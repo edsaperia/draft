@@ -1,6 +1,6 @@
 {
  "meta": {
-  "cards": 278,
+  "cards": 272,
   "walks": [
    "answers",
    "charter",
@@ -21,8 +21,7 @@
   ]
  },
  "errors": [
-  "closed: no backlog (U:) records on the page — nothing measured for the backlog",
-  "seat:applicant offered no cards — nothing was measured for it"
+  "closed: no backlog (U:) records on the page — nothing measured for the backlog"
  ],
  "cards": {
   "answers": {
@@ -30,7 +29,7 @@
     "eyebrow": "",
     "head": "Admissions",
     "lock": "",
-    "body": "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.All members must approve every new member joiningA proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.Members must vote on every new member joiningA proposed member is voted on at the approval threshold ✏️, like any change.Any member can invite new people to joinAn invitation is sent on a member’s word ✒️ — nobody else has to agree.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.",
+    "body": "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.All members must approve every new member joiningA proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.Prefer thisMembers must vote on every new member joiningA proposed member is voted on at the approval threshold ✏️, like any change.Prefer thisAny member can invite new people to joinAn invitation is sent on a member’s word ✒️ — nobody else has to agree.Prefer thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.Prefer this",
     "options": [
      {
       "set": "admission",
@@ -61,7 +60,7 @@
      },
      {
       "label": "✒️",
-      "title": "Not answered yet"
+      "title": "Set it"
      }
     ],
     "hints": [
@@ -69,7 +68,7 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
-     "Not answered yet"
+     "Set it"
     ],
     "helpers": [
      "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.",
@@ -83,7 +82,7 @@
     "eyebrow": "",
     "head": "Visibility",
     "lock": "",
-    "body": "Who may read the document besides the members — readers only, never counted. The most private answer wins: one member who wants the document closed closes it.Members onlyNobody outside the membership sees anything at all.Anyone with the linkThe chamber view only, to whoever the link reaches.Nobody sees your answer, and you will see nobody else’s until every one of them is in.",
+    "body": "Who may read the document besides the members — readers only, never counted. The most private answer wins: one member who wants the document closed closes it.Members onlyNobody outside the membership sees anything at all.Prefer thisAnyone with the linkThe chamber view only, to whoever the link reaches.Prefer thisNobody sees your answer, and you will see nobody else’s until every one of them is in.",
     "options": [
      {
       "set": "chamber",
@@ -103,8 +102,8 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "Not answered yet",
-      "title": "Not answered yet"
+      "label": "Answer",
+      "title": "Answer"
      }
     ],
     "hints": [
@@ -113,7 +112,7 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
-     "Not answered yet"
+     "Answer"
     ],
     "helpers": [
      "Who may read the document besides the members — readers only, never counted. The most private answer wins: one member who wants the document closed closes it.",
@@ -125,7 +124,7 @@
     "eyebrow": "",
     "head": "Applications",
     "lock": "",
-    "body": "Whether somebody who is not a member may ask to become one. An application is a stranger proposing their own invitation, decided as Admissions says.Invitation onlyNobody joins unless a member brings them in.Anyone may applyAn application is a stranger proposing their own invitation: it is decided the way Admissions says, and costs the applicant nothing.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.",
+    "body": "Whether somebody who is not a member may ask to become one. An application is a stranger proposing their own invitation, decided as Admissions says.Invitation onlyNobody joins unless a member brings them in.Prefer thisAnyone may applyAn application is a stranger proposing their own invitation: it is decided the way Admissions says, and costs the applicant nothing.Prefer thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.Prefer this",
     "options": [
      {
       "set": "joinBy",
@@ -151,7 +150,7 @@
      },
      {
       "label": "✒️",
-      "title": "Not answered yet"
+      "title": "Set it"
      }
     ],
     "hints": [
@@ -159,7 +158,7 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
-     "Not answered yet"
+     "Set it"
     ],
     "helpers": [
      "Whether somebody who is not a member may ask to become one. An application is a stranger proposing their own invitation, decided as Admissions says.",
@@ -172,7 +171,7 @@
     "eyebrow": "",
     "head": "Anonymous Proposals",
     "lock": "",
-    "body": "Whoever proposes a change writes a reason for it, and everybody can read that. This is only about whether their name is on it.Nobody’s name, everNo proposal ever carries a name, even after the document is finished.Nobody’s name unless they chooseNobody is named unless they sign a proposal themselves — which means an unsigned one stands out.Names at the closeHidden while the document is being written, and published with it at the end.Names at the close, or earlier by choicePublished with the document at the end, and sooner for anybody who signs.Names from the startEvery proposal carries its writer’s name from the moment it is made.If you choose this yourself, members can end up named without having agreed to it.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so it runs the other way: the document takes the most private answer, and one member who wants to stay unnamed keeps everybody unnamed.",
+    "body": "Whoever proposes a change writes a reason for it, and everybody can read that. This is only about whether their name is on it.Nobody’s name, everNo proposal ever carries a name, even after the document is finished.Prefer thisNobody’s name unless they chooseNobody is named unless they sign a proposal themselves — which means an unsigned one stands out.Prefer thisNames at the closeHidden while the document is being written, and published with it at the end.Prefer thisNames at the close, or earlier by choicePublished with the document at the end, and sooner for anybody who signs.Prefer thisNames from the startEvery proposal carries its writer’s name from the moment it is made.Prefer thisIf you choose this yourself, members can end up named without having agreed to it.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so it runs the other way: the document takes the most private answer, and one member who wants to stay unnamed keeps everybody unnamed.Prefer this",
     "options": [
      {
       "set": "authorship",
@@ -213,7 +212,7 @@
      },
      {
       "label": "✒️",
-      "title": "Not answered yet"
+      "title": "Set it"
      }
     ],
     "hints": [
@@ -221,7 +220,7 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
-     "Not answered yet"
+     "Set it"
     ],
     "helpers": [
      "Whoever proposes a change writes a reason for it, and everybody can read that. This is only about whether their name is on it.",
@@ -236,24 +235,24 @@
    },
    "bar": {
     "eyebrow": "",
-    "head": "Proposal pass threshold?",
+    "head": "Proposal Pass Threshold",
     "lock": "",
-    "body": "How sure the members have to be that a change is better than the words it replaces, at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.Nearly everyone90%In a membership of one, nothing can pass at 90% until more members arrive.Broad agreement80%In a membership of one, nothing can pass at 80% until more members arrive.A bare majority60%In a membership of one, the one vote must be for it.A number of my ownA membership of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.",
+    "body": "How sure the members have to be that a change is better than the words it replaces, at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.Nearly everyone must vote for a change for it to pass90%Prefer thisIn a membership of one, nothing can pass at 90% until more members arrive.Most of the membership must vote for a change for it to pass80%Prefer thisIn a membership of one, nothing can pass at 80% until more members arrive.A bare majority voting for a change is enough for it to pass60%Prefer thisIn a membership of one, the one vote must be for it.A number of my ownPrefer thisA membership of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.Prefer this",
     "options": [
      {
       "set": "tClose",
       "val": "90",
-      "label": "Nearly everyone90%"
+      "label": "Nearly everyone must vote for a change for it to pass90%"
      },
      {
       "set": "tClose",
       "val": "80",
-      "label": "Broad agreement80%"
+      "label": "Most of the membership must vote for a change for it to pass80%"
      },
      {
       "set": "tClose",
       "val": "60",
-      "label": "A bare majority60%"
+      "label": "A bare majority voting for a change is enough for it to pass60%"
      },
      {
       "set": "barBy",
@@ -279,15 +278,15 @@
      },
      {
       "label": "✒️",
-      "title": "Not answered yet"
+      "title": "Set it"
      }
     ],
     "hints": [
-     "Proposal pass threshold? — close it",
+     "Proposal Pass Threshold — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
-     "Not answered yet"
+     "Set it"
     ],
     "helpers": [
      "How sure the members have to be that a change is better than the words it replaces, at the end.",
@@ -303,7 +302,7 @@
     "eyebrow": "",
     "head": "When the document begins, members may propose changes to rules and vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "",
-    "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens, and the approval threshold begins its course.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.The document cannot begin while 🌍 Visibility is still being decided.🌍 Visibility is delegated to the membership, and you are its only member: a question answered by one voice has not been handed to anybody. Invite somebody at 🪪 Membership, or take it back on its own card and set it yourself.What the Founder keeps.Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.📄 The Text✒️ Laid down🛡️ Laid down🪪 Membership✒️ Kept🛡️ Kept📜 Everything else✒️ Mixed🛡️ MixedMixed means some of these have already been given up on their own cards. Keeping here lays nothing further down — a power already given comes back only on the card it went from.The questions🌍 Visibility · n of m have answeredThe peopleAda Lovell · answered everythingIt comes back to you the moment somebody else can answer.",
+    "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens, and the approval threshold begins its course.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.The document cannot begin while 🌍 Visibility is still being decided.🌍 Visibility is delegated to the membership, and you are its only member: a question answered by one voice has not been handed to anybody. Invite somebody at 🪪 Membership, or take it back on its own card and set it yourself.What the Founder keeps.Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.📝 The Text✒️ draftingKeptPrefer thisLaid downPreferred🛡️ assentKeptPrefer thisLaid downPreferred🪪 Membership✒️ draftingKeptPreferredLaid downPrefer this🛡️ assentKeptPreferredLaid downPrefer this📜 Everything else✒️ draftingKeptPrefer thisLaid downPrefer this🛡️ assentKeptPrefer thisLaid downPrefer thisWhere neither is marked, some of these have already been given up on their own cards. Keeping here lays nothing further down — a power already given comes back only on the card it went from.The questions🌍 Visibility · n of m have answeredThe peopleAda Lovell · answered everythingIt comes back to you the moment somebody else can answer.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -326,7 +325,7 @@
      "The document cannot begin while 🌍 Visibility is still being decided.",
      "🌍 Visibility is delegated to the membership, and you are its only member: a question answered by one voice has not been handed to anybody. Invite somebody at 🪪 Membership, or take it back on its own card and set it yourself.",
      "Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.",
-     "Mixed means some of these have already been given up on their own cards. Keeping here lays nothing further down — a power already given comes back only on the card it went from.",
+     "Where neither is marked, some of these have already been given up on their own cards. Keeping here lays nothing further down — a power already given comes back only on the card it went from.",
      "· n of m have answered",
      "· answered everything",
      "It comes back to you the moment somebody else can answer."
@@ -336,7 +335,7 @@
     "eyebrow": "",
     "head": "Visibility",
     "lock": "",
-    "body": "Who else can read the document. Readers are not members — they cannot propose or vote, and nothing about them is known.Members onlyAnyone with the linkLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed.",
+    "body": "Who else can read the document. Readers are not members — they cannot propose or vote, and nothing about them is known.Members onlyPrefer thisAnyone with the linkPrefer thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed.Prefer this",
     "options": [
      {
       "set": "chamber",
@@ -362,7 +361,7 @@
      },
      {
       "label": "✒️",
-      "title": "Not answered yet"
+      "title": "Set it"
      }
     ],
     "hints": [
@@ -370,7 +369,7 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
-     "Not answered yet"
+     "Set it"
     ],
     "helpers": [
      "Who else can read the document. Readers are not members — they cannot propose or vote, and nothing about them is known.",
@@ -381,7 +380,7 @@
     "eyebrow": "",
     "head": "When Does It End?",
     "lock": "",
-    "body": "When drafting stops and the text is final. Never is one of the answers: a document with no end date stops only when too few members are active.At a set timeNeverIt runs until too few members are still active.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says when they want it to end, and the document takes the latest answer — never being later than any date — so nobody is cut off before they were ready.Moving the date is a proposal ✏️ like any other. Taking the end date away altogether needs every member to agree, because with no end date the approval threshold cannot rise, and every change made so far was made under one that did.",
+    "body": "When drafting stops and the text is final. Never is one of the answers: a document with no end date stops only when too few members are active.At a set timePrefer thisNeverIt runs until too few members are still active.Prefer thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says when they want it to end, and the document takes the latest answer — never being later than any date — so nobody is cut off before they were ready.Prefer thisMoving the date is a proposal ✏️ like any other. Taking the end date away altogether needs every member to agree, because with no end date the approval threshold cannot rise, and every change made so far was made under one that did.",
     "options": [
      {
       "set": "ending",
@@ -412,7 +411,7 @@
      },
      {
       "label": "✒️",
-      "title": "Not answered yet"
+      "title": "Set it"
      }
     ],
     "hints": [
@@ -420,7 +419,7 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
-     "Not answered yet"
+     "Set it"
     ],
     "helpers": [
      "When drafting stops and the text is final. Never is one of the answers: a document with no end date stops only when too few members are active.",
@@ -520,7 +519,7 @@
     "eyebrow": "",
     "head": "Is the Founder a Member?",
     "lock": "",
-    "body": "Whether the Founder is also on the membership — inviting themselves like anybody else — or only runs the document.Member — drafting tooYou get ✏️s, you vote, you count towards quorum, and you answer the founding questions like anybody.Clerk — not draftingNo ✏️s, no voting, you count towards nothing, and there is nothing for you to answer. A clerk can stay unnamed.",
+    "body": "Whether the Founder is also on the membership — inviting themselves like anybody else — or only runs the document.Member — drafting tooYou get ✏️s, you vote, you count towards quorum, and you answer the founding questions like anybody.Prefer thisClerk — not draftingNo ✏️s, no voting, you count towards nothing, and there is nothing for you to answer. A clerk can stay unnamed.Prefer this",
     "options": [
      {
       "set": "hatPick",
@@ -557,7 +556,7 @@
    },
    "invite": {
     "eyebrow": "",
-    "head": "Anyone may be proposed as a new member, and every member has to agree — one refusal keeps them out. The Founder may invite people at will, and refuse invitations and applications that the membership pass.",
+    "head": "Nobody has been invited yet.Anyone may be proposed as a new member, and every member has to agree — one refusal keeps them out. The Founder may invite people at will, and refuse invitations and applications that the membership pass.",
     "lock": "",
     "body": "🌍 Visibility is waiting for somebody to answer it. You handed it to the membership, and you are its only member — a question answered by one voice has not been handed to anybody, so one more member is enough to start it. If you would rather not invite anybody, take it back on its own card and set it yourself.An invitation is just the link, sent by email: somebody becomes a member when they open it, and is listed as invited until then.✒️Several at once✒️n of m have opened it so far. Nobody has to be here for the document to exist, and anybody who arrives later starts with the same ✏️s as everybody else.",
     "options": [],
@@ -601,7 +600,7 @@
     "eyebrow": "",
     "head": "When Are Votes Revealed?",
     "lock": "",
-    "body": "Whether what somebody preferred is ever attached to their name. Nobody can see it while a question is open, whichever you choose.Never revealedWhat you preferred stays yours, permanently.Revealed at the endPublished with the document at the end, never before.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.",
+    "body": "Whether what somebody preferred is ever attached to their name. Nobody can see it while a question is open, whichever you choose.Never revealedWhat you preferred stays yours, permanently.Prefer thisRevealed at the endPublished with the document at the end, never before.Prefer thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.Prefer this",
     "options": [
      {
       "set": "judgments",
@@ -627,7 +626,7 @@
      },
      {
       "label": "✒️",
-      "title": "Not answered yet"
+      "title": "Set it"
      }
     ],
     "hints": [
@@ -635,7 +634,7 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
-     "Not answered yet"
+     "Set it"
     ],
     "helpers": [
      "Whether what somebody preferred is ever attached to their name. Nobody can see it while a question is open, whichever you choose.",
@@ -648,7 +647,7 @@
     "eyebrow": "",
     "head": "Do Memberships Lapse?",
     "lock": "",
-    "body": "Whether somebody stops being a member after a long time without logging in. They are warned first, and coming back is just logging in again.NeverNobody ever drops out of the count, however long they are away.They lapseLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.",
+    "body": "Whether somebody stops being a member after a long time without logging in. They are warned first, and coming back is just logging in again.NeverNobody ever drops out of the count, however long they are away.Prefer thisThey lapsePrefer thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.Prefer this",
     "options": [
      {
       "set": "lapse",
@@ -679,7 +678,7 @@
      },
      {
       "label": "✒️",
-      "title": "Not answered yet"
+      "title": "Set it"
      }
     ],
     "hints": [
@@ -687,7 +686,7 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
-     "Not answered yet"
+     "Set it"
     ],
     "helpers": [
      "Whether somebody stops being a member after a long time without logging in. They are warned first, and coming back is just logging in again.",
@@ -714,14 +713,14 @@
      },
      {
       "label": "🪶",
-      "title": "Not answered yet"
+      "title": "Save"
      }
     ],
     "hints": [
      "you@example.com",
      "Your Email — close it",
      "Put it back as it stands",
-     "Not answered yet"
+     "Save"
     ],
     "helpers": []
    },
@@ -796,7 +795,7 @@
     "eyebrow": "",
     "head": "Quorum",
     "lock": "",
-    "body": "How many members have to have voted on something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.Asked asA share of the membershipThe number goes up and down as members join and leave.A fixed numberThe number stays the same however the membership changes.The numberI set itLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest.",
+    "body": "How many members have to have voted on something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.Asked asA share of the membershipThe number goes up and down as members join and leave.Prefer thisA fixed numberThe number stays the same however the membership changes.Prefer thisThe numberI set itPrefer thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest.Prefer this",
     "options": [
      {
       "set": "quorumForm",
@@ -832,7 +831,7 @@
      },
      {
       "label": "✒️",
-      "title": "Not answered yet"
+      "title": "Set it"
      }
     ],
     "hints": [
@@ -840,7 +839,7 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
-     "Not answered yet"
+     "Set it"
     ],
     "helpers": [
      "How many members have to have voted on something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.",
@@ -854,7 +853,7 @@
     "eyebrow": "",
     "head": "Proposal Rate",
     "lock": "",
-    "body": "How often a member can propose something. Each proposal costs one ✏️.I set itLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most generous they would accept, and the document takes it.",
+    "body": "How often a member can propose something. Each proposal costs one ✏️.I set itPrefer thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most generous they would accept, and the document takes it.Prefer this",
     "options": [
      {
       "set": "rateBy",
@@ -888,7 +887,7 @@
      },
      {
       "label": "✒️",
-      "title": "Not answered yet"
+      "title": "Set it"
      }
     ],
     "hints": [
@@ -896,7 +895,7 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
-     "Not answered yet"
+     "Set it"
     ],
     "helpers": [
      "How often a member can propose something. Each proposal costs one ✏️.",
@@ -907,7 +906,7 @@
     "eyebrow": "",
     "head": "How Is a Member Removed?",
     "lock": "",
-    "body": "How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.All members must approve removing a member, and the person themselves must agreeOne member saying no keeps them in, and their own answer counts — so nobody is removed against their will.All other members must approve removing a memberSomebody can be removed even if they object, but only if every other member agrees 🏛️.Members must vote on removing a memberA removal is proposed and voted on at the approval threshold ✏️, like a change to the text.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.",
+    "body": "How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.All members must approve removing a member, and the person themselves must agreeOne member saying no keeps them in, and their own answer counts — so nobody is removed against their will.Prefer thisAll other members must approve removing a memberSomebody can be removed even if they object, but only if every other member agrees 🏛️.Prefer thisMembers must vote on removing a memberA removal is proposed and voted on at the approval threshold ✏️, like a change to the text.Prefer thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Prefer this",
     "options": [
      {
       "set": "removal",
@@ -938,7 +937,7 @@
      },
      {
       "label": "✒️",
-      "title": "Not answered yet"
+      "title": "Set it"
      }
     ],
     "hints": [
@@ -946,7 +945,7 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
-     "Not answered yet"
+     "Set it"
     ],
     "helpers": [
      "How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.",
@@ -960,7 +959,7 @@
     "eyebrow": "",
     "head": "What Type of Document Is This?",
     "lock": "",
-    "body": "A shape sets the rules the way a document of that kind usually runs. You can change any of them afterwards.A meetingA few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.A conferenceA few days with people coming and going: a third of the membership is enough to move, one proposal an hour each.OngoingNo end date, members only: a quarter of the membership can move, one proposal a day each, and a member away a month lapses.CustomDecide everything yourself — every rule is a card.",
+    "body": "A shape sets the rules the way a document of that kind usually runs. You can change any of them afterwards.A meetingA few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.Prefer thisA conferenceA few days with people coming and going: a third of the membership is enough to move, one proposal an hour each.Prefer thisOngoingNo end date, members only: a quarter of the membership can move, one proposal a day each, and a member away a month lapses.Prefer thisCustomDecide everything yourself — every rule is a card.Prefer this",
     "options": [
      {
       "set": "docShape",
@@ -1038,30 +1037,6 @@
      "docs.vote/d/"
     ]
    },
-   "text": {
-    "eyebrow": "",
-    "head": "Text",
-    "lock": "",
-    "body": "The document begins from whatever stands in the column below, and from then it changes by proposal — whoever holds the pen.Nothing written yet.Write it below, or leave it blank. The column is yours until the document begins; starting from nothing is a perfectly good way to begin.",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "OK",
-      "title": "The document begins empty"
-     }
-    ],
-    "hints": [
-     "Text — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "The document begins empty"
-    ],
-    "helpers": [
-     "The document begins from whatever stands in the column below, and from then it changes by proposal — whoever holds the pen.",
-     "Write it below, or leave it blank. The column is yours until the document begins; starting from nothing is a perfectly good way to begin."
-    ]
-   },
    "title": {
     "eyebrow": "",
     "head": "",
@@ -1100,8 +1075,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -1113,6 +1088,7 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -1180,8 +1156,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -1196,6 +1172,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -1209,8 +1186,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -1223,6 +1200,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -1236,8 +1214,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "❄️",
@@ -1254,6 +1232,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Not this one, not now — it stays open and stops being the most urgent",
      "Choose one of the three first"
     ],
@@ -1268,8 +1247,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -1282,6 +1261,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -1295,8 +1275,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -1309,6 +1289,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -1343,8 +1324,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -1357,6 +1338,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -1370,8 +1352,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Recorded — choose again to change it",
@@ -1384,6 +1366,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Recorded — choose again to change it"
     ],
     "helpers": []
@@ -1397,8 +1380,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Close — your vote stays on the record"
      }
     ],
     "hints": [
@@ -1406,7 +1389,8 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them"
+     "I can’t split them",
+     "Close — your vote stays on the record"
     ],
     "helpers": [
      "the clause changed after you voted"
@@ -1421,8 +1405,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -1435,6 +1419,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -1498,8 +1483,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Recorded — choose again to change it",
@@ -1515,6 +1500,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Recorded — choose again to change it"
     ],
     "helpers": []
@@ -1553,8 +1539,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -1571,6 +1557,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -1709,8 +1696,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -1723,6 +1710,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -1808,8 +1796,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -1822,6 +1810,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -1835,8 +1824,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -1849,6 +1838,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -1877,8 +1867,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -1891,6 +1881,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -1904,8 +1895,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Recorded — choose again to change it",
@@ -1918,6 +1909,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Recorded — choose again to change it"
     ],
     "helpers": []
@@ -1931,8 +1923,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -1945,6 +1937,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -1958,8 +1951,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -1972,6 +1965,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -1985,8 +1979,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -1999,6 +1993,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -2033,8 +2028,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -2050,6 +2045,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -2063,8 +2059,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Recorded — choose again to change it",
@@ -2077,6 +2073,7 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Recorded — choose again to change it"
     ],
     "helpers": []
@@ -2111,8 +2108,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -2127,6 +2124,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "Hollis Vane wrote this.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -2140,8 +2138,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -2154,6 +2152,7 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -2202,8 +2201,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -2215,6 +2214,7 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -2282,8 +2282,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -2297,6 +2297,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -2310,8 +2311,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -2324,6 +2325,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -2337,8 +2339,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "❄️",
@@ -2355,6 +2357,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Not this one, not now — it stays open and stops being the most urgent",
      "Choose one of the three first"
     ],
@@ -2369,8 +2372,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -2383,6 +2386,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -2396,8 +2400,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -2410,6 +2414,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -2444,8 +2449,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -2458,6 +2463,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -2471,8 +2477,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Recorded — choose again to change it",
@@ -2485,6 +2491,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Recorded — choose again to change it"
     ],
     "helpers": []
@@ -2498,8 +2505,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Close — your vote stays on the record"
      }
     ],
     "hints": [
@@ -2507,7 +2514,8 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them"
+     "I can’t split them",
+     "Close — your vote stays on the record"
     ],
     "helpers": [
      "the clause changed after you voted"
@@ -2522,8 +2530,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -2536,6 +2544,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -2599,8 +2608,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Recorded — choose again to change it",
@@ -2616,6 +2625,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Recorded — choose again to change it"
     ],
     "helpers": []
@@ -2654,8 +2664,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -2672,6 +2682,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -2810,8 +2821,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -2824,6 +2835,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -2909,8 +2921,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -2923,6 +2935,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -2936,8 +2949,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -2950,6 +2963,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -2978,8 +2992,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -2992,6 +3006,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -3005,8 +3020,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Recorded — choose again to change it",
@@ -3019,6 +3034,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Recorded — choose again to change it"
     ],
     "helpers": []
@@ -3032,8 +3048,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -3046,6 +3062,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -3059,8 +3076,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -3073,6 +3090,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -3086,8 +3104,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -3100,6 +3118,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -3134,8 +3153,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Choose one of the three first",
@@ -3151,6 +3170,7 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -3164,8 +3184,8 @@
     "inputs": [],
     "foot": [
      {
-      "label": "Indifferent",
-      "title": "I can’t split them"
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
      },
      {
       "label": "Recorded — choose again to change it",
@@ -3178,6 +3198,7 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
      "Recorded — choose again to change it"
     ],
     "helpers": []
@@ -3276,7 +3297,7 @@
     "eyebrow": "",
     "head": "Admissions",
     "lock": "",
-    "body": "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.All members must approve every new member joiningA proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.Members must vote on every new member joiningA proposed member is voted on at the approval threshold ✏️, like any change.Any member can invite new people to joinAn invitation is sent on a member’s word ✒️ — nobody else has to agree.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.",
+    "body": "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.All members must approve every new member joiningA proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.Prefer thisMembers must vote on every new member joiningA proposed member is voted on at the approval threshold ✏️, like any change.Prefer thisAny member can invite new people to joinAn invitation is sent on a member’s word ✒️ — nobody else has to agree.Prefer thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.Preferred",
     "options": [
      {
       "set": "admission",
@@ -3330,7 +3351,7 @@
     "eyebrow": "",
     "head": "Applications",
     "lock": "",
-    "body": "Whether somebody who is not a member may ask to become one. An application is a stranger proposing their own invitation, decided as Admissions says.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Invitation onlyNobody joins unless a member brings them in.Anyone may applyAn application is a stranger proposing their own invitation: it is decided the way Admissions says, and costs the applicant nothing.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.",
+    "body": "Whether somebody who is not a member may ask to become one. An application is a stranger proposing their own invitation, decided as Admissions says.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Invitation onlyNobody joins unless a member brings them in.Prefer thisAnyone may applyAn application is a stranger proposing their own invitation: it is decided the way Admissions says, and costs the applicant nothing.Prefer thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.Preferred",
     "options": [
      {
       "set": "joinBy",
@@ -3376,24 +3397,24 @@
    },
    "bar": {
     "eyebrow": "",
-    "head": "Proposal pass threshold?",
+    "head": "Proposal Pass Threshold",
     "lock": "",
-    "body": "How sure the members have to be that a change is better than the words it replaces, at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Nearly everyone90%In a membership of one, nothing can pass at 90% until more members arrive.Broad agreement80%In a membership of one, nothing can pass at 80% until more members arrive.A bare majority60%In a membership of one, the one vote must be for it.A number of my ownA membership of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.",
+    "body": "How sure the members have to be that a change is better than the words it replaces, at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Nearly everyone must vote for a change for it to pass90%Prefer thisIn a membership of one, nothing can pass at 90% until more members arrive.Most of the membership must vote for a change for it to pass80%Prefer thisIn a membership of one, nothing can pass at 80% until more members arrive.A bare majority voting for a change is enough for it to pass60%Prefer thisIn a membership of one, the one vote must be for it.A number of my ownPrefer thisA membership of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.Preferred",
     "options": [
      {
       "set": "tClose",
       "val": "90",
-      "label": "Nearly everyone90%"
+      "label": "Nearly everyone must vote for a change for it to pass90%"
      },
      {
       "set": "tClose",
       "val": "80",
-      "label": "Broad agreement80%"
+      "label": "Most of the membership must vote for a change for it to pass80%"
      },
      {
       "set": "tClose",
       "val": "60",
-      "label": "A bare majority60%"
+      "label": "A bare majority voting for a change is enough for it to pass60%"
      },
      {
       "set": "barBy",
@@ -3423,7 +3444,7 @@
      }
     ],
     "hints": [
-     "Proposal pass threshold? — close it",
+     "Proposal Pass Threshold — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
@@ -3444,7 +3465,7 @@
     "eyebrow": "",
     "head": "Visibility",
     "lock": "",
-    "body": "Who else can read the document. Readers are not members — they cannot propose or vote, and nothing about them is known.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Members onlyAnyone with the linkLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed.",
+    "body": "Who else can read the document. Readers are not members — they cannot propose or vote, and nothing about them is known.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Members onlyPrefer thisAnyone with the linkPrefer thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed.Preferred",
     "options": [
      {
       "set": "chamber",
@@ -3490,7 +3511,7 @@
     "eyebrow": "",
     "head": "When Does It End?",
     "lock": "",
-    "body": "When drafting stops and the text is final. Never is one of the answers: a document with no end date stops only when too few members are active.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.At a set timeNeverIt runs until too few members are still active.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says when they want it to end, and the document takes the latest answer — never being later than any date — so nobody is cut off before they were ready.Moving the date is a proposal ✏️ like any other. Taking the end date away altogether needs every member to agree, because with no end date the approval threshold cannot rise, and every change made so far was made under one that did.",
+    "body": "When drafting stops and the text is final. Never is one of the answers: a document with no end date stops only when too few members are active.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.At a set timePrefer thisNeverIt runs until too few members are still active.Prefer thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says when they want it to end, and the document takes the latest answer — never being later than any date — so nobody is cut off before they were ready.PreferredMoving the date is a proposal ✏️ like any other. Taking the end date away altogether needs every member to agree, because with no end date the approval threshold cannot rise, and every change made so far was made under one that did.",
     "options": [
      {
       "set": "ending",
@@ -3543,7 +3564,7 @@
     "eyebrow": "",
     "head": "Do Memberships Lapse?",
     "lock": "",
-    "body": "Whether somebody stops being a member after a long time without logging in. They are warned first, and coming back is just logging in again.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.NeverNobody ever drops out of the count, however long they are away.They lapseLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.",
+    "body": "Whether somebody stops being a member after a long time without logging in. They are warned first, and coming back is just logging in again.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.NeverNobody ever drops out of the count, however long they are away.Prefer thisThey lapsePrefer thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.Preferred",
     "options": [
      {
       "set": "lapse",
@@ -3610,14 +3631,14 @@
      },
      {
       "label": "🪶",
-      "title": "Not answered yet"
+      "title": "Save"
      }
     ],
     "hints": [
      "you@example.com",
      "Your Email — close it",
      "Put it back as it stands",
-     "Not answered yet"
+     "Save"
     ],
     "helpers": []
    },
@@ -3625,7 +3646,7 @@
     "eyebrow": "",
     "head": "Quorum",
     "lock": "",
-    "body": "How many members have to have voted on something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.Asked asA share of the membershipThe number goes up and down as members join and leave.A fixed numberThe number stays the same however the membership changes.The numberAsked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.I set itLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest.",
+    "body": "How many members have to have voted on something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.Asked asA share of the membershipThe number goes up and down as members join and leave.Prefer thisA fixed numberThe number stays the same however the membership changes.Prefer thisThe numberAsked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.I set itPrefer thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest.Preferred",
     "options": [
      {
       "set": "quorumForm",
@@ -3684,7 +3705,7 @@
     "eyebrow": "",
     "head": "Proposal Rate",
     "lock": "",
-    "body": "How often a member can propose something. Each proposal costs one ✏️.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Until it is settled everybody gets the standard rate. Picking a value here takes it back.I set itLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most generous they would accept, and the document takes it.",
+    "body": "How often a member can propose something. Each proposal costs one ✏️.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Until it is settled everybody gets the standard rate. Picking a value here takes it back.I set itPrefer thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most generous they would accept, and the document takes it.Preferred",
     "options": [
      {
       "set": "rateBy",
@@ -3738,7 +3759,7 @@
     "eyebrow": "",
     "head": "How Is a Member Removed?",
     "lock": "",
-    "body": "How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.All members must approve removing a member, and the person themselves must agreeOne member saying no keeps them in, and their own answer counts — so nobody is removed against their will.All other members must approve removing a memberSomebody can be removed even if they object, but only if every other member agrees 🏛️.Members must vote on removing a memberA removal is proposed and voted on at the approval threshold ✏️, like a change to the text.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.",
+    "body": "How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.All members must approve removing a member, and the person themselves must agreeOne member saying no keeps them in, and their own answer counts — so nobody is removed against their will.Prefer thisAll other members must approve removing a memberSomebody can be removed even if they object, but only if every other member agrees 🏛️.Prefer thisMembers must vote on removing a memberA removal is proposed and voted on at the approval threshold ✏️, like a change to the text.Prefer thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Preferred",
     "options": [
      {
       "set": "removal",
@@ -3792,7 +3813,7 @@
     "eyebrow": "",
     "head": "What Type of Document Is This?",
     "lock": "",
-    "body": "A shape sets the rules the way a document of that kind usually runs. You can change any of them afterwards.A meetingA few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.A conferenceA few days with people coming and going: a third of the membership is enough to move, one proposal an hour each.OngoingNo end date, members only: a quarter of the membership can move, one proposal a day each, and a member away a month lapses.CustomDecide everything yourself — every rule is a card.",
+    "body": "A shape sets the rules the way a document of that kind usually runs. You can change any of them afterwards.A meetingA few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.Prefer thisA conferenceA few days with people coming and going: a third of the membership is enough to move, one proposal an hour each.Prefer thisOngoingNo end date, members only: a quarter of the membership can move, one proposal a day each, and a member away a month lapses.Prefer thisCustomDecide everything yourself — every rule is a card.Prefer this",
     "options": [
      {
       "set": "docShape",
@@ -3903,7 +3924,7 @@
     "eyebrow": "",
     "head": "Admissions",
     "lock": "",
-    "body": "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.All members must approve every new member joiningA proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.Members must vote on every new member joiningA proposed member is voted on at the approval threshold ✏️, like any change.Any member can invite new people to joinAn invitation is sent on a member’s word ✒️ — nobody else has to agree.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.",
+    "body": "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.All members must approve every new member joiningA proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.Prefer thisMembers must vote on every new member joiningA proposed member is voted on at the approval threshold ✏️, like any change.Prefer thisAny member can invite new people to joinAn invitation is sent on a member’s word ✒️ — nobody else has to agree.Prefer thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.Prefer this",
     "options": [
      {
       "set": "admission",
@@ -3934,7 +3955,7 @@
      },
      {
       "label": "✒️",
-      "title": "Not answered yet"
+      "title": "Set it"
      }
     ],
     "hints": [
@@ -3942,7 +3963,7 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
-     "Not answered yet"
+     "Set it"
     ],
     "helpers": [
      "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.",
@@ -3956,7 +3977,7 @@
     "eyebrow": "",
     "head": "Applications",
     "lock": "",
-    "body": "Whether somebody who is not a member may ask to become one. An application is a stranger proposing their own invitation, decided as Admissions says.Invitation onlyNobody joins unless a member brings them in.Anyone may applyAn application is a stranger proposing their own invitation: it is decided the way Admissions says, and costs the applicant nothing.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.",
+    "body": "Whether somebody who is not a member may ask to become one. An application is a stranger proposing their own invitation, decided as Admissions says.Invitation onlyNobody joins unless a member brings them in.Prefer thisAnyone may applyAn application is a stranger proposing their own invitation: it is decided the way Admissions says, and costs the applicant nothing.Prefer thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.Prefer this",
     "options": [
      {
       "set": "joinBy",
@@ -3982,7 +4003,7 @@
      },
      {
       "label": "✒️",
-      "title": "Not answered yet"
+      "title": "Set it"
      }
     ],
     "hints": [
@@ -3990,7 +4011,7 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
-     "Not answered yet"
+     "Set it"
     ],
     "helpers": [
      "Whether somebody who is not a member may ask to become one. An application is a stranger proposing their own invitation, decided as Admissions says.",
@@ -4003,7 +4024,7 @@
     "eyebrow": "",
     "head": "Anonymous Proposals",
     "lock": "",
-    "body": "Whoever proposes a change writes a reason for it, and everybody can read that. This is only about whether their name is on it.Nobody’s name, everNo proposal ever carries a name, even after the document is finished.Nobody’s name unless they chooseNobody is named unless they sign a proposal themselves — which means an unsigned one stands out.Names at the closeHidden while the document is being written, and published with it at the end.Names at the close, or earlier by choicePublished with the document at the end, and sooner for anybody who signs.Names from the startEvery proposal carries its writer’s name from the moment it is made.If you choose this yourself, members can end up named without having agreed to it.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so it runs the other way: the document takes the most private answer, and one member who wants to stay unnamed keeps everybody unnamed.",
+    "body": "Whoever proposes a change writes a reason for it, and everybody can read that. This is only about whether their name is on it.Nobody’s name, everNo proposal ever carries a name, even after the document is finished.Prefer thisNobody’s name unless they chooseNobody is named unless they sign a proposal themselves — which means an unsigned one stands out.Prefer thisNames at the closeHidden while the document is being written, and published with it at the end.Prefer thisNames at the close, or earlier by choicePublished with the document at the end, and sooner for anybody who signs.Prefer thisNames from the startEvery proposal carries its writer’s name from the moment it is made.Prefer thisIf you choose this yourself, members can end up named without having agreed to it.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so it runs the other way: the document takes the most private answer, and one member who wants to stay unnamed keeps everybody unnamed.Prefer this",
     "options": [
      {
       "set": "authorship",
@@ -4044,7 +4065,7 @@
      },
      {
       "label": "✒️",
-      "title": "Not answered yet"
+      "title": "Set it"
      }
     ],
     "hints": [
@@ -4052,7 +4073,7 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
-     "Not answered yet"
+     "Set it"
     ],
     "helpers": [
      "Whoever proposes a change writes a reason for it, and everybody can read that. This is only about whether their name is on it.",
@@ -4067,24 +4088,24 @@
    },
    "bar": {
     "eyebrow": "",
-    "head": "Proposal pass threshold?",
+    "head": "Proposal Pass Threshold",
     "lock": "",
-    "body": "How sure the members have to be that a change is better than the words it replaces, at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.Nearly everyone90%In a membership of one, nothing can pass at 90% until more members arrive.Broad agreement80%In a membership of one, nothing can pass at 80% until more members arrive.A bare majority60%In a membership of one, the one vote must be for it.A number of my ownA membership of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.",
+    "body": "How sure the members have to be that a change is better than the words it replaces, at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.Nearly everyone must vote for a change for it to pass90%Prefer thisIn a membership of one, nothing can pass at 90% until more members arrive.Most of the membership must vote for a change for it to pass80%Prefer thisIn a membership of one, nothing can pass at 80% until more members arrive.A bare majority voting for a change is enough for it to pass60%Prefer thisIn a membership of one, the one vote must be for it.A number of my ownPrefer thisA membership of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.Prefer this",
     "options": [
      {
       "set": "tClose",
       "val": "90",
-      "label": "Nearly everyone90%"
+      "label": "Nearly everyone must vote for a change for it to pass90%"
      },
      {
       "set": "tClose",
       "val": "80",
-      "label": "Broad agreement80%"
+      "label": "Most of the membership must vote for a change for it to pass80%"
      },
      {
       "set": "tClose",
       "val": "60",
-      "label": "A bare majority60%"
+      "label": "A bare majority voting for a change is enough for it to pass60%"
      },
      {
       "set": "barBy",
@@ -4110,15 +4131,15 @@
      },
      {
       "label": "✒️",
-      "title": "Not answered yet"
+      "title": "Set it"
      }
     ],
     "hints": [
-     "Proposal pass threshold? — close it",
+     "Proposal Pass Threshold — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
-     "Not answered yet"
+     "Set it"
     ],
     "helpers": [
      "How sure the members have to be that a change is better than the words it replaces, at the end.",
@@ -4134,7 +4155,7 @@
     "eyebrow": "",
     "head": "When the document begins, members may propose changes to rules and vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "",
-    "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens, and the approval threshold begins its course.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.What the Founder keeps.Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.📄 The Text✒️ Laid down🛡️ Laid down🪪 Membership✒️ Kept🛡️ Kept📜 Everything else✒️ Kept🛡️ KeptThe questionsThe peopleAda Lovell · nothing owedNobody is kept waiting by this: whoever has not answered can still answer after the start, and the document takes what was said. Hold ✒️ to begin.",
+    "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens, and the approval threshold begins its course.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.What the Founder keeps.Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.📝 The Text✒️ draftingKeptPrefer thisLaid downPreferred🛡️ assentKeptPrefer thisLaid downPreferred🪪 Membership✒️ draftingKeptPreferredLaid downPrefer this🛡️ assentKeptPreferredLaid downPrefer this📜 Everything else✒️ draftingKeptPreferredLaid downPrefer this🛡️ assentKeptPreferredLaid downPrefer thisThe questionsThe peopleAda Lovell · nothing owedNobody is kept waiting by this: whoever has not answered can still answer after the start, and the document takes what was said. Hold ✒️ to begin.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -4225,7 +4246,7 @@
     "eyebrow": "",
     "head": "Visibility",
     "lock": "",
-    "body": "Who else can read the document. Readers are not members — they cannot propose or vote, and nothing about them is known.Members onlyAnyone with the linkLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed.",
+    "body": "Who else can read the document. Readers are not members — they cannot propose or vote, and nothing about them is known.Members onlyPrefer thisAnyone with the linkPrefer thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed.Prefer this",
     "options": [
      {
       "set": "chamber",
@@ -4251,7 +4272,7 @@
      },
      {
       "label": "✒️",
-      "title": "Not answered yet"
+      "title": "Set it"
      }
     ],
     "hints": [
@@ -4259,7 +4280,7 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
-     "Not answered yet"
+     "Set it"
     ],
     "helpers": [
      "Who else can read the document. Readers are not members — they cannot propose or vote, and nothing about them is known.",
@@ -4270,7 +4291,7 @@
     "eyebrow": "",
     "head": "When Does It End?",
     "lock": "",
-    "body": "When drafting stops and the text is final. Never is one of the answers: a document with no end date stops only when too few members are active.At a set timeNeverIt runs until too few members are still active.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says when they want it to end, and the document takes the latest answer — never being later than any date — so nobody is cut off before they were ready.Moving the date is a proposal ✏️ like any other. Taking the end date away altogether needs every member to agree, because with no end date the approval threshold cannot rise, and every change made so far was made under one that did.",
+    "body": "When drafting stops and the text is final. Never is one of the answers: a document with no end date stops only when too few members are active.At a set timePrefer thisNeverIt runs until too few members are still active.Prefer thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says when they want it to end, and the document takes the latest answer — never being later than any date — so nobody is cut off before they were ready.Prefer thisMoving the date is a proposal ✏️ like any other. Taking the end date away altogether needs every member to agree, because with no end date the approval threshold cannot rise, and every change made so far was made under one that did.",
     "options": [
      {
       "set": "ending",
@@ -4301,7 +4322,7 @@
      },
      {
       "label": "✒️",
-      "title": "Not answered yet"
+      "title": "Set it"
      }
     ],
     "hints": [
@@ -4309,7 +4330,7 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
-     "Not answered yet"
+     "Set it"
     ],
     "helpers": [
      "When drafting stops and the text is final. Never is one of the answers: a document with no end date stops only when too few members are active.",
@@ -4409,7 +4430,7 @@
     "eyebrow": "",
     "head": "Is the Founder a Member?",
     "lock": "",
-    "body": "Whether the Founder is also on the membership — inviting themselves like anybody else — or only runs the document.Member — drafting tooYou get ✏️s, you vote, you count towards quorum, and you answer the founding questions like anybody.Clerk — not draftingNo ✏️s, no voting, you count towards nothing, and there is nothing for you to answer. A clerk can stay unnamed.",
+    "body": "Whether the Founder is also on the membership — inviting themselves like anybody else — or only runs the document.Member — drafting tooYou get ✏️s, you vote, you count towards quorum, and you answer the founding questions like anybody.Prefer thisClerk — not draftingNo ✏️s, no voting, you count towards nothing, and there is nothing for you to answer. A clerk can stay unnamed.Prefer this",
     "options": [
      {
       "set": "hatPick",
@@ -4446,7 +4467,7 @@
    },
    "invite": {
     "eyebrow": "",
-    "head": "Anyone may be proposed as a new member, and every member has to agree — one refusal keeps them out. The Founder may invite people at will, and refuse invitations and applications that the membership pass.",
+    "head": "Nobody has been invited yet.Anyone may be proposed as a new member, and every member has to agree — one refusal keeps them out. The Founder may invite people at will, and refuse invitations and applications that the membership pass.",
     "lock": "",
     "body": "An invitation is just the link, sent by email: somebody becomes a member when they open it, and is listed as invited until then.✒️Several at once✒️n of m have opened it so far. Nobody has to be here for the document to exist, and anybody who arrives later starts with the same ✏️s as everybody else.",
     "options": [],
@@ -4489,7 +4510,7 @@
     "eyebrow": "",
     "head": "When Are Votes Revealed?",
     "lock": "",
-    "body": "Whether what somebody preferred is ever attached to their name. Nobody can see it while a question is open, whichever you choose.Never revealedWhat you preferred stays yours, permanently.Revealed at the endPublished with the document at the end, never before.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.",
+    "body": "Whether what somebody preferred is ever attached to their name. Nobody can see it while a question is open, whichever you choose.Never revealedWhat you preferred stays yours, permanently.Prefer thisRevealed at the endPublished with the document at the end, never before.Prefer thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.Prefer this",
     "options": [
      {
       "set": "judgments",
@@ -4515,7 +4536,7 @@
      },
      {
       "label": "✒️",
-      "title": "Not answered yet"
+      "title": "Set it"
      }
     ],
     "hints": [
@@ -4523,7 +4544,7 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
-     "Not answered yet"
+     "Set it"
     ],
     "helpers": [
      "Whether what somebody preferred is ever attached to their name. Nobody can see it while a question is open, whichever you choose.",
@@ -4536,7 +4557,7 @@
     "eyebrow": "",
     "head": "Do Memberships Lapse?",
     "lock": "",
-    "body": "Whether somebody stops being a member after a long time without logging in. They are warned first, and coming back is just logging in again.NeverNobody ever drops out of the count, however long they are away.They lapseLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.",
+    "body": "Whether somebody stops being a member after a long time without logging in. They are warned first, and coming back is just logging in again.NeverNobody ever drops out of the count, however long they are away.Prefer thisThey lapsePrefer thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.Prefer this",
     "options": [
      {
       "set": "lapse",
@@ -4567,7 +4588,7 @@
      },
      {
       "label": "✒️",
-      "title": "Not answered yet"
+      "title": "Set it"
      }
     ],
     "hints": [
@@ -4575,7 +4596,7 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
-     "Not answered yet"
+     "Set it"
     ],
     "helpers": [
      "Whether somebody stops being a member after a long time without logging in. They are warned first, and coming back is just logging in again.",
@@ -4602,14 +4623,14 @@
      },
      {
       "label": "🪶",
-      "title": "Not answered yet"
+      "title": "Save"
      }
     ],
     "hints": [
      "you@example.com",
      "Your Email — close it",
      "Put it back as it stands",
-     "Not answered yet"
+     "Save"
     ],
     "helpers": []
    },
@@ -4684,7 +4705,7 @@
     "eyebrow": "",
     "head": "Quorum",
     "lock": "",
-    "body": "How many members have to have voted on something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.Asked asA share of the membershipThe number goes up and down as members join and leave.A fixed numberThe number stays the same however the membership changes.The numberI set itLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest.",
+    "body": "How many members have to have voted on something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.Asked asA share of the membershipThe number goes up and down as members join and leave.Prefer thisA fixed numberThe number stays the same however the membership changes.Prefer thisThe numberI set itPrefer thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest.Prefer this",
     "options": [
      {
       "set": "quorumForm",
@@ -4720,7 +4741,7 @@
      },
      {
       "label": "✒️",
-      "title": "Not answered yet"
+      "title": "Set it"
      }
     ],
     "hints": [
@@ -4728,7 +4749,7 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
-     "Not answered yet"
+     "Set it"
     ],
     "helpers": [
      "How many members have to have voted on something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.",
@@ -4742,7 +4763,7 @@
     "eyebrow": "",
     "head": "Proposal Rate",
     "lock": "",
-    "body": "How often a member can propose something. Each proposal costs one ✏️.I set itLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most generous they would accept, and the document takes it.",
+    "body": "How often a member can propose something. Each proposal costs one ✏️.I set itPrefer thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most generous they would accept, and the document takes it.Prefer this",
     "options": [
      {
       "set": "rateBy",
@@ -4776,7 +4797,7 @@
      },
      {
       "label": "✒️",
-      "title": "Not answered yet"
+      "title": "Set it"
      }
     ],
     "hints": [
@@ -4784,7 +4805,7 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
-     "Not answered yet"
+     "Set it"
     ],
     "helpers": [
      "How often a member can propose something. Each proposal costs one ✏️.",
@@ -4795,7 +4816,7 @@
     "eyebrow": "",
     "head": "How Is a Member Removed?",
     "lock": "",
-    "body": "How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.All members must approve removing a member, and the person themselves must agreeOne member saying no keeps them in, and their own answer counts — so nobody is removed against their will.All other members must approve removing a memberSomebody can be removed even if they object, but only if every other member agrees 🏛️.Members must vote on removing a memberA removal is proposed and voted on at the approval threshold ✏️, like a change to the text.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.",
+    "body": "How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.All members must approve removing a member, and the person themselves must agreeOne member saying no keeps them in, and their own answer counts — so nobody is removed against their will.Prefer thisAll other members must approve removing a memberSomebody can be removed even if they object, but only if every other member agrees 🏛️.Prefer thisMembers must vote on removing a memberA removal is proposed and voted on at the approval threshold ✏️, like a change to the text.Prefer thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Prefer this",
     "options": [
      {
       "set": "removal",
@@ -4826,7 +4847,7 @@
      },
      {
       "label": "✒️",
-      "title": "Not answered yet"
+      "title": "Set it"
      }
     ],
     "hints": [
@@ -4834,7 +4855,7 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
-     "Not answered yet"
+     "Set it"
     ],
     "helpers": [
      "How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.",
@@ -4848,7 +4869,7 @@
     "eyebrow": "",
     "head": "What Type of Document Is This?",
     "lock": "",
-    "body": "A shape sets the rules the way a document of that kind usually runs. You can change any of them afterwards.A meetingA few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.A conferenceA few days with people coming and going: a third of the membership is enough to move, one proposal an hour each.OngoingNo end date, members only: a quarter of the membership can move, one proposal a day each, and a member away a month lapses.CustomDecide everything yourself — every rule is a card.",
+    "body": "A shape sets the rules the way a document of that kind usually runs. You can change any of them afterwards.A meetingA few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.Prefer thisA conferenceA few days with people coming and going: a third of the membership is enough to move, one proposal an hour each.Prefer thisOngoingNo end date, members only: a quarter of the membership can move, one proposal a day each, and a member away a month lapses.Prefer thisCustomDecide everything yourself — every rule is a card.Prefer this",
     "options": [
      {
       "set": "docShape",
@@ -4926,30 +4947,6 @@
      "docs.vote/d/"
     ]
    },
-   "text": {
-    "eyebrow": "",
-    "head": "Text",
-    "lock": "",
-    "body": "The document begins from whatever stands in the column below, and from then it changes by proposal — whoever holds the pen.Nothing written yet.Write it below, or leave it blank. The column is yours until the document begins; starting from nothing is a perfectly good way to begin.",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "OK",
-      "title": "The document begins empty"
-     }
-    ],
-    "hints": [
-     "Text — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "The document begins empty"
-    ],
-    "helpers": [
-     "The document begins from whatever stands in the column below, and from then it changes by proposal — whoever holds the pen.",
-     "Write it below, or leave it blank. The column is yours until the document begins; starting from nothing is a perfectly good way to begin."
-    ]
-   },
    "title": {
     "eyebrow": "",
     "head": "",
@@ -4993,7 +4990,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full one-second assembly"
+      "title": "One 🏛️ each — withdraw yours first"
      }
     ],
     "hints": [
@@ -5007,7 +5004,7 @@
      "1",
      "0",
      "Discard this motion",
-     "A full one-second assembly"
+     "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
      "The value you are proposing",
@@ -5037,7 +5034,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full one-second assembly"
+      "title": "One 🏛️ each — withdraw yours first"
      }
     ],
     "hints": [
@@ -5048,7 +5045,7 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "A full one-second assembly"
+     "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
      "One motion proposes one rule; what you do not touch stands.",
@@ -5059,60 +5056,49 @@
    },
    "authorship": {
     "eyebrow": "",
-    "head": "Nobody who proposes a change is ever named, even after the document is finished.",
-    "lock": "The members decide.",
-    "body": "A proposer is never named unless they sign the proposal themselves.Prefer thisProposers are named in the closing record, never before.Prefer thisProposers are named in the closing record, and sooner if they sign.Prefer thisEvery proposal carries its proposer’s name from the moment it is made.Prefer thisWhat the membership saidThe members decide.This one is about privacy, so it runs the other way: the document takes the most private answer, and one member who wants to stay unnamed keeps everybody unnamed.No names, everNames from the startWhat everyone asked for, without names.Answered3 of 3The document takes the most privateNobody’s name, ever",
+    "head": "Anonymous Proposals",
+    "lock": "",
+    "body": "Re-opened. A member has proposed an amendment — Names put pressure on people; the writing should stand alone.. It is constitutional, so all members must agree: there is no vote and nothing is ranked — you accept the amendment or keep what stands, and one refusal keeps what stands. Until every one of the 3 has answered, what stands stands.n of m have answered. Only the count shows while it runs — no names, no split — and you may change your answer until it settles.Proposals keep the privacy they were made under. Whether Names at the close replaces Nobody’s name, ever. There is no vote here: you state what you will accept, and one refusal keeps what stands.Keep what standsNobody is told who said so.Prefer thisI accept the changeIt passes once all 3 stand at accept — or abstain.Prefer thisAbstainAn answer, not a block: the motion can pass without your consent counting either way.Prefer thisNobody sees your answer, and you will see nobody else’s until every one of them is in.",
     "options": [
      {
       "set": null,
-      "val": "Nobody’s name unless they choose",
-      "label": "Prefer this"
+      "val": "no",
+      "label": "Keep what stands"
      },
      {
       "set": null,
-      "val": "Names at the close",
-      "label": "Prefer this"
+      "val": "yes",
+      "label": "I accept the change"
      },
      {
       "set": null,
-      "val": "Names at the close, or earlier by choice",
-      "label": "Prefer this"
-     },
-     {
-      "set": null,
-      "val": "Names from the start",
-      "label": "Prefer this"
+      "val": "abstain",
+      "label": "Abstain"
      }
     ],
     "inputs": [],
     "foot": [
      {
       "label": "🗑️",
-      "title": "Discard this motion"
+      "title": "Put it back as it stands"
      },
      {
-      "label": "🏛️ Ask all members",
-      "title": "A full one-second assembly"
+      "label": "",
+      "title": null
      }
     ],
     "hints": [
-     "We should change this because…",
      "Anonymous Proposals — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "This is how your reason will reach everybody else: with your name off it.",
-     "8",
-     "2",
-     "1",
-     "Discard this motion",
-     "A full one-second assembly"
+     "Put it back as it stands"
     ],
     "helpers": [
-     "We should change this because…",
-     "The members decide.",
-     "This one is about privacy, so it runs the other way: the document takes the most private answer, and one member who wants to stay unnamed keeps everybody unnamed.",
-     "What everyone asked for, without names."
+     "n of m have answered. Only the count shows while it runs — no names, no split — and you may change your answer until it settles.",
+     "Proposals keep the privacy they were made under. Whether Names at the close replaces Nobody’s name, ever. There is no vote here: you state what you will accept, and one refusal keeps what stands.",
+     "Nobody is told who said so.",
+     "It passes once all 3 stand at accept — or abstain.",
+     "An answer, not a block: the motion can pass without your consent counting either way."
     ]
    },
    "bar": {
@@ -5134,12 +5120,12 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full one-second assembly"
+      "title": "One 🏛️ each — withdraw yours first"
      }
     ],
     "hints": [
      "We should change this because…",
-     "Proposal pass threshold? — close it",
+     "Proposal Pass Threshold — close it",
      "Rising Approval Threshold? — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
@@ -5148,7 +5134,7 @@
      "0",
      "3",
      "Discard this motion",
-     "A full one-second assembly"
+     "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
      "We should change this because…",
@@ -5246,41 +5232,25 @@
    },
    "chamber": {
     "eyebrow": "",
-    "head": "Only members can see the document. The Founder may amend this at will, and refuse proposals that the membership pass.",
+    "head": "Visibility",
     "lock": "",
-    "body": "Anyone with the link can read it; it is not listed.Prefer thisIf it passes it goes to the Founder, who may assent or refuse.",
-    "options": [
-     {
-      "set": null,
-      "val": "Anyone with the link",
-      "label": "Prefer this"
-     }
-    ],
+    "body": "Passed — awaiting the 👑. The membership passed Members only — Who reads the document should be the membership’s call.. The setting is reserved, so the change goes to the founder as a 👑 question, theirs to assent to or refuse. Until then, what stands stands.",
+    "options": [],
     "inputs": [],
     "foot": [
      {
       "label": "🗑️",
-      "title": "Discard this motion"
-     },
-     {
-      "label": "🏛️ Ask all members",
-      "title": "A full one-second assembly"
+      "title": "Put it back as it stands"
      }
     ],
     "hints": [
-     "We should change this because…",
      "Visibility — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "This is how your reason will reach everybody else: with your name off it.",
-     "Discard this motion",
-     "A full one-second assembly"
+     "Passed: Anyone with the link — settled",
+     "Put it back as it stands"
     ],
-    "helpers": [
-     "We should change this because…",
-     "If it passes it goes to the Founder, who may assent or refuse."
-    ]
+    "helpers": []
    },
    "ending": {
     "eyebrow": "",
@@ -5385,7 +5355,7 @@
    },
    "invite": {
     "eyebrow": "",
-    "head": "Anyone may be proposed as a new member, and every member has to agree — one refusal keeps them out. The Founder may invite people at will, and refuse invitations and applications that the membership pass.",
+    "head": "Nobody has been invited yet.Anyone may be proposed as a new member, and every member has to agree — one refusal keeps them out. The Founder may invite people at will, and refuse invitations and applications that the membership pass.",
     "lock": "",
     "body": "InviteAn invitation is constitutional, because the membership is what quorum is a fraction of: all members must agree, and one who says no keeps them out.If it passes it goes to the Founder, who may assent or refuse.",
     "options": [],
@@ -5402,7 +5372,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full one-second assembly"
+      "title": "One 🏛️ each — withdraw yours first"
      }
     ],
     "hints": [
@@ -5413,7 +5383,7 @@
      "Does the Founder Have a Veto over Invitations? — settled",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "A full one-second assembly"
+     "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
      "An invitation is constitutional, because the membership is what quorum is a fraction of: all members must agree, and one who says no keeps them out.",
@@ -5441,7 +5411,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full one-second assembly"
+      "title": "One 🏛️ each — withdraw yours first"
      }
     ],
     "hints": [
@@ -5454,7 +5424,7 @@
      "11",
      "3",
      "Discard this motion",
-     "A full one-second assembly"
+     "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
      "We should change this because…",
@@ -5482,7 +5452,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full one-second assembly"
+      "title": "One 🏛️ each — withdraw yours first"
      }
     ],
     "hints": [
@@ -5496,7 +5466,7 @@
      "4",
      "2",
      "Discard this motion",
-     "A full one-second assembly"
+     "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
      "We should change this because…",
@@ -5636,7 +5606,7 @@
     ],
     "hints": [
      "We should change this because…",
-     "Proposal pass threshold? — settled",
+     "Proposal Pass Threshold — settled",
      "Rising Approval Threshold? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
@@ -5713,7 +5683,7 @@
      }
     ],
     "hints": [
-     "Anonymous Proposals — settled",
+     "Anonymous Proposals — waiting on you",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
      "Put it back as it stands"
@@ -5737,7 +5707,7 @@
      }
     ],
     "hints": [
-     "Proposal pass threshold? — settled",
+     "Proposal Pass Threshold — settled",
      "Rising Approval Threshold? — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
@@ -5763,9 +5733,10 @@
      }
     ],
     "hints": [
-     "Visibility — settled",
+     "Visibility — decided; it waits for your OK",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
+     "Passed: Anyone with the link — settled",
      "Put it back as it stands"
     ],
     "helpers": [
@@ -5990,30 +5961,6 @@
      "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move."
     ]
    },
-   "pw:a:text": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse changes to the text that the membership pass.",
-    "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership about the text, before they land. Anyone may always propose; this is only about what happens once one passes.Given up. The road back is a constitutional motion, the members’ to move.",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     }
-    ],
-    "hints": [
-     "Text — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Put it back as it stands"
-    ],
-    "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership about the text, before they land. Anyone may always propose; this is only about what happens once one passes.",
-     "Given up. The road back is a constitutional motion, the members’ to move."
-    ]
-   },
    "pw:a:title": {
     "eyebrow": "",
     "head": "The Founder may refuse proposals that the membership pass.",
@@ -6100,7 +6047,7 @@
      }
     ],
     "hints": [
-     "Anonymous Proposals — settled",
+     "Anonymous Proposals — waiting on you",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands"
@@ -6124,7 +6071,7 @@
      }
     ],
     "hints": [
-     "Proposal pass threshold? — settled",
+     "Proposal Pass Threshold — settled",
      "Rising Approval Threshold? — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
@@ -6150,9 +6097,10 @@
      }
     ],
     "hints": [
-     "Visibility — settled",
+     "Visibility — decided; it waits for your OK",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
+     "Passed: Anyone with the link — settled",
      "Put it back as it stands"
     ],
     "helpers": [
@@ -6377,30 +6325,6 @@
      "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move."
     ]
    },
-   "pw:u:text": {
-    "eyebrow": "",
-    "head": "The Founder may not amend the text at will.",
-    "lock": "",
-    "body": "Whether the Founder may edit the text at will, with no proposal. Anyone may always propose a change to the text — this is only about the Founder’s own hand.Given up. The road back is a constitutional motion, the members’ to move.",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     }
-    ],
-    "hints": [
-     "Text — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": [
-     "Whether the Founder may edit the text at will, with no proposal. Anyone may always propose a change to the text — this is only about the Founder’s own hand.",
-     "Given up. The road back is a constitutional motion, the members’ to move."
-    ]
-   },
    "pw:u:title": {
     "eyebrow": "",
     "head": "The Founder may amend this at will.",
@@ -6444,7 +6368,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full one-second assembly"
+      "title": "One 🏛️ each — withdraw yours first"
      }
     ],
     "hints": [
@@ -6458,7 +6382,7 @@
      "2",
      "3",
      "Discard this motion",
-     "A full one-second assembly"
+     "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
      "We should change this because…",
@@ -6525,12 +6449,35 @@
      }
     ],
     "hints": [
-     "Proposal pass threshold? — settled",
+     "Proposal Pass Threshold — settled",
      "Rising Approval Threshold? — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Passed: 82% sure at the end — close it",
      "A member wrote this. Who, is sealed until the closing record.",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "rec:chamber:0": {
+    "eyebrow": "",
+    "head": "Anyone with the link",
+    "lock": "",
+    "body": "D Month YYYY · PassedThe Founder changed who may read the document from members only to anyone with the link.ABAsh Bellamy 👑Readers who are not members should see what we are building.",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     }
+    ],
+    "hints": [
+     "Visibility — decided; it waits for your OK",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Passed: Anyone with the link — close it",
+     "The founder’s own hand — a ✒️ act, not a proposal",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -6562,7 +6509,7 @@
     "eyebrow": "",
     "head": "What the Founder Has Laid Down",
     "lock": "",
-    "body": "The Founder has laid these down. Where ✒️ stands they can no longer amend at will; where 🛡️ stands they can no longer refuse what the membership passes. Only the membership can hand either back.The Document✒️ 📄 Text🛡️ 📄 Text",
+    "body": "The Founder has laid these down. Where ✒️ stands they can no longer amend at will; where 🛡️ stands they can no longer refuse what the membership passes. Only the membership can hand either back.The Document✒️ 📝 Text🛡️ 📝 Text",
     "options": [],
     "inputs": [],
     "foot": [
@@ -6612,7 +6559,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full one-second assembly"
+      "title": "One 🏛️ each — withdraw yours first"
      }
     ],
     "hints": [
@@ -6623,7 +6570,7 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "A full one-second assembly"
+     "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
      "We should change this because…",
@@ -6633,7 +6580,7 @@
    },
    "remove": {
     "eyebrow": "",
-    "head": "A member may be proposed for removal, and every member has to agree — including them. The Founder may remove members at will, and refuse removals that the membership pass.",
+    "head": "Nobody is proposed for removal.A member may be proposed for removal, and every member has to agree — including them. The Founder may remove members at will, and refuse removals that the membership pass.",
     "lock": "",
     "body": "Choose somebody…Moss WhitlowWhoever it is will see the proposal — nobody is removed in secret.If it passes it goes to the Founder, who may assent or refuse.",
     "options": [],
@@ -6645,7 +6592,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full one-second assembly"
+      "title": "One 🏛️ each — withdraw yours first"
      }
     ],
     "hints": [
@@ -6655,7 +6602,7 @@
      "Does the Founder Have a Veto over Removals? — settled",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "A full one-second assembly"
+     "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
      "Whoever it is will see the proposal — nobody is removed in secret.",
@@ -6697,29 +6644,6 @@
      "Every link the document has ever had keeps working — a change leaves a redirect behind.",
      "We should change this because…",
      "If it passes it goes to the Founder, who may assent or refuse."
-    ]
-   },
-   "text": {
-    "eyebrow": "",
-    "head": "Text",
-    "lock": "Set by the founder when the document was made.",
-    "body": "Set by the founder when the document was made.Set toStarts empty — the membership writes it",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     }
-    ],
-    "hints": [
-     "Text — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": [
-     "Set by the founder when the document was made."
     ]
    },
    "title": {
@@ -6940,7 +6864,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full one-second assembly"
+      "title": "One 🏛️ each — withdraw yours first"
      }
     ],
     "hints": [
@@ -6954,7 +6878,7 @@
      "1",
      "0",
      "Discard this motion",
-     "A full one-second assembly"
+     "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
      "The value you are proposing",
@@ -6984,7 +6908,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full one-second assembly"
+      "title": "One 🏛️ each — withdraw yours first"
      }
     ],
     "hints": [
@@ -6995,7 +6919,7 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "A full one-second assembly"
+     "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
      "One motion proposes one rule; what you do not touch stands.",
@@ -7006,60 +6930,49 @@
    },
    "authorship": {
     "eyebrow": "",
-    "head": "Nobody who proposes a change is ever named, even after the document is finished.",
-    "lock": "The members decide.",
-    "body": "A proposer is never named unless they sign the proposal themselves.Prefer thisProposers are named in the closing record, never before.Prefer thisProposers are named in the closing record, and sooner if they sign.Prefer thisEvery proposal carries its proposer’s name from the moment it is made.Prefer thisWhat the membership saidThe members decide.This one is about privacy, so it runs the other way: the document takes the most private answer, and one member who wants to stay unnamed keeps everybody unnamed.No names, everNames from the startWhat everyone asked for, without names.Answered3 of 3The document takes the most privateNobody’s name, ever",
+    "head": "Anonymous Proposals",
+    "lock": "",
+    "body": "Re-opened. A member has proposed an amendment — Names put pressure on people; the writing should stand alone.. It is constitutional, so all members must agree: there is no vote and nothing is ranked — you accept the amendment or keep what stands, and one refusal keeps what stands. Until every one of the 3 has answered, what stands stands.n of m have answered. Only the count shows while it runs — no names, no split — and you may change your answer until it settles.Proposals keep the privacy they were made under. Whether Names at the close replaces Nobody’s name, ever. There is no vote here: you state what you will accept, and one refusal keeps what stands.Keep what standsNobody is told who said so.Prefer thisI accept the changeIt passes once all 3 stand at accept — or abstain.Prefer thisAbstainAn answer, not a block: the motion can pass without your consent counting either way.Prefer thisNobody sees your answer, and you will see nobody else’s until every one of them is in.",
     "options": [
      {
       "set": null,
-      "val": "Nobody’s name unless they choose",
-      "label": "Prefer this"
+      "val": "no",
+      "label": "Keep what stands"
      },
      {
       "set": null,
-      "val": "Names at the close",
-      "label": "Prefer this"
+      "val": "yes",
+      "label": "I accept the change"
      },
      {
       "set": null,
-      "val": "Names at the close, or earlier by choice",
-      "label": "Prefer this"
-     },
-     {
-      "set": null,
-      "val": "Names from the start",
-      "label": "Prefer this"
+      "val": "abstain",
+      "label": "Abstain"
      }
     ],
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Discard this motion"
+      "label": "🗑️ Withdraw",
+      "title": "Withdrawing hands your 🏛️ back"
      },
      {
-      "label": "🏛️ Ask all members",
-      "title": "A full one-second assembly"
+      "label": "",
+      "title": null
      }
     ],
     "hints": [
-     "We should change this because…",
      "Anonymous Proposals — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "This is how your reason will reach everybody else: with your name off it.",
-     "8",
-     "2",
-     "1",
-     "Discard this motion",
-     "A full one-second assembly"
+     "Withdrawing hands your 🏛️ back"
     ],
     "helpers": [
-     "We should change this because…",
-     "The members decide.",
-     "This one is about privacy, so it runs the other way: the document takes the most private answer, and one member who wants to stay unnamed keeps everybody unnamed.",
-     "What everyone asked for, without names."
+     "n of m have answered. Only the count shows while it runs — no names, no split — and you may change your answer until it settles.",
+     "Proposals keep the privacy they were made under. Whether Names at the close replaces Nobody’s name, ever. There is no vote here: you state what you will accept, and one refusal keeps what stands.",
+     "Nobody is told who said so.",
+     "It passes once all 3 stand at accept — or abstain.",
+     "An answer, not a block: the motion can pass without your consent counting either way."
     ]
    },
    "bar": {
@@ -7081,12 +6994,12 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full one-second assembly"
+      "title": "One 🏛️ each — withdraw yours first"
      }
     ],
     "hints": [
      "We should change this because…",
-     "Proposal pass threshold? — close it",
+     "Proposal Pass Threshold — close it",
      "Rising Approval Threshold? — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
@@ -7095,7 +7008,7 @@
      "0",
      "3",
      "Discard this motion",
-     "A full one-second assembly"
+     "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
      "We should change this because…",
@@ -7190,21 +7103,10 @@
    },
    "chamber": {
     "eyebrow": "",
-    "head": "Only members can see the document. The Founder may amend this at will, and refuse proposals that the membership pass.",
+    "head": "Visibility",
     "lock": "",
-    "body": "Who else can read the document. Readers are not members — they cannot propose or vote, and nothing about them is known.Members onlyAnyone with the linkWhy are you changing this?ABAsh Bellamy 👑",
-    "options": [
-     {
-      "set": "chamber",
-      "val": "closed",
-      "label": "Members only"
-     },
-     {
-      "set": "chamber",
-      "val": "link",
-      "label": "Anyone with the link"
-     }
-    ],
+    "body": "Passed — awaiting the 👑. The membership passed Members only — Who reads the document should be the membership’s call.. The setting is reserved, so the change goes to the founder as a 👑 question, theirs to assent to or refuse. Until then, what stands stands.",
+    "options": [],
     "inputs": [],
     "foot": [
      {
@@ -7212,28 +7114,24 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "✒️",
-      "title": "Set it"
+      "label": "🛡️",
+      "title": "Refuse — the shield holds it, and what stands stands"
      },
      {
-      "label": "🏛️ Ask all members",
-      "title": "A full one-second assembly"
+      "label": "✒️",
+      "title": "Accept — the pen passes it now"
      }
     ],
     "hints": [
-     "I am changing this because…",
      "Visibility — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
-     "The founder’s own hand — a ✒️ act, not a proposal",
+     "Passed: Anyone with the link — settled",
      "Put it back as it stands",
-     "Set it",
-     "A full one-second assembly"
+     "Refuse — the shield holds it, and what stands stands",
+     "Accept — the pen passes it now"
     ],
-    "helpers": [
-     "Who else can read the document. Readers are not members — they cannot propose or vote, and nothing about them is known.",
-     "I am changing this because…"
-    ]
+    "helpers": []
    },
    "ending": {
     "eyebrow": "",
@@ -7378,23 +7276,18 @@
     "eyebrow": "",
     "head": "Is the Founder a Member?",
     "lock": "",
-    "body": "Whether the Founder is also on the membership — inviting themselves like anybody else — or only runs the document.Member — drafting tooYou get ✏️s, you vote, you count towards quorum, and you answer the founding questions like anybody.Clerk — not draftingNo ✏️s, no voting, you count towards nothing, and there is nothing for you to answer. A clerk can stay unnamed.Settled. Now that people are voting, the Founder joins the same way as anybody else.",
+    "body": "Whether the Founder is also on the membership — inviting themselves like anybody else — or only runs the document.Member — drafting tooYou get ✏️s, you vote, you count towards quorum, and you answer the founding questions like anybody.PreferredClerk — not draftingNo ✏️s, no voting, you count towards nothing, and there is nothing for you to answer. A clerk can stay unnamed.Prefer thisSettled. Now that people are voting, the Founder joins the same way as anybody else.",
     "options": [],
     "inputs": [],
     "foot": [
      {
       "label": "🗑️",
       "title": "Put it back as it stands"
-     },
-     {
-      "label": "✒️",
-      "title": "Set it"
      }
     ],
     "hints": [
      "Is the Founder a Member? — close it",
-     "Put it back as it stands",
-     "Set it"
+     "Put it back as it stands"
     ],
     "helpers": [
      "Whether the Founder is also on the membership — inviting themselves like anybody else — or only runs the document.",
@@ -7405,7 +7298,7 @@
    },
    "invite": {
     "eyebrow": "",
-    "head": "Anyone may be proposed as a new member, and every member has to agree — one refusal keeps them out. The Founder may invite people at will, and refuse invitations and applications that the membership pass.",
+    "head": "Nobody has been invited yet.Anyone may be proposed as a new member, and every member has to agree — one refusal keeps them out. The Founder may invite people at will, and refuse invitations and applications that the membership pass.",
     "lock": "",
     "body": "An invitation is just the link, sent by email: somebody becomes a member when they open it, and is listed as invited until then.✒️🏛️ Ask all membersSeveral at once✒️n of m have opened it so far. Nobody has to be here for the document to exist, and anybody who arrives later starts with the same ✏️s as everybody else.",
     "options": [],
@@ -7435,7 +7328,7 @@
      "Can the Founder Invite at Will? — settled",
      "Does the Founder Have a Veto over Invitations? — settled",
      "Send the invitation",
-     "A full one-second assembly",
+     "One 🏛️ each — withdraw yours first",
      "Send them all",
      "Put it back as it stands",
      "Done"
@@ -7465,7 +7358,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full one-second assembly"
+      "title": "One 🏛️ each — withdraw yours first"
      }
     ],
     "hints": [
@@ -7478,7 +7371,7 @@
      "11",
      "3",
      "Discard this motion",
-     "A full one-second assembly"
+     "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
      "We should change this because…",
@@ -7506,7 +7399,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full one-second assembly"
+      "title": "One 🏛️ each — withdraw yours first"
      }
     ],
     "hints": [
@@ -7520,7 +7413,7 @@
      "4",
      "2",
      "Discard this motion",
-     "A full one-second assembly"
+     "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
      "We should change this because…",
@@ -7634,7 +7527,7 @@
     "eyebrow": "",
     "head": "The approval threshold starts at 55% and rises to 82% by the end. The Founder may amend this at will, and refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the approval threshold holds the whole way through, or starts lower and climbs to it. Starting lower lets early changes through more easily.FixedStays at 78% from the moment voting opens to the end.RisingNearly everyone90%Broad agreement80%A bare majority60%Starts at a bare majority (60%) when voting opens and climbs to 78% by the end — early changes pass more easily.A number of my ownStarts at 55% when voting opens and climbs to 78% by the end — early changes pass more easily.When voting opens%Why are you changing this?ABAsh Bellamy 👑",
+    "body": "Whether the approval threshold holds the whole way through, or starts lower and climbs to it. Starting lower lets early changes through more easily.FixedStays at 78% from the moment voting opens to the end.Prefer thisRisingPreferredNearly everyone90%Prefer thisBroad agreement80%Prefer thisA bare majority60%Prefer thisStarts at a bare majority (60%) when voting opens and climbs to 78% by the end — early changes pass more easily.A number of my ownPreferredStarts at 55% when voting opens and climbs to 78% by the end — early changes pass more easily.When voting opens%Why are you changing this?ABAsh Bellamy 👑",
     "options": [
      {
       "set": "shape",
@@ -7679,7 +7572,7 @@
     ],
     "hints": [
      "I am changing this because…",
-     "Proposal pass threshold? — settled",
+     "Proposal Pass Threshold — settled",
      "Rising Approval Threshold? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
@@ -7759,7 +7652,7 @@
      }
     ],
     "hints": [
-     "Anonymous Proposals — settled",
+     "Anonymous Proposals — waiting on others",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
      "Put it back as it stands"
@@ -7783,7 +7676,7 @@
      }
     ],
     "hints": [
-     "Proposal pass threshold? — settled",
+     "Proposal Pass Threshold — settled",
      "Rising Approval Threshold? — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
@@ -7799,17 +7692,17 @@
     "eyebrow": "",
     "head": "The Founder may refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.The Founder has a veto over proposals passed by the membership about visibility.Each one comes as a 👑 question — assent or refuse.ChosenThe Founder does not have a veto over proposals passed by the membership about visibility.Nothing waits on the Founder. One way — the road back is the members’ to give.Choose this",
+    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.The Founder has a veto over proposals passed by the membership about visibility.Each one comes as a 👑 question — assent or refuse.PreferredThe Founder does not have a veto over proposals passed by the membership about visibility.Nothing waits on the Founder. One way — the road back is the members’ to give.Prefer this",
     "options": [
      {
       "set": "pw:a:chamber",
       "val": "held",
-      "label": "Chosen"
+      "label": "Preferred"
      },
      {
       "set": "pw:a:chamber",
       "val": "given",
-      "label": "Choose this"
+      "label": "Prefer this"
      }
     ],
     "inputs": [],
@@ -7824,9 +7717,10 @@
      }
     ],
     "hints": [
-     "Visibility — settled",
+     "Visibility — waiting on others",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
+     "Passed: Anyone with the link — settled",
      "Put it back as it stands",
      "Set it"
     ],
@@ -7864,17 +7758,17 @@
     "eyebrow": "",
     "head": "The Founder may refuse invitations and applications that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over invitations, and applications, that the membership pass. This is only about what happens once one passes.The Founder has a veto over proposals passed by the membership about invitations.Each invitation, and each application, comes as a 👑 question — assent or refuse.ChosenThe Founder does not have a veto over proposals passed by the membership about invitations.An invitation the membership passes needs nobody’s assent. One way — the road back is the members’ to give.Choose this",
+    "body": "Whether the Founder has a veto over invitations, and applications, that the membership pass. This is only about what happens once one passes.The Founder has a veto over proposals passed by the membership about invitations.Each invitation, and each application, comes as a 👑 question — assent or refuse.PreferredThe Founder does not have a veto over proposals passed by the membership about invitations.An invitation the membership passes needs nobody’s assent. One way — the road back is the members’ to give.Prefer this",
     "options": [
      {
       "set": "pw:a:invite",
       "val": "held",
-      "label": "Chosen"
+      "label": "Preferred"
      },
      {
       "set": "pw:a:invite",
       "val": "given",
-      "label": "Choose this"
+      "label": "Prefer this"
      }
     ],
     "inputs": [],
@@ -7977,17 +7871,17 @@
     "eyebrow": "",
     "head": "The Founder may refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.The Founder has a veto over proposals passed by the membership about the proposal rate.Each one comes as a 👑 question — assent or refuse.ChosenThe Founder does not have a veto over proposals passed by the membership about the proposal rate.Nothing waits on the Founder. One way — the road back is the members’ to give.Choose this",
+    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.The Founder has a veto over proposals passed by the membership about the proposal rate.Each one comes as a 👑 question — assent or refuse.PreferredThe Founder does not have a veto over proposals passed by the membership about the proposal rate.Nothing waits on the Founder. One way — the road back is the members’ to give.Prefer this",
     "options": [
      {
       "set": "pw:a:rate",
       "val": "held",
-      "label": "Chosen"
+      "label": "Preferred"
      },
      {
       "set": "pw:a:rate",
       "val": "given",
-      "label": "Choose this"
+      "label": "Prefer this"
      }
     ],
     "inputs": [],
@@ -8043,17 +7937,17 @@
     "eyebrow": "",
     "head": "The Founder may refuse removals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over removals that the membership pass. This is only about what happens once one passes.The Founder has a veto over proposals passed by the membership about removals.Each removal comes as a 👑 question — assent or refuse.ChosenThe Founder does not have a veto over proposals passed by the membership about removals.A removal the membership passes needs nobody’s assent. One way — the road back is the members’ to give.Choose this",
+    "body": "Whether the Founder has a veto over removals that the membership pass. This is only about what happens once one passes.The Founder has a veto over proposals passed by the membership about removals.Each removal comes as a 👑 question — assent or refuse.PreferredThe Founder does not have a veto over proposals passed by the membership about removals.A removal the membership passes needs nobody’s assent. One way — the road back is the members’ to give.Prefer this",
     "options": [
      {
       "set": "pw:a:remove",
       "val": "held",
-      "label": "Chosen"
+      "label": "Preferred"
      },
      {
       "set": "pw:a:remove",
       "val": "given",
-      "label": "Choose this"
+      "label": "Prefer this"
      }
     ],
     "inputs": [],
@@ -8084,17 +7978,17 @@
     "eyebrow": "",
     "head": "The Founder may refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.The Founder has a veto over proposals passed by the membership about the link.Each one comes as a 👑 question — assent or refuse.ChosenThe Founder does not have a veto over proposals passed by the membership about the link.Nothing waits on the Founder. One way — the road back is the members’ to give.Choose this",
+    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.The Founder has a veto over proposals passed by the membership about the link.Each one comes as a 👑 question — assent or refuse.PreferredThe Founder does not have a veto over proposals passed by the membership about the link.Nothing waits on the Founder. One way — the road back is the members’ to give.Prefer this",
     "options": [
      {
       "set": "pw:a:slug",
       "val": "held",
-      "label": "Chosen"
+      "label": "Preferred"
      },
      {
       "set": "pw:a:slug",
       "val": "given",
-      "label": "Choose this"
+      "label": "Prefer this"
      }
     ],
     "inputs": [],
@@ -8121,45 +8015,21 @@
      "Nothing waits on the Founder. One way — the road back is the members’ to give."
     ]
    },
-   "pw:a:text": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse changes to the text that the membership pass.",
-    "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership about the text, before they land. Anyone may always propose; this is only about what happens once one passes.Given up — one way. The road back is the members’ reserve motion.",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     }
-    ],
-    "hints": [
-     "Text — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Put it back as it stands"
-    ],
-    "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership about the text, before they land. Anyone may always propose; this is only about what happens once one passes.",
-     "Given up — one way. The road back is the members’ reserve motion."
-    ]
-   },
    "pw:a:title": {
     "eyebrow": "",
     "head": "The Founder may refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.The Founder has a veto over proposals passed by the membership about the title.Each one comes as a 👑 question — assent or refuse.ChosenThe Founder does not have a veto over proposals passed by the membership about the title.Nothing waits on the Founder. One way — the road back is the members’ to give.Choose this",
+    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.The Founder has a veto over proposals passed by the membership about the title.Each one comes as a 👑 question — assent or refuse.PreferredThe Founder does not have a veto over proposals passed by the membership about the title.Nothing waits on the Founder. One way — the road back is the members’ to give.Prefer this",
     "options": [
      {
       "set": "pw:a:title",
       "val": "held",
-      "label": "Chosen"
+      "label": "Preferred"
      },
      {
       "set": "pw:a:title",
       "val": "given",
-      "label": "Choose this"
+      "label": "Prefer this"
      }
     ],
     "inputs": [],
@@ -8248,7 +8118,7 @@
      }
     ],
     "hints": [
-     "Anonymous Proposals — settled",
+     "Anonymous Proposals — waiting on others",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands"
@@ -8272,7 +8142,7 @@
      }
     ],
     "hints": [
-     "Proposal pass threshold? — settled",
+     "Proposal Pass Threshold — settled",
      "Rising Approval Threshold? — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
@@ -8288,17 +8158,17 @@
     "eyebrow": "",
     "head": "The Founder may amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.The Founder changes it at will.No proposal needed for the Founder’s own hand.ChosenOnly by proposal, like anybody.The Founder proposes like a member. One way — the road back is the members’ to give.Choose this",
+    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.The Founder changes it at will.No proposal needed for the Founder’s own hand.PreferredOnly by proposal, like anybody.The Founder proposes like a member. One way — the road back is the members’ to give.Prefer this",
     "options": [
      {
       "set": "pw:u:chamber",
       "val": "held",
-      "label": "Chosen"
+      "label": "Preferred"
      },
      {
       "set": "pw:u:chamber",
       "val": "given",
-      "label": "Choose this"
+      "label": "Prefer this"
      }
     ],
     "inputs": [],
@@ -8313,9 +8183,10 @@
      }
     ],
     "hints": [
-     "Visibility — settled",
+     "Visibility — waiting on others",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
+     "Passed: Anyone with the link — settled",
      "Put it back as it stands",
      "Set it"
     ],
@@ -8353,17 +8224,17 @@
     "eyebrow": "",
     "head": "The Founder may invite people at will.",
     "lock": "",
-    "body": "Whether the Founder may invite people at will, with nobody’s agreement. Anyone may always propose bringing somebody in, at the price Admissions sets — this is only about the Founder’s own hand.The Founder invites at will.Nobody else has to agree when the Founder brings somebody in.ChosenOnly as Admissions says, like anybody.The Founder proposes a member like anybody, at the price the document sets. One way — the road back is the members’ to give.Choose this",
+    "body": "Whether the Founder may invite people at will, with nobody’s agreement. Anyone may always propose bringing somebody in, at the price Admissions sets — this is only about the Founder’s own hand.The Founder invites at will.Nobody else has to agree when the Founder brings somebody in.PreferredOnly as Admissions says, like anybody.The Founder proposes a member like anybody, at the price the document sets. One way — the road back is the members’ to give.Prefer this",
     "options": [
      {
       "set": "pw:u:invite",
       "val": "held",
-      "label": "Chosen"
+      "label": "Preferred"
      },
      {
       "set": "pw:u:invite",
       "val": "given",
-      "label": "Choose this"
+      "label": "Prefer this"
      }
     ],
     "inputs": [],
@@ -8466,17 +8337,17 @@
     "eyebrow": "",
     "head": "The Founder may amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.The Founder changes it at will.No proposal needed for the Founder’s own hand.ChosenOnly by proposal, like anybody.The Founder proposes like a member. One way — the road back is the members’ to give.Choose this",
+    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.The Founder changes it at will.No proposal needed for the Founder’s own hand.PreferredOnly by proposal, like anybody.The Founder proposes like a member. One way — the road back is the members’ to give.Prefer this",
     "options": [
      {
       "set": "pw:u:rate",
       "val": "held",
-      "label": "Chosen"
+      "label": "Preferred"
      },
      {
       "set": "pw:u:rate",
       "val": "given",
-      "label": "Choose this"
+      "label": "Prefer this"
      }
     ],
     "inputs": [],
@@ -8532,17 +8403,17 @@
     "eyebrow": "",
     "head": "The Founder may remove members at will.",
     "lock": "",
-    "body": "Whether the Founder may remove a member at will, with nobody’s agreement — at once, their standing answers leaving with them. Anyone may always propose a removal, at the price Removal sets.The Founder removes at will.A member the Founder removes is gone at once — nobody else has to agree.ChosenOnly as Removal says, like anybody.The Founder proposes a removal like anybody, at the price the document sets. One way — the road back is the members’ to give.Choose this",
+    "body": "Whether the Founder may remove a member at will, with nobody’s agreement — at once, their standing answers leaving with them. Anyone may always propose a removal, at the price Removal sets.The Founder removes at will.A member the Founder removes is gone at once — nobody else has to agree.PreferredOnly as Removal says, like anybody.The Founder proposes a removal like anybody, at the price the document sets. One way — the road back is the members’ to give.Prefer this",
     "options": [
      {
       "set": "pw:u:remove",
       "val": "held",
-      "label": "Chosen"
+      "label": "Preferred"
      },
      {
       "set": "pw:u:remove",
       "val": "given",
-      "label": "Choose this"
+      "label": "Prefer this"
      }
     ],
     "inputs": [],
@@ -8573,17 +8444,17 @@
     "eyebrow": "",
     "head": "The Founder may amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.The Founder changes it at will.No proposal needed for the Founder’s own hand.ChosenOnly by proposal, like anybody.The Founder proposes like a member. One way — the road back is the members’ to give.Choose this",
+    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.The Founder changes it at will.No proposal needed for the Founder’s own hand.PreferredOnly by proposal, like anybody.The Founder proposes like a member. One way — the road back is the members’ to give.Prefer this",
     "options": [
      {
       "set": "pw:u:slug",
       "val": "held",
-      "label": "Chosen"
+      "label": "Preferred"
      },
      {
       "set": "pw:u:slug",
       "val": "given",
-      "label": "Choose this"
+      "label": "Prefer this"
      }
     ],
     "inputs": [],
@@ -8610,45 +8481,21 @@
      "The Founder proposes like a member. One way — the road back is the members’ to give."
     ]
    },
-   "pw:u:text": {
-    "eyebrow": "",
-    "head": "The Founder may not amend the text at will.",
-    "lock": "",
-    "body": "Whether the Founder may edit the text at will, with no proposal. Anyone may always propose a change to the text — this is only about the Founder’s own hand.Given up — one way. The road back is the members’ reserve motion.",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     }
-    ],
-    "hints": [
-     "Text — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": [
-     "Whether the Founder may edit the text at will, with no proposal. Anyone may always propose a change to the text — this is only about the Founder’s own hand.",
-     "Given up — one way. The road back is the members’ reserve motion."
-    ]
-   },
    "pw:u:title": {
     "eyebrow": "",
     "head": "The Founder may amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.The Founder changes it at will.No proposal needed for the Founder’s own hand.ChosenOnly by proposal, like anybody.The Founder proposes like a member. One way — the road back is the members’ to give.Choose this",
+    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.The Founder changes it at will.No proposal needed for the Founder’s own hand.PreferredOnly by proposal, like anybody.The Founder proposes like a member. One way — the road back is the members’ to give.Prefer this",
     "options": [
      {
       "set": "pw:u:title",
       "val": "held",
-      "label": "Chosen"
+      "label": "Preferred"
      },
      {
       "set": "pw:u:title",
       "val": "given",
-      "label": "Choose this"
+      "label": "Prefer this"
      }
     ],
     "inputs": [],
@@ -8694,7 +8541,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full one-second assembly"
+      "title": "One 🏛️ each — withdraw yours first"
      }
     ],
     "hints": [
@@ -8708,7 +8555,7 @@
      "2",
      "3",
      "Discard this motion",
-     "A full one-second assembly"
+     "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
      "We should change this because…",
@@ -8721,7 +8568,7 @@
     "eyebrow": "",
     "head": "Members start with 4 ✏️ each, up to a maximum of 8. They get an additional ✏️ every 180 minutes. A proposal that passes gives its ✏️ back. The Founder may amend this at will, and refuse proposals that the membership pass.",
     "lock": "",
-    "body": "How often a member can propose something. Each proposal costs one ✏️.I set it✏️ to start withup to a maximum ofan additional ✏️ every N minutesWhy are you changing this?ABAsh Bellamy 👑",
+    "body": "How often a member can propose something. Each proposal costs one ✏️.I set itPreferred✏️ to start withup to a maximum ofan additional ✏️ every N minutesWhy are you changing this?ABAsh Bellamy 👑",
     "options": [
      {
       "set": "rateBy",
@@ -8786,12 +8633,35 @@
      }
     ],
     "hints": [
-     "Proposal pass threshold? — settled",
+     "Proposal Pass Threshold — settled",
      "Rising Approval Threshold? — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Passed: 82% sure at the end — close it",
      "A member wrote this. Who, is sealed until the closing record.",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "rec:chamber:0": {
+    "eyebrow": "",
+    "head": "Anyone with the link",
+    "lock": "",
+    "body": "D Month YYYY · PassedThe Founder changed who may read the document from members only to anyone with the link.ABAsh Bellamy 👑Readers who are not members should see what we are building.",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     }
+    ],
+    "hints": [
+     "Visibility — waiting on others",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Passed: Anyone with the link — close it",
+     "The founder’s own hand — a ✒️ act, not a proposal",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -8844,7 +8714,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full one-second assembly"
+      "title": "One 🏛️ each — withdraw yours first"
      }
     ],
     "hints": [
@@ -8855,7 +8725,7 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "A full one-second assembly"
+     "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
      "We should change this because…",
@@ -8865,7 +8735,7 @@
    },
    "remove": {
     "eyebrow": "",
-    "head": "A member may be proposed for removal, and every member has to agree — including them. The Founder may remove members at will, and refuse removals that the membership pass.",
+    "head": "Nobody is proposed for removal.A member may be proposed for removal, and every member has to agree — including them. The Founder may remove members at will, and refuse removals that the membership pass.",
     "lock": "",
     "body": "Removing a member is yours to do at will ✒️: they leave the moment you press, their standing answers go with them, and nobody else is asked.Choose somebody…Ivy FenMoss Whitlow❌ Remove🏛️ Ask all members",
     "options": [],
@@ -8884,7 +8754,7 @@
      "Remove a Member — close it",
      "Can the Founder Remove at Will? — settled",
      "Does the Founder Have a Veto over Removals? — settled",
-     "A full one-second assembly",
+     "One 🏛️ each — withdraw yours first",
      "Put it back as it stands",
      "Set it"
     ],
@@ -8933,27 +8803,6 @@
      "Every link this document has ever had keeps working: changing it leaves a redirect behind, so an invitation somebody was sent weeks ago still opens the right document.",
      "I am changing this because…"
     ]
-   },
-   "text": {
-    "eyebrow": "",
-    "head": "Text",
-    "lock": "",
-    "body": "The text the document started from. Drafting changes the document in place, so the page may have moved on — this is what stood when it began.It began empty — the membership wrote it.",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "OK",
-      "title": "The document begins empty"
-     }
-    ],
-    "hints": [
-     "Text — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "The document begins empty"
-    ],
-    "helpers": []
    },
    "title": {
     "eyebrow": "",

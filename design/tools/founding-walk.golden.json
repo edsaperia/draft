@@ -99,6 +99,32 @@
    ]
   },
   {
+   "step": "first ✒️ on the text",
+   "rail": [
+    "myname",
+    "mypic",
+    "grant-pen"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
+    "founded: Founded by Anonymous 👑."
+   ]
+  },
+  {
+   "step": "write after the first ✒️",
+   "rail": [
+    "myname",
+    "mypic",
+    "grant-pen"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
+    "founded: Founded by Anonymous 👑."
+   ]
+  },
+  {
    "step": "open myname",
    "rail": [
     "myname",
@@ -684,78 +710,6 @@
   },
   {
    "step": "commit judgments",
-   "rail": [
-    "invite",
-    "text"
-   ],
-   "clauses": [
-    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
-    "founded: Founded by AL Ada Lovell 👑.",
-    "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this",
-    "lapse: Somebody stops being a member after 7 days without logging i",
-    "removal: Removing a member needs every member to agree, including the",
-    "begin: When the document begins, members may propose changes to rul",
-    "rate: Members start with 4 ✏️ each, up to a maximum of 6. They get",
-    "ending: The drafting process will end on Weekday at HH:MM. The Found",
-    "bar: The members must be 90% sure a proposal is better for it to ",
-    "quorum: 5% of the members must have voted on a question before it ca",
-    "authorship: Nobody who proposes a change is ever named, even after the d",
-    "judgments: Votes are never revealed. The Founder may amend this at will"
-   ]
-  },
-  {
-   "step": "open text",
-   "rail": [
-    "invite",
-    "text"
-   ],
-   "clauses": [
-    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
-    "founded: Founded by AL Ada Lovell 👑.",
-    "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this",
-    "lapse: Somebody stops being a member after 7 days without logging i",
-    "removal: Removing a member needs every member to agree, including the",
-    "begin: When the document begins, members may propose changes to rul",
-    "rate: Members start with 4 ✏️ each, up to a maximum of 6. They get",
-    "ending: The drafting process will end on Weekday at HH:MM. The Found",
-    "bar: The members must be 90% sure a proposal is better for it to ",
-    "quorum: 5% of the members must have voted on a question before it ca",
-    "authorship: Nobody who proposes a change is ever named, even after the d",
-    "judgments: Votes are never revealed. The Founder may amend this at will"
-   ]
-  },
-  {
-   "step": "commit text",
-   "rail": [
-    "invite",
-    "begin"
-   ],
-   "clauses": [
-    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
-    "founded: Founded by AL Ada Lovell 👑.",
-    "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this",
-    "lapse: Somebody stops being a member after 7 days without logging i",
-    "removal: Removing a member needs every member to agree, including the",
-    "begin: When the document begins, members may propose changes to rul",
-    "rate: Members start with 4 ✏️ each, up to a maximum of 6. They get",
-    "ending: The drafting process will end on Weekday at HH:MM. The Found",
-    "bar: The members must be 90% sure a proposal is better for it to ",
-    "quorum: 5% of the members must have voted on a question before it ca",
-    "authorship: Nobody who proposes a change is ever named, even after the d",
-    "judgments: Votes are never revealed. The Founder may amend this at will"
-   ]
-  },
-  {
-   "step": "write after 📄’s OK",
    "rail": [
     "invite",
     "begin"

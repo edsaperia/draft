@@ -350,7 +350,7 @@ var CONSTITUTION = (() => {
     // button there would be a second door to the same room).
     {
       id: "startingText",
-      glyph: "📄",
+      glyph: "📝",
       kind: "ordinary",
       delegable: false,
       valueType: "text",
@@ -2361,6 +2361,7 @@ var CONSTITUTION = (() => {
           electorate: []
         });
       }
+      if (!this.textConfirmedFlag) this.emit({ type: "starting-text-confirmed", t, text: "" });
       const before = new Map(HELD.map((k) => [k, { ...this.settings.get(k).powers }]));
       this.emit(list === void 0 ? { type: "constituted", t } : { type: "constituted", t, laidDown: list });
       const laid = [];
@@ -2428,19 +2429,19 @@ var CONSTITUTION = (() => {
       return CATALOGUE.filter((e) => {
         const st = this.settings.get(e.id);
         if (!st) return false;
-        if (e.id === "startingText") return !this.textConfirmedFlag;
+        if (e.id === "startingText") return false;
         if (this.retiredQuestion(e.id)) return false;
         return st.collecting || e.judgeGate && st.settledBy === null;
       }).map((e) => {
         const st = this.settings.get(e.id);
-        const why = e.id === "startingText" ? "text-unconfirmed" : !st.collecting ? "judge-gate" : !this.answerable(e.id) ? "deps-unsettled" : invitationOut ? "invitation-open" : soleVoice ? "one-voice" : "collecting";
+        const why = !st.collecting ? "judge-gate" : !this.answerable(e.id) ? "deps-unsettled" : invitationOut ? "invitation-open" : soleVoice ? "one-voice" : "collecting";
         if (why !== "deps-unsettled") return { setting: e.id, why };
         const on = entryOf(e.id).deps.filter((dep) => {
           const d = this.settings.get(dep);
           return !!d && d.settledBy === null;
         });
         return { setting: e.id, why, on: [...on] };
-      }).sort((a, b) => (a.setting === "startingText" ? 1 : 0) - (b.setting === "startingText" ? 1 : 0));
+      });
     }
     /**
      * The founder's readiness readout (Q443 (a)(i), both halves; founder-only
@@ -3565,9 +3566,26 @@ var CONSTITUTION = (() => {
 
   // src/meaning.ts
   var BAR_RUNGS = [
-    { pct: 90, label: "Nearly everyone" },
-    { pct: 80, label: "Broad agreement" },
-    { pct: 60, label: "A bare majority" }
+    // `sentence` is the rung as an option block reads it (CP1/Q1104 (b), Ed
+    // 2026-08-31: the option's text is the rule as it would stand, the percent
+    // stated beside it); `label` survives as the rung's short name — the
+    // distribution strip's word, and 🪜's starting rungs, where a sentence
+    // about *passing* would misstate a bar that only opens the vote.
+    {
+      pct: 90,
+      label: "Nearly everyone",
+      sentence: "Nearly everyone must vote for a change for it to pass"
+    },
+    {
+      pct: 80,
+      label: "Broad agreement",
+      sentence: "Most of the membership must vote for a change for it to pass"
+    },
+    {
+      pct: 60,
+      label: "A bare majority",
+      sentence: "A bare majority voting for a change is enough for it to pass"
+    }
   ];
   var OWN_RUNG_LABEL = "A number of my own";
   function winsNeededPct(e, pct) {
@@ -3701,7 +3719,7 @@ var CONSTITUTION = (() => {
       const st = s.settingState("startingText");
       settings.push({
         setting: "startingText",
-        glyph: "📄",
+        glyph: "📝",
         kind: "ordinary",
         holder: st.holder,
         powers: { ...st.powers },

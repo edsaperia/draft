@@ -38,7 +38,10 @@
   // uses when the oracle has nothing to say (Q49).
   function headingForKey(key) {
     let h = '';
+    // a gap sits under the heading of whatever stands before it
+    const gapN = /^G(\d+)$/.test(String(key || '')) ? +String(key).slice(1) : null;
     for (const l of DOC) {
+      if (gapN !== null && l.key && !l.gap && +(/(\d+)$/.exec(l.key) || [0, -1])[1] >= gapN) return h;
       if (l.t === 'h') h = l.x;
       if (l.key === key) return h;
     }
@@ -106,6 +109,14 @@
   // document? **Defaults false**, so any surface that never sets it behaves
   // exactly as it does today; the page sets it to `mayPenOn('text')`.
   let MAY_PEN = () => false;
+  // **Edit mode** (backlog 204, Ed 2026-08-28): the text is always a card with
+  // two modes, and the 📝 tab is the door between them. Read mode has no
+  // caret and no row; edit mode lifts the column and shows the proposal-row.
+  // The host owns the state (it is page-only, provisional, nothing in the
+  // log) and lends it here read-at-call-time like the capabilities above.
+  // **Defaults true**, so a surface that never sets it is today's always-on
+  // column.
+  let EDITING = () => true;
   // the sign control (Q770): null means no elective 👤 rung — no control
   let SIGNING = () => null;
   let SIGNER = () => '';
@@ -165,8 +176,40 @@
   // rules they have not yet accepted — gets prose they can read and select but
   // not type into. The `beforeinput` refusal below stays as the second lock:
   // `contenteditable` is a hint to the browser, never a permission model.
-  const PROSE = () => '<div class="prose" contenteditable="' + (MAY_PROPOSE() ? 'true' : 'false') +
+  // …and since backlog 204 the caret is edit mode's alone: in read mode the
+  // column is prose you can read and select, and a click there beats the 📝
+  // tab (the host's job — `#ridetab`), which is the door in.
+  const PROSE = () => '<div class="prose" contenteditable="' + (MAY_PROPOSE() && EDITING() ? 'true' : 'false') +
     '" spellcheck="false">';
+
+  // ---- gap sites (backlog 204, Q261) ---------------------------------------
+  // A **gap** is the place between two clauses, or after the last: key `G<n>`,
+  // `n` the line the insertion goes before, so `n === nLines` is the end. The
+  // host keys real blocks by line (`L<n>`) or by index (`c<n>` / `h<n>` in the
+  // fixture); either way the number is the order, and a gap's own number is
+  // read off its neighbour's — never off the next *rendered* block, which
+  // skips blank lines the engine still counts.
+  const isGapKey = (key) => /^G\d+$/.test(String(key || ''));
+  const keyNum = (key) => { const m = /(\d+)$/.exec(String(key || '')); return m ? +m[1] : -1; };
+  const gapAfter = (key) => 'G' + (keyNum(key) + 1);
+  const gapBefore = (key) => 'G' + keyNum(key);
+  // the last real block standing before a gap — where its card renders
+  const blockBeforeGap = (key) => {
+    const n = keyNum(key);
+    let at = -1;
+    DOC.forEach((l, i) => { if (!l.gap && l.key && keyNum(l.key) < n) at = i; });
+    return at;
+  };
+  // the head label of a draft on a gap: which gap, in the reader's terms
+  const gapLabel = (key) => {
+    const at = blockBeforeGap(key);
+    if (at < 0) return 'A new clause at the start';
+    const prev = DOC[at];
+    const after = DOC.slice(at + 1).some((l) => !l.gap && l.key);
+    if (!after) return 'A new clause at the end';
+    const words = String(prev.x || '').trim();
+    return 'A new clause after: ' + (words.length > 40 ? words.slice(0, 40).replace(/\s+\S*$/, '') + '…' : words);
+  };
 
   // The text a suggestion is arguing against, for the quick card's yellow band.
   function currentTextFor(key) {
@@ -474,7 +517,10 @@
   // a proposed new section stands in the gap it would fill.
   function docIndexOf(g, siteKey) {
     if (g.insertAfterKey) return DOC.findIndex((l) => l.key === g.insertAfterKey) + 0.5;
-    return DOC.findIndex((l) => l.key === (siteKey ?? (g.keys ?? [])[0]));
+    // `docIndexOfKey` reads a gap's own place — half a step after the block
+    // before it — so a draft on the gap at the very start sorts above the
+    // first clause rather than at findIndex's -1 (backlog 204)
+    return docIndexOfKey(siteKey ?? (g.keys ?? [])[0]);
   }
 
   // What the rail quotes from a suggestion. A race carries one per proposal —
@@ -835,7 +881,9 @@
     const g = SUGGS.find((x) => x.id === id);
     if (!g && extraMeta.has(id)) return extraMeta.get(id).anchor() || null;
     if (!g) return null;
-    if (g.insertAfterKey) return doc.querySelector('.insert-anchor[data-anchor="' + id + '"]');
+    // a gap draft hangs on its own held-open anchor, including the one at the
+    // very start of the column, whose `insertAfterKey` is null (backlog 204)
+    if (g.insertAfterKey || g.gapKey) return doc.querySelector('.insert-anchor[data-anchor="' + id + '"]');
     const k = siteKey || (g.keys ?? [])[0] || (g.pair && g.pair[0].key);
     // The entry has to stand where its wire lands (Ed, 264): while the composer
     // is open the clause is a card, and a rail entry levelled against the
@@ -1863,7 +1911,13 @@
   const DRAFT_ID = 'draft-yours';
   let mineSeq = 0;                      // proposing frees the composer for the next draft
   const draftOf = () => SUGGS.find((x) => x.id === DRAFT_ID);
-  const docIndexOfKey = (key) => DOC.findIndex((l) => l.key === key);
+  // a gap that is not in DOC (it is rendered only in edit mode) stands half a
+  // place after the block before it — `docIndexOf`'s own +0.5 for an insert
+  const docIndexOfKey = (key) => {
+    const i = DOC.findIndex((l) => l.key === key);
+    if (i >= 0 || !isGapKey(key)) return i;
+    return blockBeforeGap(key) + 0.5;
+  };
   const siteFor = (d, key) => (d.sites || []).find((s) => s.keys.includes(key));
 
   function ensureDraft() {
@@ -1891,7 +1945,13 @@
   function addDraftSite(d, key, text, seed) {
     const at = docIndexOfKey(key);
     const orig = originOf(key, seed);
-    for (const s of d.sites) {
+    // a gap never merges with a neighbour: an insertion at a boundary is its
+    // own hunk (`start === end`), and joining it to the clause beside it would
+    // turn a pure insert into that clause's rewrite
+    // The gap is taken out of the candidate list rather than the list being
+    // emptied: a draft that already holds one still merges two adjacent
+    // *clauses* into one run, which is what a run is for.
+    for (const s of isGapKey(key) ? [] : d.sites.filter((x) => !x.keys.some(isGapKey))) {
       const first = docIndexOfKey(s.keys[0]);
       const last = docIndexOfKey(s.keys[s.keys.length - 1]);
       // adjacency is literal: a heading in between means DOC[last+1] is the
@@ -1913,13 +1973,15 @@
     d.sites.sort((a, b) => docIndexOfKey(a.keys[0]) - docIndexOfKey(b.keys[0]));
     return { site: s, offset: 0 };
   }
-
   // What a site records about each block it replaces. The block *type* travels
   // with it (Ed, 2026-08-17) so a heading still reads as a heading in the lane
   // and in the proposal — otherwise editing a section title alongside its
   // paragraph would silently flatten it into body text.
   function originOf(key, seed) {
     const l = lineOf(key) || {};
+    // a gap has nothing standing in it: an empty paragraph origin, marked so
+    // the card's head can say which gap and the host can send an insertion
+    if (isGapKey(key)) return { key, text: '', note: seed ? seed.note : null, t: 'p', gap: true };
     return { key, text: seed ? seed.text : currentTextFor(key), note: seed ? seed.note : null,
              t: l.t, level: l.level };
   }
@@ -2085,6 +2147,14 @@
       site = added.site; offset = added.offset;
     }
     syncDraftKeys(d);
+    // a draft on a gap renders in the gap: the held-open `.insert-anchor`
+    // after the block before it is where its card stands (the read side's
+    // existing shape for a proposed section, Q261's smaller half)
+    if (isGapKey(key)) {
+      const at = blockBeforeGap(key);
+      d.insertAfterKey = at >= 0 ? DOC[at].key : null;
+      d.gapKey = key;
+    }
     d.focusKey = key;                    // what holdSel keeps still, and where the caret goes
     const caret = initial ? offset + initial.caret : null;
     const land = () => {
@@ -2125,6 +2195,17 @@
     const orig = currentTextFor(key);
     const sel = caretRangeIn(p) || { start: orig.length, end: orig.length };
     let a = Math.min(sel.start, orig.length), b = Math.min(sel.end, orig.length);
+    // **Enter at a clause edge inserts rather than rewrites** (backlog 204,
+    // Q261): a collapsed caret at the very end of an unmodified clause opens a
+    // draft on the gap after it, at the very start on the gap before it — a
+    // new clause, and the neighbour untouched. Mid-clause keeps the split
+    // below. The gap block itself takes Enter as any other keystroke.
+    const enter = ev.inputType === 'insertParagraph' || ev.inputType === 'insertLineBreak';
+    const d0 = draftOf();
+    if (enter && a === b && !isGapKey(key) && !(d0 && siteFor(d0, key))) {
+      if (a === orig.length) return startDraft(gapAfter(key), null, { text: '', caret: 0 });
+      if (a === 0 && orig.length) return startDraft(gapBefore(key), null, { text: '', caret: 0 });
+    }
     let ins = '';
     switch (ev.inputType) {
       case 'insertText': ins = ev.data == null ? '' : ev.data; break;
@@ -2229,12 +2310,15 @@
   // A nameless member signs *as Anonymous* (§9.0c: it is a name, not a gap) —
   // the label says what the signature will read, and they may go and set one.
   /**
-   * The commit at the right of the composer's row, and **✒️ where the Founder
-   * holds the pen on the Text** (R-058, entry 160). One button, one place in
-   * the row, one gesture: what changes under the pen is the glyph, the price
-   * (none — nothing is staked, so an empty ✏️ wallet cannot stop it) and the
-   * duration. 161 gives every composer the ✒️/✏️ *pair*; here the one commit
-   * simply *becomes* ✒️ where the pen is held.
+   * The commit at the right of the composer's row, and **✒️ beside ✏️ where
+   * the Founder holds the pen on the Text** (R-058, entry 160; the pair is
+   * entry 161, applied to the text at Ed's QA of 2026-08-30 — a founder who
+   * is a member has both routes and is offered both). The pen first, the
+   * room's route after it, as every band card orders them: the Founder's own
+   * act where the eye already goes, putting it to the membership the
+   * deliberate second reach. Under the pen nothing is staked (an empty ✏️
+   * wallet cannot stop it) and the glyph, the price and the duration differ;
+   * the gesture is the same hold.
    *
    * `data-pen` is how the hold below knows which act it is landing, and it is
    * on the button rather than in a closure because the hold survives a render
@@ -2242,11 +2326,55 @@
    */
   function commitBtnHtml(o) {
     const pen = MAY_PEN();
-    const dis = pen ? !!o.penDisabled : !!o.disabled;
-    return '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose"' +
-      (pen ? ' data-pen="1"' : '') + (dis ? ' disabled' : '') +
-      ' title="' + esc(pen ? o.penTitle : o.title) + '">' + (pen ? '✒️' : '✏️') + '</button>';
+    const propose = '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose"' +
+      (o.disabled ? ' disabled' : '') + ' title="' + esc(o.title) + '">✏️</button>';
+    if (!pen) return propose;
+    return '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose" data-pen="1"' +
+      (o.penDisabled ? ' disabled' : '') + ' title="' + esc(o.penTitle) + '">✒️</button>' + propose;
   }
+  /**
+   * **The proposal-row** (backlog 204, SURFACE §9.1, K31): the commit row of
+   * the text as a card, drawn at the foot of the column in edit mode and
+   * stuck to the bottom of the window while the foot is out of view. 🗑️ at
+   * the very left, always live, discards the whole draft; the commit at the
+   * very right, greyed until a site differs from its origin; the middle says
+   * how many places have changed. One helper for both hosts: session.js draws
+   * it under the charter post-🍾, and the page draws it under `#prose` before
+   * the start with the founder's ✒️ (which is `confirm-starting-text`, not
+   * the pen — the era gate is the page's, R-058).
+   *
+   * **The pair** (`o.pair`, entry 161 at Ed's QA of 2026-08-30): post-🍾 a
+   * Founder who holds the pen and is a member is offered ✒️ *and* ✏️, the pen
+   * first; either press opens the editing card, where the two holds live.
+   * Pre-🍾 there is no membership to propose to, so the page never asks for
+   * the pair and the confirm stays one ✒️.
+   */
+  function proposalRowHtml(o) {
+    o = o || {};
+    const n = o.count || 0;
+    const mid = n === 0 ? '' : n === 1 ? '1 place changed' : n + ' places changed';
+    const btn = (pen, title) => '<button class="btn btn-propose glyphbtn emojibtn" data-act="row-commit"' +
+      (pen ? ' data-pen="1"' : '') + (o.disabled ? ' disabled' : '') +
+      ' title="' + esc(title || '') + '">' + (pen ? '✒️' : '✏️') + '</button>';
+    return '<div class="race-mid commitrow proposalrow" data-proposalrow="1">' +
+      '<button class="btn btn-withdraw glyphbtn" data-act="row-discard"' + (o.discardDisabled ? ' disabled' : '') +
+      ' title="' + esc(o.discardTitle || 'Discard the whole draft — nothing has been spent on it') + '">🗑️</button>' +
+      '<span class="rowmid">' + esc(mid) + '</span>' +
+      (o.pen ? btn(true, o.title) + (o.pair ? btn(false, o.proposeTitle) : '') : btn(false, o.title)) +
+      '</div>';
+  }
+  // what the row says about the draft as it stands
+  const draftRowState = () => {
+    const d = draftOf();
+    const sites = d && d.unproposed ? d.sites : [];
+    // **The middle counts places that have *changed*** (SURFACE K31, Q1089),
+    // which is not the same as places the draft has touched: type a character
+    // into a clause and take it out again and the site survives with its
+    // origin's own wording, so `sites.length` would say *1 place changed*
+    // beside a greyed commit.
+    const dirty = sites.filter((s) => s.text !== s.origin.map((x) => x.text).join('\n'));
+    return { count: sites.length, changedCount: dirty.length, changed: dirty.length > 0 };
+  };
   function signControlHtml(d) {
     const base = SIGNING();
     if (!base) return '';
@@ -2285,7 +2413,8 @@
         p.classList.toggle('on', !!here);
         if (b) b.setAttribute('aria-pressed', String(!!here));
       });
-      const pb = card.querySelector('[data-act="draft-propose"]');
+      // the ✏️, never the ✒️ beside it — a decree leaves with no signature to name
+      const pb = card.querySelector('[data-act="draft-propose"]:not([data-pen])');
       if (pb) pb.title = pb.title.replace(/( — signed)?( — one edit)/, (d.signed ? ' — signed' : '') + '$2');
       // **The face follows the choice** (K30): signing is the moment the room
       // stops being told nothing about you, so the disc gives way to your own
@@ -2324,7 +2453,8 @@
       // marked green as you type (263), and a full-width lane is a far better
       // place to write a paragraph of prose than a 300px column.
       clauseHeadHtml(d, {
-        label: seeded ? seeded.note : undefined,
+        // a gap's head names the gap, there being no clause to show
+        label: seeded ? seeded.note : site.origin[0] && site.origin[0].gap ? gapLabel(site.keys[0]) : undefined,
         html: site.origin.map((o) => '<div class="lp' + (o.t === 'h' ? ' hblock' : '') + '" data-key="' + o.key + '">' + esc(o.text) + '</div>').join(''),
       }) +
       // and your draft as the one reply, in the reply's own order: the wording,
@@ -2761,10 +2891,11 @@
     // 🛡️ on the Text (R-056): the room passed a change and it waits on the
     // Founder. A decision card like every other — the clause it rewrites at
     // the head, the wording as the single proposal block against it — and
-    // the 👑 question's own commit row, Refuse then Accept, with no 🗑️
-    // (SURFACE Y20: the two answers are the whole act). No lane radios: this
-    // is not a judgment, and nothing about the room's decision is being
-    // re-asked.
+    // **the 👑 question takes the pattern whole** (CP5, Q1100, 2026-08-31,
+    // striking Y20's clause): 🗑️ closes it pending, and the two reserved
+    // powers are the two answers — ✒️ passes it, 🛡️ holds it. No lane
+    // radios: this is not a judgment, and nothing about the room's decision
+    // is being re-asked.
     if (s.kind === 'crown') {
       const ckey = (s.keys ?? [])[0];
       return (
@@ -2773,9 +2904,12 @@
         fieldHtml(proposalHtml(s, { html: resultOnly(s.marked), why: s.rationale, by: s.by })) +
         '<div class="foot">The membership passed this. Until you answer, the clause above stands.</div>' +
         '<div class="race-mid commitrow">' +
-        '<button class="btn" data-act="crown-refuse">Refuse</button>' +
+        '<button class="btn glyphbtn" data-act="clear-close" title="Close — the question stays pending">🗑️</button>' +
         '<span class="rightpair">' +
-        '<button class="btn btn-approve" data-act="crown-accept">Accept</button>' +
+        '<button class="btn glyphbtn" data-act="crown-refuse"' +
+        ' title="Refuse — the shield holds it, and the clause above stands">🛡️</button>' +
+        '<button class="btn btn-approve glyphbtn" data-act="crown-accept"' +
+        ' title="Accept — the pen passes it now">✒️</button>' +
         '</span></div>' +
         '</div>'
       );
@@ -3147,6 +3281,24 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         '" contenteditable="false">' + chips + '</span>';
     };
 
+    // **A gap at the very start has no block before it** (backlog 204, Q261:
+    // *at the very start on the gap before it*). `G0`'s `insertAfterKey` is
+    // null, so the anchor the gap card hangs on cannot be emitted after a
+    // neighbour — it is emitted here, above the first block, or the draft
+    // would render nowhere at all and the keystroke that opened it would look
+    // as though it had done nothing.
+    const headIns = SUGGS.find((g) => g.gapKey && g.insertAfterKey == null);
+    if (headIns) {
+      html += '<div class="insert-anchor" data-anchor="' + headIns.id + '" title="' +
+        esc(plainLabel(headIns.qLabel)) + ' — a section proposed for this gap"' +
+        anchWash(headIns, openId === headIns.id) + '>' +
+        '<span class="chipcol"><span class="achip"' + chipStyle(headIns) + ' data-anchor="' + headIns.id + '">' +
+        markOf(headIns) + '</span></span></div>';
+      if (openId === headIns.id && !cardDone) {
+        cardDone = true; html += '</div>' + suggCardHtml(headIns) + PROSE();
+      }
+    }
+
     for (const line of DOC) {
       if (line.t === 'title') { html += '<div class="doctitle">' + esc(line.x) + '</div>'; continue; }
       let secN = -1;
@@ -3156,6 +3308,10 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       } else if (headIdx > 0 && hiddenSection(headIdx - 1)) {
         continue;              // a paragraph goes with the innermost heading above it
       }
+      // **The trailing gap is drawn only in edit mode** (backlog 204): a blank
+      // block after the last clause saying a new one may start here. Read
+      // mode, the closed page, the stranger's bars and the TOC never see it.
+      if (line.gap && (!EDITING() || !MAY_PROPOSE() || closedMode)) continue;
 
       // A draft of your own **replaces** the blocks it is editing, so they open
       // into the composer where they stand rather than sprouting a card
@@ -3247,11 +3403,13 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
           // text flow so the caret lands at offset 0. The sentence promises
           // typing only to somebody who may propose.
           const blank = line.key && !line.x && !wasResolved;
-          html += '<p class="editable' + (wasResolved ? ' anch resolved' : '') + (blank ? ' blank' : '') + '"' +
+          // …and the gap block takes the same treatment with its own sentence
+          // (Q1090: one rule, two sentences — the rule is the geometry)
+          html += '<p class="editable' + (wasResolved ? ' anch resolved' : '') + (blank ? ' blank' : '') + (line.gap ? ' gap' : '') + '"' +
             (wasResolved ? ' data-anchor="' + wasResolved.id + '"' +
               anchWash(wasResolved, openId === wasResolved.id, line.key) : '') +
             (line.key ? ' data-key="' + line.key + '"' : '') +
-            (blank ? ' data-placeholder="' + (MAY_PROPOSE()
+            (blank ? ' data-placeholder="' + (line.gap ? 'Start a new clause here.' : MAY_PROPOSE()
               ? 'Nothing here yet — start typing to propose the first paragraph.'
               : 'Nothing here yet.') + '"' : '') + '>' +
             (wasResolved ? '<span class="chipcol" contenteditable="false"><span class="achip" tabindex="0"' + chipStyle(wasResolved) + ' data-anchor="' + wasResolved.id +
@@ -3271,16 +3429,52 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
           anchWash(ins, openId === ins.id) + '>' +
           '<span class="chipcol"><span class="achip"' + chipStyle(ins) + ' data-anchor="' + ins.id + '">' +
           markOf(ins) + '</span></span></div>';
-        if (openId === ins.id) html += '</div>' + suggCardHtml(ins) + PROSE();
+        if (openId === ins.id && !cardDone) { cardDone = true; html += '</div>' + suggCardHtml(ins) + PROSE(); }
       }
     }
     html += '</div>';
+    // **the proposal-row, in edit mode** (backlog 204): the foot of the text's
+    // card, and the post-🍾 commit follows entry 160's glyph rule — ✒️ where
+    // the Founder holds the pen on the Text, ✏️ otherwise. Pressing it opens
+    // the editing card, where the rationale, the sign choice and the hold live
+    // unchanged. Only where this reader may propose: read mode has no row.
+    // Where the pen is held the row offers ✏️ beside it (entry 161): this
+    // reader may propose, being inside `MAY_PROPOSE()`, and holds the pen too.
+    if (EDITING() && MAY_PROPOSE() && !closedMode) {
+      const rs = draftRowState();
+      const pen = MAY_PEN();
+      const idle = 'Nothing has changed yet — type in the document to start a draft';
+      html += proposalRowHtml({
+        count: rs.changedCount, changed: rs.changed, pen, pair: pen, disabled: !rs.changed,
+        discardDisabled: !rs.count,
+        title: !rs.changed ? idle : pen ? 'Review and amend the document' : 'Review and propose this',
+        proposeTitle: !rs.changed ? idle : 'Review and propose this',
+      });
+    }
     doc.innerHTML = html;
     fitStacks();
     fitCards();
 
     doc.querySelectorAll('[data-sec-toggle]').forEach((b) =>
       b.addEventListener('click', (ev) => { ev.stopPropagation(); toggleSection(+b.dataset.secToggle); })
+    );
+    // the proposal-row's two ends: the bin drops the whole draft (leaving is
+    // not discarding, but this is the one control that is), the commit opens
+    // the editing card on the draft's first site
+    doc.querySelectorAll('[data-proposalrow] [data-act="row-discard"]').forEach((b) =>
+      b.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        dropDraft();
+        renderAll(); drawWires();
+      })
+    );
+    doc.querySelectorAll('[data-proposalrow] [data-act="row-commit"]').forEach((b) =>
+      b.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const d = draftOf();
+        if (!d || openId === d.id) return;
+        toggle(d.id, true);
+      })
     );
     // Opening a decision card from the document is now the **mark's** job and
     // only the mark's (Ed, 224). Clicking the text puts a caret in it, because
@@ -3934,6 +4128,16 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       : what === 'b' ? 'preferred ' + quote(s.race && s.race.b.text)
       : what === 'indifferent' ? (s.kind === 'diagonal' ? 'said they matter equally' : 'indifferent')
       : 'skipped (recirculates with decay)';
+    // **🗑️ on a judgment clears the choice and closes** (CP7, Q1102): the bin
+    // puts back un-actioned input only (C4), so an uncommitted pick clears and
+    // a cast vote stays on the record exactly as it stood.
+    if (what === 'clear-close') {
+      const s0 = SUGGS.find((x) => x.id === id);
+      if (s0 && !resolved.has(id)) s0.pick = null;
+      const shut = () => { if (openId === id) openId = null; renderAll(); drawWires(); };
+      if (openId === id) collapseCards(id, shut); else shut();
+      return;
+    }
     // **❄️ cools the flame and closes the card** (Ed, 2026-08-17). It is not a
     // judgment, so nothing about the race changes and no evidence is touched —
     // the entry simply stops being eligible for 🔥 and the next most urgent
@@ -4668,6 +4872,37 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // sites that still call it explicitly are harmless.
     settleTopUrgent(); renderDoc(); renderQueue(); renderToc();
     markCurrentSection(); renderWallet(); settleWashes(); settleLift(); layoutQueue(); drawWires();
+    // the host's riding tab carries the draft's count (backlog 204) — a DOM
+    // poke on the host's side, never a render, so this cannot recurse
+    if (hooks.rendered) hooks.rendered();
+  }
+
+  // **A keystroke in read mode enters edit mode with that character applied**
+  // (backlog 204). The host hears it — a non-editable column is not a keydown
+  // target, so the listener is the document's and the host filters — and
+  // hands the character here: applied at the caret if the reader has put one
+  // in a block, else at the end of the last clause, exactly as always-on
+  // typing would have applied it.
+  function typeAt(ch) {
+    if (!MAY_PROPOSE() || closedMode) return false;
+    const picked = selectedBlocks();
+    let p = picked && picked.blocks.length === 1 ? picked.blocks[0] : null;
+    // a caret on the column itself — its whitespace, a select-all — picks no
+    // block and is refused, exactly as always-on typing refuses it (the
+    // journey's *host caret* case); the fallback below is for no caret at all
+    const sel0 = getSelection();
+    if (!p && sel0 && sel0.rangeCount && doc.contains(sel0.getRangeAt(0).startContainer)) return false;
+    if (!p) {
+      const all = [...doc.querySelectorAll('.editable[data-key]')].filter((el) => !el.closest('.sugg') && !el.classList.contains('gap'));
+      p = all[all.length - 1] || null;
+    }
+    if (!p) return false;
+    const key = p.dataset.key;
+    const orig = currentTextFor(key);
+    const sel = picked && picked.blocks[0] === p ? caretRangeIn(p) : null;
+    const a = sel && sel.start != null ? Math.min(sel.start, orig.length) : orig.length;
+    startDraft(key, null, { text: orig.slice(0, a) + ch + orig.slice(a), caret: a + ch.length });
+    return true;
   }
 
   // The drip runs. Seconds in the countdown only mean anything if they move, so
@@ -4775,6 +5010,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     if (env.mayPropose) MAY_PROPOSE = env.mayPropose;
     if (env.mayJudge) MAY_JUDGE = env.mayJudge;
     if (env.mayPen) MAY_PEN = env.mayPen;
+    if (env.editing) EDITING = env.editing;
     // the sign control's two reads (Q770): the elective base, if any, and
     // what a signature would read as — both at call time, like the two above
     if (env.signing) SIGNING = env.signing;
@@ -4804,6 +5040,9 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       // IME can still raise beforeinput, and a refusal here is the lock that
       // actually holds.
       if (!MAY_PROPOSE()) { ev.preventDefault(); return; }
+      // nor in read mode (backlog 204): the caret is edit mode's; a paste or an
+      // IME reaching a read-mode column is refused the same way
+      if (!EDITING()) { ev.preventDefault(); return; }
       // The host is the whole prose column now, so the block being typed in comes
       // from the *selection* rather than from the event's target — the target is
       // the column itself.
@@ -4869,6 +5108,18 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // edited together with its paragraph is **one candidate** — which it can only
     // be if the heading is an addressable block like any other.
     DOC.forEach((l, i) => { if ((l.t === 'p' || l.t === 'h') && !l.key) l.key = (l.t === 'h' ? 'h' : 'c') + i; });
+    // **the trailing gap** (backlog 204): the host's `blocksOf` appends one keyed
+    // by engine line; a fixture hands in none, so it takes one keyed by index —
+    // rendered only in edit mode, and never on a closed document.
+    // **A host that keys by engine line has already decided** (`L<n>`): it
+    // appends the gap itself, and deliberately omits it for the empty
+    // document, whose one empty clause *is* the place to write (Q649 (a)) —
+    // so a second gap here would draw two blank paragraphs on every empty
+    // document and fail `journey --empty-text`'s *no trailing gap*.
+    const hostKeyed = DOC.some((l) => /^L\d+$/.test(l.key || ''));
+    if (DOC.length && !hostKeyed && !DOC.some((l) => l.gap) && !closedMode && !DOC.some((l) => /^[US]:/.test(l.key || ''))) {
+      DOC.push({ t: 'p', x: '', key: 'G' + DOC.length, gap: true });
+    }
     HEADS = DOC.filter((l) => l.t === 'h').map((l) => l.level ?? 1);
     SUGGS.filter((s) => s.kind === 'draft').forEach((d) => {
       d.sites.forEach((s) => {
@@ -4992,6 +5243,9 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   window.SESSION = {
     init, setData, renderAll, toggle, clauseKeysOf, closeCard, setWallet, setRoom, setClosed,
     clockText, dateWords,
+    // edit mode's shared pieces (backlog 204): the row both hosts draw, the
+    // read-mode keystroke, and what the riding tab says about the draft
+    proposalRowHtml, typeAt, draftRowState, dropDraft,
     arcFrames, flyGlyph, pencilStorm, renderWallet, beat, act,
     // the hold vocabulary, shared with the founder's own wallets in the page:
     // `nudgeHome` brings a released flight back (never travelling less than a

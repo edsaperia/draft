@@ -143,7 +143,11 @@
    *above* your answer are dimmed rather than hidden, since *the most I will
    accept* only reads as a ladder if you can see what you are refusing.
    --------------------------------------------------------------------------- */
-  .choice { display: flex; flex-direction: column; gap: var(--s3); }
+  /* rhythm lives on the blocks, not the wrapper (CP1): option blocks appear
+     both inside a `.choice` and as bare sequences, and the audit's P5 reads
+     one gap for all of them — so the wrapper contributes nothing and
+     `.pick + .pick` says the whole of it */
+  .choice { display: flex; flex-direction: column; gap: 0; }
   /* **A second radio group stacked under the first is set apart** (Q761).
      `.choice` spaces its own rungs, and nothing spaced the *containers* — so
      the delegate rung sat flush against the values above it, 0px, and the two
@@ -163,6 +167,18 @@
      its slot in the DOM while it has nothing to say, and collapses to nothing
      rather than reserving a line — `.meaning:empty`'s rule, same reason */
   .pick .exp:empty { display: none; }
+  /* **The option block** (CP1, Q1096, 2026-08-31): the option's text stands
+     above its radio as text to be read, and the radio beneath is the same
+     *Prefer this / Preferred* pill on every card — what you read is the
+     option's own sentence, what you press never changes its words. */
+  .pick .opttext { display: block; font-size: var(--t-ui); font-weight: 600;
+    color: var(--fg); max-width: 58ch; }
+  .pick > .lanepick { margin-top: var(--s2); }
+  /* a hairline separates adjacent blocks without boxing them — the same
+     separator the power cards' `.propblock + .propblock` draws; the margin is
+     the rows' one vertical rhythm (P5), wherever the blocks stand */
+  .pick + .pick { border-top: 1px solid var(--border); padding-top: var(--s3);
+    margin-top: var(--s3); }
   /* **Direct children, since 🪜's rungs put a ladder inside a rung** (entry
      165). `.inner` has always been the option's own child and nothing else,
      but as a descendant rule `.pick.on .inner` reached *through* an open
@@ -192,15 +208,15 @@
   /* a row of fields *inside* a card — distinct from `.setrow`, which is the
      band row a pile stands in */
   .setrow2 { display: flex; gap: var(--s3); align-items: baseline; flex-wrap: wrap; }
-  /* 🍾's power table (entry 158): one zone per block, its two switches on one
-     `.setrow2`. The gap is the only thing the block adds — the switches are
-     the design system's own `.switch` (system.css), because each power here is
-     an independent on/off rather than a choice among peers, which is the one
-     thing `.pick`/`.lanepick` cannot say. This is the surface's single control
-     that is not a choice, so the table takes the other grammar rather than
-     inventing a third (Ed, 254). */
-  .beginzone + .beginzone { margin-top: var(--s3); }
-  .beginzone > .setrow2 { margin-top: var(--s1); }
+  /* 🍾's power table (entry 158; redrawn 2026-08-31, Q1103 (b)): one zone per
+     block, and under it the surface's one **two-column** layout — a ✒️ column
+     and a 🛡️ column, each a Kept / Laid-down pair of option blocks with the
+     same *Prefer this* radio as every other choice. The switch of entry 254
+     lasted two days; the pattern admits no second control. */
+  .beginzone + .beginzone { margin-top: var(--s4); }
+  .bzcols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 var(--s5);
+    margin-top: var(--s2); }
+  .bzcol > .eyebrow { margin-bottom: var(--s2); }
   .fld { display: flex; flex-direction: column; gap: var(--s1); }
   .fld > label { font-size: var(--t-cap); color: var(--muted); }
   .sugg input, .sugg textarea { font: inherit; font-size: var(--t-ui); color: var(--fg); background: var(--bg);
@@ -570,6 +586,14 @@ button.cline:hover b { text-decoration: underline; }
    ------------------------------------------------------------------------ */
 .constsec .cpara { position: relative; min-height: 32px; margin: 0 0 var(--s2); }
 .constsec .cpara .chipcol { top: 0; }
+/* A `.cpara` sits on the text axis where a charter `.anch` hangs `--s3`
+   further left of its own text, so the paragraph tabs here take the same
+   correction a charter heading's chipcol takes (system.css, Q897) — without
+   it the band's tab column sat 12px right of the charter's (Ed's QA,
+   2026-08-31: all tabs line up vertically). Direct child and member rows
+   only: the open card's strip hangs off the `.headclause`, which already
+   carries the charter paragraph's own geometry. */
+.constsec .cpara > .chipcol, .constsec .memrow .chipcol { margin-right: calc(14px + var(--s3)); }
 .constsec .cptext { margin: 0; padding-top: 3px; }
 .constsec .cptext b { font-weight: 600; }
 .constsec .cpara.notab { min-height: 0; }
@@ -689,40 +713,34 @@ button.cline:hover b { text-decoration: underline; }
 .constsec .cpara:not(.notab) .memrow.nobody { min-height: 30px; }
 .memrow .chip { font-size: var(--t-micro); }
 
-/* **The card overhangs the text axis** (Ed's QA, 2026-08-18: the tabs were
-   touching the text, and fixing that must not bring back the tab-jump). A
-   paragraph's tab keeps the document's own 14px gutter gap; when the card
-   opens, its box extends 14px further left while its text stays on the
-   document axis — session-view's own model — so the strip lands where the
-   closed tab stood and the active tab still carries under the card edge. */
-.constsec .cpara.open > .setupcard { margin-left: -14px; }
+/* **The card is the decision card's own box** (Ed's QA, 2026-08-31: cards in
+   the central column were different widths — a charter card runs a full
+   measure-gutter past the text on each side, this one ran 14px left and
+   nothing right, so the two tab families sat 12px apart). One box for every
+   card: a gutter each side, exactly the charter `.sugg`'s geometry, while the
+   text stays on the document axis — so the strip, the head and the body all
+   land where a charter card puts them, with no compensation anywhere. */
+.constsec .cpara.open > .setupcard {
+  margin-left: calc(-1 * var(--measure-gutter));
+  margin-right: calc(-1 * var(--measure-gutter));
+}
 
-/* the starting-text task anchors the prose itself (Ed, 2026-08-18): a
-   row at the band's end carrying the document's own name, its 📄 tab beside
-   it. **The tab lines up with the title** (Ed, 2026-08-21), and the offset
-   is a measurement rather than a taste: a tab is 30px and the title's line
-   box is 30px, so flush tops centre one on the other. It had been `top:10px`,
-   from when this row was empty and the tab hung beside the first block of
-   prose below it — the title moved in and the constant stayed. Everywhere
-   else the gutter's own -3px does the same job against a 24px line.
-   **The pile is empty from the save until 📄's turn** (backlog 33), and the
-   title must sit at the same x either way — which it does for free, the
-   `.chipcol` being `position: absolute` out in the gutter, so nothing about
-   the title's box depends on whether a tab is standing beside it. */
+/* the charter heading at the band's end (Ed, 2026-08-18): a row carrying
+   the document's own name. Since backlog 204 the text's 📝 tab is not in
+   this row but in the surface's sticky `#ridetab` (system.css), which rests
+   beside this title and rides with the reader; **it lines up with the
+   title** (Ed, 2026-08-21) by the same measurement as before — a tab is 30px
+   and the title's line box is 30px, so flush tops centre one on the other —
+   and the title sits at the same x whether or not a tab stands beside it,
+   the tab being absolute out in the gutter. */
 .cpara.textanchor { min-height: 0; margin: 0; }
 .cpara.textanchor .dochead { margin: 0 0 var(--s3); padding-left: 0; }
-.cpara.textanchor .chipcol { top: 0; }   /* see the note above: 30px tab, 30px title line */
 
 /* the composer's rationale wears your avatar (Ed, 2026-08-18) — the same
    speaker slot the editing card gives a rationale, with you as the speaker */
 .composeWhy { display: flex; gap: 10px; align-items: flex-start; margin-top: var(--s3); }
 .composeWhy .av { width: 26px; height: 26px; font-size: 9px; flex: none; margin-top: 8px; }
 .composeWhy .lanebox { flex: 1; }
-
-/* the rule at a composer's head sits exactly on the text axis it stood on
-   (card padding minus the 14px overhang) — the strip is anchored to the
-   headclause and must not move with it, so the compensation is on the text */
-.constsec .cpara.open .setupcard .clausehead .rtext { margin-left: calc(14px - var(--s5)); }
 
 /* headings fold (Ed, 2026-08-19): hidden prose blocks, and the overlay rail
    that carries the prose triangles — outside the contenteditable region, so
@@ -817,13 +835,11 @@ button.cline:hover b { text-decoration: underline; }
 .av.anon .anonav { color: var(--muted); }
 
 /* **One left edge** (Ed's QA, 2026-08-19: on the 📍 card *tab and title and
-   text are misaligned*). The head's text was pulled back onto the document's
-   own axis while the body kept the card's own padding, so every card had its
-   clause ten pixels left of its field — visible on 📍 because that card is
-   nearly all field. The card's padding is now the document overhang itself,
-   and the head needs no compensation to sit where a paragraph sits. */
-.constsec .cpara.open > .setupcard > *:not(.clausehead):not(.chipcol) {
-  margin-left: calc(14px - var(--s5)); }
+   text are misaligned*): head and body both sit on the document's own axis.
+   Since the card's overhang became the full measure-gutter (Ed's QA,
+   2026-08-31: one card width) that is where the card's own padding puts
+   them, and the `14px - var(--s5)` compensations this block and the head's
+   rtext carried are gone with the 14px they undid. */
 
 /* **An emoji is an emoji wherever it sits** (Ed, 2026-08-19: *the ✒️ button
    in the initial titling is correct for emoji buttons, the rest are too

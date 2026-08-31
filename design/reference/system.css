@@ -178,7 +178,6 @@
        the same easing — a wash is tuned for a colour changing somewhere in the
        margin, where a control is under the pointer and has to answer the press
        — so it is a quarter of one rather than a number of its own. */
-    --switch-ms: calc(var(--wash-ms) / 4);
 
     --rail-left: 210px;
     --rail-right: 290px;
@@ -707,6 +706,133 @@
     .achip.nudge { animation: none; box-shadow: var(--shadow-lg); }
   }
 
+  /* ---- the text as a card: the riding tab, the beat, edit mode, the row
+     (backlog 204, Ed 2026-08-28; SURFACE K31) ------------------------------ */
+  /* **The riding tab.** The text's 📝 pile stands in `#ridetab`, a direct
+     child of `.doc` placed right after the band, so its containing block is
+     the whole column and `position: sticky` carries it from the charter
+     heading to the document's foot. It takes no height of its own: the pile
+     is absolute in the gutter and lifted back up by the title's line box plus
+     the heading's margin, so at rest it sits exactly where it did beside the
+     title — the same 30px-on-30px measurement setup.css records — and the
+     sticky `top` is offset by the same amount, so detached it rides at
+     `--nav-h` plus the gutter's own air. z-index above every `.anch` pile it
+     passes (they are unpositioned or z:1–4 in a stack), never displacing one. */
+  .ridetab { --ride-up: calc(30px + var(--s3)); position: sticky; top: calc(var(--nav-h) + var(--s2) + var(--ride-up)); height: 0; z-index: 8; }
+  /* **Its gutter is the constitution's gutter** (Ed's QA, 2026-08-30): the
+     tab was resolving `right: 100%` against `.doc`'s whole content box while
+     every clause-tab resolves against a `.cpara` inside `.setrow`'s centred
+     measure column — so it sat off to the left of the tabs it is supposed to
+     line up with. The box is `.setrow`'s (setup.css) to the pixel, and
+     `.ridein` is the positioned content box the pile hangs off, since an
+     absolutely placed child measures from the padding edge otherwise.
+     `.ridein` sits on the text axis as a `.cpara` does, so the chip takes
+     the same `14px + --s3` gutter correction the band's paragraph tabs and
+     the charter headings take (Ed's QA, 2026-08-31: one tab column). */
+  .ridetab {
+    box-sizing: border-box; max-width: calc(var(--measure) + 2 * var(--measure-gutter));
+    margin: 0 auto; padding: 0 var(--measure-gutter);
+  }
+  .ridetab .ridein { position: relative; }
+  .ridetab .chipcol { top: calc(-1 * var(--ride-up)); margin-right: calc(14px + var(--s3)); }
+  /* **Detached, and in edit mode, it wears the active treatment** (M12: the
+     8px on `padding-left` as well as `width`, so the glyph does not move —
+     Q1087: one treatment, one meaning; in edit mode the text *is* the open
+     card, and a tab that has left its heading is the open card's tab
+     travelling with you). Lifted a step while riding, since it is over the
+     prose rather than beside it. */
+  .ridetab.detached .achip[data-tab="text"], .ridetab.editing .achip[data-tab="text"] {
+    width: 42px; padding-left: 8px; padding-right: 0;
+    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 34%, var(--bg));
+  }
+  /* In edit mode the text is the open card, so the pile is a strip and takes
+     the strip's own tuck-under (`.clausehead .achip`'s -2px) — on every tab,
+     ✒️ 🛡️ included, exactly as a clausehead gives it to resting tabs too
+     (Ed, 2026-08-17: every tab's right edge lands on the card's left edge;
+     Ed, 2026-08-31: tabs should always tuck). Detached over the prose there
+     is no card edge, and the pile rests on the closed piles' own column. */
+  .ridetab.editing .achip { margin-right: -2px; }
+  /* In edit mode the pile is drawn as the strip — the pile expanded, the ✒️ 🛡️
+     tabs beneath 📝 reachable (Ed's QA, 2026-08-30) — and only the front tab
+     wears the active treatment; the power tabs stay 34px, as in any strip. */
+  .ridetab.detached .achip { box-shadow: var(--shadow-md); }
+  .ridetab .achip { position: relative; }
+  /* the draft's count while one is pending: a corner figure, --t-micro */
+  .ridetab .ridecount {
+    position: absolute; right: -4px; top: -6px; min-width: 14px; height: 14px; padding: 0 3px;
+    border-radius: 7px; background: var(--primary); color: #fff;
+    font-size: var(--t-micro); font-weight: 700; line-height: 14px; text-align: center;
+  }
+  /* **The beat**: `room-pulse`'s ring, in the tab's own hue. A click in the
+     prose in read mode says nothing and beats this; no copy, ever. */
+  @keyframes tabRing {
+    from { box-shadow: var(--shadow-sm), 0 0 0 0 rgba(var(--chiphue, var(--lc-closed)), 0.55); }
+    to   { box-shadow: var(--shadow-sm), 0 0 0 12px rgba(var(--chiphue, var(--lc-closed)), 0); }
+  }
+  .achip.ring { animation: tabRing 900ms ease-out; }
+  /* **Edit mode lifts the column onto a card** (`--shadow-xl`, the one big
+     step, still a light source and not a halo). The text does not move: the
+     top padding is the same `--measure-gutter` the sides already carry and a
+     negative margin of the same size pays for it, so the outline rises 24px
+     above the first line while every `.anch` box and every line keeps its
+     geometry and the tab you press does not move. The foot runs a viewport
+     below the last clause, so the card's bottom edge is never met and the
+     proposal-row below it stays stuck to the window's foot (Ed's QA,
+     2026-08-30). */
+  /* **One column per era**: before 🍾 `#charter` holds an empty `.prose`
+     (session.js renders an empty DOC), which the padding would turn into a
+     blank screen-high card above the real column (Ed's QA, 2026-08-30) —
+     so the lift is keyed on `.begun`, and only the column in use takes it. */
+  .doc.editing:not(.begun) #prose, .doc.editing.begun #charter > .prose {
+    position: relative; z-index: 0;
+    padding-top: var(--measure-gutter); margin-top: calc(-1 * var(--measure-gutter));
+    padding-bottom: 95vh;
+  }
+  /* **The card is the decision card's width** (Ed's QA, 2026-08-30): the
+     outline is a pseudo-element carrying the shadow and radius, so the
+     column's own box and its text do not move; behind the text by z-index
+     within the column's own stacking context. Since every decision card took
+     the full prose box — the measure plus a gutter each side (Ed's QA,
+     2026-08-31: one card width) — the insets it carried for the old 14px
+     overhang are gone and the painted card *is* the prose box. */
+  .doc.editing:not(.begun) #prose::before, .doc.editing.begun #charter > .prose::before {
+    content: ''; position: absolute; z-index: -1; pointer-events: none;
+    top: 0; bottom: 0; left: 0; right: 0;
+    box-shadow: var(--shadow-xl); background: var(--bg);
+    border-radius: var(--r-md) var(--r-md) 0 0;   /* square at the foot: the card runs off the page, it does not end */
+  }
+  /* **The proposal-row sticks to the foot of the window** while the column's
+     foot is out of view — `sticky; bottom: 0` inside the column's own box, so
+     it rests at the section's foot once that is on screen (which, the card
+     running a viewport past its last clause, is never while editing). **It
+     has no ground of its own** (Ed's QA, 2026-08-30): the controls float over
+     the card directly, and the row is click-transparent everywhere but its
+     buttons, so its empty middle never takes a click meant for the text. The
+     viewport is the card: tab at its top edge, row at its bottom. */
+  .proposalrow {
+    position: sticky; bottom: 0; z-index: 7; pointer-events: none;
+    margin: 0 auto; max-width: calc(var(--measure) + 2 * var(--measure-gutter));
+    padding: var(--s2) var(--measure-gutter);
+  }
+  /* `.race-mid.commitrow`'s hairline and paddings are a card's, not this
+     row's — and **the row stands over the column's foot, not after it**: a
+     negative top margin of its own height, so the card (which carries the
+     runway) ends where `.doc` ends and the row floats over it (Ed's QA,
+     2026-08-30: *I can still see the bottom of the box*). 40px controls
+     (§9.1) inside `--s2` each side: 56px. */
+  .race-mid.commitrow.proposalrow {
+    border-top: 0; padding-top: var(--s2); padding-bottom: var(--s2);
+    box-sizing: border-box; height: 56px; margin-top: -56px;
+  }
+  .proposalrow .btn { pointer-events: auto; }
+  .proposalrow .rowmid { flex: 1; text-align: center; font-size: var(--t-small); color: var(--muted); }
+  /* the gap block (Q1090): the empty document's `blank` treatment, its own
+     sentence, and a little air above it so it reads as *after* the last clause */
+  .doc p.editable.blank.gap { margin-top: var(--s3); }
+  @media (prefers-reduced-motion: reduce) {
+    .achip.ring { animation: none; }
+  }
+
   /* ===================================================================
      The document. Its wide left padding is the chip-gutter (see .chipcol).
      =================================================================== */
@@ -738,9 +864,24 @@
        line, so opening anything down there would not move the page. Keeping it
        inside .doc also keeps the middle column running to the bottom, and
        keeps .layout tall enough for the rails to stay pinned. */
-    padding: 36px 44px 95vh 132px;
+    padding: 36px 44px 0 132px;
   }
-  @media (max-width: 900px) { .doc { padding: var(--s5) 20px 95vh; } }
+  @media (max-width: 900px) { .doc { padding: var(--s5) 20px 0; } }
+  /* **The runway is content, not padding** (Ed's QA, 2026-08-30): a sticky
+     element travels only inside its containing block's content box, so with
+     the runway as padding the riding 📝 tab stopped where the text ended and
+     sat still through the last screen. As a block at the column's foot it
+     is inside the content box and the tab rides to the page's end. In edit
+     mode the card carries the runway itself (below), so the block is zero
+     and the card's foot is the page's foot — its bottom edge is never met
+     and `.doc`'s own bottom border and corners step aside for it. */
+  .doc::after { content: ''; display: block; height: 95vh; }
+  .doc.editing::after { height: 0; }
+  .doc.editing { border-bottom-color: transparent; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  /* the pre-🍾 row's mount is not a box: a sticky row inside a wrapper
+     exactly its own height has nowhere to stick, so the wrapper is `contents`
+     and the row's containing block is `.doc`, as `#charter` is post-🍾 */
+  #proserow { display: contents; }
   .doc .prose {
     max-width: calc(var(--measure) + 2 * var(--measure-gutter));
     padding: 0 var(--measure-gutter);
@@ -1063,7 +1204,7 @@
      its own weight and case. On the scale at --t-cap, which is the step for a
      caption. */
   .rsub {
-    display: block; margin-top: 2px;
+    display: block; margin-top: var(--s1); /* on the grid — census F-G */
     font-size: var(--t-cap); font-weight: 500; text-transform: none; letter-spacing: 0;
     color: var(--muted);
   }
@@ -1140,52 +1281,9 @@
   }
   @media (prefers-reduced-motion: reduce) { .lanepick, .lanepick .dot { transition: none; } }
 
-  /* **The switch, for a setting that is not a choice among peers** (Ed, 254).
-     `.lanepick` above is the radio, and it says *one of these, or none of them
-     yet* — which is the whole of what a settings choice is, and exactly what
-     🍾's power table is not: each power there is an independent on/off, flipped
-     without touching its neighbour. Drawn as a radio it contradicted its own
-     behaviour, so the design system grows the other control rather than the
-     table borrowing the wrong one.
-
-     The same two rules govern it as govern the radio: no box — *open is said by
-     depth, not by outline*, and a rule round a switch would be competing with
-     the track for the job of saying which position it is in — and the one
-     accent, `--primary`, for *on*, against grey for *nothing is being asked of
-     you*. The track is the mark, the way the dot is the radio's, so the accent
-     lives there and the label stays ink. */
-  .switch {
-    appearance: none; font: inherit; font-size: var(--t-ui); font-weight: 600;
-    display: inline-flex; align-items: center; gap: var(--s2);
-    padding: 0; border: 0; background: none; color: var(--fg); cursor: pointer;
-  }
-  /* 32×16 with a 12px thumb, every number off the spacing scale by way of the
-     step it is built from: the travel is exactly --s4, which is what keeps the
-     thumb's inset equal at both ends without a literal anywhere. */
-  .switch .track {
-    flex: none; position: relative; display: block;
-    width: calc(var(--s5) + var(--s2)); height: var(--s4); border-radius: 999px;
-    background: var(--border);
-    transition: background var(--switch-ms) ease, box-shadow 120ms ease;
-  }
-  .switch .thumb {
-    position: absolute; top: 2px; left: 2px;
-    width: calc(var(--s4) - var(--s1)); height: calc(var(--s4) - var(--s1));
-    border-radius: 50%; background: var(--bg); box-shadow: var(--shadow-sm);
-    transition: transform var(--switch-ms) ease;
-  }
-  .switch .lab { color: var(--muted); transition: color 120ms ease; }
-  .switch[aria-checked="true"] .track { background: var(--primary); }
-  .switch[aria-checked="true"] .thumb { transform: translateX(var(--s4)); }
-  .switch[aria-checked="true"] .lab { color: var(--fg); }
-  /* hover moves toward the accent, as `.lanepick`'s does — on the label, and on
-     the track as a ring inside its own edge, which is the dot's border-colour
-     tell in the shape a track can wear it */
-  .switch:hover .lab { color: var(--primary); }
-  .switch:hover .track { box-shadow: inset 0 0 0 1.5px var(--primary); }
-  .switch[aria-checked="true"]:hover .track { box-shadow: none; }
-  .switch[disabled] { opacity: 0.55; cursor: default; }
-  .switch[disabled]:hover .lab { color: var(--muted); }
+  /* The switch (entry 254) lived here for two days — 🍾's power table was its
+     one user, and Q1103 (b) redrew that as option blocks (CP1): the pattern
+     admits no second control. Removed 2026-08-31 with its user. */
   .switch[disabled]:hover .track { box-shadow: none; }
   /* **Mixed draws the off position, and the label says why** (entry 254). A
      zone is mixed when one of its powers has already been given away on its own
@@ -1345,6 +1443,11 @@
   .field { border-top: 1px solid var(--border); padding-top: var(--s3); }
   .fieldlab { margin-bottom: var(--s2); }
   .propblock + .propblock {
+    border-top: 1px solid var(--border); margin-top: var(--s3); padding-top: var(--s3);
+  }
+  /* Indifferent is a textless option block (CP4, Q1099, 2026-08-31): the same
+     hairline as the propblocks above it, its radio naming the act. */
+  .vinblock {
     border-top: 1px solid var(--border); margin-top: var(--s3); padding-top: var(--s3);
   }
   /* The deadlock card's one raised voice: on every other card a line like this
@@ -1631,6 +1734,13 @@
     margin: 0; padding: var(--s3) 14px var(--s3) 12px;
     border-top: 1px solid var(--border);
   }
+  /* **The rationale gets a step more air** (Ed's QA, 2026-08-30: *always too
+     close to the elements above and below*). On the editing card the row
+     under the hairline takes `--s5` top and bottom; on the composer, whose
+     rationale is its own box, the same `--s5` as margin — which collapses
+     with the neighbours' `--s3`, so both sites measure 24px each side. */
+  .lanebox .editlane + .speaker { padding-top: var(--s5); padding-bottom: var(--s5); }
+  .lanebox.whylane { margin: var(--s5) 0; }
   .lanebox .edit-why {
     border: 0; box-shadow: none; padding: 0; min-height: 1.4rem;
     position: relative;
