@@ -726,13 +726,16 @@
      measure column — so it sat off to the left of the tabs it is supposed to
      line up with. The box is `.setrow`'s (setup.css) to the pixel, and
      `.ridein` is the positioned content box the pile hangs off, since an
-     absolutely placed child measures from the padding edge otherwise. */
+     absolutely placed child measures from the padding edge otherwise.
+     `.ridein` sits on the text axis as a `.cpara` does, so the chip takes
+     the same `14px + --s3` gutter correction the band's paragraph tabs and
+     the charter headings take (Ed's QA, 2026-08-31: one tab column). */
   .ridetab {
     box-sizing: border-box; max-width: calc(var(--measure) + 2 * var(--measure-gutter));
     margin: 0 auto; padding: 0 var(--measure-gutter);
   }
   .ridetab .ridein { position: relative; }
-  .ridetab .chipcol { top: calc(-1 * var(--ride-up)); }
+  .ridetab .chipcol { top: calc(-1 * var(--ride-up)); margin-right: calc(14px + var(--s3)); }
   /* **Detached, and in edit mode, it wears the active treatment** (M12: the
      8px on `padding-left` as well as `width`, so the glyph does not move —
      Q1087: one treatment, one meaning; in edit mode the text *is* the open
@@ -743,6 +746,12 @@
     width: 42px; padding-left: 8px; padding-right: 0;
     background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 34%, var(--bg));
   }
+  /* In edit mode the text is the open card, so its tab takes the strip's own
+     tuck-under (`.clausehead .achip`'s -2px): the right edge lands exactly on
+     the card's left edge (Ed, 2026-08-17: every tab's right edge lands on the
+     card's edge). Detached over the prose there is no card edge, and the tab
+     rests on the closed piles' own column instead. */
+  .ridetab.editing .achip[data-tab="text"] { margin-right: -2px; }
   /* In edit mode the pile is drawn as the strip — the pile expanded, the ✒️ 🛡️
      tabs beneath 📝 reachable (Ed's QA, 2026-08-30) — and only the front tab
      wears the active treatment; the power tabs stay 34px, as in any strip. */

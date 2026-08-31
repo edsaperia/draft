@@ -570,6 +570,14 @@ button.cline:hover b { text-decoration: underline; }
    ------------------------------------------------------------------------ */
 .constsec .cpara { position: relative; min-height: 32px; margin: 0 0 var(--s2); }
 .constsec .cpara .chipcol { top: 0; }
+/* A `.cpara` sits on the text axis where a charter `.anch` hangs `--s3`
+   further left of its own text, so the paragraph tabs here take the same
+   correction a charter heading's chipcol takes (system.css, Q897) — without
+   it the band's tab column sat 12px right of the charter's (Ed's QA,
+   2026-08-31: all tabs line up vertically). Direct child and member rows
+   only: the open card's strip hangs off the `.headclause`, which already
+   carries the charter paragraph's own geometry. */
+.constsec .cpara > .chipcol, .constsec .memrow .chipcol { margin-right: calc(14px + var(--s3)); }
 .constsec .cptext { margin: 0; padding-top: 3px; }
 .constsec .cptext b { font-weight: 600; }
 .constsec .cpara.notab { min-height: 0; }
@@ -689,13 +697,17 @@ button.cline:hover b { text-decoration: underline; }
 .constsec .cpara:not(.notab) .memrow.nobody { min-height: 30px; }
 .memrow .chip { font-size: var(--t-micro); }
 
-/* **The card overhangs the text axis** (Ed's QA, 2026-08-18: the tabs were
-   touching the text, and fixing that must not bring back the tab-jump). A
-   paragraph's tab keeps the document's own 14px gutter gap; when the card
-   opens, its box extends 14px further left while its text stays on the
-   document axis — session-view's own model — so the strip lands where the
-   closed tab stood and the active tab still carries under the card edge. */
-.constsec .cpara.open > .setupcard { margin-left: -14px; }
+/* **The card is the decision card's own box** (Ed's QA, 2026-08-31: cards in
+   the central column were different widths — a charter card runs a full
+   measure-gutter past the text on each side, this one ran 14px left and
+   nothing right, so the two tab families sat 12px apart). One box for every
+   card: a gutter each side, exactly the charter `.sugg`'s geometry, while the
+   text stays on the document axis — so the strip, the head and the body all
+   land where a charter card puts them, with no compensation anywhere. */
+.constsec .cpara.open > .setupcard {
+  margin-left: calc(-1 * var(--measure-gutter));
+  margin-right: calc(-1 * var(--measure-gutter));
+}
 
 /* the charter heading at the band's end (Ed, 2026-08-18): a row carrying
    the document's own name. Since backlog 204 the text's 📝 tab is not in
@@ -713,11 +725,6 @@ button.cline:hover b { text-decoration: underline; }
 .composeWhy { display: flex; gap: 10px; align-items: flex-start; margin-top: var(--s3); }
 .composeWhy .av { width: 26px; height: 26px; font-size: 9px; flex: none; margin-top: 8px; }
 .composeWhy .lanebox { flex: 1; }
-
-/* the rule at a composer's head sits exactly on the text axis it stood on
-   (card padding minus the 14px overhang) — the strip is anchored to the
-   headclause and must not move with it, so the compensation is on the text */
-.constsec .cpara.open .setupcard .clausehead .rtext { margin-left: calc(14px - var(--s5)); }
 
 /* headings fold (Ed, 2026-08-19): hidden prose blocks, and the overlay rail
    that carries the prose triangles — outside the contenteditable region, so
@@ -812,13 +819,11 @@ button.cline:hover b { text-decoration: underline; }
 .av.anon .anonav { color: var(--muted); }
 
 /* **One left edge** (Ed's QA, 2026-08-19: on the 📍 card *tab and title and
-   text are misaligned*). The head's text was pulled back onto the document's
-   own axis while the body kept the card's own padding, so every card had its
-   clause ten pixels left of its field — visible on 📍 because that card is
-   nearly all field. The card's padding is now the document overhang itself,
-   and the head needs no compensation to sit where a paragraph sits. */
-.constsec .cpara.open > .setupcard > *:not(.clausehead):not(.chipcol) {
-  margin-left: calc(14px - var(--s5)); }
+   text are misaligned*): head and body both sit on the document's own axis.
+   Since the card's overhang became the full measure-gutter (Ed's QA,
+   2026-08-31: one card width) that is where the card's own padding puts
+   them, and the `14px - var(--s5)` compensations this block and the head's
+   rtext carried are gone with the 14px they undid. */
 
 /* **An emoji is an emoji wherever it sits** (Ed, 2026-08-19: *the ✒️ button
    in the initial titling is correct for emoji buttons, the rest are too
