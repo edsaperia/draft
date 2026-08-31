@@ -144,8 +144,12 @@ foot: [Indifferent] [❄️] [Choose one of the three first ·disabled]   ← no
     <p>✉️ and ❌ head with the pile's avatar-and-name list (the status quo as the card's standing text), price and Founder's sentence beneath; <code>adm:</code> keeps its one-applicant head. Measured today: both doors head with price + sentence.</p>
     <label class="veto"><input type="checkbox"> Veto — leave as built</label><textarea placeholder="Notes (optional)"></textarea></div>
 
-  <div class="item find" data-id="F-E"><span class="id">F-E</span> <strong>One control, one size — OK at two sizes.</strong>
-    <p>The gates' and release cards' OK is set at 11.52px where the charter's OK is 14px (<code>card-audit</code> B6, 14 cards: <span class="k">canjudge, rel:rel-1</span> vs <span class="k">race-claims, quick-knives…</span>). Fix to the type scale's <code>--t-ui</code>.</p>
+  <div class="item find" data-id="F-E"><span class="id">F-E</span> <strong>Commit labels are two sizes, split by surface.</strong>
+    <p>Nothing has been changed — this is a proposed fix. The fact: <strong>every word-carrying commit on a band card renders at 11.52px</strong> while the charter's render at 14px, the type scale's <code>--t-ui</code>. The audit's B6 rule (a button label is <code>--t-ui</code>) flagged only the one label that exists on both surfaces — OK — which is why the first wording read ambiguously; the census then measured the whole split:</p>
+    <div class="evidence">11.52px (band):    OK · ✏️ Propose · 🏛️ Ask all members · ✒️ Take the pen
+                   🛡️ Take the shield · 🏛️ Take your voice · ✏️ Take them · 🍾 Begin
+14px (charter):    OK · ✏️ Submitted · Indifferent</div>
+    <p>Cause, one rule: <code>session-view.html:138</code> — <code>.setupcard .btn:not(.glyphbtn) { font-size: var(--t-cap) }</code> — shrinks every non-glyph button on a band card, overriding <code>.btn</code>'s own <code>--t-ui</code> (system.css:1878). The charter's cards never pass through <code>.setupcard</code>, so they keep 14px. Proposed fix: commit-row labels take <code>--t-ui</code> on both surfaces — scope the page rule away from commit-row buttons. Veto if the band's smaller commits are deliberate.</p>
     <label class="veto"><input type="checkbox"> Veto — leave as built</label><textarea placeholder="Notes (optional)"></textarea></div>
 
   <div class="item find" data-id="F-F"><span class="id">F-F</span> <strong>📧 heads two different cards.</strong>

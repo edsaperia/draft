@@ -29,7 +29,7 @@ The extraction of record for pass 4. Target: SURFACE §9.3 (CP1–CP7, Ed's ruli
 - **F-B CP2 build**: the 16 power cards relabel *Choose this / Chosen* → *Prefer this / Preferred*.
 - **F-C CP4 + CP7 build**: judgment cards gain 🗑️ (clears the selection, closes) and Indifferent moves from the row into a textless option block whose radio reads *Indifferent*.
 - **F-D CP6 build**: ✉️ and ❌ head with the pile's avatar-and-name list; price and sentence beneath.
-- **F-E** one control one size: the gates'/release cards' OK is 11.52px against the charter's 14px (`card-audit` B6, 14 cards). Fix to `--t-ui`.
+- **F-E** commit labels are two sizes, split by surface: **every word-carrying commit on a band card is 11.52px** (`--t-cap` — OK, ✏️ Propose, 🏛️ Ask all members, ✒️/🛡️/🏛️/✏️ Take …, 🍾 Begin) where the charter's are 14px (`--t-ui` — OK, ✏️ Submitted, Indifferent). Cause: `session-view.html:138`, `.setupcard .btn:not(.glyphbtn) { font-size: var(--t-cap) }`, overriding `.btn`'s own `--t-ui` (system.css:1878) on band cards only. Audit B6 saw the OK pair; the census sized the whole split. Fix: commit-row labels take `--t-ui` everywhere — scope the page rule away from `.commitrow` buttons.
 - **F-F** 📧 heads two different cards (myemail, strlogin) — one subject glyph, one meaning (STYLE §1); the stranger's login card needs its own glyph or an exemption (`card-audit` G2).
 - **F-G** two spacing nits off the 4px grid: `.rsub` margin-top 2px (answers·begin), `.choice` margin-left −2px (settled·pace) (`card-audit` S1).
 - Accepted, not a finding: the 2px switch-pass glyph move (P7) — the tuck-under ruling of 2026-08-31 stands.
