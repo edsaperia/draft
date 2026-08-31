@@ -788,16 +788,16 @@
     padding-top: var(--measure-gutter); margin-top: calc(-1 * var(--measure-gutter));
     padding-bottom: 95vh;
   }
-  /* **The card is the decision card's width** (Ed's QA, 2026-08-30): a
-     `.setupcard` spans the measure column from 14px left of it to its right
-     edge, where the prose box is the measure plus a gutter each side. So the
-     outline is a pseudo-element inset to that box — left by gutter − 14,
-     right by the gutter — carrying the shadow and radius; the column's own
-     box and its text do not move. Behind the text by z-index within the
-     column's own stacking context. */
+  /* **The card is the decision card's width** (Ed's QA, 2026-08-30): the
+     outline is a pseudo-element carrying the shadow and radius, so the
+     column's own box and its text do not move; behind the text by z-index
+     within the column's own stacking context. Since every decision card took
+     the full prose box — the measure plus a gutter each side (Ed's QA,
+     2026-08-31: one card width) — the insets it carried for the old 14px
+     overhang are gone and the painted card *is* the prose box. */
   .doc.editing:not(.begun) #prose::before, .doc.editing.begun #charter > .prose::before {
     content: ''; position: absolute; z-index: -1; pointer-events: none;
-    top: 0; bottom: 0; left: calc(var(--measure-gutter) - 14px); right: var(--measure-gutter);
+    top: 0; bottom: 0; left: 0; right: 0;
     box-shadow: var(--shadow-xl); background: var(--bg);
     border-radius: var(--r-md) var(--r-md) 0 0;   /* square at the foot: the card runs off the page, it does not end */
   }
