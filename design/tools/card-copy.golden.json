@@ -29,7 +29,7 @@
     "eyebrow": "",
     "head": "Admissions",
     "lock": "",
-    "body": "Members may propose to invite people to join the membership, and all members must agree 🏛️.Choose thisMembers may propose to invite people to join the membership, and the membership decides ✏️.Choose thisMembers may invite people to join the membership ✒️.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.Choose this",
+    "body": "Members may propose to invite people to join the membership, and all members must agree 🏛️.Choose thisMembers may propose to invite people to join the membership, and the membership decides ✏️.Choose thisMembers may invite people to join the membership ✒️.Choose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.Choose this",
     "options": [
      {
       "set": "admission",
@@ -49,7 +49,7 @@
      {
       "set": "admission",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [],
@@ -78,17 +78,17 @@
     "eyebrow": "",
     "head": "Visibility",
     "lock": "",
-    "body": "Who may read the document besides the members — readers only, never counted. The most private answer wins: one member who wants the document closed closes it.Members onlyNobody outside the membership sees anything at all.Prefer thisAnyone with the linkThe chamber view only, to whoever the link reaches.Prefer thisNobody sees your answer, and you will see nobody else’s until every one of them is in.",
+    "body": "Who may read the document besides the members — readers only, never counted. The most private answer wins: one member who wants the document closed closes it.Only members can see the document.Nobody else sees anything at all.Prefer thisAnyone with the link can read the document.The chamber view only, to whoever the link reaches.Prefer thisNobody sees your answer, and you will see nobody else’s until every one of them is in.",
     "options": [
      {
       "set": "chamber",
       "val": "closed",
-      "label": "Members only"
+      "label": "Only members can see the document."
      },
      {
       "set": "chamber",
       "val": "link",
-      "label": "Anyone with the link"
+      "label": "Anyone with the link can read the document."
      }
     ],
     "inputs": [],
@@ -112,7 +112,7 @@
     ],
     "helpers": [
      "Who may read the document besides the members — readers only, never counted. The most private answer wins: one member who wants the document closed closes it.",
-     "Nobody outside the membership sees anything at all.",
+     "Nobody else sees anything at all.",
      "The chamber view only, to whoever the link reaches."
     ]
    },
@@ -120,7 +120,7 @@
     "eyebrow": "",
     "head": "Applications",
     "lock": "",
-    "body": "Membership is by invitation only.Choose thisAnyone may apply to join — an application is voted on like an invitation.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.Choose this",
+    "body": "Membership is by invitation only.Choose thisAnyone may apply to join — an application is voted on like an invitation.Choose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.Choose this",
     "options": [
      {
       "set": "joinBy",
@@ -135,7 +135,7 @@
      {
       "set": "policyBy",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [],
@@ -164,7 +164,7 @@
     "eyebrow": "",
     "head": "Anonymous Proposals",
     "lock": "",
-    "body": "Nobody who proposes a change is ever named, even after the document is finished.Choose thisNobody who proposes a change is named unless they choose to sign it themselves.Choose thisWhoever proposes a change is named when the document is finished, and not before.Choose thisWhoever proposes a change is named when the document is finished — sooner, if they choose to sign it.Choose thisWhoever proposes a change is named from the moment they propose it.Choose thisIf you choose this yourself, members can end up named without having agreed to it.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so it runs the other way: the document takes the most private answer, and one member who wants to stay unnamed keeps everybody unnamed.Choose this",
+    "body": "Nobody who proposes a change is ever named, even after the document is finished.Choose thisNobody who proposes a change is named unless they choose to sign it themselves.Choose thisWhoever proposes a change is named when the document is finished, and not before.Choose thisWhoever proposes a change is named when the document is finished — sooner, if they choose to sign it.Choose thisWhoever proposes a change is named from the moment they propose it.Choose thisIf you choose this yourself, members can end up named without having agreed to it.The Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so it runs the other way: the document takes the most private answer, and one member who wants to stay unnamed keeps everybody unnamed.Choose this",
     "options": [
      {
       "set": "authorship",
@@ -194,7 +194,7 @@
      {
       "set": "authorship",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [],
@@ -224,7 +224,7 @@
     "eyebrow": "",
     "head": "Proposal Pass Threshold",
     "lock": "",
-    "body": "Uses the Bradley–Terry method to allow for a decision with few votes — read more.Nearly everyone must vote for a change for it to pass90%Choose thisIn a membership of one, nothing can pass at 90% until more members arrive.Most of the membership must vote for a change for it to pass80%Choose thisIn a membership of one, nothing can pass at 80% until more members arrive.A bare majority voting for a change is enough for it to pass60%Choose thisIn a membership of one, the one vote must be for it.A number of my ownChoose thisA membership of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.Choose this",
+    "body": "Uses the Bradley–Terry method to allow for a decision with few votes — read more.Nearly everyone must vote for a change for it to pass90%Choose thisIn a membership of one, nothing can pass at 90% until more members arrive.Most of the membership must vote for a change for it to pass80%Choose thisIn a membership of one, nothing can pass at 80% until more members arrive.A bare majority voting for a change is enough for it to pass60%Choose thisIn a membership of one, the one vote must be for it.A number of my ownChoose thisA membership of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.The Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.Choose this",
     "options": [
      {
       "set": "tClose",
@@ -249,7 +249,7 @@
      {
       "set": "barBy",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [
@@ -321,7 +321,7 @@
     "eyebrow": "",
     "head": "Visibility",
     "lock": "",
-    "body": "Only members can see the document.Choose thisAnyone with the link can read the document.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed.Choose this",
+    "body": "Only members can see the document.Choose thisAnyone with the link can read the document.Choose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed.Choose this",
     "options": [
      {
       "set": "chamber",
@@ -336,7 +336,7 @@
      {
       "set": "chamber",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [],
@@ -365,7 +365,7 @@
     "eyebrow": "",
     "head": "When Does It End?",
     "lock": "",
-    "body": "At a set timeChoose thisThe drafting process has no set end — it runs until too few members are active.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says when they want it to end, and the document takes the latest answer — never being later than any date — so nobody is cut off before they were ready.Choose thisMoving the date is a proposal ✏️ like any other. Taking the end date away altogether needs every member to agree, because with no end date the approval threshold cannot rise, and every change made so far was made under one that did.",
+    "body": "At a set timeChoose thisThe drafting process has no set end — it runs until too few members are active.Choose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says when they want it to end, and the document takes the latest answer — never being later than any date — so nobody is cut off before they were ready.Choose thisMoving the date is a proposal ✏️ like any other. Taking the end date away altogether needs every member to agree, because with no end date the approval threshold cannot rise, and every change made so far was made under one that did.",
     "options": [
      {
       "set": "ending",
@@ -380,7 +380,7 @@
      {
       "set": "ending",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [
@@ -576,7 +576,7 @@
     "eyebrow": "",
     "head": "When Are Votes Revealed?",
     "lock": "",
-    "body": "Votes are never revealed.Choose thisVotes are revealed when the document is finished, and not before.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.Choose this",
+    "body": "Votes are never revealed.Choose thisVotes are revealed when the document is finished, and not before.Choose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.Choose this",
     "options": [
      {
       "set": "judgments",
@@ -591,7 +591,7 @@
      {
       "set": "judgments",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [],
@@ -620,7 +620,7 @@
     "eyebrow": "",
     "head": "Do Memberships Lapse?",
     "lock": "",
-    "body": "Nobody ever drops out of the count, however long they are away.Choose thisThey lapseChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.Choose this",
+    "body": "Nobody ever drops out of the count, however long they are away.Choose thisThey lapseChoose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.Choose this",
     "options": [
      {
       "set": "lapse",
@@ -635,7 +635,7 @@
      {
       "set": "lapse",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [
@@ -766,7 +766,7 @@
     "eyebrow": "",
     "head": "Quorum",
     "lock": "",
-    "body": "Asked asThe quorum is a share of the membership — the number moves as members join and leave.Choose thisThe quorum is a fixed number of members, however the membership changes.Choose thisThe numberI set itChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest.Choose this",
+    "body": "Asked asThe quorum is a share of the membership — the number moves as members join and leave.Choose thisThe quorum is a fixed number of members, however the membership changes.Choose thisThe numberI set itChoose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest.Choose this",
     "options": [
      {
       "set": "quorumForm",
@@ -786,7 +786,7 @@
      {
       "set": "quorumBy",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [
@@ -821,7 +821,7 @@
     "eyebrow": "",
     "head": "Proposal Rate",
     "lock": "",
-    "body": "I set itChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most generous they would accept, and the document takes it.Choose this",
+    "body": "I set itChoose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most generous they would accept, and the document takes it.Choose this",
     "options": [
      {
       "set": "rateBy",
@@ -831,7 +831,7 @@
      {
       "set": "rateBy",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [
@@ -873,7 +873,7 @@
     "eyebrow": "",
     "head": "How Is a Member Removed?",
     "lock": "",
-    "body": "Removing a member needs every member to agree, including them 🏛️.Choose thisRemoving a member needs every other member to agree 🏛️ — they see the proposal, and it is decided without them.Choose thisMembers may propose to remove a member, and the membership decides ✏️.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Choose this",
+    "body": "Removing a member needs every member to agree, including them 🏛️.Choose thisRemoving a member needs every other member to agree 🏛️ — they see the proposal, and it is decided without them.Choose thisMembers may propose to remove a member, and the membership decides ✏️.Choose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Choose this",
     "options": [
      {
       "set": "removal",
@@ -893,7 +893,7 @@
      {
       "set": "removal",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [],
@@ -3155,7 +3155,7 @@
     "eyebrow": "",
     "head": "Admissions",
     "lock": "",
-    "body": "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Members may propose to invite people to join the membership, and all members must agree 🏛️.Choose thisMembers may propose to invite people to join the membership, and the membership decides ✏️.Choose thisMembers may invite people to join the membership ✒️.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.Chosen",
+    "body": "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Members may propose to invite people to join the membership, and all members must agree 🏛️.Choose thisMembers may propose to invite people to join the membership, and the membership decides ✏️.Choose thisMembers may invite people to join the membership ✒️.Choose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.Chosen",
     "options": [
      {
       "set": "admission",
@@ -3175,7 +3175,7 @@
      {
       "set": "admission",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [],
@@ -3205,7 +3205,7 @@
     "eyebrow": "",
     "head": "Applications",
     "lock": "",
-    "body": "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Membership is by invitation only.Choose thisAnyone may apply to join — an application is voted on like an invitation.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.Chosen",
+    "body": "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Membership is by invitation only.Choose thisAnyone may apply to join — an application is voted on like an invitation.Choose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.Chosen",
     "options": [
      {
       "set": "joinBy",
@@ -3220,7 +3220,7 @@
      {
       "set": "policyBy",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [],
@@ -3250,7 +3250,7 @@
     "eyebrow": "",
     "head": "Proposal Pass Threshold",
     "lock": "",
-    "body": "Uses the Bradley–Terry method to allow for a decision with few votes — read more.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Nearly everyone must vote for a change for it to pass90%Choose thisIn a membership of one, nothing can pass at 90% until more members arrive.Most of the membership must vote for a change for it to pass80%Choose thisIn a membership of one, nothing can pass at 80% until more members arrive.A bare majority voting for a change is enough for it to pass60%Choose thisIn a membership of one, the one vote must be for it.A number of my ownChoose thisA membership of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.Chosen",
+    "body": "Uses the Bradley–Terry method to allow for a decision with few votes — read more.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Nearly everyone must vote for a change for it to pass90%Choose thisIn a membership of one, nothing can pass at 90% until more members arrive.Most of the membership must vote for a change for it to pass80%Choose thisIn a membership of one, nothing can pass at 80% until more members arrive.A bare majority voting for a change is enough for it to pass60%Choose thisIn a membership of one, the one vote must be for it.A number of my ownChoose thisA membership of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.The Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.Chosen",
     "options": [
      {
       "set": "tClose",
@@ -3275,7 +3275,7 @@
      {
       "set": "barBy",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [
@@ -3315,7 +3315,7 @@
     "eyebrow": "",
     "head": "Visibility",
     "lock": "",
-    "body": "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Only members can see the document.Choose thisAnyone with the link can read the document.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed.Chosen",
+    "body": "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Only members can see the document.Choose thisAnyone with the link can read the document.Choose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed.Chosen",
     "options": [
      {
       "set": "chamber",
@@ -3330,7 +3330,7 @@
      {
       "set": "chamber",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [],
@@ -3360,7 +3360,7 @@
     "eyebrow": "",
     "head": "When Does It End?",
     "lock": "",
-    "body": "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.At a set timeChoose thisThe drafting process has no set end — it runs until too few members are active.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says when they want it to end, and the document takes the latest answer — never being later than any date — so nobody is cut off before they were ready.ChosenMoving the date is a proposal ✏️ like any other. Taking the end date away altogether needs every member to agree, because with no end date the approval threshold cannot rise, and every change made so far was made under one that did.",
+    "body": "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.At a set timeChoose thisThe drafting process has no set end — it runs until too few members are active.Choose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says when they want it to end, and the document takes the latest answer — never being later than any date — so nobody is cut off before they were ready.ChosenMoving the date is a proposal ✏️ like any other. Taking the end date away altogether needs every member to agree, because with no end date the approval threshold cannot rise, and every change made so far was made under one that did.",
     "options": [
      {
       "set": "ending",
@@ -3375,7 +3375,7 @@
      {
       "set": "ending",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [
@@ -3411,7 +3411,7 @@
     "eyebrow": "",
     "head": "Do Memberships Lapse?",
     "lock": "",
-    "body": "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Nobody ever drops out of the count, however long they are away.Choose thisThey lapseChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.Chosen",
+    "body": "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Nobody ever drops out of the count, however long they are away.Choose thisThey lapseChoose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.Chosen",
     "options": [
      {
       "set": "lapse",
@@ -3426,7 +3426,7 @@
      {
       "set": "lapse",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [
@@ -3491,7 +3491,7 @@
     "eyebrow": "",
     "head": "Quorum",
     "lock": "",
-    "body": "Asked asThe quorum is a share of the membership — the number moves as members join and leave.Choose thisThe quorum is a fixed number of members, however the membership changes.Choose thisThe numberAsked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.I set itChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest.Chosen",
+    "body": "Asked asThe quorum is a share of the membership — the number moves as members join and leave.Choose thisThe quorum is a fixed number of members, however the membership changes.Choose thisThe numberAsked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.I set itChoose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest.Chosen",
     "options": [
      {
       "set": "quorumForm",
@@ -3511,7 +3511,7 @@
      {
       "set": "quorumBy",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [
@@ -3547,7 +3547,7 @@
     "eyebrow": "",
     "head": "Proposal Rate",
     "lock": "",
-    "body": "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Until it is settled everybody gets the standard rate. Picking a value here takes it back.I set itChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most generous they would accept, and the document takes it.Chosen",
+    "body": "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Until it is settled everybody gets the standard rate. Picking a value here takes it back.I set itChoose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most generous they would accept, and the document takes it.Chosen",
     "options": [
      {
       "set": "rateBy",
@@ -3557,7 +3557,7 @@
      {
       "set": "rateBy",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [
@@ -3600,7 +3600,7 @@
     "eyebrow": "",
     "head": "How Is a Member Removed?",
     "lock": "",
-    "body": "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Removing a member needs every member to agree, including them 🏛️.Choose thisRemoving a member needs every other member to agree 🏛️ — they see the proposal, and it is decided without them.Choose thisMembers may propose to remove a member, and the membership decides ✏️.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Chosen",
+    "body": "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Removing a member needs every member to agree, including them 🏛️.Choose thisRemoving a member needs every other member to agree 🏛️ — they see the proposal, and it is decided without them.Choose thisMembers may propose to remove a member, and the membership decides ✏️.Choose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Chosen",
     "options": [
      {
       "set": "removal",
@@ -3620,7 +3620,7 @@
      {
       "set": "removal",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [],
@@ -3761,7 +3761,7 @@
     "eyebrow": "",
     "head": "Admissions",
     "lock": "",
-    "body": "Members may propose to invite people to join the membership, and all members must agree 🏛️.Choose thisMembers may propose to invite people to join the membership, and the membership decides ✏️.Choose thisMembers may invite people to join the membership ✒️.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.Choose this",
+    "body": "Members may propose to invite people to join the membership, and all members must agree 🏛️.Choose thisMembers may propose to invite people to join the membership, and the membership decides ✏️.Choose thisMembers may invite people to join the membership ✒️.Choose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.Choose this",
     "options": [
      {
       "set": "admission",
@@ -3781,7 +3781,7 @@
      {
       "set": "admission",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [],
@@ -3810,7 +3810,7 @@
     "eyebrow": "",
     "head": "Applications",
     "lock": "",
-    "body": "Membership is by invitation only.Choose thisAnyone may apply to join — an application is voted on like an invitation.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.Choose this",
+    "body": "Membership is by invitation only.Choose thisAnyone may apply to join — an application is voted on like an invitation.Choose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.Choose this",
     "options": [
      {
       "set": "joinBy",
@@ -3825,7 +3825,7 @@
      {
       "set": "policyBy",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [],
@@ -3854,7 +3854,7 @@
     "eyebrow": "",
     "head": "Anonymous Proposals",
     "lock": "",
-    "body": "Nobody who proposes a change is ever named, even after the document is finished.Choose thisNobody who proposes a change is named unless they choose to sign it themselves.Choose thisWhoever proposes a change is named when the document is finished, and not before.Choose thisWhoever proposes a change is named when the document is finished — sooner, if they choose to sign it.Choose thisWhoever proposes a change is named from the moment they propose it.Choose thisIf you choose this yourself, members can end up named without having agreed to it.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so it runs the other way: the document takes the most private answer, and one member who wants to stay unnamed keeps everybody unnamed.Choose this",
+    "body": "Nobody who proposes a change is ever named, even after the document is finished.Choose thisNobody who proposes a change is named unless they choose to sign it themselves.Choose thisWhoever proposes a change is named when the document is finished, and not before.Choose thisWhoever proposes a change is named when the document is finished — sooner, if they choose to sign it.Choose thisWhoever proposes a change is named from the moment they propose it.Choose thisIf you choose this yourself, members can end up named without having agreed to it.The Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so it runs the other way: the document takes the most private answer, and one member who wants to stay unnamed keeps everybody unnamed.Choose this",
     "options": [
      {
       "set": "authorship",
@@ -3884,7 +3884,7 @@
      {
       "set": "authorship",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [],
@@ -3914,7 +3914,7 @@
     "eyebrow": "",
     "head": "Proposal Pass Threshold",
     "lock": "",
-    "body": "Uses the Bradley–Terry method to allow for a decision with few votes — read more.Nearly everyone must vote for a change for it to pass90%Choose thisIn a membership of one, nothing can pass at 90% until more members arrive.Most of the membership must vote for a change for it to pass80%Choose thisIn a membership of one, nothing can pass at 80% until more members arrive.A bare majority voting for a change is enough for it to pass60%Choose thisIn a membership of one, the one vote must be for it.A number of my ownChoose thisA membership of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.Choose this",
+    "body": "Uses the Bradley–Terry method to allow for a decision with few votes — read more.Nearly everyone must vote for a change for it to pass90%Choose thisIn a membership of one, nothing can pass at 90% until more members arrive.Most of the membership must vote for a change for it to pass80%Choose thisIn a membership of one, nothing can pass at 80% until more members arrive.A bare majority voting for a change is enough for it to pass60%Choose thisIn a membership of one, the one vote must be for it.A number of my ownChoose thisA membership of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.The Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.Choose this",
     "options": [
      {
       "set": "tClose",
@@ -3939,7 +3939,7 @@
      {
       "set": "barBy",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [
@@ -4007,7 +4007,7 @@
     "eyebrow": "",
     "head": "Visibility",
     "lock": "",
-    "body": "Only members can see the document.Choose thisAnyone with the link can read the document.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed.Choose this",
+    "body": "Only members can see the document.Choose thisAnyone with the link can read the document.Choose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed.Choose this",
     "options": [
      {
       "set": "chamber",
@@ -4022,7 +4022,7 @@
      {
       "set": "chamber",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [],
@@ -4051,7 +4051,7 @@
     "eyebrow": "",
     "head": "When Does It End?",
     "lock": "",
-    "body": "At a set timeChoose thisThe drafting process has no set end — it runs until too few members are active.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says when they want it to end, and the document takes the latest answer — never being later than any date — so nobody is cut off before they were ready.Choose thisMoving the date is a proposal ✏️ like any other. Taking the end date away altogether needs every member to agree, because with no end date the approval threshold cannot rise, and every change made so far was made under one that did.",
+    "body": "At a set timeChoose thisThe drafting process has no set end — it runs until too few members are active.Choose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says when they want it to end, and the document takes the latest answer — never being later than any date — so nobody is cut off before they were ready.Choose thisMoving the date is a proposal ✏️ like any other. Taking the end date away altogether needs every member to agree, because with no end date the approval threshold cannot rise, and every change made so far was made under one that did.",
     "options": [
      {
       "set": "ending",
@@ -4066,7 +4066,7 @@
      {
       "set": "ending",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [
@@ -4261,7 +4261,7 @@
     "eyebrow": "",
     "head": "When Are Votes Revealed?",
     "lock": "",
-    "body": "Votes are never revealed.Choose thisVotes are revealed when the document is finished, and not before.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.Choose this",
+    "body": "Votes are never revealed.Choose thisVotes are revealed when the document is finished, and not before.Choose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.Choose this",
     "options": [
      {
       "set": "judgments",
@@ -4276,7 +4276,7 @@
      {
       "set": "judgments",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [],
@@ -4305,7 +4305,7 @@
     "eyebrow": "",
     "head": "Do Memberships Lapse?",
     "lock": "",
-    "body": "Nobody ever drops out of the count, however long they are away.Choose thisThey lapseChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.Choose this",
+    "body": "Nobody ever drops out of the count, however long they are away.Choose thisThey lapseChoose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.Choose this",
     "options": [
      {
       "set": "lapse",
@@ -4320,7 +4320,7 @@
      {
       "set": "lapse",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [
@@ -4451,7 +4451,7 @@
     "eyebrow": "",
     "head": "Quorum",
     "lock": "",
-    "body": "Asked asThe quorum is a share of the membership — the number moves as members join and leave.Choose thisThe quorum is a fixed number of members, however the membership changes.Choose thisThe numberI set itChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest.Choose this",
+    "body": "Asked asThe quorum is a share of the membership — the number moves as members join and leave.Choose thisThe quorum is a fixed number of members, however the membership changes.Choose thisThe numberI set itChoose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest.Choose this",
     "options": [
      {
       "set": "quorumForm",
@@ -4471,7 +4471,7 @@
      {
       "set": "quorumBy",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [
@@ -4506,7 +4506,7 @@
     "eyebrow": "",
     "head": "Proposal Rate",
     "lock": "",
-    "body": "I set itChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most generous they would accept, and the document takes it.Choose this",
+    "body": "I set itChoose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most generous they would accept, and the document takes it.Choose this",
     "options": [
      {
       "set": "rateBy",
@@ -4516,7 +4516,7 @@
      {
       "set": "rateBy",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [
@@ -4558,7 +4558,7 @@
     "eyebrow": "",
     "head": "How Is a Member Removed?",
     "lock": "",
-    "body": "Removing a member needs every member to agree, including them 🏛️.Choose thisRemoving a member needs every other member to agree 🏛️ — they see the proposal, and it is decided without them.Choose thisMembers may propose to remove a member, and the membership decides ✏️.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Choose this",
+    "body": "Removing a member needs every member to agree, including them 🏛️.Choose thisRemoving a member needs every other member to agree 🏛️ — they see the proposal, and it is decided without them.Choose thisMembers may propose to remove a member, and the membership decides ✏️.Choose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Choose this",
     "options": [
      {
       "set": "removal",
@@ -4578,7 +4578,7 @@
      {
       "set": "removal",
       "val": "roster",
-      "label": "Let the membership decide this rule themselves"
+      "label": "The Founder is letting the membership decide this rule themselves."
      }
     ],
     "inputs": [],
@@ -4718,16 +4718,16 @@
     "eyebrow": "",
     "head": "Members may propose to invite people to join the membership, and all members must agree 🏛️.",
     "lock": "The members decide.",
-    "body": "Bringing somebody in is a proposal the membership decides at the approval threshold.Prefer thisAny member may invite on their own word.Prefer thisWhat the membership saidThe members decide.Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.All members must approve every new member joiningAny member can invite new people to joinWhat everyone asked for, without names.Answered3 of 3The document takes the dearestAll members must approve every new member joining",
+    "body": "Members may propose to invite people to join the membership, and the membership decides ✏️.Prefer thisMembers may invite people to join the membership ✒️.Prefer thisWhat the membership saidThe members decide.Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.All membersAny memberWhat everyone asked for, without names.Answered3 of 3The document takes the dearestMembers may propose to invite people to join the membership, and all members must agree 🏛️.",
     "options": [
      {
       "set": null,
-      "val": "Members must vote on every new member joining",
+      "val": "Members may propose to invite people to join the membership, and the membership decides ✏️.",
       "label": "Prefer this"
      },
      {
       "set": null,
-      "val": "Any member can invite new people to join",
+      "val": "Members may invite people to join the membership ✒️.",
       "label": "Prefer this"
      }
     ],
@@ -4918,7 +4918,7 @@
     "eyebrow": "",
     "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "Open — the constitution is settled.",
-    "body": "The Founder began the document, granting every member the right to vote on what is proposed.A vote counts towards quorum, and whether your name goes on it is one of the rules being decided. Settling those afterwards would change what the vote meant, so they come first.Open — the constitution is settled.Nothing is being asked here — OK files it and it leaves your queue.",
+    "body": "The Founder began the document, granting every member the right to vote on what is proposed.A vote counts towards quorum, and whether your name goes on it is one of the rules being decided. Settling those afterwards would change what the vote meant, so they come first.Open — the constitution is settled.Nothing is being asked here.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -4939,14 +4939,14 @@
      "The Founder began the document, granting every member the right to vote on what is proposed.",
      "A vote counts towards quorum, and whether your name goes on it is one of the rules being decided. Settling those afterwards would change what the vote meant, so they come first.",
      "Open — the constitution is settled.",
-     "Nothing is being asked here — OK files it and it leaves your queue."
+     "Nothing is being asked here."
     ]
    },
    "canpropose": {
     "eyebrow": "",
     "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "Open — members can propose as soon as they arrive.",
-    "body": "The Founder began the document, granting every member the right to propose changes to it.Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.Open — members can propose as soon as they arrive.You hold 5 ✏️s to propose with — OK puts them in your wallet.",
+    "body": "The Founder began the document, granting every member the right to propose changes to it.Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.Open — members can propose as soon as they arrive.You hold 5 ✏️s to propose with.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -4967,7 +4967,7 @@
      "The Founder began the document, granting every member the right to propose changes to it.",
      "Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.",
      "Open — members can propose as soon as they arrive.",
-     "You hold 5 ✏️s to propose with — OK puts them in your wallet."
+     "You hold 5 ✏️s to propose with."
     ]
    },
    "chamber": {
@@ -5044,7 +5044,7 @@
     "eyebrow": "",
     "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "",
-    "body": "The Founder invited you into the membership, and Constitutional Proposals came with it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it.OK puts 🏛️ in your wallet.",
+    "body": "The Founder invited you into the membership, and Constitutional Proposals came with it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5063,8 +5063,7 @@
     ],
     "helpers": [
      "The Founder invited you into the membership, and Constitutional Proposals came with it.",
-     "All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it.",
-     "OK puts 🏛️ in your wallet."
+     "All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it."
     ]
    },
    "hat": {
@@ -6243,16 +6242,16 @@
     "eyebrow": "",
     "head": "Removing a member needs every member to agree, including them 🏛️.",
     "lock": "The members decide.",
-    "body": "Removing a member needs every other member to agree.Prefer thisA member is removed by a proposal, voted on like any other.Prefer thisWhat the membership saidThe members decide.Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Answered3 of 3The document takes—",
+    "body": "Removing a member needs every other member to agree 🏛️ — they see the proposal, and it is decided without them.Prefer thisMembers may propose to remove a member, and the membership decides ✏️.Prefer thisWhat the membership saidThe members decide.Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Answered3 of 3The document takes—",
     "options": [
      {
       "set": null,
-      "val": "All other members must approve removing a member",
+      "val": "Removing a member needs every other member to agree 🏛️ — they see the proposal, and it is decided without them.",
       "label": "Prefer this"
      },
      {
       "set": null,
-      "val": "Members must vote on removing a member",
+      "val": "Members may propose to remove a member, and the membership decides ✏️.",
       "label": "Prefer this"
      }
     ],
@@ -6559,16 +6558,16 @@
     "eyebrow": "",
     "head": "Members may propose to invite people to join the membership, and all members must agree 🏛️.",
     "lock": "The members decide.",
-    "body": "Bringing somebody in is a proposal the membership decides at the approval threshold.Prefer thisAny member may invite on their own word.Prefer thisWhat the membership saidThe members decide.Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.All members must approve every new member joiningAny member can invite new people to joinWhat everyone asked for, without names.Answered3 of 3The document takes the dearestAll members must approve every new member joining",
+    "body": "Members may propose to invite people to join the membership, and the membership decides ✏️.Prefer thisMembers may invite people to join the membership ✒️.Prefer thisWhat the membership saidThe members decide.Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.All membersAny memberWhat everyone asked for, without names.Answered3 of 3The document takes the dearestMembers may propose to invite people to join the membership, and all members must agree 🏛️.",
     "options": [
      {
       "set": null,
-      "val": "Members must vote on every new member joining",
+      "val": "Members may propose to invite people to join the membership, and the membership decides ✏️.",
       "label": "Prefer this"
      },
      {
       "set": null,
-      "val": "Any member can invite new people to join",
+      "val": "Members may invite people to join the membership ✒️.",
       "label": "Prefer this"
      }
     ],
@@ -6758,7 +6757,7 @@
     "eyebrow": "",
     "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "Open — the constitution is settled.",
-    "body": "The Founder began the document, granting every member the right to vote on what is proposed.A vote counts towards quorum, and whether your name goes on it is one of the rules being decided. Settling those afterwards would change what the vote meant, so they come first.Open — the constitution is settled.Nothing is being asked here — OK files it and it leaves your queue.",
+    "body": "The Founder began the document, granting every member the right to vote on what is proposed.A vote counts towards quorum, and whether your name goes on it is one of the rules being decided. Settling those afterwards would change what the vote meant, so they come first.Open — the constitution is settled.Nothing is being asked here.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -6778,14 +6777,14 @@
      "The Founder began the document, granting every member the right to vote on what is proposed.",
      "A vote counts towards quorum, and whether your name goes on it is one of the rules being decided. Settling those afterwards would change what the vote meant, so they come first.",
      "Open — the constitution is settled.",
-     "Nothing is being asked here — OK files it and it leaves your queue."
+     "Nothing is being asked here."
     ]
    },
    "canpropose": {
     "eyebrow": "",
     "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "Open — members can propose as soon as they arrive.",
-    "body": "The Founder began the document, granting every member the right to propose changes to it.Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.Open — members can propose as soon as they arrive.You hold 5 ✏️s to propose with — OK puts them in your wallet.",
+    "body": "The Founder began the document, granting every member the right to propose changes to it.Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.Open — members can propose as soon as they arrive.You hold 5 ✏️s to propose with.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -6805,7 +6804,7 @@
      "The Founder began the document, granting every member the right to propose changes to it.",
      "Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.",
      "Open — members can propose as soon as they arrive.",
-     "You hold 5 ✏️s to propose with — OK puts them in your wallet."
+     "You hold 5 ✏️s to propose with."
     ]
    },
    "chamber": {
@@ -6892,7 +6891,7 @@
     "eyebrow": "",
     "head": "Founder ActionsFounded by AB Ash Bellamy 👑 at HH:MM on D Month YYYY.",
     "lock": "",
-    "body": "You founded this document, and Founder Actions came with it.Founder Actions are yours: you can change this document’s rules yourself, without asking anybody. You can hand them over later.OK puts ✒️ in your wallet.",
+    "body": "You founded this document, and Founder Actions came with it.Founder Actions are yours: you can change this document’s rules yourself, without asking anybody. You can hand them over later.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -6909,15 +6908,14 @@
     ],
     "helpers": [
      "You founded this document, and Founder Actions came with it.",
-     "Founder Actions are yours: you can change this document’s rules yourself, without asking anybody. You can hand them over later.",
-     "OK puts ✒️ in your wallet."
+     "Founder Actions are yours: you can change this document’s rules yourself, without asking anybody. You can hand them over later."
     ]
    },
    "grant-shield": {
     "eyebrow": "",
     "head": "Founder VetoFounded by AB Ash Bellamy 👑 at HH:MM on D Month YYYY.",
     "lock": "",
-    "body": "You founded this document, and the Founder Veto came with it.The Founder Veto is yours: a change other people agree on waits until you accept it. You can hand it over later.OK puts 🛡️ in your wallet.",
+    "body": "You founded this document, and the Founder Veto came with it.The Founder Veto is yours: a change other people agree on waits until you accept it. You can hand it over later.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -6934,15 +6932,14 @@
     ],
     "helpers": [
      "You founded this document, and the Founder Veto came with it.",
-     "The Founder Veto is yours: a change other people agree on waits until you accept it. You can hand it over later.",
-     "OK puts 🛡️ in your wallet."
+     "The Founder Veto is yours: a change other people agree on waits until you accept it. You can hand it over later."
     ]
    },
    "grant-voice": {
     "eyebrow": "",
     "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "",
-    "body": "You founded this document, and Constitutional Proposals came with it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it.OK puts 🏛️ in your wallet.",
+    "body": "You founded this document, and Constitutional Proposals came with it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -6960,8 +6957,7 @@
     ],
     "helpers": [
      "You founded this document, and Constitutional Proposals came with it.",
-     "All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it.",
-     "OK puts 🏛️ in your wallet."
+     "All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it."
     ]
    },
    "hat": {
@@ -8350,16 +8346,16 @@
     "eyebrow": "",
     "head": "Removing a member needs every member to agree, including them 🏛️.",
     "lock": "The members decide.",
-    "body": "Removing a member needs every other member to agree.Prefer thisA member is removed by a proposal, voted on like any other.Prefer thisWhat the membership saidThe members decide.Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Answered3 of 3The document takes—",
+    "body": "Removing a member needs every other member to agree 🏛️ — they see the proposal, and it is decided without them.Prefer thisMembers may propose to remove a member, and the membership decides ✏️.Prefer thisWhat the membership saidThe members decide.Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Answered3 of 3The document takes—",
     "options": [
      {
       "set": null,
-      "val": "All other members must approve removing a member",
+      "val": "Removing a member needs every other member to agree 🏛️ — they see the proposal, and it is decided without them.",
       "label": "Prefer this"
      },
      {
       "set": null,
-      "val": "Members must vote on removing a member",
+      "val": "Members may propose to remove a member, and the membership decides ✏️.",
       "label": "Prefer this"
      }
     ],

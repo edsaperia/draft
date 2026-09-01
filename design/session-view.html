@@ -6840,7 +6840,7 @@
         // they already hold, and the press re-fires `pendingGrant`'s pencil
         // storm into a full wallet. A card that asks nothing commits nothing
         // (SURFACE §9.1, CP9).
-        return cardHtml(c, ctx, grantProv(c) + gateBody(c) + grantNote(c),
+        return cardHtml(c, ctx, grantProv(c) + gateBody(c, acked(c.k)) + grantNote(c),
           acked(c.k) ? binBtn()
             : binBtn() +
               '<button class="btn btn-approve"' +
@@ -10725,8 +10725,11 @@
   const grantNote = (c) => {
     if (c.k !== 'canpropose' || !c.open() || !viewerIsMember()) return '';
     const nHeld = cs && cs.isRemote && cs.v ? Math.floor(cs.v.wallet || 0) : (SESSION.editsHeld || 0);
+    // the OK half only while the commit row still draws one (`gateNote`'s own
+    // rule): acknowledged, the count is the whole of what is true
     return '<p class="setnote grantline">You hold <b>' + nHeld + ' ✏️' + (nHeld === 1 ? '' : 's') +
-      '</b> to propose with — <b>OK</b> puts them in your wallet.</p>';
+      '</b> to propose with' +
+      (acked(c.k) ? '.' : ' — <b>OK</b> puts them in your wallet.') + '</p>';
   };
   // the grant's flight, after the render that took its card away
   function launchGrant() {

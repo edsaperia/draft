@@ -1098,14 +1098,21 @@ window.SETUP = (function () {
   // take-verbs having gone with Ed's commit ruling of 2026-09-01 (Q1121, T44);
   // the power's glyph stays in the sentence, which is a description and not a
   // press.
-  const gateNote = (c) => {
+  // …and it names **OK** only while there is an OK to press. Since the gate
+  // commit row is `acked(k) ? 🗑️ alone : 🗑️ + OK` (CP9), an acknowledged gate
+  // — every gate on the founder's own surface, from 🍾, under SURFACE Y27 —
+  // drew a card whose body pointed at a button that was not on it. `taken` is
+  // the caller's `acked(k)`; where it is true the sentence stops at what is
+  // true, and no new words are introduced to say it.
+  const gateNote = (c, taken) => {
     if (!c.open()) return 'It comes back to you the moment it opens.';
-    if (!c.grants) return 'Nothing is being asked here — <b>OK</b> files it and it leaves your queue.';
-    return c.k === 'canpropose' ? '' : '<b>OK</b> puts ' + c.grants + ' in your wallet.';
+    if (!c.grants) return 'Nothing is being asked here' +
+      (taken ? '.' : ' — <b>OK</b> files it and it leaves your queue.');
+    return (taken || c.k === 'canpropose') ? '' : '<b>OK</b> puts ' + c.grants + ' in your wallet.';
   };
-  const gateBody = (c) => {
+  const gateBody = (c, taken) => {
     const open = c.open();
-    const note = gateNote(c);
+    const note = gateNote(c, taken);
     return '<p class="why">' + c.why + '</p>' +
       // an open grant states no lockline (Ed, 2026-08-31): the wallet sentence
       // below is the whole ask, and *You hold Founder Actions* restated a state

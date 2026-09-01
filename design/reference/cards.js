@@ -556,6 +556,69 @@ window.CARDS = (function () {
       '<span class="rsub">the clause changed after you voted</span></div>' +
       '<div class="rtext">' + esc(s.wasGround) + '</div></div>');
 
+  // ---- the clause sentences, one home -------------------------------------
+  // **One value, one sentence, the document's own** (Q1112 (b), Ed 2026-09-01:
+  // *we should try and use clause sentences whenever we can*). Q1109 put the
+  // clause sentence on the founder's option blocks and left the T41 gradient
+  // labels standing in the value's other homes — the member's blind ladder,
+  // the composer's lane, the settled strip, the readback — so one value wore
+  // two wordings depending on who was reading. Every one of those homes now
+  // reads this table.
+  //
+  // It lives here rather than in session-view's inline script because
+  // setup.js's answer ladders are one of the homes and setup.js loads first
+  // (constitution.js → cards.js → setup.js → session.js → inline); a helper
+  // belongs in the shared file its callers share, and a second copy of a
+  // sentence is exactly the drift this ends. It is deliberately **not** in
+  // `@draft/constitution` beside `meaningOf`: no architecture without a
+  // second consumer (survey item 10, undecided), so it stays page-side until
+  // the closing record wants the sentences.
+  //
+  // A value whose sentence depends on the room takes a function of one
+  // context object, never of module state — this file has none.
+  const RULES = {
+    admission: {
+      assembly: 'Members may propose to invite people to join the membership, and all members must agree 🏛️.',
+      proposal: 'Members may propose to invite people to join the membership, and the membership decides ✏️.',
+      pen: 'Members may invite people to join the membership ✒️.' },
+    removal: {
+      consent: 'Removing a member needs every member to agree, including them 🏛️.',
+      assembly: 'Removing a member needs every other member to agree 🏛️ — they see the proposal, and it is decided without them.',
+      proposal: 'Members may propose to remove a member, and the membership decides ✏️.' },
+    authorship: {
+      anonymous: 'Nobody who proposes a change is ever named, even after the document is finished.',
+      anonymousElective: 'Nobody who proposes a change is named unless they choose to sign it themselves.',
+      sealed: 'Whoever proposes a change is named when the document is finished, and not before.',
+      sealedElective: 'Whoever proposes a change is named when the document is finished — sooner, if they choose to sign it.',
+      public: 'Whoever proposes a change is named from the moment they propose it.' },
+    judgments: {
+      never: 'Votes are never revealed.',
+      after: 'Votes are revealed when the document is finished, and not before.' },
+    // **Foundership carries a read, whatever 🌍 says** (Ed, 2026-08-22), said
+    // only where it is a deviation: a founder who is a member is covered by
+    // the sentence already, and under link or public everybody reads anyway.
+    chamber: {
+      closed: (x) => 'Only members can see the document.' +
+        (x.founderIsMember ? '' : ' The Founder can always read it.'),
+      link: () => 'Anyone with the link can read the document.',
+      public: () => 'The document is public — listed and readable by anyone.' },
+    // 🤝 is one switch; what an application costs is 🪪's sentence (entry 94)
+    applications: {
+      invite: () => 'Membership is by invitation only.',
+      apply: (x) => (x.admissionPrice === 'pen' ? 'Anyone with the link joins on arrival.'
+        : 'Anyone may apply to join — an application is voted on like an invitation.') },
+  };
+  // the sentence a value would set, in this room. `x` carries only what a
+  // sentence names: `founderIsMember`, `admissionPrice`.
+  const clauseOf = (k, v, x) => {
+    const t = RULES[k]; if (!t) return '';
+    const s = t[v];
+    return typeof s === 'function' ? s(x || {}) : (s || '');
+  };
+  // every value of a setting, in the table's own order, as `[value, sentence]`
+  const clauseRungs = (k, x) => Object.keys(RULES[k] || {})
+    .map((v) => [v, clauseOf(k, v, x)]);
+
   // ---- geometry, the pure half --------------------------------------------
 
   // The collapse now travels the card's whole box back onto its paragraph
@@ -1085,6 +1148,7 @@ window.CARDS = (function () {
 
   return {
     esc, resultOnly, stripTags, pct, plainLabel,
+    RULES, clauseOf, clauseRungs,
     TICK, CROSS, PAUSE, VS16, MARK, DRAWN, mkHtml, markHtml,
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks,
     headFlags, originText, MD_RX, mdToHtml, htmlToMd, mdStrip,
