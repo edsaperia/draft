@@ -46,10 +46,15 @@
  *    every quiet seat lapses, page open or not. The non-lapsing seats here
  *    therefore *act* before every snapshot (`keepAlive`: a `set-identity`
  *    re-stating the seat's own name), which is what the module counts.
- *  · **E9's news entry is unbuilt on both sides**: `relinquish` owes no OK and
- *    the page files no news for a laid-down power, so the `lay down` row has
- *    no key and is reported as *no rule* on the page's side — filed as Q918,
- *    which is what `filed: 'Q918'` on the row says.
+ *  · **E9 is asserted, and no row here is filed** (2026-09-01). It was the one
+ *    exception until then: on 2026-08-27 the news entry was unbuilt on both
+ *    sides, so the `lay-down` row carried no key and was filed as Q918. Both
+ *    halves landed on **2026-08-29** — entry 162 (Q1013) built the 👑
+ *    `rel:<batch>` news card, `oweReleases` and `ackRelease`, and Ed rewrote
+ *    §2's E9 Audience cell as *every member but the actor* — and the row was
+ *    left green over a rule it was no longer checking. It now carries the
+ *    `rel:` prefix key and the cell has its predicate, so `filed` should stay
+ *    empty: a row filed here again means a genuinely unread cell, not this.
  *
  * First full run, 2026-08-27, against build 7eceef8 (plan-queue 41, entry 139)
  * — **red on two findings about the page and the module, not on the harness**:
@@ -65,8 +70,8 @@
  * module, so every card below it in `ORDER` is withheld from members) and
  * every clerk-hat one is **Q920** (`view.convenor.isMember` stays `true` for
  * a clerk, so 🏛️ is served and 🍾 waits on it); with those two built the
- * expected line is `findings=0 … filed=1 … unstood=0 exit=0`, the one filed row
- * being Q918.
+ * expected line is `findings=0 … filed=0 … unstood=0 exit=0` — `filed=1` while
+ * Q918's row was the exception, and 0 since it was asserted.
  * Four harness faults were fixed to get here, each noted at its row: the
  * founder's page reloads after the wire founding (`reload` on `text`), every
  * seat introduces itself with a name and a face (`face`), 💤 is answered on
@@ -150,6 +155,16 @@ const AUDIENCE = {
     (s, step, ctx, ev) => isMember(s) && s.name !== ctx.actorOf(ev) &&
       ctx.stoodAt[s.name] !== undefined && ctx.stoodAt[s.name] < ev.at,
   'the membership': (s) => isMember(s),
+  // E9, a power laid down (Q918, Ed 2026-08-29 — *rewrite the cell as `every
+  // member but the actor`*). The actor's own channel is the power card's
+  // confirmation, which is not a news entry and is not this row; the entry
+  // goes to everybody else. `stoodAt` deliberately has no part in it: unlike
+  // E5 this cell puts no arrival condition on the audience, and the module
+  // skips only the un-arrived, the removed and the convenor — so a seat stood
+  // before the act is inside it whether it arrived early, late or has since
+  // lapsed. Reversing the reading is this one line and `oweReleases`.
+  'every member but the actor (Q918, Ed 2026-08-29)':
+    (s, step, ctx, ev) => isMember(s) && s.name !== ctx.actorOf(ev),
   // E34, a mail that gave up. **Never the invitee** needs no clause here: an
   // invitee has not arrived, the module skips the unarrived, and no seat in
   // this table is one at the step that raises it. The `mailfail` step is
@@ -409,12 +424,15 @@ const STEPS = [
       noKey: 'E13\'s audience is *whoever the router serves*: the page files the entry the feed hands it, and no seat-side key states the router\'s choice' }] },
   // ✒️ laid down on ⏱️ `rate`, not ⏰ (B14, 2026-08-27): the ladder drives
   // `ending` with the founder's pen and would stall on a relinquished one.
-  // The page exposes no key for E9's news (Q571 unbuilt; `relinquish` owes
-  // no OK), so the row is reported as *no rule* on the page's side.
+  // **E9's news entry, asserted since 2026-09-01** (Q918). The page files one
+  // 👑 card per act, keyed `rel:<batch id>` and enumerated by the Proposals
+  // section's `extraKeys`, so the key is a prefix match like E34's `mail:`.
+  // The row exercises both branches of its own cell in one snapshot: the
+  // founder is the actor and must carry nothing, and `early`, `late` and
+  // `lapsed` are every other member and must each carry the entry.
   { id: 'lay-down', epoch: 'live', kind: 'cmd', seat: 'founder', cmd: 'relinquish',
     args: () => ({ setting: 'rate', power: 'unilateral' }),
-    events: [{ id: 'E9', key: null, at: 'lay-down', filed: 'Q918',
-      noKey: 'the page files no news entry for a laid-down power and `relinquish` owes no OK (Q571 unbuilt)' }] },
+    events: [{ id: 'E9', key: 'rel:', at: 'lay-down' }] },
   // ---- closed -------------------------------------------------------------
   // `toClosing` moves ⏰ with the founder's pen: a constitutional setting set
   // post-start, so E5 on `ending` for every member who was here
