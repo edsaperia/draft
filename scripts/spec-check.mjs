@@ -628,6 +628,37 @@ function checkOrder(pm) {
 }
 
 /**
+ * *A gate never withholds from the seat that set it* — SURFACE Y27, C8.
+ *
+ * Two halves, and each was a real failure before it was a rule. The founder
+ * is exempt on both gates, which is what makes the judging surface reachable
+ * from 🍾 without a card that may be hidden below ✒️, staged behind owed news
+ * or remembered only in another browser. And *has this been acknowledged* has
+ * **one** answer: the exemption lives in `acked`, so any site that asks it of
+ * a gate through `S.okd` directly is asking a second, older question — which
+ * is how the page would come to hold a gate that grants judging and still
+ * stands in the rail as a task nothing waits on.
+ *
+ * Shape only: `spec-check` reads source text and cannot open a page. The
+ * behaviour is a ladder document, founder seat, fresh profile.
+ */
+function checkGateSeat() {
+  note('A gate never withholds from the seat that set it — SURFACE Y27 against the page');
+  const page = js('design/session-view.html');
+  if (!/const gateSelfSet = \(k\) => GATE_KEYS\.includes\(k\) && amFounder\(\);/.test(page))
+    find('order', '`gateSelfSet` is not the founder on a gate key — SURFACE Y27 is the seat, not a per-document test');
+  if (!/const acked = \(k\) => S\.okd\.has\(k\) \|\| gateSelfSet\(k\);/.test(page))
+    find('order', '`acked` no longer carries the Y27 exemption — the founder is withheld their own gates again');
+  const asks = [...page.matchAll(/c\.isGate[^\n]{0,60}?S\.okd[^\n]*/g)].map((m) => m[0].trim());
+  for (const a of asks)
+    find('order', `a gate's acknowledgement is read from S.okd directly (\`${a.slice(0, 60)}\`) — it must ask acked(), or Y27 is true in one place and false in another`);
+  const gates = (page.match(/const GATE_KEYS = \[([^\]]*)\]/) || [])[1] || '';
+  for (const k of ['canpropose', 'canjudge'])
+    if (!gates.includes(`'${k}'`)) find('order', `GATE_KEYS does not hold '${k}'`);
+  if (asks.length === 0) note(`  the exemption is the founder's seat; ${gates.split(',').length} gate keys, no gate reads S.okd behind acked()`);
+}
+
+/**
  * **An author is never asked about their own text against the incumbent**
  * (Ed, 2026-08-29, backlog 253; SPEC §3.3 / R-062, SURFACE E19) — one rule
  * spanning the engine and the page, so it is asserted at both ends.
@@ -1185,6 +1216,7 @@ function checkMergeable() {
 checkMarks();
 checkWallets(pm);
 checkOrder(pm);
+checkGateSeat();
 checkAuthorNeverAsked();
 checkPenRebase();
 checkApplicantJudged();
