@@ -55,3 +55,42 @@ services:
         sync: false
       - key: DRAFT_STORE
         sync: false
+
+  # The dev host — dev.docs.vote (Ed, 2026-09-01): the *dev path* at a
+  # public URL, so the phase ladder's ⏭ bar, the seat switcher and the 📬
+  # outbox all exist there exactly as on localhost. No RESEND_API_KEY is
+  # the whole switch (mailer.dev): nothing here changes the production
+  # artifact, its DEV-drop, or verify-deploy. No build step — tsx runs the
+  # sources, and design/ (bundle included) is committed. No Postgres:
+  # documents live on the instance filesystem and EVERY DEPLOY OR RESTART
+  # WIPES THEM, which for a ladder playground is the point. Two things to
+  # know before pointing anybody at it: the outbox (magic links included)
+  # is publicly readable, so anyone with the URL can log in as anyone —
+  # the host must never hold anything real; and the free plan sleeps
+  # after ~15 min idle, so the first load takes up to a minute.
+  - type: web
+    name: draft-dev
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm ci
+    startCommand: npm run server
+    healthCheckPath: /healthz
+    # deploys on every push to main, red or green — a dev host needs no
+    # gate, and CI's hook only knows the production service
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: '24'
+      # stable per service, so cookies survive deploys — the dev default
+      # (secret.txt in the data dir) would die with the ephemeral disk
+      - key: DRAFT_SECRET
+        generateValue: true
+      # set in the dashboard: https://dev.docs.vote once the CNAME lands.
+      # The same-origin check keys on it, so the host only logs you in
+      # when visited by this name (OPERATING.md §8 trap 3).
+      - key: DRAFT_BASE_URL
+        sync: false
+      # the dev path defaults trust-proxy off; Render terminates TLS
+      - key: DRAFT_TRUST_PROXY
+        value: '1'

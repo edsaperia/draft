@@ -326,3 +326,30 @@ would assume, and each is wrong.
    at the platform; CI calls the deploy hook. But do not read that as a
    second gate before production — there isn't one. A green push to `main`
    goes live.
+
+## 9. The dev host — dev.docs.vote
+
+A second Render service, `draft-dev` (Ed, 2026-09-01), whose whole job is
+the **phase ladder at a public URL**: press ⏭ bottom-left and walk a real
+document birth → constitution → ready → session → closing → closed, sit in
+any seat, read every mail in the 📬 outbox. It is the **dev path** —
+`npm run server` under tsx, no build, no `RESEND_API_KEY` — which is the
+exact configuration CI's `walks` job boots at every push, so nothing about
+it is new territory. The production service, its artifact, the `DEV:` drop
+and `verify-deploy` are all untouched by its existence.
+
+| Property | Value | Why |
+|---|---|---|
+| Store | `file`, on the instance filesystem | **Every deploy or restart wipes every document.** A feature: the host holds only throwaways |
+| Mail | dev outbox (`mailer.dev`) | No key set. The 📬 button on every page reads the tail; magic links are followed from there, no inbox involved |
+| Deploys | `autoDeploy: true`, every push to `main` | No gate: red or green, the dev host updates. CI's deploy hook only knows the production service |
+| Plan | `free` | Sleeps after ~15 min idle; the first load then takes up to a minute. A dashboard upgrade to `starter` keeps it warm |
+| DNS | `dev.docs.vote` CNAME → the service's onrender hostname (Namecheap) | Same shape as the apex. Add the custom domain on the service too, so Render provisions TLS |
+| `DRAFT_BASE_URL` | `https://dev.docs.vote`, dashboard | The same-origin check keys on it: visited by any other name (the onrender address included) the host serves pages but refuses logins — §8 trap 3 |
+
+**The one thing to hold in mind:** the outbox is publicly readable — that
+is what makes the ladder and passwordless dev login work — so anybody who
+finds the URL can read every magic link and **log in as anyone, on any
+document there**. The host must never hold anything real. That posture is
+the reason it exists at all: it is what docs.vote itself was *not* allowed
+to become (decisions 437, Q674).
