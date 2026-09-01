@@ -59,14 +59,17 @@ const DELEGATE_ALL = process.argv.includes('--delegate-all');
 // the editing card carries the sign choice. The propose step asserts the
 // control is there, signs, and reads the founder's name back off the wire;
 // under a fixed rung (`--authorship=sealed`) it asserts the control is absent
-// and the proposal unsigned. The labels are the 👤 card's own (`opt`), one
-// per rung (K27).
+// and the proposal unsigned.
+//
+// **The rung is named by its value, never by its words** (entry 136,
+// 2026-09-01). This carried a frozen map of the five 👤 labels until Ed's copy
+// sweeps of 2026-08-31/09-01 made every rung a clause sentence — after which
+// `sealedElective` matched nothing, the walk silently took the *first* option
+// on the card (`anonymous`), and the three steps below reported a missing sign
+// control as the page's fault. It is the same shape as entry 87's delegate
+// rung: copy is Ed's to change, `data-val` is the page's own name for the
+// value and survives every rewording of it (CP1 leaves it on the button).
 const AUTHORSHIP = (process.argv.find((a) => a.startsWith('--authorship=')) || '').split('=')[1] || 'sealedElective';
-const AUTHORSHIP_LABEL = {
-  anonymous: 'Nobody’s name, ever', anonymousElective: 'Nobody’s name unless they choose',
-  sealed: 'Names at the close', sealedElective: 'Names at the close, or earlier by choice',
-  public: 'Names from the start',
-}[AUTHORSHIP];
 const ELECTIVE = AUTHORSHIP === 'anonymousElective' || AUTHORSHIP === 'sealedElective';
 const PROPOSALS_FIRST = process.argv.includes('--proposals-first');
 // **One founding per shape** (entry 166): `--shape=<meeting|conference|ongoing>`
@@ -214,6 +217,20 @@ const press = async (holdMs) => {
 
 /* ---- the birth: title, link, address, then the magic link saves it ---- */
 const stuck = [];
+/* **A control that is not there is a FAIL line, never a TypeError** (item 261,
+ * deferred until now). `page.$` answers `null` for a miss, and every
+ * `scrollIntoViewIfNeeded()` / `boundingBox()` on that answer threw — which on
+ * 2026-08-31 crashed the walk one step after `typing · FAIL`, so the run ended
+ * with a stack trace where the report should have been and CI could say only
+ * *it died*. Every such handle comes through here: the miss is said, counted,
+ * and handed back as `null` for the caller to skip on. */
+const handle = async (sel, what) => {
+  const h = await page.$(sel);
+  if (h) return h;
+  say(what.padEnd(11).slice(0, 11) + '· FAIL: no ' + what + ' on the page — ' + sel);
+  stuck.push(what);
+  return null;
+};
 const TITLE = 'Journey ' + Date.now();
 await page.goto(BASE + '/');
 await T(800);
@@ -383,11 +400,17 @@ const options = (wantDelegate) => page.evaluate((del) => {
   // every radio reads *Prefer this* now, so the words that name an option
   // live on its `.opttext`; the button is the fallback for a textless block
   // (Indifferent), whose radio names the act itself.
+  // **And it is the whole text** (entry 136, 2026-09-01): it was cut to 48
+  // characters for the log, and once the rungs became clause sentences 👤's
+  // *sealed* and *sealedElective* shared their first 64 — so the walk asked
+  // for one and clicked the other, silently. Cutting is the printing's job
+  // now (`short`), never the matching's.
   const labelOf = (x) => { const p = x.closest('.pick');
     const t = p && p.querySelector('.opttext');
-    return ((t && t.textContent) || x.textContent).trim().slice(0, 48); };
+    return ((t && t.textContent) || x.textContent).trim(); };
   return (wanted.length ? wanted : all).map(labelOf);
 }, wantDelegate);
+const short = (s) => (s && s.length > 48 ? s.slice(0, 47) + '…' : s);
 // the same question the other way round: which of the labels on the open card
 // belong to the delegate rung, so *what was chosen* can be told apart from its
 // wording at the two sites below that used to match on it
@@ -396,11 +419,21 @@ const delegLabels = () => page.evaluate(() =>
     .filter((x) => (x.dataset.val || x.dataset.ansval))
     .map((x) => { const p = x.closest('.pick');
       const t = p && p.querySelector('.opttext');
-      return ((t && t.textContent) || x.textContent).trim().slice(0, 48); }));
+      return ((t && t.textContent) || x.textContent).trim(); }));
+// the label a value wears **right now**, read off the open card: the one
+// bridge between a run's `--authorship=<rung>` and a picker that works in
+// labels, so no wording is ever written down here (see AUTHORSHIP above)
+const labelForValue = (key, val) => page.evaluate(([k, v]) => {
+  const o = document.querySelector('.setupcard [data-set="' + k + '"][data-val="' + v + '"]');
+  if (!o || o.offsetParent === null) return null;
+  const p = o.closest('.pick');
+  const t = p && p.querySelector('.opttext');
+  return ((t && t.textContent) || o.textContent).trim();
+}, [key, val]);
 const pickOption = (label) => page.evaluate((l) => {
   const labelOf = (x) => { const p = x.closest('.pick');
     const t = p && p.querySelector('.opttext');
-    return ((t && t.textContent) || x.textContent).trim().slice(0, 48); };
+    return ((t && t.textContent) || x.textContent).trim(); };
   const o = [...document.querySelectorAll('.setupcard [data-set],.setupcard [data-ans]')]
     .filter((x) => (x.dataset.val || x.dataset.ansval) && x.offsetParent !== null)
     .find((x) => labelOf(x) === l);
@@ -914,18 +947,23 @@ const stuckAtBegin = async () => {
 
 /* ---- the shape's provenance (entry 166) ---------------------------------
  * Read off the band: every clause's text by its page key. The shaped keys are
- * the row's own `sets` off the bundle, less 🪜 (no clause of its own) and
- * whatever the row hides. Asserted at the moment 🍾 is served, which is the
- * first moment every section of the constitution is on the page. */
+ * the row's own `sets` off the bundle, less whatever the row hides and less
+ * the two settings with no clause to carry a sentence: 🪜, which lives inside
+ * 🌡️'s stack, and `machines`, whose card left the surface on 2026-08-29
+ * (backlog 251) while the setting stayed in the catalogue for replay — every
+ * shape sets it, so all three shaped runs had been red on it since.
+ * Asserted at the moment 🍾 is served, which is the first moment every
+ * section of the constitution is on the page. */
+const NO_CLAUSE = ['pace', 'machines'];
 const clauses = () => page.evaluate(() => Object.fromEntries(
   [...document.querySelectorAll('#band .cpara')].map((el) => [
     el.dataset.para || (el.querySelector('[data-tab]') || { dataset: {} }).dataset.tab,
     ((el.querySelector('.cpv') || {}).textContent || '').replace(/\s+/g, ' ').trim()])
   .filter(([k, t]) => k && t)));
-const shapedKeys = () => page.evaluate((name) => {
+const shapedKeys = () => page.evaluate(([name, noClause]) => {
   const row = window.CONSTITUTION.shapeOf(name);
-  return Object.keys(row.sets).filter((id) => id !== 'pace' && !row.hides.includes(id));
-}, SHAPE);
+  return Object.keys(row.sets).filter((id) => !noClause.includes(id) && !row.hides.includes(id));
+}, [SHAPE, NO_CLAUSE]);
 const PROVENANCE = /\bAs for (a meeting|a conference|an ongoing document)\./;
 let shapeTouched = false;
 const shapeAtBegin = async () => {
@@ -1244,9 +1282,18 @@ for (let i = 0; i < 60; i++) {
   let offered = await options(wantDelegate);
   const delegs = await delegLabels();
   // 👤 takes the rung the run asked for (Q770), tried first; the rest stay
-  // as the walk's ordinary fallback
-  if (next === 'authorship' && !wantDelegate && AUTHORSHIP_LABEL && offered.includes(AUTHORSHIP_LABEL)) {
-    offered = [AUTHORSHIP_LABEL, ...offered.filter((l) => l !== AUTHORSHIP_LABEL)];
+  // as the walk's ordinary fallback. The label is read off the card by its
+  // `data-val`, so a reworded rung moves the walk with it rather than past it.
+  const authLabel = next === 'authorship' && !wantDelegate
+    ? await labelForValue('authorship', AUTHORSHIP) : null;
+  if (authLabel && offered.includes(authLabel)) {
+    offered = [authLabel, ...offered.filter((l) => l !== authLabel)];
+  } else if (next === 'authorship' && !wantDelegate) {
+    // and a rung the card does not offer is said out loud rather than fallen
+    // through: the silent fallback is what hid the stale label map for a day
+    say('👤 rung    · FAIL: no rung with data-val=' + AUTHORSHIP + ' on the open card · ' +
+      JSON.stringify(offered.map(short)));
+    stuck.push('the 👤 rung this run asked for');
   }
   for (const label of offered) {
     const at = await pickOption(label);
@@ -1275,11 +1322,11 @@ for (let i = 0; i < 60; i++) {
     // a stuck card says *why* it is stuck: which controls its commit row holds
     // and which of them are dark. "STUCK: ans-rate" alone is a line somebody
     // has to go and reproduce by hand.
-    say('  STUCK    · ' + next + (chose ? ' — ' + chose : '') + ' · commit row ' +
+    say('  STUCK    · ' + next + (chose ? ' — ' + short(chose) : '') + ' · commit row ' +
       JSON.stringify(await page.evaluate(() =>
         [...document.querySelectorAll('.setupcard .commitrow button')]
           .map((b) => (b.textContent.trim() || b.getAttribute('title') || '?') + (b.disabled ? ' [dark]' : '')))));
-  } else say('  committed· ' + next + ' (' + label + ')' + (chose ? ' — ' + chose : ''));
+  } else say('  committed· ' + next + ' (' + label + ')' + (chose ? ' — ' + short(chose) : ''));
 }
 say('founding   · rail ' + JSON.stringify(await rail()) + (stuck.length ? ' STUCK: ' + stuck.join(', ') : ''));
 // what the press actually laid down, read back off the ✒️/🛡️ tabs
@@ -1380,6 +1427,13 @@ say('begun      · ' + JSON.stringify(state) + (begunOk ? '' : '  FAIL: the char
 if (!begunOk) stuck.push('begun state');
 await page.evaluate(() => document.querySelector('#ridetab .achip[data-tab="text"]').click());
 await T(300);
+// **the rest position is measured at rest** (entry 136). The tab rides with
+// the reader by design (K31), so `lineDelta` only means *the tab rests level
+// with the document's first line* while the first line is on the page: read
+// anywhere else it measures the sticky clamp instead, which is how this step
+// began failing at 81px without the page having changed.
+await page.evaluate(() => window.scrollTo(0, 0));
+await T(200);
 const editState = await page.evaluate(() => {
   const b = document.querySelector('#charter [data-proposalrow] [data-act="row-commit"]');
   const row = document.querySelector('#charter [data-proposalrow]');
@@ -1408,6 +1462,10 @@ const editState = await page.evaluate(() => {
     padTop: col ? Math.round(first.getBoundingClientRect().top - col.getBoundingClientRect().top) : null,
     // the tab rests level with the document's first line, not the title (Ed's QA, 2026-08-30)
     lineDelta: ride && first ? Math.round(ride.getBoundingClientRect().top - first.getBoundingClientRect().top) : null,
+    // which block the delta above was measured against, said out loud: the
+    // page's own rule reads `col.firstElementChild` (`rideLine`), so a walk
+    // reading anything else is comparing two different lines
+    firstTag: first ? first.tagName + '.' + first.className + (first === col.firstElementChild ? '' : ' (not the column’s first child: ' + col.firstElementChild.tagName + '.' + col.firstElementChild.className + ')') : null,
     // the runway is the card's: no .doc padding under it, and the card's foot is .doc's
     runway: Math.round(parseFloat(getComputedStyle(document.getElementById('doc')).paddingBottom)),
     gap: !!document.querySelector('#charter .prose p.editable.blank.gap[data-key^="G"]') };
@@ -1605,7 +1663,34 @@ say('wallet     · ' + await page.evaluate(() =>
   getComputedStyle(document.getElementById('wallet')).display + ' ' +
   document.getElementById('wallet').textContent.trim()));
 
-/* ---- proposing: a caret in the charter, then one keystroke ---- */
+/* ---- proposing: 📝 the door, a caret in the charter, then one keystroke ----
+ * **📝 is the door** (SURFACE K13 as amended — Ed, 2026-09-01, choosing between
+ * *typing should still work* and *design moved*: **"Design moved: click/📝
+ * first."**). The charter mounts in read mode with no caret of its own, and a
+ * printable character there is refused at `beforeinput` — which is what the
+ * `host caret` step above asserts. So **both** branches enter through the tab
+ * and write inside edit mode: the ordinary `'X'` extends a clause into the
+ * editing card, and `--new-clause` presses Enter at the end of the last clause
+ * for a gap site (K31, Q261). The lane starts empty either way.
+ *
+ * The tab is re-found rather than assumed: `renderRideTab` empties `#ridetab`
+ * while a power tab's card is the open one, and by this point in the walk the
+ * doors have opened and reverted several cards. A bare `.click()` on the miss
+ * would throw inside the page and take the whole walk down with it, hiding the
+ * very FAIL lines below. */
+const doorPressed = await page.evaluate(() => {
+  const t = document.querySelector('#ridetab .achip[data-tab="text"]');
+  if (!t) return false;
+  t.click();
+  return true;
+});
+await T(300);
+const editAgain = { tab: doorPressed, editable: await hostEditable(),
+  editing: await page.evaluate(() => document.getElementById('doc').classList.contains('editing')) };
+const editAgainOk = doorPressed && editAgain.editable === 'true' && editAgain.editing;
+say('edit again · ' + (editAgainOk ? 'editable=true editing=true'
+  : 'FAIL: 📝 did not re-enter edit mode · ' + JSON.stringify(editAgain)));
+if (!editAgainOk) stuck.push('edit mode again');
 const caret = await page.evaluate((empty) => {
   const r = document.createRange();
   let p;
@@ -1632,34 +1717,13 @@ const caret = await page.evaluate((empty) => {
 }, EMPTY_TEXT);
 say('caret      · ' + (caret || 'FAIL: no charter paragraph to type in'));
 if (caret) {
-  /* The ordinary `'X'` is the **read-mode keystroke** (SURFACE K13/K31): the
-   * column has no caret of its own, so a printable character is heard by the
-   * page (`keydown` on the document, backlog 204), applied by `typeAt` to the
-   * block the selection stands in, and opens the editing card.
-   * `--new-clause` is the **edit-mode gap site** (K31, Q261): Enter is not a
-   * character and no read-mode door takes it — the gap branch hangs off
-   * `beforeinput`'s `insertParagraph`, which only fires on an editable host —
-   * so this step presses 📝 first, then puts the caret at the **end of the
-   * last clause** and presses Enter. The lane starts empty. */
+  /* Inside edit mode the ordinary `'X'` is applied by `typeAt` to the block the
+   * selection stands in and opens the editing card; `--new-clause` puts the
+   * caret at the **end of the last clause** and presses Enter instead, the gap
+   * branch hanging off `beforeinput`'s `insertParagraph`, which only fires on
+   * an editable host. Both need the door above, and neither reaches the page
+   * without it. */
   if (NEW_CLAUSE && !EMPTY_TEXT) {
-    // the tab is re-found rather than assumed: `renderRideTab` empties
-    // `#ridetab` while a power tab's card is the open one, and by this point
-    // in the walk the doors have opened and reverted several cards. A bare
-    // `.click()` on the miss would throw inside the page and take the whole
-    // walk down with it, hiding the very FAIL line below
-    const pressed = await page.evaluate(() => {
-      const t = document.querySelector('#ridetab .achip[data-tab="text"]');
-      if (!t) return false;
-      t.click();
-      return true;
-    });
-    await T(300);
-    const editAgain = { tab: pressed, editable: await hostEditable(),
-      editing: await page.evaluate(() => document.getElementById('doc').classList.contains('editing')) };
-    const editAgainOk = pressed && editAgain.editable === 'true' && editAgain.editing;
-    say('edit again · ' + (editAgainOk ? 'editable=true editing=true'
-      : 'FAIL: 📝 did not re-enter edit mode · ' + JSON.stringify(editAgain)));
-    if (!editAgainOk) stuck.push('edit mode again');
     await page.evaluate(() => {
       const ps = [...document.querySelectorAll('#charter .prose p.editable[data-key]')].filter((p) => !p.classList.contains('gap'));
       const p = ps[ps.length - 1];
@@ -1708,8 +1772,8 @@ if (caret) {
     say('sign ctl   · ' + (shape ? 'present under ' + AUTHORSHIP + ' (base ' + sc.base + '), Anonymous by default · ' +
       JSON.stringify(sc.labels) : 'FAIL: no sign control · ' + JSON.stringify(sc)));
     if (!shape) stuck.push('no sign control');
-    if (shape) {
-      const signBtn = await page.$('.sugg.editcard [data-act="draft-sign"][data-signed="1"]');
+    const signBtn = shape && await handle('.sugg.editcard [data-act="draft-sign"][data-signed="1"]', 'sign button');
+    if (signBtn) {
       await signBtn.scrollIntoViewIfNeeded();
       await signBtn.click();
       await T(300);
@@ -1740,55 +1804,58 @@ if (caret) {
    * Playwright can do exactly and for as long as it likes. The flight cannot
    * be judged here and is not asserted; the commit can, and now is.
    * A render is forced in the middle on purpose — that is the failing case. */
-  const pb = await page.$('[data-act="draft-propose"]:not([disabled])');
-  await pb.scrollIntoViewIfNeeded();
-  const bx = await pb.boundingBox();
-  await page.mouse.move(bx.x + bx.width / 2, bx.y + bx.height / 2);
-  /* Under `click` the click is the whole gesture and there is nothing to let
-   * go of (backlog 184), but everything this step asserts is the same in both
-   * positions: 500ms in the flight is in the air (`holding` true, a
-   * `.flypencil` on the page), the forced render happens *under* it, and the
-   * commit lands from a button that render destroyed. */
-  const proposeGesture = await pageGesture();
-  if (proposeGesture === 'click') await page.mouse.click(bx.x + bx.width / 2, bx.y + bx.height / 2);
-  else await page.mouse.down();
-  await T(500);
-  /* **and the held button does not move** (entry 59). Two things on this page
-   * answered to `holding` — the hold's own class and the stranger's sentence,
-   * whose `margin: … auto …` rule centred the ✏️ in its own commit row for the
-   * length of the hold. Sampled here, *before* the forced render: after it the
-   * node under the pointer is a new one, and what this asserts is the held
-   * button. Both axes of the box, because the sentence's rule also carried a
-   * max-width — a button that keeps its centre and loses its width has moved
-   * just as surely. */
-  const mid = await page.evaluate(() => {
-    const b = document.querySelector('[data-act="draft-propose"]');
-    const r = b && b.getBoundingClientRect();
-    return { holding: window.SESSION.holding,
-      flying: !!document.querySelector('.flypencil'), edits: window.SESSION.editsHeld,
-      cx: r ? r.x + r.width / 2 : null, w: r ? r.width : null };
-  });
-  // scale(0.97) moves each edge by under a pixel and the centre by none, so
-  // 2px is a margin rather than a tolerance for drift; the width is allowed
-  // the 3% the transform takes off it
-  const movedX = mid.cx === null ? Infinity : Math.abs(mid.cx - (bx.x + bx.width / 2));
-  const movedW = mid.w === null ? Infinity : Math.abs(mid.w - bx.width);
-  const stillThere = movedX < 2 && movedW < bx.width * 0.05 + 1;
-  await page.evaluate(() => window.SESSION && window.SESSION.renderAll());
-  await T(3200);
-  if (proposeGesture !== 'click') await page.mouse.up();
-  await T(900);
-  const after = await page.evaluate(() => ({ edits: window.SESSION.editsHeld,
-    mine: (window.SESSION.SUGGS || []).filter((x) => x.mine && x.unproposed !== true).length }));
-  const ok = proposeStatus !== null && proposeStatus < 400 && after.edits < mid.edits
-    && stillThere;
-  say('propose    · ' + (ok
-    ? 'held through a render · propose-text ' + proposeStatus + ' · wallet ' +
-      mid.edits + '→' + after.edits + ' · ' + after.mine + ' of mine standing · stayed put'
-    : 'FAIL: propose-text ' + proposeStatus + ' · wallet ' + mid.edits + '→' + after.edits +
-      ' · held ' + mid.holding + ' · flying ' + mid.flying +
-      (stillThere ? '' : ' · moved ' + Math.round(movedX) + 'px while held (width ' +
-        Math.round(bx.width) + '→' + Math.round(mid.w) + ')')));
+  const pb = await handle('[data-act="draft-propose"]:not([disabled])', 'propose ctl');
+  if (pb) await pb.scrollIntoViewIfNeeded();
+  const bx = pb ? await pb.boundingBox() : null;
+  let ok = false;
+  if (bx) {
+    await page.mouse.move(bx.x + bx.width / 2, bx.y + bx.height / 2);
+    /* Under `click` the click is the whole gesture and there is nothing to let
+     * go of (backlog 184), but everything this step asserts is the same in both
+     * positions: 500ms in the flight is in the air (`holding` true, a
+     * `.flypencil` on the page), the forced render happens *under* it, and the
+     * commit lands from a button that render destroyed. */
+    const proposeGesture = await pageGesture();
+    if (proposeGesture === 'click') await page.mouse.click(bx.x + bx.width / 2, bx.y + bx.height / 2);
+    else await page.mouse.down();
+    await T(500);
+    /* **and the held button does not move** (entry 59). Two things on this page
+     * answered to `holding` — the hold's own class and the stranger's sentence,
+     * whose `margin: … auto …` rule centred the ✏️ in its own commit row for the
+     * length of the hold. Sampled here, *before* the forced render: after it the
+     * node under the pointer is a new one, and what this asserts is the held
+     * button. Both axes of the box, because the sentence's rule also carried a
+     * max-width — a button that keeps its centre and loses its width has moved
+     * just as surely. */
+    const mid = await page.evaluate(() => {
+      const b = document.querySelector('[data-act="draft-propose"]');
+      const r = b && b.getBoundingClientRect();
+      return { holding: window.SESSION.holding,
+        flying: !!document.querySelector('.flypencil'), edits: window.SESSION.editsHeld,
+        cx: r ? r.x + r.width / 2 : null, w: r ? r.width : null };
+    });
+    // scale(0.97) moves each edge by under a pixel and the centre by none, so
+    // 2px is a margin rather than a tolerance for drift; the width is allowed
+    // the 3% the transform takes off it
+    const movedX = mid.cx === null ? Infinity : Math.abs(mid.cx - (bx.x + bx.width / 2));
+    const movedW = mid.w === null ? Infinity : Math.abs(mid.w - bx.width);
+    const stillThere = movedX < 2 && movedW < bx.width * 0.05 + 1;
+    await page.evaluate(() => window.SESSION && window.SESSION.renderAll());
+    await T(3200);
+    if (proposeGesture !== 'click') await page.mouse.up();
+    await T(900);
+    const after = await page.evaluate(() => ({ edits: window.SESSION.editsHeld,
+      mine: (window.SESSION.SUGGS || []).filter((x) => x.mine && x.unproposed !== true).length }));
+    ok = proposeStatus !== null && proposeStatus < 400 && after.edits < mid.edits
+      && stillThere;
+    say('propose    · ' + (ok
+      ? 'held through a render · propose-text ' + proposeStatus + ' · wallet ' +
+        mid.edits + '→' + after.edits + ' · ' + after.mine + ' of mine standing · stayed put'
+      : 'FAIL: propose-text ' + proposeStatus + ' · wallet ' + mid.edits + '→' + after.edits +
+        ' · held ' + mid.holding + ' · flying ' + mid.flying +
+        (stillThere ? '' : ' · moved ' + Math.round(movedX) + 'px while held (width ' +
+          Math.round(bx.width) + '→' + Math.round(mid.w) + ')')));
+  }
   if (!ok) stuck.push('propose hold');
 
   /* ---- --new-clause: the wire holds a pure insertion at the end ---------- */

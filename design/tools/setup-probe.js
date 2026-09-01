@@ -199,7 +199,17 @@
      * *this founding stopped at step 7*. The reference is pre-🧭, so these
      * three are dead on the ref side until entry 189 re-freezes it. */
     ['open-shape', () => openTab('shape')],
-    ['choose-shape', () => click('.setupcard [data-set="docShape"][data-val="meeting"]')],
+    /* **Custom, because a shape hides cards** (entry 136, 2026-09-01). This
+     * scenario used to pick *meeting*, and a meeting `hides: ['lapse']` — Ed's
+     * own ruling, *a decision nobody has* (`packages/constitution/src/shapes.ts`)
+     * — so 💤 had no tab, no card and no clause, and the four steps below it
+     * were dead on the live side while `probe-coverage` reported `✗ lapse`.
+     * That was read as a CP1 selector rot and is not: the selectors were fine,
+     * the card was never born. *Custom* is the shape that hides nothing and
+     * pre-sets nothing, which is what this scenario's own header already
+     * claims — *nothing is pre-answered, so every choice here is a real
+     * click*. A shape that hides a card is `founding-golden`'s to walk. */
+    ['choose-shape', () => click('.setupcard [data-set="docShape"][data-val="custom"]')],
     ['confirm-shape', () => click('.setupcard [data-confirm]')],
     ['open-email', () => openTab('myemail')],
     ['type-email', () => typeInto('.setupcard input[type="email"]', 'ada@example.org')],
