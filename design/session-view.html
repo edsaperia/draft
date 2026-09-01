@@ -2983,7 +2983,11 @@
     if (c.door) return true;                                   // doors, not decisions
     if (c.isBegin) return constituted();                       // 🍾: settled by the press
     if (c.isClosing) return signedClose();                     // 🥂: settled by your signature
-    if (c.isGate) return S.okd.has(c.k);
+    // `acked`, not `S.okd`: a gate the founder set themselves is acknowledged
+    // without a press (the ruling beside `acked`), so it reads settled here,
+    // asks nothing in `mustAct` and is no news — one answer to *has this been
+    // acknowledged*, in all four places that ask it.
+    if (c.isGate) return acked(c.k);
     if (c.ansFor) return answered(c);
     // **The text is never asked** (backlog 204, Q1082): it is a card with two
     // modes, not a task, so from the save it is settled — nothing below it in
@@ -3011,7 +3015,7 @@
     // …and it asks the same thing, for its own reason, once the Membership
     // rules stand and nobody has been invited (entry 181, `inviteTask`)
     : c.k === 'invite' && (oneVoiceRemedy() || inviteTask()) ? true
-    : c.isGate ? (c.open() && staged(c) && !S.okd.has(c.k))
+    : c.isGate ? (c.open() && staged(c) && !acked(c.k))
     : c.ansFor || c.own === 'you' || amFounder() ? !settled(c)
     : false);
   // How far the room has got, against the roster **as it stands** — held as a
@@ -3932,7 +3936,37 @@
   // you** stays visible and goes `locked` (a race card), because it still
   // has to be readable; that is the state cards.js already draws for a card
   // whose reader may not judge it.
-  const acked = (k) => S.okd.has(k);
+  // **A gate never withholds from the seat that set it** (Ed, 2026-09-01;
+  // SURFACE C8, E8). C8's own test is *were you here when it was set?*, and
+  // for the founder of a founder-held constitution the answer is *I set it* —
+  // so 💡 and ⚖️ are acknowledged for them the moment they open, with no card
+  // and no press. Without this the founder of a live document could be
+  // withheld judging **for ever**: the two gates sit below ✒️ in `ORDER`, so
+  // an unacknowledged pen hides them outright, and a gate is staged behind
+  // owed news besides — and since the acknowledgement lives only in this
+  // browser's `grantsKey()`, a fresh profile puts the founder back behind a
+  // card that is not on the page. A member is untouched: they were not here
+  // when it was set, and the gate is exactly the thing that tells them.
+  //
+  // **The seat that set them is the founder, on every document**, because a
+  // gate is not a setting and cannot be delegated: neither key is in
+  // `DELEGABLE` or in the catalogue, and both open on 🍾 — the founder's own
+  // press, whose card states the pair as part of its batch. So there is no
+  // *delegated gate* to make an exception for, and the exemption is the
+  // founder's whole seat rather than a per-document test.
+  //
+  // Where the founder **did** answer blind they are owed the outcome exactly
+  // like every member, and that is untouched here: a delegated question's
+  // resolution is `res-<key>` news on its own card, which this says nothing
+  // about. Reading the caveat the other way — no exemption where any founding
+  // question the gate waits on was the room's — was tried first and is wrong
+  // twice over: it fires on no real document (the ceremony delegates
+  // something by definition — the ladder's own room holds three of ⚖️'s six),
+  // so it would leave the reported defect standing; and it treats a founder
+  // who handed the room one question as a stranger to a start they pressed.
+  const GATE_KEYS = ['canpropose', 'canjudge'];
+  const gateSelfSet = (k) => GATE_KEYS.includes(k) && amFounder();
+  const acked = (k) => S.okd.has(k) || gateSelfSet(k);
   const mayPropose = () => canPropose() && viewerIsMember() && acked('canpropose');
   const mayJudge = () => canJudge() && viewerIsMember() && acked('canjudge');
   const mayVoice = () => !!cs && viewerIsMember() && !!viewerRow().in && acked('grant-voice');
@@ -5028,7 +5062,7 @@
     // the close is news to every member until they have signed (§4.6: the
     // acknowledgment IS the signature) — a clerk reads it settled
     : c.isClosing ? (c.open() && viewerIsMember() && !signedClose())
-    : c.isGate ? (c.open() && staged(c) && !S.okd.has(c.k))
+    : c.isGate ? (c.open() && staged(c) && !acked(c.k))
     : !constituted() ? false
     : !c.ansFor && isRoom(c) && settled(c) && E() > 0 && (c.in || 0) >= E() &&
       !S.okd.has('res-' + c.k))
@@ -9479,7 +9513,17 @@
         pct: Math.round((r.closeness || 0) * 100),
         judges: r.judges || 0, floor: r.floor,
         cap: r.judged ? 'you have voted on this — it is still running' : 'wants your vote',
-        shifted: !!r.shifted, deadlocked: !!r.deadlocked,
+        // **and the ground shift says what happened** (SURFACE E16). The
+        // server's `shifted` is a flag — *a judgment of mine locked by a
+        // ground shift* — and the rail entry's tooltip is the sentence, as
+        // the fixture has always supplied it; handing the renderer `true`
+        // threw `esc` and took the whole rail with it. The live sentence
+        // names no candidate because the view does not carry which one was
+        // adopted, only that this wording is no longer the one you judged.
+        shifted: r.shifted
+          ? 'The wording was changed here after you voted, so your vote was about a wording that no longer exists.'
+          : false,
+        deadlocked: !!r.deadlocked,
         crownWaits: textAssent,
         // the served pair, for the judgment that goes back
         card: rc ? { a: rc.a.id, b: rc.b.id, inc: rc.a.incumbent ? 'a' : rc.b.incumbent ? 'b' : null } : null,

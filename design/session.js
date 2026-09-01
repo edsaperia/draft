@@ -790,7 +790,13 @@
           .filter(Boolean).join(' ') +
         '" data-q="' + g.id + '"' +
         (locked ? ' tabindex="-1"' : '') + ' aria-current="' + (openId === g.id) + '"' +
-        (cap ? ' title="' + esc(g.shifted || cap) + '"' : '') +
+        // **`shifted` is a flag everywhere but here, where it is the story.**
+        // Five of its six readers only ask whether it is truthy; this one
+        // prints it, and `esc` throws on anything that is not a string — so a
+        // caller handing over a boolean took the whole rail down with it, not
+        // just this entry (the live path did exactly that, 2026-09-01). The
+        // flag is honoured, the story is used when there is one.
+        (cap ? ' title="' + esc(typeof g.shifted === 'string' ? g.shifted : cap) + '"' : '') +
         (() => {
           // the hue comes from `anchHue` so the rail entry and the clause it
           // stands beside cannot drift apart — one lifecycle, one colour
