@@ -1186,6 +1186,36 @@ describe('a document of one (Q837, backlog 253)', () => {
     expect(s.feed('p1', 3, 2000)).toHaveLength(0);
   });
 
+  /**
+   * The handle's own half of the same moment (review finding F17). The sweep
+   * that adopts on submission dissolves the race the candidate was submitted
+   * into, so a `raceId` returned regardless would name a race `raceOf` throws
+   * on — a promise the return value cannot honour. Both directions are pinned
+   * here because a test of the null branch alone is half a test: E is the only
+   * thing that differs between the two, the bar being 0.5 in both.
+   */
+  it('the handle names no race where the sweep has just dissolved it', () => {
+    const s = solo();
+    const { id, raceId } = propose(s);
+    expect(s.getCandidate(id).state).toBe('adopted');
+    expect(s.races()).toHaveLength(0);
+    // the race is gone, and the handle says so rather than naming it
+    expect(raceId).toBeNull();
+    // `raceOf` on the candidate throws, which is what the old handle invited a
+    // caller to do; the id half is still good, and is what a caller reads
+    expect(() => s.raceOf(id)).toThrow();
+    expect(s.getCandidate(id).state).toBe('adopted');
+  });
+
+  it('and names the race where it survives — at E > 1, on the same bar', () => {
+    // two voices, so the room gate (`comparisons > 0`) is not bypassed and the
+    // sweep adopts nothing: the race the submission made is still standing
+    const s = atBar(0.5, 2);
+    const { id, raceId } = propose(s);
+    expect(s.getCandidate(id).state).toBe('live');
+    expect(raceId).toBe(s.raceOf(id).id);
+  });
+
   it('above the ceiling it stays live, and the author is still never served it', () => {
     // a room of one tops out at 0.798 (Q840), so a bar of 0.9 is one the
     // sole member's own voice cannot carry — the candidate simply waits

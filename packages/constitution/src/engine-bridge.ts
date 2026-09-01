@@ -328,9 +328,13 @@ export class EngineBridge {
    * only as the starting text (§9.7a), and the live text is the engine's.
    * `signed` is the author's per-proposal choice under an elective 👤 rung
    * (Q770); whether the rung offers it is the host's gate, not this door's.
+   *
+   * The handle is relayed exactly as the engine gives it, `raceId: null` and
+   * all: at E = 1 the submission's own sweep can adopt the candidate it just
+   * made, and there is then no race to name.
    */
   proposeText(t: number, by: MemberId, patch: PatchSet, why: string, signed = false):
-    { id: string; raceId: string } {
+    { id: string; raceId: string | null } {
     this.sync(t);
     if (this.engine.balance(by, t) < this.engine.constitution.stake) {
       throw new Error('insufficient ✏️ for the stake (§7)');

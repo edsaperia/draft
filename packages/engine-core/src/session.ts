@@ -909,7 +909,7 @@ export class Session {
       /** An ordinary motion's proposed value (SPEC §9.6, Q390). */
       setting?: { settingId: string; value: unknown };
     },
-  ): { id: string; raceId: string } {
+  ): { id: string; raceId: string | null } {
     this.assertOpen();
     const entry = this.activeParticipant(input.author);
     if ((input.patch === undefined) === (input.setting === undefined)) {
@@ -982,7 +982,16 @@ export class Session {
     // than in the fold, because adoption emits events and must never run
     // during replay.
     this.sweepAdoptions(t);
-    return { id, raceId: race.id };
+    // **And the second half: the capture keeps *this* call from throwing, it
+    // does not make the id true.** Where the sweep above adopted (or parked)
+    // the candidate, the race it was submitted into no longer exists, and a
+    // `raceId` returned regardless would hand the caller an id `raceOf` throws
+    // on — the trap moved one step out of the engine. So the captured race is
+    // re-checked against the live field and the handle is `null` where it has
+    // gone. `raceOf`'s throwing contract is right and is untouched: the id is
+    // not unknown, it is *gone*, and that is a different fact.
+    const stillLive = this.races().some((r) => r.id === race.id);
+    return { id, raceId: stillLive ? race.id : null };
   }
 
   /**
