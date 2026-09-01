@@ -7077,6 +7077,17 @@
         : stateOf(c, ctx) === 'news'
         ? binBtn() +
           '<button class="btn btn-approve" data-ok="' + newsKey + '">OK</button>'
+        // **CP9 (Q1106): once the document is closed there is no commit left
+        // to draw.** What reaches here on a closed page is what
+        // `founderHandOff` does not cover — the power tabs and the two doors,
+        // which it excludes by name — and every one of them would draw the
+        // fall-through's ✒️ permanently dark, since `mayPenOn` carries
+        // `docOpen()`. Dark means *not yet* (Y19); after the close it is
+        // *never*, and a bin that closes is the whole row. The news branch
+        // stands above this deliberately: 🥂's OK is the signature, and
+        // `acknowledgeClose` is the one command the close does not refuse.
+        : cs && !docOpen()
+        ? binBtn()
         // …and one bin under all of them (Q521(a), Ed 2026-08-21). An answer
         // is a provisional value like any other — it rides the snapshot as
         // its own `ans:` key — and a card whose value lives elsewhere (the
@@ -7309,6 +7320,10 @@
     document.getElementById('doc').classList.toggle('closedpage', closedNow);
     const gone = closedNow && (farewellDone || signedClose() || !viewerIsMember());
     SESSION.setClosed(gone || isStranger());
+    // …and the document's own close, which is not the same fact (CP9): the
+    // wallets go when the farewell has flown, but a card stops being able to
+    // commit the moment the clock runs out.
+    SESSION.setDocClosed(closedNow);
     const pulse = document.getElementById('pulse');
     if (pulse) pulse.style.display = gone || isStranger() ? 'none' : '';
     birthsMuted = false;

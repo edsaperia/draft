@@ -22,6 +22,16 @@
   // the closed page (Q470): typing opens nothing and the wallet is gone
   let closedMode = false;
   const setClosed = (on) => { closedMode = !!on; renderWallet(); };
+  // **The document's own close is a second fact, and it is not this one**
+  // (CP9, Q1106). `closedMode` says *the wallets are gone* — the farewell has
+  // flown, or the reader is a stranger — and the host also sets it for the
+  // stranger's door, where nothing has closed at all. What a card needs is
+  // whether the **document** has closed, which is true for a member the
+  // moment the clock runs out and stays true whether or not they have signed.
+  // Two facts under one name is the mistake this file already has a
+  // post-mortem for, so the second one gets its own.
+  let docClosed = false;
+  const setDocClosed = (on) => { docClosed = !!on; };
   // **A host's own rail entries** (stage 8, the merge): the setup tasks are
   // entries in this rail, laid out by the same margin-index rules as every
   // other. The host hands them in as {id, html, anchor(), pinned, rank, u,
@@ -136,7 +146,14 @@
     authorRung: () => AUTHOR_RUNG(),
     signerPerson: () => SIGNER_PERSON(),
     mayPropose: () => MAY_PROPOSE(),
-    lockedOf: (s) => !!s.locked || !MAY_JUDGE(),
+    // **CP9 (Q1106): a closed document's judgment cards can never commit, so
+    // they show no commit** — Q354 keeps every filed pile openable and Q470
+    // says it asks nothing, and a locked card is already exactly that shape:
+    // 🗑️ closes and the ✓ is not drawn at all. `MAY_JUDGE` cannot carry this,
+    // `canJudge()` being `constitutedAtT !== null && !frozen` and never having
+    // asked about the close — the same omission that had every settled card
+    // on a closed page drawing a live motion composer.
+    lockedOf: (s) => !!s.locked || !MAY_JUDGE() || docClosed,
     pickOf: (s) => pickOf(s),
     stateOf: (s) => stateOf(s),
     isCast: (s) => isCast(s),
@@ -5242,6 +5259,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
 
   window.SESSION = {
     init, setData, renderAll, toggle, clauseKeysOf, closeCard, setWallet, setRoom, setClosed,
+    setDocClosed,
     clockText, dateWords,
     // edit mode's shared pieces (backlog 204): the row both hosts draw, the
     // read-mode keystroke, and what the riding tab says about the draft
