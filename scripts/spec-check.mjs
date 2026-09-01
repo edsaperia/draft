@@ -628,24 +628,6 @@ function checkOrder(pm) {
 }
 
 /**
- * **An author is never asked about their own text against the incumbent**
- * (Ed, 2026-08-29, backlog 253; SPEC §3.3 / R-062, SURFACE E19) — one rule
- * spanning the engine and the page, so it is asserted at both ends.
- *
- * The engine half is source-pinned rather than behavioural, `spec-check`
- * having no way to run a session: what matters is *where* the exclusion sits
- * — inside the scan `bestPairFor` shares between its two passes, so the rival
- * pass sees it too, and inside `explorationCard`, which serves against the
- * incumbent by a second door and would otherwise re-open the one the first
- * closed. The behaviour is `packages/engine-core/test/session.test.ts`.
- *
- * The page half is the other end of the same rule. Q838 pinned the `E() > 1`
- * condition here, because at E = 1 the sole member was served their own text
- * and needed the card; that exception is overturned — at E = 1 the proposal
- * adopts on submission — so the skip is unconditional again and a condition
- * creeping back would draw a card the engine will never fill.
- */
-/**
  * *A gate never withholds from the seat that set it* — SURFACE Y27, C8.
  *
  * Two halves, and each was a real failure before it was a rule. The founder
@@ -676,6 +658,24 @@ function checkGateSeat() {
   if (asks.length === 0) note(`  the exemption is the founder's seat; ${gates.split(',').length} gate keys, no gate reads S.okd behind acked()`);
 }
 
+/**
+ * **An author is never asked about their own text against the incumbent**
+ * (Ed, 2026-08-29, backlog 253; SPEC §3.3 / R-062, SURFACE E19) — one rule
+ * spanning the engine and the page, so it is asserted at both ends.
+ *
+ * The engine half is source-pinned rather than behavioural, `spec-check`
+ * having no way to run a session: what matters is *where* the exclusion sits
+ * — inside the scan `bestPairFor` shares between its two passes, so the rival
+ * pass sees it too, and inside `explorationCard`, which serves against the
+ * incumbent by a second door and would otherwise re-open the one the first
+ * closed. The behaviour is `packages/engine-core/test/session.test.ts`.
+ *
+ * The page half is the other end of the same rule. Q838 pinned the `E() > 1`
+ * condition here, because at E = 1 the sole member was served their own text
+ * and needed the card; that exception is overturned — at E = 1 the proposal
+ * adopts on submission — so the skip is unconditional again and a condition
+ * creeping back would draw a card the engine will never fill.
+ */
 function checkAuthorNeverAsked() {
   note('An author is never asked about their own text — SPEC §3.3 against engine and page');
   const src = readFileSync(join(ROOT, 'packages/engine-core/src/session.ts'), 'utf8');

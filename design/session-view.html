@@ -6781,12 +6781,21 @@
         // nothing here is destructive, and the hold question is entry 184's.
         // `data-ok` and the key are deliberately unchanged — the handler,
         // `pendingGrant`, `saveGrants` and every walk press this selector.
+        //
+        // **And an acknowledged gate takes the bin alone**, exactly as 🥂
+        // does once it is signed: the tab stays in the band and opens, so
+        // without this the founder — for whom `acked` is true from 🍾 and
+        // never becomes false (Y27) — is offered *✏️ Take them* for ever on
+        // a power they already hold, and the press re-fires `pendingGrant`'s
+        // pencil storm into a full wallet. A card that asks nothing commits
+        // nothing (SURFACE §9.1, CP9).
         return cardHtml(c, ctx, grantProv(c) + gateBody(c) + grantNote(c),
-          binBtn() +
-          '<button class="btn btn-approve' + (c.grants ? ' emojibtn' : '') + '"' +
-          (c.open() ? '' : ' disabled') +
-          ' data-ok="' + c.k + '">' +
-          (c.grants ? c.grants + ' ' + c.take : 'OK') + '</button>', g.cards);
+          acked(c.k) ? binBtn()
+            : binBtn() +
+              '<button class="btn btn-approve' + (c.grants ? ' emojibtn' : '') + '"' +
+              (c.open() ? '' : ' disabled') +
+              ' data-ok="' + c.k + '">' +
+              (c.grants ? c.grants + ' ' + c.take : 'OK') + '</button>', g.cards);
       }
       // **A record, opened** (Q942): what was proposed at its head, the outcome
       // and the reason in the field, and 🗑️ alone at the foot — a record asks
