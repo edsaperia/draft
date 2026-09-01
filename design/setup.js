@@ -1397,11 +1397,19 @@ window.SETUP = (function () {
       '<p class="why">How somebody who is not a member can become one. The <b>least open</b> answer wins: one member who wants invitation only keeps it so.</p>' +
       ladder(A, 'applications', [
         { v: 'invite', t: RULE('applications', 'invite', x), e: 'Nobody joins unless a member brings them in.' },
-        { v: 'apply', t: RULE('applications', 'apply', x), e: 'An application is a stranger proposing their own invitation, at no cost to them.' }]) + BLINDNOTE,
+        // …and where 🪪 is the pen there is no application to explain: the
+        // rung's own sentence is *Anyone with the link joins on arrival*, and
+        // an explainer about a stranger's proposal contradicted it
+        { v: 'apply', t: RULE('applications', 'apply', x),
+          e: (x && x.admissionPrice === 'pen') ? ''
+            : 'An application is a stranger proposing their own invitation, at no cost to them.' }]) + BLINDNOTE,
     chamber: (A, E, _form, _room, _typed, x) =>
       '<p class="why">Who may read the document besides the members — readers only, never counted. The <b>most private</b> answer wins: one member who wants the document closed closes it.</p>' +
       ladder(A, 'chamber', [
-        { v: 'closed', t: RULE('chamber', 'closed', x), e: 'Nobody outside the membership sees anything at all.' },
+        // *Nobody else*, not *nobody outside the membership*: 🌍's closed
+        // sentence names the Founder too where they are a clerk, and the
+        // explainer read as a flat contradiction of the rung above it
+        { v: 'closed', t: RULE('chamber', 'closed', x), e: 'Nobody else sees anything at all.' },
         // Public left every ladder on 2026-08-22 (Q603): offered nowhere,
         // read back everywhere a document that took it still states it
         { v: 'link', t: RULE('chamber', 'link', x), e: 'The chamber view only, to whoever the link reaches.' }]) + BLINDNOTE,

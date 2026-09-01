@@ -5225,7 +5225,10 @@
     return v ? (mayApply(v) ? 'apply' : 'invite') : (S.joinBy || 'invite'); };
   const endFmtOf = (v) => new Date(v).toLocaleString(undefined,
     { weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }).replace(' ', ' at ');
-  const endFmt = () => endFmtOf((endingVal() !== 'never' && endingVal()) || S.endsAt);
+  // which datetime the ⏰ clause is about — the room's answer where there is
+  // one, the founder's field otherwise; named once, since `ENDING_RULE` does
+  // the wording for both the clause and the *You said* readback
+  const endingAt = () => (endingVal() !== 'never' && endingVal()) || S.endsAt;
   const ENDING_NEVER = 'The drafting process has no set end — it runs until too few members are active.';
   // **A number states its own sentence** (Q1112 (b), step 5): the numeric
   // clauses are named here, taking the value rather than reading the
@@ -5255,8 +5258,10 @@
     // themselves*) — so the clause states it
     ' minutes. A proposal costs one ✏️, and one that passes gives it back.';
   const DECIDED = {
+    // the ⏰ clause is `ENDING_RULE`'s like the readback's — it was the one
+    // numeric clause left spelling itself a second time beside its builder
     ending: () => (perpetual() ? ENDING_NEVER
-      : 'The drafting process will end on ' + endFmt() + '.'),
+      : ENDING_RULE(endingAt())),
     quorum: () => QUORUM_RULE(takenOf('quorum') ||
       (S.quorumForm === 'count' ? S.quorumN : S.quorumPct)),
     // **The ramp is part of what the threshold says** (Q512, Ed 2026-08-21:
