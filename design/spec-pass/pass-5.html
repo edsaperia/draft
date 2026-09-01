@@ -1,0 +1,490 @@
+<title>SURFACE §8.1 as a table — the tabulation pass</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,700&family=Public+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+  :root {
+    --paper: #fbfaf7; --card: #ffffff; --ink: #20242c; --muted: #5d6470;
+    --line: #e3e0d8; --accent: #2b5bd7; --accent-soft: #eef2fc;
+    --find: #9a5b1c; --find-soft: #faf3e9; --ok: #2e7d4f; --ok-soft: #ecf5ef;
+    --mono-bg: #f2f0ea;
+  }
+  :root:not([data-theme="light"]) { }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #15171c; --card: #1c1f26; --ink: #e8e6e0; --muted: #9aa0ab;
+      --line: #2e323b; --accent: #7d9bf0; --accent-soft: #232a3d;
+      --find: #d9a05b; --find-soft: #2b241a; --ok: #6fbb8f; --ok-soft: #1c2a22;
+      --mono-bg: #23262e;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #15171c; --card: #1c1f26; --ink: #e8e6e0; --muted: #9aa0ab;
+    --line: #2e323b; --accent: #7d9bf0; --accent-soft: #232a3d;
+    --find: #d9a05b; --find-soft: #2b241a; --ok: #6fbb8f; --ok-soft: #1c2a22;
+    --mono-bg: #23262e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font: 16px/1.6 "Public Sans", system-ui, sans-serif;
+    margin: 0; padding: 48px 20px 96px;
+  }
+  main { max-width: 76ch; margin: 0 auto; }
+  h1, h2, h3 { font-family: "Newsreader", Georgia, serif; text-wrap: balance; line-height: 1.2; }
+  h1 { font-size: 2.4rem; font-weight: 700; margin: 0 0 4px; }
+  h2 { font-size: 1.5rem; font-weight: 700; margin: 48px 0 12px; padding-top: 24px; border-top: 1px solid var(--line); }
+  h3 { font-size: 1.12rem; font-weight: 700; margin: 28px 0 8px; }
+  .kicker { font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin-bottom: 12px; }
+  .meta { color: var(--muted); margin: 0 0 8px; }
+  p { margin: 10px 0; }
+  code, .k {
+    font-family: "IBM Plex Mono", Consolas, monospace; font-size: .84em;
+    background: var(--mono-bg); padding: 1px 5px; border-radius: 4px;
+  }
+  blockquote {
+    margin: 12px 0; padding: 10px 16px; border-left: 3px solid var(--accent);
+    background: var(--accent-soft); border-radius: 0 8px 8px 0; color: var(--ink);
+  }
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; margin: 16px 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .86rem; }
+  th, td { text-align: left; vertical-align: top; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+  th { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--card); position: sticky; top: 0; }
+  tr:last-child td { border-bottom: 0; }
+  td.state { white-space: nowrap; font-family: "IBM Plex Mono", monospace; font-size: .78rem; }
+  .yes { color: var(--ok); font-weight: 600; }
+  .no  { color: var(--find); font-weight: 600; }
+  .item {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 20px 24px; margin: 20px 0;
+  }
+  .item .id { font-family: "IBM Plex Mono", monospace; font-weight: 600; color: var(--accent); }
+  .find .id { color: var(--find); }
+  .evidence {
+    font-family: "IBM Plex Mono", monospace; font-size: .8rem; line-height: 1.5;
+    background: var(--mono-bg); border-radius: 8px; padding: 10px 14px; margin: 10px 0;
+    overflow-x: auto; white-space: pre;
+  }
+  .opts { display: flex; flex-direction: column; gap: 8px; margin: 14px 0 6px; }
+  .opt {
+    display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px;
+    border: 1px solid var(--line); border-radius: 10px; cursor: pointer;
+  }
+  .opt:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+  .opt input { margin-top: 4px; accent-color: var(--accent); }
+  .opt .rec { font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ok); font-weight: 700; margin-left: 6px; }
+  .veto { display: flex; gap: 10px; align-items: center; margin-top: 12px; font-weight: 600; cursor: pointer; }
+  .veto input { accent-color: var(--find); width: 16px; height: 16px; }
+  .veto:has(input:checked) { color: var(--find); }
+  textarea {
+    width: 100%; min-height: 40px; margin-top: 10px; padding: 8px 12px;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink);
+    font: .9rem/1.5 "Public Sans", sans-serif; resize: vertical;
+  }
+  textarea:focus, .opt input:focus-visible, .veto input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button.copyall {
+    font: 600 1rem "Public Sans", sans-serif; color: #fff; background: var(--accent);
+    border: 0; border-radius: 10px; padding: 12px 22px; cursor: pointer; margin: 18px 0 8px;
+  }
+  #out {
+    display: none; font-family: "IBM Plex Mono", monospace; font-size: .8rem;
+    background: var(--mono-bg); border-radius: 8px; padding: 12px 16px; white-space: pre-wrap;
+  }
+  ul { padding-left: 22px; } li { margin: 6px 0; }
+  .quiet { color: var(--muted); font-size: .9rem; }
+  @media (prefers-reduced-motion: no-preference) { .opt { transition: border-color .15s, background .15s; } }
+  h4 { font-family: "Public Sans", sans-serif; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 16px 0 6px; }
+  .rulebody { border-left: 3px solid var(--line); padding: 2px 0 2px 14px; margin: 6px 0; }
+  .verdict { font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; float: right; }
+  .v-clean .verdict { color: var(--ok); }
+  .v-strained .verdict { color: var(--find); }
+  .v-resists .verdict { color: #b4453a; }
+  :root[data-theme="dark"] .v-resists .verdict, :root:not([data-theme="light"]) .v-resists .verdict { color: #e08b80; }
+  .item.rule { border-left: 3px solid var(--line); }
+  .item.v-resists { border-left-color: #b4453a; }
+  .item.v-strained { border-left-color: var(--find); }
+  .item.v-clean { border-left-color: var(--ok); }
+  .evidence { white-space: pre-wrap; word-break: break-word; }
+  .big { font-size: 1.05rem; }
+</style>
+<main>
+  <div class="kicker">draft · spec pass 5 · 2026-09-01</div>
+  <h1>SURFACE §8.1 as a table</h1>
+  <p class="meta">Question <strong>1006</strong>, backlog entry <strong>191</strong> as your ruling <strong>1050</strong> redefined it: <em>§9’s card kinds were prose once and are a table now; a pass that tabulated F1–F22 the same way would do more for the file’s size and readability than every item in the extraction proposal put together.</em> Twenty-three rules now, F1–F23, 14,177 B of §8.1.</p>
+  <p class="meta"><strong>Every rule is below, in full, both ways</strong> — its prose as it stands and the row it would become — so nothing is lost invisibly. The build’s recommendation is stated per rule and you can overturn any one of it with the checkbox on that rule. Questions 1122–1127 are the choices; 1128 is a finding, which <strong>stands unless vetoed</strong>. Answers save in this page; <em>Copy all answers</em> at the foot gives the paste-back block.</p>
+
+  <h2>The finding, first</h2>
+  <p class="big"><strong>F1–F23 do not tabulate.</strong> Not because the rules are untidy, but because of what they are: <strong>an F-rule is not one normative statement, it is a named cluster of them</strong> — and the clusters are wildly uneven. A faithful table of all 23, nothing shortened and nothing dropped, is <strong>1,681 B larger</strong> than the prose, and its worst cell is 2,577 characters wide.</p>
+  <p>§9’s card-kinds table is the model, and the comparison is what makes the case. It works because every row is the same kind of thing and <strong>eight repeated field-labels lift out of every row into the header</strong> — <em>opened from · head · field · radios · left · right · closes · files as</em>. That lifting is where a table’s savings come from. §8.1 has nothing to lift: F1 is <em>the founding runs in single file</em>, F14 is four animation durations, F21 is the Membership section’s whole structure. There is no field they share, so a table over them has one honest column — <em>the rule</em> — and that column is the prose again, with scaffolding added.</p>
+
+  <h2>How to read one item — a worked fragment</h2>
+  <p>The column set the plan proposes is <strong>id · what it governs · the rule · the condition · cites</strong>, and the <code>cites</code> column exists to keep F5’s <code>(F9, F18)</code>, F19’s and F23’s cross-references intact. Here it is on the section’s <em>best</em> case, F9 — one statement, one condition, nothing to lose:</p>
+  <div class="evidence">| id | what it governs | the rule | the condition | cites |
+|---|---|---|---|---|
+| F9 | when a card appears | **A card with a dependency does not appear until its dependency is settled — never greyed.** | a card with a dependency | — |</div>
+  <p>An honest row, and <strong>59 B larger than the sentence it replaces</strong>. Now the same columns on F21, the section’s largest rule — the whole row, exactly as it would be written:</p>
+  <div class="evidence">| F21 | the Membership section | **Membership is one subsection per status, and only the first is the membership.** Under the rules (🪪 🤝 💤 🥾) stand lvl-3 subsections — **Members** · **Invitees** · **Applicants** · **Lapsed** · **Proposed for removal** — each the document's own text, not a card's. *Applicants* stands only where 🤝 allows applications and *Lapsed* only where 💤 lapses; **the three that carry a control stand when empty** (Invitees, Applicants, Proposed for removal), a control needing a fixed home and inviting mattering most when nobody has been invited — **each with a placeholder row saying so**: *(no outstanding invitations)* · *(no applicants at the moment)* · *(nobody proposed for removal)*, in *(nobody else here yet)*'s own grey treatment, since a heading over a pile and nothing else reads as a heading that lost its paragraph (entry 183). **Every such row stands level with the pile at its paragraph's head** — under *Members* the placeholder is lifted out of flow into the clearance the list already carries for your own row, so the 42 px stays the one clearance number (Q757). **A door stands by its result** (entry 96): ✉️ on *Invitees*, ❌ on *Proposed for removal*, the admit judgment on *Applicants*, 🎩 on *Members* — each a pile with its own ✒️/🛡️ tabs, never a button inside a row, and **no card draws the register**. *Members* is your own row first, then everybody else who has **arrived**, and *(nobody else here yet)* counts those rows alone. **Your ✋ 🖼️ 📧 card opens in your own row's place** (entry 188): the row gives way to the card *inside the list*, the strip's front tab exactly where the pile's front tab stood and *Invitees* still below it — a decision card replacing its own paragraph, like every other one — and a folded *Members* renders its rows to hold it, since no heading folds over the open card. **A lapsed member moves to *Lapsed* and counts all the same** (Y10) — lapse is a stall, not a departure, and they abstain rather than leave; **a removal running against somebody names them under *Proposed for removal* whatever else is true of them**, a motion about a person being the more urgent fact than a quiet spell — and where they are also lapsed the row **wears a *lapsed* pill**, so the subsection they are not in is not the only place that fact can be read. **Every subsection folds**, like every other heading in the document (entry 96, closing the lvl3 half of Q406): the same `cs-` id, the same triangle, and never over an open card. The stranger reads the register under *Members* alone — the per-subsection counts are unbuilt (Q508). | always | Y10 · Q406 · Q508 · Q757 · entries 95, 96, 183, 188 · DECISIONS The leaving rules before the register · Q868–Q870 |</div>
+  <p>That is one table cell of 2,577 characters holding 14 separate rules, five subsection names, three verbatim placeholder strings and a measurement — with every paragraph seam that made it readable flattened out, because <strong>a markdown table cell cannot hold a break, a list or a paragraph</strong>. Nothing is <em>lost</em>: it is all still there. It is simply worse, and 20% of §8.1 is in that one cell.</p>
+  <p>Those two rows are the argument. Everything below is the same comparison for all 23.</p>
+
+  <h2>The arithmetic</h2>
+  <div class="tablewrap"><table>
+    <tr><th>family</th><th>rules</th><th>n</th><th>bytes</th><th>share</th><th>what it means</th></tr>
+    <tr><td><strong>tabulates cleanly</strong></td><td class="k">F1 F4 F8 F9 F10 F12 F13 F15</td><td>8</td><td>1,030 B</td><td>7.6%</td><td>One or a few atomic statements. It would make an honest row — a larger one than the sentence.</td></tr>
+    <tr><td><strong>strained</strong></td><td class="k">F6 F7 F11 F14 F16 F17 F18 F20 F22</td><td>9</td><td>3,990 B</td><td>29.6%</td><td>It fits in a row, but the row carries the whole rule in one cell and the seams that made it readable are gone.</td></tr>
+    <tr><td><strong>resists</strong></td><td class="k">F2 F3 F5 F19 F21 F23</td><td>6</td><td>8,460 B</td><td>62.8%</td><td>Not a row without loss: too many separable statements, or a cell so long the table stops being one.</td></tr>
+  </table></div>
+  <p><strong>The eight rules that tabulate cleanly are 7.6% of the section. The six that resist are 62.8%.</strong> The table is at its best where nobody needed help and at its worst on F21, F19, F5 and F23 — which is the section.</p>
+  <div class="tablewrap"><table>
+    <tr><th>measure</th><th>bytes</th></tr>
+    <tr><td>§8.1 as it stands — the <code>### 8.1 Rules</code> heading to the start of §9</td><td>14,177</td></tr>
+    <tr><td>the 23 rules alone</td><td>13,480</td></tr>
+    <tr><td>the same 23 as one faithful table, header included</td><td>15,161</td></tr>
+    <tr><td><strong>difference</strong></td><td><strong>+1,681</strong></td></tr>
+    <tr><td><code>SURFACE.md</code> today</td><td>95,917</td></tr>
+    <tr><td>the watch number</td><td>70,000</td></tr>
+  </table></div>
+  <p class="quiet">The byte target is a consequence, never a criterion (your 1051, and plan-queue backlog 143). Nothing here was compressed to reach a number, and no rule was shortened: <em>refactor, not cull</em>. The distance to 70,000 is unchanged by this pass at 25,917 B over, and §8.1 was never where that distance was going to be found — it is 14.8% of the file.</p>
+
+  <h2>The choices — 1122 to 1127</h2>
+  <div class="item" data-id="1122"><span class="id">1122</span> <strong>The pass’s own verdict — does §8.1 become a table?</strong>
+    <p>The measurement is above. Tabulating all 23 faithfully — nothing shortened, nothing dropped, which is what <em>refactor, not cull</em> requires — makes the section <strong>larger by 1,681 B</strong>, because the prose has no repeated field-labels to lift into column headers. §9’s card-kinds table works precisely because it does: nine labels lifted out of every row. §8.1’s rules each say a different <em>kind</em> of thing, so there is nothing to lift.</p>
+      <p>And the readability half goes the same way: <strong>the eight rules that tabulate cleanly are 7.6% of the section’s bytes; the six that resist are 62.8%.</strong> The table would be at its best on the rules nobody struggles with and at its worst on F21, F19 and F5.</p>
+    <div class="opts">
+      <label class="opt"><input type="radio" name="1122" value="a"><span><strong>(a)</strong> Accept the finding — §8.1 stays prose. The pass’s product is this evidence, the new <code>spec-check</code> guard and the row-by-row record below.<span class="rec">recommended</span></span></label>
+      <label class="opt"><input type="radio" name="1122" value="b"><span><strong>(b)</strong> Tabulate the eight that tabulate cleanly and leave the rest prose — a section half table, half prose.</span></label>
+      <label class="opt"><input type="radio" name="1122" value="c"><span><strong>(c)</strong> Tabulate all 23 anyway. The 2,400-character F21 cell is accepted as the price of a uniform section.</span></label>
+    </div><textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item" data-id="1123"><span class="id">1123</span> <strong>The eight that tabulate cleanly</strong>
+    <p><strong>F1 · F4 · F8 · F9 · F10 · F12 · F13 · F15</strong> — 1,030 B, 7.6% of the section. Each is one to four atomic statements and would make an honest row. Each row is also 28–60 B <em>larger</em> than the sentence, and a reader arriving at §8.1 would meet a table of the easy rules followed by prose for the hard ones.</p>
+    <div class="opts">
+      <label class="opt"><input type="radio" name="1123" value="a"><span><strong>(a)</strong> Leave them with the rest. A section that is half table and half prose is harder to read than either, and these are the rules nobody was struggling with.<span class="rec">recommended</span></span></label>
+      <label class="opt"><input type="radio" name="1123" value="b"><span><strong>(b)</strong> Make just these eight a table, prose below it.</span></label>
+    </div><textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item" data-id="1124"><span class="id">1124</span> <strong>The nine that are strained</strong>
+    <p><strong>F6 · F7 · F11 · F14 · F16 · F17 · F18 · F20 · F22</strong> — 3,990 B, 29.6%. Each fits in a row, and each row carries the whole rule in one cell with its internal seams flattened to commas. <strong>F17 is the one rule in the section whose <em>condition</em> column earns its keep</strong> (the birth · a task outstanding · no card open); <strong>F14 is the one carrying real numbers</strong> (240 ms, 840 ms, 55 ms, six).</p>
+    <div class="opts">
+      <label class="opt"><input type="radio" name="1124" value="a"><span><strong>(a)</strong> Prose. A row that flattens six conditions into one comma run has lost the thing that made the rule checkable.<span class="rec">recommended</span></span></label>
+      <label class="opt"><input type="radio" name="1124" value="b"><span><strong>(b)</strong> Rows — accept the flattening.</span></label>
+      <label class="opt"><input type="radio" name="1124" value="c"><span><strong>(c)</strong> Rows for F14 and F17 only, where the columns do real work.</span></label>
+    </div><textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item" data-id="1125"><span class="id">1125</span> <strong>The six that resist</strong>
+    <p><strong>F2 · F3 · F5 · F19 · F21 · F23</strong> — 8,460 B, <strong>62.8% of the section</strong>. Between them 58 separable normative statements. F21 alone is 14 statements in one 2,733 B rule.</p>
+      <p>Option (c) is here so the ruling is visible rather than assumed: it is what a table of these would actually require, and you have ruled it out twice.</p>
+    <div class="opts">
+      <label class="opt"><input type="radio" name="1125" value="a"><span><strong>(a)</strong> Prose. These are the rules the table was supposed to help with, and they are the ones it helps least.<span class="rec">recommended</span></span></label>
+      <label class="opt"><input type="radio" name="1125" value="b"><span><strong>(b)</strong> Rows anyway — one cell each, however long.</span></label>
+      <label class="opt"><input type="radio" name="1125" value="c"><span><strong>(c)</strong> Split them into sub-ids (F21a, F21b …) so each is a row. <strong>This renumbers</strong>, which you ruled out twice.</span></label>
+    </div><textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item" data-id="1126"><span class="id">1126</span> <strong>F19’s six reason codes — a table inside F19?</strong>
+    <p><strong>The one genuinely tabular thing the pass found.</strong> F19 enumerates six <code>readiness()</code> reasons — <code>judge-gate</code>, <code>deps-unsettled</code>, <code>invitation-open</code>, <code>one-voice</code>, <code>collecting</code>, <code>text-unconfirmed</code> — and then says different things about three of them: <code>one-voice</code> is the only one no amount of answering clears, <code>deps-unsettled</code> is served <em>without</em> the ✉️ remedy, and a dependency that is itself a <code>one-voice</code> hold says what waits on it in turn.</p>
+      <p>That is a <em>reason · what it means · is ✉️ the remedy</em> table, and it is the one place in §8.1 where rows would carry more than the prose does. It was <strong>not</strong> built, because it changes F19’s shape and this plan’s ruling was <em>never force a table</em>.</p>
+    <div class="opts">
+      <label class="opt"><input type="radio" name="1126" value="a"><span><strong>(a)</strong> Do it in a follow-up plan — the reason codes become a small table inside F19, the surrounding rule staying prose.<span class="rec">recommended</span></span></label>
+      <label class="opt"><input type="radio" name="1126" value="b"><span><strong>(b)</strong> Leave F19 whole. The three exceptions are what matter and they do not fit the columns either.</span></label>
+      <label class="opt"><input type="radio" name="1126" value="c"><span><strong>(c)</strong> Do it now, as an amendment to this pass.</span></label>
+    </div><textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item" data-id="1127"><span class="id">1127</span> <strong>An index table above the prose?</strong>
+    <p>1006’s argument was size <em>and</em> readability. The size half is answered above. The readability half could be had without any tabulation: a 23-row <em>id → what it governs</em> index above the rules, roughly 1.2 KB added, so §8.1 opens with a map and then states the rules in full.</p>
+      <p>Against it: the ids are already bolded, already in order, and each already leads with its own summary sentence — <code>- **F1 The founding runs in single file…**</code>. An index would be a second, shorter statement of 23 things that already state themselves, and a second statement is the thing CLAUDE.md’s admission rule exists to stop.</p>
+    <div class="opts">
+      <label class="opt"><input type="radio" name="1127" value="a"><span><strong>(a)</strong> No. The bolded leads are already the index, and they cannot go stale against themselves.<span class="rec">recommended</span></span></label>
+      <label class="opt"><input type="radio" name="1127" value="b"><span><strong>(b)</strong> Yes — add the index table, and give <code>spec-check</code> a marker so it stays in step with the rules.</span></label>
+    </div><textarea placeholder="Notes (optional)"></textarea></div>
+
+  <h2>The finding — 1128</h2>
+  <div class="item find" data-id="1128"><span class="id">1128</span> <strong>The F-id guard asserts definitions, never occurrences</strong>
+    <p>The plan’s step 7 asked <code>spec-check</code> to assert that <em>each F-id appears exactly once in SURFACE.md</em>. That is unbuildable, and it would also be wrong: <strong>§8.1 is built out of cross-references.</strong> F19 is written seven times in the file, F5 and F18 five each, F7 and F3 four, F9, F8 and F23 three — and §8’s own <code>ORDER</code> table cites F5, F9, F18 and F19 in two of its cells.</p>
+   <p>Built instead: each id is <strong>defined</strong> exactly once — one list item in §8.1 whose lead is <code>- **F&lt;n&gt; </code> — the ids are exactly F1–F23 in order with no gap and no duplicate, no rule is defined outside §8.1, and <strong>every <code>F&lt;n&gt;</code> written anywhere in SURFACE.md resolves to a definition</strong>, so a citation cannot outlive the rule it points at. Green: 23 rules defined, 53 citations, all resolving. Verified to bite on a renumbering, a deletion and a dangling citation.</p>
+    <label class="veto"><input type="checkbox"> Veto — assert something else instead (say what below)</label>
+    <textarea placeholder="Notes (optional)"></textarea></div>
+
+  <h2>Every rule, both ways — F1 to F23</h2>
+  <p>Each item quotes the rule in full and reproduces the row it would become in full. The recommendation on every one is <strong>stays prose</strong>; tick the box on any rule you want tabulated regardless, and it becomes a row in the follow-up plan.</p>
+  <div class="item rule v-clean" data-id="F1"><span class="id">F1</span> <strong>the founding's pace</strong> <span class="verdict">tabulates cleanly</span>
+    <p class="quiet">1 separable normative statement · 77 B as prose → 130 B as a row (+53) · One or a few atomic statements. It would make an honest row — a larger one than the sentence.</p>
+    <h4>The rule as it stands, in full</h4>
+    <div class="rulebody"><strong>F1 The founding runs in single file, in the document's own order</strong> (C14).</div>
+    <h4>The row it would become, in full</h4>
+    <div class="evidence">| F1 | the founding's pace | **The founding runs in single file, in the document's own order** (C14). | the whole founding | C14 |</div>
+    <p>Nothing moves out; (C14) becomes <code>cites</code>. The row is 28 B larger than the sentence it replaces.</p>
+    <label class="veto"><input type="checkbox"> No — <strong>tabulate F1</strong> anyway</label>
+    <textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item rule v-resists" data-id="F2"><span class="id">F2</span> <strong>the birth order, and 🧭’s shape</strong> <span class="verdict">resists</span>
+    <p class="quiet">9 separable normative statements · 844 B as prose → 967 B as a row (+123) · Not a row without loss: too many separable statements, or a cell so long the table stops being one.</p>
+    <h4>The rule as it stands, in full</h4>
+    <div class="rulebody"><strong>F2 The birth order is 🪶 → 📍 → 🧭 → 📧, and the magic link is the instantiation</strong>: nothing is saved anywhere until it is followed; the rail at the save holds the pen, ✋ and 🖼️ — the two personal cards being the one non-gate pair that holds its place without blocking (F3, Q980), so they arrive together and the founding walks past them. 🧭 chooses a <strong>shape</strong> (entry 166) — <em>a meeting</em> · <em>a conference</em> · <em>ongoing</em> · <em>custom</em> — folded at the save as the Founder's own pre-start sets (SPEC §9.0a): every shaped clause reads <em>As for a meeting.</em> until the Founder touches it or presses 🍾, 🍾 states which they changed, 💤 is not shown at all under a meeting or a conference, and ⏰ offers chips in the shape's unit. The table is <code>packages/constitution/src/shapes.ts</code>; custom is the absence of a shape.</div>
+    <h4>The row it would become, in full</h4>
+    <div class="evidence">| F2 | the birth order, and 🧭’s shape | **The birth order is 🪶 → 📍 → 🧭 → 📧, and the magic link is the instantiation**: nothing is saved anywhere until it is followed; the rail at the save holds the pen, ✋ and 🖼️ — the two personal cards being the one non-gate pair that holds its place without blocking (F3, Q980), so they arrive together and the founding walks past them. 🧭 chooses a **shape** (entry 166) — *a meeting* · *a conference* · *ongoing* · *custom* — folded at the save as the Founder's own pre-start sets (SPEC §9.0a): every shaped clause reads *As for a meeting.* until the Founder touches it or presses 🍾, 🍾 states which they changed, 💤 is not shown at all under a meeting or a conference, and ⏰ offers chips in the shape's unit. The table is `packages/constitution/src/shapes.ts`; custom is the absence of a shape. | from arrival to the save | F3 · Q980 · SPEC §9.0a · entry 166 · shapes.ts |</div>
+    <p><strong>Two rules under one id</strong> — the birth order, and 🧭’s whole shape mechanism — with nine statements between them. Splitting them would add an id, which Ed ruled out twice; keeping them makes one 780-character cell.</p>
+    <label class="veto"><input type="checkbox"> No — <strong>tabulate F2</strong> anyway</label>
+    <textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item rule v-resists" data-id="F3"><span class="id">F3</span> <strong>what blocks the order</strong> <span class="verdict">resists</span>
+    <p class="quiet">6 separable normative statements · 643 B as prose → 736 B as a row (+93) · Not a row without loss: too many separable statements, or a cell so long the table stops being one.</p>
+    <h4>The rule as it stands, in full</h4>
+    <div class="rulebody"><strong>F3 A non-gate card blocks until settled; a gate or grant holds its place without blocking and stands beside the current question; the pen is the one grant that blocks</strong> — and ✋ 🖼️, being personal, hold their place too: a blank name is Anonymous and a blank picture is initials (§9.0c), so nothing waits on them. They stand at the save above the pen, the pen's rule — <em>every card below it is committed with the very pen it hands over</em> — not reaching a pair that is committed with no power at all (Q980). The exemption is the cards' own <code>blocks: false</code>, read by <code>blocksOrder</code> and asserted against this table's <em>blocks?</em> column.</div>
+    <h4>The row it would become, in full</h4>
+    <div class="evidence">| F3 | what blocks the order | **A non-gate card blocks until settled; a gate or grant holds its place without blocking and stands beside the current question; the pen is the one grant that blocks** — and ✋ 🖼️, being personal, hold their place too: a blank name is Anonymous and a blank picture is initials (§9.0c), so nothing waits on them. They stand at the save above the pen, the pen's rule — *every card below it is committed with the very pen it hands over* — not reaching a pair that is committed with no power at all (Q980). The exemption is the cards' own `blocks: false`, read by `blocksOrder` and asserted against this table's *blocks?* column. | every card in ORDER | §8’s blocks? column · §9.0c · Q980 |</div>
+    <p>Six statements, including the ✋ 🖼️ exemption <em>and its reason</em>. This rule quantifies over §8’s ORDER table — its <em>blocks?</em> column <em>is</em> the tabulation of it — so a row here restates a table that already exists two screens up.</p>
+    <label class="veto"><input type="checkbox"> No — <strong>tabulate F3</strong> anyway</label>
+    <textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item rule v-clean" data-id="F4"><span class="id">F4</span> <strong>the gate clauses</strong> <span class="verdict">tabulates cleanly</span>
+    <p class="quiet">2 separable normative statements · 127 B as prose → 169 B as a row (+42) · One or a few atomic statements. It would make an honest row — a larger one than the sentence.</p>
+    <h4>The rule as it stands, in full</h4>
+    <div class="rulebody"><strong>F4 The gate clauses wait for 🍾</strong>, where they are decided (Y5); 🍾 is the only step that delivers more than one clause.</div>
+    <h4>The row it would become, in full</h4>
+    <div class="evidence">| F4 | the gate clauses | **The gate clauses wait for 🍾**, where they are decided (Y5); 🍾 is the only step that delivers more than one clause. | before 🍾 | Y5 |</div>
+    <p>Two statements, and the second (🍾 is the only step delivering more than one clause) is about 🍾 rather than the gates. +45 B.</p>
+    <label class="veto"><input type="checkbox"> No — <strong>tabulate F4</strong> anyway</label>
+    <textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item rule v-resists" data-id="F5"><span class="id">F5</span> <strong>🍾’s visibility, and its power table</strong> <span class="verdict">resists</span>
+    <p class="quiet">12 separable normative statements · 1,434 B as prose → 1,574 B as a row (+140) · Not a row without loss: too many separable statements, or a cell so long the table stops being one.</p>
+    <h4>The rule as it stands, in full</h4>
+    <div class="rulebody"><strong>F5 🍾 is the founder's, invisible to members before the start, and it does not appear until it can be pressed — or until nothing else is being served</strong> (F9, F18): shown once the module's own <code>readiness()</code> is ready and 🏛️ is not still being served, hidden before that rather than greyed, <strong>except that it is shown with its commit dark when the rail would otherwise hold nothing but the ✉️ remedy</strong> (F19). Its card states the whole batch, the readiness readout — which informs and never blocks — and, where <code>readiness()</code> gives the reason <code>one-voice</code>, the sentence naming both acts that end it. <strong>It also carries the power table</strong> (entry 158, SPEC §9.7 rule 8): one row per zone of <code>BEGIN_ZONES</code> — 📝 the Text · Membership · everything else — and two switches per row, ✒️ and 🛡️, each reading <em>kept</em>, <em>laid down</em> or <strong>mixed</strong> off the same source the setting's own ✒️/🛡️ tab reads, so the two controls never disagree about one power; a power promised away on a tab shows its zone as mixed and never as kept. 📝 starts at <em>lay down</em> and every other zone at <em>keep</em>, and the write is one direction only — <em>keep</em> lays nothing further down and never reclaims, which stays on the setting's own card. The whole table travels as <strong>one act at one time-stamp</strong>, so what it lays down is one news entry and one OK (C8a). → why: Q626, Q745, Q773; DECISIONS.md, <em>Begin says what it is waiting for</em>.</div>
+    <h4>The row it would become, in full</h4>
+    <div class="evidence">| F5 | 🍾’s visibility, and its power table | **🍾 is the founder's, invisible to members before the start, and it does not appear until it can be pressed — or until nothing else is being served** (F9, F18): shown once the module's own `readiness()` is ready and 🏛️ is not still being served, hidden before that rather than greyed, **except that it is shown with its commit dark when the rail would otherwise hold nothing but the ✉️ remedy** (F19). Its card states the whole batch, the readiness readout — which informs and never blocks — and, where `readiness()` gives the reason `one-voice`, the sentence naming both acts that end it. **It also carries the power table** (entry 158, SPEC §9.7 rule 8): one row per zone of `BEGIN_ZONES` — 📝 the Text · Membership · everything else — and two switches per row, ✒️ and 🛡️, each reading *kept*, *laid down* or **mixed** off the same source the setting's own ✒️/🛡️ tab reads, so the two controls never disagree about one power; a power promised away on a tab shows its zone as mixed and never as kept. 📝 starts at *lay down* and every other zone at *keep*, and the write is one direction only — *keep* lays nothing further down and never reclaims, which stays on the setting's own card. The whole table travels as **one act at one time-stamp**, so what it lays down is one news entry and one OK (C8a). | the founder’s surface, before the start | F9 · F18 · F19 · C8a · SPEC §9.7 r8 · entry 158 · Q626 · Q745 · Q773 · DECISIONS Begin says what it is waiting for |</div>
+    <p><strong>Twelve statements across two topics</strong> — 🍾’s three visibility conditions, and the <code>BEGIN_ZONES</code> power table. The power-table half is six of them on its own (one row per zone, two switches per row, the same source as the setting’s tab, 📝 starts laid down, the write is one-direction, one act and one OK). One cell, ~1,150 characters, with no seam between the halves.</p>
+    <label class="veto"><input type="checkbox"> No — <strong>tabulate F5</strong> anyway</label>
+    <textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item rule v-strained" data-id="F6"><span class="id">F6</span> <strong>defaults and pre-answering</strong> <span class="verdict">strained</span>
+    <p class="quiet">6 separable normative statements · 581 B as prose → 655 B as a row (+74) · It fits in a row, but the row carries the whole rule in one cell and the seams that made it readable are gone.</p>
+    <h4>The rule as it stands, in full</h4>
+    <div class="rulebody"><strong>F6 Nothing is pre-answered; typing into a rung's own field is choosing that rung; picking a rung may fill that rung's own fields; delegation is an option on the card and settles the clause the same way.</strong> The old defaults survive only in ⏩'s <code>SEED</code>. The fill is ⏱️'s <em>I set it</em>, which writes the standard proposal rate — 4 ✏️ to start with, up to a maximum of 6, an additional every 10 minutes — <strong>silently, only where the field is empty, and only on the pick</strong>, so the card still arrives with nothing answered and the founder may commit unchanged. → why: Q740.</div>
+    <h4>The row it would become, in full</h4>
+    <div class="evidence">| F6 | defaults and pre-answering | **Nothing is pre-answered; typing into a rung's own field is choosing that rung; picking a rung may fill that rung's own fields; delegation is an option on the card and settles the clause the same way.** The old defaults survive only in ⏩'s `SEED`. The fill is ⏱️'s *I set it*, which writes the standard proposal rate — 4 ✏️ to start with, up to a maximum of 6, an additional every 10 minutes — **silently, only where the field is empty, and only on the pick**, so the card still arrives with nothing answered and the founder may commit unchanged. | every card that asks something | Q740 · ⏩’s SEED |</div>
+    <p>Six statements. The ⏱️ fill’s three conditions — silently · only where the field is empty · only on the pick — survive only as a comma run inside the cell, and they are the part most likely to be misread.</p>
+    <label class="veto"><input type="checkbox"> No — <strong>tabulate F6</strong> anyway</label>
+    <textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item rule v-strained" data-id="F7"><span class="id">F7</span> <strong>when a delegated question is served</strong> <span class="verdict">strained</span>
+    <p class="quiet">6 separable normative statements · 561 B as prose → 645 B as a row (+84) · It fits in a row, but the row carries the whole rule in one cell and the seams that made it readable are gone.</p>
+    <h4>The rule as it stands, in full</h4>
+    <div class="rulebody"><strong>F7 A delegated question waits for a member who has arrived, unless nothing else is outstanding — and a gate or a grant is never <em>outstanding</em>, being news rather than a question; it never resolves on one voice and never while an invitation is out; only committed answers count; the watcher waits for your own answer.</strong> <strong>Nor is the ✉️ remedy outstanding</strong> (F19): a question is <code>one-voice</code> only once it has been handed over, so counting the remedy would withhold every delegated question from the founder's first delegation onwards. → why: Q645, Q828.</div>
+    <h4>The row it would become, in full</h4>
+    <div class="evidence">| F7 | when a delegated question is served | **A delegated question waits for a member who has arrived, unless nothing else is outstanding — and a gate or a grant is never *outstanding*, being news rather than a question; it never resolves on one voice and never while an invitation is out; only committed answers count; the watcher waits for your own answer.** **Nor is the ✉️ remedy outstanding** (F19): a question is `one-voice` only once it has been handed over, so counting the remedy would withhold every delegated question from the founder's first delegation onwards. | a delegated question, before the start | F19 · Q645 · Q828 |</div>
+    <p>Six conjuncts, each a separate condition on one act. As a cell they read as a single sentence carrying five <em>unless</em> clauses; the <em>condition</em> column can hold one of the six and no more.</p>
+    <label class="veto"><input type="checkbox"> No — <strong>tabulate F7</strong> anyway</label>
+    <textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item rule v-clean" data-id="F8"><span class="id">F8</span> <strong>what is owed an OK</strong> <span class="verdict">tabulates cleanly</span>
+    <p class="quiet">2 separable normative statements · 95 B as prose → 154 B as a row (+59) · One or a few atomic statements. It would make an honest row — a larger one than the sentence.</p>
+    <h4>The rule as it stands, in full</h4>
+    <div class="rulebody"><strong>F8 Nothing is owed an OK until the document begins; a gate opening is the exception</strong> (Y6).</div>
+    <h4>The row it would become, in full</h4>
+    <div class="evidence">| F8 | what is owed an OK | **Nothing is owed an OK until the document begins; a gate opening is the exception** (Y6). | before the document begins | Y6 |</div>
+    <p>Two statements, the second an exception to the first. +40 B.</p>
+    <label class="veto"><input type="checkbox"> No — <strong>tabulate F8</strong> anyway</label>
+    <textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item rule v-clean" data-id="F9"><span class="id">F9</span> <strong>when a card appears</strong> <span class="verdict">tabulates cleanly</span>
+    <p class="quiet">1 separable normative statement · 99 B as prose → 158 B as a row (+59) · One or a few atomic statements. It would make an honest row — a larger one than the sentence.</p>
+    <h4>The rule as it stands, in full</h4>
+    <div class="rulebody"><strong>F9 A card with a dependency does not appear until its dependency is settled — never greyed.</strong></div>
+    <h4>The row it would become, in full</h4>
+    <div class="evidence">| F9 | when a card appears | **A card with a dependency does not appear until its dependency is settled — never greyed.** | a card with a dependency | — |</div>
+    <p>The cleanest row in the section — one statement, one condition — and 41 B larger than the sentence.</p>
+    <label class="veto"><input type="checkbox"> No — <strong>tabulate F9</strong> anyway</label>
+    <textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item rule v-clean" data-id="F10"><span class="id">F10</span> <strong>what opens a card</strong> <span class="verdict">tabulates cleanly</span>
+    <p class="quiet">1 separable normative statement · 54 B as prose → 92 B as a row (+38) · One or a few atomic statements. It would make an honest row — a larger one than the sentence.</p>
+    <h4>The rule as it stands, in full</h4>
+    <div class="rulebody"><strong>F10 Nothing opens itself, arrival included</strong> (C1).</div>
+    <h4>The row it would become, in full</h4>
+    <div class="evidence">| F10 | what opens a card | **Nothing opens itself, arrival included** (C1). | always | C1 |</div>
+    <p>One statement. The row is 49 B, nearly twice the 54 B rule.</p>
+    <label class="veto"><input type="checkbox"> No — <strong>tabulate F10</strong> anyway</label>
+    <textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item rule v-strained" data-id="F11"><span class="id">F11</span> <strong>the address (📍)</strong> <span class="verdict">strained</span>
+    <p class="quiet">6 separable normative statements · 318 B as prose → 392 B as a row (+74) · It fits in a row, but the row carries the whole rule in one cell and the seams that made it readable are gone.</p>
+    <h4>The rule as it stands, in full</h4>
+    <div class="rulebody"><strong>F11 The address is the machine's until you touch it</strong>: a suggested address moves itself to the nearest free one and says so; a typed one never moves; the chain is capped at three; the check is asked whenever there is an address; a verdict that cannot be got counts as one; the page answers for its own reservation.</div>
+    <h4>The row it would become, in full</h4>
+    <div class="evidence">| F11 | the address (📍) | **The address is the machine's until you touch it**: a suggested address moves itself to the nearest free one and says so; a typed one never moves; the chain is capped at three; the check is asked whenever there is an address; a verdict that cannot be got counts as one; the page answers for its own reservation. | whenever there is an address | — (slug-walk) |</div>
+    <p>Six semicolon-joined sub-rules about one control. It fits, but the <em>condition</em> column can only say <em>whenever there is an address</em> — which is itself one of the six, so the column repeats the cell.</p>
+    <label class="veto"><input type="checkbox"> No — <strong>tabulate F11</strong> anyway</label>
+    <textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item rule v-clean" data-id="F12"><span class="id">F12</span> <strong>the birth’s save, and 📧</strong> <span class="verdict">tabulates cleanly</span>
+    <p class="quiet">4 separable normative statements · 192 B as prose → 245 B as a row (+53) · One or a few atomic statements. It would make an honest row — a larger one than the sentence.</p>
+    <h4>The rule as it stands, in full</h4>
+    <div class="rulebody"><strong>F12 The email is verified before anything is saved; before the send the 📧 clause is blank; the birth has no heading and no sections; 📧 stands in the lead for the whole birth</strong> (Y16).</div>
+    <h4>The row it would become, in full</h4>
+    <div class="evidence">| F12 | the birth’s save, and 📧 | **The email is verified before anything is saved; before the send the 📧 clause is blank; the birth has no heading and no sections; 📧 stands in the lead for the whole birth** (Y16). | the birth | Y16 |</div>
+    <p>Four statements about one moment. Fits; +55 B.</p>
+    <label class="veto"><input type="checkbox"> No — <strong>tabulate F12</strong> anyway</label>
+    <textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item rule v-clean" data-id="F13"><span class="id">F13</span> <strong>the constitution’s own text</strong> <span class="verdict">tabulates cleanly</span>
+    <p class="quiet">3 separable normative statements · 161 B as prose → 220 B as a row (+59) · One or a few atomic statements. It would make an honest row — a larger one than the sentence.</p>
+    <h4>The rule as it stands, in full</h4>
+    <div class="rulebody"><strong>F13 The constitution starts writing itself at the birth</strong>; at the birth the founder holds everything by construction; the assent half waits for a membership.</div>
+    <h4>The row it would become, in full</h4>
+    <div class="evidence">| F13 | the constitution’s own text | **The constitution starts writing itself at the birth**; at the birth the founder holds everything by construction; the assent half waits for a membership. | from the birth | — |</div>
+    <p>Three statements. Fits; +60 B.</p>
+    <label class="veto"><input type="checkbox"> No — <strong>tabulate F13</strong> anyway</label>
+    <textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item rule v-strained" data-id="F14"><span class="id">F14</span> <strong>the birth-pass</strong> <span class="verdict">strained</span>
+    <p class="quiet">5 separable normative statements · 234 B as prose → 295 B as a row (+61) · It fits in a row, but the row carries the whole rule in one cell and the seams that made it readable are gone.</p>
+    <h4>The rule as it stands, in full</h4>
+    <div class="rulebody"><strong>F14 What is born arrives</strong>: a rail entry grows from zero (240 ms), a clause fades (840 ms), a batch cascades 55 ms apart capped at six, each column counting its own; reduced motion fades everything; a stagehand act mutes the pass.</div>
+    <h4>The row it would become, in full</h4>
+    <div class="evidence">| F14 | the birth-pass | **What is born arrives**: a rail entry grows from zero (240 ms), a clause fades (840 ms), a batch cascades 55 ms apart capped at six, each column counting its own; reduced motion fades everything; a stagehand act mutes the pass. | anything newly born | — (birthPass) |</div>
+    <p>Five statements carrying four numbers (240 ms, 840 ms, 55 ms, six). <strong>The numbers are the one thing in §8.1 a table would genuinely be good at</strong> — and they are four cells’ worth in a section of twenty-three rules.</p>
+    <label class="veto"><input type="checkbox"> No — <strong>tabulate F14</strong> anyway</label>
+    <textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item rule v-clean" data-id="F15"><span class="id">F15</span> <strong>what a clause says</strong> <span class="verdict">tabulates cleanly</span>
+    <p class="quiet">3 separable normative statements · 225 B as prose → 283 B as a row (+58) · One or a few atomic statements. It would make an honest row — a larger one than the sentence.</p>
+    <h4>The rule as it stands, in full</h4>
+    <div class="rulebody"><strong>F15 A clause states <em>The Founder is deciding [what]</em> until decided, then the rule and its governance deviation; a settled card's head is the rule; open questions, 🪪, 📝, personal cards and answers keep their title.</strong></div>
+    <h4>The row it would become, in full</h4>
+    <div class="evidence">| F15 | what a clause says | **A clause states *The Founder is deciding [what]* until decided, then the rule and its governance deviation; a settled card's head is the rule; open questions, 🪪, 📝, personal cards and answers keep their title.** | every clause in the band | — |</div>
+    <p>Three statements plus a five-item exemption list, which becomes a comma run in the cell.</p>
+    <label class="veto"><input type="checkbox"> No — <strong>tabulate F15</strong> anyway</label>
+    <textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item rule v-strained" data-id="F16"><span class="id">F16</span> <strong>the Founded line</strong> <span class="verdict">strained</span>
+    <p class="quiet">4 separable normative statements · 350 B as prose → 381 B as a row (+31) · It fits in a row, but the row carries the whole rule in one cell and the seams that made it readable are gone.</p>
+    <h4>The rule as it stands, in full</h4>
+    <div class="rulebody"><strong>F16 The Founded line stands from the save and gains its moment at the press</strong> — the <em>moment</em> is what is unknown before the start, not the founding — <strong>and it is the clause ✒️ and 🛡️ hang their tabs on, neither writing a sentence of its own; 🎩 is settled once the document begins; the register asks for no minimum.</strong> → why: Q639.</div>
+    <h4>The row it would become, in full</h4>
+    <div class="evidence">| F16 | the Founded line | **The Founded line stands from the save and gains its moment at the press** — the *moment* is what is unknown before the start, not the founding — **and it is the clause ✒️ and 🛡️ hang their tabs on, neither writing a sentence of its own; 🎩 is settled once the document begins; the register asks for no minimum.** | from the save | Q639 |</div>
+    <p>Four statements, <strong>three of them appended to a rule about something else</strong> — the ✒️/🛡️ tabs, 🎩 being settled at the start, the register’s minimum. A row makes that visible, which is an argument for the table and against this rule’s shape. Worth a look either way.</p>
+    <label class="veto"><input type="checkbox"> No — <strong>tabulate F16</strong> anyway</label>
+    <textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item rule v-strained" data-id="F17"><span class="id">F17</span> <strong>the dead click</strong> <span class="verdict">strained</span>
+    <p class="quiet">4 separable normative statements · 441 B as prose → 504 B as a row (+63) · It fits in a row, but the row carries the whole rule in one cell and the seams that made it readable are gone.</p>
+    <h4>The rule as it stands, in full</h4>
+    <div class="rulebody"><strong>F17 A dead click beats the next task</strong>: during the birth, a click landing on document space with no control under it — while a task is outstanding and no card is open — lifts and settles <strong>both</strong> that task's tab and its rail entry, twice, over 640 ms. It never opens the card, however often it is clicked, and <strong>nothing ever beats unprompted</strong>. Reduced motion holds the lift for the same span instead of moving. → why: Q650–Q653.</div>
+    <h4>The row it would become, in full</h4>
+    <div class="evidence">| F17 | the dead click | **A dead click beats the next task**: during the birth, a click landing on document space with no control under it — while a task is outstanding and no card is open — lifts and settles **both** that task's tab and its rail entry, twice, over 640 ms. It never opens the card, however often it is clicked, and **nothing ever beats unprompted**. Reduced motion holds the lift for the same span instead of moving. | the birth · a task outstanding · no card open | Q650–Q653 |</div>
+    <p>Four statements, three numbers and a reduced-motion case. <strong>The one rule where the <em>condition</em> column earns its keep</strong> — three real preconditions, stated separately in the prose and cleanly separable into a cell.</p>
+    <label class="veto"><input type="checkbox"> No — <strong>tabulate F17</strong> anyway</label>
+    <textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item rule v-strained" data-id="F18"><span class="id">F18</span> <strong>the supply of tasks</strong> <span class="verdict">strained</span>
+    <p class="quiet">3 separable normative statements · 570 B as prose → 621 B as a row (+51) · It fits in a row, but the row carries the whole rule in one cell and the seams that made it readable are gone.</p>
+    <h4>The rule as it stands, in full</h4>
+    <div class="rulebody"><strong>F18 The founding never runs out of tasks before 🍾</strong>: from the save until the press, a founder is always served the next founding task, a delegated question to answer as a member, or 🍾 itself. Two rules hold it — <strong>a task nothing can serve never withholds one that can</strong> (🪜 is in neither <code>ORDER</code> nor any section's keys, so 🌡️'s commit answers it on <strong>both</strong> branches, and <code>otherTasksLeft</code> counts only what the rail could offer), and <strong>🍾 is served when it is the last thing standing</strong> (F5). → why: DECISIONS.md, <em>SURFACE.md, pruned</em> (Q773–Q777).</div>
+    <h4>The row it would become, in full</h4>
+    <div class="evidence">| F18 | the supply of tasks | **The founding never runs out of tasks before 🍾**: from the save until the press, a founder is always served the next founding task, a delegated question to answer as a member, or 🍾 itself. Two rules hold it — **a task nothing can serve never withholds one that can** (🪜 is in neither `ORDER` nor any section's keys, so 🌡️'s commit answers it on **both** branches, and `otherTasksLeft` counts only what the rail could offer), and **🍾 is served when it is the last thing standing** (F5). | the save until the 🍾 press | F5 · DECISIONS SURFACE.md, pruned · Q773–Q777 |</div>
+    <p>Three statements, two of them the sub-rules that hold the first up. The cell has to say <em>two rules hold it</em> and then carry both, parenthesis and all.</p>
+    <label class="veto"><input type="checkbox"> No — <strong>tabulate F18</strong> anyway</label>
+    <textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item rule v-resists" data-id="F19"><span class="id">F19</span> <strong>the readiness reasons, and the ✉️ remedy</strong> <span class="verdict">resists</span>
+    <p class="quiet">9 separable normative statements · 1,606 B as prose → 1,722 B as a row (+116) · Not a row without loss: too many separable statements, or a cell so long the table stops being one.</p>
+    <h4>The rule as it stands, in full</h4>
+    <div class="rulebody"><strong>F19 A wait the founding cannot end says why, and ✉️ is the remedy</strong>: <code>readiness()</code> gives a reason beside each waiting question — <code>judge-gate</code>, <code>deps-unsettled</code> (the dependency named beside it), <code>invitation-open</code>, <code>one-voice</code>, <code>collecting</code>, <code>text-unconfirmed</code> — and <strong><code>one-voice</code> is the only one no amount of answering will clear</strong>, a question handed to a membership of one having been handed to nobody. <strong><code>deps-unsettled</code> is served without the remedy</strong> (entry 69): §9.0a serves a question only once its own dependencies stand, so a delegated 🌡️ under an undecided ⏰ is waiting on another question and not on the room — ✉️ is not summoned for it, and 🍾 names the dependency and that it must settle first rather than an act. Where the dependency is <em>itself</em> a <code>one-voice</code> hold, the ✉️ card that is served for <strong>that</strong> question says what is waiting on it in turn, so the second question is not read as a second problem. In that state 🍾 names it and both acts that end it, <strong>✉️ stands as a task</strong> whose card leads with why the founder is there, and the two are served <strong>together</strong>: the remedy is the dead end wearing a card, so it neither counts as <em>something else being served</em> (F5) nor as one of the <em>other tasks</em> that pace a founder's own delegated questions (F7). The ✉️ task is derived and acknowledges nothing — no OK, no <code>ACK_KEYS</code> key, nothing owed (F8) — and leaves the instant an invitation goes out (the reason becomes <code>invitation-open</code>) or the delegated setting is taken back. → why: DECISIONS.md, <em>Begin says what it is waiting for</em> (Q826–Q830).</div>
+    <h4>The row it would become, in full</h4>
+    <div class="evidence">| F19 | the readiness reasons, and the ✉️ remedy | **A wait the founding cannot end says why, and ✉️ is the remedy**: `readiness()` gives a reason beside each waiting question — `judge-gate`, `deps-unsettled` (the dependency named beside it), `invitation-open`, `one-voice`, `collecting`, `text-unconfirmed` — and **`one-voice` is the only one no amount of answering will clear**, a question handed to a membership of one having been handed to nobody. **`deps-unsettled` is served without the remedy** (entry 69): §9.0a serves a question only once its own dependencies stand, so a delegated 🌡️ under an undecided ⏰ is waiting on another question and not on the room — ✉️ is not summoned for it, and 🍾 names the dependency and that it must settle first rather than an act. Where the dependency is *itself* a `one-voice` hold, the ✉️ card that is served for **that** question says what is waiting on it in turn, so the second question is not read as a second problem. In that state 🍾 names it and both acts that end it, **✉️ stands as a task** whose card leads with why the founder is there, and the two are served **together**: the remedy is the dead end wearing a card, so it neither counts as *something else being served* (F5) nor as one of the *other tasks* that pace a founder's own delegated questions (F7). The ✉️ task is derived and acknowledges nothing — no OK, no `ACK_KEYS` key, nothing owed (F8) — and leaves the instant an invitation goes out (the reason becomes `invitation-open`) or the delegated setting is taken back. | a wait the founding cannot end | F5 · F7 · F8 · entry 69 · SPEC §9.0a · DECISIONS Begin says what it is waiting for · Q826–Q830 |</div>
+    <p><strong>Nine statements: six reason codes, three cases, and the ✉️ task’s own properties.</strong> The six reason codes <em>are</em> genuinely tabular — see 1126 — but that is a table <em>inside</em> F19, not F19 as a row.</p>
+    <label class="veto"><input type="checkbox"> No — <strong>tabulate F19</strong> anyway</label>
+    <textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item rule v-strained" data-id="F20"><span class="id">F20</span> <strong>serving a founder-member’s grant</strong> <span class="verdict">strained</span>
+    <p class="quiet">3 separable normative statements · 422 B as prose → 475 B as a row (+53) · It fits in a row, but the row carries the whole rule in one cell and the seams that made it readable are gone.</p>
+    <h4>The rule as it stands, in full</h4>
+    <div class="rulebody"><strong>F20 A grant a founder-member holds is served to them before the start</strong> (F3's <em>stands beside the current question</em>, made reachable): 🏛️'s host is the first blind question asking you, else 🪪 before the start and ⚖️ after it — never ⚖️ alone, which is hidden until 🍾 and so put the grant behind the very press it stands in front of. → why: DECISIONS.md, <em>Begin says what it is waiting for</em> (Q829).</div>
+    <h4>The row it would become, in full</h4>
+    <div class="evidence">| F20 | serving a founder-member’s grant | **A grant a founder-member holds is served to them before the start** (F3's *stands beside the current question*, made reachable): 🏛️'s host is the first blind question asking you, else 🪪 before the start and ⚖️ after it — never ⚖️ alone, which is hidden until 🍾 and so put the grant behind the very press it stands in front of. | before the start | F3 · DECISIONS Begin says what it is waiting for · Q829 |</div>
+    <p>Three statements including a negative and its reason — <em>never ⚖️ alone, which is hidden until 🍾 and so put the grant behind the very press it stands in front of</em>. The reason is the half a row makes hardest to keep.</p>
+    <label class="veto"><input type="checkbox"> No — <strong>tabulate F20</strong> anyway</label>
+    <textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item rule v-resists" data-id="F21"><span class="id">F21</span> <strong>the Membership section</strong> <span class="verdict">resists</span>
+    <p class="quiet">14 separable normative statements · 2,733 B as prose → 2,807 B as a row (+74) · Not a row without loss: too many separable statements, or a cell so long the table stops being one.</p>
+    <h4>The rule as it stands, in full</h4>
+    <div class="rulebody"><strong>F21 Membership is one subsection per status, and only the first is the membership.</strong> Under the rules (🪪 🤝 💤 🥾) stand lvl-3 subsections — <strong>Members</strong> · <strong>Invitees</strong> · <strong>Applicants</strong> · <strong>Lapsed</strong> · <strong>Proposed for removal</strong> — each the document's own text, not a card's. <em>Applicants</em> stands only where 🤝 allows applications and <em>Lapsed</em> only where 💤 lapses; <strong>the three that carry a control stand when empty</strong> (Invitees, Applicants, Proposed for removal), a control needing a fixed home and inviting mattering most when nobody has been invited — <strong>each with a placeholder row saying so</strong>: <em>(no outstanding invitations)</em> · <em>(no applicants at the moment)</em> · <em>(nobody proposed for removal)</em>, in <em>(nobody else here yet)</em>'s own grey treatment, since a heading over a pile and nothing else reads as a heading that lost its paragraph (entry 183). <strong>Every such row stands level with the pile at its paragraph's head</strong> — under <em>Members</em> the placeholder is lifted out of flow into the clearance the list already carries for your own row, so the 42 px stays the one clearance number (Q757). <strong>A door stands by its result</strong> (entry 96): ✉️ on <em>Invitees</em>, ❌ on <em>Proposed for removal</em>, the admit judgment on <em>Applicants</em>, 🎩 on <em>Members</em> — each a pile with its own ✒️/🛡️ tabs, never a button inside a row, and <strong>no card draws the register</strong>. <em>Members</em> is your own row first, then everybody else who has <strong>arrived</strong>, and <em>(nobody else here yet)</em> counts those rows alone. <strong>Your ✋ 🖼️ 📧 card opens in your own row's place</strong> (entry 188): the row gives way to the card <em>inside the list</em>, the strip's front tab exactly where the pile's front tab stood and <em>Invitees</em> still below it — a decision card replacing its own paragraph, like every other one — and a folded <em>Members</em> renders its rows to hold it, since no heading folds over the open card. <strong>A lapsed member moves to <em>Lapsed</em> and counts all the same</strong> (Y10) — lapse is a stall, not a departure, and they abstain rather than leave; <strong>a removal running against somebody names them under <em>Proposed for removal</em> whatever else is true of them</strong>, a motion about a person being the more urgent fact than a quiet spell — and where they are also lapsed the row <strong>wears a <em>lapsed</em> pill</strong>, so the subsection they are not in is not the only place that fact can be read. <strong>Every subsection folds</strong>, like every other heading in the document (entry 96, closing the lvl3 half of Q406): the same <code>cs-</code> id, the same triangle, and never over an open card. The stranger reads the register under <em>Members</em> alone — the per-subsection counts are unbuilt (Q508). → why: DECISIONS.md, <em>The leaving rules before the register</em> (Q868–Q870, entry 95).</div>
+    <h4>The row it would become, in full</h4>
+    <div class="evidence">| F21 | the Membership section | **Membership is one subsection per status, and only the first is the membership.** Under the rules (🪪 🤝 💤 🥾) stand lvl-3 subsections — **Members** · **Invitees** · **Applicants** · **Lapsed** · **Proposed for removal** — each the document's own text, not a card's. *Applicants* stands only where 🤝 allows applications and *Lapsed* only where 💤 lapses; **the three that carry a control stand when empty** (Invitees, Applicants, Proposed for removal), a control needing a fixed home and inviting mattering most when nobody has been invited — **each with a placeholder row saying so**: *(no outstanding invitations)* · *(no applicants at the moment)* · *(nobody proposed for removal)*, in *(nobody else here yet)*'s own grey treatment, since a heading over a pile and nothing else reads as a heading that lost its paragraph (entry 183). **Every such row stands level with the pile at its paragraph's head** — under *Members* the placeholder is lifted out of flow into the clearance the list already carries for your own row, so the 42 px stays the one clearance number (Q757). **A door stands by its result** (entry 96): ✉️ on *Invitees*, ❌ on *Proposed for removal*, the admit judgment on *Applicants*, 🎩 on *Members* — each a pile with its own ✒️/🛡️ tabs, never a button inside a row, and **no card draws the register**. *Members* is your own row first, then everybody else who has **arrived**, and *(nobody else here yet)* counts those rows alone. **Your ✋ 🖼️ 📧 card opens in your own row's place** (entry 188): the row gives way to the card *inside the list*, the strip's front tab exactly where the pile's front tab stood and *Invitees* still below it — a decision card replacing its own paragraph, like every other one — and a folded *Members* renders its rows to hold it, since no heading folds over the open card. **A lapsed member moves to *Lapsed* and counts all the same** (Y10) — lapse is a stall, not a departure, and they abstain rather than leave; **a removal running against somebody names them under *Proposed for removal* whatever else is true of them**, a motion about a person being the more urgent fact than a quiet spell — and where they are also lapsed the row **wears a *lapsed* pill**, so the subsection they are not in is not the only place that fact can be read. **Every subsection folds**, like every other heading in the document (entry 96, closing the lvl3 half of Q406): the same `cs-` id, the same triangle, and never over an open card. The stranger reads the register under *Members* alone — the per-subsection counts are unbuilt (Q508). | always | Y10 · Q406 · Q508 · Q757 · entries 95, 96, 183, 188 · DECISIONS The leaving rules before the register · Q868–Q870 |</div>
+    <p><strong>Fourteen statements, five subsection names, three verbatim placeholder strings and one measurement (42 px).</strong> The cell is 2,577 characters — a table row wider than most screens, with every paragraph seam gone. This is the rule that decides the section on its own.</p>
+    <label class="veto"><input type="checkbox"> No — <strong>tabulate F21</strong> anyway</label>
+    <textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item rule v-strained" data-id="F22"><span class="id">F22</span> <strong>the band’s section order</strong> <span class="verdict">strained</span>
+    <p class="quiet">3 separable normative statements · 513 B as prose → 545 B as a row (+32) · It fits in a row, but the row carries the whole rule in one cell and the seams that made it readable are gone.</p>
+    <h4>The rule as it stands, in full</h4>
+    <div class="rulebody"><strong>F22 The rules about a membership stand above the register, and Proposals reads before Decisions</strong>: 🤝 how people join, 💤 and 🥾 the two ways they leave, and only then <em>Members</em> and the list; and the whole Proposals run — 💡 ⚖️ 🏛️ ⏱️ — above ⏰ 🌡️ 👥 👤 👁️, 🍾 keeping its place last in <code>ORDER</code> though its clause opens Proposals, and 📝 last but one. → why: DECISIONS.md, <em>The leaving rules before the register</em> (Q865, Q871; reverses the second half of Q617 (a)).</div>
+    <h4>The row it would become, in full</h4>
+    <div class="evidence">| F22 | the band’s section order | **The rules about a membership stand above the register, and Proposals reads before Decisions**: 🤝 how people join, 💤 and 🥾 the two ways they leave, and only then *Members* and the list; and the whole Proposals run — 💡 ⚖️ 🏛️ ⏱️ — above ⏰ 🌡️ 👥 👤 👁️, 🍾 keeping its place last in `ORDER` though its clause opens Proposals, and 📝 last but one. | the band | DECISIONS The leaving rules before the register · Q865 · Q871 · reverses Q617 (a)’s second half |</div>
+    <p>Three statements. It fits — but the rule is <em>about</em> ordering, and an ordering reads better as a run of prose than as a cell that has to re-list it.</p>
+    <label class="veto"><input type="checkbox"> No — <strong>tabulate F22</strong> anyway</label>
+    <textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item rule v-resists" data-id="F23"><span class="id">F23</span> <strong>the founder’s ✉️ task</strong> <span class="verdict">resists</span>
+    <p class="quiet">8 separable normative statements · 1,200 B as prose → 1,286 B as a row (+86) · Not a row without loss: too many separable statements, or a cell so long the table stops being one.</p>
+    <h4>The rule as it stands, in full</h4>
+    <div class="rulebody"><strong>F23 The founder is asked to invite once the Membership rules stand</strong>: the five rules of the section — 🪪 🤝 🎩 💤 🥾 — settled or handed to the membership (a rule a shape hides is a decision nobody has and completes the section by not existing), and no row on the register but the founder's. Then ✉️ stands in the founder's rail as a task. It is <strong>derived and acknowledges nothing</strong> — no OK, no <code>ACK_KEYS</code> key, nothing owed (F8) — it <strong>blocks nothing</strong> (F3), standing beside whatever the founding is asking next, and like the <code>one-voice</code> remedy it is counted neither as <em>something else being served</em> (F5/F18) nor as one of the <em>other tasks</em> that pace the founder's own delegated questions (F7): what is offered because the founder may want company must not withhold the questions or shut 🍾's last-resort door, so ✉️ and 🍾 stand side by side. Its card is the door's own, leading with the invitation box; the remedy's <em>why you are here</em> paragraph belongs to F19's case alone. It leaves at the first invitation or at 🍾, and 🍾 is never gated on one having been sent. → why: DECISIONS.md, <em>The founder is asked to invite once the Membership stands</em> (entry 181).</div>
+    <h4>The row it would become, in full</h4>
+    <div class="evidence">| F23 | the founder’s ✉️ task | **The founder is asked to invite once the Membership rules stand**: the five rules of the section — 🪪 🤝 🎩 💤 🥾 — settled or handed to the membership (a rule a shape hides is a decision nobody has and completes the section by not existing), and no row on the register but the founder's. Then ✉️ stands in the founder's rail as a task. It is **derived and acknowledges nothing** — no OK, no `ACK_KEYS` key, nothing owed (F8) — it **blocks nothing** (F3), standing beside whatever the founding is asking next, and like the `one-voice` remedy it is counted neither as *something else being served* (F5/F18) nor as one of the *other tasks* that pace the founder's own delegated questions (F7): what is offered because the founder may want company must not withhold the questions or shut 🍾's last-resort door, so ✉️ and 🍾 stand side by side. Its card is the door's own, leading with the invitation box; the remedy's *why you are here* paragraph belongs to F19's case alone. It leaves at the first invitation or at 🍾, and 🍾 is never gated on one having been sent. | once the Membership rules stand | F3 · F5 · F7 · F8 · F18 · DECISIONS The founder is asked to invite once the Membership stands · entry 181 |</div>
+    <p>Eight statements: one compound condition (five rules settled, no row but the founder’s) and seven properties of the task, <strong>four of which are cross-references to other F-rules</strong>. Strip the cross-references to make the cell fit and the rule stops being true.</p>
+    <label class="veto"><input type="checkbox"> No — <strong>tabulate F23</strong> anyway</label>
+    <textarea placeholder="Notes (optional)"></textarea></div>
+
+  <h2>Untouched, and why</h2>
+  <ul>
+    <li><strong>No id renumbered, added, removed, merged or split.</strong> Your ruling, twice. F1–F23 stand exactly where they were, and <code>spec-check</code> now holds them there (1128).</li>
+    <li><strong>The <em>Exceptions beyond §3</em> paragraph</strong> that closes §8.1 is untouched — six exceptions, each already <em>what · which rule it breaks · why · the ruling</em>, which is the one part of the section that <em>is</em> tabular. It was left alone because tabulating it is not what 1006 asked for and it reads well as it stands. Say the word and it becomes a table on its own.</li>
+    <li><strong>F16 and F22 are candidates for something other than a table.</strong> F16 appends three unrelated rules to a rule about the Founded line; F22 states two orderings that §8’s <code>ORDER</code> table already fixes. Both are notes for you, not edits — this plan does not restructure rules, only tabulates them.</li>
+    <li><strong>§8’s <code>ORDER</code> table, the band paragraph and §9</strong> are untouched.</li>
+  </ul>
+
+  <h2>Send it back</h2>
+  <button class="copyall" type="button">Copy all answers</button>
+  <div id="out"></div>
+</main>
+<script>
+  const LS = 'draft-pass5';
+  let store = {};
+  try { store = JSON.parse(localStorage.getItem(LS) || '{}'); } catch (e) {}
+  const save = () => { try { localStorage.setItem(LS, JSON.stringify(store)); } catch (e) {} };
+  document.querySelectorAll('.item').forEach((item) => {
+    const id = item.dataset.id;
+    const st = store[id] || {};
+    const veto = item.querySelector('.veto input');
+    const note = item.querySelector('textarea');
+    if (veto && st.veto) veto.checked = true;
+    if (note && st.note) note.value = st.note;
+    item.querySelectorAll('input[type=radio]').forEach((r) => { if (st.pick === r.value) r.checked = true; });
+    item.addEventListener('change', () => {
+      const picked = item.querySelector('input[type=radio]:checked');
+      store[id] = { pick: picked ? picked.value : undefined,
+                    veto: veto ? veto.checked : undefined,
+                    note: note && note.value.trim() ? note.value.trim() : undefined };
+      save();
+    });
+    if (note) note.addEventListener('input', () => {
+      store[id] = Object.assign(store[id] || {}, { note: note.value.trim() || undefined }); save();
+    });
+  });
+  document.querySelector('.copyall').addEventListener('click', () => {
+    const lines = ['pass 5 answers — ' + new Date().toISOString().slice(0, 10)];
+    document.querySelectorAll('.item').forEach((item) => {
+      const id = item.dataset.id; const st = store[id] || {};
+      if (item.classList.contains('rule')) {
+        lines.push(id + ': ' + (st.veto ? 'TABULATE' : 'prose stands') + (st.note ? ' — ' + st.note : ''));
+      } else if (item.classList.contains('find')) {
+        lines.push(id + ': ' + (st.veto ? 'VETO' : 'stands') + (st.note ? ' — ' + st.note : ''));
+      } else {
+        lines.push(id + ': ' + (st.pick ? '(' + st.pick + ')' : 'unanswered') + (st.note ? ' — ' + st.note : ''));
+      }
+    });
+    const text = lines.join('\n');
+    const out = document.getElementById('out');
+    out.textContent = text; out.style.display = 'block';
+    try { navigator.clipboard.writeText(text); } catch (e) {}
+  });
+</script>
