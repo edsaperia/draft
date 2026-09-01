@@ -70,8 +70,11 @@
  * module, so every card below it in `ORDER` is withheld from members) and
  * every clerk-hat one is **Q920** (`view.convenor.isMember` stays `true` for
  * a clerk, so 🏛️ is served and 🍾 waits on it); with those two built the
- * expected line is `findings=0 … filed=0 … unstood=0 exit=0` — `filed=1` while
- * Q918's row was the exception, and 0 since it was asserted.
+ * expected line is `findings=0 noRule=3 filed=0 … unstood=0 exit=3` — `filed=1`
+ * while Q918's row was the exception, and 0 since it was asserted; the three
+ * no-rule rows are E22 on both hats and E13 on the member hat, each `key: null`
+ * and unfiled, so **exit 3 is the green line here** and 0 is not reachable
+ * until somebody files or keys those two.
  * Four harness faults were fixed to get here, each noted at its row: the
  * founder's page reloads after the wire founding (`reload` on `text`), every
  * seat introduces itself with a name and a face (`face`), 💤 is answered on
@@ -991,7 +994,10 @@ function assertStep(D, step, evs, snap) {
       // a settled tab (`done`) asks nothing; every other state is a task standing
       const tabs = (snap[name].band || []).filter((e) => e.kind !== 'done').map((e) => e.key);
       const has = rail.some(match) || tabs.some(match);
-      const okd = !!(snap[name].readout && (snap[name].readout.okd || []).includes(ev.key));
+      // `match`, not `includes`: a prefix key (`rel:`, `mail:`) is acknowledged
+      // under its own batch id, so an exact test never sees the OK and a seat
+      // that has answered reads as one that was never served.
+      const okd = !!(snap[name].readout && (snap[name].readout.okd || []).some(match));
       const mv = (snap[name].view || {}).view || {};
       const signed = !!(ev.orSigned && mv.closed && mv.closed.mySignature);
       const carries = has || okd || signed;
