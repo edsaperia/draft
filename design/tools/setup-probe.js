@@ -361,12 +361,11 @@
     // 🍾 commits with its own glyph on its own commit (Q516)
     ['open-begin', () => openTab('begin')],
     ['confirm-begin', () => click('.setupcard [data-confirm]')],
-    // 💡 and ⚖️ take their place in ORDER but are only *served* once the
-    // constitution is decided, so they arrive after 🍾 rather than before
-    ['open-proposing', () => openTab('canpropose')],
-    ['ok-proposing', () => click('.setupcard [data-ok]')],
-    ['open-judging', () => openTab('canjudge')],
-    ['ok-judging', () => click('.setupcard [data-ok]')],
+    // 💡 and ⚖️ took their place in ORDER after 🍾 and were opened and
+    // OK'd here — four steps that went dead on 2026-09-01 with SURFACE Y27:
+    // **a gate never withholds from the seat that set it**, so the founder,
+    // whose surface this scenario is, is served neither card and has nothing
+    // to press. A member still is, and `journey-walk` walks that seat.
     ['fast-forward', () => click('#devff')],
     ['seat-bo', () => setSeat('1')],
     ['seat-founder', () => setSeat('0')],
