@@ -31,6 +31,16 @@ window.SETUP = (function () {
   const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   const TICK = '<svg class="mkg" viewBox="0 0 12 12"><path d="M2 6.4 L4.7 9.2 L10 2.9"/></svg>';
+  // **The answer ladders speak the clause** (Q1112 (b)): a rung says the
+  // sentence that answer would put into the document, off `cards.js`'s one
+  // table — the same string the founder's own card and the composer's lane
+  // print, so a value cannot read two ways depending on who is looking.
+  // `escaped`, because a rung's text is written into markup unescaped by
+  // `ansRow`, as every other rung label here is.
+  // `x` is the clause context the surface hands the answer bodies as their
+  // sixth argument: the two settings whose sentence names a fact outside
+  // itself — 🌍's clerk deviation, 🤝's price — read it, the rest ignore it.
+  const RULE = (k, v, x) => esc(window.CARDS.clauseOf(k, v, x));
   /* ---- avatars ------------------------------------------------------------
      `initials`, `PERSON` and `avHtml` moved down to `cards.js` (backlog 255):
      the sealed speaker draws a face now, `cards.js` loads first, and a helper
@@ -1372,44 +1382,50 @@ window.SETUP = (function () {
     authorship: (A) =>
       '<p class="why">Rationales are always visible; what varies is whether a name is attached. The <b>most private</b> answer wins: one person who wants no names keeps the document unnamed.</p>' +
       ladder(A, 'authorship', [
-        { v: 'anonymous', t: 'Nobody’s name, ever', e: 'Not during the session and not in the closing record.' },
-        { v: 'anonymousElective', t: 'Nobody’s name unless they choose', e: 'Nobody is named who does not sign, so an unsigned proposal among signed ones says something.' },
-        { v: 'sealed', t: 'Names at the close', e: 'Hidden while the document is being written; published with the record.' },
-        { v: 'sealedElective', t: 'Names at the close, or earlier by choice', e: 'Published with the record, and sooner for anybody who signs.' },
-        { v: 'public', t: 'Names from the start', e: 'Everyone can see who proposed what, as it happens.' }]) +
+        { v: 'anonymous', t: RULE('authorship', 'anonymous'), e: '' },
+        { v: 'anonymousElective', t: RULE('authorship', 'anonymousElective'), e: 'An unsigned proposal among signed ones says something.' },
+        { v: 'sealed', t: RULE('authorship', 'sealed'), e: '' },
+        { v: 'sealedElective', t: RULE('authorship', 'sealedElective'), e: '' },
+        { v: 'public', t: RULE('authorship', 'public'), e: '' }]) +
       '<p class="blindnote">Nothing is preselected — anonymity holds unless everyone is content with more.</p>',
     judgments: (A) =>
       '<p class="why">Never revealed while a question is live, whichever is chosen — members who can see each other’s votes vote differently. This settles only whether they are published with the closing record.</p>' +
       ladder(A, 'judgments', [
-        { v: 'never', t: 'Never revealed', e: 'What you preferred stays yours, permanently.' },
-        { v: 'after', t: 'Revealed at the end', e: 'Published with the document at the end, never before.' }]) + BLINDNOTE,
-    applications: (A) =>
+        { v: 'never', t: RULE('judgments', 'never'), e: 'What you preferred stays yours, permanently.' },
+        { v: 'after', t: RULE('judgments', 'after'), e: 'Published with the closing record.' }]) + BLINDNOTE,
+    applications: (A, E, _form, _room, _typed, x) =>
       '<p class="why">How somebody who is not a member can become one. The <b>least open</b> answer wins: one member who wants invitation only keeps it so.</p>' +
       ladder(A, 'applications', [
-        { v: 'invite', t: 'Invitation only', e: 'Nobody joins unless a member brings them in.' },
-        { v: 'apply', t: 'Anyone may apply', e: 'An application is a stranger proposing their own invitation — decided the way Admissions says, at no cost to the applicant.' }]) + BLINDNOTE,
-    chamber: (A) =>
+        { v: 'invite', t: RULE('applications', 'invite', x), e: 'Nobody joins unless a member brings them in.' },
+        { v: 'apply', t: RULE('applications', 'apply', x), e: 'An application is a stranger proposing their own invitation, at no cost to them.' }]) + BLINDNOTE,
+    chamber: (A, E, _form, _room, _typed, x) =>
       '<p class="why">Who may read the document besides the members — readers only, never counted. The <b>most private</b> answer wins: one member who wants the document closed closes it.</p>' +
       ladder(A, 'chamber', [
-        { v: 'closed', t: 'Members only', e: 'Nobody outside the membership sees anything at all.' },
+        { v: 'closed', t: RULE('chamber', 'closed', x), e: 'Nobody outside the membership sees anything at all.' },
         // Public left every ladder on 2026-08-22 (Q603): offered nowhere,
         // read back everywhere a document that took it still states it
-        { v: 'link', t: 'Anyone with the link', e: 'The chamber view only, to whoever the link reaches.' }]) + BLINDNOTE,
+        { v: 'link', t: RULE('chamber', 'link', x), e: 'The chamber view only, to whoever the link reaches.' }]) + BLINDNOTE,
     // **One price scale** (entry 94): 🪪 and 🥾 are answered in the same
     // three verbs, most protective first, and 🥾 keeps the one rung
     // admission has no analogue for
+    // …and since Q1112 (b) each rung says the clause that answer would set,
+    // read off `cards.js`'s one table — the same sentence the founder's own
+    // card offers and the same one the composer's lane types, so 🪪 and 🥾
+    // read identically wherever they are met. The explainer stays only where
+    // it carries a fact the sentence does not (T36); where it restated the
+    // rung it went, as the founder card's own explainers did at Q1109.
     admission: (A) =>
       '<p class="why">What it costs to bring somebody into the membership — a member’s invitation or a stranger’s application alike. The <b>most protective</b> answer wins: one member who wants everyone asked keeps everyone asked.</p>' +
       ladder(A, 'admission', [
-        { v: 'assembly', t: 'All members must approve every new member joining', e: 'A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.' },
-        { v: 'proposal', t: 'Members must vote on every new member joining', e: 'A proposed member is voted on at the approval threshold ✏️, like any change.' },
-        { v: 'pen', t: 'Any member can invite new people to join', e: 'An invitation is sent on a member’s word ✒️ — nobody else has to agree.' }]) + BLINDNOTE,
+        { v: 'assembly', t: RULE('admission', 'assembly'), e: 'One refusal keeps them out.' },
+        { v: 'proposal', t: RULE('admission', 'proposal'), e: 'Voted on at the approval threshold, like any change.' },
+        { v: 'pen', t: RULE('admission', 'pen'), e: 'The invitation is sent on their word — nobody else has to agree.' }]) + BLINDNOTE,
     removal: (A) =>
       '<p class="why">What it costs to remove a member. Whichever is chosen, the member always sees a removal proposed against them, and anybody may leave at any time. The <b>most protective</b> answer wins: one member who wants everyone asked keeps everyone asked.</p>' +
       ladder(A, 'removal', [
-        { v: 'consent', t: 'All members must approve removing a member, and the person themselves must agree', e: 'One refusal keeps them in, their own counted: effectively, nobody is removed against their will.' },
-        { v: 'assembly', t: 'All other members must approve removing a member', e: 'The whole membership, minus the member in question, must agree 🏛️.' },
-        { v: 'proposal', t: 'Members must vote on removing a member', e: 'Voted on at the approval threshold ✏️ like any change, with quorum.' }]) + BLINDNOTE,
+        { v: 'consent', t: RULE('removal', 'consent'), e: 'One refusal keeps them in, their own counted: effectively, nobody is removed against their will.' },
+        { v: 'assembly', t: RULE('removal', 'assembly'), e: '' },
+        { v: 'proposal', t: RULE('removal', 'proposal'), e: 'Voted on at the approval threshold, with quorum.' }]) + BLINDNOTE,
     ending: (A) =>
       '<p class="why">When the document should close. The <b>latest</b> answer anybody gives is taken, and <b>never</b> is the latest of all — so nobody is cut off before they were ready.</p>' +
       '<div class="choice" role="radiogroup">' +

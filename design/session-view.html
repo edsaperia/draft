@@ -1083,6 +1083,39 @@
     admission: (v) => v.price,
     applications: (v) => (mayApply(v) ? 'apply' : 'invite'),
   };
+  // **One home for a value's rule sentence** (Q1109, Ed 2026-08-31: the
+  // founder card's options are the constitution's own sentences), and since
+  // Q1112 (b) that home is `cards.js`'s `RULES` — setup.js's answer ladders
+  // read it too and setup.js loads first, so the table cannot live in this
+  // script. What follows are aliases over the one table, never copies: the
+  // clause map, the option blocks, the composer's lanes, the readback and the
+  // settled strip all print the same string, so no two of them can drift.
+  // The T41 gradient labels went with the same ruling — STYLE §7 item 77.
+  // It stands here, above `MVAL` and `STANDS`, because those are evaluated
+  // object literals rather than lazy bodies: a `const` read below its own
+  // declaration is a TDZ error, not a late binding.
+  const clauseCtx = () => ({ founderIsMember: iDraft(), admissionPrice: admissionPrice() });
+  const clauseOf = (k, v) => window.CARDS.clauseOf(k, v, clauseCtx());
+  const RULES = window.CARDS.RULES;
+  const ADM_RULE = RULES.admission;
+  const REMOVAL_RULE = RULES.removal;
+  const AUTH_RULE = RULES.authorship;
+  const JUDG_RULE = RULES.judgments;
+  const CHAMBER_RULE = {
+    closed: () => clauseOf('chamber', 'closed'),
+    link: () => clauseOf('chamber', 'link'),
+    public: () => clauseOf('chamber', 'public') };
+  const APPL_RULE = (v) => clauseOf('applications', v);
+  // **A price rung is keyed by its own sentence** — the lane the composer
+  // draws, the key `MVAL` types it back from and the string a motion is
+  // reported in are one string from one table, so `checkComposer`'s both-ways
+  // assertion holds by construction rather than by two spellings agreeing.
+  const priceMval = (k) => Object.fromEntries(
+    window.CARDS.clauseRungs(k).map(([v, say]) => [say, { price: v }]));
+  // …and the lane says the rule it would set, so its text and its value are
+  // the same sentence: there is nothing left for a per-lane explainer to add
+  // (T43, and item 74's own precedent on the founder's card).
+  const ruleLanes = (k) => window.CARDS.clauseRungs(k).map(([, say]) => [say, say]);
   // what the document is called now, and what the lane is proposing
   const cs_titleNow = () => (cs ? cs.titleOf : S.title);
   const titlePending = () => (S.titleDraft !== null ? S.titleDraft : cs_titleNow());
@@ -2069,8 +2102,12 @@
     // inviting are the ✉️ door's, not this setting's.
     { k: 'admission', g: '🪪', t: 'Admissions', kind: 'constitutional', key: 'admission', p: 0.40, changeable: true,
       rule: 'Each member says the <b>cheapest</b> admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.',
-      takes: 'The document takes the dearest', result: 'All members must approve every new member joining',
-      dist: [3, 1, 0], distTop: 3, distEnds: ['All members must approve every new member joining', 'Any member can invite new people to join'] },
+      // what the document took is the clause it took (Q1112 (b)); the strip's
+      // two ends stay an **axis**, the T42 gradient in its shortest form —
+      // two document sentences side by side in a 570px row wrap into each
+      // other, and an axis label is not a home of the value's wording
+      takes: 'The document takes the dearest', result: ADM_RULE.assembly,
+      dist: [3, 1, 0], distTop: 3, distEnds: ['All members', 'Any member'] },
     // **Inviting and removing are their own cards** (Ed, 2026-08-19, 400a:
     // ✉️ and ❌): doors, not decisions — they compose the membership acts
     // and, since entry 94, **hold the Founder's ✒️/🛡️ pair over the act**:
@@ -3810,16 +3847,16 @@
       return n ? n + ' blocks' : (cs && cs.textConfirmed ? 'Starts empty — the membership writes it' : 'Nothing yet'); },
     title: () => S.title || 'Not named yet',
     slug: () => docAddr(S.slug || '…'),
-    invite: () => PRICE_WORDS.admission[admissionPrice()],
-    remove: () => PRICE_WORDS.removal[removalPrice()],
+    invite: () => ADM_RULE[admissionPrice()],
+    remove: () => REMOVAL_RULE[removalPrice()],
     myemail: () => (S.emailVerified ? S.myemail + ' · verified'
       : S.emailSent ? 'Check your inbox' : 'Not given yet'),
     myname: () => S.myname || 'Not given yet',
     mypic: () => (S.mypic ? 'Chosen' : 'Your initials'),
     // an invitee is not a member yet (§9.6a): the line counts the arrived,
     // and says who is still only invited
-    admission: () => PRICE_WORDS.admission[admissionPrice()],
-    applications: () => POLICY_WORDS[policyNow()],
+    admission: () => ADM_RULE[admissionPrice()],
+    applications: () => APPL_RULE(policyNow()),
     chamber: () => ({ link: 'Anyone with the link', closed: 'Members only',
       public: 'Public' }[takenOf('chamber') || S.chamber]),
     ending: () => (perpetual() ? 'Never — it runs until too few members are active'
@@ -3844,7 +3881,7 @@
     // a second entry here used to override them and read S alone)
     lapse: () => (S.lapse === 'never' ? 'Never — however long you are away'
       : 'After ' + S.lapseDays + ' days without logging in'),
-    removal: () => PRICE_WORDS.removal[removalPrice()],
+    removal: () => REMOVAL_RULE[removalPrice()],
     canpropose: () => (canPropose() ? 'Open' : 'Waiting on the start'),
     'grant-voice': () => 'Your consent counts in every constitutional question',
     begin: () => (constituted() ? 'Begun' + foundedAt() : 'Not yet begun'),
@@ -3853,26 +3890,36 @@
     'grant-shield': () => 'You hold the Founder Veto',
     canjudge: () => (canJudge() ? 'Open' : 'Waiting on the constitution'),
   };
+  // **The readback quotes the document** (Q1112, Ed's survey item 8, answered
+  // *yes*, 2026-09-01): *You said* is followed by the sentence the answer
+  // would put into the constitution, in quotation marks, rather than a
+  // lower-case paraphrase of it. Every entry reads the one clause table or
+  // the named clause builder above `DECIDED`, so a member's answer and the
+  // rule it would set are the same words. A rung the surface has retired but
+  // a document still holds falls through to the raw token, as it always did.
+  const said = (s) => 'You said: “' + s + '”';
   const ANSVALUE = {
-    quorum: (v) => 'You said ' + v + ' of ' + E(),
-    bar: (v) => 'You said ' + v + '%',
-    ending: (v) => (v === 'never' ? 'You said never'
-      : 'You said ' + (isNaN(Date.parse(v)) ? v
-        : new Date(v).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false }))),
-    authorship: (v) => 'You said ' + ({ anonymous: 'no names, ever', anonymousElective: 'no names unless somebody chooses', sealed: 'names at the close', sealedElective: 'names at the close, or earlier by choice', public: 'names from the start' }[v] || v),
-    judgments: (v) => 'You said ' + ({ never: 'never revealed', after: 'revealed at the end' }[v] || v),
-    chamber: (v) => 'You said ' + ({ closed: 'members only', link: 'anyone with the link', public: 'public' }[v] || v),
-    applications: (v) => 'You said ' + ({ invite: 'invitation only', apply: 'anyone may apply' }[v] || v),
-    lapse: (v) => (v === 'never' ? 'You said never' : 'You said after ' + v + ' days without logging in'),
+    quorum: (v) => said(QUORUM_RULE(v)),
+    bar: (v) => said(BAR_RULE(v, null)),
+    ending: (v) => said(ENDING_RULE(v === 'never' || isNaN(Date.parse(v)) ? 'never' : v)),
+    authorship: (v) => said(AUTH_RULE[v] || v),
+    judgments: (v) => said(JUDG_RULE[v] || v),
+    chamber: (v) => said(clauseOf('chamber', v) || v),
+    applications: (v) => said(APPL_RULE(v) || v),
+    lapse: (v) => said(LAPSE_RULE(v)),
+    // **🪪's readback was missing entirely** — `admission` is delegable and
+    // has an `ANSWER` body, so it makes an `ans-` card like every other; with
+    // no entry here `value()` called `undefined` and took the render with it
+    // the moment a member committed an answer to it. Found on this sweep.
+    admission: (v) => said(ADM_RULE[v] || v),
     // keyed by the page's own removal vocabulary — `consent` · `assembly` ·
     // `proposal`, what `ANSTYPED`/`PAGEVAL` and setup.js's ladder speak. It
     // was keyed `everyone`/`others`/`ordinary`, a vocabulary nothing on this
     // page has ever written, so every lookup missed and the readback fell
     // through to the raw token.
-    removal: (v) => 'You said ' + ({ consent: 'all members must approve removing a member, and the person themselves must agree',
-      assembly: 'all other members must approve removing a member',
-      proposal: 'members must vote on removing a member' }[v] || v),
-    rate: (v) => 'You said ' + v,
+    removal: (v) => said(REMOVAL_RULE[v] || v),
+    rate: (v) => said(RATE_RULE(v, Math.max(+v, +S.cap || RATE_START.cap),
+      +S.dripMin || RATE_START.dripMin)),
   };
   const ANSASK = { quorum: 'The lowest you will accept', bar: 'The lowest you will accept',
     ending: 'The latest you will accept', authorship: 'The most you will accept',
@@ -3880,6 +3927,7 @@
     chamber: 'The most you will accept',
     applications: 'The most open you will accept',
     lapse: 'The shortest you will accept',
+    admission: 'The cheapest you will accept',
     removal: 'The easiest you will accept',
     rate: 'The most generous you will accept' };
   // **A power tab has no VALUE of its own — its value *is* its rule.**
@@ -4081,9 +4129,9 @@
     if (k === 'slug') return docAddr(p.value.slug);
     if (k === 'pace') return (p.value.shape === 'fixed' ? 'The same number throughout'
       : 'Rising from ' + p.value.startPct + '%');
-    if (k === 'applications') return POLICY_WORDS[mayApply(p.value) ? 'apply' : 'invite'];
-    if (k === 'admission') return PRICE_WORDS.admission[p.value.price];
-    if (k === 'removal') return PRICE_WORDS.removal[p.value.price];
+    if (k === 'applications') return APPL_RULE(mayApply(p.value) ? 'apply' : 'invite');
+    if (k === 'admission') return ADM_RULE[p.value.price];
+    if (k === 'removal') return REMOVAL_RULE[p.value.price];
     if (k === 'rate') return p.value.grant + ' each, up to ' + p.value.cap +
       ', one every ' + p.value.dripMinutes + ' minutes';
     return STANDS[k] ? STANDS[k](PAGEVAL[k](p.value)) : JSON.stringify(p.value);
@@ -4262,24 +4310,23 @@
     ending: { 'Never — it runs until too few members are active': { endsAtMs: null } },
     lapse: { 'Never — however long you are away': { afterMs: null } },
     // **The keys are the composer's own lane labels**, which since T5's
-    // rung-is-a-sentence rule are 🥾's rung words verbatim, spelled one way.
-    // `mvalTyped` is only ever asked about a `data-mval`, which is the string
-    // `PROPOSE.removal` writes — and these three once spelled it a second way
-    // instead, so every 🥾 lane typed `null`, `offersStanding` fell back to the
-    // label comparison Q620 retired, and the ten-second 🏛️ hold ended at *That
-    // could not be proposed: no typed value on the draft*.
+    // rung-is-a-sentence rule are 🥾's rung words verbatim, spelled one way —
+    // and since Q1112 (b) that sentence is the clause's, so neither side is
+    // spelled here at all: both come off `cards.js`'s `RULES` through
+    // `priceMval` and `ruleLanes`. `mvalTyped` is only ever asked about a
+    // `data-mval`, which is the string `PROPOSE.removal` writes — and these
+    // three once spelled it a second way instead, so every 🥾 lane typed
+    // `null`, `offersStanding` fell back to the label comparison Q620
+    // retired, and the ten-second 🏛️ hold ended at *That could not be
+    // proposed: no typed value on the draft*.
     //
     // It happened a second time on `applications`: entry 94 made 🤝 a switch
     // and `POLICY_TEXTS` went on drawing four lanes against the two values
     // `{ apply: boolean }` can express. `spec-check`'s `checkComposer` now
-    // asserts the two lists agree in both directions, so a lane with no key
-    // here is red at the push.
-    removal: { 'All members must approve removing a member, and the person themselves must agree': { price: 'consent' },
-      'All other members must approve removing a member': { price: 'assembly' },
-      'Members must vote on removing a member': { price: 'proposal' } },
-    admission: { 'All members must approve every new member joining': { price: 'assembly' },
-      'Members must vote on every new member joining': { price: 'proposal' },
-      'Any member can invite new people to join': { price: 'pen' } },
+    // asserts the two lists agree in both directions — resolving these two
+    // through the shared table — so a lane with no key here is red at the push.
+    removal: priceMval('removal'),
+    admission: priceMval('admission'),
     applications: { 'Invitation only': { apply: false }, 'Anyone may apply': { apply: true } },
     // **Public has left the ladder** (Ed, 2026-08-22). It is offered nowhere
     // — not here, not on the founder's card, not in a member's answer — but
@@ -4671,9 +4718,9 @@
     // `everyone`/`others`/`ordinary` it returned `undefined` for every value
     // the page can produce, so `standsOf('removal')` fell to `''` on a 🥾 the
     // membership decided and the 🏛️ card read *replaces <i></i>*.
-    removal: (v) => ({ consent: 'All members must approve removing a member, and the person themselves must agree',
-      assembly: 'All other members must approve removing a member',
-      proposal: 'Members must vote on removing a member' })[v],
+    // …and since Q1112 (b) that vocabulary is the clause's own sentence, the
+    // one 🥾's lanes now offer.
+    removal: (v) => REMOVAL_RULE[v],
     quorum: (v) => (S.quorumForm === 'count' ? v + ' of the membership' : v + '% of the membership'),
     bar: (v) => v + '% sure at the end',
     ending: (v) => (v === 'never' ? 'Never — it runs until too few members are active'
@@ -4774,15 +4821,12 @@
     // exempted it from the composable set; entry 94 re-typed it into this
     // price — MVAL and TYPED arrived, this entry did not — so the settled
     // card fell through to the free-text lane this map exists to prevent.
-    // The lane sentences are ✉️'s own per-price sentences, spelled once.
-    admission: (d) => lanesFor(d, [
-      ['All members must approve every new member joining', 'Bringing somebody in is a proposal all members must agree to — one refusal keeps them out.'],
-      ['Members must vote on every new member joining', 'Bringing somebody in is a proposal the membership decides at the approval threshold.'],
-      ['Any member can invite new people to join', 'Any member may invite on their own word.']], 'admission'),
-    removal: (d) => lanesFor(d, [
-      ['All members must approve removing a member, and the person themselves must agree', 'Removing a member needs all members to agree, including them.'],
-      ['All other members must approve removing a member', 'Removing a member needs every other member to agree.'],
-      ['Members must vote on removing a member', 'A member is removed by a proposal, voted on like any other.']], 'removal'),
+    // **A lane offers a rule, so it says the rule** (Q1112 (b)): the lane's
+    // text and the value it types are the one clause sentence, which retires
+    // the per-lane paraphrase that stood beside it — a second wording of the
+    // value the lane already states, which is exactly what T43 is about.
+    admission: (d) => lanesFor(d, ruleLanes('admission'), 'admission'),
+    removal: (d) => lanesFor(d, ruleLanes('removal'), 'removal'),
     lapse: (d) => lanesFor(d, [['Never — however long you are away',
         'A membership never lapses, however long somebody is away.']], 'lapse') +
       inputBlock('A membership lapses after ' +
@@ -5167,15 +5211,10 @@
   // **The one price scale** (entry 94): what an act on the membership costs,
   // in the document's three verbs — the same words on 🪪 and 🥾, so a reader
   // learns them once. 🥾 keeps the rung admission has no analogue for.
-  const PRICE_WORDS = {
-    admission: { assembly: 'All members must approve every new member joining',
-      proposal: 'Members must vote on every new member joining',
-      pen: 'Any member can invite new people to join' },
-    removal: { consent: 'All members must approve removing a member, and the person themselves must agree',
-      assembly: 'All other members must approve removing a member',
-      proposal: 'Members must vote on removing a member' },
-  };
-  const POLICY_WORDS = { invite: 'Invitation only', apply: 'Anyone may apply' };
+  // `PRICE_WORDS` and `POLICY_WORDS` were that scale's T41 gradient labels;
+  // since Q1112 (b) the scale is spoken in the clause's own sentences and
+  // both tables are the clause table (`ADM_RULE` · `REMOVAL_RULE` ·
+  // `APPL_RULE`), so a price reads the same wherever it is met.
   // the 🥾 price as it stands (Q401) — unset reads as today's rule
   const removalPrice = () => (takenValOf('removal') || {}).price ||
     (S.removal === 'roster' ? 'consent' : S.removal);
@@ -5184,46 +5223,42 @@
     (S.admission === 'roster' || !S.admission ? 'assembly' : S.admission);
   const policyNow = () => { const v = takenValOf('applications');
     return v ? (mayApply(v) ? 'apply' : 'invite') : (S.joinBy || 'invite'); };
-  const endFmt = () => new Date((endingVal() !== 'never' && endingVal()) || S.endsAt)
-    .toLocaleString(undefined,
-      { weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }).replace(' ', ' at ');
-  // **One home for a value's rule sentence** (Q1109, Ed 2026-08-31: the
-  // founder card's options are the constitution's own sentences): the clause
-  // map and the option blocks print the same string, so what the founder
-  // reads on a choice is exactly the sentence the document would carry, and
-  // the two cannot drift. The T41 gradient labels (PRICE_WORDS) survive in
-  // their other homes — the member's ladder, the composer, the settled
-  // strip — whose reconciliation is Q1112.
-  const ADM_RULE = {
-    assembly: 'Members may propose to invite people to join the membership, and all members must agree 🏛️.',
-    proposal: 'Members may propose to invite people to join the membership, and the membership decides ✏️.',
-    pen: 'Members may invite people to join the membership ✒️.' };
-  const REMOVAL_RULE = {
-    consent: 'Removing a member needs every member to agree, including them 🏛️.',
-    assembly: 'Removing a member needs every other member to agree 🏛️ — they see the proposal, and it is decided without them.',
-    proposal: 'Members may propose to remove a member, and the membership decides ✏️.' };
-  const AUTH_RULE = { anonymous: 'Nobody who proposes a change is ever named, even after the document is finished.',
-    anonymousElective: 'Nobody who proposes a change is named unless they choose to sign it themselves.',
-    sealed: 'Whoever proposes a change is named when the document is finished, and not before.',
-    sealedElective: 'Whoever proposes a change is named when the document is finished — sooner, if they choose to sign it.',
-    public: 'Whoever proposes a change is named from the moment they propose it.' };
-  const JUDG_RULE = { never: 'Votes are never revealed.',
-    after: 'Votes are revealed when the document is finished, and not before.' };
-  const CHAMBER_RULE = {
-    closed: () => 'Only members can see the document.' + (iDraft() ? '' : ' The Founder can always read it.'),
-    link: () => 'Anyone with the link can read the document.',
-    public: () => 'The document is public — listed and readable by anyone.' };
-  const APPL_RULE = (v) => (v === 'apply'
-    ? (admissionPrice() === 'pen' ? 'Anyone with the link joins on arrival.'
-      : 'Anyone may apply to join — an application is voted on like an invitation.')
-    : 'Membership is by invitation only.');
+  const endFmtOf = (v) => new Date(v).toLocaleString(undefined,
+    { weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }).replace(' ', ' at ');
+  const endFmt = () => endFmtOf((endingVal() !== 'never' && endingVal()) || S.endsAt);
   const ENDING_NEVER = 'The drafting process has no set end — it runs until too few members are active.';
+  // **A number states its own sentence** (Q1112 (b), step 5): the numeric
+  // clauses are named here, taking the value rather than reading the
+  // document's, so the clause and the *You said* readback are the one
+  // function and a member's answer is read back in the words it would put
+  // into the document. What a value would *mean* is still `meaningOf`'s
+  // alone (T39) — none of these writes a second consequence sentence.
+  const ENDING_RULE = (v) => (v === 'never' || !v ? ENDING_NEVER
+    : 'The drafting process will end on ' + endFmtOf(v) + '.');
+  const QUORUM_RULE = (n) => (S.quorumForm === 'count'
+    ? Math.min(n, E()) + ' of the ' + E() + ' members'
+    : n + '% of the members') + ' must have voted on a question before it can change the document.';
+  // a ramp that starts where it ends is not a ramp (Ed: *if there is no
+  // ramp, the clause can just be blank*)
+  const BAR_RULE = (pct, start) =>
+    (isNum(start) && +start < +pct
+      ? 'The members must be ' + pct + '% sure a proposal is better for it to pass by the end, starting at ' + start + '% when voting opens.'
+      : 'The members must be ' + pct + '% sure a proposal is better for it to pass.');
+  const LAPSE_RULE = (v) => (v === 'never' || v === null
+    ? 'Nobody stops being a member, however long they are away.'
+    : 'Somebody stops being a member after ' + v + ' days without logging in.');
+  const RATE_RULE = (grant, cap, drip) => 'Members start with ' + grant +
+    ' proposals ✏️ each, up to a maximum of ' + cap +
+    '. They get an additional ✏️ every ' + drip +
+    // the cost rode the why paragraph until T43 dropped it (Ed,
+    // 2026-09-01: *this may mean we need to add to the clause sentences
+    // themselves*) — so the clause states it
+    ' minutes. A proposal costs one ✏️, and one that passes gives it back.';
   const DECIDED = {
     ending: () => (perpetual() ? ENDING_NEVER
       : 'The drafting process will end on ' + endFmt() + '.'),
-    quorum: () => (S.quorumForm === 'count'
-      ? Math.min(takenOf('quorum') || S.quorumN, E()) + ' of the ' + E() + ' members'
-      : (takenOf('quorum') || S.quorumPct) + '% of the members') + ' must have voted on a question before it can change the document.',
+    quorum: () => QUORUM_RULE(takenOf('quorum') ||
+      (S.quorumForm === 'count' ? S.quorumN : S.quorumPct)),
     // **The ramp is part of what the threshold says** (Q512, Ed 2026-08-21:
     // *if there is no ramp, the clause can just be blank — maybe the ramp can
     // be in the threshold setting stack, rather than a whole separate
@@ -5233,11 +5268,7 @@
       const shape2 = v ? v.shape : S.shape;
       const start2 = v && v.shape === 'ramp' ? v.startPct : S.tStart;
       const pct = takenOf('bar') || S.tClose;
-      // a ramp that starts where it ends is not a ramp (Ed: *if there is no
-      // ramp, the clause can just be blank*)
-      return (!perpetual() && shape2 === 'ramp' && isNum(start2) && +start2 < +pct
-        ? 'The members must be ' + pct + '% sure a proposal is better for it to pass by the end, starting at ' + start2 + '% when voting opens.'
-        : 'The members must be ' + pct + '% sure a proposal is better for it to pass.'); },
+      return BAR_RULE(pct, !perpetual() && shape2 === 'ramp' ? start2 : null); },
     pace: () => { const v = takenValOf('pace');
       const shape2 = v ? v.shape : S.shape;
       const start2 = v && v.shape === 'ramp' ? v.startPct : S.tStart;
@@ -5259,15 +5290,11 @@
       takenOf('chamber') || (S.chamber === 'roster' ? 'closed' : S.chamber)](),
     lapse: () => { const tv = takenOf('lapse');
       const v = tv !== null ? tv : (S.lapse === 'roster' ? null : S.lapse);
-      return (v === 'never' ? 'Nobody stops being a member, however long they are away.'
-      : 'Somebody stops being a member after ' + (typeof v === 'number' ? v : S.lapseDays) + ' days without logging in.'); },
+      return LAPSE_RULE(v === 'never' ? 'never'
+        : (typeof v === 'number' ? v : S.lapseDays)); },
     rate: () => { const v = takenValOf('rate');
-      return 'Members start with ' + (v ? v.grant : S.grant) + ' proposals ✏️ each, up to a maximum of ' +
-        (v ? v.cap : S.cap) + '. They get an additional ✏️ every ' + (v ? v.dripMinutes : S.dripMin) +
-        // the cost rode the why paragraph until T43 dropped it (Ed,
-        // 2026-09-01: *this may mean we need to add to the clause sentences
-        // themselves*) — so the clause states it
-        ' minutes. A proposal costs one ✏️, and one that passes gives it back.'; },
+      return RATE_RULE(v ? v.grant : S.grant, v ? v.cap : S.cap,
+        v ? v.dripMinutes : S.dripMin); },
     // 🤝 is one switch; what an application costs is 🪪's sentence (entry 94)
     applications: () => APPL_RULE(policyNow()),
     slug: () => 'The document lives at ' + docAddr(S.slug) + '.',
@@ -5968,8 +5995,12 @@
     // key as the values above it, so it is part of that question rather than a
     // second one. Two elements each claiming the role made two groups out of
     // one decision, which the value group's own label already covers.
+    // …and since Q1112 (b) the rung says the clause the delegation sets —
+    // Ed's own sentence for the delegated state (T43's item 7), minus the
+    // count, which is the live parenthetical the clause carries and not part
+    // of what you are choosing.
     return '<div class="choice delegrung">' +
-      opt(S, dk, 'roster', 'Let the membership decide this rule themselves',
+      opt(S, dk, 'roster', 'The Founder is letting the membership decide this rule themselves.',
         'Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. ' +
         (c.rule ? String(c.rule).replace(/<[/]?b>/g, '') : '')) +
       '</div>';
@@ -6910,8 +6941,13 @@
       // the room reaches the answer bodies as a fourth argument (entry 167):
       // `setup.js` writes the controls but must not learn where a room comes
       // from, so the caller hands it one built by `roomNow`
+      // …and the clause context as a sixth (Q1112 (b)), for the same reason:
+      // two of the clause sentences name a fact outside their own setting —
+      // 🌍's clerk deviation and 🤝's price — and a ladder that omitted it
+      // would say the rung a second way, which is the T5 finding this ends
       const body = c.ansFor ? ANSWER[c.ansFor](S.myAns, E(),
-          c.ansFor === 'quorum' ? S.quorumForm : undefined, roomNow(), ANSTYPED)
+          c.ansFor === 'quorum' ? S.quorumForm : undefined, roomNow(), ANSTYPED,
+          clauseCtx())
         // a card that is not yours to answer reads as the rule it is —
         // the founder's settings are read-only from any other chair
         // **…and from the founder's own, once the pen on it is down** (entry

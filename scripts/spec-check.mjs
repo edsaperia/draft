@@ -880,13 +880,33 @@ function checkComposer(M, pm) {
   // spelled `PRICE_WORDS`' way, and 🤝's four lanes against two typable values
   // after entry 94 made the setting a switch — and neither was visible to any
   // check: `copy-check` saw both and froze them as ordinary copy.
+  // **A rung whose lane label is the clause sentence spells neither side
+  // here** (Q1112 (b)): `MVAL.admission` is `priceMval('admission')` and
+  // `PROPOSE.admission` draws `ruleLanes('admission')`, both off `cards.js`'s
+  // one `RULES` table, so the two agree by construction rather than by two
+  // spellings matching. Both forms are resolved through that table rather
+  // than skipped: what is left to catch is a list pointed at the **wrong
+  // setting**, which is the same half-done-rename shape in a new dress — and
+  // a `lanesFor` argument this cannot resolve is still a finding, never a
+  // silent pass.
+  const rules = new Map(keyBodies(uncomment(objLit(js('design/cards.js'), 'RULES')))
+    .map(([k, b]) => [k, [...b.matchAll(/:\s*'((?:\\.|[^'\\])*)'/g)].map((m) => m[1])]));
+  const ruleSays = (fn, arg) => {
+    const m = arg.match(new RegExp(`^${fn}\\('([A-Za-z]+)'\\)$`));
+    return m ? (rules.get(m[1]) || null) : null;
+  };
   const mvalKeys = (b) => [...b.matchAll(/'((?:\\.|[^'\\])*)'\s*:\s*\{/g)].map((m) => m[1]);
-  const mval = new Map(keyBodies(uncomment(objLit(page, 'MVAL'))).map(([k, b]) => [k, mvalKeys(b)]));
+  const mval = new Map(keyBodies(uncomment(objLit(page, 'MVAL'))).map(([k, b]) => {
+    const derived = ruleSays('priceMval', (b.split(':').slice(1).join(':').trim().replace(/,\s*$/, '')));
+    return [k, derived || mvalKeys(b)];
+  }));
   const lanes = new Map(); let laneLabels = 0;
   for (const [k, raw] of keyBodies(uncomment(objLit(page, 'PROPOSE')))) {
     const body = raw; const found = [];
     for (const m of body.matchAll(/lanesFor\(/g)) {
       const arg = (argsAt(body, m.index + m[0].length - 1)[1] || '').trim();
+      const derived = ruleSays('ruleLanes', arg);
+      if (derived) { found.push(...derived); continue; }
       let lit = null;
       if (arg.startsWith('[')) lit = arg;
       else if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(arg)) lit = arrRaw(uncomment(page), arg);
@@ -897,6 +917,10 @@ function checkComposer(M, pm) {
       for (const p of lit.matchAll(/\[\s*'((?:\\.|[^'\\])*)'\s*,/g)) found.push(p[1]);
     }
     if (found.length) { lanes.set(k, found); laneLabels += found.length; }
+  }
+  // …and a `RULES` table nothing reads is the other way this could go quiet
+  for (const k of ['admission', 'removal']) {
+    if (!(rules.get(k) || []).length) find('composer', `cards.js's RULES.${k} yields no sentences — MVAL.${k} and PROPOSE.${k} both resolve through it`);
   }
   for (const [k, labels] of lanes) {
     const keys = mval.get(k) || [];
