@@ -371,13 +371,32 @@
     // 🍾 commits with its own glyph on its own commit (Q516)
     ['open-begin', () => openTab('begin')],
     ['confirm-begin', () => click('.setupcard [data-confirm]')],
-    // 💡 and ⚖️ took their place in ORDER after 🍾 and were opened and
-    // OK'd here — four steps that went dead on 2026-09-01 with SURFACE Y27:
-    // **a gate never withholds from the seat that set it**, so the founder,
-    // whose surface this scenario is, is served neither card and has nothing
-    // to press. A member still is, and `journey-walk` walks that seat.
+    // 💡 and ⚖️ took their place in ORDER after 🍾 and were opened and OK'd
+    // here — four steps that went dead on 2026-09-01 with SURFACE Y27: **a
+    // gate never withholds from the seat that set it**, so the founder, whose
+    // surface this scenario is, is served neither card and has nothing to
+    // press. They move to Bo's seat rather than leaving the pair uncovered
+    // (F20, Ed 2026-09-01): a member is served both, unacknowledged, so this
+    // is the state the founder's seat can no longer show — the body with its
+    // OK still on the row. Nothing else covered them: `founding-walk` records
+    // rail keys and clauses, never a card body, and a card the probe never
+    // opens produces no dead step, which is the hole Q732, Q910 and Q914 each
+    // fell down. The OKs are Bo's own, so the founding's own state is
+    // untouched and `seat-founder` below finds the surface it always did.
     ['fast-forward', () => click('#devff')],
     ['seat-bo', () => setSeat('1')],
+    // …and they are reached through the pile, not by key. 💡 ⚖️ and 🏛️ stand
+    // behind 🍾 on the Proposals preamble's one paragraph (`PROPOSAL_CHIPS`),
+    // and `pileHtml` marks every chip after the first `inert` and emits no
+    // `data-tab` on it — so `openTab` cannot address either gate from the
+    // closed page, on any seat. Opening the front of the stack draws the
+    // strip live, and there the tabs carry their keys. No OK is pressed:
+    // opening is what coverage measures, the open card is what the region
+    // hashes compare, and Bo's own acknowledgements are left alone so
+    // `seat-founder` below finds the surface it always did.
+    ['open-preamble-bo', () => openTab('begin')],
+    ['open-canpropose', () => click('.setupcard .chipcol [data-tab="canpropose"]')],
+    ['open-canjudge', () => click('.setupcard .chipcol [data-tab="canjudge"]')],
     ['seat-founder', () => setSeat('0')],
   ];
 

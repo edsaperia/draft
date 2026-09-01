@@ -1915,8 +1915,11 @@
     // button with 🛡️ on it when you're actually doing a veto* — a commit
     // wearing a power's glyph is pressed only when exercising that power, so an
     // acknowledgment must never wear one (STYLE T44). All four grants commit
-    // with a bare **OK**, the owed-OK word (T18), and `take` is gone; the note
-    // beneath still says what lands in the wallet, off `grants` alone.
+    // with a bare **OK**, the owed-OK word (T18), and `take` is gone. The note
+    // beneath went too, one day later (Ed, 2026-09-01, Q1129, T45): *OK puts
+    // ✒️ in your wallet* named the button T44 had just changed, and a body
+    // says what the power **is**, never what the control does. What lands in
+    // the wallet is still said by the mark and by the flight, off `grants`.
     // 💡 keeps `g: '💡'` — its subject glyph, what the settled tab wears and
     // what the preamble's stack shows (Ed's ruling of the same day, Q1121) —
     // and keeps no `isGrant`, which is read for other things; `grants` is the
@@ -1926,18 +1929,33 @@
       grants: '✏️',
       hide: () => !constituted(),
       open: () => !!cs && !!viewerId() && cs.canPropose(viewerId()),
-      // proposing opens at the start (§9.0b, Q606, 2026-08-22): the text a
-      // proposal is made against is decided as part of the start, so the one
-      // blocker is 🍾 itself; your own unanswered questions are the start's
-      // problem too, since 🍾 refuses while a judge-gate question collects
-      why: 'Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.',
+      // **The body says what a proposal is** (Ed, 2026-09-01, Q1129, T45). It
+      // used to explain *when* proposing opens — *Anybody can read the document
+      // from the first second. Nobody can propose a change until the document
+      // begins, because the start decides the text a proposal is made against.*
+      // — which is the task, and the task is already said twice beneath: the
+      // lockline says whether it is open and the blocker list says what is
+      // stopping it (proposing opens at the start, §9.0b, Q606, so the one
+      // blocker is 🍾 itself). What was missing was the power, which is what
+      // the reader has to have before OK means anything. `grantNote` beneath
+      // carries the other half of it — how many ✏️s you hold.
+      why: 'A proposal is a change you write to the document, for the membership to vote on.',
       waiting: 'Waiting on the start.',
       done: 'Open — members can propose as soon as they arrive.',
       blockers: () => (constituted() ? [] : [card('text'), card('begin')].filter((c) => c && !settled(c))) },
     { k: 'canjudge', g: '⚖️', t: 'Voting', own: 'you', isGate: true,
       hide: () => !constituted(),
       open: () => canJudge(),
-      why: 'A vote counts towards quorum, and whether your name goes on it is one of the rules being decided. Settling those afterwards would change what the vote meant, so they come first.',
+      // **And ⚖️'s says what a vote is** (Ed, 2026-09-01, Q1129, T45). Its old
+      // body — *A vote counts towards quorum, and whether your name goes on it
+      // is one of the rules being decided. Settling those afterwards would
+      // change what the vote meant, so they come first.* — argued the ordering
+      // rather than naming the power, which is why this was the one card whose
+      // note had nothing to add and said *Nothing is being asked here*. The
+      // ordering is still said where it bites: the lockline and the blocker
+      // list below, which name the constitution itself. ⚖️ grants no object,
+      // so no glyph and nothing flies; the sentence is the whole of the card.
+      why: 'A vote is your say on a proposal: you are shown two at a time and choose the one you prefer, or neither.',
       waiting: 'Waiting on the constitution.',
       done: 'Open — the constitution is settled.',
       blockers: () => ceremony().filter((c) => !settled(c) || (isRoom(c) && (c.in || 0) < E())) },
@@ -6840,7 +6858,7 @@
         // they already hold, and the press re-fires `pendingGrant`'s pencil
         // storm into a full wallet. A card that asks nothing commits nothing
         // (SURFACE §9.1, CP9).
-        return cardHtml(c, ctx, grantProv(c) + gateBody(c, acked(c.k)) + grantNote(c),
+        return cardHtml(c, ctx, grantProv(c) + gateBody(c) + grantNote(c),
           acked(c.k) ? binBtn()
             : binBtn() +
               '<button class="btn btn-approve"' +
@@ -10725,11 +10743,11 @@
   const grantNote = (c) => {
     if (c.k !== 'canpropose' || !c.open() || !viewerIsMember()) return '';
     const nHeld = cs && cs.isRemote && cs.v ? Math.floor(cs.v.wallet || 0) : (SESSION.editsHeld || 0);
-    // the OK half only while the commit row still draws one (`gateNote`'s own
-    // rule): acknowledged, the count is the whole of what is true
+    // the count, and nothing about the button (T45, Q1129): *— OK puts them in
+    // your wallet* named the commit, so the line read one way before the OK
+    // and another after it. How many ✏️s you hold is true in both states.
     return '<p class="setnote grantline">You hold <b>' + nHeld + ' ✏️' + (nHeld === 1 ? '' : 's') +
-      '</b> to propose with' +
-      (acked(c.k) ? '.' : ' — <b>OK</b> puts them in your wallet.') + '</p>';
+      '</b> to propose with.</p>';
   };
   // the grant's flight, after the render that took its card away
   function launchGrant() {

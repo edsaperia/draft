@@ -43,12 +43,12 @@ const EXEMPT = {
   // the probe drives it — open-text · write-text · save-text · close-text —
   // but there is no card DOM to record; its power tabs open as cards
   text: 'the text is a card with two modes, never opened as a setupcard (backlog 204, K31)',
-  // **a gate never withholds from the seat that set it** (SURFACE Y27, Ed
-  // 2026-09-01): 💡 and ⚖️ are acknowledged for the founder the moment they
-  // open, so the surface this probe drives is served neither card. Coverage
-  // of them belongs to a member seat, which `journey-walk` walks.
-  canpropose: 'a gate is acknowledged for the founder without a card (SURFACE Y27); the member seat is journey-walk’s',
-  canjudge: 'a gate is acknowledged for the founder without a card (SURFACE Y27); the member seat is journey-walk’s',
+  // 💡 and ⚖️ were exempted here on 2026-09-01, when SURFACE Y27 — **a gate
+  // never withholds from the seat that set it** — took both off the founder's
+  // rail and left the pair covered by nothing. The exemption is spent (F20):
+  // the founding scenario now opens both on Bo's seat, through the preamble
+  // pile, because a member is served them unacknowledged. An exemption is
+  // honest only while no seat can reach the card, and one could.
 };
 
 const TYPES = {
