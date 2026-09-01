@@ -1724,13 +1724,25 @@ if (caret) {
    * an editable host. Both need the door above, and neither reaches the page
    * without it. */
   if (NEW_CLAUSE && !EMPTY_TEXT) {
-    await page.evaluate(() => {
+    /* The last clause is looked for, never assumed — the same discipline as the
+     * 📝 tab above (F18, deferred from backlog 261). An unexpected document
+     * state left `ps` empty and the deref threw inside the page, which takes the
+     * whole walk down and hides every FAIL line below it: an exception says
+     * *something happened in a browser*, where a named step says which step
+     * wanted what. */
+    const lastClause = await page.evaluate(() => {
       const ps = [...document.querySelectorAll('#charter .prose p.editable[data-key]')].filter((p) => !p.classList.contains('gap'));
       const p = ps[ps.length - 1];
+      if (!p) return null;
       p.scrollIntoView({ block: 'center' });
       const r = document.createRange(); r.selectNodeContents(p); r.collapse(false);
       const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      return p.dataset.key || '(no key)';
     });
+    if (!lastClause) {
+      say('clause end · FAIL: no clause to press Enter at — #charter .prose p.editable[data-key] (not .gap) matched nothing');
+      stuck.push('the last clause');
+    }
     await page.keyboard.press('Enter');
     await T(700);
     const g = await page.evaluate(() => {
