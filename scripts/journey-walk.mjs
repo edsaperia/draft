@@ -1739,25 +1739,31 @@ if (caret) {
       const s = getSelection(); s.removeAllRanges(); s.addRange(r);
       return p.dataset.key || '(no key)';
     });
+    /* …and the step that could not find its caret does not press anything.
+     * Enter with no selection lands wherever focus happens to be, which is a
+     * keystroke into the document under test — and the gap assertion below
+     * would then fail a second time over the same one cause, so the run
+     * names two broken things where there is one. */
     if (!lastClause) {
       say('clause end · FAIL: no clause to press Enter at — #charter .prose p.editable[data-key] (not .gap) matched nothing');
       stuck.push('the last clause');
+    } else {
+      await page.keyboard.press('Enter');
+      await T(700);
+      const g = await page.evaluate(() => {
+        const d = (window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours');
+        const head = document.querySelector('.sugg.editcard .clausehead .headlab');
+        return { key: d && d.sites[0] ? d.sites[0].keys[0] : null, text: d && d.sites[0] ? d.sites[0].text : null,
+          insertAfter: d ? d.insertAfterKey : null, label: head ? head.textContent.trim() : null,
+          anchor: !!document.querySelector('.insert-anchor[data-anchor="draft-yours"]') };
+      });
+      const gapOk = /^G\d+$/.test(g.key || '') && g.text === '' && /new clause/i.test(g.label || '');
+      say('new clause · ' + (gapOk ? 'Enter at the end opens a draft on ' + g.key + ' — “' + g.label + '”'
+        : 'FAIL: ' + JSON.stringify(g)));
+      if (!gapOk) stuck.push('the gap site');
+      await page.keyboard.type('A new clause, proposed into the gap.');
+      await T(300);
     }
-    await page.keyboard.press('Enter');
-    await T(700);
-    const g = await page.evaluate(() => {
-      const d = (window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours');
-      const head = document.querySelector('.sugg.editcard .clausehead .headlab');
-      return { key: d && d.sites[0] ? d.sites[0].keys[0] : null, text: d && d.sites[0] ? d.sites[0].text : null,
-        insertAfter: d ? d.insertAfterKey : null, label: head ? head.textContent.trim() : null,
-        anchor: !!document.querySelector('.insert-anchor[data-anchor="draft-yours"]') };
-    });
-    const gapOk = /^G\d+$/.test(g.key || '') && g.text === '' && /new clause/i.test(g.label || '');
-    say('new clause · ' + (gapOk ? 'Enter at the end opens a draft on ' + g.key + ' — “' + g.label + '”'
-      : 'FAIL: ' + JSON.stringify(g)));
-    if (!gapOk) stuck.push('the gap site');
-    await page.keyboard.type('A new clause, proposed into the gap.');
-    await T(300);
   } else {
     await page.keyboard.type('X');
     await T(700);

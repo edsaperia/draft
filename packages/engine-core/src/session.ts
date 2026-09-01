@@ -970,11 +970,6 @@ export class Session {
       disclosure: this.constitutionValue.authorshipVisibility,
     });
     this.fitCache.clear();
-    // **The race is read before the sweep, and that ordering is the whole of
-    // why this is two statements.** At E = 1 the sweep below can adopt the
-    // candidate this call just made, and an adopted candidate is in no live
-    // race — `raceOf` would throw on the id it is about to return.
-    const race = this.raceOf(id);
     // A submission is the last moment a document of one can be waiting for
     // (backlog 253): the derived preference is the room there, so the batch
     // is due now rather than at the next `tick`. Field-wide and cooldown-
@@ -982,16 +977,24 @@ export class Session {
     // than in the fold, because adoption emits events and must never run
     // during replay.
     this.sweepAdoptions(t);
-    // **And the second half: the capture keeps *this* call from throwing, it
-    // does not make the id true.** Where the sweep above adopted (or parked)
-    // the candidate, the race it was submitted into no longer exists, and a
-    // `raceId` returned regardless would hand the caller an id `raceOf` throws
-    // on — the trap moved one step out of the engine. So the captured race is
-    // re-checked against the live field and the handle is `null` where it has
-    // gone. `raceOf`'s throwing contract is right and is untouched: the id is
-    // not unknown, it is *gone*, and that is a different fact.
-    const stillLive = this.races().some((r) => r.id === race.id);
-    return { id, raceId: stillLive ? race.id : null };
+    // **The race is read after the sweep, and it is read by membership.** At
+    // E = 1 the sweep above can adopt the candidate this call just made, and
+    // an adopted candidate is in no live race — a `raceId` returned regardless
+    // would hand the caller an id `raceOf` throws on, the trap moved one step
+    // out of the engine. So the handle is `null` where the candidate has left
+    // the live field. `raceOf`'s throwing contract is right and is untouched:
+    // the id is not unknown, it is *gone*, and that is a different fact.
+    //
+    // **And it is a membership lookup rather than an id comparison**, because
+    // a race id is `r:<its lowest-numbered member>` and the sweep can rename
+    // one without dissolving it: adopt a race's first member and the survivors
+    // regroup under the next, and a rebase that separates two footprints
+    // splits one race into two. Comparing the pre-sweep id against the live
+    // field answers *does that id still exist*, which is neither the question
+    // asked nor reliably the same answer — it returns `null` for a candidate
+    // still racing, and a live id for a race the candidate has left.
+    const race = this.races().find((r) => r.members.includes(id));
+    return { id, raceId: race ? race.id : null };
   }
 
   /**
