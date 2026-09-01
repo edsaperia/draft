@@ -628,6 +628,60 @@ function checkOrder(pm) {
 }
 
 /**
+ * **The founding rules are defined once and never renumbered** — SURFACE §8.1
+ * against itself.
+ *
+ * Ed ruled it twice (2026-08-29, and again while the tabulation plan was
+ * written): a pass over §8.1 *must not renumber F1–F22*. The ids are cited
+ * from outside the file — `CLAUDE.md`, `design/STYLE.md`, `journey-walk.mjs`,
+ * `ladder-walk.mjs`, `seat-matrix.mjs` and this checker — so a renumbering
+ * breaks pointers that nothing else would notice. This is the mechanical half
+ * of that rule.
+ *
+ * **Definitions, never occurrences.** A rule's *definition* is the one list
+ * item in §8.1 whose lead is `- **F<n> `; its *occurrences* are that plus
+ * every cross-reference — and §8.1 is built out of cross-references. F19 is
+ * written seven times in this file, F5 and F18 five each, and §8's own ORDER
+ * table cites F5, F9, F18 and F19 in two of its cells. So *each id appears
+ * exactly once* is not merely unbuildable, it would forbid the web the rules
+ * form, which is the thing worth keeping. What is asserted is that each id is
+ * **defined** exactly once (Q1128).
+ *
+ * Three claims, each droppable on its own: the ids are exactly F1–F23 in
+ * order, no gap and no duplicate; no rule is defined outside §8.1; and every
+ * `F<n>` written anywhere in SURFACE.md resolves to one of those definitions,
+ * so a citation cannot outlive the rule it points at.
+ */
+function checkFIds() {
+  note("The founding rules — SURFACE §8.1's ids, defined once and never renumbered");
+  const md = read('SURFACE.md');
+  const head = md.indexOf('### 8.1 Rules');
+  const tail = md.indexOf('\n## 9.', head);
+  if (head < 0 || tail < 0) {
+    find('order', 'SURFACE §8.1 is gone — the founding rules F1–F23 have no home');
+    return;
+  }
+  const block = md.slice(head, tail);
+  const defs = [...block.matchAll(/^- \*\*F(\d+) /gm)].map((m) => Number(m[1]));
+  if (!defs.length) {
+    find('order', '§8.1 defines no F-rule — every `F<n>` cited from CLAUDE.md, STYLE.md and scripts/ now dangles');
+    return;
+  }
+  const want = Array.from({ length: 23 }, (_, i) => i + 1);
+  if (defs.join(' ') !== want.join(' '))
+    find('order', `§8.1 defines [${defs.map((n) => `F${n}`).join(' ')}]; the rule is F1–F23 in order — no id renumbered, added, removed, merged or split (Ed, twice)`);
+  const elsewhere = [...md.replace(block, '').matchAll(/^- \*\*F(\d+) /gm)].map((m) => `F${m[1]}`);
+  if (elsewhere.length)
+    find('order', `founding rules defined outside §8.1: ${elsewhere.join(' ')} — §8.1 is the one place a founding rule is defined`);
+  const known = new Set(defs.map((n) => `F${n}`));
+  const cited = [...md.matchAll(/\bF(\d+)\b/g)].map((m) => `F${m[1]}`);
+  const dangling = [...new Set(cited)].filter((id) => !known.has(id));
+  if (dangling.length)
+    find('order', `SURFACE.md cites ${dangling.join(' ')}, which §8.1 does not define`);
+  note(`  ${defs.length} rules defined, F${defs[0]}–F${defs[defs.length - 1]}; ${cited.length} citations in the file, all resolving`);
+}
+
+/**
  * *A gate never withholds from the seat that set it* — SURFACE Y27, C8.
  *
  * Two halves, and each was a real failure before it was a rule. The founder
@@ -1240,6 +1294,7 @@ function checkMergeable() {
 checkMarks();
 checkWallets(pm);
 checkOrder(pm);
+checkFIds();
 checkGateSeat();
 checkAuthorNeverAsked();
 checkPenRebase();
