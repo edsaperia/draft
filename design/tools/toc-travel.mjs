@@ -19,6 +19,11 @@
  * Two window sizes in one invocation, `card-audit`'s pair: a geometry finding
  * that moves with the viewport is a layout fact rather than a defect, and this
  * one has to hold at both.
+ *
+ * Since SURFACE **M17** it is also where *whether* a click arrives is checked:
+ * an entry naming a heading inside something folded unfolds it and then travels,
+ * so an anchor with nothing laid out behind it is clicked like any other rather
+ * than skipped, and a click that leaves it that way is a failure.
  */
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
@@ -76,7 +81,7 @@ async function measureAt(browser, base, size, fails) {
   if (!counts.own) fails.push(label + ": the rail carries none of the charter's own headings (#toc a[data-toc]) — nothing of the existing path was measured");
 
   let measured = 0;
-  const skipped = [], opened = [];
+  const skipped = [], opened = [], unfolded = [];
   for (let i = 0; i < counts.all; i++) {
     const r = await page.evaluate(async (n) => {
       const a = document.querySelectorAll('#toc a[href^="#"]')[n];
@@ -86,10 +91,14 @@ async function measureAt(browser, base, size, fails) {
       const id = href.slice(1);
       const target = document.getElementById(id);
       const box = target && target.getBoundingClientRect();
-      // no target, or a target with no layout box (a hidden section) — the same
-      // two things `scrollToHeading` declines to move for
-      if (!target) return { skip: 'no such element', href, text };
-      if (!box.width && !box.height) return { skip: 'no layout box', href, text };
+      // **A rail click always arrives somewhere** (SURFACE M17). A heading that
+      // is not laid out *yet* — the constitution pile shut over its own
+      // sections, a prose heading shut over the ones beneath it — used to be
+      // skipped here, on the grounds that it is what `scrollToHeading` declines
+      // to move for. That is now the defect rather than the excuse: the entry's
+      // own pile unfolds and then travels, and this is the one case in which
+      // measuring the arrival is the whole point.
+      const hidden = !target ? 'not in the page' : (!box.width && !box.height) ? 'not laid out' : null;
       // A card collapses over `COLLAPSE_MS`, and the page relayouts on its own
       // scroll — so each anchor is clicked from a page that has finished moving
       // and measured once this one has. Clicking mid-collapse measures the
@@ -101,26 +110,35 @@ async function measureAt(browser, base, size, fails) {
       a.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
       await settle();
       const again = document.getElementById(id);
-      const r2 = { href, text, opened: window.SESSION.openId !== wasOpen };
+      const abox = again && again.getBoundingClientRect();
+      const r2 = { href, text, hidden, opened: window.SESSION.openId !== wasOpen };
       if (r2.opened) {
         // close it again so the next anchor measures the same page as the first
         try { window.SESSION.toggle(window.SESSION.openId, false); } catch { /* already shut */ }
         await settle();
         return r2;
       }
-      r2.top = again ? again.getBoundingClientRect().top : null;
+      r2.top = again && (abox.width || abox.height) ? abox.top : null;
       r2.bottom = document.querySelector('.navbar').getBoundingClientRect().bottom;
       return r2;
     }, i);
     if (r.gone) continue;
-    if (r.skip) { skipped.push(r.href + ' (' + r.skip + ')'); continue; }
     // **M10's card branch is not navigation** (Ed, 179): a charter heading
     // holding exactly one question *is* that question, so clicking it opens
     // the card and `bringIntoView` aims at the clause's own `READ_LINE`. There
     // is no heading arrival to measure, and asserting one would be asserting
     // that M10 is a bug.
     if (r.opened) { opened.push(r.href); continue; }
-    if (r.top === null) { skipped.push(r.href); continue; }   // the click rebuilt its own target away
+    if (r.top === null) {
+      // M17 again: an entry that was folded away and *stayed* folded away is
+      // the dead click this tool exists to catch, where a target the click
+      // rebuilt out from under itself is only unmeasurable
+      if (r.hidden) fails.push(label + ': ' + JSON.stringify(r.text) + ' (' + r.href + ') was ' +
+        r.hidden + ' and the click left it that way — M17');
+      else skipped.push(r.href);
+      continue;
+    }
+    if (r.hidden) unfolded.push(r.href);
     measured++;
     if (r.top < r.bottom) {
       fails.push(label + ': ' + JSON.stringify(r.text) + ' (' + r.href + ') lands at top ' +
@@ -136,8 +154,10 @@ async function measureAt(browser, base, size, fails) {
     token: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')),
   }));
   console.log('toc-travel ' + label + ': ' + measured + ' anchor(s) measured, ' +
-    opened.length + ' opened a card (M10, not navigation), ' + skipped.length + ' skipped (no target or no layout box)');
+    unfolded.length + ' of them unfolded first (M17), ' +
+    opened.length + ' opened a card (M10, not navigation), ' + skipped.length + ' skipped (the click rebuilt its own target away)');
   console.log('  navbar bottom ' + bar.bottom.toFixed(1) + 'px measured · --nav-h ' + bar.token + 'px derived');
+  if (unfolded.length) console.log('  unfolded: ' + unfolded.join(' '));
   if (skipped.length) console.log('  skipped: ' + skipped.join(' '));
   if (opened.length) console.log('  opened:  ' + opened.join(' '));
   await context.close();
