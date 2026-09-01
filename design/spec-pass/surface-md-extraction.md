@@ -1,5 +1,18 @@
 # SURFACE.md extracted, not culled — a proposal (Q944)
 
+**Performed 2026-08-29 by entry 191, commit `18710a9`** — *SURFACE.md: the extraction pass
+applied, and Ed's quotations moved (entry 191, Q1036)*, which took `SURFACE.md` from 87,617
+to 82,301 bytes on disk. **All 26 change-items are applied and none is overtaken**: the six
+retires (1, 6, 14, 18, 33, 40) are gone from the file, the fourteen reduces (8, 15, 20, 21,
+22, 25, 26, 29, 30, 31, 34, 35, 36, 37) each end in the pointer proposed here, the one move
+(32) stands verbatim in `design/DECISIONS.md`'s *SURFACE.md, pruned (2026-08-29, entry 191)*
+beside item 8's reason, and the five points (3, 9, 10, 12, 27) are the cross-references
+drafted here. Item 47 was answered by Ed the same day (**Q1036**): his quoted sentences move,
+and the rule stands on its own. **Kept, not deleted** — `CLAUDE.md`'s rule is that a pass
+file goes once its answers are in `QUESTIONS.md`, and **1006**'s §8.1 tabulation still reads
+this document (§1's per-section measurements and §6 item 50). Verified item by item, against
+the sentence each quotes, by plan 139 on 2026-09-01, which found nothing left to build.
+
 **Read-only.** Nothing in `SURFACE.md` changed in the build that wrote this file. Every
 numbered item below is a **proposal**, to be approved one at a time — reply *do 3 and 7*.
 A later plan applies what is approved, cites the file as it stands then, and runs where no
