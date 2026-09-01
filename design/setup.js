@@ -1079,24 +1079,27 @@ window.SETUP = (function () {
   // member reads it as “these, and then you can write” rather than as a rule.
   // (One copy since 2026-08-18 — it had been byte-identical in both surfaces.)
   //
-  // **A grant says what its press does, in the button's own words** (entry
-  // 180): *Nothing is being asked here* is true of ⚖️ and false of a grant,
-  // whose press hands you an object. So an open card carrying `grants` closes
-  // on the take sentence instead — except 💡, whose consequence is already
-  // said by `grantNote` beneath (the pencil count is the whole point of it),
-  // and which would otherwise say it twice (T36).
+  // **A grant says what its press does** (entry 180): *Nothing is being asked
+  // here* is true of ⚖️ and false of a grant, whose press hands you an object.
+  // So an open card carrying `grants` closes on what the press puts in the
+  // wallet instead — except 💡, whose consequence is already said by
+  // `grantNote` beneath (the pencil count is the whole point of it), and which
+  // would otherwise say it twice (T36). The button it names is **OK**, the
+  // take-verbs having gone with Ed's commit ruling of 2026-09-01 (Q1121, T44);
+  // the power's glyph stays in the sentence, which is a description and not a
+  // press.
   const gateNote = (c) => {
     if (!c.open()) return 'It comes back to you the moment it opens.';
     if (!c.grants) return 'Nothing is being asked here — <b>OK</b> files it and it leaves your queue.';
-    return c.k === 'canpropose' ? '' : '<b>' + c.grants + ' ' + c.take + '</b> puts it in your wallet.';
+    return c.k === 'canpropose' ? '' : '<b>OK</b> puts ' + c.grants + ' in your wallet.';
   };
   const gateBody = (c) => {
     const open = c.open();
     const note = gateNote(c);
     return '<p class="why">' + c.why + '</p>' +
-      // an open grant states no lockline (Ed, 2026-08-31): the take sentence
-      // below is the whole ask, and *You hold the pen* restated a state the
-      // wallet says the moment it is taken. Gates keep theirs — a gate's
+      // an open grant states no lockline (Ed, 2026-08-31): the wallet sentence
+      // below is the whole ask, and *You hold Founder Actions* restated a state
+      // the wallet says the moment it is taken. Gates keep theirs — a gate's
       // lockline is what the card is waiting for, or that it opened.
       (open && c.isGrant ? '' :
         '<div class="lockline">' + (open ? TICK : '') + '<span>' +

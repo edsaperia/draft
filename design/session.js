@@ -2907,9 +2907,9 @@
         '<button class="btn glyphbtn" data-act="clear-close" title="Close — the question stays pending">🗑️</button>' +
         '<span class="rightpair">' +
         '<button class="btn glyphbtn" data-act="crown-refuse"' +
-        ' title="Refuse — the shield holds it, and the clause above stands">🛡️</button>' +
+        ' title="Refuse — the Founder Veto holds it, and the clause above stands">🛡️</button>' +
         '<button class="btn btn-approve glyphbtn" data-act="crown-accept"' +
-        ' title="Accept — the pen passes it now">✒️</button>' +
+        ' title="Accept — a Founder Action passes it now">✒️</button>' +
         '</span></div>' +
         '</div>'
       );

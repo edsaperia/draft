@@ -172,7 +172,7 @@ One glyph per entry, the same alphabet in all three columns (contents rail · gu
 |---|---|---|---|---|---|---|---|
 | ask | the subject glyph | the subject glyph | an answer or a set | open, by urgency | yes | yes | the setting's card |
 | wait | ⏳ **only where the wait is about you** (📧, a gate, 🍾); a **delegated** card waiting on the room keeps its glyph and leaves the rail, ordinary or constitutional alike (Q517, Ed 2026-08-29) — the tab says the rule, the queue says nothing | ⏳, or the glyph | nothing; fill = how far the room has got | closed | only where the wait is about you | no | the watching card |
-| news | drawn ✔; **a grant wears the glyph of the power it grants** (✒️ 🛡️ 🏛️, and ✏️ on 💡 — entry 180) | drawn ✔; **a grant wears the glyph of the power it grants** | OK, or the take | changed | yes | yes | the news card |
+| news | drawn ✔; **a grant wears the glyph of the power it grants** (✒️ 🛡️ 🏛️, and ✏️ on 💡 — entry 180) | drawn ✔; **a grant wears the glyph of the power it grants** | OK | changed | yes | yes | the news card |
 | yours | ✏️ | ✏️ | nothing — withdraw | yours | yes | yes, force-kept | the application |
 | done | drawn grey ✔, and it leaves | **the subject glyph** on grey | nothing | closed | no | — | the settled card (= the composer) |
 
@@ -207,10 +207,10 @@ Every power is an object you hold, kept where you can see it, spent by flying it
 | wallet | verb | who has to agree | socket | quantity | hold ms | grant key | arrives | flight |
 |---|---|---|---|---|---|---|---|---|
 | 🪶 quill | founding | nobody — nothing exists yet | quill | 4 feathers; 3 spent on the birth (title, link, the send), the 4th permanent and is the logo | 1000 | — | by navigating to docs.vote; no task | feather → button; home on release |
-| ✒️ pen | drafting | nobody — you hold the power | penwallet | one, perpetual, never spent; ∞ in the count slot | 1000 | grant-pen | the save · *You founded this document, and the pen came with it* / *The membership returned the pen to you* | pen → button; the take → socket; farewell → 🥂 |
-| 🛡️ shield | the pen's other half | nobody — a refusal power | shieldwallet | one, perpetual; ∞ | — | grant-shield | the save · *…the shield came with it* / *…returned the shield* | the take → socket; farewell → 🥂 (Q621) |
-| ✏️ propose | proposing | enough of the room, at the threshold | wallet | many; 1 per Propose, refunded whole on withdraw, dripped on real minutes, capped; past four, three glyphs and +n | 1000 | canpropose | 🍾, per member at their OK · *The Founder began the document, granting every member the right to propose changes to it* | arc → button; the storm from the take; farewell storm → 🥂 |
-| 🏛️ voice | consensus | all members | voicewallet | one at a time, returned whole | 1000 | grant-voice | with the first blind question you are asked (Q605) · four sentences by arrival | the take → socket; farewell → 🥂; the motion hold flies nothing — the assembly is the meter |
+| ✒️ pen | drafting | nobody — you hold the power | penwallet | one, perpetual, never spent; ∞ in the count slot | 1000 | grant-pen | the save · *You founded this document, and Founder Actions came with it* / *The membership returned Founder Actions to you* | pen → button; the grant's OK → socket; farewell → 🥂 |
+| 🛡️ shield | the pen's other half | nobody — a refusal power | shieldwallet | one, perpetual; ∞ | — | grant-shield | the save · *…the Founder Veto came with it* / *…returned the Founder Veto* | the grant's OK → socket; farewell → 🥂 (Q621) |
+| ✏️ propose | proposing | enough of the room, at the threshold | wallet | many; 1 per Propose, refunded whole on withdraw, dripped on real minutes, capped; past four, three glyphs and +n | 1000 | canpropose | 🍾, per member at their OK · *The Founder began the document, granting every member the right to propose changes to it* | arc → button; the storm from the grant's OK; farewell storm → 🥂 |
+| 🏛️ voice | consensus | all members | voicewallet | one at a time, returned whole | 1000 | grant-voice | with the first blind question you are asked (Q605) · four sentences by arrival | the grant's OK → socket; farewell → 🥂; the motion hold flies nothing — the assembly is the meter |
 | 🍾 begin | a moment, not a capacity | the founder alone | — | — | 1000 | — | 🍾 is its own task | the cork → the document title |
 | ⚖️ judge | a right, not an object | — | — | — | — | canjudge | 🍾 · *…granting every member the right to vote on what is proposed* | nothing flies |
 
@@ -240,7 +240,7 @@ An act that spends something out of a wallet is held, and **every hold on the su
 | ✏️ Propose (a draft in the charter) | 1000 | 288 | the last drawn ✏️ | same |
 | ✏️ Propose (a motion) | 1000 | 288 | the last drawn ✏️ (Q614) | same |
 | 🏛️ Ask all members | 1000 | — | nothing — the members' avatars convene | disperses; nothing sent |
-| the take (✒️ 🛡️ 🏛️ ✏️ Take …) | a click | — | the grant's object, the take → socket | — |
+| a grant's OK (💡 ✒️ 🛡️ 🏛️) | a click | — | the grant's object, the button → socket | — |
 
 The refund flight and every grant's inbound flight take 640 ms.
 
@@ -279,17 +279,17 @@ The refund flight and every grant's inbound flight take 640 ms.
 | 3 | myemail | 📧 | birth · identity | lead (pre-save); your own row after | yes | shape | Your Email |
 | 4 | myname | ✋ | personal | members — your own row | no | the save | Your Name |
 | 5 | mypic | 🖼️ | personal | members — your own row | no | the save | Your Picture |
-| 6 | grant-pen | ✒️ | grant | lead — a tab on the Founded line, no clause | yes | the save | The Pen |
-| 7 | grant-shield | 🛡️ | grant | lead — a tab on the Founded line, no clause | no | the save | The Shield |
+| 6 | grant-pen | ✒️ | grant | lead — a tab on the Founded line, no clause | yes | the save | Founder Actions |
+| 7 | grant-shield | 🛡️ | grant | lead — a tab on the Founded line, no clause | no | the save | Founder Veto |
 | 8 | chamber | 🌍 | constitutional · judge-gate | lead, penultimate | yes | the pen's OK | Visibility |
 | 9 | admission | 🪪 | constitutional — **the price of admission** (entry 94) | members, first — its own clause, above 🤝, because an application pays it (Ed, 2026-08-26) | yes | chamber | Admissions (the ✉️ door is the **remedy** while 🍾 waits on `one-voice`, F19) |
 | 10 | applications | 🤝 | constitutional | members — above *Members*, ahead of 💤 🥾 (Q617) | yes | admission | Applications |
 | 11 | hat | 🎩 | decision, not a setting | members — a tab on the list; no sentence | yes | applications | Is the Founder a Member? |
 | 12 | lapse | 💤 | constitutional · judge-gate | members — above *Members*, with 🤝 (Q865) | yes | hat | Do Memberships Lapse? |
 | 13 | removal | 🥾 | constitutional | members — the last rule above *Members* | yes | lapse | How Is a Member Removed? |
-| 14 | canpropose | 💡 | gate (and the ✏️ grant) | rate — in the preamble's stack | no | 🍾 | Proposing |
+| 14 | canpropose | 💡 | gate (and the ✏️ grant) | rate — in the preamble's stack | no | 🍾 | Proposals |
 | 15 | canjudge | ⚖️ | gate | rate — in the preamble's stack | no | 🍾 | Voting |
-| 16 | grant-voice | 🏛️ | grant | rate — in the preamble's stack (Y23) | no | its clause is pinned; the **news** still arrives with the first blind question you are asked — else, **before the start, under 🪪**, and under ⚖️ after it (Q605, narrowed by Q750, widened by Q829) | Your Consent |
+| 16 | grant-voice | 🏛️ | grant | rate — in the preamble's stack (Y23) | no | its clause is pinned; the **news** still arrives with the first blind question you are asked — else, **before the start, under 🪪**, and under ⚖️ after it (Q605, narrowed by Q750, widened by Q829) | Constitutional Proposals |
 | 17 | rate | ⏱️ | ordinary, delegable | rate | yes | removal | Proposal Rate |
 | 18 | ending | ⏰ | constitutional, route inside it | deciding, first | yes | rate | When Does It End? |
 | 19 | bar | 🌡️ | constitutional · judge-gate; its commit sets 🪜 | deciding | yes | ending | Proposal Pass Threshold |
@@ -367,8 +367,8 @@ Two implementations of one shell (`suggCardHtml` in session.js for the charter; 
 | 👑 question | the setting's card, news-pinned | the title | *Passed — awaiting the 👑…* | none | 🗑️ (closes, kept pending) | 🛡️ refuse · ✒️ accept (CP5) | either power; 🗑️ | record |
 | 👑 question (the Text) | the founder's rail, beside the clause | **the clause it rewrites** | the parked wording against it, one proposal block, under its speaker | none | 🗑️ (closes, kept pending) | 🛡️ refuse · ✒️ accept (CP5) | either power; 🗑️ | the entry leaves |
 | news / owed OK | news entry ✔ | the rule | the read body · the watch half · the change line (was / now, who, why; *Last amended* once acknowledged) | none | 🗑️ | OK | OK | grey; the clause keeps the line |
-| gates 💡 ⚖️ | rail, hidden until 🍾 | the gate's sentence | who gave it · why · the blockers · *✏️ Take them puts n ✏️s in your wallet* (💡) | none | 🗑️ | OK; **💡: ✏️ Take them** (it is the ✏️ grant — Q461a) | OK (persisted) | grey ✔; gone from the rail |
-| grants 🏛️ ✒️ 🛡️ | rail, staged | the sentence | as a gate, closing on *‹the take› puts it in your wallet* | none | 🗑️ | **✒️ Take the pen · 🛡️ Take the shield · 🏛️ Take your consent**, a click | the take → the flight | grey |
+| gates 💡 ⚖️ | rail, hidden until 🍾 | the gate's sentence | who gave it · why · the blockers · *You hold n ✏️s to propose with — OK puts them in your wallet* (💡) | none | 🗑️ | OK (it is the ✏️ grant, and a grant's commit is still OK — Q461a, Q1121) | OK (persisted) | grey ✔; gone from the rail |
+| grants 🏛️ ✒️ 🛡️ | rail, staged | the sentence | as a gate, closing on *OK puts ‹the glyph› in your wallet* | none | 🗑️ | **OK**, a click — never the power's glyph (T44, Q1121) | the OK → the flight | grey |
 | 🍾 Begin | rail (founder) | the sentence | the batch, whose first line states what the power table was told to keep on the Text · **the power table** (one zone per row, a ✒️ column and a 🛡️ column of Kept / Laid-down option blocks — the surface's one two-column card, Q1103 (b); `BEGIN_ZONES`) · the readiness readout · the hold line | Choose this, per Kept / Laid-down block (CP2) | 🗑️ | 🍾 Begin (hold) | the hold | grey, restating the batch; the table is gone, there being nothing left to choose |
 | 🥂 The Close | rail, pinned, per member | the sentence | final as of · the batch · your closing comment | none | 🗑️ | OK = sign | OK → the farewell | — |
 | 🪪 Admissions | band tab, above 🤝 | the rule — the price of admission (entry 94) | the three options, each as the clause it would set (Q1109) | Choose this ×3 (CP2) | 🗑️ | ✒️ | ✒️ | grey |
@@ -408,8 +408,7 @@ Two implementations of one shell (`suggCardHtml` in session.js for the charter; 
 | ✏️ / 🏛️, second | the Founder's own card on a setting they hold ✒️ on — after the pen, never in front of it; on a door, in the body beside the door's own act | the route's own — the ✏️ flight or the assembly | accent-subtle | one glyph per route (K7), read off the value (K6); K29 |
 | 🏛️ Ask all members | a constitutional motion | the assembly, one second (§7.2) | accent-subtle | one 🏛️ out per member |
 | ✏️ Submitted | a proposed draft | — | pressed | the act become the fact; the row does not move |
-| OK | anything that asks only to have been seen — ⚖️, news, 🥂 (📝 Text's OK is struck since K31: the text is no acknowledgement) | — | solid accent | a word, not a glyph |
-| ✒️ 🛡️ 🏛️ ✏️ Take … | a grant | — (a click) | accent-subtle | the glyph of the power it hands over, then the verb; OK is for what only wants to have been seen — a grant is taken |
+| OK | anything that asks only to have been seen — ⚖️, news, 🥂, **and every grant** 💡 ✒️ 🛡️ 🏛️ (📝 Text's OK is struck since K31: the text is no acknowledgement) | — | solid accent | a word, not a glyph; **an acknowledgment never wears a power's glyph** (STYLE T44 — Ed, 2026-09-01, reversing entry 180's commit half; the mark still wears it, and the object still flies from the press) |
 | Indifferent | a textless option block on a judgment (CP4) | — | radio | labelled, never 🤷; a judgment about the pair, after the lanes |
 | ❄️ | the 🔥 card, or one already chilled | — | glyph button | a toggle on the flame; pressing closes, un-pressing does not |
 | 🛡️ Refuse · ✒️ Accept | the 👑 question | — | glyph buttons | the two reserved powers are the two answers (CP5, Q1100); 🗑️ closes it pending |

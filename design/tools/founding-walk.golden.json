@@ -464,7 +464,7 @@
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
-    "rate: Members start with 4 ✏️ each, up to a maximum of 6. They get",
+    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
     "ending: The Founder is deciding when the drafting process will end."
    ]
   },
@@ -484,7 +484,7 @@
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
-    "rate: Members start with 4 ✏️ each, up to a maximum of 6. They get"
+    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6"
    ]
   },
   {
@@ -503,7 +503,7 @@
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
-    "rate: Members start with 4 ✏️ each, up to a maximum of 6. They get",
+    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The Founder is deciding how sure members must be at the clos"
    ]
@@ -524,7 +524,7 @@
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
-    "rate: Members start with 4 ✏️ each, up to a maximum of 6. They get",
+    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
     "ending: The drafting process will end on Weekday at HH:MM. The Found"
    ]
   },
@@ -544,7 +544,7 @@
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
-    "rate: Members start with 4 ✏️ each, up to a maximum of 6. They get",
+    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 90% sure a proposal is better for it to ",
     "quorum: The Founder is deciding how many members must weigh in befor"
@@ -566,7 +566,7 @@
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
-    "rate: Members start with 4 ✏️ each, up to a maximum of 6. They get",
+    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 90% sure a proposal is better for it to "
    ]
@@ -587,7 +587,7 @@
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
-    "rate: Members start with 4 ✏️ each, up to a maximum of 6. They get",
+    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 90% sure a proposal is better for it to ",
     "quorum: 5% of the members must have voted on a question before it ca",
@@ -610,7 +610,7 @@
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
-    "rate: Members start with 4 ✏️ each, up to a maximum of 6. They get",
+    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 90% sure a proposal is better for it to ",
     "authorship: The Founder is deciding whether anonymous proposers are reve"
@@ -632,7 +632,7 @@
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
-    "rate: Members start with 4 ✏️ each, up to a maximum of 6. They get",
+    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 90% sure a proposal is better for it to ",
     "quorum: 5% of the members must have voted on a question before it ca",
@@ -655,7 +655,7 @@
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
-    "rate: Members start with 4 ✏️ each, up to a maximum of 6. They get",
+    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 90% sure a proposal is better for it to ",
     "quorum: 5% of the members must have voted on a question before it ca"
@@ -677,7 +677,7 @@
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
-    "rate: Members start with 4 ✏️ each, up to a maximum of 6. They get",
+    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 90% sure a proposal is better for it to ",
     "quorum: 5% of the members must have voted on a question before it ca",
@@ -701,7 +701,7 @@
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
-    "rate: Members start with 4 ✏️ each, up to a maximum of 6. They get",
+    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 90% sure a proposal is better for it to ",
     "quorum: 5% of the members must have voted on a question before it ca",
@@ -724,7 +724,7 @@
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
-    "rate: Members start with 4 ✏️ each, up to a maximum of 6. They get",
+    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 90% sure a proposal is better for it to ",
     "quorum: 5% of the members must have voted on a question before it ca",
@@ -747,7 +747,7 @@
     "applications: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
-    "rate: Members start with 4 ✏️ each, up to a maximum of 6. They get",
+    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 90% sure a proposal is better for it to ",
     "quorum: 5% of the members must have voted on a question before it ca",
@@ -771,7 +771,7 @@
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: Members may propose changes to rules as soon as they arrive,",
-    "rate: Members start with 4 ✏️ each, up to a maximum of 6. They get",
+    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 90% sure a proposal is better for it to ",
     "quorum: 5% of the members must have voted on a question before it ca",
@@ -794,7 +794,7 @@
     "applications: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
-    "rate: Members start with 4 ✏️ each, up to a maximum of 6. They get",
+    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 90% sure a proposal is better for it to ",
     "quorum: 5% of the members must have voted on a question before it ca",
@@ -817,7 +817,7 @@
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: Members may propose changes to rules as soon as they arrive,",
-    "rate: Members start with 4 ✏️ each, up to a maximum of 6. They get",
+    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 90% sure a proposal is better for it to ",
     "quorum: 5% of the members must have voted on a question before it ca",
@@ -839,7 +839,7 @@
     "applications: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
-    "rate: Members start with 4 ✏️ each, up to a maximum of 6. They get",
+    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 90% sure a proposal is better for it to ",
     "quorum: 5% of the members must have voted on a question before it ca",
@@ -860,7 +860,7 @@
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: Members may propose changes to rules as soon as they arrive,",
-    "rate: Members start with 4 ✏️ each, up to a maximum of 6. They get",
+    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 90% sure a proposal is better for it to ",
     "quorum: 5% of the members must have voted on a question before it ca",

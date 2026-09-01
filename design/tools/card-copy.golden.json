@@ -303,7 +303,7 @@
     ],
     "hints": [
      "Begin — close it",
-     "Your Consent — settled",
+     "Constitutional Proposals — settled",
      "Put it back as it stands",
      "The document cannot begin yet"
     ],
@@ -413,9 +413,9 @@
    },
    "grant-pen": {
     "eyebrow": "",
-    "head": "The PenFounded by AL Ada Lovell 👑.",
+    "head": "Founder ActionsFounded by AL Ada Lovell 👑.",
     "lock": "",
-    "body": "You founded this document, and the pen came with it.While you hold the pen, you can change this document’s rules yourself, without asking anybody. You can hand it over later.✒️ Take the pen puts it in your wallet.",
+    "body": "You founded this document, and Founder Actions came with it.Founder Actions are yours: you can change this document’s rules yourself, without asking anybody. You can hand them over later.OK puts ✒️ in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -424,26 +424,26 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "✒️ Take the pen",
+      "label": "OK",
       "title": null
      }
     ],
     "hints": [
-     "The Pen — close it",
+     "Founder Actions — close it",
      "Part of the constitution is reserved: changing it needs the founder’s assent",
      "Put it back as it stands"
     ],
     "helpers": [
-     "You founded this document, and the pen came with it.",
-     "While you hold the pen, you can change this document’s rules yourself, without asking anybody. You can hand it over later.",
-     "✒️ Take the pen puts it in your wallet."
+     "You founded this document, and Founder Actions came with it.",
+     "Founder Actions are yours: you can change this document’s rules yourself, without asking anybody. You can hand them over later.",
+     "OK puts ✒️ in your wallet."
     ]
    },
    "grant-shield": {
     "eyebrow": "",
-    "head": "The ShieldFounded by AL Ada Lovell 👑.",
+    "head": "Founder VetoFounded by AL Ada Lovell 👑.",
     "lock": "",
-    "body": "You founded this document, and the shield came with it.While you hold the shield, a change other people agree on waits until you accept it. You can hand it over later.🛡️ Take the shield puts it in your wallet.",
+    "body": "You founded this document, and the Founder Veto came with it.The Founder Veto is yours: a change other people agree on waits until you accept it. You can hand it over later.OK puts 🛡️ in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -452,27 +452,27 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "🛡️ Take the shield",
+      "label": "OK",
       "title": null
      }
     ],
     "hints": [
-     "The Shield — close it",
-     "The Pen — settled",
+     "Founder Veto — close it",
+     "Founder Actions — settled",
      "Part of the constitution is reserved: changing it needs the founder’s assent",
      "Put it back as it stands"
     ],
     "helpers": [
-     "You founded this document, and the shield came with it.",
-     "While you hold the shield, a change other people agree on waits until you accept it. You can hand it over later.",
-     "🛡️ Take the shield puts it in your wallet."
+     "You founded this document, and the Founder Veto came with it.",
+     "The Founder Veto is yours: a change other people agree on waits until you accept it. You can hand it over later.",
+     "OK puts 🛡️ in your wallet."
     ]
    },
    "grant-voice": {
     "eyebrow": "",
     "head": "When the document begins, members may propose changes to rules and vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "",
-    "body": "You founded this document, and your consent in every constitutional question came with it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it.🏛️ Take your consent puts it in your wallet.",
+    "body": "You founded this document, and Constitutional Proposals came with it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it.OK puts 🏛️ in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -481,18 +481,18 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "🏛️ Take your consent",
+      "label": "OK",
       "title": null
      }
     ],
     "hints": [
-     "Your Consent — close it",
+     "Constitutional Proposals — close it",
      "Put it back as it stands"
     ],
     "helpers": [
-     "You founded this document, and your consent in every constitutional question came with it.",
+     "You founded this document, and Constitutional Proposals came with it.",
      "All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it.",
-     "🏛️ Take your consent puts it in your wallet."
+     "OK puts 🏛️ in your wallet."
     ]
    },
    "hat": {
@@ -4098,7 +4098,7 @@
     ],
     "hints": [
      "Begin — close it",
-     "Your Consent — settled",
+     "Constitutional Proposals — settled",
      "Put it back as it stands",
      "Hold to begin the document"
     ],
@@ -4128,8 +4128,8 @@
     "hints": [
      "Voting — close it",
      "Begin — settled",
-     "Proposing — settled",
-     "Your Consent — settled",
+     "Proposals — settled",
+     "Constitutional Proposals — settled",
      "Put it back as it stands"
     ],
     "helpers": [
@@ -4143,7 +4143,7 @@
     "eyebrow": "",
     "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "Open — members can propose as soon as they arrive.",
-    "body": "The Founder began the document, granting every member the right to propose changes to it.Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.Open — members can propose as soon as they arrive.You hold 5 ✏️s to propose with — ✏️ Take them puts them in your wallet.",
+    "body": "The Founder began the document, granting every member the right to propose changes to it.Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.Open — members can propose as soon as they arrive.You hold 5 ✏️s to propose with — OK puts them in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -4152,22 +4152,22 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "✏️ Take them",
+      "label": "OK",
       "title": null
      }
     ],
     "hints": [
-     "Proposing — close it",
+     "Proposals — close it",
      "Voting — decided; it waits for your OK",
      "Begin — settled",
-     "Your Consent — settled",
+     "Constitutional Proposals — settled",
      "Put it back as it stands"
     ],
     "helpers": [
      "The Founder began the document, granting every member the right to propose changes to it.",
      "Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.",
      "Open — members can propose as soon as they arrive.",
-     "You hold 5 ✏️s to propose with — ✏️ Take them puts them in your wallet."
+     "You hold 5 ✏️s to propose with — OK puts them in your wallet."
     ]
    },
    "chamber": {
@@ -4266,9 +4266,9 @@
    },
    "grant-pen": {
     "eyebrow": "",
-    "head": "The PenFounded by AL Ada Lovell 👑.",
+    "head": "Founder ActionsFounded by AL Ada Lovell 👑.",
     "lock": "",
-    "body": "You founded this document, and the pen came with it.While you hold the pen, you can change this document’s rules yourself, without asking anybody. You can hand it over later.✒️ Take the pen puts it in your wallet.",
+    "body": "You founded this document, and Founder Actions came with it.Founder Actions are yours: you can change this document’s rules yourself, without asking anybody. You can hand them over later.OK puts ✒️ in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -4277,26 +4277,26 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "✒️ Take the pen",
+      "label": "OK",
       "title": null
      }
     ],
     "hints": [
-     "The Pen — close it",
+     "Founder Actions — close it",
      "Part of the constitution is reserved: changing it needs the founder’s assent",
      "Put it back as it stands"
     ],
     "helpers": [
-     "You founded this document, and the pen came with it.",
-     "While you hold the pen, you can change this document’s rules yourself, without asking anybody. You can hand it over later.",
-     "✒️ Take the pen puts it in your wallet."
+     "You founded this document, and Founder Actions came with it.",
+     "Founder Actions are yours: you can change this document’s rules yourself, without asking anybody. You can hand them over later.",
+     "OK puts ✒️ in your wallet."
     ]
    },
    "grant-shield": {
     "eyebrow": "",
-    "head": "The ShieldFounded by AL Ada Lovell 👑.",
+    "head": "Founder VetoFounded by AL Ada Lovell 👑.",
     "lock": "",
-    "body": "You founded this document, and the shield came with it.While you hold the shield, a change other people agree on waits until you accept it. You can hand it over later.🛡️ Take the shield puts it in your wallet.",
+    "body": "You founded this document, and the Founder Veto came with it.The Founder Veto is yours: a change other people agree on waits until you accept it. You can hand it over later.OK puts 🛡️ in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -4305,27 +4305,27 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "🛡️ Take the shield",
+      "label": "OK",
       "title": null
      }
     ],
     "hints": [
-     "The Shield — close it",
-     "The Pen — settled",
+     "Founder Veto — close it",
+     "Founder Actions — settled",
      "Part of the constitution is reserved: changing it needs the founder’s assent",
      "Put it back as it stands"
     ],
     "helpers": [
-     "You founded this document, and the shield came with it.",
-     "While you hold the shield, a change other people agree on waits until you accept it. You can hand it over later.",
-     "🛡️ Take the shield puts it in your wallet."
+     "You founded this document, and the Founder Veto came with it.",
+     "The Founder Veto is yours: a change other people agree on waits until you accept it. You can hand it over later.",
+     "OK puts 🛡️ in your wallet."
     ]
    },
    "grant-voice": {
     "eyebrow": "",
     "head": "When the document begins, members may propose changes to rules and vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "",
-    "body": "You founded this document, and your consent in every constitutional question came with it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it.🏛️ Take your consent puts it in your wallet.",
+    "body": "You founded this document, and Constitutional Proposals came with it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it.OK puts 🏛️ in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -4334,18 +4334,18 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "🏛️ Take your consent",
+      "label": "OK",
       "title": null
      }
     ],
     "hints": [
-     "Your Consent — close it",
+     "Constitutional Proposals — close it",
      "Put it back as it stands"
     ],
     "helpers": [
-     "You founded this document, and your consent in every constitutional question came with it.",
+     "You founded this document, and Constitutional Proposals came with it.",
      "All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it.",
-     "🏛️ Take your consent puts it in your wallet."
+     "OK puts 🏛️ in your wallet."
     ]
    },
    "hat": {
@@ -5074,9 +5074,9 @@
     "hints": [
      "What the Founder Has Laid Down — decided; it waits for your OK",
      "Begin — close it",
-     "Proposing — settled",
+     "Proposals — settled",
      "Voting — settled",
-     "Your Consent — settled",
+     "Constitutional Proposals — settled",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -5101,9 +5101,9 @@
     "hints": [
      "What the Founder Has Laid Down — decided; it waits for your OK",
      "Begin — settled",
-     "Proposing — settled",
+     "Proposals — settled",
      "Voting — close it",
-     "Your Consent — settled",
+     "Constitutional Proposals — settled",
      "Put it back as it stands"
     ],
     "helpers": [
@@ -5117,7 +5117,7 @@
     "eyebrow": "",
     "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "Open — members can propose as soon as they arrive.",
-    "body": "The Founder began the document, granting every member the right to propose changes to it.Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.Open — members can propose as soon as they arrive.You hold 5 ✏️s to propose with — ✏️ Take them puts them in your wallet.",
+    "body": "The Founder began the document, granting every member the right to propose changes to it.Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.Open — members can propose as soon as they arrive.You hold 5 ✏️s to propose with — OK puts them in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5126,23 +5126,23 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "✏️ Take them",
+      "label": "OK",
       "title": null
      }
     ],
     "hints": [
      "What the Founder Has Laid Down — decided; it waits for your OK",
      "Begin — settled",
-     "Proposing — close it",
+     "Proposals — close it",
      "Voting — settled",
-     "Your Consent — settled",
+     "Constitutional Proposals — settled",
      "Put it back as it stands"
     ],
     "helpers": [
      "The Founder began the document, granting every member the right to propose changes to it.",
      "Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.",
      "Open — members can propose as soon as they arrive.",
-     "You hold 5 ✏️s to propose with — ✏️ Take them puts them in your wallet."
+     "You hold 5 ✏️s to propose with — OK puts them in your wallet."
     ]
    },
    "chamber": {
@@ -5219,7 +5219,7 @@
     "eyebrow": "",
     "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "",
-    "body": "The Founder invited you into the membership, and your consent in every constitutional question came with it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it.🏛️ Take your consent puts it in your wallet.",
+    "body": "The Founder invited you into the membership, and Constitutional Proposals came with it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it.OK puts 🏛️ in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5228,22 +5228,22 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "🏛️ Take your consent",
+      "label": "OK",
       "title": null
      }
     ],
     "hints": [
      "What the Founder Has Laid Down — decided; it waits for your OK",
      "Begin — settled",
-     "Proposing — settled",
+     "Proposals — settled",
      "Voting — settled",
-     "Your Consent — close it",
+     "Constitutional Proposals — close it",
      "Put it back as it stands"
     ],
     "helpers": [
-     "The Founder invited you into the membership, and your consent in every constitutional question came with it.",
+     "The Founder invited you into the membership, and Constitutional Proposals came with it.",
      "All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it.",
-     "🏛️ Take your consent puts it in your wallet."
+     "OK puts 🏛️ in your wallet."
     ]
    },
    "hat": {
@@ -5527,7 +5527,7 @@
      "Passed: 82% sure at the end — settled",
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
-     "The founder’s own hand — a ✒️ act, not a proposal",
+     "The founder’s own hand — a Founder Action ✒️, not a proposal",
      "Discard this motion"
     ],
     "helpers": [
@@ -6277,9 +6277,9 @@
    },
    "rate": {
     "eyebrow": "",
-    "head": "Members start with 4 ✏️ each, up to a maximum of 8. They get an additional ✏️ every 180 minutes. A proposal costs one ✏️, and one that passes gives it back. The Founder may amend this at will, and refuse proposals that the membership pass.",
+    "head": "Members start with 4 proposals ✏️ each, up to a maximum of 8. They get an additional ✏️ every 180 minutes. A proposal costs one ✏️, and one that passes gives it back. The Founder may amend this at will, and refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Members start with ✏️ each, up to a maximum of . They get an additional ✏️ every minutes.If it passes it goes to the Founder, who may assent or refuse.",
+    "body": "Members start with proposals ✏️ each, up to a maximum of . They get an additional ✏️ every minutes.If it passes it goes to the Founder, who may assent or refuse.",
     "options": [],
     "inputs": [
      {
@@ -6361,7 +6361,7 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Passed: Anyone with the link — close it",
-     "The founder’s own hand — a ✒️ act, not a proposal",
+     "The founder’s own hand — a Founder Action ✒️, not a proposal",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -6409,9 +6409,9 @@
     "hints": [
      "What the Founder Has Laid Down — close it",
      "Begin — settled",
-     "Proposing — settled",
+     "Proposals — settled",
      "Voting — settled",
-     "Your Consent — settled",
+     "Constitutional Proposals — settled",
      "Put it back as it stands"
     ],
     "helpers": [
@@ -6926,9 +6926,9 @@
     ],
     "hints": [
      "Begin — close it",
-     "Proposing — settled",
+     "Proposals — settled",
      "Voting — settled",
-     "Your Consent — settled",
+     "Constitutional Proposals — settled",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -6952,9 +6952,9 @@
     ],
     "hints": [
      "Begin — settled",
-     "Proposing — settled",
+     "Proposals — settled",
      "Voting — close it",
-     "Your Consent — settled",
+     "Constitutional Proposals — settled",
      "Put it back as it stands"
     ],
     "helpers": [
@@ -6968,7 +6968,7 @@
     "eyebrow": "",
     "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "Open — members can propose as soon as they arrive.",
-    "body": "The Founder began the document, granting every member the right to propose changes to it.Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.Open — members can propose as soon as they arrive.You hold 5 ✏️s to propose with — ✏️ Take them puts them in your wallet.",
+    "body": "The Founder began the document, granting every member the right to propose changes to it.Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.Open — members can propose as soon as they arrive.You hold 5 ✏️s to propose with — OK puts them in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -6977,22 +6977,22 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "✏️ Take them",
+      "label": "OK",
       "title": null
      }
     ],
     "hints": [
      "Begin — settled",
-     "Proposing — close it",
+     "Proposals — close it",
      "Voting — settled",
-     "Your Consent — settled",
+     "Constitutional Proposals — settled",
      "Put it back as it stands"
     ],
     "helpers": [
      "The Founder began the document, granting every member the right to propose changes to it.",
      "Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.",
      "Open — members can propose as soon as they arrive.",
-     "You hold 5 ✏️s to propose with — ✏️ Take them puts them in your wallet."
+     "You hold 5 ✏️s to propose with — OK puts them in your wallet."
     ]
    },
    "chamber": {
@@ -7009,11 +7009,11 @@
      },
      {
       "label": "🛡️",
-      "title": "Refuse — the shield holds it, and what stands stands"
+      "title": "Refuse — the Founder Veto holds it, and what stands stands"
      },
      {
       "label": "✒️",
-      "title": "Accept — the pen passes it now"
+      "title": "Accept — a Founder Action passes it now"
      }
     ],
     "hints": [
@@ -7022,8 +7022,8 @@
      "Does the Founder Have a Veto? — settled",
      "Passed: Anyone with the link — settled",
      "Put it back as it stands",
-     "Refuse — the shield holds it, and what stands stands",
-     "Accept — the pen passes it now"
+     "Refuse — the Founder Veto holds it, and what stands stands",
+     "Accept — a Founder Action passes it now"
     ],
     "helpers": []
    },
@@ -7077,9 +7077,9 @@
    },
    "grant-pen": {
     "eyebrow": "",
-    "head": "The PenFounded by AB Ash Bellamy 👑 at HH:MM on D Month YYYY.",
+    "head": "Founder ActionsFounded by AB Ash Bellamy 👑 at HH:MM on D Month YYYY.",
     "lock": "",
-    "body": "You founded this document, and the pen came with it.While you hold the pen, you can change this document’s rules yourself, without asking anybody. You can hand it over later.✒️ Take the pen puts it in your wallet.",
+    "body": "You founded this document, and Founder Actions came with it.Founder Actions are yours: you can change this document’s rules yourself, without asking anybody. You can hand them over later.OK puts ✒️ in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7088,27 +7088,27 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "✒️ Take the pen",
+      "label": "OK",
       "title": null
      }
     ],
     "hints": [
-     "The Pen — close it",
-     "The Shield — settled",
+     "Founder Actions — close it",
+     "Founder Veto — settled",
      "Part of the constitution is reserved: changing it needs the founder’s assent",
      "Put it back as it stands"
     ],
     "helpers": [
-     "You founded this document, and the pen came with it.",
-     "While you hold the pen, you can change this document’s rules yourself, without asking anybody. You can hand it over later.",
-     "✒️ Take the pen puts it in your wallet."
+     "You founded this document, and Founder Actions came with it.",
+     "Founder Actions are yours: you can change this document’s rules yourself, without asking anybody. You can hand them over later.",
+     "OK puts ✒️ in your wallet."
     ]
    },
    "grant-shield": {
     "eyebrow": "",
-    "head": "The ShieldFounded by AB Ash Bellamy 👑 at HH:MM on D Month YYYY.",
+    "head": "Founder VetoFounded by AB Ash Bellamy 👑 at HH:MM on D Month YYYY.",
     "lock": "",
-    "body": "You founded this document, and the shield came with it.While you hold the shield, a change other people agree on waits until you accept it. You can hand it over later.🛡️ Take the shield puts it in your wallet.",
+    "body": "You founded this document, and the Founder Veto came with it.The Founder Veto is yours: a change other people agree on waits until you accept it. You can hand it over later.OK puts 🛡️ in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7117,27 +7117,27 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "🛡️ Take the shield",
+      "label": "OK",
       "title": null
      }
     ],
     "hints": [
-     "The Pen — settled",
-     "The Shield — close it",
+     "Founder Actions — settled",
+     "Founder Veto — close it",
      "Part of the constitution is reserved: changing it needs the founder’s assent",
      "Put it back as it stands"
     ],
     "helpers": [
-     "You founded this document, and the shield came with it.",
-     "While you hold the shield, a change other people agree on waits until you accept it. You can hand it over later.",
-     "🛡️ Take the shield puts it in your wallet."
+     "You founded this document, and the Founder Veto came with it.",
+     "The Founder Veto is yours: a change other people agree on waits until you accept it. You can hand it over later.",
+     "OK puts 🛡️ in your wallet."
     ]
    },
    "grant-voice": {
     "eyebrow": "",
     "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "",
-    "body": "You founded this document, and your consent in every constitutional question came with it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it.🏛️ Take your consent puts it in your wallet.",
+    "body": "You founded this document, and Constitutional Proposals came with it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it.OK puts 🏛️ in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7146,21 +7146,21 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "🏛️ Take your consent",
+      "label": "OK",
       "title": null
      }
     ],
     "hints": [
      "Begin — settled",
-     "Proposing — settled",
+     "Proposals — settled",
      "Voting — settled",
-     "Your Consent — close it",
+     "Constitutional Proposals — close it",
      "Put it back as it stands"
     ],
     "helpers": [
-     "You founded this document, and your consent in every constitutional question came with it.",
+     "You founded this document, and Constitutional Proposals came with it.",
      "All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it.",
-     "🏛️ Take your consent puts it in your wallet."
+     "OK puts 🏛️ in your wallet."
     ]
    },
    "hat": {
@@ -7465,7 +7465,7 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Passed: 82% sure at the end — settled",
-     "The founder’s own hand — a ✒️ act, not a proposal",
+     "The founder’s own hand — a Founder Action ✒️, not a proposal",
      "Put it back as it stands",
      "Set it"
     ],
@@ -8423,7 +8423,7 @@
    },
    "rate": {
     "eyebrow": "",
-    "head": "Members start with 4 ✏️ each, up to a maximum of 8. They get an additional ✏️ every 180 minutes. A proposal costs one ✏️, and one that passes gives it back. The Founder may amend this at will, and refuse proposals that the membership pass.",
+    "head": "Members start with 4 proposals ✏️ each, up to a maximum of 8. They get an additional ✏️ every 180 minutes. A proposal costs one ✏️, and one that passes gives it back. The Founder may amend this at will, and refuse proposals that the membership pass.",
     "lock": "",
     "body": "I set itChosen✏️ to start withup to a maximum ofan additional ✏️ every N minutesWhy are you changing this?ABAsh Bellamy 👑",
     "options": [
@@ -8467,7 +8467,7 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Rejected: 6 each, up to 8, one every 180 minutes — settled",
-     "The founder’s own hand — a ✒️ act, not a proposal",
+     "The founder’s own hand — a Founder Action ✒️, not a proposal",
      "Put it back as it stands",
      "Set it"
     ],
@@ -8517,7 +8517,7 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Passed: Anyone with the link — close it",
-     "The founder’s own hand — a ✒️ act, not a proposal",
+     "The founder’s own hand — a Founder Action ✒️, not a proposal",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -8649,7 +8649,7 @@
      "Link — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
-     "The founder’s own hand — a ✒️ act, not a proposal",
+     "The founder’s own hand — a Founder Action ✒️, not a proposal",
      "Put it back as it stands",
      "Set it"
     ],
@@ -8687,7 +8687,7 @@
      "Title — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
-     "The founder’s own hand — a ✒️ act, not a proposal",
+     "The founder’s own hand — a Founder Action ✒️, not a proposal",
      "Put it back as it stands",
      "Give it a name first"
     ],

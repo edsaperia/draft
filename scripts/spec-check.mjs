@@ -431,7 +431,7 @@ function checkWallets(pm) {
   const hold = numLit(sess, 'HOLD_MS');
   const holds = tableAfter('SURFACE.md', 'holds');
   // a cell that is not a number is a row with no hold to state (🛡️ and ⚖️ in
-  // the wallets table read `—`, *the take* reads `a click`) — exempt by being
+  // the wallets table read `—`, *a grant's OK* reads `a click`) — exempt by being
   // non-numeric rather than by a list of glyphs, so a new such row is exempt
   // by construction and a row that states a number is never skipped
   const cells = [...rows, ...holds].map((r) => ({ what: r.control || r.wallet, ms: r['hold ms'] }))
