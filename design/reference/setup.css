@@ -179,6 +179,11 @@
      the rows' one vertical rhythm (P5), wherever the blocks stand */
   .pick + .pick { border-top: 1px solid var(--border); padding-top: var(--s3);
     margin-top: var(--s3); }
+  /* the delegate rung is set apart by --s4 (Q761) yet is still one of the
+     card's blocks, so it draws the same hairline — it had the gap and no
+     line, reading as unattached to the choice above it (Ed, 2026-08-31) */
+  .choice.delegrung > .pick { border-top: 1px solid var(--border);
+    padding-top: var(--s3); }
   /* **Direct children, since 🪜's rungs put a ladder inside a rung** (entry
      165). `.inner` has always been the option's own child and nothing else,
      but as a descendant rule `.pick.on .inner` reached *through* an open

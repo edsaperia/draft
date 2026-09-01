@@ -1047,7 +1047,9 @@ window.SETUP = (function () {
 
   const ansRow = (on, key, val, ttl, exp, extra, inner) =>
     // the answer ladder's rung, in the option-block shape (CP1) — the rung's
-    // text above, the fixed *Prefer this* radio beneath it
+    // text above, the fixed *Prefer this* radio beneath it. *Prefer*, not
+    // *Choose* (Q1110, Ed 2026-09-01): your answer is yours alone, but it
+    // feeds the rule the room takes together — the collective register.
     '<div class="pick' + (on ? ' on' : '') + (extra || '') + '">' +
     '<span class="opttext">' + ttl + '</span>' +
     (exp ? '<span class="exp">' + exp + '</span>' : '') +
@@ -1077,23 +1079,31 @@ window.SETUP = (function () {
   // member reads it as “these, and then you can write” rather than as a rule.
   // (One copy since 2026-08-18 — it had been byte-identical in both surfaces.)
   //
-  // **A grant says what its press does, in the button's own words** (entry
-  // 180): *Nothing is being asked here* is true of ⚖️ and false of a grant,
-  // whose press hands you an object. So an open card carrying `grants` closes
-  // on the take sentence instead — except 💡, whose consequence is already
-  // said by `grantNote` beneath (the pencil count is the whole point of it),
-  // and which would otherwise say it twice (T36).
+  // **A grant says what its press does** (entry 180): *Nothing is being asked
+  // here* is true of ⚖️ and false of a grant, whose press hands you an object.
+  // So an open card carrying `grants` closes on what the press puts in the
+  // wallet instead — except 💡, whose consequence is already said by
+  // `grantNote` beneath (the pencil count is the whole point of it), and which
+  // would otherwise say it twice (T36). The button it names is **OK**, the
+  // take-verbs having gone with Ed's commit ruling of 2026-09-01 (Q1121, T44);
+  // the power's glyph stays in the sentence, which is a description and not a
+  // press.
   const gateNote = (c) => {
     if (!c.open()) return 'It comes back to you the moment it opens.';
     if (!c.grants) return 'Nothing is being asked here — <b>OK</b> files it and it leaves your queue.';
-    return c.k === 'canpropose' ? '' : '<b>' + c.grants + ' ' + c.take + '</b> puts it in your wallet.';
+    return c.k === 'canpropose' ? '' : '<b>OK</b> puts ' + c.grants + ' in your wallet.';
   };
   const gateBody = (c) => {
     const open = c.open();
     const note = gateNote(c);
     return '<p class="why">' + c.why + '</p>' +
-      '<div class="lockline">' + (open ? TICK : '') + '<span>' +
-      (open ? c.done : c.waiting) + '</span></div>' +
+      // an open grant states no lockline (Ed, 2026-08-31): the wallet sentence
+      // below is the whole ask, and *You hold Founder Actions* restated a state
+      // the wallet says the moment it is taken. Gates keep theirs — a gate's
+      // lockline is what the card is waiting for, or that it opened.
+      (open && c.isGrant ? '' :
+        '<div class="lockline">' + (open ? TICK : '') + '<span>' +
+        (open ? c.done : c.waiting) + '</span></div>') +
       (open ? '' : '<div class="gatelist">' + c.blockers().map((b) =>
         '<span class="gaterow"><span class="gg">' + b.g + '</span>' + esc(b.t) + '</span>').join('') + '</div>') +
       (note ? '<p class="setnote">' + note + '</p>' : '');
@@ -1493,18 +1503,20 @@ window.SETUP = (function () {
   const opt = (S, key, val, ttl, exp, inner, off, extra) => {
     const on = S[key] === val;
     // **The option block** (CP1, Q1096): the option's text is document text,
-    // its explanation beneath, and the radio under both — a fixed
-    // *Prefer this / Preferred* pair, so the words on the control are the same
-    // on every card and the option's own sentence is what you read, not what
-    // you press. The data attributes stay on the button: every handler and
-    // every walk finds the act exactly where it always was.
+    // its explanation beneath, and the radio under both. The radio names the
+    // register (Ed, 2026-08-31 evening, re-ruling Q1097): *Choose this /
+    // Chosen* here, because every card drawn with `opt` is the chooser's
+    // alone to decide — a founder-held setting, the delegate rung; *Prefer
+    // this / Preferred* is for a choice put to more than one person. The
+    // data attributes stay on the button: every handler and every walk finds
+    // the act exactly where it always was.
     return '<div class="pick' + (on ? ' on' : '') + (off ? ' off' : '') + (extra || '') + '">' +
       '<span class="opttext">' + ttl + '</span>' +
       (exp ? '<span class="exp">' + exp + '</span>' : '') +
       '<button class="lanepick" aria-pressed="' + on + '"' + (off ? ' disabled' : '') +
       (off ? '' : ' data-set="' + key + '" data-val="' + val + '"') + '>' +
-      '<span class="dot"></span><span class="off">Prefer this</span>' +
-      '<span class="on">Preferred</span></button>' +
+      '<span class="dot"></span><span class="off">Choose this</span>' +
+      '<span class="on">Chosen</span></button>' +
       (inner ? '<span class="inner">' + inner + '</span>' : '') + '</div>';
   };
 
