@@ -597,9 +597,13 @@ window.CARDS = (function () {
     // **Foundership carries a read, whatever 🌍 says** (Ed, 2026-08-22), said
     // only where it is a deviation: a founder who is a member is covered by
     // the sentence already, and under link or public everybody reads anyway.
+    // Where it *is* a deviation it is **one sentence naming both audiences**
+    // (Ed's QA, 2026-09-02): a second sentence after a first that has just
+    // excluded the reader reads as an afterthought about the rule, where one
+    // sentence simply says who can read it.
     chamber: {
-      closed: (x) => 'Only members can see the document.' +
-        (x.founderIsMember ? '' : ' The Founder can always read it.'),
+      closed: (x) => (x.founderIsMember ? 'Only members can see the document.'
+        : 'Only members and the Founder can see the document.'),
       link: () => 'Anyone with the link can read the document.',
       public: () => 'The document is public — listed and readable by anyone.' },
     // 🤝 is one switch; what an application costs is 🪪's sentence (entry 94)
