@@ -75,6 +75,9 @@
   .setupcard .clausehead .headtitle { font-size: var(--t-lead); font-weight: 600; }
   .setupcard h2 { font-size: var(--t-lead); font-weight: 600; margin: 0 0 var(--s2); }
   .setupcard .why { color: var(--muted); font-size: var(--t-small); margin: 0 0 var(--s4); max-width: 60ch; }
+  /* a text-only card (the grants) is read, not scanned past — its one
+     paragraph is the body, at body size (Ed's QA, 2026-09-02 pm) */
+  .setupcard.textcard .why { font-size: var(--t-body); color: var(--ink); }
   .setupcard .setnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); }
   .setupcard .body { border-top: 1px solid var(--border); padding-top: var(--s3); margin-top: var(--s3); }
   /* the hairline between the constitution and the document proper, and the
@@ -887,15 +890,11 @@ button.cline:hover b { text-decoration: underline; }
    them, and the `14px - var(--s5)` compensations this block and the head's
    rtext carried are gone with the 14px they undid. */
 
-/* **An emoji is an emoji wherever it sits** (Ed, 2026-08-19: *the ✒️ button
-   in the initial titling is correct for emoji buttons, the rest are too
-   colourful*). The quiet ground was scoped to glyph-only buttons, which left
-   🏛️ and ✏️ Propose — labelled buttons carrying a glyph — on the full
-   accent. Same treatment, whatever else is in the label. */
-.btn.btn-approve.emojibtn:not([disabled]) {
-  background: var(--primary-subtle); border-color: var(--primary);
-  color: var(--primary-emphasis); font-weight: 600;
-}
+/* **A glyph commit is flat** (Q1153, completed by Ed's QA of 2026-09-02 pm):
+   the accent-subtle ground and accent border this rule gave every enabled
+   ✒️/🏛️/✏️ commit survived the system.css half of Q1153 and was the blue Ed
+   kept flagging on the sheet. The base .btn outline is the whole treatment;
+   armed is said by elevation (the .commitrow shadow rules). */
 /* **A disabled commit is flat, and there is one flat** (Ed, 2026-08-21,
    asking for the card buttons to be consistent). Three grounds had grown on
    the same row: 🗑️ stayed white (it is not an approve, so no rule reached

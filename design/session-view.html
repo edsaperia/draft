@@ -239,7 +239,7 @@
 <script src="session.js"></script>
 <script>
 (function () {
-  const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml, watchBody,
+  const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml,
     nameBody, pictureBody, opt, num, numIn, ctlWord, someIn, ANSWER, stateOf,
     MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml, stripHtml, readBody,
     motionBody, motionReopen, routeFor, motionCommitHtml, BLINDNOTE, methodNote, listOf, syncSlider } = window.SETUP;
@@ -1111,6 +1111,12 @@
   // object literals rather than lazy bodies: a `const` read below its own
   // declaration is a TDZ error, not a late binding.
   const clauseCtx = () => ({ founderIsMember: iDraft(), admissionPrice: admissionPrice() });
+  // **Provenance is a chosen radio, not a note** (Ed's QA, 2026-09-02 pm, on
+  // settled 🌍): *Chosen by the membership* wears the lanepick's own chosen
+  // state, disabled — full strength, per the locked-card rule — so the
+  // two-block pair reads as the option card it is.
+  const chosenRadio = (label) => '<button class="lanepick" aria-pressed="true" disabled>' +
+    '<span class="dot"></span><span>' + esc(label) + '</span></button>';
   const clauseOf = (k, v) => window.CARDS.clauseOf(k, v, clauseCtx());
   const RULES = window.CARDS.RULES;
   const ADM_RULE = RULES.admission;
@@ -1953,7 +1959,7 @@
     // one fact the mark, the tooltip, the flight and the closing sentence all
     // key on. ⚖️ has neither: a right is not an object and nothing flies.
     { k: 'canpropose', g: '💡', t: 'Proposals', own: 'you', isGate: true,
-      grants: '✏️',
+      grants: '✏️', textcard: true,
       hide: () => !constituted(),
       open: () => !!cs && !!viewerId() && cs.canPropose(viewerId()),
       // **The body says what a proposal is** (Ed, 2026-09-01, Q1129, T45). It
@@ -1970,7 +1976,7 @@
       waiting: 'Waiting on the start.',
       done: 'Open — members can propose as soon as they arrive.',
       blockers: () => (constituted() ? [] : [card('text'), card('begin')].filter((c) => c && !settled(c))) },
-    { k: 'canjudge', g: '⚖️', t: 'Voting', own: 'you', isGate: true,
+    { k: 'canjudge', g: '⚖️', t: 'Voting', own: 'you', isGate: true, textcard: true,
       hide: () => !constituted(),
       open: () => canJudge(),
       // **And ⚖️'s says what a vote is** (Ed, 2026-09-01, Q1129, T45). Its old
@@ -2005,10 +2011,12 @@
     // paragraph (`voiceHost`) rather than ⚖️'s, because the voice is what
     // the question is answered with. It still blocks nothing (a gate).
     { k: 'grant-voice', g: '🏛️', t: 'Constitutional Proposals', own: 'you', isGate: true, isGrant: true,
-      grants: '🏛️',
+      grants: '🏛️', textcard: true,
       open: () => !!cs && viewerIsMember() && !!viewerRow().in,
       early: () => firstAsked() !== null,
-      why: 'All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it.',
+      // the consent-wallet paragraph is cut (Ed's QA, 2026-09-02 pm): the
+      // head's three lines are the whole body of the card
+      why: '',
       waiting: 'Waiting on your arrival.',
       blockers: () => [] },
     // **A grant is the holder's** (SURFACE E8's audience column, enforced here
@@ -2022,7 +2030,7 @@
     // founder holds is stated where it bites — on each setting's own clause,
     // by `holderLine` — which is the whole of Ed's argument for retiring them.
     { k: 'grant-pen', g: '✒️', t: 'Founder Actions', own: 'you', isGate: true, isGrant: true,
-      grants: '✒️',
+      grants: '✒️', textcard: true,
       hide: () => !amFounder(),
       open: () => !!cs && amFounder() && holdsPenAnywhere(),
       // Ed's sentence, card review 2026-09-02
@@ -2046,7 +2054,7 @@
     // always has. That also leaves the rail at the save holding the pen alone,
     // which is a thing the journey walk asserts.
     { k: 'grant-shield', g: '🛡️', t: 'Founder Veto', own: 'you', isGate: true, isGrant: true,
-      grants: '🛡️',
+      grants: '🛡️', textcard: true,
       hide: () => !amFounder(),   // the holder's, like the pen above
       open: () => !!cs && amFounder() && holdsShieldAnywhere(),
       // Ed's sentence, card review 2026-09-02
@@ -2291,9 +2299,9 @@
     // merged — the rate is one thought, stated as one sentence)
     { k: 'rate', g: '⏱️', t: 'Proposal Rate', kind: 'ordinary', key: 'rateBy', p: 0.36,
       rule: 'Each member says the <b>most generous</b> they would accept, and the document takes it.',
-      // what applies while the question is still collecting — the one fact the
-      // delegated note owns, and the reason `meanwhile` exists (Q763)
-      meanwhile: 'Until it is settled everybody gets the standard rate.',
+      // `meanwhile` retired with the delegated card's pre-start frame (Ed's
+      // QA, 2026-09-02 pm) — the standard-rate fact goes unsaid until the 🍾
+      // redesign takes it up (Q1169)
       takes: 'The document takes the most generous', result: '5 each, one back every 120 minutes',
       taken: { grant: 5, cap: 8, dripMinutes: 120 },
       dist: [1, 2, 4, 3, 2, 1, 1], distTop: 4, distEnds: ['sparing', 'generous'] },
@@ -2779,7 +2787,9 @@
           : 'Chosen by the membership';
         said = (was ? '<div class="pick"><span class="opttext">' + esc(was) + '</span></div>' : '') +
           '<div class="pick on"><span class="opttext">' + esc(now2 || '') + '</span>' +
-          '<span class="exp provline">' + prov + '</span></div>';
+          // the same chosen-radio provenance the parked pair wears (Ed's QA,
+          // 2026-09-02 pm); the card's fuller redesign is backlogged
+          chosenRadio(prov) + '</div>';
       }
     }
     return '<div class="body changed">' + eyebrow + said + speaker + '</div>';
@@ -5253,9 +5263,13 @@
     judgments: 'The membership are deciding if votes are revealed',
   };
   const decidingOf = (k) => DECIDING[k] || 'The membership are deciding this rule';
-  // the thirteen cards of Q1151 — every option-block settings card, 🎩 included
+  // every option-block card loses its title head (Q1151, widened by Ed's QA
+  // of 2026-09-02 pm): the settings cards, 🎩 (the build's kind-personal
+  // guard had silently excluded it), and the identity cards ✋ 🖼️ 📧 now that
+  // they are option-block cards too. An answer card matches through `ansFor`.
   const OPTHEADLESS = new Set(['chamber', 'admission', 'applications', 'hat',
-    'lapse', 'removal', 'rate', 'ending', 'bar', 'quorum', 'authorship', 'judgments']);
+    'lapse', 'removal', 'rate', 'ending', 'bar', 'quorum', 'authorship', 'judgments',
+    'myname', 'mypic', 'myemail']);
   // ---- 🧭 the shape (entry 166) — read from the bundle's table, never a
   // number of the page's own ----------------------------------------------
   // the shape as a noun phrase, for the provenance and the 🍾 line
@@ -5600,9 +5614,12 @@
     // a setup entry's wash alpha rides the charter's urgency ramp (Q623 (a)):
     // the urgency is the rail's own `RAIL_U`, so the two columns agree
     urgencyOf: (c) => RAIL_U[stateOf(c, ctx)],
-    // a clause that is a thing rather than a sentence: the membership list,
-    // and — since Q639 — the Founded line the two grants hang their tabs on
-    clauseFor: (c) => (onFoundedLine(c) ? foundedClause() : ''),
+    // a clause that is a thing rather than a sentence: the membership list.
+    // The Founded line left the grant heads with Q1170 (completed in Ed's QA
+    // of 2026-09-02 pm — the build had kept it): the two grants still replace
+    // the Founded paragraph and hang their tabs on it, but the card no longer
+    // restates it; the paragraph itself stays in the constitution.
+    clauseFor: () => '',
     // the title card's head is the document title itself — the clause,
     // opened — never the word “Title” (Ed, 2026-08-18)
     inDocOpenSlot: false,
@@ -5645,7 +5662,17 @@
       if (c.k === 'text' || onFoundedLine(c)) return null;
       if (c.isGate) return breakLines(linkify(esc(decisionLine(c))));
       if (c.ansFor || c.kind === 'personal') return null;
-      if (settled(c)) return breakLines(linkify(esc(decisionLine(c))));
+      if (settled(c)) {
+        // **the standing block says who chose it** (Ed's QA, 2026-09-02 pm,
+        // with Q1176): where the rule came from the membership, the head
+        // block wears the chosen radio — the provenance that used to live in
+        // the retired watch-half. Only on the option-block heads, where the
+        // rule is drawn as a block at all.
+        const st = csState(c.k);
+        const byRoom = !!(st && st.settledBy && st.settledBy !== 'convenor');
+        return breakLines(linkify(esc(decisionLine(c)))) +
+          (byRoom && OPTHEADLESS.has(c.k) ? chosenRadio('Chosen by the membership') : '');
+      }
       if (composerOn(c)) return esc(standsOf(c.k));
       return null;
     },
@@ -5653,12 +5680,13 @@
     // (Q1151, F15): the founder's own setting card, whose blocks state the
     // rule — never a member's answer card, a record, a power tab, a door or
     // a gate, which keep their titles
-    noTitleHead: (c) => !c.power && !c.record && !c.isGate && !c.ansFor && !c.door &&
-      c.kind !== 'personal' && OPTHEADLESS.has(c.k),
+    noTitleHead: (c) => !c.power && !c.record && !c.isGate && !c.door &&
+      (OPTHEADLESS.has(c.k) || (c.ansFor && OPTHEADLESS.has(c.ansFor))),
     // a settled option-block setting draws its rule as the first block
-    // (Q1167 a) — same keys, same exclusions
+    // (Q1167 a) — same keys, same exclusions; an identity card never reaches
+    // it (no catalogue rule to draw), so the widened set is safe here too
     blockHead: (c) => !c.power && !c.record && !c.isGate && !c.ansFor && !c.door &&
-      c.kind !== 'personal' && OPTHEADLESS.has(c.k),
+      OPTHEADLESS.has(c.k),
     // reserved = held by the founder: the room may pass a change, and it
     // then goes to the founder as a 👑 question (accept or reject)
     reserved: (c) => !c.power && !c.record && !c.isGate && !c.ansFor && c.kind !== 'personal' && !membersHold(c),
@@ -6144,13 +6172,15 @@
   // applies **meanwhile**, while the question is still collecting.
   const theyDecide = (key) => {
     if (!wantsDelegate(key)) return '';
-    const c = card(key);
-    return '<p class="setnote">' +
-      (cs && cs.constitutedAtT !== null
-        ? 'You propose like anybody, and nothing comes to you for assent.'
-        : '<b>Asked of everyone before drafting begins, blind</b> — you among them, if you are on the membership.' +
-          (c && c.meanwhile ? ' ' + c.meanwhile : '')) +
-      ' Picking a value here takes it back.</p>';
+    // **The pre-start frame is gone** (Ed's QA, 2026-09-02 pm, finishing
+    // Q1152): *Asked of everyone before drafting begins, blind — you among
+    // them… Picking a value here takes it back.* and the `meanwhile` tail all
+    // leave the delegated card; the blindness story returns with the 🍾
+    // redesign (Q1169). The post-start sentence stays — it is about motions,
+    // not the founding.
+    return (cs && cs.constitutedAtT !== null)
+      ? '<p class="setnote">You propose like anybody, and nothing comes to you for assent. Picking a value here takes it back.</p>'
+      : '';
   };
 
   // Q506: the register's "and afterwards" pair is gone from this card —
@@ -6274,8 +6304,10 @@
   const barRungs = () =>
     M.BAR_RUNGS.map((r) => pctRung({
       // the block text is the rule as it would stand (Q1104 (b)); the short
-      // label stays the strip's and 🪜's
-      set: 'tClose', val: r.pct, label: r.sentence, pct: r.pct,
+      // label stays the strip's and 🪜's. No % figure on the rung (Ed's QA,
+      // 2026-09-02 pm: *Remove %s*) — the sentence is the whole rung; 🪜's
+      // start ladder keeps its numbers, being a ladder *of* numbers.
+      set: 'tClose', val: r.pct, label: r.sentence,
       on: S.barBy === 'founder' && +S.tClose === r.pct,
       exp: meaning('bar', { pct: r.pct }),
     })).join('');
@@ -6867,7 +6899,7 @@
           return cardHtml(c, ctx, said +
             '<p class="why">Anybody may join on their own word here, so ' +
             esc(applicantName(ap)) + ' is a member from the moment they asked.</p>',
-            binBtn() + '<button class="btn btn-approve" data-ok="' + esc(c.k) + '">OK</button>',
+            binBtn() + '<button class="btn btn-approve okbtn" data-ok="' + esc(c.k) + '">OK</button>',
             g.cards);
         }
         // **🏛️ — everybody's consent**, which is the constitutional motion the
@@ -6919,7 +6951,7 @@
         if (!b) return cardHtml(c, ctx, '<p class="why">This is no longer outstanding.</p>',
           binBtn(), g.cards);
         return cardHtml(c, ctx, releaseBody(b),
-          binBtn() + '<button class="btn btn-approve" data-ok="' + esc(c.k) + '">OK</button>',
+          binBtn() + '<button class="btn btn-approve okbtn" data-ok="' + esc(c.k) + '">OK</button>',
           g.cards);
       }
       // **A mail that gave up, in one card** (SURFACE E34): the addresses the
@@ -6931,7 +6963,7 @@
         if (!b) return cardHtml(c, ctx, '<p class="why">This is no longer outstanding.</p>',
           binBtn(), g.cards);
         return cardHtml(c, ctx, mailGiveUpBody(b),
-          binBtn() + '<button class="btn btn-approve" data-ok="' + esc(c.k) + '">OK</button>',
+          binBtn() + '<button class="btn btn-approve okbtn" data-ok="' + esc(c.k) + '">OK</button>',
           g.cards);
       }
       if (c.isClosing) {
@@ -6940,7 +6972,7 @@
           signed || !viewerIsMember()
             ? binBtn()
             : binBtn() +
-              '<button class="btn btn-approve" data-sign="1" title="OK signs the document; your comment goes on the record">OK</button>',
+              '<button class="btn btn-approve okbtn" data-sign="1" title="OK signs the document; your comment goes on the record">OK</button>',
           g.cards);
       }
       if (c.isGate) {
@@ -6970,7 +7002,7 @@
         return cardHtml(c, ctx, grantProv(c) + gateBody(c) + grantNote(c),
           acked(c.k) ? binBtn()
             : binBtn() +
-              '<button class="btn btn-approve"' +
+              '<button class="btn btn-approve okbtn"' +
               (c.open() ? '' : ' disabled') +
               ' data-ok="' + c.k + '">OK</button>', g.cards);
       }
@@ -6981,7 +7013,7 @@
       // **the record's OK only closes** (Q1167 b): a word, not a glyph — no
       // ACK_KEYS entry, nothing tracked, nobody owes a press
       if (c.record) return cardHtml(c, ctx, recordBody(c),
-        binBtn() + '<button class="btn btn-approve" data-close="1">OK</button>', g.cards);
+        binBtn() + '<button class="btn btn-approve okbtn" data-close="1">OK</button>', g.cards);
       // 403/405 (Ed, 2026-08-19): a power tab, opened — the ✒️ or 🛡️
       // half of a setting's governance, its head the rule as it stands
       if (c.power) {
@@ -7005,14 +7037,18 @@
       // it now sits with the founder — Accept applies it, Reject files it.
       if (m && m.status === 'awaiting-crown') {
         // **the two-block pair** (Q1167 a as refined, Ed 2026-09-02): the
-        // standing rule, then the change the membership has already chosen —
-        // *Chosen by the membership* is a fact here, the vote being over and
-        // the card waiting on the founder's own act. The narrated
-        // Passed-awaiting paragraph retires.
+        // standing rule, then the change the membership has already chosen.
+        // Both blocks carry the full clause sentence and the provenance is a
+        // chosen radio — *Chosen by the membership* — rather than a note
+        // (Ed's QA, 2026-09-02 pm): the pair reads as the option card it is,
+        // the vote being over and the card waiting on the founder's own act.
+        const rec0 = liveMotionRec(c);
+        const rawV = rec0 && rec0.payload && rec0.payload.kind === 'set' ? rec0.payload.value : null;
+        const toClause = (typeof rawV === 'string' && window.CARDS.clauseOf(c.k, rawV, clauseCtx())) || m.to;
         return cardHtml(c, ctx,
-          '<div class="pick"><span class="opttext">' + esc(standsOf(c.k)) + '</span></div>' +
-          '<div class="pick on"><span class="opttext">' + esc(m.to) + '</span>' +
-          '<span class="exp provline">Chosen by the membership</span></div>' +
+          '<div class="pick"><span class="opttext">' + esc(decisionLine(c)) + '</span></div>' +
+          '<div class="pick on"><span class="opttext">' + esc(toClause) + '</span>' +
+          chosenRadio('Chosen by the membership') + '</div>' +
           (m.why ? window.CARDS.speakerHtml(m.why) : ''),
           // **The 👑 takes the pattern whole** (CP5, Q1100, Ed's refinement):
           // 🗑️ closes the card with the question kept pending, and the two
@@ -7074,8 +7110,7 @@
             // flying out of the wallet is what teaches it, and a sentence
             // beside the flight is the surface explaining its own animation
             : (crownWaits(c) ? '<p class="setnote">If it passes it goes to the Founder, who may assent or refuse.</p>' : '')) +
-          doorErrHtml(c.k) +
-          (wasAsked(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
+          doorErrHtml(c.k);
         return cardHtml(c, ctx, body2 + changeHalf(c),
           '<button class="btn glyphbtn" data-dropmotion="1"' +
           ' title="Discard this motion">🗑️</button>' +
@@ -7100,11 +7135,13 @@
         // reads. `founderHandOff` is the same question the composer swap has
         // always asked, put to the body.
         : ((!amFounder() || founderHandOff(c)) && c.own !== 'you' && !doorDirect(c))
-        // the read-only body is the one upper half that has not named 🌡️'s
-        // method, so the watch half carries it here and nowhere else
-        ? readBody(c, ctx) + (wasAsked(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx, true) + '</div>' : '')
-        : BODY[c.k]() + delegateRung(c) +
-          (wasAsked(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
+        // **The watch-half is retired** (Q1176, Ed 2026-09-02 pm): *What the
+        // membership said*, the distribution strip, the taken line and the
+        // running count all leave the delegated cards; provenance is the
+        // standing block's own chosen radio, and the per-question counts move
+        // to 🍾 (design finished with Q1169).
+        ? readBody(c, ctx)
+        : BODY[c.k]() + delegateRung(c);
       // **The route left the card bodies** (Ed's copy pass, 2026-08-19,
       // finishing what the kind-eyebrow removal started): every card carried
       // a kind line restating the preamble, and the preamble is where the
@@ -7254,7 +7291,7 @@
         : ((!amFounder() || founderHandOff(c)) && c.own !== 'you' && !c.ansFor)
         ? (stateOf(c, ctx) === 'news'
           ? binBtn() +
-            '<button class="btn btn-approve" data-ok="' + newsKey + '">OK</button>'
+            '<button class="btn btn-approve okbtn" data-ok="' + newsKey + '">OK</button>'
           : binBtn())
         : (c.k === 'myname' || c.k === 'mypic')
         // **The bin clears un-actioned input and never touches what is set**
@@ -7323,7 +7360,7 @@
               ' data-confirm="1" title="' + (mayPen() ? 'Set it' : penWaitTitle) + '">✒️</button>'; })()
         : stateOf(c, ctx) === 'news'
         ? binBtn() +
-          '<button class="btn btn-approve" data-ok="' + newsKey + '">OK</button>'
+          '<button class="btn btn-approve okbtn" data-ok="' + newsKey + '">OK</button>'
         // **CP9 (Q1106): once the document is closed there is no commit left
         // to draw.** What reaches here on a closed page is what
         // `founderHandOff` does not cover — the power tabs and the two doors,
@@ -8846,7 +8883,7 @@
     const body = c.record ? recordBody(c)
       : c.k === 'text' ? strangerTextBody() : strangerReadBody(c);
     return cardHtml(c, strCtx, body,
-      binBtn() + (c.record ? '<button class="btn btn-approve" data-close="1">OK</button>' : ''),
+      binBtn() + (c.record ? '<button class="btn btn-approve okbtn" data-close="1">OK</button>' : ''),
       g.cards);
   };
   const strangerTextBody = () => {
@@ -10750,11 +10787,28 @@
     const deps = depsHolds().map((h) => '<p class="setnote hold">' +
       settingNamed(h.setting) + ' is waiting on ' + listOf(h.on.map(settingNamed)) +
       ', which must settle first — it cannot be answered until then.</p>').join('');
-    const qs = (rd.questions || []).map((q) => '<span class="gaterow">' +
-      '<span class="gg">' + glyphOfSetting(q.setting) + '</span>' +
-      esc(card(pkeyOf(q.setting)) ? card(pkeyOf(q.setting)).t : q.setting) +
-      '<span class="rsub"> · ' + (q.settled ? 'settled' : q.collecting
-        ? (q.answered + ' of ' + q.electorate + ' have answered') : 'still being decided') + '</span></span>').join('');
+    // **A collecting question is a sentence, not a tally** (Ed's QA,
+    // 2026-09-02 pm, with Q1176): the counts the retired watch-half carried
+    // live here now — *X out of Y of the membership have voted on whether…* —
+    // the subject derived from the one `DECIDING` table so it cannot drift
+    // from the card's own delegation sentence. The card's fuller design is
+    // Q1169's.
+    const qs = (rd.questions || []).map((q) => {
+      const k = pkeyOf(q.setting);
+      let line;
+      if (q.settled) {
+        line = esc(card(k) ? card(k).t : q.setting) + '<span class="rsub"> · settled</span>';
+      } else if (q.collecting) {
+        const subject = decidingOf(k)
+          .replace(/^The membership (?:are|is) deciding /, '')
+          .replace(/^if /, 'whether ').replace(/\.$/, '');
+        line = esc(q.answered + ' out of ' + q.electorate +
+          ' of the membership have voted on ' + subject + '.');
+      } else {
+        line = esc(card(k) ? card(k).t : q.setting) + '<span class="rsub"> · still being decided</span>';
+      }
+      return '<span class="gaterow"><span class="gg">' + glyphOfSetting(q.setting) + '</span>' + line + '</span>';
+    }).join('');
     const ms = (rd.members || []).map((m) => '<span class="gaterow">' +
       esc(m.name || 'Anonymous') + '<span class="rsub"> · ' +
       (!m.arrived ? 'invited, not yet arrived' : m.owed === 0 ? 'nothing owed'
