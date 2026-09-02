@@ -73,6 +73,65 @@ entry, and ask Ed about the push, which deploys.
 doctype), backlog 269 in plan-queue's BACKLOG.md (the 🍾 revisit, Q1169 —
 deliberately unscoped).
 
+---
+
+## QA addendum — Ed's second pass, 2026-09-02 pm (Q1173–Q1176)
+
+Ed reviewed the re-captured sheet card by card; his comments are in the session
+of 2026-09-02 pm and are being built as this addendum's rules. His framing, in
+his own words: *I am trying to strip copy right back, I want to try and
+communicate things through consistency and careful use of words, using the
+clause text to explain everything as much as possible. I have a plan for the
+"delegate to the membership" blind notes etc — it will be integrated into the
+redesign of the "begin" card.* So the blindness copy leaves the whole surface
+now (reversing Q1152's kept half — flagged, confirmed), and its explanation
+returns with the 🍾 redesign (Q1169 / backlog 269).
+
+**The four scope answers**, asked one at a time in chat:
+
+- **1173 — hairlines.** The head↔field hairline (`.field`'s border-top) goes
+  from any card with no head, and from any card that is only a head and text
+  (the grants). It stays where a head sits over real controls. **There must
+  never be two hairlines with nothing between them** — that rule is general.
+- **1174 — every OK is blue again.** Reverses the build's reading 1 of Q1153
+  (*every commit* was read to include OK). The grammar is now: glyph commits
+  flat (armed said by elevation), word-OK solid `--primary` with white text,
+  everywhere. The leftover `setup.css` `.emojibtn` accent rule (primary-subtle
+  fill + primary border on every enabled glyph commit) was the blue Ed kept
+  seeing — a Q1153 build miss, deleted.
+- **1175 — every answer card strips to bare blocks.** Title, question body,
+  per-option explainer lines and blind note all go, on all delegated-answer
+  cards, not 🌍's alone. The answer card becomes the founding card served to a
+  member.
+- **1176 — the watch-half retires entirely.** *What the membership said*, the
+  distribution strip, the taken line AND the running answered-count leave every
+  settled/collecting delegated card. Provenance survives as the standing
+  block's radio label (*Chosen by the membership*). **The counts move to 🍾**:
+  one line per still-collecting question — *X out of Y of the membership have
+  voted on whether proposals should be anonymous.* — with the card's full
+  design finished later (Q1169).
+
+**Defects found against the last build** (fixed, not reversals): 🎩 kept its
+title — `noTitleHead`'s `kind !== 'personal'` guard excluded it though `hat`
+is in `OPTHEADLESS` (Q1151 miss); the grant cards' *Founded by* line survived
+in the head (Q1170 miss); the `.emojibtn` accent rule above (Q1153 miss).
+
+**The rest of the round**, card by card: titles also leave ✋ 🖼️ 📧 (founding
+and settled — an extension of Q1151, not a reversal); identity cards gain a
+**status-quo-first block** where a value stands (the current name / picture /
+email as the top option, the composer and Anonymous beneath; settled 🪶 takes
+the same shape — status quo on top, *The document is titled […]* beneath, the
+rationale raised); founding grants lose the *Founded by* line and their body
+reads at body size; settled ✒️ 🛡️ 🎩 gain a close-only OK (1167 b's grammar,
+no ACK_KEYS entry); 🏛️ grant loses its consent-wallet paragraph; settled 📍
+reads *Previous links still work.* and drops *Suggested from the title*; ✉️
+loses the *n of m have opened it* sentence; ❌ loses both policy sentences,
+its dropdown reads *Choose somebody to remove…* and its acts (✒️ 🏛️) move to
+the commit row; ⏱️'s unit dropdown wears the clause text and fits its word,
+and settled ⏱️ drops *The Founder may amend this at will…*; 🌡️'s rungs lose
+their % figures; the record card's redesign is backlogged (rec:chamber:0 —
+*this card is confusing*).
+
 **What this is.** Ed reviewed the Card Specimen Sheet card by card and wrote notes on
 twenty-four of them. This file carries every note **verbatim**, sorted so that the rules
 which repeat across many cards are stated once, and marks the places where a note reverses
