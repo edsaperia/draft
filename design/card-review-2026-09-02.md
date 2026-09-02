@@ -627,7 +627,111 @@ reversal of Q341. The two readings build differently.
 
 ## Part D — Questions for Ed
 
-Numbers claimed in QUESTIONS.md.
+Numbers claimed in QUESTIONS.md. **Ed answered these in chat on 2026-09-02**; each answer
+is recorded under its own number below, and an answered question is the instruction — build
+what the answer says, not what the question guessed.
+
+### Answered
+
+- **1149 — 💤's options swap, the sentences stand as Ed wrote them.** The lapse rule and its
+  day field become the **first** block (*After [n] days, inactive members lapse and
+  automatically abstain from votes.*), the no-lapse rule the second (*Inactive members never
+  lapse and are still counted towards votes.*). The card leads with lapsing. The consent
+  ordering is untouched — display order is not aggregation order.
+- **1150 — "The membership are deciding".** Plural on all eleven; the three that said *is*
+  (⏱️, 👥, 👤) are corrected.
+- **1151 — the card's head only.** The rail entry keeps its name (💤 *Do Memberships
+  Lapse?*), the tab keeps its tooltip, the record keeps the name. Only the head goes, on the
+  thirteen option-block settings cards.
+- **1152 — remove all of it.** The delegate rung's explanation goes entirely: both the *Not
+  now — every member states…* frame and the per-setting aggregation tail (`c.rule`), leaving
+  the rung carrying only its new A3 sentence. The member's own answer card keeps *Nobody sees
+  your answer…*, so blindness is still said to the person it protects.
+- **1153 — flat when inert, lifted when armed.** The blue fill goes from every commit; the
+  armed state is said by **elevation**, which is the design system's own rule (*open is said
+  by depth, not by outline*). Note the current CSS gives `.commitrow .btn` `--shadow-md`
+  unconditionally, so the change is to make the lift conditional on armed, not to add one.
+  Ed did not rule on the accent **border**; the reading taken is that it stays, since the
+  note objected to the background.
+- **1154 — the pair at the right.** 🗑️ stays leftmost; the two commits group at the far right
+  with the founder's power immediately left of the route's commit (✒️ ✏️, and 🛡️ ✒️ on 🌍).
+  SURFACE §9.1 survives — the commit is still at the right — and only the spread closes up.
+- **1155 — every commit that has a glyph.** ✏️ Propose → ✏️, 🍾 Begin → 🍾, 🏛️ Ask all
+  members → 🏛️, 🗑️ Withdraw → 🗑️. Only **OK** keeps a word, having no glyph.
+  **One consequence to raise before building**: under this rule *✏️ Submitted* also loses its
+  word, and that string is not a label but the row's only report that the proposal is in
+  (K18, *✏️ hold → ✏️ Submitted*). See Q1171.
+- **1156 and 1157 — Ed's language stands, and the explainer carries the precision.** Ed:
+  *use my language — if someone wants to understand they can read the explainer.* So 🌡️'s
+  rungs describe a **share of voters** as written, the method note names Bradley–Terry–
+  Davidson as written, and `pairwise.html` at `/pairwise` — which exists precisely to say
+  *what one number means in votes, and why it is a confidence rather than a share* — is
+  where the exact account lives. **`methodNote` must keep its link to it.** STYLE T15 (*never
+  the maths*) is amended for 🌡️'s method note; it is not repealed for the rest of the
+  surface.
+- **1163 — follows 1157.** 🥾's *To remove a member, a majority of members must agree ✏️*
+  stands as written, on the same ruling.
+- **1158 — 🌡️ only, three rungs.** 90 / 80 / 60 and no free-number block. Q1104 (b)'s pattern
+  survives on 🪜, 👥 and ⏱️; 🌡️ is named as the card that does not take it.
+- **1159 — remove them and say nothing.** The three ceiling lines go, nothing replaces them
+  anywhere, and `/pairwise` covers it for whoever goes looking. Q840's note is retired;
+  Q840's *mechanism* finding is untouched and `ceilingNote` becomes dead code to delete.
+- **1160 — fix them in the card, keep the mechanism.** `RateValue` keeps `{grant, cap,
+  dripMinutes}`; every document is created with **grant = cap = 3** and the card offers only
+  the interval. No engine change and no §7/§13 rewrite — SPEC states the fixed values. The
+  burst of three still works, and reopening the maximum later is a card change.
+- **1161 — the unit is worked out from the number.** Nothing new is stored: the clause prints
+  the largest unit that divides exactly (1440 → *every day*, 120 → *every 2 hours*, 45 →
+  *every 45 minutes*). The selector is input only.
+- **1162 — the membership chooses the form too.** The member's answer card shows **both**
+  blocks, each with its own picker, so a member states a form as well as a number.
+  **This reverses Q341 for 👥** — the form is no longer pacing kept by the founder — and
+  SPEC §4.2/§9.0a and SURFACE §8 must say so.
+- **1172 — strictest at the moment it settles.** Every answer is evaluated against the
+  membership as it stands when the question settles, and the answer demanding the most
+  voters wins; **its form and its number both stand**. So a member who asked for a share can
+  end up bound by a fixed count, and the promise a member is given is *no looser than what I
+  accepted, judged when it settles*. Needs stating in SPEC §9.0a beside the other consent
+  directions, and `catalogue.ts`'s `quorum` consent `order` has to be rewritten from a scalar
+  comparison to one that resolves both forms against `E`.
+- **1164 — Anonymous is the block; blank is not an answer.** ✋'s name block stays inert
+  until something is typed; anonymity is reached by choosing the Anonymous block.
+  **SPEC §9.0c is amended**: the gap stops meaning anything. ✋ still never blocks the
+  founding queue (Q980), so an unanswered ✋ simply shows initials until it is answered.
+- **1165 — the anonymous picture is the status quo.** Ed: *Anonymous picture is the status
+  quo.* So 🖼️'s top block is the anonymous state, pairing with ✋'s: **Anonymous · Upload an
+  image · Pick an emoji**, the picker opening when its block is chosen. Reading taken, flag
+  if wrong: an anonymous picture still draws the member's initials where they have a name,
+  since that is what `avHtml` falls back to and nothing else was asked for.
+- **1166 — both modes survive, and the commit says which.** Ed: *have ✒️ and ✏️ submit
+  buttons as appropriate to the user's permissions. Send on submit with ✒️, propose on submit
+  with ✏️.* One multi-line box with the new placeholder; ✒️ where the viewer's word sends,
+  ✏️ where it composes a motion, and both where the viewer has both — ordered by Q1154's
+  rule, ✒️ immediately left of ✏️, the pair at the right. SPEC §9.7 rule 9 is untouched.
+- **1167 (a) — every settled setting, and the second block arrives with the proposal.** The
+  standing rule is always the first block; a second block appears when a motion stands or one
+  is being composed, carrying its provenance line (*Chosen by the membership*, *Chosen by
+  Founder Action ✒️*). One grammar across all eighteen.
+- **1167 (b) — an OK that just closes it.** The record card gains the charter's sealed-record
+  OK: bottom right, a word not a glyph, no tracking, no `ACK_KEYS` entry, nobody owes a
+  press.
+- **1168 — no question to answer: the wording is already accurate.** SPEC §9.5a says a
+  lapsed member *"leaves the quorum base the way an abstainer does and stands outside every
+  electorate… counted as abstaining in every decision meanwhile"*. *Inactive members lapse and
+  automatically abstain from votes* is a true statement of the mechanism and goes in as
+  written.
+- **1169 — file it open, with this review attached.** The 🍾 backlog entry records what was
+  noticed without fixing a scope, and points at this file and the specimen sheet so whoever
+  picks it up meets the card in context. Not in scope for this batch beyond A4 and A6.
+- **1170 — the card's head only.** The grant cards stop repeating the Founded line; the
+  paragraph stays in the constitution, keeps carrying the ✒️ and 🛡️ tabs (Q639) and still
+  feeds the closing record.
+- **1171 — the word stays where it reports a state.** The rule is: **a button offering an act
+  wears its glyph alone; a button reporting what already happened says so in words.** So
+  ✏️ Propose → ✏️, 🍾 Begin → 🍾, 🏛️ Ask all members → 🏛️ — and **✏️ Submitted** and
+  **🗑️ Withdraw** keep their words. This narrows Q1155 and is the version to build.
+
+### The questions as they were put
 
 1149. **💤's two rewrites look swapped.** *Nobody ever drops out of the count* is the
     no-lapse option and is given the lapse sentence; *They lapse* is the lapse option and is
@@ -682,18 +786,35 @@ Numbers claimed in QUESTIONS.md.
 
 ---
 
-## Part E — Suggested order
+## Part E — Order of work
 
-1. **Answer Part D**, at least 1149 (💤 would ship inverted), 1153–1155 (the commit row is
-   one change across every card) and 1160–1162.
-2. **Amend the documents**: SURFACE §9's card rows and §9.1; STYLE.md T15 and the helper-text
-   rules; SPEC §7/§13 for ⏱️ with a version bump and Ed's sign-off; `design/SPEC-REASONING.md`
-   for the reversals of Q840, Q1104 (b) and possibly Q341.
-3. **The cross-cutting builds**, one commit each: A1 title, A2 blind note, A3 the per-setting
-   sentence table, A4+A5+A6 the commit row.
-4. **The card rebuilds**: ✋ and 🖼️ as option-block cards, the three grant cards, ✉️, then the
-   settled shape for 🌍 and its record.
-5. **The mechanism builds**: ⏱️ last, because it moves the catalogue, the consent rule, the
-   composer and `meaningOf` together.
-6. **`npm run qa:freeze`** at the end, and re-run the specimen capture so the sheet shows the
-   new cards.
+Every question is answered, so this is a build order rather than a plan for one. Nothing here
+is blocked.
+
+1. **Amend the documents first.** SPEC: §9.0c (1164, a blank name stops being an answer),
+   §9.0a and §4.2 (1162 and 1172 — 👥's form joins the delegated question, and mixed answers
+   resolve strictest-at-settle), §7 (1160 — ⏱️'s grant and cap are fixed at 3), §9.5a needs
+   nothing (1168). Version bump and Ed's sign-off, `README.md` following.
+   SURFACE: §9's card rows for the head (1151), the settled two-block shape (1167 a) and the
+   record's OK (1167 b); §9.1 for the commit row (1153, 1154, 1155, 1171); §8's `ORDER` where
+   titles and blocks move. STYLE: T15 amended for 🌡️'s method note only (1156), the
+   glyph-versus-word rule from 1171 as a new T-rule, and the delegation sentence's number
+   (1150). `design/SPEC-REASONING.md`: the reversals of Q840 (1159), Q1104 (b) for 🌡️ (1158)
+   and Q341 for 👥 (1162).
+2. **The cross-cutting builds**, one commit each — these are most of the work and they touch
+   every card at once: **A1** the head (13 cards), **A2** the delegate rung's explanation
+   (9), **A3** the per-setting delegation sentence as one table beside `meaningOf` (11, two
+   call sites), **A4/A5/A6** the commit row — lift instead of fill, the pair grouped at the
+   right, glyphs alone except where a word reports a state.
+3. **The card rebuilds**: ✋ and 🖼️ as option-block cards with Anonymous first on both; the
+   three grant cards (✒️, 🛡️, 🏛️) losing their heads, their rail subtitles and their old
+   sentences; ✉️ down to one box with two possible commits; 🌡️ to three rungs; 🥾, 🎩, 🌍, 🤝,
+   🪪, 👤, 👁️, ⏰ for their clause rewrites.
+4. **The two that change shape**: 👥 (the form folds into the blocks and joins the delegated
+   question — `catalogue.ts`'s `quorum` consent `order` has to resolve both forms against E)
+   and the settled two-block card, which is the band's shape after 🍾.
+5. **⏱️ last**, because even as a card-only change it moves the composer, `meaningOf`, the
+   clause sentence and the unit derivation together.
+6. **File the 🍾 backlog entry** (1169), open, pointing at this file and the sheet.
+7. **`npm run qa:freeze`**, then re-run `card-audit --specimens` and republish the sheet so it
+   shows the cards as they now are.
