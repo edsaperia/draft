@@ -708,10 +708,18 @@ what the answer says, not what the question guessed.
   with ✏️.* One multi-line box with the new placeholder; ✒️ where the viewer's word sends,
   ✏️ where it composes a motion, and both where the viewer has both — ordered by Q1154's
   rule, ✒️ immediately left of ✏️, the pair at the right. SPEC §9.7 rule 9 is untouched.
-- **1167 (a) — every settled setting, and the second block arrives with the proposal.** The
-  standing rule is always the first block; a second block appears when a motion stands or one
-  is being composed, carrying its provenance line (*Chosen by the membership*, *Chosen by
-  Founder Action ✒️*). One grammar across all eighteen.
+- **1167 (a) — every settled setting, and the second block holds only a decided thing**
+  (refined with Ed, 2026-09-02 pm, from the specimen's own state — a motion carried by every
+  member and parked at the founder's veto). The standing rule is always the first block. A
+  second block appears in exactly two states: while the viewer composes (their draft), and
+  when a change the membership has already chosen awaits the viewer's own act — the parked
+  motion on the founder's card, *Chosen by the membership* under it, the commit row being
+  the founder's answer. **A mid-flight motion never appears on the settled card**; members
+  meet it as a voting task in the rail. **Once the change lands the card returns to one
+  block** — the new standing rule alone; history lives on the record card behind the rule,
+  which keeps the before/after pair, its provenance line (*Chosen by the membership*,
+  *Chosen by Founder Action ✒️*) and 1167 (b)'s OK for ever. One grammar across all
+  eighteen.
 - **1167 (b) — an OK that just closes it.** The record card gains the charter's sealed-record
   OK: bottom right, a word not a glyph, no tracking, no `ACK_KEYS` entry, nobody owes a
   press.
@@ -730,6 +738,11 @@ what the answer says, not what the question guessed.
   wears its glyph alone; a button reporting what already happened says so in words.** So
   ✏️ Propose → ✏️, 🍾 Begin → 🍾, 🏛️ Ask all members → 🏛️ — and **✏️ Submitted** and
   **🗑️ Withdraw** keep their words. This narrows Q1155 and is the version to build.
+
+- **Q995 stands — the close is said "at the end"** (Ed, 2026-09-02 pm). 👤's rewrites land
+  with *when no more changes can be made* adjusted to *at the end* (*…and all names are
+  revealed at the end*), so 👤 and 👁️ keep describing the close in one phrase and 👁️'s
+  clauses are untouched.
 
 ### The questions as they were put
 
