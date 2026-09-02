@@ -60,12 +60,15 @@ export const BAR_RUNGS: readonly { pct: number; label: string; sentence: string 
   // stated beside it); `label` survives as the rung's short name — the
   // distribution strip's word, and 🪜's starting rungs, where a sentence
   // about *passing* would misstate a bar that only opens the vote.
+  // the sentences are Ed's own (card review 2026-09-02, Q1156/Q1157: a share
+  // of voters is the deliberate simplification — the precise account lives at
+  // /pairwise, which `methodNote` links)
   { pct: 90, label: 'Nearly everyone',
-    sentence: 'Nearly everyone must vote for a change for it to pass' },
+    sentence: 'For a proposal ✏️ to pass, nearly all members that voted on it must prefer it to the alternatives' },
   { pct: 80, label: 'Broad agreement',
-    sentence: 'Most of the membership must vote for a change for it to pass' },
+    sentence: 'For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives' },
   { pct: 60, label: 'A bare majority',
-    sentence: 'A bare majority voting for a change is enough for it to pass' },
+    sentence: 'For a proposal ✏️ to pass, a majority of the membership that voted must prefer it to the alternatives' },
 ];
 
 /** The fourth rung: the precise number, for whoever really wants it. */
@@ -160,15 +163,10 @@ function winsClause(e: number, pct: number): { k: number; n: number } | null | u
 function barMeaning(pct: number, room: Room): string | null {
   const w = winsClause(room.e, pct);
   if (w === undefined) return null;
-  if (w === null) {
-    // **The out-of-reach sentence names its own percent.** Two rungs can be
-    // out of reach of the same room, and *nothing can pass at this one* said
-    // twice under two different numbers is the same sentence twice (T36) as
-    // well as the less useful half of what there is to say.
-    return fit('In a membership of ' + roomOf(room.e) +
-      ', nothing can pass at ' + Math.floor(pct) + '% until more members arrive.');
-  }
-  if (w.n === 1) return fit('In a membership of one, the one vote must be for it.');
+  // **A bar this room cannot reach, and a room of one, say nothing** (Ed,
+  // 2026-09-02, Q1159, reversing Q840's note: *remove them and say nothing*
+  // — /pairwise covers it for whoever goes looking; T39's nothing-true rule).
+  if (w === null || w.n === 1) return null;
   if (w.k === w.n) return fit('In a membership of ' + w.n + ', all ' + w.n + ' must vote for it by the end.');
   return fit('In a membership of ' + w.n + ', ' + w.k + ' of ' + w.n + ' must vote for it by the end.');
 }

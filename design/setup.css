@@ -198,6 +198,9 @@
      sentence's own type and only as much box as its digits need. */
   .pick .opttext .numin { width: 4.5rem; font-size: inherit;
     padding: var(--s1) var(--s2); }
+  /* the ⏰ date, inside its sentence the same way (card review 2026-09-02):
+     a datetime needs more box than digits do */
+  .pick .opttext .numin.datein { width: auto; max-width: 16rem; }
   .pick > .lanepick { margin-top: var(--s2); }
   /* a hairline separates adjacent blocks without boxing them — the same
      separator the power cards' `.propblock + .propblock` draws; the margin is
@@ -336,7 +339,6 @@
   /* the ceiling the room can reach (Q840) — the same size and colour as the
      blindnote beneath it, and deliberately no hot colour and no glyph: grey
      means nothing is being asked of you, and this asks nothing */
-  .ceilingnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); }
 
   /* what choosing this value would do, in this room (entry 167) — a note
      under a number field, so it takes the `.exp` treatment a rung's own

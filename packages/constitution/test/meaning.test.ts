@@ -93,18 +93,17 @@ describe('meaningOf', () => {
     expect(bar(90, 6)).toBe('In a membership of 6, 5 of 6 must vote for it by the end.');
   });
 
-  it('all of them, and the membership of one, each read as themselves', () => {
+  it('all-of-them reads as itself', () => {
     expect(bar(90, 3)).toBe('In a membership of 3, all 3 must vote for it by the end.');
-    expect(bar(60, 1)).toBe('In a membership of one, the one vote must be for it.');
   });
 
-  it('an unreachable bar says so, and names which bar', () => {
-    expect(bar(90, 1)).toBe('In a membership of one, nothing can pass at 90% until more members arrive.');
-    expect(bar(90, 2)).toBe('In a membership of 2, nothing can pass at 90% until more members arrive.');
-    // …and the two out-of-reach rungs of one room do not read as one sentence
-    // said twice (card-audit T36)
-    expect(bar(80, 1)).toBe('In a membership of one, nothing can pass at 80% until more members arrive.');
-    expect(bar(80, 1)).not.toBe(bar(90, 1));
+  it('an unreachable bar, and a membership of one, say nothing (Q1159, Ed 2026-09-02)', () => {
+    // the ceiling lines are retired — remove them and say nothing; /pairwise
+    // carries the account, and T39's nothing-true rule prints no line
+    expect(bar(90, 1)).toBeNull();
+    expect(bar(90, 2)).toBeNull();
+    expect(bar(80, 1)).toBeNull();
+    expect(bar(60, 1)).toBeNull();
   });
 
   it('🪜 names where the climb starts and where it ends', () => {

@@ -242,7 +242,7 @@
   const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml, watchBody,
     nameBody, pictureBody, opt, num, numIn, ctlWord, someIn, ANSWER, stateOf,
     MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml, stripHtml, readBody,
-    motionBody, motionReopen, routeFor, motionCommitHtml, BLINDNOTE, ceilingNote, methodNote, listOf, syncSlider } = window.SETUP;
+    motionBody, motionReopen, routeFor, motionCommitHtml, BLINDNOTE, methodNote, listOf, syncSlider } = window.SETUP;
   // **A setup card opens and closes like a decision card** (Ed, 2026-08-18:
   // *the whole point of building off session-view is that we would have all
   // this stuff*): cards.js own expandCard/collapseCard, which have been
@@ -2198,7 +2198,9 @@
       // (no `ready` of its own: *never*, or a date — CHOSEN.ending. The old
       // predicate read true on an empty field, which was harmless only
       // while the field arrived with a date already in it.)
-      knote: 'Moving the date is a proposal ✏️ like any other. Taking the end date away altogether needs every member to agree, because with no end date the approval threshold cannot rise, and every change made so far was made under one that did.',
+      // knote retired (Ed's card review, 2026-09-02): the two-routes-inside-
+      // one-setting explanation leaves the card; the route behaviour and the
+      // composer's routeNote stand.
       rule: 'Each member says when they want it to end, and the document takes the <b>latest</b> answer — <b>never</b> being later than any date — so nobody is cut off before they were ready.',
       takes: 'The document takes the latest', result: 'Saturday 18:00',
       dist: [2, 3, 5, 3, 1], distTop: 4, distEnds: ['Tue', 'Never'] },
@@ -4835,8 +4837,9 @@
       meanLine('bar', d.val && d.val.pct !== undefined ? d.val : null)) +
       // and the method note with it (entry 163): the pen's set card is the
       // founder card in its second epoch, so a founder who first meets 🌡️
-      // after the save would otherwise never be offered the explainer
-      ceilingNote(E(), 99) + methodNote(),
+      // after the save would otherwise never be offered the explainer.
+      // (The ceiling note is gone — Q1159.)
+      methodNote(),
     quorum: (d) => (S.quorumForm === 'count'
       ? inputBlock('Quorum is <input class="num" type="number" min="1" max="99" data-mnum=" of the membership" value="' +
         esc((d.to.match(/\d+/) || [])[0] || takenOf('quorum') || quorumCount()) + '"> of the membership.',
@@ -5284,7 +5287,9 @@
   // one, the founder's field otherwise; named once, since `ENDING_RULE` does
   // the wording for both the clause and the *You said* readback
   const endingAt = () => (endingVal() !== 'never' && endingVal()) || S.endsAt;
-  const ENDING_NEVER = 'The drafting process has no set end — it runs until too few members are active.';
+  // Ed's sentence (card review 2026-09-02); the freeze is real (SPEC §9.5)
+  // and the card no longer mentions it
+  const ENDING_NEVER = 'Changes to the document may be made perpetually.';
   // **A number states its own sentence** (Q1112 (b), step 5): the numeric
   // clauses are named here, taking the value rather than reading the
   // document's, so the clause and the *You said* readback are the one
@@ -5292,19 +5297,22 @@
   // into the document. What a value would *mean* is still `meaningOf`'s
   // alone (T39) — none of these writes a second consequence sentence.
   const ENDING_RULE = (v) => (v === 'never' || !v ? ENDING_NEVER
-    : 'The drafting process will end on ' + endFmtOf(v) + '.');
+    : 'No more changes to the document may be made after ' + endFmtOf(v) + '.');
   const QUORUM_RULE = (n) => (S.quorumForm === 'count'
-    ? Math.min(n, E()) + ' of the ' + E() + ' members'
-    : n + '% of the members') + ' must have voted on a question before it can change the document.';
+    ? n + ' members'
+    : n + '% of the membership') + ' must vote on a proposal ✏️ before it can pass.';
   // a ramp that starts where it ends is not a ramp (Ed: *if there is no
   // ramp, the clause can just be blank*)
   const BAR_RULE = (pct, start) =>
     (isNum(start) && +start < +pct
       ? 'The members must be ' + pct + '% sure a proposal is better for it to pass by the end, starting at ' + start + '% when voting opens.'
       : 'The members must be ' + pct + '% sure a proposal is better for it to pass.');
+  // Ed's sentences (card review 2026-09-02, Q1149 — the options swap so the
+  // card leads with lapsing; Q1168 — *automatically abstain* is §9.5a's own
+  // mechanism, stated accurately)
   const LAPSE_RULE = (v) => (v === 'never' || v === null
-    ? 'Nobody stops being a member, however long they are away.'
-    : 'Somebody stops being a member after ' + v + ' days without logging in.');
+    ? 'Inactive members never lapse and are still counted towards votes.'
+    : 'After ' + v + ' days, inactive members lapse and automatically abstain from votes.');
   const RATE_RULE = (grant, cap, drip) => 'Members start with ' + grant +
     ' proposals ✏️ each, up to a maximum of ' + cap +
     '. They get an additional ✏️ every ' + drip +
@@ -6204,6 +6212,10 @@
   // `tClose` directly (`fillRung` takes `barBy` with them); the fourth is the
   // card's original *I set it* rung under its own name, so the field, its
   // `data-num` and the probe's two steps are exactly where they were.
+  // **Exactly three rungs** (Ed, 2026-09-02, Q1158, reversing Q1104 (b) for
+  // 🌡️ alone): *A number of my own* and its box are gone from this card —
+  // the pattern survives on 🪜, 👥 and ⏱️, and the composer still takes a
+  // number for a motion.
   const barRungs = () =>
     M.BAR_RUNGS.map((r) => pctRung({
       // the block text is the rule as it would stand (Q1104 (b)); the short
@@ -6211,13 +6223,7 @@
       set: 'tClose', val: r.pct, label: r.sentence, pct: r.pct,
       on: S.barBy === 'founder' && +S.tClose === r.pct,
       exp: meaning('bar', { pct: r.pct }),
-    })).join('') +
-    pctRung({
-      set: 'barBy', val: 'founder', label: M.OWN_RUNG_LABEL, mean: 'bar', ctl: true,
-      on: S.barBy === 'founder' && !isRungPct(S.tClose),
-      exp: isNum(S.tClose) && !isRungPct(S.tClose) ? meaning('bar', { pct: +S.tClose }) : '',
-      inner: '<span class="setrow2">' + num(S, 'tClose', 'At the end', 50, 99, '%') + '</span>',
-    });
+    })).join('');
   // 🪜's, inside *Rising*: the same three percents read as a starting bar, and
   // a rung is dimmed where it would not actually start below the close — a
   // ramp that starts at its own ceiling is not a ramp. The close is the
@@ -6284,8 +6290,10 @@
       // alone, in the clause voice (Q1109; STYLE §3 — third person, about
       // the document)
       return '<div class="choice" role="radiogroup">' +
-        opt(o, 'hatPick', 'member', 'The Founder is a member — drafting, voting, counting towards quorum and answering the founding questions like anybody.', '', '', started) +
-        opt(o, 'hatPick', 'clerk', 'The Founder only runs the document — no ✏️s, no votes, counting towards nothing, with nothing to answer. A clerk can stay unnamed.', '', '', started) +
+        // the consequences cut, the fact kept (Ed's card review, 2026-09-02);
+        // *a clerk can stay unnamed* survives on ✋'s clerk branch alone
+        opt(o, 'hatPick', 'member', 'The Founder is part of the membership.', '', '', started) +
+        opt(o, 'hatPick', 'clerk', 'The Founder is not part of the membership.', '', '', started) +
         '</div>' +
         (started ? '<p class="setnote"><b>Settled.</b> Now that people are voting, the Founder joins the same way as anybody else.</p>' : '');
     },
@@ -6299,7 +6307,8 @@
       // `ctlWord` (T46): a shape's title names a *kind of document* and sets
       // twelve clauses at once — it is not itself one of them
       M.SHAPES.map((r) => opt(S, 'docShape', r.name, ctlWord(esc(r.title)), esc(r.say))).join('') +
-      opt(S, 'docShape', 'custom', ctlWord('Custom'), 'Decide everything yourself — every rule is a card.') +
+      // *— every rule is a card* cut (Ed's card review, 2026-09-02)
+      opt(S, 'docShape', 'custom', ctlWord('Custom'), 'Decide everything yourself.') +
       '</div>',
     title: () =>
       '<div class="lanebox"><div class="lp editlane titlelane' + (titlePending() ? '' : ' blank') + '"' +
@@ -6477,12 +6486,14 @@
       theyDecide('ending') +
       // under a shaped document that did not set ⏰ (a meeting, a conference)
       // the rung grows chips in the shape's unit above the field (entry 166,
-      // F6: picking a chip fills the rung's own field); the field stays
-      // `ctlWord` (T46) — *At a set time* names the field under it; the clause
-      // is `ENDING_RULE`'s, which cannot be written until the date is
-      opt(S, 'ending', 'ends', ctlWord('At a set time'), '',
-        endChipsHtml() +
-        '<span class="fld"><label>Ends</label><input type="datetime-local" data-txt="endsAt" value="' + S.endsAt + '"></span>') +
+      // F6: picking a chip fills the rung's own field). **The picker stands
+      // inside the sentence** (Ed's card review 2026-09-02, Q1137's pattern):
+      // the block states the rule with the date where its number goes, so
+      // *At a set time* retired with the stacked field.
+      opt(S, 'ending', 'ends',
+        'No more changes to the document may be made after ' +
+        '<input class="num numin datein" type="datetime-local" data-txt="endsAt" value="' + S.endsAt + '">.',
+        '', endChipsHtml()) +
       opt(S, 'ending', 'perpetual', ENDING_NEVER) +
       '</div>',
     bar: () =>
@@ -6491,7 +6502,7 @@
       '<div class="choice" role="radiogroup">' +
       theyDecide('bar') +
       barRungs() +
-      '</div>' + ceilingNote(E(), 99),
+      '</div>',
     pace: () =>
       '<div class="choice" role="radiogroup">' +
       // **Fixed first** (entry 167, rule 4): it is the more demanding shape —
@@ -6587,17 +6598,17 @@
     lapse: () =>
       '<div class="choice" role="radiogroup">' +
       theyDecide('lapse') +
-      // **Most-protective-first** (entry 167, rule 4): *never* is what the
-      // document takes — the longest spell of all — so it is topmost, as
-      // 👁️ and 🪪 already read, and *They lapse* follows it. Its old `exp`
-      // (*After a gap you choose.*) said only that the field below is a
-      // field; what it means is now the `.meaning` under that field.
-      opt(S, 'lapse', 'never', meaning('lapse', { afterMs: null })) +
-      // `ctlWord` (T46): *They lapse* is the rung's own two words — `LAPSE_RULE`
-      // cannot state the clause until the field beneath carries a number
-      opt(S, 'lapse', 'days', ctlWord('They lapse'), '',
-        '<span class="setrow2">' + num(S, 'lapseDays', 'Days without logging in', 7, 365) + '</span>' +
+      // **The card leads with lapsing** (Ed, 2026-09-02, Q1149 — the options
+      // swap, the sentences stand as he wrote them; display order is not
+      // aggregation order, so the consent direction is untouched). The day
+      // count stands inside the clause (Q1137's pattern), and typing into it
+      // still chooses the rung (F6).
+      opt(S, 'lapse', 'days',
+        'After ' + numIn(S, 'lapseDays', 7, 365) +
+        ' days, inactive members lapse and automatically abstain from votes.', '',
         meanLine('lapse', isNum(S.lapseDays) ? { afterMs: +S.lapseDays * 86400000 } : null)) +
+      opt(S, 'lapse', 'never', LAPSE_RULE('never'), '',
+        meanLine('lapse', { afterMs: null })) +
       '</div>',
     removal: () =>
       '<div class="choice" role="radiogroup">' +

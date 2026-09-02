@@ -1271,8 +1271,12 @@ window.SETUP = (function () {
      markup with no handler and no state, so the 4s poll re-rendering the card
      wholesale costs it nothing, and an anchor is a real control to the
      dead-click nudge, which is structural. */
+  // Ed's own sentences (card review 2026-09-02, Q1156 — T15 amended for this
+  // note alone); the link to /pairwise is load-bearing and stays
   const methodNote = () =>
-    '<p class="methodnote">Uses the Bradley–Terry method to allow for a decision with few votes — ' +
+    '<p class="methodnote">docs.vote uses the Bradley–Terry–Davidson voting method to decide ' +
+    'whether a proposal ✏️ passes. It uses probability to compensate for when only a small ' +
+    'fraction of the membership vote — ' +
     '<a href="/pairwise" target="_blank" rel="noopener">read more</a>.</p>';
 
   /* **What choosing this would do, in this room** (entry 167). One line, one
@@ -1306,50 +1310,26 @@ window.SETUP = (function () {
     '<p class="meaning" data-meaning="' + esc(key) + '">' +
     esc((value && window.CONSTITUTION.meaningOf(key, value, room || { e: 1 })) || '') + '</p>';
 
-  const roomOf = (E) => window.CONSTITUTION.roomPhrase(E);
-  const ceilingNote = (E, max) => {
-    const pct = window.CONSTITUTION.barCeilingPct(E);
-    if (pct >= max) return '';
-    return '<p class="ceilingnote">A membership of ' + roomOf(E) + ' that agrees without exception can be ' +
-      pct + '% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.</p>';
-  };
+  // `ceilingNote` deleted (Ed, 2026-09-02, Q1159, reversing Q840's note):
+  // the ceiling lines go and nothing replaces them anywhere — /pairwise
+  // carries the account. Q840's mechanism finding is untouched
+  // (`barCeilingPct` and threshold.test.ts stand).
 
-  /* 🌡️'s blind answer, as a ladder (entry 165).
-
-     **`'own'` is a rung, not an answer.** Choosing *A number of my own* is
-     choosing where to answer, and the page's `filled()` refuses it exactly as
-     it refuses an untouched control: the ✓ stays dark until a number is in the
-     box. It is the same two-act rule the whole ceremony keeps (K26) — touching
-     a control is not answering with it.
-
-     The meaning under each rung is read live from the room as it stands, like
-     `ceilingNote` above and for the same reason: a sentence about a room of
-     five stops being true when a sixth arrives, and naming the room in the
+  /* 🌡️'s blind answer, as a ladder (entry 165). The meaning under each rung
+     is read live from the room as it stands: a sentence about a room of five
+     stops being true when a sixth arrives, and naming the room in the
      sentence is what lets the reader see that it moved. */
-  const rungPct = (v) => window.CONSTITUTION.BAR_RUNGS.some((r) => r.pct === +v);
-  const ownBar = (v) => v === 'own' || (typeof v === 'number' && !rungPct(v));
   const barMeaning = (pct, room) =>
     window.CONSTITUTION.meaningOf('bar', { pct: +pct }, room) || '';
   const pctLabel = (label, pct) => esc(label) + '<span class="pct">' + pct + '%</span>';
+  // **Exactly three rungs, and no free-number block** (Ed, 2026-09-02, Q1158,
+  // reversing Q1104 (b) for 🌡️ alone — the pattern survives on 🪜, 👥 and
+  // ⏱️). The `'own'` rung, its box and its `data-ansnum` hook are gone.
   const barLadder = (A, room) => ladder(A, 'bar',
     window.CONSTITUTION.BAR_RUNGS.map((r) => ({
       // the rung's block text is the rule as it would stand (Q1104 (b))
       v: r.pct, t: pctLabel(r.sentence, r.pct), e: barMeaning(r.pct, room),
-    })),
-    // **The box is rendered only inside the rung that is chosen**, rather than
-    // rendered always and hidden by `.pick > .inner` the way `opt`'s fields
-    // are. A blind answer is the one place that distinction is load-bearing: a
-    // number field standing in the DOM under an unchosen rung is a value the
-    // page is holding for a question the member has not said they will answer
-    // that way, and every harness that reads the card would find it.
-    ansRow(ownBar(A.bar), 'bar', 'own', ctlWord(esc(window.CONSTITUTION.OWN_RUNG_LABEL)), '', '',
-      !ownBar(A.bar) ? '' :
-        '<span class="fld"><span class="numrow">' +
-        '<input class="num" type="number" data-ansnum="bar" min="50" max="99"' +
-        (typeof A.bar === 'number' ? ' value="' + A.bar + '"' : '') + '>' +
-        '<span class="setnote" style="margin:0">%</span></span></span>' +
-        '<span class="exp" data-meaning="bar">' +
-        (typeof A.bar === 'number' ? esc(barMeaning(A.bar, room)) : '') + '</span>'));
+    })));
 
   /* One body per delegable question — the copy a member answers against,
      identical on both surfaces because it is the same question.
@@ -1384,7 +1364,6 @@ window.SETUP = (function () {
       // (T5, Q620) — and the same `.above` dimming as 👁️, so *the most I will
       // accept* still reads as a ladder of what you are refusing.
       barLadder(A, room || { e: E }) +
-      ceilingNote(E, 99) +
       methodNote() +
       '<p class="blindnote">Nobody sees your answer. The document takes the <b>highest</b> given.</p>',
     authorship: (A) =>
@@ -1699,5 +1678,5 @@ window.SETUP = (function () {
     FACE_TONES, faceToneRow, faceToned, setFaceTone,
     setFaceTaken, faceTakenBy, faceBtn, emojiPicker,
     motionBody, motionReopen, routeFor, motionCommitHtml,
-    slider, syncSlider, ladder, ANSWER, BLINDNOTE, ceilingNote, methodNote, meaningLine, listOf, gateBody, wirePicDrop, MAILS, renderMailModal, birthPass };
+    slider, syncSlider, ladder, ANSWER, BLINDNOTE, methodNote, meaningLine, listOf, gateBody, wirePicDrop, MAILS, renderMailModal, birthPass };
 })();

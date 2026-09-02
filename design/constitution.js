@@ -3571,20 +3571,23 @@ var CONSTITUTION = (() => {
     // stated beside it); `label` survives as the rung's short name — the
     // distribution strip's word, and 🪜's starting rungs, where a sentence
     // about *passing* would misstate a bar that only opens the vote.
+    // the sentences are Ed's own (card review 2026-09-02, Q1156/Q1157: a share
+    // of voters is the deliberate simplification — the precise account lives at
+    // /pairwise, which `methodNote` links)
     {
       pct: 90,
       label: "Nearly everyone",
-      sentence: "Nearly everyone must vote for a change for it to pass"
+      sentence: "For a proposal ✏️ to pass, nearly all members that voted on it must prefer it to the alternatives"
     },
     {
       pct: 80,
       label: "Broad agreement",
-      sentence: "Most of the membership must vote for a change for it to pass"
+      sentence: "For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives"
     },
     {
       pct: 60,
       label: "A bare majority",
-      sentence: "A bare majority voting for a change is enough for it to pass"
+      sentence: "For a proposal ✏️ to pass, a majority of the membership that voted must prefer it to the alternatives"
     }
   ];
   var OWN_RUNG_LABEL = "A number of my own";
@@ -3610,10 +3613,7 @@ var CONSTITUTION = (() => {
   function barMeaning(pct, room) {
     const w = winsClause(room.e, pct);
     if (w === void 0) return null;
-    if (w === null) {
-      return fit("In a membership of " + roomOf(room.e) + ", nothing can pass at " + Math.floor(pct) + "% until more members arrive.");
-    }
-    if (w.n === 1) return fit("In a membership of one, the one vote must be for it.");
+    if (w === null || w.n === 1) return null;
     if (w.k === w.n) return fit("In a membership of " + w.n + ", all " + w.n + " must vote for it by the end.");
     return fit("In a membership of " + w.n + ", " + w.k + " of " + w.n + " must vote for it by the end.");
   }
