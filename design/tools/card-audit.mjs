@@ -49,6 +49,10 @@ const AS_JSON = process.argv.includes('--json');
 const VIEWPORT = { width: +arg('width', 1600), height: +arg('height', 1000) };
 const OUT = arg('out', join(DESIGN, 'tools', 'card-audit.json'));
 const BASELINE = arg('baseline', null);
+/** where to keep the specimens the card sheet is built from; off when absent */
+const SPECIMENS = arg('specimens', null);
+/** how big a box has to be before a specimen flattens it; 0 keeps the default */
+const HEAVY = +arg('heavy', 0);
 const ALL_WALKS = ['founding', 'answers', 'delegated', 'settled', 'outsiders', 'charter', 'closed'];
 const WALKS = arg('walk', ALL_WALKS.join(',')).split(',').filter(Boolean);
 // a misspelt walk otherwise runs nothing, finds nothing and exits 0 — which is
@@ -417,7 +421,79 @@ const IN_PAGE = () => {
       .map((n) => n.textContent).join('').replace(/\s+/g, ' ').trim() || null;
   };
 
+  /* --- the specimen, for the sheet --------------------------------------- */
+
+  /**
+   * **A specimen is the page, pruned to the boxes that position this card.**
+   * The sheet's promise is that what you are looking at is draft's own markup
+   * at its own geometry rather than a redrawing, so the card and its rail
+   * entry are carried across untouched, with every ancestor they hang from.
+   * What is *not* the specimen is flattened: a heavy block box outside it
+   * keeps its tag, its classes and its measured size and loses its children,
+   * because the only thing it contributes to the card is the space it takes.
+   *
+   * Two rules make the flattening geometry-neutral, and the sheet's own
+   * verify pass proves it card by card rather than taking it on trust.
+   * `box-sizing` is forced, since a measured rect is a border box and the
+   * stub might be styled content-box; and nothing inside a marked element is
+   * ever stubbed, however heavy — the 🖼️ picker draws the whole of Unicode
+   * and is still part of the card it is on.
+   */
+  // chars of innerHTML worth flattening; `--heavy=` raises it, and a number
+  // no page can reach is the control that says whether pruning moved anything
+  const HEAVY = window.__CA_HEAVY || 600;
+  const BLOCKISH = /^(block|flow-root|flex|grid|list-item|table|table-row-group|table-row|table-cell)$/;
+  const specimen = (card, key) => {
+    const rail = document.querySelector('#rail .qitem[data-q="' + CSS.escape(key) + '"]');
+    const marks = [[card, 'card'], [rail, 'rail']].filter((m) => m[0]);
+    marks.forEach((m) => m[0].setAttribute('data-specimen', m[1]));
+    const keep = new Set();
+    marks.forEach((m) => { for (let n = m[0]; n; n = n.parentElement) keep.add(n); });
+    const inside = (n) => marks.some((m) => m[0].contains(n));
+    const live = document.documentElement;
+    const clone = live.cloneNode(true);
+    const prune = (l, c) => {
+      if (!l || !c || l.nodeType !== 1 || c.nodeType !== 1) return;
+      if (!keep.has(l) && !inside(l) && c.innerHTML.length > HEAVY) {
+        const s = getComputedStyle(l);
+        if (BLOCKISH.test(s.display)) {
+          const r = l.getBoundingClientRect();
+          c.textContent = '';
+          c.setAttribute('style', (c.getAttribute('style') || '') + ';box-sizing:border-box;width:'
+            + R2(r.width) + 'px;height:' + R2(r.height) + 'px;');
+          return;
+        }
+      }
+      const lk = l.children; const ck = c.children;
+      for (let i = 0; i < lk.length && i < ck.length; i++) prune(lk[i], ck[i]);
+    };
+    prune(live, clone);
+    clone.querySelectorAll('script, link[rel="stylesheet"], template').forEach((n) => n.remove());
+    const box = (el) => {
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return { w: Math.ceil(r.width), h: Math.ceil(r.height) };
+    };
+    /**
+     * **The page's own stylesheet travels with the specimen.** `system.css`
+     * and `setup.css` are two of three: session-view carries a third inline in
+     * its head, and a mount given only the two files draws the card with a
+     * slice of its rules missing — a few pixels of height on anything with a
+     * field in it, which is exactly the kind of drift a sheet like this exists
+     * to catch and would instead have been reporting as a defect.
+     */
+    const out = {
+      html: clone.querySelector('body').outerHTML,
+      css: [...document.querySelectorAll('style')].map((s) => s.textContent).join('\n'),
+      card: box(card), rail: box(rail),
+    };
+    marks.forEach((m) => m[0].removeAttribute('data-specimen'));
+    return out;
+  };
+
   window.__CA = {
+    tokens, rect, txt,
+    specimen,
     tokens, rect, txt,
     /** every card the surface is currently offering, by key, wherever it stands */
     offered: () => {
@@ -442,6 +518,9 @@ const IN_PAGE = () => {
       const travel = (a, b) => (a && b ? [Math.round((b[0] - a[0]) * 100) / 100, Math.round((b[1] - a[1]) * 100) / 100] : null);
       return {
         key,
+        // off unless --specimens asked for it: the payload is the page, and
+        // 270 of them would drown the numbers this instrument exists for
+        ...(window.__CA_SPEC ? { spec: specimen(card, key) } : {}),
         strings: strings(card),
         buttons: buttons(card),
         radios: radios(card),
@@ -1314,6 +1393,8 @@ async function main() {
     viewport: VIEWPORT, deviceScaleFactor: 1, locale: 'en-GB', timezoneId: 'Europe/London',
   });
   await context.addInitScript(IN_PAGE);
+  if (SPECIMENS) await context.addInitScript(() => { window.__CA_SPEC = true; });
+  if (SPECIMENS && HEAVY) await context.addInitScript((h) => { window.__CA_HEAVY = h; }, HEAVY);
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push('page error: ' + String(e)));
@@ -1397,6 +1478,29 @@ async function main() {
     const seen = new Set([...(baseline.rollup || []), ...(baseline.cross || [])].map(keyOf));
     for (const f of [...rollup, ...cross]) f.stable = seen.has(keyOf(f));
   }
+  /**
+   * The specimens leave the payload before it is written: they are the page,
+   * the numbers are what the instrument is for, and one file holding both
+   * would be a hundred megabytes of markup with the findings buried in it.
+   */
+  const specs = [];
+  // the page's inline CSS is the same string on every card of a surface, so it
+  // is kept once and pointed at — 270 copies of it would be most of the file
+  const sheets = [];
+  for (const c of cards) {
+    if (!c.spec) continue;
+    const { css, ...rest } = c.spec;
+    let sheet = sheets.indexOf(css);
+    if (sheet < 0) { sheet = sheets.length; sheets.push(css); }
+    specs.push({ walk: c.walk, key: c.key, glyph: c.tabGlyph, head: c.strings && c.strings.head, sheet, ...rest });
+    delete c.spec;
+  }
+  if (SPECIMENS) {
+    await writeFile(SPECIMENS, JSON.stringify({
+      meta: { viewport: VIEWPORT, walks: WALKS, n: specs.length }, sheets, specs,
+    }));
+  }
+
   const payload = {
     meta: { viewport: VIEWPORT, walks: WALKS, cards: cards.length, seconds: Math.round((Date.now() - t0) / 100) / 10 },
     tokens: tok, cards, switches, rollup, cross, errors,
@@ -1425,6 +1529,7 @@ async function main() {
   }
   if (errors.length) { console.log('\nerrors:'); for (const e of errors.slice(0, 20)) console.log('  ' + e); }
   console.log('\npayload → ' + OUT);
+  if (SPECIMENS) console.log('specimens → ' + SPECIMENS + ' (' + specs.length + ')');
 }
 
 main().catch((e) => { console.error(e); process.exit(2); });
