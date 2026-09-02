@@ -567,11 +567,18 @@ window.SETUP = (function () {
     // exactly when keeping the clause is one of the answers.
     const oo = o || {};
     const rule = ctx.headFor && ctx.headFor(c);
+    // **An option-block settings card carries no title head** (Ed's card
+    // review, 2026-09-02, Q1151; SURFACE F15): since CP1 its blocks state the
+    // rule completely, so the question the head restated is gone — the name
+    // survives on the rail entry, the tab tooltip and the record. The head
+    // element itself stays: it is what carries the tab strip.
+    const noTitle = !rule && ctx.noTitleHead && ctx.noTitleHead(c);
     return '<div class="sugg setupcard" role="tabpanel" data-setupcard="' + c.k + '">' +
       CB.clauseHeadHtml(oo.s || c, {
         label: null, wash: false,
         marks: stripHtml(siblings || [c], ctx),
         html: (rule ? '<div class="headrule">' + rule + '</div>'
+            : noTitle ? ''
             : '<div class="headtitle">' + esc(c.t) + '</div>') +
           (ctx.clauseFor ? (ctx.clauseFor(c) || '') : ''),
         v: oo.v, edit: false,
@@ -979,18 +986,18 @@ window.SETUP = (function () {
   const motionCommitHtml = (c, dto, heldOut) => {
     const constitutional = routeFor(c, dto) === 'constitutional';
     const clickGesture = !!(window.SESSION && window.SESSION.gesture === 'click');
+    // **the commit wears its glyph alone** (Ed, 2026-09-02, Q1155/Q1171,
+    // STYLE T47): the act's words move to the title, where the price and the
+    // gesture were already said
     return constitutional
-      ? '<button class="btn btn-approve emojibtn holdmotion"' +
+      ? '<button class="btn btn-approve glyphbtn emojibtn holdmotion"' +
         (!dto || heldOut ? ' disabled' : '') +
         ' title="' + (heldOut ? 'One 🏛️ each — withdraw yours first'
-          : clickGesture ? 'A full one-second assembly' : 'A full one-second hold') + '"' +
-        ' data-holdmotion="' + c.k + '">🏛️ ' +
-        (clickGesture ? 'Ask all members' : 'Hold to ask everyone') + '</button>'
-      // ✏️ on the ordinary commit, to match the 🏛️ on the other route (Ed,
-      // 2026-08-19): the two commits are the two routes, and a bare word
-      // beside a glyphed hold said only one of them out loud
-      : '<button class="btn btn-approve emojibtn"' + (dto ? '' : ' disabled') +
-        ' data-putmotion="1">✏️ Propose</button>';
+          : clickGesture ? 'Ask all members — a full one-second assembly'
+          : 'Ask all members — a full one-second hold') + '"' +
+        ' data-holdmotion="' + c.k + '">🏛️</button>'
+      : '<button class="btn btn-approve glyphbtn emojibtn"' + (dto ? '' : ' disabled') +
+        ' data-putmotion="1" title="Propose it">✏️</button>';
   };
 
   /* ---- the consent controls, shared -----------------------------------------

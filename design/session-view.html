@@ -5197,6 +5197,30 @@
     shape: 'what type of document this is',
     text: 'the text the document starts from',
   };
+  // **The delegation sentence, one per setting** (Ed's card review, 2026-09-02,
+  // Q1150–Q1152): the generic *The Founder is letting the membership decide
+  // this rule themselves.* becomes the question being decided, named — one
+  // table, because the sentence prints at two sites (the delegated clause and
+  // the delegate rung) and a hand-written string at each would drift. Ed's
+  // own sentences, all plural (Q1150), stored without the final stop so the
+  // clause site can carry its count parenthetical.
+  const DECIDING = {
+    chamber: 'The membership are deciding if the document can be seen by anyone with the link',
+    admission: 'The membership are deciding how new members may join',
+    applications: 'The membership are deciding whether anyone with the link may apply to become a member',
+    lapse: 'The membership are deciding whether inactive members lapse',
+    removal: 'The membership are deciding how a member is removed',
+    rate: 'The membership are deciding how often members should be able to make proposals',
+    ending: 'The membership are deciding when changes may no longer be made to the document',
+    bar: 'The membership are deciding what proportion of votes a proposal ✏️ needs to pass',
+    quorum: 'The membership are deciding how many members must vote on a proposal ✏️ before it can pass',
+    authorship: 'The membership are deciding if anonymous proposals are allowed',
+    judgments: 'The membership are deciding if votes are revealed',
+  };
+  const decidingOf = (k) => DECIDING[k] || 'The membership are deciding this rule';
+  // the thirteen cards of Q1151 — every option-block settings card, 🎩 included
+  const OPTHEADLESS = new Set(['chamber', 'admission', 'applications', 'hat',
+    'lapse', 'removal', 'rate', 'ending', 'bar', 'quorum', 'authorship', 'judgments']);
   // ---- 🧭 the shape (entry 166) — read from the bundle's table, never a
   // number of the page's own ----------------------------------------------
   // the shape as a noun phrase, for the provenance and the 🍾 line
@@ -5499,7 +5523,7 @@
           // the interim visibility rule stays stated (Q618 (a)) — a
           // stranger reading the door is reading this rule
           ? 'Until the members decide, only members can see the document'
-          : 'The Founder is letting the membership decide this rule themselves') +
+          : decidingOf(c.k)) +
           (isStranger() ? ' — the members are answering.'
             : roomExists() ? ' (' + Math.min(c.in || 0, E()) + ' of ' + E() + ' have answered so far).'
             : ' — waiting for members.');
@@ -5566,6 +5590,12 @@
       if (composerOn(c)) return esc(standsOf(c.k));
       return null;
     },
+    // **the thirteen option-block settings cards carry no title head**
+    // (Q1151, F15): the founder's own setting card, whose blocks state the
+    // rule — never a member's answer card, a record, a power tab, a door or
+    // a gate, which keep their titles
+    noTitleHead: (c) => !c.power && !c.record && !c.isGate && !c.ansFor && !c.door &&
+      c.kind !== 'personal' && OPTHEADLESS.has(c.k),
     // reserved = held by the founder: the room may pass a change, and it
     // then goes to the founder as a 👑 question (accept or reject)
     reserved: (c) => !c.power && !c.record && !c.isGate && !c.ansFor && c.kind !== 'personal' && !membersHold(c),
@@ -6031,14 +6061,14 @@
     // key as the values above it, so it is part of that question rather than a
     // second one. Two elements each claiming the role made two groups out of
     // one decision, which the value group's own label already covers.
-    // …and since Q1112 (b) the rung says the clause the delegation sets —
-    // Ed's own sentence for the delegated state (T43's item 7), minus the
-    // count, which is the live parenthetical the clause carries and not part
-    // of what you are choosing.
+    // …and since the card review (Q1150–Q1152) the rung says the question the
+    // delegation hands over — `DECIDING`'s per-setting sentence — and carries
+    // **no explanation of the blind collection**: the *Not now — every member
+    // states…* frame and the per-setting aggregation tail are gone (Q1152).
+    // Blindness is still said to the person it protects, on the member's own
+    // answer card (`BLINDNOTE`).
     return '<div class="choice delegrung">' +
-      opt(S, dk, 'roster', 'The Founder is letting the membership decide this rule themselves.',
-        'Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. ' +
-        (c.rule ? String(c.rule).replace(/<[/]?b>/g, '') : '')) +
+      opt(S, dk, 'roster', decidingOf(c.k) + '.', '') +
       '</div>';
   };
   // **One fact, one home** (Q763, STYLE T36). How blind answers aggregate had
@@ -6771,8 +6801,8 @@
         return cardHtml(c, ctx, beginBody(c, rd),
           constituted() ? binBtn()
             : binBtn() +
-              '<button class="btn btn-approve emojibtn btn-pen" data-confirm="1" data-begin="1"' + (can ? '' : ' disabled') +
-              ' title="' + (can ? 'Hold to begin the document' : 'The document cannot begin yet') + '">🍾 Begin</button>',
+              '<button class="btn btn-approve glyphbtn emojibtn btn-pen" data-confirm="1" data-begin="1"' + (can ? '' : ' disabled') +
+              ' title="' + (can ? 'Begin the document — a full one-second hold' : 'The document cannot begin yet') + '">🍾</button>',
           g.cards);
       }
       // **The admit judgment, on its own card** (entry 96): the applicant at
@@ -6940,11 +6970,13 @@
           // Both wear their power's glyph and both exercise it, which is what
           // T44 asks of a glyphed commit.
           (amFounder()
-            ? binBtn() +
+            // the pair groups at the far right, the veto immediately left of
+            // the pen (Ed, 2026-09-02, Q1154)
+            ? binBtn() + '<span class="rightpair">' +
               '<button class="btn glyphbtn emojibtn" data-crownq="reject"' +
               ' title="Refuse — the Founder Veto holds it, and what stands stands">🛡️</button>' +
               '<button class="btn btn-approve glyphbtn emojibtn" data-crownq="accept"' +
-              ' title="Accept — a Founder Action passes it now">✒️</button>'
+              ' title="Accept — a Founder Action passes it now">✒️</button></span>'
             : binBtn()), g.cards);
       }
       // a live motion takes the route its own value asks for (329a)
@@ -7182,8 +7214,9 @@
           ' data-confirm="1" title="Save">' + TICK + '</button>'
         : c.k === 'title'
         // the title's lane rides the snapshot like every other provisional
-        // value now, so this card keeps the shared bin (2026-08-21)
-        ? binBtn() +
+        // value now, so this card keeps the shared bin (2026-08-21); the pen
+        // and the route's commit group at the far right (Q1154)
+        ? binBtn() + '<span class="rightpair">' +
           '<button class="btn btn-approve glyphbtn emojibtn"' +
           // the lock, not the wallet (entry 62): 🪶 at the birth, and after it
           // the pen **on the title**. The tooltip still asks the wallet, since
@@ -7196,7 +7229,7 @@
           // (entry 161): the Founder's own act stays where their eye already
           // goes and putting it to the membership is the deliberate second
           // reach, so this is **after** the pen and never in front of it.
-          founderCommit(c)
+          founderCommit(c) + '</span>'
         // 📧 in flight: the act is resending, and it spends nothing, so it is
         // a click rather than a hold (the ladder is for what comes out of a
         // wallet). The first send is still the 🪶 commit below.
@@ -7252,11 +7285,12 @@
         // (📄's OK stood here until backlog 204 — Q744's no-bin and Q798's OK;
         // the text is no card body now and its commit is the proposal-row's,
         // so nothing special-cases it)
-        : (binBtn() +
+        : (binBtn() + '<span class="rightpair">' +
         // ✒️ is the founder's pen (Ed, 360): a set of a setting binds the
         // document. Q449 (Ed, 2026-08-20): an answer to a shared question
         // and a setting about yourself — your name, picture, email — bind
-        // nobody (§9.0c), so they commit with ✓, never the pen.
+        // nobody (§9.0c), so they commit with ✓, never the pen. The pen and
+        // the route's commit group at the far right (Q1154).
         '<button class="btn btn-approve glyphbtn' + (commitGlyph === TICK ? '' : ' emojibtn') + '"' +
         // the card decides the ✒️, the wallet decides the sentence (entry 62)
         (ready(c) && penOkFor(commitGlyph, c) ? '' : ' disabled') +
@@ -7267,7 +7301,7 @@
         // reaches this branch (its row keeps an inert ✒️), and a door's second
         // act belongs beside the door's own, in the body (Q1024, §9.1) — which
         // `BODY.remove` draws. Without this it was drawn twice.
-        (c.door ? '' : founderCommit(c)));
+        (c.door ? '' : founderCommit(c)) + '</span>');
       // the refusal line, under the body and beside the commit row that tried
       // (entry 62). The two doors draw it inside their own bodies already, so
       // they are excluded here rather than carrying it twice.
