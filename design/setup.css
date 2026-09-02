@@ -204,6 +204,13 @@
   /* the ⏰ date, inside its sentence the same way (card review 2026-09-02):
      a datetime needs more box than digits do */
   .pick .opttext .numin.datein { width: auto; max-width: 16rem; }
+  /* ⏱️'s unit dropdown is a word in its sentence too (Ed's QA, 2026-09-02
+     pm): a select inherits no font by default, so it is told to — the whole
+     `font`, not just the size — and takes only the box its word needs. */
+  select.dripunit, .pick .opttext .numin.dripunit { font: inherit; width: auto; }
+  /* 🪶's settled composer is a lane inside its sentence (Ed's QA, 2026-09-02
+     pm): the block-shaped editlane becomes a word-shaped one there */
+  .pick .opttext .titlelane { display: inline-block; min-width: 14rem; vertical-align: baseline; }
   .pick > .lanepick { margin-top: var(--s2); }
   /* a hairline separates adjacent blocks without boxing them — the same
      separator the power cards' `.propblock + .propblock` draws; the margin is

@@ -923,7 +923,7 @@
     const rows = removableRows();
     if (!rows.length) return '<p class="setnote">There is nobody to remove.</p>';
     return '<span class="fld"><select data-removewho="1" style="min-width:18rem">' +
-      '<option value=""' + (S.removeWho ? '' : ' selected') + '>Choose somebody…</option>' +
+      '<option value=""' + (S.removeWho ? '' : ' selected') + '>Choose somebody to remove…</option>' +
       rows.map((p) => '<option value="' + esc(p.mid) + '"' +
         (S.removeWho === p.mid ? ' selected' : '') + '>' +
         esc(p.n || p.e || 'Anonymous') + (p.in ? '' : ' — invited, not yet here') +
@@ -1612,16 +1612,19 @@
       set: (v) => { viewerRow()[key] = !!v; } });
   }
   const identityAnswered = (k) => (k === 'myname' ? S.nameSet : S.picSet);
-  // **Which block ✋ / 🖼️ stands on** (card review 2026-09-02, Q1164/Q1165):
-  // an explicit pick wins; else the value answers (a name, a picture's kind);
-  // else an *answered* blank is the chosen Anonymous, and an unanswered card
-  // stands on nothing — nothing is preselected (F6).
+  // **Which block ✋ / 🖼️ stands on** (card review 2026-09-02, Q1164/Q1165;
+  // status-quo-first per Ed's QA, 2026-09-02 pm): an explicit pick wins; a
+  // standing value puts the card on its own *keep* block — the status quo,
+  // which commits nothing; an *answered* blank is the chosen Anonymous; an
+  // unanswered card stands on nothing — nothing is preselected (F6). Typing
+  // into the composer picks it explicitly (the input handler's job now that
+  // a standing name derives to *keep*).
   const namePickNow = () => (S.namePick != null ? S.namePick
-    : (S.myname || '').trim() ? 'name' : (S.nameSet ? 'anon' : null));
+    : (S.myname || '').trim() ? 'keep' : (S.nameSet ? 'anon' : null));
   const picPickNow = () => (S.picPick != null ? S.picPick
-    : S.mypic ? (S.mypic[0] === 'u' ? 'upload' : 'emoji') : (S.picSet ? 'anon' : null));
+    : S.mypic ? 'keep' : (S.picSet ? 'anon' : null));
   const appPicPickNow = () => (S.appPicPick != null ? S.appPicPick
-    : S.app && S.app.pic ? (S.app.pic[0] === 'u' ? 'upload' : 'emoji') : null);
+    : S.app && S.app.pic ? 'keep' : null);
   Object.defineProperty(S, 'myAns', { get: () => (viewerRow().ans || (viewerRow().ans = {})) });
   Object.defineProperty(S, 'okd', { get: () => (viewerRow().okd || (viewerRow().okd = new Set())) });
   // a motion draft and your consent answers are yours, not the room's
@@ -1705,7 +1708,10 @@
     // Q534c: the address the title actually wanted, and where this one
     // landed — naming both is the whole point, since the alternative is the
     // machine choosing an address and not mentioning it
-    : S.slugTaken ? '<p class="setnote">Suggested from the title — <b>' + docAddr(esc(S.slugTaken)) + '</b> is taken, so this one is <b>' + docAddr(esc(S.slug)) + '</b>.</p>' : '');
+    // …and on a settled card the machine's pick is history, so the prefix
+    // goes there (Ed's QA, 2026-09-02 pm); the birth keeps naming both
+    : S.slugTaken ? '<p class="setnote">' + (cs ? '' : 'Suggested from the title — ') +
+      '<b>' + docAddr(esc(S.slugTaken)) + '</b> is taken, so this one is <b>' + docAddr(esc(S.slug)) + '</b>.</p>' : '');
   const refreshSlugNote = () => {
     const n = document.querySelector('[data-slugnote]');
     if (n) n.innerHTML = slugNoteHtml();
@@ -4492,12 +4498,14 @@
   // where a member's would be sealed.
   const founderSpeakerLane = (v) => {
     const f = founderInfo();
-    return '<div class="speaker founderspoke">' + avHtml(f) +
+    // raised like every other rationale composer (Ed's QA, 2026-09-02 pm):
+    // the lanebox is what whyLane wraps a member's reason in
+    return '<div class="lanebox whylane"><div class="speaker founderspoke">' + avHtml(f) +
       '<div class="spksaid"><span class="who">' + esc((f.n || '').trim() || 'The Founder') +
       ' <span title="The founder’s own hand — a Founder Action ✒️, not a proposal">👑</span></span>' +
       '<div class="said edit-why' + (v ? '' : ' blank') + '" contenteditable="plaintext-only"' +
       ' spellcheck="false" data-setwhy="1"' +
-      ' data-placeholder="I am changing this because…">' + esc(v) + '</div></div></div>';
+      ' data-placeholder="I am changing this because…">' + esc(v) + '</div></div></div></div>';
   };
   const mvalTyped = (k, disp) => {
     if (card(k) && card(k).door) return null; // membership sentences parse at commit
@@ -4935,7 +4943,7 @@
       if (!rows.length) return '<p class="setnote">There is nobody to remove.</p>';
       const val = (p) => (p.n || p.e) + ' leaves the membership';
       return '<span class="fld"><select data-mval-sel="1" style="min-width:18rem">' +
-        '<option value=""' + (d.to ? '' : ' selected') + '>Choose somebody…</option>' +
+        '<option value=""' + (d.to ? '' : ' selected') + '>Choose somebody to remove…</option>' +
         rows.map((p) => '<option value="' + esc(val(p)) + '"' +
           (d.to === val(p) ? ' selected' : '') + '>' +
           esc(p.n || p.e || 'Anonymous') + (p.in ? '' : ' — invited, not yet here') +
@@ -5486,18 +5494,12 @@
     const said = [founderMay(parts), founderMayNotYet(going)].filter(Boolean);
     return said.length ? ' ' + said.join(' ') : '';
   };
-  // **A settled clause is the rule, then the deviation** (Ed's QA, entry 198):
-  // the rule and its provenance make line one, and what the Founder may do
-  // about it stands on the line beneath, so a reader who wants the rule alone
-  // stops at the end of the first line. The break is a newline character,
-  // never a `<br>`: this string is plain text and both consumers escape it,
-  // so the markup is made after escaping (`breakLines`). `holderLine`'s own
-  // leading space is kept **before** the break, which is what leaves
-  // `textContent` byte-identical and the frozen strings undisturbed.
-  const clauseText = (rule, k) => {
-    const h = holderLine(k);
-    return rule + shapedLine(k) + (h ? ' \n' + h.slice(1) : '');
-  };
+  // **The clause is the rule alone** (Ed's QA, 2026-09-02 pm, superseding
+  // entry 198's rule-then-deviation layout): *The Founder may amend this at
+  // will…* leaves the clause — that is the power tabs' fact, and the tabs
+  // stand on this very clause. `holderLine` survives for the birth's title
+  // paragraph, which explains the pen before there are tabs to do it.
+  const clauseText = (rule, k) => rule + shapedLine(k);
   // **Links in the constitution are real links** (Ed, 2026-08-19):
   // underlined, ink-coloured (.doclink), applied after escaping so a
   // sentence can never smuggle markup in. The `d/` is optional so a member's
@@ -5637,6 +5639,10 @@
         // alone — the composer branch keeps the price, which is what a
         // member composing needs
         if (c.k === 'invite' && doorDirect(c)) return doorPeople(c);
+        // ❌ heads with its people alone (Ed's QA, 2026-09-02 pm): the policy
+        // is 🥾's clause to state — *this is the place to remove, not where
+        // the removal policy is set*
+        if (c.k === 'remove') return doorPeople(c);
         const rule = settled(c) ? breakLines(linkify(esc(decisionLine(c))))
           : composerOn(c) ? esc(standsOf(c.k)) : '';
         return doorPeople(c) + (rule ? '<div class="doorrule">' + rule + '</div>' : '');
@@ -5684,9 +5690,12 @@
       (OPTHEADLESS.has(c.k) || (c.ansFor && OPTHEADLESS.has(c.ansFor))),
     // a settled option-block setting draws its rule as the first block
     // (Q1167 a) — same keys, same exclusions; an identity card never reaches
-    // it (no catalogue rule to draw), so the widened set is safe here too
+    // it (no catalogue rule to draw), so the widened set is safe here too.
+    // 🪶 joins once there is a document (Ed's QA, 2026-09-02 pm): the settled
+    // title is two options, the standing sentence on top, the composer's
+    // sentence beneath.
     blockHead: (c) => !c.power && !c.record && !c.isGate && !c.ansFor && !c.door &&
-      OPTHEADLESS.has(c.k),
+      (OPTHEADLESS.has(c.k) || (c.k === 'title' && !!cs)),
     // reserved = held by the founder: the room may pass a change, and it
     // then goes to the founder as a 👑 question (accept or reject)
     reserved: (c) => !c.power && !c.record && !c.isGate && !c.ansFor && c.kind !== 'personal' && !membersHold(c),
@@ -6397,10 +6406,17 @@
       // *— every rule is a card* cut (Ed's card review, 2026-09-02)
       opt(S, 'docShape', 'custom', ctlWord('Custom'), 'Decide everything yourself.') +
       '</div>',
-    title: () =>
-      '<div class="lanebox"><div class="lp editlane titlelane' + (titlePending() ? '' : ' blank') + '"' +
-      ' contenteditable="plaintext-only" spellcheck="false" data-titlelane="1"' +
-      ' data-ph="Give this document a title">' + esc(titlePending()) + '</div></div>',
+    // settled, the composer is the second option block, its lane inside the
+    // sentence (Ed's QA, 2026-09-02 pm; Q1137's inline pattern) — the birth
+    // keeps the big lane, the page's first act
+    title: () => (cs
+      ? '<div class="choice"><div class="pick"><span class="opttext">The document is titled ' +
+        '<span class="lp editlane titlelane' + (titlePending() ? '' : ' blank') + '"' +
+        ' contenteditable="plaintext-only" spellcheck="false" data-titlelane="1"' +
+        ' data-ph="A new title">' + esc(titlePending()) + '</span>.</span></div></div>'
+      : '<div class="lanebox"><div class="lp editlane titlelane' + (titlePending() ? '' : ' blank') + '"' +
+        ' contenteditable="plaintext-only" spellcheck="false" data-titlelane="1"' +
+        ' data-ph="Give this document a title">' + esc(titlePending()) + '</div></div>'),
     // Stripped to the field on Ed's word (2026-08-19): the unlocks line, the
     // suggested-from-the-title note, "what people paste to each other", the
     // label and the Copy button all went. The card is titled Link and holds a
@@ -6428,11 +6444,17 @@
       // **Said where you might change it, not where you set it** (Ed,
       // 2026-08-19): before the save nothing has been sent to anybody, so a
       // promise about old links is answering a worry nobody has yet.
-      (cs ? '<p class="setnote">Every link this document has ever had keeps working: changing it leaves a redirect behind, so an invitation somebody was sent weeks ago still opens the right document.</p>' : ''),
+      // one short promise since Ed's QA of 2026-09-02 pm — the redirect
+      // mechanics went with the rest of the explanatory copy
+      (cs ? '<p class="setnote">Previous links still work.</p>' : ''),
     myemail: () => (S.emailVerified
-      ? '<div class="lockline">' + TICK + '<span>Verified — <b>' + esc(S.myemail) + '</b> can get back in.</span></div>' +
-        '<span class="fld"><label>Change it</label><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" style="width:20rem"></span>' +
-        '<p class="setnote">Changing it starts verification again — the new address has to prove it works too.</p>'
+      // **The standing address is the first block** (Ed's QA, 2026-09-02 pm):
+      // the status quo on top wearing the chosen radio, a new address as the
+      // block beneath — typing into it is the change, exactly as before. The
+      // verification-restarts note is cut; the flow itself says it.
+      ? '<div class="choice"><div class="pick on"><span class="opttext">' + esc(S.myemail) + '</span>' +
+        chosenRadio('Chosen') + '</div>' +
+        '<div class="pick"><span class="opttext"><input type="email" data-txt="myemail" value="" placeholder="you@example.com" style="width:20rem"></span></div></div>'
       : S.emailSent
       // **The document says it was sent** (Ed, 2026-08-21): the clause reads
       // *The Founder is checking their email for a link*, so the card does
@@ -6497,10 +6519,9 @@
       '<div class="roster">' +
       '<textarea placeholder="name@example.com&#10;one address per line" data-emails="1">' + esc(S.inviteMany) + '</textarea>' +
       '</div>' +
-      doorErrHtml('invite') +
-      '<p class="setnote">' + arrived() + ' of ' + S.roster.length + ' have opened it so far. ' +
-      'Nobody has to be here for the document to exist, and anybody who arrives later ' +
-      'starts with the same ✏️s as everybody else.</p>'),
+      // the arrived-count sentence and its two reassurances are cut (Ed's QA,
+      // 2026-09-02 pm) — who has arrived is the membership list's to say
+      doorErrHtml('invite')),
     // **❌ with the pen is exile at will** (Ed, 2026-08-26): immediate, and
     // every answer the member was standing on leaves with them — the card
     // says so in the sentence, and the button is the whole of the act
@@ -6508,17 +6529,17 @@
     // dropdown of **members and invitees alike** — withdrawing an invitation
     // is a kind of removal — in place of the per-row *❌ Remove* list, which
     // put the same act on as many buttons as there were people.
+    // **The acts live on the commit row** (Ed's QA, 2026-09-02 pm): you
+    // choose the person, then press the commit that is the act — ✒️ removes
+    // at will, the route's commit proposes. The at-will explanation and the
+    // policy recap are cut: the policy is 🥾's clause to state, and this is
+    // the place a removal is *done*.
     remove: () => (directRemove()
-      ? '<p class="why">' + (constituted()
-          ? 'Removing a member is yours to do at will ✒️: they leave the moment you press, their standing answers go with them, and nobody else is asked.'
-          : 'Until the document begins, taking somebody off the list is yours alone — an invitation withdrawn is nobody else’s business yet.') +
-        '</p>' + removeSubjectPicker() +
-        '<div style="margin-top:var(--s2)"><button class="btn" data-exile="1"' +
-        (S.removeWho ? '' : ' disabled') + '>❌ Remove</button>' +
-        // beside the door's own act, as on ✉️ (entry 161, Q1024) — the row's
-        // ✒️ here is inert for a door and is not what this joins
-        founderCommit(card('remove')) + '</div>' +
+      ? (constituted() ? ''
+          : '<p class="why">Until the document begins, taking somebody off the list is yours alone — an invitation withdrawn is nobody else’s business yet.</p>') +
+        removeSubjectPicker() +
         doorErrHtml('remove')
+      // a member's card is unchanged by that QA — Ed reviewed the founder's
       : '<p class="why">' + ({
           consent: 'Removing a member is a proposal every member answers, including them — nobody leaves against their will.',
           assembly: 'Removing a member is a proposal every other member answers; they see it running.',
@@ -6999,8 +7020,11 @@
         // they already hold, and the press re-fires `pendingGrant`'s pencil
         // storm into a full wallet. A card that asks nothing commits nothing
         // (SURFACE §9.1, CP9).
+        // …and an acked gate keeps an OK that only closes (Ed's QA,
+        // 2026-09-02 pm, 1167 b's grammar): no ACK_KEYS entry, nothing
+        // tracked — the friendlier way out beside the bin.
         return cardHtml(c, ctx, grantProv(c) + gateBody(c) + grantNote(c),
-          acked(c.k) ? binBtn()
+          acked(c.k) ? binBtn() + '<button class="btn btn-approve okbtn" data-close="1">OK</button>'
             : binBtn() +
               '<button class="btn btn-approve okbtn"' +
               (c.open() ? '' : ' disabled') +
@@ -7288,7 +7312,18 @@
         // …and the same for a founder whose hand is off this setting (entry
         // 62): the body above is already the settled card, and a settled card
         // commits nothing. 🗑️ is the band's always-live close (Q613 (a)).
-        : ((!amFounder() || founderHandOff(c)) && c.own !== 'you' && !c.ansFor)
+        : (c.k === 'remove' && directRemove())
+        // **the acts are the row's** (Ed's QA, 2026-09-02 pm): choose the
+        // person in the body, then press the act — ✒️ removes on your word
+        // (the old ❌ Remove button, now the pen it always was), the route's
+        // commit beside it proposes instead. Q1154's order: the power
+        // immediately left of the route's commit.
+        ? binBtn() + '<span class="rightpair">' +
+          '<button class="btn btn-approve glyphbtn emojibtn" data-exile="1"' +
+          (S.removeWho ? '' : ' disabled') +
+          ' title="Remove them — your word removes">✒️</button>' +
+          founderCommit(card('remove')) + '</span>'
+      : ((!amFounder() || founderHandOff(c)) && c.own !== 'you' && !c.ansFor)
         ? (stateOf(c, ctx) === 'news'
           ? binBtn() +
             '<button class="btn btn-approve okbtn" data-ok="' + newsKey + '">OK</button>'
@@ -7347,8 +7382,10 @@
             // **CP9 (Q1106): locked at 🍾 for ever, so no commit at all** —
             // a permanently dark ✒️ promised a thaw that never comes; dark
             // means *not yet* (Y19), and 🎩 after the start is *never*.
-            // 🗑️ stays as the close.
-            if (cs && cs.constitutedAtT !== null) return binBtn();
+            // 🗑️ stays as the close, with 1167 b's close-only OK beside it
+            // (Ed's QA, 2026-09-02 pm).
+            if (cs && cs.constitutedAtT !== null) return binBtn() +
+              '<button class="btn btn-approve okbtn" data-close="1">OK</button>';
             const cur = S.seen.has('hat') ? (iDraft() ? 'member' : 'clerk') : null;
             const dirty = !!S.hatPick && S.hatPick !== cur;
             return binBtn() +
@@ -8069,7 +8106,11 @@
             return; }
           // committing is the act — and since Q1164 anonymity is the chosen
           // block, so a commit on the Anonymous block clears the value it
-          // sends whatever the field held
+          // sends whatever the field held. The *keep* block is the status quo
+          // (Ed's QA, 2026-09-02 pm): committing on it changes nothing and
+          // sends nothing.
+          if (was === 'myname' && namePickNow() === 'keep') { S.namePick = null; return; }
+          if (was === 'mypic' && picPickNow() === 'keep') { S.picPick = null; return; }
           if (was === 'myname') { if (namePickNow() === 'anon') S.myname = '';
             S.nameSet = true; cs.setIdentity(now(), viewerId(), { name: S.myname || null });
             S.namePick = null; return; }
@@ -8674,7 +8715,8 @@
     // this is the field under the caret
     if (t.matches && t.matches('[data-add]')) { S.inviteOne = t.value; refreshCommit(); return; }
     if (t.matches && t.matches('[data-emails]')) { S.inviteMany = t.value; return; }
-    if (t.dataset.txt === 'myname') { S.myname = t.value; renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
+    if (t.dataset.txt === 'myname') { S.myname = t.value; S.namePick = 'name';
+      renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
     if (t.dataset.txt === 'myemail') { S.myemail = t.value.trim();
       S.emailSent = false; S.emailVerified = false; S.seen.delete('myemail');
       // **Your address is yours** (Q755). A line here wrote `S.myemail` onto

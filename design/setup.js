@@ -656,11 +656,17 @@ window.SETUP = (function () {
   const nameBody = (me, opts) => {
     const o = opts || {};
     const pk = { namePick: o.pick || null };
+    // **The standing name is the first block** (Ed's QA, 2026-09-02 pm): a
+    // name already given heads the card as the status quo — choosing it, or
+    // committing on it, changes nothing — and the composer beneath starts
+    // empty, being the *new* name. With no name yet the composer leads.
+    const keep = (me.n || '').trim();
     // `locked` is the closed document (CP9): the blocks stay readable and
     // nothing on them commits
     return '<div class="choice" role="radiogroup">' +
+      (keep ? opt(pk, 'namePick', 'keep', esc(keep), '', '', o.locked) : '') +
       opt(pk, 'namePick', 'name',
-        '<input id="myname" class="namein" data-txt="myname" value="' + esc(me.n || '') +
+        '<input id="myname" class="namein" data-txt="myname" value="' + (keep ? '' : esc(me.n || '')) +
         '" placeholder="Your name"' + (o.locked ? ' disabled' : '') + '>', '', '', o.locked) +
       opt(pk, 'namePick', 'anon', ctlWord('Anonymous'),
         (o.optional ? 'The Founded by line shows no name.' : ''), '', o.locked) +
@@ -758,8 +764,12 @@ window.SETUP = (function () {
     const pic = me.pic || '';
     const uploaded = pic[0] === 'u';
     const pickState = { [pk]: oo.pick || null };
+    // **The standing picture is the first block** (Ed's QA, 2026-09-02 pm):
+    // a picture already worn heads the card as the status quo, drawn at
+    // avatar size; the three answers stand beneath it unchanged.
     // `locked` is the closed document (CP9): readable, nothing commits
     return '<div class="choice" role="radiogroup">' +
+      (pic ? opt(pickState, pk, 'keep', avHtml(me, 'big'), '', '', oo.locked) : '') +
       opt(pickState, pk, 'anon', ctlWord('Anonymous'), '', '', oo.locked) +
       opt(pickState, pk, 'upload', ctlWord('Upload an image'), '',
         oo.pick === 'upload' && !oo.locked
