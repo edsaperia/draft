@@ -171,8 +171,33 @@
      above its radio as text to be read, and the radio beneath is the same
      *Prefer this / Preferred* pill on every card — what you read is the
      option's own sentence, what you press never changes its words. */
-  .pick .opttext { display: block; font-size: var(--t-ui); font-weight: 600;
+  /* **Clause text wears the clause font, inside a control too** (Q1136, STYLE
+     T46, Ed's QA 2026-09-02: *all clause text in radio options should be in
+     clause font*). Since Q1109 an option's text **is** the clause sentence the
+     document will carry, and plan 138 pushed the same sentences into the
+     member's ladders, the composer's lanes and the strips — but the typography
+     stayed a button's, so one sentence read two ways depending on whether it
+     was standing in the document or being offered. `--t-body` is the token
+     whose own comment says *a clause under judgment*, and the document's
+     weight is normal: `600` was the other half of what made it a control. */
+  .pick .opttext { display: block; font-size: var(--t-body); font-weight: 400;
     color: var(--fg); max-width: 58ch; }
+  /* …and a control's own word is not clause text (T46's second half). The
+     minority of options whose text never was a document sentence — *Fixed*,
+     *Rising*, *Never*, *I set it*, *Kept*, *Admit them* — keep the treatment
+     they have. Marked rather than inferred, and marked on the **exception**:
+     a card written tomorrow whose option carries a clause is then right by
+     doing nothing, which is the direction Ed's rule is general in. Either
+     spelling works — the class on the whole block's text where a builder
+     draws nothing else (`consentPicks`, the admit lanes, 🍾's table), or
+     `ctlWord` around one label where its siblings are clauses. */
+  .pick .opttext.ctl, .pick .opttext .ctl { font-size: var(--t-ui); font-weight: 600; }
+  /* **A number inside a clause is a word in it** (Q1137, Ed: *the input boxes
+     should be inline*). `.num`'s 5.5rem is a field standing in a `.fld`
+     column; set in prose it reads as a form, so the inline variant takes the
+     sentence's own type and only as much box as its digits need. */
+  .pick .opttext .numin { width: 4.5rem; font-size: inherit;
+    padding: var(--s1) var(--s2); }
   .pick > .lanepick { margin-top: var(--s2); }
   /* a hairline separates adjacent blocks without boxing them — the same
      separator the power cards' `.propblock + .propblock` draws; the margin is

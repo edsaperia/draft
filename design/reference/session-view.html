@@ -240,7 +240,7 @@
 <script>
 (function () {
   const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml, watchBody,
-    nameBody, pictureBody, opt, num, someIn, ANSWER, stateOf,
+    nameBody, pictureBody, opt, num, numIn, ctlWord, someIn, ANSWER, stateOf,
     MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml, stripHtml, readBody,
     motionBody, motionReopen, routeFor, motionCommitHtml, BLINDNOTE, ceilingNote, methodNote, listOf, syncSlider } = window.SETUP;
   // **A setup card opens and closes like a decision card** (Ed, 2026-08-18:
@@ -4910,7 +4910,10 @@
   const consentPicks = (key, opts) => '<div class="choice" role="radiogroup">' +
     opts.map(([v, label, exp]) =>
       '<div class="pick' + (S.mAns[key] === v ? ' on' : '') + '">' +
-      '<span class="opttext">' + label + '</span>' +
+      // `ctl` throughout (T46): a consent answer is what *you* say — *I accept
+      // them joining* — not a sentence the document will carry, so it keeps
+      // the control treatment the whole option block used to wear
+      '<span class="opttext ctl">' + label + '</span>' +
       '<span class="exp">' + exp + '</span>' +
       '<button class="lanepick" aria-pressed="' + (S.mAns[key] === v) +
       '" data-motion="' + v + '"><span class="dot"></span>' +
@@ -6110,7 +6113,10 @@
   const pctRung = (o) => {
     const on = !!o.on;
     return '<div class="pick' + (on ? ' on' : '') + (o.off ? ' off' : '') + '">' +
-      '<span class="opttext">' + esc(o.label) +
+      // three of the four rungs are the rule as it would stand and take the
+      // clause font; the fourth, *A number of my own*, is the ladder's escape
+      // rather than a rung of it and says so in a control's voice (T46)
+      '<span class="opttext">' + (o.ctl ? ctlWord(esc(o.label)) : esc(o.label)) +
       (o.pct ? '<span class="pct">' + o.pct + '%</span>' : '') + '</span>' +
       '<button class="lanepick" aria-pressed="' + on + '"' + (o.off ? ' disabled' : '') +
       (o.off ? '' : ' data-set="' + o.set + '" data-val="' + o.val + '"') + '>' +
@@ -6177,7 +6183,7 @@
       exp: meaning('bar', { pct: r.pct }),
     })).join('') +
     pctRung({
-      set: 'barBy', val: 'founder', label: M.OWN_RUNG_LABEL, mean: 'bar',
+      set: 'barBy', val: 'founder', label: M.OWN_RUNG_LABEL, mean: 'bar', ctl: true,
       on: S.barBy === 'founder' && !isRungPct(S.tClose),
       exp: isNum(S.tClose) && !isRungPct(S.tClose) ? meaning('bar', { pct: +S.tClose }) : '',
       inner: '<span class="setrow2">' + num(S, 'tClose', 'At the end', 50, 99, '%') + '</span>',
@@ -6213,7 +6219,7 @@
       // make up its mind. So it clears the start instead, which is also what
       // choosing it means: an empty box to type your own number into.
       pctRung({
-        set: 'tStart', val: '', label: M.OWN_RUNG_LABEL, mean: 'pace',
+        set: 'tStart', val: '', label: M.OWN_RUNG_LABEL, mean: 'pace', ctl: true,
         on: S.shape === 'ramp' && (!isRungPct(S.tStart) || stray(S.tStart)),
         exp: isNum(S.tStart) && (!isRungPct(S.tStart) || stray(S.tStart))
           ? meaning('pace', { shape: 'ramp', startPct: +S.tStart }) : '',
@@ -6260,8 +6266,10 @@
     shape: () =>
       '<p class="why">A shape sets the rules the way a document of that kind usually runs. You can change any of them afterwards.</p>' +
       '<div class="choice" role="radiogroup">' +
-      M.SHAPES.map((r) => opt(S, 'docShape', r.name, esc(r.title), esc(r.say))).join('') +
-      opt(S, 'docShape', 'custom', 'Custom', 'Decide everything yourself — every rule is a card.') +
+      // `ctlWord` (T46): a shape's title names a *kind of document* and sets
+      // twelve clauses at once — it is not itself one of them
+      M.SHAPES.map((r) => opt(S, 'docShape', r.name, ctlWord(esc(r.title)), esc(r.say))).join('') +
+      opt(S, 'docShape', 'custom', ctlWord('Custom'), 'Decide everything yourself — every rule is a card.') +
       '</div>',
     title: () =>
       '<div class="lanebox"><div class="lp editlane titlelane' + (titlePending() ? '' : ' blank') + '"' +
@@ -6440,7 +6448,9 @@
       // under a shaped document that did not set ⏰ (a meeting, a conference)
       // the rung grows chips in the shape's unit above the field (entry 166,
       // F6: picking a chip fills the rung's own field); the field stays
-      opt(S, 'ending', 'ends', 'At a set time', '',
+      // `ctlWord` (T46) — *At a set time* names the field under it; the clause
+      // is `ENDING_RULE`'s, which cannot be written until the date is
+      opt(S, 'ending', 'ends', ctlWord('At a set time'), '',
         endChipsHtml() +
         '<span class="fld"><label>Ends</label><input type="datetime-local" data-txt="endsAt" value="' + S.endsAt + '"></span>') +
       opt(S, 'ending', 'perpetual', ENDING_NEVER) +
@@ -6463,12 +6473,14 @@
       // Both explanations are the family's now, and where it has nothing true
       // to say — 🌡️ unset, so there is no number to hold or climb to — the
       // rung carries its name alone rather than a stand-in of the card's own.
-      opt(S, 'shape', 'fixed', 'Fixed', meaning('pace', { shape: 'fixed' })) +
+      // `ctlWord` on both (T46): 🪜's two rungs are the shape's own names —
+      // the sentence each would set is `DECIDED.pace`'s, printed elsewhere
+      opt(S, 'shape', 'fixed', ctlWord('Fixed'), meaning('pace', { shape: 'fixed' })) +
       // *Rising* carries no sentence of its own: what a rise would mean
       // depends on where it starts, and every rung inside it says so — the
       // fourth one included. A sentence here would be one of theirs, printed
       // twice on one card (T36).
-      opt(S, 'shape', 'ramp', 'Rising', '',
+      opt(S, 'shape', 'ramp', ctlWord('Rising'), '',
         '<div class="choice">' + startRungs() + '</div>', perpetual()) +
       '</div>' + (perpetual() ? '<p class="setnote">With no end date there is nothing to climb towards, so the number stays fixed.</p>' : ''),
     quorum: () =>
@@ -6486,7 +6498,11 @@
       // the `suffix` on the share field stays: it is the **readout** — what
       // the percent comes to today — where the `.meaning` under it is the
       // **consequence**, and the two are different jobs (entry 167)
-      opt(S, 'quorumBy', 'founder', 'I set it', '',
+      // `ctlWord` (T46): *I set it* answers *who decides*, not *what the rule
+      // is* — 👥's clause is `QUORUM_RULE`'s and needs a number this has not
+      // been given yet. (⏱️ below no longer says it: since Q1137 the rate's
+      // own sentence is the option's text, with the three numbers in it.)
+      opt(S, 'quorumBy', 'founder', ctlWord('I set it'), '',
         '<span class="setrow2">' + (S.quorumForm === 'share'
           ? num(S, 'quorumPct', 'Share', 1, 100, '% — ' + quorumCount() + ' of ' + E() + ' today')
           : num(S, 'quorumN', 'Members', 1, 40, 'of ' + E())) + '</span>' +
@@ -6510,10 +6526,18 @@
     rate: () =>
       '<div class="choice" role="radiogroup">' +
       theyDecide('rate') +
-      opt(S, 'rateBy', 'founder', 'I set it', '',
-        '<span class="setrow2">' + num(S, 'grant', '✏️ to start with', 0, 40) +
-        num(S, 'cap', 'up to a maximum of', 1, 99) +
-        num(S, 'dripMin', 'an additional ✏️ every N minutes', 5, 2880) + '</span>' +
+      // **A numeric clause reads as a sentence** (Q1137, Ed's QA 2026-09-02:
+      // *the input boxes should be inline*). The rung was *I set it* over
+      // three `num()` fields in a `.setrow2` — each a label stacked over an
+      // input, so ⏱️ was the one setting card that met the Founder as a form
+      // rather than as the rule it sets. It is `RATE_RULE` itself now, handed
+      // three inline inputs where its three numbers go: the option's text is
+      // the clause the document will carry, which is what Q1109 made every
+      // other enumerated card and what T46 now sets the type for. The three
+      // field labels are gone because the sentence says what each number is.
+      opt(S, 'rateBy', 'founder',
+        RATE_RULE(numIn(S, 'grant', 0, 40), numIn(S, 'cap', 1, 99),
+          numIn(S, 'dripMin', 5, 2880)), '',
         // three numbers say nothing on their own: what a member weighs is how
         // many proposals they come to over the session, which is why ⏱️'s
         // meaning names the window (entry 167, rule 1)
@@ -6539,7 +6563,9 @@
       // (*After a gap you choose.*) said only that the field below is a
       // field; what it means is now the `.meaning` under that field.
       opt(S, 'lapse', 'never', meaning('lapse', { afterMs: null })) +
-      opt(S, 'lapse', 'days', 'They lapse', '',
+      // `ctlWord` (T46): *They lapse* is the rung's own two words — `LAPSE_RULE`
+      // cannot state the clause until the field beneath carries a number
+      opt(S, 'lapse', 'days', ctlWord('They lapse'), '',
         '<span class="setrow2">' + num(S, 'lapseDays', 'Days without logging in', 7, 365) + '</span>' +
         meanLine('lapse', isNum(S.lapseDays) ? { afterMs: +S.lapseDays * 86400000 } : null)) +
       '</div>',
@@ -6794,7 +6820,8 @@
         // option blocks (CP1); Indifferent is a textless block whose radio
         // names the act instead of *Prefer this* (CP4, Q1099)
         const lane = (v, label) => '<div class="pick' + (pick === v ? ' on' : '') + '">' +
-          (label ? '<span class="opttext">' + label + '</span>' : '') +
+          // `ctl` (T46): *Admit them* is the lane's own act, not the clause
+          (label ? '<span class="opttext ctl">' + label + '</span>' : '') +
           '<button class="lanepick" aria-pressed="' + (pick === v) +
           '" data-admitpick="' + esc(c.admit) + '" data-v="' + v + '">' +
           '<span class="dot"></span>' + (v === 'either' ? '<span>Indifferent</span>'
@@ -8515,6 +8542,15 @@
     // commit wakes on the typing (the txt branch above has always done this;
     // the num branch never needed to while every number arrived pre-filled)
     if (t.dataset.num) { S[t.dataset.num] = t.value === '' ? '' : +t.value;
+      // **A number typed into ⏱️'s sentence claims the rung it stands in**
+      // (Q1137). Everywhere else a `num` field is inside a `.pick > .inner`
+      // and cannot be reached until its rung is chosen; ⏱️'s three are inline
+      // words in the option's own clause, so they are legible — and typable —
+      // from the moment the card opens. Without this the Founder could fill
+      // the sentence in and leave the radio on the delegate rung, with a dark
+      // ✓ and nothing saying why. Same rule `fillRung` runs the other way for
+      // 🌡️, where picking a preset takes `barBy` with it.
+      if (Object.prototype.hasOwnProperty.call(RATE_START, t.dataset.num)) S.rateBy = 'founder';
       syncMeaning(t);
       renderRail(); SESSION.refreshRail(); refreshCommit(); }
     // …and the same for a number typed into an **answer** (entry 165), which
@@ -10516,7 +10552,9 @@
     const st = beginZoneState(z, pw);
     const on = st === val;
     return '<div class="pick' + (on ? ' on' : '') + '">' +
-      '<span class="opttext">' + word + '</span>' +
+      // `ctl` (T46): *Kept* / *Laid down* are the table's own two words, and
+      // the clause a zone ends up with is written elsewhere entirely
+      '<span class="opttext ctl">' + word + '</span>' +
       '<button class="lanepick" aria-pressed="' + on + '"' +
       ' data-bzone="' + esc(z.name) + '" data-bpower="' + pw + '" data-bval="' + val + '">' +
       '<span class="dot"></span><span class="off">Choose this</span>' +

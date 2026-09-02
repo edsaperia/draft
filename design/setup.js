@@ -1335,7 +1335,7 @@ window.SETUP = (function () {
     // number field standing in the DOM under an unchosen rung is a value the
     // page is holding for a question the member has not said they will answer
     // that way, and every harness that reads the card would find it.
-    ansRow(ownBar(A.bar), 'bar', 'own', esc(window.CONSTITUTION.OWN_RUNG_LABEL), '', '',
+    ansRow(ownBar(A.bar), 'bar', 'own', ctlWord(esc(window.CONSTITUTION.OWN_RUNG_LABEL)), '', '',
       !ownBar(A.bar) ? '' :
         '<span class="fld"><span class="numrow">' +
         '<input class="num" type="number" data-ansnum="bar" min="50" max="99"' +
@@ -1445,10 +1445,10 @@ window.SETUP = (function () {
       // true and painted *At a set time* as chosen, beside an empty date and
       // a dark ✓: a suggested answer on a blind collection.
       ansRow(A.ending !== null && A.ending !== undefined && A.ending !== 'never',
-        'ending', 'date', 'At a set time', '',
+        'ending', 'date', ctlWord('At a set time'), '',
         '', '<span class="fld"><label>Ends</label><input type="datetime-local" data-ansdate="ending"' +
         (A.ending && A.ending !== 'never' ? ' value="' + esc(A.ending) + '"' : '') + '></span>') +
-      ansRow(A.ending === 'never', 'ending', 'never', 'Never', 'It runs until it is frozen.') +
+      ansRow(A.ending === 'never', 'ending', 'never', ctlWord('Never'), 'It runs until it is frozen.') +
       '</div>' + BLINDNOTE,
     // **Never first** (entry 167, rule 4): the document takes the *longest*
     // asked for and *never* is the longest of all, so it heads the ladder as
@@ -1458,7 +1458,7 @@ window.SETUP = (function () {
     lapse: (A, E, _form, room, typed) =>
       '<p class="why">Whether a membership <b>lapses</b> after a period of inactivity — and how long. A lapsed member leaves the quorum base like an abstainer: the membership can finish without them, their votes keep counting, and coming back is just logging in. They are warned by email first, and sent the document and record when it happens.</p>' +
       '<div class="choice" role="radiogroup">' +
-      ansRow(A.lapse === 'never', 'lapse', 'never', 'Never',
+      ansRow(A.lapse === 'never', 'lapse', 'never', ctlWord('Never'),
         esc(window.CONSTITUTION.meaningOf('lapse', { afterMs: null }, room || { e: E }) || '')) +
       '</div>' +
       '<span class="fld"><label>The shortest period of inactivity you will accept</label>' +
@@ -1549,6 +1549,24 @@ window.SETUP = (function () {
     '<span class="fld"><label>' + label + '</label><span class="numrow">' +
     '<input class="num" type="number" data-num="' + key + '" value="' + S[key] + '" min="' + min + '" max="' + max + '">' +
     (suffix ? '<span class="setnote" style="margin:0">' + suffix + '</span>' : '') + '</span></span>';
+
+  /* **A number set in the middle of a clause** (Q1137). `num` builds a field —
+     a label stacked over an input in a `.fld` column — which is a form, and a
+     clause with a form in it does not read as a sentence. This is the same
+     input with the sentence's own words around it in place of a label, so a
+     rule builder can be handed three of them and write its own line. The
+     `data-num` hook is unmoved: every handler and every walk finds the number
+     exactly where it always was. */
+  const numIn = (S, key, min, max) =>
+    '<input class="num numin" type="number" data-num="' + key + '" value="' + S[key] +
+    '" min="' + min + '" max="' + max + '">';
+
+  /* **A control's own word, marked as not being clause text** (Q1138, T46).
+     The rule is about clause text, not about every radio, and telling the two
+     apart cleanly needs a flag — the plan's own condition for adding one. This
+     is it: `.opttext` wears the clause font, and a label that never was a
+     document sentence wears this. See `setup.css`'s `.pick .opttext.ctl`. */
+  const ctlWord = (s) => '<span class="ctl">' + s + '</span>';
 
   const someIn = (n, E) => (n >= E ? 'everyone in' : n + ' of ' + E + ' in');
 
@@ -1670,7 +1688,7 @@ window.SETUP = (function () {
 
   return { esc, TICK, initials, avHtml, hueOf, washOf, stateOf, markOf, railEntry,
     bandHtml, fitBand, pileHtml, stripHtml, cardHtml, readBody, watchBody, distHtml,
-    nameBody, pictureBody, opt, num, faces, someIn, FACE_EMOJI,
+    nameBody, pictureBody, opt, num, numIn, ctlWord, faces, someIn, FACE_EMOJI,
     FACE_TONES, faceToneRow, faceToned, setFaceTone,
     setFaceTaken, faceTakenBy, faceBtn, emojiPicker,
     motionBody, motionReopen, routeFor, motionCommitHtml,

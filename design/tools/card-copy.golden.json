@@ -818,12 +818,12 @@
     "eyebrow": "",
     "head": "Proposal Rate",
     "lock": "",
-    "body": "I set itChoose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most generous they would accept, and the document takes it.Choose this",
+    "body": "Members start with proposals ✏️ each, up to a maximum of . They get an additional ✏️ every minutes. A proposal costs one ✏️, and one that passes gives it back.Choose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most generous they would accept, and the document takes it.Choose this",
     "options": [
      {
       "set": "rateBy",
       "val": "founder",
-      "label": "I set it"
+      "label": "Members start with proposals ✏️ each, up to a maximum of . They get an additional ✏️ every minutes. A proposal costs one ✏️, and one that passes gives it back."
      },
      {
       "set": "rateBy",
@@ -3544,12 +3544,12 @@
     "eyebrow": "",
     "head": "Proposal Rate",
     "lock": "",
-    "body": "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Until it is settled everybody gets the standard rate. Picking a value here takes it back.I set itChoose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most generous they would accept, and the document takes it.Chosen",
+    "body": "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Until it is settled everybody gets the standard rate. Picking a value here takes it back.Members start with proposals ✏️ each, up to a maximum of . They get an additional ✏️ every minutes. A proposal costs one ✏️, and one that passes gives it back.Choose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most generous they would accept, and the document takes it.Chosen",
     "options": [
      {
       "set": "rateBy",
       "val": "founder",
-      "label": "I set it"
+      "label": "Members start with proposals ✏️ each, up to a maximum of . They get an additional ✏️ every minutes. A proposal costs one ✏️, and one that passes gives it back."
      },
      {
       "set": "rateBy",
@@ -4500,12 +4500,12 @@
     "eyebrow": "",
     "head": "Proposal Rate",
     "lock": "",
-    "body": "I set itChoose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most generous they would accept, and the document takes it.Choose this",
+    "body": "Members start with proposals ✏️ each, up to a maximum of . They get an additional ✏️ every minutes. A proposal costs one ✏️, and one that passes gives it back.Choose thisThe Founder is letting the membership decide this rule themselves.Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most generous they would accept, and the document takes it.Choose this",
     "options": [
      {
       "set": "rateBy",
       "val": "founder",
-      "label": "I set it"
+      "label": "Members start with proposals ✏️ each, up to a maximum of . They get an additional ✏️ every minutes. A proposal costs one ✏️, and one that passes gives it back."
      },
      {
       "set": "rateBy",
@@ -8214,12 +8214,12 @@
     "eyebrow": "",
     "head": "Members start with 4 proposals ✏️ each, up to a maximum of 8. They get an additional ✏️ every 180 minutes. A proposal costs one ✏️, and one that passes gives it back. The Founder may amend this at will, and refuse proposals that the membership pass.",
     "lock": "",
-    "body": "I set itChosen✏️ to start withup to a maximum ofan additional ✏️ every N minutesWhy are you changing this?ABAsh Bellamy 👑",
+    "body": "Members start with proposals ✏️ each, up to a maximum of . They get an additional ✏️ every minutes. A proposal costs one ✏️, and one that passes gives it back.ChosenWhy are you changing this?ABAsh Bellamy 👑",
     "options": [
      {
       "set": "rateBy",
       "val": "founder",
-      "label": "I set it"
+      "label": "Members start with proposals ✏️ each, up to a maximum of . They get an additional ✏️ every minutes. A proposal costs one ✏️, and one that passes gives it back."
      }
     ],
     "inputs": [
