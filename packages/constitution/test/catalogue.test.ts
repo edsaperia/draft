@@ -273,15 +273,18 @@ describe('the consent rule (SPEC §9.0a): maxima along the protective direction'
       .toEqual({ rung: 'anonymousElective' });
   });
 
-  it('rate: the most generous wins (§9.0)', () => {
+  it('rate: the most generous wins, and the ordering is the interval alone (§9.0, R-083)', () => {
+    // the grant and cap are fixed at 3 for every new document (Q1160), so
+    // the consent order reduces to the drip — the faster interval wins
+    expect(resolveConsent(entryOf('rate'), [
+      { grant: 3, cap: 3, dripMinutes: 240 },
+      { grant: 3, cap: 3, dripMinutes: 60 },
+    ]).value).toEqual({ grant: 3, cap: 3, dripMinutes: 60 });
+    // a replayed log with unequal grants orders on the interval too
     expect(resolveConsent(entryOf('rate'), [
       { grant: 4, cap: 8, dripMinutes: 240 },
-      { grant: 6, cap: 8, dripMinutes: 480 },
-    ]).value).toEqual({ grant: 6, cap: 8, dripMinutes: 480 });
-    expect(resolveConsent(entryOf('rate'), [
-      { grant: 4, cap: 8, dripMinutes: 240 },
-      { grant: 4, cap: 8, dripMinutes: 60 },
-    ]).value).toEqual({ grant: 4, cap: 8, dripMinutes: 60 });
+      { grant: 6, cap: 8, dripMinutes: 60 },
+    ]).value).toEqual({ grant: 6, cap: 8, dripMinutes: 60 });
   });
 
   it('machines: the most restrictive wins — one refusal keeps them out', () => {

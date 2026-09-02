@@ -1018,7 +1018,9 @@
   // writes into them when the founder picks *I set it* — an answer to a rung
   // they have just chosen. Referenced twice: by that fill, and by the
   // delegated fallbacks below, which used to carry 8 and 240 of their own.
-  const RATE_START = { grant: 4, cap: 6, dripMin: 10 };
+  // grant and cap are the mechanism's fixed 3 since Q1160 (SPEC §7, R-083);
+  // the fill writes the standard interval and the two constants
+  const RATE_START = { grant: 3, cap: 3, dripMin: 10 };
   const unset = (v) => v === '' || v === null || v === undefined;
   // picking a rung may fill that rung's own fields. Two guards the design
   // rests on: **only empty fields**, so a founder who typed 12 and re-picked
@@ -1057,7 +1059,7 @@
     authorship: () => ({ rung: S.authorship }),
     judgments: () => ({ rung: S.judgments }),
     chamber: () => ({ rung: S.chamber }),
-    rate: () => ({ grant: +S.grant, cap: Math.max(+S.cap, +S.grant), dripMinutes: +S.dripMin }),
+    rate: () => ({ grant: 3, cap: 3, dripMinutes: +S.dripMin }),   // Q1160: 3/3 fixed
     lapse: () => (S.lapse === 'never' ? { afterMs: null } : { afterMs: +S.lapseDays * 86400000 }),
     removal: () => ({ price: S.removal }),
     admission: () => ({ price: S.admission }),
@@ -1081,12 +1083,14 @@
     removal: (v) => ({ price: v }),
     admission: (v) => ({ price: v }),
     lapse: (v) => (v === 'never' ? { afterMs: null } : { afterMs: +v * 86400000 }),
-    rate: (v) => ({ grant: +v, cap: Math.max(+v, +S.cap || RATE_START.cap),
-      dripMinutes: +S.dripMin || RATE_START.dripMin }),
+    // the answer is the interval since Q1160, in the member's own unit
+    rate: (v) => ({ grant: 3, cap: 3,
+      dripMinutes: +v * (DRIP_UNITS[S.myAns.rateUnit] || 1) }),
   };
   // a typed value → the page's own vocabulary (what STANDS/DECIDED speak)
   const PAGEVAL = {
-    quorum: (v) => v.n, bar: (v) => v.pct, rate: (v) => v.grant,
+    // rate's page scalar is the interval since Q1160
+    quorum: (v) => v.n, bar: (v) => v.pct, rate: (v) => v.dripMinutes,
     ending: (v) => (v.endsAtMs === null ? 'never' : msToLocal(v.endsAtMs)),
     lapse: (v) => (v.afterMs === null ? 'never' : Math.round(v.afterMs / 86400000)),
     authorship: (v) => v.rung,
@@ -3022,7 +3026,7 @@
     quorum: () => !!S.quorumForm && isNum(S.quorumForm === 'count' ? S.quorumN : S.quorumPct),
     // the cap cannot be below the grant: the module quietly raises it, so a
     // cap of 2 beside a grant of 5 would print a rule the document does not have
-    rate: () => isNum(S.grant) && isNum(S.cap) && isNum(S.dripMin) && +S.cap >= +S.grant,
+    rate: () => isNum(S.dripMin) && +S.dripMin > 0,   // Q1160: the interval is the whole answer
     hat: () => !!S.hatPick,
   };
   const chosen = (k) => wantsDelegate(k) || !CHOSEN[k] || CHOSEN[k]();
@@ -3931,8 +3935,7 @@
     judgments: () => ({ never: 'Never revealed', after: 'Revealed at the end' }[
       takenOf('judgments') || (S.judgments === 'roster' ? 'never' : S.judgments)]),
     rate: () => { const v = takenValOf('rate');
-      return (v ? v.grant : S.grant) + ' each · +1 every ' + (v ? v.dripMinutes : S.dripMin) +
-        ' min · cap ' + (v ? v.cap : S.cap); },
+      return 'One every ' + dripPhrase(v ? v.dripMinutes : S.dripMin); },
     // (🌍 and 🤝 are stated once, above, module-first like every neighbour:
     // a second entry here used to override them and read S alone)
     lapse: () => (S.lapse === 'never' ? 'Never — however long you are away'
@@ -3974,8 +3977,9 @@
     // page has ever written, so every lookup missed and the readback fell
     // through to the raw token.
     removal: (v) => said(REMOVAL_RULE[v] || v),
-    rate: (v) => said(RATE_RULE(v, Math.max(+v, +S.cap || RATE_START.cap),
-      +S.dripMin || RATE_START.dripMin)),
+    // the answer is the interval since Q1160 — minutes, from the member's
+    // own number and unit
+    rate: (v) => said(RATE_RULE(+v * (DRIP_UNITS[S.myAns.rateUnit] || 1))),
   };
   const ANSASK = { quorum: 'The lowest you will accept', bar: 'The lowest you will accept',
     ending: 'The latest you will accept', authorship: 'The most you will accept',
@@ -4188,8 +4192,7 @@
     if (k === 'applications') return APPL_RULE(mayApply(p.value) ? 'apply' : 'invite');
     if (k === 'admission') return ADM_RULE[p.value.price];
     if (k === 'removal') return REMOVAL_RULE[p.value.price];
-    if (k === 'rate') return p.value.grant + ' each, up to ' + p.value.cap +
-      ', one every ' + p.value.dripMinutes + ' minutes';
+    if (k === 'rate') return 'a new proposal every ' + dripPhrase(p.value.dripMinutes);
     return STANDS[k] ? STANDS[k](PAGEVAL[k](p.value)) : JSON.stringify(p.value);
   };
   const pageMotion = (rec) => ({ id: rec.id, kind: rec.route, by: rec.by,
@@ -4446,8 +4449,7 @@
       public: 'names from the start' }[v.rung] || v.rung),
     judgments: (v) => ({ never: 'never revealed',
       after: 'revealed at the end' }[v.rung] || v.rung),
-    rate: (v) => v.grant + ' ✏️ to start, up to ' + v.cap +
-      ', one more every ' + v.dripMinutes + ' minutes',
+    rate: (v) => 'a new proposal every ' + dripPhrase(v.dripMinutes),
   };
   const wordsFor = (k, v) => { if (v === null || v === undefined) return null;
     try { return WORDS[k] ? String(WORDS[k](v)) : null; } catch (e) { return null; } };
@@ -4783,9 +4785,8 @@
     bar: (v) => v + '% sure at the end',
     ending: (v) => (v === 'never' ? 'Never — it runs until too few members are active'
       : new Date(v).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false })),
-    rate: (v) => { const tv = takenValOf('rate');
-      return v + ' each · +1 every ' + (tv ? tv.dripMinutes : S.dripMin) +
-        ' min · cap ' + (tv ? tv.cap : S.cap); },
+    rate: () => { const tv = takenValOf('rate');
+      return 'a new proposal every ' + dripPhrase(tv ? tv.dripMinutes : S.dripMin); },
   };
   const standsOf = (k) => {
     const c = card(k);
@@ -4840,11 +4841,11 @@
         // meaning belongs beside it exactly as on the founder's card
         meanLine('pace', d.val && d.val.shape ? d.val : null)),
     rate: (d) => {
+      // one number since Q1160: a motion proposes the interval, and the
+      // standing grant and cap ride through unchanged
       const n = d.to.match(/\d+/g) || [];
-      return inputBlock('Members start with ' +
-        '<input class="num" type="number" min="0" max="40" data-mrate="x" value="' + esc(n[0] || S.grant) + '"> proposals ✏️ each, up to a maximum of ' +
-        '<input class="num" type="number" min="1" max="99" data-mrate="y" value="' + esc(n[1] || S.cap) + '">. They get an additional ✏️ every ' +
-        '<input class="num" type="number" min="5" max="2880" data-mrate="z" value="' + esc(n[2] || S.dripMin) + '"> minutes.',
+      return inputBlock('Members may make a new proposal ✏️ every ' +
+        '<input class="num" type="number" min="1" max="2880" data-mrate="z" value="' + esc(n[0] || S.dripMin) + '"> minutes.',
         meanLine('rate', d.val && d.val.grant !== undefined ? d.val : null));
     },
     ending: (d) => {
@@ -5063,7 +5064,7 @@
         quorumBy: 'roster', quorumForm: 'share', quorumPct: 33, quorumN: 5,
         joinBy: 'invite', policyBy: 'roster', lapse: 'roster', lapseDays: 90,
         removal: 'roster', admission: 'roster', authorship: 'roster', judgments: 'roster',
-        rateBy: 'founder', grant: 4, dripMin: 180, cap: 8,
+        rateBy: 'founder', grant: 3, dripMin: 180, cap: 3,   // 3/3 fixed, Q1160
         // **🌍 stays with the founder, and that is the tooling fix** (Ed,
         // 2026-08-22, asking whether ⏩ could be more useful for working on
         // the power cards). ⏩ already leaves three power cards live — the
@@ -5096,7 +5097,10 @@
         quorum: (S.quorumForm === 'count' ? S.quorumN : S.quorumPct),
         bar: S.tClose, authorship: 'anonymous',
         judgments: 'never', chamber: 'closed', applications: 'invite',
-        lapse: 'never', removal: 'consent', admission: 'assembly', rate: S.grant };
+        // a ⏱️ answer is the interval since Q1160 (minutes — ANSTYPED reads
+        // the member's unit, which ⏩ leaves at its minutes default)
+        lapse: 'never', removal: 'consent', admission: 'assembly',
+        rate: S.dripMin || RATE_START.dripMin };
       for (const k of Object.keys(FILL)) {
         const st = csState(k);
         if (!st || !st.collecting) continue;
@@ -5344,13 +5348,24 @@
   const LAPSE_RULE = (v) => (v === 'never' || v === null
     ? 'Inactive members never lapse and are still counted towards votes.'
     : 'After ' + v + ' days, inactive members lapse and automatically abstain from votes.');
-  const RATE_RULE = (grant, cap, drip) => 'Members start with ' + grant +
-    ' proposals ✏️ each, up to a maximum of ' + cap +
-    '. They get an additional ✏️ every ' + drip +
-    // the cost rode the why paragraph until T43 dropped it (Ed,
-    // 2026-09-01: *this may mean we need to add to the clause sentences
-    // themselves*) — so the clause states it
-    ' minutes. A proposal costs one ✏️, and one that passes gives it back.';
+  // **⏱️ is one number** (Ed, 2026-09-02, Q1160/Q1161, R-083): the grant and
+  // the maximum are the mechanism's fixed 3 (SPEC §7), the interval is the
+  // setting, and **the unit is worked out from the stored minutes** — the
+  // clause prints the largest unit that divides exactly (1440 → *every day*,
+  // 120 → *every 2 hours*, 45 → *every 45 minutes*); the card's selector is
+  // input only, minutes stored everywhere (the drip runs on real minutes).
+  const DRIP_UNITS = { minutes: 1, hours: 60, days: 1440 };
+  const dripParts = (mins) => (isNum(mins) && +mins > 0
+    ? (+mins % 1440 === 0 ? { n: +mins / 1440, unit: 'days' }
+      : +mins % 60 === 0 ? { n: +mins / 60, unit: 'hours' }
+      : { n: +mins, unit: 'minutes' })
+    : null);
+  const dripPhrase = (mins) => { const p = dripParts(mins);
+    return !p ? '' : p.n === 1
+      ? { days: 'day', hours: 'hour', minutes: 'minute' }[p.unit]
+      : p.n + ' ' + p.unit; };
+  const RATE_RULE = (drip) =>
+    'Members may make a new proposal ✏️ every ' + dripPhrase(drip) + '.';
   const DECIDED = {
     // the ⏰ clause is `ENDING_RULE`'s like the readback's — it was the one
     // numeric clause left spelling itself a second time beside its builder
@@ -5393,8 +5408,7 @@
       return LAPSE_RULE(v === 'never' ? 'never'
         : (typeof v === 'number' ? v : S.lapseDays)); },
     rate: () => { const v = takenValOf('rate');
-      return RATE_RULE(v ? v.grant : S.grant, v ? v.cap : S.cap,
-        v ? v.dripMinutes : S.dripMin); },
+      return RATE_RULE(v ? v.dripMinutes : S.dripMin); },
     // 🤝 is one switch; what an application costs is 🪪's sentence (entry 94)
     applications: () => APPL_RULE(policyNow()),
     slug: () => 'The document lives at ' + docAddr(S.slug) + '.',
@@ -6588,28 +6602,23 @@
     rate: () =>
       '<div class="choice" role="radiogroup">' +
       theyDecide('rate') +
-      // **A numeric clause reads as a sentence** (Q1137, Ed's QA 2026-09-02:
-      // *the input boxes should be inline*). The rung was *I set it* over
-      // three `num()` fields in a `.setrow2` — each a label stacked over an
-      // input, so ⏱️ was the one setting card that met the Founder as a form
-      // rather than as the rule it sets. It is `RATE_RULE` itself now, handed
-      // three inline inputs where its three numbers go: the option's text is
-      // the clause the document will carry, which is what Q1109 made every
-      // other enumerated card and what T46 now sets the type for. The three
-      // field labels are gone because the sentence says what each number is.
-      opt(S, 'rateBy', 'founder',
-        RATE_RULE(numIn(S, 'grant', 0, 40), numIn(S, 'cap', 1, 99),
-          numIn(S, 'dripMin', 5, 2880)), '',
-        // three numbers say nothing on their own: what a member weighs is how
-        // many proposals they come to over the session, which is why ⏱️'s
-        // meaning names the window (entry 167, rule 1)
-        meanLine('rate', CHOSEN.rate() ? TYPED.rate() : null)) +
-      '</div>' +
-      // the commit waits on all three numbers, and on the maximum being a
-      // maximum: without this the button just stays dark and says nothing
-      // about why (found walking the founding, 2026-08-21)
-      (isNum(S.grant) && isNum(S.cap) && +S.cap < +S.grant
-        ? '<p class="setnote">The maximum cannot be lower than the number they start with.</p>' : ''),
+      // **⏱️ is one number** (Ed, 2026-09-02, Q1160/Q1161, R-083): the grant
+      // and the maximum are the mechanism's fixed 3 and are not on the card;
+      // the sentence carries the number in the card's own unit with a
+      // minutes/hours/days selector beside it — input only, minutes stored.
+      (() => { const p = dripParts(S.dripMin);
+        const unit = S.dripUnit || (p ? p.unit : 'minutes');
+        const shown = isNum(S.dripN) ? S.dripN : (p ? p.n : '');
+        const sel = '<select class="num numin dripunit" data-dripunit="1">' +
+          ['minutes', 'hours', 'days'].map((u) =>
+            '<option value="' + u + '"' + (u === unit ? ' selected' : '') + '>' + u + '</option>').join('') +
+          '</select>';
+        return opt(S, 'rateBy', 'founder',
+          'Members may make a new proposal ✏️ every ' +
+          '<input class="num numin" type="number" data-num="dripN" min="1" max="2880"' +
+          (shown === '' ? '' : ' value="' + shown + '"') + '> ' + sel + '.', '',
+          meanLine('rate', CHOSEN.rate() ? TYPED.rate() : null)); })() +
+      '</div>',
     chamber: () =>
       '<div class="choice" role="radiogroup">' +
       theyDecide('chamber') +
@@ -7612,6 +7621,17 @@
     // route, the commit glyph and the rationale lane all follow as before.
     if (ev.target.matches('[data-removewho]')) {
       S.removeWho = ev.target.value; return render(); }
+    // ⏱️'s unit selector (Q1161): input only — the number keeps, the stored
+    // minutes rescale, and picking a unit claims the rung like typing does
+    if (ev.target.matches('[data-dripunit]')) {
+      const p = dripParts(S.dripMin);
+      const n = isNum(S.dripN) ? +S.dripN : (p ? p.n : '');
+      S.dripUnit = ev.target.value;
+      if (n !== '') { S.dripN = n; S.dripMin = n * (DRIP_UNITS[S.dripUnit] || 1); S.rateBy = 'founder'; }
+      return render(); }
+    // …and the member's, on their ⏱️ answer card
+    if (ev.target.matches('[data-ansunit]')) {
+      S.myAns.rateUnit = ev.target.value; return render(); }
     if (ev.target.matches('[data-mval-sel]')) {
       const v = ev.target.value;
       if (!v) { S.draft = null; return render(); }
@@ -7640,12 +7660,11 @@
     if (ev.target.matches('[data-mpace]')) { S.draft.to = 'Rising from ' + ev.target.value + '%';
       S.draft.val = { shape: 'ramp', startPct: +ev.target.value }; return render(); }
     if (ev.target.matches('[data-mrate]')) {
-      const g2 = (k2) => document.querySelector('[data-mrate="' + k2 + '"]');
-      S.draft.to = (g2('x') && g2('x').value || '4') + ' each, up to ' + (g2('y') && g2('y').value || '8') +
-        ', one every ' + (g2('z') && g2('z').value || '180') + ' minutes';
-      S.draft.val = { grant: +(g2('x') && g2('x').value || 4),
-        cap: Math.max(+(g2('y') && g2('y').value || 8), +(g2('x') && g2('x').value || 4)),
-        dripMinutes: +(g2('z') && g2('z').value || 180) };
+      // the interval alone (Q1160): the standing grant and cap ride through
+      const stand = takenValOf('rate') || { grant: 3, cap: 3 };
+      const z = +(ev.target.value || S.dripMin || 180);
+      S.draft.to = 'a new proposal every ' + dripPhrase(z);
+      S.draft.val = { grant: stand.grant, cap: stand.cap, dripMinutes: z };
       return render(); }
     if (ev.target.matches('[data-mdate]')) {
       S.draft.to = ev.target.value
@@ -8635,6 +8654,12 @@
     // commit wakes on the typing (the txt branch above has always done this;
     // the num branch never needed to while every number arrived pre-filled)
     if (t.dataset.num) { S[t.dataset.num] = t.value === '' ? '' : +t.value;
+      // ⏱️'s number is typed in the card's own unit and stored in minutes
+      // (Q1161: the selector is input only, minutes stored everywhere)
+      if (t.dataset.num === 'dripN') {
+        S.dripMin = t.value === '' ? '' : +t.value * (DRIP_UNITS[S.dripUnit] || 1);
+        S.rateBy = 'founder';
+      }
       // **A number typed into ⏱️'s sentence claims the rung it stands in**
       // (Q1137). Everywhere else a `num` field is inside a `.pick > .inner`
       // and cannot be reached until its rung is chosen; ⏱️'s three are inline
@@ -8648,7 +8673,8 @@
       // the chosen treatment itself. Without this the sentence is typed into
       // a rung still reading *Choose this*, and `.pick > .inner` — where the
       // meaning `syncMeaning` is about to write lives — stays display:none.
-      if (Object.prototype.hasOwnProperty.call(RATE_START, t.dataset.num)) {
+      if (t.dataset.num === 'dripN' ||
+          Object.prototype.hasOwnProperty.call(RATE_START, t.dataset.num)) {
         S.rateBy = 'founder';
         const pick = t.closest('.pick');
         if (pick && !pick.classList.contains('on')) {

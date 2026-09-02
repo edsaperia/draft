@@ -79,7 +79,7 @@ export const SHAPES: readonly Shape[] = [
       // a meeting's document is passed round by its address
       chamber: { rung: 'link' },
       // **is** alpha-preset's measured *ALPHA PRESET*: the one cell with evidence
-      rate: { grant: 6, cap: 8, dripMinutes: 5 },
+      rate: { grant: 3, cap: 3, dripMinutes: 5 },
       // Ed: hidden for a meeting — a decision nobody has
       lapse: { afterMs: null },
       // Ed: off
@@ -103,7 +103,7 @@ export const SHAPES: readonly Shape[] = [
       judgments: { rung: 'never' },
       chamber: { rung: 'link' },
       // drip in hours
-      rate: { grant: 4, cap: 8, dripMinutes: 60 },
+      rate: { grant: 3, cap: 3, dripMinutes: 60 },
       lapse: { afterMs: null },
       machines: { enabled: false, budget: 0 },
       removal: { price: 'consent' },
@@ -128,7 +128,7 @@ export const SHAPES: readonly Shape[] = [
       // an ongoing document is the members'
       chamber: { rung: 'closed' },
       // drip in days
-      rate: { grant: 4, cap: 6, dripMinutes: 1440 },
+      rate: { grant: 3, cap: 3, dripMinutes: 1440 },
       // Ed: about 30 days for ongoing
       lapse: { afterMs: 30 * DAY_MS },
       machines: { enabled: false, budget: 0 },

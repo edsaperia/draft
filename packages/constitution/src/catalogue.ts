@@ -244,17 +244,14 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
   { id: 'rate', glyph: '⏱️', kind: 'ordinary',
     delegable: true, valueType: 'rate',
     consent: {
-      // Most generous wins (§9.0): higher grant, then higher cap, then a
-      // faster drip. Generosity is the protective direction here — nobody
-      // is bound by a rate more restrictive than they accepted.
-      ask: 'the least generous proposal rate you will accept',
-      order: (a, b) => {
-        const ra = a as RateValue;
-        const rb = b as RateValue;
-        if (ra.grant !== rb.grant) return ra.grant - rb.grant;
-        if (ra.cap !== rb.cap) return ra.cap - rb.cap;
-        return rb.dripMinutes - ra.dripMinutes;
-      },
+      // Most generous wins (§9.0): the faster drip. **The ordering reduces
+      // to the interval alone** (Ed, 2026-09-02, Q1160, R-083): the grant and
+      // cap are fixed at 3 for every new document, so the old grant-then-cap
+      // comparisons were dead between equal values and are gone — a replayed
+      // log with unequal grants resolved at its own record, never re-ordered.
+      ask: 'the least generous drip interval you will accept',
+      order: (a, b) =>
+        (b as RateValue).dripMinutes - (a as RateValue).dripMinutes,
     },
     deps: [], judgeGate: false },
 

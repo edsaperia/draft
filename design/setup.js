@@ -1473,17 +1473,23 @@ window.SETUP = (function () {
       '<span class="setnote" style="margin:0">days</span></span></span>' +
       meaningLine('lapse', ansValue(typed, 'lapse', A.lapse), room) +
       '<p class="blindnote">Nobody sees your answer. The document takes the <b>longest</b> asked for, <b>never</b> the longest of all.</p>',
-    rate: (A, E, _form, room, typed) =>
-      '<p class="why">The most sparing proposal rate you would accept. The document takes the <b>most generous</b> answer given.</p>' +
-      '<span class="fld"><label>The fewest ✏️ to start with</label><input class="num" type="number" min="0" max="40"' +
-      ' data-ansnum="rate"' + (typeof A.rate === 'number' ? ' value="' + A.rate + '"' : '') + '></span>' +
-      // ⏱️ is the one answer card that carried no meaning at all: a number
-      // field and a body. What the number comes to over the session is the
-      // consequence the answer turns on (entry 167). The answer states the
-      // grant alone, so the whole typed value comes from the caller's own
-      // `ANSTYPED` — setup.js writes the control and never the vocabulary.
-      meaningLine('rate', ansValue(typed, 'rate', A.rate), room) +
-      BLINDNOTE,
+    rate: (A, E, _form, room, typed) => {
+      // **The answer is the interval** (Ed, 2026-09-02, Q1160/Q1161, R-083):
+      // the grant and maximum are the mechanism's fixed 3, so a member
+      // states how often — the number in their own unit, minutes stored.
+      // The whole typed value still comes from the caller's own `ANSTYPED`.
+      const unit = A.rateUnit || 'minutes';
+      const sel = '<select class="num numin dripunit" data-ansunit="rate">' +
+        ['minutes', 'hours', 'days'].map((u) =>
+          '<option value="' + u + '"' + (u === unit ? ' selected' : '') + '>' + u + '</option>').join('') +
+        '</select>';
+      return '<p class="why">The least often you would accept members being able to propose. The document takes the <b>most generous</b> answer given.</p>' +
+        '<span class="opttext">Members may make a new proposal ✏️ every ' +
+        '<input class="num numin" type="number" min="1" max="2880" data-ansnum="rate"' +
+        (typeof A.rate === 'number' ? ' value="' + A.rate + '"' : '') + '> ' + sel + '.</span>' +
+        meaningLine('rate', ansValue(typed, 'rate', A.rate), room) +
+        BLINDNOTE;
+    },
   };
 
   /* ---- the mails -----------------------------------------------------------
