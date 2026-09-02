@@ -267,17 +267,18 @@ describe('promise 2 — the form never converts (§9.0a, Q341)', () => {
       .toThrow('the question is collecting in the current form — answers would change meaning');
   });
 
-  it('an answer in the other form is refused rather than converted', () => {
+  it('an answer in the other form is accepted, and the settle keeps the one demanding the most voters (R-082, Q1162/Q1172)', () => {
+    // two members, one answering as a count and one as a share: against the
+    // electorate at the settle (E = 2), 1 member < ceil(60% × 2) = 2, so the
+    // share answer wins — its form and its number both stand
     const { s, bo } = founding();
-    s.setQuorumForm(2, 'count');
     s.delegate(2, 'quorum');
-    expect(() => s.answer(3, bo, 'quorum', { form: 'share', n: 60 }))
-      .toThrow('the quorum question is asked as a count (§9.0a)');
-    // and the other way round, on the module's own opening frame
-    const b = founding();
-    b.s.delegate(2, 'quorum');
-    expect(() => b.s.answer(3, b.bo, 'quorum', { form: 'count', n: 2 }))
-      .toThrow('the quorum question is asked as a share (§9.0a)');
+    s.answer(3, bo, 'quorum', { form: 'count', n: 1 });
+    s.answer(4, 'ada', 'quorum', { form: 'share', n: 60 });
+    const st = s.settingState('quorum');
+    expect(st.value).toEqual({ form: 'share', n: 60 });
+    // …and the promise is *no looser than what I accepted, judged when it
+    // settles*: a member who asked for a count can end up bound by a share
   });
 
   it('after the start the frame cannot be re-set as a frame at all — `setQuorumForm` is pre-start only', () => {

@@ -1579,9 +1579,10 @@ export class ConstitutionSession {
     const entry = entryOf(setting);
     const err = validateFor(entry, value);
     if (err) throw new Error(err);
-    if (setting === 'quorum' && (value as QuorumValue).form !== this.quorumFormValue) {
-      throw new Error(`the quorum question is asked as a ${this.quorumFormValue} (§9.0a)`);
-    }
+    // **A quorum answer states its form as well as its number** (Ed,
+    // 2026-09-02, Q1162, R-082 — Q341 reversed for 👥 alone): the old
+    // refusal of a form other than the convenor's is gone; mixed answers
+    // resolve strictest against E at the settle (Q1172).
     if (setting === 'pace') {
       const ending = this.settings.get('ending')!.value as EndingValue | null;
       if (ending && ending.endsAtMs === null && (value as PaceValue).shape === 'ramp') {
@@ -1655,7 +1656,10 @@ export class ConstitutionSession {
     if (electorate.length < 2) return;
     if (!electorate.every((m) => st.answers.has(m.id))) return;
     const answers = electorate.map((m) => st.answers.get(m.id)!);
-    const { value, distribution } = resolveConsent(entry, answers);
+    // the room at the settle (R-082, Q1172): quorum's mixed-form answers
+    // resolve against this E, and the promise each member holds is *no
+    // looser than what I accepted, judged when it settles*
+    const { value, distribution } = resolveConsent(entry, answers, { e: electorate.length });
     this.emit({ type: 'question-resolved', t, setting, value, distribution,
       electorate: electorate.map((m) => m.id).sort() });
   }

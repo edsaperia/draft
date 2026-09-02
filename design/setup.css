@@ -205,6 +205,13 @@
   /* a hairline separates adjacent blocks without boxing them — the same
      separator the power cards' `.propblock + .propblock` draws; the margin is
      the rows' one vertical rhythm (P5), wherever the blocks stand */
+  /* the settled rule as the card's first block (Q1167 a): the head's slot,
+     the block's treatment — a hairline closes it off from the alternatives */
+  .setupcard .clausehead .headrule.asblock {
+    padding-bottom: var(--s3); border-bottom: 1px solid var(--border);
+    margin-bottom: var(--s3);
+  }
+  .provline { color: var(--muted); font-size: var(--t-small); display: block; margin-top: var(--s1); }
   .pick + .pick { border-top: 1px solid var(--border); padding-top: var(--s3);
     margin-top: var(--s3); }
   /* the delegate rung is set apart by --s4 (Q761) yet is still one of the

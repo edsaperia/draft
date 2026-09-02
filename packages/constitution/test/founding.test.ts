@@ -192,12 +192,12 @@ describe('blind collection and the consent rule live (§9.0a)', () => {
     expect(s.settingState('lapse').value).toEqual({ afterMs: null });
   });
 
-  it('the quorum question is asked in the convenor’s form (§9.0a)', () => {
+  it('a quorum answer states its own form, and mixed answers resolve strictest against E (R-082, Q1162/Q1172)', () => {
     const s = openDelegated();
     s.setQuorumForm(1, 'count');
-    expect(() => s.answer(2, 'ada', 'quorum', { form: 'share', n: 60 }))
-      .toThrow(/asked as a count/);
-    s.answer(2, 'ada', 'quorum', { form: 'count', n: 2 });
+    // the old refusal of a form other than the convenor's is gone
+    s.answer(2, 'ada', 'quorum', { form: 'share', n: 60 });
+    s.answer(3, 'ada', 'quorum', { form: 'count', n: 2 });
   });
 
   // Q415 (Ed, 2026-08-19): pacing is never a founding question — no surface

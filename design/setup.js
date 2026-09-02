@@ -573,11 +573,16 @@ window.SETUP = (function () {
     // survives on the rail entry, the tab tooltip and the record. The head
     // element itself stays: it is what carries the tab strip.
     const noTitle = !rule && ctx.noTitleHead && ctx.noTitleHead(c);
+    // **A settled setting's rule reads as the first block** (Q1167 a): the
+    // rule keeps the head's slot — the strip hangs there and the open/close
+    // geometry is measured against it — and wears the option block's own
+    // treatment, so the card reads status quo first, alternatives beneath.
+    const asBlock = rule && ctx.blockHead && ctx.blockHead(c);
     return '<div class="sugg setupcard" role="tabpanel" data-setupcard="' + c.k + '">' +
       CB.clauseHeadHtml(oo.s || c, {
         label: null, wash: false,
         marks: stripHtml(siblings || [c], ctx),
-        html: (rule ? '<div class="headrule">' + rule + '</div>'
+        html: (rule ? '<div class="headrule' + (asBlock ? ' asblock' : '') + '">' + rule + '</div>'
             : noTitle ? ''
             : '<div class="headtitle">' + esc(c.t) + '</div>') +
           (ctx.clauseFor ? (ctx.clauseFor(c) || '') : ''),
@@ -1342,21 +1347,30 @@ window.SETUP = (function () {
      `room` is the fourth argument since entry 167: what a value would mean is
      the module's to say, and it needs the room to say it. */
   const ANSWER = {
-    quorum: (A, E, form, room) => {
-      const share = form === 'share';
-      const asN = (v) => (share ? Math.max(1, Math.ceil(v / 100 * E)) : v);
-      // **The three band sentences are retired** (entry 167). *A small part of
-      // the room can carry a change while the rest are elsewhere.* was true of
-      // any small quorum in any room, which is the one thing a meaning must
-      // not be: it named no room, so a member arriving never changed it, and
-      // the reader could not tell what their answer would actually cost.
-      const mean = (v) => window.CONSTITUTION.meaningOf('quorum',
-        { form: share ? 'share' : 'count', n: +v }, room || { e: E }) || '';
-      return '<p class="why">How many ' + (E >= 2 ? 'of the ' + E : 'of the membership') + ' must weigh in before a question can change the document — short of that it waits; silence is never a vote. Asked as a <b>' + (share ? 'share of the membership' : 'count') + '</b>: the wording is the founder’s, the number is the membership’s.</p>' +
-      (share
-        ? slider(A, 'quorum', 5, 100, (v) => v + '% — ' + asN(v) + ' of ' + E, mean, 5)
-        : slider(A, 'quorum', 1, E, (v) => v + ' of ' + E, mean)) +
-      '<p class="blindnote">Nobody sees your answer. The document takes the <b>highest</b> given, so it is never lower than yours.</p>';
+    quorum: (A, E, _form, room) => {
+      // **The member states a form as well as a number** (Ed, 2026-09-02,
+      // Q1162 — Q341 reversed for 👥 alone, R-082): two blocks, each the rule
+      // as it would stand with its number inline (Q1137's pattern), the form
+      // chosen by the block. The consent slider retires with this — 👥 was
+      // its last user. Mixed answers resolve strictest against E at the
+      // settle (Q1172), which is what the blind note now promises.
+      const f = A.quorumForm || null;
+      const mean = (frm, v) => (typeof v === 'number'
+        ? window.CONSTITUTION.meaningOf('quorum', { form: frm, n: +v }, room || { e: E }) || ''
+        : '');
+      const box = (frm, min, max) =>
+        '<input class="num numin" type="number" data-ansnum="quorum" min="' + min + '" max="' + max + '"' +
+        (f === frm && typeof A.quorum === 'number' ? ' value="' + A.quorum + '"' : '') + '>';
+      return '<p class="why">How many ' + (E >= 2 ? 'of the ' + E : 'of the membership') + ' must weigh in before a question can change the document — short of that it waits; silence is never a vote.</p>' +
+      '<div class="choice" role="radiogroup">' +
+      ansRow(f === 'share', 'quorumForm', 'share',
+        box('share', 5, 100) + '% of the membership must vote on a proposal ✏️ before it can pass.',
+        f === 'share' ? mean('share', A.quorum) : '') +
+      ansRow(f === 'count', 'quorumForm', 'count',
+        box('count', 1, Math.max(1, E)) + ' members must vote on a proposal ✏️ before it can pass.',
+        f === 'count' ? mean('count', A.quorum) : '') +
+      '</div>' +
+      '<p class="blindnote">Nobody sees your answer. The document takes the answer that needs the <b>most voters</b>, read against the membership as it stands when the question settles — never looser than yours.</p>';
     },
     bar: (A, E, _form, room) =>
       '<p class="why">How sure the membership must be that a new wording beats the one it replaces, <b>at the close, where an adoption is permanent</b>. Everything earlier can still be challenged, so this one number covers the whole way; how it climbs is the founder’s pacing.</p>' +

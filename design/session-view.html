@@ -1069,7 +1069,9 @@
     : (v.joinPolicy !== undefined && v.joinPolicy !== 'invite'));
   // a member's page-vocabulary answer → typed, and back — one place each way
   const ANSTYPED = {
-    quorum: (v) => ({ form: S.quorumForm, n: +v }),
+    // the form is the member's own since Q1162 — the block they chose, never
+    // the founder's frame
+    quorum: (v) => ({ form: S.myAns.quorumForm || S.quorumForm, n: +v }),
     bar: (v) => ({ pct: +v }),
     ending: (v) => (v === 'never' ? { endsAtMs: null } : { endsAtMs: Date.parse(v) }),
     authorship: (v) => ({ rung: v }),
@@ -2758,26 +2760,22 @@
       const k = pkeyOf(rec.payload.setting);
       const what = esc(WHAT[k] || (k === 'title' ? 'the document' + Q + 's title'
         : (card(k) ? card(k).t.toLowerCase() : 'this rule')));
-      const who = rec.route === 'pen' ? 'The Founder ' : 'The membership ';
       const was = wordsFor(k, stoodBefore(rec));
       const now2 = wordsFor(k, rec.payload.value);
       if (!carried) {
         said = '<p class="cpv">The membership kept ' + what +
           (was ? ' as it stood: ' + esc(was) : ' as it stood') + '.</p>';
-      } else if (!was) {
-        // no earlier value on the record: say what it became rather than
-        // guessing at what it left
-        said = '<p class="cpv">' + who + 'changed ' + what +
-          (now2 ? ' to ' + esc(now2) : '') + '.</p>';
-      } else if (was.length > 32 || (now2 || '').length > 32) {
-        // the same *long values are shown, not narrated* rule `changeHalf`
-        // switches to past 32 characters
-        said = '<p class="cpv">' + who + 'changed ' + what + '.</p>' +
-          '<p class="waswas"><span>was</span>' + esc(was) + '</p>' +
-          (now2 ? '<p class="waswas"><span>now</span>' + esc(now2) + '</p>' : '');
       } else {
-        said = '<p class="cpv">' + who + 'changed ' + what + ' from ' + esc(was) +
-          (now2 ? ' to ' + esc(now2) : '') + '.</p>';
+        // **The before/after pair** (Ed's card review, 2026-09-02, Q1167):
+        // the text that stood as the first block, the new text as the second
+        // with its provenance line beneath — *Chosen by the membership* for a
+        // raised motion, *Chosen by Founder Action ✒️* for an amendment. The
+        // narrated from–to sentence and the was/now rows retire with it.
+        const prov = rec.route === 'pen' ? 'Chosen by Founder Action ✒️'
+          : 'Chosen by the membership';
+        said = (was ? '<div class="pick"><span class="opttext">' + esc(was) + '</span></div>' : '') +
+          '<div class="pick on"><span class="opttext">' + esc(now2 || '') + '</span>' +
+          '<span class="exp provline">' + prov + '</span></div>';
       }
     }
     return '<div class="body changed">' + eyebrow + said + speaker + '</div>';
@@ -2964,6 +2962,9 @@
   // until the box beside it has one, exactly as it does before any rung is
   // touched at all.
   const filled = (c) => { const v = S.myAns[ansKey(c)];
+    // 👥 needs both halves since Q1162: a number and the block it was
+    // answered in — the form is part of the answer now
+    if (ansKey(c) === 'quorum') return typeof v === 'number' && !!S.myAns.quorumForm;
     return v !== null && v !== undefined && v !== 'own'; };
   // **One rule for the answer boxes, whichever event brings it** (entry 165):
   // the keystroke repaints in place and the blur re-renders, but what the
@@ -2976,6 +2977,16 @@
     const pick = t.closest('.pick');
     const own = pick && pick.querySelector('[data-ansval="own"]');
     S.myAns[k] = t.value === '' ? (own ? 'own' : null) : +t.value;
+    // **typing into an answer block's box chooses that block** (F6's rule,
+    // reaching the answer rungs with Q1162 — 👥's two boxes share one number
+    // key and the rung says which form it answers in)
+    const rung = pick && pick.querySelector('[data-ans][data-ansval]');
+    if (rung && t.value !== '' && S.myAns[rung.dataset.ans] !== rung.dataset.ansval) {
+      S.myAns[rung.dataset.ans] = rung.dataset.ansval;
+      pick.classList.add('on');
+      const sibs = pick.parentElement ? pick.parentElement.querySelectorAll('.pick') : [];
+      sibs.forEach((p) => { if (p !== pick) p.classList.remove('on'); });
+    }
     // …and the sentence under the box follows the keystroke. Since entry 167
     // the box is not always inside a rung — 💤's and ⏱️'s answers are a bare
     // field — so the slot is looked for in the rung first and then on the
@@ -3944,7 +3955,7 @@
   // a document still holds falls through to the raw token, as it always did.
   const said = (s) => 'You said: “' + s + '”';
   const ANSVALUE = {
-    quorum: (v) => said(QUORUM_RULE(v)),
+    quorum: (v) => said(QUORUM_RULE(v, S.myAns.quorumForm)),
     bar: (v) => said(BAR_RULE(v, null)),
     ending: (v) => said(ENDING_RULE(v === 'never' || isNaN(Date.parse(v)) ? 'never' : v)),
     authorship: (v) => said(AUTH_RULE[v] || v),
@@ -5315,7 +5326,10 @@
   // alone (T39) — none of these writes a second consequence sentence.
   const ENDING_RULE = (v) => (v === 'never' || !v ? ENDING_NEVER
     : 'No more changes to the document may be made after ' + endFmtOf(v) + '.');
-  const QUORUM_RULE = (n) => (S.quorumForm === 'count'
+  // `form` is the value's own since Q1162 — a delegated resolution can land
+  // in either form whatever the founder's frame says, so a caller with a
+  // typed value passes its form and only the founder's own field defaults
+  const QUORUM_RULE = (n, form) => (((form || S.quorumForm) === 'count')
     ? n + ' members'
     : n + '% of the membership') + ' must vote on a proposal ✏️ before it can pass.';
   // a ramp that starts where it ends is not a ramp (Ed: *if there is no
@@ -5342,8 +5356,9 @@
     // numeric clause left spelling itself a second time beside its builder
     ending: () => (perpetual() ? ENDING_NEVER
       : ENDING_RULE(endingAt())),
-    quorum: () => QUORUM_RULE(takenOf('quorum') ||
-      (S.quorumForm === 'count' ? S.quorumN : S.quorumPct)),
+    quorum: () => { const tv = takenValOf('quorum');
+      return tv ? QUORUM_RULE(tv.n, tv.form)
+        : QUORUM_RULE(S.quorumForm === 'count' ? S.quorumN : S.quorumPct); },
     // **The ramp is part of what the threshold says** (Q512, Ed 2026-08-21:
     // *if there is no ramp, the clause can just be blank — maybe the ramp can
     // be in the threshold setting stack, rather than a whole separate
@@ -5625,6 +5640,10 @@
     // rule — never a member's answer card, a record, a power tab, a door or
     // a gate, which keep their titles
     noTitleHead: (c) => !c.power && !c.record && !c.isGate && !c.ansFor && !c.door &&
+      c.kind !== 'personal' && OPTHEADLESS.has(c.k),
+    // a settled option-block setting draws its rule as the first block
+    // (Q1167 a) — same keys, same exclusions
+    blockHead: (c) => !c.power && !c.record && !c.isGate && !c.ansFor && !c.door &&
       c.kind !== 'personal' && OPTHEADLESS.has(c.k),
     // reserved = held by the founder: the room may pass a change, and it
     // then goes to the founder as a 👑 question (accept or reject)
@@ -6530,29 +6549,24 @@
         '<div class="choice">' + startRungs() + '</div>', perpetual()) +
       '</div>' + (perpetual() ? '<p class="setnote">With no end date there is nothing to climb towards, so the number stays fixed.</p>' : ''),
     quorum: () =>
-      // **The form is the wording, the number is the decision** (§9.0a): count
-      // or share is how the question tracks a changing membership, and it is
-      // the founder's even when the number is the room's.
-      '<div class="eyebrow fieldlab">Asked as</div>' +
-      '<div class="choice" role="radiogroup" aria-label="Form">' +
-      opt(S, 'quorumForm', 'share', 'The quorum is a share of the membership — the number moves as members join and leave.') +
-      opt(S, 'quorumForm', 'count', 'The quorum is a fixed number of members, however the membership changes.') +
-      '</div>' +
-      '<div class="eyebrow fieldlab">The number</div>' +
-      '<div class="choice" role="radiogroup" aria-label="Number">' +
+      // **The form joins the question** (Ed, 2026-09-02, Q1162 — Q341
+      // reversed for 👥 alone, R-082): two blocks, each the rule as it would
+      // stand with its number inline (Q1137's pattern). The *Asked as* /
+      // *The number* eyebrows and the *I set it* rung fold into them;
+      // picking a block or typing in its box chooses that form (F6) and
+      // takes the question back.
+      '<div class="choice" role="radiogroup">' +
       theyDecide('quorum') +
-      // the `suffix` on the share field stays: it is the **readout** — what
-      // the percent comes to today — where the `.meaning` under it is the
-      // **consequence**, and the two are different jobs (entry 167)
-      // `ctlWord` (T46): *I set it* answers *who decides*, not *what the rule
-      // is* — 👥's clause is `QUORUM_RULE`'s and needs a number this has not
-      // been given yet. (⏱️ below no longer says it: since Q1137 the rate's
-      // own sentence is the option's text, with the three numbers in it.)
-      opt(S, 'quorumBy', 'founder', ctlWord('I set it'), '',
-        '<span class="setrow2">' + (S.quorumForm === 'share'
-          ? num(S, 'quorumPct', 'Share', 1, 100, '% — ' + quorumCount() + ' of ' + E() + ' today')
-          : num(S, 'quorumN', 'Members', 1, 40, 'of ' + E())) + '</span>' +
-        meanLine('quorum', CHOSEN.quorum() ? TYPED.quorum() : null)) +
+      opt(S, 'quorumForm', 'share',
+        numIn(S, 'quorumPct', 1, 100) +
+        '% of the membership must vote on a proposal ✏️ before it can pass.', '',
+        (S.quorumForm === 'share'
+          ? meanLine('quorum', CHOSEN.quorum() ? TYPED.quorum() : null) : '')) +
+      opt(S, 'quorumForm', 'count',
+        numIn(S, 'quorumN', 1, 40) +
+        ' members must vote on a proposal ✏️ before it can pass.', '',
+        (S.quorumForm === 'count'
+          ? meanLine('quorum', CHOSEN.quorum() ? TYPED.quorum() : null) : '')) +
       '</div>',
     authorship: () =>
       '<div class="choice" role="radiogroup">' +
@@ -6562,7 +6576,9 @@
       opt(S, 'authorship', 'sealed', AUTH_RULE.sealed) +
       opt(S, 'authorship', 'sealedElective', AUTH_RULE.sealedElective) +
       opt(S, 'authorship', 'public', AUTH_RULE.public) +
-      '</div><p class="setnote">If you choose this yourself, members can end up named without having agreed to it.</p>',
+      // the choose-this-yourself warning cut by Ed with the review
+      // (2026-09-02) — §3.5a's protection is unchanged, only the note goes
+      '</div>',
     judgments: () =>
       '<div class="choice" role="radiogroup">' +
       theyDecide('judgments') +
@@ -6952,7 +6968,10 @@
       // and the reason in the field, and 🗑️ alone at the foot — a record asks
       // nothing, so it has no OK (SURFACE §9, the sealed record's *nothing*).
       // The bin is the band's one always-live close (Q613 (a)).
-      if (c.record) return cardHtml(c, ctx, recordBody(c), binBtn(), g.cards);
+      // **the record's OK only closes** (Q1167 b): a word, not a glyph — no
+      // ACK_KEYS entry, nothing tracked, nobody owes a press
+      if (c.record) return cardHtml(c, ctx, recordBody(c),
+        binBtn() + '<button class="btn btn-approve" data-close="1">OK</button>', g.cards);
       // 403/405 (Ed, 2026-08-19): a power tab, opened — the ✒️ or 🛡️
       // half of a setting's governance, its head the rule as it stands
       if (c.power) {
@@ -6975,10 +6994,16 @@
       // **Reserved is assent, not silence** (§9.7): the room passed it, and
       // it now sits with the founder — Accept applies it, Reject files it.
       if (m && m.status === 'awaiting-crown') {
+        // **the two-block pair** (Q1167 a as refined, Ed 2026-09-02): the
+        // standing rule, then the change the membership has already chosen —
+        // *Chosen by the membership* is a fact here, the vote being over and
+        // the card waiting on the founder's own act. The narrated
+        // Passed-awaiting paragraph retires.
         return cardHtml(c, ctx,
-          '<div class="unlocks"><b>Passed — awaiting the 👑.</b> The membership passed <i>' + esc(m.to) + '</i>' +
-          (m.why ? ' — <i>' + esc(m.why) + '</i>' : '') +
-          '. The setting is reserved, so the change goes to the founder as a <b>👑 question</b>, theirs to assent to or refuse. Until then, what stands stands.</div>',
+          '<div class="pick"><span class="opttext">' + esc(standsOf(c.k)) + '</span></div>' +
+          '<div class="pick on"><span class="opttext">' + esc(m.to) + '</span>' +
+          '<span class="exp provline">Chosen by the membership</span></div>' +
+          (m.why ? window.CARDS.speakerHtml(m.why) : ''),
           // **The 👑 takes the pattern whole** (CP5, Q1100, Ed's refinement):
           // 🗑️ closes the card with the question kept pending, and the two
           // reserved powers are the two answers — a Founder Action passes it,
@@ -8090,6 +8115,10 @@
       // a ⏰ chip lights by its own id, not by the date it happens to carry
       if (o.dataset.set === 'endsAt') S.endChip = o.dataset.chip || '';
       if (perpetual() && S.shape === 'ramp') S.shape = 'fixed';
+      // 👥's form blocks are the value rungs since Q1162, so picking one is
+      // the founder's own answer — it takes the question back exactly as
+      // picking a value does anywhere (*Picking a value here takes it back*)
+      if (o.dataset.set === 'quorumForm') S.quorumBy = 'founder';
       return render(); }
     const pic = ev.target.closest('[data-pic]');
     if (pic) { S.mypic = pic.dataset.pic; return pickerRender(); }
@@ -8514,6 +8543,7 @@
     const rung = rungOf && rungOf.querySelector('[data-set][data-val]');
     if (rung && S[rung.dataset.set] !== setVal(rung.dataset.val)) {
       S[rung.dataset.set] = setVal(rung.dataset.val);
+      if (rung.dataset.set === 'quorumForm') S.quorumBy = 'founder';   // Q1162
       rungOf.classList.add('on');
       const others = rungOf.parentElement ? rungOf.parentElement.querySelectorAll('.pick') : [];
       others.forEach((p) => { const b = p.querySelector('[data-set="' + rung.dataset.set + '"]');
@@ -8785,7 +8815,9 @@
     // rules are, and a rule's history is part of what it is (Q942)
     const body = c.record ? recordBody(c)
       : c.k === 'text' ? strangerTextBody() : strangerReadBody(c);
-    return cardHtml(c, strCtx, body, binBtn(), g.cards);
+    return cardHtml(c, strCtx, body,
+      binBtn() + (c.record ? '<button class="btn btn-approve" data-close="1">OK</button>' : ''),
+      g.cards);
   };
   const strangerTextBody = () => {
     const p = strPayload();

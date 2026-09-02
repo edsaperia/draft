@@ -402,8 +402,13 @@ var CONSTITUTION = (() => {
       deps: ["ending"],
       judgeGate: false
     },
-    // The form is the convenor's, the number the room's (§9.0a) — resolution
-    // refuses mixed forms rather than converting.
+    // **The question collects the form and the number together** (Ed,
+    // 2026-09-02, Q1162 — Q341 reversed for 👥 alone, R-082): a member answers
+    // as a share of the membership or as a fixed count, and mixed answers
+    // resolve at the settle — every answer read against E as it stands then,
+    // the answer demanding the most voters winning, its form and number both
+    // standing (Q1172). Same-form ties keep the higher number, which is the
+    // old scalar order exactly, so every existing log resolves as it did.
     {
       id: "quorum",
       glyph: "👥",
@@ -411,8 +416,13 @@ var CONSTITUTION = (() => {
       delegable: true,
       valueType: "quorum",
       consent: {
-        ask: "the lowest quorum you will accept, in the convenor's chosen form",
-        order: (a, b) => a.n - b.n
+        ask: "the lowest quorum you will accept — a share of the membership or a fixed count",
+        order: (a, b, ctx) => {
+          const e = Math.max(1, ctx && ctx.e || 1);
+          const demand = (v) => v.form === "count" ? v.n : Math.ceil(v.n / 100 * e);
+          const d = demand(a) - demand(b);
+          return d !== 0 ? d : a.n - b.n;
+        }
       },
       deps: [],
       judgeGate: true
@@ -663,12 +673,12 @@ var CONSTITUTION = (() => {
   }
 
   // src/consent.ts
-  function resolveConsent(entry, answers) {
+  function resolveConsent(entry, answers, ctx) {
     const consent = entry.consent;
     if (!consent) throw new Error(`${entry.id} is not a consent question`);
     if (answers.length === 0) throw new Error(`${entry.id}: nothing to resolve — no answers`);
     const distribution = [...answers].sort((a, b) => {
-      const byOrder = consent.order(b, a);
+      const byOrder = consent.order(b, a, ctx);
       if (byOrder !== 0) return byOrder;
       return stableStringify(a) < stableStringify(b) ? -1 : 1;
     });
@@ -2258,9 +2268,6 @@ var CONSTITUTION = (() => {
       const entry = entryOf(setting);
       const err = validateFor(entry, value);
       if (err) throw new Error(err);
-      if (setting === "quorum" && value.form !== this.quorumFormValue) {
-        throw new Error(`the quorum question is asked as a ${this.quorumFormValue} (§9.0a)`);
-      }
       if (setting === "pace") {
         const ending = this.settings.get("ending").value;
         if (ending && ending.endsAtMs === null && value.shape === "ramp") {
@@ -2298,7 +2305,7 @@ var CONSTITUTION = (() => {
       if (electorate.length < 2) return;
       if (!electorate.every((m) => st.answers.has(m.id))) return;
       const answers = electorate.map((m) => st.answers.get(m.id));
-      const { value, distribution } = resolveConsent(entry, answers);
+      const { value, distribution } = resolveConsent(entry, answers, { e: electorate.length });
       this.emit({
         type: "question-resolved",
         t,

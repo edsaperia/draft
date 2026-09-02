@@ -45,11 +45,21 @@ export type SettingId =
   | 'admission' | 'applications'
   | 'displayName' | 'picture';
 
+export interface ConsentCtx {
+  /** The electorate at the moment the question settles (R-082, Q1172). */
+  e: number;
+}
+
 export interface ConsentSpec {
   /** Host-facing phrasing of the binding scalar; member copy is page-side. */
   ask: string;
-  /** > 0 ⇒ a is the more protective/demanding answer — the one the document keeps. */
-  order: (a: SettingValue, b: SettingValue) => number;
+  /**
+   * > 0 ⇒ a is the more protective/demanding answer — the one the document
+   * keeps. `ctx` carries the electorate at the settle, for the one order that
+   * needs it: quorum's, which resolves a share and a fixed count against E
+   * (R-082, Q1172 — the answer demanding the most voters wins).
+   */
+  order: (a: SettingValue, b: SettingValue, ctx?: ConsentCtx) => number;
 }
 
 export interface CatalogueEntry {
@@ -162,13 +172,24 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
     delegable: false, valueType: 'pace',
     deps: ['ending'], judgeGate: false },
 
-  // The form is the convenor's, the number the room's (§9.0a) — resolution
-  // refuses mixed forms rather than converting.
+  // **The question collects the form and the number together** (Ed,
+  // 2026-09-02, Q1162 — Q341 reversed for 👥 alone, R-082): a member answers
+  // as a share of the membership or as a fixed count, and mixed answers
+  // resolve at the settle — every answer read against E as it stands then,
+  // the answer demanding the most voters winning, its form and number both
+  // standing (Q1172). Same-form ties keep the higher number, which is the
+  // old scalar order exactly, so every existing log resolves as it did.
   { id: 'quorum', glyph: '👥', kind: 'constitutional',
     delegable: true, valueType: 'quorum',
     consent: {
-      ask: "the lowest quorum you will accept, in the convenor's chosen form",
-      order: (a, b) => (a as QuorumValue).n - (b as QuorumValue).n,
+      ask: 'the lowest quorum you will accept — a share of the membership or a fixed count',
+      order: (a, b, ctx) => {
+        const e = Math.max(1, (ctx && ctx.e) || 1);
+        const demand = (v: QuorumValue) =>
+          (v.form === 'count' ? v.n : Math.ceil((v.n / 100) * e));
+        const d = demand(a as QuorumValue) - demand(b as QuorumValue);
+        return d !== 0 ? d : (a as QuorumValue).n - (b as QuorumValue).n;
+      },
     },
     deps: [], judgeGate: true },
 
