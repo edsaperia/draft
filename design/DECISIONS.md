@@ -2227,3 +2227,39 @@ Ed, opening pass 4: *Decision cards are very inconsistent. There are special cas
 **And two label-shaped traps, both the same trap.** `journey-walk` held a frozen map of the five 👤 rung labels; Ed's copy sweeps turned every rung into a clause sentence, the map matched nothing, and the walk quietly took the first option on the card and then reported the missing sign control as the page's fault. Fixing the wording would have been fixing the symptom: the label is now read off the card by `data-val`, which CP1 deliberately left on the button, and a rung the card does not offer is a FAIL line rather than a fallback. Underneath it was a second one — the picker cut every label to 48 characters for the log, and as sentences 👤's `sealed` and `sealedElective` share their first sixty-four. Matching is exact now and cutting is the printing's job. This is entry 87's delegate rung and CLAUDE.md's own *a walk that identifies an option by the button's text* gotcha, arriving for the third time; the general lesson is that **a walk may print words and must not decide on them**.
 
 **One measurement was not stale, only taken in the wrong place.** `journey`'s edit-mode step read the riding tab 81px below the document's first line and blamed the page. The tab rides with the reader by design (K31, `position: sticky`), so *rests level with the first line* is only a claim about the rest position; measured from wherever the walk's previous steps had scrolled to, it was reading the sticky clamp. The step scrolls to the top before measuring, and the page was never wrong.
+
+## The watch-half retires, and the strip with it (2026-09-02 pm, Ed's QA of the rebuilt sheet — Q1176)
+
+**What stood.** Once a delegated question closed, the card grew a second half
+under its own body: *What the membership said*, the distribution strip (the
+shape of what people asked for, without names — `distHtml`, and 🌡️'s rung
+strip `rungStripHtml` off the room's real answers), the *Answered n of n*
+line, the taken line and the meaning line. While it still collected, the same
+half showed pips and the running count. One implementation (`watchBody` in
+setup.js), appended under three different upper halves.
+
+**What Ed ruled.** Remove all of it, on every settled delegated card, the
+running count included — his framing for the whole round being *I am trying
+to strip copy right back … using the clause text to explain everything as
+much as possible*. Provenance survives as the standing block's own radio,
+*Chosen by the membership*, drawn disabled at full strength (the locked-card
+rule); the counts move to 🍾 as one sentence per still-collecting question
+(*X out of Y of the membership have voted on whether…*, subject derived from
+the `DECIDING` table so it cannot drift); and the blindness story — the other
+thing the watch half used to carry — returns with 🍾's redesign (Q1169,
+backlog 269).
+
+**What was lost, knowingly.** A member no longer sees the *shape* of the
+room's answers anywhere on the card — the strip's whole argument was that a
+consent rule's number is one person's and the strip showed how far it sat
+from the rest. If that account is wanted back, it belongs to the 🍾 redesign
+or the record, not to the settled card. 🌡️'s method note also left the
+member's read-only path with the watch half (it rode `withMethod`); the
+answer card and the founder's card still carry it, so the `/pairwise` link
+survives where the number is chosen.
+
+**Code.** `watchBody`, `distHtml` and `rungStripHtml` are deleted, not
+stranded; the card literals keep their fixture `dist`/`taken` fields, now
+unread. The chosen-radio provenance is `chosenRadio` in session-view.html,
+worn by the settled head (room-settled option-block cards), the parked 👑
+pair and the record card.
