@@ -418,7 +418,17 @@
   // not write gets the beat and nothing else (SURFACE K31).
   function toggleEditMode() {
     if (!canEditText()) { ringTab(); return; }
-    if (S.editMode) { setEditMode(false); return; }
+    // **The door leaves in one press, editing card and all** (Q1133, Ed's QA
+    // 2026-09-02). The card is inside the mode, so leaving closes it into its
+    // own clause — the same act entering performs, one line down, and the
+    // asymmetry is what made *leave* mean *close the card and stay*. The draft
+    // is untouched: leaving is not discarding, and 🗑️ on the row is the only
+    // bin (K31).
+    if (S.editMode) {
+      if (SESSION.openId != null) SESSION.closeCard();
+      setEditMode(false);
+      return;
+    }
     if (SESSION.openId != null) SESSION.closeCard();
     if (S.open) { closeThen(() => { S.open = null; setEditMode(true); }); return; }
     setEditMode(true);
@@ -11053,11 +11063,21 @@
     entries: () => railEntries,
     isOpen: (id) => S.open === id,
     openId: () => S.open,
-    closeOthers: () => {
+    closeOthers: (mine) => {
       // one card at a time (backlog 204): a charter card opening leaves edit
       // mode — the draft is kept — with no render of its own, since `toggle`
-      // renders the charter itself in the same sequence
-      if (S.editMode) {
+      // renders the charter itself in the same sequence.
+      //
+      // **Except the editing card, which is edit mode's own** (Q1134, Ed's QA
+      // 2026-09-02). K31 names what leaves — *any other card opening (race,
+      // band, identity)* — and the draft's card is not among them: it is
+      // opened *by* a keystroke in edit mode (K13), and the column goes on
+      // intercepting every input into a clause, which is how a second site
+      // joins the same draft. Clearing the flag here was the whole of the bug
+      // Ed found: by the time he pressed 📝 the mode was already off, so the
+      // door opened again — closing the card, keeping the lift — where K31
+      // says one press leaves (Q1133).
+      if (!mine && S.editMode) {
         S.editMode = false;
         document.getElementById('doc').classList.remove('editing');
         renderRideTab();

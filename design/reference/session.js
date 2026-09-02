@@ -3345,7 +3345,15 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       // section title opened nothing at all.
       if (writing && siteFor(writing, line.key)) {
         const site = siteFor(writing, line.key);
-        if (site.keys[0] === line.key) {
+        // **A gap site's card hangs on its own `insert-anchor`, never on the
+        // gap block** (Q1134). The two stand at the same place in the document
+        // — after the clause the insertion goes before — and the anchor is
+        // where every gap draft's card is emitted, mid-document ones included,
+        // so drawing one here as well would put two of the same card on the
+        // page. It never showed until edit mode survived the card opening:
+        // `EDITING()` was false by then, and the gap block above was skipped
+        // wholesale.
+        if (!line.gap && site.keys[0] === line.key) {
           html += '</div>' + editCardHtml(writing, site) + PROSE();
         }
         continue;
@@ -3836,6 +3844,65 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     smoothScrollBy(r.top - headLine(), done || (() => {}));
   }
 
+  // **A rail click always arrives somewhere** (SURFACE M17, F9). An entry can
+  // name a heading that is inside something *folded* — the constitution pile
+  // shut over its own sections is the ordinary case, a prose heading shut over
+  // the ones beneath it the other — and the rail goes on listing it, because a
+  // contents list that hides what is folded is a worse contents list. Until
+  // this existed the click cancelled the browser's own jump, `scrollToHeading`
+  // found a target with no layout box and declined, and the reader was left
+  // exactly where they were with nothing changed: the surface's own
+  // `dead-click-nudge` complaint, one column to the left.
+  //
+  // The rail already **mirrors** the fold state — every entry carries its own
+  // `sectoggle` — so this is a lookup rather than a new mechanism: walk out to
+  // the entries at outer levels above this one and press the ones that read
+  // shut, whoever bound them. Pressing the rail's own control is what keeps the
+  // host's fold keys the host's business; nothing here knows what `cs-…` or
+  // `ph:…` mean.
+  const reachable = (id) => {
+    const el = id && document.getElementById(id);
+    if (!el) return false;
+    const r = el.getBoundingClientRect();
+    return !!(r.width || r.height);
+  };
+  const tocLvl = (li) => +((li.className.match(/lvl(\d)/) || [0, 9])[1]);
+  // The chain of outer-level entries above this one, outermost last: each step
+  // out is a strictly smaller `lvl`, which is the same reading of the rail that
+  // `foldProse` and `buriedBy` make of their own columns.
+  function foldedOver(id) {
+    const links = [...tocEl.querySelectorAll('a[href^="#"]')];
+    const i = links.findIndex((a) => a.getAttribute('href') === '#' + id);
+    const li = i < 0 ? null : links[i].closest('li');
+    if (!li) return [];
+    const keys = [];
+    let lvl = tocLvl(li);
+    for (let j = i - 1; j >= 0 && lvl > 1; j--) {
+      const up = links[j].closest('li');
+      if (!up || tocLvl(up) >= lvl) continue;
+      lvl = tocLvl(up);
+      const b = up.querySelector('[data-sec-toggle]');
+      if (b && b.getAttribute('aria-expanded') === 'false') keys.push(b.dataset.secToggle);
+    }
+    return keys;
+  }
+
+  // Unfold, then travel — and in that order, because the unfold is what puts
+  // the heading somewhere to travel to. Each press rebuilds the rail, so the
+  // control is re-found by its own key rather than held across the render.
+  function travelToHeading(id) {
+    if (!reachable(id)) {
+      for (const k of foldedOver(id)) {
+        const b = tocEl.querySelector('[data-sec-toggle="' + k + '"]');
+        if (b) b.click();
+      }
+      // one reflow, so the scroll is measured against the layout the unfold
+      // just made and not the one it replaced
+      void document.body.offsetHeight;
+    }
+    scrollToHeading(id && document.getElementById(id), () => markCurrentSection());
+  }
+
   const topTarget = (targets) => targets.reduce((a, c) =>
     (c.getBoundingClientRect().top < a.getBoundingClientRect().top ? c : a));
   // The clause a move is aimed at — a patch's topmost site, everyone else's only
@@ -3940,7 +4007,10 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     const closing = openId;
     const next = openId === id ? null : id;
     if (!closing && !next) return;
-    if (next && extra && extra.closeOthers) extra.closeOthers();
+    // …and the host is told **whose** card is opening (Q1134): the editing card
+    // is edit mode's own — a keystroke in edit mode is what opens it (K13) — so
+    // it is not one of K31's *any other card opening*, and it must not leave.
+    if (next && extra && extra.closeOthers) extra.closeOthers(next === DRAFT_ID);
     // **The pile shuts when the stack does** (Ed, 2026-08-17). Opening a
     // tab-stack always starts from the same place, filed decisions piled,
     // because being piled is a *posture of the closed stack* rather than a
@@ -4395,7 +4465,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         const only = entriesForSection(n);
         if (only.length === 1 && openId !== only[0].id) return toggle(only[0].id, true);
         // same owned animation as the queue-wire, and clear of the sticky navbar
-        scrollToHeading(document.getElementById('sec-' + n), () => markCurrentSection());
+        travelToHeading('sec-' + n);
       })
     );
     // Everything the host contributed above the charter's own headings — the
@@ -4419,7 +4489,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         // the id off the anchor's own href, never a guessed prefix: the lead
         // emits four kinds (#cs-constitution, #cs-<key>, #dochead, #h<i>)
         const id = (a.getAttribute('href') || '').slice(1);
-        scrollToHeading(id && document.getElementById(id), () => markCurrentSection());
+        travelToHeading(id);
       })
     );
     if (extra && extra.afterToc) extra.afterToc();
