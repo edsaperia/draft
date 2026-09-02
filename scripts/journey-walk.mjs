@@ -1774,6 +1774,72 @@ if (caret) {
   }));
   say('typing     · ' + (r.editCard ? 'opens the editing card' : 'FAIL: no editing card') +
     ' · propose control ' + (r.proposeBtn ? 'present and live' : 'MISSING'));
+  /* ---- **the door in both directions** (Q1133, Ed's QA 2026-09-02) ---------
+   * The walk already leaves edit mode twice, above — but both from a column
+   * with **no draft on it**, and that is the half that worked. Ed's step 5 is
+   * this one: press 📝 with an editing card open. K31 says one press leaves —
+   * the card closes into its clause, the lift and the caret go, the row goes —
+   * and that **the draft is kept**, leaving not being discarding. The pre-fix
+   * page reported `editing=true editable=true` here: the editing card closed
+   * underneath a column that stayed lifted and writable, so the door opened
+   * and did not close.
+   *
+   * The draft is read off `SUGGS` on both sides of the press rather than
+   * assumed from what was typed, since the two branches above type different
+   * things into different kinds of site; and then it is **found again** the
+   * way a member would find it — 📝 back in, its own chip in the gutter — which
+   * is also what hands the steps below the open card they expect. */
+  const beforeLeave = await page.evaluate(() => {
+    const d = (window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours');
+    return d ? (d.sites || []).map((s) => s.text).join('¶') : null;
+  });
+  await page.evaluate(() => {
+    const t = document.querySelector('#ridetab .achip[data-tab="text"]');
+    if (t) t.click();
+  });
+  await T(400);
+  const left = await page.evaluate(() => {
+    const d = (window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours');
+    return {
+      editing: document.getElementById('doc').classList.contains('editing'),
+      editable: (document.querySelector('#charter .prose') || {}).getAttribute
+        ? document.querySelector('#charter .prose').getAttribute('contenteditable') : '(none)',
+      card: !!document.querySelector('.sugg.editcard'),
+      row: !!document.querySelector('#charter [data-proposalrow]'),
+      openId: window.SESSION.openId,
+      draft: d ? (d.sites || []).map((s) => s.text).join('¶') : null,
+    };
+  });
+  const leftOk = !left.editing && left.editable === 'false' && !left.card && !left.row &&
+    left.openId == null && left.draft !== null && left.draft === beforeLeave;
+  say('leave draft· ' + (leftOk ? '📝 with a draft open leaves edit mode and keeps the draft'
+    : 'FAIL: ' + JSON.stringify(left) + ' · the draft was ' + JSON.stringify(beforeLeave)));
+  if (!leftOk) stuck.push('leaving edit mode with a draft open');
+  /* …and back in: the draft is still on the page, reachable from its own chip,
+   * with the text it had. A leave that quietly dropped the draft would pass
+   * every assertion above and fail here. */
+  const foundAgain = await page.evaluate(() => {
+    const t = document.querySelector('#ridetab .achip[data-tab="text"]');
+    if (t) t.click();
+    return !!t;
+  });
+  await T(400);
+  const reopened = await page.evaluate(() => {
+    const chip = document.querySelector('.achip[data-anchor="draft-yours"]');
+    if (chip) chip.click();
+    return !!chip;
+  });
+  await T(400);
+  const back = await page.evaluate(() => {
+    const lane = document.querySelector('.sugg.editcard [data-lane]');
+    return { editing: document.getElementById('doc').classList.contains('editing'),
+      card: !!document.querySelector('.sugg.editcard'),
+      lane: lane ? lane.textContent : null };
+  });
+  const backOk = foundAgain && reopened && back.editing && back.card && !!back.lane;
+  say('draft kept · ' + (backOk ? '📝 again, its chip in the gutter, and the draft is where it was'
+    : 'FAIL: ' + JSON.stringify({ foundAgain, reopened, ...back })));
+  if (!backOk) stuck.push('the draft did not survive the leave');
   /* ---- the sign control (Q770): there under an elective 👤 rung, absent
    * under a fixed one; pressing *Signed* flips the draft without a render
    * (the lane keeps its caret) and the ✏️ hold's title says what leaves. */

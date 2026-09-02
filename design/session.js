@@ -3345,7 +3345,15 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       // section title opened nothing at all.
       if (writing && siteFor(writing, line.key)) {
         const site = siteFor(writing, line.key);
-        if (site.keys[0] === line.key) {
+        // **A gap site's card hangs on its own `insert-anchor`, never on the
+        // gap block** (Q1134). The two stand at the same place in the document
+        // — after the clause the insertion goes before — and the anchor is
+        // where every gap draft's card is emitted, mid-document ones included,
+        // so drawing one here as well would put two of the same card on the
+        // page. It never showed until edit mode survived the card opening:
+        // `EDITING()` was false by then, and the gap block above was skipped
+        // wholesale.
+        if (!line.gap && site.keys[0] === line.key) {
           html += '</div>' + editCardHtml(writing, site) + PROSE();
         }
         continue;
@@ -3999,7 +4007,10 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     const closing = openId;
     const next = openId === id ? null : id;
     if (!closing && !next) return;
-    if (next && extra && extra.closeOthers) extra.closeOthers();
+    // …and the host is told **whose** card is opening (Q1134): the editing card
+    // is edit mode's own — a keystroke in edit mode is what opens it (K13) — so
+    // it is not one of K31's *any other card opening*, and it must not leave.
+    if (next && extra && extra.closeOthers) extra.closeOthers(next === DRAFT_ID);
     // **The pile shuts when the stack does** (Ed, 2026-08-17). Opening a
     // tab-stack always starts from the same place, filed decisions piled,
     // because being piled is a *posture of the closed stack* rather than a
