@@ -818,10 +818,18 @@ export async function createDraftServer(cfg: ServerConfig,
        rung would make merely opening the page press the button. */
     DEV: if (req.method === 'GET' && path === '/api/dev/ladder') {
       if (!mailer.dev) { json(res, 404, { error: 'not found' }); return; }
-      const { phaseOf, RUNGS, seedOfSlug, seatsOf } = await import('./dev-ladder.js');
+      const { phaseOf, RUNGS, seedOfSlug, seatsOf, manifestOf } =
+        await import('./dev-ladder.js');
       const slug = url.searchParams.get('slug');
       const doc = slug === null ? null : store.bySlug(slug);
       const phase = phaseOf(doc, nowMs);
+      const manifestSafely = (d: typeof doc, t: number): { what: string; seat?: string }[] => {
+        try {
+          return manifestOf(d, t).lines;
+        } catch (e) {
+          return [{ what: `the manifest could not be read: ${(e as Error).message}` }];
+        }
+      };
       json(res, 200, {
         phase,
         next: RUNGS[Math.min(RUNGS.indexOf(phase) + 1, RUNGS.length - 1)],
@@ -829,6 +837,19 @@ export async function createDraftServer(cfg: ServerConfig,
         seed: doc === null ? null : seedOfSlug(doc.cs.slug),
         seats: doc === null ? [] : seatsOf(doc.cs),
         me: doc === null ? null : (cookieSession(req, doc.id)?.memberId ?? null),
+        /* What is *in* the document, for `npm run ladder --to=` to print
+           beside its own assertions (Q1140). It rides this GET because the
+           walk drives the **bar** and so never sees `runLadder`'s own
+           return — and because reading it back here is what makes it the
+           document's account of itself rather than the rung's (Q1141).
+
+           **It must never take the bar down.** The bar asks this on every
+           page load and draws nothing at all if the answer is an error, so
+           a manifest that throws would remove the ⏭ from the page and
+           report itself as *the server is not in dev mail mode* — which is
+           exactly what a first cut of `manifestOf` did. It is an extra;
+           a failure to describe the document is not a failure to serve it. */
+        manifest: manifestSafely(doc, nowMs),
       });
       return;
     }

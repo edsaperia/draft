@@ -358,6 +358,149 @@ export function seatsOf(cs: ConstitutionSession): { id: string; name: string; fo
   return seats;
 }
 
+// ---------------------------------------------------------------------------
+// The manifest — what is *in* the document, read back from it
+
+/**
+ * One line of the manifest. `seat` is set wherever the thing is served to one
+ * seat and no other, and that is the half that turns a count into an
+ * instruction: a reader hunting a 👑 question on a member's seat is not
+ * looking at a broken feature, they are looking at the wrong seat.
+ */
+export interface ManifestLine {
+  what: string;
+  seat?: 'founder';
+}
+
+export interface LadderManifest {
+  phase: Rung;
+  seed: number | null;
+  lines: ManifestLine[];
+}
+
+/**
+ * What the document actually holds, for `npm run ladder --to=<rung>` to print
+ * beside its own assertions.
+ *
+ * **Read back, never reported.** `LadderResult.built` says what the rung
+ * *tried* to do; this says what landed. The difference is the whole point —
+ * a rung that drafts thirty rewrites and loses six to `rebase-failed` has
+ * built a document with twenty-four in it, and a manifest sourced from the
+ * builder's intentions would mislead a reader more precisely than saying
+ * nothing at all. So every count here comes from the engine's own candidate
+ * states and log, or from the module's own records.
+ *
+ * **Zero is the most useful number it prints.** The gap this closes is that a
+ * reader who cannot find a thing cannot tell a broken feature from a wrong
+ * seat from an unlucky seed; `0 amendments adopted` answers that outright, so
+ * the headline counts print whatever they are rather than being omitted when
+ * empty.
+ */
+export function manifestOf(doc: LoadedDoc | null, nowMs: number): LadderManifest {
+  const phase = phaseOf(doc, nowMs);
+  const lines: ManifestLine[] = [];
+  const say = (what: string, seat?: 'founder'): void => {
+    lines.push(seat === undefined ? { what } : { what, seat });
+  };
+  /** `1 setting` rather than `1 settings` — a dozen counted nouns, one rule. */
+  const many = (k: number, one: string, plural = `${one}s`): string =>
+    `${k} ${k === 1 ? one : plural}`;
+
+  if (doc === null) {
+    say('the manifest is empty — no document has been built yet');
+    return { phase, seed: null, lines };
+  }
+  const cs = doc.cs;
+  const seed = seedOfSlug(cs.slug);
+  const members = [...cs.memberRecords().values()].filter((m) => !m.removed);
+  say(`${many(members.filter((m) => m.arrivedAtT !== null).length, 'member')} arrived, ` +
+    `of ${members.length} on the roster`);
+
+  // Before 🍾 there is no engine, so the constitution is the only thing to
+  // name — and the one question a founder standing here has is whether the
+  // cork is reachable and, if not, what is still holding it.
+  if (cs.constitutedAtT === null) {
+    // the managed map's own filter, mirrored from session.ts's `MANAGED`:
+    // the personal pair and the Text carry no managed value and
+    // `settingState` refuses them outright
+    const states = CATALOGUE
+      .filter((e) => e.kind !== 'personal' && e.id !== 'startingText')
+      .map((e) => cs.settingState(e.id));
+    const delegated = states.filter((s) => s.holder === 'members').length;
+    say(`${many(states.length - delegated, 'setting')} kept by the founder, ` +
+      `${delegated} delegated`);
+    const r = cs.readiness();
+    const collecting = r.questions.filter((q) => q.collecting).length;
+    say(`${many(collecting, 'blind question')} still collecting, ` +
+      `${r.questions.length - collecting} settled`);
+    if (r.ready) say('🍾 is offered and not yet pressed', 'founder');
+    else say(`not ready — waiting on ${r.waiting.join(', ')}`);
+    return { phase, seed, lines };
+  }
+
+  const bridge = asEngineDoc(doc).bridge;
+  if (bridge === null) {
+    say('the engine did not start — nothing of the session can be reported');
+    return { phase, seed, lines };
+  }
+  const engine = bridge.engine;
+  const cands = engine.allCandidates();
+  const events = new Map<string, number>();
+  for (const entry of engine.log) {
+    events.set(entry.event.type, (events.get(entry.event.type) ?? 0) + 1);
+  }
+  const n = (type: string): number => events.get(type) ?? 0;
+
+  // the thing Ed went looking for and could not name: which clauses moved.
+  // A setting motion races in the engine too and has no patch, so text
+  // amendments are the ones carrying one.
+  const adopted = cands.filter((c) => c.state === 'adopted' && c.patch !== undefined);
+  const at = [...new Set(adopted.flatMap((c) => c.patch!.hunks.map((h) => h.start)))]
+    .sort((a, b) => a - b);
+  say(`${many(adopted.length, 'amendment')} adopted, text at version ` +
+    `${engine.currentVersion()}` +
+    (at.length > 0 ? ` — on charter ${at.length === 1 ? 'line' : 'lines'} ${at.join(', ')}` : ''));
+
+  const pending = [...cs.crownQuestionRecords().values()].filter((q) => q.status === 'pending');
+  say(`${many(pending.length, 'adoption')} parked awaiting assent — the 👑 questions`,
+    'founder');
+
+  const motions = [...cs.motionRecords().values()];
+  say(`${many(motions.filter((m) => m.status === 'running').length, 'motion')} standing, ` +
+    `${motions.filter((m) => m.status === 'carried').length} carried, ` +
+    `${many(n('constitution-amended'), 'setting')} amended`);
+  say(`${many(engine.races().length, 'race')} live with judging to offer`);
+  say(`${many(n('candidate-submitted'), 'candidate')} submitted, ` +
+    `${many(n('comparison'), 'comparison')}`);
+  // last, because it is the line that explains a thin document
+  say(`${n('rebase-failed')} rebase-failed`);
+
+  const apps = [...cs.applicantRecords().values()];
+  if (apps.length > 0) {
+    say(`${apps.length} at the door — ${apps.map((a) => a.status).join(', ')}`);
+  }
+  const out = members.filter((m) => m.signedOut !== null);
+  if (out.length > 0) {
+    say(`${many(out.length, 'member')} signed out — ` +
+      `${out.filter((m) => m.signedOut === 'holding').length} holding, ` +
+      `${out.filter((m) => m.signedOut === 'abstaining').length} abstaining`);
+  }
+
+  if (cs.closed) {
+    say(`closed at ${new Date(cs.closedAt!).toISOString()}`);
+    const signed = cs.closingSignatures().length;
+    say(`${signed} signed, ${Math.max(0, cs.E() - signed)} left it unsigned`);
+    say(`${cands.filter((c) => c.state === 'undecided').length} undecided — the backlog`);
+  } else {
+    const ends = (cs.settingState('ending').value as { endsAtMs: number | null } | null)
+      ?.endsAtMs ?? null;
+    if (ends !== null) {
+      say(`the close is ${Math.round((ends - nowMs) / MINUTE)} minutes away`);
+    }
+  }
+  return { phase, seed, lines };
+}
+
 interface Ctx {
   seed: number;
   nowMs: number;

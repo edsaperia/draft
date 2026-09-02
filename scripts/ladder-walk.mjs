@@ -23,6 +23,22 @@
  * first rung that fails. Like every walk here it cannot assert anything that
  * depends on an animation completing: the automation tab is backgrounded, so
  * rAF never fires.
+ *
+ * **`birth` is not a stop, and an unknown `--to` is refused.** The stops are
+ * the five rungs below, which are the five *presses*: `runLadder` treats the
+ * birth as "no document" and the first press both creates the document and
+ * fills the room, so no press this walk can make ever leaves one standing at
+ * `birth`. `--to=birth` therefore used to match nothing and walk the whole
+ * ladder to `closed` in silence, which reads as a pass. It is now an error at
+ * the door, and so is every typo (Q1142).
+ *
+ * **Every rung prints a manifest** beside its assertions (Q1140): the
+ * assertions say the page *rendered*, and a reader who then cannot find a
+ * thing in the document cannot tell a broken feature from a wrong seat from
+ * an unlucky seed. The manifest is read back from the document by
+ * `manifestOf` and served on `GET /api/dev/ladder`, because this walk drives
+ * the bar and so never sees `runLadder`'s own report of what it meant to
+ * build (Q1141).
  */
 import { chromium } from 'playwright';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
@@ -37,6 +53,15 @@ const SEED = arg('seed') ?? String(Math.floor(Math.random() * 1e6));
 const RUNGS = ['constitution', 'ready', 'session', 'closing', 'closed'];
 
 const say = (...a) => console.log(...a);
+
+// A stop that matches no rung would otherwise walk the whole ladder and print
+// no `stopped at` line at all — a silent pass wearing the shape of a run that
+// worked. Refused before the browser starts, so it costs nothing.
+if (STOP !== null && !RUNGS.includes(STOP)) {
+  say(`✗ no such stop: '${STOP}' — the stops are ${RUNGS.join(', ')}`);
+  process.exit(1);
+}
+
 const fails = [];
 const check = (rung, what, ok, detail = '') => {
   say(`   ${ok ? '·' : '✗'} ${what}${detail ? ` — ${detail}` : ''}`);
@@ -99,7 +124,9 @@ for (const rung of RUNGS) {
   const phase = await barPhase();
   check(rung, 'the bar reports the rung', (phase ?? '').startsWith(rung), phase ?? 'no bar');
   await assertSurface(rung);
-  if (STOP === rung) { say(`\nstopped at ${rung}: ${page.url()}`); break; }
+  if (STOP === rung) say(`\nstopped at ${rung}: ${page.url()}`);
+  await sayManifest();
+  if (STOP === rung) break;
 }
 
 check('walk', 'no page errors', errors.length === 0, errors.slice(0, 2).join(' | '));
@@ -123,6 +150,31 @@ async function okThe(key) {
     if (ok !== null) { ok.scrollIntoView({ block: 'center' }); ok.click(); }
   });
   await T(600);
+}
+
+/**
+ * What is *in* the document at this rung, printed beside the assertions.
+ *
+ * Nothing here is asserted and nothing here can fail the walk: the counts are
+ * an account of the document, and a document whose seed drew nothing
+ * interesting is not a broken one. That is exactly why they print even when
+ * they are zero — `0 amendments adopted` is the line that tells a reader to
+ * stop hunting.
+ *
+ * Read over the seat the walk already holds (the founder's, set by the bar's
+ * own press), so the seat notes it prints are advice about *other* seats.
+ */
+async function sayManifest() {
+  const slug = (/\/d\/([^/?#]+)/.exec(page.url()) ?? [])[1] ?? null;
+  if (slug === null) { say('   manifest — no document at this address'); return; }
+  const m = await page.evaluate((s) =>
+    fetch(`/api/dev/ladder?slug=${encodeURIComponent(s)}`).then((r) => r.json()), slug);
+  const lines = m?.manifest ?? [];
+  say(`   manifest — seed ${m?.seed ?? SEED}, reproduce with --seed=${m?.seed ?? SEED}`);
+  if (lines.length === 0) { say('   · the manifest is empty'); return; }
+  for (const line of lines) {
+    say(`   · ${line.what}${line.seat === 'founder' ? " — the founder's seat only" : ''}`);
+  }
 }
 
 /** Everything the rungs are judged on, in one pass over the page.
