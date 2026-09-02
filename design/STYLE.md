@@ -76,6 +76,9 @@ founder-is-member 🎩, proposing gate 💡, voting gate ⚖️, crown 👑, hor
   time, says *(that’s you!)* once and only there (Ed, 2026-08-27, entry 140) —
   only the Founder ever sees the birth, and after the save the same clause is
   byte-identical to what every other reader gets.
+- **The membership takes a plural verb** (Ed, 2026-09-02, Q1150): *the
+  membership are deciding*, on every delegation sentence and anywhere else the
+  word stands for the people rather than the count.
 - **The rule stops at the end of its line, and the deviation follows.** A
   settled clause is the rule and its provenance (*As for a meeting.*) on one
   line, and the Founder's powers over it (*The Founder may amend this at
@@ -94,8 +97,16 @@ founder-is-member 🎩, proposing gate 💡, voting gate ⚖️, crown 👑, hor
 - **A rename reaches the option labels**, not just the headings.
 - **A task you have to do carries no subtitle.** Subtitles help you choose
   which task to open, so they survive only on a motion (the value proposed)
-  and on news (what happened).
+  and on news (what happened) — **except a grant's own entry, which carries
+  none** (Ed, 2026-09-02, card review: *remove body text "You hold Founder
+  Actions" from the queue card*): the title names the power and the card says
+  the rest.
 - **A settled card's head is the rule, not the task's name.**
+- **A settings card whose option blocks state the rule carries no head**
+  (Ed, 2026-09-02, card review, Q1151): since CP1 every block says completely
+  what the title restated, so the head goes from every option-block settings
+  card — founding and settled alike. The card's name survives on the rail
+  entry, the tab tooltip and the record.
 
 ## 5. Bodies and notes
 
@@ -283,7 +294,7 @@ Since entry 128 the strings these rules govern are **pinned**: `npm run copy-che
 | T12 | A count, never a direction, while a question runs | *4 of 9 have answered* |
 | T13 | A value, never a guess: an undecided rule says who is deciding it, and what applies meanwhile where something does | *The Founder is deciding [x]*; *Until the Founder decides, only members can see the document* (Q618) |
 | T14 | No spec references in surface copy — cards.js included (Q608) | — |
-| T15 | No project-speak, no engine jargon: roster, participant, ordinary, ceremony, tokens, the bar, economy, queue-card, rolling log hash, judgment, comparison, Bradley–Terry, confidence | *the standard rate*; *approval threshold* |
+| T15 | No project-speak, no engine jargon: roster, participant, ordinary, ceremony, tokens, the bar, economy, queue-card, rolling log hash, judgment, comparison, Bradley–Terry, confidence. **One amendment** (Ed, 2026-09-02, Q1156: *use my language — if someone wants to understand they can read the explainer*): 🌡️'s method note names **Bradley–Terry–Davidson** and probability, in Ed's own sentences, and keeps its link to `/pairwise` — the sole site, and the amendment reaches no other card | *the standard rate*; *approval threshold*; `methodNote` |
 | T16 | Raw values are not copy | dates through `toLocaleString`; whole percents |
 | T17 | The price is said in words exactly once, at the act | the ✏️ hold's tooltip; the 🪶 bubble |
 | T18 | Decided is a word, not a glyph: **OK on anything that only wants to have been seen, a grant included** — entry 180's take-verbs are gone, reversed by Ed on 2026-09-01 under T44; what still says a grant hands something over is its **mark**, which wears the power's glyph, and the flight from the press | `data-seen`, `data-ok`; `grants`, and no `take` |
@@ -316,3 +327,4 @@ Since entry 128 the strings these rules govern are **pinned**: `npm run copy-che
 | T44 | **A commit wearing a power's glyph is pressed only when exercising that power; an acknowledgment never wears one** (Ed, 2026-09-01, backlog 263: *you should only click a button with 🛡️ on it when you're actually doing a veto*). The glyph on a button is a promise about what pressing it does — ✒️ commits a Founder Action, 🛡️ refuses with the Founder Veto, ✏️ and 🏛️ spend what they name, 🪶 and 🍾 are their own acts — and a grant, which only says *I have seen this*, commits with the bare **OK** (T18). It reverses the commit half of entry 180 and nothing else: the **mark** still wears the power's glyph, and the object still flies from the press | the four grants' `data-ok`; the 👑 question's ✒️ / 🛡️; SURFACE §9.1's OK row |
 | T45 | **A card body says what the thing is, never what the control does** (Ed, 2026-09-01, Q1129: *You don't even have to say “nothing is being asked here”; just say what proposals/voting/✏️/✒️ are and then they can press OK*). No sentence in a body names its own commit, states what pressing it will do, or says that nothing is being asked — a reader who has just been told what a power **is** needs no instruction to press OK, and a sentence about the power is true whether or not the card has been acknowledged, which is what stops a body going stale when a button changes. It **narrows T43's task carve-out rather than closing it**: what the card is waiting for, and that *It comes back to you the moment it opens*, are about the card's own queue and stay — what leaves is the **commit**, named or described. It reverses the two sentences item 76 recorded as kept and nothing else | `gateNote`, `grantNote`; the five gate and grant bodies; SURFACE §9's gates and grants rows |
 | T46 | **Clause text wears the clause font wherever it is read, including inside a control** (Ed's QA, 2026-09-02, Q1136: *all clause text in radio options should be in clause font*). A sentence the document will carry is set in `--t-body` at the document's own weight whether it is standing in the charter, offered as an option block, offered as a ladder rung, typed in a composer lane or read back in a strip — the same words in one typography, which is the **typographic half of T43**: a constitution that speaks for itself does not change its voice when it is being chosen. Its second half is the exception, and the exception is marked rather than inferred: **a control's own word is not clause text** — *Fixed*, *Rising*, *Never*, *At a set time*, *I set it*, *They lapse*, *Kept*, *Admit them*, *A number of my own*, a shape's title, a consent answer — and keeps `--t-ui`/600. Marked on the exception, so an option carrying a clause is right by default. And a number that stands **inside** a clause is a word in it, not a field beneath it (Q1137) | `setup.css`'s `.pick .opttext`, `.opttext.ctl` and `.numin`; `ctlWord` and `numIn` in `design/setup.js`; item 79 |
+| T47 | **A button offering an act wears its glyph alone; a button reporting what already happened says so in words** (Ed, 2026-09-02, Q1155 as narrowed by Q1171). So ✏️ Propose → **✏️**, 🍾 Begin → **🍾**, 🏛️ Ask all members → **🏛️** — and **✏️ Submitted** and **🗑️ Withdraw** keep their words, the first being the row's only report that the proposal is in (K18), the second naming an act its glyph alone would misstate. **OK** keeps its word, having no glyph (T18). Sits beside T44: the glyph is still a promise about what pressing it does; this rule only strips the word that repeated the promise | every commit row; SURFACE §9.1 |
