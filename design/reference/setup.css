@@ -198,10 +198,20 @@
      sentence's own type and only as much box as its digits need. */
   .pick .opttext .numin { width: 4.5rem; font-size: inherit;
     padding: var(--s1) var(--s2); }
+  /* the ⏰ date, inside its sentence the same way (card review 2026-09-02):
+     a datetime needs more box than digits do */
+  .pick .opttext .numin.datein { width: auto; max-width: 16rem; }
   .pick > .lanepick { margin-top: var(--s2); }
   /* a hairline separates adjacent blocks without boxing them — the same
      separator the power cards' `.propblock + .propblock` draws; the margin is
      the rows' one vertical rhythm (P5), wherever the blocks stand */
+  /* the settled rule as the card's first block (Q1167 a): the head's slot,
+     the block's treatment — a hairline closes it off from the alternatives */
+  .setupcard .clausehead .headrule.asblock {
+    padding-bottom: var(--s3); border-bottom: 1px solid var(--border);
+    margin-bottom: var(--s3);
+  }
+  .provline { color: var(--muted); font-size: var(--t-small); display: block; margin-top: var(--s1); }
   .pick + .pick { border-top: 1px solid var(--border); padding-top: var(--s3);
     margin-top: var(--s3); }
   /* the delegate rung is set apart by --s4 (Q761) yet is still one of the
@@ -336,7 +346,6 @@
   /* the ceiling the room can reach (Q840) — the same size and colour as the
      blindnote beneath it, and deliberately no hot colour and no glyph: grey
      means nothing is being asked of you, and this asks nothing */
-  .ceilingnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); }
 
   /* what choosing this value would do, in this room (entry 167) — a note
      under a number field, so it takes the `.exp` treatment a rung's own
@@ -395,7 +404,10 @@
      avatars*, which is what an `.emojiface` takes on a `.memrow` — the
      roster's rows are set in `--t-small`. The grid alone; the *Currently*
      line beneath it keeps `.big`. */
-  .emojiface.grid { font-size: var(--t-small); }
+  /* slightly larger than the member row's --t-small (Ed's card review,
+     2026-09-02: *Emoji should be slighty larger*) — the next stop on the
+     type scale that reads as a change */
+  .emojiface.grid { font-size: var(--t-body); }
   /* 👑/📯 beside the founder's name (entry 197): the same four declarations,
      so the mark takes the size of the text it stands in — but its own class,
      since an `.emojiface` inside a member row is read as that member's face. */
@@ -481,6 +493,10 @@
   .idrow { display: flex; align-items: center; gap: var(--s4); margin-bottom: var(--s4); }
   .idrow .fld { flex: 1; }
   .idrow input { width: 100%; }
+  /* ✋'s name composer inside its own option block (card review 2026-09-02):
+     the field is the block's text, so it takes the sentence's type */
+  .pick .opttext .namein { font-size: inherit; width: 100%; max-width: 18rem;
+    padding: var(--s1) var(--s2); }
 
   /* **The pile headings are the people** (Ed, 2026-08-18). A row of faces under
      each heading, arriving as the people do — the founder under Founder, the

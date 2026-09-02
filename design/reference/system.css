@@ -1774,13 +1774,11 @@
      contradiction inside this button’s own life: ✏️ Submitted below has
      always been subtle, so the live control was the loud one and the spent
      one the quiet one, which is backwards. */
-  .btn.glyphbtn.emojibtn:not([disabled]) {
-    background: var(--primary-subtle); border-color: var(--primary);
-    color: var(--primary-emphasis);
-  }
-  .btn.glyphbtn.emojibtn:not([disabled]):hover {
-    background: var(--light); border-color: var(--primary-hover);
-  }
+  /* **A commit is flat when inert and lifted when armed** (Ed, 2026-09-02,
+     Q1153): the accent-subtle fill and accent border this rule used to give
+     every glyph commit are gone — the base .btn's neutral outline is the whole
+     ground, the armed state is said by elevation (the .commitrow shadow rules
+     above), and the greyed glyph is what says inert. */
   .btn.btn-propose { font-weight: 600; }
   /* The draft's propose button **is** a glyph button, so it says so in its class
      list rather than restating .glyphbtn's geometry here and getting the height
@@ -1887,8 +1885,9 @@
   /* the head here is a question rather than a clause, so it carries a question's
      weight instead of the document's */
   .diag-open .clausehead .rtext { font-weight: 600; }
-  .btn.btn-approve { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
-  .btn.btn-approve:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
+  /* the solid --primary fill is retired with the subtle one (Q1153): a word
+     commit (OK) is the base .btn at weight 600, armed said by elevation */
+  .btn.btn-approve { font-weight: 600; }
   /* the tick is the commit, so it is the one solid green thing on a card */
   .btn.btn-approve.glyphbtn {
     background: var(--ok); border-color: var(--ok); color: #fff;

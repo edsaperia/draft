@@ -242,7 +242,7 @@
   const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml, watchBody,
     nameBody, pictureBody, opt, num, numIn, ctlWord, someIn, ANSWER, stateOf,
     MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml, stripHtml, readBody,
-    motionBody, motionReopen, routeFor, motionCommitHtml, BLINDNOTE, ceilingNote, methodNote, listOf, syncSlider } = window.SETUP;
+    motionBody, motionReopen, routeFor, motionCommitHtml, BLINDNOTE, methodNote, listOf, syncSlider } = window.SETUP;
   // **A setup card opens and closes like a decision card** (Ed, 2026-08-18:
   // *the whole point of building off session-view is that we would have all
   // this stuff*): cards.js own expandCard/collapseCard, which have been
@@ -1018,7 +1018,9 @@
   // writes into them when the founder picks *I set it* — an answer to a rung
   // they have just chosen. Referenced twice: by that fill, and by the
   // delegated fallbacks below, which used to carry 8 and 240 of their own.
-  const RATE_START = { grant: 4, cap: 6, dripMin: 10 };
+  // grant and cap are the mechanism's fixed 3 since Q1160 (SPEC §7, R-083);
+  // the fill writes the standard interval and the two constants
+  const RATE_START = { grant: 3, cap: 3, dripMin: 10 };
   const unset = (v) => v === '' || v === null || v === undefined;
   // picking a rung may fill that rung's own fields. Two guards the design
   // rests on: **only empty fields**, so a founder who typed 12 and re-picked
@@ -1057,7 +1059,7 @@
     authorship: () => ({ rung: S.authorship }),
     judgments: () => ({ rung: S.judgments }),
     chamber: () => ({ rung: S.chamber }),
-    rate: () => ({ grant: +S.grant, cap: Math.max(+S.cap, +S.grant), dripMinutes: +S.dripMin }),
+    rate: () => ({ grant: 3, cap: 3, dripMinutes: +S.dripMin }),   // Q1160: 3/3 fixed
     lapse: () => (S.lapse === 'never' ? { afterMs: null } : { afterMs: +S.lapseDays * 86400000 }),
     removal: () => ({ price: S.removal }),
     admission: () => ({ price: S.admission }),
@@ -1069,7 +1071,9 @@
     : (v.joinPolicy !== undefined && v.joinPolicy !== 'invite'));
   // a member's page-vocabulary answer → typed, and back — one place each way
   const ANSTYPED = {
-    quorum: (v) => ({ form: S.quorumForm, n: +v }),
+    // the form is the member's own since Q1162 — the block they chose, never
+    // the founder's frame
+    quorum: (v) => ({ form: S.myAns.quorumForm || S.quorumForm, n: +v }),
     bar: (v) => ({ pct: +v }),
     ending: (v) => (v === 'never' ? { endsAtMs: null } : { endsAtMs: Date.parse(v) }),
     authorship: (v) => ({ rung: v }),
@@ -1079,12 +1083,14 @@
     removal: (v) => ({ price: v }),
     admission: (v) => ({ price: v }),
     lapse: (v) => (v === 'never' ? { afterMs: null } : { afterMs: +v * 86400000 }),
-    rate: (v) => ({ grant: +v, cap: Math.max(+v, +S.cap || RATE_START.cap),
-      dripMinutes: +S.dripMin || RATE_START.dripMin }),
+    // the answer is the interval since Q1160, in the member's own unit
+    rate: (v) => ({ grant: 3, cap: 3,
+      dripMinutes: +v * (DRIP_UNITS[S.myAns.rateUnit] || 1) }),
   };
   // a typed value → the page's own vocabulary (what STANDS/DECIDED speak)
   const PAGEVAL = {
-    quorum: (v) => v.n, bar: (v) => v.pct, rate: (v) => v.grant,
+    // rate's page scalar is the interval since Q1160
+    quorum: (v) => v.n, bar: (v) => v.pct, rate: (v) => v.dripMinutes,
     ending: (v) => (v.endsAtMs === null ? 'never' : msToLocal(v.endsAtMs)),
     lapse: (v) => (v.afterMs === null ? 'never' : Math.round(v.afterMs / 86400000)),
     authorship: (v) => v.rung,
@@ -1223,6 +1229,7 @@
     'lapse', 'lapseDays', 'removal', 'removeWho', 'admission', 'authorship', 'judgments',
     'grant', 'dripMin', 'cap', 'chamber',
     'barBy', 'quorumBy', 'rateBy', 'myname', 'mypic', 'myemail', 'hatPick',
+    'namePick', 'picPick', 'appPicPick',
     // the title's provisional lane rides the snapshot like every other
     // provisional value, so 🪶 needs no bin of its own (2026-08-21)
     'titleDraft']
@@ -1599,6 +1606,16 @@
       set: (v) => { viewerRow()[key] = !!v; } });
   }
   const identityAnswered = (k) => (k === 'myname' ? S.nameSet : S.picSet);
+  // **Which block ✋ / 🖼️ stands on** (card review 2026-09-02, Q1164/Q1165):
+  // an explicit pick wins; else the value answers (a name, a picture's kind);
+  // else an *answered* blank is the chosen Anonymous, and an unanswered card
+  // stands on nothing — nothing is preselected (F6).
+  const namePickNow = () => (S.namePick != null ? S.namePick
+    : (S.myname || '').trim() ? 'name' : (S.nameSet ? 'anon' : null));
+  const picPickNow = () => (S.picPick != null ? S.picPick
+    : S.mypic ? (S.mypic[0] === 'u' ? 'upload' : 'emoji') : (S.picSet ? 'anon' : null));
+  const appPicPickNow = () => (S.appPicPick != null ? S.appPicPick
+    : S.app && S.app.pic ? (S.app.pic[0] === 'u' ? 'upload' : 'emoji') : null);
   Object.defineProperty(S, 'myAns', { get: () => (viewerRow().ans || (viewerRow().ans = {})) });
   Object.defineProperty(S, 'okd', { get: () => (viewerRow().okd || (viewerRow().okd = new Set())) });
   // a motion draft and your consent answers are yours, not the room's
@@ -2008,7 +2025,8 @@
       grants: '✒️',
       hide: () => !amFounder(),
       open: () => !!cs && amFounder() && holdsPenAnywhere(),
-      why: 'Founder Actions are yours: you can change this document’s rules yourself, without asking anybody. You can hand them over later.',
+      // Ed's sentence, card review 2026-09-02
+      why: 'As the founder of this document, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers if you choose to.',
       waiting: 'Waiting on the save.',
       blockers: () => [] },
     // **The shield is acknowledged separately from the pen** (Q532(3), Ed
@@ -2031,7 +2049,8 @@
       grants: '🛡️',
       hide: () => !amFounder(),   // the holder's, like the pen above
       open: () => !!cs && amFounder() && holdsShieldAnywhere(),
-      why: 'The Founder Veto is yours: a change other people agree on waits until you accept it. You can hand it over later.',
+      // Ed's sentence, card review 2026-09-02
+      why: 'As the founder of this document, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can later give up this power if you choose to.',
       waiting: 'Waiting on the save.',
       blockers: () => [] },
     // **🍾 Begin — the founder's explicit act of starting the document**
@@ -2170,11 +2189,12 @@
     // blank picture is initials (§9.0c), so there is nothing the constitution
     // is waiting to learn from either. Read by `blocksOrder`; the two arrive
     // *together* because 🖼️ follows ✋ in `ORDER` and ✋ no longer blocks.
-    { k: 'myname', g: '✋', t: 'Your Name', kind: 'personal', own: 'you',       // a blank name is Anonymous (§9.0c), so this card always has something
-      // to commit — and with the founding running in single file, a task
-      // that cannot be committed is a task nothing can get past
-      ready: () => true, changeable: true, blocks: false },
-    { k: 'mypic', g: '🖼️', t: 'Your Picture', kind: 'personal', own: 'you', changeable: true, blocks: false },
+    { k: 'myname', g: '✋', t: 'Your Name', kind: 'personal', own: 'you',
+      // a blank is no answer since Q1164: the ✓ arms once a block is chosen
+      // (typing chooses the name block, F6) — and ✋ still blocks nothing
+      ready: () => namePickNow() !== null, changeable: true, blocks: false },
+    { k: 'mypic', g: '🖼️', t: 'Your Picture', kind: 'personal', own: 'you',
+      ready: () => picPickNow() !== null, changeable: true, blocks: false },
     // A document may start empty, which is why this is not a blocker on having
     // content but on having *decided*: a page nobody has looked at and a page
     // somebody chose to leave blank look identical, and only one of them should
@@ -2198,7 +2218,9 @@
       // (no `ready` of its own: *never*, or a date — CHOSEN.ending. The old
       // predicate read true on an empty field, which was harmless only
       // while the field arrived with a date already in it.)
-      knote: 'Moving the date is a proposal ✏️ like any other. Taking the end date away altogether needs every member to agree, because with no end date the approval threshold cannot rise, and every change made so far was made under one that did.',
+      // knote retired (Ed's card review, 2026-09-02): the two-routes-inside-
+      // one-setting explanation leaves the card; the route behaviour and the
+      // composer's routeNote stand.
       rule: 'Each member says when they want it to end, and the document takes the <b>latest</b> answer — <b>never</b> being later than any date — so nobody is cut off before they were ready.',
       takes: 'The document takes the latest', result: 'Saturday 18:00',
       dist: [2, 3, 5, 3, 1], distTop: 4, distEnds: ['Tue', 'Never'] },
@@ -2742,26 +2764,22 @@
       const k = pkeyOf(rec.payload.setting);
       const what = esc(WHAT[k] || (k === 'title' ? 'the document' + Q + 's title'
         : (card(k) ? card(k).t.toLowerCase() : 'this rule')));
-      const who = rec.route === 'pen' ? 'The Founder ' : 'The membership ';
       const was = wordsFor(k, stoodBefore(rec));
       const now2 = wordsFor(k, rec.payload.value);
       if (!carried) {
         said = '<p class="cpv">The membership kept ' + what +
           (was ? ' as it stood: ' + esc(was) : ' as it stood') + '.</p>';
-      } else if (!was) {
-        // no earlier value on the record: say what it became rather than
-        // guessing at what it left
-        said = '<p class="cpv">' + who + 'changed ' + what +
-          (now2 ? ' to ' + esc(now2) : '') + '.</p>';
-      } else if (was.length > 32 || (now2 || '').length > 32) {
-        // the same *long values are shown, not narrated* rule `changeHalf`
-        // switches to past 32 characters
-        said = '<p class="cpv">' + who + 'changed ' + what + '.</p>' +
-          '<p class="waswas"><span>was</span>' + esc(was) + '</p>' +
-          (now2 ? '<p class="waswas"><span>now</span>' + esc(now2) + '</p>' : '');
       } else {
-        said = '<p class="cpv">' + who + 'changed ' + what + ' from ' + esc(was) +
-          (now2 ? ' to ' + esc(now2) : '') + '.</p>';
+        // **The before/after pair** (Ed's card review, 2026-09-02, Q1167):
+        // the text that stood as the first block, the new text as the second
+        // with its provenance line beneath — *Chosen by the membership* for a
+        // raised motion, *Chosen by Founder Action ✒️* for an amendment. The
+        // narrated from–to sentence and the was/now rows retire with it.
+        const prov = rec.route === 'pen' ? 'Chosen by Founder Action ✒️'
+          : 'Chosen by the membership';
+        said = (was ? '<div class="pick"><span class="opttext">' + esc(was) + '</span></div>' : '') +
+          '<div class="pick on"><span class="opttext">' + esc(now2 || '') + '</span>' +
+          '<span class="exp provline">' + prov + '</span></div>';
       }
     }
     return '<div class="body changed">' + eyebrow + said + speaker + '</div>';
@@ -2873,14 +2891,15 @@
       s1 = canJudge() ? prop + ', and may vote on proposals.'
         : prop + '. They may begin voting on proposals when the whole constitution has been decided.';
     }
-    // sentence 2 — what it takes to pass. The *each member holding one voice*
-    // tail went with entry 187: the voice fact's home is the 🏛️ grant card
-    // (its `why`, its `done`, its sockets and its standalone clause), and the
-    // preamble repeating it was a second home (T36).
-    const s2 = 'A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass.';
-    // sentence 3 — the governance baseline `holderLine` states deviations from
-    return s1 + ' ' + s2 + ' Nobody amends a rule at will, and no passed change waits on anyone' +
-      Q + 's assent, unless a rule says so.';
+    // sentences 2 and 3 — what it takes to pass, one route per line (Ed's
+    // card review, 2026-09-02: three lines with explicit breaks on the 🏛️
+    // card — `breakLines` draws them there; the constitution's own paragraph
+    // flows them as prose). What the rewrite drops is *Nobody amends a rule
+    // at will, and no passed change waits on anyone's assent, unless a rule
+    // says so* — the default-powers sentence, cut by Ed with the review.
+    return s1 + '\n' +
+      'A proposal ✏️ passes when it meets the approval threshold.\n' +
+      'A constitutional proposal 🏛️ passes only when all members agree.';
   };
   const preamblePara = () =>
     '<div class="cpara notab"><p class="cpv">' + proposalsClause() + '</p></div>';
@@ -2947,6 +2966,9 @@
   // until the box beside it has one, exactly as it does before any rung is
   // touched at all.
   const filled = (c) => { const v = S.myAns[ansKey(c)];
+    // 👥 needs both halves since Q1162: a number and the block it was
+    // answered in — the form is part of the answer now
+    if (ansKey(c) === 'quorum') return typeof v === 'number' && !!S.myAns.quorumForm;
     return v !== null && v !== undefined && v !== 'own'; };
   // **One rule for the answer boxes, whichever event brings it** (entry 165):
   // the keystroke repaints in place and the blur re-renders, but what the
@@ -2959,6 +2981,16 @@
     const pick = t.closest('.pick');
     const own = pick && pick.querySelector('[data-ansval="own"]');
     S.myAns[k] = t.value === '' ? (own ? 'own' : null) : +t.value;
+    // **typing into an answer block's box chooses that block** (F6's rule,
+    // reaching the answer rungs with Q1162 — 👥's two boxes share one number
+    // key and the rung says which form it answers in)
+    const rung = pick && pick.querySelector('[data-ans][data-ansval]');
+    if (rung && t.value !== '' && S.myAns[rung.dataset.ans] !== rung.dataset.ansval) {
+      S.myAns[rung.dataset.ans] = rung.dataset.ansval;
+      pick.classList.add('on');
+      const sibs = pick.parentElement ? pick.parentElement.querySelectorAll('.pick') : [];
+      sibs.forEach((p) => { if (p !== pick) p.classList.remove('on'); });
+    }
     // …and the sentence under the box follows the keystroke. Since entry 167
     // the box is not always inside a rung — 💤's and ⏱️'s answers are a bare
     // field — so the slot is looked for in the rung first and then on the
@@ -2994,7 +3026,7 @@
     quorum: () => !!S.quorumForm && isNum(S.quorumForm === 'count' ? S.quorumN : S.quorumPct),
     // the cap cannot be below the grant: the module quietly raises it, so a
     // cap of 2 beside a grant of 5 would print a rule the document does not have
-    rate: () => isNum(S.grant) && isNum(S.cap) && isNum(S.dripMin) && +S.cap >= +S.grant,
+    rate: () => isNum(S.dripMin) && +S.dripMin > 0,   // Q1160: the interval is the whole answer
     hat: () => !!S.hatPick,
   };
   const chosen = (k) => wantsDelegate(k) || !CHOSEN[k] || CHOSEN[k]();
@@ -3903,19 +3935,18 @@
     judgments: () => ({ never: 'Never revealed', after: 'Revealed at the end' }[
       takenOf('judgments') || (S.judgments === 'roster' ? 'never' : S.judgments)]),
     rate: () => { const v = takenValOf('rate');
-      return (v ? v.grant : S.grant) + ' each · +1 every ' + (v ? v.dripMinutes : S.dripMin) +
-        ' min · cap ' + (v ? v.cap : S.cap); },
+      return 'One every ' + dripPhrase(v ? v.dripMinutes : S.dripMin); },
     // (🌍 and 🤝 are stated once, above, module-first like every neighbour:
     // a second entry here used to override them and read S alone)
     lapse: () => (S.lapse === 'never' ? 'Never — however long you are away'
       : 'After ' + S.lapseDays + ' days without logging in'),
     removal: () => REMOVAL_RULE[removalPrice()],
     canpropose: () => (canPropose() ? 'Open' : 'Waiting on the start'),
-    'grant-voice': () => 'Your consent counts in every constitutional question',
+    // the three grants carry no subtitle (Ed's card review, 2026-09-02:
+    // *remove body text "You hold Founder Actions" from the queue card*;
+    // STYLE §4 as amended — the title names the power, the card says the rest)
     begin: () => (constituted() ? 'Begun' + foundedAt() : 'Not yet begun'),
     closing: () => (cs && cs.closed ? 'Closed' + closedAtWords() : ''),
-    'grant-pen': () => 'You hold Founder Actions',
-    'grant-shield': () => 'You hold the Founder Veto',
     canjudge: () => (canJudge() ? 'Open' : 'Waiting on the constitution'),
   };
   // **The readback quotes the document** (Q1112, Ed's survey item 8, answered
@@ -3927,7 +3958,7 @@
   // a document still holds falls through to the raw token, as it always did.
   const said = (s) => 'You said: “' + s + '”';
   const ANSVALUE = {
-    quorum: (v) => said(QUORUM_RULE(v)),
+    quorum: (v) => said(QUORUM_RULE(v, S.myAns.quorumForm)),
     bar: (v) => said(BAR_RULE(v, null)),
     ending: (v) => said(ENDING_RULE(v === 'never' || isNaN(Date.parse(v)) ? 'never' : v)),
     authorship: (v) => said(AUTH_RULE[v] || v),
@@ -3946,8 +3977,9 @@
     // page has ever written, so every lookup missed and the readback fell
     // through to the raw token.
     removal: (v) => said(REMOVAL_RULE[v] || v),
-    rate: (v) => said(RATE_RULE(v, Math.max(+v, +S.cap || RATE_START.cap),
-      +S.dripMin || RATE_START.dripMin)),
+    // the answer is the interval since Q1160 — minutes, from the member's
+    // own number and unit
+    rate: (v) => said(RATE_RULE(+v * (DRIP_UNITS[S.myAns.rateUnit] || 1))),
   };
   const ANSASK = { quorum: 'The lowest you will accept', bar: 'The lowest you will accept',
     ending: 'The latest you will accept', authorship: 'The most you will accept',
@@ -4160,8 +4192,7 @@
     if (k === 'applications') return APPL_RULE(mayApply(p.value) ? 'apply' : 'invite');
     if (k === 'admission') return ADM_RULE[p.value.price];
     if (k === 'removal') return REMOVAL_RULE[p.value.price];
-    if (k === 'rate') return p.value.grant + ' each, up to ' + p.value.cap +
-      ', one every ' + p.value.dripMinutes + ' minutes';
+    if (k === 'rate') return 'a new proposal every ' + dripPhrase(p.value.dripMinutes);
     return STANDS[k] ? STANDS[k](PAGEVAL[k](p.value)) : JSON.stringify(p.value);
   };
   const pageMotion = (rec) => ({ id: rec.id, kind: rec.route, by: rec.by,
@@ -4418,8 +4449,7 @@
       public: 'names from the start' }[v.rung] || v.rung),
     judgments: (v) => ({ never: 'never revealed',
       after: 'revealed at the end' }[v.rung] || v.rung),
-    rate: (v) => v.grant + ' ✏️ to start, up to ' + v.cap +
-      ', one more every ' + v.dripMinutes + ' minutes',
+    rate: (v) => 'a new proposal every ' + dripPhrase(v.dripMinutes),
   };
   const wordsFor = (k, v) => { if (v === null || v === undefined) return null;
     try { return WORDS[k] ? String(WORDS[k](v)) : null; } catch (e) { return null; } };
@@ -4563,7 +4593,9 @@
     const why = (S.setWhy || {})[c.k] || '';
     if (c.door) {
       if (c.k === 'invite') {
-        const at = (S.inviteOne || '').trim();
+        // one box since Q1166: the route's commit proposes the first address
+        // in it — one motion proposes one member
+        const at = (S.inviteMany || '').split('\n').map((s) => s.trim()).filter(Boolean)[0] || '';
         return at ? { k: c.k, to: at + ' joins the membership', why } : null;
       }
       const row = removableRows().find((p) => p.mid === S.removeWho);
@@ -4753,9 +4785,8 @@
     bar: (v) => v + '% sure at the end',
     ending: (v) => (v === 'never' ? 'Never — it runs until too few members are active'
       : new Date(v).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false })),
-    rate: (v) => { const tv = takenValOf('rate');
-      return v + ' each · +1 every ' + (tv ? tv.dripMinutes : S.dripMin) +
-        ' min · cap ' + (tv ? tv.cap : S.cap); },
+    rate: () => { const tv = takenValOf('rate');
+      return 'a new proposal every ' + dripPhrase(tv ? tv.dripMinutes : S.dripMin); },
   };
   const standsOf = (k) => {
     const c = card(k);
@@ -4810,11 +4841,11 @@
         // meaning belongs beside it exactly as on the founder's card
         meanLine('pace', d.val && d.val.shape ? d.val : null)),
     rate: (d) => {
+      // one number since Q1160: a motion proposes the interval, and the
+      // standing grant and cap ride through unchanged
       const n = d.to.match(/\d+/g) || [];
-      return inputBlock('Members start with ' +
-        '<input class="num" type="number" min="0" max="40" data-mrate="x" value="' + esc(n[0] || S.grant) + '"> proposals ✏️ each, up to a maximum of ' +
-        '<input class="num" type="number" min="1" max="99" data-mrate="y" value="' + esc(n[1] || S.cap) + '">. They get an additional ✏️ every ' +
-        '<input class="num" type="number" min="5" max="2880" data-mrate="z" value="' + esc(n[2] || S.dripMin) + '"> minutes.',
+      return inputBlock('Members may make a new proposal ✏️ every ' +
+        '<input class="num" type="number" min="1" max="2880" data-mrate="z" value="' + esc(n[0] || S.dripMin) + '"> minutes.',
         meanLine('rate', d.val && d.val.grant !== undefined ? d.val : null));
     },
     ending: (d) => {
@@ -4835,8 +4866,9 @@
       meanLine('bar', d.val && d.val.pct !== undefined ? d.val : null)) +
       // and the method note with it (entry 163): the pen's set card is the
       // founder card in its second epoch, so a founder who first meets 🌡️
-      // after the save would otherwise never be offered the explainer
-      ceilingNote(E(), 99) + methodNote(),
+      // after the save would otherwise never be offered the explainer.
+      // (The ceiling note is gone — Q1159.)
+      methodNote(),
     quorum: (d) => (S.quorumForm === 'count'
       ? inputBlock('Quorum is <input class="num" type="number" min="1" max="99" data-mnum=" of the membership" value="' +
         esc((d.to.match(/\d+/) || [])[0] || takenOf('quorum') || quorumCount()) + '"> of the membership.',
@@ -5032,7 +5064,7 @@
         quorumBy: 'roster', quorumForm: 'share', quorumPct: 33, quorumN: 5,
         joinBy: 'invite', policyBy: 'roster', lapse: 'roster', lapseDays: 90,
         removal: 'roster', admission: 'roster', authorship: 'roster', judgments: 'roster',
-        rateBy: 'founder', grant: 4, dripMin: 180, cap: 8,
+        rateBy: 'founder', grant: 3, dripMin: 180, cap: 3,   // 3/3 fixed, Q1160
         // **🌍 stays with the founder, and that is the tooling fix** (Ed,
         // 2026-08-22, asking whether ⏩ could be more useful for working on
         // the power cards). ⏩ already leaves three power cards live — the
@@ -5065,7 +5097,10 @@
         quorum: (S.quorumForm === 'count' ? S.quorumN : S.quorumPct),
         bar: S.tClose, authorship: 'anonymous',
         judgments: 'never', chamber: 'closed', applications: 'invite',
-        lapse: 'never', removal: 'consent', admission: 'assembly', rate: S.grant };
+        // a ⏱️ answer is the interval since Q1160 (minutes — ANSTYPED reads
+        // the member's unit, which ⏩ leaves at its minutes default)
+        lapse: 'never', removal: 'consent', admission: 'assembly',
+        rate: S.dripMin || RATE_START.dripMin };
       for (const k of Object.keys(FILL)) {
         const st = csState(k);
         if (!st || !st.collecting) continue;
@@ -5197,6 +5232,30 @@
     shape: 'what type of document this is',
     text: 'the text the document starts from',
   };
+  // **The delegation sentence, one per setting** (Ed's card review, 2026-09-02,
+  // Q1150–Q1152): the generic *The Founder is letting the membership decide
+  // this rule themselves.* becomes the question being decided, named — one
+  // table, because the sentence prints at two sites (the delegated clause and
+  // the delegate rung) and a hand-written string at each would drift. Ed's
+  // own sentences, all plural (Q1150), stored without the final stop so the
+  // clause site can carry its count parenthetical.
+  const DECIDING = {
+    chamber: 'The membership are deciding if the document can be seen by anyone with the link',
+    admission: 'The membership are deciding how new members may join',
+    applications: 'The membership are deciding whether anyone with the link may apply to become a member',
+    lapse: 'The membership are deciding whether inactive members lapse',
+    removal: 'The membership are deciding how a member is removed',
+    rate: 'The membership are deciding how often members should be able to make proposals',
+    ending: 'The membership are deciding when changes may no longer be made to the document',
+    bar: 'The membership are deciding what proportion of votes a proposal ✏️ needs to pass',
+    quorum: 'The membership are deciding how many members must vote on a proposal ✏️ before it can pass',
+    authorship: 'The membership are deciding if anonymous proposals are allowed',
+    judgments: 'The membership are deciding if votes are revealed',
+  };
+  const decidingOf = (k) => DECIDING[k] || 'The membership are deciding this rule';
+  // the thirteen cards of Q1151 — every option-block settings card, 🎩 included
+  const OPTHEADLESS = new Set(['chamber', 'admission', 'applications', 'hat',
+    'lapse', 'removal', 'rate', 'ending', 'bar', 'quorum', 'authorship', 'judgments']);
   // ---- 🧭 the shape (entry 166) — read from the bundle's table, never a
   // number of the page's own ----------------------------------------------
   // the shape as a noun phrase, for the provenance and the 🍾 line
@@ -5260,7 +5319,9 @@
   // one, the founder's field otherwise; named once, since `ENDING_RULE` does
   // the wording for both the clause and the *You said* readback
   const endingAt = () => (endingVal() !== 'never' && endingVal()) || S.endsAt;
-  const ENDING_NEVER = 'The drafting process has no set end — it runs until too few members are active.';
+  // Ed's sentence (card review 2026-09-02); the freeze is real (SPEC §9.5)
+  // and the card no longer mentions it
+  const ENDING_NEVER = 'Changes to the document may be made perpetually.';
   // **A number states its own sentence** (Q1112 (b), step 5): the numeric
   // clauses are named here, taking the value rather than reading the
   // document's, so the clause and the *You said* readback are the one
@@ -5268,33 +5329,51 @@
   // into the document. What a value would *mean* is still `meaningOf`'s
   // alone (T39) — none of these writes a second consequence sentence.
   const ENDING_RULE = (v) => (v === 'never' || !v ? ENDING_NEVER
-    : 'The drafting process will end on ' + endFmtOf(v) + '.');
-  const QUORUM_RULE = (n) => (S.quorumForm === 'count'
-    ? Math.min(n, E()) + ' of the ' + E() + ' members'
-    : n + '% of the members') + ' must have voted on a question before it can change the document.';
+    : 'No more changes to the document may be made after ' + endFmtOf(v) + '.');
+  // `form` is the value's own since Q1162 — a delegated resolution can land
+  // in either form whatever the founder's frame says, so a caller with a
+  // typed value passes its form and only the founder's own field defaults
+  const QUORUM_RULE = (n, form) => (((form || S.quorumForm) === 'count')
+    ? n + ' members'
+    : n + '% of the membership') + ' must vote on a proposal ✏️ before it can pass.';
   // a ramp that starts where it ends is not a ramp (Ed: *if there is no
   // ramp, the clause can just be blank*)
   const BAR_RULE = (pct, start) =>
     (isNum(start) && +start < +pct
       ? 'The members must be ' + pct + '% sure a proposal is better for it to pass by the end, starting at ' + start + '% when voting opens.'
       : 'The members must be ' + pct + '% sure a proposal is better for it to pass.');
+  // Ed's sentences (card review 2026-09-02, Q1149 — the options swap so the
+  // card leads with lapsing; Q1168 — *automatically abstain* is §9.5a's own
+  // mechanism, stated accurately)
   const LAPSE_RULE = (v) => (v === 'never' || v === null
-    ? 'Nobody stops being a member, however long they are away.'
-    : 'Somebody stops being a member after ' + v + ' days without logging in.');
-  const RATE_RULE = (grant, cap, drip) => 'Members start with ' + grant +
-    ' proposals ✏️ each, up to a maximum of ' + cap +
-    '. They get an additional ✏️ every ' + drip +
-    // the cost rode the why paragraph until T43 dropped it (Ed,
-    // 2026-09-01: *this may mean we need to add to the clause sentences
-    // themselves*) — so the clause states it
-    ' minutes. A proposal costs one ✏️, and one that passes gives it back.';
+    ? 'Inactive members never lapse and are still counted towards votes.'
+    : 'After ' + v + ' days, inactive members lapse and automatically abstain from votes.');
+  // **⏱️ is one number** (Ed, 2026-09-02, Q1160/Q1161, R-083): the grant and
+  // the maximum are the mechanism's fixed 3 (SPEC §7), the interval is the
+  // setting, and **the unit is worked out from the stored minutes** — the
+  // clause prints the largest unit that divides exactly (1440 → *every day*,
+  // 120 → *every 2 hours*, 45 → *every 45 minutes*); the card's selector is
+  // input only, minutes stored everywhere (the drip runs on real minutes).
+  const DRIP_UNITS = { minutes: 1, hours: 60, days: 1440 };
+  const dripParts = (mins) => (isNum(mins) && +mins > 0
+    ? (+mins % 1440 === 0 ? { n: +mins / 1440, unit: 'days' }
+      : +mins % 60 === 0 ? { n: +mins / 60, unit: 'hours' }
+      : { n: +mins, unit: 'minutes' })
+    : null);
+  const dripPhrase = (mins) => { const p = dripParts(mins);
+    return !p ? '' : p.n === 1
+      ? { days: 'day', hours: 'hour', minutes: 'minute' }[p.unit]
+      : p.n + ' ' + p.unit; };
+  const RATE_RULE = (drip) =>
+    'Members may make a new proposal ✏️ every ' + dripPhrase(drip) + '.';
   const DECIDED = {
     // the ⏰ clause is `ENDING_RULE`'s like the readback's — it was the one
     // numeric clause left spelling itself a second time beside its builder
     ending: () => (perpetual() ? ENDING_NEVER
       : ENDING_RULE(endingAt())),
-    quorum: () => QUORUM_RULE(takenOf('quorum') ||
-      (S.quorumForm === 'count' ? S.quorumN : S.quorumPct)),
+    quorum: () => { const tv = takenValOf('quorum');
+      return tv ? QUORUM_RULE(tv.n, tv.form)
+        : QUORUM_RULE(S.quorumForm === 'count' ? S.quorumN : S.quorumPct); },
     // **The ramp is part of what the threshold says** (Q512, Ed 2026-08-21:
     // *if there is no ramp, the clause can just be blank — maybe the ramp can
     // be in the threshold setting stack, rather than a whole separate
@@ -5329,8 +5408,7 @@
       return LAPSE_RULE(v === 'never' ? 'never'
         : (typeof v === 'number' ? v : S.lapseDays)); },
     rate: () => { const v = takenValOf('rate');
-      return RATE_RULE(v ? v.grant : S.grant, v ? v.cap : S.cap,
-        v ? v.dripMinutes : S.dripMin); },
+      return RATE_RULE(v ? v.dripMinutes : S.dripMin); },
     // 🤝 is one switch; what an application costs is 🪪's sentence (entry 94)
     applications: () => APPL_RULE(policyNow()),
     slug: () => 'The document lives at ' + docAddr(S.slug) + '.',
@@ -5499,7 +5577,7 @@
           // the interim visibility rule stays stated (Q618 (a)) — a
           // stranger reading the door is reading this rule
           ? 'Until the members decide, only members can see the document'
-          : 'The Founder is letting the membership decide this rule themselves') +
+          : decidingOf(c.k)) +
           (isStranger() ? ' — the members are answering.'
             : roomExists() ? ' (' + Math.min(c.in || 0, E()) + ' of ' + E() + ' have answered so far).'
             : ' — waiting for members.');
@@ -5537,6 +5615,11 @@
       // **a door heads with its people** (CP6, Q1101): the pile's list first,
       // then the rule as it stands beneath it, both inside the one head
       if (c.door) {
+        // the direct ✉️ carries no price/power sentence (Ed's card review,
+        // 2026-09-02): where the viewer's word sends, the head is the people
+        // alone — the composer branch keeps the price, which is what a
+        // member composing needs
+        if (c.k === 'invite' && doorDirect(c)) return doorPeople(c);
         const rule = settled(c) ? breakLines(linkify(esc(decisionLine(c))))
           : composerOn(c) ? esc(standsOf(c.k)) : '';
         return doorPeople(c) + (rule ? '<div class="doorrule">' + rule + '</div>' : '');
@@ -5566,6 +5649,16 @@
       if (composerOn(c)) return esc(standsOf(c.k));
       return null;
     },
+    // **the thirteen option-block settings cards carry no title head**
+    // (Q1151, F15): the founder's own setting card, whose blocks state the
+    // rule — never a member's answer card, a record, a power tab, a door or
+    // a gate, which keep their titles
+    noTitleHead: (c) => !c.power && !c.record && !c.isGate && !c.ansFor && !c.door &&
+      c.kind !== 'personal' && OPTHEADLESS.has(c.k),
+    // a settled option-block setting draws its rule as the first block
+    // (Q1167 a) — same keys, same exclusions
+    blockHead: (c) => !c.power && !c.record && !c.isGate && !c.ansFor && !c.door &&
+      c.kind !== 'personal' && OPTHEADLESS.has(c.k),
     // reserved = held by the founder: the room may pass a change, and it
     // then goes to the founder as a 👑 question (accept or reject)
     reserved: (c) => !c.power && !c.record && !c.isGate && !c.ansFor && c.kind !== 'personal' && !membersHold(c),
@@ -6031,14 +6124,14 @@
     // key as the values above it, so it is part of that question rather than a
     // second one. Two elements each claiming the role made two groups out of
     // one decision, which the value group's own label already covers.
-    // …and since Q1112 (b) the rung says the clause the delegation sets —
-    // Ed's own sentence for the delegated state (T43's item 7), minus the
-    // count, which is the live parenthetical the clause carries and not part
-    // of what you are choosing.
+    // …and since the card review (Q1150–Q1152) the rung says the question the
+    // delegation hands over — `DECIDING`'s per-setting sentence — and carries
+    // **no explanation of the blind collection**: the *Not now — every member
+    // states…* frame and the per-setting aggregation tail are gone (Q1152).
+    // Blindness is still said to the person it protects, on the member's own
+    // answer card (`BLINDNOTE`).
     return '<div class="choice delegrung">' +
-      opt(S, dk, 'roster', 'The Founder is letting the membership decide this rule themselves.',
-        'Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. ' +
-        (c.rule ? String(c.rule).replace(/<[/]?b>/g, '') : '')) +
+      opt(S, dk, 'roster', decidingOf(c.k) + '.', '') +
       '</div>';
   };
   // **One fact, one home** (Q763, STYLE T36). How blind answers aggregate had
@@ -6174,6 +6267,10 @@
   // `tClose` directly (`fillRung` takes `barBy` with them); the fourth is the
   // card's original *I set it* rung under its own name, so the field, its
   // `data-num` and the probe's two steps are exactly where they were.
+  // **Exactly three rungs** (Ed, 2026-09-02, Q1158, reversing Q1104 (b) for
+  // 🌡️ alone): *A number of my own* and its box are gone from this card —
+  // the pattern survives on 🪜, 👥 and ⏱️, and the composer still takes a
+  // number for a motion.
   const barRungs = () =>
     M.BAR_RUNGS.map((r) => pctRung({
       // the block text is the rule as it would stand (Q1104 (b)); the short
@@ -6181,13 +6278,7 @@
       set: 'tClose', val: r.pct, label: r.sentence, pct: r.pct,
       on: S.barBy === 'founder' && +S.tClose === r.pct,
       exp: meaning('bar', { pct: r.pct }),
-    })).join('') +
-    pctRung({
-      set: 'barBy', val: 'founder', label: M.OWN_RUNG_LABEL, mean: 'bar', ctl: true,
-      on: S.barBy === 'founder' && !isRungPct(S.tClose),
-      exp: isNum(S.tClose) && !isRungPct(S.tClose) ? meaning('bar', { pct: +S.tClose }) : '',
-      inner: '<span class="setrow2">' + num(S, 'tClose', 'At the end', 50, 99, '%') + '</span>',
-    });
+    })).join('');
   // 🪜's, inside *Rising*: the same three percents read as a starting bar, and
   // a rung is dimmed where it would not actually start below the close — a
   // ramp that starts at its own ceiling is not a ramp. The close is the
@@ -6254,8 +6345,10 @@
       // alone, in the clause voice (Q1109; STYLE §3 — third person, about
       // the document)
       return '<div class="choice" role="radiogroup">' +
-        opt(o, 'hatPick', 'member', 'The Founder is a member — drafting, voting, counting towards quorum and answering the founding questions like anybody.', '', '', started) +
-        opt(o, 'hatPick', 'clerk', 'The Founder only runs the document — no ✏️s, no votes, counting towards nothing, with nothing to answer. A clerk can stay unnamed.', '', '', started) +
+        // the consequences cut, the fact kept (Ed's card review, 2026-09-02);
+        // *a clerk can stay unnamed* survives on ✋'s clerk branch alone
+        opt(o, 'hatPick', 'member', 'The Founder is part of the membership.', '', '', started) +
+        opt(o, 'hatPick', 'clerk', 'The Founder is not part of the membership.', '', '', started) +
         '</div>' +
         (started ? '<p class="setnote"><b>Settled.</b> Now that people are voting, the Founder joins the same way as anybody else.</p>' : '');
     },
@@ -6269,7 +6362,8 @@
       // `ctlWord` (T46): a shape's title names a *kind of document* and sets
       // twelve clauses at once — it is not itself one of them
       M.SHAPES.map((r) => opt(S, 'docShape', r.name, ctlWord(esc(r.title)), esc(r.say))).join('') +
-      opt(S, 'docShape', 'custom', ctlWord('Custom'), 'Decide everything yourself — every rule is a card.') +
+      // *— every rule is a card* cut (Ed's card review, 2026-09-02)
+      opt(S, 'docShape', 'custom', ctlWord('Custom'), 'Decide everything yourself.') +
       '</div>',
     title: () =>
       '<div class="lanebox"><div class="lp editlane titlelane' + (titlePending() ? '' : ' blank') + '"' +
@@ -6331,8 +6425,9 @@
           ? '<p class="why">Your address is the only way back in — there are no passwords — so a new one has to prove it works before it replaces the old.</p>'
           : '') +
         '<span class="fld"><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" placeholder="you@example.com" style="width:20rem"></span>'),
-    myname: () => nameBody(me(), { optional: viewerIsClerk() }),
-    mypic: () => pictureBody(me()),
+    myname: () => nameBody(me(), { optional: viewerIsClerk(), pick: namePickNow(),
+      locked: !!(cs && !docOpen()) }),
+    mypic: () => pictureBody(me(), { pick: picPickNow(), locked: !!(cs && !docOpen()) }),
     // **Whether the founder is in it is its own question** (Ed, 2026-08-18).
     // It had been the top half of the roster card, which made a decision about
     // one person a preamble to a list of everybody — and the founder is a hat
@@ -6358,36 +6453,19 @@
       // and where the document is stuck on a question nobody can answer, the
       // card leads with *why you are here* (Q828) — the remedy above the door
       : oneVoiceAsk() +
-      '<p class="why">An invitation is just the link, sent by email: somebody becomes a member when they open it, and is listed as <i>invited</i> until then.</p>' +
-      // **The send wears the mark of the act** (Ed, entry 37): *it is the
-      // Invite / Send invitations buttons that should be ✒️, as each invite is
-      // the proposal.* In the direct form the viewer's own word sends (Y24),
-      // and that is the ✒️ verb — nobody has to agree, because you hold the
-      // power (the four verbs, SURFACE §7). It is a **click, not a hold**: the
-      // ladder is for what comes out of a wallet, and a direct invitation
-      // spends nothing — a member inviting at 🪪 *pen* holds no pen wallet at
-      // all. And it is never disabled on an empty field, because the refusal
-      // sentence (Y25) is what an empty field is owed.
-      // The word goes, as it did on 📨 (Ed, 2026-08-21): a label beside a glyph
-      // and a tooltip does nothing they were not already doing, and the
-      // *Several at once* eyebrow already names the second box.
-      '<div class="roster"><div class="addrow"><input type="email" placeholder="name@example.com" data-add="1" value="' + esc(S.inviteOne) + '">' +
-      '<button class="btn btn-approve glyphbtn emojibtn" data-act="add"' +
-      ' title="Send the invitation">✒️</button>' +
-      // **A door's second act sits beside the door's own** (entry 161, Q1024).
-      // ✉️'s act is the field and its ✒️, and §9.1 already rules that a door
-      // whose act is in the body has nothing left to commit on the row — so
-      // the route's commit joins the act here rather than contradicting a row
-      // that is a bare ✓ exactly because the act is elsewhere.
-      founderCommit(card('invite')) + '</div></div>' +
+      // **One box** (Ed's card review, 2026-09-02, Q1166): the single-address
+      // field with its own ✒️, the *Several at once* eyebrow and the two
+      // explanatory paragraphs are gone. What is left is the multi-line box —
+      // its placeholder the two lines Ed wrote — and the send is the commit
+      // row's ✒️ (the act moved from the body to the row; Y24's *word sends*
+      // test still decides whether this branch is drawn at all). The box
+      // keeps what is in it across a close, like every other field here: a
+      // pasted list of addresses is the most expensive thing anybody types
+      // on this card (Ed, 2026-08-21).
+      '<div class="roster">' +
+      '<textarea placeholder="name@example.com&#10;one address per line" data-emails="1">' + esc(S.inviteMany) + '</textarea>' +
+      '</div>' +
       doorErrHtml('invite') +
-      '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Several at once</div>' +
-            // the boxes keep what is in them across a close, like every other
-      // field here: a pasted list of addresses is the most expensive thing
-      // anybody types on this card (Ed, 2026-08-21)
-      '<textarea placeholder="Paste addresses here, one per line" data-emails="1">' + esc(S.inviteMany) + '</textarea>' +
-      '<div style="margin-top:var(--s2)"><button class="btn btn-approve glyphbtn emojibtn"' +
-      ' data-act="invite" title="Send them all">✒️</button></div>' +
       '<p class="setnote">' + arrived() + ' of ' + S.roster.length + ' have opened it so far. ' +
       'Nobody has to be here for the document to exist, and anybody who arrives later ' +
       'starts with the same ✏️s as everybody else.</p>'),
@@ -6447,12 +6525,14 @@
       theyDecide('ending') +
       // under a shaped document that did not set ⏰ (a meeting, a conference)
       // the rung grows chips in the shape's unit above the field (entry 166,
-      // F6: picking a chip fills the rung's own field); the field stays
-      // `ctlWord` (T46) — *At a set time* names the field under it; the clause
-      // is `ENDING_RULE`'s, which cannot be written until the date is
-      opt(S, 'ending', 'ends', ctlWord('At a set time'), '',
-        endChipsHtml() +
-        '<span class="fld"><label>Ends</label><input type="datetime-local" data-txt="endsAt" value="' + S.endsAt + '"></span>') +
+      // F6: picking a chip fills the rung's own field). **The picker stands
+      // inside the sentence** (Ed's card review 2026-09-02, Q1137's pattern):
+      // the block states the rule with the date where its number goes, so
+      // *At a set time* retired with the stacked field.
+      opt(S, 'ending', 'ends',
+        'No more changes to the document may be made after ' +
+        '<input class="num numin datein" type="datetime-local" data-txt="endsAt" value="' + S.endsAt + '">.',
+        '', endChipsHtml()) +
       opt(S, 'ending', 'perpetual', ENDING_NEVER) +
       '</div>',
     bar: () =>
@@ -6461,7 +6541,7 @@
       '<div class="choice" role="radiogroup">' +
       theyDecide('bar') +
       barRungs() +
-      '</div>' + ceilingNote(E(), 99),
+      '</div>',
     pace: () =>
       '<div class="choice" role="radiogroup">' +
       // **Fixed first** (entry 167, rule 4): it is the more demanding shape —
@@ -6484,29 +6564,24 @@
         '<div class="choice">' + startRungs() + '</div>', perpetual()) +
       '</div>' + (perpetual() ? '<p class="setnote">With no end date there is nothing to climb towards, so the number stays fixed.</p>' : ''),
     quorum: () =>
-      // **The form is the wording, the number is the decision** (§9.0a): count
-      // or share is how the question tracks a changing membership, and it is
-      // the founder's even when the number is the room's.
-      '<div class="eyebrow fieldlab">Asked as</div>' +
-      '<div class="choice" role="radiogroup" aria-label="Form">' +
-      opt(S, 'quorumForm', 'share', 'The quorum is a share of the membership — the number moves as members join and leave.') +
-      opt(S, 'quorumForm', 'count', 'The quorum is a fixed number of members, however the membership changes.') +
-      '</div>' +
-      '<div class="eyebrow fieldlab">The number</div>' +
-      '<div class="choice" role="radiogroup" aria-label="Number">' +
+      // **The form joins the question** (Ed, 2026-09-02, Q1162 — Q341
+      // reversed for 👥 alone, R-082): two blocks, each the rule as it would
+      // stand with its number inline (Q1137's pattern). The *Asked as* /
+      // *The number* eyebrows and the *I set it* rung fold into them;
+      // picking a block or typing in its box chooses that form (F6) and
+      // takes the question back.
+      '<div class="choice" role="radiogroup">' +
       theyDecide('quorum') +
-      // the `suffix` on the share field stays: it is the **readout** — what
-      // the percent comes to today — where the `.meaning` under it is the
-      // **consequence**, and the two are different jobs (entry 167)
-      // `ctlWord` (T46): *I set it* answers *who decides*, not *what the rule
-      // is* — 👥's clause is `QUORUM_RULE`'s and needs a number this has not
-      // been given yet. (⏱️ below no longer says it: since Q1137 the rate's
-      // own sentence is the option's text, with the three numbers in it.)
-      opt(S, 'quorumBy', 'founder', ctlWord('I set it'), '',
-        '<span class="setrow2">' + (S.quorumForm === 'share'
-          ? num(S, 'quorumPct', 'Share', 1, 100, '% — ' + quorumCount() + ' of ' + E() + ' today')
-          : num(S, 'quorumN', 'Members', 1, 40, 'of ' + E())) + '</span>' +
-        meanLine('quorum', CHOSEN.quorum() ? TYPED.quorum() : null)) +
+      opt(S, 'quorumForm', 'share',
+        numIn(S, 'quorumPct', 1, 100) +
+        '% of the membership must vote on a proposal ✏️ before it can pass.', '',
+        (S.quorumForm === 'share'
+          ? meanLine('quorum', CHOSEN.quorum() ? TYPED.quorum() : null) : '')) +
+      opt(S, 'quorumForm', 'count',
+        numIn(S, 'quorumN', 1, 40) +
+        ' members must vote on a proposal ✏️ before it can pass.', '',
+        (S.quorumForm === 'count'
+          ? meanLine('quorum', CHOSEN.quorum() ? TYPED.quorum() : null) : '')) +
       '</div>',
     authorship: () =>
       '<div class="choice" role="radiogroup">' +
@@ -6516,7 +6591,9 @@
       opt(S, 'authorship', 'sealed', AUTH_RULE.sealed) +
       opt(S, 'authorship', 'sealedElective', AUTH_RULE.sealedElective) +
       opt(S, 'authorship', 'public', AUTH_RULE.public) +
-      '</div><p class="setnote">If you choose this yourself, members can end up named without having agreed to it.</p>',
+      // the choose-this-yourself warning cut by Ed with the review
+      // (2026-09-02) — §3.5a's protection is unchanged, only the note goes
+      '</div>',
     judgments: () =>
       '<div class="choice" role="radiogroup">' +
       theyDecide('judgments') +
@@ -6526,28 +6603,23 @@
     rate: () =>
       '<div class="choice" role="radiogroup">' +
       theyDecide('rate') +
-      // **A numeric clause reads as a sentence** (Q1137, Ed's QA 2026-09-02:
-      // *the input boxes should be inline*). The rung was *I set it* over
-      // three `num()` fields in a `.setrow2` — each a label stacked over an
-      // input, so ⏱️ was the one setting card that met the Founder as a form
-      // rather than as the rule it sets. It is `RATE_RULE` itself now, handed
-      // three inline inputs where its three numbers go: the option's text is
-      // the clause the document will carry, which is what Q1109 made every
-      // other enumerated card and what T46 now sets the type for. The three
-      // field labels are gone because the sentence says what each number is.
-      opt(S, 'rateBy', 'founder',
-        RATE_RULE(numIn(S, 'grant', 0, 40), numIn(S, 'cap', 1, 99),
-          numIn(S, 'dripMin', 5, 2880)), '',
-        // three numbers say nothing on their own: what a member weighs is how
-        // many proposals they come to over the session, which is why ⏱️'s
-        // meaning names the window (entry 167, rule 1)
-        meanLine('rate', CHOSEN.rate() ? TYPED.rate() : null)) +
-      '</div>' +
-      // the commit waits on all three numbers, and on the maximum being a
-      // maximum: without this the button just stays dark and says nothing
-      // about why (found walking the founding, 2026-08-21)
-      (isNum(S.grant) && isNum(S.cap) && +S.cap < +S.grant
-        ? '<p class="setnote">The maximum cannot be lower than the number they start with.</p>' : ''),
+      // **⏱️ is one number** (Ed, 2026-09-02, Q1160/Q1161, R-083): the grant
+      // and the maximum are the mechanism's fixed 3 and are not on the card;
+      // the sentence carries the number in the card's own unit with a
+      // minutes/hours/days selector beside it — input only, minutes stored.
+      (() => { const p = dripParts(S.dripMin);
+        const unit = S.dripUnit || (p ? p.unit : 'minutes');
+        const shown = isNum(S.dripN) ? S.dripN : (p ? p.n : '');
+        const sel = '<select class="num numin dripunit" data-dripunit="1">' +
+          ['minutes', 'hours', 'days'].map((u) =>
+            '<option value="' + u + '"' + (u === unit ? ' selected' : '') + '>' + u + '</option>').join('') +
+          '</select>';
+        return opt(S, 'rateBy', 'founder',
+          'Members may make a new proposal ✏️ every ' +
+          '<input class="num numin" type="number" data-num="dripN" min="1" max="2880"' +
+          (shown === '' ? '' : ' value="' + shown + '"') + '> ' + sel + '.', '',
+          meanLine('rate', CHOSEN.rate() ? TYPED.rate() : null)); })() +
+      '</div>',
     chamber: () =>
       '<div class="choice" role="radiogroup">' +
       theyDecide('chamber') +
@@ -6557,17 +6629,17 @@
     lapse: () =>
       '<div class="choice" role="radiogroup">' +
       theyDecide('lapse') +
-      // **Most-protective-first** (entry 167, rule 4): *never* is what the
-      // document takes — the longest spell of all — so it is topmost, as
-      // 👁️ and 🪪 already read, and *They lapse* follows it. Its old `exp`
-      // (*After a gap you choose.*) said only that the field below is a
-      // field; what it means is now the `.meaning` under that field.
-      opt(S, 'lapse', 'never', meaning('lapse', { afterMs: null })) +
-      // `ctlWord` (T46): *They lapse* is the rung's own two words — `LAPSE_RULE`
-      // cannot state the clause until the field beneath carries a number
-      opt(S, 'lapse', 'days', ctlWord('They lapse'), '',
-        '<span class="setrow2">' + num(S, 'lapseDays', 'Days without logging in', 7, 365) + '</span>' +
+      // **The card leads with lapsing** (Ed, 2026-09-02, Q1149 — the options
+      // swap, the sentences stand as he wrote them; display order is not
+      // aggregation order, so the consent direction is untouched). The day
+      // count stands inside the clause (Q1137's pattern), and typing into it
+      // still chooses the rung (F6).
+      opt(S, 'lapse', 'days',
+        'After ' + numIn(S, 'lapseDays', 7, 365) +
+        ' days, inactive members lapse and automatically abstain from votes.', '',
         meanLine('lapse', isNum(S.lapseDays) ? { afterMs: +S.lapseDays * 86400000 } : null)) +
+      opt(S, 'lapse', 'never', LAPSE_RULE('never'), '',
+        meanLine('lapse', { afterMs: null })) +
       '</div>',
     removal: () =>
       '<div class="choice" role="radiogroup">' +
@@ -6673,7 +6745,7 @@
     // **The founder's own card** (Q733) — one body, two seats, so they cannot
     // drift. It used to be a hand-rolled copy with no uploader in it at all.
     apppic: () => pictureBody({ n: S.app.name, pic: S.app.pic },
-      { picAttr: 'data-apppic', into: 'app' }),
+      { picAttr: 'data-apppic', into: 'app', pickKey: 'appPicPick', pick: appPicPickNow() }),
     apptext: () => '<p class="why">A few words to the members, if you want them — who you are, why this document. Optional: an empty application is a real application.</p>' +
       '<div class="lanebox"><div class="lp editlane' + (S.app.text ? '' : ' blank') + '" contenteditable="plaintext-only"' +
       ' spellcheck="false" data-apptext="1" data-ph="To the members…">' + esc(S.app.text) + '</div></div>',
@@ -6771,8 +6843,8 @@
         return cardHtml(c, ctx, beginBody(c, rd),
           constituted() ? binBtn()
             : binBtn() +
-              '<button class="btn btn-approve emojibtn btn-pen" data-confirm="1" data-begin="1"' + (can ? '' : ' disabled') +
-              ' title="' + (can ? 'Hold to begin the document' : 'The document cannot begin yet') + '">🍾 Begin</button>',
+              '<button class="btn btn-approve glyphbtn emojibtn btn-pen" data-confirm="1" data-begin="1"' + (can ? '' : ' disabled') +
+              ' title="' + (can ? 'Begin the document — a full one-second hold' : 'The document cannot begin yet') + '">🍾</button>',
           g.cards);
       }
       // **The admit judgment, on its own card** (entry 96): the applicant at
@@ -6906,7 +6978,10 @@
       // and the reason in the field, and 🗑️ alone at the foot — a record asks
       // nothing, so it has no OK (SURFACE §9, the sealed record's *nothing*).
       // The bin is the band's one always-live close (Q613 (a)).
-      if (c.record) return cardHtml(c, ctx, recordBody(c), binBtn(), g.cards);
+      // **the record's OK only closes** (Q1167 b): a word, not a glyph — no
+      // ACK_KEYS entry, nothing tracked, nobody owes a press
+      if (c.record) return cardHtml(c, ctx, recordBody(c),
+        binBtn() + '<button class="btn btn-approve" data-close="1">OK</button>', g.cards);
       // 403/405 (Ed, 2026-08-19): a power tab, opened — the ✒️ or 🛡️
       // half of a setting's governance, its head the rule as it stands
       if (c.power) {
@@ -6929,10 +7004,16 @@
       // **Reserved is assent, not silence** (§9.7): the room passed it, and
       // it now sits with the founder — Accept applies it, Reject files it.
       if (m && m.status === 'awaiting-crown') {
+        // **the two-block pair** (Q1167 a as refined, Ed 2026-09-02): the
+        // standing rule, then the change the membership has already chosen —
+        // *Chosen by the membership* is a fact here, the vote being over and
+        // the card waiting on the founder's own act. The narrated
+        // Passed-awaiting paragraph retires.
         return cardHtml(c, ctx,
-          '<div class="unlocks"><b>Passed — awaiting the 👑.</b> The membership passed <i>' + esc(m.to) + '</i>' +
-          (m.why ? ' — <i>' + esc(m.why) + '</i>' : '') +
-          '. The setting is reserved, so the change goes to the founder as a <b>👑 question</b>, theirs to assent to or refuse. Until then, what stands stands.</div>',
+          '<div class="pick"><span class="opttext">' + esc(standsOf(c.k)) + '</span></div>' +
+          '<div class="pick on"><span class="opttext">' + esc(m.to) + '</span>' +
+          '<span class="exp provline">Chosen by the membership</span></div>' +
+          (m.why ? window.CARDS.speakerHtml(m.why) : ''),
           // **The 👑 takes the pattern whole** (CP5, Q1100, Ed's refinement):
           // 🗑️ closes the card with the question kept pending, and the two
           // reserved powers are the two answers — a Founder Action passes it,
@@ -6940,11 +7021,13 @@
           // Both wear their power's glyph and both exercise it, which is what
           // T44 asks of a glyphed commit.
           (amFounder()
-            ? binBtn() +
+            // the pair groups at the far right, the veto immediately left of
+            // the pen (Ed, 2026-09-02, Q1154)
+            ? binBtn() + '<span class="rightpair">' +
               '<button class="btn glyphbtn emojibtn" data-crownq="reject"' +
               ' title="Refuse — the Founder Veto holds it, and what stands stands">🛡️</button>' +
               '<button class="btn btn-approve glyphbtn emojibtn" data-crownq="accept"' +
-              ' title="Accept — a Founder Action passes it now">✒️</button>'
+              ' title="Accept — a Founder Action passes it now">✒️</button></span>'
             : binBtn()), g.cards);
       }
       // a live motion takes the route its own value asks for (329a)
@@ -7155,8 +7238,16 @@
       // its ✒️ for now: its act is a dropdown plus *❌ Remove*, and that is a
       // change of its own.
       const foot = (c.k === 'invite' && doorDirect(c))
-        ? binBtn() +
-          '<button class="btn btn-approve glyphbtn" data-close="1" title="Done">' + TICK + '</button>'
+        // **the send is the row's commit** (Q1166): ✒️ where the viewer's
+        // word sends, beside the route's commit where the founder holds both
+        // (the pair at the right, ✒️ immediately left — Q1154). A click, not
+        // a hold: a direct invitation spends nothing, and it is never
+        // disabled on an empty box, the refusal sentence (Y25) being what an
+        // empty box is owed.
+        ? binBtn() + '<span class="rightpair">' +
+          '<button class="btn btn-approve glyphbtn emojibtn" data-act="invite"' +
+          ' title="Send the invitations — your word sends">✒️</button>' +
+          founderCommit(card('invite')) + '</span>'
         // …and the same for a founder whose hand is off this setting (entry
         // 62): the body above is already the settled card, and a settled card
         // commits nothing. 🗑️ is the band's always-live close (Q613 (a)).
@@ -7182,8 +7273,9 @@
           ' data-confirm="1" title="Save">' + TICK + '</button>'
         : c.k === 'title'
         // the title's lane rides the snapshot like every other provisional
-        // value now, so this card keeps the shared bin (2026-08-21)
-        ? binBtn() +
+        // value now, so this card keeps the shared bin (2026-08-21); the pen
+        // and the route's commit group at the far right (Q1154)
+        ? binBtn() + '<span class="rightpair">' +
           '<button class="btn btn-approve glyphbtn emojibtn"' +
           // the lock, not the wallet (entry 62): 🪶 at the birth, and after it
           // the pen **on the title**. The tooltip still asks the wallet, since
@@ -7196,7 +7288,7 @@
           // (entry 161): the Founder's own act stays where their eye already
           // goes and putting it to the membership is the deliberate second
           // reach, so this is **after** the pen and never in front of it.
-          founderCommit(c)
+          founderCommit(c) + '</span>'
         // 📧 in flight: the act is resending, and it spends nothing, so it is
         // a click rather than a hold (the ladder is for what comes out of a
         // wallet). The first send is still the 🪶 commit below.
@@ -7252,11 +7344,12 @@
         // (📄's OK stood here until backlog 204 — Q744's no-bin and Q798's OK;
         // the text is no card body now and its commit is the proposal-row's,
         // so nothing special-cases it)
-        : (binBtn() +
+        : (binBtn() + '<span class="rightpair">' +
         // ✒️ is the founder's pen (Ed, 360): a set of a setting binds the
         // document. Q449 (Ed, 2026-08-20): an answer to a shared question
         // and a setting about yourself — your name, picture, email — bind
-        // nobody (§9.0c), so they commit with ✓, never the pen.
+        // nobody (§9.0c), so they commit with ✓, never the pen. The pen and
+        // the route's commit group at the far right (Q1154).
         '<button class="btn btn-approve glyphbtn' + (commitGlyph === TICK ? '' : ' emojibtn') + '"' +
         // the card decides the ✒️, the wallet decides the sentence (entry 62)
         (ready(c) && penOkFor(commitGlyph, c) ? '' : ' disabled') +
@@ -7267,7 +7360,7 @@
         // reaches this branch (its row keeps an inert ✒️), and a door's second
         // act belongs beside the door's own, in the body (Q1024, §9.1) — which
         // `BODY.remove` draws. Without this it was drawn twice.
-        (c.door ? '' : founderCommit(c)));
+        (c.door ? '' : founderCommit(c)) + '</span>');
       // the refusal line, under the body and beside the commit row that tried
       // (entry 62). The two doors draw it inside their own bodies already, so
       // they are excluded here rather than carrying it twice.
@@ -7529,6 +7622,17 @@
     // route, the commit glyph and the rationale lane all follow as before.
     if (ev.target.matches('[data-removewho]')) {
       S.removeWho = ev.target.value; return render(); }
+    // ⏱️'s unit selector (Q1161): input only — the number keeps, the stored
+    // minutes rescale, and picking a unit claims the rung like typing does
+    if (ev.target.matches('[data-dripunit]')) {
+      const p = dripParts(S.dripMin);
+      const n = isNum(S.dripN) ? +S.dripN : (p ? p.n : '');
+      S.dripUnit = ev.target.value;
+      if (n !== '') { S.dripN = n; S.dripMin = n * (DRIP_UNITS[S.dripUnit] || 1); S.rateBy = 'founder'; }
+      return render(); }
+    // …and the member's, on their ⏱️ answer card
+    if (ev.target.matches('[data-ansunit]')) {
+      S.myAns.rateUnit = ev.target.value; return render(); }
     if (ev.target.matches('[data-mval-sel]')) {
       const v = ev.target.value;
       if (!v) { S.draft = null; return render(); }
@@ -7557,12 +7661,11 @@
     if (ev.target.matches('[data-mpace]')) { S.draft.to = 'Rising from ' + ev.target.value + '%';
       S.draft.val = { shape: 'ramp', startPct: +ev.target.value }; return render(); }
     if (ev.target.matches('[data-mrate]')) {
-      const g2 = (k2) => document.querySelector('[data-mrate="' + k2 + '"]');
-      S.draft.to = (g2('x') && g2('x').value || '4') + ' each, up to ' + (g2('y') && g2('y').value || '8') +
-        ', one every ' + (g2('z') && g2('z').value || '180') + ' minutes';
-      S.draft.val = { grant: +(g2('x') && g2('x').value || 4),
-        cap: Math.max(+(g2('y') && g2('y').value || 8), +(g2('x') && g2('x').value || 4)),
-        dripMinutes: +(g2('z') && g2('z').value || 180) };
+      // the interval alone (Q1160): the standing grant and cap ride through
+      const stand = takenValOf('rate') || { grant: 3, cap: 3 };
+      const z = +(ev.target.value || S.dripMin || 180);
+      S.draft.to = 'a new proposal every ' + dripPhrase(z);
+      S.draft.val = { grant: stand.grant, cap: stand.cap, dripMinutes: z };
       return render(); }
     if (ev.target.matches('[data-mdate]')) {
       S.draft.to = ev.target.value
@@ -7927,10 +8030,15 @@
           if (was === 'slug') {
             if (S.slug !== cs.slug) watchSet('slug', cs.setSetting(now(), 'link', { slug: S.slug }));
             return; }
-          // committing is the act, whatever the value — an empty name is
-          // Anonymous and an empty picture is your initials, both real answers
-          if (was === 'myname') { S.nameSet = true; cs.setIdentity(now(), viewerId(), { name: S.myname || null }); return; }
-          if (was === 'mypic') { S.picSet = true; cs.setIdentity(now(), viewerId(), { picture: S.mypic || null }); return; }
+          // committing is the act — and since Q1164 anonymity is the chosen
+          // block, so a commit on the Anonymous block clears the value it
+          // sends whatever the field held
+          if (was === 'myname') { if (namePickNow() === 'anon') S.myname = '';
+            S.nameSet = true; cs.setIdentity(now(), viewerId(), { name: S.myname || null });
+            S.namePick = null; return; }
+          if (was === 'mypic') { if (picPickNow() === 'anon') S.mypic = '';
+            S.picSet = true; cs.setIdentity(now(), viewerId(), { picture: S.mypic || null });
+            S.picPick = null; return; }
           // 🎩 commits here like every other setting (Q522, Ed 2026-08-21).
           // It used to carry a commit control of its own, which is how it
           // came to be the one card that did not close on being set.
@@ -8027,6 +8135,10 @@
       // a ⏰ chip lights by its own id, not by the date it happens to carry
       if (o.dataset.set === 'endsAt') S.endChip = o.dataset.chip || '';
       if (perpetual() && S.shape === 'ramp') S.shape = 'fixed';
+      // 👥's form blocks are the value rungs since Q1162, so picking one is
+      // the founder's own answer — it takes the question back exactly as
+      // picking a value does anywhere (*Picking a value here takes it back*)
+      if (o.dataset.set === 'quorumForm') S.quorumBy = 'founder';
       return render(); }
     const pic = ev.target.closest('[data-pic]');
     if (pic) { S.mypic = pic.dataset.pic; return pickerRender(); }
@@ -8098,8 +8210,11 @@
       const box = (scope2 || document).querySelector('[data-emails]');
       // one address at a time, and `forEach` would otherwise hand `invite`
       // the index as its card key
-      if (box) { box.value.split(/[\s,;]+/).filter((x) => x.includes('@'))
-        .forEach((x) => invite(x, cardKeyAt(scope2))); }
+      const ads = box ? box.value.split(/[\s,;]+/).filter((x) => x.includes('@')) : [];
+      // an empty press is owed the refusal sentence (Y25) — the one box is
+      // the only field now (Q1166), so the sentence lands under it
+      if (!ads.length) { setDoorErr(cardKeyAt(scope2) || 'invite', 'Type an address to send the invitation to.'); return render(); }
+      ads.forEach((x) => invite(x, cardKeyAt(scope2)));
       S.inviteMany = '';
       return render();
     }
@@ -8451,6 +8566,7 @@
     const rung = rungOf && rungOf.querySelector('[data-set][data-val]');
     if (rung && S[rung.dataset.set] !== setVal(rung.dataset.val)) {
       S[rung.dataset.set] = setVal(rung.dataset.val);
+      if (rung.dataset.set === 'quorumForm') S.quorumBy = 'founder';   // Q1162
       rungOf.classList.add('on');
       const others = rungOf.parentElement ? rungOf.parentElement.querySelectorAll('.pick') : [];
       others.forEach((p) => { const b = p.querySelector('[data-set="' + rung.dataset.set + '"]');
@@ -8542,6 +8658,12 @@
     // commit wakes on the typing (the txt branch above has always done this;
     // the num branch never needed to while every number arrived pre-filled)
     if (t.dataset.num) { S[t.dataset.num] = t.value === '' ? '' : +t.value;
+      // ⏱️'s number is typed in the card's own unit and stored in minutes
+      // (Q1161: the selector is input only, minutes stored everywhere)
+      if (t.dataset.num === 'dripN') {
+        S.dripMin = t.value === '' ? '' : +t.value * (DRIP_UNITS[S.dripUnit] || 1);
+        S.rateBy = 'founder';
+      }
       // **A number typed into ⏱️'s sentence claims the rung it stands in**
       // (Q1137). Everywhere else a `num` field is inside a `.pick > .inner`
       // and cannot be reached until its rung is chosen; ⏱️'s three are inline
@@ -8550,7 +8672,21 @@
       // the sentence in and leave the radio on the delegate rung, with a dark
       // ✓ and nothing saying why. Same rule `fillRung` runs the other way for
       // 🌡️, where picking a preset takes `barBy` with it.
-      if (Object.prototype.hasOwnProperty.call(RATE_START, t.dataset.num)) S.rateBy = 'founder';
+      // …and the rung has to *look* claimed, in place: a full render would
+      // rebuild the field under the caret, so the block it stands in takes
+      // the chosen treatment itself. Without this the sentence is typed into
+      // a rung still reading *Choose this*, and `.pick > .inner` — where the
+      // meaning `syncMeaning` is about to write lives — stays display:none.
+      if (t.dataset.num === 'dripN' ||
+          Object.prototype.hasOwnProperty.call(RATE_START, t.dataset.num)) {
+        S.rateBy = 'founder';
+        const pick = t.closest('.pick');
+        if (pick && !pick.classList.contains('on')) {
+          pick.classList.add('on');
+          const rung = pick.querySelector('.lanepick');
+          if (rung) rung.setAttribute('aria-pressed', 'true');
+        }
+      }
       syncMeaning(t);
       renderRail(); SESSION.refreshRail(); refreshCommit(); }
     // …and the same for a number typed into an **answer** (entry 165), which
@@ -8709,7 +8845,9 @@
     // rules are, and a rule's history is part of what it is (Q942)
     const body = c.record ? recordBody(c)
       : c.k === 'text' ? strangerTextBody() : strangerReadBody(c);
-    return cardHtml(c, strCtx, body, binBtn(), g.cards);
+    return cardHtml(c, strCtx, body,
+      binBtn() + (c.record ? '<button class="btn btn-approve" data-close="1">OK</button>' : ''),
+      g.cards);
   };
   const strangerTextBody = () => {
     const p = strPayload();
@@ -10746,26 +10884,22 @@
   const penFrom = () => powerFrom('unilateral');
   const grantedBy = (c) => {
     if (!c.open()) return '';                    // nothing has been conferred yet
+    // **The founder is not told they founded the document** (Ed's card
+    // review, 2026-09-02): the *You founded this document, and X came with
+    // it.* sentences are cut on all three grants. A power that arrived by
+    // somebody else's act keeps its provenance — that is E8's news value.
     if (c.k === 'grant-pen') {
       return penFrom() === 'motion'
-        ? 'The membership returned Founder Actions to you.'
-        : 'You founded this document, and Founder Actions came with it.';
+        ? 'The membership returned Founder Actions to you.' : '';
     }
-    // the shield's own sentence. Without it the card opened straight into the
-    // explanation with no account of *whose act* conferred the power, which is
-    // most of what tells you whether it can be taken away again — the one
-    // thing every other grant on this surface says first.
     if (c.k === 'grant-shield') {
       return powerFrom('assent') === 'motion'
-        ? 'The membership returned the Founder Veto to you.'
-        : 'You founded this document, and the Founder Veto came with it.';
+        ? 'The membership returned the Founder Veto to you.' : '';
     }
     if (c.k === 'grant-voice') {
       const a = myArrival();
       const via = a ? a.via : (amFounder() ? 'founding' : 'invitation');
-      if (via === 'founding') {
-        return 'You founded this document, and Constitutional Proposals came with it.';
-      }
+      if (via === 'founding') return '';
       if (via === 'application') {
         return 'The membership admitted you on your application, and Constitutional Proposals came with it.';
       }

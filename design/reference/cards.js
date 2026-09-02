@@ -576,21 +576,26 @@ window.CARDS = (function () {
   //
   // A value whose sentence depends on the room takes a function of one
   // context object, never of module state — this file has none.
+  // Ed's card review of 2026-09-02 rewrote most of these sentences verbatim
+  // (design/card-review-2026-09-02.md, Part B); 👤's *at the end* is his
+  // Q995 ruling holding — one phrase for the close on both ladders — and
+  // 🥾's *apart from them* lost its emphasis because clause text is escaped
+  // at its reading sites and markup cannot ride the table.
   const RULES = {
     admission: {
       assembly: 'Members may propose to invite people to join the membership, and all members must agree 🏛️.',
       proposal: 'Members may propose to invite people to join the membership, and the membership decides ✏️.',
-      pen: 'Members may invite people to join the membership ✒️.' },
+      pen: 'Members may invite people to join the membership at will ✒️.' },
     removal: {
-      consent: 'Removing a member needs every member to agree, including them 🏛️.',
-      assembly: 'Removing a member needs every other member to agree 🏛️ — they see the proposal, and it is decided without them.',
-      proposal: 'Members may propose to remove a member, and the membership decides ✏️.' },
+      consent: 'To remove a member, all members must agree 🏛️.',
+      assembly: 'To remove a member, all members apart from them must agree 🏛️.',
+      proposal: 'To remove a member, a majority of members must agree ✏️.' },
     authorship: {
-      anonymous: 'Nobody who proposes a change is ever named, even after the document is finished.',
-      anonymousElective: 'Nobody who proposes a change is named unless they choose to sign it themselves.',
-      sealed: 'Whoever proposes a change is named when the document is finished, and not before.',
-      sealedElective: 'Whoever proposes a change is named when the document is finished — sooner, if they choose to sign it.',
-      public: 'Whoever proposes a change is named from the moment they propose it.' },
+      anonymous: 'All proposals are made anonymously.',
+      anonymousElective: 'Proposals may be made anonymously.',
+      sealed: 'All proposals are made anonymously, and all names are revealed at the end.',
+      sealedElective: 'Proposals may be made anonymously, and all names are revealed at the end.',
+      public: 'Proposals may not be made anonymously.' },
     judgments: {
       never: 'Votes are never revealed.',
       after: 'Votes are revealed when the document is finished, and not before.' },
@@ -602,15 +607,17 @@ window.CARDS = (function () {
     // excluded the reader reads as an afterthought about the rule, where one
     // sentence simply says who can read it.
     chamber: {
-      closed: (x) => (x.founderIsMember ? 'Only members can see the document.'
-        : 'Only members and the Founder can see the document.'),
-      link: () => 'Anyone with the link can read the document.',
+      closed: (x) => (x.founderIsMember ? 'The document can only be seen by members.'
+        : 'The document can only be seen by members and the Founder.'),
+      link: () => 'The document can be seen by anyone with the link.',
       public: () => 'The document is public — listed and readable by anyone.' },
     // 🤝 is one switch; what an application costs is 🪪's sentence (entry 94)
+    // — a tie the card no longer states (Ed's rewrite dropped *voted on like
+    // an invitation*; SPEC §9.7½ still holds it)
     applications: {
-      invite: () => 'Membership is by invitation only.',
+      invite: () => 'New members may only join by invitation.',
       apply: (x) => (x.admissionPrice === 'pen' ? 'Anyone with the link joins on arrival.'
-        : 'Anyone may apply to join — an application is voted on like an invitation.') },
+        : 'Anyone with the link may apply to become a member.') },
   };
   // the sentence a value would set, in this room. `x` carries only what a
   // sentence names: `founderIsMember`, `admissionPrice`.

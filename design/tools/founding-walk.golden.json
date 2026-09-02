@@ -240,7 +240,7 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
+    "chamber: The document can only be seen by members. The Founder may am",
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: The Founder is deciding how new members are admitted."
    ]
@@ -253,7 +253,7 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
+    "chamber: The document can only be seen by members. The Founder may am",
     "founded: Founded by AL Ada Lovell 👑."
    ]
   },
@@ -265,7 +265,7 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
+    "chamber: The document can only be seen by members. The Founder may am",
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,",
     "applications: The Founder is deciding whether strangers may apply to join."
@@ -279,7 +279,7 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
+    "chamber: The document can only be seen by members. The Founder may am",
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,"
    ]
@@ -292,10 +292,10 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
+    "chamber: The document can only be seen by members. The Founder may am",
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this"
+    "applications: New members may only join by invitation. The Founder may ame"
    ]
   },
   {
@@ -306,10 +306,10 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
+    "chamber: The document can only be seen by members. The Founder may am",
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this"
+    "applications: New members may only join by invitation. The Founder may ame"
    ]
   },
   {
@@ -320,10 +320,10 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
+    "chamber: The document can only be seen by members. The Founder may am",
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this",
+    "applications: New members may only join by invitation. The Founder may ame",
     "lapse: The Founder is deciding whether an inactive membership lapse"
    ]
   },
@@ -335,10 +335,10 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
+    "chamber: The document can only be seen by members. The Founder may am",
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this"
+    "applications: New members may only join by invitation. The Founder may ame"
    ]
   },
   {
@@ -349,11 +349,11 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
+    "chamber: The document can only be seen by members. The Founder may am",
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this",
-    "lapse: Somebody stops being a member after 7 days without logging i",
+    "applications: New members may only join by invitation. The Founder may ame",
+    "lapse: After 7 days, inactive members lapse and automatically absta",
     "removal: The Founder is deciding how a member is removed."
    ]
   },
@@ -365,11 +365,11 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
+    "chamber: The document can only be seen by members. The Founder may am",
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this",
-    "lapse: Somebody stops being a member after 7 days without logging i"
+    "applications: New members may only join by invitation. The Founder may ame",
+    "lapse: After 7 days, inactive members lapse and automatically absta"
    ]
   },
   {
@@ -382,12 +382,12 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
+    "chamber: The document can only be seen by members. The Founder may am",
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this",
-    "lapse: Somebody stops being a member after 7 days without logging i",
-    "removal: Removing a member needs every member to agree, including the",
+    "applications: New members may only join by invitation. The Founder may ame",
+    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "begin: When the document begins, members may propose changes to rul",
     "rate: The Founder is deciding how often members may propose."
    ]
@@ -402,12 +402,12 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
+    "chamber: The document can only be seen by members. The Founder may am",
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this",
-    "lapse: Somebody stops being a member after 7 days without logging i",
-    "removal: Removing a member needs every member to agree, including the",
+    "applications: New members may only join by invitation. The Founder may ame",
+    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "rate: The Founder is deciding how often members may propose."
    ]
   },
@@ -420,12 +420,12 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
+    "chamber: The document can only be seen by members. The Founder may am",
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this",
-    "lapse: Somebody stops being a member after 7 days without logging i",
-    "removal: Removing a member needs every member to agree, including the",
+    "applications: New members may only join by invitation. The Founder may ame",
+    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "begin: When the document begins, members may propose changes to rul",
     "rate: The Founder is deciding how often members may propose."
    ]
@@ -439,12 +439,12 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
+    "chamber: The document can only be seen by members. The Founder may am",
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this",
-    "lapse: Somebody stops being a member after 7 days without logging i",
-    "removal: Removing a member needs every member to agree, including the",
+    "applications: New members may only join by invitation. The Founder may ame",
+    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "begin: When the document begins, members may propose changes to rul"
    ]
   },
@@ -457,14 +457,14 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
+    "chamber: The document can only be seen by members. The Founder may am",
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this",
-    "lapse: Somebody stops being a member after 7 days without logging i",
-    "removal: Removing a member needs every member to agree, including the",
+    "applications: New members may only join by invitation. The Founder may ame",
+    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "begin: When the document begins, members may propose changes to rul",
-    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
+    "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
     "ending: The Founder is deciding when the drafting process will end."
    ]
   },
@@ -477,14 +477,14 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
+    "chamber: The document can only be seen by members. The Founder may am",
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this",
-    "lapse: Somebody stops being a member after 7 days without logging i",
-    "removal: Removing a member needs every member to agree, including the",
+    "applications: New members may only join by invitation. The Founder may ame",
+    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "begin: When the document begins, members may propose changes to rul",
-    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6"
+    "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou"
    ]
   },
   {
@@ -496,15 +496,15 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
+    "chamber: The document can only be seen by members. The Founder may am",
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this",
-    "lapse: Somebody stops being a member after 7 days without logging i",
-    "removal: Removing a member needs every member to agree, including the",
+    "applications: New members may only join by invitation. The Founder may ame",
+    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "begin: When the document begins, members may propose changes to rul",
-    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
-    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
+    "ending: No more changes to the document may be made after Weekday at",
     "bar: The Founder is deciding how sure members must be at the clos"
    ]
   },
@@ -517,15 +517,15 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
+    "chamber: The document can only be seen by members. The Founder may am",
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this",
-    "lapse: Somebody stops being a member after 7 days without logging i",
-    "removal: Removing a member needs every member to agree, including the",
+    "applications: New members may only join by invitation. The Founder may ame",
+    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "begin: When the document begins, members may propose changes to rul",
-    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
-    "ending: The drafting process will end on Weekday at HH:MM. The Found"
+    "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
+    "ending: No more changes to the document may be made after Weekday at"
    ]
   },
   {
@@ -537,15 +537,15 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
+    "chamber: The document can only be seen by members. The Founder may am",
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this",
-    "lapse: Somebody stops being a member after 7 days without logging i",
-    "removal: Removing a member needs every member to agree, including the",
+    "applications: New members may only join by invitation. The Founder may ame",
+    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "begin: When the document begins, members may propose changes to rul",
-    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
-    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
+    "ending: No more changes to the document may be made after Weekday at",
     "bar: The members must be 90% sure a proposal is better for it to ",
     "quorum: The Founder is deciding how many members must weigh in befor"
    ]
@@ -559,15 +559,15 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
+    "chamber: The document can only be seen by members. The Founder may am",
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this",
-    "lapse: Somebody stops being a member after 7 days without logging i",
-    "removal: Removing a member needs every member to agree, including the",
+    "applications: New members may only join by invitation. The Founder may ame",
+    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "begin: When the document begins, members may propose changes to rul",
-    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
-    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
+    "ending: No more changes to the document may be made after Weekday at",
     "bar: The members must be 90% sure a proposal is better for it to "
    ]
   },
@@ -580,17 +580,17 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
+    "chamber: The document can only be seen by members. The Founder may am",
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this",
-    "lapse: Somebody stops being a member after 7 days without logging i",
-    "removal: Removing a member needs every member to agree, including the",
+    "applications: New members may only join by invitation. The Founder may ame",
+    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "begin: When the document begins, members may propose changes to rul",
-    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
-    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
+    "ending: No more changes to the document may be made after Weekday at",
     "bar: The members must be 90% sure a proposal is better for it to ",
-    "quorum: 5% of the members must have voted on a question before it ca",
+    "quorum: 5 members must vote on a proposal ✏️ before it can pass. The",
     "authorship: The Founder is deciding whether anonymous proposers are reve"
    ]
   },
@@ -603,15 +603,15 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
+    "chamber: The document can only be seen by members. The Founder may am",
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this",
-    "lapse: Somebody stops being a member after 7 days without logging i",
-    "removal: Removing a member needs every member to agree, including the",
+    "applications: New members may only join by invitation. The Founder may ame",
+    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "begin: When the document begins, members may propose changes to rul",
-    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
-    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
+    "ending: No more changes to the document may be made after Weekday at",
     "bar: The members must be 90% sure a proposal is better for it to ",
     "authorship: The Founder is deciding whether anonymous proposers are reve"
    ]
@@ -625,17 +625,17 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
+    "chamber: The document can only be seen by members. The Founder may am",
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this",
-    "lapse: Somebody stops being a member after 7 days without logging i",
-    "removal: Removing a member needs every member to agree, including the",
+    "applications: New members may only join by invitation. The Founder may ame",
+    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "begin: When the document begins, members may propose changes to rul",
-    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
-    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
+    "ending: No more changes to the document may be made after Weekday at",
     "bar: The members must be 90% sure a proposal is better for it to ",
-    "quorum: 5% of the members must have voted on a question before it ca",
+    "quorum: 5 members must vote on a proposal ✏️ before it can pass. The",
     "authorship: The Founder is deciding whether anonymous proposers are reve"
    ]
   },
@@ -648,17 +648,17 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
+    "chamber: The document can only be seen by members. The Founder may am",
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this",
-    "lapse: Somebody stops being a member after 7 days without logging i",
-    "removal: Removing a member needs every member to agree, including the",
+    "applications: New members may only join by invitation. The Founder may ame",
+    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "begin: When the document begins, members may propose changes to rul",
-    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
-    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
+    "ending: No more changes to the document may be made after Weekday at",
     "bar: The members must be 90% sure a proposal is better for it to ",
-    "quorum: 5% of the members must have voted on a question before it ca"
+    "quorum: 5 members must vote on a proposal ✏️ before it can pass. The"
    ]
   },
   {
@@ -670,18 +670,18 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
+    "chamber: The document can only be seen by members. The Founder may am",
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this",
-    "lapse: Somebody stops being a member after 7 days without logging i",
-    "removal: Removing a member needs every member to agree, including the",
+    "applications: New members may only join by invitation. The Founder may ame",
+    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "begin: When the document begins, members may propose changes to rul",
-    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
-    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
+    "ending: No more changes to the document may be made after Weekday at",
     "bar: The members must be 90% sure a proposal is better for it to ",
-    "quorum: 5% of the members must have voted on a question before it ca",
-    "authorship: Nobody who proposes a change is ever named, even after the d",
+    "quorum: 5 members must vote on a proposal ✏️ before it can pass. The",
+    "authorship: All proposals are made anonymously. The Founder may amend th",
     "judgments: The Founder is deciding whether votes are revealed with the "
    ]
   },
@@ -694,18 +694,18 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
+    "chamber: The document can only be seen by members. The Founder may am",
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this",
-    "lapse: Somebody stops being a member after 7 days without logging i",
-    "removal: Removing a member needs every member to agree, including the",
+    "applications: New members may only join by invitation. The Founder may ame",
+    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "begin: When the document begins, members may propose changes to rul",
-    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
-    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
+    "ending: No more changes to the document may be made after Weekday at",
     "bar: The members must be 90% sure a proposal is better for it to ",
-    "quorum: 5% of the members must have voted on a question before it ca",
-    "authorship: Nobody who proposes a change is ever named, even after the d"
+    "quorum: 5 members must vote on a proposal ✏️ before it can pass. The",
+    "authorship: All proposals are made anonymously. The Founder may amend th"
    ]
   },
   {
@@ -717,18 +717,18 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
+    "chamber: The document can only be seen by members. The Founder may am",
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this",
-    "lapse: Somebody stops being a member after 7 days without logging i",
-    "removal: Removing a member needs every member to agree, including the",
+    "applications: New members may only join by invitation. The Founder may ame",
+    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "begin: When the document begins, members may propose changes to rul",
-    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
-    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
+    "ending: No more changes to the document may be made after Weekday at",
     "bar: The members must be 90% sure a proposal is better for it to ",
-    "quorum: 5% of the members must have voted on a question before it ca",
-    "authorship: Nobody who proposes a change is ever named, even after the d",
+    "quorum: 5 members must vote on a proposal ✏️ before it can pass. The",
+    "authorship: All proposals are made anonymously. The Founder may amend th",
     "judgments: Votes are never revealed. The Founder may amend this at will"
    ]
   },
@@ -741,17 +741,17 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
+    "chamber: The document can only be seen by members. The Founder may am",
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this",
-    "lapse: Somebody stops being a member after 7 days without logging i",
-    "removal: Removing a member needs every member to agree, including the",
-    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
-    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "applications: New members may only join by invitation. The Founder may ame",
+    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "removal: To remove a member, all members must agree 🏛️. The Founder ",
+    "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
+    "ending: No more changes to the document may be made after Weekday at",
     "bar: The members must be 90% sure a proposal is better for it to ",
-    "quorum: 5% of the members must have voted on a question before it ca",
-    "authorship: Nobody who proposes a change is ever named, even after the d",
+    "quorum: 5 members must vote on a proposal ✏️ before it can pass. The",
+    "authorship: All proposals are made anonymously. The Founder may amend th",
     "judgments: Votes are never revealed. The Founder may amend this at will"
    ]
   },
@@ -761,18 +761,18 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
+    "chamber: The document can only be seen by members. The Founder may am",
     "founded: Founded by AL Ada Lovell 👑 at HH:MM on D Month YYYY.",
     "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this",
-    "lapse: Somebody stops being a member after 7 days without logging i",
-    "removal: Removing a member needs every member to agree, including the",
+    "applications: New members may only join by invitation. The Founder may ame",
+    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "begin: Members may propose changes to rules as soon as they arrive,",
-    "rate: Members start with 4 proposals ✏️ each, up to a maximum of 6",
-    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
+    "ending: No more changes to the document may be made after Weekday at",
     "bar: The members must be 90% sure a proposal is better for it to ",
-    "quorum: 5% of the members must have voted on a question before it ca",
-    "authorship: Nobody who proposes a change is ever named, even after the d",
+    "quorum: 5 members must vote on a proposal ✏️ before it can pass. The",
+    "authorship: All proposals are made anonymously. The Founder may amend th",
     "judgments: Votes are never revealed. The Founder may amend this at will"
    ]
   }

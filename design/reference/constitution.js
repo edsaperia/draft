@@ -402,8 +402,13 @@ var CONSTITUTION = (() => {
       deps: ["ending"],
       judgeGate: false
     },
-    // The form is the convenor's, the number the room's (§9.0a) — resolution
-    // refuses mixed forms rather than converting.
+    // **The question collects the form and the number together** (Ed,
+    // 2026-09-02, Q1162 — Q341 reversed for 👥 alone, R-082): a member answers
+    // as a share of the membership or as a fixed count, and mixed answers
+    // resolve at the settle — every answer read against E as it stands then,
+    // the answer demanding the most voters winning, its form and number both
+    // standing (Q1172). Same-form ties keep the higher number, which is the
+    // old scalar order exactly, so every existing log resolves as it did.
     {
       id: "quorum",
       glyph: "👥",
@@ -411,8 +416,13 @@ var CONSTITUTION = (() => {
       delegable: true,
       valueType: "quorum",
       consent: {
-        ask: "the lowest quorum you will accept, in the convenor's chosen form",
-        order: (a, b) => a.n - b.n
+        ask: "the lowest quorum you will accept — a share of the membership or a fixed count",
+        order: (a, b, ctx) => {
+          const e = Math.max(1, ctx && ctx.e || 1);
+          const demand = (v) => v.form === "count" ? v.n : Math.ceil(v.n / 100 * e);
+          const d = demand(a) - demand(b);
+          return d !== 0 ? d : a.n - b.n;
+        }
       },
       deps: [],
       judgeGate: true
@@ -487,17 +497,13 @@ var CONSTITUTION = (() => {
       delegable: true,
       valueType: "rate",
       consent: {
-        // Most generous wins (§9.0): higher grant, then higher cap, then a
-        // faster drip. Generosity is the protective direction here — nobody
-        // is bound by a rate more restrictive than they accepted.
-        ask: "the least generous proposal rate you will accept",
-        order: (a, b) => {
-          const ra = a;
-          const rb = b;
-          if (ra.grant !== rb.grant) return ra.grant - rb.grant;
-          if (ra.cap !== rb.cap) return ra.cap - rb.cap;
-          return rb.dripMinutes - ra.dripMinutes;
-        }
+        // Most generous wins (§9.0): the faster drip. **The ordering reduces
+        // to the interval alone** (Ed, 2026-09-02, Q1160, R-083): the grant and
+        // cap are fixed at 3 for every new document, so the old grant-then-cap
+        // comparisons were dead between equal values and are gone — a replayed
+        // log with unequal grants resolved at its own record, never re-ordered.
+        ask: "the least generous drip interval you will accept",
+        order: (a, b) => b.dripMinutes - a.dripMinutes
       },
       deps: [],
       judgeGate: false
@@ -663,12 +669,12 @@ var CONSTITUTION = (() => {
   }
 
   // src/consent.ts
-  function resolveConsent(entry, answers) {
+  function resolveConsent(entry, answers, ctx) {
     const consent = entry.consent;
     if (!consent) throw new Error(`${entry.id} is not a consent question`);
     if (answers.length === 0) throw new Error(`${entry.id}: nothing to resolve — no answers`);
     const distribution = [...answers].sort((a, b) => {
-      const byOrder = consent.order(b, a);
+      const byOrder = consent.order(b, a, ctx);
       if (byOrder !== 0) return byOrder;
       return stableStringify(a) < stableStringify(b) ? -1 : 1;
     });
@@ -920,7 +926,7 @@ var CONSTITUTION = (() => {
         // a meeting's document is passed round by its address
         chamber: { rung: "link" },
         // **is** alpha-preset's measured *ALPHA PRESET*: the one cell with evidence
-        rate: { grant: 6, cap: 8, dripMinutes: 5 },
+        rate: { grant: 3, cap: 3, dripMinutes: 5 },
         // Ed: hidden for a meeting — a decision nobody has
         lapse: { afterMs: null },
         // Ed: off
@@ -944,7 +950,7 @@ var CONSTITUTION = (() => {
         judgments: { rung: "never" },
         chamber: { rung: "link" },
         // drip in hours
-        rate: { grant: 4, cap: 8, dripMinutes: 60 },
+        rate: { grant: 3, cap: 3, dripMinutes: 60 },
         lapse: { afterMs: null },
         machines: { enabled: false, budget: 0 },
         removal: { price: "consent" }
@@ -969,7 +975,7 @@ var CONSTITUTION = (() => {
         // an ongoing document is the members'
         chamber: { rung: "closed" },
         // drip in days
-        rate: { grant: 4, cap: 6, dripMinutes: 1440 },
+        rate: { grant: 3, cap: 3, dripMinutes: 1440 },
         // Ed: about 30 days for ongoing
         lapse: { afterMs: 30 * DAY_MS },
         machines: { enabled: false, budget: 0 },
@@ -2258,9 +2264,6 @@ var CONSTITUTION = (() => {
       const entry = entryOf(setting);
       const err = validateFor(entry, value);
       if (err) throw new Error(err);
-      if (setting === "quorum" && value.form !== this.quorumFormValue) {
-        throw new Error(`the quorum question is asked as a ${this.quorumFormValue} (§9.0a)`);
-      }
       if (setting === "pace") {
         const ending = this.settings.get("ending").value;
         if (ending && ending.endsAtMs === null && value.shape === "ramp") {
@@ -2298,7 +2301,7 @@ var CONSTITUTION = (() => {
       if (electorate.length < 2) return;
       if (!electorate.every((m) => st.answers.has(m.id))) return;
       const answers = electorate.map((m) => st.answers.get(m.id));
-      const { value, distribution } = resolveConsent(entry, answers);
+      const { value, distribution } = resolveConsent(entry, answers, { e: electorate.length });
       this.emit({
         type: "question-resolved",
         t,
@@ -3571,20 +3574,23 @@ var CONSTITUTION = (() => {
     // stated beside it); `label` survives as the rung's short name — the
     // distribution strip's word, and 🪜's starting rungs, where a sentence
     // about *passing* would misstate a bar that only opens the vote.
+    // the sentences are Ed's own (card review 2026-09-02, Q1156/Q1157: a share
+    // of voters is the deliberate simplification — the precise account lives at
+    // /pairwise, which `methodNote` links)
     {
       pct: 90,
       label: "Nearly everyone",
-      sentence: "Nearly everyone must vote for a change for it to pass"
+      sentence: "For a proposal ✏️ to pass, nearly all members that voted on it must prefer it to the alternatives"
     },
     {
       pct: 80,
       label: "Broad agreement",
-      sentence: "Most of the membership must vote for a change for it to pass"
+      sentence: "For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives"
     },
     {
       pct: 60,
       label: "A bare majority",
-      sentence: "A bare majority voting for a change is enough for it to pass"
+      sentence: "For a proposal ✏️ to pass, a majority of the membership that voted must prefer it to the alternatives"
     }
   ];
   var OWN_RUNG_LABEL = "A number of my own";
@@ -3610,10 +3616,7 @@ var CONSTITUTION = (() => {
   function barMeaning(pct, room) {
     const w = winsClause(room.e, pct);
     if (w === void 0) return null;
-    if (w === null) {
-      return fit("In a membership of " + roomOf(room.e) + ", nothing can pass at " + Math.floor(pct) + "% until more members arrive.");
-    }
-    if (w.n === 1) return fit("In a membership of one, the one vote must be for it.");
+    if (w === null || w.n === 1) return null;
     if (w.k === w.n) return fit("In a membership of " + w.n + ", all " + w.n + " must vote for it by the end.");
     return fit("In a membership of " + w.n + ", " + w.k + " of " + w.n + " must vote for it by the end.");
   }
