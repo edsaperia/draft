@@ -1,5 +1,78 @@
 # Card review — Ed, 2026-09-02
 
+## Handover — the review is BUILT (2026-09-02 pm); what follows is QA
+
+For the session receiving Ed's comments on the re-captured sheet. Read this
+section before acting on any comment; the rest of this file is the review as
+it was answered, and **an answered question below is the instruction that was
+built** — a comment that contradicts one is Ed changing his mind, which is
+fine, but say so back to him rather than treating the build as having erred.
+
+**State.** Everything in Part E landed on `main` as ten commits,
+`94ca08a..7de54b2`, on top of Ed's answers (`96e05b4`), **none of it pushed —
+a push is a deploy and is Ed's call**. SPEC is v0.96. All four CI gates are
+green, and so are: `journey` (both variants), `founding-walk`, `slug-walk`,
+`applicants-walk`, `powers-walk`, `slider-walk`, `ladder`,
+`motions -w @draft/sim-harness`, `probe-coverage`, `spec-check`, `copy-check`.
+`qa:freeze` has **already run** (commit `7de54b2`): the probes' references,
+the copy golden and the founding golden are frozen at the post-review page, so
+a fresh red on any of them is a real change made *after* this handover.
+`card-audit` holds its stable pre-batch set of 10 findings (H2 1 · H4 1 ·
+P2 1 · P3 1 · P7 2 · S1 4); the closed walk's *no backlog records* note
+pre-exists the batch (verified at `07faa75`).
+
+**The sheet Ed reviewed** is the same artifact re-captured after the build:
+https://claude.ai/code/artifact/bdd96cfd-768a-4354-adf1-619cf827ccb5 — all 78
+specimens, keys unchanged, so his comments will name `walk·key` as before.
+The sheet builder is still a scratch script (Q1145 open); this rebuild's copy
+lives only in the building session's scratchpad, so a further re-capture means
+re-deriving it from the published page's own mounting script (read the
+artifact: the skeleton is stable, `#draftcss` is system.css+setup.css,
+`#pagecss-0` is the audit's `sheets[0]`, one `<template class="page">` per
+specimen keyed by its `code.specid`, swapped from
+`npm run card-audit -- --specimens=<file>`).
+
+**Readings taken on spec during the build** — the likeliest QA comments, so
+check a comment against this list before treating it as a defect report:
+
+1. **OK buttons lost their solid fill too** — Q1153's *every commit* entails
+   it; OK is the neutral outline at weight 600, the ✓ keeps its green.
+2. **The settled card's "first block"** is the standing rule drawn in the
+   head's own slot wearing the option block's treatment (`.headrule.asblock`)
+   — the tab strip and the 0px-tab geometry live on the head, so the rule
+   *reads* as block one without rebuilding the open/close machinery. The
+   alternatives beneath are the composer's own blocks, standing marked
+   *Chosen* wherever the RULES order puts it — not literally hoisted first.
+3. **✉️'s Enter-sends (Q814) retired with the single field** — Enter in the
+   multi-line box is a newline; the send is the row's ✒️. A founder's
+   propose-instead reads the box's **first** address (one motion, one member);
+   the member's composer lane is unchanged, and 🌍/👤's lane explainers are
+   the standing Q1143/Q1144 two-homes residual, untouched.
+4. **🥾's *apart from them* lost its emphasis** — clause text is escaped at
+   its reading sites; markup cannot ride the RULES table.
+5. **The `DECIDING` table lives beside `WHAT` in session-view.html**, not
+   beside `meaningOf` — both call sites are in that file and the sentences
+   are room-independent.
+6. **In a membership of one, 🌡️'s rungs carry no meaning line at all**
+   (Q1159's *remove them and say nothing*, reaching the n=1 line too).
+7. **The unanswered ✋/🖼️** show the default appearance until answered
+   (initials where a name is known, the anonymous mark otherwise) — Q1164's
+   *blank is no answer*; the ✓ arms only once a block is chosen or typed.
+
+**How to take Ed's comments.** Small fixes by hand on `main`, one commit per
+coherent fix, in this file's vocabulary (cite the Q number). Anything
+re-opening a shape (the settled pair, ✉️'s box, 👥's forms) is a question
+back to Ed first. After the fixes: `npm run qa:freeze` again if copy or
+geometry moved, and re-read this file's *Answered* section before editing any
+card body — the answers are the spec. When Ed declares QA done: **delete this
+file** (it is a pass file — the answers live in SPEC/SURFACE/STYLE/
+SPEC-REASONING now), release the unspent numbers in QUESTIONS.md's 1149–1172
+entry, and ask Ed about the push, which deploys.
+
+**Still open nearby**: Q1145 (sheet builder into the repo), Q1146 (the
+doctype), backlog 269 in plan-queue's BACKLOG.md (the 🍾 revisit, Q1169 —
+deliberately unscoped).
+
 **What this is.** Ed reviewed the Card Specimen Sheet card by card and wrote notes on
 twenty-four of them. This file carries every note **verbatim**, sorted so that the rules
 which repeat across many cards are stated once, and marks the places where a note reverses
