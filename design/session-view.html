@@ -6425,8 +6425,9 @@
           ? '<p class="why">Your address is the only way back in — there are no passwords — so a new one has to prove it works before it replaces the old.</p>'
           : '') +
         '<span class="fld"><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" placeholder="you@example.com" style="width:20rem"></span>'),
-    myname: () => nameBody(me(), { optional: viewerIsClerk(), pick: namePickNow() }),
-    mypic: () => pictureBody(me(), { pick: picPickNow() }),
+    myname: () => nameBody(me(), { optional: viewerIsClerk(), pick: namePickNow(),
+      locked: !!(cs && !docOpen()) }),
+    mypic: () => pictureBody(me(), { pick: picPickNow(), locked: !!(cs && !docOpen()) }),
     // **Whether the founder is in it is its own question** (Ed, 2026-08-18).
     // It had been the top half of the roster card, which made a decision about
     // one person a preamble to a list of everybody — and the founder is a hat
@@ -8209,8 +8210,11 @@
       const box = (scope2 || document).querySelector('[data-emails]');
       // one address at a time, and `forEach` would otherwise hand `invite`
       // the index as its card key
-      if (box) { box.value.split(/[\s,;]+/).filter((x) => x.includes('@'))
-        .forEach((x) => invite(x, cardKeyAt(scope2))); }
+      const ads = box ? box.value.split(/[\s,;]+/).filter((x) => x.includes('@')) : [];
+      // an empty press is owed the refusal sentence (Y25) — the one box is
+      // the only field now (Q1166), so the sentence lands under it
+      if (!ads.length) { setDoorErr(cardKeyAt(scope2) || 'invite', 'Type an address to send the invitation to.'); return render(); }
+      ads.forEach((x) => invite(x, cardKeyAt(scope2)));
       S.inviteMany = '';
       return render();
     }

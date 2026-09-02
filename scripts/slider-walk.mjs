@@ -134,10 +134,10 @@ const birth = async () => {
   await page.waitForTimeout(600);
 };
 
-// 👥 is two questions on one card (the founder's *Asked as*, the room's *The
-// number*), so delegating it means picking the form as well — the value half
-// stays the founder's whatever happens to the number.
-const FORM = { bar: null, quorum: '[data-set="quorumForm"][data-val="share"]' };
+// **The form is the member's own since Q1162**: delegating 👥 hands over the
+// whole question — no form is pre-picked, and clicking a form block now
+// would take the question back rather than frame it.
+const FORM = { bar: null, quorum: null };
 let seen = new Set();
 const walkTo = async (stop, delegate) => {
   for (let i = 0; i < 40; i++) {
@@ -207,40 +207,11 @@ const walkTo = async (stop, delegate) => {
   return null;
 };
 
-/** The slider's own state, and where on screen it is. */
-const readSlider = () => page.evaluate(() => {
-  const c = document.querySelector('.setupcard');
-  const sl = c && c.querySelector('[data-slide]');
-  if (!sl) return null;
-  sl.scrollIntoView({ block: 'center' });
-  const r = sl.getBoundingClientRect();
-  const commit = c.querySelector('[data-confirm]');
-  return {
-    key: sl.dataset.slide, min: +sl.min, max: +sl.max, step: +sl.step, value: +sl.value,
-    unset: !!c.querySelector('.cs.unset'), readout: (c.querySelector('.csval') || {}).textContent,
-    mean: ((c.querySelector('.csmean') || {}).textContent || '').trim(),
-    pct: sl.style.getPropertyValue('--pct').trim(),
-    commitOff: !commit || commit.disabled,
-    x: r.x, y: r.y, w: r.width, h: r.height,
-  };
-});
-/** Press on the track and pull the thumb to `frac` of its width. */
-const dragTo = async (s, frac) => {
-  await page.mouse.move(s.x + s.w / 2, s.y + s.h / 2);
-  await page.mouse.down();
-  for (const f of [0.5, (0.5 + frac) / 2, frac, frac]) {
-    await page.mouse.move(s.x + s.w * f, s.y + s.h / 2);
-    await page.waitForTimeout(60);
-  }
-  await page.mouse.up();
-  await page.waitForTimeout(300);
-  return readSlider();
-};
+/* (readSlider and dragTo retired with the last slider — Q1162, Ed's card
+   review of 2026-09-02: 👥 answers in two blocks now, and no control on the
+   surface is a track.) */
 
 /* ---- the two answer cards ---------------------------------------------- */
-// what the readout must look like once it carries a value: the founder's
-// chosen form — a share, and what it comes to
-const SHAPE = { quorum: /^\d+% — \d+ of \d+$/ };
 // **The track the member is offered, read off the DOM** (promise-coverage 👥,
 // backlog entry 85). The two blind questions are the only place a member
 // states a number, so what the track can *express* is half of what the
@@ -278,7 +249,8 @@ const readRungs = () => page.evaluate(() => {
     return {
       val: b ? b.dataset.ansval : null,
       on: p.classList.contains('on'),
-      label: (b ? b.textContent : '').replace(/\s+/g, ' ').trim(),
+      // the block's own sentence (CP1), not the fixed radio words
+      label: ((p.querySelector('.opttext') || {}).textContent || '').replace(/\s+/g, ' ').trim(),
       exp: ((p.querySelector('.exp') || {}).textContent || '').trim(),
     };
   });
@@ -303,41 +275,30 @@ const readRungs = () => page.evaluate(() => {
     seen.add(want);
     check('the founder is served ' + want, await openCard(want));
 
+    // **Exactly three rungs since Q1158** (Ed's card review, 2026-09-02):
+    // *A number of my own* and its box left 🌡️ — the pattern survives on
+    // 🪜, 👥 and ⏱️ — and in a membership of one the meaning lines say
+    // nothing at all (Q1159: the ceiling lines are removed and nothing
+    // replaces them; T39's nothing-true rule prints no line).
     const born = await readRungs();
-    const rungs = born.picks.filter((p) => p.val && p.val !== 'own');
-    check('it offers three rungs and a number of your own', rungs.length === 3 &&
-      born.picks.some((p) => p.val === 'own'), born.picks.map((p) => p.val).join(', '));
+    const rungs = born.picks.filter((p) => p.val);
+    check('it offers exactly three rungs and no number of your own',
+      rungs.length === 3 && !born.picks.some((p) => p.val === 'own'),
+      born.picks.map((p) => p.val).join(', '));
     check('most protective first', rungs.map((p) => p.val).join(',') === '90,80,60',
       rungs.map((p) => p.val).join(','));
-    check('each rung says what it would mean for this room',
-      // "membership", not "room", since entry 215's rename — the walk's regex
-      // outlived the copy it read (found 2026-08-31; slider-walk is not in CI)
-      rungs.every((p) => /^In a membership of one, /.test(p.exp)),
-      rungs.map((p) => p.exp).join(' | '));
+    check('in a membership of one the rungs say nothing (Q1159)',
+      rungs.every((p) => p.exp === ''), rungs.map((p) => p.exp).join(' | '));
+    check('the rungs are Ed’s share-of-voters sentences (Q1156/Q1157)',
+      rungs.every((p) => /^For a proposal ✏️ to pass, /.test(p.label)),
+      rungs.map((p) => p.label.slice(0, 44)).join(' | '));
     check('born untouched', !born.picks.some((p) => p.val && p.on),
       born.picks.filter((p) => p.on).map((p) => p.val).join(','));
-    check('and the number box is not even in the DOM', born.box === null);
+    check('and no number box anywhere', born.box === null);
     check('the commit is dark until it is touched', born.commitOff);
-
-    await clickIn('.setupcard [data-ans="bar"][data-ansval="own"]');
-    const own = await readRungs();
-    check('a number of my own opens an empty box', own.box !== null && own.box.value === '',
-      own.box ? JSON.stringify(own.box) : 'no box');
-    check('the box is the range the question offers',
-      !!own.box && own.box.min === 50 && own.box.max === 99,
-      own.box ? own.box.min + '…' + own.box.max : '');
-    check('choosing where to answer is not answering', own.commitOff);
-
-    await typeIn('.setupcard [data-ansnum="bar"]', '72');
-    const typed = await readRungs();
-    const ownRow = typed.picks.find((p) => p.val === 'own');
-    check('a typed number wakes the ✓', !typed.commitOff);
-    check('and says what it would mean, rather than repeating itself',
-      !!ownRow && /^In a membership of one, /.test(ownRow.exp) && !/72/.test(ownRow.exp), ownRow && ownRow.exp);
 
     await clickIn('.setupcard [data-ans="bar"][data-ansval="80"]');
     const rung = await readRungs();
-    check('a rung takes the answer back off the box', rung.box === null);
     check('the rung is the one that is on',
       rung.picks.filter((p) => p.on).map((p) => p.val).join(',') === '80',
       rung.picks.filter((p) => p.on).map((p) => p.val).join(','));
@@ -349,7 +310,15 @@ const readRungs = () => page.evaluate(() => {
   }
 }
 
-/* ---- 👥: the slider, still ---------------------------------------------- */
+/* ---- 👥: two blocks, the form part of the answer (Q1162) ----------------
+   The consent slider retired with Ed's card review of 2026-09-02: the member
+   states a **form as well as a number** — a share block and a count block,
+   each the rule as it would stand with its number inline (Q1137's pattern).
+   What is asserted is the same three promises transposed: **born untouched**
+   (no block on, boxes empty, dark ✓), **typing into a block's box chooses
+   that block** (F6's rule reaching the answer rungs), and **the range is the
+   question's own** (5–100 on the share box, where the track's ends used to
+   be read). */
 for (const key of ['quorum']) {
   const want = 'ans-' + key;
   console.log('\n' + want);
@@ -360,44 +329,53 @@ for (const key of ['quorum']) {
   seen.add(want);
   check('the founder is served ' + want, await openCard(want));
 
-  const born = await readSlider();
-  if (!born) { check(want + ' has a slider', false); continue; }
-  check('born untouched', born.unset && born.pct === '0',
-    'unset=' + born.unset + ' --pct=' + born.pct);
-  check('the readout asks rather than answers', born.readout === 'Drag to answer', born.readout);
+  const readBlocks = () => page.evaluate(() => {
+    const c = document.querySelector('.setupcard');
+    if (!c) return null;
+    const picks = [...c.querySelectorAll('.pick')].map((p) => {
+      const b = p.querySelector('[data-ans]');
+      const box = p.querySelector('[data-ansnum]');
+      return {
+        val: b ? b.dataset.ansval : null,
+        on: p.classList.contains('on'),
+        label: (p.querySelector('.opttext') ? p.querySelector('.opttext').textContent : '').replace(/\s+/g, ' ').trim(),
+        box: box ? { value: box.value, min: +box.min, max: +box.max } : null,
+      };
+    }).filter((p) => p.val);
+    const commit = c.querySelector('[data-confirm]');
+    return { picks, commitOff: !commit || commit.disabled };
+  });
+
+  const born = await readBlocks();
+  if (!born || !born.picks.length) { check(want + ' has the two blocks', false); continue; }
+  check('two blocks, share first', born.picks.map((p) => p.val).join(',') === 'share,count',
+    born.picks.map((p) => p.val).join(','));
+  check('each block is the rule with its number inline',
+    born.picks.every((p) => p.box && /must vote on a proposal ✏️ before it can pass/.test(p.label)),
+    born.picks.map((p) => p.label.slice(0, 50)).join(' | '));
+  check('born untouched', !born.picks.some((p) => p.on) &&
+    born.picks.every((p) => p.box.value === ''),
+    born.picks.map((p) => p.val + '=' + p.box.value + (p.on ? '*' : '')).join(','));
   check('the commit is dark until it is touched', born.commitOff);
+  const share = born.picks.find((p) => p.val === 'share');
+  check('the share box is the range the question offers',
+    !!share && share.box.min === BOUNDS[key].min && share.box.max === BOUNDS[key].max,
+    share ? share.box.min + '…' + share.box.max : '');
 
-  const low = await dragTo(born, 0);
-  check('dragged to the left edge it reads min', low.value === low.min,
-    low.value + ' of ' + low.min + '…' + low.max);
-  const high = await dragTo(low, 1);
-  check('dragged to the right edge it reads max', high.value === high.max,
-    high.value + ' of ' + high.min + '…' + high.max);
-  const mid = await dragTo(high, 0.5);
-  check('and stops in between', mid.value > mid.min && mid.value < mid.max, String(mid.value));
-
-  // the ends of the track are the ends `ANSWER` states, and the member
-  // cannot walk off either of them
-  const track = BOUNDS[key];
-  check('the track starts where the question does', low.min === track.min,
-    low.min + ' want ' + track.min);
-  check('and ends where it does', high.max === track.max,
-    high.max + ' want ' + track.max);
-  check('in the steps it offers', mid.step === track.step, mid.step + ' want ' + track.step);
-
-  check('the readout carries the value', SHAPE[key].test(mid.readout || ''), mid.readout);
-  // **…and under it, what that value would do in this room** (entry 167).
-  // The three fixed band sentences that stood here named no room at all —
-  // *A small part of the room can carry a change while the rest are
-  // elsewhere.* is true of any small quorum anywhere — so a member arriving
-  // never moved them. `syncSlider` repaints this from the stored `mean` on
-  // every step of the drag, which is the *nothing rebuilds under a press*
-  // path, so it is asserted after a drag rather than after a render.
-  for (const [where, s] of [['at min', low], ['at max', high], ['in between', mid]]) {
-    check('the meaning names the room ' + where, /membership of/.test(s.mean || ''), s.mean);
-  }
-  check('the touched control is no longer unset', !mid.unset && mid.pct !== '0', '--pct=' + mid.pct);
-  check('the ✓ wakes', !mid.commitOff);
+  // typing into the share block's box chooses that block and wakes the ✓
+  await page.evaluate(() => {
+    const p = [...document.querySelectorAll('.setupcard .pick')]
+      .find((x) => (x.querySelector('[data-ans]') || { dataset: {} }).dataset.ansval === 'share');
+    const box = p && p.querySelector('[data-ansnum]');
+    if (box) { box.value = '40';
+      for (const e of ['input', 'change']) box.dispatchEvent(new Event(e, { bubbles: true })); }
+  });
+  await page.waitForTimeout(400);
+  const typed = await readBlocks();
+  check('typing into the share box chooses the share block',
+    typed.picks.filter((p) => p.on).map((p) => p.val).join(',') === 'share',
+    typed.picks.filter((p) => p.on).map((p) => p.val).join(','));
+  check('the ✓ wakes', !typed.commitOff);
 
   await clickIn('.setupcard [data-confirm]');
   await page.waitForTimeout(400);

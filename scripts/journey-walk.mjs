@@ -442,8 +442,13 @@ const pickOption = (label) => page.evaluate((l) => {
   const r = o.getBoundingClientRect();
   return { x: r.x + 14, y: r.y + r.height / 2 };
 }, label);
-const fillFields = () => page.evaluate(() =>
-  document.querySelectorAll('.setupcard input, .setupcard textarea').forEach((n) => {
+const fillFields = () => page.evaluate(() => {
+  // **One number per choice group** (Q1162): 👥 draws two blocks each with
+  // its own box, and filling both would answer in two forms at once — the
+  // last claim winning, which committed a count of 5 in a room of 2. The
+  // first block is the share form, which is what the walk always answered.
+  const takenChoice = new Set();
+  return document.querySelectorAll('.setupcard input, .setupcard textarea').forEach((n) => {
     // **A consent slider always has a value and still needs touching** — it is
     // greyed until it is, because a range control with no default still paints
     // its thumb somewhere. So it cannot be skipped for having a `.value` the
@@ -466,11 +471,17 @@ const fillFields = () => page.evaluate(() =>
       return fire();
     }
     if (n.value || /^(email|radio|checkbox|file|hidden|color)$/.test(n.type)) return;
-    if (n.type === 'number') n.value = String(Math.max(+n.min || 1, 5));
+    if (n.type === 'number') {
+      const ch = n.closest('.choice');
+      if (ch && takenChoice.has(ch)) return;
+      if (ch) takenChoice.add(ch);
+      n.value = String(Math.max(+n.min || 1, 5));
+    }
     else if (n.type === 'datetime-local') n.value = '2026-09-18T18:00';
     else n.value = 'The club shall meet on the first Tuesday.';
     fire();
-  }));
+  });
+});
 const committable = () => page.evaluate(() =>
   [...document.querySelectorAll('.setupcard .commitrow button')]
     .some((x) => !x.disabled && !/🗑/.test(x.textContent)));
@@ -528,21 +539,18 @@ const rowsUnder = (which) => page.evaluate((id) => {
 }, MEM_SEC[which]);
 const refusalLine = () => page.evaluate(() =>
   ((document.querySelector('.setupcard .why.refusal') || {}).textContent || '').trim());
-const inviteFrom = async (addr, byEnter) => {
-  await typeIn('.setupcard [data-add]', addr);
+// **One box since Q1166** (Ed's card review, 2026-09-02): the single-address
+// field and its Enter-sends promise (Q814) retired with it — Enter in a
+// multi-line box is a newline — and the send is the commit row's ✒️.
+const inviteFrom = async (addr) => {
+  await typeIn('.setupcard [data-emails]', addr);
   await T(120);
-  if (byEnter) {
-    // **Enter sends** (Q814): a lone field with a button beside it and no
-    // form around it swallowed the return key, which is the one gesture
-    // everybody makes after typing an address.
-    await page.focus('.setupcard [data-add]');
-    await page.keyboard.press('Enter');
-  } else await clickIn('.setupcard [data-act="add"]');
+  await clickIn('.setupcard .commitrow [data-act="invite"]');
   await T(900);
 };
 const inviteDoorPreBegin = async () => {
-  await inviteFrom(GUEST1, false);
-  await inviteFrom(GUEST2, true);
+  await inviteFrom(GUEST1);
+  await inviteFrom(GUEST2);
   // the rows live under *Invitees*, which the open ✉️ card is standing in
   // front of — so it is shut to read them, and opened again to carry on
   await closeCard();
@@ -567,14 +575,14 @@ const inviteDoorPreBegin = async () => {
   // compared the way the store compares it (Q815): the store lowercases
   // every address it takes, so a case variant used to walk past the page's
   // own check into a server refusal nobody could see.
-  await inviteFrom(GUEST1.toUpperCase(), false);
+  await inviteFrom(GUEST1.toUpperCase());
   const said = await refusalLine();
   const refusalOk = /already on the membership/i.test(said);
   say('refusal    · ' + (refusalOk ? '“' + said + '”'
     : 'FAIL: a duplicate address said ' + JSON.stringify(said)));
   if (!refusalOk) stuck.push('the refusal sentence on ✉️');
   // and it is about what is in the field, so the next keystroke retires it
-  await typeIn('.setupcard [data-add]', '');
+  await typeIn('.setupcard [data-emails]', '');
   await T(220);
   const cleared = !(await refusalLine());
   say('cleared    · ' + (cleared ? 'the next keystroke retires it'
@@ -591,25 +599,26 @@ const inviteDoorPreBegin = async () => {
   // The button's height rides along because a 52×40 glyph button in a flex row
   // beside a `flex: 1` input is the one thing that could come out a different
   // size from every other pen button on the page.
+  // **The send is the row's commit since Q1166** (Ed's card review): the box
+  // is the body, ✒️ sends from the commit row, and there is no closing ✓ and
+  // no [data-confirm] pen — the mark still sits on the act.
   const marks = await page.evaluate(() => {
     const c = document.querySelector('.setupcard');
-    const send = c && c.querySelector('.addrow button');
     const row = c && c.querySelector('.commitrow');
+    const send = row && row.querySelector('[data-act="invite"]');
     return {
       send: send ? (send.textContent || '').trim() : '(no send button)',
       h: send ? Math.round(send.getBoundingClientRect().height) : 0,
       title: send ? send.title : '',
       bin: !!(row && row.querySelector('[data-revert]')),
-      close: !!(row && row.querySelector('[data-close]')),
       confirm: !!(row && row.querySelector('[data-confirm]')),
     };
   });
-  const marksOk = marks.send === '✒️' && marks.bin && marks.close && !marks.confirm;
+  const marksOk = marks.send === '✒️' && marks.bin && !marks.confirm;
   say('the mark   · send ' + JSON.stringify(marks.send) + ' (' + marks.h + 'px, “' +
-    marks.title + '”) · row 🗑️ ' + marks.bin + ' ✓ ' + marks.close +
-    ' confirm ' + marks.confirm +
-    (marksOk ? '' : '  FAIL: the ✒️ belongs on the send, and the row only closes'));
-  if (!marksOk) stuck.push('the ✒️ on ✉️’s send and the closing ✓ on its row');
+    marks.title + '”) · row 🗑️ ' + marks.bin + ' confirm ' + marks.confirm +
+    (marksOk ? '' : '  FAIL: the ✒️ send belongs on the row, with 🗑️ and no pen'));
+  if (!marksOk) stuck.push('the ✒️ on ✉️’s row');
 };
 
 /* ---- a second seat (backlog 50, Q842–Q848) ------------------------------
@@ -936,7 +945,7 @@ const stuckAtBegin = async () => {
   if (!st.rail.includes('invite')) stuck.push('✉️ is not served as the remedy');
   // 4 — and it works: one address is enough to end the wait it names
   if (await open('invite')) {
-    await inviteFrom(GUEST1, false);
+    await inviteFrom(GUEST1);
     const after = await oneVoiceState();
     const gone = !after.holds.some((h) => h.why === 'one-voice') && !after.rail.includes('invite');
     say('invited    · ' + (gone ? 'the ✉️ task leaves and the reason is no longer one-voice'
@@ -1629,7 +1638,7 @@ const invitationStandsAfterBegin = async () => {
 };
 await invitationStandsAfterBegin();
 
-await doorShuts('invite', '✉️', '[data-add]', 'box');
+await doorShuts('invite', '✉️', '[data-emails]', 'box');
 await doorShuts('remove', '❌', '[data-exile]', 'exile');
 
 /* ---- a caret on the column itself, not in a clause (Ed, 2026-08-22) ----

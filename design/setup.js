@@ -745,12 +745,14 @@ window.SETUP = (function () {
   const nameBody = (me, opts) => {
     const o = opts || {};
     const pk = { namePick: o.pick || null };
+    // `locked` is the closed document (CP9): the blocks stay readable and
+    // nothing on them commits
     return '<div class="choice" role="radiogroup">' +
       opt(pk, 'namePick', 'name',
         '<input id="myname" class="namein" data-txt="myname" value="' + esc(me.n || '') +
-        '" placeholder="Your name">') +
+        '" placeholder="Your name"' + (o.locked ? ' disabled' : '') + '>', '', '', o.locked) +
       opt(pk, 'namePick', 'anon', ctlWord('Anonymous'),
-        (o.optional ? 'The Founded by line shows no name.' : '')) +
+        (o.optional ? 'The Founded by line shows no name.' : ''), '', o.locked) +
       '</div>';
   };
 
@@ -845,17 +847,18 @@ window.SETUP = (function () {
     const pic = me.pic || '';
     const uploaded = pic[0] === 'u';
     const pickState = { [pk]: oo.pick || null };
+    // `locked` is the closed document (CP9): readable, nothing commits
     return '<div class="choice" role="radiogroup">' +
-      opt(pickState, pk, 'anon', ctlWord('Anonymous')) +
+      opt(pickState, pk, 'anon', ctlWord('Anonymous'), '', '', oo.locked) +
       opt(pickState, pk, 'upload', ctlWord('Upload an image'), '',
-        oo.pick === 'upload'
+        oo.pick === 'upload' && !oo.locked
           ? '<div class="picdrop" data-picinto="' + into + '"><div class="picact">' +
             '<label class="btn">' + (uploaded ? 'Choose another' : 'Choose a picture') +
             '<input type="file" accept="image/*" data-picfile="1"></label>' +
             (uploaded ? avHtml(me, 'big') : '') + '</div></div>'
-          : '') +
+          : '', oo.locked) +
       opt(pickState, pk, 'emoji', ctlWord('Pick an emoji'), '',
-        oo.pick === 'emoji' ? emojiPicker(pic, me.n, at) : '') +
+        oo.pick === 'emoji' && !oo.locked ? emojiPicker(pic, me.n, at) : '', oo.locked) +
       '</div>';
   };
 

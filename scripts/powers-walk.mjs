@@ -554,14 +554,16 @@ const runDocument = async (hat) => {
     else {
       if (!pOrd.pen) bad.push('no live ✒️ beside it');
       if (!pOrd.composer) bad.push('one commit where there should be two');
-      if (!pOrd.live.some((l) => /Propose/.test(l))) {
-        bad.push('an ordinary value offers no ✏️ Propose (' + JSON.stringify(pOrd.live) + ')');
+      // the commit is its glyph alone since T47 (Q1155/Q1171): the act's
+      // words live in the title, so the glyph is what a walk reads
+      if (!pOrd.live.some((l) => l.includes('✏️'))) {
+        bad.push('an ordinary value offers no ✏️ (' + JSON.stringify(pOrd.live) + ')');
       }
     }
     await clickIn('[data-set="ending"][data-val="perpetual"]');
     await T(600);
     const pCon = await probe();
-    if (!pCon || !pCon.live.some((l) => /all members|ask everyone/i.test(l))) {
+    if (!pCon || !pCon.live.some((l) => l.includes('🏛️'))) {
       bad.push('*never* offers no 🏛️ (' + JSON.stringify((pCon || {}).live) + ')');
     }
     // back to the date, and put *that* to the room: an ordinary motion is the

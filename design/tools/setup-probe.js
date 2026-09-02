@@ -290,9 +290,10 @@
     // (Q732, 2026-08-23) — which is how an emoji face rendered at 7px on the
     // Founded line for four days with every check green.
     ['open-picture', () => openTab('mypic')],
-    // the picker is one flat grid of Unicode's whole list since entry 186, so
-    // every glyph is in the box already and the fox is clicked where it
-    // stands — the search step that used to reach it went with the search
+    // the picker opens when its block is chosen since the card review of
+    // 2026-09-02 (Q1165: 🖼️ is Anonymous · Upload an image · Pick an emoji),
+    // so the block is chosen first and the fox clicked where it stands
+    ['choose-emoji-block', () => click('.setupcard [data-set="picPick"][data-val="emoji"]')],
     ['choose-emoji', () => click('.setupcard .avopt[data-pic="e🦊"]')],
     ['confirm-picture', () => click('.setupcard [data-confirm]')],
     /* **The rest of the founding, card by card** (Q915, Ed 2026-08-26).
@@ -327,26 +328,22 @@
     // founder who is a member, which this one is (🎩 above)
     ['open-the-voice', () => openTab('grant-voice')],
     ['ok-the-voice', () => click('.setupcard [data-ok]')],
-    // ⏱️ is the one card carrying three numbers: the grant, the cap and the
-    // drip, which is the whole of the proposal rate in one sentence
+    // ⏱️ is one number since Q1160 (Ed's card review, 2026-09-02): the
+    // interval, typed inside the sentence — typing claims the rung (F6)
     ['open-rate', () => openTab('rate')],
-    ['choose-rate-holder', () => click('.setupcard [data-set="rateBy"][data-val="founder"]')],
-    ['type-rate-grant', () => typeInto('.setupcard input[data-num="grant"]', '5')],
-    ['type-rate-cap', () => typeInto('.setupcard input[data-num="cap"]', '8')],
-    ['type-rate-drip', () => typeInto('.setupcard input[data-num="dripMin"]', '45')],
+    ['type-rate-drip', () => typeInto('.setupcard input[data-num="dripN"]', '45')],
     ['confirm-rate', () => click('.setupcard [data-confirm]')],
     ['open-ending', () => openTab('ending')],
     ['choose-ending', () => click('.setupcard [data-set="ending"][data-val="perpetual"]')],
     ['confirm-ending', () => click('.setupcard [data-confirm]')],
+    // 🌡️ is exactly three rungs since Q1158 — the free-number box left
     ['open-bar', () => openTab('bar')],
-    ['choose-bar-holder', () => click('.setupcard [data-set="barBy"][data-val="founder"]')],
-    ['type-bar', () => typeInto('.setupcard input[data-num="tClose"]', '78')],
+    ['choose-bar', () => click('.setupcard [data-set="tClose"][data-val="80"]')],
     ['confirm-bar', () => click('.setupcard [data-confirm]')],
-    // 👥 is the card with two eyebrows — *Asked as* and *The number* — so
-    // both are driven, which no other settings card asks for
+    // 👥 collects form and number together since Q1162: the count block is
+    // its own rule sentence, the number typed inside it
     ['open-quorum', () => openTab('quorum')],
     ['choose-quorum-form', () => click('.setupcard [data-set="quorumForm"][data-val="count"]')],
-    ['choose-quorum-holder', () => click('.setupcard [data-set="quorumBy"][data-val="founder"]')],
     ['type-quorum', () => typeInto('.setupcard input[data-num="quorumN"]', '3')],
     ['confirm-quorum', () => click('.setupcard [data-confirm]')],
     ['open-authorship', () => openTab('authorship')],

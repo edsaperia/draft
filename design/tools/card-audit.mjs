@@ -1226,11 +1226,14 @@ async function walkSettled(page, base, cards, errors, seat, switches) {
         { kind: 'set', setting: 'bar', value: { pct: Math.min(95, bar.pct + 4) } },
         'The charter should not change on a bare majority of the evidence.');
       for (const id of voters) if (id !== mover) cs.answerMotion(tick(), id, m1, 'accept');
-      const rate = cs.settingState('rate').value || { grant: 4, cap: 8, dripMinutes: 180 };
+      // the interval is the whole setting since Q1160 (grant and cap fixed
+      // at 3), so the rejected ordinary motion proposes a faster drip
+      const rate = cs.settingState('rate').value || { grant: 3, cap: 3, dripMinutes: 180 };
       const m2 = cs.openMotion(tick(), mover,
         { kind: 'set', setting: 'rate',
-          value: { grant: rate.grant + 2, cap: rate.cap, dripMinutes: rate.dripMinutes } },
-        'Two more to start would let people write before they have to choose.');
+          value: { grant: rate.grant, cap: rate.cap,
+            dripMinutes: Math.max(5, Math.round(rate.dripMinutes / 2)) } },
+        'Half the wait would let people write while the thought is warm.');
       cs.adjudicateOrdinaryMotion(tick(), m2, 'held');
       // **Pass 4's census reaches three more states** (2026-08-31): a
       // constitutional motion **parked at the 👑** (👁️ is founder-held
