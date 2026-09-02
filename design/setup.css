@@ -221,6 +221,10 @@
     padding-bottom: var(--s3); border-bottom: 1px solid var(--border);
     margin-bottom: var(--s3);
   }
+  /* the standing block's chosen radio (Ed's QA, 2026-09-02 pm) sits on its
+     own line, not at the tail of the rule's text — every radio on a card
+     lines up down its left edge (P1) */
+  .headrule .lanepick { display: flex; width: max-content; margin-top: var(--s2); }
   .provline { color: var(--muted); font-size: var(--t-small); display: block; margin-top: var(--s1); }
   .pick + .pick { border-top: 1px solid var(--border); padding-top: var(--s3);
     margin-top: var(--s3); }

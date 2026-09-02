@@ -883,11 +883,16 @@ function crossCard(cards) {
 
   // T5 — one label per rung, everywhere. The founder's radio, the member's
   // ladder and the composer's lane must say the same words for one value.
+  // The status-quo *keep* rungs (Ed's QA, 2026-09-02 pm) are exempt by
+  // design: their label IS the member's own standing value — a name, a
+  // picture — so two seats rightly label them two ways.
+  const VALUE_RUNGS = new Set(['namePick=keep', 'picPick=keep', 'appPicPick=keep']);
   const byRung = new Map();
   for (const c of cards) {
     for (const o of c.strings.options) {
       if (!o.set || !o.val || !o.label) continue;
       const k = o.set + '=' + o.val;
+      if (VALUE_RUNGS.has(k)) continue;
       if (!byRung.has(k)) byRung.set(k, new Map());
       const seen = byRung.get(k);
       const label = o.label.replace(/\s+/g, ' ').trim();

@@ -578,14 +578,23 @@ window.SETUP = (function () {
     // geometry is measured against it — and wears the option block's own
     // treatment, so the card reads status quo first, alternatives beneath.
     const asBlock = rule && ctx.blockHead && ctx.blockHead(c);
-    return '<div class="sugg setupcard" role="tabpanel" data-setupcard="' + c.k + '">' +
+    // **A hairline earns its place** (Q1173): the head↔field rule draws only
+    // under a head with content over real controls. `nohead` — nothing in the
+    // head but the strip; `rulehead` — the settled rule as the first block,
+    // whose .asblock border-bottom is already the separator; `textcard` — a
+    // head over plain text (the grants), flagged on the card literal.
+    const clauseHtml = ctx.clauseFor ? (ctx.clauseFor(c) || '') : '';
+    const shellCls = 'sugg setupcard' +
+      (asBlock ? ' rulehead' : !rule && noTitle && !clauseHtml ? ' nohead' : '') +
+      (c.textcard ? ' textcard' : '');
+    return '<div class="' + shellCls + '" role="tabpanel" data-setupcard="' + c.k + '">' +
       CB.clauseHeadHtml(oo.s || c, {
         label: null, wash: false,
         marks: stripHtml(siblings || [c], ctx),
         html: (rule ? '<div class="headrule' + (asBlock ? ' asblock' : '') + '">' + rule + '</div>'
             : noTitle ? ''
             : '<div class="headtitle">' + esc(c.t) + '</div>') +
-          (ctx.clauseFor ? (ctx.clauseFor(c) || '') : ''),
+          clauseHtml,
         v: oo.v, edit: false,
       }) +
       '<div class="field">' + body + '</div>' +
@@ -609,118 +618,24 @@ window.SETUP = (function () {
     // lockline says only where the value came from (Ed's copy pass,
     // 2026-08-19, which also removed the dead setBy/readNote branches:
     // no card ever set either).
-    return '<div class="lockline">' + TICK + '<span>' +
+    // value first, provenance beneath (Ed's QA, 2026-09-02 pm — the same
+    // order the settled card's chosen-radio grammar reads in; it also keeps
+    // H3's one-place rule true now that stripped heads leave the lockline
+    // leading otherwise)
+    return '<div class="statline"><span class="k">Set to</span><span class="v">' +
+      ctx.value(c) + '</span></div>' +
+      '<div class="lockline">' + TICK + '<span>' +
       esc(ctx.lockline ? ctx.lockline(c) : 'Set by the founder when the document was made.') +
-      '</span></div>' +
-      '<div class="statline"><span class="k">Set to</span><span class="v">' +
-      ctx.value(c) + '</span></div>';
+      '</span></div>';
   }
 
-  /* What the **founder** sees when they open a card they handed to the room —
-     and what a member sees on one they have already answered. While it runs it
-     can say only how many have answered: any of the values, or a running
-     maximum, would let the room read itself before it had finished, which is
-     the whole reason the ceremony is blind.
-
-     Once it closes there is nothing left to anchor, so the card carries the
-     `distribution-strip` — the shape of what people asked for, without names.
-     A consent rule is worth seeing the shape of: the number the document took
-     is one person's, and the strip is what says how far it sat from the rest. */
-  /* `withMethod` is the caller saying *nothing above me has named the method*
-     (entry 163). The watch half is appended under three different upper
-     halves, and two of them — the founder's own card and the pen's set card —
-     carry 🌡️'s method note already; only the read-only body does not, and a
-     card that said the same sentence twice is exactly what T36 is about. The
-     knowledge is the caller's because only the caller knows what it put above
-     the strip (T20). */
-  function watchBody(c, ctx, withMethod) {
-    const inN = c.in || 0, done = inN >= ctx.E;
-    // No heading of its own: this half is always appended under a card that has
-    // already said what it is about, and a second <h2> repeating the card's own
-    // title was the surest sign the two halves were not reading as one card.
-    let h = '<div class="eyebrow fieldlab">' + esc(done ? 'What the membership said' : 'What the membership is saying') + '</div>' +
-      '<div class="lockline">' + (done ? TICK : '') +
-      '<span>The members decide' + (done ? '' : ' — asked of everyone before drafting began, blind') + '.</span></div>' +
-      '<p class="why">' + (c.rule || '') + '</p>';
-    if (!done) {
-      h += '<div class="pips">' + Array.from({ length: ctx.E }, (_, i) =>
-        '<span class="pip' + (i < inN ? ' in' : '') + '"></span>').join('') + '</div>' +
-        '<div class="statline"><span class="k">Answered</span><span class="v">' + inN + ' of ' + ctx.E + '</span></div>' +
-        '<p class="setnote">Nobody sees anybody’s answer until every one is in — you included. Only the count can show without anchoring the rest.</p>';
-      return h;
-    }
-    h += (c.strip === 'rungs' && c.distribution && c.distribution.length
-      ? rungStripHtml(c.distribution) : distHtml(c)) +
-      '<div class="statline"><span class="k">Answered</span><span class="v">' + ctx.E + ' of ' + ctx.E + '</span></div>' +
-      '<div class="statline"><span class="k">' + esc(c.takes || 'The document takes') + '</span>' +
-      '<span class="v">' + esc(c.result || '—') + '</span></div>' +
-      // **…and what that would mean for the room as it stands now** (entry
-      // 167), not for the room at the resolution: a settled 👥 card read next
-      // month says *in a room of 7* where it was 5 at the founding, which is
-      // the whole point of a sentence that names its own dependence.
-      meaningLine(c.k, c.taken, ctx.room) +
-      // 🌡️'s settled card is where a member first meets the number as a fact
-      // about the document rather than as a question, so the explainer is
-      // linked here too (entry 163). Not on the still-collecting branch, which
-      // has its blind note and its count and asks nothing more.
-      (withMethod && c.k === 'bar' ? methodNote() : '');
-    return h;
-  }
-
-  /* `distribution-strip` — published without names (SPEC §9.0a). The bar the
-     document ended up taking is the accent one; it is not necessarily the tall
-     one, and that is exactly what makes the strip worth drawing. */
-  function distHtml(c) {
-    if (!c.dist || !c.dist.length) return '';
-    const max = Math.max(...c.dist, 1);
-    return '<div class="dist">' + c.dist.map((n, i) =>
-      '<span' + (i === c.distTop ? ' class="top"' : '') + ' style="height:' +
-      Math.max(2, Math.round(n / max * 54)) + 'px" title="' + n + '"></span>').join('') + '</div>' +
-      '<div class="distx"><span>' + esc((c.distEnds || ['', ''])[0]) + '</span>' +
-      '<span>' + esc((c.distEnds || ['', ''])[1]) + '</span></div>' +
-      // 'the fourteen' was a fixture literal that lied on every roster but
-      // one (copy pass, 2026-08-19) — the strip says the same true thing
-      // whatever the membership is
-      '<p class="setnote">What everyone asked for, without names.</p>';
-  }
-
-  /* The same strip, drawn over **rungs** rather than over a fixture's buckets
-     (entry 165). Two differences from `distHtml`, and both follow from the
-     ladder above it:
-
-     - The columns are the ladder's own, so a rung nobody chose still stands —
-       at zero, visibly — and the shape of the room's answer is read against
-       the choices it had rather than against an anonymous run of bars. Any
-       number somebody named that is not a rung takes a column of its own,
-       in its place by value.
-     - It reads the **room's real answers** (`csState('bar').distribution`),
-       not a literal on the card record. That is why it is a second function
-       and not a flag on the first: every other card's strip is still the
-       Hollow Oak histogram on every document, which is a defect of its own
-       and a plan of its own.
-
-     Ordered most-protective-first to match the ladder, so a member's eye
-     travels the same way twice. The taken value is `distribution[0]` by
-     construction — `resolveConsent` sorts and takes the head — so the accent
-     column is not a second claim about who won. */
-  function rungStripHtml(dist) {
-    const rungs = window.CONSTITUTION.BAR_RUNGS;
-    const counts = new Map();
-    rungs.forEach((r) => counts.set(r.pct, 0));
-    dist.forEach((v) => { const p = +v.pct;
-      counts.set(p, (counts.get(p) || 0) + 1); });
-    const cols = [...counts.keys()].sort((a, b) => b - a);
-    const max = Math.max(...counts.values(), 1);
-    const taken = dist.length ? +dist[0].pct : null;
-    const labelOf = (p) => { const r = rungs.find((x) => x.pct === p); return r ? r.label : ''; };
-    return '<div class="dist">' + cols.map((p) =>
-      '<span' + (p === taken ? ' class="top"' : '') + ' style="height:' +
-      Math.max(2, Math.round(counts.get(p) / max * 54)) + 'px" title="' +
-      counts.get(p) + '"></span>').join('') + '</div>' +
-      '<div class="distl">' + cols.map((p) =>
-        '<span>' + p + '%' + (labelOf(p) ? '<br>' + esc(labelOf(p)) : '') + '</span>').join('') + '</div>' +
-      '<p class="setnote">What everyone asked for, without names.</p>';
-  }
+  /* **The watch-half is retired** (Q1176, Ed 2026-09-02 pm). `watchBody`,
+     `distHtml` and `rungStripHtml` — *What the membership said*, the
+     distribution strip, the taken line and the running answered-count — are
+     deleted with their last callers: provenance is the standing block's own
+     chosen radio now, the per-question counts moved to 🍾 (Q1169 finishes
+     that card's design), and the blindness story returns with the same
+     redesign. The strip's reasoning is preserved in design/DECISIONS.md. */
 
   /* **A name and a picture are two cards** (Ed, 2026-08-18: *picture and name
      separate!*). They were one, on the reasoning that they are answered in one
@@ -745,11 +660,17 @@ window.SETUP = (function () {
   const nameBody = (me, opts) => {
     const o = opts || {};
     const pk = { namePick: o.pick || null };
+    // **The standing name is the first block** (Ed's QA, 2026-09-02 pm): a
+    // name already given heads the card as the status quo — choosing it, or
+    // committing on it, changes nothing — and the composer beneath starts
+    // empty, being the *new* name. With no name yet the composer leads.
+    const keep = (me.n || '').trim();
     // `locked` is the closed document (CP9): the blocks stay readable and
     // nothing on them commits
     return '<div class="choice" role="radiogroup">' +
+      (keep ? opt(pk, 'namePick', 'keep', esc(keep), '', '', o.locked) : '') +
       opt(pk, 'namePick', 'name',
-        '<input id="myname" class="namein" data-txt="myname" value="' + esc(me.n || '') +
+        '<input id="myname" class="namein" data-txt="myname" value="' + (keep ? '' : esc(me.n || '')) +
         '" placeholder="Your name"' + (o.locked ? ' disabled' : '') + '>', '', '', o.locked) +
       opt(pk, 'namePick', 'anon', ctlWord('Anonymous'),
         (o.optional ? 'The Founded by line shows no name.' : ''), '', o.locked) +
@@ -847,8 +768,12 @@ window.SETUP = (function () {
     const pic = me.pic || '';
     const uploaded = pic[0] === 'u';
     const pickState = { [pk]: oo.pick || null };
+    // **The standing picture is the first block** (Ed's QA, 2026-09-02 pm):
+    // a picture already worn heads the card as the status quo, drawn at
+    // avatar size; the three answers stand beneath it unchanged.
     // `locked` is the closed document (CP9): readable, nothing commits
     return '<div class="choice" role="radiogroup">' +
+      (pic ? opt(pickState, pk, 'keep', avHtml(me, 'big'), '', '', oo.locked) : '') +
       opt(pickState, pk, 'anon', ctlWord('Anonymous'), '', '', oo.locked) +
       opt(pickState, pk, 'upload', ctlWord('Upload an image'), '',
         oo.pick === 'upload' && !oo.locked
@@ -1128,7 +1053,7 @@ window.SETUP = (function () {
   const gateBody = (c) => {
     const open = c.open();
     const note = gateNote(c);
-    return '<p class="why">' + c.why + '</p>' +
+    return (c.why ? '<p class="why">' + c.why + '</p>' : '') +
       // an open grant states no lockline (Ed, 2026-08-31): *You hold Founder
       // Actions* restated a state the wallet says the moment it is taken.
       // Gates keep theirs — a gate's lockline is what the card is waiting for,
@@ -1335,14 +1260,14 @@ window.SETUP = (function () {
      sentence is what lets the reader see that it moved. */
   const barMeaning = (pct, room) =>
     window.CONSTITUTION.meaningOf('bar', { pct: +pct }, room) || '';
-  const pctLabel = (label, pct) => esc(label) + '<span class="pct">' + pct + '%</span>';
   // **Exactly three rungs, and no free-number block** (Ed, 2026-09-02, Q1158,
   // reversing Q1104 (b) for 🌡️ alone — the pattern survives on 🪜, 👥 and
-  // ⏱️). The `'own'` rung, its box and its `data-ansnum` hook are gone.
+  // ⏱️). The `'own'` rung, its box and its `data-ansnum` hook are gone; the
+  // % figure went with Ed's QA of 2026-09-02 pm (*Remove %s*).
   const barLadder = (A, room) => ladder(A, 'bar',
     window.CONSTITUTION.BAR_RUNGS.map((r) => ({
       // the rung's block text is the rule as it would stand (Q1104 (b))
-      v: r.pct, t: pctLabel(r.sentence, r.pct), e: barMeaning(r.pct, room),
+      v: r.pct, t: esc(r.sentence), e: barMeaning(r.pct, room),
     })));
 
   /* One body per delegable question — the copy a member answers against,
@@ -1364,19 +1289,22 @@ window.SETUP = (function () {
       const box = (frm, min, max) =>
         '<input class="num numin" type="number" data-ansnum="quorum" min="' + min + '" max="' + max + '"' +
         (f === frm && typeof A.quorum === 'number' ? ' value="' + A.quorum + '"' : '') + '>';
-      return '<p class="why">How many ' + (E >= 2 ? 'of the ' + E : 'of the membership') + ' must weigh in before a question can change the document — short of that it waits; silence is never a vote.</p>' +
-      '<div class="choice" role="radiogroup">' +
+      // **Bare blocks** (Q1175, Ed 2026-09-02 pm): the question paragraph and
+      // the blind note are gone from every answer body — the clause text is
+      // the explanation, and the blindness story returns with the 🍾 redesign
+      // (Q1169). The meaning lines stay: they are meaningOf's, not copy.
+      return '<div class="choice" role="radiogroup">' +
       ansRow(f === 'share', 'quorumForm', 'share',
         box('share', 5, 100) + '% of the membership must vote on a proposal ✏️ before it can pass.',
         f === 'share' ? mean('share', A.quorum) : '') +
       ansRow(f === 'count', 'quorumForm', 'count',
         box('count', 1, Math.max(1, E)) + ' members must vote on a proposal ✏️ before it can pass.',
         f === 'count' ? mean('count', A.quorum) : '') +
-      '</div>' +
-      '<p class="blindnote">Nobody sees your answer. The document takes the answer that needs the <b>most voters</b>, read against the membership as it stands when the question settles — never looser than yours.</p>';
+      '</div>';
     },
     bar: (A, E, _form, room) =>
-      '<p class="why">How sure the membership must be that a new wording beats the one it replaces, <b>at the close, where an adoption is permanent</b>. Everything earlier can still be challenged, so this one number covers the whole way; how it climbs is the founder’s pacing.</p>' +
+      // Q1175: the question paragraph and blind note are gone; the rungs and
+      // the method note (Ed's own, Q1156, with its /pairwise link) remain
       // **Three rungs and a number** (entry 165, Ed 2026-08-27: *we need to
       // help them with 3 preset buttons, and they can edit the precise % if
       // they really want to*). The slider that stood here asked for a percent
@@ -1387,42 +1315,28 @@ window.SETUP = (function () {
       // (T5, Q620) — and the same `.above` dimming as 👁️, so *the most I will
       // accept* still reads as a ladder of what you are refusing.
       barLadder(A, room || { e: E }) +
-      methodNote() +
-      '<p class="blindnote">Nobody sees your answer. The document takes the <b>highest</b> given.</p>',
+      methodNote(),
     authorship: (A) =>
-      '<p class="why">Rationales are always visible; what varies is whether a name is attached. The <b>most private</b> answer wins: one person who wants no names keeps the document unnamed.</p>' +
       ladder(A, 'authorship', [
         { v: 'anonymous', t: RULE('authorship', 'anonymous'), e: '' },
-        { v: 'anonymousElective', t: RULE('authorship', 'anonymousElective'), e: 'An unsigned proposal among signed ones says something.' },
+        { v: 'anonymousElective', t: RULE('authorship', 'anonymousElective'), e: '' },
         { v: 'sealed', t: RULE('authorship', 'sealed'), e: '' },
         { v: 'sealedElective', t: RULE('authorship', 'sealedElective'), e: '' },
-        { v: 'public', t: RULE('authorship', 'public'), e: '' }]) +
-      '<p class="blindnote">Nothing is preselected — anonymity holds unless everyone is content with more.</p>',
+        { v: 'public', t: RULE('authorship', 'public'), e: '' }]),
     judgments: (A) =>
-      '<p class="why">Never revealed while a question is live, whichever is chosen — members who can see each other’s votes vote differently. This settles only whether they are published with the closing record.</p>' +
       ladder(A, 'judgments', [
-        { v: 'never', t: RULE('judgments', 'never'), e: 'What you preferred stays yours, permanently.' },
-        { v: 'after', t: RULE('judgments', 'after'), e: 'Published with the closing record.' }]) + BLINDNOTE,
+        { v: 'never', t: RULE('judgments', 'never'), e: '' },
+        { v: 'after', t: RULE('judgments', 'after'), e: '' }]),
     applications: (A, E, _form, _room, _typed, x) =>
-      '<p class="why">How somebody who is not a member can become one. The <b>least open</b> answer wins: one member who wants invitation only keeps it so.</p>' +
       ladder(A, 'applications', [
-        { v: 'invite', t: RULE('applications', 'invite', x), e: 'Nobody joins unless a member brings them in.' },
-        // …and where 🪪 is the pen there is no application to explain: the
-        // rung's own sentence is *Anyone with the link joins on arrival*, and
-        // an explainer about a stranger's proposal contradicted it
-        { v: 'apply', t: RULE('applications', 'apply', x),
-          e: (x && x.admissionPrice === 'pen') ? ''
-            : 'An application is a stranger proposing their own invitation, at no cost to them.' }]) + BLINDNOTE,
+        { v: 'invite', t: RULE('applications', 'invite', x), e: '' },
+        { v: 'apply', t: RULE('applications', 'apply', x), e: '' }]),
     chamber: (A, E, _form, _room, _typed, x) =>
-      '<p class="why">Who may read the document besides the members — readers only, never counted. The <b>most private</b> answer wins: one member who wants the document closed closes it.</p>' +
       ladder(A, 'chamber', [
-        // *Nobody else*, not *nobody outside the membership*: 🌍's closed
-        // sentence names the Founder too where they are a clerk, and the
-        // explainer read as a flat contradiction of the rung above it
-        { v: 'closed', t: RULE('chamber', 'closed', x), e: 'Nobody else sees anything at all.' },
         // Public left every ladder on 2026-08-22 (Q603): offered nowhere,
         // read back everywhere a document that took it still states it
-        { v: 'link', t: RULE('chamber', 'link', x), e: 'The chamber view only, to whoever the link reaches.' }]) + BLINDNOTE,
+        { v: 'closed', t: RULE('chamber', 'closed', x), e: '' },
+        { v: 'link', t: RULE('chamber', 'link', x), e: '' }]),
     // **One price scale** (entry 94): 🪪 and 🥾 are answered in the same
     // three verbs, most protective first, and 🥾 keeps the one rung
     // admission has no analogue for
@@ -1433,19 +1347,16 @@ window.SETUP = (function () {
     // it carries a fact the sentence does not (T36); where it restated the
     // rung it went, as the founder card's own explainers did at Q1109.
     admission: (A) =>
-      '<p class="why">What it costs to bring somebody into the membership — a member’s invitation or a stranger’s application alike. The <b>most protective</b> answer wins: one member who wants everyone asked keeps everyone asked.</p>' +
       ladder(A, 'admission', [
-        { v: 'assembly', t: RULE('admission', 'assembly'), e: 'One refusal keeps them out.' },
-        { v: 'proposal', t: RULE('admission', 'proposal'), e: 'Voted on at the approval threshold, like any change.' },
-        { v: 'pen', t: RULE('admission', 'pen'), e: 'The invitation is sent on their word — nobody else has to agree.' }]) + BLINDNOTE,
+        { v: 'assembly', t: RULE('admission', 'assembly'), e: '' },
+        { v: 'proposal', t: RULE('admission', 'proposal'), e: '' },
+        { v: 'pen', t: RULE('admission', 'pen'), e: '' }]),
     removal: (A) =>
-      '<p class="why">What it costs to remove a member. Whichever is chosen, the member always sees a removal proposed against them, and anybody may leave at any time. The <b>most protective</b> answer wins: one member who wants everyone asked keeps everyone asked.</p>' +
       ladder(A, 'removal', [
-        { v: 'consent', t: RULE('removal', 'consent'), e: 'One refusal keeps them in, their own counted: effectively, nobody is removed against their will.' },
+        { v: 'consent', t: RULE('removal', 'consent'), e: '' },
         { v: 'assembly', t: RULE('removal', 'assembly'), e: '' },
-        { v: 'proposal', t: RULE('removal', 'proposal'), e: 'Voted on at the approval threshold, with quorum.' }]) + BLINDNOTE,
+        { v: 'proposal', t: RULE('removal', 'proposal'), e: '' }]),
     ending: (A) =>
-      '<p class="why">When the document should close. The <b>latest</b> answer anybody gives is taken, and <b>never</b> is the latest of all — so nobody is cut off before they were ready.</p>' +
       '<div class="choice" role="radiogroup">' +
       // **Unset is "no value", not "null"** (Q779) — the same defect the
       // consent slider carried, in the one other answer body that tests for
@@ -1457,15 +1368,14 @@ window.SETUP = (function () {
         'ending', 'date', ctlWord('At a set time'), '',
         '', '<span class="fld"><label>Ends</label><input type="datetime-local" data-ansdate="ending"' +
         (A.ending && A.ending !== 'never' ? ' value="' + esc(A.ending) + '"' : '') + '></span>') +
-      ansRow(A.ending === 'never', 'ending', 'never', ctlWord('Never'), 'It runs until it is frozen.') +
-      '</div>' + BLINDNOTE,
+      ansRow(A.ending === 'never', 'ending', 'never', ctlWord('Never'), '') +
+      '</div>',
     // **Never first** (entry 167, rule 4): the document takes the *longest*
     // asked for and *never* is the longest of all, so it heads the ladder as
     // the most-protective answer does everywhere else — the rung's own
     // sentence is the family's now, and the field below carries a `.meaning`
     // that repaints as the number is typed.
     lapse: (A, E, _form, room, typed) =>
-      '<p class="why">Whether a membership <b>lapses</b> after a period of inactivity — and how long. A lapsed member leaves the quorum base like an abstainer: the membership can finish without them, their votes keep counting, and coming back is just logging in. They are warned by email first, and sent the document and record when it happens.</p>' +
       '<div class="choice" role="radiogroup">' +
       ansRow(A.lapse === 'never', 'lapse', 'never', ctlWord('Never'),
         esc(window.CONSTITUTION.meaningOf('lapse', { afterMs: null }, room || { e: E }) || '')) +
@@ -1474,8 +1384,7 @@ window.SETUP = (function () {
       '<span class="setrow2"><input class="num" type="number" min="7" max="365"' +
       ' data-ansnum="lapse"' + (typeof A.lapse === 'number' ? ' value="' + A.lapse + '"' : '') + '>' +
       '<span class="setnote" style="margin:0">days</span></span></span>' +
-      meaningLine('lapse', ansValue(typed, 'lapse', A.lapse), room) +
-      '<p class="blindnote">Nobody sees your answer. The document takes the <b>longest</b> asked for, <b>never</b> the longest of all.</p>',
+      meaningLine('lapse', ansValue(typed, 'lapse', A.lapse), room),
     rate: (A, E, _form, room, typed) => {
       // **The answer is the interval** (Ed, 2026-09-02, Q1160/Q1161, R-083):
       // the grant and maximum are the mechanism's fixed 3, so a member
@@ -1486,12 +1395,10 @@ window.SETUP = (function () {
         ['minutes', 'hours', 'days'].map((u) =>
           '<option value="' + u + '"' + (u === unit ? ' selected' : '') + '>' + u + '</option>').join('') +
         '</select>';
-      return '<p class="why">The least often you would accept members being able to propose. The document takes the <b>most generous</b> answer given.</p>' +
-        '<span class="opttext">Members may make a new proposal ✏️ every ' +
+      return '<span class="opttext">Members may make a new proposal ✏️ every ' +
         '<input class="num numin" type="number" min="1" max="2880" data-ansnum="rate"' +
         (typeof A.rate === 'number' ? ' value="' + A.rate + '"' : '') + '> ' + sel + '.</span>' +
-        meaningLine('rate', ansValue(typed, 'rate', A.rate), room) +
-        BLINDNOTE;
+        meaningLine('rate', ansValue(typed, 'rate', A.rate), room);
     },
   };
 
@@ -1702,7 +1609,7 @@ window.SETUP = (function () {
     esc(p.n) + (p.n === meName ? ' (you)' : '') + '</span>').join('') + '</div>';
 
   return { esc, TICK, initials, avHtml, hueOf, washOf, stateOf, markOf, railEntry,
-    bandHtml, fitBand, pileHtml, stripHtml, cardHtml, readBody, watchBody, distHtml,
+    bandHtml, fitBand, pileHtml, stripHtml, cardHtml, readBody,
     nameBody, pictureBody, opt, num, numIn, ctlWord, faces, someIn, FACE_EMOJI,
     FACE_TONES, faceToneRow, faceToned, setFaceTone,
     setFaceTaken, faceTakenBy, faceBtn, emojiPicker,

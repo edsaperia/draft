@@ -618,11 +618,15 @@ window.SETUP = (function () {
     // lockline says only where the value came from (Ed's copy pass,
     // 2026-08-19, which also removed the dead setBy/readNote branches:
     // no card ever set either).
-    return '<div class="lockline">' + TICK + '<span>' +
+    // value first, provenance beneath (Ed's QA, 2026-09-02 pm — the same
+    // order the settled card's chosen-radio grammar reads in; it also keeps
+    // H3's one-place rule true now that stripped heads leave the lockline
+    // leading otherwise)
+    return '<div class="statline"><span class="k">Set to</span><span class="v">' +
+      ctx.value(c) + '</span></div>' +
+      '<div class="lockline">' + TICK + '<span>' +
       esc(ctx.lockline ? ctx.lockline(c) : 'Set by the founder when the document was made.') +
-      '</span></div>' +
-      '<div class="statline"><span class="k">Set to</span><span class="v">' +
-      ctx.value(c) + '</span></div>';
+      '</span></div>';
   }
 
   /* **The watch-half is retired** (Q1176, Ed 2026-09-02 pm). `watchBody`,

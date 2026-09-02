@@ -1441,6 +1441,16 @@
      you can do about it. The rules are the whole structure of the card — there
      is no other line on it. */
   .field { border-top: 1px solid var(--border); padding-top: var(--s3); }
+  /* **A hairline earns its place** (Q1173, Ed 2026-09-02 pm): the head↔field
+     rule goes where the card has no head (`nohead` — the strip alone is not a
+     head), where the card is only a head and some text (`textcard` — the
+     grants), and where the head is the settled rule drawn as the first block
+     (`rulehead` — .asblock's own border-bottom is already the separator, and
+     two hairlines with nothing between them is the thing Ed banned). The
+     classes are cardHtml's, computed where the head is. */
+  .setupcard.nohead .field,
+  .setupcard.textcard .field,
+  .setupcard.rulehead .field { border-top: 0; padding-top: 0; }
   .fieldlab { margin-bottom: var(--s2); }
   .propblock + .propblock {
     border-top: 1px solid var(--border); margin-top: var(--s3); padding-top: var(--s3);
@@ -1886,8 +1896,20 @@
      weight instead of the document's */
   .diag-open .clausehead .rtext { font-weight: 600; }
   /* the solid --primary fill is retired with the subtle one (Q1153): a word
-     commit (OK) is the base .btn at weight 600, armed said by elevation */
+     commit is the base .btn at weight 600, armed said by elevation */
   .btn.btn-approve { font-weight: 600; }
+  /* **Every OK is blue** (Q1174, Ed 2026-09-02 pm, reversing Q1153's reach
+     over OK): a glyph commit offers an act and stays flat; OK acknowledges or
+     closes, and wears the solid accent it had before Q1153 — the two are
+     different kinds of press and the fill is what says so. The class is
+     explicit (`okbtn` on every OK emission site) because the OKs commit under
+     four different data- attributes and one word. */
+  .btn.btn-approve.okbtn:not([disabled]) {
+    background: var(--primary); border-color: var(--primary); color: #fff;
+  }
+  .btn.btn-approve.okbtn:not([disabled]):hover {
+    background: var(--primary-hover); border-color: var(--primary-hover); color: #fff;
+  }
   /* the tick is the commit, so it is the one solid green thing on a card */
   .btn.btn-approve.glyphbtn {
     background: var(--ok); border-color: var(--ok); color: #fff;

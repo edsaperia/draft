@@ -10844,8 +10844,8 @@
         const subject = decidingOf(k)
           .replace(/^The membership (?:are|is) deciding /, '')
           .replace(/^if /, 'whether ').replace(/\.$/, '');
-        line = esc(q.answered + ' out of ' + q.electorate +
-          ' of the membership have voted on ' + subject + '.');
+        line = esc(q.answered + ' out of ' + q.electorate + ' of the membership ' +
+          (q.answered === 1 ? 'has' : 'have') + ' voted on ' + subject + '.');
       } else {
         line = esc(card(k) ? card(k).t : q.setting) + '<span class="rsub"> · still being decided</span>';
       }

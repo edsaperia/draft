@@ -1678,7 +1678,7 @@
         : '') +
       (isUnread(s)
         ? '<div class="race-mid commitrow"><span></span>' +
-          '<button class="btn btn-approve" data-seen="' + s.id + '"' +
+          '<button class="btn btn-approve okbtn" data-seen="' + s.id + '"' +
           ' title="It leaves your margin and stays in the record">OK</button></div>'
         : '') +
       '</div>'
@@ -1903,7 +1903,7 @@
         // a label whose whole job is to be there until you act is a caption for the
         // absence of an act.
         ? '<div class="race-mid commitrow"><span></span>' +
-          '<button class="btn btn-approve" data-seen="' + s.id + '"' +
+          '<button class="btn btn-approve okbtn" data-seen="' + s.id + '"' +
           ' title="It leaves your margin and stays in the record">OK</button></div>'
         : '') +
       '</div>'
