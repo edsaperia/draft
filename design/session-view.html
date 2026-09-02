@@ -8550,7 +8550,20 @@
       // the sentence in and leave the radio on the delegate rung, with a dark
       // ✓ and nothing saying why. Same rule `fillRung` runs the other way for
       // 🌡️, where picking a preset takes `barBy` with it.
-      if (Object.prototype.hasOwnProperty.call(RATE_START, t.dataset.num)) S.rateBy = 'founder';
+      // …and the rung has to *look* claimed, in place: a full render would
+      // rebuild the field under the caret, so the block it stands in takes
+      // the chosen treatment itself. Without this the sentence is typed into
+      // a rung still reading *Choose this*, and `.pick > .inner` — where the
+      // meaning `syncMeaning` is about to write lives — stays display:none.
+      if (Object.prototype.hasOwnProperty.call(RATE_START, t.dataset.num)) {
+        S.rateBy = 'founder';
+        const pick = t.closest('.pick');
+        if (pick && !pick.classList.contains('on')) {
+          pick.classList.add('on');
+          const rung = pick.querySelector('.lanepick');
+          if (rung) rung.setAttribute('aria-pressed', 'true');
+        }
+      }
       syncMeaning(t);
       renderRail(); SESSION.refreshRail(); refreshCommit(); }
     // …and the same for a number typed into an **answer** (entry 165), which

@@ -3318,7 +3318,11 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         '<span class="chipcol"><span class="achip"' + chipStyle(headIns) + ' data-anchor="' + headIns.id + '">' +
         markOf(headIns) + '</span></span></div>';
       if (openId === headIns.id && !cardDone) {
-        cardDone = true; html += '</div>' + suggCardHtml(headIns) + PROSE();
+        // …and the anchor draws **the gap's own site** (Q1134's other half):
+        // `suggCardHtml` falls back to `sites[0]`, which on a draft that also
+        // holds a clause site is that clause's card — the very duplicate the
+        // gap branch below now avoids, drawn here instead.
+        cardDone = true; html += '</div>' + suggCardHtml(headIns, headIns.gapKey) + PROSE();
       }
     }
 
@@ -3460,7 +3464,8 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
           anchWash(ins, openId === ins.id) + '>' +
           '<span class="chipcol"><span class="achip"' + chipStyle(ins) + ' data-anchor="' + ins.id + '">' +
           markOf(ins) + '</span></span></div>';
-        if (openId === ins.id && !cardDone) { cardDone = true; html += '</div>' + suggCardHtml(ins) + PROSE(); }
+        // the gap's own site, never `sites[0]` — see the head anchor above
+        if (openId === ins.id && !cardDone) { cardDone = true; html += '</div>' + suggCardHtml(ins, ins.gapKey) + PROSE(); }
       }
     }
     html += '</div>';
