@@ -117,7 +117,9 @@ say('\n== founding-8: a staggered ceremony with a never holdout ==============')
     // consent (the subject included) being the most protective — where this
     // walk was written against the retired everyone/others ladder
     s.answer(9, m, 'removal', { price: m === dee ? 'consent' : 'assembly' });
-    s.answer(9, m, 'rate', { grant: m === bo ? 6 : 4, cap: 8, dripMinutes: 240 });
+    // the consent order is the interval alone since Q1160 (R-083): the grant
+    // and cap are fixed at 3 for new documents, and generosity is the drip
+    s.answer(9, m, 'rate', { grant: 3, cap: 3, dripMinutes: m === bo ? 60 : 240 });
   }
   eq(s.settingState('quorum').value, { form: 'share', n: 75 },
     'quorum: the highest stated minimum binds (fay wanted 75%)');
@@ -127,8 +129,8 @@ say('\n== founding-8: a staggered ceremony with a never holdout ==============')
     'lapse: never is the longest quiet spell of all');
   eq(s.settingState('removal').value, { price: 'consent' },
     'removal (🥾): one member who will only accept consent keeps the subject included');
-  eq(s.settingState('rate').value, { grant: 6, cap: 8, dripMinutes: 240 },
-    'rate: the most generous grant wins (§9.0)');
+  eq(s.settingState('rate').value, { grant: 3, cap: 3, dripMinutes: 60 },
+    'rate: the fastest drip wins — the interval is the whole ordering (§9.0, R-083)');
   // **🍾 is the founder's explicit act** (Q443, R-045): the last gate
   // resolving used to constitute the document by itself, and this walk was
   // written then. `begin` is the only thing that emits `constituted` now,
