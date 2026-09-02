@@ -1223,6 +1223,7 @@
     'lapse', 'lapseDays', 'removal', 'removeWho', 'admission', 'authorship', 'judgments',
     'grant', 'dripMin', 'cap', 'chamber',
     'barBy', 'quorumBy', 'rateBy', 'myname', 'mypic', 'myemail', 'hatPick',
+    'namePick', 'picPick', 'appPicPick',
     // the title's provisional lane rides the snapshot like every other
     // provisional value, so 🪶 needs no bin of its own (2026-08-21)
     'titleDraft']
@@ -1599,6 +1600,16 @@
       set: (v) => { viewerRow()[key] = !!v; } });
   }
   const identityAnswered = (k) => (k === 'myname' ? S.nameSet : S.picSet);
+  // **Which block ✋ / 🖼️ stands on** (card review 2026-09-02, Q1164/Q1165):
+  // an explicit pick wins; else the value answers (a name, a picture's kind);
+  // else an *answered* blank is the chosen Anonymous, and an unanswered card
+  // stands on nothing — nothing is preselected (F6).
+  const namePickNow = () => (S.namePick != null ? S.namePick
+    : (S.myname || '').trim() ? 'name' : (S.nameSet ? 'anon' : null));
+  const picPickNow = () => (S.picPick != null ? S.picPick
+    : S.mypic ? (S.mypic[0] === 'u' ? 'upload' : 'emoji') : (S.picSet ? 'anon' : null));
+  const appPicPickNow = () => (S.appPicPick != null ? S.appPicPick
+    : S.app && S.app.pic ? (S.app.pic[0] === 'u' ? 'upload' : 'emoji') : null);
   Object.defineProperty(S, 'myAns', { get: () => (viewerRow().ans || (viewerRow().ans = {})) });
   Object.defineProperty(S, 'okd', { get: () => (viewerRow().okd || (viewerRow().okd = new Set())) });
   // a motion draft and your consent answers are yours, not the room's
@@ -2008,7 +2019,8 @@
       grants: '✒️',
       hide: () => !amFounder(),
       open: () => !!cs && amFounder() && holdsPenAnywhere(),
-      why: 'Founder Actions are yours: you can change this document’s rules yourself, without asking anybody. You can hand them over later.',
+      // Ed's sentence, card review 2026-09-02
+      why: 'As the founder of this document, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers if you choose to.',
       waiting: 'Waiting on the save.',
       blockers: () => [] },
     // **The shield is acknowledged separately from the pen** (Q532(3), Ed
@@ -2031,7 +2043,8 @@
       grants: '🛡️',
       hide: () => !amFounder(),   // the holder's, like the pen above
       open: () => !!cs && amFounder() && holdsShieldAnywhere(),
-      why: 'The Founder Veto is yours: a change other people agree on waits until you accept it. You can hand it over later.',
+      // Ed's sentence, card review 2026-09-02
+      why: 'As the founder of this document, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can later give up this power if you choose to.',
       waiting: 'Waiting on the save.',
       blockers: () => [] },
     // **🍾 Begin — the founder's explicit act of starting the document**
@@ -2170,11 +2183,12 @@
     // blank picture is initials (§9.0c), so there is nothing the constitution
     // is waiting to learn from either. Read by `blocksOrder`; the two arrive
     // *together* because 🖼️ follows ✋ in `ORDER` and ✋ no longer blocks.
-    { k: 'myname', g: '✋', t: 'Your Name', kind: 'personal', own: 'you',       // a blank name is Anonymous (§9.0c), so this card always has something
-      // to commit — and with the founding running in single file, a task
-      // that cannot be committed is a task nothing can get past
-      ready: () => true, changeable: true, blocks: false },
-    { k: 'mypic', g: '🖼️', t: 'Your Picture', kind: 'personal', own: 'you', changeable: true, blocks: false },
+    { k: 'myname', g: '✋', t: 'Your Name', kind: 'personal', own: 'you',
+      // a blank is no answer since Q1164: the ✓ arms once a block is chosen
+      // (typing chooses the name block, F6) — and ✋ still blocks nothing
+      ready: () => namePickNow() !== null, changeable: true, blocks: false },
+    { k: 'mypic', g: '🖼️', t: 'Your Picture', kind: 'personal', own: 'you',
+      ready: () => picPickNow() !== null, changeable: true, blocks: false },
     // A document may start empty, which is why this is not a blocker on having
     // content but on having *decided*: a page nobody has looked at and a page
     // somebody chose to leave blank look identical, and only one of them should
@@ -2875,14 +2889,15 @@
       s1 = canJudge() ? prop + ', and may vote on proposals.'
         : prop + '. They may begin voting on proposals when the whole constitution has been decided.';
     }
-    // sentence 2 — what it takes to pass. The *each member holding one voice*
-    // tail went with entry 187: the voice fact's home is the 🏛️ grant card
-    // (its `why`, its `done`, its sockets and its standalone clause), and the
-    // preamble repeating it was a second home (T36).
-    const s2 = 'A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass.';
-    // sentence 3 — the governance baseline `holderLine` states deviations from
-    return s1 + ' ' + s2 + ' Nobody amends a rule at will, and no passed change waits on anyone' +
-      Q + 's assent, unless a rule says so.';
+    // sentences 2 and 3 — what it takes to pass, one route per line (Ed's
+    // card review, 2026-09-02: three lines with explicit breaks on the 🏛️
+    // card — `breakLines` draws them there; the constitution's own paragraph
+    // flows them as prose). What the rewrite drops is *Nobody amends a rule
+    // at will, and no passed change waits on anyone's assent, unless a rule
+    // says so* — the default-powers sentence, cut by Ed with the review.
+    return s1 + '\n' +
+      'A proposal ✏️ passes when it meets the approval threshold.\n' +
+      'A constitutional proposal 🏛️ passes only when all members agree.';
   };
   const preamblePara = () =>
     '<div class="cpara notab"><p class="cpv">' + proposalsClause() + '</p></div>';
@@ -3913,11 +3928,11 @@
       : 'After ' + S.lapseDays + ' days without logging in'),
     removal: () => REMOVAL_RULE[removalPrice()],
     canpropose: () => (canPropose() ? 'Open' : 'Waiting on the start'),
-    'grant-voice': () => 'Your consent counts in every constitutional question',
+    // the three grants carry no subtitle (Ed's card review, 2026-09-02:
+    // *remove body text "You hold Founder Actions" from the queue card*;
+    // STYLE §4 as amended — the title names the power, the card says the rest)
     begin: () => (constituted() ? 'Begun' + foundedAt() : 'Not yet begun'),
     closing: () => (cs && cs.closed ? 'Closed' + closedAtWords() : ''),
-    'grant-pen': () => 'You hold Founder Actions',
-    'grant-shield': () => 'You hold the Founder Veto',
     canjudge: () => (canJudge() ? 'Open' : 'Waiting on the constitution'),
   };
   // **The readback quotes the document** (Q1112, Ed's survey item 8, answered
@@ -4565,7 +4580,9 @@
     const why = (S.setWhy || {})[c.k] || '';
     if (c.door) {
       if (c.k === 'invite') {
-        const at = (S.inviteOne || '').trim();
+        // one box since Q1166: the route's commit proposes the first address
+        // in it — one motion proposes one member
+        const at = (S.inviteMany || '').split('\n').map((s) => s.trim()).filter(Boolean)[0] || '';
         return at ? { k: c.k, to: at + ' joins the membership', why } : null;
       }
       const row = removableRows().find((p) => p.mid === S.removeWho);
@@ -5569,6 +5586,11 @@
       // **a door heads with its people** (CP6, Q1101): the pile's list first,
       // then the rule as it stands beneath it, both inside the one head
       if (c.door) {
+        // the direct ✉️ carries no price/power sentence (Ed's card review,
+        // 2026-09-02): where the viewer's word sends, the head is the people
+        // alone — the composer branch keeps the price, which is what a
+        // member composing needs
+        if (c.k === 'invite' && doorDirect(c)) return doorPeople(c);
         const rule = settled(c) ? breakLines(linkify(esc(decisionLine(c))))
           : composerOn(c) ? esc(standsOf(c.k)) : '';
         return doorPeople(c) + (rule ? '<div class="doorrule">' + rule + '</div>' : '');
@@ -6370,8 +6392,8 @@
           ? '<p class="why">Your address is the only way back in — there are no passwords — so a new one has to prove it works before it replaces the old.</p>'
           : '') +
         '<span class="fld"><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" placeholder="you@example.com" style="width:20rem"></span>'),
-    myname: () => nameBody(me(), { optional: viewerIsClerk() }),
-    mypic: () => pictureBody(me()),
+    myname: () => nameBody(me(), { optional: viewerIsClerk(), pick: namePickNow() }),
+    mypic: () => pictureBody(me(), { pick: picPickNow() }),
     // **Whether the founder is in it is its own question** (Ed, 2026-08-18).
     // It had been the top half of the roster card, which made a decision about
     // one person a preamble to a list of everybody — and the founder is a hat
@@ -6397,36 +6419,19 @@
       // and where the document is stuck on a question nobody can answer, the
       // card leads with *why you are here* (Q828) — the remedy above the door
       : oneVoiceAsk() +
-      '<p class="why">An invitation is just the link, sent by email: somebody becomes a member when they open it, and is listed as <i>invited</i> until then.</p>' +
-      // **The send wears the mark of the act** (Ed, entry 37): *it is the
-      // Invite / Send invitations buttons that should be ✒️, as each invite is
-      // the proposal.* In the direct form the viewer's own word sends (Y24),
-      // and that is the ✒️ verb — nobody has to agree, because you hold the
-      // power (the four verbs, SURFACE §7). It is a **click, not a hold**: the
-      // ladder is for what comes out of a wallet, and a direct invitation
-      // spends nothing — a member inviting at 🪪 *pen* holds no pen wallet at
-      // all. And it is never disabled on an empty field, because the refusal
-      // sentence (Y25) is what an empty field is owed.
-      // The word goes, as it did on 📨 (Ed, 2026-08-21): a label beside a glyph
-      // and a tooltip does nothing they were not already doing, and the
-      // *Several at once* eyebrow already names the second box.
-      '<div class="roster"><div class="addrow"><input type="email" placeholder="name@example.com" data-add="1" value="' + esc(S.inviteOne) + '">' +
-      '<button class="btn btn-approve glyphbtn emojibtn" data-act="add"' +
-      ' title="Send the invitation">✒️</button>' +
-      // **A door's second act sits beside the door's own** (entry 161, Q1024).
-      // ✉️'s act is the field and its ✒️, and §9.1 already rules that a door
-      // whose act is in the body has nothing left to commit on the row — so
-      // the route's commit joins the act here rather than contradicting a row
-      // that is a bare ✓ exactly because the act is elsewhere.
-      founderCommit(card('invite')) + '</div></div>' +
+      // **One box** (Ed's card review, 2026-09-02, Q1166): the single-address
+      // field with its own ✒️, the *Several at once* eyebrow and the two
+      // explanatory paragraphs are gone. What is left is the multi-line box —
+      // its placeholder the two lines Ed wrote — and the send is the commit
+      // row's ✒️ (the act moved from the body to the row; Y24's *word sends*
+      // test still decides whether this branch is drawn at all). The box
+      // keeps what is in it across a close, like every other field here: a
+      // pasted list of addresses is the most expensive thing anybody types
+      // on this card (Ed, 2026-08-21).
+      '<div class="roster">' +
+      '<textarea placeholder="name@example.com&#10;one address per line" data-emails="1">' + esc(S.inviteMany) + '</textarea>' +
+      '</div>' +
       doorErrHtml('invite') +
-      '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Several at once</div>' +
-            // the boxes keep what is in them across a close, like every other
-      // field here: a pasted list of addresses is the most expensive thing
-      // anybody types on this card (Ed, 2026-08-21)
-      '<textarea placeholder="Paste addresses here, one per line" data-emails="1">' + esc(S.inviteMany) + '</textarea>' +
-      '<div style="margin-top:var(--s2)"><button class="btn btn-approve glyphbtn emojibtn"' +
-      ' data-act="invite" title="Send them all">✒️</button></div>' +
       '<p class="setnote">' + arrived() + ' of ' + S.roster.length + ' have opened it so far. ' +
       'Nobody has to be here for the document to exist, and anybody who arrives later ' +
       'starts with the same ✏️s as everybody else.</p>'),
@@ -6714,7 +6719,7 @@
     // **The founder's own card** (Q733) — one body, two seats, so they cannot
     // drift. It used to be a hand-rolled copy with no uploader in it at all.
     apppic: () => pictureBody({ n: S.app.name, pic: S.app.pic },
-      { picAttr: 'data-apppic', into: 'app' }),
+      { picAttr: 'data-apppic', into: 'app', pickKey: 'appPicPick', pick: appPicPickNow() }),
     apptext: () => '<p class="why">A few words to the members, if you want them — who you are, why this document. Optional: an empty application is a real application.</p>' +
       '<div class="lanebox"><div class="lp editlane' + (S.app.text ? '' : ' blank') + '" contenteditable="plaintext-only"' +
       ' spellcheck="false" data-apptext="1" data-ph="To the members…">' + esc(S.app.text) + '</div></div>',
@@ -7198,8 +7203,16 @@
       // its ✒️ for now: its act is a dropdown plus *❌ Remove*, and that is a
       // change of its own.
       const foot = (c.k === 'invite' && doorDirect(c))
-        ? binBtn() +
-          '<button class="btn btn-approve glyphbtn" data-close="1" title="Done">' + TICK + '</button>'
+        // **the send is the row's commit** (Q1166): ✒️ where the viewer's
+        // word sends, beside the route's commit where the founder holds both
+        // (the pair at the right, ✒️ immediately left — Q1154). A click, not
+        // a hold: a direct invitation spends nothing, and it is never
+        // disabled on an empty box, the refusal sentence (Y25) being what an
+        // empty box is owed.
+        ? binBtn() + '<span class="rightpair">' +
+          '<button class="btn btn-approve glyphbtn emojibtn" data-act="invite"' +
+          ' title="Send the invitations — your word sends">✒️</button>' +
+          founderCommit(card('invite')) + '</span>'
         // …and the same for a founder whose hand is off this setting (entry
         // 62): the body above is already the settled card, and a settled card
         // commits nothing. 🗑️ is the band's always-live close (Q613 (a)).
@@ -7972,10 +7985,15 @@
           if (was === 'slug') {
             if (S.slug !== cs.slug) watchSet('slug', cs.setSetting(now(), 'link', { slug: S.slug }));
             return; }
-          // committing is the act, whatever the value — an empty name is
-          // Anonymous and an empty picture is your initials, both real answers
-          if (was === 'myname') { S.nameSet = true; cs.setIdentity(now(), viewerId(), { name: S.myname || null }); return; }
-          if (was === 'mypic') { S.picSet = true; cs.setIdentity(now(), viewerId(), { picture: S.mypic || null }); return; }
+          // committing is the act — and since Q1164 anonymity is the chosen
+          // block, so a commit on the Anonymous block clears the value it
+          // sends whatever the field held
+          if (was === 'myname') { if (namePickNow() === 'anon') S.myname = '';
+            S.nameSet = true; cs.setIdentity(now(), viewerId(), { name: S.myname || null });
+            S.namePick = null; return; }
+          if (was === 'mypic') { if (picPickNow() === 'anon') S.mypic = '';
+            S.picSet = true; cs.setIdentity(now(), viewerId(), { picture: S.mypic || null });
+            S.picPick = null; return; }
           // 🎩 commits here like every other setting (Q522, Ed 2026-08-21).
           // It used to carry a commit control of its own, which is how it
           // came to be the one card that did not close on being set.
@@ -10804,26 +10822,22 @@
   const penFrom = () => powerFrom('unilateral');
   const grantedBy = (c) => {
     if (!c.open()) return '';                    // nothing has been conferred yet
+    // **The founder is not told they founded the document** (Ed's card
+    // review, 2026-09-02): the *You founded this document, and X came with
+    // it.* sentences are cut on all three grants. A power that arrived by
+    // somebody else's act keeps its provenance — that is E8's news value.
     if (c.k === 'grant-pen') {
       return penFrom() === 'motion'
-        ? 'The membership returned Founder Actions to you.'
-        : 'You founded this document, and Founder Actions came with it.';
+        ? 'The membership returned Founder Actions to you.' : '';
     }
-    // the shield's own sentence. Without it the card opened straight into the
-    // explanation with no account of *whose act* conferred the power, which is
-    // most of what tells you whether it can be taken away again — the one
-    // thing every other grant on this surface says first.
     if (c.k === 'grant-shield') {
       return powerFrom('assent') === 'motion'
-        ? 'The membership returned the Founder Veto to you.'
-        : 'You founded this document, and the Founder Veto came with it.';
+        ? 'The membership returned the Founder Veto to you.' : '';
     }
     if (c.k === 'grant-voice') {
       const a = myArrival();
       const via = a ? a.via : (amFounder() ? 'founding' : 'invitation');
-      if (via === 'founding') {
-        return 'You founded this document, and Constitutional Proposals came with it.';
-      }
+      if (via === 'founding') return '';
       if (via === 'application') {
         return 'The membership admitted you on your application, and Constitutional Proposals came with it.';
       }

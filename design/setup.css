@@ -397,7 +397,10 @@
      avatars*, which is what an `.emojiface` takes on a `.memrow` — the
      roster's rows are set in `--t-small`. The grid alone; the *Currently*
      line beneath it keeps `.big`. */
-  .emojiface.grid { font-size: var(--t-small); }
+  /* slightly larger than the member row's --t-small (Ed's card review,
+     2026-09-02: *Emoji should be slighty larger*) — the next stop on the
+     type scale that reads as a change */
+  .emojiface.grid { font-size: var(--t-body); }
   /* 👑/📯 beside the founder's name (entry 197): the same four declarations,
      so the mark takes the size of the text it stands in — but its own class,
      since an `.emojiface` inside a member row is read as that member's face. */
@@ -483,6 +486,10 @@
   .idrow { display: flex; align-items: center; gap: var(--s4); margin-bottom: var(--s4); }
   .idrow .fld { flex: 1; }
   .idrow input { width: 100%; }
+  /* ✋'s name composer inside its own option block (card review 2026-09-02):
+     the field is the block's text, so it takes the sentence's type */
+  .pick .opttext .namein { font-size: inherit; width: 100%; max-width: 18rem;
+    padding: var(--s1) var(--s2); }
 
   /* **The pile headings are the people** (Ed, 2026-08-18). A row of faces under
      each heading, arriving as the people do — the founder under Founder, the

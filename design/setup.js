@@ -730,22 +730,24 @@ window.SETUP = (function () {
      whether a name is attached to a **proposal**, which is sealed by default
      (SPEC §9.0c). Both are written by `setup.js` because both are the same
      question for a founder and for a member. */
-  const nameBody = (me, opts) =>
-    '<div class="idrow">' + avHtml(me, 'big') +
-    '<span class="fld"><label for="myname">Your name</label>' +
-    '<input id="myname" data-txt="myname" value="' + esc(me.n || '') + '" placeholder="Your name"></span></div>' +
-    // a blank name is a real answer (§9.0c), and since the card can be
-    // saved empty it has to say what saving it empty does. **Both branches
-    // have to be true on their own** (Q980): since ✋ is served at the save it
-    // is served before 🎩 is answered, so almost every founder reads the
-    // member branch first and a clerk meets theirs only by reopening the card.
-    // The old clerk note said *optional* as though the other branch were not —
-    // both are optional, and the branches differ only in where the blank
-    // lands. *Founded by* is the words on the page (the Founded line, F16);
-    // *Convenor* appears in no string a reader can see.
-    ((opts && opts.optional)
-      ? '<p class="setnote">You are not a member, so your name appears only on the <i>Founded by</i> line. Leave it blank and that line shows <b>no name</b>.</p>'
-      : '<p class="setnote">This is how you appear to the membership. Leave it blank and you appear as <b>Anonymous</b>. You can set it later from any seat.</p>');
+  /* **✋ is an option-block card** (Ed's card review, 2026-09-02; Q1164,
+     SPEC §9.0c as amended): the name composer as the first block — inert
+     until something is typed, and typing chooses it (F6's rule) — and
+     *Anonymous* as its own block, because anonymity is chosen and a blank is
+     no answer. The label, the avatar preview and the two helper paragraphs
+     are gone. The clerk's block keeps the one fact only ✋ still states
+     (🎩's *a clerk can stay unnamed* was cut): where their blank lands. */
+  const nameBody = (me, opts) => {
+    const o = opts || {};
+    const pk = { namePick: o.pick || null };
+    return '<div class="choice" role="radiogroup">' +
+      opt(pk, 'namePick', 'name',
+        '<input id="myname" class="namein" data-txt="myname" value="' + esc(me.n || '') +
+        '" placeholder="Your name">') +
+      opt(pk, 'namePick', 'anon', ctlWord('Anonymous'),
+        (o.optional ? 'The Founded by line shows no name.' : '')) +
+      '</div>';
+  };
 
   /* **It is an uploader** (Ed, 2026-08-18). The card had offered a ground for
      your initials or a drawn mark, on the reasoning that a mockup has no
@@ -823,29 +825,33 @@ window.SETUP = (function () {
      copy of the grounds and the picker and carried no uploader at all, which
      is an asymmetry nobody chose. Everything that differs between the two is
      an attribute name and where the file lands. */
+  /* **🖼️ is an option-block card of three answers** (Ed's card review,
+     2026-09-02; Q1165): *Anonymous* first — the status quo, initials where
+     the member has a name (`avHtml`'s own fallback) — then *Upload an image*,
+     then *Pick an emoji*, each control appearing only when its block is
+     chosen. The eyebrow labels, the *Currently* line with Remove, the
+     drag-note and the what-nothing-means paragraph are gone: choosing
+     Anonymous IS remove, and the chosen block is the status readout. */
   const pictureBody = (me, o) => {
-    const opt = o || {};
-    const at = opt.picAttr || 'data-pic';
-    const into = opt.into || 'me';
+    const oo = o || {};
+    const at = oo.picAttr || 'data-pic';
+    const into = oo.into || 'me';
+    const pk = oo.pickKey || 'picPick';
     const pic = me.pic || '';
     const uploaded = pic[0] === 'u';
-    return '<div class="eyebrow fieldlab">Pick an emoji</div>' +
-      emojiPicker(pic, me.n, at) +
-      '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Or upload an image</div>' +
-      '<div class="picdrop" data-picinto="' + into + '"><div class="picact">' +
-      '<label class="btn">' + (uploaded ? 'Choose another' : 'Choose a picture') +
-      '<input type="file" accept="image/*" data-picfile="1"></label>' +
-      // it is scaled down and re-encoded here rather than stored whole, so the
-      // card has to say what that costs a picture that moves
-      '<span class="picnote">or drag one onto this box. It is scaled down and' +
-      ' saved as a still, so an animated picture stops moving.</span></div></div>' +
-      '<div class="piccur"><span class="piccurlab">Currently:</span> ' + avHtml(me, 'big') +
-      (pic ? '<button class="btn" ' + at + '="">Remove</button>' : '') + '</div>' +
-      // T28's rule for the picture: the card says what choosing nothing means
-      '<p class="setnote">' + (me.n
-        ? 'With no picture you appear as your initials.'
-        : 'With no picture you appear as an anonymous mark, and as your initials once you have a name.') +
-      '</p>';
+    const pickState = { [pk]: oo.pick || null };
+    return '<div class="choice" role="radiogroup">' +
+      opt(pickState, pk, 'anon', ctlWord('Anonymous')) +
+      opt(pickState, pk, 'upload', ctlWord('Upload an image'), '',
+        oo.pick === 'upload'
+          ? '<div class="picdrop" data-picinto="' + into + '"><div class="picact">' +
+            '<label class="btn">' + (uploaded ? 'Choose another' : 'Choose a picture') +
+            '<input type="file" accept="image/*" data-picfile="1"></label>' +
+            (uploaded ? avHtml(me, 'big') : '') + '</div></div>'
+          : '') +
+      opt(pickState, pk, 'emoji', ctlWord('Pick an emoji'), '',
+        oo.pick === 'emoji' ? emojiPicker(pic, me.n, at) : '') +
+      '</div>';
   };
 
   /* ---- ordinary and constitutional ----------------------------------------
