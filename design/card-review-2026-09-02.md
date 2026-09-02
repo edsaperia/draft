@@ -651,8 +651,8 @@ what the answer says, not what the question guessed.
   armed state is said by **elevation**, which is the design system's own rule (*open is said
   by depth, not by outline*). Note the current CSS gives `.commitrow .btn` `--shadow-md`
   unconditionally, so the change is to make the lift conditional on armed, not to add one.
-  Ed did not rule on the accent **border**; the reading taken is that it stays, since the
-  note objected to the background.
+  **The accent border goes too** (Ed, 2026-09-02): an armed commit is flat and unbordered,
+  elevation alone says armed, and the greyed glyph is what says inert.
 - **1154 — the pair at the right.** 🗑️ stays leftmost; the two commits group at the far right
   with the founder's power immediately left of the route's commit (✒️ ✏️, and 🛡️ ✒️ on 🌍).
   SURFACE §9.1 survives — the commit is still at the right — and only the spread closes up.
@@ -700,8 +700,8 @@ what the answer says, not what the question guessed.
   founding queue (Q980), so an unanswered ✋ simply shows initials until it is answered.
 - **1165 — the anonymous picture is the status quo.** Ed: *Anonymous picture is the status
   quo.* So 🖼️'s top block is the anonymous state, pairing with ✋'s: **Anonymous · Upload an
-  image · Pick an emoji**, the picker opening when its block is chosen. Reading taken, flag
-  if wrong: an anonymous picture still draws the member's initials where they have a name,
+  image · Pick an emoji**, the picker opening when its block is chosen. Confirmed by Ed
+  2026-09-02: an anonymous picture still draws the member's initials where they have a name,
   since that is what `avHtml` falls back to and nothing else was asked for.
 - **1166 — both modes survive, and the commit says which.** Ed: *have ✒️ and ✏️ submit
   buttons as appropriate to the user's permissions. Send on submit with ✒️, propose on submit
