@@ -360,14 +360,14 @@ const releasePen = async (k) => {
   }
   await clickIn('.setupcard [data-confirm]');
   await record('commit pw:u:' + k);
-  // **The clause is the rule alone** (Ed's QA, 2026-09-02 pm): the power
-  // state left the clause for the power tabs, so the release sentence
-  // (*From the start, the Founder may not amend this at will.* — R-048's
-  // pending form) must never come back on it. The tab's own laid-down state
-  // is asserted by `gave` above.
+  // **The paragraph states the release; the card does not** (Ed, 2026-09-03,
+  // correcting the QA round's over-reach): this helper reads `#band .cpara
+  // .cpv` — the document's own paragraph — so R-048's pending sentence is
+  // back where it always was. The card head's power-free text is the copy
+  // golden's to hold.
   const said = await clauseText(k);
-  if (/the Founder may (not )?amend this at will/.test(said || '')) {
-    errors.push(k + ' released the pen and its clause still states power: ' + said);
+  if (!/From the start, the Founder may not amend this at will\./.test(said || '')) {
+    errors.push(k + ' released the pen but its clause does not say so: ' + said);
   }
   const now = await penCount();
   if (now !== penHeldAtRelease) {

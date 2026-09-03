@@ -128,7 +128,11 @@ reads *Previous links still work.* and drops *Suggested from the title*; ✉️
 loses the *n of m have opened it* sentence; ❌ loses both policy sentences,
 its dropdown reads *Choose somebody to remove…* and its acts (✒️ 🏛️) move to
 the commit row; ⏱️'s unit dropdown wears the clause text and fits its word,
-and settled ⏱️ drops *The Founder may amend this at will…*; 🌡️'s rungs lose
+and settled ⏱️ drops *The Founder may amend this at will…* — **from the card
+only** (Ed, 2026-09-03, correcting the build's first reading: the document's
+own paragraph keeps its holder line as before; the card head is the rule
+alone, the ✒️ 🛡️ tabs carry the powers — `decisionLine`'s `withPowers` is
+the seam); 🌡️'s rungs lose
 their % figures; the record card's redesign is backlogged (rec:chamber:0 —
 *this card is confusing*).
 

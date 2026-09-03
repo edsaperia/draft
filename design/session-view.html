@@ -5494,12 +5494,19 @@
     const said = [founderMay(parts), founderMayNotYet(going)].filter(Boolean);
     return said.length ? ' ' + said.join(' ') : '';
   };
-  // **The clause is the rule alone** (Ed's QA, 2026-09-02 pm, superseding
-  // entry 198's rule-then-deviation layout): *The Founder may amend this at
-  // will…* leaves the clause — that is the power tabs' fact, and the tabs
-  // stand on this very clause. `holderLine` survives for the birth's title
-  // paragraph, which explains the pen before there are tabs to do it.
-  const clauseText = (rule, k) => rule + shapedLine(k);
+  // **The document keeps the powers; the card drops them** (Ed, 2026-09-03,
+  // correcting the QA round's over-reach): the constitution's own paragraph
+  // still states the rule and then, on entry 198's second line, what the
+  // Founder may do about it — *The Founder may amend this at will…* — exactly
+  // as before. What lost the sentence is the **decision card** for a setting
+  // that is not itself about founder powers: there the rule stands alone and
+  // the ✒️ 🛡️ tabs on the very same clause carry the powers. One function,
+  // the caller declaring which text it is (`withPowers`), so the two cannot
+  // drift apart silently.
+  const clauseText = (rule, k, withPowers) => {
+    const h = withPowers ? holderLine(k) : '';
+    return rule + shapedLine(k) + (h ? ' \n' + h.slice(1) : '');
+  };
   // **Links in the constitution are real links** (Ed, 2026-08-19):
   // underlined, ink-coloured (.doclink), applied after escaping so a
   // sentence can never smuggle markup in. The `d/` is optional so a member's
@@ -5515,7 +5522,9 @@
   // `esc` stays the whole of the answer, and a newline in member-written text
   // must not become markup.
   const breakLines = (s) => String(s).replace(/\n/g, '<br>');
-  const decisionLine = (c) => {
+  // `withPowers` — true only from the paragraph seam (ctx.decisionLine): the
+  // document states the holder line, the card does not (Ed, 2026-09-03)
+  const decisionLine = (c, withPowers) => {
     // a grant's paragraph states the document's rule (third person, the same
     // for every reader); the card that opens on it is yours
     // 🍾's clause is the Proposals preamble (Ed, 2026-08-22): the tab hangs
@@ -5576,7 +5585,7 @@
       const st = csState(c.k);
       const collecting = st ? st.collecting : !((c.in || 0) >= E() && E() > 0);
       return !collecting && (!st || st.value !== null)
-        ? clauseText((DECIDED[c.k] ? DECIDED[c.k]() : value(c)), c.k)
+        ? clauseText((DECIDED[c.k] ? DECIDED[c.k]() : value(c)), c.k, withPowers)
         // while the founder is the only person the document knows about, an
         // answer count would be counting the founder alone (pacing pass,
         // 2026-08-19) — the honest tail is that the question waits for a room
@@ -5601,7 +5610,7 @@
     // the provenance rides between the rule and the powers (entry 166), and
     // since entry 198 the powers stand on their own line: *… As for a
     // meeting.* / *The Founder may amend this at will.*
-    return settled(c) ? clauseText((DECIDED[c.k] ? DECIDED[c.k]() : value(c)), c.k)
+    return settled(c) ? clauseText((DECIDED[c.k] ? DECIDED[c.k]() : value(c)), c.k, withPowers)
       // the same interim rule while the Founder holds 🌍 undecided (Q618 (a))
       : c.k === 'chamber' ? 'Until the Founder decides, only members can see the document.'
       : 'The Founder is deciding ' + (WHAT[c.k] || 'this') + '.';
@@ -5739,7 +5748,9 @@
     // newline in member-written text into markup after `esc` had made it safe
     decisionLine: (c) => (c.record ? linkify(esc(c.t))
       : c.power ? linkify(esc(powerHeadLine(c)))
-      : breakLines(linkify(esc(decisionLine(c))))),
+      // the paragraph is the document speaking, holder line included
+      // (Ed, 2026-09-03) — the card heads call decisionLine without it
+      : breakLines(linkify(esc(decisionLine(c, true))))),
     // 🪜 has no paragraph of its own (Q512): the ramp is part of what the
     // threshold says, so its tab stands in 🌡️'s stack and opening it opens
     // at 🌡️'s own clause — which is also where its rail entry anchors,
