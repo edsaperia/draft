@@ -72,6 +72,10 @@ export class EngineBridge {
   private readonly motionOfCandidate = new Map<string, MotionId>();
   private readonly known = new Set<string>();
   private cursor: number;
+  /** The host's pacing, when the host stated one: the cooldown it re-states
+   *  on a resumed document born under another (R-086). Null is a bridge
+   *  given no tuning — a sim, a test — which re-paces nothing. */
+  private readonly tuning: EngineTuning | null;
 
   constructor(
     cs: ConstitutionSession,
@@ -85,6 +89,7 @@ export class EngineBridge {
       throw new Error('the engine starts where the constitution is settled (§9.0b)');
     }
     this.cs = cs;
+    this.tuning = opts.tuning ?? null;
     if (opts.resume !== undefined) {
       this.engine = EngineSession.replay([...opts.resume.log]);
       for (const entry of opts.resume.log) {
@@ -647,6 +652,15 @@ export class EngineBridge {
     // fall out of the mechanism rather than needing a second rule.
     const owed = this.cs.textAdoptionNeedsAssent();
     if (owed !== (this.engine.constitution.textAssent ?? false)) changes.textAssent = owed;
+    // **The host's pacing is ground too** (R-086, Ed 2026-09-05). The
+    // cooldown rides the constitute event, so a document begun under one
+    // value would carry it for ever — and the cooldown is the host's (§4.2),
+    // one value for every document it serves. A host that stated its
+    // pacing re-states it at the sweep; the amendment is in the log, so a
+    // replay lands on the same state and the same hash.
+    if (this.tuning !== null && this.engine.constitution.cooldownMs !== this.tuning.cooldownMs) {
+      changes.cooldownMs = this.tuning.cooldownMs;
+    }
     if (Object.keys(changes).length > 0) this.engine.amend(t, changes);
   }
 }

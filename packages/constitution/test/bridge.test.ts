@@ -5,6 +5,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { EngineBridge } from '../src/engine-bridge.js';
+import { DEFAULT_TUNING } from '../src/adapter.js';
 import { buildConstituted } from './helpers.js';
 
 describe('an ordinary motion, raced end to end', () => {
@@ -302,5 +303,52 @@ describe('a text proposal races in the engine (stage 8, Q418)', () => {
     expect(() => bridge.proposeText(10, bo, patch(99, ['x']), ''))
       .toThrow(/targets version 99/);
     expect(bridge.engine.balance(bo, 10)).toBe(4);
+  });
+});
+
+describe("the host's pacing is ground (R-086, Ed 2026-09-05)", () => {
+  it('a document begun under one cooldown is re-paced to the host’s at its next sweep, and replays', () => {
+    const { s } = buildConstituted();
+    const slow = new EngineBridge(s, {
+      t: 3, rngSeed: 'repace', tuning: { ...DEFAULT_TUNING, cooldownMs: 300_000 },
+    });
+    expect(slow.engine.constitution.cooldownMs).toBe(300_000);
+    const amendments = (b: EngineBridge) =>
+      b.engine.log.filter((e) => e.event.type === 'constitution-amended');
+    const before = amendments(slow).length;
+
+    // the same log resumed by a host pacing at nothing: replay reproduces
+    // the birth, and the first sweep states the host's own value
+    const fast = new EngineBridge(s, {
+      t: 3, rngSeed: 'repace', tuning: { ...DEFAULT_TUNING, cooldownMs: 0 },
+      resume: { log: [...slow.engine.log], ...slow.state() },
+    });
+    expect(fast.engine.constitution.cooldownMs).toBe(300_000);
+    fast.tick(10);
+    expect(fast.engine.constitution.cooldownMs).toBe(0);
+    expect(amendments(fast)).toHaveLength(before + 1);
+    expect(amendments(fast).at(-1)).toMatchObject({ event: { changes: { cooldownMs: 0 } } });
+    // once: the next sweep finds nothing to say
+    fast.tick(11);
+    expect(amendments(fast)).toHaveLength(before + 1);
+
+    // the amendment is in the log, so a replay lands on the same state
+    const again = new EngineBridge(s, {
+      t: 3, rngSeed: 'repace', resume: { log: [...fast.engine.log], ...fast.state() },
+    });
+    expect(again.engine.rollingHash()).toBe(fast.engine.rollingHash());
+    expect(again.engine.constitution.cooldownMs).toBe(0);
+  });
+
+  it('a bridge given no tuning states no pacing, so it re-paces nothing', () => {
+    const { s } = buildConstituted();
+    const slow = new EngineBridge(s, {
+      t: 3, rngSeed: 'silent', tuning: { ...DEFAULT_TUNING, cooldownMs: 300_000 },
+    });
+    const silent = new EngineBridge(s, {
+      t: 3, rngSeed: 'silent', resume: { log: [...slow.engine.log], ...slow.state() },
+    });
+    silent.tick(10);
+    expect(silent.engine.constitution.cooldownMs).toBe(300_000);
   });
 });

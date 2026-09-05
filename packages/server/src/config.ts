@@ -126,9 +126,11 @@ export interface ServerConfig {
    * remains the brake on hasty adoption meanwhile. The one-minute value
    * returns with a second kind of room (R-052 (b)).
    *
-   * Read at boot like everything else here, so changing it is a restart and
-   * a document's *running* engine keeps whatever it was born with until
-   * then. Refused above §4.2's ceiling rather than clamped: an operator who
+   * Read at boot like everything else here, so changing it is a restart;
+   * every document the host serves is then re-paced to the value at its
+   * next sweep, by an amendment in its own engine log (R-086), because the
+   * cooldown is the host's and not the document's. Refused above §4.2's
+   * ceiling rather than clamped: an operator who
    * asks for ten minutes has misunderstood the rule, and a silent clamp
    * would leave them believing it took.
    */

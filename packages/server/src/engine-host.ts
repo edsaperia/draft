@@ -41,8 +41,11 @@ export function asEngineDoc(doc: LoadedDoc): EngineDoc {
   return d;
 }
 
-/** Resume a persisted bridge; called once per document at load. */
-export async function resumeBridge(persistence: Persistence, doc: LoadedDoc): Promise<void> {
+/** Resume a persisted bridge; called once per document at load. The host's
+ *  tuning rides along so the bridge can re-state the host's cooldown on a
+ *  document born under another (R-086) — at the first sweep, never here. */
+export async function resumeBridge(persistence: Persistence, doc: LoadedDoc,
+  tuning?: Partial<EngineTuning>): Promise<void> {
   const d = asEngineDoc(doc);
   if (d.bridge !== null) return;
   const log = await persistence.readEngineLog(doc.id) as EngineLogEntry[];
@@ -60,6 +63,7 @@ export async function resumeBridge(persistence: Persistence, doc: LoadedDoc): Pr
   const state = JSON.parse(raw) as BridgeState;
   d.bridge = new EngineBridge(doc.cs, {
     t: doc.cs.constitutedAtT!, rngSeed: doc.id,
+    ...(tuning ? { tuning: { ...DEFAULT_TUNING, ...tuning } } : {}),
     resume: { log: log as never, ...state },
   });
   d.enginePersisted = log.length;

@@ -100,6 +100,13 @@ export interface Constitution {
 export interface ConstitutionAmendment {
   adoptionThresholdEnd?: number;
   windowEndMs?: number;
+  /**
+   * The adoption metronome (§4.2) is the host's, not the room's, and a
+   * document carries the value it was born under in its own log — so a
+   * host whose pacing differs re-states its own here (R-086). Engine
+   * tuning rather than a decision: it re-rates nothing already adopted.
+   */
+  cooldownMs?: number;
   tokenGrant?: number;
   tokenDripMinutes?: number;
   tokenCap?: number;

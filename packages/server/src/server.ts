@@ -131,7 +131,7 @@ export async function createDraftServer(cfg: ServerConfig,
   await store.loadAll();
   for (const doc of store.all()) {
     try {
-      await resumeBridge(persistence, doc);
+      await resumeBridge(persistence, doc, cfg.engineTuning);
     } catch (e) {
       // review #2, finding 1: a half-written bridge state or engine log
       // must quarantine this document's engine, never the whole server —
