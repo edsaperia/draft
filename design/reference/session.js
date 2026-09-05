@@ -9,9 +9,13 @@
  * hook given every path does exactly what it did. Proven by
  * design/tools/session-probe.js against design/reference/.
  *
- * Load order: cards.js → session.js → the page's own script (the fixture +
- * init). */
+ * Load order: copy.js → cards.js → session.js → the page's own script (the
+ * fixture + init). */
 (function () {
+  // Every member-readable string this surface renders lives in copy.js (Ed's
+  // brief, 2026-09-05, Part 3: copy edits touch that file only); `T` is the
+  // session surface's own section of it.
+  const T = window.COPY.session;
   // the fixture's parameters, handed in at init (they were consts in the page)
   let DOC, SUGGS, ROSTER, FLOOR, EDIT_RULES, SESSION_MINUTES;
   let editsHeld, editsToNext;
@@ -220,12 +224,12 @@
   // the head label of a draft on a gap: which gap, in the reader's terms
   const gapLabel = (key) => {
     const at = blockBeforeGap(key);
-    if (at < 0) return 'A new clause at the start';
+    if (at < 0) return T.gap.atStart;
     const prev = DOC[at];
     const after = DOC.slice(at + 1).some((l) => !l.gap && l.key);
-    if (!after) return 'A new clause at the end';
+    if (!after) return T.gap.atEnd;
     const words = String(prev.x || '').trim();
-    return 'A new clause after: ' + (words.length > 40 ? words.slice(0, 40).replace(/\s+\S*$/, '') + '…' : words);
+    return T.gap.after(words.length > 40 ? words.slice(0, 40).replace(/\s+\S*$/, '') + '…' : words);
   };
 
   // The text a suggestion is arguing against, for the quick card's yellow band.
@@ -552,8 +556,7 @@
     // wrong thing entirely once the question is *can you write a better one*.
     // Quoting two of eight arguments there is picking a side by accident and
     // saying nothing about the state the entry is actually in.
-    if (stuck(g)) return ['Deadlocked — ' + (g.judges ?? 0) + ' people can’t agree on a proposal even ' +
-      'after ' + (g.comparisons ?? 0) + ' votes. Can you propose something everyone will agree on?'];
+    if (stuck(g)) return [T.rail.deadlocked(g.judges ?? 0, g.comparisons ?? 0)];
     if (g.kind === 'race') return [g.race && g.race.a && g.race.a.rationale, g.race && g.race.b && g.race.b.rationale].filter(Boolean);
     // A diagonal quotes nothing (Ed, 2026-08-17). A teaser is a *rationale* —
     // somebody's argument for their wording — and a diagonal has none, because
@@ -733,7 +736,7 @@
         const drafting = !!g.unproposed;
         const why = (g.rationale || '').trim();
         const where = e.of > 1
-          ? '<span class="qs"><span class="sibn">' + e.n + ' of ' + e.of + ' places</span></span>' : '';
+          ? '<span class="qs"><span class="sibn">' + T.rail.placesOf(e.n, e.of) + '</span></span>' : '';
         html +=
           '<li class="qitem" data-q="' + g.id + '" data-site="' + (e.site ?? '') + '">' +
           '<button class="yours' + (drafting ? ' drafting' : '') + '" data-q="' + g.id + '"' +
@@ -742,20 +745,20 @@
           washAttrs(qKey(g, e), drafting ? tint('yours', 0.20) : wash(g, 'yours').col,
             drafting ? '100%' : wash(g, 'yours').fill) +
           ' title="' + esc(drafting
-            ? 'Your draft — not proposed yet.'
-            : (g.cap || 'Yours, in the race')) + '">' +
+            ? T.rail.draftTitle
+            : (g.cap || T.rail.yoursInRace)) + '">' +
           (drafting
             ? '<span class="ql">' + markHtml('propose') + '<span>' + esc(plainLabel(e.label || g.qLabel)) + '</span></span>' +
               where +
               '<span class="qwhy' + (why ? '' : ' empty') + '">' +
-              (why ? esc(why) : 'no reason given yet — say what this is for') + '</span>' +
+              (why ? esc(why) : T.rail.noReason) + '</span>' +
               ''
             // **✏️ does not say "yours"** (Ed, 2026-08-17). The pencil means *you
             // wrote this* and the entry is the accent blue; a word saying it a third
             // time is the surface reading its own glossary aloud. The place count
             // survives, because it says *which* place and nothing else does.
             : '<span class="ql">' + markHtml('propose') + esc(plainLabel(e.label || g.qLabel)) +
-              (e.of > 1 ? '<span class="qv"> · ' + e.n + ' of ' + e.of + ' places</span>' : '') + '</span>') +
+              (e.of > 1 ? '<span class="qv"> · ' + T.rail.placesOf(e.n, e.of) + '</span>' : '') + '</span>') +
           '</button></li>';
         continue;
       }
@@ -772,7 +775,7 @@
       // the caption said two thirds of it again in smaller type (2026-08-17).
       // There is no progress to report either — that is what deadlock means.
       const cap = stuck(g) ? ''
-        : justJudged ? 'still deciding — click to change your mind' : g.cap;
+        : justJudged ? T.rail.stillDeciding : g.cap;
       const sib = e.of > 1 ? ' sib' : '';
 
       // A judged entry is one line: label, your verdict, and — if the ground
@@ -1660,7 +1663,7 @@
     return (
       '<div class="sugg sealed-open" data-card="' + s.id + '"' +
       (skey ? ' data-site="' + skey + '"' : '') + '>' +
-      '<div class="rechead"><span>The Founder amended this</span>' +
+      '<div class="rechead"><span>' + T.record.amended + '</span>' +
       '<span class="sub">' + esc((s.decided || {}).when || '') + '</span></div>' +
       (skey
         ? clauseHeadHtml(s, {
@@ -1668,18 +1671,18 @@
             label: null,
           })
         : '') +
-      speakerHtml(s.rationale, undefined, s.by || 'The Founder') +
+      speakerHtml(s.rationale, undefined, s.by || T.record.founder) +
       // in the same `rsub` vocabulary the record uses for *the text that
       // stood*; silent where the server could not say what stood before
       (s.replaced
         ? '<div class="field"><div class="ranked wasthere">' +
-          '<div class="rtag"><span class="rsub">the text it replaced</span></div>' +
+          '<div class="rtag"><span class="rsub">' + T.record.replaced + '</span></div>' +
           '<div class="rtext">' + esc(s.replaced) + '</div></div></div>'
         : '') +
       (isUnread(s)
         ? '<div class="race-mid commitrow"><span></span>' +
           '<button class="btn btn-approve okbtn" data-seen="' + s.id + '"' +
-          ' title="It leaves your margin and stays in the record">OK</button></div>'
+          ' title="' + T.record.okTitle + '">' + T.record.ok + '</button></div>'
         : '') +
       '</div>'
     );
@@ -1835,9 +1838,9 @@
       // sentence. Quorum and your own verdict move into the tooltip, where they
       // are still there for anybody who wants them and cost no ink.
       '<div class="rechead" title="' +
-      esc((d.judges ?? 0) + ' of ' + ROSTER + ' weighed in · quorum was ' + FLOOR +
-        ' · ' + (yours ? 'you ' + yours : 'you never voted on this')) + '">' +
-      '<span>' + (und ? 'Undecided at the close' : 'Decided') + ' · ' + (d.judges ?? 0) + '/' + ROSTER + PEOPLE +
+      esc(T.record.tooltip(d.judges ?? 0, ROSTER, FLOOR,
+        yours ? T.record.youSaid(yours) : T.record.youNever)) + '">' +
+      '<span>' + (und ? T.record.undecided : T.record.decided) + ' · ' + (d.judges ?? 0) + '/' + ROSTER + PEOPLE +
       // an undecided race with no reading prints no numbers: 0% > 0% is a
       // sentence about nothing
       (und && !(d.bar > 0) ? '' : ' · ' + pct(best) + JUDG +
@@ -1853,8 +1856,7 @@
       // §2). The decision stands — that is the whole of the ruling, and
       // refusing the batch was the option it rejected.
       (d.capped
-        ? '<span class="rsub">the ranking maths stopped short on this one; '
-          + 'the decision stands</span>'
+        ? '<span class="rsub">' + T.record.capped + '</span>'
         : '') +
       (top
         ? clauseHeadHtml(s, {
@@ -1904,7 +1906,7 @@
         // absence of an act.
         ? '<div class="race-mid commitrow"><span></span>' +
           '<button class="btn btn-approve okbtn" data-seen="' + s.id + '"' +
-          ' title="It leaves your margin and stays in the record">OK</button></div>'
+          ' title="' + T.record.okTitle + '">' + T.record.ok + '</button></div>'
         : '') +
       '</div>'
     );
@@ -1948,7 +1950,7 @@
     if (!d) {
       d = {
         id: DRAFT_ID, kind: 'draft', mine: true, unproposed: true, state: 'needs',
-        keys: [], sites: [], rationale: '', qLabel: 'Your draft',
+        keys: [], sites: [], rationale: '', qLabel: T.compose.draftLabel,
         urgency: 0, pct: 0, cap: '',
         // the sign choice (Q770): the base is the default, signing the opt-in
         signed: false,
@@ -2375,13 +2377,13 @@
   function proposalRowHtml(o) {
     o = o || {};
     const n = o.count || 0;
-    const mid = n === 0 ? '' : n === 1 ? '1 place changed' : n + ' places changed';
+    const mid = n === 0 ? '' : T.row.placesChanged(n);
     const btn = (pen, title) => '<button class="btn btn-propose glyphbtn emojibtn" data-act="row-commit"' +
       (pen ? ' data-pen="1"' : '') + (o.disabled ? ' disabled' : '') +
       ' title="' + esc(title || '') + '">' + (pen ? '✒️' : '✏️') + '</button>';
     return '<div class="race-mid commitrow proposalrow" data-proposalrow="1">' +
       '<button class="btn btn-withdraw glyphbtn" data-act="row-discard"' + (o.discardDisabled ? ' disabled' : '') +
-      ' title="' + esc(o.discardTitle || 'Discard the whole draft — nothing has been spent on it') + '">🗑️</button>' +
+      ' title="' + esc(o.discardTitle || T.row.discardAll) + '">🗑️</button>' +
       '<span class="rowmid">' + esc(mid) + '</span>' +
       (o.pen ? btn(true, o.title) + (o.pair ? btn(false, o.proposeTitle) : '') : btn(false, o.title)) +
       '</div>';
@@ -2401,17 +2403,17 @@
   function signControlHtml(d) {
     const base = SIGNING();
     if (!base) return '';
-    const name = (SIGNER() || '').trim() || 'Anonymous';
+    const name = (SIGNER() || '').trim() || T.sign.anonymousName;
     const pick = (on, val, ttl, exp) =>
       '<div class="pick' + (on ? ' on' : '') + '">' +
       '<button class="lanepick" type="button" aria-pressed="' + on + '" data-act="draft-sign" data-signed="' + val + '">' +
       '<span class="dot"></span><span>' + ttl + '</span></button>' +
       '<span class="exp">' + exp + '</span></div>';
     return '<div class="choice signctl" role="radiogroup" data-signbase="' + base + '">' +
-      pick(!d.signed, '0', 'Anonymous', 'Nobody is told who proposed this' +
-        (base === 'anonymous' ? ' — ever.' : ' until the document is finished.')) +
-      pick(!!d.signed, '1', 'Signed — as ' + esc(name),
-        'Your name goes on it from the moment you propose it, and stays there.') +
+      pick(!d.signed, '0', T.sign.anonLabel, T.sign.anonExpLead +
+        (base === 'anonymous' ? T.sign.expEver : T.sign.expUntil)) +
+      pick(!!d.signed, '1', T.sign.signedAs(esc(name)),
+        T.sign.signedExp) +
       '</div>';
   }
   // **What the room will see on a proposal of yours that is already out** (K30):
@@ -2465,9 +2467,9 @@
     return (
       '<div class="sugg editcard" data-card="' + d.id + '" data-anchor="' + d.id + '" data-site="' + site.keys[0] + '">' +
       (n > 1
-        ? '<div class="pnav"><span class="pwhere">' + esc(site.label) + ' · place ' + (i + 1) + ' of ' + n + '</span>' +
-          '<span class="psteps">' + step(i > 0 ? i - 1 : null, 'The place before', '↑') +
-          step(i < n - 1 ? i + 1 : null, 'The next place', '↓') + '</span></div>'
+        ? '<div class="pnav"><span class="pwhere">' + esc(site.label) + T.nav.placeOf(i + 1, n) + '</span>' +
+          '<span class="psteps">' + step(i > 0 ? i - 1 : null, T.nav.prev, '↑') +
+          step(i < n - 1 ? i + 1 : null, T.nav.next, '↓') + '</span></div>'
         : '') +
       // The clause at the head, like every other card (Ed, 2026-08-16, closing
       // Q275). It had stayed paired on the argument that while you are writing
@@ -2483,7 +2485,7 @@
       // and your draft as the one reply, in the reply's own order: the wording,
       // then the argument for it behind the same blank disc everybody else's
       // sits behind — which is what the rest of the roster will see (§3.4).
-      '<div class="field"><div class="fieldlab">What you are proposing</div>' +
+      '<div class="field"><div class="fieldlab">' + T.compose.fieldLab + '</div>' +
       '<div class="propblock">' + laneBoxHtml(d, site) + '</div>' +
       // …and, under an elective 👤 rung, whether your name goes on it (Q770):
       // part of the rationale composer area, above the row that commits it
@@ -2496,7 +2498,7 @@
       // this* where every other card puts *finish this*.
       '<div class="race-mid commitrow">' +
       '<button class="btn btn-withdraw glyphbtn" data-act="draft-cancel"' +
-      ' title="Discard this draft — nothing has been spent on it yet">🗑️</button>' +
+      ' title="' + T.row.discardDraft + '">🗑️</button>' +
       // **✏️, and a second press to mean it** (Ed, 2026-08-17). Proposing is
       // the one irreversible-feeling act on this surface — it spends an edit and
       // puts your wording in front of the room — and it was a single click on a
@@ -2510,13 +2512,13 @@
       // "sure?" onto it. Pressing anything else disarms it.
       commitBtnHtml({
         disabled: broke,
-        title: broke ? 'No ✏️ left — another arrives as the drip accrues'
-          : 'Hold to propose this' + (n > 1 ? ' in all ' + n + ' places' : '') +
+        title: broke ? T.row.broke
+          : T.row.holdPropose + (n > 1 ? T.row.inAllPlaces(n) : '') +
             // the hold's tooltip says what leaves: a signed one leaves with your name
-            (d.signed ? ' — signed' : '') +
-            ' — one edit leaves your wallet to pay for it',
-        penTitle: 'Amend the document' + (n > 1 ? ' in all ' + n + ' places' : '') +
-          ' — it passes at once and costs nothing',
+            (d.signed ? T.row.signedSuffix : '') +
+            T.row.editCost,
+        penTitle: T.row.amend + (n > 1 ? T.row.inAllPlaces(n) : '') +
+          T.row.penCost,
       }) +
       '</div>' +
       // Only the two facts that change what pressing ✏️ *does* (Ed, 2026-08-17).
@@ -2524,9 +2526,9 @@
       // screen — and the rest was the design explaining itself.
       (rival || n > 1
         ? '<div class="foot">' +
-          (rival ? 'Yours joins the proposals already racing here' : '') +
+          (rival ? T.compose.rivalNote : '') +
           (rival && n > 1 ? ' · ' : '') +
-          (n > 1 ? 'All ' + n + ' places go in as one change' : '') + '.</div>'
+          (n > 1 ? T.compose.allPlacesNote(n) : '') + '.</div>'
         : '') +
       // a live refusal (the text moved under the draft) is said on the card,
       // where the draft still is — never lost to a console
@@ -2548,9 +2550,9 @@
     return (
       '<div class="sugg minecard" data-card="' + d.id + '" data-site="' + s.keys[0] + '">' +
       (n > 1
-        ? '<div class="pnav"><span class="pwhere">' + esc(s.label) + ' · place ' + (i + 1) + ' of ' + n + '</span>' +
-          '<span class="psteps">' + step(i > 0 ? i - 1 : null, 'The place before', '↑') +
-          step(i < n - 1 ? i + 1 : null, 'The next place', '↓') + '</span></div>'
+        ? '<div class="pnav"><span class="pwhere">' + esc(s.label) + T.nav.placeOf(i + 1, n) + '</span>' +
+          '<span class="psteps">' + step(i > 0 ? i - 1 : null, T.nav.prev, '↑') +
+          step(i < n - 1 ? i + 1 : null, T.nav.next, '↓') + '</span></div>'
         : '') +
       // The `yoursnote` is gone (Ed, 2026-08-17). It opened every card of your
       // own with three sentences of mechanism — that nothing is asked of you,
@@ -2575,7 +2577,7 @@
       fieldHtml('<div class="propblock"><div class="rtext">' +
         laneBlocks(s.text, originText(s), headFlags(s)) + '</div>' +
         speakerHtml(d.rationale, undefined, mineSpeaker(d)) + '</div>',
-        1, 'What you proposed') +
+        1, T.compose.proposedLab) +
       // **The same row the editing card had, one step further on** (Ed,
       // 2026-08-17). 🗑️ stays exactly where it was — discarding a draft and
       // withdrawing a proposal are the same gesture at two moments, and the
@@ -2585,10 +2587,10 @@
       // when it is pressed. Nothing moves between the two cards, which is the
       // point — it is one lifecycle, not two screens.
       '<div class="race-mid commitrow">' +
-      '<button class="btn btn-withdraw glyphbtn" data-act="draft-withdraw" title="Withdraw' +
-      (n > 1 ? ' all ' + n + ' places' : '') + ' — the edit comes back in full">🗑️</button>' +
+      '<button class="btn btn-withdraw glyphbtn" data-act="draft-withdraw" title="' + T.row.withdraw +
+      (n > 1 ? T.row.allPlaces(n) : '') + T.row.withdrawCost + '">🗑️</button>' +
       '<button class="btn btn-propose" aria-pressed="true" disabled' +
-      ' title="Proposed — one edit spent. It is in the race now.">✏️ Submitted</button>' +
+      ' title="' + T.row.submittedTitle + '">' + T.row.submitted + '</button>' +
       '</div>' +
       '</div>'
     );
@@ -2667,7 +2669,7 @@
   // you click to close it.
   const ownChipHtml = (g) =>
     '<span class="achip wmark" role="button" tabindex="0" data-anchor="' + g.id + '"' +
-    chipStyle(g) + ' title="Close this one">' + mkHtml(markKindOf(g)) + '</span>';
+    chipStyle(g) + ' title="' + T.chip.closeThis + '">' + mkHtml(markKindOf(g)) + '</span>';
 
   const achipHtml = (g, key, o) =>
     '<span class="achip' + (o.inert ? ' behind' : '') + '"' +
@@ -2675,8 +2677,8 @@
     ' data-anchor="' + g.id + '"' + chipStyle(g, o.z ? 'z-index:' + o.z : '') +
     (o.inert ? '' : ' title="' + esc(plainLabel(g.qLabel)) +
       (g.kind === 'patch'
-        ? ' · place ' + (g.sites.findIndex((x) => x.key === key) + 1) + ' of ' + g.sites.length
-        : '') + (o.title || ' — open it') + '"') +
+        ? T.nav.placeOf(g.sites.findIndex((x) => x.key === key) + 1, g.sites.length)
+        : '') + (o.title || T.chip.openIt) + '"') +
     '>' + mkHtml(markKindOf(g)) + '</span>';
 
   // **The filed pile** (Ed, 2026-08-17, answering 294). A card's tab strip lines
@@ -2707,10 +2709,9 @@
     const open = filedOpen.has(key) || holdsActive;
     return '<span class="filedpile' + (open ? ' open' : '') + '"' +
       (holdsActive ? '' : ' data-filed="' + key + '"') +
-      (open ? '' : ' role="button" tabindex="0" title="' + gs.length +
-        ' decided and filed at this clause — open them"') + '>' +
+      (open ? '' : ' role="button" tabindex="0" title="' + T.chip.filedPile(gs.length) + '"') + '>' +
       gs.map((g, i) => (g.id === activeId ? ownChipHtml(g) : achipHtml(g, key, {
-        inert: !open, z: gs.length - i, title: ' — the record',
+        inert: !open, z: gs.length - i, title: T.chip.theRecord,
       }))).join('') + '</span>';
   }
 
@@ -2778,7 +2779,7 @@
       '<div class="sugg dead-open" data-card="' + s.id + '"' +
       (key ? ' data-site="' + key + '"' : '') + '>' +
       clauseHeadHtml(s, { text: currentTextFor(key), key: key, chips: chipsFor(key, s.id),
-                          label: 'The clause as it stands — and it is still standing' }) +
+                          label: T.dead.headLabel }) +
       // The card's own voice, and the only place it raises it. On a race card a
       // line like this is a caveat at the foot; here it is the whole point of
       // the card, so it goes at the top and is the first thing read.
@@ -2797,8 +2798,7 @@
       // evidence**, because it is what makes the claim above it credible: this
       // is stuck, not merely unlooked-at. So it belongs *in* the claim, and the
       // rest is gone.
-      '<div class="field"><div class="fieldlab">Everything in flight · ' + field.length +
-      ' proposals, oldest first</div>' +
+      '<div class="field"><div class="fieldlab">' + T.dead.fieldLab(field.length) + '</div>' +
       // `result-only`, marked, **with the floor forced off** (Ed, 2026-08-17).
       // Left to itself the floor marks three of the eight and silences the
       // rest, because each of these is far enough from the clause to count as a
@@ -2832,7 +2832,7 @@
       // ask for one from somebody who cannot give it.
       (MAY_PROPOSE()
         ? '<div class="field bridgedesk"><div class="fieldlab">' +
-          '✏️ propose something everyone can agree on</div>' +
+          T.dead.deskLab + '</div>' +
           '<div class="propblock">' + laneBoxHtml(d, site, site ? null : key) + '</div></div>' +
       // The same row as the editing card's, and it stays the same row: 🗑️ at
       // the very left for the whole of a proposal's life, the commit control at
@@ -2842,13 +2842,12 @@
       // the card, and with nothing to put back it simply closes it.
           '<div class="race-mid commitrow">' +
           '<button class="btn btn-withdraw glyphbtn" data-act="draft-cancel"' +
-          ' title="' + (site ? 'Discard this draft — nothing has been spent on it yet'
-                             : 'Close — there is nothing here to put back') + '">🗑️</button>' +
+          ' title="' + (site ? T.row.discardDraft : T.row.closeNothing) + '">🗑️</button>' +
           commitBtnHtml({
             disabled: !(site && !broke),
-            title: 'Hold to propose this — one edit leaves your wallet to pay for it',
+            title: T.row.holdPropose + T.row.editCost,
             penDisabled: !site,
-            penTitle: 'Amend the document — it passes at once and costs nothing',
+            penTitle: T.row.amend + T.row.penCost,
           }) +
           '</div>'
         : '') +
@@ -2859,7 +2858,7 @@
   // Q440 (2026-08-21): 🛡️ held on the Text — a live item carries crownWaits,
   // and the card says a carried change waits on the Founder before it lands
   const crownNote = (s) => (s.crownWaits
-    ? '<p class="setnote">If it passes it goes to the Founder, who may assent or refuse before it lands.</p>' : '');
+    ? '<p class="setnote">' + T.crown.waits + '</p>' : '');
   function suggCardHtml(s, siteKey) {
     if (stateOf(s) === 'sealed') return sealedCardHtml(s);
     if (stuck(s)) return deadlockCardHtml(s);
@@ -2891,9 +2890,9 @@
       return (
         '<div class="sugg diag-open" data-card="' + s.id + '" data-site="' +
         (siteKey || s.pair[0].key) + '">' +
-        clauseHeadHtml(s, { label: 'This card asks',
-                            html: 'Which of these deserves more of the membership’s attention?' }) +
-        fieldHtml(q(s.pair[0], 'first') + q(s.pair[1], 'second'), 2, 'The two questions') +
+        clauseHeadHtml(s, { label: T.diag.headLabel,
+                            html: T.diag.question }) +
+        fieldHtml(q(s.pair[0], 'first') + q(s.pair[1], 'second'), 2, T.diag.fieldLab) +
         // **The commit row is the card's bottom band, on every card**
         // (housekeeping pass, 2026-08-17). Three card types printed their
         // one-line type note *after* it, and a locked card its lock note, so on
@@ -2906,7 +2905,7 @@
         // the reason the controls below it are dead, which is worth knowing
         // before you reach for them rather than after.
         reviseNote(s) +
-        '<div class="foot">This ranks the questions, never the answers — neither text changes either way.</div>' +
+        '<div class="foot">' + T.diag.foot + '</div>' +
         commitRowHtml(s) +
         '</div>'
       );
@@ -2925,14 +2924,14 @@
         '<div class="sugg quick-open" data-card="' + s.id + '" data-site="' + (ckey || '') + '">' +
         clauseHeadHtml(s, { text: currentTextFor(ckey), key: ckey, chips: chipsFor(ckey, s.id) }) +
         fieldHtml(proposalHtml(s, { html: resultOnly(s.marked), why: s.rationale, by: s.by })) +
-        '<div class="foot">The membership passed this. Until you answer, the clause above stands.</div>' +
+        '<div class="foot">' + T.crown.foot + '</div>' +
         '<div class="race-mid commitrow">' +
-        '<button class="btn glyphbtn" data-act="clear-close" title="Close — the question stays pending">🗑️</button>' +
+        '<button class="btn glyphbtn" data-act="clear-close" title="' + T.crown.close + '">🗑️</button>' +
         '<span class="rightpair">' +
         '<button class="btn glyphbtn" data-act="crown-refuse"' +
-        ' title="Refuse — the Founder Veto holds it, and the clause above stands">🛡️</button>' +
+        ' title="' + T.crown.refuse + '">🛡️</button>' +
         '<button class="btn btn-approve glyphbtn" data-act="crown-accept"' +
-        ' title="Accept — a Founder Action passes it now">✒️</button>' +
+        ' title="' + T.crown.accept + '">✒️</button>' +
         '</span></div>' +
         '</div>'
       );
@@ -2959,7 +2958,7 @@
         // to keep the clause, and a reader could reasonably think one of them
         // must win. Everything else that used to be here was the design
         // explaining itself.
-        '<div class="foot">Neither of these has to win — the clause above stands unless the leader clears the approval threshold.</div>' +
+        '<div class="foot">' + T.race.foot + '</div>' +
         commitRowHtml(s) +
         '</div>'
       );
@@ -2978,10 +2977,10 @@
       return (
         '<div class="sugg patch-open" data-card="' + s.id + '" data-site="' + site.key + '">' +
         '<div class="pnav">' +
-        '<span class="pwhere">' + esc(site.label) + ' · place ' + (i + 1) + ' of ' + n + '</span>' +
+        '<span class="pwhere">' + esc(site.label) + T.nav.placeOf(i + 1, n) + '</span>' +
         '<span class="psteps">' +
-        step(i > 0 ? i - 1 : null, 'The place before', '↑') +
-        step(i < n - 1 ? i + 1 : null, 'The next place', '↓') +
+        step(i > 0 ? i - 1 : null, T.nav.prev, '↑') +
+        step(i < n - 1 ? i + 1 : null, T.nav.next, '↓') +
         '</span></div>' +
         // Here the clause *is* one of the two things being judged, so its head
         // picks like any proposal. The fixture's `marked` is already the full
@@ -2991,8 +2990,7 @@
                             chips: chipsFor(site.key, s.id) }) +
         fieldHtml(proposalHtml(s, { v: 'approve', html: resultOnly(site.marked), why: s.rationale, by: s.by, key: site.key })) +
         reviseNote(s) +
-        '<div class="foot">One vote for all ' + n +
-        ' places — choosing here chooses everywhere.</div>' +
+        '<div class="foot">' + T.patch.foot(n) + '</div>' +
         commitRowHtml(s) +
         '</div>'
       );
@@ -3013,7 +3011,7 @@
     return (
       '<div class="sugg quick-open" data-card="' + s.id + '" data-site="' + (key || '') + '">' +
       clauseHeadHtml(s, { text: cur, key: key, v: 'keep', edit: noEdit,
-                          label: s.isInsert ? 'The gap as it stands' : undefined,
+                          label: s.isInsert ? T.insert.headLabel : undefined,
                           chips: chipsFor(key, s.id) }) +
       groundNote(s) +
       fieldHtml(proposalHtml(s, { v: 'approve', html: prop, why: s.rationale, by: s.by, edit: noEdit })) +
@@ -3313,7 +3311,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     const headIns = SUGGS.find((g) => g.gapKey && g.insertAfterKey == null);
     if (headIns) {
       html += '<div class="insert-anchor" data-anchor="' + headIns.id + '" title="' +
-        esc(plainLabel(headIns.qLabel)) + ' — a section proposed for this gap"' +
+        esc(plainLabel(headIns.qLabel)) + T.chip.gapSection + '"' +
         anchWash(headIns, openId === headIns.id) + '>' +
         '<span class="chipcol"><span class="achip"' + chipStyle(headIns) + ' data-anchor="' + headIns.id + '">' +
         markOf(headIns) + '</span></span></div>';
@@ -3394,7 +3392,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
           }
           marks = '<span class="chipcol" contenteditable="false"><span class="achip" tabindex="0"' +
             chipStyle(hDecided) + ' data-anchor="' + hDecided.id + '" title="' +
-            esc(plainLabel(hDecided.qLabel)) + ' — decided">' + mkHtml(markKindOf(hDecided)) + '</span></span>';
+            esc(plainLabel(hDecided.qLabel)) + T.chip.decided + '">' + mkHtml(markKindOf(hDecided)) + '</span></span>';
         }
         const inside = collapsed.has(secN) ? suggestionsInSection(secN) : 0;
         html += '<h2 class="docline editable' + (marks ? ' marked' : '') +
@@ -3444,11 +3442,11 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
             (wasResolved ? ' data-anchor="' + wasResolved.id + '"' +
               anchWash(wasResolved, openId === wasResolved.id, line.key) : '') +
             (line.key ? ' data-key="' + line.key + '"' : '') +
-            (blank ? ' data-placeholder="' + (line.gap ? 'Start a new clause here.' : MAY_PROPOSE()
-              ? 'Nothing here yet — start typing to propose the first paragraph.'
-              : 'Nothing here yet.') + '"' : '') + '>' +
+            (blank ? ' data-placeholder="' + (line.gap ? T.blank.gap : MAY_PROPOSE()
+              ? T.blank.mayPropose
+              : T.blank.plain) + '"' : '') + '>' +
             (wasResolved ? '<span class="chipcol" contenteditable="false"><span class="achip" tabindex="0"' + chipStyle(wasResolved) + ' data-anchor="' + wasResolved.id +
-              '" title="' + esc(plainLabel(wasResolved.qLabel)) + ' — decided">' + mkHtml(markKindOf(wasResolved)) + '</span></span>' : '') +
+              '" title="' + esc(plainLabel(wasResolved.qLabel)) + T.chip.decided + '">' + mkHtml(markKindOf(wasResolved)) + '</span></span>' : '') +
             esc(line.x) + '</p>';
         }
       }
@@ -3460,7 +3458,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         // the gap stays inside the prose column so its gutter mark lines up
         // with every other mark in the margin
         html += '<div class="insert-anchor" data-anchor="' + ins.id + '" title="' +
-          esc(plainLabel(ins.qLabel)) + ' — a section proposed for this gap"' +
+          esc(plainLabel(ins.qLabel)) + T.chip.gapSection + '"' +
           anchWash(ins, openId === ins.id) + '>' +
           '<span class="chipcol"><span class="achip"' + chipStyle(ins) + ' data-anchor="' + ins.id + '">' +
           markOf(ins) + '</span></span></div>';
@@ -3479,12 +3477,12 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     if (EDITING() && MAY_PROPOSE() && !closedMode) {
       const rs = draftRowState();
       const pen = MAY_PEN();
-      const idle = 'Nothing has changed yet — type in the document to start a draft';
+      const idle = T.row.idle;
       html += proposalRowHtml({
         count: rs.changedCount, changed: rs.changed, pen, pair: pen, disabled: !rs.changed,
         discardDisabled: !rs.count,
-        title: !rs.changed ? idle : pen ? 'Review and amend the document' : 'Review and propose this',
-        proposeTitle: !rs.changed ? idle : 'Review and propose this',
+        title: !rs.changed ? idle : pen ? T.row.reviewAmend : T.row.reviewPropose,
+        proposeTitle: !rs.changed ? idle : T.row.reviewPropose,
       });
     }
     doc.innerHTML = html;
@@ -3717,8 +3715,8 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
           submit.disabled = now === null;
           const cast = isJudged(s) && now !== null && now === committedOf(s);
           submit.setAttribute('aria-pressed', String(cast));
-          submit.title = cast ? 'Recorded — choose again to change it'
-            : now ? 'Submit this vote' : 'Choose one of the three first';
+          submit.title = cast ? window.COPY.grammar.commit.cast
+            : now ? window.COPY.grammar.commit.submit : window.COPY.grammar.commit.choose;
         }
       });
     };
@@ -4218,14 +4216,14 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // member actually chose rather than a position on a screen.
     const quote = (t) => '“' + String(t || '').split(/\s+/).slice(0, 6).join(' ') + '…”';
     const verdict =
-      what === 'approve' ? 'approved (recorded as: proposal beats current text)'
-      : what === 'keep' ? 'kept the current text'
-      : what === 'first' ? 'said ' + (s.pair ? '“' + s.pair[0].name + '”' : 'the first') + ' matters more'
-      : what === 'second' ? 'said ' + (s.pair ? '“' + s.pair[1].name + '”' : 'the second') + ' matters more'
-      : what === 'a' ? 'preferred ' + quote(s.race && s.race.a.text)
-      : what === 'b' ? 'preferred ' + quote(s.race && s.race.b.text)
-      : what === 'indifferent' ? (s.kind === 'diagonal' ? 'said they matter equally' : 'indifferent')
-      : 'skipped (recirculates with decay)';
+      what === 'approve' ? T.verdict.approve
+      : what === 'keep' ? T.verdict.keep
+      : what === 'first' ? T.verdict.matters(s.pair ? '“' + s.pair[0].name + '”' : T.verdict.theFirst)
+      : what === 'second' ? T.verdict.matters(s.pair ? '“' + s.pair[1].name + '”' : T.verdict.theSecond)
+      : what === 'a' ? T.verdict.preferred(quote(s.race && s.race.a.text))
+      : what === 'b' ? T.verdict.preferred(quote(s.race && s.race.b.text))
+      : what === 'indifferent' ? (s.kind === 'diagonal' ? T.verdict.equal : T.verdict.indifferent)
+      : T.verdict.skipped;
     // **🗑️ on a judgment clears the choice and closes** (CP7, Q1102): the bin
     // puts back un-actioned input only (C4), so an uncommitted pick clears and
     // a cast vote stays on the record exactly as it stood.
@@ -5303,8 +5301,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   // 10-minute steps inside the hour — never finer, never seconds. Every
   // figure rounds *down* to its step, so the clock is never optimistic.
   // Cold at every distance: the last hours' urgency belongs to the questions.
-  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
-    'August', 'September', 'October', 'November', 'December'];
+  const MONTHS = T.clock.months;
   // a date in words, the year only when it is not this one (STYLE §2: raw
   // values are not copy); `todayMs` is a seam for the check script
   function dateWords(ms, todayMs) {
@@ -5318,19 +5315,19 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   function clockText(state) {
     if (!state || state.kind === 'none') return '';
     if (state.kind === 'frozen') {
-      return 'Frozen' + (state.mustReturn > 0 ? ' — ' + state.mustReturn + ' must return' : '');
+      return T.clock.frozen + (state.mustReturn > 0 ? T.clock.mustReturn(state.mustReturn) : '');
     }
-    if (state.kind === 'closed') return 'Closed ' + dateWords(state.atMs, state.todayMs);
+    if (state.kind === 'closed') return T.clock.closed(dateWords(state.atMs, state.todayMs));
     const ms = state.ms;
-    if (ms <= 0) return 'closing now';       // the clock has passed; the close is landing
-    if (ms > 7 * DAY) { const d = Math.floor(ms / DAY); return d + ' days left'; }
-    if (ms > 6 * HOUR) { const h = Math.floor(ms / HOUR); return h + ' hours left'; }
+    if (ms <= 0) return T.clock.closingNow;  // the clock has passed; the close is landing
+    if (ms > 7 * DAY) { const d = Math.floor(ms / DAY); return T.clock.daysLeft(d); }
+    if (ms > 6 * HOUR) { const h = Math.floor(ms / HOUR); return T.clock.hoursLeft(h); }
     if (ms > HOUR) {
       const steps = Math.floor(ms / (20 * MIN)), h = Math.floor(steps / 3), m = (steps % 3) * 20;
-      return h + 'h ' + String(m).padStart(2, '0') + 'm left';
+      return T.clock.hmLeft(h, String(m).padStart(2, '0'));
     }
     const m = Math.floor(ms / (10 * MIN)) * 10;
-    return m >= 10 ? m + ' minutes left' : 'under 10 minutes left';
+    return m >= 10 ? T.clock.minutesLeft(m) : T.clock.underTen;
   }
 
   function setRoom(r) {

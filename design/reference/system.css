@@ -1916,6 +1916,20 @@
     font-size: 1.35rem; font-weight: 700;
   }
   .btn.btn-approve.glyphbtn:hover { background: var(--ok-hover); border-color: var(--ok-hover); color: #fff; }
+  /* the tick's green is the tick's own (Q1174, Ed 2026-09-05: "✔️ should still
+     be green") — but ✒️/🪶/🍾/✏️/🏛️ also carry .glyphbtn and were inheriting
+     it. An emoji commit is flat like every other glyph commit (Q1153); the
+     glyph itself carries its own colour, so no fill is needed under it.
+     :not([disabled]) keeps this out of the greyed-out rule's way regardless
+     of source order — the two are meant to never both apply (card review
+     round 3, 2026-09-05, A1). */
+  .btn.btn-approve.glyphbtn.emojibtn:not([disabled]) {
+    background: var(--bg); border-color: var(--border); color: var(--fg);
+    font-size: 1.2rem; font-weight: 400;
+  }
+  .btn.btn-approve.glyphbtn.emojibtn:not([disabled]):hover {
+    background: var(--light); border-color: var(--primary-hover); color: var(--fg);
+  }
   /* cast: the judgment on the record. Pressed in, quieter, still clickable —
      choosing something else springs it back out (Ed, 216). */
   .btn.btn-approve.glyphbtn[aria-pressed="true"],

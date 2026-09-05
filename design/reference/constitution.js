@@ -2365,17 +2365,7 @@ var CONSTITUTION = (() => {
         });
       }
       if (!this.textConfirmedFlag) this.emit({ type: "starting-text-confirmed", t, text: "" });
-      const before = new Map(HELD.map((k) => [k, { ...this.settings.get(k).powers }]));
       this.emit(list === void 0 ? { type: "constituted", t } : { type: "constituted", t, laidDown: list });
-      const laid = [];
-      for (const k of HELD) {
-        const was = before.get(k);
-        const now = this.settings.get(k).powers;
-        for (const p of ["unilateral", "assent"]) {
-          if (was[p] && !now[p]) laid.push({ setting: k, power: p });
-        }
-      }
-      this.oweReleases(t, laid);
     }
     /** What 🍾 waits on (§9.0b, §9.7.1): a delegated question on **any** setting
      *  blocks the start while it collects, and every judge-gate must be settled

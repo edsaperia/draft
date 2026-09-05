@@ -208,10 +208,56 @@
      pm): a select inherits no font by default, so it is told to — the whole
      `font`, not just the size — and takes only the box its word needs. */
   select.dripunit, .pick .opttext .numin.dripunit { font: inherit; width: auto; }
+  /* ❌'s member picker is a decision in its own right, not a form field, so
+     it reads at clause size rather than the browser's own cramped control
+     (Ed, card review round 3, 2026-09-05, A11). */
+  select[data-removewho] { font: inherit; font-size: var(--t-body); line-height: 1.55;
+    padding: var(--s1) var(--s2); height: auto; min-height: 2.25rem; }
   /* 🪶's settled composer is a lane inside its sentence (Ed's QA, 2026-09-02
-     pm): the block-shaped editlane becomes a word-shaped one there */
-  .pick .opttext .titlelane { display: inline-block; min-width: 14rem; vertical-align: baseline; }
+     pm): the block-shaped editlane becomes a word-shaped one there. Card
+     review round 3 (Ed, 2026-09-05, A9): it read as bare text with nowhere
+     to click, so it wears the composer's own outline — border, radius,
+     ground — sized to the head's own standing title (below). */
+  .pick .opttext .titlelane { display: inline-block; min-width: 14rem; vertical-align: baseline;
+    border: 1px solid var(--border); border-radius: var(--r-sm);
+    padding: var(--s1) var(--s2); background: var(--bg); }
+  /* the lane's text matches the standing title in the card's own head
+     (#titlepara .setupcard .clausehead .headrule .headdoct, below) — the two
+     are the same sentence at two moments, not two sizes of it (A9). */
+  #titlepara .pick .opttext .titlelane { font-size: var(--t-lead); font-weight: 600; }
   .pick > .lanepick { margin-top: var(--s2); }
+  /* a composer lane's radio bar inside an option block takes the block's own
+     radio rhythm (Ed's card review round 3, 2026-09-05, A11 on 🪪: the lanes
+     became `.pick` blocks so one rule spaces every block on the card) */
+  .pick > .lanebar { margin-top: var(--s2); padding-top: 0; }
+  /* 🧭's rungs list the clauses a shape sets, each on its own line under the
+     rung's sentence, at the clause's own size (round 3, 03) */
+  .pick .opttext .shapeclause { display: block; margin-top: var(--s1); }
+  /* Q1181 (Ed, 2026-09-05, card review round 3): 🍾's power table asks one
+     question per zone — keep it, or lay it down — so it takes one control,
+     not a radio pair. Sits where a `.lanepick` sits under any other option
+     block's text; the glyph itself is the option, so the box is small and
+     square rather than a radio's row. */
+  .pick > .pwtoggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-top: var(--s2); appearance: none; position: relative;
+    width: 2.5rem; height: 2rem; padding: 0;
+    border: 1px solid var(--border); border-radius: var(--r-md); background: var(--bg);
+    font: inherit; font-size: 1.1rem; line-height: 1; cursor: pointer;
+  }
+  .pick > .pwtoggle:hover { border-color: var(--primary-hover); background: var(--light); }
+  .pick > .pwtoggle:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  /* laid down: the same idiom the wallet sockets use for a power not held
+     (system.css's `.notheld` — grey glyph, red strike on the socket rather
+     than the glyph, so the strike keeps its own colour under the grayscale
+     filter). Kept is the plain glyph doing no more than sitting there. */
+  .pwtoggle[aria-pressed="false"] .tg { filter: grayscale(1); opacity: 0.6; }
+  .pwtoggle[aria-pressed="false"]::after {
+    content: ''; position: absolute; left: 50%; top: 50%;
+    width: 1.5rem; height: 2px; margin: -1px 0 0 -0.75rem; border-radius: 1px;
+    background: var(--slash); transform: rotate(45deg);
+  }
+  .pwtoggle[disabled] { cursor: default; opacity: 0.6; }
   /* a hairline separates adjacent blocks without boxing them — the same
      separator the power cards' `.propblock + .propblock` draws; the margin is
      the rows' one vertical rhythm (P5), wherever the blocks stand */
@@ -250,27 +296,23 @@
      is what is being chosen and the number is what it comes to (entry 165) */
   .pick .pct { font-size: var(--t-small); color: var(--muted); margin-left: 0.5em; }
   .pick.above { opacity: 0.5; }
-  .pick.off { opacity: 0.42; }
-  .pick.off .lanepick { pointer-events: none; }
-  /* A power option that cannot be taken yet dims **whole**, the way .pick.off
-     does. Since the rule moved out of the button and became the block's own
-     document text, dimming the control alone would leave a live-looking
-     sentence standing over a dead radio — and the sentence is now the larger
-     half of the option. */
-  .setupcard .propblock.off { opacity: 0.42; }
-  .setupcard .propblock.off .lanepick { pointer-events: none; }
+  /* Ed, 2026-09-05 (card review round 3, 39 🎩): reversing the whole-block dim
+     this used to be — "It should just be the Choose this option button that's
+     greyed out, not everything on the card". The sentence is document text
+     and stays readable; the radio is what cannot be pressed, so the radio is
+     what greys. Covers both a plain option block and a power option's
+     `.propblock`, which used to carry the same whole-block treatment. */
+  .pick.off .lanepick, .setupcard .propblock.off .lanepick {
+    opacity: 0.42; pointer-events: none;
+  }
   /* a row of fields *inside* a card — distinct from `.setrow`, which is the
      band row a pile stands in */
   .setrow2 { display: flex; gap: var(--s3); align-items: baseline; flex-wrap: wrap; }
-  /* 🍾's power table (entry 158; redrawn 2026-08-31, Q1103 (b)): one zone per
-     block, and under it the surface's one **two-column** layout — a ✒️ column
-     and a 🛡️ column, each a Kept / Laid-down pair of option blocks with the
-     same *Prefer this* radio as every other choice. The switch of entry 254
-     lasted two days; the pattern admits no second control. */
+  /* 🍾's power table (entry 158; redrawn 2026-08-31, Q1103 (b); redrawn again
+     Q1181, Ed 2026-09-05, card review round 3): the two-column ✒️/🛡️ layout
+     of the first redraw is retired — one zone per block, no columns — for a
+     glyph toggle under each option's text (`.pwtoggle`, below). */
   .beginzone + .beginzone { margin-top: var(--s4); }
-  .bzcols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 var(--s5);
-    margin-top: var(--s2); }
-  .bzcol > .eyebrow { margin-bottom: var(--s2); }
   .fld { display: flex; flex-direction: column; gap: var(--s1); }
   .fld > label { font-size: var(--t-cap); color: var(--muted); }
   .sugg input, .sugg textarea { font: inherit; font-size: var(--t-ui); color: var(--fg); background: var(--bg);
@@ -371,11 +413,14 @@
   .meaning:empty { display: none; }
 
   /* the one place the method is named, and the link out to /pairwise (entry
-     163) — the ceiling note's own size and colour, for the same reason: grey
-     means nothing is being asked of you. The anchor takes the .doclink
-     treatment rather than the accent, so the only hot thing on the card stays
-     the control */
-  .methodnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); }
+     163). Card review round 3 (Ed, 2026-09-05, A10, reading 1192): "important
+     and shouldn't be in tiny text" — the ceiling note's grey caption size read
+     as a footnote nobody need read, so it takes the .unlocks blue-box
+     treatment instead, at question size. The anchor still takes an
+     underline rather than the accent, so the only hot thing on the card
+     stays the control. */
+  .methodnote { font-size: var(--t-ui); color: var(--primary-emphasis); background: var(--primary-subtle);
+    border-radius: var(--r-sm); padding: var(--s2) var(--s3); line-height: 1.45; margin: var(--s3) 0; }
   .methodnote a { color: inherit; text-decoration: underline;
     text-decoration-thickness: 1px; text-underline-offset: 2.5px;
     text-decoration-color: var(--border); }
@@ -920,9 +965,8 @@ button.cline:hover b { text-decoration: underline; }
   background: var(--light); border-color: var(--border); color: var(--muted);
   opacity: 1; box-shadow: none;
 }
-.btn.btn-approve.emojibtn:not([disabled]):hover {
-  background: var(--light); border-color: var(--primary-hover);
-}
+/* folded into system.css's `.btn.btn-approve.glyphbtn.emojibtn:not([disabled]):hover`
+   (card review round 3, 2026-09-05, A1/Q1174) — one hover treatment, not two. */
 
 /* ---- 🍾 and 🥂, and the closed page (Q443, Q468, Q470 — 2026-08-21) ----- */
   .setupcard .batch { margin: 0 0 var(--s3); padding-left: 18px; font-size: var(--t-small); color: var(--ink); }
