@@ -306,5 +306,261 @@ window.COPY = (function () {
     },
   };
 
-  return { RULES, grammar, session };
+  // ---- the page's own script (session-view.html) ---------------------------
+  // The founder surface, the band, the doors and the birth. Pass 1 of the
+  // page move (Ed, 2026-09-05, item 4: two passes): the untangled strings.
+  // The big checker-read tables keep their key structure in the page; where
+  // only their sentence values moved, the reference stands in the value slot.
+  const page = {
+    // who removed you, and the register's departure lines
+    departed: {
+      byFounder: (day) => 'The Founder removed you from this document on ' + day + '.',
+      bySelf: (day) => 'You left this document on ' + day + '.',
+      byMembers: (day) => 'The membership removed you from this document on ' + day + '.',
+      someone: 'a member',
+      lineSelf: (who, day) => who + ' left on ' + day + '.',
+      lineMembers: (who, day) => 'The membership removed ' + who + ' on ' + day + '.',
+      lineFounder: (who, day) => 'The Founder removed ' + who + ' on ' + day + '.',
+    },
+    // 📝's value slot: the column, counted
+    prose: {
+      nothingYet: 'Nothing written yet.',
+      paragraph: 'paragraph',
+      heading: 'heading',
+      below: ', below.',
+    },
+    // the riding tab's tooltip and the pre-🍾 prose row
+    ride: {
+      writing: 'you are writing; press to stop',
+      pressToWrite: 'press to write',
+      readOnly: 'read only',
+      textDash: 'Text — ',
+    },
+    proseRow: {
+      discard: 'Put the column back to the text as it stands',
+      save: 'Save the text — the document begins from whatever stands here',
+      saved: 'Saved — the document begins from whatever stands here',
+    },
+    // ❌'s picker and the doors' shared fallbacks
+    door: {
+      nobodyToRemove: 'There is nobody to remove.',
+      choose: 'Choose somebody to remove…',
+      invitedNotHere: ' — invited, not yet here',
+      anonymous: 'Anonymous',
+    },
+    refuseSet: (reason) => 'That could not be set: ' + reason + '.',
+    binPutBack: 'Put it back as it stands',
+    // 👑/📯 in the topbar
+    founderMark: {
+      crowned: 'Part of the constitution is reserved: changing it needs the founder’s assent',
+      none: 'The Founder reserves nothing — no special part in the document',
+    },
+    // 📍's verdict fragments, composed around the bold address
+    slugNote: {
+      taken: ' is taken.',
+      free: ' is free.',
+      suggested: 'Suggested from the title — ',
+      takenSo: ' is taken, so this one is ',
+    },
+    // the settings cards (CARDS): titles (the rail's names since Q1151),
+    // aggregation rules and the settled strip's takes-lines. Fixture values
+    // (result, dist…) stay with the fixture.
+    cards: {
+      title: { t: 'Title' },
+      myemail: { t: 'Your Email' },
+      slug: { t: 'Link' },
+      shape: { t: 'What Type of Document Is This?' },
+      admission: { t: 'Admissions',
+        rule: 'Each member says the <b>cheapest</b> admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.',
+        takes: 'The document takes the dearest' },
+      invite: { t: 'Invite a Member' },
+      remove: { t: 'Remove a Member' },
+      hat: { t: 'Is the Founder a Member?' },
+      applications: { t: 'Applications',
+        rule: 'Each member says the <b>most open</b> door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.' },
+      myname: { t: 'Your Name' },
+      mypic: { t: 'Your Picture' },
+      text: { t: 'Text' },
+      ending: { t: 'When Does It End?',
+        routeNote: 'What this takes depends on what you write. A different date is a proposal ✏️ like any other. <b>Never</b> — no end date at all — needs every member to agree, because with no end date the approval threshold cannot rise, and every change made so far was made under one that did.',
+        rule: 'Each member says when they want it to end, and the document takes the <b>latest</b> answer — <b>never</b> being later than any date — so nobody is cut off before they were ready.',
+        takes: 'The document takes the latest' },
+      bar: { t: 'Proposal Pass Threshold',
+        rule: 'Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.',
+        takes: 'The document takes the highest' },
+      pace: { t: 'Rising Approval Threshold?' },
+      quorum: { t: 'Quorum',
+        rule: 'Each member says the lowest they will accept, and the document takes the highest.',
+        takes: 'The document takes the highest' },
+      authorship: { t: 'Anonymous Proposals',
+        rule: 'This one is about privacy, so it runs the other way: the document takes the <b>most private</b> answer, and one member who wants to stay unnamed keeps everybody unnamed.',
+        takes: 'The document takes the most private' },
+      judgments: { t: 'When Are Votes Revealed?',
+        rule: 'Also about privacy, so the <b>most private</b> answer wins: one member who wants them kept private keeps them private.',
+        takes: 'The document takes the most private' },
+      rate: { t: 'Proposal Rate',
+        rule: 'Each member says the <b>most generous</b> they would accept, and the document takes it.',
+        takes: 'The document takes the most generous' },
+      chamber: { t: 'Visibility',
+        rule: 'This one is about privacy, so the <b>most private</b> answer wins: one member who wants it kept closed keeps it closed.',
+        takes: 'The document takes the most private' },
+      removal: { t: 'How Is a Member Removed?',
+        rule: 'Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.' },
+      lapse: { t: 'Do Memberships Lapse?',
+        rule: 'Each member says the shortest gap they would accept, and the document takes the longest — <b>never</b> being longer than any of them — so nobody loses their membership faster than they accepted.',
+        takes: 'The document takes the longest' },
+    },
+    // the power tabs' titles (T6–T9) and the synthetic cards' titles
+    pwTitle: {
+      inviteU: 'Can the Founder Invite at Will?',
+      inviteA: 'Does the Founder Have a Veto over Invitations?',
+      removeU: 'Can the Founder Remove at Will?',
+      removeA: 'Does the Founder Have a Veto over Removals?',
+      genericU: 'Can the Founder Make Amendments at Will?',
+      genericA: 'Does the Founder Have a Veto?',
+    },
+    synth: {
+      anApplicant: 'an applicant',
+      hasJoined: ' Has Joined',
+      admitLead: 'Admit ',
+      admitTail: '?',
+      released: 'What the Founder Has Laid Down',
+      mailGaveUp: 'An Invitation Did Not Send',
+      passedLead: 'Passed: ',
+      rejectedLead: 'Rejected: ',
+      anonymous: 'Anonymous',
+    },
+    // the Founder's two powers: the joined verb phrases (Q516i), the nouns
+    // the veto sentence names, the option blocks and the release notes. The
+    // page keeps each table's key structure (spec-check reads the keys);
+    // the words live here.
+    pw: {
+      phrase: {
+        star: { u: 'amend this at will', a: 'refuse proposals that the membership pass' },
+        invite: { u: 'invite people at will', a: 'refuse invitations and applications that the membership pass' },
+        remove: { u: 'remove members at will', a: 'refuse removals that the membership pass' },
+        text: { u: 'amend the text at will', a: 'refuse changes to the text that the membership pass' },
+      },
+      may: (parts, aside) => 'The Founder' + (aside ? ' (that’s you!)' : '') +
+        ' may ' + parts.join(', and ') + '.',
+      mayNotYet: (parts) => 'From the start, the Founder may not ' + parts.join(', or ') + '.',
+      mayNot: (phrase) => 'The Founder may not ' + phrase + '.',
+      noun: {
+        title: 'the title', slug: 'the link', text: 'the text',
+        ending: 'the ending', bar: 'the approval threshold',
+        pace: 'how the approval threshold rises', quorum: 'quorum',
+        authorship: 'anonymous proposals', judgments: 'vote reveal',
+        chamber: 'visibility', rate: 'the proposal rate', lapse: 'membership lapse',
+        removal: 'member removal',
+        admission: 'the price of admission', applications: 'applications',
+        invite: 'invitations', remove: 'removals',
+        fallback: 'this',
+      },
+      veto: (has, noun) => 'The Founder ' + (has ? 'has' : '<b>does not</b> have') +
+        ' a veto over proposals passed by the membership about ' + noun + '.',
+      opts: {
+        star: {
+          u: { held: ['The Founder changes it at will.', 'No proposal needed for the Founder’s own hand.'],
+               given: ['Only by proposal, like anybody.', 'The Founder proposes like a member.'] },
+          a: { held: ['', 'Each one comes as a 👑 question — assent or refuse.'],
+               given: ['', 'Nothing waits on the Founder.'] },
+        },
+        invite: {
+          u: { held: ['The Founder invites at will.', 'Nobody else has to agree when the Founder brings somebody in.'],
+               given: ['Only as Admissions says, like anybody.', 'The Founder proposes a member like anybody, at the price the document sets.'] },
+          a: { held: ['', 'Each invitation, and each application, comes as a 👑 question — assent or refuse.'],
+               given: ['', 'An invitation the membership passes needs nobody’s assent.'] },
+        },
+        remove: {
+          u: { held: ['The Founder removes at will.', 'A member the Founder removes is gone at once — nobody else has to agree.'],
+               given: ['Only as Removal says, like anybody.', 'The Founder proposes a removal like anybody, at the price the document sets.'] },
+          a: { held: ['', 'Each removal comes as a 👑 question — assent or refuse.'],
+               given: ['', 'A removal the membership passes needs nobody’s assent.'] },
+        },
+        text: {
+          u: { held: ['The Founder edits the text at will.', 'No proposal needed for the Founder’s own hand on the text.'],
+               given: ['Only by proposal, like anybody.', 'The Founder proposes a change to the text like a member.'] },
+          a: { held: ['', 'Each one comes as a 👑 question before it lands — assent or refuse.'],
+               given: ['', 'A change the membership passes lands in the text at once.'] },
+        },
+      },
+      chooseThis: 'Choose this',
+      chosen: 'Chosen',
+      notes: {
+        holds: 'The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move.',
+        givenFromStart: '<b>Given up from the start.</b> The Founder holds it until the document begins.',
+        given: '<b>Given up.</b> The road back is a constitutional motion, the members’ to move.',
+        givenOneWay: '<b>Given up — one way.</b> The road back is the members’ reserve motion.',
+        oneWayTail: ' One way — the road back is the members’ to give.',
+        delegatesTail: ' Neither power would be left, so it hands the question to the membership straight away.',
+        atBeginTail: ' It takes effect when the document begins.',
+        vetoNeedsPen: 'A veto can only be held where the Founder still amends it at will — take back the ✒️ first.',
+        opensWithValue: 'Opens once this setting has a value.',
+        revisable: 'Revisable until the document begins. Giving both up hands the question to the members — delegation is exactly the state of holding neither.',
+      },
+    },
+    // a settled motion's record card (Q942) and the before/after pair (Q1167)
+    motionRec: {
+      gone: 'This record is no longer on the document.',
+      passed: 'Passed',
+      rejected: 'Rejected',
+      reserveReturned: (what) => 'The membership returned ' + what + ' to the founder’s reserve.',
+      reserveKept: (what) => 'The membership kept ' + what + ' with the membership.',
+      titleNoun: 'the document’s title',
+      ruleNoun: 'this rule',
+      keptLead: 'The membership kept ',
+      keptAsStoodWas: ' as it stood: ',
+      keptAsStood: ' as it stood',
+      provPen: 'Chosen by Founder Action ✒️',
+      provMembers: 'Chosen by the membership',
+    },
+    // the Proposals preamble (Y21): the gates' fragments, composed
+    preamble: {
+      beforeBegin: 'When the document begins, members may propose changes to rules and vote on proposals.',
+      voteOnly: 'Members may vote on proposals.',
+      voteWhenDecided: 'Members may begin voting on proposals when the whole constitution has been decided.',
+      proposeAtBegin: ' They may propose changes to rules when the document begins.',
+      proposeLead: 'Members may propose changes to rules ',
+      onceAnswered: 'once they have answered the questions the Founder delegated',
+      asArrive: 'as soon as they arrive',
+      andVote: ', and may vote on proposals.',
+      voteTail: '. They may begin voting on proposals when the whole constitution has been decided.',
+      passOrdinary: 'A proposal ✏️ passes when it meets the approval threshold.',
+      passConstitutional: 'A constitutional proposal 🏛️ passes only when all members agree.',
+    },
+    titledLead: 'The document is titled ',
+    // the gates and grants (GATES): titles, bodies, locklines
+    gate: {
+      canpropose: {
+        title: 'Proposals',
+        why: 'A proposal is a change you write to the document, for the membership to vote on.',
+        waiting: 'Waiting on the start.',
+        done: 'Open — members can propose as soon as they arrive.',
+      },
+      canjudge: {
+        title: 'Voting',
+        why: 'A vote is your say on a proposal: you are shown two at a time and choose the one you prefer, or neither.',
+        waiting: 'Waiting on the constitution.',
+        done: 'Open — the constitution is settled.',
+      },
+      voice: {
+        title: 'Constitutional Proposals',
+        waiting: 'Waiting on your arrival.',
+      },
+      pen: {
+        title: 'Founder Actions',
+        why: 'As the founder of this document, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers if you choose to.',
+        waiting: 'Waiting on the save.',
+      },
+      shield: {
+        title: 'Founder Veto',
+        why: 'As the founder of this document, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can later give up this power if you choose to.',
+        waiting: 'Waiting on the save.',
+      },
+      begin: { title: 'Begin' },
+      closing: { title: 'The Close' },
+    },
+  };
+
+  return { RULES, grammar, session, page };
 })();

@@ -863,7 +863,9 @@ function checkBeginZones(M, pm) {
 function checkComposer(M, pm) {
   note('The composer maps — PROPOSE · ANSWER · MVAL · the rung values · PW_*');
   const page = js('design/session-view.html'); const setup = js('design/setup.js');
-  const cards = [...page.matchAll(/\{ k: '([a-z-]+)', g: [^,]+, t: '[^']*',[^\n]*?kind: '([a-z]+)'/g)].map((m) => ({ k: m[1], kind: m[2] }));
+  // a card's title is a literal or, since the copy move (2026-09-05), a
+  // reference into copy.js — the row's key and kind are the page's either way
+  const cards = [...page.matchAll(/\{ k: '([a-z-]+)', g: [^,]+, t: (?:'[^']*'|PAGE_COPY\.[A-Za-z.]+),[^\n]*?kind: '([a-z]+)'/g)].map((m) => ({ k: m[1], kind: m[2] }));
   // 🧭 is a decision at the birth, not a setting (entry 166): no motion about
   // meeting-ness, nothing to compose. 🪪 was exempt here from the register
   // era, when it had no value — entry 94 made it a price and the exemption
@@ -918,7 +920,9 @@ function checkComposer(M, pm) {
     for (const v of vals) if (!rungs.includes(v)) find('composer', `ANSWER.${k} offers '${v}', which the catalogue does not (or the surface retired)`);
   }
   const pw = (n) => topKeys(objLit(page, n)).filter((x) => x !== '*');
-  const noun = [...objLit(page, 'PW_NOUN').matchAll(/\b([a-z]+): '/g)].map((m) => m[1]);
+  // a noun's value is a literal or, since the copy move (2026-09-05), a
+  // reference into copy.js — the keys are the page's either way
+  const noun = [...objLit(page, 'PW_NOUN').matchAll(/\b([a-z]+): (?:'|PAGE_COPY\.)/g)].map((m) => m[1]);
   for (const k of propose.concat(['text'])) if (!['invite', 'remove'].includes(k) && !noun.includes(k)) find('composer', `PW_NOUN lacks '${k}'`);
   const base = pw('PW_PHRASE').sort().join(' ');
   // PWWHY left this list with the table itself (T43, Ed 2026-09-01: a power
