@@ -1027,24 +1027,34 @@ const shapeAtBegin = async () => {
  * needs it, where ✉️'s pen is `doorShuts`' subject and 🌍's is the amendment's.
  * Membership's **🛡️** is the block that moves, for the same reason: its ✒️
  * has to survive to the door checks after the start. */
-// The table's controls are option blocks since Q1103 (b) (2026-08-31): each
-// zone × power a Kept / Laid-down pair of `.lanepick` radios carrying
-// `data-bval`, pressed state on `aria-pressed`. `says` reports the position
-// the pair spells — Kept, Laid down, or Mixed where neither radio is pressed —
-// so every assertion below keeps reading the words it always read.
-const BZ_SEL = (z, pw, val) =>
-  '.setupcard .lanepick[data-bzone="' + z + '"][data-bpower="' + pw + '"]' +
-  '[data-bval="' + (val || 'down') + '"]';
+// The table's controls are glyph toggles since Q1181 (Ed's card review round
+// 3, 2026-09-05): each zone × power one `.pwtoggle` carrying `data-bzone` and
+// `data-bpw`, `aria-pressed="true"` for kept, `"false"` for laid down — and a
+// mixed zone (a power promised away on one of its own tabs) reads struck too,
+// told apart by the tooltip the page writes for it. `says` reports the word
+// the toggle spells, so every assertion below keeps reading what it always
+// read. `bzSet` presses only where the toggle does not already stand at the
+// wanted position, a toggle being a flip rather than a choice.
+const BZ_SEL = (z, pw) =>
+  '.setupcard .pwtoggle[data-bzone="' + z + '"][data-bpw="' + pw + '"]';
 const bzCells = () => page.evaluate(() =>
   [...document.querySelectorAll('.setupcard .beginzone')].map((z) => ({
     name: (z.querySelector('.fieldlab') || {}).textContent.trim(),
     cells: ['u', 'a'].map((pw) => {
-      const on = (v) => { const b = z.querySelector(
-        '.lanepick[data-bpower="' + pw + '"][data-bval="' + v + '"]');
-        return !!b && b.getAttribute('aria-pressed') === 'true'; };
-      return { pw, says: on('keep') ? 'Kept' : on('down') ? 'Laid down' : 'Mixed' };
+      const b = z.querySelector('.pwtoggle[data-bpw="' + pw + '"]');
+      const kept = !!b && b.getAttribute('aria-pressed') === 'true';
+      const mixed = !!b && !kept && /already/.test(b.getAttribute('title') || '');
+      return { pw, says: kept ? 'Kept' : mixed ? 'Mixed' : 'Laid down' };
     }),
   })));
+const bzSet = async (z, pw, val) => {
+  const cells = await bzCells();
+  const zone = cells.find((c) => c.name.includes(z));
+  const cell = zone && zone.cells.find((c) => c.pw === pw);
+  const want = val === 'keep' ? 'Kept' : 'Laid down';
+  if (cell && cell.says === want) return true;
+  return clickIn(BZ_SEL(z, pw));
+};
 // the ✒️/🛡️ tab's own head sentence for one key — the surface's word on who
 // holds what, written by `powerHeadLine` off `pwPair`. The tabs are inert
 // peeks on a closed pile, so the base card is opened first, exactly as
@@ -1083,7 +1093,7 @@ const beginZonesBeforeStart = async () => {
       ' · kept ' + JSON.stringify(keptPen.map((z) => z.name))));
   if (!ok) stuck.push('the 🍾 zone holding a promised-away pen did not read mixed');
   // …and one zone's 🛡️ set to lay down, which is what the press must carry
-  const set = await clickIn(BZ_SEL('Membership', 'a', 'down'));
+  const set = await bzSet('Membership', 'a', 'down');
   const after = await bzCells();
   const memb = after.find((z) => /Membership/.test(z.name));
   const down = !!memb && memb.cells.some((c) => c.pw === 'a' && /Laid down/.test(c.says));

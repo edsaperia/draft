@@ -36,10 +36,12 @@ window.COPY = (function () {
   // clause text is escaped at its reading sites and markup cannot ride the
   // table. `spec-check`'s `checkComposer` reads this literal from this file.
   const RULES = {
+    // Ed's sentences (card review round 3, 2026-09-05, 10): *any member*,
+    // *someone*, and the 🏛️ rung's *but*
     admission: {
-      assembly: 'Members may propose to invite people to join the membership, and all members must agree 🏛️.',
-      proposal: 'Members may propose to invite people to join the membership, and the membership decides ✏️.',
-      pen: 'Members may invite people to join the membership at will ✒️.' },
+      assembly: 'Any member may propose to invite someone to join the membership, but all members must agree 🏛️.',
+      proposal: 'Any member may propose to invite someone to join the membership, and the membership decides ✏️.',
+      pen: 'Any member may invite someone to join the membership at will ✒️.' },
     removal: {
       consent: 'To remove a member, all members must agree 🏛️.',
       assembly: 'To remove a member, all members apart from them must agree 🏛️.',
@@ -250,7 +252,6 @@ window.COPY = (function () {
     },
     // 🛡️ on the Text: the 👑 question and the note on a live race under it
     crown: {
-      waits: 'If it passes it goes to the Founder, who may assent or refuse before it lands.',
       foot: 'The membership passed this. Until you answer, the clause above stands.',
       close: 'Close — the question stays pending',
       refuse: 'Refuse — the Founder Veto holds it, and the clause above stands',
@@ -486,11 +487,10 @@ window.COPY = (function () {
       },
       chooseThis: 'Choose this',
       chosen: 'Chosen',
+      // the four read-only notes (*The Founder holds this…*, *Given up…*)
+      // went with Ed's card review round 3 (2026-09-05, 52/53): a tab with
+      // nothing to set is its head sentence and a close-only OK
       notes: {
-        holds: 'The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move.',
-        givenFromStart: '<b>Given up from the start.</b> The Founder holds it until the document begins.',
-        given: '<b>Given up.</b> The road back is a constitutional motion, the members’ to move.',
-        givenOneWay: '<b>Given up — one way.</b> The road back is the members’ reserve motion.',
         oneWayTail: ' One way — the road back is the members’ to give.',
         delegatesTail: ' Neither power would be left, so it hands the question to the membership straight away.',
         atBeginTail: ' It takes effect when the document begins.',
@@ -511,7 +511,9 @@ window.COPY = (function () {
       keptLead: 'The membership kept ',
       keptAsStoodWas: ' as it stood: ',
       keptAsStood: ' as it stood',
-      provPen: 'Chosen by Founder Action ✒️',
+      // the two provenance labels, and the only two (Q1188, Ed 2026-09-05):
+      // one wording for a founding choice and a later amendment alike
+      provPen: 'Chosen by the Founder ✒️',
       provMembers: 'Chosen by the membership',
     },
     // the Proposals preamble (Y21): the gates' fragments, composed
@@ -582,31 +584,52 @@ window.COPY = (function () {
     composeNote: {
       redirect: 'Every link the document has ever had keeps working — a change leaves a redirect behind.',
       neverNeedsAll: 'Taking the end date away needs all members to agree — with no end date the approval threshold cannot rise.',
-      oneMotionOneRule: 'One motion proposes one rule; what you do not touch stands.',
-      inviteConstitutional: 'An invitation is constitutional, because the membership is what quorum is a fraction of: all members must agree, and one who says no keeps them out.',
       removalSeen: 'Whoever it is will see the proposal — nobody is removed in secret.',
-      somebodyToInvite: 'Somebody to invite',
-      inviteBtn: 'Invite',
     },
     // a constitutional motion's consent card: the question and the answers
+    // **The consent card is three clause blocks** (Ed's card review round 3,
+    // 2026-09-05, Q1182; STYLE T48): what stands with *Keep this*, what is
+    // proposed with *Prefer this*, and *Abstain* on its own. The explanations
+    // of the consent rule, the counts and the blind note all went with it.
     consent: {
-      inviteWhy: (name) => 'Whether <b>' + name + '</b> joins the membership. Adding a member changes what quorum is a fraction of, so it is constitutional: the most restrictive answer wins, and one member who says no keeps them out.',
-      inviteNo: ['I would rather they did not', 'They stay out. Nobody is told who said so.'],
-      inviteYes: ['I accept them joining', 'They start with the ✏️s everyone got, plus what the drip has added since, and quorum recomputes.'],
-      inviteAbstain: ['Abstain', 'An answer, not a block: they can join without your consent counting either way.'],
+      keepThis: 'Keep this',
+      kept: 'Kept',
+      abstain: 'Abstain',
+      // an invitation or a removal has no rule sentence, so its blocks say
+      // what the membership would be either way
+      staysAsIs: 'The membership stays as it is.',
+      joins: (name) => name + ' joins the membership.',
+      staysIn: (name) => name + ' stays in the membership.',
+      leaves: (name) => name + ' leaves the membership.',
       removeSelfWhy: 'Whether <b>you</b> leave the membership. Under this document’s rule that is decided by <b>everyone but you</b> — you see it running, and your answer is not asked.',
       removeSelfCount: (judged, others) => judged + ' of ' + others + ' have answered. One refusal keeps you in.',
-      removeWhy: (name) => 'Whether <b>' + name + '</b> leaves the membership. Removing a member changes what quorum is a fraction of, so it is constitutional — ',
-      removeByOthers: 'decided by everyone but them; they see it running.',
-      removeByAll: 'and their own answer counts among everyone’s.',
-      removeNo: ['They stay', 'Nobody is told who said so.'],
-      removeYes: ['I accept their leaving', 'Their votes already cast keep counting; quorum recomputes.'],
-      removeAbstain: ['Abstain', 'An answer, not a block.'],
-      honour: '<b>Proposals keep the privacy they were made under.</b> ',
-      setWhy: (to, stands) => 'Whether <b>' + to + '</b> replaces <i>' + stands + '</i>. There is no vote here: you state what you will accept, and one refusal keeps what stands.',
-      setNo: ['Keep what stands', 'Nobody is told who said so.'],
-      setYes: (e) => ['I accept the change', 'It passes once all ' + e + ' stand at accept — or abstain.'],
-      setAbstain: ['Abstain', 'An answer, not a block: the motion can pass without your consent counting either way.'],
+    },
+    // 🍾's power table (Q1181, Ed 2026-09-05): one clause per zone × power,
+    // the rule that holds if the power is kept; the glyph toggle beside it
+    // carries the ✒️ / 🛡️, so the sentence does not repeat it
+    begin: {
+      zones: {
+        'The Text': {
+          u: 'The Founder may amend the text at will.',
+          a: 'The Founder may refuse changes to the text that the membership pass.' },
+        'Membership': {
+          u: 'The Founder may change the membership rules, and invite or remove members, at will.',
+          a: 'The Founder may refuse membership changes that the membership pass.' },
+        'Everything else': {
+          u: 'The Founder may amend every other rule at will.',
+          a: 'The Founder may refuse every other change that the membership pass.' },
+      },
+      keptTip: 'Kept — press to lay it down at the start',
+      downTip: 'Laid down at the start — press to keep it',
+      mixedTip: 'Partly given up already on its own cards — press to keep the rest',
+    },
+    // 🧭's rungs, Ed's sentences (card review round 3, 2026-09-05, 03); the
+    // clauses each shape sets follow them on the card, built from the rules
+    shape: {
+      meeting: 'This document is for a meeting.',
+      conference: 'This document is for a conference.',
+      ongoing: 'This document is perpetual.',
+      custom: 'The Founder will decide every setting by hand.',
     },
     // the gates and grants (GATES): titles, bodies, locklines
     gate: {
@@ -628,12 +651,12 @@ window.COPY = (function () {
       },
       pen: {
         title: 'Founder Actions',
-        why: 'As the founder of this document, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers if you choose to.',
+        why: 'As the founder of this document, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers later if you choose to.',
         waiting: 'Waiting on the save.',
       },
       shield: {
         title: 'Founder Veto',
-        why: 'As the founder of this document, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can later give up this power if you choose to.',
+        why: 'As the founder of this document, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to.',
         waiting: 'Waiting on the save.',
       },
       begin: { title: 'Begin' },

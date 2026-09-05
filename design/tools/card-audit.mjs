@@ -889,7 +889,10 @@ function crossCard(cards) {
   // The status-quo *keep* rungs (Ed's QA, 2026-09-02 pm) are exempt by
   // design: their label IS the member's own standing value — a name, a
   // picture — so two seats rightly label them two ways.
-  const VALUE_RUNGS = new Set(['namePick=keep', 'picPick=keep', 'appPicPick=keep']);
+  // …and since Ed's card review round 3 (2026-09-05, A7) the *Anonymous*
+  // picture rung too: its label is the avatar you would wear anonymous —
+  // your own initials where you have a name — so it is a value rung as well.
+  const VALUE_RUNGS = new Set(['namePick=keep', 'picPick=keep', 'appPicPick=keep', 'picPick=anon', 'appPicPick=anon']);
   const byRung = new Map();
   for (const c of cards) {
     for (const o of c.strings.options) {

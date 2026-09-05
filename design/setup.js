@@ -584,8 +584,12 @@ window.SETUP = (function () {
     // whose .asblock border-bottom is already the separator; `textcard` — a
     // head over plain text (the grants), flagged on the card literal.
     const clauseHtml = ctx.clauseFor ? (ctx.clauseFor(c) || '') : '';
+    // …and `bareHead` (ctx's) names a head that is the field's own value
+    // rather than a rule over a control — 🪶 at the birth — which takes no
+    // hairline either (Ed's card review round 3, 2026-09-05, 01)
+    const bare = ctx.bareHead && ctx.bareHead(c);
     const shellCls = 'sugg setupcard' +
-      (asBlock ? ' rulehead' : !rule && noTitle && !clauseHtml ? ' nohead' : '') +
+      (asBlock ? ' rulehead' : (!rule && noTitle && !clauseHtml) || bare ? ' nohead' : '') +
       (c.textcard ? ' textcard' : '');
     return '<div class="' + shellCls + '" role="tabpanel" data-setupcard="' + c.k + '">' +
       CB.clauseHeadHtml(oo.s || c, {
@@ -774,7 +778,11 @@ window.SETUP = (function () {
     // `locked` is the closed document (CP9): readable, nothing commits
     return '<div class="choice" role="radiogroup">' +
       (pic ? opt(pickState, pk, 'keep', avHtml(me, 'big'), '', '', oo.locked) : '') +
-      opt(pickState, pk, 'anon', ctlWord('Anonymous'), '', '', oo.locked) +
+      // **Anonymous is the avatar, not the word** (Ed's card review round 3,
+      // 2026-09-05, 06/41): the block shows what anonymous looks like for
+      // this member — initials where they have a name, the anonymous mark
+      // otherwise (Q1165) — which is `avHtml` with no picture
+      opt(pickState, pk, 'anon', avHtml({ n: me.n }, 'big'), '', '', oo.locked) +
       opt(pickState, pk, 'upload', ctlWord('Upload an image'), '',
         oo.pick === 'upload' && !oo.locked
           ? '<div class="picdrop" data-picinto="' + into + '"><div class="picact">' +
@@ -882,19 +890,10 @@ window.SETUP = (function () {
       '<p class="setnote">' + (m.judged || 0) + ' of ' + ctx.E + ' have voted on it.</p>';
   }
 
-  /* A **constitutional motion**, which is not a judgment and has no card of its
-     own: somebody has asked to re-open a founding question, so the founding
-     question is live again and you answer it exactly as you did at the ceremony.
-     This band is the whole of the addition — everything below it is the consent
-     control that was always there. */
-  const motionReopen = (c, ctx, m) =>
-    '<div class="unlocks"><b>Re-opened.</b> A member has proposed an amendment' +
-    (m.why ? ' — <i>' + esc(m.why) + '</i>' : '') + '. ' +
-    'It is constitutional, so all members must agree: there is no vote and nothing is ranked — ' +
-    'you accept the amendment or keep what stands, and one refusal keeps what stands. ' +
-    'Until every one of the ' + ctx.E + ' has answered, what stands stands.</div>' +
-    '<p class="setnote">' + (m.judged || 0) + ' of ' + ctx.E + ' have answered. ' +
-    'Only the count shows while it runs — no names, no split — and you may change your answer until it settles.</p>';
+  /* A **constitutional motion** has no explanatory band any more: the
+     *Re-opened…* paragraph and its count left with Ed's card review round 3
+     (2026-09-05, Q1182) — the consent card is the settled card's own three
+     blocks, drawn by session-view's `consentBlocks`. */
 
   /* Writing one. The same `.lanebox` the `editing-card` writes a clause in,
      because a motion is a proposal and proposing is one gesture on this
@@ -1613,6 +1612,6 @@ window.SETUP = (function () {
     nameBody, pictureBody, opt, num, numIn, ctlWord, faces, someIn, FACE_EMOJI,
     FACE_TONES, faceToneRow, faceToned, setFaceTone,
     setFaceTaken, faceTakenBy, faceBtn, emojiPicker,
-    motionBody, motionReopen, routeFor, motionCommitHtml,
+    motionBody, routeFor, motionCommitHtml,
     slider, syncSlider, ladder, ANSWER, BLINDNOTE, methodNote, meaningLine, listOf, gateBody, wirePicDrop, MAILS, renderMailModal, birthPass };
 })();

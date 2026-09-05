@@ -243,7 +243,7 @@
   const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml,
     nameBody, pictureBody, opt, num, numIn, ctlWord, someIn, ANSWER, stateOf,
     MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml, stripHtml, readBody,
-    motionBody, motionReopen, routeFor, motionCommitHtml, BLINDNOTE, methodNote, listOf, syncSlider } = window.SETUP;
+    motionBody, routeFor, motionCommitHtml, BLINDNOTE, methodNote, listOf, syncSlider } = window.SETUP;
   // every member-readable string this script renders lives in copy.js (Ed's
   // brief, 2026-09-05, Part 3: copy edits touch that file only)
   const PAGE_COPY = window.COPY.page;
@@ -1117,6 +1117,13 @@
   // settled 🌍): *Chosen by the membership* wears the lanepick's own chosen
   // state, disabled — full strength, per the locked-card rule — so the
   // two-block pair reads as the option card it is.
+  // **Who chose what stands**, in the two words the surface has for it
+  // (Q1188): the membership, by a founding question or a carried motion; or
+  // the Founder ✒️, by a founding choice or an amendment at will — one
+  // wording for both eras, the pen being the mark of the Founder's own hand.
+  const provOf = (k) => { const st = csState(k);
+    return st && st.settledBy && st.settledBy !== 'convenor'
+      ? PAGE_COPY.motionRec.provMembers : PAGE_COPY.motionRec.provPen; };
   const chosenRadio = (label) => '<button class="lanepick" aria-pressed="true" disabled>' +
     '<span class="dot"></span><span>' + esc(label) + '</span></button>';
   const clauseOf = (k, v) => window.CARDS.clauseOf(k, v, clauseCtx());
@@ -1712,7 +1719,10 @@
     // machine choosing an address and not mentioning it
     // …and on a settled card the machine's pick is history, so the prefix
     // goes there (Ed's QA, 2026-09-02 pm); the birth keeps naming both
-    : S.slugTaken ? '<p class="setnote">' + (cs ? '' : PAGE_COPY.slugNote.suggested) +
+    // …and on a settled card the machine's pick is history and says nothing
+    // (Ed's card review round 3, 2026-09-05, 30 — *remove "… is taken, so
+    // this one is …"*); the birth keeps naming both
+    : S.slugTaken && !cs ? '<p class="setnote">' + PAGE_COPY.slugNote.suggested +
       '<b>' + docAddr(esc(S.slugTaken)) + '</b>' + PAGE_COPY.slugNote.takenSo + '<b>' + docAddr(esc(S.slug)) + '</b>.</p>' : '');
   const refreshSlugNote = () => {
     const n = document.querySelector('[data-slugnote]');
@@ -2677,19 +2687,14 @@
     // refuses, so on a closed page they were a control for an act that cannot
     // happen. No new copy: what an inert card says is what stands, and that is
     // the sentence this branch already draws.
-    if (!amFounder() || !docOpen()) {
-      // a release made before the start is recorded now and lands at 🍾
-      // (R-048), so it is not *given up* yet — and the clause beside this
-      // card says so in the same breath
-      return '<p class="setnote">' + (held
-        ? PAGE_COPY.pw.notes.holds
-        : pend && !live
-          ? PAGE_COPY.pw.notes.givenFromStart
-          : PAGE_COPY.pw.notes.given) + '</p>';
-    }
-    if (live && !held) {
-      return '<p class="setnote">' + PAGE_COPY.pw.notes.givenOneWay + '</p>';
-    }
+    // **A read-only power tab is its head sentence and nothing else** (Ed's
+    // card review round 3, 2026-09-05, 52/53 — *remove "Given up — one way…"
+    // and the hairline above it*): the head already states the rule, and the
+    // road back is the members' to know from SPEC, not the card's to explain.
+    // The same for the tab seen by a non-founder or on a closed document, and
+    // for a release recorded before the start (R-048) — the clause beside the
+    // card says *from the start* in the same breath.
+    if (!amFounder() || !docOpen() || (live && !held)) return '';
     // 🛡️-held is unreachable pre-start while ✒️ is given (the
     // assent-only state is inert before the start, §9.7 v0.54)
     const blockAHeld = c.power === 'a' && !live && !p.u && !held;
@@ -2757,27 +2762,30 @@
         : PAGE_COPY.motionRec.reserveKept(esc(what))) + '</p>';
     } else {
       const k = pkeyOf(rec.payload.setting);
-      const what = esc(WHAT[k] || (k === 'title' ? PAGE_COPY.motionRec.titleNoun
-        : (card(k) ? card(k).t.toLowerCase() : PAGE_COPY.motionRec.ruleNoun)));
-      const was = wordsFor(k, stoodBefore(rec));
-      const now2 = wordsFor(k, rec.payload.value);
-      if (!carried) {
-        said = '<p class="cpv">' + PAGE_COPY.motionRec.keptLead + what +
-          (was ? PAGE_COPY.motionRec.keptAsStoodWas + esc(was) : PAGE_COPY.motionRec.keptAsStood) + '.</p>';
-      } else {
-        // **The before/after pair** (Ed's card review, 2026-09-02, Q1167):
-        // the text that stood as the first block, the new text as the second
-        // with its provenance line beneath — *Chosen by the membership* for a
-        // raised motion, *Chosen by Founder Action ✒️* for an amendment. The
-        // narrated from–to sentence and the was/now rows retire with it.
-        const prov = rec.route === 'pen' ? PAGE_COPY.motionRec.provPen
-          : PAGE_COPY.motionRec.provMembers;
+      // **The two-block record, passed or rejected** (Ed's card review,
+      // 2026-09-02, Q1167; round 3, 2026-09-05, Q1186): both blocks are full
+      // clause sentences (A3), the proposer's reason sits inside the proposed
+      // block under its sentence, and the provenance radio marks whichever
+      // rule stands — the new one on a passed record (*Chosen by the
+      // membership* for a raised motion, *Chosen by the Founder ✒️* for an
+      // amendment), the old one on a rejected record, which changed nothing.
+      // The narrated *kept … as it stood* sentence retires with it, and the
+      // head went too: the eyebrow dates the record and the blocks say what
+      // it did.
+      const was = sentenceFor(k, stoodBefore(rec));
+      const now2 = sentenceFor(k, rec.payload.value);
+      const prov = rec.route === 'pen' ? PAGE_COPY.motionRec.provPen
+        : PAGE_COPY.motionRec.provMembers;
+      if (carried) {
         said = (was ? '<div class="pick"><span class="opttext">' + esc(was) + '</span></div>' : '') +
           '<div class="pick on"><span class="opttext">' + esc(now2 || '') + '</span>' +
-          // the same chosen-radio provenance the parked pair wears (Ed's QA,
-          // 2026-09-02 pm); the card's fuller redesign is backlogged
-          chosenRadio(prov) + '</div>';
+          speaker + chosenRadio(prov) + '</div>';
+      } else {
+        said = (was ? '<div class="pick on"><span class="opttext">' + esc(was) + '</span>' +
+            chosenRadio(provOf(k)) + '</div>' : '') +
+          '<div class="pick"><span class="opttext">' + esc(now2 || '') + '</span>' + speaker + '</div>';
       }
+      return '<div class="body changed">' + eyebrow + said + '</div>';
     }
     return '<div class="body changed">' + eyebrow + said + speaker + '</div>';
   };
@@ -4450,6 +4458,41 @@
   };
   const wordsFor = (k, v) => { if (v === null || v === undefined) return null;
     try { return WORDS[k] ? String(WORDS[k](v)) : null; } catch (e) { return null; } };
+  // **A value is always its clause sentence** (Ed's card review round 3,
+  // 2026-09-05, A3 — 31, 32, 50, 56): the record card's blocks and the parked
+  // pair print the sentence the constitution would carry for a value, never
+  // `WORDS`'s short phrase, which survives for the narrated *from x to y*
+  // lines alone. One function over the same rule builders `DECIDED` reads,
+  // taking a **module** value rather than the document's, so a record can
+  // say what stood at a past moment. 🌡️ and 🪜 read each other, as the
+  // clause does: the ramp is part of what the threshold says (Q512).
+  const sentenceFor = (k, v) => {
+    if (v === null || v === undefined) return null;
+    try {
+      const pv = takenValOf('pace');
+      const rampStart = pv ? (pv.shape === 'ramp' ? pv.startPct : null)
+        : (S.shape === 'ramp' ? S.tStart : null);
+      switch (k) {
+        case 'title': return 'The document is titled ' + LD + v.text + RD + '.';
+        case 'slug': return 'The document lives at ' + docAddr(v.slug) + '.';
+        case 'ending': return ENDING_RULE(v.endsAtMs === null ? 'never' : msToLocal(v.endsAtMs));
+        case 'quorum': return QUORUM_RULE(v.n, v.form);
+        case 'bar': return BAR_RULE(v.pct, perpetual() ? null : rampStart);
+        case 'pace': return v.shape !== 'ramp' || perpetual()
+          ? 'The approval threshold stays the same all the way through.'
+          : 'The approval threshold starts at ' + v.startPct + '% and rises to ' + (takenOf('bar') || S.tClose) + '% by the end.';
+        case 'authorship': return AUTH_RULE[v.rung] || null;
+        case 'judgments': return JUDG_RULE[v.rung] || null;
+        case 'chamber': return CHAMBER_RULE[v.rung] ? CHAMBER_RULE[v.rung]() : null;
+        case 'applications': return APPL_RULE(mayApply(v) ? 'apply' : 'invite');
+        case 'admission': return ADM_RULE[v.price] || null;
+        case 'removal': return REMOVAL_RULE[v.price] || null;
+        case 'lapse': return LAPSE_RULE(v.afterMs === null ? 'never' : Math.round(v.afterMs / 86400000));
+        case 'rate': return RATE_RULE(v.dripMinutes);
+        default: return wordsFor(k, v);
+      }
+    } catch (e) { return wordsFor(k, v); }
+  };
   // what this setting held before the founder last set it — null on a first
   // decision, which is the whole test
   const changedFrom = (k) => { const st = csState(k); return st ? (st.previousValue || null) : null; };
@@ -4661,11 +4704,30 @@
      laneBarHtml speaking data-mval, the rationale is the editing-card's own
      sealed-disc speaker — never an avatar, since authorship is sealed. */
   const PC = window.CARDS.make({ valAttr: 'data-mval', pickOf: (d) => (d ? d.to : null) });
+  // **Every composer block is an option block** (Ed's card review round 3,
+  // 2026-09-05, A11 on 🪪: *vertical spacing is inconsistent* — three
+  // block implementations stood on one card, `.headrule.asblock`,
+  // `.propblock` and `.pick`): a lane is a `.pick` like the standing rule
+  // above it and the founder's own blocks, so one rule spaces them all.
   const laneBlock = (d, val, text) =>
-    '<div class="propblock"><div class="rtext">' + text + '</div>' +
+    '<div class="pick' + (d && d.to === val ? ' on' : '') + '"><span class="opttext">' + text + '</span>' +
     PC.laneBarHtml(d, val, { edit: false }) + '</div>';
-  const inputBlock = (html, note) =>
-    '<div class="propblock"><div class="rtext">' + html + '</div>' + (note || '') + '</div>';
+  // **…and a block carrying a field has a radio too** (Ed's card review
+  // round 3, A2 — 37 💤, 42 📧, 51 ⏰, 54 🌡️, 57 👥: *should have a radio
+  // button "Prefer this", since it is an option*). Typing still chooses the
+  // block (F6); the radio says so, and pressing it chooses by focusing the
+  // field. Its words follow CP2's register: *Choose this* where the chooser
+  // alone decides (the pen's own hand), *Prefer this* on a proposal put to
+  // more than one person.
+  const inputBlock = (html, note, d, k, onIf) => {
+    const on = typeof onIf === 'boolean' ? onIf : !!(d && d.to) && !/^never/i.test(String(d.to));
+    const solo = !!(k && mayPenOn(k));
+    return '<div class="pick' + (on ? ' on' : '') + '"><span class="opttext">' + html + '</span>' + (note || '') +
+      '<button class="lanepick" type="button" aria-pressed="' + on + '" data-pickinput="1"' +
+      ' title="' + (solo ? 'Choose this — nothing leaves the card until you commit' : 'Say you prefer this — nothing leaves the card until you submit') + '">' +
+      '<span class="dot"></span><span class="off">' + (solo ? PAGE_COPY.pw.chooseThis : window.COPY.grammar.lane.prefer) + '</span>' +
+      '<span class="on">' + (solo ? PAGE_COPY.pw.chosen : window.COPY.grammar.lane.preferred) + '</span></button></div>';
+  };
   // **What stands on a delegated setting is what the room's answers took**,
   // never the founder's field — that still says 'roster'. The consent rule,
   // computed live: highest for quorum and the bar, latest for the ending
@@ -4822,14 +4884,18 @@
   // every composable setting has its control (Ed's QA, 2026-08-18) — a text
   // box asks somebody to guess a format the surface already knows
   const PROPOSE = {
+    // 🪶 and 📍's alternative starts blank (Ed's card review round 3,
+    // 2026-09-05, 29/30): a composer pre-filled with what stands offers a
+    // change nobody has made
     title: (d) => inputBlock('The document is titled ' +
-      '<input data-mtext="1" value="' + esc(d.to || S.title) + '" style="width:22rem">.'),
+      '<input data-mtext="1" value="' + esc(d.to || '') + '" placeholder="A new title" style="width:22rem">.',
+      '', d, 'title'),
     slug: (d) => inputBlock('The document lives at ' + docAddr('') +
       // the field holds the slug alone, so the stored form is stripped back
       // off it; the `d/` is optional in the strip so a draft composed before
       // the address gained its route still round-trips into the box
-      '<input data-mslug="1" value="' + esc((d.to || S.slug).replace(/^docs\.vote\/(?:d\/)?/, '')) + '" style="width:12rem">.',
-      '<p class="setnote">' + PAGE_COPY.composeNote.redirect + '</p>'),
+      '<input data-mslug="1" value="' + esc((d.to || '').replace(/^docs\.vote\/(?:d\/)?/, '')) + '" style="width:12rem">.',
+      '<p class="setnote">' + PAGE_COPY.composeNote.redirect + '</p>', d, 'slug'),
     pace: (d) => lanesFor(d, [['The same number throughout',
         'The approval threshold stays the same all the way through.']], 'pace') +
       inputBlock('The approval threshold starts at ' +
@@ -4837,19 +4903,20 @@
         esc((/^Rising/.test(d.to) && (d.to.match(/\d+/) || [])[0]) || S.tStart) + '">% and rises to the number at the end.',
         // a motion is composed with the setting's own control (K1), so the
         // meaning belongs beside it exactly as on the founder's card
-        meanLine('pace', d.val && d.val.shape ? d.val : null)),
+        meanLine('pace', d.val && d.val.shape ? d.val : null), d, 'pace', /^Rising/.test(d.to)),
     rate: (d) => {
       // one number since Q1160: a motion proposes the interval, and the
       // standing grant and cap ride through unchanged
       const n = d.to.match(/\d+/g) || [];
       return inputBlock('Members may make a new proposal ✏️ every ' +
         '<input class="num" type="number" min="1" max="2880" data-mrate="z" value="' + esc(n[0] || S.dripMin) + '"> minutes.',
-        meanLine('rate', d.val && d.val.grant !== undefined ? d.val : null));
+        meanLine('rate', d.val && d.val.grant !== undefined ? d.val : null), d, 'rate');
     },
     ending: (d) => {
       const never = /never/i.test(d.to);
       return inputBlock('The drafting process will end on ' +
-          '<input type="datetime-local" data-mdate="1" value="' + esc(S.endsAt || '') + '">.') +
+          '<input type="datetime-local" data-mdate="1" value="' + esc(S.endsAt || '') + '">.',
+          '', d, 'ending', !!d.to && !never) +
         lanesFor(d, [['Never — it runs until too few members are active',
           'The drafting process has no set end — it runs until too few members are active.']], 'ending') +
         (never ? '<p class="setnote">' + PAGE_COPY.composeNote.neverNeedsAll + '</p>' : '');
@@ -4861,7 +4928,7 @@
     bar: (d) => inputBlock('A proposal passes when the members are ' +
       '<input class="num" type="number" min="50" max="99" data-mnum="% sure at the end" value="' +
       esc((d.to.match(/\d+/) || [])[0] || takenOf('bar') || S.tClose) + '">% sure at the end.',
-      meanLine('bar', d.val && d.val.pct !== undefined ? d.val : null)) +
+      meanLine('bar', d.val && d.val.pct !== undefined ? d.val : null), d, 'bar') +
       // and the method note with it (entry 163): the pen's set card is the
       // founder card in its second epoch, so a founder who first meets 🌡️
       // after the save would otherwise never be offered the explainer.
@@ -4870,10 +4937,10 @@
     quorum: (d) => (S.quorumForm === 'count'
       ? inputBlock('Quorum is <input class="num" type="number" min="1" max="99" data-mnum=" of the membership" value="' +
         esc((d.to.match(/\d+/) || [])[0] || takenOf('quorum') || quorumCount()) + '"> of the membership.',
-        meanLine('quorum', d.val && d.val.form ? d.val : null))
+        meanLine('quorum', d.val && d.val.form ? d.val : null), d, 'quorum')
       : inputBlock('Quorum is <input class="num" type="number" min="1" max="100" data-mnum="% of the membership" value="' +
         esc((d.to.match(/\d+/) || [])[0] || takenOf('quorum') || S.quorumPct) + '">% of the membership.',
-        meanLine('quorum', d.val && d.val.form ? d.val : null))),
+        meanLine('quorum', d.val && d.val.form ? d.val : null), d, 'quorum')),
     // 🪪: the price of admission, its three rungs as lanes, labels MVAL's
     // verbatim. The register-era 🪪 had no value to compose and spec-check
     // exempted it from the composable set; entry 94 re-typed it into this
@@ -4893,7 +4960,8 @@
         // presence, not truthiness: `afterMs: null` is 💤's *Never*, a real
         // value with a real sentence, and the other keys all test for the
         // field being there rather than for it being non-zero
-        meanLine('lapse', d.val && d.val.afterMs !== undefined ? d.val : null)),
+        meanLine('lapse', d.val && d.val.afterMs !== undefined ? d.val : null),
+        d, 'lapse', !!d.to && !/^never/i.test(d.to)),
     authorship: (d) => lanesFor(d, [
       ['Nobody’s name, ever', 'A proposer is never named — not even in the closing record.'],
       ['Nobody’s name unless they choose', 'A proposer is never named unless they sign the proposal themselves.'],
@@ -4906,14 +4974,24 @@
     chamber: (d) => lanesFor(d, [
       ['Members only', 'Only members can read the document.'],
       ['Anyone with the link', 'Anyone with the link can read it; it is not listed.']], 'chamber'),
-    applications: (d) => lanesFor(d, POLICY_TEXTS, 'applications') +
-      '<p class="setnote">' + PAGE_COPY.composeNote.oneMotionOneRule + '</p>',
+    // the *one motion proposes one rule* note went with Ed's card review
+    // round 3 (2026-09-05, 36 🤝)
+    applications: (d) => lanesFor(d, POLICY_TEXTS, 'applications'),
     // ✉️: whom to bring in — the invite half of what was one roster
     // composer (Ed, 2026-08-19, 400a)
-    invite: (d) =>
-      '<div class="roster"><div class="addrow"><input placeholder="' + PAGE_COPY.composeNote.somebodyToInvite + '" data-mjoin="1">' +
-      '<button class="btn" data-mjoinbtn="1">' + PAGE_COPY.composeNote.inviteBtn + '</button></div></div>' +
-      '<p class="setnote">' + PAGE_COPY.composeNote.inviteConstitutional + '</p>',
+    // **The member's ✉️ is the same box** (Ed's card review round 3,
+    // 2026-09-05, 63; Q1187): no *Invite* button — the route's commit in the
+    // row is the act — and no policy sentences. One motion per address: at
+    // ✏️ price every line raises its own, each costing its own ✏️; at 🏛️
+    // price a member holds one at a time, so the box allows one line.
+    invite: (d) => {
+      const one = admissionPrice() === 'assembly';
+      const lines = (d.many || (d.to ? [d.to.replace(/ joins the membership$/, '')] : [])).join('\n');
+      return '<div class="roster">' + (one
+        ? '<input placeholder="name@example.com" data-mjoin="1" value="' + esc(lines.split('\n')[0] || '') + '" style="width:20rem">'
+        : '<textarea placeholder="name@example.com&#10;one address per line" data-mjoin="1">' + esc(lines) + '</textarea>') +
+        '</div>';
+    },
     // ❌: the membership, in front of you, with an ✕ beside each — which
     // is what “propose a removal” means
     // **One control names the subject** (entry 96): the same dropdown the pen
@@ -4937,25 +5015,32 @@
   // A constitutional motion re-opens consent: what is proposed, what stands,
   // two answers, one refusal keeps what stands. The pick markup is one
   // helper — invite, removal and the generic body differ only in copy.
+  // **The consent card's three blocks** (Ed's card review round 3,
+  // 2026-09-05, Q1182; STYLE T48): what stands, with *Keep this*; what is
+  // proposed, with the proposer's sealed reason under its sentence and
+  // *Prefer this*; and *Abstain* as its own textless block, the radio naming
+  // the act as Indifferent does. Every block is clause text — the register
+  // the whole surface reads in now — and nothing else is said: no consent
+  // rule explained, no count, no blindness note.
   const consentPicks = (key, opts) => '<div class="choice" role="radiogroup">' +
-    opts.map(([v, label, exp]) =>
-      '<div class="pick' + (S.mAns[key] === v ? ' on' : '') + '">' +
-      // `ctl` throughout (T46): a consent answer is what *you* say — *I accept
-      // them joining* — not a sentence the document will carry, so it keeps
-      // the control treatment the whole option block used to wear
-      '<span class="opttext ctl">' + label + '</span>' +
-      '<span class="exp">' + exp + '</span>' +
-      '<button class="lanepick" aria-pressed="' + (S.mAns[key] === v) +
-      '" data-motion="' + v + '"><span class="dot"></span>' +
-      '<span class="off">' + window.COPY.grammar.lane.prefer + '</span><span class="on">' + window.COPY.grammar.lane.preferred + '</span></button>' +
-      '</div>').join('') + '</div>';
+    opts.map(([v, html, kind]) => {
+      const on = S.mAns[key] === v;
+      const off = kind === 'keep' ? PAGE_COPY.consent.keepThis
+        : kind === 'prefer' ? window.COPY.grammar.lane.prefer : PAGE_COPY.consent.abstain;
+      const onW = kind === 'keep' ? PAGE_COPY.consent.kept
+        : kind === 'prefer' ? window.COPY.grammar.lane.preferred : PAGE_COPY.consent.abstain;
+      return '<div class="pick' + (on ? ' on' : '') + '">' +
+        (html ? '<span class="opttext">' + html + '</span>' : '') +
+        '<button class="lanepick" aria-pressed="' + on + '" data-motion="' + v + '"><span class="dot"></span>' +
+        '<span class="off">' + off + '</span><span class="on">' + onW + '</span></button></div>';
+    }).join('') + '</div>';
+  const consentBlocks = (key, stands, proposed, why) => consentPicks(key, [
+    ['no', esc(stands), 'keep'],
+    ['yes', esc(proposed) + (why ? window.CARDS.speakerHtml(why) : ''), 'prefer'],
+    ['abstain', '', 'abstain'],
+  ]);
   const inviteBody = (m) =>
-    '<p class="why">' + PAGE_COPY.consent.inviteWhy(esc(m.invite)) + '</p>' +
-    consentPicks('invite', [
-      ['no'].concat(PAGE_COPY.consent.inviteNo),
-      ['yes'].concat(PAGE_COPY.consent.inviteYes),
-      ['abstain'].concat(PAGE_COPY.consent.inviteAbstain),
-    ]) + BLINDNOTE;
+    consentBlocks('invite', PAGE_COPY.consent.staysAsIs, PAGE_COPY.consent.joins(m.invite), m.why);
   const removeBody = (m) => {
     const nm = nameOfMember(m.removee);
     // 🏛️ without [avatar] (Q401a): under 'others' the subject sees the
@@ -4965,29 +5050,15 @@
       return '<p class="why">' + PAGE_COPY.consent.removeSelfWhy + '</p>' +
         '<p class="setnote">' + PAGE_COPY.consent.removeSelfCount(m.judged || 0, Math.max(E() - 1, 0)) + '</p>';
     }
-    return '<p class="why">' + PAGE_COPY.consent.removeWhy(esc(nm)) +
-    (removalPrice() === 'assembly'
-      ? PAGE_COPY.consent.removeByOthers
-      : PAGE_COPY.consent.removeByAll) + '</p>' +
-    consentPicks('remove', [
-      ['no'].concat(PAGE_COPY.consent.removeNo),
-      ['yes'].concat(PAGE_COPY.consent.removeYes),
-      ['abstain'].concat(PAGE_COPY.consent.removeAbstain),
-    ]) + BLINDNOTE;
+    return consentBlocks('remove', PAGE_COPY.consent.staysIn(nm), PAGE_COPY.consent.leaves(nm), m.why);
   };
-  // **Honour, said where the vote is cast** (entry 31, Ed 2026-08-26): a
-  // motion on 👤 binds proposals made after it and none made before, so the
-  // voter reads that before answering. Nowhere else — the settled card's
-  // `why` is about the choice, not the change.
+  // a set motion: the standing clause against the proposed one, the latter
+  // the full sentence for the motion's own value (A3), never its short label
   const consentBody = (c, m) => (m.invite ? inviteBody(m)
-    : m.removee !== undefined ? removeBody(m) :
-    '<p class="why">' + (c.k === 'authorship' ? PAGE_COPY.consent.honour : '') +
-    PAGE_COPY.consent.setWhy(esc(m.to), esc(standsOf(c.k))) + '</p>' +
-    consentPicks(c.k, [
-      ['no'].concat(PAGE_COPY.consent.setNo),
-      ['yes'].concat(PAGE_COPY.consent.setYes(E())),
-      ['abstain'].concat(PAGE_COPY.consent.setAbstain),
-    ]) + BLINDNOTE);
+    : m.removee !== undefined ? removeBody(m)
+    : (() => { const rec = liveMotionRec(c);
+      const v = rec && rec.payload && rec.payload.kind === 'set' ? rec.payload.value : null;
+      return consentBlocks(c.k, decisionLine(c), (v !== null && sentenceFor(c.k, v)) || m.to, m.why); })());
 
   // dev only (with the dropdown, Ed 362): complete the founding in one press,
   // because motions live on the far side of it and the mock has no persistence
@@ -5237,20 +5308,25 @@
   // the delegate rung) and a hand-written string at each would drift. Ed's
   // own sentences, all plural (Q1150), stored without the final stop so the
   // clause site can carry its count parenthetical.
+  // **…in the future tense, naming both answers where there are two** (Ed's
+  // card review round 3, 2026-09-05, Q1185 — reversing Q1150's tense): the
+  // five binary settings say what the choice is between, the ladders and
+  // the numbers keep a one-clause subject. 🍾's count lines derive their
+  // subject from this table, so they move with it.
   const DECIDING = {
-    chamber: 'The membership are deciding if the document can be seen by anyone with the link',
-    admission: 'The membership are deciding how new members may join',
-    applications: 'The membership are deciding whether anyone with the link may apply to become a member',
-    lapse: 'The membership are deciding whether inactive members lapse',
-    removal: 'The membership are deciding how a member is removed',
-    rate: 'The membership are deciding how often members should be able to make proposals',
-    ending: 'The membership are deciding when changes may no longer be made to the document',
-    bar: 'The membership are deciding what proportion of votes a proposal ✏️ needs to pass',
-    quorum: 'The membership are deciding how many members must vote on a proposal ✏️ before it can pass',
-    authorship: 'The membership are deciding if anonymous proposals are allowed',
-    judgments: 'The membership are deciding if votes are revealed',
+    chamber: 'The membership will decide whether the document can only be seen by members or by anyone with the link',
+    admission: 'The membership will decide how new members may join',
+    applications: 'The membership will decide whether new members may only join by invitation or whether anyone with the link may apply',
+    lapse: 'The membership will decide whether inactive members lapse or never lapse',
+    removal: 'The membership will decide how a member is removed',
+    rate: 'The membership will decide how often members should be able to make proposals',
+    ending: 'The membership will decide whether changes end on a set date or may be made perpetually',
+    bar: 'The membership will decide what proportion of votes a proposal ✏️ needs to pass',
+    quorum: 'The membership will decide how many members must vote on a proposal ✏️ before it can pass',
+    authorship: 'The membership will decide if anonymous proposals are allowed',
+    judgments: 'The membership will decide whether votes are revealed at the end or never',
   };
-  const decidingOf = (k) => DECIDING[k] || 'The membership are deciding this rule';
+  const decidingOf = (k) => DECIDING[k] || 'The membership will decide this rule';
   // every option-block card loses its title head (Q1151, widened by Ed's QA
   // of 2026-09-02 pm): the settings cards, 🎩 (the build's kind-personal
   // guard had silently excluded it), and the identity cards ✋ 🖼️ 📧 now that
@@ -5262,6 +5338,27 @@
   // number of the page's own ----------------------------------------------
   // the shape as a noun phrase, for the provenance and the 🍾 line
   const SHAPE_NOUN = { meeting: 'a meeting', conference: 'a conference', ongoing: 'an ongoing document' };
+  // the clauses a shape's `sets` would print, in the table's own order (03)
+  const shapeClauses = (r) => {
+    const sets = r.sets || {};
+    const never = !!(sets.ending && sets.ending.endsAtMs === null);
+    const out = [];
+    for (const mid of Object.keys(sets)) {
+      if (mid === 'machines' || mid === 'pace' || (r.hides || []).includes(mid)) continue;
+      const v = sets[mid];
+      let s = null;
+      try {
+        if (mid === 'bar') {
+          const p = sets.pace;
+          s = BAR_RULE(v.pct, p && p.shape === 'ramp' && !never ? p.startPct : null);
+        } else {
+          s = sentenceFor(pkeyOf(mid), v);
+        }
+      } catch (e) { s = null; }
+      if (s) out.push('<span class="shapeclause">' + esc(s) + '</span>');
+    }
+    return out.join('');
+  };
   // the row the document was born with — the module's, or the page's own
   // choice before the save; null for custom
   const shapeRow = () => { const n = cs ? cs.shape : S.docShape;
@@ -5636,6 +5733,9 @@
           : composerOn(c) ? esc(standsOf(c.k)) : '';
         return doorPeople(c) + (rule ? '<div class="doorrule">' + rule + '</div>' : '');
       }
+      // a record has no head (Ed's card review round 3, 2026-09-05, 32/56,
+      // Q1186): the eyebrow dates it and its blocks say what it did
+      if (c.record) return null;
       // post-save the title card opens at its own clause, so its head is
       // the clause sentence (the headdoct span stays: refreshCommit types
       // into it live); at the birth it is still the big heading itself
@@ -5663,10 +5763,14 @@
         // block wears the chosen radio — the provenance that used to live in
         // the retired watch-half. Only on the option-block heads, where the
         // rule is drawn as a block at all.
-        const st = csState(c.k);
-        const byRoom = !!(st && st.settledBy && st.settledBy !== 'convenor');
+        // **…whoever chose it** (Ed's card review round 3, 2026-09-05, 49 ⏱️:
+        // *should have "Chosen by [whoever it was chosen by]"*; Q1188): the
+        // radio is on every standing rule drawn as a block, reading *Chosen
+        // by the membership* or *Chosen by the Founder ✒️* — one wording for
+        // a founding choice and a later amendment alike.
+        const asBlock = OPTHEADLESS.has(c.k) || c.k === 'title' || c.k === 'slug';
         return breakLines(linkify(esc(decisionLine(c)))) +
-          (byRoom && OPTHEADLESS.has(c.k) ? chosenRadio('Chosen by the membership') : '');
+          (asBlock ? chosenRadio(provOf(c.k)) : '');
       }
       if (composerOn(c)) return esc(standsOf(c.k));
       return null;
@@ -5675,16 +5779,26 @@
     // (Q1151, F15): the founder's own setting card, whose blocks state the
     // rule — never a member's answer card, a record, a power tab, a door or
     // a gate, which keep their titles
-    noTitleHead: (c) => !c.power && !c.record && !c.isGate && !c.door &&
-      (OPTHEADLESS.has(c.k) || (c.ansFor && OPTHEADLESS.has(c.ansFor))),
+    // …and since Ed's card review round 3 (2026-09-05) neither does a record
+    // (32/56: the eyebrow dates it, the blocks say what it did — Q1186), nor
+    // 📍 at the birth (02: its field is the whole card)
+    noTitleHead: (c) => !c.power && !c.isGate && !c.door &&
+      (c.record || (c.k === 'slug' && !cs) ||
+        OPTHEADLESS.has(c.k) || (c.ansFor && OPTHEADLESS.has(c.ansFor))),
+    // 🪶 at the birth has a head — the title itself, or its placeholder —
+    // over one lane, and the hairline between them went with Ed's round 3
+    // (01): the head is the field's own value, not a rule over a control
+    bareHead: (c) => c.k === 'title' && !cs,
     // a settled option-block setting draws its rule as the first block
     // (Q1167 a) — same keys, same exclusions; an identity card never reaches
     // it (no catalogue rule to draw), so the widened set is safe here too.
     // 🪶 joins once there is a document (Ed's QA, 2026-09-02 pm): the settled
     // title is two options, the standing sentence on top, the composer's
     // sentence beneath.
+    // 📍 joins 🪶 there (Ed's card review round 3, 2026-09-05, Q1183's
+    // approved mockup: the standing address wearing its provenance radio)
     blockHead: (c) => !c.power && !c.record && !c.isGate && !c.ansFor && !c.door &&
-      (OPTHEADLESS.has(c.k) || (c.k === 'title' && !!cs)),
+      (OPTHEADLESS.has(c.k) || ((c.k === 'title' || c.k === 'slug') && !!cs)),
     // reserved = held by the founder: the room may pass a change, and it
     // then goes to the founder as a 👑 question (accept or reject)
     reserved: (c) => !c.power && !c.record && !c.isGate && !c.ansFor && c.kind !== 'personal' && !membersHold(c),
@@ -6381,30 +6495,45 @@
         // *a clerk can stay unnamed* survives on ✋'s clerk branch alone
         opt(o, 'hatPick', 'member', 'The Founder is part of the membership.', '', '', started) +
         opt(o, 'hatPick', 'clerk', 'The Founder is not part of the membership.', '', '', started) +
-        '</div>' +
-        (started ? '<p class="setnote"><b>Settled.</b> Now that people are voting, the Founder joins the same way as anybody else.</p>' : '');
+        '</div>';
+      // the *Settled.* note went with Ed's card review round 3 (2026-09-05,
+      // 39 🎩): a locked card says so by its greyed radios alone
     },
     // 🧭 (entry 166): the three rows from the bundle's table and a fourth,
     // custom, whose two strings live here. Nothing preselected (F6); each
     // rung its title in bold and its consequence beneath. No number is typed
     // into the page — a row's `say` is the row's.
+    // **A shape's block is its clauses** (Ed's card review round 3,
+    // 2026-09-05, 03): the intro paragraph and the title go, each rung is
+    // Ed's sentence — *This document is for a meeting.* — followed by the
+    // constitution sentences the shape's `sets` would put into the document,
+    // only those (the ones still to be chosen are not listed), through the
+    // same rule builders the constitution prints with. 🪜 rides 🌡️'s
+    // sentence as it does in the clause (Q512); a setting the shape hides
+    // and `machines` (no clause) are left out; custom lists nothing.
     shape: () =>
-      '<p class="why">A shape sets the rules the way a document of that kind usually runs. You can change any of them afterwards.</p>' +
       '<div class="choice" role="radiogroup">' +
-      // `ctlWord` (T46): a shape's title names a *kind of document* and sets
-      // twelve clauses at once — it is not itself one of them
-      M.SHAPES.map((r) => opt(S, 'docShape', r.name, ctlWord(esc(r.title)), esc(r.say))).join('') +
-      // *— every rule is a card* cut (Ed's card review, 2026-09-02)
-      opt(S, 'docShape', 'custom', ctlWord('Custom'), 'Decide everything yourself.') +
+      M.SHAPES.map((r) => opt(S, 'docShape', r.name,
+        esc(PAGE_COPY.shape[r.name]) + shapeClauses(r))).join('') +
+      opt(S, 'docShape', 'custom', esc(PAGE_COPY.shape.custom)) +
       '</div>',
     // settled, the composer is the second option block, its lane inside the
     // sentence (Ed's QA, 2026-09-02 pm; Q1137's inline pattern) — the birth
     // keeps the big lane, the page's first act
+    // **…blank, outlined, at the standing title's size, with its own radio**
+    // (Ed's card review round 3, 2026-09-05, 29; A2): the lane holds only
+    // what has been typed *since* the card opened — never the standing
+    // title, which is block one's — and *Choose this* beneath it names the
+    // block, chosen the moment something is typed (F6)
     title: () => (cs
-      ? '<div class="choice"><div class="pick"><span class="opttext">The document is titled ' +
-        '<span class="lp editlane titlelane' + (titlePending() ? '' : ' blank') + '"' +
+      ? (() => { const typed = S.titleDraft !== null ? S.titleDraft : '';
+        return '<div class="choice"><div class="pick' + (typed ? ' on' : '') + '"><span class="opttext">The document is titled ' +
+        '<span class="lp editlane titlelane' + (typed ? '' : ' blank') + '"' +
         ' contenteditable="plaintext-only" spellcheck="false" data-titlelane="1"' +
-        ' data-ph="A new title">' + esc(titlePending()) + '</span>.</span></div></div>'
+        ' data-ph="A new title">' + esc(typed) + '</span>.</span>' +
+        '<button class="lanepick" type="button" aria-pressed="' + !!typed + '" data-pickinput="1">' +
+        '<span class="dot"></span><span class="off">' + PAGE_COPY.pw.chooseThis + '</span>' +
+        '<span class="on">' + PAGE_COPY.pw.chosen + '</span></button></div></div>'; })()
       : '<div class="lanebox"><div class="lp editlane titlelane' + (titlePending() ? '' : ' blank') + '"' +
         ' contenteditable="plaintext-only" spellcheck="false" data-titlelane="1"' +
         ' data-ph="Give this document a title">' + esc(titlePending()) + '</div></div>'),
@@ -6415,12 +6544,26 @@
     // itself. What survives is what the field cannot say: that a *collision*
     // moved your slug, whether what you have typed is legal and free, and
     // that changing it later breaks nothing.
-    slug: () =>
-      '<div data-slugnote>' + slugNoteHtml() + '</div>' +
+    // **Settled, the alternative is a block that starts blank** (Ed's card
+    // review round 3, 2026-09-05, 30; A2): the standing address is block one
+    // (the head), the field beneath shows nothing until something is typed,
+    // and the *is taken, so this one is* history goes — `slugNoteHtml` keeps
+    // only a live refusal there. At the birth the field is the card, as before.
+    slug: () => (cs
+      ? (() => { const stands = ((csState('slug') || {}).value || {}).slug;
+        const typed = S.slug !== stands ? S.slug : '';
+        return '<div data-slugnote>' + slugNoteHtml() + '</div>' +
+          '<div class="choice"><div class="pick' + (typed ? ' on' : '') + '"><span class="opttext">' +
+          'The document lives at ' + docAddr('') +
+          '<input data-slug="1" value="' + esc(typed) + '" spellcheck="false" style="width:16rem">.</span>' +
+          '<button class="lanepick" type="button" aria-pressed="' + !!typed + '" data-pickinput="1">' +
+          '<span class="dot"></span><span class="off">' + PAGE_COPY.pw.chooseThis + '</span>' +
+          '<span class="on">' + PAGE_COPY.pw.chosen + '</span></button></div></div>'; })()
+      : '<div data-slugnote>' + slugNoteHtml() + '</div>' +
       '<span class="fld"><span class="setrow2">' +
       '<span class="setnote" style="margin:0">' + docAddr('') + '</span>' +
       '<input data-slug="1" value="' + esc(S.slug) + '" spellcheck="false" style="width:16rem">' +
-      '</span></span>' +
+      '</span></span>') +
       // the rules recital went with the rest (Ed, 2026-08-19) — a legal link
       // says the one thing worth saying, that it is free. The illegal case
       // keeps its line: that is not helper text, it is why the ✒️ is greyed.
@@ -6445,7 +6588,12 @@
       // verification-restarts note is cut; the flow itself says it.
       ? '<div class="choice"><div class="pick on"><span class="opttext">' + esc(S.myemail) + '</span>' +
         chosenRadio('Chosen') + '</div>' +
-        '<div class="pick"><span class="opttext"><input type="email" data-txt="myemail" value="" placeholder="you@example.com" style="width:20rem"></span></div></div>'
+        // the second option carries its own *Choose this* (Ed's card review
+        // round 3, 2026-09-05, 42; A2): typing chooses it, the radio says so
+        '<div class="pick"><span class="opttext"><input type="email" data-txt="myemail" value="" placeholder="you@example.com" style="width:20rem"></span>' +
+        '<button class="lanepick" type="button" aria-pressed="false" data-pickinput="1">' +
+        '<span class="dot"></span><span class="off">' + PAGE_COPY.pw.chooseThis + '</span>' +
+        '<span class="on">' + PAGE_COPY.pw.chosen + '</span></button></div></div>'
       : S.emailSent
       // **The document says it was sent** (Ed, 2026-08-21): the clause reads
       // *The Founder is checking their email for a link*, so the card does
@@ -6488,13 +6636,10 @@
     // send (Q812): the founder before the start or holding the door's ✒️,
     // any member while 🪪 stands at ✒️. Otherwise the door is a composer,
     // and the sentence says what the proposal will cost.
+    // …and where it composes instead, nothing but the composer (Ed's card
+    // review round 3, 2026-09-05, 63): the price is 🪪's clause to state
     invite: () => (constituted() && !directInvite()
-      ? '<p class="why">' + ({
-          assembly: 'Bringing somebody in is a proposal all members must agree to — one refusal keeps them out.',
-          proposal: 'Bringing somebody in is a proposal the membership decides at the approval threshold.',
-          pen: 'Any member may invite on their own word.' })[admissionPrice()] +
-        ' Proposing that somebody leaves is ❌.</p>' +
-        doorErrHtml('invite')
+      ? doorErrHtml('invite')
       // and where the document is stuck on a question nobody can answer, the
       // card leads with *why you are here* (Q828) — the remedy above the door
       : oneVoiceAsk() +
@@ -6884,8 +7029,10 @@
       if (c.isBegin) {
         const rd = readinessOf();
         const can = !constituted() && amFounder() && (!rd || rd.ready);
+        // a begun document's 🍾 asks nothing and takes the close-only OK
+        // (Ed's card review round 3, 2026-09-05, 45; reading 1190)
         return cardHtml(c, ctx, beginBody(c, rd),
-          constituted() ? binBtn()
+          constituted() ? binBtn() + '<button class="btn btn-approve okbtn" data-close="1">OK</button>'
             : binBtn() +
               '<button class="btn btn-approve glyphbtn emojibtn btn-pen" data-confirm="1" data-begin="1"' + (can ? '' : ' disabled') +
               ' title="' + (can ? 'Begin the document — a full one-second hold' : 'The document cannot begin yet') + '">🍾</button>',
@@ -6918,15 +7065,12 @@
         // room already knows: the shared picks, and the generic commit path,
         // reached because `motionTargets` points this motion at this card.
         if (price === 'assembly') {
+          // the consent card's own three blocks (Q1182): the applicant's
+          // words are the reason under the proposed block, 🏛️ commits
           return cardHtml(c, ctx, said +
-            '<p class="why">All members must agree before somebody joins — one refusal keeps them out.</p>' +
-            consentPicks(c.k, [
-              ['no', 'I would rather they did not', 'They stay out. Nobody is told who said so.'],
-              ['yes', 'I accept them joining', 'They start with the ✏️s everyone got, and quorum recomputes.'],
-              ['abstain', 'Abstain', 'An answer, not a block: they can join without your consent counting either way.'],
-            ]) + BLINDNOTE,
-            binBtn() + '<button class="btn btn-approve glyphbtn"' +
-            (motionPicked(c) ? '' : ' disabled') + ' data-confirm="1">' + TICK + '</button>',
+            consentBlocks(c.k, PAGE_COPY.consent.staysAsIs, PAGE_COPY.consent.joins(applicantName(ap)), null),
+            binBtn() + '<button class="btn btn-approve glyphbtn emojibtn"' +
+            (motionPicked(c) ? '' : ' disabled') + ' data-confirm="1" title="Give your answer">🏛️</button>',
             g.cards);
         }
         // **✏️ — the membership decides**, its own one-candidate race against
@@ -7014,7 +7158,15 @@
         // …and an acked gate keeps an OK that only closes (Ed's QA,
         // 2026-09-02 pm, 1167 b's grammar): no ACK_KEYS entry, nothing
         // tracked — the friendlier way out beside the bin.
-        return cardHtml(c, ctx, grantProv(c) + gateBody(c) + grantNote(c),
+        // **An open gate is its head and its OK** (Ed's card review round 3,
+        // 2026-09-05, 46 💡 / 47 ⚖️): the provenance line, the explainer, the
+        // *Open —* line and the wallet count all go once the gate is open —
+        // the head's clause says what members may do. A gate still waiting
+        // keeps its blockers list, which is what the card is for until 🍾;
+        // the three grants (✒️ 🛡️ 🏛️) keep their sentence, being news of a
+        // power rather than a gate.
+        const gateOpenBare = c.isGate && !c.isGrant && c.open();
+        return cardHtml(c, ctx, gateOpenBare ? '' : grantProv(c) + gateBody(c) + grantNote(c),
           acked(c.k) ? binBtn() + '<button class="btn btn-approve okbtn" data-close="1">OK</button>'
             : binBtn() +
               '<button class="btn btn-approve okbtn"' +
@@ -7040,11 +7192,14 @@
         // ✒️, not ✓: giving up a power is the founder's unilateral set,
         // and ✒️ is the pen every unilateral set on this surface commits
         // with — the ✓ is reserved for answering a shared question
+        // …and a tab with nothing to set takes the close-only OK (Ed's card
+        // review round 3, 2026-09-05, 52/53; reading 1190 — every card whose
+        // row was 🗑️ alone): a word, no ACK_KEYS entry, nobody owes a press
         return cardHtml(c, ctx, powerBody(c),
           (editable ? binBtn() +
             '<button class="btn btn-approve glyphbtn emojibtn" data-confirm="1"' +
             ' title="Set it">✒️</button>'
-            : binBtn()),
+            : binBtn() + '<button class="btn btn-approve okbtn" data-close="1">OK</button>'),
           g.cards);
       }
       const m = motionOn(c);
@@ -7059,7 +7214,10 @@
         // the vote being over and the card waiting on the founder's own act.
         const rec0 = liveMotionRec(c);
         const rawV = rec0 && rec0.payload && rec0.payload.kind === 'set' ? rec0.payload.value : null;
-        const toClause = (typeof rawV === 'string' && window.CARDS.clauseOf(c.k, rawV, clauseCtx())) || m.to;
+        // the full clause sentence, never the short label (Ed's card review
+        // round 3, 2026-09-05, 31 🌍: *"Members only" => "The document can
+        // only be seen by members."*)
+        const toClause = (rawV !== null && sentenceFor(c.k, rawV)) || m.to;
         return cardHtml(c, ctx,
           '<div class="pick"><span class="opttext">' + esc(decisionLine(c)) + '</span></div>' +
           '<div class="pick on"><span class="opttext">' + esc(toClause) + '</span>' +
@@ -7095,16 +7253,18 @@
           g.cards, { v: 'stands', s: { ...m, pick: S.mAns[c.k] } });
       }
       if (m) {
-        // constitutional: the founding question, live again. Yours carries
-        // the withdraw at the very left, where 🗑️ always is — it hands the
-        // 🏛️ back whole, which is what makes the one-each limit livable.
-        return cardHtml(c, ctx,
-          motionReopen(c, ctx, { ...m, judged: motionJudged(c.k) }) + consentBody(c, m),
-          (m.by === viewerId()
-            ? '<button class="btn" data-withdrawmotion="' + c.k + '" title="Withdrawing hands your 🏛️ back">🗑️ Withdraw</button>'
-            : binBtn()) +
-          '<button class="btn btn-approve glyphbtn"' + (motionPicked(c) ? '' : ' disabled') +
-          ' data-confirm="1">' + TICK + '</button>', g.cards);
+        // **The consent card takes the settled shape** (Ed's card review
+        // round 3, 2026-09-05, 58, Q1182): the standing rule as block one
+        // with *Keep this*, the proposed rule beneath with the proposer's
+        // sealed reason and *Prefer this*, *Abstain* on its own row like
+        // Indifferent — full clause text on every block, no *Re-opened*
+        // paragraph, no count, no privacy sentence, no explainers, no blind
+        // note, and no Withdraw (a residual: where the mover withdraws is
+        // Q1195's). The commit is 🏛️ — your consent, given (C4).
+        return cardHtml(c, ctx, consentBody(c, m),
+          binBtn() +
+          '<button class="btn btn-approve glyphbtn emojibtn"' + (motionPicked(c) ? '' : ' disabled') +
+          ' data-confirm="1" title="Give your answer">🏛️</button>', g.cards);
       }
       // — unless it is a decision you are owed: the OK comes before the
       // motion, since an unacknowledged rule sits in the rail until it is
@@ -7119,12 +7279,12 @@
             : '<div class="lanebox"><div class="lp editlane" contenteditable="plaintext-only" spellcheck="false"' +
               ' data-motionlane="to" data-ph="The value you are proposing">' + esc(d.to) + '</div></div>') +
           whyLane(d) +
-          (route === 'constitutional'
-            ? (crownWaits(c) ? '<p class="setnote">If it passes it goes to the Founder, who may assent or refuse.</p>' : '')
-            // the price is not said in words (Ed, 2026-08-19): the pencil
-            // flying out of the wallet is what teaches it, and a sentence
-            // beside the flight is the surface explaining its own animation
-            : (crownWaits(c) ? '<p class="setnote">If it passes it goes to the Founder, who may assent or refuse.</p>' : '')) +
+          // the price is not said in words (Ed, 2026-08-19): the pencil
+          // flying out of the wallet is what teaches it, and a sentence
+          // beside the flight is the surface explaining its own animation.
+          // The *goes to the Founder, who may assent or refuse* note went the
+          // same way with Ed's card review round 3 (2026-09-05, reading
+          // 1189): the 🛡️ tab beside the card already says the veto stands.
           doorErrHtml(c.k);
         return cardHtml(c, ctx, body2 + changeHalf(c),
           '<button class="btn glyphbtn" data-dropmotion="1"' +
@@ -7272,7 +7432,12 @@
       // the solid green the drawn ✓ owns, between two on the accent-subtle.
       // One expression now decides both: an emoji needs a quiet ground
       // wherever it sits, and the ✓ stays the one solid green thing.
-      const commitGlyph = !cs ? '🪶' : (c.ansFor || c.kind === 'personal') ? TICK : '✒️';
+      // **…and an answer to a constitutional question commits with 🏛️**
+      // (Ed, 2026-09-05, Q1182 — SURFACE C4 amended): the founding answer
+      // cards and the consent card are the same act, your consent given, and
+      // §7's *the founding answers are a kind of 🏛️* is now literal. ✓ is
+      // left to ordinary judgments and the cards about yourself.
+      const commitGlyph = !cs ? '🪶' : c.ansFor ? '🏛️' : c.kind === 'personal' ? TICK : '✒️';
       // **A door whose act is in the body has nothing left to commit** (Ed,
       // entry 37: *the main action in the bottom right is just ✔️, closing the
       // card*). ✉️ in its direct form sends from the field — so the row's ✒️
@@ -7826,14 +7991,6 @@
       S.draft.to = mval.dataset.mval;
       S.draft.val = mvalTyped(S.open, mval.dataset.mval);
       return render(); }
-    const mj = ev.target.closest('[data-mjoinbtn]');
-    if (mj) {
-      const f2 = document.querySelector('[data-mjoin]');
-      const n = (f2 && f2.value || '').trim();
-      if (n) { if (!S.draft || S.draft.k !== S.open) S.draft = { k: S.open, to: '', why: '' };
-        S.draft.to = n + ' joins the membership'; render(); }
-      return;
-    }
     if (ev.target.closest('[data-dropmotion]'))
       return closeThen(() => { S.draft = null; S.open = null; });
     const wm = ev.target.closest('[data-withdrawmotion]');
@@ -7871,6 +8028,14 @@
         // were — so `own` drops the draft instead of restoring it, and the
         // refusal line is the whole of what is carried over.
         try {
+          // **one motion per address** (Q1187): a ✉️ box holding several
+          // lines raises one invitation each, the first carrying the
+          // refusal path below; the rest are fired the same way
+          const extra = (d0.many || []).slice(1);
+          for (const addr of extra) {
+            try { cs.openMotion(now(), viewerId(), draftPayload({ ...d0, to: addr + ' joins the membership' }), d0.why || undefined); }
+            catch (e) { console.warn('invite not raised for ' + addr, e); }
+          }
           const sent = cs.openMotion(now(), viewerId(), draftPayload(d0), d0.why || undefined);
           S.draft = null;
           S.doorErr = null;
@@ -8186,10 +8351,25 @@
     const bz = ev.target.closest('[data-bzone]');
     if (bz) {
       const z = BEGIN_ZONES.find((x) => x.name === bz.dataset.bzone);
-      // a radio position, not a toggle (Q1103 (b)): the block pressed names
-      // its own value
-      if (z) S.beginZones[z.name + ':' + bz.dataset.bpower] = bz.dataset.bval;
+      // **a toggle since Q1181** (Ed's card review round 3, 2026-09-05): the
+      // power's glyph flips between kept and laid down — plain or struck.
+      // Pressing a mixed zone's glyph reads as *keep*, which lays nothing
+      // further down (the note beneath the table says so).
+      if (z) {
+        const key = z.name + ':' + bz.dataset.bpw;
+        S.beginZones[key] = beginPos(z, bz.dataset.bpw) === 'down' ? 'keep' : 'down';
+      }
       return render();
+    }
+    // **a field block's radio chooses by focusing its field** (A2): typing
+    // is what chooses the block (F6), so the radio reaches for the field and
+    // re-fires its input, and the handlers that read the field do the rest
+    const pi = ev.target.closest('[data-pickinput]');
+    if (pi) {
+      const blk = pi.closest('.pick');
+      const f = blk && blk.querySelector('input, select, [contenteditable]');
+      if (f) { f.focus(); f.dispatchEvent(new Event('input', { bubbles: true })); }
+      return;
     }
     const o = ev.target.closest('[data-set]');
     if (o) { const nv = setVal(o.dataset.val);
@@ -8665,6 +8845,18 @@
       sw.classList.toggle('blank', !sw.textContent.trim());
       return;
     }
+    // the ✉️ composer's box (Q1187): every non-empty line is an address, the
+    // first is the draft's `to` (what the commit and the route read), the
+    // whole list rides `many` so the ✏️ press can raise one motion per line
+    if (t.matches && t.matches('[data-mjoin]')) {
+      if (!S.draft || S.draft.k !== S.open) S.draft = { k: S.open, to: '', why: '' };
+      const addrs = String(t.value || '').split('\n').map((s) => s.trim()).filter(Boolean);
+      S.draft.many = addrs;
+      S.draft.to = addrs.length ? addrs[0] + ' joins the membership' : '';
+      const slot = document.querySelector('[data-putmotion], [data-holdmotion]');
+      if (slot) slot.outerHTML = commitFor(card(S.draft.k));
+      return;
+    }
     const ml = t.closest && t.closest('[data-motionlane]');
     if (ml) { if (!S.draft || S.draft.k !== S.open) S.draft = { k: S.open, to: '', why: '' };
       S.draft[ml.dataset.motionlane] = ml.textContent.trim();
@@ -8898,6 +9090,11 @@
   });
   // An undecided rule has no value to print and nobody to attribute it to,
   // so the card says who is deciding it — the paragraph's own sentence.
+  // **A stranger's tab opens the settled card, read-only** (Ed's card
+  // review round 3, 2026-09-05, 64/65, Q1183): the head — inherited from
+  // `ctx.headFor` — is the standing rule as its block with the provenance
+  // radio, exactly the member's card minus the composer, so the body is
+  // empty. The *Set to / Set by the founder* readBody retires with this.
   const strangerReadBody = (c) => {
     const st = csState(c.k);
     if (st && st.settledBy === null) {
@@ -8905,7 +9102,7 @@
         ? 'The members are deciding this.'
         : 'The Founder is deciding this.') + '</p>';
     }
-    return readBody(c, strCtx);
+    return '';
   };
   const strangerReadCard = (g) => {
     const c = card(S.open);
@@ -8915,8 +9112,10 @@
     // rules are, and a rule's history is part of what it is (Q942)
     const body = c.record ? recordBody(c)
       : c.k === 'text' ? strangerTextBody() : strangerReadBody(c);
+    // every card here asks nothing, so every one takes the close-only OK
+    // (reading 1190)
     return cardHtml(c, strCtx, body,
-      binBtn() + (c.record ? '<button class="btn btn-approve okbtn" data-close="1">OK</button>' : ''),
+      binBtn() + '<button class="btn btn-approve okbtn" data-close="1">OK</button>',
       g.cards);
   };
   const strangerTextBody = () => {
@@ -9005,6 +9204,9 @@
     yours: () => false,
     waiting: (c) => STRS.sent === c.k,
     fillOf: () => '100%',
+    // the login card carries no title head (Ed's card review round 3, 66):
+    // its tab says what it is, and the field is the whole of the card
+    noTitleHead: (c) => c.k === 'strlogin',
     summary: (c) => (STRS.sent === c.k ? 'Check your inbox'
       : c.k === 'strapply' ? 'Membership is by application'
       : (strPayload() || {}).joinOpen ? 'Anyone with the link may join' : 'Members log in by email'),
@@ -9015,20 +9217,30 @@
     if (!c) return '';
     const okAddr = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(STRS.email.trim());
     const p = strPayload() || {};
+    // **📧 Log In is a field and a commit** (Ed's card review round 3,
+    // 2026-09-05, 66): the title, the hairline, the explanatory paragraph and
+    // the *Your email* label all go; the send is the commit row's right-hand
+    // button, a 📧 glyph under T47's rule (reading 1194), armed by a valid
+    // address. 🪪 Apply keeps its sentence: what an application is has to be
+    // said somewhere, and its card is the only place.
+    const login = c.k === 'strlogin';
+    const field = '<span class="fld">' + (login ? '' : '<label>Your email</label>') +
+      '<input type="email" data-stremail="1" value="' + esc(STRS.email) + '" placeholder="you@example.com" style="width:20rem"></span>';
     const body = STRS.sent === c.k
       ? '<p class="why">Sent to <b>' + esc(STRS.sentTo) + '</b>. ' +
         (c.k === 'strapply' ? 'Follow the link to begin your application — the address is your identity here.'
           : 'If that address is on the membership, a link is on its way.') + '</p>' +
         // the field stays after the send (Q609): typing a different address
         // un-sends, and the send button returns
-        '<span class="fld"><label>Your email</label><input type="email" data-stremail="1" value="' + esc(STRS.email) + '" placeholder="you@example.com" style="width:20rem"></span>'
-      : '<p class="why">' + (c.k === 'strapply'
-          ? 'Membership is by application. Your email is your identity here — the link it sends is the login, and the answer arrives on it.'
-          : (p.joinOpen ? 'Anyone with the link may join. ' : '') +
-            'Members log in by email: enter the address the membership knows you by, and follow the link it sends. Nothing here says whether an address is a member’s.') + '</p>' +
-        '<span class="fld"><label>Your email</label><input type="email" data-stremail="1" value="' + esc(STRS.email) + '" placeholder="you@example.com" style="width:20rem"></span>' +
-        '<div style="margin-top:var(--s3)"><button class="btn"' + (okAddr ? '' : ' disabled') + ' data-strsend="' + c.k + '">Send the link</button></div>';
-    const foot = binBtn();
+        field
+      : (login ? '' : '<p class="why">' +
+          'Membership is by application. Your email is your identity here — the link it sends is the login, and the answer arrives on it.</p>') +
+        field +
+        (login ? '' : '<div style="margin-top:var(--s3)"><button class="btn"' + (okAddr ? '' : ' disabled') + ' data-strsend="' + c.k + '">Send the link</button></div>');
+    const foot = binBtn() + (login && STRS.sent !== c.k
+      ? '<button class="btn btn-approve glyphbtn emojibtn"' + (okAddr ? '' : ' disabled') +
+        ' data-strsend="' + c.k + '" title="Send the link">📧</button>'
+      : '');
     return cardHtml(c, strRailCtx, body, foot, [c]);
   }
   document.addEventListener('input', (ev) => {
@@ -10756,21 +10968,25 @@
   // The card is unique in drawing them in **two columns**, a ✒️ column and a
   // 🛡️ column (Ed's own shape for it). **Mixed presses neither radio**, and
   // the sentence under the table explains what that means.
-  const beginPick = (z, pw, val, word) => {
+  // **Six clause blocks, the power's glyph as the toggle** (Ed's card review
+  // round 3, 2026-09-05, Q1181 — replacing the twelve *Kept / Laid down*
+  // radios): each zone × power is one option block stating the rule that
+  // holds if the power is *kept*, and where a radio would sit the glyph
+  // itself stands — plain for kept, wearing the wallets' red strike for laid
+  // down — pressed to flip. The sentences are `PAGE_COPY.begin.zones`'.
+  // **Mixed reads as struck**: a power promised away on one of the zone's
+  // own tabs is not a zone the Founder is keeping, and the sentence under
+  // the table says what pressing it then does.
+  const beginZoneBlock = (z, pw) => {
     const st = beginZoneState(z, pw);
-    const on = st === val;
-    return '<div class="pick' + (on ? ' on' : '') + '">' +
-      // `ctl` (T46): *Kept* / *Laid down* are the table's own two words, and
-      // the clause a zone ends up with is written elsewhere entirely
-      '<span class="opttext ctl">' + word + '</span>' +
-      '<button class="lanepick" aria-pressed="' + on + '"' +
-      ' data-bzone="' + esc(z.name) + '" data-bpower="' + pw + '" data-bval="' + val + '">' +
-      '<span class="dot"></span><span class="off">Choose this</span>' +
-      '<span class="on">Chosen</span></button></div>';
+    const kept = st === 'keep';
+    return '<div class="pick' + (kept ? ' on' : '') + '">' +
+      '<span class="opttext">' + esc(PAGE_COPY.begin.zones[z.name][pw]) + '</span>' +
+      '<button class="pwtoggle" type="button" aria-pressed="' + kept + '"' +
+      ' data-bzone="' + esc(z.name) + '" data-bpw="' + pw + '"' +
+      ' title="' + (kept ? PAGE_COPY.begin.keptTip : st === 'mixed' ? PAGE_COPY.begin.mixedTip : PAGE_COPY.begin.downTip) + '">' +
+      '<span class="tg">' + (pw === 'u' ? '✒️' : '🛡️') + '</span></button></div>';
   };
-  const beginCol = (z, pw) =>
-    '<div class="bzcol"><div class="eyebrow">' + (pw === 'u' ? '✒️ drafting' : '🛡️ assent') + '</div>' +
-    beginPick(z, pw, 'keep', 'Kept') + beginPick(z, pw, 'down', 'Laid down') + '</div>';
   const beginZonesHtml = () => {
     if (constituted() || !amFounder()) return '';
     const anyMixed = BEGIN_ZONES.some((z) => ['u', 'a'].some((pw) => beginZoneState(z, pw) === 'mixed'));
@@ -10778,7 +10994,7 @@
       '<p class="why">Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.</p>' +
       BEGIN_ZONES.map((z) => '<div class="beginzone">' +
         '<div class="fieldlab">' + (z.glyph ? z.glyph + ' ' : '') + esc(z.name) + '</div>' +
-        '<div class="bzcols">' + beginCol(z, 'u') + beginCol(z, 'a') + '</div></div>').join('') +
+        '<div class="choice">' + beginZoneBlock(z, 'u') + beginZoneBlock(z, 'a') + '</div></div>').join('') +
       (anyMixed ? '<p class="setnote">Where neither is marked, some of these have already been given up on their own cards. ' +
         'Keeping here lays nothing further down — a power already given comes back only on the card it went from.</p>' : '');
   };
@@ -10833,7 +11049,7 @@
         line = esc(card(k) ? card(k).t : q.setting) + '<span class="rsub"> · settled</span>';
       } else if (q.collecting) {
         const subject = decidingOf(k)
-          .replace(/^The membership (?:are|is) deciding /, '')
+          .replace(/^The membership (?:will decide|(?:are|is) deciding) /, '')
           .replace(/^if /, 'whether ').replace(/\.$/, '');
         line = esc(q.answered + ' out of ' + q.electorate + ' of the membership ' +
           (q.answered === 1 ? 'has' : 'have') + ' voted on ' + subject + '.');
