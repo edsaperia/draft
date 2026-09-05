@@ -2305,9 +2305,11 @@ Abstain as a textless block on CP4's placement — and the register names the
 **act** rather than the preference, because *Keep this* and *Prefer this* are
 what the two blocks mean when a rule is being replaced. The count goes with
 the rest of the watch half (Q1176) and the blindness story belongs to 🍾's
-redesign (Q1169). **No Withdraw**: the card is the answerer's, not the
-mover's — the mover withdraws from the motion's own task, and a Withdraw on
-everybody's consent card was the mover's control drawn on every seat.
+redesign (Q1169). **The mover's 🗑️ stays, wordless**: Ed's *no "withdraw"* was about the
+word on the button, not the act (corrected the same night) — the mover's
+🗑️ at the very left still withdraws and hands the 🏛️ back, and T47
+strips its word there — and on the ordinary motion's card too, Ed
+closing the exception the same night so the two motion cards match.
 
 **And the commit is 🏛️** (Q1182's second half, Ed making his own earlier
 sentence literal). SURFACE §7 had said *the founding answers are a kind of

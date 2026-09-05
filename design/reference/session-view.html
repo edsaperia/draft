@@ -7246,7 +7246,9 @@
           // one bin on every card, always live (Q613 (a), 2026-08-22): for the
           // mover it withdraws, for anybody else it simply closes the card
           (m.by === viewerId()
-            ? '<button class="btn" data-withdrawmotion="' + c.k + '" title="Withdrawing returns the ✏️ in full">🗑️ Withdraw</button>'
+            // …glyph alone since 2026-09-05 (Ed, closing T47's one exception
+            // for the word *Withdraw*: both motion cards' 🗑️ match)
+            ? '<button class="btn glyphbtn" data-withdrawmotion="' + c.k + '" title="Withdraw it — the ✏️ comes back in full">🗑️</button>'
             : binBtn()) +
           '<button class="btn btn-approve glyphbtn"' + (motionPicked(c) ? '' : ' disabled') +
           ' data-confirm="1">' + TICK + '</button>',
@@ -7259,10 +7261,15 @@
         // sealed reason and *Prefer this*, *Abstain* on its own row like
         // Indifferent — full clause text on every block, no *Re-opened*
         // paragraph, no count, no privacy sentence, no explainers, no blind
-        // note, and no Withdraw (a residual: where the mover withdraws is
-        // Q1195's). The commit is 🏛️ — your consent, given (C4).
+        // note. **The mover's 🗑️ still withdraws** — Ed, 2026-09-05, correcting
+        // the build's first reading: the note was about the word *Withdraw*
+        // on the button, not the act — so it wears the glyph alone (T47), at
+        // the very left where 🗑️ always is, and hands the 🏛️ back whole.
+        // The commit is 🏛️ — your consent, given (C4).
         return cardHtml(c, ctx, consentBody(c, m),
-          binBtn() +
+          (m.by === viewerId()
+            ? '<button class="btn glyphbtn" data-withdrawmotion="' + c.k + '" title="Withdraw it — your 🏛️ comes back whole">🗑️</button>'
+            : binBtn()) +
           '<button class="btn btn-approve glyphbtn emojibtn"' + (motionPicked(c) ? '' : ' disabled') +
           ' data-confirm="1" title="Give your answer">🏛️</button>', g.cards);
       }
