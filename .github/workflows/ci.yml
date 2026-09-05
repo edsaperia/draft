@@ -291,6 +291,31 @@ jobs:
             -H 'content-type: application/json' \
             -d '{"title":"Test Charter","slug":"test-charter","email":"a@b.com"}'
 
+      # room-walk gets a server of its own, with the adoption cooldown at 0:
+      # phase A adopts twice in one document, and the second adoption cannot
+      # wait a real cooldown out inside a CI walk. The shared server above
+      # keeps the default, because the ladder's seeded history was built
+      # under it and a different cooldown would re-time its whole past.
+      - name: boot a second dev server for room-walk, cooldown 0
+        run: |
+          export PORT=8162
+          export DRAFT_DATA_DIR="$RUNNER_TEMP/room-walk-data"
+          export DRAFT_BASE_URL="http://127.0.0.1:$PORT"
+          export DRAFT_BUILD_SHA="$GITHUB_SHA"
+          export DRAFT_COOLDOWN_MS=0
+          npm run server > "$RUNNER_TEMP/room-server.log" 2>&1 &
+          echo "ROOM_PID=$!" >> "$GITHUB_ENV"
+          echo "ROOM_BASE=$DRAFT_BASE_URL" >> "$GITHUB_ENV"
+          for i in $(seq 1 60); do
+            if curl -fsS -o /dev/null "$DRAFT_BASE_URL/healthz"; then up=1; break; fi
+            sleep 0.5
+          done
+          if [ -z "$up" ]; then
+            echo "the room-walk server never answered /healthz — its log follows"
+            cat "$RUNNER_TEMP/room-server.log"
+            exit 1
+          fi
+
       # `if: always()` for the same reason as probe's neighbours (Q913): one
       # walk's failure must not hide the next one's. They share the one
       # server, which is fine because each founds its own document under its
@@ -319,6 +344,10 @@ jobs:
         if: always()
       - run: npm run ladder -- "$WALK_BASE"
         if: always()
+      # the whole loop: propose → every member served → vote → adopt, twice,
+      # then the 🛡️ park-and-crown path on a ladder document (Q1178)
+      - run: npm run room-walk -- "$ROOM_BASE"
+        if: always()
 
       # The server's side of the story, beside the walk's: a red walk with
       # only the walk's stdout is the one-hour hunt Q911 describes.
@@ -326,10 +355,13 @@ jobs:
         if: always()
         run: |
           kill -TERM "$WALK_PID" || true
+          kill -TERM "$ROOM_PID" || true
           pkill -f 'src/main.ts' || true
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: walk-server-log
-          path: ${{ runner.temp }}/walk-server.log
+          path: |
+            ${{ runner.temp }}/walk-server.log
+            ${{ runner.temp }}/room-server.log
           if-no-files-found: warn

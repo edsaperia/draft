@@ -25,6 +25,7 @@
     "journey": "node scripts/journey-walk.mjs",
     "applicants-walk": "node scripts/applicants-walk.mjs",
     "powers-walk": "node scripts/powers-walk.mjs",
+    "room-walk": "node scripts/room-walk.mjs",
     "slug-walk": "node scripts/slug-walk.mjs",
     "slider-walk": "node scripts/slider-walk.mjs",
     "ladder": "node scripts/ladder-walk.mjs",
