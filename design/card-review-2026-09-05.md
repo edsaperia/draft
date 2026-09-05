@@ -418,4 +418,15 @@ Send the link should be a submit button in the bottom right.
 
 **Readings, built unless vetoed:** 1189 `crownWaits` goes everywhere; 1190 close-only OK on every 🗑️-only card; 1191 *Any members* → *Any member*; 1192 the method note at `--t-ui` in the box; 1193 `.pick.off` greys the radio alone, everywhere; 1194 the login card's send is a 📧 glyph commit. 1195 spare.
 
-Answers are recorded under their number below as they arrive.
+### Answered (Ed, 2026-09-05 evening, one at a time in chat)
+
+- **1181 — six clause blocks, glyph toggles.** Each power on each zone is one option block stating the *kept* rule as a constitution sentence; where the radio would sit stands the power's own glyph as a toggle — plain for kept, wearing the wallets' red strike (`--slash`) for laid down, pressed to flip. Six blocks, not twelve; no Kept / Laid down words.
+- **1182 — the consent card takes the settled shape, with act-naming radios.** Every block is full clause text: the standing rule first with **Keep this**, the proposed rule beneath with the proposer's sealed rationale and **Prefer this**, then **Abstain** on its own row like Indifferent. No Withdraw. Everything else goes (the *Re-opened* paragraph, the count, the privacy sentence, the explainers, the blind note). **The commit is 🏛️ — on every answer to a constitutional question**, the founding answer cards included; ✓ is left to ordinary judgments and personal cards. SURFACE C4 and §7 are amended (Ed's *the founding answers are a kind of 🏛️*, made literal).
+- **1183 — a stranger's tab opens the settled card, read-only**: the standing rule as block one with its provenance radio, the power and record tabs in the strip, a close-only OK. The *Set to / Set by the founder* card retires.
+- **1184 — no release card at 🍾; kept for later releases.** The start's own news (💡 ⚖️) and the settled 🍾 card's list cover the Text's ✒️ 🛡️; a power laid down after the start is still one news card per act, stripped to its list and its OK. SPEC §9.7 rule 3 gains the exception.
+- **1185 — both alternatives on the five binaries, *will decide* everywhere.** 🌍 🤝 💤 ⏰ 👁️ name their two answers; the ladders and numbers keep a one-clause subject; all eleven read *The membership will decide…* — **Q1150's tense is reversed.** 🍾's count lines follow the subjects.
+- **1186 — the rejected record takes the passed record's headless two-block shape**: eyebrow, the rule that stands with its provenance radio, the refused rule with the sealed rationale and no radio, OK. The narrated *kept … as it stood* sentence goes.
+- **1187 — one motion per address; a single-line box where only one may be proposed.** At ✏️ price every line raises its own motion and costs its own ✏️; at 🏛️ price (one at a time) the box allows one line.
+- **1188 — *Chosen by the Founder ✒️* everywhere the founder chose**, one wording for both eras; the record card's *Chosen by Founder Action ✒️* changes to match. *Chosen by the membership* is the other wording.
+
+**Ed's mid-round note:** *✔️ should still be green* — Q1174 stands; A1 is the emoji commits alone.
