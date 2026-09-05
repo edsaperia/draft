@@ -445,7 +445,7 @@ worse afternoon.
 | 🪜 the pace | **fixed** | *Rising Approval Threshold?* → no |
 | ⏱️ the rate | **6 to start, cap 8, one every 5 minutes** | the proposal-rate card |
 | ⏰ the window | **20 minutes if the room allows it, 15 otherwise** | the ending card |
-| the cooldown | **`DRAFT_COOLDOWN_MS=60000`** | **not a setting** — §4.2 engine tuning, an operator env knob since entry 77 |
+| the cooldown | **none** — the host default since 2026-09-05 (R-086); `DRAFT_COOLDOWN_MS=60000` was the intended alpha value but was never set on the host, which paced at the engine's five minutes until then | **not a setting** — §4.2 engine tuning, an operator env knob since entry 77 |
 
 **The numbers behind it** (clubhouse scenario, 25 seeds, scripted personas,
 roster 8 at 15 minutes unless stated). Each row is the row above it with one

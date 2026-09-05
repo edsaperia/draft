@@ -24,6 +24,10 @@ export const PROD_BUILD = process.env.DRAFT_BUILD === 'prod';
 /** SPEC §4.2: the adoption cooldown "must stay short (≤5 min)". The knob's
  *  ceiling, and the reason it is a refusal rather than a clamp. */
 export const COOLDOWN_MAX_MS = 5 * 60_000;
+/** What an unset `DRAFT_COOLDOWN_MS` means: no cooldown — adoptions land the
+ *  moment they clear (Ed, 2026-09-05; SPEC §4.2 v0.97, R-086). The variable
+ *  switches pacing on, never off. See `engineTuning` below. */
+export const HOST_COOLDOWN_MS = 0;
 
 export interface ServerConfig {
   port: number;
@@ -112,6 +116,16 @@ export interface ServerConfig {
    * or a creation-time engine parameter beside grant and drip is Q946; the
    * env knob is what stands.
    *
+   * **The host's default is no cooldown at all** (Ed, 2026-09-05, SPEC
+   * v0.97, R-086): the one-minute value was never set on any host — the
+   * blueprint does not declare the variable and the dashboard never did —
+   * so docs.vote paced at the engine's five minutes from the day it went
+   * live, and to somebody testing the product that reads as the document
+   * ignoring them. So an unset variable means `HOST_COOLDOWN_MS`, zero, and
+   * setting it is how an operator switches pacing *on*; the ramp (§4.3)
+   * remains the brake on hasty adoption meanwhile. The one-minute value
+   * returns with a second kind of room (R-052 (b)).
+   *
    * Read at boot like everything else here, so changing it is a restart and
    * a document's *running* engine keeps whatever it was born with until
    * then. Refused above §4.2's ceiling rather than clamped: an operator who
@@ -153,13 +167,12 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfi
     throw new Error('DRAFT_STORE=pg requires DATABASE_URL');
   }
   // §4.2's own ceiling, refused rather than clamped (see engineTuning)
-  // An empty value is *unset*, not zero. `Number('')` is 0, and a platform
-  // dashboard with a blank box beside the name would otherwise hand the room
-  // a cooldown of nothing — the metronome off — while reading, to whoever
-  // set it, exactly like not having set it.
+  // An empty value is *unset* — the host default, `HOST_COOLDOWN_MS` — and
+  // is distinguished from a typed 0 only so that the refusal below judges
+  // what the operator actually wrote.
   const cooldownRaw = (env.DRAFT_COOLDOWN_MS ?? '').trim();
-  const cooldownMs = cooldownRaw === '' ? null : Number(cooldownRaw);
-  if (cooldownMs !== null
+  const cooldownMs = cooldownRaw === '' ? HOST_COOLDOWN_MS : Number(cooldownRaw);
+  if (cooldownRaw !== ''
     && (!Number.isFinite(cooldownMs) || cooldownMs < 0 || cooldownMs > COOLDOWN_MAX_MS)) {
     throw new Error(
       `DRAFT_COOLDOWN_MS must be 0..${COOLDOWN_MAX_MS} (§4.2: the cooldown must stay short, `
@@ -189,7 +202,7 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfi
       ? env.DRAFT_TRUST_PROXY === '1' : PROD_BUILD,
     proxyHops: env.DRAFT_PROXY_HOPS ? Math.max(1, Number(env.DRAFT_PROXY_HOPS)) : 1,
     buildSha: env.RENDER_GIT_COMMIT ?? env.DRAFT_BUILD_SHA ?? null,
-    ...(cooldownMs === null ? {} : { engineTuning: { cooldownMs } }),
+    engineTuning: { cooldownMs },
   };
 }
 

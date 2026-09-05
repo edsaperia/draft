@@ -78,10 +78,11 @@
   (PRODUCTION.md stage 3, decision 437), so no misconfiguration can
   serve magic links — the code is not there. The view's `devMail:
   false` keeps the page from offering it.
-- **Engine tuning is a config field, never an env var** (`engineTuning`):
-  tests that adopt twice in one second pass cooldownMs 0; production
-  constructs its config from the environment, which cannot set it, so a
-  deployed room always runs the §4.2 pacing as shipped.
+- **Engine tuning is a config field, never an env var** (`engineTuning`),
+  with one exception: the cooldown is the operator's (SPEC §4.2, Q946),
+  read from `DRAFT_COOLDOWN_MS`, and **unset means none** (Ed, 2026-09-05,
+  R-086) — the variable switches pacing on. The rest of the tuning cannot
+  be set from the environment, so a deployed room runs it as shipped.
 - **The mail-minting doors are rate-limited**, minimally (Q346 territory):
   an in-memory per-IP bucket on create/login/apply, 20 per 10 minutes —
   a brake on mail floods, not an abuse story. Restart empties it.

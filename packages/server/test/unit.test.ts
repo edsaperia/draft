@@ -196,12 +196,15 @@ describe('stage 7: the two cutover switches, read inertly', () => {
    * minutes gives a 15-minute room three moments when the document can
    * change. Ed's answer is one minute; this is the only way to say so.
    */
-  it('DRAFT_COOLDOWN_MS: absent means the engine default, present means the room is paced', async () => {
-    const { configFromEnv, COOLDOWN_MAX_MS } = await import('../src/config.js');
+  it('DRAFT_COOLDOWN_MS: absent means no cooldown, present means the room is paced', async () => {
+    const { configFromEnv, COOLDOWN_MAX_MS, HOST_COOLDOWN_MS } = await import('../src/config.js');
     const env = { DRAFT_DATA_DIR: tmp(), DRAFT_SECRET: 's' };
-    // absent: the field is not there at all, so `engineTuning` stays
-    // undefined and `DEFAULT_TUNING` is what the engine gets
-    expect(configFromEnv(env).engineTuning).toBeUndefined();
+    // absent: the host default, which is no cooldown at all (Ed,
+    // 2026-09-05, R-086) — never the engine's shipped five minutes, which
+    // is what docs.vote silently ran at while the variable went unset
+    expect(HOST_COOLDOWN_MS).toBe(0);
+    expect(configFromEnv(env).engineTuning).toEqual({ cooldownMs: 0 });
+    expect(configFromEnv({ ...env, DRAFT_COOLDOWN_MS: '  ' }).engineTuning).toEqual({ cooldownMs: 0 });
     expect(configFromEnv({ ...env, DRAFT_COOLDOWN_MS: '60000' }).engineTuning)
       .toEqual({ cooldownMs: 60_000 });
     // 0 is legal and is not "absent": a test host wants adoptions in one

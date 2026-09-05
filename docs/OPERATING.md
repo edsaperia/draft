@@ -54,7 +54,7 @@ in the repo).
 | `DATABASE_URL` | Postgres connection string; required when `DRAFT_STORE=pg` | unset | Dashboard, when it exists — the frankfurt database's **internal** connection string |
 | `DRAFT_TRUST_PROXY` | `1`/`0`. Trust `x-forwarded-*` for the client IP and the original protocol | On in the built artifact, off in dev | Not set — the build's default is already right on Render |
 | `DRAFT_PROXY_HOPS` | How many proxies **append** to `x-forwarded-for`, i.e. how far from the right the client's own entry sits. Only consulted when the proxy states the client no other way | `1` | Not set. **Never raise it "to be safe"** — a count larger than the real chain reads an entry the client supplied, which is the spoof the count exists to prevent |
-| `DRAFT_COOLDOWN_MS` | The adoption metronome (SPEC §4.2) — how long after one adoption before the document can change again. Engine tuning, **never a room decision**: not a setting, not in the catalogue, not in the record. Above 5 min is a **boot refusal**, not a clamp | `300000` (5 min) | Not set day to day. **`60000` for a supervised alpha session** — at the default a 15-minute room has three moments when the document can change, and at a minute it has fifteen. Read at boot, so changing it is a restart, and a running document keeps what it was born with until then. `/healthz` states the value in force |
+| `DRAFT_COOLDOWN_MS` | The adoption metronome (SPEC §4.2) — how long after one adoption before the document can change again. Engine tuning, **never a room decision**: not a setting, not in the catalogue, not in the record. Above 5 min is a **boot refusal**, not a clamp | `0` — no cooldown; adoptions land as they clear (Ed, 2026-09-05, SPEC v0.97) | Not set. **Setting it switches pacing on**: `60000` gives a 15-minute room fifteen moments when the document can change. Before 2026-09-05 the unset default was the engine's `300000`, and docs.vote ran at it from the day it went live — the one-minute value in the earlier docs was never set anywhere. Read at boot, so changing it is a restart, and a running document keeps what it was born with until then. `/healthz` states the value in force |
 | `DRAFT_DESIGN_DIR` | Where `design/` is | `./design`, else `../../design`, whichever exists | Not set |
 | `RENDER_GIT_COMMIT` | The commit the process was built from, served as the `x-build` header | — | Render sets it |
 | `DRAFT_BUILD_SHA` | The same, anywhere that is not Render | unset | Not set |
@@ -65,9 +65,10 @@ Two things in that neighbourhood that are **not** configuration:
   set. `npm run build` bakes `prod` into `dist/server.mjs`, and that is what
   makes the artifact the production one: it refuses to boot
   half-configured, and the dev-outbox route is dropped from the bytes.
-- **Engine tuning** (cooldowns, hot-set size) is a config *field* and is
-  deliberately not readable from the environment, so a deployed room always
-  runs the pacing as shipped.
+- **Engine tuning** (hot-set size, deadlock thresholds and the rest) is a
+  config *field* and is deliberately not readable from the environment, so a
+  deployed room always runs as shipped. The one exception is the cooldown
+  above, which is the operator's by SPEC §4.2.
 
 **The production artifact fails fast.** It refuses to boot without
 `DRAFT_SECRET`, `DRAFT_BASE_URL` and `RESEND_API_KEY` — naming all of the
