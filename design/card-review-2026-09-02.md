@@ -33,7 +33,24 @@ tabs carrying the powers. `decisionLine(c, withPowers)` is the seam — the
 paragraph seam (`ctx.decisionLine`) passes true, every card site omits it.
 Head and paragraph are no longer byte-identical, deliberately.
 
-**The sheet Ed reviewed** is the same artifact re-captured after the build:
+**Round 3 (2026-09-05).** The sheet was re-captured from the tree at
+`84eb3d1` (the copy.js move complete, CP2's provenance radio in) — the same
+78 keys — and republished to the same URL with the artifact's `db`
+capability: **Ed's notes now save to the artifact's own store as he types**,
+collection `notes/round-2026-09-05/cards`, one document per card
+(`{ key: 'walk·key', title, text, at }`), read with the Artifact tool's
+`read_db` (list that collection; a row with empty `text` is a cleared box).
+Ed asked that they be read **as a batch** when he says he is done, never as
+they land — related problems repeat across cards. *Copy all notes* survives
+as the fallback. The audit at that capture stood at its stable ten. The
+sheet builder is still a scratch script (Q1145): a capture is
+`npm run card-audit -- --specimens=<file>`, and the builder takes the
+published page's skeleton (read the artifact), swaps `#draftcss`
+(system.css + setup.css), `#pagecss-N` (the capture's `sheets[N]`) and one
+`<template class="page">` per specimen, keeps the old sheet's 78-key
+selection and kind blurbs, and mounts without a doctype (Q1146).
+
+**The sheet Ed reviewed in round 2** is the same artifact re-captured after the build:
 https://claude.ai/code/artifact/bdd96cfd-768a-4354-adf1-619cf827ccb5 — all 78
 specimens, keys unchanged, so his comments will name `walk·key` as before.
 It has been re-captured twice since (versions `qa-round-2` and
