@@ -151,5 +151,160 @@ window.COPY = (function () {
     whyPlaceholder: 'We should change this because…',
   };
 
-  return { RULES, grammar };
+  // ---- the session surface (session.js) ------------------------------------
+  // The charter column, the margin rail, the composer, the records and the
+  // clock. Keyed by the renderer that speaks each string.
+  const session = {
+    // the needs-you-queue's own words
+    rail: {
+      draftTitle: 'Your draft — not proposed yet.',
+      yoursInRace: 'Yours, in the race',
+      noReason: 'no reason given yet — say what this is for',
+      placesOf: (n, of) => n + ' of ' + of + ' places',
+      stillDeciding: 'still deciding — click to change your mind',
+      deadlocked: (judges, comparisons) => 'Deadlocked — ' + judges +
+        ' people can’t agree on a proposal even after ' + comparisons +
+        ' votes. Can you propose something everyone will agree on?',
+    },
+    // the gap a draft stands in, named for the rail and the editing head
+    gap: {
+      atStart: 'A new clause at the start',
+      atEnd: 'A new clause at the end',
+      after: (words) => 'A new clause after: ' + words,
+    },
+    // the sealed record and the Founder's amendment card
+    record: {
+      amended: 'The Founder amended this',
+      founder: 'The Founder',
+      replaced: 'the text it replaced',
+      ok: 'OK',
+      okTitle: 'It leaves your margin and stays in the record',
+      tooltip: (judges, roster, floor, yoursLine) =>
+        judges + ' of ' + roster + ' weighed in · quorum was ' + floor + ' · ' + yoursLine,
+      youSaid: (verdict) => 'you ' + verdict,
+      youNever: 'you never voted on this',
+      undecided: 'Undecided at the close',
+      decided: 'Decided',
+      capped: 'the ranking maths stopped short on this one; the decision stands',
+    },
+    // the proposal row and the commit titles either side of the ✏️ hold
+    row: {
+      placesChanged: (n) => (n === 1 ? '1 place changed' : n + ' places changed'),
+      discardAll: 'Discard the whole draft — nothing has been spent on it',
+      discardDraft: 'Discard this draft — nothing has been spent on it yet',
+      closeNothing: 'Close — there is nothing here to put back',
+      broke: 'No ✏️ left — another arrives as the drip accrues',
+      holdPropose: 'Hold to propose this',
+      inAllPlaces: (n) => ' in all ' + n + ' places',
+      signedSuffix: ' — signed',
+      editCost: ' — one edit leaves your wallet to pay for it',
+      amend: 'Amend the document',
+      penCost: ' — it passes at once and costs nothing',
+      withdraw: 'Withdraw',
+      allPlaces: (n) => ' all ' + n + ' places',
+      withdrawCost: ' — the edit comes back in full',
+      submitted: '✏️ Submitted',
+      submittedTitle: 'Proposed — one edit spent. It is in the race now.',
+      idle: 'Nothing has changed yet — type in the document to start a draft',
+      reviewAmend: 'Review and amend the document',
+      reviewPropose: 'Review and propose this',
+    },
+    // the sign control (Q770): whether your name goes on the draft
+    sign: {
+      anonymousName: 'Anonymous',
+      anonLabel: 'Anonymous',
+      anonExpLead: 'Nobody is told who proposed this',
+      expEver: ' — ever.',
+      expUntil: ' until the document is finished.',
+      signedAs: (escName) => 'Signed — as ' + escName,
+      signedExp: 'Your name goes on it from the moment you propose it, and stays there.',
+    },
+    // the place-stepper a patch and a multi-site draft share
+    nav: {
+      prev: 'The place before',
+      next: 'The next place',
+      placeOf: (i, n) => ' · place ' + i + ' of ' + n,
+    },
+    // the editing card's own labels
+    compose: {
+      fieldLab: 'What you are proposing',
+      proposedLab: 'What you proposed',
+      draftLabel: 'Your draft',
+      rivalNote: 'Yours joins the proposals already racing here',
+      allPlacesNote: (n) => 'All ' + n + ' places go in as one change',
+    },
+    // the gutter tabs and the filed pile
+    chip: {
+      closeThis: 'Close this one',
+      openIt: ' — open it',
+      theRecord: ' — the record',
+      decided: ' — decided',
+      gapSection: ' — a section proposed for this gap',
+      filedPile: (n) => n + ' decided and filed at this clause — open them',
+    },
+    // the deadlock card: the reading room and the desk
+    dead: {
+      headLabel: 'The clause as it stands — and it is still standing',
+      fieldLab: (n) => 'Everything in flight · ' + n + ' proposals, oldest first',
+      deskLab: '✏️ propose something everyone can agree on',
+    },
+    // 🛡️ on the Text: the 👑 question and the note on a live race under it
+    crown: {
+      waits: 'If it passes it goes to the Founder, who may assent or refuse before it lands.',
+      foot: 'The membership passed this. Until you answer, the clause above stands.',
+      close: 'Close — the question stays pending',
+      refuse: 'Refuse — the Founder Veto holds it, and the clause above stands',
+      accept: 'Accept — a Founder Action passes it now',
+    },
+    // the salience diagonal
+    diag: {
+      headLabel: 'This card asks',
+      question: 'Which of these deserves more of the membership’s attention?',
+      fieldLab: 'The two questions',
+      foot: 'This ranks the questions, never the answers — neither text changes either way.',
+    },
+    race: {
+      foot: 'Neither of these has to win — the clause above stands unless the leader clears the approval threshold.',
+    },
+    patch: {
+      foot: (n) => 'One vote for all ' + n + ' places — choosing here chooses everywhere.',
+    },
+    insert: {
+      headLabel: 'The gap as it stands',
+    },
+    // the empty clause and the gap block, out of the text flow
+    blank: {
+      gap: 'Start a new clause here.',
+      mayPropose: 'Nothing here yet — start typing to propose the first paragraph.',
+      plain: 'Nothing here yet.',
+    },
+    // what a cast judgment reads back as (the locked card's own sentence)
+    verdict: {
+      approve: 'approved (recorded as: proposal beats current text)',
+      keep: 'kept the current text',
+      matters: (name) => 'said ' + name + ' matters more',
+      theFirst: 'the first',
+      theSecond: 'the second',
+      preferred: (quoted) => 'preferred ' + quoted,
+      equal: 'said they matter equally',
+      indifferent: 'indifferent',
+      skipped: 'skipped (recirculates with decay)',
+    },
+    // the session-clock's ladder (Q466/Q471) and the date in words
+    clock: {
+      months: ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+        'August', 'September', 'October', 'November', 'December'],
+      frozen: 'Frozen',
+      mustReturn: (n) => ' — ' + n + ' must return',
+      closed: (dateWords) => 'Closed ' + dateWords,
+      closingNow: 'closing now',
+      daysLeft: (d) => d + ' days left',
+      hoursLeft: (h) => h + ' hours left',
+      hmLeft: (h, mm) => h + 'h ' + mm + 'm left',
+      minutesLeft: (m) => m + ' minutes left',
+      underTen: 'under 10 minutes left',
+    },
+  };
+
+  return { RULES, grammar, session };
 })();
