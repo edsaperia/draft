@@ -2231,6 +2231,43 @@ export class Session {
     const cards: Card[] = [];
     const served = new Set<string>();
     let hotIndex = 0;
+    // **The unheard slots** (SPEC §8.2 made structural; Q1178, 2026-09-05).
+    // The hand's leading slots go to the races this participant hasn't
+    // judged that are still short of the floor, least-measured first — all
+    // of them, up to the hand, not one: a single slot re-starves the next
+    // fresh race behind whichever unheard race sorts first. The hot set is
+    // the top-`hotSetSize` *valued* races and a race with no evidence values
+    // below every race with some, so without this a fresh proposal reached
+    // nobody: every seat's whole hand held older races, and the new card
+    // arrived only after a member had cleared 3–11 of them (`room-walk`
+    // reproduces it). §8.2's own sentence — *the unheard are asked at the
+    // moment their silence would be foreclosed* — and §8.1's *new-candidate
+    // measurement scores as exploration* both point here; what the spec does
+    // not state is the guarantee, hence the question number.
+    {
+      const starving = races
+        .filter((r) => !judgedRaces.has(r.id) && r.distinctMovers < floor)
+        .sort((a, b) => a.comparisons - b.comparisons || a.id.localeCompare(b.id));
+      for (const r of starving) {
+        if (cards.length >= n) break;
+        const fit = this.fitRaceMembers(r.members, r.incumbentId);
+        const best = this.bestPairFor(
+          fit, r.members, r.incumbentId, participantId, r.rivalGateOpen);
+        if (best === null) continue;
+        served.add(pairKey(best.aId, best.bId));
+        cards.push({
+          kind: 'edge',
+          subtype:
+            best.aId === r.incumbentId || best.bId === r.incumbentId
+              ? 'incumbent'
+              : 'rival',
+          aId: best.aId,
+          bId: best.bId,
+          raceId: r.id,
+          value: best.value,
+        });
+      }
+    }
     // §8.3a idle serving: with the audience gate open and nothing else to
     // judge, the diagonal simply arrives — capped so the participant is
     // never asked more than three in a row, counting ones already judged.

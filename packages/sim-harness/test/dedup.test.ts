@@ -116,7 +116,16 @@ describe('sim regression: dedup off is byte-identical to before the gate existed
   // chain. Both variants still agree with each other, which is the invariant
   // this test defends
   // (was 3ec36c64ff9501c0f24c7d661323fc818b6598032d9bfd30c533448f77fd66bc).
-  const PINNED = '0f18a6b0eb3e0a74fb6e95ab84eec53c2e5f5f7365561617fd4252f26812e46d';
+  // Re-pinned 2026-09-05 (Q1178, the unheard slots): a race a participant
+  // hasn't judged that is short of the adoption floor now takes the hand's
+  // leading slots, least-measured first — without it a fresh proposal in a
+  // document whose hot set was full of evidenced races reached nobody
+  // (`room-walk`'s finding). Every persona's feed legitimately leads with
+  // different cards, so the comparisons, the adoption timings and the chain
+  // all move. Both variants still agree with each other, which is the
+  // invariant this test defends
+  // (was 0f18a6b0eb3e0a74fb6e95ab84eec53c2e5f5f7365561617fd4252f26812e46d).
+  const PINNED = 'dc729ecd80686db4a3c78ed725af3143bb40a481b71786b894373c422a34727f';
 
   const run = (withGate: boolean) =>
     runSession({

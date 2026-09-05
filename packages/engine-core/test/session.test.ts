@@ -487,6 +487,51 @@ describe('session lifecycle', () => {
   });
 
   /**
+   * **The unheard slot** (SPEC §8.2 made structural; Q1178, 2026-09-05): a
+   * race this participant hasn't judged, still short of the adoption floor,
+   * takes the hand's first card — least-measured first. Without it a fresh
+   * proposal in a document whose hot set is already full of evidenced races
+   * reached nobody: the hot set is the top-`hotSetSize` *valued* races, and
+   * a race with no evidence values below every race with some, so the new
+   * card arrived only after a member cleared their whole hand (found by
+   * `scripts/room-walk.mjs` playing a real room over HTTP). Exploration is
+   * switched off here so the slot is proven structural, not a lucky roll;
+   * the hot set is narrowed to 2 so the evidenced races genuinely crowd
+   * the fresh one out.
+   */
+  it('reserves the first slot for an unheard race a full hot set would starve', () => {
+    const s = openSession({
+      // bar out of reach, so the evidenced races stay live and hot
+      adoptionThresholdStart: 0.999, adoptionThresholdEnd: 0.999,
+      hotSetSize: 2, explorationEvery: 1_000_000,
+    }, 12); // floor 4
+    const { id: cA } = s.submitCandidate(1000, {
+      author: 'p1', patch: rewrite(0, 1, 'A.'), rationale: 'r' });
+    const { id: cB } = s.submitCandidate(2000, {
+      author: 'p2', patch: rewrite(0, 2, 'B.'), rationale: 'r' });
+    // four judges each: both races meet the floor and carry real evidence
+    for (const [i, p] of ['p3', 'p4', 'p5', 'p6'].entries()) {
+      s.judge(3000 + 2 * i, p, cA, s.raceOf(cA).incumbentId, 'a');
+      s.judge(3001 + 2 * i, p, cB, s.raceOf(cB).incumbentId, 'a');
+    }
+    // the fresh proposal: no measured comparisons, floor unmet
+    const { id: cC } = s.submitCandidate(5000, {
+      author: 'p7', patch: rewrite(0, 3, 'C.'), rationale: 'r' });
+    const raceC = s.raceOf(cC).id;
+    // p8 has judged nothing: their very next hand leads with the unheard race
+    const hand = s.feed('p8', 4, 6000);
+    expect(hand.length).toBeGreaterThan(0);
+    expect(hand[0]!.raceId).toBe(raceC);
+    expect([hand[0]!.aId, hand[0]!.bId]).toContain(cC);
+    // and the slot is per-participant: once p8 has judged it, their next
+    // hand's first card is one of the evidenced races again
+    s.judge(7000, 'p8', cC, s.raceOf(cC).incumbentId, 'a');
+    const next = s.feed('p8', 4, 8000);
+    expect(next.length).toBeGreaterThan(0);
+    expect(next[0]!.raceId).not.toBe(raceC);
+  });
+
+  /**
    * **An author is never served their own text against the incumbent** (Ed,
    * 2026-08-29, backlog 253; SPEC §3.3, R-062): the preference is derived
    * and already held, so the card asks a question the engine answered
