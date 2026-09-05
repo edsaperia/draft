@@ -3901,15 +3901,15 @@
 
   const VALUE = {
     text: () => { const n = proseCounts().blocks;
-      return n ? n + ' blocks' : (cs && cs.textConfirmed ? 'Starts empty — the membership writes it' : 'Nothing yet'); },
-    title: () => S.title || 'Not named yet',
+      return n ? PAGE_COPY.val.blocks(n) : (cs && cs.textConfirmed ? PAGE_COPY.val.startsEmpty : PAGE_COPY.val.nothingYet); },
+    title: () => S.title || PAGE_COPY.val.notNamed,
     slug: () => docAddr(S.slug || '…'),
     invite: () => ADM_RULE[admissionPrice()],
     remove: () => REMOVAL_RULE[removalPrice()],
-    myemail: () => (S.emailVerified ? S.myemail + ' · verified'
-      : S.emailSent ? 'Check your inbox' : 'Not given yet'),
-    myname: () => S.myname || 'Not given yet',
-    mypic: () => (S.mypic ? 'Chosen' : 'Your initials'),
+    myemail: () => (S.emailVerified ? S.myemail + PAGE_COPY.val.verifiedTail
+      : S.emailSent ? PAGE_COPY.val.checkInbox : PAGE_COPY.val.notGiven),
+    myname: () => S.myname || PAGE_COPY.val.notGiven,
+    mypic: () => (S.mypic ? PAGE_COPY.val.chosen : PAGE_COPY.val.initials),
     // an invitee is not a member yet (§9.6a): the line counts the arrived,
     // and says who is still only invited
     admission: () => ADM_RULE[admissionPrice()],
@@ -3923,28 +3923,28 @@
     pace: () => { const v = takenValOf('pace');
       const shape2 = v ? v.shape : S.shape;
       const start2 = v && v.shape === 'ramp' ? v.startPct : S.tStart;
-      return (perpetual() ? 'Fixed — no end date to rise towards'
-        : shape2 === 'ramp' ? 'Rising from ' + start2 + '%' : 'The same number throughout'); },
+      return (perpetual() ? PAGE_COPY.val.fixedNoEnd
+        : shape2 === 'ramp' ? PAGE_COPY.val.risingFrom(start2) : 'The same number throughout'); },
     quorum: () => (S.quorumForm === 'count'
-      ? Math.min(takenOf('quorum') || S.quorumN, E()) + ' of ' + E()
-      : (takenOf('quorum') || S.quorumPct) + '% — ' + quorumCount() + ' of ' + E()),
+      ? PAGE_COPY.val.quorumOf(Math.min(takenOf('quorum') || S.quorumN, E()), E())
+      : PAGE_COPY.val.quorumPct(takenOf('quorum') || S.quorumPct, quorumCount(), E())),
     authorship: () => ({'anonymous':'Nobody’s name, ever','anonymousElective':'Nobody’s name unless they choose','sealed':'Names at the close','sealedElective':'Names at the close, or earlier by choice','public':'Names from the start'})[takenOf('authorship') || (S.authorship === 'roster' ? 'anonymous' : S.authorship)],
     judgments: () => ({ never: 'Never revealed', after: 'Revealed at the end' }[
       takenOf('judgments') || (S.judgments === 'roster' ? 'never' : S.judgments)]),
     rate: () => { const v = takenValOf('rate');
-      return 'One every ' + dripPhrase(v ? v.dripMinutes : S.dripMin); },
+      return PAGE_COPY.val.oneEvery(dripPhrase(v ? v.dripMinutes : S.dripMin)); },
     // (🌍 and 🤝 are stated once, above, module-first like every neighbour:
     // a second entry here used to override them and read S alone)
     lapse: () => (S.lapse === 'never' ? 'Never — however long you are away'
-      : 'After ' + S.lapseDays + ' days without logging in'),
+      : PAGE_COPY.val.lapseAfter(S.lapseDays)),
     removal: () => REMOVAL_RULE[removalPrice()],
-    canpropose: () => (canPropose() ? 'Open' : 'Waiting on the start'),
+    canpropose: () => (canPropose() ? PAGE_COPY.val.open : PAGE_COPY.val.waitingStart),
     // the three grants carry no subtitle (Ed's card review, 2026-09-02:
     // *remove body text "You hold Founder Actions" from the queue card*;
     // STYLE §4 as amended — the title names the power, the card says the rest)
-    begin: () => (constituted() ? 'Begun' + foundedAt() : 'Not yet begun'),
-    closing: () => (cs && cs.closed ? 'Closed' + closedAtWords() : ''),
-    canjudge: () => (canJudge() ? 'Open' : 'Waiting on the constitution'),
+    begin: () => (constituted() ? PAGE_COPY.val.begun + foundedAt() : PAGE_COPY.val.notBegun),
+    closing: () => (cs && cs.closed ? PAGE_COPY.val.closed + closedAtWords() : ''),
+    canjudge: () => (canJudge() ? PAGE_COPY.val.open : PAGE_COPY.val.waitingConstitution),
   };
   // **The readback quotes the document** (Q1112, Ed's survey item 8, answered
   // *yes*, 2026-09-01): *You said* is followed by the sentence the answer
@@ -3953,7 +3953,7 @@
   // the named clause builder above `DECIDED`, so a member's answer and the
   // rule it would set are the same words. A rung the surface has retired but
   // a document still holds falls through to the raw token, as it always did.
-  const said = (s) => 'You said: “' + s + '”';
+  const said = PAGE_COPY.said;
   const ANSVALUE = {
     quorum: (v) => said(QUORUM_RULE(v, S.myAns.quorumForm)),
     bar: (v) => said(BAR_RULE(v, null)),
@@ -3978,15 +3978,15 @@
     // own number and unit
     rate: (v) => said(RATE_RULE(+v * (DRIP_UNITS[S.myAns.rateUnit] || 1))),
   };
-  const ANSASK = { quorum: 'The lowest you will accept', bar: 'The lowest you will accept',
-    ending: 'The latest you will accept', authorship: 'The most you will accept',
-    judgments: 'The most you will accept',
-    chamber: 'The most you will accept',
-    applications: 'The most open you will accept',
-    lapse: 'The shortest you will accept',
-    admission: 'The cheapest you will accept',
-    removal: 'The easiest you will accept',
-    rate: 'The most generous you will accept' };
+  const ANSASK = { quorum: PAGE_COPY.ask.lowest, bar: PAGE_COPY.ask.lowest,
+    ending: PAGE_COPY.ask.latest, authorship: PAGE_COPY.ask.most,
+    judgments: PAGE_COPY.ask.most,
+    chamber: PAGE_COPY.ask.most,
+    applications: PAGE_COPY.ask.mostOpen,
+    lapse: PAGE_COPY.ask.shortest,
+    admission: PAGE_COPY.ask.cheapest,
+    removal: PAGE_COPY.ask.easiest,
+    rate: PAGE_COPY.ask.mostGenerous };
   // **A power tab has no VALUE of its own — its value *is* its rule.**
   // `chipsFor` hands every viewer the ✒️/🛡️ tabs of a settled setting, and on
   // any chair but the founder's the card body is `readBody`, which asks for
@@ -4012,7 +4012,7 @@
   // as news, where what happened is the whole point.
   const summary = (c) => {
     const m = motionOn(c);
-    if (m) return 'Under motion — ' + esc(m.to);
+    if (m) return PAGE_COPY.underMotion + esc(m.to);
     if (stateOf(c, ctx) === 'news') return value(c);
     return '';
   };
@@ -4117,7 +4117,7 @@
   // wallet and there is nothing to explain where the setting's own pen is
   // down — that card has already stopped being the founder's to edit (step 3).
   const penOkFor = (glyph, c) => glyph !== '✒️' || (c ? mayPenOn(c.k) : mayPen());
-  const penWaitTitle = 'Founder Actions ✒️ are waiting in your tasks — accept them and this turns.';
+  const penWaitTitle = PAGE_COPY.penWait;
 
   // ---- motions (stage D of the merge, Ed 361) ---------------------------
   // A motion is the act of changing a **settled** document's rules (§9.6a):
@@ -4152,7 +4152,7 @@
     const rows = c.k === 'invite'
       ? S.roster.filter((p) => !p.in)
       : (cs ? S.roster.filter((p) => removalPendingIds().has(p.mid || 'founder')) : []);
-    const empty = c.k === 'invite' ? 'Nobody has been invited yet.' : 'Nobody is proposed for removal.';
+    const empty = c.k === 'invite' ? PAGE_COPY.doorEmpty.invite : PAGE_COPY.doorEmpty.remove;
     return '<div class="headpeople">' + (rows.length
       ? rows.map((p) => '<span class="hp">' + avHtml(p) + ' ' +
           esc(p.n || p.e || 'Anonymous') + '</span>').join('')
@@ -4468,10 +4468,10 @@
   const founderSpeaker = (why) => {
     const f = founderInfo();
     return '<div class="speaker founderspoke">' + avHtml(f) +
-      '<div class="spksaid"><span class="who">' + esc((f.n || '').trim() || 'The Founder') +
-      ' <span title="The founder’s own hand — a Founder Action ✒️, not a proposal">👑</span></span>' +
+      '<div class="spksaid"><span class="who">' + esc((f.n || '').trim() || PAGE_COPY.theFounder) +
+      ' <span title="' + PAGE_COPY.crownHand + '">👑</span></span>' +
       (why ? '<div class="said">' + esc(why) + '</div>'
-        : '<div class="said none">No reason given.</div>') + '</div></div>';
+        : '<div class="said none">' + window.COPY.grammar.speaker.noReason + '</div>') + '</div></div>';
   };
   // the same speaker, with the reason still being written. It is the
   // editing-card's own arrangement — you write the sentence in the place and
@@ -4482,11 +4482,11 @@
     // raised like every other rationale composer (Ed's QA, 2026-09-02 pm):
     // the lanebox is what whyLane wraps a member's reason in
     return '<div class="lanebox whylane"><div class="speaker founderspoke">' + avHtml(f) +
-      '<div class="spksaid"><span class="who">' + esc((f.n || '').trim() || 'The Founder') +
-      ' <span title="The founder’s own hand — a Founder Action ✒️, not a proposal">👑</span></span>' +
+      '<div class="spksaid"><span class="who">' + esc((f.n || '').trim() || PAGE_COPY.theFounder) +
+      ' <span title="' + PAGE_COPY.crownHand + '">👑</span></span>' +
       '<div class="said edit-why' + (v ? '' : ' blank') + '" contenteditable="plaintext-only"' +
       ' spellcheck="false" data-setwhy="1"' +
-      ' data-placeholder="I am changing this because…">' + esc(v) + '</div></div></div></div>';
+      ' data-placeholder="' + PAGE_COPY.whyChangingPlaceholder + '">' + esc(v) + '</div></div></div></div>';
   };
   const mvalTyped = (k, disp) => {
     if (card(k) && card(k).door) return null; // membership sentences parse at commit
@@ -4619,11 +4619,10 @@
   // not a member, so there is no ✏️ to spend and `openMotion` would refuse
   // them anyway. Drawn exactly where the pair would otherwise stand.
   const founderPairNote = (c) => (founderPairOn(c) && !viewerIsMember()
-    ? '<p class="setnote">You are not a member, so there is no ✏️ for you to spend — ' +
-      'this one is yours to set.</p>' : '');
+    ? '<p class="setnote">' + PAGE_COPY.clerkNoPencil + '</p>' : '');
   // what a press finds when the value it was drawn for has gone (F17: a click
   // that lands on nothing is answered). One sentence, both gestures.
-  const NOTHING_TO_PUT = 'That could not be proposed: nothing is chosen on this card.';
+  const NOTHING_TO_PUT = PAGE_COPY.nothingToPut;
   // **The founder's editing body follows the setting's own pen** (entry 62).
   // True exactly where the founder is being shown the card and no longer has
   // the hand it is drawn for: the value radios, the title lane, the delegate
@@ -4830,7 +4829,7 @@
       // off it; the `d/` is optional in the strip so a draft composed before
       // the address gained its route still round-trips into the box
       '<input data-mslug="1" value="' + esc((d.to || S.slug).replace(/^docs\.vote\/(?:d\/)?/, '')) + '" style="width:12rem">.',
-      '<p class="setnote">Every link the document has ever had keeps working — a change leaves a redirect behind.</p>'),
+      '<p class="setnote">' + PAGE_COPY.composeNote.redirect + '</p>'),
     pace: (d) => lanesFor(d, [['The same number throughout',
         'The approval threshold stays the same all the way through.']], 'pace') +
       inputBlock('The approval threshold starts at ' +
@@ -4853,7 +4852,7 @@
           '<input type="datetime-local" data-mdate="1" value="' + esc(S.endsAt || '') + '">.') +
         lanesFor(d, [['Never — it runs until too few members are active',
           'The drafting process has no set end — it runs until too few members are active.']], 'ending') +
-        (never ? '<p class="setnote">Taking the end date away needs all members to agree — with no end date the approval threshold cannot rise.</p>' : '');
+        (never ? '<p class="setnote">' + PAGE_COPY.composeNote.neverNeedsAll + '</p>' : '');
     },
     // the ceiling note (Q840) rides the founder's own control as well as the
     // member's slider — a founder setting 85% alone in the room is told
@@ -4908,31 +4907,31 @@
       ['Members only', 'Only members can read the document.'],
       ['Anyone with the link', 'Anyone with the link can read it; it is not listed.']], 'chamber'),
     applications: (d) => lanesFor(d, POLICY_TEXTS, 'applications') +
-      '<p class="setnote">One motion proposes one rule; what you do not touch stands.</p>',
+      '<p class="setnote">' + PAGE_COPY.composeNote.oneMotionOneRule + '</p>',
     // ✉️: whom to bring in — the invite half of what was one roster
     // composer (Ed, 2026-08-19, 400a)
     invite: (d) =>
-      '<div class="roster"><div class="addrow"><input placeholder="Somebody to invite" data-mjoin="1">' +
-      '<button class="btn" data-mjoinbtn="1">Invite</button></div></div>' +
-      '<p class="setnote">An invitation is constitutional, because the membership is what quorum is a fraction of: all members must agree, and one who says no keeps them out.</p>',
+      '<div class="roster"><div class="addrow"><input placeholder="' + PAGE_COPY.composeNote.somebodyToInvite + '" data-mjoin="1">' +
+      '<button class="btn" data-mjoinbtn="1">' + PAGE_COPY.composeNote.inviteBtn + '</button></div></div>' +
+      '<p class="setnote">' + PAGE_COPY.composeNote.inviteConstitutional + '</p>',
     // ❌: the membership, in front of you, with an ✕ beside each — which
     // is what “propose a removal” means
     // **One control names the subject** (entry 96): the same dropdown the pen
     // branch uses, members and invitees alike, in place of a ✕ on every row.
     remove: (d) => (() => {
       const rows = removableRows();
-      if (!rows.length) return '<p class="setnote">There is nobody to remove.</p>';
+      if (!rows.length) return '<p class="setnote">' + PAGE_COPY.door.nobodyToRemove + '</p>';
       const val = (p) => (p.n || p.e) + ' leaves the membership';
       return '<span class="fld"><select data-mval-sel="1" style="min-width:18rem">' +
-        '<option value=""' + (d.to ? '' : ' selected') + '>Choose somebody to remove…</option>' +
+        '<option value=""' + (d.to ? '' : ' selected') + '>' + PAGE_COPY.door.choose + '</option>' +
         rows.map((p) => '<option value="' + esc(val(p)) + '"' +
           (d.to === val(p) ? ' selected' : '') + '>' +
-          esc(p.n || p.e || 'Anonymous') + (p.in ? '' : ' — invited, not yet here') +
+          esc(p.n || p.e || PAGE_COPY.door.anonymous) + (p.in ? '' : PAGE_COPY.door.invitedNotHere) +
           '</option>').join('') + '</select></span>'; })() +
       // no route note: the 🥾 clause states how a removal is decided, and
       // hardcoding one rung here lied under the other two (copy pass,
       // 2026-08-19)
-      '<p class="setnote">Whoever it is will see the proposal — nobody is removed in secret.</p>',
+      '<p class="setnote">' + PAGE_COPY.composeNote.removalSeen + '</p>',
   };
 
   // A constitutional motion re-opens consent: what is proposed, what stands,
@@ -4948,14 +4947,14 @@
       '<span class="exp">' + exp + '</span>' +
       '<button class="lanepick" aria-pressed="' + (S.mAns[key] === v) +
       '" data-motion="' + v + '"><span class="dot"></span>' +
-      '<span class="off">Prefer this</span><span class="on">Preferred</span></button>' +
+      '<span class="off">' + window.COPY.grammar.lane.prefer + '</span><span class="on">' + window.COPY.grammar.lane.preferred + '</span></button>' +
       '</div>').join('') + '</div>';
   const inviteBody = (m) =>
-    '<p class="why">Whether <b>' + esc(m.invite) + '</b> joins the membership. Adding a member changes what quorum is a fraction of, so it is constitutional: the most restrictive answer wins, and one member who says no keeps them out.</p>' +
+    '<p class="why">' + PAGE_COPY.consent.inviteWhy(esc(m.invite)) + '</p>' +
     consentPicks('invite', [
-      ['no', 'I would rather they did not', 'They stay out. Nobody is told who said so.'],
-      ['yes', 'I accept them joining', 'They start with the ✏️s everyone got, plus what the drip has added since, and quorum recomputes.'],
-      ['abstain', 'Abstain', 'An answer, not a block: they can join without your consent counting either way.'],
+      ['no'].concat(PAGE_COPY.consent.inviteNo),
+      ['yes'].concat(PAGE_COPY.consent.inviteYes),
+      ['abstain'].concat(PAGE_COPY.consent.inviteAbstain),
     ]) + BLINDNOTE;
   const removeBody = (m) => {
     const nm = nameOfMember(m.removee);
@@ -4963,17 +4962,17 @@
     // motion running against them — ruled, Ed 2026-08-19 — and is asked
     // nothing; it settles without them.
     if (removalPrice() === 'assembly' && m.removee && m.removee === viewerId()) {
-      return '<p class="why">Whether <b>you</b> leave the membership. Under this document’s rule that is decided by <b>everyone but you</b> — you see it running, and your answer is not asked.</p>' +
-        '<p class="setnote">' + (m.judged || 0) + ' of ' + Math.max(E() - 1, 0) + ' have answered. One refusal keeps you in.</p>';
+      return '<p class="why">' + PAGE_COPY.consent.removeSelfWhy + '</p>' +
+        '<p class="setnote">' + PAGE_COPY.consent.removeSelfCount(m.judged || 0, Math.max(E() - 1, 0)) + '</p>';
     }
-    return '<p class="why">Whether <b>' + esc(nm) + '</b> leaves the membership. Removing a member changes what quorum is a fraction of, so it is constitutional — ' +
+    return '<p class="why">' + PAGE_COPY.consent.removeWhy(esc(nm)) +
     (removalPrice() === 'assembly'
-      ? 'decided by everyone but them; they see it running.'
-      : 'and their own answer counts among everyone’s.') + '</p>' +
+      ? PAGE_COPY.consent.removeByOthers
+      : PAGE_COPY.consent.removeByAll) + '</p>' +
     consentPicks('remove', [
-      ['no', 'They stay', 'Nobody is told who said so.'],
-      ['yes', 'I accept their leaving', 'Their votes already cast keep counting; quorum recomputes.'],
-      ['abstain', 'Abstain', 'An answer, not a block.'],
+      ['no'].concat(PAGE_COPY.consent.removeNo),
+      ['yes'].concat(PAGE_COPY.consent.removeYes),
+      ['abstain'].concat(PAGE_COPY.consent.removeAbstain),
     ]) + BLINDNOTE;
   };
   // **Honour, said where the vote is cast** (entry 31, Ed 2026-08-26): a
@@ -4982,12 +4981,12 @@
   // `why` is about the choice, not the change.
   const consentBody = (c, m) => (m.invite ? inviteBody(m)
     : m.removee !== undefined ? removeBody(m) :
-    '<p class="why">' + (c.k === 'authorship' ? '<b>Proposals keep the privacy they were made under.</b> ' : '') +
-    'Whether <b>' + esc(m.to) + '</b> replaces <i>' + esc(standsOf(c.k)) + '</i>. There is no vote here: you state what you will accept, and one refusal keeps what stands.</p>' +
+    '<p class="why">' + (c.k === 'authorship' ? PAGE_COPY.consent.honour : '') +
+    PAGE_COPY.consent.setWhy(esc(m.to), esc(standsOf(c.k))) + '</p>' +
     consentPicks(c.k, [
-      ['no', 'Keep what stands', 'Nobody is told who said so.'],
-      ['yes', 'I accept the change', 'It passes once all ' + E() + ' stand at accept — or abstain.'],
-      ['abstain', 'Abstain', 'An answer, not a block: the motion can pass without your consent counting either way.'],
+      ['no'].concat(PAGE_COPY.consent.setNo),
+      ['yes'].concat(PAGE_COPY.consent.setYes(E())),
+      ['abstain'].concat(PAGE_COPY.consent.setAbstain),
     ]) + BLINDNOTE);
 
   // dev only (with the dropdown, Ed 362): complete the founding in one press,
