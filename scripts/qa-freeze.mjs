@@ -36,13 +36,16 @@ const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 
 const STEPS = [
   { name: 'the frozen reference', script: 'scripts/probe.mjs' },
-  { name: 'the copy golden', script: 'scripts/copy-check.mjs' },
+  // two copy goldens since 2026-09-05: the words themselves (static, from
+  // design/copy.js) and what the walks render (the card-audit drive)
+  { name: 'the copy-source golden', script: 'scripts/copy-check.mjs' },
+  { name: 'the copy golden', script: 'scripts/copy-check.mjs', args: ['--walk'] },
   { name: 'the founding golden', script: 'scripts/founding-golden.mjs' },
 ];
 
 for (const step of STEPS) {
-  console.log(`\n=== ${step.name} — node ${step.script} --update`);
-  const r = spawnSync(process.execPath, [join(ROOT, step.script), '--update'], {
+  console.log(`\n=== ${step.name} — node ${step.script} ${(step.args || []).concat('--update').join(' ')}`);
+  const r = spawnSync(process.execPath, [join(ROOT, step.script), ...(step.args || []), '--update'], {
     cwd: ROOT,
     stdio: 'inherit',
   });

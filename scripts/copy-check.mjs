@@ -11,8 +11,21 @@
  * is now a red build and a reviewed diff, and moving the golden is a separate,
  * named act whose diff is what the next STYLE.md pass reads.
  *
- *   node scripts/copy-check.mjs            # compare, exit 1 on a diff
- *   node scripts/copy-check.mjs --update   # refresh the golden on purpose
+ *   node scripts/copy-check.mjs            # static: copy.js against its own golden, milliseconds
+ *   node scripts/copy-check.mjs --walk     # the Playwright walk against card-copy.golden.json
+ *   node scripts/copy-check.mjs --update   # refresh the active mode's golden on purpose
+ *
+ * **Two modes, two goldens, two failure classes** (Ed, 2026-09-05, Part 3 of
+ * the copy brief). Since the move, every member-readable string lives in
+ * `design/copy.js`; the fast **static** mode (the default) reads that file in
+ * a vm — no browser — and diffs every string and template against
+ * `design/tools/copy-source.golden.json`, so *the words changed* is a red in
+ * CI's `ci` job within seconds of every push. What the static mode cannot
+ * see is what the page *does* with the words — a string dropped from a card,
+ * shown twice, or interpolated wrongly — and that stays the **walk** mode's
+ * job, behind `--walk`: the original ~3-minute card-audit drive against
+ * `card-copy.golden.json`, in CI's `probe` job as ever. `npm run copy-freeze`
+ * refreshes both.
  *
  * **Why a script of its own** rather than a `--strings` mode of `card-audit`,
  * and not a check inside `spec-check`. The time is in the walks, not in the
@@ -41,10 +54,77 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import vm from 'node:vm';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const GOLDEN = join(ROOT, 'design', 'tools', 'card-copy.golden.json');
 const update = process.argv.includes('--update');
+const walkMode = process.argv.includes('--walk');
+
+/**
+ * The static mode: `design/copy.js`, flattened and frozen. Every string is
+ * recorded at its COPY path; a template function is recorded as its own
+ * source (newlines normalised), so an edit to any constant fragment of it is
+ * a diff that names the template. The golden is derived from copy.js alone —
+ * it says *these are the approved words*, and nothing about rendering, which
+ * is the walk golden's claim and stays so.
+ */
+function staticMode() {
+  const SRC_GOLDEN = join(ROOT, 'design', 'tools', 'copy-source.golden.json');
+  const ctx = { window: {} };
+  ctx.globalThis = ctx;
+  vm.createContext(ctx);
+  try {
+    vm.runInContext(readFileSync(join(ROOT, 'design', 'copy.js'), 'utf8'), ctx, { filename: 'copy.js' });
+  } catch (e) {
+    console.error(String(e && e.message));
+    console.error('\ndesign/copy.js did not evaluate — the instrument failed, which is not a copy change');
+    process.exit(2);
+  }
+  const COPY = ctx.window.COPY;
+  if (!COPY || typeof COPY !== 'object') {
+    console.error('design/copy.js evaluated but set no window.COPY — not a copy change');
+    process.exit(2);
+  }
+  const entries = {};
+  const flat = (v, path) => {
+    if (typeof v === 'string') { entries[path] = v.replace(/\r\n/g, '\n'); return; }
+    if (typeof v === 'function') { entries[path] = 'ƒ ' + String(v).replace(/\r\n/g, '\n'); return; }
+    if (v && typeof v === 'object') {
+      for (const k of Object.keys(v).sort()) flat(v[k], path ? path + '.' + k : k);
+      return;
+    }
+    // a number or a boolean in the copy file is a surprise worth stopping on:
+    // nothing here should be anything but words and the templates that make them
+    console.error(`design/copy.js holds a ${typeof v} at ${path} — not a string or a template`);
+    process.exit(2);
+  };
+  flat(COPY, '');
+  const out = { meta: { entries: Object.keys(entries).length }, entries };
+
+  if (update || !existsSync(SRC_GOLDEN)) {
+    writeFileSync(SRC_GOLDEN, JSON.stringify(out, null, 1) + '\n');
+    console.log(`${update ? 'updated ' : 'wrote '}${SRC_GOLDEN} (${out.meta.entries} entries)`);
+    process.exit(0);
+  }
+  const golden = JSON.parse(readFileSync(SRC_GOLDEN, 'utf8'));
+  const a = golden.entries || {};
+  const diffs = [];
+  for (const k of [...new Set([...Object.keys(a), ...Object.keys(entries)])].sort()) {
+    if (!(k in entries)) { diffs.push(`gone: ${k} — was ${JSON.stringify(a[k])}`); continue; }
+    if (!(k in a)) { diffs.push(`new: ${k} — ${JSON.stringify(entries[k])}`); continue; }
+    if (a[k] !== entries[k]) diffs.push(`${k}: ${JSON.stringify(a[k])} → ${JSON.stringify(entries[k])}`);
+  }
+  if (diffs.length) {
+    console.log(diffs.join('\n'));
+    console.log(`\n${diffs.length} difference(s) from the copy-source golden — a copy change is deliberate: ` +
+      'run npm run copy-freeze and read the diff against STYLE.md §8');
+    process.exit(1);
+  }
+  console.log(`the copy source matches its golden (${out.meta.entries} entries)`);
+  process.exit(0);
+}
+if (!walkMode) staticMode();
 
 const run = spawnSync(process.execPath, [join(ROOT, 'design', 'tools', 'card-audit.mjs'), '--json'],
   { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });

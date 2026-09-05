@@ -943,7 +943,9 @@ function checkComposer(M, pm) {
   // setting**, which is the same half-done-rename shape in a new dress — and
   // a `lanesFor` argument this cannot resolve is still a finding, never a
   // silent pass.
-  const rules = new Map(keyBodies(uncomment(objLit(js('design/cards.js'), 'RULES')))
+  // the RULES sentences live in design/copy.js since 2026-09-05 (Ed's brief,
+  // Part 3: copy edits touch that file only); cards.js keeps the readers
+  const rules = new Map(keyBodies(uncomment(objLit(js('design/copy.js'), 'RULES')))
     .map(([k, b]) => [k, [...b.matchAll(/:\s*'((?:\\.|[^'\\])*)'/g)].map((m) => m[1])]));
   const ruleSays = (fn, arg) => {
     const m = arg.match(new RegExp(`^${fn}\\('([A-Za-z]+)'\\)$`));
@@ -1039,7 +1041,7 @@ function checkPicture() {
 
 function checkBannedWords() {
   note('Banned words — STYLE.md §1–2 over every file a member reads from');
-  const files = ['design/cards.js', 'design/session.js', 'design/setup.js', 'design/session-view.html'];
+  const files = ['design/copy.js', 'design/cards.js', 'design/session.js', 'design/setup.js', 'design/session-view.html'];
   const banned = BANNED;
   for (const f of files) {
     // comments are exempt (CLAUDE.md: code comments may cite the spec); class names in markup are not copy
@@ -1081,7 +1083,7 @@ function checkBannedWords() {
  */
 function checkListJoiner() {
   note('The list-joiner — STYLE.md §1 over every file a member reads from (Q630)');
-  const files = ['design/cards.js', 'design/session.js', 'design/setup.js', 'design/session-view.html'];
+  const files = ['design/copy.js', 'design/cards.js', 'design/session.js', 'design/setup.js', 'design/session-view.html'];
   let sites = 0; let hand = 0;
   for (const f of files) {
     // comments exempt, and **line numbers preserved**, which is why the block

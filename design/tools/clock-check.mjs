@@ -20,6 +20,8 @@ const ctx = { window: win, document: { getElementById: () => null, querySelector
 ctx.globalThis = ctx;
 vm.createContext(ctx);
 // session.js destructures window.CARDS at load, so the card grammar goes first
+// — and the grammar reads its words off window.COPY, so copy.js goes before it
+vm.runInContext(readFileSync(join(here, '..', 'copy.js'), 'utf8'), ctx, { filename: 'copy.js' });
 vm.runInContext(readFileSync(join(here, '..', 'cards.js'), 'utf8'), ctx, { filename: 'cards.js' });
 vm.runInContext(src, ctx, { filename: 'session.js' });
 const { clockText, dateWords } = win.SESSION;

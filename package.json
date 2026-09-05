@@ -32,7 +32,7 @@
     "seat-matrix": "node scripts/seat-matrix.mjs",
     "founding-golden": "node scripts/founding-golden.mjs",
     "copy-check": "node scripts/copy-check.mjs",
-    "copy-freeze": "node scripts/copy-check.mjs --update",
+    "copy-freeze": "node scripts/copy-check.mjs --update && node scripts/copy-check.mjs --walk --update",
     "qa:freeze": "node scripts/qa-freeze.mjs",
     "emoji-data": "node scripts/emoji-data.mjs",
     "founder-answers": "node scripts/founding-walk.mjs --delegate=chamber",

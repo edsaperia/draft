@@ -78,6 +78,7 @@ const FROZEN = [
   'setup.js',
   'setup.css',
   'cards.js',
+  'copy.js',
   'system.css',
   'constitution.js',
   'emoji-data.js',

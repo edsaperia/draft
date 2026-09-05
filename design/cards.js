@@ -22,6 +22,11 @@
 window.CARDS = (function () {
   'use strict';
 
+  // Every member-readable string this grammar renders lives in copy.js
+  // (Ed's brief, 2026-09-05, Part 3: copy edits touch that file only); `G`
+  // is the grammar's own section of it. copy.js loads before this file.
+  const G = window.COPY.grammar;
+
   // Full five-character escaping (PRODUCTION.md stage 3, defect 4): esc'd
   // strings land in attribute values as well as text (a lane's valAttr
   // carries member-proposed setting values on the live page), and an
@@ -386,7 +391,7 @@ window.CARDS = (function () {
   // current text, needs no seed at all.
   function laneSeed(s, lane, key) {
     if (lane === 'keep') return null;
-    const note = 'the proposal you are editing';
+    const note = G.seedNote;
     // a `deadlock-card`'s field is a slate, so the lane is its index in it
     if (String(lane).startsWith('slate:')) {
       const c = (s.slate || [])[+String(lane).slice(6)];
@@ -401,11 +406,11 @@ window.CARDS = (function () {
   }
   const laneProposeHtml = (s, lane, key) =>
     '<button class="lanepropose" data-propose-from="' + s.id + '|' + lane + '|' + (key || '') +
-    '" title="Write your own version of this proposal. Free to open — proposing costs one edit.">' +
+    '" title="' + G.proposeEdit.title + '">' +
     // "propose edit" rather than "edit this" (Ed, 2026-08-17): what the button
     // starts is a *proposal*, and "edit this" promises an edit — which is the
     // one thing this surface never lets you do to the charter directly.
-    '✏️ propose edit</button>';
+    G.proposeEdit.label + '</button>';
 
   const initials = (n) => String(n).trim().split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 
@@ -498,8 +503,7 @@ window.CARDS = (function () {
   const speakerHtml = (why, title, who) => {
     const p = personOf(who);
     const name = p ? String(p.n || '') : '';
-    const ttl = title || (p ? esc(name) + ' wrote this.'
-      : 'A member wrote this. Who, is sealed until the closing record.');
+    const ttl = title || (p ? G.speaker.wroteThis(esc(name)) : G.speaker.sealed);
     return '<div class="speaker' + (p ? ' revealed' : '') + '">' +
       (p
         ? '<span class="spkface" title="' + ttl + '">' + avHtml(p) + '</span>'
@@ -507,7 +511,7 @@ window.CARDS = (function () {
       (p ? '<span class="who">' + esc(name) + '</span>' : '') +
       (why
         ? '<div class="said">' + esc(why) + '</div>'
-        : '<div class="said none">No reason given.</div>') +
+        : '<div class="said none">' + G.speaker.noReason + '</div>') +
       '</div>';
   };
 
@@ -516,7 +520,7 @@ window.CARDS = (function () {
   // each page, so `open` arrives as a fact rather than being read here.
   const secToggleHtml = (key, open, cls) =>
     '<button class="sectoggle' + (cls ? ' ' + cls : '') + '" data-sec-toggle="' + esc(String(key)) + '"' +
-    ' aria-expanded="' + open + '" title="' + (open ? 'Fold this section away' : 'Unfold this section') +
+    ' aria-expanded="' + open + '" title="' + (open ? G.sectoggle.fold : G.sectoggle.unfold) +
     '"><span class="tri">▸</span></button>';
 
   // The field label names the band and, where there is more than one candidate,
@@ -524,7 +528,7 @@ window.CARDS = (function () {
   // §8.3 has nothing to say about it.
   const fieldHtml = (inner, n, label) =>
     '<div class="field"><div class="fieldlab">' +
-    (label || (n > 1 ? 'Proposed · ' + n + ' rival proposals' : 'Proposed')) +
+    (label || (n > 1 ? G.field.rivals(n) : G.field.proposed)) +
     '</div>' + inner + '</div>';
 
   // The field a sealed judgment was decided from — only things that were
@@ -552,8 +556,8 @@ window.CARDS = (function () {
   }
 
   const groundNote = (s) => (!s.shifted || !s.wasGround ? ''
-    : '<div class="replaced"><div class="rtag">The text you voted on' +
-      '<span class="rsub">the clause changed after you voted</span></div>' +
+    : '<div class="replaced"><div class="rtag">' + G.ground.tag +
+      '<span class="rsub">' + G.ground.sub + '</span></div>' +
       '<div class="rtext">' + esc(s.wasGround) + '</div></div>');
 
   // ---- the clause sentences, one home -------------------------------------
@@ -565,60 +569,21 @@ window.CARDS = (function () {
   // two wordings depending on who was reading. Every one of those homes now
   // reads this table.
   //
-  // It lives here rather than in session-view's inline script because
+  // The readers live here rather than in session-view's inline script because
   // setup.js's answer ladders are one of the homes and setup.js loads first
-  // (constitution.js → cards.js → setup.js → session.js → inline); a helper
-  // belongs in the shared file its callers share, and a second copy of a
-  // sentence is exactly the drift this ends. It is deliberately **not** in
-  // `@draft/constitution` beside `meaningOf`: no architecture without a
+  // (constitution.js → copy.js → cards.js → setup.js → session.js → inline);
+  // a helper belongs in the shared file its callers share, and a second copy
+  // of a sentence is exactly the drift this ends. It is deliberately **not**
+  // in `@draft/constitution` beside `meaningOf`: no architecture without a
   // second consumer (survey item 10, undecided), so it stays page-side until
   // the closing record wants the sentences.
   //
   // A value whose sentence depends on the room takes a function of one
   // context object, never of module state — this file has none.
-  // Ed's card review of 2026-09-02 rewrote most of these sentences verbatim
-  // (design/card-review-2026-09-02.md, Part B); 👤's *at the end* is his
-  // Q995 ruling holding — one phrase for the close on both ladders — and
-  // 🥾's *apart from them* lost its emphasis because clause text is escaped
-  // at its reading sites and markup cannot ride the table.
-  const RULES = {
-    admission: {
-      assembly: 'Members may propose to invite people to join the membership, and all members must agree 🏛️.',
-      proposal: 'Members may propose to invite people to join the membership, and the membership decides ✏️.',
-      pen: 'Members may invite people to join the membership at will ✒️.' },
-    removal: {
-      consent: 'To remove a member, all members must agree 🏛️.',
-      assembly: 'To remove a member, all members apart from them must agree 🏛️.',
-      proposal: 'To remove a member, a majority of members must agree ✏️.' },
-    authorship: {
-      anonymous: 'All proposals are made anonymously.',
-      anonymousElective: 'Proposals may be made anonymously.',
-      sealed: 'All proposals are made anonymously, and all names are revealed at the end.',
-      sealedElective: 'Proposals may be made anonymously, and all names are revealed at the end.',
-      public: 'Proposals may not be made anonymously.' },
-    judgments: {
-      never: 'Votes are never revealed.',
-      after: 'Votes are revealed when the document is finished, and not before.' },
-    // **Foundership carries a read, whatever 🌍 says** (Ed, 2026-08-22), said
-    // only where it is a deviation: a founder who is a member is covered by
-    // the sentence already, and under link or public everybody reads anyway.
-    // Where it *is* a deviation it is **one sentence naming both audiences**
-    // (Ed's QA, 2026-09-02): a second sentence after a first that has just
-    // excluded the reader reads as an afterthought about the rule, where one
-    // sentence simply says who can read it.
-    chamber: {
-      closed: (x) => (x.founderIsMember ? 'The document can only be seen by members.'
-        : 'The document can only be seen by members and the Founder.'),
-      link: () => 'The document can be seen by anyone with the link.',
-      public: () => 'The document is public — listed and readable by anyone.' },
-    // 🤝 is one switch; what an application costs is 🪪's sentence (entry 94)
-    // — a tie the card no longer states (Ed's rewrite dropped *voted on like
-    // an invitation*; SPEC §9.7½ still holds it)
-    applications: {
-      invite: () => 'New members may only join by invitation.',
-      apply: (x) => (x.admissionPrice === 'pen' ? 'Anyone with the link joins on arrival.'
-        : 'Anyone with the link may apply to become a member.') },
-  };
+  // The sentences themselves live in copy.js (the one copy home, 2026-09-05,
+  // with the table's own history in its header there); this file keeps the
+  // readers, so every caller and export is unchanged.
+  const RULES = window.COPY.RULES;
   // the sentence a value would set, in this room. `x` carries only what a
   // sentence names: `founderIsMember`, `admissionPrice`.
   const clauseOf = (k, v, x) => {
@@ -699,9 +664,9 @@ window.CARDS = (function () {
       return '<div class="lanebar">' +
         '<button class="lanepick" type="button" ' + env.valAttr + '="' + esc(String(v)) + '"' +
         ' aria-pressed="' + (env.pickOf(s) === v) + '"' + (env.lockedOf(s) ? ' disabled' : '') +
-        ' title="Say you prefer this proposal — nothing leaves the card until you submit">' +
+        ' title="' + G.lane.pickTitle + '">' +
         '<i class="dot" aria-hidden="true"></i>' +
-        '<span class="off">Prefer this</span><span class="on">Preferred</span></button>' +
+        '<span class="off">' + G.lane.prefer + '</span><span class="on">' + G.lane.preferred + '</span></button>' +
         (o.edit === false || !env.mayPropose() ? '' : laneProposeHtml(s, o.lane || v, o.key)) +
         '</div>';
     }
@@ -749,7 +714,7 @@ window.CARDS = (function () {
         // ranking whose rank, outcome and score are all in the card's own eyebrow
         // one line above, so a second label under it was the third telling.
         (o.label === null ? ''
-          : '<div class="headlab"><span>' + (o.label || 'The clause as it stands') + '</span></div>') +
+          : '<div class="headlab"><span>' + (o.label || G.head.label) + '</span></div>') +
         // `data-key` sits on the washed block, not on the text inside it, because
         // that is the box `.anch` is: hold the text instead and the scroll
         // anchoring lands six pixels out, which is exactly the paragraph's own
@@ -762,7 +727,7 @@ window.CARDS = (function () {
         (o.html !== undefined
           ? '<div class="rtext">' + o.html + '</div>'
           : o.text === null
-          ? '<div class="rtext none">Nothing stands here — the charter runs straight from Bringing a Guest to Guests Staying Over.</div>'
+          ? '<div class="rtext none">' + G.head.nothing + '</div>'
           : '<div class="rtext">' + esc(o.text) + '</div>') +
         '</div>' +
         (opt ? laneBarHtml(s, o.v, { lane: 'keep', key: o.key, edit: o.edit }) : '') +
@@ -809,13 +774,12 @@ window.CARDS = (function () {
       return '<div class="pick vinblock">' +
         '<button class="lanepick vin" type="button" ' + env.valAttr + '="indifferent"' +
         ' aria-pressed="' + (pick === 'indifferent') + '"' + (env.lockedOf(s) ? ' disabled' : '') +
-        ' title="' + (s.kind === 'diagonal' ? 'They matter equally' : 'I can’t split them') + '">' +
+        ' title="' + (s.kind === 'diagonal' ? G.commit.vinDiagonal : G.commit.vinPair) + '">' +
         '<i class="dot" aria-hidden="true"></i>' +
-        '<span class="off">Indifferent</span><span class="on">Indifferent</span></button></div>' +
+        '<span class="off">' + G.commit.indifferent + '</span><span class="on">' + G.commit.indifferent + '</span></button></div>' +
         '<div class="race-mid commitrow">' +
         '<button class="btn glyphbtn" data-act="clear-close" title="' +
-        (env.lockedOf(s) ? 'Close — your vote stays on the record'
-          : 'Clears your choice and closes — there is nothing here to put back') + '">🗑️</button>' +
+        (env.lockedOf(s) ? G.commit.binLocked : G.commit.bin) + '">🗑️</button>' +
         (extra || '') +
         // The two acts on this card share the right-hand corner, in the order you
         // would reach for them: ❄️ first because it is the one that says *not now*,
@@ -825,29 +789,27 @@ window.CARDS = (function () {
         ((insists || env.isChilled(s.id))
           ? '<button class="btn glyphbtn chill" data-act="chill"' +
             ' aria-pressed="' + env.isChilled(s.id) + '" title="' +
-            (env.isChilled(s.id)
-              ? 'Cooled — this one will not be put at the front of your queue. Press again to allow it.'
-              : 'Not this one, not now — it stays open and stops being the most urgent') + '">❄️</button>'
+            (env.isChilled(s.id) ? G.commit.chillOn : G.commit.chillOff) + '">❄️</button>'
           : '') +
         (env.lockedOf(s) ? '' : '<button class="btn btn-approve glyphbtn"' +
           (pick ? '' : ' disabled') +
           ' data-act="submit" aria-pressed="' + env.isCast(s) + '" title="' +
-          (env.isCast(s) ? 'Recorded — choose again to change it'
-            : pick ? 'Submit this vote' : 'Choose one of the three first') + '">' + TICK + '</button>') +
+          (env.isCast(s) ? G.commit.cast
+            : pick ? G.commit.submit : G.commit.choose) + '">' + TICK + '</button>') +
         '</span>' +
         '</div>';
     }
 
     function reviseNote(s) {
       if (!env.isJudged(s)) return '';
-      const said = '<span class="rl">You ' + (env.verdictOf(s) || s.verdict || 'voted') + '</span>';
+      const said = '<span class="rl">' + G.revise.you + (env.verdictOf(s) || s.verdict || G.revise.voted) + '</span>';
       if (s.shifted) {
         return '<div class="srationale locked">' + said + esc(s.shifted) +
-          ' You cannot change it, because it was not a vote about this text.</div>';
+          G.revise.shiftedTail + '</div>';
       }
       if (s.locked) {
         return '<div class="srationale locked">' + said +
-          'This one is settled, so your vote is on the record as it stands.</div>';
+          G.revise.lockedTail + '</div>';
       }
       // **The unlocked case says nothing at all** (Ed, 2026-08-17). It had been
       // trimmed once already, to what you said plus the fact it can change, and
@@ -885,13 +847,11 @@ window.CARDS = (function () {
       const person = rung === 'public' || (elective && !!(d && d.signed))
         ? env.signerPerson() : null;
       if (person) {
-        return '<span class="spkface" title="This is how your reason will reach' +
-          ' everybody else: with your name on it.">' + avHtml(person) + '</span>';
+        return '<span class="spkface" title="' + G.draftFace.signed + '">' + avHtml(person) + '</span>';
       }
       const forever = rung === 'anonymous' || rung === 'anonymousElective';
-      return '<span class="disc" aria-hidden="true" title="This is how your reason will reach' +
-        ' everybody else: with your name off it' +
-        (forever ? ', permanently.' : ' until the closing record.') + '"></span>';
+      return '<span class="disc" aria-hidden="true" title="' + G.draftFace.sealedLead +
+        (forever ? G.draftFace.forever : G.draftFace.untilClose) + '"></span>';
     }
 
     // **The editing surface itself**, extracted so the `editing-card` and the
@@ -917,12 +877,12 @@ window.CARDS = (function () {
         // off; a single toggle says the same with the state in its own pressed-
         // ness, which is what every other control on this surface does.
         '<div class="lanectl">' +
-        '<button class="lfmt" data-fmt="bold" title="Bold (the markdown is **like this**)"><b>B</b></button>' +
-        '<button class="lfmt" data-fmt="italic" title="Italic (the markdown is *like this*)">' +
+        '<button class="lfmt" data-fmt="bold" title="' + G.fmt.bold + '"><b>B</b></button>' +
+        '<button class="lfmt" data-fmt="italic" title="' + G.fmt.italic + '">' +
         '<span class="ital">I</span></button>' +
         '<button class="lmode" data-mode="' + (env.laneRaw() ? 'rich' : 'md') + '"' +
         ' aria-pressed="' + env.laneRaw() + '"' +
-        ' title="Markdown — see and type the characters exactly as they are stored">[]</button>' +
+        ' title="' + G.fmt.mdMode + '">[]</button>' +
         '</div>' +
         (blank
           ? '<div class="editlane" contenteditable="true" data-deadlane data-key="' + blank +
@@ -946,7 +906,7 @@ window.CARDS = (function () {
         // "because it's clearer" — where an opening clause invites the sentence
         // the field is actually for. It also states the act: what you are writing
         // is the case for a change, not a note about one.
-        ' data-placeholder="We should change this because…">' +
+        ' data-placeholder="' + G.whyPlaceholder + '">' +
         esc((d && d.rationale) || '') + '</div></div>' +
         '</div>';
     }

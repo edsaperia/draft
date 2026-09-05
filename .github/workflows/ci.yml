@@ -47,6 +47,9 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run spec-check
+      # the words themselves, in seconds: design/copy.js against its own
+      # golden (static mode; the rendered golden stays in `probe` behind --walk)
+      - run: npm run copy-check
       # the session-clock's ladder at its boundaries (Q471), and the rule
       # that no distance on it ever says seconds. It has a runner of its own
       # because design/ has no test runner, and until entry 77 nothing ran
@@ -171,7 +174,7 @@ jobs:
       # change** — that is the point, not a defect. ~3 min of headless walking,
       # which is why it is in this job and not in `ci`, and `if: always()` for
       # the same reason as its neighbours (Q913).
-      - run: npm run copy-check
+      - run: npm run copy-check -- --walk
         if: always()
       # which cards the setup-probe actually opens (Q914 (9), Q915). --strict
       # cannot do this job: a dead step needs a *miss*, and a card nobody
