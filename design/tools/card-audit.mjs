@@ -667,9 +667,12 @@ function rulesFor(card, tok) {
   // CP2 — the radio names the register (re-ruled 2026-08-31): a dotted radio
   // says Prefer this / Preferred (a choice put to more than one person),
   // Choose this / Chosen (the chooser alone decides), or Indifferent, and
-  // nothing else; the option's own words live on its block.
+  // nothing else; the option's own words live on its block. Since Q1167 (a)
+  // and Q1176 (Ed's QA round 2, taught to the audit 2026-09-05) provenance is
+  // the standing block's radio label, so *Chosen by …* forms are sanctioned.
   for (const r of card.radios) {
     if (!r.dot || !r.label) continue;
+    if (/^Chosen by /.test(r.label.trim())) continue;
     if (!['Prefer this', 'Preferred', 'Choose this', 'Chosen', 'Indifferent'].includes(r.label.trim())) {
       at('CP2', 'pattern', 'radio vocabulary — Prefer this / Preferred · Choose this / Chosen · Indifferent (§9.3)',
         '“' + r.label.trim().slice(0, 40) + '”');
