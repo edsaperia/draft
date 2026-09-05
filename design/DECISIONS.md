@@ -2263,3 +2263,103 @@ stranded; the card literals keep their fixture `dist`/`taken` fields, now
 unread. The chosen-radio provenance is `chosenRadio` in session-view.html,
 worn by the settled head (room-settled option-block cards), the parked 👑
 pair and the record card.
+
+## Card review round 3 (2026-09-05, Q1181–Q1188 and readings 1189–1194)
+
+Ed's forty-four notes on the re-captured sheet, under the same framing as
+round 2 — *strip copy right back, communicate through consistency and careful
+use of words, using the clause text to explain everything*. The rules land in
+SURFACE §9, §9.1 and §9.3, STYLE T48 and item 82, and SPEC §9.7 rule 3
+(R-087). The reasons, in the order the questions were asked.
+
+**🍾's power table: six blocks with glyph toggles, not twelve radios and not
+a table** (Q1181). The two-column form CP1 gave it — a ✒️ column and a 🛡️
+column of *Kept* / *Laid down* option blocks — was the surface's one card
+that did not read as a card: three rows × two columns × two radios is twelve
+controls and twenty-four words for six binary facts, and the words are the
+ones the surface uses nowhere else. Ed's own reading was that the switches it
+replaced were better and that something better still might exist. What the
+card is actually saying is six sentences of the constitution — *the Founder
+may amend the Text at will*, and its five siblings — so each becomes an
+option block stating the **kept** rule as a clause, with the power's own
+glyph standing where the radio would sit: plain for kept, wearing the
+wallets' `--slash` strike for laid down. The glyph is already the surface's
+word for that power in five other places (the wallet, the tab, the commit,
+the mark, the clause), and the strike is already its word for *not held*
+(§7.1), so nothing new is learned to read it. Six blocks is half the
+controls, no register words at all, and the same grammar as every other
+card. Rejected by construction: keeping the table (the note that opened the
+question), and toggles with *Kept* / *Laid down* labels beside them, which
+would have kept the vocabulary that made it read as a form.
+
+**The consent card takes the settled card's shape** (Q1182). The specimen was
+the settled setting card *while a constitutional motion is in flight on it*,
+and it carried a *Re-opened…* paragraph, a count line, the blind sentence,
+three bare-word blocks each with an explainer, a *🗑️ Withdraw* and an
+unlabelled commit — every one of them a thing rounds 1 and 2 removed from
+some other card. Ed's *this doesn't conform to the pattern at all* is
+therefore a census finding, not a taste: the card had simply not been visited.
+It is the settled card with one more block, so it is drawn as one — the
+standing rule, the proposed rule with its proposer's sealed rationale,
+Abstain as a textless block on CP4's placement — and the register names the
+**act** rather than the preference, because *Keep this* and *Prefer this* are
+what the two blocks mean when a rule is being replaced. The count goes with
+the rest of the watch half (Q1176) and the blindness story belongs to 🍾's
+redesign (Q1169). **No Withdraw**: the card is the answerer's, not the
+mover's — the mover withdraws from the motion's own task, and a Withdraw on
+everybody's consent card was the mover's control drawn on every seat.
+
+**And the commit is 🏛️** (Q1182's second half, Ed making his own earlier
+sentence literal). SURFACE §7 had said *the founding answers are a kind of
+🏛️* since the wallets were designed, while the cards committed answers with
+✓ — the mark for *this binds nobody but me*. An answer to a constitutional
+question binds the document: it is a member spending their consent, which is
+exactly what the 🏛️ wallet holds one of. So 🏛️ commits every answer to a
+constitutional question — the founding blind answer and the consent answer
+alike — and ✓ is left to ordinary judgments and the cards about yourself.
+C4's sentence is the amendment; the raise was already 🏛️, so the glyph now
+means one thing on this surface rather than two thirds of one.
+
+**The stranger's door prints the settled card** (Q1183). *Set to … / Set by
+the founder when the document was made.* was written before the settled card
+existed and survived because no walk seats a stranger at a paragraph tab. It
+tells a stranger something the constitution's own clause already tells them,
+in a second vocabulary, and it is the only card on the surface with a shape
+of its own for no reason. Since `hydrateFromModule` already prints what the
+module holds through the member surface's own mapping (Y15), the door can
+open the settled card read-only: the standing rule with its provenance radio,
+the power and record tabs in the strip, and a close-only OK. One card fewer,
+and a stranger reads what a member reads.
+
+**No release card at 🍾** (Q1184) — the reasoning is R-087; in surface terms
+it is the same *three cards for one press* finding that A5 keeps making about
+words, made about cards.
+
+**The record card loses its head** (Q1186). Its head repeated the value the
+blocks beneath already carried, in the short label form (*Anyone with the
+link*, *82% sure at the end*) that A3 was cutting everywhere else — so
+removing the label form removed the head's whole content, and with it the two
+hairlines that bracketed nothing (Q1173's general rule). What is left is what
+a record is: a date, an outcome, the two rules, who chose, and why. **Passed
+and rejected are one shape** because the difference between them is which
+block wears the provenance radio and which wears the rationale — not a
+different card.
+
+**Provenance on every standing rule** (Q1188). CP2's third form was drawn
+only where the *membership* chose the value, so a founder-set rule — the
+common case, and the whole of a document before the start — had a bare block
+and the reader had to infer who set it from the absence of a label. One
+wording covers both eras (*Chosen by the Founder ✒️*), because the era is not
+what the reader is asking: they are asking whose rule this is. The record
+card's *Chosen by Founder Action ✒️* was a second spelling of the same fact
+and goes.
+
+**The tense reversal** (Q1185). Q1150 chose *the membership are deciding* to
+say the collection is running now; Ed's own sentences on 🌍 twice read *will
+decide*, and the reason is the reader: a founder meeting the delegate rung is
+choosing what *will* happen, not being told what is happening, and the same
+sentence is read on a card where nothing has been collected yet. Naming both
+answers on the binaries is the same instruction as A3 — a sentence that names
+one alternative describes a choice the reader cannot see the shape of. The
+ladders and the numbers have no pair to name, so they keep a one-clause
+subject; that asymmetry is deliberate and is why the ruling names the five.
