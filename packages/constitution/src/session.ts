@@ -1743,18 +1743,16 @@ export class ConstitutionSession {
     // it (`commands.ts`, the ladder) and a started document is never wedged
     // with no text and no way to propose one — `canPropose` reads the flag.
     if (!this.textConfirmedFlag) this.emit({ type: 'starting-text-confirmed', t, text: '' });
-    const before = new Map(HELD.map((k) => [k, { ...this.settings.get(k)!.powers }]));
     this.emit(list === undefined ? { type: 'constituted', t }
       : { type: 'constituted', t, laidDown: list });
-    const laid: Array<{ setting: PowerKey; power: Power }> = [];
-    for (const k of HELD) {
-      const was = before.get(k)!;
-      const now = this.settings.get(k)!.powers;
-      for (const p of ['unilateral', 'assent'] as const) {
-        if (was[p] && !now[p]) laid.push({ setting: k, power: p });
-      }
-    }
-    this.oweReleases(t, laid);
+    // **The start owes no acknowledgement for what it lays down** (Ed,
+    // 2026-09-05, Q1184; SPEC §9.7 rule 3's exception, R-087). It used to
+    // owe every member one release batch for the whole of what 🍾 laid down,
+    // so a member arriving at the start met three news cards for one press —
+    // 💡, ⚖️ and *What the Founder Has Laid Down* — where the start's own
+    // news already says the document has begun and the settled 🍾 card
+    // lists what beginning did. A power laid down **after** the start is
+    // still one batch per act (`relinquish` → `oweReleases`), unchanged.
   }
 
   /** What 🍾 waits on (§9.0b, §9.7.1): a delegated question on **any** setting

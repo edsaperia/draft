@@ -696,13 +696,14 @@ describe('what the room is told when the holder moves', () => {
   it('the un-arrived, the removed and the convenor are owed nothing', () => {
     const { s, bo, dee, ez } = liveRoom();
     s.relinquish(4, 'lapse', 'unilateral');
-    expect(s.memberRecords().get(bo)!.releasesOwed.size).toBe(2); // 🍾 and this
+    // 🍾's own lay-down owes nothing since Q1184 (R-087): this is the one
+    expect(s.memberRecords().get(bo)!.releasesOwed.size).toBe(1);
     expect(s.memberRecords().get(dee)!.releasesOwed.size).toBe(0); // never here
-    expect(s.memberRecords().get(ez)!.releasesOwed.size).toBe(1);  // gone at 🍾's
+    expect(s.memberRecords().get(ez)!.releasesOwed.size).toBe(0);  // gone at 🍾
     expect(s.memberRecords().get('ada')!.releasesOwed.size).toBe(0);
   });
 
-  it('a pre-start release is news at 🍾, in the same batch as the Text\'s own pair', () => {
+  it('a pre-start release is spent at 🍾 and, like the Text\'s own pair, is news to nobody (Q1184)', () => {
     const { s, bo, cy } = preStart();
     s.confirmStartingText(2, 'The clubhouse shall be kept open.');
     penEverything(s, 2);
@@ -710,15 +711,14 @@ describe('what the room is told when the holder moves', () => {
     // nothing is news yet: the power has not moved
     expect(s.memberRecords().get(bo)!.releasesOwed.size).toBe(0);
     s.begin(3);
-    const batches = [...s.memberRecords().get(bo)!.releasesOwed];
-    expect(batches).toHaveLength(1);
-    expect(s.memberRecords().get(cy)!.releasesOwed.has(batches[0]!)).toBe(true);
-    // the diff 🍾 actually spent: ⏱️'s pen, and the Text's own pair
-    expect(s.releaseBatchRecords().get(batches[0]!)!.releases).toEqual([
-      { setting: 'rate', power: 'unilateral' },
-      { setting: 'startingText', power: 'unilateral' },
-      { setting: 'startingText', power: 'assent' },
-    ]);
+    // …and nothing is news after it either: the start's own news covers
+    // what it laid down (R-087), so no batch is minted and nobody owes a press
+    expect(s.memberRecords().get(bo)!.releasesOwed.size).toBe(0);
+    expect(s.memberRecords().get(cy)!.releasesOwed.size).toBe(0);
+    expect(s.releaseBatchRecords().size).toBe(0);
+    // the powers moved all the same
+    expect(s.settingState('rate').powers.unilateral).toBe(false);
+    expect(s.settingState('startingText').powers).toEqual({ unilateral: false, assent: false });
   });
 
   it('a solo document tells nobody, and the batch that told nobody groups nothing', () => {

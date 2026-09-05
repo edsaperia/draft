@@ -173,23 +173,33 @@ describe('🍾 begin — the founder starts the document (Q443)', () => {
     expect(s.constitutedAtT).toBe(3);
   });
 
-  it('a whole zone laid down is one release batch per member, never one per pair (entry 162)', () => {
+  it('the start owes no release acknowledgement, however much it lays down (Q1184, R-087)', () => {
     const { s, bo } = readyDoc('z7');
     // the Membership zone, as `BEGIN_ZONES` has it: both doors and the four
-    // rules — twelve pairs in one press
+    // rules — twelve pairs in one press, the Text's own pair with them
     const zone = ['door:invite', 'door:remove', 'admission', 'applications',
       'removal', 'lapse'] as const;
     s.begin(2, [...zone, 'startingText' as const].flatMap((k) => [
       { setting: k, power: 'unilateral' as const },
       { setting: k, power: 'assent' as const },
     ]));
+    // laid down, and nobody owes a press for it: the start's own news covers it
+    for (const k of zone) expect(s.settingState(k).holder).toBe('members');
+    expect(s.memberRecords().get(bo)!.releasesOwed.size).toBe(0);
+    expect(s.releaseBatchRecords().size).toBe(0);
+  });
+
+  it('a release after the start is one batch per member per act, never one per pair (entry 162)', () => {
+    const { s, bo } = readyDoc('z8');
+    s.begin(2);
+    // one act, two powers, the same `t`: one batch, one card, one OK
+    s.relinquish(3, 'bar', 'unilateral');
+    s.relinquish(3, 'bar', 'assent');
     const owed = [...s.memberRecords().get(bo)!.releasesOwed];
     expect(owed).toHaveLength(1);
     const batch = s.releaseBatchRecords().get(owed[0]!)!;
-    // the Text's own pair rides the same batch — one act, one card, one OK
-    expect(batch.releases).toHaveLength(14);
-    expect(batch.t).toBe(2);
-    for (const k of zone) expect(s.settingState(k).holder).toBe('members');
+    expect(batch.releases).toHaveLength(2);
+    expect(batch.t).toBe(3);
   });
 
   it('spends every pending release in the same act (R-048)', () => {
