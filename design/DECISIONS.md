@@ -2427,3 +2427,91 @@ return that had nothing left to revive — two entries, not one — and
 `founding-v0.jsonl` was regenerated in step, since Q767 derives it from the walk
 beside it. Q463 (d) had named *the freeze alarm* as one of two mails that exist
 by necessity; it no longer exists, and Q463 is a design pass of its own.
+
+## The card is a deck, and the ⏳ card is your ledger (2026-09-06, Q1200–Q1201)
+
+Ed: *The reason I wanted to use Bradley-Terry is for when there are many
+alternatives to the same clause, we have a pairwise system. Come to think of
+it, I haven't been served multiple pairs from one clause yet.* He had not been,
+and the cause was the page, not the engine. `Session.feed()` deals a hand of up
+to ten cards and excludes every pair the member has already judged on the
+current ground (`bestPairFor`, SPEC §8.3); §8.3b even assumes the member is
+served pair after pair from one race, since a deadlock is disclosed only once
+the race has *nothing left to ask you*. The page took the first served card
+touching each race (`cards.findIndex`), mapped the server's per-race `judged`
+flag — *any standing vote of mine on this race* — to `state: 'deciding'`, and
+kept its provisional `resolved` / `verdicts` / `picked` / `committed` maps keyed
+by item id, which is the race id. So one comparison per member per race, for
+the life of the race, whatever the engine was holding; the rival ranking
+Bradley–Terry is there for rested on almost nothing.
+
+**Three shapes were put to him.** A **stack** of tabs, one per pair: a busy
+clause becomes ten same-mark tabs the rail cannot fit, and a count that reads
+as importance against the margin index (M1–M6). A **switcher** on the card, a
+control to step among the dealt pairs: a new control whose main job is
+overriding the router's order, and §8.3 is active pair sampling — the order is
+the information. And the **deck**: one entry per clause, lit while the router
+holds an unjudged pair for you on the race; judging closes the card and the
+next press opens the next pair in the router's order; ⏳ only when none is
+left; no new control. He chose the deck, and on what the entry shows while the
+deck is not empty — *it should show you the pair that you would vote on next* —
+so the teaser is the front pair's case, exactly what `teasersFor` already
+printed, and the count the option text had floated is withdrawn. His ruling of
+2026-08-17 (*💡 doesn't need to say how many left to decide*) stands: nothing
+counts what is behind the front pair.
+
+**Then the ledger.** Ed: *Is there a way I can go back to see pairs that I've
+already judged?* There was not, live: the server sent *you have voted on this
+race* as a flag and never which pair or which way, so the ⏳ card's verdict
+lived only in the page's memory for the current visit, and `LIVE_HOOKS.judge`
+warned *no card served* on any ⏳ card at all — the engine having, correctly,
+dealt nothing — so a live judgment could never actually be revised from the
+page. Offered the ⏳ card as the member's own ledger — every pair they judged
+there, verdict marked, revisable — he folded it into the deck plan, so the
+deck's accepted cost (an earlier pair out of reach while later pairs are dealt)
+never shipped. **The view carries `myJudgments` per race**: the member's own
+standing judgments touching it, ids and verdict, oldest first, superseded ones
+gone. It is §3.5-safe by construction — every line is the member's own act, and
+the blind guard (`not.toMatch(/leaderP|certification|author|"value"/)`) covers
+it. The ledger's blocks are drawn from `proposalHtml`'s own pieces — a
+`propblock` per pair, `rtext` wordings, `wordingHtml` for a candidate's change
+against the clause, the lane radio's dot as an inert mark on the chosen side —
+rather than through `proposalHtml` itself, since a pair is two wordings under
+one press and a proposal block is one wording under a speaker. A press makes
+that pair the card's active pair with the verdict pre-selected (`activeLedger`
+in session.js, cleared as the card closes), and ✓ sends `judge-race` on the
+same pair, the revision §4.4 already allows. One commit row on the card at all
+times (§9.1): the ledger's blocks are a switcher over what you have *already*
+answered, never over what the router has not yet asked. A locked (↻) block
+takes no press and carries the ground-shift sentence.
+
+**What the build found.** The plan's context said one hand could hold
+incumbent-vs-A and incumbent-vs-B from one race at once. It cannot:
+`bestPairFor` returns one best pair per race and skips only pairs already
+*judged* (`servedOut`), never pairs already dealt in the same hand, and the
+hand de-duplicates by pair — so the same race yields the same pair on every
+slot and a hand holds one pair per race. The deck therefore reads **across
+views**, not within one: judge, and the command's own refresh deals the next.
+That is the design rule 1 already stated, and nothing on the page depends on
+the hand's size; the server test asserts what the mechanism keeps. And the
+rival pair needs no gate: with a member's incumbent pairs exhausted,
+`bestPairFor`'s second scan deals A-vs-B whatever the gate says (the
+"sparingly" of §8.3) — so two challengers on one clause are **three** presses
+on one entry, quick, quick, then the race card, and a race card is reachable
+on a live document with a room of two. The journey walk's deck step is exactly
+that, the guest proposing a second wording on the clause of its first.
+
+**Provisional state keyed by pair.** `pairKeyOf(g)` is the item id plus the
+pair's ids where an item carries a pair and the id alone where it does not, so
+the fixture's items, the diagonals and the motions key exactly as before —
+`session-probe` IDENTICAL, `setup-probe` 0 diffs. The rail's state and receipt
+read the **front** pair (`frontKeyOf`): after a judgment the entry wears
+*still deciding — click to change your mind* until the refresh deals the next
+pair, and re-lights the moment it does. The charter column's data key
+(`syncCharter`) hashes the text, the close and the two capabilities, not the
+items — but the items are rebuilt from the view on every poll and every
+command's refresh regardless of the key, except under a draft being typed, so
+the served pair did not need adding to it.
+
+No SPEC change and no R-number: the mechanism is unchanged, and §8.3 and §8.3b
+already say it.
