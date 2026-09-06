@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 432
+  "entries": 438
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -378,6 +378,10 @@
   "session.gap.atEnd": "A new clause at the end",
   "session.gap.atStart": "A new clause at the start",
   "session.insert.headLabel": "The gap as it stands",
+  "session.ledger.current": "the current text",
+  "session.ledger.label": "ƒ (n) => (n === 1 ? 'Your vote on this clause' : 'Your votes on this clause')",
+  "session.ledger.pickFirst": "Choose one of your votes above to change it",
+  "session.ledger.revise": "Change this vote",
   "session.nav.next": "The next place",
   "session.nav.placeOf": "ƒ (i, n) => ' · place ' + i + ' of ' + n",
   "session.nav.prev": "The place before",
@@ -388,6 +392,8 @@
   "session.rail.noReason": "no reason given yet — say what this is for",
   "session.rail.placesOf": "ƒ (n, of) => n + ' of ' + of + ' places'",
   "session.rail.stillDeciding": "still deciding — click to change your mind",
+  "session.rail.votedStillRunning": "you have voted on this — it is still running",
+  "session.rail.wantsVote": "wants your vote",
   "session.rail.yoursInRace": "Yours, in the race",
   "session.record.amended": "The Founder amended this",
   "session.record.capped": "the ranking maths stopped short on this one; the decision stands",
