@@ -109,6 +109,9 @@
   .queue .mkg, .achip .mkg, .cline .mkg, .constsec .mkg, .setupcard .mkg {
     width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.9;
     stroke-linecap: round; stroke-linejoin: round; }
+  /* but the drawn ✓ *as a commit* is the glyph's size, on a band card as on
+     the charter's (Ed, 2026-09-06: one commit-row glyph size everywhere) */
+  .setupcard .commitrow .btn .mkg { width: 1em; height: 1em; }
   /* the **subject** glyph. A live rail marks lifecycle state, because every card
      there is a different state of one kind of thing; a setup rail is the
      reverse — one state, many kinds — so it marks subject instead. The two sets
@@ -698,7 +701,11 @@ button.cline:hover b { text-decoration: underline; }
    2026-08-31: all tabs line up vertically). Direct child and member rows
    only: the open card's strip hangs off the `.headclause`, which already
    carries the charter paragraph's own geometry. */
-.constsec .cpara > .chipcol, .constsec .memrow .chipcol { margin-right: calc(14px + var(--s3)); }
+.constsec .cpara > .chipcol, .constsec .memrow .chipcol,
+/* the birth's 🪶 too: its column sits in a `display: contents` wrapper, so the
+   direct-child rule above never reached it and the glyph stepped 10px on open
+   (Ed, 2026-09-06) — the rule `fitTitleCard` says pins it in x, at last */
+#titlepara > #titlechip > .chipcol { margin-right: calc(14px + var(--s3)); }
 .constsec .cptext { margin: 0; padding-top: 3px; }
 .constsec .cptext b { font-weight: 600; }
 .constsec .cpara.notab { min-height: 0; }

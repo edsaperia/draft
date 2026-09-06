@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 429
+  "entries": 434
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -47,6 +47,9 @@
   "grammar.lane.pickTitle": "Say you prefer this proposal — nothing leaves the card until you submit",
   "grammar.lane.prefer": "Prefer this",
   "grammar.lane.preferred": "Preferred",
+  "grammar.lane.propose": "Propose this",
+  "grammar.lane.proposeTitle": "Propose this — nothing leaves the card until you submit",
+  "grammar.lane.proposed": "Proposed",
   "grammar.proposeEdit.label": "✏️ propose edit",
   "grammar.proposeEdit.title": "Write your own version of this proposal. Free to open — proposing costs one edit.",
   "grammar.revise.lockedTail": "This one is settled, so your vote is on the record as it stands.",
@@ -200,8 +203,10 @@
   "page.proseRow.discard": "Put the column back to the text as it stands",
   "page.proseRow.save": "Save the text — the document begins from whatever stands here",
   "page.proseRow.saved": "Saved — the document begins from whatever stands here",
+  "page.pw.chooseOrPropose": "ƒ (routeGlyph) => 'Choose ✒️ or Propose ' + routeGlyph + ' this'",
   "page.pw.chooseThis": "Choose this",
   "page.pw.chosen": "Chosen",
+  "page.pw.chosenOrProposed": "ƒ (routeGlyph) => 'Chosen ✒️ or Proposed ' + routeGlyph",
   "page.pw.may": "ƒ (parts, aside) => 'The Founder' + (aside ? ' (that’s you!)' : '') +\n        ' may ' + parts.join(', and ') + '.'",
   "page.pw.mayNot": "ƒ (phrase) => 'The Founder may not ' + phrase + '.'",
   "page.pw.mayNotYet": "ƒ (parts) => 'From the start, the Founder may not ' + parts.join(', or ') + '.'",

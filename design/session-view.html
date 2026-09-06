@@ -143,7 +143,7 @@
      above serves a card body's utility buttons; a commit-row word takes
      --t-ui like the charter's, so OK on a gate and OK on a sealed record
      are one size. The row's 40px height is §9.1's and set elsewhere. */
-  .setupcard .commitrow .btn { font-size: var(--t-ui); }
+  .setupcard .commitrow .btn:not(.glyphbtn) { font-size: var(--t-ui); }
   /* the door's head-people (CP6, Q1101): the pile's list as the card's
      standing text, quiet rows above the rule sentence */
   .headrule .headpeople { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s4);
@@ -596,8 +596,11 @@
   // **A click in read mode beats the tab** — the room-pulse ring, no copy —
   // when it lands on nothing (the dead-click's structural test) and selects
   // nothing (a phrase selected is reading, not reaching for a door).
+  // …and not when the same click has just closed a card (the outside-click
+  // rule below): closing is the whole of what that click did
+  let closedByClick = false;
   document.addEventListener('click', (ev) => {
-    if (!cs || S.editMode) return;
+    if (!cs || S.editMode || closedByClick) return;
     if (ev.shiftKey || ev.metaKey || ev.ctrlKey || ev.altKey) return;
     if (!ev.target.closest('#prose, #charter .prose')) return;
     if (ev.target.closest('a, button, input, textarea, select, label, [role="button"], [contenteditable="true"], .achip, .insert-anchor, [data-sec-toggle], .sugg')) return;
@@ -1150,6 +1153,10 @@
   // what the document is called now, and what the lane is proposing
   const cs_titleNow = () => (cs ? cs.titleOf : S.title);
   const titlePending = () => (S.titleDraft !== null ? S.titleDraft : cs_titleNow());
+  // whether a title stands yet — the key the 🪶 card's shape turns on (Ed,
+  // 2026-09-06): before one does the card is one lane and nothing else; after,
+  // it is the standing name and a blank composer, two option blocks
+  const titleStands = () => !!cs_titleNow();
   const viewerId = () => (S.viewer === 'applicant' || S.viewer === 'stranger'
     ? null : (viewerRow().mid || FOUNDER));
   // **A heading on the screen is a heading in the text**: the editor keeps
@@ -4709,9 +4716,46 @@
   // block implementations stood on one card, `.headrule.asblock`,
   // `.propblock` and `.pick`): a lane is a `.pick` like the standing rule
   // above it and the founder's own blocks, so one rule spaces them all.
-  const laneBlock = (d, val, text) =>
+  // **The radio says what the press will do** (Ed, 2026-09-06, CP2's third
+  // register): on a composer the commit *creates* a proposal, so its lanes
+  // read *Propose this / Proposed* — or *Choose this / Chosen* where the
+  // chooser alone decides, the pen's own hand. *Prefer this* is a judgment's.
+  // …and where the founder holds the pen *and* the route's commit stands
+  // beside it (founderPair), one press could do either, so the radio names
+  // both — *Choose ✒️ or Propose 🏛️ this*, the second glyph being the route
+  // the picked value would take (Ed, 2026-09-06, choosing this over a
+  // neutral fourth word).
+  const composeWords = (k, val) => {
+    if (!(k && mayPenOn(k))) {
+      return { off: window.COPY.grammar.lane.propose, on: window.COPY.grammar.lane.proposed,
+        title: window.COPY.grammar.lane.proposeTitle };
+    }
+    const c = card(k);
+    if (c && founderPair(c)) {
+      const g = routeFor(c, val || (S.draft && S.draft.k === k ? S.draft.to : '')) === 'constitutional' ? '🏛️' : '✏️';
+      return { off: PAGE_COPY.pw.chooseOrPropose(g), on: PAGE_COPY.pw.chosenOrProposed(g),
+        title: 'Choose it with ✒️, or propose it with ' + g + ' — nothing leaves the card until you commit' };
+    }
+    return { off: PAGE_COPY.pw.chooseThis, on: PAGE_COPY.pw.chosen,
+      title: 'Choose this — nothing leaves the card until you commit' };
+  };
+  // The founder's own blocks — `opt` in setup.js and `pctRung` below — draw
+  // inside the open card, so the card they belong to is `S.open`; the same
+  // two-commit test applies, the delegate rung excepted (handing a setting
+  // over is the pen's act alone, never a proposal).
+  const pairWords = (key, val) => {
+    const k = S.open;
+    const c = k ? card(k) : null;
+    // the delegate rung shares its setting's key on several cards (DKEY), so
+    // it is told apart by its value — `opt(S, dk, 'roster', …)` — not its key
+    if (!c || val === 'roster' || !mayPenOn(c.k) || !founderPair(c)) return null;
+    const g = routeFor(c, String(val == null ? '' : val)) === 'constitutional' ? '🏛️' : '✏️';
+    return { off: PAGE_COPY.pw.chooseOrPropose(g), on: PAGE_COPY.pw.chosenOrProposed(g) };
+  };
+  window.SETUP.setPickWords(pairWords);
+  const laneBlock = (d, val, text, k) =>
     '<div class="pick' + (d && d.to === val ? ' on' : '') + '"><span class="opttext">' + text + '</span>' +
-    PC.laneBarHtml(d, val, { edit: false }) + '</div>';
+    PC.laneBarHtml(d, val, { edit: false, words: composeWords(k, val) }) + '</div>';
   // **…and a block carrying a field has a radio too** (Ed's card review
   // round 3, A2 — 37 💤, 42 📧, 51 ⏰, 54 🌡️, 57 👥: *should have a radio
   // button "Prefer this", since it is an option*). Typing still chooses the
@@ -4721,12 +4765,12 @@
   // more than one person.
   const inputBlock = (html, note, d, k, onIf) => {
     const on = typeof onIf === 'boolean' ? onIf : !!(d && d.to) && !/^never/i.test(String(d.to));
-    const solo = !!(k && mayPenOn(k));
+    const w = composeWords(k, d && d.to);
     return '<div class="pick' + (on ? ' on' : '') + '"><span class="opttext">' + html + '</span>' + (note || '') +
       '<button class="lanepick" type="button" aria-pressed="' + on + '" data-pickinput="1"' +
-      ' title="' + (solo ? 'Choose this — nothing leaves the card until you commit' : 'Say you prefer this — nothing leaves the card until you submit') + '">' +
-      '<span class="dot"></span><span class="off">' + (solo ? PAGE_COPY.pw.chooseThis : window.COPY.grammar.lane.prefer) + '</span>' +
-      '<span class="on">' + (solo ? PAGE_COPY.pw.chosen : window.COPY.grammar.lane.preferred) + '</span></button></div>';
+      ' title="' + esc(w.title) + '">' +
+      '<span class="dot"></span><span class="off">' + esc(w.off) + '</span>' +
+      '<span class="on">' + esc(w.on) + '</span></button></div>';
   };
   // **What stands on a delegated setting is what the room's answers took**,
   // never the founder's field — that still says 'roster'. The consent rule,
@@ -4870,7 +4914,7 @@
   const offersStanding = (k, label) => { const v = mvalTyped(k, label), s = standsTyped(k);
     return v && s ? JSON.stringify(v) === JSON.stringify(s) : currentOf(k).startsWith(label); };
   const lanesFor = (d, pairs, k) => pairs.filter(([val]) => !offersStanding(k, val))
-    .map(([val, text]) => laneBlock(d, val, text)).join('');
+    .map(([val, text]) => laneBlock(d, val, text, k)).join('');
   const whyLane = (d) =>
     '<div class="lanebox whylane"><div class="speaker">' +
     '<span class="disc" aria-hidden="true" title="This is how your reason will reach everybody else: with your name off it."></span>' +
@@ -5739,9 +5783,13 @@
       // post-save the title card opens at its own clause, so its head is
       // the clause sentence (the headdoct span stays: refreshCommit types
       // into it live); at the birth it is still the big heading itself
+      // …and once a title stands, in either era, it is block one and wears
+      // its provenance radio like every standing rule (CP2, Q1188; Ed,
+      // 2026-09-06: the name with *Chosen by the Founder* underneath)
       if (c.k === 'title') return (cs ? 'The document is titled ' + LD : '') +
         '<span class="headdoct' + (S.title ? '' : ' ph') + '">' +
-        esc(S.title) + '</span>' + (cs ? RD + '.' : '');
+        esc(S.title) + '</span>' + (cs ? RD + '.' : '') +
+        (titleStands() ? chosenRadio(provOf('title')) : '');
       const m = motionOn(c);
       // an ordinary motion's head is the value as it stands, wearing the
       // keep-lane; a constitutional one re-opens the question, title head.
@@ -5788,7 +5836,9 @@
     // 🪶 at the birth has a head — the title itself, or its placeholder —
     // over one lane, and the hairline between them went with Ed's round 3
     // (01): the head is the field's own value, not a rule over a control
-    bareHead: (c) => c.k === 'title' && !cs,
+    // …while it has no title yet. Once one stands the birth's 🪶 takes the
+    // block grammar like the settled one (Ed, 2026-09-06)
+    bareHead: (c) => c.k === 'title' && !cs && !titleStands(),
     // a settled option-block setting draws its rule as the first block
     // (Q1167 a) — same keys, same exclusions; an identity card never reaches
     // it (no catalogue rule to draw), so the widened set is safe here too.
@@ -5798,7 +5848,7 @@
     // 📍 joins 🪶 there (Ed's card review round 3, 2026-09-05, Q1183's
     // approved mockup: the standing address wearing its provenance radio)
     blockHead: (c) => !c.power && !c.record && !c.isGate && !c.ansFor && !c.door &&
-      (OPTHEADLESS.has(c.k) || ((c.k === 'title' || c.k === 'slug') && !!cs)),
+      (OPTHEADLESS.has(c.k) || (c.k === 'title' && titleStands()) || (c.k === 'slug' && !!cs)),
     // reserved = held by the founder: the room may pass a change, and it
     // then goes to the founder as a 👑 question (accept or reject)
     reserved: (c) => !c.power && !c.record && !c.isGate && !c.ansFor && c.kind !== 'personal' && !membersHold(c),
@@ -6018,6 +6068,45 @@
     if (sel && !sel.isCollapsed && String(sel).trim()) return;
     nudgeNextTask();
   });
+  /* **A click on nothing, with a card open, closes it** (Ed, 2026-09-06:
+     *when I click on the surface outside of a decision card, it should
+     close*). The same gesture as the nudge above with the opposite meaning —
+     no card open, point at the task; a card open, close it — and the same
+     structural test: no control under the pointer, nothing selected. Two
+     things the nudge did not need:
+     · **The pointer went down outside too.** A drag that starts in a card and
+       ends on the page fires its click on their common ancestor, which reads
+       as outside; selecting a rationale must not slam the card shut.
+     · **Capture phase, state read first.** The delegated handlers below
+       change `S.open` on the same click (a tab press, a rail entry); read
+       before they run, and step aside for anything that is itself a way into
+       or out of a card, so those keep their own meaning.
+     The one carve-out is edit mode's own card (K31, Y18): there the column
+     is the editor and a click in a clause is a caret, never a close. */
+  let downOn = null;
+  document.addEventListener('pointerdown', (ev) => { downOn = ev.target; }, true);
+  const WAY_IN = 'a, button, input, textarea, select, label, [role="button"], [contenteditable="true"], ' +
+    '.achip, .insert-anchor, [data-tab], [data-card], [data-anchor], [data-q], [data-toc], [data-sec-toggle]';
+  const CARD_SIDE = '.setupcard, .sugg, #ridetab, #proserow, [data-proposalrow], .walletsay, ' +
+    '#mailmodal, #devoutbox, .devswitch, .ladderbar';
+  document.addEventListener('click', (ev) => {
+    const bandOpen = S.open, charterOpen = SESSION.openId;
+    if (!bandOpen && charterOpen == null) return;
+    if (ev.button !== 0 || ev.shiftKey || ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    if (penHoldFired) return;            // a hold's own click lands on its commit
+    const origin = (downOn && document.contains(downOn)) ? downOn : ev.target;
+    for (const at of [origin, ev.target]) {
+      if (!(at instanceof Element)) return;
+      if (at.closest(WAY_IN) || at.closest(CARD_SIDE)) return;
+    }
+    const sel = window.getSelection();
+    if (sel && !sel.isCollapsed && String(sel).trim()) return;
+    if (S.editMode && charterOpen === 'draft-yours') return;
+    closedByClick = true;
+    setTimeout(() => { closedByClick = false; }, 0);
+    if (charterOpen != null) SESSION.closeCard();
+    if (bandOpen) closeThen(() => { S.open = null; });
+  }, true);
 
   function renderRail() {
     if (isStranger()) {
@@ -6349,6 +6438,7 @@
   // not a preset*), and is the only one carrying a field.
   const pctRung = (o) => {
     const on = !!o.on;
+    const pw = pairWords(o.set, o.val) || { off: 'Choose this', on: 'Chosen' };
     return '<div class="pick' + (on ? ' on' : '') + (o.off ? ' off' : '') + '">' +
       // three of the four rungs are the rule as it would stand and take the
       // clause font; the fourth, *A number of my own*, is the ladder's escape
@@ -6357,8 +6447,8 @@
       (o.pct ? '<span class="pct">' + o.pct + '%</span>' : '') + '</span>' +
       '<button class="lanepick" aria-pressed="' + on + '"' + (o.off ? ' disabled' : '') +
       (o.off ? '' : ' data-set="' + o.set + '" data-val="' + o.val + '"') + '>' +
-      '<span class="dot"></span><span class="off">Choose this</span>' +
-      '<span class="on">Chosen</span></button>' +
+      '<span class="dot"></span><span class="off">' + esc(pw.off) + '</span>' +
+      '<span class="on">' + esc(pw.on) + '</span></button>' +
       // `mean` is the rung whose sentence is about a number being typed rather
       // than about a fixed preset, so it carries the `data-meaning` hook
       // `syncMeaning` writes into — without it the sentence under the caret
@@ -6525,12 +6615,18 @@
     // what has been typed *since* the card opened — never the standing
     // title, which is block one's — and *Choose this* beneath it names the
     // block, chosen the moment something is typed (F6)
-    title: () => (cs
-      ? (() => { const typed = S.titleDraft !== null ? S.titleDraft : '';
-        return '<div class="choice"><div class="pick' + (typed ? ' on' : '') + '"><span class="opttext">The document is titled ' +
-        '<span class="lp editlane titlelane' + (typed ? '' : ' blank') + '"' +
+    // The branch is *does a title stand*, not *is there a document* (Ed,
+    // 2026-09-06): re-opened at the birth the card is the same two blocks as
+    // post-save — the composer holds only what differs from what stands (📍's
+    // own rule), so it is born blank and unpressed; at the birth it is the
+    // bare lane at title size, since block one is the bare name.
+    title: () => (titleStands()
+      ? (() => { const typed = S.titleDraft !== null && S.titleDraft !== cs_titleNow() ? S.titleDraft : '';
+        const lane = '<span class="lp editlane titlelane' + (typed ? '' : ' blank') + '"' +
         ' contenteditable="plaintext-only" spellcheck="false" data-titlelane="1"' +
-        ' data-ph="A new title">' + esc(typed) + '</span>.</span>' +
+        ' data-ph="A new title">' + esc(typed) + '</span>';
+        return '<div class="choice"><div class="pick' + (typed ? ' on' : '') + '"><span class="opttext">' +
+        (cs ? 'The document is titled ' + lane + '.' : lane) + '</span>' +
         '<button class="lanepick" type="button" aria-pressed="' + !!typed + '" data-pickinput="1">' +
         '<span class="dot"></span><span class="off">' + PAGE_COPY.pw.chooseThis + '</span>' +
         '<span class="on">' + PAGE_COPY.pw.chosen + '</span></button></div></div>'; })()
@@ -7610,7 +7706,7 @@
     const tp = document.getElementById('titlepara');
     // only at the birth: post-save the title opens at its own clause in
     // the constitution (titleGovPara), never over the heading
-    tp.classList.toggle('open', !cs && S.open === 'title');
+    tp.classList.toggle('open', !cs && S.open === 'title' && !settled(card('title')));
     tp.querySelectorAll('.setupcard').forEach((el) => el.remove());
     if (!cs && S.open === 'title' && !settled(card('title'))) tp.insertAdjacentHTML('beforeend', cardFor(groups()[0]));
     // **The constitution starts writing itself at the birth** (Ed,
@@ -8247,7 +8343,9 @@
             return;
           }
           // the link card is born pre-filled the moment the title settles
-          if (was === 'title') S.title = titlePending();
+          // …and the draft is spent by the commit: re-opened, the composer
+          // is blank again, holding only what differs from what now stands
+          if (was === 'title') { S.title = titlePending(); S.titleDraft = null; }
           if (was === 'title' && S.title && !S.slug) fillSuggestedSlug();
           // Q460: confirming the link only chooses the address — **the save is
           // the magic link** (the click is the instantiation), see the
@@ -9798,6 +9896,11 @@
         clearTimeout(deb);
         if (cs.textConfirmed) return;
         deb = setTimeout(() => {
+          // …and asked again when the debounce lands: a confirm can arrive
+          // inside the 800ms (journey's ✒️ follows its typing at once), and
+          // the route refuses a stash after it — a refusal CI's walks job
+          // counted red on every push from 2026-09-05 (Ed, 2026-09-06)
+          if (cs.textConfirmed || constituted()) return;
           api.post('/api/d/' + LIVESLUG + '/stash', { text: proseText() }).catch(() => {});
         }, 800);
       });

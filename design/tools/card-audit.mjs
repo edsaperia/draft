@@ -356,7 +356,11 @@ const IN_PAGE = () => {
    * rather than asserted.
    */
   const closedGeo = (key) => {
+    // …the birth's 🪶 included: its tab stands in #titlepara, not the band,
+    // and went unmeasured for as long as this looked in the band alone (the
+    // 10px step of 2026-09-06 lived exactly there)
     const tab = document.querySelector('#band [data-tab="' + CSS.escape(key) + '"], ' +
+      '#titlepara [data-tab="' + CSS.escape(key) + '"], ' +
       '#charter .achip[data-anchor="' + CSS.escape(key) + '"], .achip[data-anchor="' + CSS.escape(key) + '"]');
     const para = tab ? tab.closest('.cpara, .anch, p') : null;
     /**
@@ -398,7 +402,7 @@ const IN_PAGE = () => {
     // a quoted attribute value, so quotes and backslashes are the whole of
     // what the key has to be protected from — `CSS.escape` is for identifiers
     const q = String(key).replace(/["\\]/g, '\\$&');
-    const g = glyphBox(document.querySelector('#band [data-tab="' + q + '"]'));
+    const g = glyphBox(document.querySelector('#band [data-tab="' + q + '"], #titlepara [data-tab="' + q + '"]'));
     return g ? [R2(g[0] - window.scrollX), R2(g[1] - window.scrollY), g[2], g[3]] : null;
   };
 
@@ -607,6 +611,14 @@ function rulesFor(card, tok) {
     if (wordy && b.fontSize && !near(b.fontSize, tok.type.ui, 0.3)) {
       at('B5', 'buttons', 'a button label is --t-ui (' + tok.type.ui + 'px)', '“' + b.label + '” at ' + b.fontSize + 'px');
     }
+    // **B6 — one glyph size, in every state** (Ed, 2026-09-06: the buttons
+    // should be and stay the same size). The literal is `.btn.glyphbtn`'s
+    // 1.35rem; it had run 12 → 14 → 19.2 → 21.6px by card kind and by
+    // whether the commit was armed, on what §9.1 calls one control.
+    if (/glyphbtn/.test(b.cls) && b.fontSize && !near(b.fontSize, 21.6, 0.3)) {
+      at('B6', 'buttons', 'a glyph commit is 1.35rem (21.6px) inert, armed or held',
+        (b.label || b.cls) + (b.disabled ? ' (inert)' : '') + ' at ' + b.fontSize + 'px');
+    }
   }
   const heights = [...new Set(card.buttons.filter((b) => b.r).map((b) => b.h))];
   if (heights.length > 1) at('B1', 'buttons', 'one row, one height', heights.length + ' heights sharing one row: ' + heights.join(', ') + 'px');
@@ -630,8 +642,11 @@ function rulesFor(card, tok) {
   if (card.tab.front && card.tab.closedW !== null && card.tab.openW !== null && card.tab.openW !== card.tab.closedW) {
     const grew = Math.round((card.tab.openW - card.tab.closedW) * 100) / 100;
     const left = card.tab.boxTravel ? card.tab.boxTravel[0] : null;
-    if (!near(grew, 8, 0.51) || (left !== null && !near(left, -8, 0.51))) {
-      at('P3', 'positioning', 'the active tab grows exactly 8px, and grows it to the left',
+    // 8px of growth to the left, and 2px of tuck under the card on the right
+    // (system.css `.clausehead .achip`, 2026-09-06: the tuck's 2px is padding,
+    // so the glyph stays put) — 10px of box, all of the visible part leftward
+    if (!near(grew, 10, 0.51) || (left !== null && !near(left, -8, 0.51))) {
+      at('P3', 'positioning', 'the active tab grows 8px to the left, plus the 2px tuck under the card',
         'it grows ' + grew + 'px and its left edge moves ' + left + 'px');
     }
   }
@@ -673,8 +688,11 @@ function rulesFor(card, tok) {
   for (const r of card.radios) {
     if (!r.dot || !r.label) continue;
     if (/^Chosen by /.test(r.label.trim())) continue;
-    if (!['Prefer this', 'Preferred', 'Choose this', 'Chosen', 'Indifferent'].includes(r.label.trim())) {
-      at('CP2', 'pattern', 'radio vocabulary — Prefer this / Preferred · Choose this / Chosen · Indifferent (§9.3)',
+    // the founder's two-commit card names both acts, the route's glyph second (Ed, 2026-09-06)
+    if (/^(Choose ✒️ or Propose|Chosen ✒️ or Proposed) (✏️|🏛️)( this)?$/u.test(r.label.trim())) continue;
+    // …and Propose this / Proposed where the press creates a proposal (Ed, 2026-09-06)
+    if (!['Prefer this', 'Preferred', 'Choose this', 'Chosen', 'Propose this', 'Proposed', 'Indifferent'].includes(r.label.trim())) {
+      at('CP2', 'pattern', 'radio vocabulary — Prefer this / Preferred · Choose this / Chosen · Propose this / Proposed · Indifferent (§9.3)',
         '“' + r.label.trim().slice(0, 40) + '”');
     }
   }

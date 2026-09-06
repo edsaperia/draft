@@ -751,7 +751,8 @@
      (Ed, 2026-08-17: every tab's right edge lands on the card's left edge;
      Ed, 2026-08-31: tabs should always tuck). Detached over the prose there
      is no card edge, and the pile rests on the closed piles' own column. */
-  .ridetab.editing .achip { margin-right: -2px; }
+  .ridetab.editing .achip { margin-right: -2px; padding-right: 2px; width: 36px; }
+  .ridetab.editing .achip[data-tab="text"] { width: 44px; padding-right: 2px; }
   /* In edit mode the pile is drawn as the strip — the pile expanded, the ✒️ 🛡️
      tabs beneath 📝 reachable (Ed's QA, 2026-08-30) — and only the front tab
      wears the active treatment; the power tabs stay 34px, as in any strip. */
@@ -1381,7 +1382,12 @@
      `chipcol`'s own offset, corrected here rather than in the gutter, because
      in the gutter there is no card to line up with and the current position is
      the one the card-opening motion is measured against. */
-  .clausehead .achip { border-radius: var(--r-sm) 0 0 var(--r-sm); margin-right: -2px; }
+  /* …and the 2px the tuck moves the box is given back to the glyph (Ed,
+     2026-09-06: *the symbol shouldn't move* — it had stepped 2px right on every
+     open since 2026-08-31, P2 on ~150 cards). With `border-box`, 2px of
+     right padding on a 2px wider box leaves the content box — and the glyph
+     centred in it — exactly where the closed tab's was. */
+  .clausehead .achip { border-radius: var(--r-sm) 0 0 var(--r-sm); margin-right: -2px; padding-right: 2px; width: 36px; }
   .clausehead .achip.wmark {
     /* The active tab is the same box as the others. It had been 6px wider,
        carried under the card to kill the seam — but a tab that overshoots is
@@ -1399,8 +1405,9 @@
        The glyph must not move — the card-opening motion is measured on it
        staying at 0,0 — so the 8px goes on `padding-left` as well as on `width`.
        With `border-box` the content box is still 34px and the glyph still
-       centres in it; the tab simply starts 8px further out. */
-    width: 42px; padding-left: 8px; padding-right: 0;
+       centres in it; the tab simply starts 8px further out. The 2px of
+       right padding is the tuck's, above. */
+    width: 44px; padding-left: 8px; padding-right: 2px;
     /* **The active tab keeps its colour** (Ed, 2026-08-17). It used to take the
        card's white surface, which is the ordinary tab move — but now that the
        prose carries no highlight, the gutter holds the only lifecycle colour on
@@ -1800,7 +1807,7 @@
      not a different control. Specificity has to beat the shared hover above,
      since the pointer is by definition on it while it is held. */
   .btn.btn-propose.glyphbtn.emojibtn.holding {
-    background: var(--primary-subtle); border-color: var(--primary-hover); transform: scale(0.97);
+    background: var(--primary-subtle); border-color: var(--primary-hover);
   }
   /* the edit in flight: it belongs to neither end, so it lives on the body and
      is pointer-transparent — you are still holding the button underneath it.
@@ -1857,9 +1864,14 @@
   /* a display utility has to outrank the two-class button rules it lands on */
   .hidden { display: none !important; }
 
+  /* **One glyph size, in every state, on every card** (Ed, 2026-09-06: the
+     buttons should be and stay the same size — take the largest they reach).
+     1.35rem was the largest, reached only by an inert approve glyph; it is now
+     the size of every glyph commit, 🗑️ and ❄️ included, armed or not, held
+     or not. Nothing below this line re-states a glyph's font-size. */
   .btn.glyphbtn {
     display: inline-flex; align-items: center; justify-content: center;
-    width: 3.25rem; height: 2.5rem; padding: 0; font-size: 1.2rem; line-height: 1;
+    width: 3.25rem; height: 2.5rem; padding: 0; font-size: 1.35rem; line-height: 1;
   }
   /* Discarding is a real thing to do and not a danger — a draft has cost
      nothing, and withdrawing a proposal hands the edit back in full (SPEC
@@ -1925,7 +1937,7 @@
      round 3, 2026-09-05, A1). */
   .btn.btn-approve.glyphbtn.emojibtn:not([disabled]) {
     background: var(--bg); border-color: var(--border); color: var(--fg);
-    font-size: 1.2rem; font-weight: 400;
+    font-weight: 400;
   }
   .btn.btn-approve.glyphbtn.emojibtn:not([disabled]):hover {
     background: var(--light); border-color: var(--primary-hover); color: var(--fg);

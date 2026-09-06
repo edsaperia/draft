@@ -516,12 +516,37 @@ const GUEST2 = 'cy' + STAMP + '@example.org';
  *    found by address and a joined member by name — never both. */
 const MEM_SEC = { members: 'cs-mem-members', invitees: 'cs-mem-invitees',
   applicants: 'cs-mem-applicants', removal: 'cs-mem-proposed-for-removal' };
+// **A click on nothing outside the card closes it** (SURFACE C2, Ed
+// 2026-09-06): every close in this walk is that gesture, with a real pointer,
+// on the blank column left of the document — so the rule is exercised at each
+// of its call sites, and a card that stays open under it is a failure that
+// names itself. The chip was the old way; it still works, but is not the rule.
 const closeCard = async () => {
-  await page.evaluate(() => {
-    const a = document.querySelector('.setupcard .chipcol .achip');
-    if (a) a.click();
+  const had = await page.evaluate(() => !!document.querySelector('.setupcard'));
+  if (!had) return;
+  // the spot has to be nothing *now*: the page scrolls as the walk goes, and
+  // the column left of the document holds the contents rail's links at the
+  // top — so it is searched for, by the page's own test, rather than assumed
+  const spot = await page.evaluate(() => {
+    const d = document.getElementById('doc').getBoundingClientRect();
+    const x = Math.max(8, d.left - 60);
+    const control = 'a, button, input, textarea, select, label, [role="button"], [contenteditable="true"], ' +
+      '.achip, [data-tab], [data-card], [data-anchor], [data-q], [data-toc], .setupcard, .sugg, nav, aside';
+    for (let y = window.innerHeight - 60; y > 80; y -= 40) {
+      const el = document.elementFromPoint(x, y);
+      if (el && !el.closest(control)) return { x, y };
+    }
+    return null;
   });
-  await T(420);
+  if (!spot) { stuck.push('no dead spot to click beside the document'); return; }
+  await page.mouse.click(spot.x, spot.y);
+  await T(480);
+  const still = await page.evaluate(() => !!document.querySelector('.setupcard'));
+  if (still) {
+    stuck.push('a click on nothing outside the open card did not close it (SURFACE C2)');
+    await page.evaluate(() => { const a = document.querySelector('.setupcard .chipcol .achip'); if (a) a.click(); });
+    await T(420);
+  }
 };
 /** Rows under one Membership subsection, or null if the heading is absent. */
 const rowsUnder = (which) => page.evaluate((id) => {

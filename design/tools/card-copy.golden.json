@@ -4645,7 +4645,7 @@
     "eyebrow": "",
     "head": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.Chosen by the membership",
     "lock": "",
-    "body": "Any member may propose to invite someone to join the membership, and the membership decides ✏️.Prefer thisAny member may invite someone to join the membership at will ✒️.Prefer this",
+    "body": "Any member may propose to invite someone to join the membership, and the membership decides ✏️.Propose thisAny member may invite someone to join the membership at will ✒️.Propose this",
     "options": [
      {
       "set": null,
@@ -4674,7 +4674,7 @@
      "Admissions — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
+     "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "One 🏛️ each — withdraw yours first"
@@ -4687,7 +4687,7 @@
     "eyebrow": "",
     "head": "New members may only join by invitation.Chosen by the membership",
     "lock": "",
-    "body": "Anyone may apply to join.Prefer this",
+    "body": "Anyone may apply to join.Propose this",
     "options": [
      {
       "set": null,
@@ -4711,7 +4711,7 @@
      "Applications — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
+     "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "One 🏛️ each — withdraw yours first"
@@ -4767,7 +4767,7 @@
     "eyebrow": "",
     "head": "The members must be 82% sure a proposal is better for it to pass by the end, starting at 55% when voting opens.Chosen by the membership",
     "lock": "",
-    "body": "A proposal passes when the members are % sure at the end.Prefer thisdocs.vote uses the Bradley–Terry–Davidson voting method to decide whether a proposal ✏️ passes. It uses probability to compensate for when only a small fraction of the membership vote — read more.",
+    "body": "A proposal passes when the members are % sure at the end.Propose thisdocs.vote uses the Bradley–Terry–Davidson voting method to decide whether a proposal ✏️ passes. It uses probability to compensate for when only a small fraction of the membership vote — read more.",
     "options": [],
     "inputs": [
      {
@@ -4792,7 +4792,7 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Passed: 82% sure at the end — settled",
-     "Say you prefer this — nothing leaves the card until you submit",
+     "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "One 🏛️ each — withdraw yours first"
@@ -4906,7 +4906,7 @@
     "eyebrow": "",
     "head": "No more changes to the document may be made after Weekday at HH:MM.Chosen by the membership",
     "lock": "",
-    "body": "The drafting process will end on .Prefer thisThe drafting process has no set end — it runs until too few members are active.Prefer this",
+    "body": "The drafting process will end on .Propose thisThe drafting process has no set end — it runs until too few members are active.Propose this",
     "options": [
      {
       "set": null,
@@ -4935,8 +4935,7 @@
      "When Does It End? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
-     "Say you prefer this — nothing leaves the card until you submit",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
+     "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "Propose it"
@@ -5034,7 +5033,7 @@
     "eyebrow": "",
     "head": "Votes are never revealed.Chosen by the membership",
     "lock": "",
-    "body": "Votes are published with the closing record, never before.Prefer this",
+    "body": "Votes are published with the closing record, never before.Propose this",
     "options": [
      {
       "set": null,
@@ -5058,7 +5057,7 @@
      "When Are Votes Revealed? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
+     "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "One 🏛️ each — withdraw yours first"
@@ -5071,7 +5070,7 @@
     "eyebrow": "",
     "head": "Inactive members never lapse and are still counted towards votes.Chosen by the membership",
     "lock": "",
-    "body": "A membership lapses after days without logging in.Prefer this",
+    "body": "A membership lapses after days without logging in.Propose this",
     "options": [],
     "inputs": [
      {
@@ -5094,7 +5093,7 @@
      "Do Memberships Lapse? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
-     "Say you prefer this — nothing leaves the card until you submit",
+     "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "One 🏛️ each — withdraw yours first"
@@ -5234,7 +5233,7 @@
     "eyebrow": "",
     "head": "The approval threshold starts at 55% and rises to 82% by the end.",
     "lock": "",
-    "body": "The approval threshold stays the same all the way through.Prefer thisThe approval threshold starts at % and rises to the number at the end.Prefer thisLast amended D MonthThe Founder has changed how the approval threshold climbs to the close from rising from 55% to rising from 55%.ABAsh Bellamy 👑No reason given.",
+    "body": "The approval threshold stays the same all the way through.Propose thisThe approval threshold starts at % and rises to the number at the end.Propose thisLast amended D MonthThe Founder has changed how the approval threshold climbs to the close from rising from 55% to rising from 55%.ABAsh Bellamy 👑No reason given.",
     "options": [
      {
       "set": null,
@@ -5265,8 +5264,7 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Passed: 82% sure at the end — settled",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "Say you prefer this — nothing leaves the card until you submit",
+     "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "The founder’s own hand — a Founder Action ✒️, not a proposal",
      "Discard this motion",
@@ -6038,7 +6036,7 @@
     "eyebrow": "",
     "head": "33% of the membership must vote on a proposal ✏️ before it can pass.Chosen by the membership",
     "lock": "",
-    "body": "Quorum is % of the membership.Prefer this",
+    "body": "Quorum is % of the membership.Propose this",
     "options": [],
     "inputs": [
      {
@@ -6061,7 +6059,7 @@
      "Quorum — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
-     "Say you prefer this — nothing leaves the card until you submit",
+     "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "One 🏛️ each — withdraw yours first"
@@ -6074,7 +6072,7 @@
     "eyebrow": "",
     "head": "Members may make a new proposal ✏️ every 3 hours.Chosen by the Founder ✒️",
     "lock": "",
-    "body": "Members may make a new proposal ✏️ every minutes.Prefer this",
+    "body": "Members may make a new proposal ✏️ every minutes.Propose this",
     "options": [],
     "inputs": [
      {
@@ -6098,7 +6096,7 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Rejected: a new proposal every 90 minutes — settled",
-     "Say you prefer this — nothing leaves the card until you submit",
+     "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "Propose it"
@@ -6193,7 +6191,7 @@
     "eyebrow": "",
     "head": "To remove a member, all members must agree 🏛️.Chosen by the membership",
     "lock": "",
-    "body": "To remove a member, all members apart from them must agree 🏛️.Prefer thisTo remove a member, a majority of members must agree ✏️.Prefer this",
+    "body": "To remove a member, all members apart from them must agree 🏛️.Propose thisTo remove a member, a majority of members must agree ✏️.Propose this",
     "options": [
      {
       "set": null,
@@ -6222,7 +6220,7 @@
      "How Is a Member Removed? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
+     "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "One 🏛️ each — withdraw yours first"
@@ -6266,7 +6264,7 @@
     "eyebrow": "",
     "head": "The document lives at docs.vote/d/the-hollow-oak-club-house-charter-3b3f.Chosen by the Founder ✒️",
     "lock": "",
-    "body": "The document lives at docs.vote/d/.Every link the document has ever had keeps working — a change leaves a redirect behind.Prefer this",
+    "body": "The document lives at docs.vote/d/.Every link the document has ever had keeps working — a change leaves a redirect behind.Propose this",
     "options": [],
     "inputs": [
      {
@@ -6289,7 +6287,7 @@
      "Link — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
-     "Say you prefer this — nothing leaves the card until you submit",
+     "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "Propose it"
@@ -6301,9 +6299,9 @@
    },
    "title": {
     "eyebrow": "",
-    "head": "The document is titled “The Hollow Oak Club — House Charter”.",
+    "head": "The document is titled “The Hollow Oak Club — House Charter”.Chosen by the Founder ✒️",
     "lock": "",
-    "body": "The document is titled .Prefer this",
+    "body": "The document is titled .Propose this",
     "options": [],
     "inputs": [
      {
@@ -6327,7 +6325,7 @@
      "Title — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
-     "Say you prefer this — nothing leaves the card until you submit",
+     "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "Propose it"
@@ -6495,7 +6493,7 @@
    },
    "title": {
     "eyebrow": "",
-    "head": "The document is titled “The Hollow Oak Club — House Charter”.",
+    "head": "The document is titled “The Hollow Oak Club — House Charter”.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
@@ -6524,7 +6522,7 @@
     "eyebrow": "",
     "head": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.Chosen by the membership",
     "lock": "",
-    "body": "Any member may propose to invite someone to join the membership, and the membership decides ✏️.Prefer thisAny member may invite someone to join the membership at will ✒️.Prefer this",
+    "body": "Any member may propose to invite someone to join the membership, and the membership decides ✏️.Propose thisAny member may invite someone to join the membership at will ✒️.Propose this",
     "options": [
      {
       "set": null,
@@ -6553,7 +6551,7 @@
      "Admissions — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
+     "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "One 🏛️ each — withdraw yours first"
@@ -6566,7 +6564,7 @@
     "eyebrow": "",
     "head": "New members may only join by invitation.Chosen by the membership",
     "lock": "",
-    "body": "Anyone may apply to join.Prefer this",
+    "body": "Anyone may apply to join.Propose this",
     "options": [
      {
       "set": null,
@@ -6590,7 +6588,7 @@
      "Applications — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
+     "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "One 🏛️ each — withdraw yours first"
@@ -6646,7 +6644,7 @@
     "eyebrow": "",
     "head": "The members must be 82% sure a proposal is better for it to pass by the end, starting at 55% when voting opens.Chosen by the membership",
     "lock": "",
-    "body": "A proposal passes when the members are % sure at the end.Prefer thisdocs.vote uses the Bradley–Terry–Davidson voting method to decide whether a proposal ✏️ passes. It uses probability to compensate for when only a small fraction of the membership vote — read more.",
+    "body": "A proposal passes when the members are % sure at the end.Propose thisdocs.vote uses the Bradley–Terry–Davidson voting method to decide whether a proposal ✏️ passes. It uses probability to compensate for when only a small fraction of the membership vote — read more.",
     "options": [],
     "inputs": [
      {
@@ -6671,7 +6669,7 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Passed: 82% sure at the end — settled",
-     "Say you prefer this — nothing leaves the card until you submit",
+     "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "One 🏛️ each — withdraw yours first"
@@ -6795,7 +6793,7 @@
     "eyebrow": "",
     "head": "No more changes to the document may be made after Weekday at HH:MM.Chosen by the membership",
     "lock": "",
-    "body": "The drafting process will end on .Prefer thisThe drafting process has no set end — it runs until too few members are active.Prefer this",
+    "body": "The drafting process will end on .Propose thisThe drafting process has no set end — it runs until too few members are active.Propose this",
     "options": [
      {
       "set": null,
@@ -6824,8 +6822,7 @@
      "When Does It End? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
-     "Say you prefer this — nothing leaves the card until you submit",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
+     "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "Propose it"
@@ -6975,7 +6972,7 @@
     "eyebrow": "",
     "head": "Votes are never revealed.Chosen by the membership",
     "lock": "",
-    "body": "Votes are published with the closing record, never before.Prefer this",
+    "body": "Votes are published with the closing record, never before.Propose this",
     "options": [
      {
       "set": null,
@@ -6999,7 +6996,7 @@
      "When Are Votes Revealed? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
+     "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "One 🏛️ each — withdraw yours first"
@@ -7012,7 +7009,7 @@
     "eyebrow": "",
     "head": "Inactive members never lapse and are still counted towards votes.Chosen by the membership",
     "lock": "",
-    "body": "A membership lapses after days without logging in.Prefer this",
+    "body": "A membership lapses after days without logging in.Propose this",
     "options": [],
     "inputs": [
      {
@@ -7035,7 +7032,7 @@
      "Do Memberships Lapse? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
-     "Say you prefer this — nothing leaves the card until you submit",
+     "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "One 🏛️ each — withdraw yours first"
@@ -7170,7 +7167,7 @@
     "eyebrow": "",
     "head": "The approval threshold starts at 55% and rises to 82% by the end.",
     "lock": "",
-    "body": "FixedStays at 78% from the moment voting opens to the end.Choose thisRisingChosenNearly everyone90%Choose thisBroad agreement80%Choose thisA bare majority60%Choose thisStarts at a bare majority (60%) when voting opens and climbs to 78% by the end — early changes pass more easily.A number of my ownChosenStarts at 55% when voting opens and climbs to 78% by the end — early changes pass more easily.When voting opens%Why are you changing this?ABAsh Bellamy 👑",
+    "body": "FixedStays at 78% from the moment voting opens to the end.Choose ✒️ or Propose ✏️ thisRisingChosen ✒️ or Proposed ✏️Nearly everyone90%Choose ✒️ or Propose ✏️ thisBroad agreement80%Choose ✒️ or Propose ✏️ thisA bare majority60%Choose ✒️ or Propose ✏️ thisStarts at a bare majority (60%) when voting opens and climbs to 78% by the end — early changes pass more easily.A number of my ownChosen ✒️ or Proposed ✏️Starts at 55% when voting opens and climbs to 78% by the end — early changes pass more easily.When voting opens%Why are you changing this?ABAsh Bellamy 👑",
     "options": [
      {
       "set": "shape",
@@ -8175,7 +8172,7 @@
     "eyebrow": "",
     "head": "33% of the membership must vote on a proposal ✏️ before it can pass.Chosen by the membership",
     "lock": "",
-    "body": "Quorum is % of the membership.Prefer this",
+    "body": "Quorum is % of the membership.Propose this",
     "options": [],
     "inputs": [
      {
@@ -8198,7 +8195,7 @@
      "Quorum — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
-     "Say you prefer this — nothing leaves the card until you submit",
+     "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "One 🏛️ each — withdraw yours first"
@@ -8211,7 +8208,7 @@
     "eyebrow": "",
     "head": "Members may make a new proposal ✏️ every 3 hours.Chosen by the Founder ✒️",
     "lock": "",
-    "body": "Members may make a new proposal ✏️ every minuteshoursdays.ChosenWhy are you changing this?ABAsh Bellamy 👑",
+    "body": "Members may make a new proposal ✏️ every minuteshoursdays.Chosen ✒️ or Proposed ✏️Why are you changing this?ABAsh Bellamy 👑",
     "options": [
      {
       "set": "rateBy",
@@ -8340,7 +8337,7 @@
     "eyebrow": "",
     "head": "To remove a member, all members must agree 🏛️.Chosen by the membership",
     "lock": "",
-    "body": "To remove a member, all members apart from them must agree 🏛️.Prefer thisTo remove a member, a majority of members must agree ✏️.Prefer this",
+    "body": "To remove a member, all members apart from them must agree 🏛️.Propose thisTo remove a member, a majority of members must agree ✏️.Propose this",
     "options": [
      {
       "set": null,
@@ -8369,7 +8366,7 @@
      "How Is a Member Removed? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
+     "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "One 🏛️ each — withdraw yours first"
@@ -8452,7 +8449,7 @@
    },
    "title": {
     "eyebrow": "",
-    "head": "The document is titled “The Hollow Oak Club — House Charter”.",
+    "head": "The document is titled “The Hollow Oak Club — House Charter”.Chosen by the Founder ✒️",
     "lock": "",
     "body": "The document is titled .Choose thisWhy are you changing this?ABAsh Bellamy 👑",
     "options": [],

@@ -1446,8 +1446,16 @@ window.SETUP = (function () {
      `opt` draws the session-view's own `.lanepick` radio (Ed, 2026-08-18). The
      option's name is the pill's label; its explanation sits under it, and any
      settings the option carries appear only while it is chosen. */
+  // **The radio's words are the surface's to override per block** (Ed,
+  // 2026-09-06): on a founder-held setting where the route's own commit
+  // stands beside the pen, one press could decree or propose, and the
+  // surface — which alone knows that — hands `opt` the pair to print.
+  // Null keeps *Choose this / Chosen*.
+  let PICK_WORDS = null;
+  const setPickWords = (fn) => { PICK_WORDS = typeof fn === 'function' ? fn : null; };
   const opt = (S, key, val, ttl, exp, inner, off, extra) => {
     const on = S[key] === val;
+    const w = (PICK_WORDS && PICK_WORDS(key, val)) || { off: 'Choose this', on: 'Chosen' };
     // **The option block** (CP1, Q1096): the option's text is document text,
     // its explanation beneath, and the radio under both. The radio names the
     // register (Ed, 2026-08-31 evening, re-ruling Q1097): *Choose this /
@@ -1461,8 +1469,8 @@ window.SETUP = (function () {
       (exp ? '<span class="exp">' + exp + '</span>' : '') +
       '<button class="lanepick" aria-pressed="' + on + '"' + (off ? ' disabled' : '') +
       (off ? '' : ' data-set="' + key + '" data-val="' + val + '"') + '>' +
-      '<span class="dot"></span><span class="off">Choose this</span>' +
-      '<span class="on">Chosen</span></button>' +
+      '<span class="dot"></span><span class="off">' + esc(w.off) + '</span>' +
+      '<span class="on">' + esc(w.on) + '</span></button>' +
       (inner ? '<span class="inner">' + inner + '</span>' : '') + '</div>';
   };
 
@@ -1609,7 +1617,7 @@ window.SETUP = (function () {
 
   return { esc, TICK, initials, avHtml, hueOf, washOf, stateOf, markOf, railEntry,
     bandHtml, fitBand, pileHtml, stripHtml, cardHtml, readBody,
-    nameBody, pictureBody, opt, num, numIn, ctlWord, faces, someIn, FACE_EMOJI,
+    nameBody, pictureBody, opt, setPickWords, num, numIn, ctlWord, faces, someIn, FACE_EMOJI,
     FACE_TONES, faceToneRow, faceToned, setFaceTone,
     setFaceTaken, faceTakenBy, faceBtn, emojiPicker,
     motionBody, routeFor, motionCommitHtml,

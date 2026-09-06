@@ -661,12 +661,17 @@ window.CARDS = (function () {
     // untouched across every card a patch is showing on.
     function laneBarHtml(s, v, opts) {
       const o = opts || {};
+      // the register is the caller's (CP2): a judgment's lane prefers; a
+      // composer's lane proposes, or chooses where the chooser alone decides
+      // (Ed, 2026-09-06) — the words arrive as `opts.words`, the default is
+      // the judgment's pair
+      const w = o.words || { off: G.lane.prefer, on: G.lane.preferred, title: G.lane.pickTitle };
       return '<div class="lanebar">' +
         '<button class="lanepick" type="button" ' + env.valAttr + '="' + esc(String(v)) + '"' +
         ' aria-pressed="' + (env.pickOf(s) === v) + '"' + (env.lockedOf(s) ? ' disabled' : '') +
-        ' title="' + G.lane.pickTitle + '">' +
+        ' title="' + esc(w.title) + '">' +
         '<i class="dot" aria-hidden="true"></i>' +
-        '<span class="off">' + G.lane.prefer + '</span><span class="on">' + G.lane.preferred + '</span></button>' +
+        '<span class="off">' + esc(w.off) + '</span><span class="on">' + esc(w.on) + '</span></button>' +
         (o.edit === false || !env.mayPropose() ? '' : laneProposeHtml(s, o.lane || v, o.key)) +
         '</div>';
     }

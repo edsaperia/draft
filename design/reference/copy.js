@@ -111,6 +111,12 @@ window.COPY = (function () {
       pickTitle: 'Say you prefer this proposal — nothing leaves the card until you submit',
       prefer: 'Prefer this',
       preferred: 'Preferred',
+      // the third register (Ed, 2026-09-06): where picking the option and
+      // committing *creates* a proposal — the composer's lanes and field
+      // blocks — the radio says what the press will do
+      proposeTitle: 'Propose this — nothing leaves the card until you submit',
+      propose: 'Propose this',
+      proposed: 'Proposed',
     },
     // clauseHeadHtml: the clause lifted into the head
     head: {
@@ -487,6 +493,11 @@ window.COPY = (function () {
       },
       chooseThis: 'Choose this',
       chosen: 'Chosen',
+      // the two-commit card (Ed, 2026-09-06): a founder holding the pen may
+      // decree the pick or put it to the room, so the radio names both, the
+      // second glyph being the route's own commit — ✏️ or 🏛️
+      chooseOrPropose: (routeGlyph) => 'Choose ✒️ or Propose ' + routeGlyph + ' this',
+      chosenOrProposed: (routeGlyph) => 'Chosen ✒️ or Proposed ' + routeGlyph,
       // the four read-only notes (*The Founder holds this…*, *Given up…*)
       // went with Ed's card review round 3 (2026-09-05, 52/53): a tab with
       // nothing to set is its head sentence and a close-only OK
