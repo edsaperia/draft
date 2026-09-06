@@ -1,10 +1,9 @@
 {
-  "entries": 70,
-  "rollingHash": "cf8d5f27661c50bfbc2e15ce66324386c69633270a69e21caa22fa9d4388a192",
+  "entries": 68,
+  "rollingHash": "acee6d7ed5afd4707563d7f919f1e8528f2b26f3a413569a02216f0272b1d6b0",
   "chainVerifies": true,
   "constitutedAtT": 8,
   "E": 3,
-  "quorumBase": 3,
   "members": [
     {
       "id": "ada",
@@ -12,7 +11,6 @@
       "arrivedAtT": 0,
       "removed": false,
       "lapsed": false,
-      "signedOut": null,
       "name": "Ada",
       "picture": "e🦉"
     },
@@ -22,7 +20,6 @@
       "arrivedAtT": 2,
       "removed": false,
       "lapsed": false,
-      "signedOut": null,
       "name": "Bo",
       "picture": "e🦊"
     },
@@ -32,7 +29,6 @@
       "arrivedAtT": 2,
       "removed": false,
       "lapsed": false,
-      "signedOut": null,
       "name": "Cy",
       "picture": null
     },
@@ -42,7 +38,6 @@
       "arrivedAtT": null,
       "removed": true,
       "lapsed": false,
-      "signedOut": null,
       "name": null,
       "picture": null
     }

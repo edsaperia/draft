@@ -175,15 +175,14 @@ describe('🌍 the readers the fold knows about', () => {
     const { s, bo, cy } = built('closed', { lapseMs: 7 * DAY, endsAtMs: 400 * DAY });
     const before = view(s, cy);
     expect(before.members.find((m) => m.id === cy)!.lapsed).toBe(false);
-    // only `cy` goes quiet: the other two are seen a day before the tick, so
-    // the room keeps its quorum and the freeze (§9.5) stays out of the way.
+    // only `cy` goes quiet: the other two are seen a day before the tick.
     // A day, not a minute: `seen` records at most hourly.
     s.seen(7 * DAY, 'ada');
     s.seen(7 * DAY, bo);
     s.tick(8 * DAY);
     const after = view(s, cy);
     expect(after.members.find((m) => m.id === cy)!.lapsed).toBe(true);
-    expect(after.frozen).toBe(false);
+    expect(s.canJudge()).toBe(true); // nothing stops on a lapse (§9.5, R-088)
     // still a member, still a full read: the register with its addresses,
     // the standing values, `gates.reading`. `seatAlive` asks only
     // `!m.removed`, so the server agrees with the fold here.

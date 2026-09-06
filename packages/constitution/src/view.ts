@@ -207,9 +207,6 @@ export interface MemberView {
   lapseWarned: boolean;
   /** The 🧭 shape the document was born with, or null for custom (entry 166). */
   shape: ShapeName | null;
-  frozen: boolean;
-  /** The freeze's shortfall (§9.5): how many must return to thaw; null while not frozen. */
-  mustReturn: number | null;
   /** The close (SPEC §4.6): null while open; once closed, when, my own signature, the block. */
   closed: {
     at: number;
@@ -428,8 +425,6 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
         : { name: null, picture: null, nameSet: false, pictureSet: false },
     lapseWarned: me ? me.lapseWarned : isConvenor ? s.convenorRecord().lapseWarned : false,
     shape: s.shape,
-    frozen: s.frozen,
-    mustReturn: s.mustReturn(),
     closed: s.closed
       ? {
           at: s.closedAt!,

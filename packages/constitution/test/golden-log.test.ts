@@ -100,8 +100,8 @@ describe('the golden log', () => {
 
   it('is long enough to be worth freezing', () => {
     // a golden that covers three acts proves nothing; this one runs from an
-    // empty document to a live one with motions, an application and a
-    // sign-out behind it
+    // empty document to a live one with motions, an application and the
+    // clock behind it
     expect(frozenState.entries).toBeGreaterThan(60);
   });
 });

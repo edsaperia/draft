@@ -281,8 +281,8 @@ export type Event =
   | {
       /**
        * Lapse, engine-side (SPEC §9.5a, §8.2): a suspended participant
-       * leaves E — the floor, a share-quorum and the freeze base stop
-       * counting them — and cannot act, but every judgment they cast
+       * leaves E — the floor and a share-quorum stop counting them — and
+       * cannot act, but every judgment they cast
        * keeps counting and their wallet keeps dripping. Revival is
        * `participant-resumed`; the host calls it on any authenticated
        * act.

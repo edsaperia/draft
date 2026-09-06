@@ -15,7 +15,7 @@
  * | 2 | *The question was asked as a count (or a share), and that is how it is answered and how it stands* | pre-Begin | **holds** — `setQuorumForm`'s two refusals, `answer`'s third |
  * | 2 | …and live | live | **gap (fold)** — nothing after 🍾 checks the form: a `set` motion or the founder's own pen re-frames `quorumFormValue` silently, and the composer cannot express the re-frame it permits |
  * | 3 | *If the quorum is a share, it is a share of who is here now* | live | **holds** — `adoptionFloor()` re-derives from `eCount()` on every call; `floor-recomputed` on every roster change |
- * | 4 | *When too few of us are still here to reach quorum, the document stops* | live | **gap (fold)** — `maybeFreezeOrThaw` is called from `signOut`, `memberReturn` and `tick`, and **not** from `afterRosterChange`; a removal, a resignation or an uninvite leaves the room below quorum and the document unfrozen until the host's next minute tick |
+ * | 4 | *When too few of us are still here to reach quorum, nothing passes — and nothing stops* (§9.5, R-088: there is no freeze) | live | **holds** — `canJudge()` is `constitutedT !== null`; a lapse, a removal or a birth that leaves E under a count-form quorum holds every race at the floor and holds nothing else |
  * | 5 | *The founding questions themselves are not decided by quorum* | pre-Begin | **holds, by design** — `maybeResolve` has no quorum in it at all; it holds on an open invitation and on one voice |
  * | 6 | *A constitutional motion has no quorum either* | live | **holds, by design** — `maybeSettleMotions` reads `motionElectorateOf`, never `quorumCount` |
  * | — | the arithmetic: *a share of E, rounded up* | all | **gap (fold, both packages)** — `Math.ceil((n / 100) * E)` is not ⌈n·E/100⌉ in binary floating point |
@@ -27,12 +27,12 @@
  *
  * | | pre-Begin | live | closed |
  * |---|---|---|---|
- * | **count**, founder-held and set | 2 (the form is fixed), 5 | 1, 2 (gap), 3 (a count does not track E — that is the point of the form), 4 (gap), 6 | 1 (the final batch applies the same floor) |
+ * | **count**, founder-held and set | 2 (the form is fixed), 5 | 1, 2 (gap), 3 (a count does not track E — that is the point of the form), 4, 6 | 1 (the final batch applies the same floor) |
  * | **count**, delegated and collecting | 2, 5; 👥 is a judge-gate, so nothing is judged and promise 1 is not yet being made | *empty* — `begin` refuses while it collects | *empty* |
  * | **count**, delegated and settled | 2, 5 | as founder-held: who holds it does not change what it promises | as founder-held |
- * | **share**, founder-held and set | 2, 5; a share before Begin is a share of a room still forming, so promise 3 is not yet being made | 1, 2 (gap), 3, 4 (gap), 6 | 1 |
+ * | **share**, founder-held and set | 2, 5; a share before Begin is a share of a room still forming, so promise 3 is not yet being made | 1, 2 (gap), 3, 4, 6 | 1 |
  * | **share**, delegated and collecting | 2, 5 | *empty* | *empty* |
- * | **share**, delegated and settled | 2, 5 | 1, 2 (gap), 3, 4 (gap), 6 | 1 |
+ * | **share**, delegated and settled | 2, 5 | 1, 2 (gap), 3, 4, 6 | 1 |
  *
  * Two cells the plan asked to be named explicitly: **a share before Begin**
  * is empty of promise 3 (there is no settled room for it to be a share of),
@@ -188,33 +188,6 @@ describe('promise 1 — nothing carries until Q of us have weighed in (§4.2, §
     const v0 = bridge.engine.currentVersion();
     bridge.proposeText(10, 'ada', patch(v0, ['Open always.']), '');
     expect(bridge.engine.document()).toBe('Open always.');
-  });
-
-  it('an abstention leaves the freeze base and not E, so the floor does not move — the document freezes instead of adopting on the remainder', () => {
-    // E = 3, count 2. cy abstains: E is still 3 (the floor is still 2) but
-    // the counted base is 2 — exactly quorum, so no freeze yet. bo abstains
-    // too and the base is 1 < 2: the document stops rather than letting the
-    // last member carry anything.
-    const { s, bo, cy } = buildConstituted({ quorum: { form: 'count', n: 2 } });
-    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'abstain-floor' });
-    const v0 = bridge.engine.currentVersion();
-    const { id, raceId } = bridge.proposeText(10, bo, patch(v0, ['Open always.']), '');
-    s.signOut(11, cy, 'abstaining');
-    expect(s.E()).toBe(3);
-    expect(s.quorumBase()).toBe(2);
-    expect(s.frozen).toBe(false);
-    expect(bridge.engine.adoptionFloor()).toBe(2); // E unmoved: an abstainer is still in E
-
-    s.signOut(12, bo, 'abstaining');
-    expect(s.quorumBase()).toBe(1);
-    expect(s.frozen).toBe(true);
-    expect(s.canJudge()).toBe(false);
-    // and the parked race adopts nothing on the host's tick
-    const race = bridge.engine.races().find((r) => r.id === raceId)!;
-    expect(race.distinctMovers).toBe(1);
-    bridge.tick(13);
-    expect(bridge.engine.getCandidate(id).state).not.toBe('adopted');
-    expect(bridge.engine.document()).toBe('The clubhouse shall be kept open.');
   });
 
   it('the close applies the same floor: a race one mover short at T=0 is recorded undecided, never adopted (§4.6)', () => {
@@ -398,96 +371,66 @@ describe('promise 3 — a share is a share of who is here now (§9.3, §8.2)', (
   });
 });
 
-describe('promise 4 — too few of us left and the document stops (§9.5)', () => {
-  // The sign-out half is already locked by `membership.test.ts`'s *signing
-  // out and the freeze* — holding stays in the base, abstaining leaves it,
-  // 1 < 2 freezes, a return thaws. Not duplicated here.
+describe('promise 4 — too few of us left and nothing passes, but nothing stops (§9.5, R-088)', () => {
+  // Until v0.99 this promise read *the document stops*: a freeze, fed by
+  // sign-out and by the lapse clock. Ed retired both (2026-09-06, Q1196) —
+  // quorum is the adoption floor and only that, so a room that cannot reach
+  // it holds every race at the floor and holds nothing else. Each case below
+  // is the positive of the freeze case it replaced: judging stays open, the
+  // floor stands above E, and the race waits (§8.2).
 
-  it('a lapse freezes inside the same tick that applied it', () => {
+  it('a lapse that leaves E under a count-form quorum leaves the document judging, with every race held at the floor', () => {
     const { s, bo, cy } = buildConstituted({
       quorum: { form: 'count', n: 3 },
       lapse: { afterMs: LAPSE_MS },
     });
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'lapse-floor' });
+    const v0 = bridge.engine.currentVersion();
+    const { id } = bridge.proposeText(10, bo, patch(v0, ['Open always.']), '');
     keepAlive(s, LAPSE_ALIVE, 'ada');
-    expect(bo).toBeDefined();
     expect(cy).toBeDefined();
-    expect(s.frozen).toBe(false);
     s.tick(LAPSE_TICK); // bo and cy have been quiet since the founding
     expect(s.E()).toBe(1);
-    expect(s.frozen).toBe(true);
-    expect(s.mustReturn()).toBe(2);
+    expect(s.canJudge()).toBe(true);                // nothing stops
+    bridge.tick(LAPSE_TICK + 1);
+    expect(bridge.engine.adoptionFloor()).toBe(3);  // Q = 3 stands above ⌈1/3⌉
+    expect(bridge.engine.getCandidate(id).state).not.toBe('adopted');
+    expect(bridge.engine.document()).toBe('The clubhouse shall be kept open.');
   });
 
-  /**
-   * **The gap this plan expects.** `afterRosterChange` — which `remove`,
-   * `resign`, `uninvite` and the lapse loop all call — emits
-   * `floor-recomputed`, re-resolves the questions and re-settles the
-   * motions, and never asks whether the room that is left can still reach
-   * quorum. `maybeFreezeOrThaw` is reached from `signOut`, `memberReturn`
-   * and `tick` only. So a removal that takes the counted base below quorum
-   * leaves the document open until the host's next minute tick, and a race
-   * can adopt on the smaller room in the meantime (`server.ts` `tick`).
-   *
-   * Written as `it.fails` so the suite records the gap and goes green the
-   * day the fix lands: the assertion inside is what *should* hold.
-   */
-  it.fails('a removal that empties the room freezes it at once (FINDING: promise 4 — afterRosterChange never asks)', () => {
+  it('a removal that takes E under the quorum does the same, at once — there is no window, because there is nothing to fire', () => {
     const { s, bo, cy } = buildConstituted({
       quorum: { form: 'count', n: 3 },
       doors: { remove: { unilateral: true, assent: false } },
     });
-    expect(s.quorumBase()).toBe(3);
-    s.remove(10, cy);
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'remove-floor' });
+    const v0 = bridge.engine.currentVersion();
+    const { id } = bridge.proposeText(10, bo, patch(v0, ['Open always.']), '');
+    s.remove(11, cy);
     expect(s.E()).toBe(2);
-    expect(s.quorumBase()).toBe(2); // 2 < 3
-    expect(s.frozen).toBe(true);
-    expect(bo).toBeDefined();
+    expect(s.canJudge()).toBe(true);
+    s.tick(12);                                     // the host's tick changes nothing either
+    expect(s.canJudge()).toBe(true);
+    bridge.tick(12);
+    expect(bridge.engine.adoptionFloor()).toBe(3);  // 3 > ⌈2/3⌉ = 1
+    expect(bridge.engine.getCandidate(id).state).not.toBe('adopted');
+    expect(bridge.engine.document()).toBe('The clubhouse shall be kept open.');
   });
 
-  it('and the tick behind it does freeze — which is how long the window is', () => {
-    const { s, cy } = buildConstituted({
-      quorum: { form: 'count', n: 3 },
-      doors: { remove: { unilateral: true, assent: false } },
-    });
-    s.remove(10, cy);
-    expect(s.frozen).toBe(false); // the window: open until the host ticks
-    expect(s.canJudge()).toBe(true); // …and judging is open inside it
+  it('a document born asking for more members than it has is open from the start, and adopts nothing until they arrive', () => {
+    // count 5 with E = 3: the meaning line says *nothing can pass until more
+    // members arrive*, and that is the whole of what happens
+    const { s, bo } = buildConstituted({ quorum: { form: 'count', n: 5 } });
+    expect(s.canJudge()).toBe(true);
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'birth-floor' });
+    expect(bridge.engine.adoptionFloor()).toBe(5);
+    const v0 = bridge.engine.currentVersion();
+    const { id } = bridge.proposeText(10, bo, patch(v0, ['Open always.']), '');
     s.tick(11);
-    expect(s.frozen).toBe(true);
-    expect(s.mustReturn()).toBe(1);
-  });
-
-  it.fails('a resignation does the same (FINDING: promise 4 — the same gap by the other door)', () => {
-    const { s, cy } = buildConstituted({ quorum: { form: 'count', n: 3 } });
-    s.resign(10, cy);
-    expect(s.quorumBase()).toBe(2);
-    expect(s.frozen).toBe(true);
-  });
-
-  it.fails('and the thaw has the same window: an arrival into a frozen room does not thaw it (FINDING: promise 4, the other direction)', () => {
-    const { s, cy } = buildConstituted({
-      quorum: { form: 'count', n: 3 },
-      admission: { price: 'pen' },
-      doors: { remove: { unilateral: true, assent: false } },
-    });
-    s.remove(10, cy);
-    s.tick(11);
-    expect(s.frozen).toBe(true);
-    const dee = s.invite(12, 'dee@example.org');
-    s.arrive(13, dee);
-    expect(s.quorumBase()).toBe(3);
-    expect(s.frozen).toBe(false);
-  });
-
-  it('a document born asking for more members than it has is not frozen until the first tick either', () => {
-    // count 5 with E = 3: `begin` has no freeze check, so the room is open
-    // and unable to adopt anything until the host ticks and names the fact.
-    const { s } = buildConstituted({ quorum: { form: 'count', n: 5 } });
-    expect(s.frozen).toBe(false);
-    expect(s.mustReturn()).toBeNull();
-    s.tick(3);
-    expect(s.frozen).toBe(true);
-    expect(s.mustReturn()).toBe(2);
+    expect(s.canJudge()).toBe(true);
+    bridge.tick(11);
+    expect(bridge.engine.getCandidate(id).state).not.toBe('adopted');
+    expect(bridge.engine.document()).toBe('The clubhouse shall be kept open.');
   });
 });
 

@@ -148,7 +148,6 @@ describe('⏰ 1 — the record is cut on the clock (SPEC §4.6)', () => {
     s.tick(1_000_000);
     expect(s.closed).toBe(true);
     expect(s.memberRecords().get(bo)!.lapsed).toBe(false);
-    expect(s.frozen).toBe(false);
   });
 
   it('a founding that runs past its own closing date is not closed under the founder', () => {
@@ -191,7 +190,6 @@ describe('⏰ 2 — after the close every door is shut but the signing (SPEC §4
       ['giveOk', () => s.giveOk(T, bo, 'ending')],
       ['begin', () => s.begin(T)],
       ['openMotion', () => s.openMotion(T, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } })],
-      ['signOut', () => s.signOut(T, bo, 'holding')],
     ];
     for (const [name, act] of shut) {
       expect(() => act(), name).toThrow(/closed/);

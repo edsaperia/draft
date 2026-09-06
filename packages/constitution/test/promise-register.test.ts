@@ -175,7 +175,6 @@ describe('promise 3 — the electorate is who is here now (v0.48, §8.2)', () =>
     expect(s.E()).toBe(3);
     const dee = s.invite(2, 'dee@example.org');
     expect(s.E()).toBe(3);
-    expect(s.quorumBase()).toBe(3);
     expect(s.motionElectorate()).not.toContain(dee);
     s.arrive(3, dee);
     expect(s.E()).toBe(4);
@@ -206,7 +205,7 @@ describe('promise 3 — the electorate is who is here now (v0.48, §8.2)', () =>
   });
 
   // the lapse half is `doors.test.ts` (*a running 🏛️ does not wait on a
-  // lapsed member*) and the abstaining sign-out is `membership.test.ts`
+  // lapsed member*); there is no sign-out since v0.99 (R-088)
 });
 
 // ---------------------------------------------------------------------------

@@ -210,25 +210,20 @@ function spellPhrase(afterMs: number): string {
    *34% of a room of 5 is 2* is the whole of what a share is asking them to
    agree to, and it moves when somebody joins.
 
-   The verb is **freezes**, not *pauses*: the topbar's clock already says
-   *Frozen — 3 must return* and the glossary names the state `freeze`, so one
-   word for one state across the surface (T5). */
+   Every branch ends in the floor and nothing else (Ed, 2026-09-06, Q1196;
+   R-088). Until v0.99 three of them ended in *the document freezes*, which
+   was 👥's other job; there is no freeze now, so the one consequence each
+   sentence states (T37) is the only one the setting has — how many must
+   have voted on a change before it can pass. */
 function quorumBody(q: number, n: number): string {
   if (q > n) {
     return q + ' of you must have voted before a change can pass, so nothing can pass ' +
       'until more members arrive.';
   }
   if (n === 1) return 'your own vote is the whole quorum, and nothing waits on anybody else.';
-  if (q >= n) {
-    return 'all ' + n + ' of you must have voted on a change before it can pass — one member ' +
-      'away and the document freezes.';
-  }
-  // a quorum of one never holds anything up and never freezes a room with
-  // anybody in it, so the second clause would be a consequence that cannot
-  // happen (T37: one consequence, and it has to be a real one)
-  if (q <= 1) return 'one vote meets quorum, so a change never waits for more people to arrive.';
-  return 'at least ' + q + ' of you must have voted on a change before it can pass; with fewer ' +
-    'than ' + q + ' still here the document freezes.';
+  if (q >= n) return 'all ' + n + ' of you must have voted on a change before it can pass.';
+  if (q <= 1) return 'one vote is enough for a change to pass, so nothing waits for anybody else.';
+  return 'at least ' + q + ' of you must have voted on a change before it can pass.';
 }
 
 function quorumMeaning(v: QuorumValue, room: Room): string | null {

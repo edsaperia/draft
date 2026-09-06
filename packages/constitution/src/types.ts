@@ -240,14 +240,17 @@ export type ConstitutionEvent =
   | { type: 'setting-handed-over'; t: number; setting: PowerKey }
   | { type: 'crown-lapsed'; t: number }
   | { type: 'crown-returned'; t: number }
-  /* -- presence and the freeze (§9.5, §9.5a) ------------------------------ */
+  /* -- presence (§9.5, §9.5a) --------------------------------------------- */
+  /** legacy (v0.99, Q1196): there is no sign-out; a log written before R-088 replays this as a no-op. */
   | { type: 'signed-out'; t: number; member: MemberId; mode: 'holding' | 'abstaining' }
   | { type: 'member-returned'; t: number; member: MemberId }
   | { type: 'lapse-warned'; t: number; member: MemberId }
   /** Presence is presence (Q459a): an authenticated read refreshed the member's clock — at most hourly. */
   | { type: 'member-seen'; t: number; member: MemberId }
   | { type: 'member-lapsed'; t: number; member: MemberId }
+  /** legacy (v0.99, Q1196): there is no freeze; replays as a no-op. */
   | { type: 'frozen'; t: number }
+  /** legacy (v0.99, Q1196): there is no thaw; replays as a no-op. */
   | { type: 'thawed'; t: number }
   /** Follow-on of every roster change (§9.3/Q10): the gazette's floor announcement. */
   | { type: 'floor-recomputed'; t: number; E: number; quorumN: number | null;
@@ -352,7 +355,6 @@ export interface MemberRecord {
   removedBy: DepartureBy | null;
   lapsed: boolean;
   lapseWarned: boolean;
-  signedOut: 'holding' | 'abstaining' | null;
   name: string | null;
   picture: string | null;
   /**

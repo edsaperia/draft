@@ -21,7 +21,7 @@ import type { ApplicationsValue, EndingValue, LapseValue, PaceValue,
   PercentValue, Price, PriceValue, QuorumValue, SettingValue, SlugValue, TextValue } from './values.js';
 import { eqValue } from './values.js';
 import { resolveConsent } from './consent.js';
-import { eOf, inE, motionElectorateOf, quorumBaseOf, quorumCount,
+import { eOf, inE, motionElectorateOf, quorumCount,
   adoptionFloorTerm } from './populations.js';
 import type { ThresholdAnchors } from './threshold.js';
 import { barAt, reAnchor, seedAnchors } from './threshold.js';
@@ -164,7 +164,6 @@ export class ConstitutionSession {
   private closedFlag = false;
   private closedT: number | null = null;
   private anchors: ThresholdAnchors | null = null;
-  private frozenFlag = false;
   private motions = new Map<MotionId, MotionRecord>();
   private crownQuestions = new Map<string, CrownQuestionRecord>();
   private applicants = new Map<string, ApplicantRecord>();
@@ -911,18 +910,16 @@ export class ConstitutionSession {
     }
   }
 
-  /** Presence, the freeze, lapsing and applications (§9.5, §9.5a, §9.7½). */
+  /** Presence, lapsing and applications (§9.5, §9.5a, §9.7½). */
   private applyPresence(event: ConstitutionEvent): void {
     switch (event.type) {
-      case 'signed-out': {
-        const m = this.members.get(event.member)!;
-        m.signedOut = event.mode;
-        this.touch(event.member, event.t);
+      case 'signed-out':
+        // legacy (v0.99, Q1196): a log written before R-088 may carry a
+        // sign-out; the record has no field for it now, so it replays as a
+        // no-op and the chain is untouched
         break;
-      }
       case 'member-returned': {
         const m = this.members.get(event.member)!;
-        m.signedOut = null;
         m.lapsed = false;
         m.lapseWarned = false;
         this.touch(event.member, event.t);
@@ -943,14 +940,10 @@ export class ConstitutionSession {
         this.members.get(event.member)!.lapsed = true;
         break;
       }
-      case 'frozen': {
-        this.frozenFlag = true;
+      case 'frozen':
+      case 'thawed':
+        // legacy (v0.99, Q1196): there is no freeze; both replay as no-ops
         break;
-      }
-      case 'thawed': {
-        this.frozenFlag = false;
-        break;
-      }
       case 'closed': {
         this.closedFlag = true;
         this.closedT = event.t;
@@ -1094,7 +1087,7 @@ export class ConstitutionSession {
     arrivedAtT: number | null, arrival: Arrival): MemberRecord {
     return {
       id, email, invitedAtT, arrivedAtT, arrival,
-      removed: false, removedBy: null, lapsed: false, lapseWarned: false, signedOut: null,
+      removed: false, removedBy: null, lapsed: false, lapseWarned: false,
       name: null, picture: null, nameSet: false, pictureSet: false,
       lastActivityT: arrivedAtT ?? invitedAtT,
       okOwed: new Set(), okGiven: new Set(),
@@ -1635,24 +1628,17 @@ export class ConstitutionSession {
     // already exists: until judging opens the roster is theirs to re-shape,
     // so an invitation that will never be opened can simply be withdrawn.
     if ([...this.members.values()].some((m) => m.arrivedAtT === null && !m.removed)) return;
-    // **The electorate is E minus those who have signed out abstaining**
-    // (§9.0a, → why: R-015, R-049; Ed 2026-08-25 closing Q647 as (b)). An
-    // abstainer has said they are done and are not to be counted, so waiting
-    // on their answer waits on somebody who has declared they will not give
-    // one — a question that reads complete on the card and can never settle,
-    // with nothing on the surface naming who holds it up. A member signed out
-    // **holding** stays in: holding is *I am done and still count*. It is the
-    // live set, re-read on every answer and every departure, the same set the
-    // motion side has resolved against since v0.48 and the same one `view()`
-    // counts *n of E* over. Both gates below read it.
+    // **The electorate is E as it stands** (§9.0a, §9.5, → why: R-015,
+    // R-088; Ed 2026-09-06, Q1196 — E is the only base). It is the live set,
+    // re-read on every answer and every departure, the same set the motion
+    // side resolves against and the same one `view()` counts *n of E* over.
+    // Both gates below read it.
     const electorate = motionElectorateOf(this.members.values());
     // **and never on one voice**, which is the other half of the same reason:
     // a consent rule computed over a single answer is that answer, so a
     // delegated question with a membership of one has not been delegated to
     // anybody. The founder's remedy is either half of the choice they already
-    // have — invite somebody, or take the setting back and set it. Read
-    // against the smaller set, so a room of two where one abstains does not
-    // resolve on the survivor's single answer either.
+    // have — invite somebody, or take the setting back and set it.
     if (electorate.length < 2) return;
     if (!electorate.every((m) => st.answers.has(m.id))) return;
     const answers = electorate.map((m) => st.answers.get(m.id)!);
@@ -1793,8 +1779,8 @@ export class ConstitutionSession {
    * the electorate is even counted, so a room of one with an unopened
    * invitation reads `invitation-open` and not `one-voice` — which is right,
    * since the invitation is already the remedy. And it is the same *set*, not
-   * just the same order: `soleVoice` counts the electorate (E minus
-   * abstainers, R-049), so a readout that says `collecting` while the resolver
+   * just the same order: `soleVoice` counts the electorate (E as it stands,
+   * R-088), so a readout that says `collecting` while the resolver
    * is refusing on one voice — the Q826 defect over again — cannot arise.
    *
    * The deps loop is `maybeResolve`'s **first** gate, before the invitation
@@ -1853,14 +1839,13 @@ export class ConstitutionSession {
    * how many of the questions they owe they have answered. **Participation
    * itemised by name, never preference** — no value, no running maximum.
    *
-   * **Counted over the electorate, not over E** (R-049, Q648): `electorate`
-   * is E minus abstainers and `answered` counts only that set's answers, the
-   * way `view()` has counted a collecting question's `answeredCount` all
-   * along — the two readouts of one question now read one electorate. An
-   * abstainer is still **listed** among the members (they are arrived and not
-   * removed) and simply owes nothing: `owed` and `answered` are both 0, since
-   * the itemisation is of participation in a question they are no longer part
-   * of. They may still call `answer()`; it is recorded and not counted.
+   * **Counted over the electorate** (R-088; Q648 before it): `electorate` is
+   * E as it stands and `answered` counts only that set's answers, the way
+   * `view()` counts a collecting question's `answeredCount` — the two readouts
+   * of one question read one electorate. A member outside E (lapsed) is still
+   * **listed** among the members and simply owes nothing: `owed` and
+   * `answered` are both 0, since the itemisation is of participation in a
+   * question they are no longer part of.
    */
   readiness(): {
     ready: boolean;
@@ -1897,8 +1882,8 @@ export class ConstitutionSession {
       .filter((m) => !m.removed && !m.invitationExpired)
       .map((m) => {
         // …and the **same** set the questions above are counted over: `eIds`
-        // is the electorate, so a member outside it (not yet arrived, lapsed,
-        // or signed out abstaining) owes nothing. Counting a lapsed member's
+        // is the electorate, so a member outside it (not yet arrived, or
+        // lapsed) owes nothing. Counting a lapsed member's
         // owed questions while `answered`/`electorate` exclude them reported
         // somebody holding the founding up whom `maybeResolve` never waits for.
         const out = !eIds.has(m.id);
@@ -2326,7 +2311,7 @@ export class ConstitutionSession {
 
   /**
    * The settle check (v0.48): a constitutional motion carries at the moment
-   * every currently active member — the quorum base, evaluated live — stands
+   * every currently active member — E, evaluated live (R-088) — stands
    * at accept or abstain with no keep standing. Re-run on every answer and
    * every roster event; a standing keep blocks but does not kill.
    */
@@ -2382,7 +2367,7 @@ export class ConstitutionSession {
       CONSTITUTIONAL.has(rec.payload.setting)) {
       // A constitutional value changed: anybody who had no say is owed the
       // decision. Under unanimity that is only whoever stood outside the
-      // electorate (abstaining sign-outs, the lapsed); under an ordinary
+      // electorate (the lapsed); under an ordinary
       // route (an ending date-move) the judges are the engine's business,
       // so everybody is owed the news (NOTES.md).
       for (const m of this.members.values()) {
@@ -2464,25 +2449,9 @@ export class ConstitutionSession {
   }
 
   // -------------------------------------------------------------------------
-  // Presence, the freeze and the lapse clocks (§9.5, §9.5a)
-
-  signOut(t: number, member: MemberId, mode: 'holding' | 'abstaining'): void {
-    this.requireOpen('signing out');
-    const m = this.members.get(member);
-    if (!m || !inE(m)) throw new Error(`'${member}' is not an arrived member`);
-    this.emit({ type: 'signed-out', t, member, mode });
-    // An abstainer leaves the quorum base: motions can complete, the
-    // document can freeze — plain silence never does either (§9.5). Since
-    // R-049 a founding question's electorate is that same live set, so an
-    // abstention that shrinks it to exactly the people who have answered
-    // completes the question here, at the act, rather than waiting on the
-    // next unrelated answer. No ground shift is emitted: the roster has not
-    // moved and the abstainer is still a member, so nobody's answer has had
-    // its ground changed under it.
-    this.maybeSettleMotions(t);
-    this.maybeResolveAll(t);
-    this.maybeFreezeOrThaw(t);
-  }
+  // Presence and the lapse clocks (§9.5, §9.5a). There is no sign-out and no
+  // freeze since v0.99 (R-088): plain silence is nothing, and the ways out of
+  // E are resignation, removal and lapse.
 
   /**
    * Revival is just logging in again (§9.5a) — the host calls this on any
@@ -2502,12 +2471,10 @@ export class ConstitutionSession {
       throw new Error(`unknown member '${member}'`);
     }
     // nothing to revive → no event, no state: the clock only moves on events
-    if (m.signedOut === null && !m.lapsed && !m.lapseWarned) return;
+    if (!m.lapsed && !m.lapseWarned) return;
     const wasLapsed = m.lapsed;
     this.emit({ type: 'member-returned', t, member });
     if (wasLapsed) this.afterRosterChange(t, 'arrival', member); // E grew back
-    else this.maybeSettleMotions(t); // a returned abstainer re-enters the electorate
-    this.maybeFreezeOrThaw(t);
   }
 
   /**
@@ -2520,7 +2487,7 @@ export class ConstitutionSession {
    * is the room's. A shorter spell needs nothing here — the next tick lapses
    * whoever is now due. Before this the sweep just stopped when 💤 went to
    * *never*, and the lapsed stayed lapsed in a status no rule produced until
-   * they happened to log in. A sign-out is untouched: that one is an act.
+   * they happened to log in.
    */
   private rereadLapse(t: number): void {
     const lapse = this.settings.get('lapse')!.value as LapseValue | null;
@@ -2528,7 +2495,7 @@ export class ConstitutionSession {
     const stillDue = (lastT: number, at: 'lapseAtT' | 'warnAtT'): boolean =>
       afterMs !== null && t >= lapseDue(lastT, afterMs)![at];
     for (const m of [...this.members.values()]) {
-      if (m.removed || m.arrivedAtT === null || m.signedOut !== null) continue;
+      if (m.removed || m.arrivedAtT === null) continue;
       const revive = m.lapsed ? !stillDue(m.lastActivityT, 'lapseAtT')
         : m.lapseWarned && !stillDue(m.lastActivityT, 'warnAtT');
       if (!revive) continue;
@@ -2590,7 +2557,6 @@ export class ConstitutionSession {
         }
       }
     }
-    this.maybeFreezeOrThaw(t);
   }
 
   private holdsAnythingReserved(): boolean {
@@ -2652,21 +2618,6 @@ export class ConstitutionSession {
     if (!m || m.removed) throw new Error(`'${member}' is not a member`);
     if (m.closingAck !== null) throw new Error('already signed');
     this.emit({ type: 'close-acknowledged', t, member, comment });
-  }
-
-  /** The freeze line (§9.5): counted base below quorum parks the document. */
-  private maybeFreezeOrThaw(t: number): void {
-    if (this.constitutedT === null) return;
-    const q = this.settings.get('quorum')!.value as QuorumValue | null;
-    if (!q) return;
-    const E = eOf(this.members.values()).length;
-    const counted = quorumBaseOf(this.members.values()).length;
-    const needed = quorumCount(q, E);
-    if (!this.frozenFlag && counted < needed) {
-      this.emit({ type: 'frozen', t });
-    } else if (this.frozenFlag && counted >= needed) {
-      this.emit({ type: 'thawed', t });
-    }
   }
 
   // -------------------------------------------------------------------------
@@ -2910,19 +2861,8 @@ export class ConstitutionSession {
     return !!st && st.settledBy === 'convenor' && st.previousValue === null &&
       st.settledAtT === this.createdT && this.constitutedT === null;
   }
-  get frozen(): boolean { return this.frozenFlag; }
   get closed(): boolean { return this.closedFlag; }
   get closedAt(): number | null { return this.closedT; }
-
-  /** How many must return to thaw (§9.5): the quorum shortfall while frozen, null otherwise. */
-  mustReturn(): number | null {
-    if (!this.frozenFlag) return null;
-    const q = this.settings.get('quorum')!.value as QuorumValue | null;
-    if (!q) return null;
-    const E = eOf(this.members.values()).length;
-    const counted = quorumBaseOf(this.members.values()).length;
-    return Math.max(0, quorumCount(q, E) - counted);
-  }
 
   /**
    * The signatures block (SPEC §4.6): who has acknowledged the close, in the
@@ -2996,7 +2936,6 @@ export class ConstitutionSession {
   applicantRecords(): ReadonlyMap<string, ApplicantRecord> { return this.applicants; }
 
   E(): number { return eOf(this.members.values()).length; }
-  quorumBase(): number { return quorumBaseOf(this.members.values()).length; }
   motionElectorate(): MemberId[] {
     return motionElectorateOf(this.members.values()).map((m) => m.id);
   }
@@ -3006,8 +2945,8 @@ export class ConstitutionSession {
     return this.anchors === null ? null : barAt(this.anchors, t);
   }
 
-  /** Judging is the room's gate (§9.0b): open from constituted, parked by freeze. */
-  canJudge(): boolean { return this.constitutedT !== null && !this.frozenFlag; }
+  /** Judging is the room's gate (§9.0b): open from constituted. There is no freeze (R-088). */
+  canJudge(): boolean { return this.constitutedT !== null; }
 
   /** Proposing is yours (§9.0b): confirmed text plus your own outstanding answers. */
   canPropose(member: MemberId): boolean {

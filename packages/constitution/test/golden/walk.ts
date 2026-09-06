@@ -97,9 +97,8 @@ export function goldenWalk(): ConstitutionSession {
   s.verifyApplication(14, eve);
   s.submitApplication(15, eve, { name: 'Eve', picture: 'e🦡', words: 'I keep bees.' });
 
-  /* -- an owed acknowledgment, a sign-out, and the clock running --------- */
+  /* -- an owed acknowledgment, and the clock running --------------------- */
   s.giveOk(16, bo, 'bar');
-  s.signOut(17, cy, 'abstaining');
   s.tick(18);
   s.memberReturn(19, cy);
   return s;
@@ -125,10 +124,9 @@ export function snapshotOf(s: ConstitutionSession): unknown {
     chainVerifies: s.verifyChain(),
     constitutedAtT: s.constitutedAtT,
     E: s.E(),
-    quorumBase: s.quorumBase(),
     members: [...s.memberRecords().values()].map((m) => ({
       id: m.id, email: m.email, arrivedAtT: m.arrivedAtT, removed: m.removed,
-      lapsed: m.lapsed, signedOut: m.signedOut, name: m.name, picture: m.picture,
+      lapsed: m.lapsed, name: m.name, picture: m.picture,
     })),
     settings,
   };

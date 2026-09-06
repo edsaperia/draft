@@ -37,7 +37,7 @@
  *   events that name their actor: `setting-set`, `identity-set`,
  *   `answer-given`, `ok-given`, `motion-opened`, `motion-answer`,
  *   `power-relinquished`, `crown-question-answered`/`-auto-passed`,
- *   `setting-handed-over`, `signed-out`, `member-returned`,
+ *   `setting-handed-over`, `member-returned`,
  *   `application-proposed`. **Judging and proposing text do not**: those ride
  *   the engine's log, which never reaches `apply`. So *inactive* means *no
  *   authenticated read and no constitution act for the spell* — an open page
@@ -215,8 +215,8 @@ describe('💤 promise 7 · every epoch · under never no clock runs at all', ()
 
 describe('💤 promise 8 · live · the rule is re-read when it changes', () => {
   // `membership.test.ts` locks the pen's three cases — off, lengthened,
-  // shortened — and that a sign-out is untouched. What it does not have is
-  // the other road onto `rereadLapse`: a carried 🏛️ motion.
+  // shortened. What it does not have is the other road onto `rereadLapse`:
+  // a carried 🏛️ motion.
   it('a carried 🏛️ motion on 💤 re-reads it too, and returns whoever it no longer lapses', () => {
     const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 } });
     // 💤 is the founder's here, so hand it to the room first: a motion that
@@ -322,8 +322,8 @@ describe('💤 · after the close · the clock stops, but the door back does not
 
   /**
    * **The one finding in this audit that is not communicative.** Every other
-   * presence path is shut after the close — `seen` returns false, `signOut`
-   * has `requireOpen` — but `memberReturn` has neither, and the host calls it
+   * presence path is shut after the close — `seen` returns false — but
+   * `memberReturn` has no `requireOpen`, and the host calls it
    * from the magic link, the dev seat route and **any command** by a lapsed
    * member. So a lapsed member following their login link after the close
    * writes `member-returned` into a record §4.6 says was cut, and the closed
@@ -336,24 +336,5 @@ describe('💤 · after the close · the clock stops, but the door back does not
     s.memberReturn(12_000, cy);
     expect(types(s).slice(types(s).indexOf('closed'))).toContain('member-returned');
     expect(s.memberRecords().get(cy)!.lapsed).toBe(false);
-  });
-});
-
-describe('💤 · perpetual · the lapse clock is what feeds the freeze line', () => {
-  it('a lapse that drops the quorum base below the count freezes; the return thaws', () => {
-    // perpetual by construction: `buildConstituted` resolves ⏰ from the room's
-    // answers, so the close is at 500_000 — everything here happens before it
-    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 },
-      quorum: { form: 'count', n: 3 } });
-    expect(s.frozen).toBe(false);
-    s.setIdentity(9_000, 'ada', { name: 'Ada' });
-    s.setIdentity(9_000, bo, { name: 'Bo' });
-    s.tick(10_500); // cy alone is quiet
-    expect(s.memberRecords().get(cy)!.lapsed).toBe(true);
-    expect(s.frozen).toBe(true);
-    expect(s.mustReturn()).toBe(1);
-    s.memberReturn(11_000, cy);
-    expect(s.frozen).toBe(false);
-    expect(s.mustReturn()).toBeNull();
   });
 });

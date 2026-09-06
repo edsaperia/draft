@@ -20,7 +20,7 @@ export type { ConsentResolution } from './consent.js';
 export * from './types.js';
 export { ConstitutionSession } from './session.js';
 export type { OpenInput, WaitingHold, WaitingWhy } from './session.js';
-export { eOf, inE, quorumBaseOf, motionElectorateOf, quorumCount,
+export { eOf, inE, motionElectorateOf, quorumCount,
   adoptionFloorTerm, adoptionFloor } from './populations.js';
 export { BAR_CEILING_PCT, VOTES_NEEDED, VOTES_NEEDED_HI_PCT, VOTES_NEEDED_LO_PCT, VOTES_NEEDED_MAX_N,
   barAt, barCeilingPct, reAnchor, seedAnchors, smoothstep, votesNeeded } from './threshold.js';

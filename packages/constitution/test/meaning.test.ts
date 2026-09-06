@@ -247,22 +247,26 @@ describe('the meaning family', () => {
     }
   });
 
-  it('👥’s arithmetic is `quorumCount`’s, and the freeze clause follows it', () => {
+  it('👥’s arithmetic is `quorumCount`’s, and every branch ends in the floor (Q1196)', () => {
     const room: Room = { e: 9, endsAtMs: null, nowMs: NOW, barPct: 80 };
     const share: QuorumValue = { form: 'share', n: 34 };
     expect(quorumCount(share, 9)).toBe(4);
     expect(meaningOf('quorum', share, room))
-      .toBe('34% of a membership of 9 is 4: at least 4 of you must have voted on a change before it can pass; with fewer than 4 still here the document freezes.');
+      .toBe('34% of a membership of 9 is 4: at least 4 of you must have voted on a change before it can pass.');
     const count: QuorumValue = { form: 'count', n: 9 };
     expect(quorumCount(count, 9)).toBe(9);
     expect(meaningOf('quorum', count, room))
-      .toBe('In a membership of 9, all 9 of you must have voted on a change before it can pass — one member away and the document freezes.');
-    // a quorum of one never freezes a room with anybody in it, so the
-    // consequence that cannot happen is not stated (T37)
-    expect(meaningOf('quorum', { form: 'count', n: 1 }, room)).not.toMatch(/freezes/);
+      .toBe('In a membership of 9, all 9 of you must have voted on a change before it can pass.');
+    // a quorum of one waits for nobody, and says so
+    expect(meaningOf('quorum', { form: 'count', n: 1 }, room))
+      .toBe('In a membership of 9, one vote is enough for a change to pass, so nothing waits for anybody else.');
     // …and a count larger than the room says so rather than pretending
     expect(meaningOf('quorum', { form: 'count', n: 12 }, room))
       .toMatch(/nothing can pass until more members arrive\.$/);
+    // there is no freeze (R-088), and no branch of the sentence names one
+    for (const n of [1, 2, 4, 9, 12]) {
+      expect(meaningOf('quorum', { form: 'count', n }, room)).not.toMatch(/freez|still here/);
+    }
   });
 
   it('💤’s spells are words, and ⏱️’s spans are too', () => {

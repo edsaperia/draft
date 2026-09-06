@@ -60,7 +60,6 @@ var CONSTITUTION = (() => {
     meaningOf: () => meaningOf,
     motionElectorateOf: () => motionElectorateOf,
     motionRouteOf: () => motionRouteOf,
-    quorumBaseOf: () => quorumBaseOf,
     quorumCount: () => quorumCount,
     reAnchor: () => reAnchor,
     resolveConsent: () => resolveConsent,
@@ -701,11 +700,8 @@ var CONSTITUTION = (() => {
   function eOf(members) {
     return [...members].filter(inE);
   }
-  function quorumBaseOf(members) {
-    return eOf(members).filter((m) => m.signedOut !== "abstaining");
-  }
   function motionElectorateOf(members) {
-    return quorumBaseOf(members);
+    return eOf(members);
   }
   function quorumCount(quorum, E) {
     return quorum.form === "count" ? quorum.n : Math.ceil(quorum.n / 100 * E);
@@ -1042,7 +1038,6 @@ var CONSTITUTION = (() => {
       __publicField(this, "closedFlag", false);
       __publicField(this, "closedT", null);
       __publicField(this, "anchors", null);
-      __publicField(this, "frozenFlag", false);
       __publicField(this, "motions", /* @__PURE__ */ new Map());
       __publicField(this, "crownQuestions", /* @__PURE__ */ new Map());
       __publicField(this, "applicants", /* @__PURE__ */ new Map());
@@ -1662,18 +1657,13 @@ var CONSTITUTION = (() => {
           this.applyPresence(event);
       }
     }
-    /** Presence, the freeze, lapsing and applications (§9.5, §9.5a, §9.7½). */
+    /** Presence, lapsing and applications (§9.5, §9.5a, §9.7½). */
     applyPresence(event) {
       switch (event.type) {
-        case "signed-out": {
-          const m = this.members.get(event.member);
-          m.signedOut = event.mode;
-          this.touch(event.member, event.t);
+        case "signed-out":
           break;
-        }
         case "member-returned": {
           const m = this.members.get(event.member);
-          m.signedOut = null;
           m.lapsed = false;
           m.lapseWarned = false;
           this.touch(event.member, event.t);
@@ -1694,14 +1684,9 @@ var CONSTITUTION = (() => {
           this.members.get(event.member).lapsed = true;
           break;
         }
-        case "frozen": {
-          this.frozenFlag = true;
+        case "frozen":
+        case "thawed":
           break;
-        }
-        case "thawed": {
-          this.frozenFlag = false;
-          break;
-        }
         case "closed": {
           this.closedFlag = true;
           this.closedT = event.t;
@@ -1841,7 +1826,6 @@ var CONSTITUTION = (() => {
         removedBy: null,
         lapsed: false,
         lapseWarned: false,
-        signedOut: null,
         name: null,
         picture: null,
         nameSet: false,
@@ -2403,8 +2387,8 @@ var CONSTITUTION = (() => {
      * the electorate is even counted, so a room of one with an unopened
      * invitation reads `invitation-open` and not `one-voice` — which is right,
      * since the invitation is already the remedy. And it is the same *set*, not
-     * just the same order: `soleVoice` counts the electorate (E minus
-     * abstainers, R-049), so a readout that says `collecting` while the resolver
+     * just the same order: `soleVoice` counts the electorate (E as it stands,
+     * R-088), so a readout that says `collecting` while the resolver
      * is refusing on one voice — the Q826 defect over again — cannot arise.
      *
      * The deps loop is `maybeResolve`'s **first** gate, before the invitation
@@ -2443,14 +2427,13 @@ var CONSTITUTION = (() => {
      * how many of the questions they owe they have answered. **Participation
      * itemised by name, never preference** — no value, no running maximum.
      *
-     * **Counted over the electorate, not over E** (R-049, Q648): `electorate`
-     * is E minus abstainers and `answered` counts only that set's answers, the
-     * way `view()` has counted a collecting question's `answeredCount` all
-     * along — the two readouts of one question now read one electorate. An
-     * abstainer is still **listed** among the members (they are arrived and not
-     * removed) and simply owes nothing: `owed` and `answered` are both 0, since
-     * the itemisation is of participation in a question they are no longer part
-     * of. They may still call `answer()`; it is recorded and not counted.
+     * **Counted over the electorate** (R-088; Q648 before it): `electorate` is
+     * E as it stands and `answered` counts only that set's answers, the way
+     * `view()` counts a collecting question's `answeredCount` — the two readouts
+     * of one question read one electorate. A member outside E (lapsed) is still
+     * **listed** among the members and simply owes nothing: `owed` and
+     * `answered` are both 0, since the itemisation is of participation in a
+     * question they are no longer part of.
      */
     readiness() {
       const E = motionElectorateOf(this.members.values());
@@ -2855,7 +2838,7 @@ var CONSTITUTION = (() => {
     }
     /**
      * The settle check (v0.48): a constitutional motion carries at the moment
-     * every currently active member — the quorum base, evaluated live — stands
+     * every currently active member — E, evaluated live (R-088) — stands
      * at accept or abstain with no keep standing. Re-run on every answer and
      * every roster event; a standing keep blocks but does not kill.
      */
@@ -2983,16 +2966,9 @@ var CONSTITUTION = (() => {
       }
     }
     // -------------------------------------------------------------------------
-    // Presence, the freeze and the lapse clocks (§9.5, §9.5a)
-    signOut(t, member, mode) {
-      this.requireOpen("signing out");
-      const m = this.members.get(member);
-      if (!m || !inE(m)) throw new Error(`'${member}' is not an arrived member`);
-      this.emit({ type: "signed-out", t, member, mode });
-      this.maybeSettleMotions(t);
-      this.maybeResolveAll(t);
-      this.maybeFreezeOrThaw(t);
-    }
+    // Presence and the lapse clocks (§9.5, §9.5a). There is no sign-out and no
+    // freeze since v0.99 (R-088): plain silence is nothing, and the ways out of
+    // E are resignation, removal and lapse.
     /**
      * Revival is just logging in again (§9.5a) — the host calls this on any
      * authenticated return. Emits only when there is something to revive;
@@ -3007,12 +2983,10 @@ var CONSTITUTION = (() => {
         if (member === this.convenor.id) return;
         throw new Error(`unknown member '${member}'`);
       }
-      if (m.signedOut === null && !m.lapsed && !m.lapseWarned) return;
+      if (!m.lapsed && !m.lapseWarned) return;
       const wasLapsed = m.lapsed;
       this.emit({ type: "member-returned", t, member });
       if (wasLapsed) this.afterRosterChange(t, "arrival", member);
-      else this.maybeSettleMotions(t);
-      this.maybeFreezeOrThaw(t);
     }
     /**
      * **Lapse is a reading of the rule, re-read when the rule changes** (entry
@@ -3024,14 +2998,14 @@ var CONSTITUTION = (() => {
      * is the room's. A shorter spell needs nothing here — the next tick lapses
      * whoever is now due. Before this the sweep just stopped when 💤 went to
      * *never*, and the lapsed stayed lapsed in a status no rule produced until
-     * they happened to log in. A sign-out is untouched: that one is an act.
+     * they happened to log in.
      */
     rereadLapse(t) {
       const lapse = this.settings.get("lapse").value;
       const afterMs = lapse ? lapse.afterMs : null;
       const stillDue = (lastT, at) => afterMs !== null && t >= lapseDue(lastT, afterMs)[at];
       for (const m of [...this.members.values()]) {
-        if (m.removed || m.arrivedAtT === null || m.signedOut !== null) continue;
+        if (m.removed || m.arrivedAtT === null) continue;
         const revive = m.lapsed ? !stillDue(m.lastActivityT, "lapseAtT") : m.lapseWarned && !stillDue(m.lastActivityT, "warnAtT");
         if (!revive) continue;
         const wasLapsed = m.lapsed;
@@ -3085,7 +3059,6 @@ var CONSTITUTION = (() => {
           }
         }
       }
-      this.maybeFreezeOrThaw(t);
     }
     holdsAnythingReserved() {
       for (const st of this.settings.values()) {
@@ -3143,20 +3116,6 @@ var CONSTITUTION = (() => {
       if (!m || m.removed) throw new Error(`'${member}' is not a member`);
       if (m.closingAck !== null) throw new Error("already signed");
       this.emit({ type: "close-acknowledged", t, member, comment });
-    }
-    /** The freeze line (§9.5): counted base below quorum parks the document. */
-    maybeFreezeOrThaw(t) {
-      if (this.constitutedT === null) return;
-      const q = this.settings.get("quorum").value;
-      if (!q) return;
-      const E = eOf(this.members.values()).length;
-      const counted = quorumBaseOf(this.members.values()).length;
-      const needed = quorumCount(q, E);
-      if (!this.frozenFlag && counted < needed) {
-        this.emit({ type: "frozen", t });
-      } else if (this.frozenFlag && counted >= needed) {
-        this.emit({ type: "thawed", t });
-      }
     }
     // -------------------------------------------------------------------------
     // Applications (§9.7½)
@@ -3389,23 +3348,11 @@ var CONSTITUTION = (() => {
       const st = this.settings.get(id);
       return !!st && st.settledBy === "convenor" && st.previousValue === null && st.settledAtT === this.createdT && this.constitutedT === null;
     }
-    get frozen() {
-      return this.frozenFlag;
-    }
     get closed() {
       return this.closedFlag;
     }
     get closedAt() {
       return this.closedT;
-    }
-    /** How many must return to thaw (§9.5): the quorum shortfall while frozen, null otherwise. */
-    mustReturn() {
-      if (!this.frozenFlag) return null;
-      const q = this.settings.get("quorum").value;
-      if (!q) return null;
-      const E = eOf(this.members.values()).length;
-      const counted = quorumBaseOf(this.members.values()).length;
-      return Math.max(0, quorumCount(q, E) - counted);
     }
     /**
      * The signatures block (SPEC §4.6): who has acknowledged the close, in the
@@ -3498,9 +3445,6 @@ var CONSTITUTION = (() => {
     E() {
       return eOf(this.members.values()).length;
     }
-    quorumBase() {
-      return quorumBaseOf(this.members.values()).length;
-    }
     motionElectorate() {
       return motionElectorateOf(this.members.values()).map((m) => m.id);
     }
@@ -3508,9 +3452,9 @@ var CONSTITUTION = (() => {
     bar(t) {
       return this.anchors === null ? null : barAt(this.anchors, t);
     }
-    /** Judging is the room's gate (§9.0b): open from constituted, parked by freeze. */
+    /** Judging is the room's gate (§9.0b): open from constituted. There is no freeze (R-088). */
     canJudge() {
-      return this.constitutedT !== null && !this.frozenFlag;
+      return this.constitutedT !== null;
     }
     /** Proposing is yours (§9.0b): confirmed text plus your own outstanding answers. */
     canPropose(member) {
@@ -3630,11 +3574,9 @@ var CONSTITUTION = (() => {
       return q + " of you must have voted before a change can pass, so nothing can pass until more members arrive.";
     }
     if (n === 1) return "your own vote is the whole quorum, and nothing waits on anybody else.";
-    if (q >= n) {
-      return "all " + n + " of you must have voted on a change before it can pass — one member away and the document freezes.";
-    }
-    if (q <= 1) return "one vote meets quorum, so a change never waits for more people to arrive.";
-    return "at least " + q + " of you must have voted on a change before it can pass; with fewer than " + q + " still here the document freezes.";
+    if (q >= n) return "all " + n + " of you must have voted on a change before it can pass.";
+    if (q <= 1) return "one vote is enough for a change to pass, so nothing waits for anybody else.";
+    return "at least " + q + " of you must have voted on a change before it can pass.";
   }
   function quorumMeaning(v, room) {
     if (typeof v.n !== "number" || !Number.isFinite(v.n)) return null;
@@ -3899,8 +3841,6 @@ var CONSTITUTION = (() => {
       } : { name: null, picture: null, nameSet: false, pictureSet: false },
       lapseWarned: me ? me.lapseWarned : isConvenor ? s.convenorRecord().lapseWarned : false,
       shape: s.shape,
-      frozen: s.frozen,
-      mustReturn: s.mustReturn(),
       closed: s.closed ? {
         at: s.closedAt,
         mySignature: me && me.closingAck ? me.closingAck : null,
