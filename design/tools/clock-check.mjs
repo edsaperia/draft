@@ -55,8 +55,6 @@ const cases = [
   // the other states
   [clockText({ kind: 'none' }), ''],
   [clockText(null), ''],
-  [clockText({ kind: 'frozen' }), 'Frozen'],
-  [clockText({ kind: 'frozen', mustReturn: 3 }), 'Frozen — 3 must return'],
   [clockText({ kind: 'closed', atMs: Date.UTC(2026, 8, 3, 12), todayMs: Date.UTC(2026, 8, 4, 12) }), 'Closed 3 September'],
   [clockText({ kind: 'closed', atMs: Date.UTC(2025, 8, 3, 12), todayMs: Date.UTC(2026, 8, 4, 12) }), 'Closed 3 September 2025'],
   [dateWords(Date.UTC(2026, 0, 15, 12), Date.UTC(2026, 5, 1, 12)), '15 January'],

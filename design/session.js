@@ -154,7 +154,7 @@
     // they show no commit** — Q354 keeps every filed pile openable and Q470
     // says it asks nothing, and a locked card is already exactly that shape:
     // 🗑️ closes and the ✓ is not drawn at all. `MAY_JUDGE` cannot carry this,
-    // `canJudge()` being `constitutedAtT !== null && !frozen` and never having
+    // `canJudge()` being `constitutedAtT !== null` and never having
     // asked about the close — the same omission that had every settled card
     // on a closed page drawing a live motion composer.
     lockedOf: (s) => !!s.locked || !MAY_JUDGE() || docClosed,
@@ -5310,13 +5310,10 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       (d.getFullYear() === now.getFullYear() ? '' : ' ' + d.getFullYear());
   }
   const MIN = 60_000, HOUR = 60 * MIN, DAY = 24 * HOUR;
-  // state: {kind:'none'} | {kind:'left', ms} | {kind:'frozen', mustReturn?}
-  //      | {kind:'closed', atMs, todayMs?}
+  // state: {kind:'none'} | {kind:'left', ms} | {kind:'closed', atMs, todayMs?}
+  // (no 'frozen': there is no freeze since v0.99, R-088)
   function clockText(state) {
     if (!state || state.kind === 'none') return '';
-    if (state.kind === 'frozen') {
-      return T.clock.frozen + (state.mustReturn > 0 ? T.clock.mustReturn(state.mustReturn) : '');
-    }
     if (state.kind === 'closed') return T.clock.closed(dateWords(state.atMs, state.todayMs));
     const ms = state.ms;
     if (ms <= 0) return T.clock.closingNow;  // the clock has passed; the close is landing
