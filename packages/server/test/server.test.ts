@@ -2332,3 +2332,143 @@ describe('🧭 the shape chosen before the birth (entry 166)', () => {
     }
   });
 });
+
+/**
+ * **The card is a deck** (Q1200) and **the ⏳ card is your ledger** (Q1201).
+ * Two challengers on one clause reach a fourth member as two pairs — one per
+ * view, the judged one leaving the hand and the other arriving in its place,
+ * since `feed()` deals one best pair per race and excludes the pairs already
+ * judged (`bestPairFor`, SPEC §8.3) — and the race stops dealing only once
+ * nothing is left to ask. The view then lists the member's own standing
+ * judgments on the race (`myJudgments`), oldest first, ids and verdict only;
+ * judging a listed pair again is the revision §4.4 allows, and the ledger
+ * shows the new verdict with the old one gone. Nothing about standings, and
+ * nobody else's ledger, reaches any view (§3.5). The quorum is set above
+ * the number of judges so the race cannot adopt under the test.
+ */
+describe('the pair deck and the judged-pairs ledger (Q1200, Q1201)', () => {
+  it('deals every pair on a race across views, files only when none is left, and lists the pairs judged, revisable', async () => {
+    const { base, dataDir } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Pair deck', email: 'ada@example.org',
+    })).json() as { slug: string; devLink: string };
+    const slug = created.slug;
+    const ada = cookieOf(await consume(created.devLink));
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const body = await (await post(base, `/api/d/${slug}/cmd`,
+        { cmd: name, args }, cookie)).json() as { error?: string; result?: unknown };
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+      return body.result;
+    };
+    type Deck = MemberViewPayload & {
+      clauses: Array<{ id: string; judged: boolean;
+        myJudgments: Array<{ a: string; b: string; outcome: string; locked: boolean }> }>;
+      raceCards: Array<{ kind: string; raceId?: string; a: CardOption; b: CardOption }>;
+    };
+    const viewOf = async (cookie: string) => (await (await fetch(
+      `${base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as unknown as Deck;
+
+    await cmd(ada, 'confirm-starting-text', { text: 'The clubhouse is open.\nThe rota is weekly.' });
+    for (const who of ['bo', 'cy', 'dee']) await cmd(ada, 'invite', { email: `${who}@example.org` });
+    const follow = async (email: string): Promise<string> =>
+      cookieOf(await consume((await lastMailTo(dataDir, email)).link!));
+    const bo = await follow('bo@example.org');
+    const cy = await follow('cy@example.org');
+    const dee = await follow('dee@example.org');
+    await cmd(ada, 'set-setting', { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
+    const ends = Date.now() + 3600_000;
+    const values: Record<string, unknown> = {
+      pace: { shape: 'fixed' }, quorum: { form: 'count', n: 4 },
+      authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
+      applications: { apply: false }, admission: { price: 'assembly' },
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+      ending: { endsAtMs: ends }, bar: { pct: 66 }, chamber: { rung: 'link' },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await cmd(ada, 'reclaim', { setting });
+      await cmd(ada, 'set-setting', { setting, value });
+    }
+    await cmd(ada, 'begin', {});
+
+    // two challengers on the first clause, one race
+    const r1 = await cmd(bo, 'propose-text', { baseVersion: 0,
+      hunks: [{ start: 0, end: 1, lines: ['The clubhouse is open all week.'] }],
+      why: 'weekends too' }) as { id: string; raceId: string };
+    const r2 = await cmd(cy, 'propose-text', { baseVersion: 0,
+      hunks: [{ start: 0, end: 1, lines: ['The clubhouse never closes.'] }],
+      why: 'never' }) as { id: string; raceId: string };
+    expect(r2.raceId).toBe(r1.raceId);
+    const onRace = (v: Deck) => v.raceCards.filter((c) => c.kind === 'edge' && c.raceId === r1.raceId);
+    const pairOf = (c: { a: { id: string }; b: { id: string } }) => [c.a.id, c.b.id].sort().join('|');
+    const challengerSide = (c: { a: CardOption; b: CardOption }) => (c.a.incumbent ? 'b' : 'a');
+    const challengerId = (c: { a: CardOption; b: CardOption }) => (c.a.incumbent ? c.b.id : c.a.id);
+
+    // -- the deck: the first deal, one pair on the race, the rival gate shut
+    const v1 = await viewOf(dee);
+    expect(v1.clauses).toHaveLength(1);
+    expect(v1.clauses[0]!.judged).toBe(false);
+    expect(v1.clauses[0]!.myJudgments).toEqual([]);
+    const dealt1 = onRace(v1);
+    expect(dealt1.length).toBeGreaterThan(0);
+    const first = dealt1[0]!;
+    expect(first.a.incumbent || first.b.incumbent).toBe(true);
+    // dee judges it: the race still wants dee — the other pair is dealt now,
+    // the judged one is out of the hand, and `judged` says a vote stands
+    await cmd(dee, 'judge-race', { a: first.a.id, b: first.b.id, outcome: challengerSide(first) });
+    const v2 = await viewOf(dee);
+    expect(v2.clauses[0]!.judged).toBe(true);
+    const dealt2 = onRace(v2);
+    expect(dealt2.length).toBeGreaterThan(0);
+    expect(dealt2.map(pairOf)).not.toContain(pairOf(first));
+    const second = dealt2[0]!;
+    expect(second.a.incumbent || second.b.incumbent).toBe(true);
+    expect(new Set([challengerId(first), challengerId(second)])).toEqual(new Set([r1.id, r2.id]));
+    // dee judges that too: with dee's incumbent pairs exhausted the router
+    // deals the **rival** pair, the two challengers against each other —
+    // `bestPairFor`'s second scan, the "sparingly" of §8.3, gate or no gate
+    await cmd(dee, 'judge-race', { a: second.a.id, b: second.b.id, outcome: challengerSide(second) });
+    const v3 = await viewOf(dee);
+    const dealt3 = onRace(v3);
+    expect(dealt3.length).toBeGreaterThan(0);
+    const third = dealt3[0]!;
+    expect(third.a.incumbent || third.b.incumbent).toBeFalsy();
+    expect(pairOf(third)).toBe([r1.id, r2.id].sort().join('|'));
+    expect(v3.clauses[0]!.judged).toBe(true);
+    // and once that is judged, nothing is left to ask on this race
+    await cmd(dee, 'judge-race', { a: third.a.id, b: third.b.id, outcome: 'a' });
+    const v3b = await viewOf(dee);
+    expect(onRace(v3b)).toHaveLength(0);
+    expect(v3b.clauses[0]!.judged).toBe(true);
+
+    // -- the ledger: the three pairs, oldest first, with the outcomes dee gave
+    const led = v3b.clauses[0]!.myJudgments;
+    expect(led).toEqual([
+      { a: first.a.id, b: first.b.id, outcome: challengerSide(first), locked: false },
+      { a: second.a.id, b: second.b.id, outcome: challengerSide(second), locked: false },
+      { a: third.a.id, b: third.b.id, outcome: 'a', locked: false },
+    ]);
+    // revising the first pair the other way: the new verdict stands for that
+    // pair, the old one is gone (superseded), still three entries, nothing new dealt
+    const incumbentSide = first.a.incumbent ? 'a' : 'b';
+    await cmd(dee, 'judge-race', { a: first.a.id, b: first.b.id, outcome: incumbentSide });
+    const v4 = await viewOf(dee);
+    const led2 = v4.clauses[0]!.myJudgments;
+    expect(led2).toHaveLength(3);
+    expect(led2.filter((j) => pairOf({ a: { id: j.a }, b: { id: j.b } }) === pairOf(first)))
+      .toEqual([{ a: first.a.id, b: first.b.id, outcome: incumbentSide, locked: false }]);
+    expect(onRace(v4)).toHaveLength(0);
+
+    // -- blind: no standing on the wire, and no ledger but your own
+    for (const v of [v1, v2, v3, v4]) {
+      expect(JSON.stringify(v.clauses)).not.toMatch(/leaderP|certification|author|"value"/);
+    }
+    const adaV = await viewOf(ada);
+    expect(adaV.clauses[0]!.myJudgments).toEqual([]);
+    // an author's derived preference for their own text (§3.3) is not a
+    // judgment they cast: bo's ledger is empty and nothing of bo's stands
+    const boV = await viewOf(bo);
+    expect(boV.clauses[0]!.myJudgments).toEqual([]);
+    expect(boV.clauses[0]!.judged).toBe(false);
+    expect(JSON.stringify([adaV.clauses, boV.clauses])).not.toContain('"outcome"');
+  });
+});

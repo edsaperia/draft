@@ -402,6 +402,16 @@ export async function createDraftServer(cfg: ServerConfig,
         // a judgment of mine locked by a ground shift, with nothing of mine
         // standing since: the race will ask me again (↻)
         shifted: !standing && here.some((j) => j.locked && !j.superseded),
+        // **The member's own ledger** (Q1201): every standing judgment of
+        // theirs touching this race, oldest first, as the ids judged and the
+        // verdict given — the ⏳ card lists them and a press revises one
+        // (SPEC §4.4). Their own moves are their own data (§11); nothing
+        // about anybody else's enters here, and `superseded` ones are gone
+        // because the revision replaced them. An author's derived preference
+        // for their own text (§3.3) is not a judgment and is not in
+        // `judgments()`, so their ledger holds only what they cast.
+        myJudgments: here.filter((j) => !j.superseded)
+          .map((j) => ({ a: j.aId, b: j.bId, outcome: j.outcome, locked: j.locked })),
       };
     });
     const mine = api.myCandidates().flatMap((m) => {
