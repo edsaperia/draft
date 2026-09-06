@@ -2163,6 +2163,235 @@ if (caret) {
       await closeCard();
     }
   }
+
+  /* ---- the pair deck (Q1200) and the ledger (Q1201) ------------------------
+   * The guest proposes a **second** wording on the same clause as their
+   * first, so the founder's deck on that race holds two incumbent pairs and,
+   * once those are judged, the rival pair — three presses on one entry, in
+   * the router's order, the entry's teaser always the next pair's case and
+   * the entry filing as ⏳ only when the hand on that race is empty. Before
+   * the deck the page kept the first served card and filed the race on any
+   * standing vote, so a member got one comparison per race for its life.
+   *
+   * Then the ledger: a **reload** empties the page's provisional maps, so
+   * what the ⏳ card lists is the view's own `myJudgments` — three blocks
+   * with the verdicts the walk gave — and a press on the first makes it the
+   * card's active pair with that verdict pre-selected; choosing the other
+   * lane and ✓ sends the revision on the same pair, and a second reload
+   * shows the new verdict on the block, off the wire alone.
+   *
+   * Everything is read off the DOM — the entry's mark, its tooltip, its
+   * `.qwhy` teasers, the card's blocks and radios — never off `S`; the race
+   * id comes from the wire, which is the one name the rail and the view
+   * share. */
+  if (guestPage && ok) {
+    const line = EMPTY_TEXT ? 0 : 1;
+    const WHY1 = 'Sundays are the point', WHY2 = 'One is plenty';
+    // **The floor goes above the room first.** Under this walk's founding
+    // the floor is one (quorum 1 of 2) and the bar 55%, and an author's
+    // derived preference is a mover (§8.2) — so the first judgment anywhere
+    // sweeps the *other* challenger in at p ≈ 0.83, and the deck is gone
+    // with the race (two runs of this step sealed it exactly so). The founder
+    // still holds ✒️ on 👥 here, so a count of three — above E — holds every
+    // race at the floor for the rest of the walk, which is this step. Sent
+    // from Node with the page's own cookie, so a refusal is printed here
+    // rather than counted as the page's.
+    const slug = new URL(page.url()).pathname.replace(/^\/d\//, '');
+    const jar = (await page.context().cookies(BASE)).map((c) => c.name + '=' + c.value).join('; ');
+    const floored = await fetch(BASE + '/api/d/' + slug + '/cmd', { method: 'POST',
+      headers: { 'content-type': 'application/json', cookie: jar },
+      body: JSON.stringify({ cmd: 'set-setting', args: { setting: 'quorum', value: { form: 'count', n: 3 } } }) })
+      .then((r) => r.json()).catch((e) => ({ error: String(e && e.message) }));
+    if (floored && floored.error) {
+      say('deck       · FAIL: could not raise the floor above the room · ' + JSON.stringify(floored.error));
+      stuck.push('the deck’s floor');
+    }
+    await T(4600);                                   // the founder's poll takes the new floor
+    const sent2 = await guestPage.evaluate(([n, why]) => {
+      const api = location.pathname.replace('/d/', '/api/d/');
+      return fetch(api + '/view').then((r) => r.json()).then((v) => fetch(api + '/cmd', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ cmd: 'propose-text', args: { baseVersion: v.textVersion,
+          hunks: [{ start: n, end: n + 1, lines: ['Every member may bring one guest, on Sundays.'] }],
+          why } }),
+      })).then((r) => r.json()).catch((e) => ({ error: String(e && e.message) }));
+    }, [line, WHY2]);
+    if (sent2 && sent2.error) {
+      say('deck       · FAIL: the member could not propose a second wording · ' + JSON.stringify(sent2.error));
+      stuck.push('the second seat’s second proposal');
+    } else {
+      await closeCard();
+      await T(5600);                               // one poll in the founder's seat
+      const raceId = await page.evaluate((n) => {
+        const api = location.pathname.replace('/d/', '/api/d/');
+        return fetch(api + '/view').then((r) => r.json()).then((v) =>
+          ((v.clauses || []).find((c) => (c.contested || []).some((sp) => sp.start === n)) || {}).id || null);
+      }, line);
+      // the entry as the founder sees it: how many for this race, its mark,
+      // its tooltip and its teasers
+      const entry = () => page.evaluate((id) => {
+        const q = String(id).replace(/["\\]/g, '\\$&');
+        const lis = [...document.querySelectorAll('#rail li[data-q="' + q + '"]')];
+        const li = lis[0];
+        if (!li) return { n: 0, mark: '', cap: '', teasers: [] };
+        const b = li.querySelector('button');
+        return { n: lis.length, mark: ((li.querySelector('.qmark') || {}).textContent || '').trim(),
+          cap: b ? b.title : '', teasers: [...li.querySelectorAll('.qwhy')].map((e) => e.textContent.trim()) };
+      }, raceId);
+      // open the entry from the rail — the page's own route in — and read the
+      // card: its kind, the reasons on its blocks, the radios
+      const openEntry = async () => {
+        await page.evaluate((id) => {
+          const q = String(id).replace(/["\\]/g, '\\$&');
+          const b = document.querySelector('#rail li[data-q="' + q + '"] button');
+          if (b) b.click();
+        }, raceId);
+        await T(1400);
+        return page.evaluate((id) => {
+          const q = String(id).replace(/["\\]/g, '\\$&');
+          const card = document.querySelector('.sugg[data-card="' + q + '"]');
+          if (!card) return { card: false };
+          return { card: true, cls: card.className,
+            whys: [...card.querySelectorAll('.field:not(.ledger) .propblock .speaker .said')].map((e) => e.textContent.trim()),
+            keepLane: !!card.querySelector('.clausehead [data-v="keep"]'),
+            lanes: [...card.querySelectorAll('[data-v]')].map((b) => b.dataset.v + ':' + b.getAttribute('aria-pressed')),
+            submitPressed: (card.querySelector('[data-act="submit"]') || {}).getAttribute
+              ? card.querySelector('[data-act="submit"]').getAttribute('aria-pressed') : null,
+            ledger: [...card.querySelectorAll('.ledgerpair')].map((p) => ({
+              active: p.classList.contains('active'),
+              on: [...p.querySelectorAll('.lside')].map((s) => s.classList.contains('on')),
+              onIsCurrent: !!p.querySelector('.lside.on .rsub'),
+            })) };
+        }, raceId);
+      };
+      const judge = async (v) => {
+        const okJ = await page.evaluate(([id, val]) => {
+          const q = String(id).replace(/["\\]/g, '\\$&');
+          const card = document.querySelector('.sugg[data-card="' + q + '"]');
+          const lane = card && card.querySelector('[data-v="' + val + '"]');
+          if (!lane) return false;
+          lane.click();
+          const s = card.querySelector('[data-act="submit"]');
+          if (!s || s.disabled) return false;
+          s.click();
+          return true;
+        }, [raceId, v]);
+        await T(2400);                             // the receipt, the command, its refresh
+        return okJ;
+      };
+      const isNeeds = (e) => e.n === 1 && (e.mark === '💡' || e.mark === '🔥');
+      if (!raceId) {
+        say('deck       · FAIL: no race on line ' + line + ' in the wire');
+        stuck.push('the deck’s race');
+      } else {
+        // 1 — one entry, lit, one teaser: the front pair's case
+        const e1 = await entry();
+        const ok1 = isNeeds(e1) && e1.teasers.length === 1 && [WHY1, WHY2].includes(e1.teasers[0]);
+        say('deck 1     · ' + (ok1 ? 'one entry ' + e1.mark + ' “' + e1.cap + '” · teaser “' + e1.teasers[0] + '”'
+          : 'FAIL: ' + JSON.stringify(e1)));
+        if (!ok1) stuck.push('the deck’s entry before any judgment');
+        const first = e1.teasers[0], other = first === WHY1 ? WHY2 : WHY1;
+        // 2 — open, judge: the entry stays lit and its teaser is the other case
+        const c1 = await openEntry();
+        const ok2 = c1.card && /quick-open/.test(c1.cls) && c1.keepLane && c1.whys.length === 1 && c1.whys[0] === first;
+        say('deck 2     · ' + (ok2 ? 'the card is the front pair, quick, its reason “' + first + '”' : 'FAIL: ' + JSON.stringify(c1)));
+        if (!ok2) stuck.push('the deck’s first card');
+        // **Indifferent, deliberately**: a room of two has a floor of one, so
+        // one approving vote adopts the challenger on the spot and the race
+        // seals into a record (the first run of this step did exactly that).
+        // A tie leaves every posterior at 0.5 and the race standing, which is
+        // what a deck needs; the rival pair below touches no incumbent.
+        const j1 = await judge('indifferent');
+        const e2 = await entry();
+        const ok3 = j1 && isNeeds(e2) && e2.teasers.length === 1 && e2.teasers[0] === other;
+        say('deck 3     · ' + (ok3 ? 'judged · the entry stays ' + e2.mark + ' “' + e2.cap + '” · teaser now “' + other + '”'
+          : 'FAIL: judged ' + j1 + ' · ' + JSON.stringify(e2)));
+        if (!ok3) stuck.push('the entry after the first judgment');
+        // 3 — press again: the other pair; judge it; the rival pair is next
+        const c2 = await openEntry();
+        const ok4 = c2.card && /quick-open/.test(c2.cls) && c2.whys.length === 1 && c2.whys[0] === other;
+        say('deck 4     · ' + (ok4 ? 'the next press opens the other pair, its reason “' + other + '”' : 'FAIL: ' + JSON.stringify(c2)));
+        if (!ok4) stuck.push('the deck’s second card');
+        const j2 = await judge('indifferent');
+        const e3 = await entry();
+        const ok5 = j2 && isNeeds(e3) && e3.teasers.length === 2;
+        say('deck 5     · ' + (ok5 ? 'judged · the entry stays ' + e3.mark + ' with two teasers: the rival pair is dealt'
+          : 'FAIL: judged ' + j2 + ' · ' + JSON.stringify(e3)));
+        if (!ok5) stuck.push('the entry after the second judgment');
+        const c3 = await openEntry();
+        const ok6 = c3.card && /race-open/.test(c3.cls) && !c3.keepLane && c3.whys.length === 2 &&
+          c3.whys.includes(WHY1) && c3.whys.includes(WHY2);
+        say('deck 6     · ' + (ok6 ? 'the third press opens the rival pair: a race card, two blocks, no keep lane'
+          : 'FAIL: ' + JSON.stringify(c3)));
+        if (!ok6) stuck.push('the rival card');
+        const j3 = await judge('a');
+        const e4 = await entry();
+        const ok7 = j3 && e4.n === 1 && e4.mark === '⏳' && e4.teasers.length === 0;
+        say('deck 7     · ' + (ok7 ? 'judged · the entry files as ⏳ “' + e4.cap + '”, no teaser — the hand is empty'
+          : 'FAIL: judged ' + j3 + ' · ' + JSON.stringify(e4)));
+        if (!ok7) stuck.push('the entry once the deck is empty');
+
+        // 4 — the ledger, after a reload: three blocks, the verdicts given
+        await page.reload();
+        await page.waitForFunction(() => !!(window.SESSION && window.SESSION.SUGGS && window.SESSION.SUGGS.length &&
+          document.querySelector('#rail li')), null, { timeout: 30_000 });
+        await T(1500);
+        const e5 = await entry();
+        const l1 = await openEntry();
+        // the two ties mark their Indifferent row (a third side, after the
+        // two wordings), the rival pair marks its first side; nothing is active
+        const okL1 = e5.mark === '⏳' && l1.card && /ledger-open/.test(l1.cls) && l1.ledger.length === 3 &&
+          l1.ledger.every((p) => p.on.filter(Boolean).length === 1) &&
+          l1.ledger[0].on.join() === 'false,false,true' && l1.ledger[1].on.join() === 'false,false,true' &&
+          l1.ledger[2].on.join() === 'true,false' && l1.ledger.every((p) => !p.active);
+        say('ledger 1   · ' + (okL1 ? 'after a reload the ⏳ card lists 3 pairs, each with the verdict given, none active'
+          : 'FAIL: ' + JSON.stringify({ e5, l1 })));
+        if (!okL1) stuck.push('the ledger after a reload');
+        // 5 — press the first block: its pair is the card's, the verdict pre-selected and cast
+        await page.evaluate((id) => {
+          const q = String(id).replace(/["\\]/g, '\\$&');
+          const b = document.querySelector('.sugg[data-card="' + q + '"] .ledgerpair[data-ledger]');
+          if (b) b.click();
+        }, raceId);
+        await T(700);
+        const l2 = await page.evaluate((id) => {
+          const q = String(id).replace(/["\\]/g, '\\$&');
+          const card = document.querySelector('.sugg[data-card="' + q + '"]');
+          if (!card) return { card: false };
+          return { card: true, cls: card.className,
+            pressed: [...card.querySelectorAll('[data-v][aria-pressed="true"]')].map((b) => b.dataset.v),
+            keepLane: !!card.querySelector('.clausehead [data-v="keep"]'),
+            cast: (card.querySelector('[data-act="submit"]') || {}).getAttribute
+              ? card.querySelector('[data-act="submit"]').getAttribute('aria-pressed') : null,
+            active: [...card.querySelectorAll('.ledgerpair')].map((p) => p.classList.contains('active')) };
+        }, raceId);
+        const okL2 = l2.card && /quick-open/.test(l2.cls) && !/ledger-open/.test(l2.cls) && l2.keepLane &&
+          l2.pressed.join() === 'indifferent' && l2.cast === 'true' && l2.active.join() === 'true,false,false';
+        say('ledger 2   · ' + (okL2 ? 'the first block pressed: the card is that pair, quick, Indifferent pre-selected, ✓ pressed'
+          : 'FAIL: ' + JSON.stringify(l2)));
+        if (!okL2) stuck.push('the ledger block pressed');
+        // 6 — choose the other lane, ✓: the revision goes on the same pair
+        const jr = await judge('keep');
+        await T(1500);
+        await page.reload();
+        await page.waitForFunction(() => !!(window.SESSION && window.SESSION.SUGGS && window.SESSION.SUGGS.length &&
+          document.querySelector('#rail li')), null, { timeout: 30_000 });
+        await T(1500);
+        const l3 = await openEntry();
+        // a revision is a new judgment, so *oldest first* lists the revised
+        // pair last; the blocks are found by what they mark, not by position
+        const kinds = l3.ledger.map((p) => (p.onIsCurrent ? 'keep' : p.on.join()));
+        const okL3 = jr && l3.card && l3.ledger.length === 3 &&
+          kinds.filter((k) => k === 'keep').length === 1 &&
+          kinds.filter((k) => k === 'false,false,true').length === 1 &&
+          kinds.filter((k) => k === 'true,false').length === 1;
+        say('ledger 3   · ' + (okL3 ? 'revised to keep, and after a reload one block marks the current text, the tie and the rival verdict beside it — off the wire alone'
+          : 'FAIL: judged ' + jr + ' · ' + JSON.stringify(l3)));
+        if (!okL3) stuck.push('the ledger revision');
+        await closeCard();
+      }
+    }
+  }
 }
 say('errors     · ' + (errors.length ? errors.slice(0, 4).join(' / ') : 'none'));
 say('refused    · ' + (refused.length ? refused.join(' / ') : 'none'));
