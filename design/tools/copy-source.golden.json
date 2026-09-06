@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 434
+  "entries": 432
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -342,7 +342,6 @@
   "session.clock.closed": "ƒ (dateWords) => 'Closed ' + dateWords",
   "session.clock.closingNow": "closing now",
   "session.clock.daysLeft": "ƒ (d) => d + ' days left'",
-  "session.clock.frozen": "Frozen",
   "session.clock.hmLeft": "ƒ (h, mm) => h + 'h ' + mm + 'm left'",
   "session.clock.hoursLeft": "ƒ (h) => h + ' hours left'",
   "session.clock.minutesLeft": "ƒ (m) => m + ' minutes left'",
@@ -358,7 +357,6 @@
   "session.clock.months.7": "August",
   "session.clock.months.8": "September",
   "session.clock.months.9": "October",
-  "session.clock.mustReturn": "ƒ (n) => ' — ' + n + ' must return'",
   "session.clock.underTen": "under 10 minutes left",
   "session.compose.allPlacesNote": "ƒ (n) => 'All ' + n + ' places go in as one change'",
   "session.compose.draftLabel": "Your draft",

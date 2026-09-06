@@ -301,8 +301,6 @@ window.COPY = (function () {
     clock: {
       months: ['January', 'February', 'March', 'April', 'May', 'June', 'July',
         'August', 'September', 'October', 'November', 'December'],
-      frozen: 'Frozen',
-      mustReturn: (n) => ' — ' + n + ' must return',
       closed: (dateWords) => 'Closed ' + dateWords,
       closingNow: 'closing now',
       daysLeft: (d) => d + ' days left',

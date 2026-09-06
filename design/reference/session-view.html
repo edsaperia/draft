@@ -4577,7 +4577,7 @@
   const doorDirect = (c) => !!c.door && (c.k === 'invite' ? directInvite() : directRemove());
   // **On a closed document nobody composes** (entry 62, SURFACE K2). This is
   // its own term rather than something `motionsLive()` provides: `canJudge()`
-  // is `constitutedAtT !== null && !frozen` and has never asked about the
+  // is `constitutedAtT !== null` and has never asked about the
   // close, so every settled card on a closed page was drawing a live motion
   // composer whose commit the server would refuse.
   const composerOn = (c) => motionsLive() && docOpen() && viewerIsMember() && !c.isGate && !c.ansFor &&
@@ -6150,8 +6150,8 @@
   // The topbar middle reads the room: pulse · clock · quorum. Before the
   // start the line keeps the founding's stage words and the head count;
   // from the start it is where the document is in its life — the countdown
-  // at the ladder (empty on a perpetual document), Frozen, or Closed [date]
-  // forever — and *quorum N of E*. The countdown runs on the server's clock:
+  // at the ladder (empty on a perpetual document), or Closed [date] forever
+  // (no Frozen: there is no freeze since v0.99, R-088) — and *quorum N of E*. The countdown runs on the server's clock:
   // the view carries serverNowMs and the page offsets by when it arrived.
   let stageWords = 'reading only';
   const serverNow = () => (cs && cs.isRemote && cs.v.serverNowMs)
@@ -6167,8 +6167,6 @@
   const clockState = () => {
     if (!cs || cs.constitutedAtT === null) return { kind: 'none' };
     if (cs.closed) return { kind: 'closed', atMs: cs.closedAt, todayMs: serverNow() };
-    if (cs.frozen) { const mr = typeof cs.mustReturn === 'function' ? cs.mustReturn() : cs.mustReturn;
-      return { kind: 'frozen', mustReturn: mr == null ? undefined : mr }; }
     const end = endsAtMsOf();
     if (end === null) return { kind: 'none' };
     return { kind: 'left', ms: end - serverNow() };
@@ -9154,7 +9152,7 @@
         questions: [], resolutions: [], members: [], applicants: [], owedOks: [],
         owedReleases: [], owedMailGiveUps: [], owedAmendments: [], motions: [],
         crownTasks: [], identity: { name: null, picture: null },
-        frozen: d.frozen, closed: d.closed, mustReturn: null } };
+        closed: d.closed } };
   };
   const founderInfo = () => (isStranger() && strPayload()
     ? { n: strPayload().founder.name || '', pic: strPayload().founder.picture || '' }
@@ -9394,10 +9392,8 @@
       set v(nv) { v = nv; ix = null; },
       get textConfirmed() { return self.v.textConfirmed; },
       get constitutedAtT() { return self.v.constitutedAtT; },
-      get frozen() { return !!self.v.view.frozen; },
       get closed() { return !!self.v.view.closed; },
       get closedAt() { return self.v.view.closed ? self.v.view.closed.at : null; },
-      get mustReturn() { return self.v.view.mustReturn == null ? null : self.v.view.mustReturn; },
       get record() { return self.v.record || null; },
       readiness: () => self.v.readiness || null,
       closingSignatures: () => (self.v.view.closed && self.v.view.closed.signatures) || [],
