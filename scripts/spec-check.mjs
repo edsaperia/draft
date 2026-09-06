@@ -745,7 +745,8 @@ function checkAuthorNeverAsked() {
   else note('  exploration skips the participant’s own candidates');
   const page = js('design/session-view.html');
   const pat = page.indexOf('function itemsFromView(');
-  const items = pat < 0 ? '' : page.slice(pat, pat + 4000);
+  // the window reaches past the deck and ledger building above the skip (Q1200)
+  const items = pat < 0 ? '' : page.slice(pat, pat + 8000);
   if (!/r\.candidates\.every\(\(c\) => c\.mine\)\) continue;/.test(items))
     find('events', 'the all-mine skip in `itemsFromView` carries a condition again — the engine serves no pair for an all-mine race at any E, so E19 exempts nothing (backlog 253 overturns Q835)');
   else note('  the `mine` skip is unconditional');

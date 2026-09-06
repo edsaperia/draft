@@ -10147,11 +10147,29 @@
     try { textAssent = !!pwPair('text').a; } catch (e) { textAssent = false; }
     const cards = v.raceCards || [];
     const sideOf = (rc, ids) => (ids.has(rc.a.id) ? 'a' : ids.has(rc.b.id) ? 'b' : null);
+    const RAIL = window.COPY.session.rail;
+    // **and the ground shift says what happened** (SURFACE E16). The
+    // server's `shifted` is a flag — *a judgment of mine locked by a
+    // ground shift* — and the rail entry's tooltip is the sentence, as
+    // the fixture has always supplied it; handing the renderer `true`
+    // threw `esc` and took the whole rail with it. The live sentence
+    // names no candidate because the view does not carry which one was
+    // adopted, only that this wording is no longer the one you judged.
+    const SHIFTED_NOTE = 'The wording was changed here after you voted, so your vote was about a wording that no longer exists.';
     const items = [];
     for (const r of v.clauses || []) {
       const ids = new Set(r.candidates.map((c) => c.id).concat([r.incumbentId]));
-      const at = cards.findIndex((rc) => rc.kind === 'edge' && sideOf(rc, ids));
-      const rc = at >= 0 ? cards[at] : null;
+      // **The card is a deck** (Q1200, Ed 2026-09-06): every served edge card
+      // on this race, in the router's order — `nextCards` keeps the feed's
+      // order and the engine has already excluded every pair this member
+      // judged on the current ground — and the front one is the card. The
+      // race wants your vote while any is dealt, voted on or not; it files
+      // as ⏳ only when your hand on it is empty and a vote of yours stands.
+      // The card carries its `raceId`; matching by candidate id survives as
+      // the fallback for a card that does not.
+      const dealt = cards.filter((rc) => rc.kind === 'edge' &&
+        (rc.raceId ? rc.raceId === r.id : !!sideOf(rc, ids)));
+      const rc = dealt[0] || null;
       // the contested footprint is a list of spans; the page anchors the race
       // at their union (one clause run)
       const csp = spanOf(r.contested && r.contested.length ? r.contested : r.candidates.flatMap((c) => c.hunks));
@@ -10159,8 +10177,29 @@
       const inc = plain(lines, csp);
       const textOf = (c) => applyIn(lines, csp, c.hunks);
       const byId = (id) => r.candidates.find((c) => c.id === id);
+      // a name the server attached is one the reveal rule allowed (a signed
+      // proposal, Q770, or one made under `public`): the live card shows it,
+      // and since backlog 255 their face with it — the picture rides the same
+      // `author` object and is blind at exactly the same gate (K30)
+      const byOf = (c) => (c.author && c.author.name
+        ? { n: c.author.name, pic: c.author.picture || '' } : null);
+      // **Your ledger** (Q1201): every pair you have a standing judgment on
+      // in this race, oldest first, each side resolved to what the card can
+      // draw — the incumbent as the current text, a candidate as its reading
+      // with its diff and its case. A side the view no longer names (the
+      // incumbent a shift replaced) keeps its id and draws no text.
+      const sideOfId = (id) => {
+        if (id === r.incumbentId) return { id, inc: true, text: inc };
+        const c = byId(id);
+        if (!c) return { id, inc: false, text: null };
+        const t = textOf(c);
+        return { id, inc: false, text: t, marked: markedOf(inc, t), rationale: c.rationale, by: byOf(c) };
+      };
+      const ledger = (r.myJudgments || []).map((j) => ({
+        a: sideOfId(j.a), b: sideOfId(j.b), outcome: j.outcome,
+        locked: !!j.locked, note: j.locked ? SHIFTED_NOTE : null }));
       const base = {
-        id: r.id, keys, state: r.judged ? 'deciding' : 'needs',
+        id: r.id, keys, state: rc ? 'needs' : r.judged ? 'deciding' : 'needs',
         qLabel: labelFor(keys[0]),
         // urgency is the router's own (SPEC §8.1): the served card's value
         // over the best in this feed; the fill is the race's closeness to
@@ -10168,21 +10207,13 @@
         urgency: rc && rc.urgency != null ? rc.urgency : 0.3,
         pct: Math.round((r.closeness || 0) * 100),
         judges: r.judges || 0, floor: r.floor,
-        cap: r.judged ? 'you have voted on this — it is still running' : 'wants your vote',
-        // **and the ground shift says what happened** (SURFACE E16). The
-        // server's `shifted` is a flag — *a judgment of mine locked by a
-        // ground shift* — and the rail entry's tooltip is the sentence, as
-        // the fixture has always supplied it; handing the renderer `true`
-        // threw `esc` and took the whole rail with it. The live sentence
-        // names no candidate because the view does not carry which one was
-        // adopted, only that this wording is no longer the one you judged.
-        shifted: r.shifted
-          ? 'The wording was changed here after you voted, so your vote was about a wording that no longer exists.'
-          : false,
+        cap: rc || !r.judged ? RAIL.wantsVote : RAIL.votedStillRunning,
+        shifted: r.shifted ? SHIFTED_NOTE : false,
         deadlocked: !!r.deadlocked,
         crownWaits: textAssent,
-        // the served pair, for the judgment that goes back
+        // the front of the deck, for the judgment that goes back
         card: rc ? { a: rc.a.id, b: rc.b.id, inc: rc.a.incumbent ? 'a' : rc.b.incumbent ? 'b' : null } : null,
+        ledger,
       };
       // a race holding only my own proposal is mine to withdraw, not to judge
       // — the `mine` item carries it (the author's preference is derived, never
@@ -10198,12 +10229,6 @@
       const others = r.candidates.filter((c) => !c.mine);
       const slate = r.deadlocked
         ? { slate: r.candidates.map((x) => ({ text: textOf(x), rationale: x.rationale })) } : {};
-      // a name the server attached is one the reveal rule allowed (a signed
-      // proposal, Q770, or one made under `public`): the live card shows it,
-      // and since backlog 255 their face with it — the picture rides the same
-      // `author` object and is blind at exactly the same gate (K30)
-      const byOf = (c) => (c.author && c.author.name
-        ? { n: c.author.name, pic: c.author.picture || '' } : null);
       if (r.candidates.length === 1 || (rc && (rc.a.incumbent || rc.b.incumbent))) {
         // one challenger against what stands: the quick card
         const c = (rc ? byId(rc.a.incumbent ? rc.b.id : rc.a.id) : null) || r.candidates[0];
@@ -10408,10 +10433,13 @@
       const s = liveItem(id);
       if (s && s.amendment) { try { cs.ackAmendment(now(), viewerId(), s.amendment); } catch (e) {} }
     };
-    LIVE_HOOKS.judge = (id, what) => {
+    // `pair` is the pair the card was about (Q1201): a ledger block you
+    // pressed to revise, else the front of the deck — session.js says which,
+    // since it holds the press; a judgment with neither has nothing to send
+    LIVE_HOOKS.judge = (id, what, pair) => {
       const s = liveItem(id);
-      if (!s || !s.card) { console.warn('[live] no card served for', id); return; }
-      const c = s.card;
+      const c = pair || (s && s.card);
+      if (!c) { console.warn('[live] no card served for', id); return; }
       const challenger = c.inc === 'a' ? 'b' : 'a';
       const outcome = what === 'indifferent' ? 'tie'
         : what === 'keep' ? (c.inc || 'tie')

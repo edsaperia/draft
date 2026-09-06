@@ -169,10 +169,23 @@ window.COPY = (function () {
       yoursInRace: 'Yours, in the race',
       noReason: 'no reason given yet — say what this is for',
       placesOf: (n, of) => n + ' of ' + of + ' places',
+      // a live race's tooltip (Q1200): it wants your vote while the router
+      // holds a pair for you on it — voted on or not — and says you have
+      // voted only once nothing is left to ask
+      wantsVote: 'wants your vote',
+      votedStillRunning: 'you have voted on this — it is still running',
       stillDeciding: 'still deciding — click to change your mind',
       deadlocked: (judges, comparisons) => 'Deadlocked — ' + judges +
         ' people can’t agree on a proposal even after ' + comparisons +
         ' votes. Can you propose something everyone will agree on?',
+    },
+    // the ledger (Q1201): the pairs you judged on this race, on the ⏳ card
+    // and beneath a live one, each a press to revise
+    ledger: {
+      label: (n) => (n === 1 ? 'Your vote on this clause' : 'Your votes on this clause'),
+      current: 'the current text',
+      revise: 'Change this vote',
+      pickFirst: 'Choose one of your votes above to change it',
     },
     // the gap a draft stands in, named for the rail and the editing head
     gap: {

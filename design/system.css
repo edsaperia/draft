@@ -1536,6 +1536,22 @@
   .commitrow .btn.holding { box-shadow: none; }
   .commitrow .btn[disabled] { box-shadow: none; }
   .propblock .rtext { font-size: var(--t-body); margin-bottom: 0; }
+  /* the ledger (Q1201): the pairs you judged on this race, one block each,
+     the side you chose marked with the lane radio's own dot — inert, the
+     press is the whole block — and the pressed block lifted, since open is
+     said by depth; a locked (↻) block takes no press and says why */
+  .sugg .ledger .ledgerpair { cursor: pointer; border-radius: var(--r-sm); transition: box-shadow 120ms ease; }
+  .sugg .ledger .ledgerpair.locked { cursor: default; }
+  .sugg .ledger .ledgerpair:not(.locked):hover .lside .rtext { color: var(--primary); }
+  .sugg .ledger .ledgerpair.active { box-shadow: var(--shadow-sm); }
+  .sugg .ledger .lside { display: flex; align-items: flex-start; gap: var(--s2); }
+  .sugg .ledger .lside + .lside { margin-top: var(--s2); }
+  .sugg .ledger .lside .rtext { flex: 1; }
+  .sugg .ledger .lside .rtext.none { color: var(--muted); }
+  .sugg .ledger .lside .rsub { display: block; }
+  .sugg .ledger .lmark, .sugg .ledger .lmark[aria-pressed="true"] {
+    padding: 0; border: 0; background: none; cursor: inherit; margin-top: 3px;
+  }
   /* The commit row's own hairline and band rhythm belong to **the row**, not to
      what happens to precede it. This was `.field + .race-mid`, which was true
      for as long as the field was always the band immediately above — and stopped
