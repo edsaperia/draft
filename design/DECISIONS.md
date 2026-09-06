@@ -2365,3 +2365,65 @@ answers on the binaries is the same instruction as A3 — a sentence that names
 one alternative describes a choice the reader cannot see the shape of. The
 ladders and the numbers have no pair to name, so they keep a one-clause
 subject; that asymmetry is deliberate and is why the ruling names the five.
+
+## Quorum is the adoption floor; the freeze and sign-out retire (2026-09-06, Q1196–Q1199)
+
+Ed opened the session with a proposal to remove 👥 altogether: *I have
+realised that I misunderstood what Quorum does. I don't think we need it; the
+functionality I want is covered by Lapse and Leave, and we won't have "Sign
+Out". I think we should set it to 0 and then remove it from the surface and
+path. Fewer options is good!* He was told that 👥 did two jobs. The first was
+the **freeze** (SPEC §9.5 as it stood): when the counted base — E minus the
+members who had signed out abstaining — fell below quorum, the document parked
+its races and cut the record until enough people returned. That was the job he
+meant, and it was already nearly dead: sign-out never had a surface — no card,
+no control, no copy ever offered *holding* or *abstaining* to a member — so the
+only way a real document could freeze was a fixed count larger than its roster,
+which the 👥 meaning line already described in words. The second was the
+**adoption floor** (§4.2, §8.2): `F = max(Q, min(⌈E/3⌉, F_max))`, the number of
+distinct members who must have judged a race before it may adopt — the one job
+Lapse and Leave do nothing about, since they remove the absent from E and say
+nothing about how many of the present must have been heard. Offered four
+options, he chose: **keep 👥 as the floor, remove the freeze** — the card stays
+and its copy says plainly what it does, sign-out and the freeze go, `/pairwise`
+is corrected, and the form-and-number exception (Q1162) stays with the card.
+The mechanism reason is R-088: the freeze and lapse pulled opposite ways (*stop
+until they return* against *carry on without them*), and a document that had
+consented to 💤 was being asked to do both about the same quiet member.
+
+He then found where the misreading had come from. `design/pairwise.html`, under
+*Nobody has to be present at once*, said that 👥 *asks a different question:
+whether enough of the membership is still here for the document to go on at
+all. It is about the membership being present, never about how many votes one
+proposal has* — the last clause flatly false against §4.2, and contradicting the
+card's own meaning line beneath it (*at least q of you must have voted on a
+change before it can pass*). Ed: *Then the explainer is wrong I think!* It was,
+and it is the product's own text that taught him the wrong quorum (Q1198). The
+parenthesis now says what the quorum is: *the floor under all of this: the
+number of members who must have voted on a change before it can pass, however
+sure the document already is. It never decides a proposal; it only says how
+many people the document must have heard from first.* The paragraph after it,
+*An absent member is not a vote against*, was read against §8.2 and left alone:
+a race short of the floor waits and degrades to backlog at the close, and the
+absent decide nothing, which is what it says.
+
+Two readings were built as resolved rather than asked, since each was the
+smaller change and Ed had not overruled them in QUESTIONS.md. **The topbar's
+*quorum n of E* stays** (Q1197): `renderClock` prints `cs.v.floor`, which *is*
+the floor, and Q860 had already made it a sentence about a decision rather than
+about the room. **The clause sentence stays** (Q1199): *Quorum is n of the
+membership.* keeps *Quorum* a noun that plainly wants a number (STYLE §4), and
+the meaning line beneath it is where *what it does* is said (T39) — three of its
+branches had ended in *the document freezes*, and every branch now ends in the
+floor. Rejected: making the clause sentence carry the floor itself, which would
+have moved one sentence into four homes (the composer's block, `copy.js`, the
+clause and the meaning line) to say what the line beneath already says.
+
+What the mechanism keeps for the record: `signed-out`, `frozen` and `thawed`
+stay in the event union and replay as no-ops, because a log written before v0.99
+may carry them and a hash-chained file is never patched; `legacy-events.test.ts`
+builds one and loads it. The golden walk lost its sign-out and, with it, the
+return that had nothing left to revive — two entries, not one — and
+`founding-v0.jsonl` was regenerated in step, since Q767 derives it from the walk
+beside it. Q463 (d) had named *the freeze alarm* as one of two mails that exist
+by necessity; it no longer exists, and Q463 is a design pass of its own.
