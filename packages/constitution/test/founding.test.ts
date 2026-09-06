@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { ConstitutionSession } from '../src/session.js';
-import { view } from '../src/view.js';
 import type { ConstitutionEvent } from '../src/types.js';
 
 /**
