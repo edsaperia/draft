@@ -479,12 +479,6 @@ export function manifestOf(doc: LoadedDoc | null, nowMs: number): LadderManifest
   if (apps.length > 0) {
     say(`${apps.length} at the door — ${apps.map((a) => a.status).join(', ')}`);
   }
-  const out = members.filter((m) => m.signedOut !== null);
-  if (out.length > 0) {
-    say(`${many(out.length, 'member')} signed out — ` +
-      `${out.filter((m) => m.signedOut === 'holding').length} holding, ` +
-      `${out.filter((m) => m.signedOut === 'abstaining').length} abstaining`);
-  }
 
   if (cs.closed) {
     say(`closed at ${new Date(cs.closedAt!).toISOString()}`);
@@ -648,7 +642,6 @@ async function toSession(host: LadderHost, doc: LoadedDoc, ctx: Ctx): Promise<vo
   await proposeAndJudge(host, doc, bridge, cast, pen, span, rnd, ctx);
   await motions(host, doc, bridge, cast, pen, rnd, ctx);
   await application(host, doc, pen, ctx);
-  await signOuts(cs, cast, pen, ctx);
 
   await host.commit(doc, pen.now);
 }
@@ -867,17 +860,6 @@ async function application(host: LadderHost, doc: LoadedDoc,
     await host.commit(doc, pen.now);
   } catch (e) {
     ctx.skipped.push(`the applicant: ${(e as Error).message}`);
-  }
-}
-
-/** Two people done: one holding the room to a quorum, one trusting it to finish. */
-async function signOuts(cs: ConstitutionSession, cast: string[], pen: Pen, ctx: Ctx): Promise<void> {
-  try {
-    cs.signOut(pen.next(), cast[cast.length - 2]!, 'holding');
-    cs.signOut(pen.next(), cast[cast.length - 3]!, 'abstaining');
-    ctx.built.push('two members signed out — one holding, one abstaining');
-  } catch (e) {
-    ctx.skipped.push(`sign-out: ${(e as Error).message}`);
   }
 }
 

@@ -69,7 +69,6 @@ type MemberViewPayload = {
     motions: Array<{ id: string; route: string; status: string; payload: unknown }>;
     crownTasks: Array<{ id: string; motion: string | null;
       text?: { candidateId: string; summary: string } }>;
-    frozen: boolean; mustReturn: number | null;
     closed: null | { at: number; mySignature: { comment: string } | null; signatures: unknown[] };
   };
 };
@@ -324,10 +323,11 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     const after = await viewOf(ada);
     expect(after.constitutedAtT).not.toBeNull();
     // the session-clock (Q466): the view says what time the server thinks it
-    // is, and whether the document is frozen or closed — never the threshold
+    // is, and whether the document is closed — never the threshold, and
+    // nothing about a freeze, there being none (R-088)
     expect(typeof after.serverNowMs).toBe('number');
     expect(Math.abs(after.serverNowMs - Date.now())).toBeLessThan(60_000);
-    expect(after.view.frozen).toBe(false);
+    expect(after.view).not.toHaveProperty('frozen');
     expect(after.view.closed).toBeNull();
 
     // -- a motion over HTTP races in the engine (Q391) --------------------
@@ -1179,8 +1179,6 @@ describe('the clock closes the document (SPEC §4.6, Q467)', () => {
     const closed = await viewOf(bo);
     expect(closed.view.closed).not.toBeNull();
     expect(closed.view.closed!.at).toBe(ends);
-    expect(closed.view.frozen).toBe(false);
-    expect(closed.view.mustReturn).toBeNull();
     // the third outcome, with its field and the text that stood
     expect(closed.records.some((r) => r.outcome === 'undecided')).toBe(true);
     const rec = closed.record!;
@@ -1369,7 +1367,7 @@ describe('a laid-down pen is laid down (entry 62)', () => {
 
 type StrangerPayload = {
   stranger: true; seq: number; eseq: number; devMail: boolean; title: string; slug: string;
-  constitutedAtT: number | null; closed: { at: number } | null; frozen: boolean;
+  constitutedAtT: number | null; closed: { at: number } | null;
   serverNowMs: number; textConfirmed: boolean;
   holding: { kind: string; sentence: string | null };
   founder: { name: string | null; picture: string | null };

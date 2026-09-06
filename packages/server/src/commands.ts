@@ -392,9 +392,6 @@ const HANDLERS: Record<string, Handler> = {
       ? cap(args.comment, LIMITS.why, 'the closing comment') : '';
     cs.acknowledgeClose(t, a.memberId, comment);
   },
-  'sign-out': (cs, a, t, args) => {
-    cs.signOut(t, a.memberId, str(args, 'mode') as 'holding' | 'abstaining');
-  },
   /* -- an applicant's one act (§9.7½): submit — nothing else speaks for them */
   'submit-application': (cs, a, t, args) => {
     const applicant = applicantOnly(a);

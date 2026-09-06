@@ -112,7 +112,7 @@ interface Payload {
   clauses: Clause[];
   raceCards: CardView[];
   constitutedAtT: number | null;
-  view: { closed: unknown; frozen: boolean };
+  view: { closed: unknown };
 }
 
 async function viewOf(base: string, slug: string, cookie: string): Promise<Payload> {

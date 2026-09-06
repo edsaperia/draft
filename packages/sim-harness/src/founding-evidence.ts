@@ -315,21 +315,12 @@ say('\n== the crown, v0.49: assent ends either route; a lapsed crown assents by 
 }
 
 /* ========================================================================= */
-say('\n== membership lifecycle: sign-out, the freeze, the lapse ===============');
+say('\n== membership lifecycle: the lapse (there is no sign-out and no freeze, R-088) ===');
 {
   const { s, bo, cy } = threeRoom({ lapse: { afterMs: 10_000 } });
-  s.signOut(3, cy, 'holding');
-  check(!s.frozen && s.quorumBase() === 3,
-    'holding: cy stays in the base — no walkout can hide as attrition (§9.5)');
-  s.signOut(4, bo, 'abstaining');
-  check(!s.frozen && s.quorumBase() === 2,
-    'one abstainer leaves the base; two counted still meet the quorum of two');
-  s.signOut(5, 'ada', 'abstaining');
-  check(s.frozen, 'the base fell below quorum: frozen — a stall with an alarm');
-  s.memberReturn(6, bo);
-  check(!s.frozen, 'and it thaws when enough return');
+  check(s.canJudge() && s.E() === 3, 'three in E, judging open: plain silence is nothing (§9.5)');
 
-  say('  the clock: cy is quiet from t=3; lapse is 10 000 with warning at 75%');
+  say('  the clock: cy is quiet from the founding; lapse is 10 000 with warning at 75%');
   s.setIdentity(7_000, 'ada', { name: 'Ada' });
   s.setIdentity(7_000, bo, { name: 'Bo' });
   s.tick(8_000);
