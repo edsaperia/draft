@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.104
+# Group Drafting Engine — Specification v0.105
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -347,7 +347,7 @@ Rules maximally public, state maximally private. Published before open: the cons
 
 ## 12. Display
 
-Non-contiguous footprints render as multi-hunk diffs with collapsed context. Wide patches show intent summary, occurrence count, and expandable sampled instances. Race cards render contested spans once, candidates as toggleable overlays. The composer renders the full race. The care map renders as document heat. All public views inherit the magnitude-only discipline.
+Every public view inherits the magnitude-only discipline (§3.5). How anything is drawn — a candidate against its clause, a wide patch, a race, the composer — is `SURFACE.md`'s, not this spec's (Ed, 2026-09-07, Q1277, v0.105: the rendering intent this section once carried is in `design/DECISIONS.md`).
 
 ---
 
@@ -374,7 +374,6 @@ Steps 1, 2 and 4 are built; of step 3 only the dedup gate's equivalence oracle a
 | 9.1 | Room mode — the ticker, the stuck set, the closing sweep | nothing |
 | 9.3 | The floor recomputation announced, so a race parked at the old floor never completes silently | nothing (Q10; SURFACE.md E29) |
 | 10 | The coherence auditor — a standing account, 4 ✏️ and no drip, patching drift | the `machineAuthored` flag on a candidate; the card retired 2026-08-29 (R-078), the setting kept for replay |
-| 12 | Candidates as toggleable overlays; the care map as document heat | nothing; the surface's rule is that the prose carries no highlight (SURFACE.md, `suggestion-anchor`) |
 
 ---
 
