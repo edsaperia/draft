@@ -3397,3 +3397,72 @@ The intro as it stood: *The target grammar every card converges on (Ed's seven r
 - **CP10**: *Built the same evening on 💤's \*A membership lapses\*, 📧's composer block, ⏰'s \*will end on\*, 🌡️'s and 👥's sentence blocks, and on 🪶's and 📍's composer lanes.*
 - **CP11**: *Built the same evening.*
 
+
+## CLAUDE.md, the history lifted 2026-09-07 (the docs pass)
+
+The docs pass of 2026-09-07 (Ed: *a docs pass looking especially for things that are no longer relevant that can be removed, and attempting to synthesise the rest*) applied `CLAUDE.md`'s own admission rule to `CLAUDE.md`: the marking sweep first (Q1052), then the four kinds, the fifth question and the eviction rule (Q736). What left the operative file is reproduced here verbatim, as it stood at `bd427d7`, so that nothing evicted is only in git. The two *Lifted out of name entries* sub-headings of 2026-08-23 and 2026-08-24 were folded into *Gotchas* proper (design-system and product), every bullet kept — the headings were extraction history, and this section is where that history lives.
+
+**CLAUDE.md is operative; this is the record.** Where the two disagree, CLAUDE.md wins.
+
+### The Documents section, as it stood before it became a table
+
+- `SPEC.md` — the mechanism spec, and the single source of truth. **Amend only with Ed's sign-off; bump the version.** **Rules only** ("keep latest design, not history" — Ed, 2026-08-13): tables and numbered rules, each pointing at its reasons as `→ why: R-nnn`. `npm run spec-check` (in CI) asserts §9.7.1 and §9.7.2 against the code, so drift is red at the push.
+- `design/SPEC-REASONING.md` — the reasoning behind SPEC.md §9: dated rulings, what each replaced, what was rejected, keyed `R-nnn`. To the spec what `design/DECISIONS.md` is to the glossary below (mechanism reasons there, surface reasons here — Q564). Not loaded per session.
+- `SURFACE.md` — **what the surface tells a member, and what a control does**: the event matrix (event × audience × channel × ask × close × persistence), the rules C1–C16 that quantify over it, the exceptions, the page-key ↔ setting map, the marks and the rail (§6), the wallets and holds (§7), the founding order and the band (§8), the card kinds, the commit row and the composer (§9). `spec-check` asserts its tables against the page's own maps (`ORDER`, `ACK_KEYS`, `CHOSEN`, `PROPOSE`, every card).
+- `design/spec-pass/` — the pass archive: `pass-N.md` the extraction of record, `pass-N.html` the questions artifact's source (republished to the same URL from this path). Deleted once a pass is folded and its answers are in QUESTIONS.md.
+- `QUESTIONS.md` — open and deferred items only, numbered from one continuous project-wide sequence (Ed answers by number). Never renumber or reuse numbers; delete items once folded into the spec. Questions raised in chat that Ed doesn't answer before the session ends belong here with real sequence numbers. Draw in-chat numbers from this sequence too when they concern project decisions.
+- `PRODUCTION.md` — the road to docs.vote: the staged rollout and the security-defect list. A working document; read it before proposing anything about hosting, data or go-live.
+- `design/MOBILE.md` — **docs.vote on a phone**: the responsive plan, its `mobile-walk`, and the PWA · push · offline stage, all decided by **Ed 2026-08-23** and **not yet built**. Read it before touching layout for narrow; PRODUCTION.md stages 17–18 point at it.
+- `design/DECISIONS.md` — the reasoning behind everything in the glossary below: superseded designs, rejected alternatives, the arguments that produced each rule. It is also the record of what each extraction lifted out of this file, one dated section per pass, verbatim. Not loaded per session; read it when a rule seems arbitrary, or before re-proposing something.
+- `design/*.html` — the mockup series: light-only, Bootstrap-plain, one continuous fictional world (the Hollow Oak Club charter). **There is one page**, `design/session-view.html`; the others redirect. Shared: **`system.css`** (all surfaces), **`cards.js`** (the card grammar), **`setup.css` + `setup.js`** (setup only), **`session.js`** (the charter column, the margin-index rail, the wires, the composer, the wallet and flights), **`fixture-session.js`** (the Hollow Oak session fixture, at `?fixture=session`). **A new helper belongs in the shared file its callers share, never copied into a surface.** Load order: `constitution.js` → `copy.js` → `cards.js` → `setup.js` → `session.js` → inline. **Every surface is the session-view** — SURFACE §1 C1.
+- `packages/sim-harness/REPORT-deferred-evidence.md` — findings from the 2026-08-14 evidence pass (Q8/Q9/Q10/Q13), with reproduce instructions.
+- `design/STYLE.md` — the surface-copy checklist (vocabulary, numbers, person, titles, bodies, mail) and its numbered rules T1–T48; the audit log lives in `design/DECISIONS.md` since 2026-09-07. **Every string a member can read passes it; code comments are exempt.**
+- `REVIEW-creation-session.md` — the 2026-08-18 end-to-end walk of creation → founding → live session. **Still load-bearing: open Q335 points at its §7** as the definitive settings-to-engine field mapping. Keep until that lands.
+- `README.md` — the public repo's front door, and since docs.vote went live the first thing a stranger reads. It states the spec version, the four packages and the test counts, so it goes stale silently — check it whenever one of those changes.
+
+Two claims in it were corrected in the table that replaced it: `REVIEW-creation-session.md`'s §7 is titled *The `Constitution` split (Q335 groundwork)* — it points at Q335, not the reverse — and `design/spec-pass/` was not empty (`card-audit.html`, `claude-md-audit.md`, `pass-4.*`, `pass-5.*`, `surface-md-extraction.md` all stood in it on 2026-09-07).
+
+### The Retired names paragraph, as it stood before it became a table
+
+**Retired names**, kept here so a lookup lands: `document-creation`, `founding-ceremony` and `setup.html` (the surfaces) → `session-view.html`; `edit-wallet` → `propose-wallet`; `setup-piles` → `constitution-section`; `drafting-desk`, `arrival-bar`, `bounty-board`, `redline` → gone; `lanepick`-the-control and `switch` → `option-block` (CP1, Q1096/Q1103, 2026-08-31 — `.lanepick` survives as the radio's class); `always-on-typing` → `edit-mode` (K13 amended, Ed 2026-09-01: **📝 is the door** — the interception survives, one press further in); `watch-half` and `distribution-strip` → retired outright (Q1176, Ed's QA 2026-09-02 pm: provenance is the standing block's radio, the counts are 🍾's); `sign-out` and `freeze` → retired outright (Q1196, Ed 2026-09-06: quorum is the floor and only that; the freeze and lapse pulled opposite ways). Their reasoning is in `design/DECISIONS.md`. The two superseded notes files, `design/session-view.notes.md` and `design/setup.notes.md`, were deleted 2026-08-23; `SURFACE.md` holds what was live in them and git holds the rest.
+
+### Two glossary entries that joined the Retired names
+
+Both named something the glossary already named or no longer draws. `consent-slider` had read *retired* in its own entry since Q1162; `section-toggle` was a second name for `sectoggle`, which has the fuller entry (SURFACE F21, Q406).
+
+- `consent-slider` [concept] — **retired** (Q1162, 2026-09-02): 👥, its last user, answers in two form blocks with inline numbers; nothing on the surface is a track. The nothing-preselected rule survives on every control (F6).
+- `section-toggle` [concept] — the fold triangle, mirrored in the contents rail and the document gutter.
+
+### The `stranger's door` entry's open pointer
+
+The entry ended *Open: Q508, Q509.* All three door questions were ruled and built — Q508 (Ed: (c), both halves), Q509 (Ed: (a), built as 894–896 on 2026-08-26), Q510 (Ed: (a)) — and stand in this file's closed-items list. The entry now points here.
+
+### Two gotchas reduced to their bite
+
+**The card lifecycle** restated SURFACE C1–C5 and L1–L9 one line each. The rule file is the home; the operative file keeps the pointer and the one line other gotchas lean on (*closing is not discarding*). As it stood:
+
+- **The card lifecycle lives in `SURFACE.md`** (spec pass 1, 2026-08-22): what opens a card, what it focuses, what closes it, what 🗑️ puts back, the one commit row and the hold ladder — rules C1–C5 and the lifecycle rows L1–L9. Kept here in one line each because they bite: a card opens only on a click and focuses its main decision; closing is not discarding; a card closes when its answer becomes the document's (a judgment too, since Q576 — files as ⏳); 🗑️ is always live, puts back only un-actioned input, and is the only bin; one commit row, one flat disabled look, 40px.
+
+**The option block** carried its rule (the `option-block` entry and SURFACE §9.3 state it) ahead of its mistake. As it stood:
+
+- **A choice is an option block, and the option's name lives on the block, not the button** (CP1, Q1096, 2026-08-31): `.opttext` above, hairline between, a fixed-vocabulary radio beneath (*Prefer this / Preferred* or *Choose this / Chosen* by register — CP2) — never a bordered box, never the sentence as the click target. Every radio on a card says the same words, so a walk or handler that identifies an option by the button's text finds every option identically named — journey's three label helpers broke exactly there, and slider-walk's rung reader would have.
+
+### The spec pass — the passes run so far
+
+The section's opening carried the history of the passes; the procedure stays, the history is here.
+
+> Re-runnable; pass 1 was 2026-08-22 (Q540–Q582), and passes 2+ mostly live in steps 4–7. Pass 3 (2026-08-29, v0.90, backlog 192) ran step 6 alone over **SPEC §3, §4 and §8** — no artifact and no questions — and `spec-check` now asserts every `→ why: R-nnn` resolves.
+
+Pass 2 was 2026-08-22 (Q585–Q624; *Spec pass 2* above). Pass 4 was the card-pattern census of 2026-08-31 (`design/spec-pass/pass-4.md`, SURFACE §9.3, Q1096–Q1102); pass 5 tabulated SURFACE §8.1 on 2026-09-01 (`pass-5.md`, Q1122–Q1128).
+
+### The CI convention, as it stood
+
+> - **CI runs `npm run typecheck` (tsc --noEmit per workspace) as well as tests, lint and build — run all four before calling a tree green.** 2026-08-21: a push went red on typecheck alone, because the server test file hand-typed the view and the day's new fields never reached those types; vitest does not type-check tests, so tests passing says nothing about it. And since 2026-08-27 a third job, `walks`, boots a dev server (no `RESEND_API_KEY`, so the outbox and the ⏭ bar exist) and runs `journey`, `applicants-walk`, `slug-walk` and `ladder` against it at every push, `if: always()` between them so none masks another — Q917 (a). Since 2026-09-05 it also boots a second, cooldown-0 server for `room-walk`, which needs two adoptions in one document. Like `probe` it runs in parallel with `ci` and cannot gate the deploy: a red there is a red X on the commit, not a held deploy.
+
+### What goes in this file — the sizes
+
+The opening paragraph carried the arithmetic of the two prior extractions; the rule stays, the numbers are here.
+
+> The admission rule, written down because the two prior extractions had none and the file regrew past its pre-extraction size within two days of each — 52.7 KB out on 2026-08-20, 60.1 KB out on 2026-08-22, and 139 KB standing when this pass began. **Extraction without an admission rule only resets the clock.**
+
+**The arithmetic of this pass.** 99,291 B and 353 lines before; 99,601 B and 365 lines after — **+310 B**, because the two tables (Documents, Retired names) cost more markup than the prose they replaced. Nothing was removed because the file is long (Q1051); 150 glossary entries became 148 (the two retired), 67 gotchas stayed 67, and the checker counts 30 of them guarded where it counted 26, the four `card-audit` gotchas of 2026-09-06 now naming their guard as an invocation.
