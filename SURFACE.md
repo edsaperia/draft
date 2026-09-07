@@ -83,6 +83,8 @@ The card lifecycle, as the rows of the matrix a single card passes through:
 
 ## 3. Exceptions
 
+*Ruling* is who ruled and when, a date or a Q; it may also name where the ruling's post-mortem lives, as Y27 does (Ed, 2026-09-07, Q1236). Cells stay self-contained and carry no `→ why:` flag (Q1005).
+
 | # | What | Rule | Why | Ruling |
 |---|---|---|---|---|
 | Y2 | 📧 closes on send and re-opens on refusal | C2 | a refusal has nowhere else to be read | 2026-08-21 |
