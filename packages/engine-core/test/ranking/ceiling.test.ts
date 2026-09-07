@@ -133,7 +133,10 @@ describe('the ceiling a room can reach (Q840)', () => {
         prev = k;
       }
     }
-  });
+    // two thousand fits: ~0.9 s alone, 9.2 s under a full run on Ed's
+    // machine (Q1204), so the sweep gets its own budget rather than a
+    // cheaper fit that would test less
+  }, 60_000);
 
   it('a room smaller than one is not a room', () => {
     expect(winsNeeded(0, 60)).toBe(null);
