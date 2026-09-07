@@ -100,8 +100,7 @@ The index, in the section's own order (nothing is pinned — Ed, 2026-09-07, Q12
 | 1015 | What is a member told while a text adoption awaits assent? | 2026-08-29 | answered (b), owed — needs a SURFACE §2 row | R-056 |
 | 1016 | The seat-matrix row for a shielded Text | 2026-08-29 | a rider on the next harness change | `scripts/seat-matrix.mjs` |
 | 1033 | A motion-backed 👑 question at a vacated seat | 2026-08-29 | answered (a), owed | R-060; `crownSeatVacated` |
-| 1205 | `seat-matrix` is red | 2026-09-06 | open | `scripts/seat-matrix.mjs` |
-| 1237 | F5, F19, F21 and K31 remain very long | 2026-09-07 | waiting on Ed | SURFACE F5, F19, F21, K31, §8, §9 |
+| 1205 | `seat-matrix` is red | 2026-09-06 | diagnosed 2026-09-07: 56 → 21 (walk) → 11 (Q919 (b), Q920 built); what stands is 1281, 1282 and a gate-news cluster still unread | `scripts/seat-matrix.mjs`; 1280–1282 |
 | 1238 | §5's survival | 2026-09-07 | waiting on Ed | SURFACE §5, E12; Q1004, Q1015 |
 | 1239 | The `L` lifecycle table and the setup-alphabet and socket-state tables have no marker | 2026-09-07 | waiting on Ed | SURFACE L1–L9; `seat-matrix.mjs` |
 | 1240 | `design/spec-pass/` holds five files where its own rule says folded passes are deleted | 2026-09-07 | waiting on Ed | CLAUDE.md Documents; Q1096–Q1102, Q1122–1128, Q943, Q944 |
@@ -424,7 +423,7 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 
 1205. **`seat-matrix` is red, and was before either of 2026-09-06's builds** — 56 findings and a `TypeError … reading 'closed'`, identical from a worktree at `b62fcbc`. CI's `walks` job does not run it, so nothing went red. Needs a look before it is trusted again; until then a claim that a seat change is safe cannot lean on it.
 
-1237. **F5, F19, F21 and K31 remain very long** (Raised by the documents pass of 2026-09-07, SURFACE.md log §6 item 7.) (1,900–2,900 characters each) and the checker caps nothing in SURFACE.md. They are Ed-ruled throughout, so this pass trimmed only their history. Readings: (a) leave them — a founding rule is allowed to be long; (b) a later pass moves their card-level detail (F5's power-table description, K31's edit-mode geometry) into §9's 🍾 and 📝 rows, which already state most of it, leaving the rule a paragraph; (c) split F21 into subsection-per-status rows in the band table (§8), which now exists to hold them.
+    **Where it stands (2026-09-07, after the diagnosis and two builds).** The 56 were four things, none a stale selector: the founder's gate cards no longer exist (Ed, 2026-09-01) so two steps drove a control the surface stopped offering; Q919 (b) was unbuilt (the whole member-hat cluster); Q920 was unbuilt (the whole clerk-hat cascade); and the applicant's live page throws on load, which the walk had been dropping in silence. The walk fixes (`7a6dd61`) took it to 21; building Q919 (b) and Q920 the same morning took it to **11**, on a fresh server: the applicant page (**1281**, two seats and one error), a lapsed member offered a motion answer (**1282**, E10), and **an E4 cluster still unread** — the 💡/⚖️ gate news not carried by the `early` and `lapsed` seats on either hat, and carried *as a tab* by a clerk founder who is outside the audience. That cluster is the next look; the gate news is not a setting, so Q919 (b)'s poll fix does not reach it. Four `noRule` cells stand (E11, E13, E22, and E11's audience — Q930).
 
 1238. **§5's survival.** (Raised by the documents pass of 2026-09-07, SURFACE.md log §6 item 8.) Ed's Q1004 (2026-08-28) said *§5 survives with its one bullet*; it now has two (the head of the document, and the 👑 pointer bullet). If the ruling meant exactly one, the 👑 bullet's Q1015 fact wants a home — E12's Audience cell (*the founder*) already implies it — and the bullet can go.
 
@@ -504,6 +503,7 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 
 | # | Title | Raised | State | Pointers |
 |---|---|---|---|---|
+| 1237 | Trim F5, F19, F21 and K31 to their rulings; the card detail moves to §9's rows and §8's table | 2026-09-07 | answered 2026-09-07 (b), owed — a docs plan, no code | SURFACE F5, F19, F21, K31, §8, §9 |
 | 1209 | Every settings title is an ask — imperative or question, case by case; the noun titles go | 2026-09-07 | answered 2026-09-07, owed — a copy pass over the 22 titles, two labels each (Q331 (b)) | STYLE T1–T2; `design/copy.js` CARDS; the copy and founding goldens; Q331 |
 | 1202 | ⏳ means *waiting for other people to vote*; a race you can still act on keeps its action mark, dealt or not | 2026-09-06 | answered 2026-09-07, owed — the page still lights on the hand | SURFACE E13, L4, §6; SPEC §8.3b; `itemsFromView`'s `dealt`; `bestPairFor` |
 | 996 | A per-decision reveal rung for 👁️ | 2026-08-28 | answered, owed — the catalogue still reads `never · after` | SPEC §3.5a, §9.7.1 |
@@ -515,6 +515,10 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 | 244 | A flow entry can overlap a pinned one | 2026-08-16 | open — cosmetic | `freeFor` (session.js) |
 | 248 | The ⌈E/3⌉ has never been calibrated | 2026-08-16 | open — wants a sweep | SPEC §8.2 |
 | 252 | A perpetual document loses the reset | 2026-08-16 | open | SPEC §9.4, §4.5 |
+
+1237. **Trim F5, F19, F21 and K31 to their rulings; the card detail moves to §9's rows and §8's table**
+
+    **Answered by Ed, 2026-09-07, (b)**, once the four were described to him. F5 (~1,700 characters) is 🍾's visibility rule followed by a description of the six-block power table that §9's 🍾 row also gives; K31 (~3,500) is 📝's two modes followed by the edit-mode geometry that §9's 📝 row states in outline; F21 (~2,700) is Membership's five statuses in prose that §8's band table has columns for; F19 (~1,600) is 🍾's readout vocabulary, long because it is complete. **Owed, as a docs plan:** each rule is left as its ruling and a pointer; the card descriptions land in §9's 🍾 and 📝 rows and the per-status facts in §8's table, nothing dropped — every sentence moved is Ed's, so the plan lists each move as a before/after the way the docs pass did; `spec-check` holds §8 and §9's shapes and `seat-matrix` reads §2, so the moves cannot silently break a parse. No code.
 
 1209. **Every settings title is an ask — imperative or question, case by case; the noun titles go**
 
