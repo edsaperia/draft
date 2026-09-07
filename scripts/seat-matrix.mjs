@@ -922,9 +922,15 @@ const railOf = (page) => page.evaluate(() => ({
   // and a task can stand as a tab the rail never lists — Q639's ⏳ pair did
   band: [...document.querySelectorAll('#band .achip[data-tab], #titlepara .achip[data-tab]')].map((el) => ({
     key: el.dataset.tab, kind: ([...el.classList].find((c) => c.startsWith('st-')) || 'st-?').slice(3) })),
+  // `order` rides along because the rail is a *consequence* of it: a card
+  // withheld by `orderReady` and a card nobody is owed look identical in the
+  // rail, and telling the two apart is the first question every finding here
+  // asks (2026-09-07 — the whole member-hat cluster turned out to be one
+  // card's `vis=0`, invisible in six runs of snapshots without this line).
   readout: (() => { const f = window.__founding ? window.__founding() : null;
     return f ? { served: f.served, okd: f.okd, owed: f.owed, amFounder: f.amFounder,
-      viewerIsMember: f.viewerIsMember, constituted: f.constituted, readiness: f.readiness } : null; })(),
+      viewerIsMember: f.viewerIsMember, constituted: f.constituted, readiness: f.readiness,
+      order: f.order, answers: f.answers, owedUnservable: f.owedUnservable } : null; })(),
 }));
 async function snapshot(D) {
   if (!D.slug) return {};
