@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.101
+# Group Drafting Engine — Specification v0.102
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -169,7 +169,7 @@ Co-signs and withdrawals refund fully; merges pool pro-rata. **The maximum caps 
 
 **A second gate reopens the stream** (Ed, 2026-08-17). Above **2E live questions** diagonals return to the judgment stream at a low rate for everybody — the old ~1 in 10. Between E and 2E the audience gate alone applies; below E there are none at all. The three-in-a-row ceiling still governs what an idle participant is served; the stream rate is separate from it. → why: R-070
 
-Rival-vs-rival pairs answer a conditional question — "if this text changes, which change is better?" Two serving rules follow (Ed, 2026-08-14). First, cards never offer "keep the current text" on a rival pair, and the rival card's prompt states the conditional framing plainly. Second, rival pairs are served sparingly until the race shows evidence that at least one challenger plausibly displaces the incumbent; before that, incumbent-involving pairs dominate the race's sampling. → why: R-071
+Rival-vs-rival pairs answer a conditional question — "if this text changes, which change is better?" Two serving rules follow (Ed, 2026-08-14). First, cards never offer "keep the current text" on a rival pair — and the card carries no prompt explaining the framing (Ed, Q95: members need not learn the rules on every card; the clause that promised one left at v0.102, Q1230). Second, rival pairs are served sparingly until the race shows evidence that at least one challenger plausibly displaces the incumbent; before that, incumbent-involving pairs dominate the race's sampling. → why: R-071
 
 **8.3b When a participant is told a race is deadlocked** (Ed, 2026-08-17). Deadlock detection is a property of the race (§8.3), but **disclosure of it is per-participant**: a deadlocked race is served to you as an ordinary race, and is disclosed as deadlocked only once it has **nothing left to ask you** — no pair in it the router would otherwise hand you. Until then the surface shows it as any other open race and the bridge invitation is withheld. → why: R-072
 
