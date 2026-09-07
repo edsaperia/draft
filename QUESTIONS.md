@@ -101,7 +101,6 @@ The index, in the section's own order (nothing is pinned — Ed, 2026-09-07, Q12
 | 1016 | The seat-matrix row for a shielded Text | 2026-08-29 | a rider on the next harness change | `scripts/seat-matrix.mjs` |
 | 1033 | A motion-backed 👑 question at a vacated seat | 2026-08-29 | answered (a), owed | R-060; `crownSeatVacated` |
 | 1205 | `seat-matrix` is red | 2026-09-06 | diagnosed 2026-09-07: 56 → 21 (walk) → 11 (Q919 (b), Q920 built); what stands is 1281, 1282 and a gate-news cluster still unread | `scripts/seat-matrix.mjs`; 1280–1282 |
-| 1239 | The `L` lifecycle table and the setup-alphabet and socket-state tables have no marker | 2026-09-07 | waiting on Ed | SURFACE L1–L9; `seat-matrix.mjs` |
 | 1240 | `design/spec-pass/` holds five files where its own rule says folded passes are deleted | 2026-09-07 | waiting on Ed | CLAUDE.md Documents; Q1096–Q1102, Q1122–1128, Q943, Q944 |
 | 1241 | The double-fire child gotcha is unguarded on its own text | 2026-09-07 | waiting on Ed | CLAUDE.md Gotchas; `penHoldFired`; `npm run journey` |
 | 1242 | The 🎩 gotcha names no guard | 2026-09-07 | waiting on Ed | CLAUDE.md Gotchas; `npm run journey`, `npm run ladder` |
@@ -424,8 +423,6 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 
     **Where it stands (2026-09-07, after the diagnosis and two builds).** The 56 were four things, none a stale selector: the founder's gate cards no longer exist (Ed, 2026-09-01) so two steps drove a control the surface stopped offering; Q919 (b) was unbuilt (the whole member-hat cluster); Q920 was unbuilt (the whole clerk-hat cascade); and the applicant's live page throws on load, which the walk had been dropping in silence. The walk fixes (`7a6dd61`) took it to 21; building Q919 (b) and Q920 the same morning took it to **11**, on a fresh server: the applicant page (**1281**, two seats and one error), a lapsed member offered a motion answer (**1282**, E10), and **an E4 cluster still unread** — the 💡/⚖️ gate news not carried by the `early` and `lapsed` seats on either hat, and carried *as a tab* by a clerk founder who is outside the audience. That cluster is the next look; the gate news is not a setting, so Q919 (b)'s poll fix does not reach it. Four `noRule` cells stand (E11, E13, E22, and E11's audience — Q930).
 
-1239. **The `L` lifecycle table and the setup-alphabet and socket-state tables have no marker** (Raised by the documents pass of 2026-09-07, SURFACE.md log §6 item 9.) and are not parsed; the seat matrix reads `events` and `holds` only. Nothing asserts L1–L9 against the page. Worth a marker and a check, or are they illustration?
-
 1240. **`design/spec-pass/` holds five files where its own rule says folded passes are deleted.** (Raised by the documents pass of 2026-09-07, CLAUDE.md log §6 item 1.) `pass-4.md/.html` (the card-pattern census, folded 2026-08-31 — Q1096–Q1102), `pass-5.md/.html` (SURFACE §8.1 as a table; its own header says *deleted when the pass folds*, and the QUESTIONS pass reports Q1122–1128 built), `card-audit.html` (STYLE log Q2 already asks), `claude-md-audit.md` (Q943, applied by entry 201) and `surface-md-extraction.md` (Q944, applied by entry 191). Readings: (a) delete all five — the rule as written; (b) keep the two proposals and the census as an archive and amend the rule to say so; (c) delete only `pass-N.*`. The table's row keeps the rule as written and names the two proposals.
 
 1241. **The double-fire child gotcha is unguarded on its own text** (Raised by the documents pass of 2026-09-07, CLAUDE.md log §6 item 2.) (*A completed hold clicks for you…*, ~1,100 chars, `penHoldFired`). Its parent family cites `npm run journey`, but no assertion of *one commit per hold* is named, and DECISIONS holds no post-mortem for it (`grep -c penHoldFired design/DECISIONS.md` = 0). If `journey` does assert it, the paragraph should reduce and the post-mortem move; if not, it stays whole, as now. Someone who knows `journey-walk.mjs` should say which.
@@ -500,6 +497,7 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 
 | # | Title | Raised | State | Pointers |
 |---|---|---|---|---|
+| 1239 | Three checkers for SURFACE's L table, setup alphabet and socket states — a disagreement is a finding for Ed, not a fix | 2026-09-07 | answered 2026-09-07, owed — a tooling plan | SURFACE §2 L1–L9, §6, §7.1; `journey-walk.mjs`; `spec-check.mjs`; `stateOf`/`markOf` |
 | 1237 | Trim F5, F19, F21 and K31 to their rulings; the card detail moves to §9's rows and §8's table | 2026-09-07 | answered 2026-09-07 (b), owed — a docs plan, no code | SURFACE F5, F19, F21, K31, §8, §9 |
 | 1209 | Every settings title is an ask — imperative or question, case by case; the noun titles go | 2026-09-07 | answered 2026-09-07, owed — a copy pass over the 22 titles, two labels each (Q331 (b)) | STYLE T1–T2; `design/copy.js` CARDS; the copy and founding goldens; Q331 |
 | 1202 | ⏳ means *waiting for other people to vote*; a race you can still act on keeps its action mark, dealt or not | 2026-09-06 | answered 2026-09-07, owed — the page still lights on the hand | SURFACE E13, L4, §6; SPEC §8.3b; `itemsFromView`'s `dealt`; `bestPairFor` |
@@ -512,6 +510,10 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 | 244 | A flow entry can overlap a pinned one | 2026-08-16 | open — cosmetic | `freeFor` (session.js) |
 | 248 | The ⌈E/3⌉ has never been calibrated | 2026-08-16 | open — wants a sweep | SPEC §8.2 |
 | 252 | A perpetual document loses the reset | 2026-08-16 | open | SPEC §9.4, §4.5 |
+
+1239. **Three checkers for SURFACE's L table, setup alphabet and socket states — a disagreement is a finding for Ed, not a fix**
+
+    **Answered by Ed, 2026-09-07:** *I want to check all three, but where they disagree with the code we should check which is right.* **Owed, as a tooling plan.** (1) The L table (§2, L1–L9): a parse marker on the table, and `journey-walk.mjs` asserting each row's *Close* and *Persistence* cells on the live path — it already performs L1, L3, L4, L5, L6, L7 and L8 under other names; L2 (✋🖼️📧 saved) and L9 (🗑️ puts back un-actioned input, set values untouched) are the two presses to add. (2) The setup alphabet (§6): `spec-check` reads the five-state table and asserts it against `stateOf`/`markOf` in setup.js — rail mark, tab mark, in-the-rail, pins — the way it already asserts §6's lifecycle marks against `MARK`/`DRAWN`. (3) Socket states (§7.1): `spec-check` asserts every class in the table exists in system.css and the wallet renderer and that no other socket class does. **The rule the plan must carry:** a first run will find disagreements, and each is filed as a numbered finding quoting the cell and the code, for Ed to say which is right — the checker lands red and stays red until he rules, never bent to pass. No product code changes.
 
 1237. **Trim F5, F19, F21 and K31 to their rulings; the card detail moves to §9's rows and §8's table**
 
