@@ -560,9 +560,11 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1206** — claim by writing the block here, then commit it alone. Released and unspent, reclaimable by the precedent of 1109–1112: **1017** (claimed with 1015–1016 for backlog entry 159), **1022** (with 1020–1021 for entry 160), **1031** (with 1030 for entry 173).
+**The next free number is 1280** — claim by writing the block here, then commit it alone. Released and unspent, reclaimable by the precedent of 1109–1112: **1017** (claimed with 1015–1016 for backlog entry 159), **1022** (with 1020–1021 for entry 160), **1031** (with 1030 for entry 173).
 
 Every other claim block and built-narrative, and the map of where everything below 260 went, left this file verbatim on 2026-09-07 for `design/DECISIONS.md` § *QUESTIONS.md, the closed items and the spent numbers, lifted 2026-09-07 (the docs pass)*. What stays below is every claim block that still names an open number.
+
+**1206–1279 are the questions of the documents pass of 2026-09-07**, claimed by the session that ran the pass after Ed had gone to bed, one item per question the fourteen logs left in their *Questions* sections, in log order: **1206–1209** STYLE.md (log §6 items 1–4); **1210–1230** QUESTIONS.md (log §6 items 1–21); **1231–1239** SURFACE.md (log §6 items 1–9); **1240–1245** CLAUDE.md (log §6 items 1–6); **1246–1250** README.md (log §6 items 1–5); **1251–1256** PRODUCTION.md (log §6 items 1–6); **1257–1259** docs/OPERATING.md (log §6 items 1–3); **1260–1263** the package NOTES files (log §6 items 1–4); **1264–1266** design/MOBILE.md (log §7 items 1–3); **1267–1268** REVIEW-creation-session.md (log §6 items 1–2); **1269–1270** REPORT-deferred-evidence.md (log §7 items 1–2); **1271–1272** design/spec-pass/ (log §6 items 1–2); **1273** the card reviews (log item 1); **1274–1279** SPEC.md (log *Questions* items 1–6). All seventy-four stand under *Open*, each body the log's question verbatim.
 
 **1202–1205 are the pair-deck build's open findings (2026-09-07)**, claimed in the session that ran the two builds of 2026-09-06 (quorum-is-the-floor, pair-deck) after Ed had said *push* without answering them: **1202** what ⏳ means under the deck (dealt now vs held); **1203** where a revised pair sits in the ledger; **1204** the slow ceiling test on Ed's machine; **1205** `seat-matrix` red before either build. All four stand under *Open*.
 
