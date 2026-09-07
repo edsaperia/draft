@@ -82,12 +82,12 @@ export interface CardView {
   urgency: number;
   /**
    * Edge subtype (SPEC §8.3, Q48). Rival cards ask the conditional
-   * question and never offer "keep the current text"; a client must
-   * render that framing plainly. Absent on diagonals.
+   * question and never offer "keep the current text"; the card carries no
+   * prompt saying so (Ed, Q95: members need not learn the rules on every
+   * card — the `prompt` field left with SPEC v0.108, tidy item 60). Absent
+   * on diagonals.
    */
   subtype?: EdgeSubtype;
-  /** Card copy per SPEC §4.1, §8.3. */
-  prompt: string;
   a: OptionView;
   b: OptionView;
 }
@@ -148,12 +148,6 @@ export class ParticipantApi {
         urgency: top > 0 ? Math.max(0, Math.min(1, card.value / top)) : 1,
         kind: card.kind === 'diagonal' ? ('diagonal' as const) : ('edge' as const),
         ...(card.subtype ? { subtype: card.subtype } : {}),
-        prompt:
-          card.kind === 'diagonal'
-            ? 'Which matters more?'
-            : card.subtype === 'rival'
-              ? 'If this text changes, which change is better?'
-              : 'Which should the group adopt?',
         a: this.renderOption(card.aId),
         b: this.renderOption(card.bId),
       }));

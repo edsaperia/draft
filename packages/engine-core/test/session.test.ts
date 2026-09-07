@@ -891,15 +891,12 @@ describe('rival-pair gating (SPEC §8.3, Q48)', () => {
     const cards = api.nextCards(6, 5000);
     const rival = cards.find((c) => c.subtype === 'rival');
     expect(rival).toBeDefined();
-    expect(rival!.prompt).toBe('If this text changes, which change is better?');
+    // the card carries no prompt (Q95; the field left at SPEC v0.108) — the
+    // framing is the subtype, and the client says nothing on the card
+    expect('prompt' in rival!).toBe(false);
     // Neither option is the status quo.
     for (const option of [rival!.a, rival!.b]) {
       expect(option.changes.every((ch) => ch.before !== ch.after)).toBe(true);
-    }
-    // Incumbent-involving cards still ask the adoption question outright.
-    const incumbent = api.nextCards(6, 5000).find((c) => c.subtype === 'incumbent');
-    if (incumbent) {
-      expect(incumbent.prompt).toBe('Which should the group adopt?');
     }
     // And the API's own-judgment view supports revision from the client
     // side: p4 sees both judgments, neither locked while the ground stands.
