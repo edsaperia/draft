@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.102
+# Group Drafting Engine — Specification v0.103
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -206,7 +206,7 @@ Rules only. The reasoning behind each — the dated rulings, what they replaced,
 - **delegate the decision, not the field** (Q341): a question collects exactly the binding scalar — the threshold at the close — while the machinery it rides on (the ramp's shape and start) stays with the convenor and is ordinary. **The quorum is the exception** (Ed, 2026-09-02, Q1162 — Q341 reversed for 👥 alone): its question collects the **form and the number together**, each member answering as a share of the membership or as a fixed count, and mixed answers resolve at the settle — every answer is read against E as it stands when the question settles, and the answer demanding the most voters wins, its form and its number both standing. The promise each member holds is *no looser than what I accepted, judged when it settles* (Q1172). A question whose meaning depends on another setting is not served until that setting settles (`deps`, §9.7.1). → why: R-014, R-082
 - the **distribution is published without names**; while the question runs only the count of answers shows, to the convenor and the members alike.
 - the electorate is **E** as it stands when the answer is read (§8.2), re-read live on every answer and every roster event. A question **does not resolve while an invitation is outstanding, and never on one voice**. → why: R-015, R-088
-- **the roster is the ground of every answer**: an arrival or removal while a question runs is a ground shift — answers stand, their authors are told and may revise until the question settles. → why: R-017
+- **the roster is the ground of every answer**: an arrival or removal while a question runs is a ground shift — answers stand, nobody is told, and every answer stays revisable until the question settles as it always is (Ed, 2026-09-07, Q1231, v0.103). → why: R-017
 - members who join later **inherit** the constitution and are owed **nothing** for it: a setting that predates you is simply what the document says, and you read it like anybody arriving. What *is* addressed to a joiner is a power handed to them, which arrives as a grant and is acknowledged as one (§9.0b). → why: R-016
 
 The founding is optional in full: a convenor may set everything and delegate nothing, in which case there is no founding question and the document opens straight into the start. The cost is stated in R-001.
