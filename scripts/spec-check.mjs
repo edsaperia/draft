@@ -477,12 +477,15 @@ function checkWallets(pm) {
     if (!holdBind.includes("addEventListener('" + e + "'")) find('holds', `the propose hold does not release on ${e}`);
   if (sess.includes(`doc.querySelectorAll('[data-act="draft-propose"]')`)) find('holds', 'the propose hold is bound per button again — it must be delegated, or a render orphans it');
   // **The commit gesture is a switch, and the documentation of it must not
-  // drift from it** (backlog 184, 2026-08-28). Two frozen instruments follow
-  // `COMMIT_GESTURE` — SURFACE §7.2's bold word, read here, and the 🏛️ label
-  // in `card-copy.golden.json` — so flipping the trial is two edits and a
-  // `npm run copy-freeze`, and this is what says so out loud. Ed's call, B36:
-  // an agreement check, not a legality check, because the only thing that
-  // stops the trial's own documentation going stale is a red build.
+  // drift from it** (backlog 184, 2026-08-28). One frozen instrument follows
+  // `COMMIT_GESTURE` — SURFACE §7.2's bold word, read here — and one edit
+  // beside it that nothing freezes: the 🏛️ tooltip in `setup.js`, which names
+  // the gesture (the golden froze the 🏛️ label until Q1153 took the words off
+  // the commit; Ed, 2026-09-07, Q1234: the tooltip stays unfrozen and §7.2's
+  // sentence is the rule). So flipping the trial is two edits, and this is
+  // what says so out loud. Ed's call, B36: an agreement check, not a
+  // legality check, because the only thing that stops the trial's own
+  // documentation going stale is a red build.
   const gesture = strLit(sess, 'COMMIT_GESTURE');
   if (gesture !== 'click' && gesture !== 'hold') find('holds', `COMMIT_GESTURE is '${gesture}' — it is 'click' or 'hold'`);
   const said = (read('SURFACE.md').match(/The commit gesture is \*\*(\w+)\*\*/) || [])[1];
