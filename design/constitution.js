@@ -1237,6 +1237,7 @@ var CONSTITUTION = (() => {
             this.members.delete(this.convenor.id);
           }
           this.convenor.membershipSet = true;
+          this.convenor.isMember = event.isMember;
           break;
         }
         case "setting-set": {
@@ -3394,8 +3395,19 @@ var CONSTITUTION = (() => {
     get crownLapsed() {
       return this.crownLapsedFlag;
     }
+    /**
+     * The convenor as the view reports them. **`isMember` is the roster's
+     * answer, never the struct's** (Q920 (a), Ed 2026-08-27; built 2026-09-07):
+     * the field is set once at creation and 🎩's fold moves the seat on the
+     * roster, so a clerk's document served `isMember: true` for ever and the
+     * page read the clerk as a member — the founder's rail then carried the
+     * voice grant as news before 🍾, and 🍾 waited on an OK a clerk can never
+     * give (the seat matrix's clerk hat, cascading). The roster is the fact
+     * (entry 94); the fold keeps the field in step as well, for any reader of
+     * the struct itself.
+     */
     convenorRecord() {
-      return this.convenor;
+      return { ...this.convenor, isMember: this.members.has(this.convenor.id) };
     }
     /**
      * **Every change the pen has made, in order** (Q530, Ed 2026-08-22, asking

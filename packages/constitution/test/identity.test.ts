@@ -93,7 +93,11 @@ describe('🎩 re-tick keeps the founder’s identity (Q646)', () => {
     // carried back onto the convenor struct, so the clerk keeps their face
     expect(s.convenorRecord().name).toBe('Ash Bellamy');
     expect(s.convenorRecord().nameSet).toBe(true);
+    // and the record's membership is the roster's answer, not the value set
+    // at creation (Q920): a clerk's document must not serve isMember: true
+    expect(s.convenorRecord().isMember).toBe(false);
     s.setConvenorMembership(3, true); // and back in
+    expect(s.convenorRecord().isMember).toBe(true);
     const rec = s.memberRecords().get('ada')!;
     expect(rec.name).toBe('Ash Bellamy');
     expect(rec.picture).toBe('e🦊');

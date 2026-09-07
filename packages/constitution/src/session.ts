@@ -393,6 +393,10 @@ export class ConstitutionSession {
         }
         // the act, not the value (Q682): whichever way it went, 🎩 was asked
         this.convenor.membershipSet = true;
+        // and the struct's own field follows the seat (Q920): the roster is
+        // the fact, and `convenorRecord()` reads it, but nothing that reads
+        // the struct directly should meet a value from before the act
+        this.convenor.isMember = event.isMember;
         break;
       }
       case 'setting-set': {
@@ -2897,7 +2901,20 @@ export class ConstitutionSession {
   get quorumForm(): 'count' | 'share' { return this.quorumFormValue; }
   get crownLapsed(): boolean { return this.crownLapsedFlag; }
 
-  convenorRecord(): Readonly<typeof this.convenor> { return this.convenor; }
+  /**
+   * The convenor as the view reports them. **`isMember` is the roster's
+   * answer, never the struct's** (Q920 (a), Ed 2026-08-27; built 2026-09-07):
+   * the field is set once at creation and 🎩's fold moves the seat on the
+   * roster, so a clerk's document served `isMember: true` for ever and the
+   * page read the clerk as a member — the founder's rail then carried the
+   * voice grant as news before 🍾, and 🍾 waited on an OK a clerk can never
+   * give (the seat matrix's clerk hat, cascading). The roster is the fact
+   * (entry 94); the fold keeps the field in step as well, for any reader of
+   * the struct itself.
+   */
+  convenorRecord(): Readonly<typeof this.convenor> {
+    return { ...this.convenor, isMember: this.members.has(this.convenor.id) };
+  }
   /**
    * **Every change the pen has made, in order** (Q530, Ed 2026-08-22, asking
    * for the reasons to reach the record as well as the rail). `SettingState`
