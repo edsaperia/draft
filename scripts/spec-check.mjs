@@ -1280,6 +1280,38 @@ function checkClaudeMd() {
  * git never looks. Anywhere nearer the top, write the escape `\u0000`: the
  * string is identical at runtime and the file still merges.
  */
+/**
+ * SPEC §13's ledger of promises (Ed, 2026-09-07, Q1275): every mechanism the
+ * spec states and the tree does not hold is one row of one table, and the
+ * sentence that promises it carries no inline mark. Two assertions: each row's
+ * § lands on a section that exists (a top-level section is a heading, a
+ * subsection a bold-led line, as the CLAUDE.md pointer check reads them), and
+ * no `not yet built` / `unbuilt` mark survives outside the ledger itself.
+ */
+function checkLedger() {
+  note('SPEC §13 ledger — every row resolves, no inline unbuilt mark');
+  const spec = read('SPEC.md');
+  const at = spec.indexOf('\n## 13. ');
+  const end = spec.indexOf('\n## ', at + 1);
+  if (at < 0 || end < 0) { find('ledger', 'SPEC.md has no §13 for the ledger to live in'); return; }
+  const body = spec.slice(at, end);
+  const rows = [...body.matchAll(/^\| ([0-9][0-9., ]*[0-9a-z]?) \| /gm)].map((m) => m[1]);
+  if (!rows.length) find('ledger', 'SPEC §13 holds no ledger rows — the table is gone or its first column no longer starts with a section number');
+  for (const cell of rows) {
+    for (const n of cell.split(/,\s*/)) {
+      const esc = n.replace(/\./g, '\\.');
+      const re = n.includes('.') ? new RegExp(`^\\*\\*${esc}[. ]`, 'm') : new RegExp(`^#+ ${esc}\\. `, 'm');
+      if (!re.test(spec)) find('ledger', `SPEC §13 ledger row § ${n} points at no section of SPEC.md`);
+    }
+  }
+  const outside = spec.slice(0, at) + spec.slice(end);
+  for (const m of outside.matchAll(/not yet built|unbuilt/gi)) {
+    const line = outside.slice(0, m.index).split('\n').length;
+    find('ledger', `SPEC.md line ${line} carries an inline "${m[0]}" mark — a promise the tree does not hold is a §13 ledger row, never a mark on the sentence (Q1275)`);
+  }
+  note(`  ${rows.length} ledger rows resolve`);
+}
+
 function checkMergeable() {
   const WINDOW = 8000; // git's FIRST_FEW_BYTES, in xdiff/xutils.c
   const files = execSync('git ls-files -- packages scripts design docs package.json',
@@ -1312,6 +1344,7 @@ checkPicture();
 checkBannedWords();
 checkListJoiner();
 checkClaudeMd();
+checkLedger();
 checkMergeable();
 
 console.log(findings.length ? `\n${findings.length} disagreement(s)` : '\nspec and code agree');

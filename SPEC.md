@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.99
+# Group Drafting Engine — Specification v0.100
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -141,7 +141,7 @@ Tokens exist to make proposing cost something — anti-flooding, nothing more. E
 
     refund = stake × min( w / 0.5 , 1.5 )
 
-Co-signs and withdrawals refund fully; merges pool pro-rata. **The maximum caps accrual, and a cut to it clamps** (Ed, 2026-08-27, v0.80): the drip stops at the cap and a refund is never forfeited to it, so a wallet may stand above the maximum between changes — but a motion or a pen that **lowers** the cap clamps every wallet to the new maximum as it lands, which is what keeps the sentence the room agreed (*up to a maximum of y*) true whenever the room has just changed it. *Not yet built: the engine holds the accrual cap and does not clamp on a cut — see Q949.* **The drip runs on real minutes everywhere** (Ed, 2026-08-18, closing Q353): the %-of-window pacing is retired, so the unit the surface states — *an additional ✏️ every z minutes* — is the mechanism's own, a windowed document and a perpetual one fill the same way, and moving the close touches nobody's wallet: §4.3 made postponement bar-neutral, this makes it wallet-neutral. (240 minutes is the order of the old default — 10% of a two-day window; calibration owns the number, Appendix A.) (Calibration note, sim evidence 2026-08-14: at these defaults the economy is deliberately slack — no starvation observed at rosters 5–14, participants sit near the cap — so the drip is close to inert; it stays for population-scale headroom, and the wall-clock drip/threshold pairing is confirmed to feel soft-early/hard-late as intended, Q8.) The curve is continuous because cliffs concentrate gaming at the boundary; junk self-punishes in proportion, near-misses cost little. w is the peak rather than exit-time probability by design: a good early candidate displaced by a later, better draft is not punished for the improvement it provoked, and junk never peaks high. Calibration histories appear in the record as audit data; their use is the context's business.
+Co-signs and withdrawals refund fully; merges pool pro-rata. **The maximum caps accrual, and a cut to it clamps** (Ed, 2026-08-27, v0.80): the drip stops at the cap and a refund is never forfeited to it, so a wallet may stand above the maximum between changes — but a motion or a pen that **lowers** the cap clamps every wallet to the new maximum as it lands, which is what keeps the sentence the room agreed (*up to a maximum of y*) true whenever the room has just changed it. **The drip runs on real minutes everywhere** (Ed, 2026-08-18, closing Q353): the %-of-window pacing is retired, so the unit the surface states — *an additional ✏️ every z minutes* — is the mechanism's own, a windowed document and a perpetual one fill the same way, and moving the close touches nobody's wallet: §4.3 made postponement bar-neutral, this makes it wallet-neutral. (240 minutes is the order of the old default — 10% of a two-day window; calibration owns the number, Appendix A.) (Calibration note, sim evidence 2026-08-14: at these defaults the economy is deliberately slack — no starvation observed at rosters 5–14, participants sit near the cap — so the drip is close to inert; it stays for population-scale headroom, and the wall-clock drip/threshold pairing is confirmed to feel soft-early/hard-late as intended, Q8.) The curve is continuous because cliffs concentrate gaming at the boundary; junk self-punishes in proportion, near-misses cost little. w is the peak rather than exit-time probability by design: a good early candidate displaced by a later, better draft is not punished for the improvement it provoked, and junk never peaks high. Calibration histories appear in the record as audit data; their use is the context's business.
 
 ---
 
@@ -217,9 +217,9 @@ The founding is optional in full: a convenor may set everything and delegate not
 
 **9.1 Distributed by default.** The baseline is a fully remote window, possibly days long. Co-presence is optional; a projector is another client rendering the chamber view (room mode: ticker, the stuck set, closing sweep). Nothing in the mechanism references a room.
 
-**9.2 Two publications.** Common knowledge is made by publication. **Opening:** roster, constitution, and starting text, hash-anchored and pushed to all. **Closing:** the text and the record. Between them the chamber view is ambient: adoptions land with a chime, the rolling log hash and deadlocked races are visible, live standings never are. *(The chime and the gazette are promised here and not yet built — SURFACE.md E28–E30, Q465.)*
+**9.2 Two publications.** Common knowledge is made by publication. **Opening:** roster, constitution, and starting text, hash-anchored and pushed to all. **Closing:** the text and the record. Between them the chamber view is ambient: adoptions land with a chime, the rolling log hash and deadlocked races are visible, live standings never are.
 
-**9.3 Presence and access.** Participation is bouts, not attendance; c_p absorbs intermittency. Roster changes follow §9.6a — freely before the start, by motion after. Where a change happens: a joiner receives the base grant plus drip accrued to date (capped); F recomputes from current E; a removed member's live candidates remain live, flagged author-departed, and their cast judgments stay counted; the floor recomputation is announced so races parked at the old floor never complete silently (Q10; unbuilt, SURFACE.md E29). Who may read is the 🌍 setting — constitutional, held like any constitutional setting. **Foundership carries a read independent of 🌍**: the setting decides who may read the document *besides* the people it is already about, and the convenor is one of those people whether or not they are a member. It is a read and nothing else — no judgment, no proposal, no quorum place — and it ends when the office does. → why: R-042. There is no observer role: who may read is settled by 🌍 alone, and nothing is known about a reader who is not a member. → why: R-030. The record's distribution is the convenor's.
+**9.3 Presence and access.** Participation is bouts, not attendance; c_p absorbs intermittency. Roster changes follow §9.6a — freely before the start, by motion after. Where a change happens: a joiner receives the base grant plus drip accrued to date (capped); F recomputes from current E; a removed member's live candidates remain live, flagged author-departed, and their cast judgments stay counted; the floor recomputation is announced so races parked at the old floor never complete silently. Who may read is the 🌍 setting — constitutional, held like any constitutional setting. **Foundership carries a read independent of 🌍**: the setting decides who may read the document *besides* the people it is already about, and the convenor is one of those people whether or not they are a member. It is a read and nothing else — no judgment, no proposal, no quorum place — and it ends when the office does. → why: R-042. There is no observer role: who may read is settled by 🌍 alone, and nothing is known about a reader who is not a member. → why: R-030. The record's distribution is the convenor's.
 
 **9.4 Sessions repeat.** Next session, the adoption threshold resets and the backlog re-enters stake-waived, carrying graveyards, camp maps, and rationales as briefing context — not as evidence. Between sessions, authors revise against everything the record taught; incubation is where bridges that need longer than a window get built.
 
@@ -351,11 +351,31 @@ Non-contiguous footprints render as multi-hunk diffs with collapsed context. Wid
 
 ---
 
-## 13. Build order (non-normative)
+## 13. Build order and the ledger of promises (non-normative)
 
 1. **Engine core + textual patch machinery** — a pure, deterministic, UI-free, LLM-free library. 2. **Simulation harness** — LLM personas as ordinary clients of the participant API, calibrating mechanics before any live cohort. 3. **LLM layer** — semantic composition (Gate 2), the dedup gate, surgery proposals, geometry seeds, loss accounts, the coherence auditor; isolated behind interfaces so 1–2 never depend on a network call. 4. **Product**. 5. **Pilot** — a real session with a real group.
 
-Steps 1–4 are built; the staged rollout that replaced this list is `PRODUCTION.md`.
+Steps 1, 2 and 4 are built; of step 3 only the dedup gate's equivalence oracle and the race labeler exist; the staged rollout that replaced this list is `PRODUCTION.md`.
+
+**The ledger.** Every mechanism this spec states and the tree does not hold is one row here, and nowhere else: the sentence that promises it stays a plain rule, carries no *not yet built* mark, and the row is deleted when the mechanism lands (Ed, 2026-09-07, Q1275; §10's auditor stays promised by Q1274). `spec-check` asserts that every row's section exists and that no inline mark survives.
+
+| § | Promise | What the tree holds |
+|---|---|---|
+| 2.2 | Gate 2, semantic composition — both authors confirm a joint realization | nothing; the oracle (`packages/engine-core/src/oracle.ts`) has `checkEquivalence` and `describeRace` only |
+| 2.5 | Surgery — carving a contested instance into its own race, and normalising partial-overlap rivals | comments only (`text/patch.ts`, `text/rebase.ts`) |
+| 4.2, 9.2 | The chime and the gazette — adoptions land with a chime; the chamber view is ambient | nothing (SURFACE.md E28–E30, Q465) |
+| 5.1 | Embeddings in the submission gate, and the *differentiate* choice | `dedup-gate.ts` has edit distance plus the oracle's equivalence, co-sign and insist |
+| 5.2 | Behavioural probes of flagged-similar pairs, and the auto-merge | nothing |
+| 6.1 | The briefing — heat, camps, the *why* digest, the graveyard, the bridge bar | nothing; *camp* appears once, in a comment |
+| 6.2 | The three-tier dominated account — facts, the winners' words, hypothesis — and the near-resolution invitation | `dominated()` (`session.ts`) names the candidates; no account is built |
+| 6.3 | Stratified probes measuring a bridge's minimum support across camps | nothing |
+| 6.4 | Geometry — classifying deadlocks and seeding midpoint or unbundled drafts | nothing |
+| 7 | A cut to the maximum clamps every wallet as it lands | the engine holds the cap (`tokens.ts`) and does not clamp on a cut (Q949, R-083) |
+| 8.4 | Notifications — the batched, magnitude-only digest | nothing; the only mail is the operator's `notifyEmail` and the invitation |
+| 9.1 | Room mode — the ticker, the stuck set, the closing sweep | nothing |
+| 9.3 | The floor recomputation announced, so a race parked at the old floor never completes silently | nothing (Q10; SURFACE.md E29) |
+| 10 | The coherence auditor — a standing account, 4 ✏️ and no drip, patching drift | the `machineAuthored` flag on a candidate; the card retired 2026-08-29 (R-078), the setting kept for replay |
+| 12 | Candidates as toggleable overlays; the care map as document heat | nothing; the surface's rule is that the prose carries no highlight (SURFACE.md, `suggestion-anchor`) |
 
 ---
 
