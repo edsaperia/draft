@@ -40,6 +40,26 @@
  * — `filed` is in it because a run carried green over a growing pile of filed
  * rows is exactly what a gate needs to be able to see.
  *
+ * **Where it stands, 2026-09-07** (the pass that re-read it against HEAD).
+ * Three harness faults were fixed then and are named at their rows: an event
+ * raised by a step that **did not happen** — skipped by `ifHat`, or thrown —
+ * is no longer asserted against the seats (`D.skipped`); the
+ * two steps that pressed OK on the founder's own 💡 and ⚖️ are **retired**,
+ * Ed's ruling of 2026-09-01 having taken those cards off the founder's page
+ * (`selfSet` on `E4` is what the founder carries instead); and a seat whose
+ * **snapshot throws** is reported rather than dropped out of every audience in
+ * silence. What is left red is the product, and each of the three is a
+ * question already on the register:
+ *   · **Q919 (b)**, `S.seen` never rebuilt from a poll — a member's page open
+ *     across a later founder act withholds every card below the one that
+ *     changed, for ever. `early` and `lapsed` report it on E4, E5 and E10; the
+ *     `late` seat, freshly booted, carries all of them, which is the proof.
+ *   · **Q920**, `view.convenor.isMember` stale for a clerk — the clerk
+ *     document never begins, and every clerk row after `begin` is that.
+ *   · the **applicant's live page** has no branch at all: the server's
+ *     applicant payload carries no `view` (`server.ts:1448`), and `remoteCS`
+ *     reads `self.v.view.*` unguarded, so the seat is dead from `knock` on.
+ *
  * Two things learned building it (2026-08-27), both load-bearing:
  *  · **Presence is stamped hourly** (`SEEN_EVERY_MS` in session.ts), so a
  *    page that merely polls does not keep a seat alive under a one-minute 💤 —
@@ -213,7 +233,17 @@ const ORACLE = {
   closed: (p) => { const v = p && p.view; return v && 'closed' in v ? v.closed !== null : null; },
 };
 const E8 = (key) => ({ id: 'E8', key, at: 'seat-early' });
-const E4 = (key) => ({ id: 'E4', key, at: 'begin', oracle: 'gates' });
+// **A gate never withholds from the seat that set it** (Ed, 2026-09-01;
+// `gateSelfSet` in `design/session-view.html`, SURFACE C8/E8). 💡 and ⚖️ are
+// acknowledged for the founder the moment they open — no card, no press, and
+// nothing in `S.okd` — so on the founder's seat the entry is carried by
+// exemption and there is nothing in the rail, the band or the readout to read
+// it off. The exemption is the founder's whole seat rather than a
+// per-document test, because a gate is not a setting and cannot be delegated.
+// `selfSet` is the one escape hatch this table gives an audience row, beside
+// E24's `orSigned`, and it says so at the finding line rather than silently.
+const E4 = (key) => ({ id: 'E4', key, at: 'begin', oracle: 'gates',
+  selfSet: (seat) => seat.role === 'founder' });
 const E5 = (key, at) => ({ id: 'E5', key, at, oracle: 'owed' });
 const STEPS = [
   // ---- before 🍾 --------------------------------------------------------
@@ -274,10 +304,15 @@ const STEPS = [
   // ---- live ---------------------------------------------------------------
   { id: 'begin', epoch: 'live', kind: 'hold', seat: 'founder', key: 'begin',
     events: [E4('canpropose'), E4('canjudge'), { id: 'E25', key: 'strapply', at: 'begin' }] },
-  { id: 'ok-propose', epoch: 'live', kind: 'ok', seat: 'founder', key: 'canpropose', ifHat: 'member',
-    events: [E4('canpropose'), E4('canjudge')] },
-  { id: 'ok-judge', epoch: 'live', kind: 'ok', seat: 'founder', key: 'canjudge', ifHat: 'member',
-    events: [E4('canpropose'), E4('canjudge')] },
+  // `ok-propose` and `ok-judge` are **retired** (2026-09-07). They opened 💡
+  // and ⚖️ on the founder's page and pressed their OK; since Ed's ruling of
+  // 2026-09-01 (`gateSelfSet`) the founder has no such card to open, so both
+  // steps could only ever report *no canpropose card to OK on the founder's
+  // page* — a walk driving a control the surface no longer offers, which is
+  // the harness testing something else. E4 keeps its assertion on `begin`,
+  // where the gates open, and the founder's half of it is `selfSet` above.
+  // Nothing else was riding them: a member's gate is news they acknowledge on
+  // their own clock, and E4 asserts it as news, not as an acknowledgement.
   // 🌍's own promise — *at `public` the stranger reads the text* — is **not
   // rail-expressible** (entry 82): the door's cards are `strlogin` and
   // `strapply`, and neither depends on the rung, so the stranger's rail is
@@ -473,6 +508,13 @@ async function runDocument(hat) {
   const D = {
     hat, slug: null, docbase: null, title: 'Seat matrix ' + Date.now(),
     stamp: String(Date.now()).slice(-8), applicantId: null, closed: false,
+    // the steps that did not happen on this document, by index — skipped by
+    // `ifHat`, or thrown. An event raised by a step that never ran is
+    // asserted against a document where the thing never happened, and every
+    // seat inside the audience is then reported for not carrying news nobody
+    // sent (2026-09-07: three E34 rows and one E10 on the clerk hat, all of
+    // them the harness talking to itself)
+    skipped: new Set(), snapDead: new Set(),
     seats: {}, stoodAt: {}, findings: [], noRule: [], filed: [], errors: [], refused: [], unstood: [], steps: [],
     actorOf: (ev) => (STEPS[ev.at] || {}).seat,
   };
@@ -489,8 +531,20 @@ async function runDocument(hat) {
     const label = `${step.epoch.padEnd(6)} · ${step.id}` +
       (evs.length ? ' · ' + evs.map((e) => e.id + ' ' + (e.key ?? '(no key)')).join(', ') : '');
     say(`⏭ ${label}`);
+    // the runner's own `ifHat` test, read here so the assertion can see it:
+    // each runner decides whether to act, and only this loop knows which
+    // events the decision silences
+    if (step.ifHat && step.ifHat !== D.hat) D.skipped.add(i);
     let note = null;
     try { note = await RUN[step.kind](step, D); } catch (e) {
+      // **A step that could not be stood raised no event either.** The
+      // failure is already reported under `unstood`, with its reason; going
+      // on to assert that every seat inside the audience carries news the
+      // step never sent adds a finding per seat about a fiction, and buries
+      // the one line that says what actually went wrong (2026-09-07: the
+      // clerk hat's 🍾 refusal was reported once and then re-reported as
+      // eight audience findings across E4, E5 and E24).
+      D.skipped.add(i);
       D.unstood.push(`${hat} · ${step.id}: ${String(e && e.message || e)}`);
       say('   ✗ ' + String(e && e.message || e));
     }
@@ -524,7 +578,11 @@ async function standUp(D, name) {
   return s;
 }
 function attachNets(D, name, page) {
-  page.on('pageerror', (e) => D.errors.push(`[${D.hat}/${name}] ` + String(e)));
+  // the first frame of the stack too: `String(e)` is the message alone, and a
+  // page error on a surface no walk opens by hand is unfindable without the
+  // line it threw on (2026-09-07, the applicant's `self.v.view` getters)
+  page.on('pageerror', (e) => D.errors.push(`[${D.hat}/${name}] ` + String(e) +
+    (e && e.stack ? ' · ' + String(e.stack).split('\n').slice(1, 3).map((l) => l.trim()).join(' ← ') : '')));
   // a refused command is a failure even where the surface recovers (journey's rule)
   page.on('response', (r) => { if (r.url().includes('/api/') && r.status() >= 400) {
     const at = D.refused.push(`[${D.hat}/${name}] ` + r.status() + ' ' + r.request().method() + ' ' +
@@ -945,7 +1003,20 @@ async function snapshot(D) {
       const v = await viewAs(D, name);
       out[name] = { rail: r.rail, band: r.band, readout: r.readout, view: mask(D, v) };
     } catch (e) {
-      out[name] = { unstood: 'snapshot failed: ' + String(e && e.message) };
+      // **A seat whose snapshot throws is not a seat that carries nothing.**
+      // `assertStep` skips an `unstood` seat, so a page that cannot be read
+      // drops silently out of every audience from that step on and the run
+      // reports itself green over it — which is how the applicant's dead
+      // live page went unseen from the step that stands it to the close
+      // (2026-09-07). Once per seat per document: the cause is one page, and
+      // a line per step would bury the rest of the report.
+      const why = 'snapshot failed: ' + String(e && e.message).split('\n')[0];
+      out[name] = { unstood: why };
+      if (!D.snapDead.has(name)) {
+        D.snapDead.add(name);
+        D.unstood.push(`${D.hat} · seat ${name} could not be read from here on: ${why}`);
+        say(`   ✗ seat ${name} · ${why}`);
+      }
     }
   }
   return out;
@@ -971,6 +1042,13 @@ function mask(D, v) {
 /* ---- the assertion ----------------------------------------------------------- */
 function assertStep(D, step, evs, snap) {
   for (const ev of evs) {
+    // an event whose own step this hat skipped never happened on this
+    // document: nothing was sent, so nobody is owed it and a seat that does
+    // not carry it is right
+    if (D.skipped.has(ev.at)) {
+      say(`   · ${ev.id} ${ev.key ?? '(no key)'} — not asserted: ${STEPS[ev.at].id} did not run on the ${D.hat} hat`);
+      continue;
+    }
     const row = EVENT[ev.id];
     const cell = row ? row.Audience : null;
     if (!row) { D.noRule.push({ hat: D.hat, step: step.id, event: ev.id, cell: '(no such row)', why: 'SURFACE §2 has no ' + ev.id }); continue; }
@@ -1006,10 +1084,16 @@ function assertStep(D, step, evs, snap) {
       const okd = !!(snap[name].readout && (snap[name].readout.okd || []).some(match));
       const mv = (snap[name].view || {}).view || {};
       const signed = !!(ev.orSigned && mv.closed && mv.closed.mySignature);
-      const carries = has || okd || signed;
+      // `inAud &&`: an exemption is a way of **satisfying** an audience, never
+      // evidence of carrying. Read the other way it manufactures a finding on
+      // the clerk hat, where the founder is outside *every member* and holds
+      // no gate to be exempt about (2026-09-07, first run with `selfSet`).
+      const self = inAud && !!(ev.selfSet && ev.selfSet(seat, step, D, ev));
+      const carries = has || okd || signed || self;
       const how = rail.some(match) ? 'carries it'
         : has ? 'carries it as a tab (' + ((snap[name].band || []).find((e) => match(e.key)) || {}).kind + ')'
-        : okd ? 'acknowledged it' : signed ? 'signed it' : 'does not carry it';
+        : okd ? 'acknowledged it' : signed ? 'signed it'
+        : self ? 'holds it by the seat-that-set-it exemption' : 'does not carry it';
       if (carries === inAud) continue;
       let module = '';
       if (ev.oracle) {
