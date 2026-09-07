@@ -114,10 +114,18 @@ Glyph names are stable (tabulated 2026-09-07, Q1208; the founding order's own gl
 
 - **T1 · Task titles are Title Case**; bare nouns drop their article (*Title*,
   *Link*, *Text*).
-- **T2 · A title says what kind of answer it wants**: *Is the Founder a
-  Member?* wants yes or no; *How many ✏️s do members start with?* wants a
-  number. **Quorum** and **Approval threshold** stay nouns — terms of art that
-  plainly want a number.
+- **T2 · A title says what kind of answer it wants, and that there is a
+  choice to make**: *Is the Founder a Member?* wants yes or no; *How many
+  ✏️s do members start with?* wants a number; *Choose the Quorum* wants a
+  number and says whose choice it is. All three are examples of the shape,
+  not a list of cards — the second has never been a title. **A settings
+  title is an ask, an imperative or a question, chosen case by case for
+  whichever reads most naturally; a bare noun is not an ask** (Ed,
+  2026-09-07, Q1209: *it should be clear the user has a choice to make, and
+  what the nature of that choice is* — reversing the exemption that had kept
+  *Quorum* and *Proposal Pass Threshold* as nouns). The review of every title
+  against this is owed (Q1209 in QUESTIONS.md's Backlog); what a settled
+  card is titled is Q331.
 - **T5 · A rename reaches the option labels**, not just the headings — **one
   label per rung, everywhere**: the founder's radio, the member's ladder and
   the composer's lane say the same words (Q620), which since Q1112 (b) they do

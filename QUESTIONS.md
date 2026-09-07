@@ -112,7 +112,6 @@ The index, in the section's own order (the first seven were pinned at the front 
 | 1016 | The seat-matrix row for a shielded Text | 2026-08-29 | a rider on the next harness change | `scripts/seat-matrix.mjs` |
 | 1033 | A motion-backed 👑 question at a vacated seat | 2026-08-29 | answered (a), owed | R-060; `crownSeatVacated` |
 | 1205 | `seat-matrix` is red | 2026-09-06 | open | `scripts/seat-matrix.mjs` |
-| 1209 | §4 T2's number example names a title that does not exist | 2026-09-07 | waiting on Ed | STYLE.md §4 T2; STYLE audit item 79 |
 | 1210 | 189 and 196 — the tiers they name have left the code | 2026-09-07 | waiting on Ed | QUESTIONS.md; Q189, Q196; SPEC §8.3, §3.2; `session.js:895` |
 | 1211 | 211 — the shrug is gone | 2026-09-07 | waiting on Ed | QUESTIONS.md; Q211; SURFACE §9.1; Q1096–Q1103 |
 | 1212 | 278 — every half it left open has been built | 2026-09-07 | waiting on Ed | QUESTIONS.md; Q278; SURFACE §8, K28, K30; Q996, Q1075–1079 |
@@ -542,8 +541,6 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 
 1205. **`seat-matrix` is red, and was before either of 2026-09-06's builds** — 56 findings and a `TypeError … reading 'closed'`, identical from a worktree at `b62fcbc`. CI's `walks` job does not run it, so nothing went red. Needs a look before it is trusted again; until then a claim that a seat change is safe cannot lean on it.
 
-1209. **§4 T2's number example names a title that does not exist.** (Raised by the documents pass of 2026-09-07, STYLE.md log §6 item 4.) *"How many ✏️s do members start with? wants a number"* — no card has carried that title; ⏱️ is *Proposal Rate* and states its rule as one sentence (item 79). The T2 row's examples are current. Readings: (a) keep it as an illustration of the rule's shape; (b) replace it with a live title that wants a number — none is a question any more (*Quorum*, *Proposal Pass Threshold* are the nouns the same bullet exempts), which is itself a sign the example has aged; (c) drop the number half and keep *Is the Founder a Member?*.
-
 1210. **189 and 196 — the tiers they name have left the code.** (Raised by the documents pass of 2026-09-07, QUESTIONS.md log §6 item 1.) 189 asks what to call the rail's *hot / warm / cool* tiers; 196 where their 0.66 / 0.33 cuts should sit. `design/session.js` has no `'warm'` or `'cool'` today and *tier* survives in one comment (`session.js:895`); every rail entry has been one size since 2026-08-16 (the items themselves say so). Readings: (a) both close — there is nothing left to name or move; (b) 189 survives as a vocabulary note for SPEC §8.3's *hot set* against §3.2's *cold*, which are the two real terms; (c) keep both as written. The pass could not tell whether the tiers were retired by a ruling or fell out of a rebuild.
 
 1211. **211 — the shrug is gone.** (Raised by the documents pass of 2026-09-07, QUESTIONS.md log §6 item 2.) *Undoing indifference costs two clicks* was about a shrug control that hid once a lane was chosen. Indifference is now the labelled last radio of the commit row (SURFACE §9.1, Q1096–Q1103). Whether clearing an indifferent verdict still takes two clicks is unmeasured. Readings: (a) close — a radio in the trio has the same undo as its neighbours; (b) measure it on a card before closing; (c) keep.
@@ -678,6 +675,7 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 
 | # | Title | Raised | State | Pointers |
 |---|---|---|---|---|
+| 1209 | Every settings title is an ask — imperative or question, case by case; the noun titles go | 2026-09-07 | answered 2026-09-07, owed — a copy pass over the 22 titles, waiting on Q331 | STYLE T1–T2; `design/copy.js` CARDS; the copy and founding goldens; Q331 |
 | 1202 | ⏳ means *waiting for other people to vote*; a race you can still act on keeps its action mark, dealt or not | 2026-09-06 | answered 2026-09-07, owed — the page still lights on the hand | SURFACE E13, L4, §6; SPEC §8.3b; `itemsFromView`'s `dealt`; `bestPairFor` |
 | 1009 | SURFACE.md is over its size budget and only grows | 2026-08-28 | both halves built (`18710a9`; §8.1 is a table since Q1122–1128); the limit itself lives in plan-queue (log Q16) | Q1006 (DECISIONS); Q1051 |
 | 996 | A per-decision reveal rung for 👁️ | 2026-08-28 | answered, owed — the catalogue still reads `never · after` | SPEC §3.5a, §9.7.1 |
@@ -691,6 +689,10 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 | 251 | The token economy has no perpetual form | 2026-08-16 | largely overtaken — the drip runs on real minutes; the calibration worry stands (log Q12) | `proposal-rate` |
 | 252 | A perpetual document loses the reset | 2026-08-16 | open | SPEC §9.4, §4.5 |
 | 259 | The founding ceremony is a third ceremony, and wants designing | 2026-08-16 | overtaken — the founding is built (log Q11) | SURFACE §8 |
+
+1209. **Every settings title is an ask — imperative or question, case by case; the noun titles go**
+
+    **Answered by Ed, 2026-09-07**, on a question that had only asked about T2's examples: *It should be examples. But I think we should change the titles! e.g. "Quorum" => "Choose the Quorum"*; and on the scope: *review all titles and use whatever you think is most natural case by case; an imperative or a question; it should be clear the user has a choice to make, and what the nature of that choice is.* STYLE T2 says so since the same day. **Owed, as a plan:** a review of the 22 settings-card titles in `design/copy.js`'s CARDS block — today thirteen nouns (*Title, Link, Your Email, Admissions, Applications, Your Name, Your Picture, Text, Proposal Pass Threshold, Quorum, Anonymous Proposals, Proposal Rate, Visibility*), seven questions, two acts — each re-titled as an imperative or a question by whichever reads most naturally, presented to Ed as a table (old · new · why) before it lands; then `copy-freeze`, `founding-golden --update` and `qa:freeze`, and every walk that asserts a title (`applicants-walk`'s labels, `journey`, the probes). **Waits on Q331** — whether a settled card keeps its asking title — because *Choose the Quorum · 5* at the head of a constitution is a different sentence from *Quorum · 5*, and the plan should change each title once.
 
 1202. **⏳ means *waiting for other people to vote*; a race you can still act on keeps its action mark, dealt or not**
 
