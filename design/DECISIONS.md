@@ -3295,3 +3295,105 @@ Everything below 260 that does not appear as an open, deferred or backlog item a
 
 Two exceptions worth knowing. **46 is parked, not spent** — diagonal-card visual distinction, to be decided with the palette work. And **73** was raised in chat but folded into 72(b), so it stands for nothing on its own.
 
+## SURFACE.md, the history lifted 2026-09-07 (the docs pass)
+
+Lifted verbatim from `SURFACE.md` by the docs pass of 2026-09-07 (Ed, 2026-09-07: *looking especially for things that are no longer relevant that can be removed, and attempting to synthesise the rest*), on the pass's rule that history moves out of rule files: a SURFACE rule states the rule and points at its reason, and what it replaced, what it reversed and when it was built is history. Each fragment is quoted as it stood at `5ddb14c`, keyed by the rule, row or paragraph it left, in the file's own order. Where a whole paragraph was re-cut into a table (§8's *Outside ORDER* and *The band*) the paragraph is here in full. Nothing here changes a ruling; the rule that survives in `SURFACE.md` cites the same `Qnnn` / `R-nnn` / entry it always did.
+
+### §1 Rules
+
+- **C4**, a sentence removed as stale rather than moved: *🏛️'s label follows the commit gesture — it is the one control whose words name the gesture that works it, and it reads \*Hold to ask everyone\* in the hold position.* No such string exists in the tree; the 🏛️ commit is the glyph alone (T47; `card-copy.golden.json` holds `"🏛️"` and nothing longer for it), and what follows the gesture is the button's **tooltip** — `setup.js:934`, *Ask all members — a full one-second assembly* / *… hold*. C4 now says *🏛️'s tooltip names the gesture that works it (§7.2)*.
+
+### §2 The event matrix
+
+- **E2**, channel: *clause (the distribution strip retired — Q1176)*.
+- **E34**, close: *the row line: on the re-send (Q1030, Ed 2026-08-29 — not on the mail actually sending, which nothing records); the news card: OK*.
+- **E35**, channel: *(Ed, 2026-08-29, Q1021 answered as (b), Q1034)*.
+
+### §3 Exceptions
+
+- **Y19**, what: *The ✒️ commit under an unacknowledged pen stays, dark, with \*Your pen is waiting in your tasks\** — the quoted sentence is now `penWait` in `design/copy.js`: *Founder Actions ✒️ are waiting in your tasks — accept them and this turns.* (the pen was renamed Founder Actions at Q1121); the row quotes the live string.
+- **Y20**, what: *(reading 1194, 2026-09-05)*; ruling: *Q613; 📄 Q744; the 👑 clause struck by CP5 (Q1100), 2026-08-31*.
+- **Y27**, why, the post-mortem sentence: *Withholding on an acknowledgement kept per browser meant a fresh profile could never reach the judging surface at all*. The ruling's own section is *2026-09-01 — a gate never withholds from the seat that set it (SURFACE Y27)*, above.
+
+### §4 Page keys
+
+- The paragraph: *\*\*Two pairs stopped being asymmetric\*\*: 🪪 and 🤝 are `admission` and `applications` on either side, so `MID` carries neither, and a log written under the old id folds at load (`foldLegacyIds` in `session.ts`). The page's word `'roster'` still means \*the membership holds this setting\* — that is the delegation sentinel, not a key. → why: DECISIONS.md, \*SURFACE.md, pruned\* (Q903).* Restated as the current fact; the *stopped being* half is *SURFACE.md, pruned (2026-08-29, entry 191)*, above.
+
+### §5 Things the spec used to say about the surface
+
+The heading and its lead (*What SPEC.md used to state about the surface, kept here:*) go; the section is now *5. The head of the document*, kept as a section by Ed's ruling (Q1004: *§5 survives with its one bullet*). Two bullets left it:
+
+- *\*\*How a constitutional motion is put\*\* — the one-second 🏛️ commit, by whichever gesture the switch is in: C4 and the hold ladder, §7.2.* — a pointer to two rules stated in full; nothing else.
+- *\*\*The 👑 question\*\* — \*refuse\* is the Founder's word, \*reject\* the membership's; the room is told nothing while it waits (Q1015). The task and the card: E12 and §9.* — the vocabulary is STYLE T8's; the bullet survives as *the room is told nothing while it waits (Q1015; E12's audience). Refuse is the Founder's word and reject the membership's: STYLE T8.*
+
+### §7.2 The hold ladder
+
+- The paragraph's frozen-instruments sentence: *Two frozen instruments follow it — this paragraph's bold word, which `spec-check` reads against the constant, and the 🏛️ label in `card-copy.golden.json` — so flipping the trial is \*\*two edits and a `npm run copy-freeze`\*\*, not one word. Trial of 2026-08-28 (backlog 184).* The golden holds no gesture-naming 🏛️ string (its 🏛️ entries are `"🏛️"` and *One 🏛️ each — withdraw yours first*; the only *one-second* string in it is 🍾's tooltip, which does not follow the switch); the second instrument is the 🏛️ tooltip in `setup.js`, and the paragraph now says so. The name `short-press-nudge`, which appeared nowhere but this paragraph, became the symbol it meant, `nudgeHome` (`design/session.js`).
+- **W16**, the post-mortem: *A hold that a boundary event can cancel is cancelled by its own surface — a render detaches the button under the pointer, and `.holding`’s own shrink insets the hit box by 0.78 px under a stationary cursor. What survives that is a commit resolved by \*\*id\*\* rather than by node.* The ruling is *A hold is released by letting go, and by nothing else* (Ed, 2026-08-22), above, and CLAUDE.md's gotcha of the same name; `spec-check` asserts the release set.
+
+### §8 The founding order and the band
+
+- **Row 9 (🪪)**, section: *members, first — its own clause, above 🤝, because an application pays it (Ed, 2026-08-26)*.
+- **Row 16 (🏛️)**, hidden until: *(Q605, narrowed by Q750, widened by Q829)*.
+- **The *Outside ORDER* paragraph**, re-cut into a table and a 🌡️ paragraph, as it stood:
+
+> Outside `ORDER`: 🪜 (a tab in 🌡️'s stack; no clause, no rail entry — Q512, and therefore **answered by 🌡️'s commit on both its branches**, F18); the `ans-*` answer tasks (**a tab in the delegated setting's own stack, and no clause of their own** — Q786–Q788; `stackOrder` puts the question in front while it is asking and the watcher in front once it is answered; and 🌡️'s answer body, alone among them, **is a ladder of exactly three rungs, most-protective-first** — 90 · 80 · 60, each stating Ed's own sentence (*For a proposal ✏️ to pass, nearly all members that voted on it must prefer it to the alternatives.* and its two siblings) — **with no free-number block** (Q1158, reversing Q1104 (b) for this card alone; the pattern survives on 🪜, 👥 and ⏱️) **and no ceiling line** (Q1159, reversing Q840's note — `/pairwise` carries the account, and where a meaning line has nothing true to say it says nothing, T39). Each rung still carries its grey meaning line where one is true (*In a membership of 5, 4 of 5 must vote for it by the end*), read live so an arriving member visibly moves it. The method note is Ed's own two sentences naming Bradley–Terry–Davidson and probability, linking `/pairwise` (Q1156, T15 as amended). The founder's own 🌡️ set card carries the same rungs, the same sentences and the same lines, and 🪜's *Rising* carries them again as starting points, dimmed where the start would not be below the close. Entry 165); ✉️ ❌ (**a door stands by its result**, entry 96: ✉️ on *Invitees*, ❌ on *Proposed for removal*, both from the birth — ✉️ because it is the founder's invitation box before the start, ❌ because withdrawing an invitation is a kind of removal — each wearing its own ✒️/🛡️ pair over the act, entry 94; and ✉️ **stands in the founder's rail as a task** once the Membership rules stand, beside whatever the founding is asking next, until the first invitation goes out or 🍾 is pressed — F23, entry 181); the `adm:` admit cards (one per applicant still asking, in the *Applicants* pile, absent at 🪪 *pen* where an application is admitted on submit — entry 96); the ✒️/🛡️ power tabs under every held-able setting (*Can the Founder Make Amendments at Will?* / *Does the Founder Have a Veto?* — Q615; on the doors *Can the Founder Invite / Remove at Will?* / *Does the Founder Have a Veto over Invitations / Removals?*); 🥂.
+
+- **The band paragraph** and **The Document** paragraph, re-cut into one table, as they stood:
+
+> **The band** (`SEC`): the opening run (`lead`) — title wearing 🪶 ✒️ 🛡️, the link, 📧 pre-save, 🌍, the Founded line wearing the two grants' ✒️ 🛡️ — then **Membership** (`members`: the rules 🪪 · 🤝 · 💤 · 🥾, then one lvl-3 subsection per status, each carrying the control whose result it holds — *Members* with 🎩, your row wearing ✋ 🖼️ 📧 and, once begun, *Leave*; *Invitees* with ✉️ and its power tabs; *Applicants* with one admit card per person asking; *Lapsed* with none; *Proposed for removal* with ❌ and its power tabs — F21, entries 95 and 96), **Proposals** (`rate`: the preamble wearing 🍾 💡 ⚖️ 🏛️ · ⏱️), **Decisions** (`deciding`: ⏰ · 🥂 when closed · 🌡️ with 🪜 in its stack · 👥), **Anonymity** (`privacy`: 👤 👁️), the hairline, the charter under its own name with the riding 📝 tab beside it (K31 — from the save, in `#ridetab`, never in the band's own row).
+
+> **The Document** (`doc`) is a rail-only group: 🪶 📍 🌍 📝 (📝 never reaching the rail — K31). Before 🌍 is decided the clause states the interim rule: *Until the Founder decides, only members can see the document* / *Until the members decide, …* (Q618).
+
+- **F5**: *(C8a as amended, Q1184)*.
+- **F19**: `text-unconfirmed` left the list of `readiness()` reasons — `WaitingWhy` in `packages/constitution/src/session.ts:51` is `'judge-gate' | 'invitation-open' | 'one-voice' | 'collecting' | 'deps-unsettled'`, and the string appears nowhere in `packages/constitution/src`; 🍾 confirms whatever stands (R-081), so the text holds nothing.
+- **F21**: *(entry 96, closing the lvl3 half of Q406)*.
+- **F22**: *(Q865, Q871; reverses the second half of Q617 (a))*.
+
+### §9 The card kinds
+
+- **setting (founder, pen)**, head: *the head goes from every option-block settings card, founding and settled alike (Q1151), the birth's 📍 with them (card review 2026-09-05)*; field: *(Q1185, reversing Q1150's tense)* and *— \*\*no watch half\*\* (Q1176): the standing rule is block one and \*\*always wears its provenance radio\*\* (CP2, Q1188), and the counts live on 🍾*.
+- **watching**, field: *— \*\*the watch half is retired\*\* (Q1176): no \*What the membership said\*, no distribution strip, no count; provenance is the standing block's radio, the counts are 🍾's*.
+- **constitutional motion (consent)**, field: *— no \*Re-opened…\* paragraph, no count, no privacy sentence, no per-option explainers, no blind note*; left: *(Q1182 as Ed corrected it, 2026-09-05: the word goes, not the act)*.
+- **the composer**, field: *(Q1167 a, refined 2026-09-02)* and *and \*\*the \*goes to the Founder, who may assent or refuse\* note is gone from every card that carried it\*\* (reading 1189, 2026-09-05)*.
+- **power cards ✒️ 🛡️**, field: *— \*\*given up: the head sentence alone\*\* (card review 2026-09-05, A5), the \*Given up — one way…\* note and the hairline above it gone*.
+- **settled motion record**, field: *the narrated \*kept … as it stood\* sentence gone*.
+- **gates 💡 ⚖️**, field: *\*\*none\*\* — the card is its head and its OK (card review 2026-09-05, A5): the provenance line, the explainer, the \*Open —\* lockline and the wallet count all go, and no sentence names the commit (T45, Q1129)*.
+- **grants 🏛️ ✒️ 🛡️**, field: *— the Founded line and the who-gave-it sentence are gone from the card (Q1170: the paragraph stays in the constitution, keeps its ✒️ 🛡️ tabs and feeds the record)*.
+- **🍾 Begin**, field: *; the two-column Kept / Laid-down card retires*.
+- **✉️ Invite**, field: *— the single-address field and the \*Several at once\* choice both retired; the two explanatory paragraphs gone;* and *; the two policy paragraphs go with the button (A5)*.
+- **identity ✋ 🖼️ 📧**, field: *the labels, avatar preview and helper paragraphs all gone*.
+- **🎩**, field: *(card review 2026-09-02 — the consequences cut, the fact kept)* and *(reading 1193, and on every locked block, not 🎩's alone), with no \*Settled. Now that people are voting…\* note (card review 2026-09-05, A5)*.
+- **the stranger's two**, head: *— title, hairline, paragraph and \*Your email\* label all go (card review 2026-09-05, A5)*.
+- **the stranger's settled card**, head: *: the \*Set to … / Set by the founder when the document was made.\* card retires*.
+
+### §9.1 The commit-row grammar
+
+- Rule 1: *(Q1174, reversing Q1153's reach over it)*.
+- Rule 4: *(Ed, 2026-09-05, closing T47's \*Withdraw\* exception)*.
+- **✏️ (hold)**, ground: *(the blue fill retired — Q1153)*.
+- **🏛️**, where: *; \*Ask all members\* retired*.
+- **OK**, rule: *(STYLE T44 — Ed, 2026-09-01, reversing entry 180's commit half; the mark still wears it, and the object still flies from the press)*.
+
+### §9.2 Composer rules — K31
+
+- *a keystroke is refused rather than taken as a door — 📝 is the door (K13, amended 2026-09-01)* — K31 now points at K13 for the door.
+- *\*\*📄 is retired\*\*: from the save the text is simply 📝 — the founder presses it, writes, and ✒️ saves (`confirm-starting-text`, every press);* — the rule survives under *✒️ is the only save*.
+- *→ why: DECISIONS.md, \*The text is the open card\* (backlog 204, reversing entry 36's acknowledgement; entry 56 stands).*
+
+### §9.3 The card pattern
+
+The intro as it stood: *The target grammar every card converges on (Ed's seven rulings, 2026-08-31, Q1096–Q1102 — pass 4). Where a row of §9's table or §9.1 disagrees, the row describes the page as built and this section describes what it must become; the pass-4 census measures the gap, and rows move with the fixes, family by family. A rule marked \*\*unbuilt\*\* binds the build, not today's page.* Every CP rule is built, so the section now says the rule wins over a stale row. The build narratives, by rule:
+
+- **CP1**: *The `lanepick` click-the-sentence control retires. \*\*Switches too\*\* (Q1103 (b)): 🍾's power table becomes option blocks and the `switch` control retires with lanepick —* … *(Q1181, 2026-09-05, retiring the two-column form Q1103 (b) had given it)* … *Built on the band, the blind answers, the consent picks, the admit lanes and 🍾's table, 2026-08-31 (plan A); the charter's judgment lanes were already the shape, and their Indifferent block (CP4) landed the same evening (plan B).*
+- **CP2**: *(Q1097, re-ruled by Ed the same evening, 2026-08-31, reinstating the split the morning's ruling had declined)*; *(Q1167 (a), Q1176; widened by Q1188, Ed 2026-09-05)*; *(the record card's \*Chosen by Founder Action ✒️\* changes to match)* — done: the string appears nowhere in `design/`; *Rebuilt 2026-08-31.*
+- **CP3**: *Built; the census verifies.*
+- **CP4**: *Supersedes §9.1's row-left placement. Built 2026-08-31 (plan B).*
+- **CP5**: *Refuse/Accept as words retire; Y20's 👑 clause is struck at the build.* and *it always did — the census had read the ✓'s title — and C4's sentence now says so. Built 2026-08-31 (plan C).*
+- **CP6**: *Built 2026-08-31 (plan C).*
+- **CP7**: *The census confirmed the drift: no judgment card has one.* and *Built on the charter 2026-08-31 (plan B); the rows above moved with it.*
+- **CP8**: *— the 202 ruling's logic; the act's statement is now the glyph, T47* and *Built on the band 2026-08-31 (plan A); the judged charter card's \*Recorded\* line moves with plan B.*
+- **CP9**: *Built 2026-08-31 (plan C, 🎩); the closed half 2026-09-01 — the band's power tabs and doors, and the charter's judgment cards, which a closed document now locks (K2).*
+- **CP10**: *Built the same evening on 💤's \*A membership lapses\*, 📧's composer block, ⏰'s \*will end on\*, 🌡️'s and 👥's sentence blocks, and on 🪶's and 📍's composer lanes.*
+- **CP11**: *Built the same evening.*
+
