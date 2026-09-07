@@ -50,7 +50,7 @@ Commit hashes are this repository's; *running log* means the lifted log in
 | 12 | Privacy, ToS, retention, erasure | **open** — drafted, parked | `docs/legal/PRIVACY.md` and `TERMS.md` (`2a70192`; placeholders marked, not in force, not linked from the product); Q500's eight decisions **parked by Ed, 2026-08-29, until go-live is actually scheduled** |
 | 13 | Accessibility | **open** — not started | no audit has run; nothing in the tree or in plan-queue's backlog names one (the four surface files carry 74 `aria-` attributes between them, `grep -c aria-`) |
 | 14 | Performance, caching, stress tests | **open** — not started as a stage | the instruments exist: `soak-harness` (`packages/sim-harness/src/soak.ts`, 2026-08-27) and the alpha preset below; **load waits until behaviour is as expected** (Ed, 2026-08-26 — stage 19) |
-| 15 | Documentation review | done — first pass 2026-08-20, re-read 2026-09-07 (this docs pass) | `752b41d`; `docs/OPERATING.md`, the three runbooks, `README.md` |
+| 15 | Documentation review — the gate is *somebody else can operate it* | **open** — the documents are right (first pass 2026-08-20, re-verified 2026-09-07), but the gate is literal (Ed, 2026-09-07, Q1254): it closes when an operator who is neither Ed nor a session follows a runbook cold to its end; on the go-live checklist | `752b41d`; `docs/OPERATING.md`, the three runbooks, `README.md` |
 | 16 | Rollback, go-live checklist, soft launch | **open** — not started | the checklist below; built so far, the mail kill-switch `DRAFT_MAIL_OFF` (`config.ts:60`); no error reporting exists (OPERATING §4) |
 | 17 | Mobile read + judge — `design/MOBILE.md` stages 0–4 | **planned** 2026-08-23 (655–673), not built | no `mobile-walk` in `scripts/` |
 | 18 | PWA · push · offline — `design/MOBILE.md` stage 5 | **planned**, not built | as 17 |
@@ -159,7 +159,9 @@ test mail to Gmail/Outlook/iCloud lands in the inbox and the link works
 exactly once · privacy policy and ToS linked · `DRAFT_SECRET` in the platform
 store, no `secret.txt` on disk · Render's Postgres backups enabled and one restore from them drilled (499a) · a
 full walk on production with a throwaway address, then delete it and verify
-the deletion · mail kill-switch and maintenance mode tested, then off.
+the deletion · mail kill-switch and maintenance mode tested, then off · an
+operator who is neither Ed nor a session follows one runbook cold to its end
+(stage 15's gate, Q1254).
 
 **Soft launch in three steps:** Ed alone with a real document for a week →
 3–5 friends on one document with the logs watched daily → a Newspeak House
