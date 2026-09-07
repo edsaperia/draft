@@ -96,8 +96,8 @@ number). Check every comment against Part D **and the QA addendum below** —
 both are answered instructions, and a contradiction is Ed reversing, to be
 said back to him. He asks that blocking questions go **one at a time,
 multiple choice** (AskUserQuestion, context in the body, recommended option
-first); claim numbers for them in QUESTIONS.md before asking (next free:
-1178). Anything re-opening a shape is a question first; anything about the
+first); claim numbers for them in QUESTIONS.md before asking (the next free
+number is the first line of its *Spent numbers*). Anything re-opening a shape is a question first; anything about the
 blind notes, the consent-rule explanations or the founding counts belongs to
 the 🍾 redesign (Q1169, backlog 269 — Ed has a plan there, do not reinvent it
 on the cards). After the fixes: the walk suite against a fresh dev server
@@ -106,7 +106,8 @@ on the cards). After the fixes: the walk suite against a fresh dev server
 push is a deploy**, and verify the health check's build sha. When Ed declares
 QA done: **delete this file** (a pass file — the answers live in
 SPEC/SURFACE/STYLE/SPEC-REASONING), release the unspent numbers in
-QUESTIONS.md's 1149–1172 entry (1173–1176 are all spent), and file anything
+the 1149–1172 entry (now in `design/DECISIONS.md` § *QUESTIONS.md, the closed
+items and the spent numbers, lifted 2026-09-07*; 1173–1176 are all spent), and file anything
 still moving as backlog entries.
 
 **Still open nearby**: Q1145 (sheet builder into the repo), Q1146 (the
@@ -446,7 +447,8 @@ are the ones the constitution prints, so the rewrite moves the **document's own 
 just the card's — SURFACE Y-rules and STYLE §3. There is also a known residual here: 🌍's
 **composer lane** hand-writes its own copy (`PROPOSE.chamber`) instead of reading the
 clause table, so this string has two homes and both must move (Q1112 (b)'s residual, on the
-record at QUESTIONS.md's 1143–1144 entry).
+record at the 1143–1144 entry, now in `design/DECISIONS.md` § *QUESTIONS.md, the closed items
+and the spent numbers, lifted 2026-09-07*).
 
 ### 🪪 Admissions (founding·admission)
 
