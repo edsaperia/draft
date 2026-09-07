@@ -483,7 +483,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1283** — claim by writing the block here, then commit it alone.
+**The next free number is 1284** — claim by writing the block here, then commit it alone.
+
+**1283 is the router re-read's aside** (the Q1262 diagnosis, 2026-09-07): `feed()` drops deadlocked races from serving entirely where SPEC §8.3b says a deadlocked race is served as an ordinary race until it has nothing left to ask *you*.
 
 **1280–1282 are the three product defects the seat-matrix re-read of 2026-09-07 found** (Q1205's diagnosis, and the stranger render for Q1232): **1280** the stranger's settled Admissions card has no rule block; **1281** the applicant's live page throws on load; **1282** a lapsed member is offered a constitutional answer the module refuses. **A released number is dead** (Ed, 2026-09-07, Q1223): claimed and unused, it is never reused, so a number always dates its item — **1017** (claimed with 1015–1016 for backlog entry 159), **1022** (with 1020–1021 for entry 160), **1031** (with 1030 for entry 173) stay unspent for ever; 1109–1112's reuse was the one exception, not a precedent.
 
