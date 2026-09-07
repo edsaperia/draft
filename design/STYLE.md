@@ -124,8 +124,11 @@ Glyph names are stable (tabulated 2026-09-07, Q1208; the founding order's own gl
   2026-09-07, Q1209: *it should be clear the user has a choice to make, and
   what the nature of that choice is* — reversing the exemption that had kept
   *Quorum* and *Proposal Pass Threshold* as nouns). The review of every title
-  against this is owed (Q1209 in QUESTIONS.md's Backlog); what a settled
-  card is titled is Q331.
+  against this is owed (Q1209 in QUESTIONS.md's Backlog). **A card wears the
+  ask while it is outstanding and its noun once it is settled** — two labels
+  on one card, which shows being the card's state, the tab and the rail
+  following the card (Ed, 2026-09-07, Q331 (b)): the pile at the head of the
+  document reads as rules, the rail as asks.
 - **T5 · A rename reaches the option labels**, not just the headings — **one
   label per rung, everywhere**: the founder's radio, the member's ladder and
   the composer's lane say the same words (Q620), which since Q1112 (b) they do
