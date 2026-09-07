@@ -45,8 +45,9 @@
   arrives you in one act; revival (§9.5a) is the same — any authenticated
   command by a lapsed member calls memberReturn first.
 - **Time** is the server clock clamped non-decreasing per document
-  (`max(Date.now(), last event t)`); `tick()` runs the lapse/freeze clocks
-  once a minute on constituted documents.
+  (`max(Date.now(), last event t)`); `tick()` runs the lapse clock and the
+  close once a minute on constituted documents (the freeze retired with
+  Q1196, Ed 2026-09-06: quorum is the adoption floor and only that).
 - **Slugs never break**: every slug a document has worn routes to it
   (cs.slugs is the registry, §9.7). /d/:slug serves session-view.html live
   (Q391): the page detects its address and renders the real document
@@ -59,8 +60,10 @@
   set-motions stake and race; judge-race is in the whitelist; the view
   serves each member their race cards and wallet.
 - **Applicants speak the same doors** (§9.7½): POST /api/d/:slug/apply
-  starts an application (the module refuses invitation-only documents and
-  member addresses, told to log in instead), the mailed /auth/apply link
+  mails a verification link and writes nothing to the log (stage 3, defect
+  8; an invitation-only document is refused, and a member's address gets a
+  login mail and the same 200 — the door is not a membership oracle,
+  review #1 finding 8); the mailed /auth/apply link starts the application,
   verifies the address and sets an `app:`-prefixed cookie whose one
   permitted act is submit-application; under `apply` the submission opens
   the free ordinary admit motion — **which races** (§9.7½ v0.56, Q397):
@@ -84,22 +87,28 @@
   R-086) — the variable switches pacing on. The rest of the tuning cannot
   be set from the environment, so a deployed room runs it as shipped.
 - **The mail-minting doors are rate-limited**, minimally (Q346 territory):
-  an in-memory per-IP bucket on create/login/apply, 20 per 10 minutes —
-  a brake on mail floods, not an abuse story. Restart empties it.
-- **Not in this slice**, each deliberate: reading a public/link chamber
-  without a membership cookie (every view requires login today), and
-  what PRODUCTION.md still has staged — Postgres, deliverable mail from
-  mail.docs.vote, the surface merge. HTTPS and deployment are no longer
-  among them: docs.vote is live in alpha on Render, CI deploys it on
-  green (decision 476) and verifies the live host afterwards with
-  `npm run verify`.
+  an in-memory per-IP bucket per door (`tooMany`, nine of them — create,
+  login, apply, the three auth landings, the slug and pending checks, the
+  stranger's view — 20 per 10 minutes at the mail doors, more at the
+  read-only ones), the IP read from `cf-connecting-ip` and otherwise from
+  `x-forwarded-for` counted `DRAFT_PROXY_HOPS` from the right — a brake on
+  mail floods, not an abuse story. Restart empties it.
+- **The stranger's door is a seatless read** (Q508–Q510): `GET
+  /api/d/:slug/view` without a cookie serves what 🌍 allows — the
+  membership and the settled rules, never a name on a proposal — and the
+  page renders it as the same three columns with one card in the rail.
+  There is no login screen. Postgres, deliverable mail from
+  `mail.docs.vote` and the surface merge, once *not in this slice*, all
+  landed on 2026-08-20/21 (PRODUCTION.md's stage table); docs.vote is live
+  in alpha on Render, CI deploys it on green (decision 476) and verifies
+  the live host afterwards with `npm run verify`.
 
 ## 🍾 begin, readiness and the hourly touch (2026-08-21)
 
 - `begin` is founder-only and is the only way a document starts; the founder's view
-  carries `readiness` (null for everybody else). Until the page has its 🍾 card, a
-  document can be begun only through the API — the fixture's ⏩ and the live page's
-  auto-open both assumed the module constituted itself.
+  carries `readiness` (null for everybody else). The page's 🍾 card (SURFACE F5,
+  built 2026-08-21) is how a founder begins one; the fixture's ⏩ settles the
+  founding in one press.
 - Every member `GET …/view` calls `cs.seen` first and commits only when the module
   recorded something (at most hourly per member), so a reader never lapses (Q459a) and
   a four-second poll does not write the log.

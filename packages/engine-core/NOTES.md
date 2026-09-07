@@ -1,6 +1,6 @@
-# engine-core — implementation notes (P1–P3)
+# engine-core — implementation notes
 
-Decisions the spec left to implementation, and P1 simplifications. Anything
+Decisions the spec left to implementation, and the first build's simplifications. Anything
 needing Ed's sign-off is in QUESTIONS.md; the rest is engineering record.
 
 ## Mechanism decisions
@@ -19,7 +19,7 @@ needing Ed's sign-off is in QUESTIONS.md; the rest is engineering record.
   spans' text is unchanged.
 - **Fit scope: live members + incumbent.** Comparisons involving retired /
   withdrawn / merged candidates drop out of the race fit. The graveyard's
-  evidentiary role (loss accounts, span attribution) is P3.
+  evidentiary role (loss accounts, span attribution) is deferred.
 - **Dominated** (SPEC §6.2, projected per Q11): P(incumbent beats X) exceeds
   the current adoption threshold, on ≥ 5 comparisons involving X. Since the
   threshold only rises within a session, "the incumbent already clears the
@@ -55,9 +55,9 @@ needing Ed's sign-off is in QUESTIONS.md; the rest is engineering record.
   slots; costlier judges get only top-value edges. This implements the v/c_p
   division of labor without per-pair v/c_p arithmetic.
 - Diagonal cards serve race leaders, uniformly sampled; salience-uncertainty
-  weighting is a P2 refinement.
+  weighting is a later refinement.
 
-## Advisory gates beside the sync fold (P3 phase 1)
+## Advisory gates beside the sync fold
 
 The pattern for every LLM feature: **async oracles advise; the sync fold
 decides.** `oracle.ts` defines the `SemanticOracle` interface (pure types,
@@ -85,7 +85,7 @@ plus the LLM covers small rosters) → oracle. The gate checks live
 candidates only; graveyard checking and behavioral probes are later
 phases.
 
-## Deferred to P2/P3 (stubs or absent by design)
+## Deferred (stubs or absent by design)
 
 - Gate 2 semantic composition, inclusion lattices, and lattice diagonals
   (overlap → rivalry today; lattice diagonals are logged but unmodeled).
@@ -96,17 +96,21 @@ phases.
 - Bridge metric / stratified probes; composer briefings; loss accounts.
 - Machine participants (incl. coherence auditor); "weak dissatisfaction"
   from propose-C is logged but does not move any model.
-- Authorship visibility is stored in the constitution; enforcement is the
-  API layer's job (the engine stores truth).
+- Authorship visibility: the engine stores the truth and answers
+  `authorVisible` (SPEC §3.5a, R-050); withholding is the view layer's job.
 
 ## Module map
 
-`session.ts` (engine-core state machine) · `text/` (patch-engine) ·
-`ranking/davidson.ts` (ranking-model) · `adoption-threshold.ts` ·
-`tokens.ts` · `hash.ts` + `rng.ts` (event-log integrity) · routing lives in
-`session.ts` (`feed`, `bountyBoard`, `backlog`) · `oracle.ts`
-(SemanticOracle contract; implementations live outside the engine) ·
-`dedup-gate.ts` (advisory async dedup-gate, outside the Session).
+`session.ts` (engine-core state machine) · `text/` (patch-engine: `diff`,
+`patch`, `compose`, `rebase`) · `ranking/davidson.ts` (ranking-model) ·
+`ranking/ceiling.ts` (the confidence a room's evidence can reach —
+`ceilingPct`, `winsNeeded`; Q840) · `adoption-threshold.ts` · `tokens.ts` ·
+`hash.ts` + `sha256.ts` + `rng.ts` (event-log integrity) · routing lives in
+`session.ts` (`feed`, `bountyBoard`, `backlog`) · `participant-api.ts` (the
+blind-discipline surface, `authorVisible`) · `race-labeler.ts` (advisory
+naming, outside the state machine; Q49) · `oracle.ts` (SemanticOracle
+contract; implementations live outside the engine) · `dedup-gate.ts`
+(advisory async dedup-gate, outside the Session).
 
 ## The close (SPEC §4.6, Q467)
 
@@ -119,9 +123,9 @@ T=0; a later act meets `assertOpen`, which throws the typed `DocumentClosedError
 (`the document closed at N`). The close is an event, never a wall-clock
 inference at load — replay is bit-identical across it. The engine does **not**
 close on an arbitrary act carrying a past-window timestamp (tests use such
-timestamps freely); only the clock — `tick` — closes, the way freeze and lapse
-are host-driven. `finalRender` and `backlog` read the log after the close
+timestamps freely); only the clock — `tick` — closes, the way lapse
+is host-driven. `finalRender` and `backlog` read the log after the close
 (races() is then empty): `finalRender` reports the adopted-at-T=0 set and the
 document as it stands; `backlog` is the undecided set, ranked. `outcomes()`
 serves `undecided` alongside `adopted`/`retired`. The host's explicit `close(t)`
-(a sim's end, a perpetual freeze made final) runs the same sequence.
+(a sim's end) runs the same sequence.

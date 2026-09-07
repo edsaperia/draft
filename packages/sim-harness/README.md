@@ -96,6 +96,30 @@ exploration/salience rates) × 25 seeds on the clubhouse scenario, ~575
 scripted runs, CSV plus a per-knob summary. LLM-free; costs only CPU.
 Findings so far are folded into SPEC §4.2 and §8.3.
 
+The run of 2026-08-13 (`runs/sweep-clubhouse.log` and `.csv`, git-ignored;
+575 runs, 25 seeds per value): baseline welfare **0.982 ± 0.021** (per-seed
+0.91–1.00); every knob value between **0.945 and 0.994**, so the mechanism
+is robust everywhere the sweep looked. Two values moved the spec:
+`hotSetSize=3` scored 0.994 against the then-default 6's 0.982 and became
+the engine default (Q31, SPEC v0.8); cooldowns of 15 and 30 minutes fell to
+0.958 and 0.945 with adoptions halved, which is why §4.2 caps the cooldown at
+five minutes (Q32). The one engine bug the early runs found is
+`e3b7b6e` (2026-08-13): replay diverged because `peakW` updated in the
+command layer rather than the fold.
+
+## The other instruments
+
+All `npm run <name> -w @draft/sim-harness`; each says what it needs.
+
+| Script | What it does | Needs |
+|---|---|---|
+| `preset` | The alpha preset: whole candidate constitutions over roster × window at the ten-to-twenty-minute operating point, scored on `alive` (did the document change at all); exits non-zero if the preset stops beating the shipped defaults. Numbers: PRODUCTION.md § Measurements | nothing — scripted, in-process |
+| `soak` | N clients against the **real server** at the same time: real personas over the real HTTP login path, one cookie jar per seat, every command fired in one tick. Assertions, not metrics | a running dev server |
+| `evidence` | The four deferred-question studies (Q8/Q9/Q10/Q13) behind `REPORT-deferred-evidence.md`; `--q all\|8\|9\|10\|13 --seeds N --hours H`, CSVs to `runs/` | nothing — deterministic |
+| `founding` | Deterministic acceptance walks over `@draft/constitution` with a narrative log; the same hash every run. Part of `npm test` | nothing |
+| `motions` | The same over the engine-bridge: ordinary motions racing in engine-core, the crown's assent between verdict and application, an amendment binding a race in flight. Part of `npm test` | nothing |
+| `score` | The welfare judge, below | Claude credentials |
+
 ## Welfare judge
 
 LLM runs write novel text, so their final lines are usually off the

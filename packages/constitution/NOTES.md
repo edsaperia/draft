@@ -43,7 +43,10 @@ recorded here as they are made, so Ed can flip any of them cheaply.
 - **A motion carried by pure abstention carries nothing**: at least one
   standing accept is required, because a motion nobody consented to is not a
   consent.
-- **A document-abstainer's standing keep leaves with them**: the electorate
+- ~~**A document-abstainer's standing keep leaves with them**~~ — **retired
+  with sign-out (Q1196, Ed 2026-09-06)**: there is no sign-out and no freeze;
+  quorum is the adoption floor and only that (SPEC v0.99, R-088; `types.ts`
+  keeps the legacy events as no-ops on replay). As it stood: the electorate
   is live (v0.48), and abstaining the document is "I trust you to finish up"
   — so a keep from a member who then signs out abstaining stops blocking.
   Confirmed by Ed 2026-08-18 (*abstain means abstain — if they wanted to
@@ -69,7 +72,9 @@ recorded here as they are made, so Ed can flip any of them cheaply.
 - **`memberReturn` emits only when something revives** (lapse, sign-out, a
   warning); routine activity rides the member's own commands, so the log
   carries no heartbeats.
-- **Delegating 'applications' releases both holds at once** (v0.52): the
+- ~~**Delegating 'applications' releases both holds at once**~~ (v0.52) —
+  **superseded by Q506 (below)**: the crown pair left the value for the
+  setting, so there is no register crown to release. As it stood: the
   membership's crown lives in the applications *value* (§9.7½), so the
   hand-over event flips the setting's holder and, if the value says
   'reserved', rewrites it to 'members' — "delegate anything" must not
@@ -85,7 +90,10 @@ recorded here as they are made, so Ed can flip any of them cheaply.
   crown-lapse event — with its auto-assent mode — fires at the next tick,
   since the clocks are event-driven and never preempted. A 👑 question
   raised in that gap simply auto-passes at the tick.
-- **`applications.holder` is the convenor's frame, not part of the consent**:
+- ~~**`applications.holder` is the convenor's frame, not part of the consent**~~
+  — **superseded by Q506 (below)**; a legacy `holder` still validates and
+  folds onto the powers (`values.ts`, `session.ts` *the legacy holder*). As it
+  stood:
   the delegated question collects the join-policy rung; the holder (the crown
   choice) is consented by joining, the way §9.7 says — so the consent order
   compares rungs only.
@@ -96,7 +104,9 @@ recorded here as they are made, so Ed can flip any of them cheaply.
   constitutional amendment, a hand-over) — the diff is immune to new routes
   being added and cannot double-apply. Roster events are relayed
   event-by-event because they have no value to diff.
-- **Admit-motions still adjudicate by the host's hand** (367b residual). An
+- ~~**Admit-motions still adjudicate by the host's hand**~~ (367b residual) —
+  **superseded (v0.56, Q397)**: an admit motion is its own one-candidate race
+  in the bridge (`enterAdmitRace`, `engine-bridge.ts`). As it stood: An
   application (§9.7½) is an ordinary motion with no scalar value to race,
   so the bridge does not enter it in the engine; its engine shape is part
   of Q391's design work. The seam stays open for it.
@@ -108,7 +118,9 @@ recorded here as they are made, so Ed can flip any of them cheaply.
   disagree with the engine's glide while a ramp is live. The engine is the
   adjudicating authority (adoption tests against engine.adoptionThreshold);
   cs.bar() is display. Reconcile if a surface ever draws both.
-- **The two powers ride the settings; the register's ride its value** (v0.54).
+- ~~**The two powers ride the settings; the register's ride its value**~~
+  (v0.54) — **superseded by Q506 (below)**: both pairs ride the settings now.
+  As it stood:
   A setting's crown is `SettingState.powers` and changes by relinquish /
   delegate / reclaim / the reserve motion; the register's crown stays inside
   the applications value (four holder states) and changes by changing that
@@ -116,7 +128,9 @@ recorded here as they are made, so Ed can flip any of them cheaply.
   applications setting cannot rewrite its value directly, so they cannot
   soften the register's own powers by hand — the room can, by motion, and
   delegation of the applications setting still un-crowns the register whole.
-- **Q395 order** (v0.54): the applications consent tiebreak ranks holders
+- ~~**Q395 order**~~ (v0.54) — **went with the field (Q506 below)**: the
+  blind question collects the join policy alone. As it stood: the
+  applications consent tiebreak ranks holders
   both > assent-only > unilateral-only > members, on the reasoning that
   assent restricts the members while unilateral only adds a founder power.
   Wants Ed's eye; the primary key (join policy) is unchanged.
@@ -156,7 +170,7 @@ recorded here as they are made, so Ed can flip any of them cheaply.
 ## The close (SPEC §4.6, Q467)
 
 `tick(t)` closes the document when the ending date is crossed (tested before
-the lapse/freeze clocks, which stop at T=0): `closed`, then every running
+the lapse clock, which stops at T=0 — the freeze retired with Q1196): `closed`, then every running
 **constitutional** motion is `motion-kept-at-close` (what stands stands, the
 mover's 🏛️ returns via `myHeldMotion` clearing), every pending 👑 question is
 `crown-failed-closed` (carried-but-unassented — crown-lapse auto-pass does not
@@ -166,7 +180,9 @@ left to join, only to read*). After the close every mutator is refused
 (`requireOpen`) except **`acknowledgeClose(t, member, comment)`** — the OK on
 the 🥂 card, per member once, blank allowed: `close-acknowledged` **is** the
 signature, the comment its rationale. `closingSignatures()` orders them by
-signing time, names per the ✍️ setting (`nobody` anonymises). `view()` serves
+signing time and carries each signer's name as the record holds it — whether
+the page prints it is `authorVisible`'s call, not the module's (CLAUDE.md
+`closing-card`). `view()` serves
 `closed: { at, mySignature, signatures }`.
 
 **The bridge relays the close engine-first** (`engine-bridge.close` /
@@ -190,8 +206,8 @@ it down or the page performs 🍾's batch for them.
 
 ## 🍾 begin, readiness, and presence (Q443, Q441/457, Q459 — 2026-08-21)
 
-- **Nothing starts until the founder says so.** `maybeConstitute` is gone; `begin(t)`
-  emits the one `constituted` event (so a log from before today replays identically —
+- **Nothing starts until the founder says so.** `maybeConstitute` is gone;
+  `begin(t, laidDown?)` emits the one `constituted` event (so a log from before today replays identically —
   its `constituted` was simply auto-emitted). `begin` refuses while any judge-gate
   setting is unsettled and names them: judging needs the whole constitution (§9.0b).
   It does **not** wait on anybody's answer once the questions stand — readiness
