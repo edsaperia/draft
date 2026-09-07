@@ -42,7 +42,7 @@ Vocabulary: **audience** — nobody / the actor / one member / every member owed
 | E9 | A power is laid down | every member but the actor (Q918, Ed 2026-08-29) | the power card; **one news entry owed an OK, stating its whole batch — and none at 🍾** (C8a; Q571, Q1013, Q1184); clause deviation vanishes | OK | on commit / on OK | clause; record | — |
 | E10 | A constitutional motion is put — an invitation or removal too, where 🪪 / 🥾 stands at *assembly* (entry 94) | every active member | the setting's own card, live again; rail ask | accept / keep / abstain | ✓ — answered entry leaves; tab keeps its glyph | carried → E5 | invite remove |
 | E11 | An ordinary motion is put — an invitation or removal too, where 🪪 / 🥾 stands at *proposal* (entry 94) | every active member — not anyone whose membership has gone quiet (Q930, Ed 2026-08-29) | race card | a judgment | ✓ — closes and files ⏳ (Q576) | → E5 / E14 | invite remove |
-| E12 | A 👑 question | the founder | news-pinned task, Refuse / Accept | Refuse / Accept | on commit | record | — |
+| E12 | A 👑 question | the founder — the room is told nothing while it waits (Q1015) | news-pinned task, Refuse / Accept (*refuse* is the Founder's word, *reject* the membership's: STYLE T8) | Refuse / Accept | on commit | record | — |
 | E13 | A text race wants a judgment | whoever the router serves | 💡 / 🔥 entry at the clause, gutter tab | a judgment | ✓ — closes; the entry keeps its mark while anything on the race can still be asked of you, dealt into your hand or not (Q1200; Q1202, Ed 2026-09-07: *if there are things you can do, it shows the symbol of that action, even if it is not urgent*); ⏳ only once nothing is left for you and the race waits on other people, and the ⏳ card is your ledger of every pair you judged there, each revisable (Q576, Q1201) | ⏳ until the seal | — |
 | E14 | A race seals, the document changed | every member | ✔ green pinned; clause | OK | OK | grey ✔ filed; record | — |
 | E15 | A race seals, the incumbent held | members who judged it | ✖ green, pins only if you judged | OK | OK | grey ✖ filed | — |
@@ -147,8 +147,7 @@ Keys that are not settings: `hat` `myemail` `begin` (SPEC §9.7.1, decisions tha
 
 Lifted from SPEC.md; kept as a section by Ed's ruling (Q1004).
 
-- **The head of the document** — the Constitution block carries the founder, the constituted-at time (*Founded by [name] 👑 at [time] on [date]*) and every setting's current value as a clause, governance stated by deviation under the Proposals preamble.
-- **The 👑 question** — the room is told nothing while it waits (Q1015; E12's audience). *Refuse* is the Founder's word and *reject* the membership's: STYLE T8. The card: §9.
+- **The head of the document** — the Constitution block carries the founder, the constituted-at time (*Founded by [name] 👑 at [time] on [date]*) and every setting's current value as a clause, governance stated by deviation under the Proposals preamble. (One bullet, by Ed's Q1004 and Q1238; the 👑 question is E12 and STYLE T8.)
 
 ## 6. The marks alphabet and the rail
 
