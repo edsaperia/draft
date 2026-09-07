@@ -4456,3 +4456,15 @@ Condensed from the walk; this is the §3-of-PLAN.md list made concrete.
    beside engine-core, drivable by sim-harness, and the server consumes it —
    same shape as the drafting engine itself.
 
+
+## design/spec-pass/, the folded passes deleted 2026-09-07 (the docs pass)
+
+CLAUDE.md's rule for the pass archive: *deleted once a pass is folded and its answers are in QUESTIONS.md*. Three passes stood folded on 2026-09-07 and their files were `git rm`'d; this section is where a lookup lands, and each file is recoverable from git at the commit named. None of the three HTML sources names a published artifact URL (`grep -o 'https://claude.ai/…' design/spec-pass/*.html` was empty), so the source file is the artifact's only trace and its commit is the pointer.
+
+| File | Commit added · last | What it was | Fold evidence |
+|---|---|---|---|
+| `pass-4.md` (10,434 B), `pass-4.html` (25,378 B; `<title>The Card Pattern Census</title>`) | `b70ab32` · `fd7144f`, 2026-08-31 | Pass 4, the card pattern census: 270 card openings at 1600×1000 read against CP1–CP7, and the questionnaire that asked Q1096–Q1102 | Folded 2026-08-31 (`f5db9c7`, *Pass 4's answers folded (Ed, 2026-08-31): CP1 widens twice, CP8 and CP9 born*); SURFACE §9.3 opens *Ed's seven rulings of 2026-08-31 (Q1096–Q1102, pass 4)*; the spent block *1096–1115 are the card pattern (pass 4)* above; no open row in QUESTIONS.md |
+| `pass-5.md` (7,268 B), `pass-5.html` (78,459 B; `<title>SURFACE §8.1 as a table — the tabulation pass</title>`) | `ed52dfd`, 2026-09-01 | Pass 5, SURFACE §8.1 tabulated: the twenty-three founding rules F1–F23 shown both ways, asking Q1122–Q1127 and finding Q1128; its own header said *This file is deleted when the pass folds* | The spent block *1122–1128 are the SURFACE §8.1 tabulation* above; QUESTIONS.md's 1009 row: *§8.1 is a table since Q1122–1128*; no open row |
+| `card-audit.html` (44,873 B; `<title>Card Audit — every decision card against STYLE.md</title>`) | `fb26cf1`, 2026-08-23 | The card audit's questions artifact: 182 cards read at once against STYLE.md, 14 findings and 8 questions numbered 685–706 | The STYLE audit log's eleventh pass (items 45–46 above); the spent block *685–722 are claimed for the card audit* above; no open row among 685–706 |
+
+Left in place, deliberately: `claude-md-audit.md` (Q943, applied by entry 201) and `surface-md-extraction.md` (Q944, applied by entry 191). Both say in their own first paragraph that they are applied, but CLAUDE.md's Documents row for `design/spec-pass/` names them as part of the archive (*also the two audit proposals*), and whether the rule as written reaches proposals is a question for Ed (the docs pass's `spec-pass.log.md`, Question 1).
