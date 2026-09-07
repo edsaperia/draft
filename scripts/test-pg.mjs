@@ -12,7 +12,7 @@
  *   npm run test:pg
  *   npm run test:pg -- --reporter=verbose      (extra args reach vitest)
  *
- * The default is the pinned local container from PRODUCTION.md — `draft-pg`,
+ * The default is the pinned local container from docs/OPERATING.md §7 — `draft-pg`,
  * postgres:17-alpine, 127.0.0.1:5433, user/password/database all `draft`.
  * Port 5433, not 55432: Windows reserves that range. An existing
  * DRAFT_TEST_DATABASE_URL in the environment wins, so CI and a plan-queue

@@ -212,7 +212,7 @@ async function main(): Promise<void> {
   // -- the founder settles the constitution and starts --------------------
   // At the alpha preset, so this run walks the constitution the day will
   // have: a fixed 85% bar, 6 ✏️ capped at 8 dripping every 5 minutes, and a
-  // 20-minute window (see PRODUCTION.md's running log). The cooldown is not
+  // 20-minute window (see PRODUCTION.md § Measurements). The cooldown is not
   // here because it is not a setting — it is DRAFT_COOLDOWN_MS.
   await cmd(founder, 'confirm-starting-text', { text: scenario.text });
   const settings: Array<[string, unknown]> = [
