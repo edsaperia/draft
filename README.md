@@ -1,70 +1,77 @@
 # draft
 
-A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped.
+A group drafting engine, and the web app built on it: **[docs.vote](https://docs.vote)**.
 
-The mechanism in one breath: proposed changes are patches; patches that conflict race each other; participants make blind pairwise judgments (A / B / indifferent / propose-C — no authorship, no standings); a race adopts its leader when the win-probability clears a confidence bar that rises over the session; whatever never clears the bar ships as a ranked backlog. The session's product is not just the text — it is the full map of what was agreed, what was contested, and what the minority cared about.
+A membership writes a document together. Anybody may propose a change; proposals that conflict race each other; the membership votes on them in blind pairwise comparisons — *which of these two wordings?*, with no names attached and no standings shown — and a race adopts its leader when the **approval threshold**, a confidence that rises over the document's life, is cleared. Whatever never clears ships with the document as a ranked backlog. The output is not just the agreed text but the record of what was contested, by how much, and what the minority cared about. The document's own rules — who is a member, how sure the membership must be, whether the document ever ends — are decided inside the document by the same mechanism, constitutional changes needing everybody.
 
-First target: constitutional conventions for [Newspeak House](https://newspeak.house) cohorts (rosters ~5–20), designed not to preclude much larger instances.
+First target: constitutional conventions for [Newspeak House](https://newspeak.house) cohorts (5–20 members), designed not to preclude much larger instances.
 
-**It is live, in alpha, at [docs.vote](https://docs.vote).** One document is created by naming it and verifying an address; everything after that — who is a member, how sure the room must be, whether the document ever ends — is decided in the document itself, by the people in it. Alpha means exactly what the banner on every page says: this is early, and nothing in it should yet be trusted with a decision that matters.
+**docs.vote is live, in alpha.** A document is created by naming it and verifying an email address; everything after that happens in the document. The banner on every page says what alpha means here: this is early, and nothing in it should yet be trusted with a decision that matters.
 
-- **[SPEC.md](SPEC.md)** — the specification (currently v0.99), single source of truth for the mechanism.
-- **[SURFACE.md](SURFACE.md)** — what the surface tells a member and what a control does: the event matrix, the marks alphabet, the wallets and holds, the founding order and the band, the card kinds and the composer. Tabular, and asserted against the code by `npm run spec-check`.
-- **[QUESTIONS.md](QUESTIONS.md)** — open and deferred items; resolved decisions are folded into the spec, not logged separately.
-- **[design/STYLE.md](design/STYLE.md)** — the surface-copy checklist every string a member can read has to pass.
-- **[design/DECISIONS.md](design/DECISIONS.md)** and **[design/SPEC-REASONING.md](design/SPEC-REASONING.md)** — the reasoning archives: why a thing is the way it is, what it replaced, what was tried and rejected. The second is keyed to the spec's own `R-nnn` rulings.
-- **[design/MOBILE.md](design/MOBILE.md)** — docs.vote on a phone: the responsive plan, the PWA and push stage, and the device checklist. Not yet built.
-- **[PRODUCTION.md](PRODUCTION.md)** — the road to docs.vote: the staged rollout, the security work, the persistence design, and the go-live checklist. A working document.
-- **[docs/OPERATING.md](docs/OPERATING.md)** — the operator's map: what runs where, every environment variable, how a deploy happens, and the data directory's layout. Procedures live beside it, in `docs/runbooks/`.
-- **[CLAUDE.md](CLAUDE.md)** — project conventions, v1 product decisions, and the glossary of named parts.
+## Run it locally
 
-## Layout
-
-- `packages/engine-core` — the mechanism as a pure, deterministic, dependency-free TypeScript library (P1): patch-engine (diffs, footprints, rebase), ranking-model (Bradley–Terry with ties), the session state machine, hash-chained event-log, router, token economy, and the participant API — the one blind-discipline surface that humans, sim personas, and personal AIs all speak identically. See its [`NOTES.md`](packages/engine-core/NOTES.md) for implementation decisions.
-- `packages/constitution` — the §9 layer, equally pure and dependency-free: the settings catalogue, the blind founding (each member states the least they will accept; the document takes the maximum), motions on both routes — ordinary ones race, constitutional ones need everybody — applications, lapse, and its own hash-chained log. It runs in a browser as well as in node, and ships as a committed bundle the design surfaces load. See its [`NOTES.md`](packages/constitution/NOTES.md).
-- `packages/server` — the product host: node:http with no framework, one hash-chained JSONL log per document as the only persistence, magic-link auth, stateless HMAC cookies, and the engine riding every commit. See its [`NOTES.md`](packages/server/NOTES.md).
-- `packages/sim-harness` — synthetic participants driving full sessions (P2): deterministic scripted personas with ground-truth welfare metrics, LLM personas (fourteen of them, including a schemer, a revolutionary, and a literal dog), a constitution calibration sweep, and a colour commentator for watching runs live. See its [`README.md`](packages/sim-harness/README.md).
-- `design/` — the surfaces themselves. `session-view.html` is the one page the server serves — birth, founding and the live, drafted document — with its machinery in `session.js`, `setup.js` and `cards.js`; `setup.html` redirects to it.
-
-## Development
-
-`npm install` at the root, then:
+Node 24 or later.
 
 ```
-npm test               # every workspace (1086 tests)
-npm run typecheck
-npm run lint
-npm run build          # the production artifacts: dist/server.mjs and dist/draft-tools.mjs
-npm run server         # a local instance on :8140
-npm run verify <url>   # the live-environment checks, safe against production
+git clone https://github.com/edsaperia/draft && cd draft
+npm install
+npm run server        # → draft server on http://localhost:8140
+npm test              # every package
 ```
 
-Without `RESEND_API_KEY` the server runs its dev inbox: every magic link is written to `packages/server/data/outbox.jsonl` and offered on the page behind a 📬 button, so a whole room can be played from one browser. That route does not exist in the production artifact.
+Without `RESEND_API_KEY` the server runs a **dev inbox**: every mail, magic links intact, goes to the console and to `packages/server/data/outbox.jsonl`, and the page grows a 📬 button that opens them — so a whole membership can be played from one browser. That route does not exist in the production build.
 
-The simulator, which needs none of the above:
+| Command | What it does |
+|---|---|
+| `npm run typecheck` · `npm run lint` · `npm run spec-check` · `npm run copy-check` | The checks CI runs at every push: types per package, eslint, the spec and surface tables against the code, the surface copy against its golden. |
+| `npm run build` | The production artifacts, `dist/server.mjs` and `dist/draft-tools.mjs`, with the dev routes dropped from the bytes. `npm start` boots the artifact and refuses without `DRAFT_SECRET`, an `https://` `DRAFT_BASE_URL` and `RESEND_API_KEY`. |
+| `npm run verify <url>` | The live-environment checks (TLS, headers, no dev outbox). Read-only; safe against production. |
+| `npm run design` | Serves `design/` at `http://localhost:8137/` with the fixture documents: `/` a blank arrival, `/?fixture=session` a session mid-flight, `&closed=1` a closed one. Needs no server and no account. |
+| `npm run sim -w @draft/sim-harness -- --mode scripted --scenario clubhouse --seeds 5` | A deterministic simulated session, scored against the scenario's ground truth. No network. |
+| `npm run sweep -w @draft/sim-harness` | The calibration sweep: ~575 scripted runs over the constitution's knobs. LLM-free. |
+| `npm run test:pg` | The server suite against a real Postgres (a local `postgres:17` on `127.0.0.1:5433`); `npm test` skips those 14 tests without one. |
 
-```
-# a deterministic scripted run with welfare scoring
-npm run sim -w @draft/sim-harness -- --mode scripted --scenario clubhouse --seeds 5
+## Packages
 
-# the calibration sweep (LLM-free, ~575 runs)
-npm run sweep -w @draft/sim-harness
+TypeScript end to end; `pg` is the only runtime dependency. Tests measured 2026-09-07 with `npm test`: **1,073 passing** (9 todo, 14 skipped without Postgres).
 
-# a live LLM session with colour commentary (needs Claude credentials)
-npm run sim -w @draft/sim-harness -- --mode subscription --scenario clubhouse \
-    --model claude-sonnet-5 --hours 4 --verbose --commentary
-```
+| Package | What it is | Tests |
+|---|---|---|
+| `packages/engine-core` | The mechanism as a pure, deterministic, dependency-free library: diffs and footprints, the races, Bradley–Terry ranking with ties, the session state machine, the hash-chained event log, the feed router, and the participant API — the one blind surface that people, simulated members and personal AIs all speak identically. Notes: [`NOTES.md`](packages/engine-core/NOTES.md). | 289 |
+| `packages/constitution` | The document's rules as a module, equally pure: the settings catalogue, the blind founding (each member states the least they will accept; the document takes the maximum), motions on both routes — ordinary ones race, constitutional ones need everybody — applications, lapse, its own hash-chained log. Runs in the browser too, as the committed bundle `design/constitution.js`. Notes: [`NOTES.md`](packages/constitution/NOTES.md). | 666 |
+| `packages/server` | The product host: `node:http` with no framework, one hash-chained log per document as the only persistence (JSONL on disk or one row per entry in Postgres), magic-link login, stateless HMAC cookies, the engine riding every commit. Notes: [`NOTES.md`](packages/server/NOTES.md). | 86 (+14 Postgres) |
+| `packages/sim-harness` | Simulated members driving whole sessions: deterministic scripted personas with ground-truth welfare scoring, LLM personas speaking the same participant API with no back door, a calibration sweep whose findings are folded into SPEC §4.2 and §8.3, and a live commentator. [`README.md`](packages/sim-harness/README.md). | 32 |
+| `design/` | The surface itself, served by the server off disk: `session-view.html` is the one page — arrival, founding and the live document — with its machinery in `session.js`, `setup.js` and `cards.js`, and every string a member can read in `copy.js`. | — |
 
-## Status
+## Documents
 
-Spec v0.99. The mechanism (engine-core, 289 tests) and the constitutional layer (666 tests) are built and tested; the server (99 tests, 14 more against Postgres) hosts real documents at docs.vote; the simulator (32 tests) is what keeps all of it honest.
+Rule files hold rules; the reasoning behind them lives in `design/`. Where two disagree, `SPEC.md` wins.
 
-The mechanism holds up in practice:
+| Document | What it is | Read it when |
+|---|---|---|
+| [`SPEC.md`](SPEC.md) | The mechanism, v0.99 — tables and numbered rules, each pointing at its reasons as `→ why: R-nnn`. The single source of truth. | First, to understand what the engine does. |
+| [`SURFACE.md`](SURFACE.md) | What the surface tells a member and what a control does: the event matrix, the marks, the wallets, the founding order, the card kinds. Asserted against the page's own tables by `npm run spec-check`. | Second, to understand what a member sees. |
+| [`CLAUDE.md`](CLAUDE.md) | The project's operative reference: the vocabulary, the glossary of every named part, and the post-mortems that bite. | Before contributing. |
+| [`design/STYLE.md`](design/STYLE.md) | The surface-copy checklist every string a member can read has to pass. | Before touching `copy.js`. |
+| [`design/DECISIONS.md`](design/DECISIONS.md) · [`design/SPEC-REASONING.md`](design/SPEC-REASONING.md) | The archives: why a thing is the way it is, what it replaced, what was rejected. The second is keyed to the spec's `R-nnn` rulings. | When a rule seems arbitrary. |
+| [`QUESTIONS.md`](QUESTIONS.md) | Open and deferred items, on one project-wide number sequence. | To see what is undecided. |
+| [`PRODUCTION.md`](PRODUCTION.md) | The roadmap: the staged rollout to docs.vote and what is left of it. | To see what is next. |
+| [`design/MOBILE.md`](design/MOBILE.md) | docs.vote on a phone — planned, not yet built. | Before touching layout for narrow screens. |
+| [`docs/OPERATING.md`](docs/OPERATING.md) | The operator's map: what runs where, every environment variable, how a deploy happens. Procedures in [`docs/runbooks/`](docs/runbooks/). | Before running an instance. |
 
-- **Scripted validation**: welfare ratios 0.96–1.00 across seeds on both scenarios — the mechanism reliably finds (nearly) the utilitarian-best text a roster's latent preferences admit, including on the coupled `clubhouse` scenario where the optimal document is reachable only through correctly *ordered* adoptions.
-- **Calibration sweep** (2026-08): 575+ runs over nine constitution knobs. Robust everywhere (0.94–0.99); a smaller hot set (3) beat the old default and is now the spec default; long post-adoption cooldowns measurably starve resolution and are now doctrinally capped (§4.2).
-- **Live LLM runs**: full sessions with fourteen Sonnet-powered personas speaking the same participant API as humans, no sim backdoor. Emergent bridge-drafting, factional skirmishes, and overturns consistent with the spec's self-correction story. Two real engine bugs (router slot starvation, replay divergence) were found by simulation before any UI existed.
+## Checks, walks and deploys
 
-The surface merge landed on 2026-08-21: a begun document is drafted in on the page, proposals race in the engine and adopt into the text. Next, in the order PRODUCTION.md sets out: privacy, ToS, retention and erasure (stage 12, drafted but not in force), then accessibility (13), then performance and stress tests. Postgres, observability, backups and deliverable mail landed on 2026-08-20. P3 (the LLM layer of the engine itself: semantic composition gates, dedup, surgery, briefings, machine participants) waits behind it.
+CI runs three jobs at every push. `ci` (lint, typecheck, tests, spec-check, copy-check, build, a boot smoke on the artifact) gates the deploy; `probe` and `walks` run beside it and mark the commit red without holding anything. **A push to `main` is a deploy**: CI fires the Render hook, waits for the live `x-build` header to become the pushed commit, then runs `verify` against docs.vote. **[dev.docs.vote](https://dev.docs.vote)** is a second, throwaway instance on the dev path — a ⏭ control bottom-left walks a document through its whole life, and the 📬 outbox is public, so it must never hold anything real; every deploy wipes it.
 
-Run logs and sweep CSVs land in `packages/sim-harness/runs/` (git-ignored).
+The rest of `package.json`'s scripts are instruments, in two kinds:
+
+| Kind | Scripts | Needs |
+|---|---|---|
+| Headless over `design/` | `probe`, `probe-coverage`, `card-audit`, `toc-travel`, `slider-walk`, `founder-answers`, `founding-golden`, `copy-check -- --walk` | Playwright's Chromium (`npx playwright install chromium`); each serves `design/` itself. `clock-check` needs only node. |
+| Against a running dev server | `journey`, `applicants-walk`, `slug-walk`, `powers-walk`, `ladder`, `room-walk`, `seat-matrix`, `room-bots -- <document url>` | `npm run server` in another terminal, with no `RESEND_API_KEY`. Each checks it is talking to a server built from your tree before it starts. |
+
+What each asserts is in `CLAUDE.md`'s glossary under *Tooling*.
+
+## Licence
+
+[MIT](LICENSE).
