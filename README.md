@@ -11,7 +11,7 @@ First target: constitutional conventions for [Newspeak House](https://newspeak.h
 - **[SPEC.md](SPEC.md)** — the specification (currently v0.99), single source of truth for the mechanism.
 - **[SURFACE.md](SURFACE.md)** — what the surface tells a member and what a control does: the event matrix, the marks alphabet, the wallets and holds, the founding order and the band, the card kinds and the composer. Tabular, and asserted against the code by `npm run spec-check`.
 - **[QUESTIONS.md](QUESTIONS.md)** — open and deferred items; resolved decisions are folded into the spec, not logged separately.
-- **[design/STYLE.md](design/STYLE.md)** — the surface-copy checklist every string a member can read has to pass, and the audit log.
+- **[design/STYLE.md](design/STYLE.md)** — the surface-copy checklist every string a member can read has to pass.
 - **[design/DECISIONS.md](design/DECISIONS.md)** and **[design/SPEC-REASONING.md](design/SPEC-REASONING.md)** — the reasoning archives: why a thing is the way it is, what it replaced, what was tried and rejected. The second is keyed to the spec's own `R-nnn` rulings.
 - **[design/MOBILE.md](design/MOBILE.md)** — docs.vote on a phone: the responsive plan, the PWA and push stage, and the device checklist. Not yet built.
 - **[PRODUCTION.md](PRODUCTION.md)** — the road to docs.vote: the staged rollout, the security work, the persistence design, and the go-live checklist. A working document.

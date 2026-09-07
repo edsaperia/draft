@@ -1111,7 +1111,8 @@
   // script. What follows are aliases over the one table, never copies: the
   // clause map, the option blocks, the composer's lanes, the readback and the
   // settled strip all print the same string, so no two of them can drift.
-  // The T41 gradient labels went with the same ruling — STYLE §7 item 77.
+  // The T41 gradient labels went with the same ruling — STYLE audit item 77
+  // (design/DECISIONS.md).
   // It stands here, above `MVAL` and `STANDS`, because those are evaluated
   // object literals rather than lazy bodies: a `const` read below its own
   // declaration is a TDZ error, not a late binding.

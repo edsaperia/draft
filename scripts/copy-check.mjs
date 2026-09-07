@@ -1,7 +1,8 @@
 /**
  * copy-check — every card's words, frozen, and diffed at every push.
  *
- * Copy on this project is audited by passes — STYLE.md §7 has twelve — and a
+ * Copy on this project is audited by passes — the audit log, once STYLE.md §7
+ * and now design/DECISIONS.md's, had twelve when this was written — and a
  * pass is a snapshot: nothing pinned a card's words *between* passes, so the
  * next change to a card silently undid the last audit and the stale sentence
  * was found by a person in a sitting. `design/tools/card-audit.mjs` already
@@ -203,7 +204,8 @@ const copyOf = (c) => {
     foot: (s.foot || []).map((f) => ({ label: norm(f.label), title: f.title == null ? null : norm(f.title) })),
     hints: (s.hints || []).map(norm),
     // the `.why`, `.setnote`, `.rsub`, `.qwhy` and `.exp` sentences: the
-    // twelfth pass's whole subject was these bodies, so they are copy
+    // twelfth audit pass (STYLE audit items 49–51, design/DECISIONS.md) was
+    // about nothing but these bodies, so they are copy
     helpers: (c.helpers || []).map((h) => norm(h.text)),
   };
 };
