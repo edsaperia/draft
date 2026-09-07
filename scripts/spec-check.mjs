@@ -1337,6 +1337,57 @@ function checkCandidateStates() {
   note(`  ${specSet.size} states agree`);
 }
 
+/**
+ * Appendix A's `code` column (Ed, 2026-09-07, tidy item 57): every tuning
+ * number the spec publishes names the constant that holds it, and this asserts
+ * the constant exists at that value. Modelled on `checkCandidateStates` — the
+ * table is the claim, the source is the truth — and it is what dissolves the
+ * older finding that Appendix A named two homes for the fixture values and
+ * neither for the engine's own.
+ *
+ * A cell is ` · `-separated entries, each `\`name\` = value` (a constant) or
+ * `\`name()\`` (a function: existence only, there being no number to check).
+ * Object fields are looked for inside `DEFAULT_CONSTITUTION` alone, so a
+ * parameter of the same name elsewhere in a 2,000-line file cannot answer for
+ * one; `const NAME = …` is looked for across the corpus, which is where the
+ * host's two cooldown constants live. Values are compared numerically after
+ * evaluating the source's own expression, so `90 * 1000` and `90000` agree.
+ */
+function checkTuning() {
+  note('Appendix A — the code column against the engine and the host');
+  const rows = tableAfter('SPEC.md', 'tuning');
+  const eng = uncomment(read('packages/engine-core/src/session.ts'));
+  const at = eng.indexOf('DEFAULT_CONSTITUTION');
+  const block = at < 0 ? '' : eng.slice(at, eng.indexOf('\n};', at));
+  if (!block) find('tuning', 'engine-core/src/session.ts has no DEFAULT_CONSTITUTION for Appendix A to name');
+  const corpus = [eng, uncomment(read('packages/engine-core/src/tokens.ts')),
+    uncomment(read('packages/server/src/config.ts'))].join('\n');
+  const num = (s) => {
+    const t = String(s).replace(/_/g, '').trim();
+    return /^[0-9.*+ ]+$/.test(t) ? Function(`"use strict";return (${t});`)() : NaN;
+  };
+  let named = 0;
+  for (const r of rows) {
+    for (const m of (r.code || '').matchAll(/`([A-Za-z_][A-Za-z0-9_]*)(\(\))?`(?:\s*=\s*([^·|]+))?/g)) {
+      const [, name, fn, want] = m;
+      named++;
+      if (fn) {
+        if (!new RegExp(`function ${name}\\b`).test(corpus))
+          find('tuning', `Appendix A names \`${name}()\`, which the tuning sources do not define`);
+        continue;
+      }
+      const def = block.match(new RegExp(`^\\s*${name}:\\s*([^,\\n]+)`, 'm'))
+        || corpus.match(new RegExp(`^\\s*(?:export )?const ${name}\\s*=\\s*([^;\\n]+)`, 'm'));
+      if (!def) { find('tuning', `Appendix A names \`${name}\`, which the tuning sources do not define`); continue; }
+      if (want === undefined) continue;
+      const got = num(def[1]), said = num(want);
+      if (!Number.isFinite(got) || !Number.isFinite(said) || got !== said)
+        find('tuning', `Appendix A says ${name} = ${String(want).trim()}; the source says ${def[1].trim()}`);
+    }
+  }
+  note(`  ${named} tuning constants named, each defined at the value Appendix A states`);
+}
+
 function checkMergeable() {
   const WINDOW = 8000; // git's FIRST_FEW_BYTES, in xdiff/xutils.c
   const files = execSync('git ls-files -- packages scripts design docs package.json',
@@ -1371,6 +1422,7 @@ checkListJoiner();
 checkClaudeMd();
 checkLedger();
 checkCandidateStates();
+checkTuning();
 checkMergeable();
 
 console.log(findings.length ? `\n${findings.length} disagreement(s)` : '\nspec and code agree');
