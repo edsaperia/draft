@@ -864,7 +864,7 @@
             // `room-pulse`: one beat per movement by anybody, yourself
             // included — content-free by rule (what moved is never said)
             SESSION.beat();
-            syncFromCs(); hydrateValues(S.open); render();
+            syncFromCs(); hydrateSeen(false); hydrateValues(S.open); render();
           }
         })
         .catch((e) => console.warn('[live] view', e && e.message));
@@ -9631,6 +9631,22 @@
       const k = pkeyOf(q.setting);
       S.myAns[k] = PAGEVAL[k] ? PAGEVAL[k](q.myAnswer) : q.myAnswer;
     }
+    hydrateSeen(true);
+  }
+  /**
+   * **What is settled is re-read on every poll, not only at boot** (Q919 (b),
+   * Ed 2026-08-27; built 2026-09-07 — the seat matrix's whole member-hat
+   * cluster was this). `S.seen` is page state, and until today only `hydrateS`
+   * wrote it, once, at boot: a member's page open across a later founder act
+   * never learned the setting settled, `blocksOrder` hid every card below it,
+   * and the band stopped dead for as long as the tab stayed open — while a
+   * page booted a minute later carried everything. The poll calls this with
+   * `withOks` false: the acknowledgement half stays boot-only, because an OK
+   * pressed between two polls would otherwise be un-pressed by a view fetched
+   * before the command landed (the two-press family, Q846).
+   */
+  function hydrateSeen(withOks) {
+    const v = cs.v;
     // settled means confirmed here (the server's record IS the confirm),
     // and acknowledged means not owed (§9.0b)
     const owed = new Set(v.view.owedOks);
@@ -9651,7 +9667,7 @@
         // only ever *added*, so an acknowledgement given once could never be
         // taken back — and a change re-owes the OK it dropped, which is the
         // whole mechanism by which a change announces itself.
-        if (st.settledBy !== null) {
+        if (withOks && st.settledBy !== null) {
           if (owed.has(midOf(c.k))) { S.okd.delete('set-' + c.k); S.okd.delete('res-' + c.k); }
           else { S.okd.add('set-' + c.k); S.okd.add('res-' + c.k); }
         }
