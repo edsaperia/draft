@@ -8,7 +8,6 @@ The index, in the section's own order (nothing is pinned — Ed, 2026-09-07, Q12
 
 | # | Title | Raised | State | Pointers |
 |---|---|---|---|---|
-| 1283 | `feed()` drops deadlocked races from serving, where SPEC §8.3b serves them until nothing is left for *you* | 2026-09-07 | open — a possible engine drift, found by the Q1262 re-read | `session.ts` `feed()`, `nothingElseToJudge`; SPEC §8.3b, R-072 |
 | 1282 | A lapsed member is offered a constitutional answer the module refuses | 2026-09-07 | open — a page bug | `mustAct` for a motion card, session-view.html; SURFACE E10 |
 | 1281 | The applicant's live page throws on load | 2026-09-07 | open — a page/server bug, live at docs.vote since applicants existed | `server.ts` the applicant payload; `remoteCS` in session-view.html; `strangerAsView` |
 | 1280 | The stranger's settled Admissions card has no rule block | 2026-09-07 | open — a page bug | `strangerReadBody` / `ctx.headFor`, session-view.html; SURFACE §9 the stranger's settled card |
@@ -101,8 +100,6 @@ The index, in the section's own order (nothing is pinned — Ed, 2026-09-07, Q12
 | 1016 | The seat-matrix row for a shielded Text | 2026-08-29 | a rider on the next harness change | `scripts/seat-matrix.mjs` |
 | 1033 | A motion-backed 👑 question at a vacated seat | 2026-08-29 | answered (a), owed | R-060; `crownSeatVacated` |
 | 1205 | `seat-matrix` is red | 2026-09-06 | diagnosed 2026-09-07: 56 → 21 (walk) → 11 (Q919 (b), Q920 built); what stands is 1281, 1282 and a gate-news cluster still unread | `scripts/seat-matrix.mjs`; 1280–1282 |
-
-1283. **`feed()` drops deadlocked races from serving, where SPEC §8.3b serves them until nothing is left for *you*.** (Found by the router re-read of 2026-09-07, Q1262 — an aside outside that item.) `feed()` filters `allRaces` to the non-deadlocked before it builds a hand, while §8.3b (R-072) says a deadlocked race *is served to you as an ordinary race, and is disclosed as deadlocked only once it has nothing left to ask you*. `nothingElseToJudge` honours the per-participant half — it asks whether *you* have a usable comparison on each deadlocked race — but the serving half reads global: once a race is deadlocked, nobody is dealt its pairs, whether or not they have judged it. Either the spec's sentence or the filter is wrong, and it is a mechanism question: does a member who has never judged a deadlocked race still get its pairs? For Ed.
 
 1282. **A lapsed member is offered a constitutional answer the module refuses.** (Found by the seat-matrix re-read of 2026-09-07, Q1205.) `mustAct` for a motion card (session-view.html, the motion branch) is *viewer is a member, has not answered, is not excluded by the motion* — with no *active* test — so a lapsed member's rail carries the 🏛️ card and their answer comes back refused (`session.ts`, *is not in the motion's electorate*). SURFACE E10's audience is *every active member*. The `may*` gotcha exactly: an act you cannot take must not be offered. Fix: the motion card's `mustAct` asks the lapse as `canJudge` does.
 

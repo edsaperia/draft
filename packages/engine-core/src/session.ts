@@ -2182,10 +2182,29 @@ export class Session {
    * (the same active-sampling rule races use), and never more than three
    * in a row per participant. Pure: same state and time, same feed.
    */
+  /**
+   * **A deadlocked race still asks the members it has never heard from**
+   * (SPEC §8.3b, R-072; Ed, 2026-09-07, Q1283). Deadlock is a fact about the
+   * evidence so far, and a participant with no usable comparison on the race
+   * is the one source of evidence that fact does not cover — their judgments
+   * can tip it, or are what a bridge (§6.3) needs. So the race is served to
+   * them as an ordinary race, and is disclosed as deadlocked only once it has
+   * nothing left to ask them. One test, read by the feed and by the
+   * empty-queue check alike.
+   */
+  private deadlockStillAsks(r: RaceView, participantId: string): boolean {
+    if (!r.deadlocked) return false;
+    const usable = this.usableComparisons(r.members, r.incumbentId);
+    return !usable.some((c) => c.participantId === participantId);
+  }
+
   feed(participantId: string, n: number, t: number = this.lastT): Card[] {
     this.activeParticipant(participantId);
     const allRaces = this.races();
-    const races = allRaces.filter((r) => !r.deadlocked);
+    // a deadlocked race leaves everybody's feed except the members it has
+    // never heard from (§8.3b; until Q1283 it left every feed, and the
+    // disclosure rule below was only half of the spec's sentence)
+    const races = allRaces.filter((r) => !r.deadlocked || this.deadlockStillAsks(r, participantId));
     if (allRaces.length === 0) return [];
     const E = this.eCount();
     const liveQuestions = allRaces.length;
@@ -2396,9 +2415,7 @@ export class Session {
     cheap: boolean,
   ): boolean {
     for (const r of allRaces) {
-      if (!r.deadlocked) continue;
-      const usable = this.usableComparisons(r.members, r.incumbentId);
-      if (!usable.some((c) => c.participantId === participantId)) return false;
+      if (this.deadlockStillAsks(r, participantId)) return false;
     }
     for (const r of races) {
       const fit = this.fitRaceMembers(r.members, r.incumbentId);
