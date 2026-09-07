@@ -36,21 +36,9 @@ recorded here as they are made, so Ed can flip any of them cheaply.
 - **The quorum form never converts**: resolution refuses answers in the wrong
   form rather than converting count↔share, because the form is the frame the
   question was asked under (§9.0a — delegate the decision, not the field).
-- ~~The mover answers like everybody~~ **Reversed by Ed 2026-08-18 (v0.49)**:
-  the mover stands at accept from the moment the motion is put — proposers
-  prefer their own proposals, the same way §3.3 counts an author's own
-  preference without asking. Revisable like any answer; 🗑️ stays their way out.
 - **A motion carried by pure abstention carries nothing**: at least one
   standing accept is required, because a motion nobody consented to is not a
   consent.
-- ~~**A document-abstainer's standing keep leaves with them**~~ — **retired
-  with sign-out (Q1196, Ed 2026-09-06)**: there is no sign-out and no freeze;
-  quorum is the adoption floor and only that (SPEC v0.99, R-088; `types.ts`
-  keeps the legacy events as no-ops on replay). As it stood: the electorate
-  is live (v0.48), and abstaining the document is "I trust you to finish up"
-  — so a keep from a member who then signs out abstaining stops blocking.
-  Confirmed by Ed 2026-08-18 (*abstain means abstain — if they wanted to
-  block it, they shouldn't have signed out*; Q371 closed).
 - **Convenor direct-change on reserved settings post-start is uniform**,
   constitutional ones included (Ed's 366; the reservation was consented by
   everybody on the way in, the crown argument generalised). A member's route
@@ -59,12 +47,6 @@ recorded here as they are made, so Ed can flip any of them cheaply.
   exemption is gone, because consent's everyone does not include a clerk,
   and a member-convenor's accept in the vote is their answer as a member,
   not their assent as holder.
-- ~~On convenor lapse every reserved setting passes to the members~~
-  **Reversed by Ed 2026-08-18 (v0.49)**: lapse is automatic abstention, and
-  on an assent, abstaining is granting — nothing changes hands, every
-  reserved setting stays reserved, pending 👑 questions pass by themselves,
-  and while the crown sleeps a members-passed change applies as if accepted.
-  Revival is logging in (`crown-returned`), restoring the assent requirement.
 - **Late pace/ending resolution re-anchors prospectively**: if a non-gate
   pacing question resolves after constituted, the anchors reseed at that
   moment — a room-decided ramp can lower the bar from its fixed-interim
@@ -72,14 +54,6 @@ recorded here as they are made, so Ed can flip any of them cheaply.
 - **`memberReturn` emits only when something revives** (lapse, sign-out, a
   warning); routine activity rides the member's own commands, so the log
   carries no heartbeats.
-- ~~**Delegating 'applications' releases both holds at once**~~ (v0.52) —
-  **superseded by Q506 (below)**: the crown pair left the value for the
-  setting, so there is no register crown to release. As it stood: the
-  membership's crown lives in the applications *value* (§9.7½), so the
-  hand-over event flips the setting's holder and, if the value says
-  'reserved', rewrites it to 'members' — "delegate anything" must not
-  leave the register crowned behind a members-held policy. Q389 records
-  the one-sentence reading this commits to.
 - **The reserve payload excludes the text, the register, applications and
   personal settings**: the text is never held (changed by drafting, §9.7),
   the register is held through applications, and the membership's road
@@ -90,13 +64,6 @@ recorded here as they are made, so Ed can flip any of them cheaply.
   crown-lapse event — with its auto-assent mode — fires at the next tick,
   since the clocks are event-driven and never preempted. A 👑 question
   raised in that gap simply auto-passes at the tick.
-- ~~**`applications.holder` is the convenor's frame, not part of the consent**~~
-  — **superseded by Q506 (below)**; a legacy `holder` still validates and
-  folds onto the powers (`values.ts`, `session.ts` *the legacy holder*). As it
-  stood:
-  the delegated question collects the join-policy rung; the holder (the crown
-  choice) is consented by joining, the way §9.7 says — so the consent order
-  compares rungs only.
 - **The engine-bridge's standing diff** (367b). sync() relays what stands by
   diffing every raceable setting's cs value against the engine's standings
   map, rather than by pattern-matching the events that could have changed
@@ -104,12 +71,6 @@ recorded here as they are made, so Ed can flip any of them cheaply.
   constitutional amendment, a hand-over) — the diff is immune to new routes
   being added and cannot double-apply. Roster events are relayed
   event-by-event because they have no value to diff.
-- ~~**Admit-motions still adjudicate by the host's hand**~~ (367b residual) —
-  **superseded (v0.56, Q397)**: an admit motion is its own one-candidate race
-  in the bridge (`enterAdmitRace`, `engine-bridge.ts`). As it stood: An
-  application (§9.7½) is an ordinary motion with no scalar value to race,
-  so the bridge does not enter it in the engine; its engine shape is part
-  of Q391's design work. The seam stays open for it.
 - **Bar amendments: the engine glides, the cs display re-seeds** (367b).
   engine-core re-anchors on any ceiling or close change — keep the current
   value, ride to the (new) ceiling over the remainder, §4.3's "a bar never
@@ -118,22 +79,6 @@ recorded here as they are made, so Ed can flip any of them cheaply.
   disagree with the engine's glide while a ramp is live. The engine is the
   adjudicating authority (adoption tests against engine.adoptionThreshold);
   cs.bar() is display. Reconcile if a surface ever draws both.
-- ~~**The two powers ride the settings; the register's ride its value**~~
-  (v0.54) — **superseded by Q506 (below)**: both pairs ride the settings now.
-  As it stood:
-  A setting's crown is `SettingState.powers` and changes by relinquish /
-  delegate / reclaim / the reserve motion; the register's crown stays inside
-  the applications value (four holder states) and changes by changing that
-  value. One corner deliberately left: a founder holding assent-only on the
-  applications setting cannot rewrite its value directly, so they cannot
-  soften the register's own powers by hand — the room can, by motion, and
-  delegation of the applications setting still un-crowns the register whole.
-- ~~**Q395 order**~~ (v0.54) — **went with the field (Q506 below)**: the
-  blind question collects the join policy alone. As it stood: the
-  applications consent tiebreak ranks holders
-  both > assent-only > unilateral-only > members, on the reasoning that
-  assent restricts the members while unilateral only adds a founder power.
-  Wants Ed's eye; the primary key (join policy) is unchanged.
 - **The Text is held like anything else** (Q440, 2026-08-21). `startingText`
   now carries a crown pair (`HELD` = the managed map plus the Text), held
   by the founder from creation, relinquished on the same clock as every
@@ -221,3 +166,70 @@ it down or the page performs 🍾's batch for them.
   once an hour per member (`SEEN_EVERY_MS`), folding to the same activity touch an
   act makes. A lapsed member's read records nothing — revival stays an act
   (`memberReturn`). The server calls it on every member view.
+
+## Superseded
+
+The calls above that were later reversed or retired, gathered here on 2026-09-07 (Ed, Q1260) so the live calls read first. Each keeps its strike, its date and its reason; the reasoning behind each reversal is in `design/DECISIONS.md`.
+
+- ~~The mover answers like everybody~~ **Reversed by Ed 2026-08-18 (v0.49)**:
+  the mover stands at accept from the moment the motion is put — proposers
+  prefer their own proposals, the same way §3.3 counts an author's own
+  preference without asking. Revisable like any answer; 🗑️ stays their way out.
+
+- ~~**A document-abstainer's standing keep leaves with them**~~ — **retired
+  with sign-out (Q1196, Ed 2026-09-06)**: there is no sign-out and no freeze;
+  quorum is the adoption floor and only that (SPEC v0.99, R-088; `types.ts`
+  keeps the legacy events as no-ops on replay). As it stood: the electorate
+  is live (v0.48), and abstaining the document is "I trust you to finish up"
+  — so a keep from a member who then signs out abstaining stops blocking.
+  Confirmed by Ed 2026-08-18 (*abstain means abstain — if they wanted to
+  block it, they shouldn't have signed out*; Q371 closed).
+
+- ~~On convenor lapse every reserved setting passes to the members~~
+  **Reversed by Ed 2026-08-18 (v0.49)**: lapse is automatic abstention, and
+  on an assent, abstaining is granting — nothing changes hands, every
+  reserved setting stays reserved, pending 👑 questions pass by themselves,
+  and while the crown sleeps a members-passed change applies as if accepted.
+  Revival is logging in (`crown-returned`), restoring the assent requirement.
+
+- ~~**Delegating 'applications' releases both holds at once**~~ (v0.52) —
+  **superseded by Q506 (below)**: the crown pair left the value for the
+  setting, so there is no register crown to release. As it stood: the
+  membership's crown lives in the applications *value* (§9.7½), so the
+  hand-over event flips the setting's holder and, if the value says
+  'reserved', rewrites it to 'members' — "delegate anything" must not
+  leave the register crowned behind a members-held policy. Q389 records
+  the one-sentence reading this commits to.
+
+- ~~**`applications.holder` is the convenor's frame, not part of the consent**~~
+  — **superseded by Q506 (below)**; a legacy `holder` still validates and
+  folds onto the powers (`values.ts`, `session.ts` *the legacy holder*). As it
+  stood:
+  the delegated question collects the join-policy rung; the holder (the crown
+  choice) is consented by joining, the way §9.7 says — so the consent order
+  compares rungs only.
+
+- ~~**Admit-motions still adjudicate by the host's hand**~~ (367b residual) —
+  **superseded (v0.56, Q397)**: an admit motion is its own one-candidate race
+  in the bridge (`enterAdmitRace`, `engine-bridge.ts`). As it stood: An
+  application (§9.7½) is an ordinary motion with no scalar value to race,
+  so the bridge does not enter it in the engine; its engine shape is part
+  of Q391's design work. The seam stays open for it.
+
+- ~~**The two powers ride the settings; the register's ride its value**~~
+  (v0.54) — **superseded by Q506 (below)**: both pairs ride the settings now.
+  As it stood:
+  A setting's crown is `SettingState.powers` and changes by relinquish /
+  delegate / reclaim / the reserve motion; the register's crown stays inside
+  the applications value (four holder states) and changes by changing that
+  value. One corner deliberately left: a founder holding assent-only on the
+  applications setting cannot rewrite its value directly, so they cannot
+  soften the register's own powers by hand — the room can, by motion, and
+  delegation of the applications setting still un-crowns the register whole.
+
+- ~~**Q395 order**~~ (v0.54) — **went with the field (Q506 below)**: the
+  blind question collects the join policy alone. As it stood: the
+  applications consent tiebreak ranks holders
+  both > assent-only > unilateral-only > members, on the reasoning that
+  assent restricts the members while unilateral only adds a founder power.
+  Wants Ed's eye; the primary key (join policy) is unchanged.
