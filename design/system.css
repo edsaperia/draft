@@ -1406,7 +1406,9 @@
     position: relative; z-index: 1;
   }
   .clausehead .achip.wmark:hover {
-    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 42%, var(--bg)); transform: none;
+    /* the active tab keeps the hover lift every other tab has (Ed,
+       2026-09-06; a `transform: none` here had pinned it flat) */
+    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 42%, var(--bg));
     box-shadow: -1px 1px 1px rgba(0, 0, 0, 0.09), -4px 3px 6px rgba(0, 0, 0, 0.16);
   }
   .clausehead .achip.wmark:active { transform: none; }
