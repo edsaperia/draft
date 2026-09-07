@@ -30,15 +30,35 @@
  *   proposal  — the applicant raises a **task**: a rail entry naming them, a
  *               row under *Applicants*, and a card offering the three lanes —
  *               *Admit them* against the membership as it stands, ✓ to file it.
- *   assembly  — the same task, in its 🏛️ form: the consent picks, with a
- *               refusal among them, committing on the assembly hold (entry 78).
+ *   assembly  — the same task, in its 🏛️ form: the consent card's three
+ *               blocks (Q1182, T48) — the membership as it stands, the
+ *               applicant joining, Abstain — committing on the assembly hold
+ *               (entry 78).
  *   pen       — no task and no applicant row; **news**, with an OK, they having
  *               joined the moment they opened the link (Q894–Q896), which is
  *               also why the card names them by their address: they have given
  *               no name, having never filled an application in.
  */
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import vm from 'node:vm';
 import { chromium } from 'playwright';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
+
+// The card's words come from `design/copy.js`, read here the way copy-check
+// reads it — evaluated in a bare context, so the assertion is the file's own
+// strings against what the page rendered, never a literal that drifts the
+// next time the copy moves (which is how the assembly assertion went red on
+// every push from 2026-09-05, Q1182 having rewritten the consent card).
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const COPY = (() => {
+  const ctx = { window: {} };
+  ctx.globalThis = ctx;
+  vm.createContext(ctx);
+  vm.runInContext(readFileSync(join(ROOT, 'design', 'copy.js'), 'utf8'), ctx, { filename: 'copy.js' });
+  return ctx.window.COPY;
+})();
 
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
 const PRICE = (process.argv.find((a) => a.startsWith('--price=')) || '--price=proposal')
@@ -329,10 +349,19 @@ if (admEntry) {
     return {
       // the lane's name is the block's text since CP1 (2026-08-31) — every
       // radio reads *Prefer this*; a textless block's button names the act
+      // the radio's own word: a two-state radio holds its *off* and *on*
+      // labels in two spans and shows one, so the visible one is read —
+      // `textContent` on the button would join them (*AbstainAbstain*)
       lanes: [...c.querySelectorAll('.lanepick')].map((b) => {
         const p = b.closest('.pick');
         const t = p && p.querySelector('.opttext');
-        return ((t && t.textContent) || b.textContent).trim();
+        const off = b.querySelector('.off');
+        return ((t && t.textContent) || (off && off.textContent) || b.textContent).trim();
+      }),
+      // what each radio says unpressed (T48: the act it stands for)
+      radios: [...c.querySelectorAll('.lanepick')].map((b) => {
+        const off = b.querySelector('.off');
+        return ((off && off.textContent) || b.textContent).trim();
       }),
       ok: !!c.querySelector('[data-ok]'),
       tick: !!c.querySelector('[data-admitgo], [data-confirm]'),
@@ -353,16 +382,26 @@ if (admEntry) {
    * 🪪/🤝). Both priced forms of the admit card draw three `.lanepick`s, so a
    * bare count cannot tell 🪪 *assembly* from 🪪 *proposal* — and the promise
    * each price makes is a different promise. At *assembly* nobody joins
-   * without everyone's consent: the card is a 🏛️ question with a refusal
-   * among its answers and it commits on the assembly hold. At *proposal* the
-   * membership decides at the threshold: the card is a judgment between the
-   * applicant and the membership as it stands, and it commits with ✓. The
-   * seat matrix cannot say this — it asserts *who carries the entry*, not what
-   * the card asks — so it is asserted here, per price. */
+   * without everyone's consent: the card is a 🏛️ question in the settled
+   * two-block grammar (SURFACE §9's *constitutional motion (consent)* row,
+   * Q1182, STYLE T48) — the membership as it stands under *Keep this*, the
+   * applicant joining under *Prefer this*, *Abstain* as its own textless block
+   * — and it commits on the assembly hold. At *proposal* the membership
+   * decides at the threshold: the card is a judgment between the applicant
+   * and the membership as it stands, and it commits with ✓. The seat matrix
+   * cannot say this — it asserts *who carries the entry*, not what the card
+   * asks — so it is asserted here, per price. The consent card's words are
+   * copy.js's own (`consent`, `grammar.lane`); the proposal card's three
+   * words are still inline in session-view.html, so they stand here as
+   * literals — the commit row's `grammar.commit.indifferent` is another
+   * site's string and is not borrowed for it. */
   const FORM = {
-    assembly: { want: ['I would rather they did not', 'I accept them joining', 'Abstain'],
+    assembly: {
+      want: [COPY.page.consent.staysAsIs, COPY.page.consent.joins(NAME), COPY.page.consent.abstain],
+      radios: [COPY.page.consent.keepThis, COPY.grammar.lane.prefer, COPY.page.consent.abstain],
       commit: 'confirm', called: 'a 🏛️ question' },
-    proposal: { want: ['Admit them', 'Keep the membership as it is', 'Indifferent'],
+    proposal: {
+      want: ['Admit them', 'Keep the membership as it is', 'Indifferent'],
       commit: 'admitgo', called: 'a judgment at the threshold' },
   }[PRICE];
   if (FORM && card) {
@@ -371,6 +410,12 @@ if (admEntry) {
       say('FAIL: at 🪪 ' + PRICE + ' the card should be ' + FORM.called + ' — ' +
         JSON.stringify(FORM.want) + ', saw ' + JSON.stringify(card.lanes));
       stuck.push('the ' + PRICE + ' lanes');
+      formOk = false;
+    }
+    if (FORM.radios && JSON.stringify(card.radios) !== JSON.stringify(FORM.radios)) {
+      say('FAIL: at 🪪 ' + PRICE + ' the radios should name the acts (T48) — ' +
+        JSON.stringify(FORM.radios) + ', saw ' + JSON.stringify(card.radios));
+      stuck.push('the ' + PRICE + ' radios');
       formOk = false;
     }
     if (card.commit !== FORM.commit) {
