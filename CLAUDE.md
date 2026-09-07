@@ -72,6 +72,7 @@ Use these names in all discussion, commits, and code. Literal and stable beats e
 | Retired name | Went to | Why |
 |---|---|---|
 | `document-creation`, `founding-ceremony` (the surface), `setup.html` | `session-view.html` | there is one page (Q418 (a)) |
+| `founding-ceremony` (the concept) | `blind-founding` | one name for two things (Q1243, Ed 2026-09-07); SPEC §9.0a and the log's `settledBy: 'ceremony'` keep the word |
 | `edit-wallet` | `propose-wallet` | — |
 | `setup-piles` | `constitution-section` | — |
 | `drafting-desk`, `arrival-bar`, `bounty-board`, `redline` | gone | — |
@@ -94,7 +95,7 @@ Use these names in all discussion, commits, and code. Literal and stable beats e
 - `dedup-gate` [concept] — submission-time duplicate check (embeddings, edit distance, LLM equivalence) plus behavioral dedup probes. SPEC §5.
 - `race-labeler` [symbol] — advisory naming and typing of disputes, from the oracle's `describeRace` with a deterministic nearest-heading fallback. Outside the state machine: labels never enter the event log and gate nothing (Q49).
 - `document-modes` [concept] — two independent settings fixed at creation: the **window** (an end datetime, or none) and the **threshold shape** (fixed, or ramping). Only a perpetual document is constrained to a fixed threshold. SPEC §9.0. The surface asks the window on one card, ⏰, with *never* among its answers — SURFACE §8's `ORDER` row 14.
-- `founding-ceremony` [concept] — the blind collection before any drafting: each member states the lowest they will accept and the document takes the maximum of each. A consent rule rather than a vote, which is what lets it escape the constitutional bootstrap. SPEC §9.0a; the surface's order is SURFACE §8.
+- `blind-founding` [concept] — the blind collection before any drafting (`founding-ceremony` until Q1243): each member states the lowest they will accept and the document takes the maximum of each. A consent rule rather than a vote, which is what lets it escape the constitutional bootstrap. SPEC §9.0a; the surface's order is SURFACE §8.
 - `coherence-auditor` [concept] — machine drafter patrolling document drift on a fixed token budget. **Not a member**: it never judges and counts toward no quorum. No surface card since 2026-08-29 (backlog 251); the `machines` setting stays in the catalogue for replay, and a question delegated before the card went is resolved at 🍾 by its `retiredAnswer` (entry 259, R-080). SPEC §10.
 
 **Design system** (session-view's, tokenised — every surface adopts it rather than inventing its own):
