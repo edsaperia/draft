@@ -7,8 +7,8 @@
 > is created. `/var/data` below was the disk's mount path; on a service with
 > no disk, use a directory under `/tmp` for imports and exports.
 
-Written 2026-08-20 as stage 6 landed. The design it executes is in
-PRODUCTION.md ("the cutover is two variables"); this is the procedure.
+Written 2026-08-20 as stage 6 landed. The design it executes — the cutover
+is two variables — is `docs/OPERATING.md` §7; this is the procedure.
 
 ## The two switches
 
@@ -100,11 +100,16 @@ and a diverged one is refused.
 One row per log entry: `document_log` and `engine_log`, primary key
 `(document_id, seq)`, columns `prev_hash`, `hash`, `event` (text — the
 exact serialised bytes; `event::jsonb` where a reader wants it),
-`schema_version` (nullable: absent means 1). `provisional`, `bridge_state`
-keyed by document; `tokens` and `stashes` keyed by hash and key with an
-expiry index; `schema_migrations` records what has been applied. Every
-migration runs at boot, once, under an advisory lock; a build that finds a
-newer schema than it knows refuses to start.
+`schema_version` (nullable: absent means 1). `documents` lists them;
+`provisional`, `bridge_state` keyed by document; `tokens` and `stashes`
+keyed by hash and key with an expiry index; `outbox` is the durable mail
+queue (migration 4, review #1 finding 15); `schema_migrations` records what
+has been applied. Four migrations so far (`pg-persistence.ts` `MIGRATIONS`):
+the first schema, then `stashes.slug` (Q460/462 — the address reserved at
+the birth), `stashes.doc_id` (Q519 — a re-sent link forwards to the document
+the first one made), and `outbox`. Every migration runs at boot, once, under
+an advisory lock; a build that finds a newer schema than it knows refuses to
+start.
 
 Writes to a document's log take a per-document advisory lock for the
 batch, and the primary key refuses a second writer on the same seq — a
@@ -113,7 +118,7 @@ deploy overlapping its predecessor cannot fork a chain.
 ## Local rehearsal
 
 The pinned container: `postgres:17-alpine`, `127.0.0.1:5433`, user /
-password / database `draft` (PRODUCTION.md has the `docker run`). The
+password / database `draft` (`docs/OPERATING.md` §7 has the `docker run`). The
 whole server test suite runs over it with
 
     DRAFT_TEST_STORE=pg DRAFT_TEST_DATABASE_URL=postgres://draft:draft@127.0.0.1:5433/draft npm test -w @draft/server

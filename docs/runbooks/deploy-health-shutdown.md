@@ -7,7 +7,8 @@ Written 2026-08-20 as stage 7 landed. For the map of what runs where, see
 
     curl -s https://docs.vote/healthz
 
-    {"ok":true,"build":"<commit sha>","store":"pg","documents":3,"uptimeSeconds":912}
+    {"ok":true,"build":"<commit sha>","catalogue":[…],"store":"pg","documents":3,
+     "uptimeSeconds":912,"mail":"on","outbox":{…},"errors":{…},"cooldownMs":0}
 
 Production has read `"store":"pg"` since the cutover of 2026-08-20; a
 `"file"` there means `DRAFT_STORE` is unset and the instance is writing to
@@ -17,12 +18,16 @@ a disk that no longer exists between deploys.
   `RENDER_GIT_COMMIT`; `DRAFT_BUILD_SHA` elsewhere). Compare with
   `git rev-parse origin/main`. CI polls this after every deploy and refuses
   to verify until it matches the pushed SHA.
-- `store` is `file` (the JSONL layout on the persistent disk) or `pg`
-  (Postgres). Until the stage-6 cutover this says `file`.
+- `store` is `file` (the JSONL layout under the data directory) or `pg`
+  (Postgres). Production says `pg`.
 - `documents` is how many documents loaded at boot. After a restore, this
   is the first number to read.
 - `uptimeSeconds` resets on every deploy or crash. A small number you did
   not cause means the process restarted: read the logs.
+- `mail` is `off` while `DRAFT_MAIL_OFF=1` holds the outbox; `errors` counts
+  the throws nobody handled since boot and is the number to watch between
+  sessions; `cooldownMs` is the adoption metronome in force. All three:
+  `docs/OPERATING.md` §2 and §4.
 
 Render's own health check points at `/healthz` (render.yaml). A service
 created from an earlier blueprint keeps its old path until changed in the

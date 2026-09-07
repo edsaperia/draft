@@ -2,8 +2,9 @@
 
 What runs where, what configures it, how a deploy happens, and where the
 bytes live. Written for somebody who did not build it. PRODUCTION.md is the
-plan and carries the reasoning; this file is the map, and where the two
-disagree the code wins — every claim here was checked against
+plan — the stages, what is left of them, the decisions — and
+`design/DECISIONS.md` carries the reasoning; this file is the map, and where
+they disagree the code wins — every claim here was checked against
 `packages/server/src/config.ts`, `render.yaml`, `.github/workflows/ci.yml`
 and `scripts/verify-deploy.mjs` rather than against the plan.
 
@@ -48,7 +49,8 @@ in the repo).
 | `DRAFT_BASE_URL` | Absolute origin used in **mailed links** and in the same-origin check | `http://localhost:<port>` | Dashboard → `https://docs.vote`. Also a **GitHub Actions repository variable** of the same name, which is what CI verifies against |
 | `DRAFT_SECRET` | HMAC secret for session cookies and for tokens at rest | A random 32-byte secret persisted to `secret.txt` in the data dir | `render.yaml`, `generateValue: true` — so nothing is written to the disk in production |
 | `RESEND_API_KEY` | Real mail when set; the dev outbox otherwise | unset | Dashboard |
-| `DRAFT_MAIL_FROM` | The `From` header on every mail | `docs.vote <invitations@mail.docs.vote>` | Dashboard, `sync: false` — **read §6, trap 2 before trusting it** |
+| `DRAFT_MAIL_FROM` | The `From` header on every mail | `docs.vote <invitations@mail.docs.vote>` | Dashboard, `sync: false` — **read §8, trap 2 before trusting it** |
+| `DRAFT_MAIL_OFF` | The mail kill-switch (stage 16): `1` holds every queued mail **pending** — nothing is lost and nothing goes out — and clearing it delivers the backlog. `/healthz` reports it as `mail: off` | unset (mail on) | Not set. An env-var change and a restart; no deploy |
 | `DRAFT_NOTIFY_EMAIL` | Operator notification: every document birth is mailed here | `edsaperia@gmail.com`, compiled in | Not set. Setting it **empty** switches the notification off |
 | `DRAFT_STORE` | `file` or `pg` — where the bytes live. Absent means `file`. An unrecognised value is a **boot refusal**, never a fallback | `file` | Not set. This is the Postgres cutover switch (§7) |
 | `DATABASE_URL` | Postgres connection string; required when `DRAFT_STORE=pg` | unset | Dashboard, when it exists — the frankfurt database's **internal** connection string |
@@ -82,10 +84,16 @@ There is no separate deploy step. **A push to `main` is a deploy.** Commit
 freely; pushing is the decision.
 
 1. Push to `main`.
-2. CI (`.github/workflows/ci.yml`) runs `npm ci`, `npm run lint`,
-   `npm run typecheck`, `npm test`, `npm run spec-check`, `npm run build`,
-   and re-runs the server's own tests against Postgres with
-   `DRAFT_TEST_STORE=pg npm test -w @draft/server`.
+2. CI (`.github/workflows/ci.yml`) has three jobs. **`ci`** — the only one
+   that deploys — runs `npm ci`, `npm run lint`, `npm run typecheck`,
+   `npm test`, `npm run spec-check`, `npm run copy-check`,
+   `npm run clock-check`, re-runs the server's own tests against Postgres
+   with `DRAFT_TEST_STORE=pg npm test -w @draft/server`, then
+   `npm run build`. **`probe`** (the two design probes, the copy walk,
+   probe coverage) and **`walks`** (a dev server booted in the job, then
+   `journey`, `applicants-walk`, `slug-walk`, `ladder` and `room-walk`
+   against it) run in parallel with `ci` and cannot hold the deploy: a red
+   there is a red X on the commit, not a held deploy.
 3. CI runs a **boot smoke** on the artifact: it must refuse to boot with no
    secrets; configured, it must serve `/`, serve `/setup.js`, answer
    `/healthz` with `"store":"file"`, send `x-content-type-options: nosniff`,
@@ -121,20 +129,21 @@ npm run verify https://docs.vote
 or equivalently `node scripts/verify-deploy.mjs https://docs.vote`. It
 prints one line per check and exits non-zero if any failed.
 
-The ten default checks: `/` serves HTML · `/healthz` states its build, store
-and document count and is `no-store` · the security headers (`nosniff`,
-`no-referrer`, and the three CSP directives) · HSTS a year with
+The twelve default checks: `/` serves HTML · `/healthz` states its build,
+store and document count and is `no-store` · the security headers
+(`nosniff`, `no-referrer`, and the three CSP directives) · HSTS a year with
 `includeSubDomains` · plain http is redirected and never served · the dev
-outbox is 404 · API responses are `no-store` · design assets serve while
-notes, probe tooling and the frozen reference copies 404 · an unknown
-document 404s in JSON without leaking internals · a cross-origin auth POST
-is refused 403.
+outbox is 404 · the phase ladder is not in the artifact (Q674) · API
+responses are `no-store` · design assets serve while notes, probe tooling
+and the frozen reference copies 404 · the approval-threshold explainer
+serves at `/pairwise` · an unknown document 404s in JSON without leaking
+internals · a cross-origin auth POST is refused 403.
 
 ```
 npm run verify https://docs.vote -- --limits
 ```
 
-adds an eleventh: it hammers `/api/docs/pending` — the one rate-limited door
+adds a thirteenth: it hammers `/api/docs/pending` — the one rate-limited door
 that neither sends mail nor writes a log — with a *spoofed*
 `x-forwarded-for` on every request, and expects a 429. It is off by default
 because it leaves a 429 in the platform's logs.
