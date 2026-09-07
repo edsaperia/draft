@@ -101,7 +101,6 @@ The index, in the section's own order (the first seven were pinned at the front 
 | 1016 | The seat-matrix row for a shielded Text | 2026-08-29 | a rider on the next harness change | `scripts/seat-matrix.mjs` |
 | 1033 | A motion-backed 👑 question at a vacated seat | 2026-08-29 | answered (a), owed | R-060; `crownSeatVacated` |
 | 1205 | `seat-matrix` is red | 2026-09-06 | open | `scripts/seat-matrix.mjs` |
-| 1223 | 1017, 1022, 1031 — released numbers: reclaimable? | 2026-09-07 | waiting on Ed | QUESTIONS.md *Spent numbers*; Q1109–1112 |
 | 1224 | 919 (b) and 920 — owed builds the pass could not verify | 2026-09-07 | waiting on Ed | QUESTIONS.md; Q919, Q920; `session-view.html:9572`; `session.ts:351`, `:2900` |
 | 1225 | 1009 — is it closed? | 2026-09-07 | waiting on Ed | QUESTIONS.md; Q1009; Q1122–1128; plan-queue BACKLOG 191 |
 | 1226 | 913 — moved on the spent block's word | 2026-09-07 | waiting on Ed | QUESTIONS.md; Q913; `ci.yml:175–189` |
@@ -450,8 +449,6 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 
 1205. **`seat-matrix` is red, and was before either of 2026-09-06's builds** — 56 findings and a `TypeError … reading 'closed'`, identical from a worktree at `b62fcbc`. CI's `walks` job does not run it, so nothing went red. Needs a look before it is trusted again; until then a claim that a seat change is safe cannot lean on it.
 
-1223. **1017, 1022, 1031 — released numbers: reclaimable?** (Raised by the documents pass of 2026-09-07, QUESTIONS.md log §6 item 14.) The pass wrote them beside the next-free line as *reclaimable by the precedent of 1109–1112*. If the rule is instead that a released number is dead, the sentence should say so.
-
 1224. **919 (b) and 920 — owed builds the pass could not verify.** (Raised by the documents pass of 2026-09-07, QUESTIONS.md log §6 item 15.) 919 (a) is built (`session-view.html:9572–9573`); whether (b), `S.seen` rebuilt on every poll, landed is unclear — `settled()`'s comments (`~L3105–3115`) say the live path no longer needs `S.seen` for the cards that bit, which may be (b) by another road. 920: the fold compares against the roster (`session.ts:351`) but `convenorRecord()` still hands back the struct with its `isMember` field (`session.ts:2900`). Both kept as *answered, owed*; a session that knows should update the state line.
 
 1225. **1009 — is it closed?** (Raised by the documents pass of 2026-09-07, QUESTIONS.md log §6 item 16.) Both halves are built (the extraction `18710a9`; the §8.1 tabulation Q1122–1128, a 60-row table). What remains is raising plan-queue's watch limit, an edit outside this tree. Readings: (a) close here and let plan-queue's BACKLOG 191 carry the limit; (b) keep until the limit moves.
@@ -625,7 +622,7 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1280** — claim by writing the block here, then commit it alone. Released and unspent, reclaimable by the precedent of 1109–1112: **1017** (claimed with 1015–1016 for backlog entry 159), **1022** (with 1020–1021 for entry 160), **1031** (with 1030 for entry 173).
+**The next free number is 1280** — claim by writing the block here, then commit it alone. **A released number is dead** (Ed, 2026-09-07, Q1223): claimed and unused, it is never reused, so a number always dates its item — **1017** (claimed with 1015–1016 for backlog entry 159), **1022** (with 1020–1021 for entry 160), **1031** (with 1030 for entry 173) stay unspent for ever; 1109–1112's reuse was the one exception, not a precedent.
 
 Every other claim block and built-narrative, and the map of where everything below 260 went, left this file verbatim on 2026-09-07 for `design/DECISIONS.md` § *QUESTIONS.md, the closed items and the spent numbers, lifted 2026-09-07 (the docs pass)*. What stays below is every claim block that still names an open number.
 
