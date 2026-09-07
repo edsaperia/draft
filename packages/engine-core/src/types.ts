@@ -139,8 +139,12 @@ export type CandidateState =
   | 'merged'
   | 'carried'
   | 'withdrawn'
-  /** Displaced incumbent or rebase-failure limbo: not live, kept for the model. */
-  | 'displaced'
+  /**
+   * Rebase-failure limbo (SPEC §2.4, §2.6): no longer live, held until the
+   * author confirms a patch against the current version or withdraws. A
+   * `displaced` state once sat beside it and nothing ever assigned it; it
+   * left when SPEC §2.6 was made to match this union (Q1229, 2026-09-07).
+   */
   | 'rebase-pending'
   /**
    * Cleared bar and floor under 🛡️ on the Text (SPEC §9.7 rule 8, R-056):

@@ -49,7 +49,7 @@ Rule files hold rules; the reasoning behind them lives in `design/`. Where two d
 
 | Document | What it is | Read it when |
 |---|---|---|
-| [`SPEC.md`](SPEC.md) | The mechanism, v0.100 — tables and numbered rules, each pointing at its reasons as `→ why: R-nnn`. The single source of truth. | First, to understand what the engine does. |
+| [`SPEC.md`](SPEC.md) | The mechanism, v0.101 — tables and numbered rules, each pointing at its reasons as `→ why: R-nnn`. The single source of truth. | First, to understand what the engine does. |
 | [`SURFACE.md`](SURFACE.md) | What the surface tells a member and what a control does: the event matrix, the marks, the wallets, the founding order, the card kinds. Asserted against the page's own tables by `npm run spec-check`. | Second, to understand what a member sees. |
 | [`CLAUDE.md`](CLAUDE.md) | The project's operative reference: the vocabulary, the glossary of every named part, and the post-mortems that bite. | Before contributing. |
 | [`design/STYLE.md`](design/STYLE.md) | The surface-copy checklist every string a member can read has to pass. | Before touching `copy.js`. |

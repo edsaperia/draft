@@ -1312,6 +1312,28 @@ function checkLedger() {
   note(`  ${rows.length} ledger rows resolve`);
 }
 
+/**
+ * SPEC §2.6's candidate state set against engine-core's `CandidateState`
+ * (Ed, 2026-09-07, Q1229): the spec lists every state the engine can hold a
+ * candidate in, and nothing else — a state in one list and not the other is
+ * either an unwritten mechanism or a dead union member.
+ */
+function checkCandidateStates() {
+  note('SPEC §2.6 state set — equals engine-core’s CandidateState');
+  const spec = read('SPEC.md');
+  const m = spec.match(/^\*\*2\.6 [^\n]*?state \{([^}]*)\}/m);
+  if (!m) { find('states', 'SPEC §2.6 no longer carries a `state {…}` set'); return; }
+  const specSet = new Set(m[1].split(',').map((s) => s.trim().replace(/\*/g, '')).filter(Boolean));
+  // comments first, since a doc comment on a member may carry a semicolon
+  const ts = read('packages/engine-core/src/types.ts').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+  const u = ts.match(/export type CandidateState =([\s\S]*?);/);
+  if (!u) { find('states', 'engine-core/src/types.ts has no `CandidateState` union'); return; }
+  const codeSet = new Set([...u[1].matchAll(/'([a-z-]+)'/g)].map((x) => x[1]));
+  for (const s of specSet) if (!codeSet.has(s)) find('states', `SPEC §2.6 lists state \`${s}\`, which CandidateState does not have`);
+  for (const s of codeSet) if (!specSet.has(s)) find('states', `CandidateState has \`${s}\`, which SPEC §2.6 does not list`);
+  note(`  ${specSet.size} states agree`);
+}
+
 function checkMergeable() {
   const WINDOW = 8000; // git's FIRST_FEW_BYTES, in xdiff/xutils.c
   const files = execSync('git ls-files -- packages scripts design docs package.json',
@@ -1345,6 +1367,7 @@ checkBannedWords();
 checkListJoiner();
 checkClaudeMd();
 checkLedger();
+checkCandidateStates();
 checkMergeable();
 
 console.log(findings.length ? `\n${findings.length} disagreement(s)` : '\nspec and code agree');

@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.100
+# Group Drafting Engine — Specification v0.101
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -35,7 +35,7 @@ The record is co-equal with the text: it is where outvoted currents remain visib
 
 **2.5 Surgery.** When a wide patch and a narrow patch collide at one site, the system proposes carving the contested instance into its own race, letting the rest of the wide patch proceed. The author accepts or declines. Surgery also normalizes partial-overlap rivals (A does X+Y, B does X+Z: the X-rivalry becomes its own race; Y and Z proceed independently).
 
-**2.6 Candidate fields.** patch · footprint · author · rationale (≤300 chars, pinned) · stake · evidence record · state {live, adopted, retired, merged, carried, withdrawn}.
+**2.6 Candidate fields.** patch · footprint · author · rationale (≤300 chars, pinned) · stake · evidence record · state {live, adopted, retired, merged, carried, withdrawn, rebase-pending, awaiting-assent, undecided}. Three states beyond the six of the race's own life (Ed, 2026-09-07, Q1229): **rebase-pending** — a patch whose rebase onto a newly adopted text failed (§2.4), no longer live, held until its author confirms a patch against the current version or withdraws it, the stake refunded whole either way; **awaiting-assent** — cleared the bar and the floor under 🛡️ on the Text, out of every feed and every race, unjudgeable and unwithdrawable, leaving only by the convenor's answer or as *undecided* at the close (§9.7 rule 8 → why: R-056); **undecided** — unresolved at the close, the incumbent standing but not kept (§4.6). The set is engine-core's `CandidateState`, and `spec-check` holds the two equal.
 
 **2.7 Convenor guidance (non-normative).** Localize cross-cutting concerns in the starting text as legal drafting does — a definitions section turns renames into one-line patches. The patch model catches what document engineering cannot.
 
