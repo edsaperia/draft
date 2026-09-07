@@ -1433,6 +1433,12 @@ describe("the stranger's door (Q452/455/456)", () => {
     const chamberRow = k.body.view.settings.find((s) => s.setting === 'chamber')!;
     expect(chamberRow.holder).toBe('members');
     expect(chamberRow.settledBy).toBeNull();
+    // …🪪 among them (Q1280): the door left `admission` out from its first
+    // build, when the setting was the membership list itself, and the
+    // stranger's settled Admissions card opened over an empty head
+    const admissionRow = k.body.view.settings.find((s) => s.setting === 'admission');
+    expect(admissionRow, 'the door serves the 🪪 rule').toBeDefined();
+    expect(admissionRow!.kind).toBe('constitutional');
 
     // the founder takes 🌍 back pre-start: now the founder is deciding — unnamed, so "The founder"
     await cmd(ada, 'reclaim', { setting: 'chamber' });

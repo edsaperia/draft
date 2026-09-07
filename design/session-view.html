@@ -3132,7 +3132,14 @@
   const motionExcludesMe = (c) => { const rec = liveMotionRec(c);
     return !!(rec && rec.payload && rec.payload.kind === 'remove' &&
       removalPrice() === 'assembly' && rec.payload.member === viewerId()); };
-  const mustAct = (c) => (motionOn(c) ? (viewerIsMember() && !answeredMotion(c) && !motionExcludesMe(c))
+  // **A lapsed member is not asked** (Q1282, 2026-09-07): a lapse leaves the
+  // motion electorate (§9.5a), so the module refuses their answer — *is not
+  // in the motion's electorate* — and a card offering it is the `may*`
+  // mistake exactly: an act you cannot take must not be offered. SURFACE
+  // E10's audience is *every active member*; the lapsed see it waiting.
+  const viewerLapsed = () => { if (!cs || !viewerIsMember()) return false;
+    const r = cs.memberRecords().get(viewerId()); return !!(r && r.lapsed); };
+  const mustAct = (c) => (motionOn(c) ? (viewerIsMember() && !viewerLapsed() && !answeredMotion(c) && !motionExcludesMe(c))
     : c.isBegin ? (amFounder() && !constituted())
     : c.isClosing ? false
     // 🪪 is the remedy for a `one-voice` wait, and while that is what the

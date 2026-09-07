@@ -1367,7 +1367,13 @@ export async function createDraftServer(cfg: ServerConfig,
           : null,
       },
       view: {
-        settings: CATALOGUE.filter((e) => e.kind !== 'personal' && e.id !== 'admission').map((e) => {
+        // every rule, 🪪 included (Q1280, 2026-09-07): the door left
+        // `admission` out from its first build, when the setting was the
+        // membership list itself and had no sentence to print; since Q903 it
+        // is a priced rule like 🥾, and without its row the stranger's
+        // settled 🪪 card opened over an empty head. The top-level
+        // `admission` price stays for the door's own Apply arithmetic.
+        settings: CATALOGUE.filter((e) => e.kind !== 'personal').map((e) => {
           const st = cs.settingState(e.id);
           return { setting: e.id, glyph: e.glyph, kind: e.kind, value: st.value,
             settledBy: st.settledBy, holder: st.holder, collecting: st.collecting,
