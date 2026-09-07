@@ -56,9 +56,13 @@
  *     `late` seat, freshly booted, carries all of them, which is the proof.
  *   · **Q920**, `view.convenor.isMember` stale for a clerk — the clerk
  *     document never begins, and every clerk row after `begin` is that.
- *   · the **applicant's live page** has no branch at all: the server's
- *     applicant payload carries no `view` (`server.ts:1448`), and `remoteCS`
- *     reads `self.v.view.*` unguarded, so the seat is dead from `knock` on.
+ *   · the **applicant's live page** had no branch at all (Q1281, fixed
+ *     2026-09-07): the server's applicant payload carried no `view`, and
+ *     `remoteCS` read `self.v.view.*` unguarded, so the seat was dead from
+ *     `knock` on — and read as *quiet*, because `liveBoot`'s catch swallowed
+ *     the throw and the snapshot's failure dropped the seat from every
+ *     audience. `knock` now asserts the page booted as the applicant, and an
+ *     `unstood` seat is a red run (exit 1), never a line in the report.
  *
  * Two things learned building it (2026-08-27), both load-bearing:
  *  · **Presence is stamped hourly** (`SEEN_EVERY_MS` in session.ts), so a
@@ -912,7 +916,16 @@ const RUN = {
     const body = await r.json().catch(() => null);
     if (r.status !== 200 || !body || !body.devLink) throw new Error(`the door refused the knock → ${r.status} ${JSON.stringify(body)}`);
     await s.page.goto(body.devLink);
-    await s.page.waitForTimeout(1800);
+    await s.page.waitForTimeout(2200);
+    // **the seat is read, not assumed** (Q1281): a page that booted as
+    // nobody is an unstood seat, and an unstood seat is a red run — this is
+    // the page that threw on load for as long as applicants existed while the
+    // walk went on submitting for it by fetch
+    const f = await s.page.evaluate(() => (window.__founding ? window.__founding() : null));
+    if (!f || f.viewer !== 'applicant') {
+      throw new Error(`the applicant's page did not boot as the applicant seat — viewer ${JSON.stringify(f && f.viewer)}`);
+    }
+    if (!f.rail.includes('apply')) throw new Error(`the applicant's rail holds no Apply card: ${JSON.stringify(f.rail)}`);
     s.stood = true; D.stoodAt.applicant = stepIndex(step.id);
     const sub = await cmdAs(D, 'applicant', 'submit-application', { name: s.def.person, words: 'I bake.' });
     if (sub.status !== 200) throw new Error(`submit-application → ${sub.status} ${JSON.stringify(sub.body)}`);

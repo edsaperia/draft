@@ -2296,6 +2296,122 @@ describe('🥾 exile, resignation and the shut door say so (Q901, E31–E33)', (
 });
 
 /**
+ * **An applicant is a stranger who has knocked** (Q1281, 2026-09-07). The
+ * applicant's view used to be a thin payload with no `view` at all, and the
+ * live page — which has a door branch and a member branch — fell through to
+ * the member one and threw on its first `view.*` read: a blank surface for
+ * every applicant at docs.vote, for as long as applicants have existed. The
+ * seat is now served the door's own payload plus the application, so what the
+ * page's predicates read is exactly what a stranger's are given; the privacy
+ * line of stage 3 defect 7 is the door's line — no members' emails, no
+ * questions, no answers — and the one number the applicant's card promises,
+ * *n of E have voted on it*, is a count the server makes and never a name.
+ */
+describe('the applicant is served the door plus their application (Q1281)', () => {
+  type ApplicantPayload = {
+    stranger: boolean; me: string; canRead: boolean; text: string | null;
+    applyOpen: boolean; seq: number; eseq: number;
+    applicant: { id: string; email: string; status: string; motion: string | null; judged: number };
+    view: { settings: unknown[]; gates: { proposing: boolean; judging: boolean }; crowned: boolean;
+      members?: unknown; questions?: unknown; motions?: unknown };
+  };
+  it('carries the stranger’s view, stranger: false, and a judged count that names nobody', async () => {
+    const { base } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Knock Charter', email: 'ada@example.org',
+    })).json() as { ok: boolean; slug: string; devLink: string };
+    const ada = cookieOf(await consume(created.devLink));
+    const slug = created.slug;
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const res = await post(base, `/api/d/${slug}/cmd`, { cmd: name, args }, cookie);
+      return await res.json() as { ok?: boolean; error?: string; result?: unknown };
+    };
+    const ok = async (cookie: string, name: string, args: unknown) => {
+      const body = await cmd(cookie, name, args);
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+    };
+    const viewOf = async (cookie: string, since?: string) =>
+      (await (await fetch(`${base}/api/d/${slug}/view${since ? '?since=' + since : ''}`,
+        { headers: { cookie } })).json()) as ApplicantPayload;
+    await ok(ada, 'confirm-starting-text', { text: 'The latch lifts from inside.' });
+    await ok(ada, 'set-setting',
+      { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
+    const values: Record<string, unknown> = {
+      ending: { endsAtMs: null }, pace: { shape: 'fixed' }, bar: { pct: 60 },
+      quorum: { form: 'count', n: 1 }, chamber: { rung: 'link' },
+      authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
+      applications: { apply: true }, admission: { price: 'proposal' },
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await ok(ada, 'reclaim', { setting });
+      await ok(ada, 'set-setting', { setting, value });
+    }
+    await ok(ada, 'set-convenor-membership', { isMember: true });
+    await ok(ada, 'begin', {});
+    const knock = await (await post(base, `/api/d/${slug}/apply`,
+      { email: 'dee@example.org' })).json() as { ok: boolean; devLink: string };
+    expect(knock.ok).toBe(true);
+    const dee = cookieOf(await consume(knock.devLink));
+
+    // -- verified, not yet submitted: the door's view, plus the application --
+    const v0 = await viewOf(dee);
+    expect(v0.stranger).toBe(false);
+    expect(v0.me).toMatch(/^app:/);
+    expect(v0.applicant.id).toBeTruthy();
+    expect(v0.applicant.email).toBe('dee@example.org');
+    expect(v0.applicant.status).toBe('verified');
+    expect(v0.applicant.motion).toBeNull();
+    expect(v0.applicant.judged).toBe(0);
+    expect(v0.applyOpen).toBe(true);
+    // the rules and the gates, as the door serves them
+    expect(Array.isArray(v0.view.settings)).toBe(true);
+    expect(v0.view.settings.length).toBeGreaterThan(5);
+    expect(v0.view.gates).toEqual({ proposing: true, judging: true });
+    // 🌍 link: the text is readable to a link-holder
+    expect(v0.canRead).toBe(true);
+    expect(v0.text).toContain('The latch lifts from inside.');
+    // …and never the room: no member rows with emails, no questions, no
+    // motions (stage 3, defect 7)
+    expect(v0.view.members).toBeUndefined();
+    expect(v0.view.questions).toBeUndefined();
+    expect(v0.view.motions).toBeUndefined();
+    expect(JSON.stringify(v0)).not.toContain('ada@example.org');
+    // the poll's short answer works for an applicant as for everybody
+    const quiet = await viewOf(dee, `${v0.seq}.${v0.eseq}`);
+    expect((quiet as unknown as { view?: unknown }).view).toBeUndefined();
+    expect(quiet.seq).toBe(v0.seq);
+
+    // -- submitted: the motion is open, and the applicant's own voice on the
+    // race (the bridge lends it as author) is not a judge --------------------
+    await ok(dee, 'submit-application', { name: 'Dee', words: 'I bake.' });
+    const v1 = await viewOf(dee);
+    expect(v1.applicant.status).toBe('submitted');
+    expect(v1.applicant.motion).toBeTruthy();
+    expect(v1.applicant.judged).toBe(0);
+    expect(JSON.stringify(v1)).not.toContain('ada@example.org');
+
+    // -- the founder judges the admit race: one judge, counted, unnamed -----
+    const adaView = await (await fetch(`${base}/api/d/${slug}/view`,
+      { headers: { cookie: ada } })).json() as MemberViewPayload;
+    const admitCard = adaView.raceCards.find((c) =>
+      (c.a.setting?.settingId ?? '').startsWith('admit:') ||
+      (c.b.setting?.settingId ?? '').startsWith('admit:'));
+    expect(admitCard).toBeTruthy();
+    const admitSide = (admitCard!.a.setting?.settingId ?? '').startsWith('admit:') &&
+      !admitCard!.a.id.startsWith('inc:') ? 'a' : 'b';
+    await ok(ada, 'judge-race', { a: admitCard!.a.id, b: admitCard!.b.id, outcome: admitSide });
+    const v2 = await viewOf(dee);
+    // one member has voted — and the count survives the race adopting (at
+    // E = 1 the one judgment clears the bar, and the motion waits on the
+    // founder's 🛡️ at `awaiting-crown` with the race gone from `races()`)
+    expect(v2.applicant.judged).toBe(1);
+    expect(['submitted', 'proposed', 'admitted']).toContain(v2.applicant.status);
+    expect(JSON.stringify(v2)).not.toContain('ada@example.org');
+  }, 60_000);
+});
+
+/**
  * 🧭 **The shape rides the pending creation to the save** (entry 166): a
  * row's name on `/api/docs` reaches `store.create` through the token's
  * `pending`, and the save folds it as the founder's own sets — so the

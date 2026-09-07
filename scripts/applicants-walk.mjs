@@ -266,7 +266,7 @@ if (knock.status !== 200 || !knock.body || !knock.body.devLink) {
   const guest = await guestCtx.newPage();
   guest.on('pageerror', (e) => errors.push('applicant: ' + String(e)));
   await guest.goto(knock.body.devLink);
-  await T(1800);
+  await T(2200);
   // **At ✒️ the link is the joining** (Q894–Q896): `/auth/apply` admits the
   // visitor on arrival, so there is no application left to submit and the
   // command is rightly refused. They have given no name either, which is why
@@ -274,18 +274,104 @@ if (knock.status !== 200 || !knock.body || !knock.body.devLink) {
   if (PRICE === 'pen') {
     say('applicant  · ' + APPLICANT + ' opened the link and was admitted on arrival');
   } else {
-    const sub = await guest.evaluate(async ([slug, name]) => {
-      const r = await fetch(`/api/d/${slug}/cmd`, {
-        method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ cmd: 'submit-application', args: { name, words: 'I bake.' } }),
-      });
-      return { status: r.status, body: await r.json().catch(() => null) };
-    }, [SLUG, NAME]);
-    if (sub.status !== 200) {
-      say('FAIL: submit-application → ' + sub.status + ' ' + JSON.stringify(sub.body));
-      stuck.push('submit');
+    /* **The applicant's own page is read, not assumed** (Q1281, 2026-09-07).
+     * This walk used to submit by `fetch` from inside the guest page and never
+     * looked at what that page showed — and for as long as applicants have
+     * existed the live page threw on its first `view.*` read and rendered
+     * nothing, the error swallowed by `liveBoot`'s own catch so `pageerror`
+     * never fired. So the seat is asserted first — the page booted as the
+     * applicant and the rail holds their Apply card — and then the application
+     * is filled in and submitted **on the surface**, the way an applicant does
+     * it: the name card, the picture card (an emoji), the words, then Submit
+     * on the Apply card, which goes over the wire as `submit-application`. */
+    // a readout that throws is the dead page's own report — on the pre-fix
+    // page `__founding()` itself threw inside `remoteCS`'s getters — so it is
+    // caught and printed as the failure line rather than crashing the walk
+    const guestFounding = () => guest.evaluate(() => (window.__founding ? window.__founding() : null))
+      .catch((e) => ({ threw: String(e && e.message).split('\n')[0] }));
+    const gf = await guestFounding();
+    if (!gf || gf.viewer !== 'applicant') {
+      say('FAIL: the applicant\'s page did not boot as the applicant seat — ' +
+        (gf && gf.threw ? 'the readout threw: ' + gf.threw : 'viewer ' + JSON.stringify(gf && gf.viewer)) +
+        ' (Q1281\'s shape: a dead page reads as nobody)');
+      stuck.push('the applicant seat');
+    } else if (!gf.rail.includes('apply')) {
+      say('FAIL: the applicant\'s rail holds no Apply card: ' + JSON.stringify(gf.rail));
+      stuck.push('the applicant\'s rail');
+    } else {
+      say('applicant  · the page booted as the applicant; rail ' + JSON.stringify(gf.rail));
     }
-    say('applicant  · ' + NAME + ' verified and submitted');
+    const openOn = async (k) => {
+      const el = await guest.$(`#rail [data-card="${k}"], #rail [data-q="${k}"]`);
+      if (!el) return false;
+      await el.scrollIntoViewIfNeeded();
+      await el.click();
+      await T(450);
+      return true;
+    };
+    const clickOn = async (sel) => {
+      const ok = await guest.evaluate((s) => {
+        const el = document.querySelector(s);
+        if (!el || el.disabled) return false;
+        el.scrollIntoView({ block: 'center' });
+        el.click();
+        return true;
+      }, sel);
+      await T(420);
+      return ok;
+    };
+    const filled = [];
+    // ✋ the name
+    if (await openOn('appname')) {
+      const inp = await guest.$('.setupcard input[data-appname]');
+      if (inp) { await inp.click(); await guest.keyboard.type(NAME, { delay: 8 }); }
+      if (!(await clickOn('.setupcard button[data-close]'))) filled.push('the name card would not close');
+    } else filled.push('no ✋ card');
+    // 🖼️ the picture: the emoji block, then the first free glyph in the grid
+    if (await openOn('apppic')) {
+      if (!(await clickOn('.setupcard [data-set="appPicPick"][data-val="emoji"]'))) filled.push('no emoji block on 🖼️');
+      if (!(await clickOn('.setupcard button[data-apppic]:not([disabled])'))) filled.push('no glyph to pick on 🖼️');
+      if (!(await clickOn('.setupcard button[data-close]'))) filled.push('the picture card would not close');
+    } else filled.push('no 🖼️ card');
+    // 👋 the words
+    if (await openOn('apptext')) {
+      const lane = await guest.$('.setupcard [data-apptext]');
+      if (lane) { await lane.click(); await guest.keyboard.type('I bake.', { delay: 8 }); }
+      if (!(await clickOn('.setupcard button[data-close]'))) filled.push('the words card would not close');
+    } else filled.push('no 👋 card');
+    if (filled.length) { say('FAIL: filling the application in — ' + filled.join(' · ')); stuck.push('the application'); }
+    // 🪪 Submit — a plain click, not a hold (the application becomes an
+    // ordinary motion; the assembly hold is the members', not the applicant's)
+    if (!(await openOn('apply'))) { say('FAIL: no Apply card to submit from'); stuck.push('the Apply card'); }
+    else if (!(await clickOn('.setupcard button[data-appsubmit]'))) {
+      const why = await guest.evaluate(() => {
+        const b = document.querySelector('.setupcard button[data-appsubmit]');
+        return b ? 'Submit is dark' : 'no Submit button';
+      });
+      say('FAIL: Submit could not be pressed — ' + why); stuck.push('the Submit press');
+    }
+    // the wire answers, then the poll re-reads the record: `submitted` is what
+    // the server said, and the card says so in words
+    let after = null;
+    for (let i = 0; i < 12; i++) {
+      await T(500);
+      after = await guestFounding();
+      if (after && after.applicant && after.applicant.submitted) break;
+    }
+    const cardSays = await guest.evaluate(() => {
+      const c = document.querySelector('.setupcard');
+      return c ? (c.textContent || '').replace(/\s+/g, ' ').trim() : '';
+    });
+    if (!after || !after.applicant || !after.applicant.submitted) {
+      say('FAIL: the application never read as submitted on the page — ' + JSON.stringify(after && after.applicant));
+      stuck.push('submitted on the page');
+    } else if (!/Submitted\./.test(cardSays)) {
+      say('FAIL: the Apply card does not read as submitted: ' + JSON.stringify(cardSays.slice(0, 160)));
+      stuck.push('the Apply card reads Submitted');
+    } else {
+      say('applicant  · ' + NAME + ' verified and submitted on the surface · ' +
+        JSON.stringify((cardSays.match(/Submitted\.[^—]*/) || [''])[0].trim()));
+    }
   }
   await guestCtx.close();
 }

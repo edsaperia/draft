@@ -35,7 +35,7 @@
  * | **lapsed** member | the member branch (`seatAlive` asks only `!m.removed`) | no — §9.5a, a stall, not a departure |
  * | **removed** member | the **door** (`seatAlive` false — review #1, finding 1) | yes |
  * | clerk founder | the member branch (the convenor's seat is always alive) | no — X12, R-042, foundership carries a read |
- * | **applicant** mid-application | their own branch | **yes**, `chamber.rung !== 'closed'` gates `text` (stage 3 defect 7, review #1 finding 12) |
+ * | **applicant** mid-application | their own branch — the **door's payload plus their application** (Q1281) | **yes**, `strangerView`'s `canRead` gates `text` and the register (stage 3 defect 7, review #1 finding 12) |
  * | stranger with the address | the door | yes |
  * | **invitee** who has not followed their link | the door — no cookie, and an invitation is not a membership (§9.6a) | yes |
  *
@@ -391,7 +391,7 @@ describe('🌍 the readers: which cookie is a seat, and which is the door', () =
       { cmd: 'set-identity', args: { name: 'x' } }, d.cookies['cy@example.org']!)).status).toBe(401);
   });
 
-  it('an applicant\'s text read follows 🌍, and their payload never names a member', async () => {
+  it('an applicant\'s text read follows 🌍, and their payload names a member only where the door does', async () => {
     const b = await boot();
     const d = await found(b, { title: 'Harvest Committee', chamber: 'closed',
       applications: true, members: ['bo@example.org'] });
@@ -410,13 +410,19 @@ describe('🌍 the readers: which cookie is a seat, and which is the door', () =
       // their own branch: their application, the document's face, and the
       // text only where 🌍 says so (review #1, finding 12; stage 3 defect 7)
       expect(k.body.applicant, `applicant at ${rung}`).not.toBeNull();
-      expect(k.body.stranger).toBeUndefined();
+      // **an applicant is a stranger who has knocked** (Q1281, 2026-09-07):
+      // the payload is the door's plus their application, and says in as
+      // many words that this seat is not the door
+      expect(k.body.stranger).toBe(false);
       if (rung === 'closed') expect(k.body.text).toBeNull();
       else expect(k.body.text).toContain('apples');
-      // never a member's address, never a member's name, at any rung —
-      // an applicant is not in the room until the room says so
+      // never a member's address, at any rung — an applicant is not in the
+      // room until the room says so; a member's *name* rides the register
+      // exactly where the door serves it to any link-holder (Q508(c)), so
+      // under `closed` it is withheld and under the words rungs it is read
       expect(k.raw, `applicant at ${rung}`).not.toMatch(/bo@example\.org|ada@example\.org/);
-      expect(k.raw, `applicant at ${rung}`).not.toMatch(/Bo Vane/);
+      if (rung === 'closed') expect(k.raw, `applicant at ${rung}`).not.toMatch(/Bo Vane/);
+      else expect(k.raw, `applicant at ${rung}`).toMatch(/Bo Vane/);
       for (const [what, re] of NEVER.filter(([w]) => w !== 'an address' && w !== 'a member\'s wallet')) {
         expect(k.raw, `an applicant was served ${what} at ${rung}`).not.toMatch(re);
       }

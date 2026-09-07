@@ -17,7 +17,7 @@ import { randomBytes } from 'node:crypto';
 import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
 import { CATALOGUE, ConstitutionSession, isShapeName, mayApply, sha256Hex, view } from '../../constitution/src/index.js';
-import type { ApplicationsValue, LogEntry, Price, PriceValue } from '../../constitution/src/index.js';
+import type { ApplicantRecord, ApplicationsValue, LogEntry, Price, PriceValue } from '../../constitution/src/index.js';
 import { DEFAULT_TUNING, authorshipBase } from '../../constitution/src/adapter.js';
 import { Auth } from './auth.js';
 import type { ServerConfig } from './config.js';
@@ -1442,38 +1442,38 @@ export async function createDraftServer(cfg: ServerConfig,
           json(res, 200, { seq, eseq });
           return;
         }
-        // an applicant is served their own application and the document's
-        // face — never the members' emails, the questions, or anybody's
-        // answers (stage 3, defect 7)
+        // **An applicant is a stranger who has knocked** (Q1281, 2026-09-07):
+        // they are served the door's own payload — the rules, the text where
+        // 🌍 lets a link-holder read it, the register on the same rung — plus
+        // their own application, and never the members' emails, the
+        // questions, or anybody's answers (stage 3, defect 7). The old thin
+        // payload carried no `view` at all, and the live page, which has a
+        // door branch and a member branch, fell through to the member one
+        // and threw on its first `view.*` read; every applicant at docs.vote
+        // got a blank surface. The text gate is `strangerView`'s `canRead`
+        // (link | public), which agrees with the old applicant gate
+        // (`rung !== 'closed'`) on every rung the catalogue has.
         if (applicantId !== null) {
           const app = doc.cs.applicantRecords().get(applicantId) ?? null;
-          // the text read follows the 🌍 setting (review #1, finding 12):
-          // an applicant holds the link, so 'closed' — members only —
-          // keeps the charter from them
-          const chamber = doc.cs.settingState('chamber').value as
-            { rung?: string } | null;
-          const mayRead = chamber !== null && chamber.rung !== 'closed';
           json(res, 200, {
-            me: memberId,
-            isFounder: false,
-            devMail: mailer.dev,
-            applicant: app === null ? null : { id: app.id, status: app.status,
-              name: app.name, picture: app.picture, words: app.words,
-              motion: app.motion },
-            title: doc.cs.titleOf,
-            slug: doc.cs.slug,
-            constitutedAtT: doc.cs.constitutedAtT,
             seq,
             eseq,
-            serverNowMs: nowMs,
-            textConfirmed: doc.cs.textConfirmed,
-            text: mayRead ? raceView(doc, memberId, nowMs).text : null,
+            devMail: mailer.dev,
+            ...strangerView(doc, nowMs, session),
+            // the door's payload says `stranger: true`; this seat is not the
+            // door, and the page's door branch must not fire for it
+            stranger: false,
+            me: memberId,
+            isFounder: false,
+            applicant: app === null ? null : { id: app.id, email: app.email,
+              status: app.status, name: app.name, picture: app.picture,
+              words: app.words, motion: app.motion,
+              // how many have judged the admit motion: a count, never who —
+              // the applicant's own card promises *n of E have voted on it*
+              judged: admitJudged(doc, app) },
+            // the page's poll fingerprints these two on every seat
             raceCards: [],
             wallet: null,
-            // E33 (Q901): whether the door is still open, computed as the
-            // stranger's door computes it, so the card can say so before
-            // the press and not only after the refusal
-            applyOpen: applyOpenFor(doc.cs),
           });
           return;
         }
@@ -1804,6 +1804,39 @@ function admissionPrice(cs: ConstitutionSession): Price {
 function applyOpenFor(cs: ConstitutionSession): boolean {
   const applyAllowed = mayApply(cs.settingState('applications').value as ApplicationsValue | null);
   return cs.constitutedAtT !== null && !cs.closed && applyAllowed && admissionPrice(cs) !== 'pen';
+}
+
+/**
+ * How many of the membership have judged an applicant's admit motion — a
+ * **count only**, never who or which way (SPEC §3.5; the applicant's own card
+ * says *n of E have voted on it*, Q1281). Nothing submitted, nothing counted.
+ * A carried motion reads as the whole electorate, as the page's own readout
+ * does. On the constitutional route the answers are the module's; on the
+ * ordinary route the application is a one-candidate race in the engine
+ * (`admit:<id>`, §9.7½) and the judges are the distinct members with a
+ * standing judgment on it — never the applicant, whose own voice the bridge
+ * lends the race as its author (`RaceView.distinctMovers` would count it).
+ */
+function admitJudged(doc: LoadedDoc, app: ApplicantRecord): number {
+  if (app.motion === null) return 0;
+  const rec = doc.cs.motionRecords().get(app.motion);
+  if (rec === undefined) return 0;
+  if (rec.status === 'carried') return doc.cs.E();
+  if (rec.route === 'constitutional') return rec.answers.size;
+  const ed = asEngineDoc(doc);
+  if (ed.bridge === null) return 0;
+  // keyed on the candidate, not the race: a race that has adopted leaves
+  // `races()` while the motion still awaits the crown's assent, and the
+  // judgments that carried it are still the answer to *how many have voted*
+  const ids = new Set(ed.bridge.engine.allCandidates()
+    .filter((c) => c.setting?.settingId === `admit:${app.id}`).map((c) => c.id));
+  if (ids.size === 0) return 0;
+  const judges = new Set<string>();
+  for (const j of ed.bridge.engine.judgments()) {
+    if (j.superseded || j.participantId === app.id) continue;
+    if (ids.has(j.aId) || ids.has(j.bId)) judges.add(j.participantId);
+  }
+  return judges.size;
 }
 
 function json(res: ServerResponse, code: number, payload: unknown): void {

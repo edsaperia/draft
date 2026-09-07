@@ -747,7 +747,8 @@
   let charterKey = null;
   const charterOn = () => constituted();
   function syncCharter() {
-    if (isStranger()) return syncStrangerCharter();
+    // the applicant reads the text exactly where a stranger would (Q1281)
+    if (atTheDoor()) return syncStrangerCharter();
     const on = charterOn();
     // the close re-keys the column: the backlog and the signatures are blocks of the closed document, and a new signature is a new block
     const closeKey = cs && cs.closed ? ' closed:' + closeSignatures().length + ':' + undecidedCount() : '';
@@ -833,7 +834,10 @@
           // path does the same, and without this the member surface would
           // re-render over an empty view with nothing to say why
           if (data.stranger) { STR = data; data = strangerAsView(data); S.viewer = 'stranger'; }
-          else if (S.viewer === 'stranger') { STR = null; S.viewer = 0; }
+          // the applicant's payload is the door's plus their application
+          // (Q1281): reshaped the same way, the application re-read into S
+          else if (data.applicant) { STR = data; data = applicantAsView(data); S.viewer = 'applicant'; hydrateApplicant(data.applicant); }
+          else if (atTheDoor()) { STR = null; S.viewer = 0; }
           // the engine's seq moves on every judgment, proposal and adoption,
           // so it is the cheap fingerprint for the charter's side of the view
           const moved = data.seq !== cs.v.seq || (data.eseq || 0) !== (cs.v.eseq || 0) ||
@@ -854,7 +858,7 @@
           // column somebody is reading drops their selection, and the poll
           // runs every four seconds.
           let repainted = false;
-          if (S.viewer !== 'stranger' && !constituted() && !amFounder()) {
+          if (!atTheDoor() && !constituted() && !amFounder()) {
             const want = data.text || data.provisionalText || '';
             // `proseText` trims, so the comparison does too — otherwise a
             // stored text with an edge newline would repaint for ever
@@ -1402,6 +1406,9 @@
   // the chair holds nothing
   const STRANGER_STUB = { n: '', pic: '', role: 'stranger', ans: {}, okd: new Set() };
   const isStranger = () => S.viewer === 'stranger';
+  // the two seats outside the room, who read the document as the door
+  // shows it (Q1281: an applicant is a stranger who has knocked)
+  const atTheDoor = () => isStranger() || S.viewer === 'applicant';
   const viewerRow = () => (S.viewer === 'applicant' ? APP_STUB
     : isStranger() ? STRANGER_STUB : (S.roster[S.viewer] || S.roster[0]));
   const amFounder = () => !!viewerRow().founder;
@@ -6941,6 +6948,8 @@
   // by magic link before anything can be submitted), member emails are
   // unique, and an empty application is a real application.
   const APPLICANT = { get judged() {
+    // live, the server counts on the motion (Q1281): a count, never who
+    if (cs && cs.isRemote) return (cs.v && cs.v.applicant && cs.v.applicant.judged) || 0;
     if (!cs || !S.app.csId) return 2; // fixture until the module holds it
     const a = cs.applicantRecords().get(S.app.csId);
     const rec = a && a.motion ? cs.motionRecords().get(a.motion) : null;
@@ -7109,9 +7118,14 @@
       const tp0 = document.getElementById('titlepara');
       tp0.classList.remove('open');
       tp0.querySelectorAll('.setupcard').forEach((el) => el.remove());
-      band.innerHTML = (S.open
+      // their own five open as their cards; every other tab is the rule as it
+      // stands, read-only, exactly as the door opens it (Q1183) — an
+      // applicant is a stranger who has knocked (Q1281). This used to wrap an
+      // empty open paragraph around any settings tab an applicant pressed.
+      const own = APPCARDS().some((c) => c.k === S.open);
+      band.innerHTML = (own
         ? '<div class="setrow constsec"><div class="csec"><div class="cpara open">' + applicantCardHtml() + '</div></div></div>' : '') +
-        (settled(card('myemail')) ? bandHtml(groups(), ctx, () => '') : '');
+        (settled(card('myemail')) ? bandHtml(groups(), strCtx, strangerReadCard) : '');
       fitBand(band);
       return;
     }
@@ -7899,13 +7913,14 @@
     const closedNow = !!(cs && cs.closed);
     document.getElementById('doc').classList.toggle('closedpage', closedNow);
     const gone = closedNow && (farewellDone || signedClose() || !viewerIsMember());
-    SESSION.setClosed(gone || isStranger());
+    SESSION.setClosed(gone || atTheDoor());
     // …and the document's own close, which is not the same fact (CP9): the
     // wallets go when the farewell has flown, but a card stops being able to
     // commit the moment the clock runs out.
     SESSION.setDocClosed(closedNow);
+    // the pulse is the room's (SPEC §3.5), and neither seat at the door is in it
     const pulse = document.getElementById('pulse');
-    if (pulse) pulse.style.display = gone || isStranger() ? 'none' : '';
+    if (pulse) pulse.style.display = gone || atTheDoor() ? 'none' : '';
     birthsMuted = false;
   };
   let birthsMuted = false;
@@ -8939,9 +8954,18 @@
     // keystroke into it retires the sentence (Y25; E33) — no render here,
     // the card under the caret must not rebuild
     const retireApply = () => { if (S.doorErr && S.doorErr.k === 'apply') S.doorErr = null; };
-    if (t.dataset.appname !== undefined) { S.app.name = t.value; retireApply(); return; }
+    // **the applicant's ✓ follows the typing** (Q1281): their cards commit
+    // with `data-close`, which `refreshCommit` does not reach, so the name
+    // card's ✓ stayed dark after the name was typed until something else
+    // re-rendered — corrected in place, as every typed-into row is
+    const refreshAppClose = () => {
+      const c = APPCARDS().find((x) => x.k === S.open);
+      const b = document.querySelector('.setupcard button[data-close]');
+      if (c && b) b.disabled = !(c.done() || c.optional);
+    };
+    if (t.dataset.appname !== undefined) { S.app.name = t.value; retireApply(); refreshAppClose(); return; }
     const at = t.closest && t.closest('[data-apptext]');
-    if (at) { S.app.text = at.textContent.trim(); at.classList.toggle('blank', !S.app.text); retireApply(); return; }
+    if (at) { S.app.text = at.textContent.trim(); at.classList.toggle('blank', !S.app.text); retireApply(); refreshAppClose(); return; }
     const sw = t.closest && t.closest('[data-setwhy]');
     if (sw) {
       if (!S.setWhy) S.setWhy = {};
@@ -9154,6 +9178,33 @@
         owedReleases: [], owedMailGiveUps: [], owedAmendments: [], motions: [],
         crownTasks: [], identity: { name: null, picture: null },
         closed: d.closed } };
+  };
+  // **An applicant is a stranger who has knocked** (Q1281, 2026-09-07): the
+  // server serves them the door's payload plus their own application, and
+  // the page reads it through the stranger's projection with that one row
+  // added — the shape `remoteCS`'s `applicantRecords` indexes, so
+  // `cs.applicantRecords().get(S.app.csId)` finds them. `me` is their seat.
+  const applicantAsView = (d) => {
+    const v = strangerAsView(d);
+    const a = d.applicant;
+    return { ...v, me: d.me, stranger: false,
+      view: { ...v.view, applicants: a ? [{ id: a.id, email: a.email || '', name: a.name,
+        picture: a.picture, words: a.words, status: a.status, motion: a.motion }] : [] } };
+  };
+  // the applicant's provisional layer, from the server's record: what they
+  // have typed stays theirs (the server holds nothing until Submit), so a
+  // null field never overwrites a value in hand; `submitted` is the status
+  // (started · verified · submitted · proposed · admitted · refused)
+  const hydrateApplicant = (a) => {
+    if (!a) return;
+    S.app.csId = a.id;
+    if (a.email) S.app.email = a.email;
+    if (a.name !== null && a.name !== undefined) S.app.name = a.name;
+    if (a.picture !== null && a.picture !== undefined) S.app.pic = a.picture;
+    if (a.words !== null && a.words !== undefined) S.app.text = a.words;
+    // the link verified them before the page existed (§9.7½)
+    S.app.started = true; S.app.emailSent = true; S.app.emailVerified = true; S.app.mailOpen = false;
+    S.app.submitted = a.status !== 'started' && a.status !== 'verified';
   };
   const founderInfo = () => (isStranger() && strPayload()
     ? { n: strPayload().founder.name || '', pic: strPayload().founder.picture || '' }
@@ -9501,8 +9552,15 @@
       answerCrownQuestion: (t, question, outcome) => api.cmd('answer-crown-question', { question, outcome }),
       setConvenorMembership: (t, isMember) => api.cmd('set-convenor-membership', { isMember }),
       adjudicateOrdinaryMotion: () => {}, // the engine's job now (Q391a)
-      startApplication: () => { throw new Error('applications go live with Q346'); },
-      verifyApplication: () => {}, submitApplication: () => {}, tick: () => {},
+      // live, the address is verified by the magic link before the page
+      // exists (§9.7½), so nothing starts or verifies an application here;
+      // **submit is the applicant's one act**, and it goes over the wire
+      // (Q1281) — the handler reads the answer, so a refusal at the door
+      // lands under the control that tried (E33)
+      startApplication: () => { throw new Error('an application starts at the door, by magic link'); },
+      verifyApplication: () => {},
+      submitApplication: (t, applicant, fields) => api.cmd('submit-application', fields || {}),
+      tick: () => {},
     };
     return self;
   }
@@ -9864,6 +9922,25 @@
       }, 4000);
         return;
       }
+      // **An applicant is a stranger who has knocked** (Q1281, 2026-09-07):
+      // the door's payload plus their application, read through the
+      // stranger's projection, the rail holding the applicant's own cards.
+      // Until this branch existed the payload fell through to the member
+      // path below and the first `view.*` read threw, and the catch at the
+      // foot of this chain swallowed it — a blank page for every applicant.
+      if (data.applicant) {
+        STR = data;
+        cs = remoteCS(applicantAsView(data));
+        S.viewer = 'applicant';
+        hydrateApplicant(data.applicant);
+        hydrateS();
+        render();
+        setInterval(() => {
+          if (pressInFlight()) return;
+          api.refresh();
+        }, 4000);
+        return;
+      }
       cs = remoteCS(data);
       wireLive();
       syncFromCs();
@@ -9917,7 +9994,14 @@
           api.post('/api/d/' + LIVESLUG + '/stash', { text: proseText() }).catch(() => {});
         }, 800);
       });
-    }).catch((e) => console.warn('[live] boot', e && e.message));
+    }).catch((e) => {
+      // **A swallowed boot error hides a dead seat from every walk** (Q1281):
+      // this warn was the whole of it for as long as applicants have existed,
+      // so Playwright's `pageerror` never fired and the seat read as quiet.
+      // Rethrown out of the chain, the failure is an uncaught error again.
+      console.warn('[live] boot', e && e.message);
+      setTimeout(() => { throw e; });
+    });
   }
 
   function birthBoot() {
@@ -10933,6 +11017,12 @@
   // implementation of the thing under test.
   window.__founding = () => ({
     constituted: constituted(),
+    // which seat booted, and — for an applicant — where their application
+    // stands (Q1281): the walks assert the seat rather than infer it from a
+    // rail that a dead page also leaves empty
+    viewer: S.viewer,
+    applicant: S.viewer === 'applicant'
+      ? { csId: S.app.csId, submitted: S.app.submitted, judged: APPLICANT.judged } : null,
     amFounder: amFounder(), viewerIsMember: viewerIsMember(),
     beginOffered: (() => { try { return beginOffered(); } catch (e) { return String(e); } })(),
     // `holds` is the reason beside each waiting id (Q826) — the walks assert on
