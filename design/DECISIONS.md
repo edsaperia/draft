@@ -4722,3 +4722,92 @@ By the eviction rule (Q736): a gotcha whose mistake is caught by a named automat
 1265. **`holdWallet` is a name the tree no longer has** (Raised by the documents pass of 2026-09-07, design/MOBILE.md log §7 item 2.), but CLAUDE.md's Gotchas still use it (*`holdWallet` asks `mayPen()`*, *the ghost must never become a removal*, *the spend-preview … `holdWallet`*). `spec-check` checks `[symbol]` kinds in the glossary, not names in gotchas, so nothing reddens. MOBILE now says *the wallet family (`penHold`)*; the three CLAUDE.md gotchas are outside this item and were left — for the CLAUDE.md agent or a later pass. **Closed 2026-09-07 (no ruling needed) — the premise was wrong:** `holdWallet` is live (`design/session-view.html`, the const that names the wallet a commit spends from; `isPenCommit` and the pen flight call it), so CLAUDE.md's three gotchas are right as they stand; `penHold` is the hold's state variable beside it. MOBILE.md's re-aim to `penHold` alone is corrected to name both.
 
 1269. **The report's engine observations name a gap that may since have closed** (Raised by the documents pass of 2026-09-07, REPORT-deferred-evidence.md log §7 item 1.): *`ParticipantApi` has no composer-opening call — the runner invokes `Session.openComposer` directly … when the product builds the composer, the participant-api will need that surface.* The composer exists (SURFACE §9.2, K13–K26). Whether `participant-api.ts` grew that call is a code question outside this report's scope; if it did, nothing in the report needs to change (it is dated), but the gotcha it names is worth a look by whoever next touches `participant-api.ts`. **Closed 2026-09-07 (no ruling needed), verified:** `participant-api.ts` still has no composer-opening call, and nothing in the server calls `Session.openComposer` either — only the sim runner does (`runner.ts`). The product's composer is page state that submits through `propose-text`, so the gap the report named is unchanged and now asymmetric: the runner opens a composer the engine tracks, a member never does. A design observation for whoever next touches `participant-api.ts`, not a defect.
+
+## REVIEW-creation-session.md, §7 lifted whole and the file deleted 2026-09-07 (Q1267 (c), Q335 closed)
+
+Ed ruled on 2026-09-07 (Q1267 (c)) that Q335 closes as done by the constitution package — the room-agreed half left engine-core’s reach on 2026-08-19, and engine-core’s one `Constitution` object is accepted as it is — so the file kept only for §7 goes. What it held at deletion, verbatim (its §§1–6 were lifted into this file on 2026-09-07 already):
+
+# Review: document creation → founding questions → live session
+
+An end-to-end walk of the creation process (Ed's ask, 2026-08-18): each step
+checked for sense and for consistency — against SPEC v0.30, against the two
+setup surfaces, against session-view's rules, and against what engine-core
+actually implements. It doubles as the groundwork for Q335 (splitting
+`Constitution`), because the split's contents are exactly what this walk
+surfaces: §7 ends with the definitive settings-to-engine mapping.
+
+**Findings are numbered 338–344** in the project sequence. Unambiguous bugs
+found during the walk were fixed in the same pass and are marked **[fixed]**;
+everything else is a decision and waits for Ed.
+
+**Since 2026-09-07 this file holds §7 alone.** The walk (§1), what held (§2),
+findings 338–344 (§3 — all since answered and built), the v0.31 SPEC fixes
+(§4), the mockup fix (§5) and the integration contract the port was built
+against (§6) are in `design/DECISIONS.md` § *REVIEW-creation-session.md,
+§§1–6 lifted 2026-09-07*, verbatim. The file goes when Q335 lands.
+
+---
+
+## 7. The `Constitution` split (Q335 groundwork)
+
+What the walk establishes about engine-core's `Constitution`, field by field.
+
+**Room-agreed (→ `RoomSettings`, the constitution proper):**
+
+| engine field | card | notes |
+|---|---|---|
+| `adoptionThresholdStart/End` | ✒️ approval threshold | shape implicit (start=end ⇒ fixed); see 341 |
+| `windowStartMs/EndMs` | ⏰ when does it end | perpetual = no end; start semantics are 342 |
+| `tokenGrant` | 🪙 grant | |
+| `tokenDripPerTenth`, `tokenCap` | 💧 drip | per-hour form for perpetual docs not yet in engine |
+| `authorshipVisibility` | 👤 whose proposal | |
+
+**Room-agreed but missing from the engine entirely:**
+
+| setting | card | engine today |
+|---|---|---|
+| quorum (+form) | 👥 | absent — finding 338 |
+| signing | ✍️ | absent |
+| judgments-reveal | 👁️ | absent |
+| chamber | 🔭 | absent (server-side concern, but the *value* is constitutional and belongs in the record) |
+| machine member (+budget) | 🤖 | absent as a setting; `Participant.machine` exists |
+
+**Engine tuning (→ `EngineTuning`, never on a card, never in a motion):**
+`adoptionFloorMax` (pending 338), `deadlockMinComparisons`, `deadlockEpsilon`,
+`cooldownMs`, `redraftLimit`, `rationaleMaxChars`, `boutGapMs`, `hotSetSize`,
+`explorationEvery`, `rivalGateProb`, `rivalGateMinComparisons`,
+`reopenedBoost` — and `salienceEvery`, which is stale (§8.3a superseded it)
+and should be deleted in the same pass.
+
+**Neither:** `stake` becomes a constant (v0.30); `rngSeed` is provenance and
+stays on the session, not in either bag.
+
+Recommendation: implement the split as its own commit once Ed has read this —
+it is still a rename today, and 338's answer decides one field's home.
+
+**Where it stands, 2026-09-07.** The settings the walk called *missing from
+the engine* live in `@draft/constitution`'s catalogue (SPEC §9.7.1: 👥 quorum
+— now the adoption floor, SPEC §4.2 — ✍️ signing, 👁️ judgments, 🌍
+visibility; 🤖 machines retired 2026-08-29), and the cards have been renamed
+since (🌡️ the threshold, ⏰ the window, ⏱️ the proposal rate, 👤 authorship).
+engine-core's `Constitution` (`packages/engine-core/src/types.ts:16`) still
+holds both bags — `adoptionThresholdStart` (:22) beside `cooldownMs` (:42),
+`tokenGrant` (:45), `hotSetSize` (:58) and `salienceEvery` (:62) — which is
+Q335's open half (QUESTIONS.md: *partly answered — SPEC's half done (Q562);
+engine-core's object still one*).
+
+---
+
+*Review conducted 2026-08-18 against SPEC v0.30→31, design/document-creation.html,
+design/founding-ceremony.html, design/setup.js, design/session-view.html, and
+packages/engine-core/src at commit `2f24490`.*
+
+335. **Split `Constitution` into what the room agreed and what the engine is tuned to** **Closed by Ed, 2026-09-07 (Q1267 (c)): done by the constitution package.** The room-agreed half — the 18-setting catalogue, the consent rule, the motions — left engine-core's reach on 2026-08-19 as `@draft/constitution`; engine-core's own `Constitution` stays one object, tuned by Appendix A and the operator's variables, and that is accepted. REVIEW-creation-session.md, kept for this, is deleted; its §7 is in this file above.
+
+    **Where it stands (docs pass, 2026-09-07):** half done — SPEC's Appendix A is *Engine tuning* and §9.7.1 holds the settings (Q562); `packages/engine-core/src/types.ts` still declares one `Constitution` interface with `hotSetSize` beside the threshold (lines 16–19).
+
+    (raised 2026-08-18, PLAN.md §2.2; expanded after Ed asked why it matters). engine-core has one object holding both — the threshold, the grant, the drip, the stake and the window on one side, and `hotSetSize`, `explorationEvery`, `boutGapMs`, `deadlockEpsilon`, `cooldownMs`, `redraftLimit` on the other. Three things go wrong while they share a name. The **record** published at the close would list a tuning constant beside the threshold as though the room had agreed it. The **motion** machinery routes on whether a setting is constitutional, and with one object there is nothing stopping somebody moving to amend `boutGapMs`. And the **ceremony** has no definable output: what the founding questions produce *is* the room’s half of this object, and it cannot produce half of a thing. The cost is a rename across engine-core and sim-harness today, against a data migration once real documents exist with saved settings. Recommendation: **now**. The only reason it is a question at all is that it touches a package that should not change without Ed’s word. **Status 2026-08-18:** the in-depth review Ed asked for is delivered as REVIEW-creation-session.md; its §7 is the definitive field-by-field mapping, and the split is one commit once he has read it (338’s answer decides one field’s home). *The document-level half landed 2026-08-22 (spec pass 1, Q562): Appendix A is now* Engine tuning *and holds only what nobody is asked; the settings are §9.7.1. The engine-core object is still one.*
+
+1267. **§7's table is the 2026-08-18 mapping and Q335 has moved under it.** (Raised by the documents pass of 2026-09-07, REVIEW-creation-session.md log §6 item 1.) Two of its three tables are now wrong in detail (the *missing from the engine* table names settings the constitution package has held since 2026-08-19; the field table names cards by retired glyphs), and its recommendation (*implement the split as its own commit once Ed has read this — it is still a rename today*) predates the constitution package, which took the room-agreed half out of engine-core's reach without splitting the engine's own object. The brief said keep §7 whole, so I did and added the state note. Readings for Ed: (a) leave until Q335 lands (as committed); (b) rewrite §7 as the current mapping — engine-core `Constitution` fields × where each is decided today (catalogue setting / operator env / config field) — which is most of Q335's remaining work and would make this file that work's plan; (c) close Q335 as *done by the constitution package* if the one-bag engine object is acceptable, and delete the file. **Ruled by Ed, 2026-09-07: (c).** Q335 closes as done by the constitution package; the file is deleted, §7 lifted verbatim into DECISIONS; CLAUDE.md's Documents row goes.
+
+1262. **`engine-core/NOTES.md`'s *Dominated (SPEC §6.2, projected per Q11)*** (Raised by the documents pass of 2026-09-07, the package NOTES log §6 item 3.) and its *Router v1 (SPEC §8, simplified)* section describe the first build's router (deterministic slot pattern, c_p median split). The router has since moved (Q1178 *the unheard slots*, `f345167`; §8.3a's diagonal; hot set 3). I corrected nothing there because I could not verify each sentence against `session.ts`'s current routing in the time of this pass; someone who knows the router should read that section against `feed()`. **Done 2026-09-07 (no ruling needed — the item asked someone who knows the router):** a delegated re-read checked every sentence of the two sections against `feed()`, `bestPairFor`, `explorationCard`, `diagonalCard` and `dominated()`. Nine claims stale (the deterministic slot pattern is a seeded per-slot roll; the unheard preference is structural, the leading slots, not a multiplier; diagonals are chosen by active sampling and terminate at `deadlockEpsilon`, not sampled uniformly; costly judges lose only the exploration slot; the `reopenedBoost`, the hot set of three, the pair deck's `servedOut`, the rival gate and R-062 were unmentioned; *Dominated* implied a projection the code deliberately does not make). Both sections rewritten in the file's register, *Router v1* retitled, the two *later refinement* hedges gone. The re-read's one aside — `feed()` drops deadlocked races from serving entirely against §8.3b — is filed as 1283.

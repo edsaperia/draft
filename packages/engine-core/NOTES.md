@@ -20,10 +20,17 @@ needing Ed's sign-off is in QUESTIONS.md; the rest is engineering record.
 - **Fit scope: live members + incumbent.** Comparisons involving retired /
   withdrawn / merged candidates drop out of the race fit. The graveyard's
   evidentiary role (loss accounts, span attribution) is deferred.
-- **Dominated** (SPEC §6.2, projected per Q11): P(incumbent beats X) exceeds
-  the current adoption threshold, on ≥ 5 comparisons involving X. Since the
-  threshold only rises within a session, "the incumbent already clears the
-  current bar against you" is a fair reading of "no realistic path".
+- **Dominated** (SPEC §6.2 — a query, not an event, and not the projection
+  §6.2 asks for): `dominated()` names the candidates the incumbent already
+  beats at the bar *as it stands now*, on at least five usable comparisons in
+  which the candidate is a side (locked, ground-shifted evidence excluded).
+  Today's bar is a floor under any projection's because the ramp is a
+  smoothstep to its closing value and re-anchoring on a moved close never
+  lowers it (`@draft/constitution`'s `barAt`) — with the one caveat that
+  nothing validates a ramp whose start exceeds its end. No engine command
+  fires §6.2's invitation: the composer's summons is the host's to send, and
+  `dominated()` is what it would read. (Re-read against the code 2026-09-07,
+  Q1262.)
 - **Deadlock:** ≥ `deadlockMinComparisons` usable comparisons AND the
   best available pair's value < `deadlockEpsilon`, where pair value =
   posterior variance of the strength difference × outcome unpredictability.
@@ -41,21 +48,45 @@ needing Ed's sign-off is in QUESTIONS.md; the rest is engineering record.
   default to the last event's time, which keeps replays exact; live callers
   pass now. The evidence-clock variant is deferred to the sim (Q26).
 
-## Router v1 (SPEC §8, simplified)
+## The router (SPEC §8; re-read against `feed()` 2026-09-07, Q1262)
 
-- Race value = (leaderP / adoption threshold) × salience weight; races short
-  of the floor get a 1.25× boost in feeds of participants who haven't judged
-  them (§8.2's "unheard preference").
-- Slot pattern is deterministic (every `salienceEvery`-th slot a diagonal,
-  every `explorationEvery`-th an exploration card) rather than sampled;
-  the seeded RNG picks diagonal race pairs. Feeds are pure: same state,
-  same feed — replay-auditable.
-- c_p = mean in-bout response gap (gaps > `boutGapMs` discarded).
-  Participants at or below the median c_p (or without data) get exploration
-  slots; costlier judges get only top-value edges. This implements the v/c_p
-  division of labor without per-pair v/c_p arithmetic.
-- Diagonal cards serve race leaders, uniformly sampled; salience-uncertainty
-  weighting is a later refinement.
+What is still simplified against the spec is the per-pair v/c_p arithmetic,
+approximated as one binary gate; everything else the first build hedged as a
+later refinement has since landed.
+
+- **What a race is worth.** Value = (leaderP / adoption threshold) × salience
+  weight, an unmeasured race entering at 0.5; × 1.25 while the race is short
+  of its floor and unjudged by this participant (§8.2's unheard preference,
+  now a tiebreak inside the hot-set ordering rather than the mechanism); ×
+  `reopenedBoost` (1.5) while a ground shift has locked the race's evidence
+  and nothing fresh has been measured (§4.4, Q50). The hot set is the top
+  `hotSetSize` = 3 by that value (Q31).
+- **How a hand is built.** The leading slots are the *unheard* slots — every
+  floor-short race this participant has not judged, least-measured first —
+  before any hot-set slot is filled (Q1178, `f345167`): a fresh race carries
+  no evidence and so sorts below every measured one, and the multiplier alone
+  starved new proposals, which `room-walk` reproduces. The remaining slots
+  take a seeded per-slot roll rather than a fixed pattern (`roll <
+  1/salienceEvery` a diagonal, then `1/explorationEvery` an exploration card,
+  cheap judges only), so a client fetching one card at a time gets the same
+  mix; the diagonal branch opens only above 2E live questions, and §8.3a's
+  idle serving is a separate budget capped at three in a row
+  (`trailingDiagonalRun`). Feeds are pure in state and in the time argument
+  — same state, same `t`, same feed — so replay is auditable.
+- **Cost, and the pair.** c_p is the mean in-bout response gap (gaps over
+  `boutGapMs` discarded; a member with no data counts as cheap); at or below
+  the roster's upper median it buys exactly one thing, the exploration slot,
+  and with it the shape of the empty-queue test. Within a race the pair
+  dealt is the highest-value one this participant has not already judged on
+  this ground (`servedOut` on `contextKey`, so a race keeps dealing fresh
+  pairs, Q1200), incumbent pairs first while the rival gate is shut (§8.3's
+  "sparingly"), and never the author's own text against the incumbent
+  (R-062).
+- **Diagonals** serve leader against leader, chosen by the same
+  active-sampling value over one race-level salience fit and terminating at
+  `deadlockEpsilon` (§8.3a's "it terminates"); the seeded RNG rolls only
+  what kind of slot it is. Uniform sampling and the "later" salience
+  weighting are both history.
 
 ## Advisory gates beside the sync fold
 
