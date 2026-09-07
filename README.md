@@ -67,7 +67,7 @@ The rest of `package.json`'s scripts are instruments, in two kinds:
 
 | Kind | Scripts | Needs |
 |---|---|---|
-| Headless over `design/` | `probe`, `probe-coverage`, `card-audit`, `toc-travel`, `slider-walk`, `founder-answers`, `founding-golden`, `copy-check -- --walk` | Playwright's Chromium (`npx playwright install chromium`); each serves `design/` itself. `clock-check` needs only node. |
+| Headless over `design/` | `probe`, `probe-coverage`, `card-audit`, `toc-travel`, `slider-walk`, `founder-answers`, `founding-golden`, `copy-check -- --walk` | Playwright's Chromium (`npm run playwright:install`); each serves `design/` itself. `clock-check` needs only node. |
 | Against a running dev server | `journey`, `applicants-walk`, `slug-walk`, `powers-walk`, `ladder`, `room-walk`, `seat-matrix`, `room-bots -- <document url>` | `npm run server` in another terminal, with no `RESEND_API_KEY`. Each checks it is talking to a server built from your tree before it starts. |
 
 What each asserts is in `CLAUDE.md`'s glossary under *Tooling*.

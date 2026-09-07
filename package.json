@@ -19,6 +19,7 @@
     "verify": "node scripts/verify-deploy.mjs",
     "probe": "node scripts/probe.mjs",
     "probe-coverage": "node scripts/probe-coverage.mjs",
+    "playwright:install": "playwright install chromium",
     "card-audit": "node design/tools/card-audit.mjs",
     "clock-check": "node design/tools/clock-check.mjs",
     "toc-travel": "node design/tools/toc-travel.mjs",
