@@ -12,7 +12,7 @@ The index, in the section's own order (nothing is pinned — Ed, 2026-09-07, Q12
 | 1281 | The applicant's live page throws on load | 2026-09-07 | open — a page/server bug, live at docs.vote since applicants existed | `server.ts` the applicant payload; `remoteCS` in session-view.html; `strangerAsView` |
 | 1280 | The stranger's settled Admissions card has no rule block | 2026-09-07 | open — a page bug | `strangerReadBody` / `ctx.headFor`, session-view.html; SURFACE §9 the stranger's settled card |
 | 1195 | Three residuals of the card review round 3 build | 2026-09-05 | waiting on Ed — (b) (c) (d) | SURFACE §7.2, F5; Q1181 |
-| 1177 | `founding-walk --delegate=chamber` is red | 2026-09-02 | open — diagnose before trusting either reading | `scripts/founding-walk.mjs`; SURFACE K13 |
+| 1177 | `founding-walk --delegate=chamber` is red | 2026-09-02 | open — diagnose before trusting either reading; 2026-09-07: red the same way with `--delegate=quorum` and `=bar`, three errors identical at this morning's `030383d` and at the day's head (the pen-release clause, keystrokes lost after the first ✒️, 🍾 not spending the release), so nothing today caused it | `scripts/founding-walk.mjs`; SURFACE K13 |
 | 1178 | The unheard slots: a fresh race is guaranteed the hand's leading cards | 2026-09-05 | waiting on Ed — held for a design conversation | SPEC §8.2–§8.3; `scripts/room-walk.mjs` |
 | 1180 | The dud rail entry: a vote on an unserved race is dropped in silence | 2026-09-05 | waiting on 1178 | `itemsFromView`, `LIVE_HOOKS.judge` |
 | 1179 | A ready race queued behind a standing park is invisible to everyone | 2026-09-05 | waiting on 1178 | R-056; Q1015 |
