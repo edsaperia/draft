@@ -2456,6 +2456,10 @@ describe('the pair deck and the judged-pairs ledger (Q1200, Q1201)', () => {
     expect(led2).toHaveLength(3);
     expect(led2.filter((j) => pairOf({ a: { id: j.a }, b: { id: j.b } }) === pairOf(first)))
       .toEqual([{ a: first.a.id, b: first.b.id, outcome: incumbentSide, locked: false }]);
+    // and the revised pair keeps its place (Q1203): the ledger is ordered by
+    // the first time each pair was judged, so the block order is unchanged
+    expect(led2.map((j) => pairOf({ a: { id: j.a }, b: { id: j.b } })))
+      .toEqual(led.map((j) => pairOf({ a: { id: j.a }, b: { id: j.b } })));
     expect(onRace(v4)).toHaveLength(0);
 
     // -- blind: no standing on the wire, and no ledger but your own

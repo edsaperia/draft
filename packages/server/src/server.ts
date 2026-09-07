@@ -409,9 +409,19 @@ export async function createDraftServer(cfg: ServerConfig,
         // about anybody else's enters here, and `superseded` ones are gone
         // because the revision replaced them. An author's derived preference
         // for their own text (§3.3) is not a judgment and is not in
-        // `judgments()`, so their ledger holds only what they cast.
-        myJudgments: here.filter((j) => !j.superseded)
-          .map((j) => ({ a: j.aId, b: j.bId, outcome: j.outcome, locked: j.locked })),
+        // `judgments()`, so their ledger holds only what they cast. **A pair
+        // keeps its place when revised** (Q1203, Ed 2026-09-07): the order
+        // is the first time the member judged each pair, not the time of
+        // the verdict that stands, so the ledger reads as the list of what
+        // they were asked and a revision never moves a block.
+        myJudgments: (() => {
+          const key = (j: { aId: string; bId: string }) => [j.aId, j.bId].sort().join(' ');
+          const firstAt = new Map<string, number>();
+          here.forEach((j, i) => { if (!firstAt.has(key(j))) firstAt.set(key(j), i); });
+          return here.filter((j) => !j.superseded)
+            .sort((x, y) => firstAt.get(key(x))! - firstAt.get(key(y))!)
+            .map((j) => ({ a: j.aId, b: j.bId, outcome: j.outcome, locked: j.locked }));
+        })(),
       };
     });
     const mine = api.myCandidates().flatMap((m) => {
