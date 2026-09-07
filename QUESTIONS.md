@@ -101,7 +101,6 @@ The index, in the section's own order (the first seven were pinned at the front 
 | 1016 | The seat-matrix row for a shielded Text | 2026-08-29 | a rider on the next harness change | `scripts/seat-matrix.mjs` |
 | 1033 | A motion-backed 👑 question at a vacated seat | 2026-08-29 | answered (a), owed | R-060; `crownSeatVacated` |
 | 1205 | `seat-matrix` is red | 2026-09-06 | open | `scripts/seat-matrix.mjs` |
-| 1220 | 259 — the founding ceremony wants designing | 2026-09-07 | waiting on Ed | QUESTIONS.md; Q259; SURFACE §8 |
 | 1221 | 251 — the token economy's perpetual form | 2026-09-07 | waiting on Ed | QUESTIONS.md; Q251, Q248 |
 | 1222 | 267 — moved as a record | 2026-09-07 | waiting on Ed | QUESTIONS.md; Q267 |
 | 1223 | 1017, 1022, 1031 — released numbers: reclaimable? | 2026-09-07 | waiting on Ed | QUESTIONS.md *Spent numbers*; Q1109–1112 |
@@ -453,8 +452,6 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 
 1205. **`seat-matrix` is red, and was before either of 2026-09-06's builds** — 56 findings and a `TypeError … reading 'closed'`, identical from a worktree at `b62fcbc`. CI's `walks` job does not run it, so nothing went red. Needs a look before it is trusted again; until then a claim that a seat change is safe cannot lean on it.
 
-1220. **259 — the founding ceremony wants designing.** (Raised by the documents pass of 2026-09-07, QUESTIONS.md log §6 item 11.) The founding is built (SURFACE §8: the order, the band, the birth's layout); `document-creation` is a retired name. Readings: (a) close; (b) keep as the pointer to what the founding still lacks — which nothing in the item names.
-
 1221. **251 — the token economy's perpetual form.** (Raised by the documents pass of 2026-09-07, QUESTIONS.md log §6 item 12.) The drip runs on real minutes everywhere (⏱️, `proposal-rate`), so the perpetual form exists. What stands is the calibration worry — at v1 defaults a wallet sits near its cap and a full wallet says nothing. Readings: (a) close and let 248 (the ⌈E/3⌉ calibration) carry the calibration family; (b) keep, retitled as the calibration worry.
 
 1222. **267 — moved as a record.** (Raised by the documents pass of 2026-09-07, QUESTIONS.md log §6 item 13.) The item recorded a numbering collision and said *now that you have seen it, it can go*. It was moved (not deleted) so the number stays findable. Ed to confirm.
@@ -580,7 +577,6 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 | 248 | The ⌈E/3⌉ has never been calibrated | 2026-08-16 | open — wants a sweep | SPEC §8.2 |
 | 251 | The token economy has no perpetual form | 2026-08-16 | largely overtaken — the drip runs on real minutes; the calibration worry stands (log Q12) | `proposal-rate` |
 | 252 | A perpetual document loses the reset | 2026-08-16 | open | SPEC §9.4, §4.5 |
-| 259 | The founding ceremony is a third ceremony, and wants designing | 2026-08-16 | overtaken — the founding is built (log Q11) | SURFACE §8 |
 
 1209. **Every settings title is an ask — imperative or question, case by case; the noun titles go**
 
@@ -639,12 +635,6 @@ One reversal to expect if approval is built: it produces the **more legible reco
     (raised 2026-08-16). Grant 4, drip 1 per 10% of window, reset each session — none of it survives a document without a window (§9.0). The drip becomes a rate against real time and the reset simply goes, but the rate and cap want choosing, and the choice is now visible to members rather than internal: Ed's `edit-wallet` (2026-08-16) draws tokens as ✏️ glyphs, one vanishing per use, with the next one inking in as the drip accrues. Worth knowing before tuning it: §7's calibration note says participants **sit near the cap** at v1 defaults, so in a windowed document the wallet would show eight full pencils all session and say nothing. Two risks in that. A device that never moves is not earning its place; and a visibly depleting wallet reintroduces psychological friction that the economy does not actually require, which cuts against the whole point of the always-on composer. Either the economy tightens enough for the display to be honest, or the wallet stays quiet while it is full. *Half-answered 2026-08-16 by the composer: proposing spends a pencil and withdrawing returns it, so the wallet now answers your own actions and is not purely decorative. The calibration worry stands — at v1 defaults a real member still sits near the cap.*
 
 252. **A perpetual document loses the reset** (raised 2026-08-16, from §9.0). §9.4 and §4.5 lean on it: next session the threshold resets, the backlog re-enters stake-waived, and everything becomes contestable again — "entrenchment is session-scoped". With no sessions, an adopted clause stands until something clears the same fixed bar, and there is no periodic moment inviting the room to reconsider. This is the one place where perpetual is worse rather than merely different. Candidates for a replacement: a scheduled thaw; a rule that a clause untouched for long enough re-enters the backlog; or accepting that a perpetual document *should* entrench, since that is what a standing charter is for.
-
-259. **The founding ceremony is a third ceremony, and wants designing**
-
-    **Where it stands (docs pass, 2026-09-07):** overtaken — the founding is built: its order, the band and the birth's own layout are SURFACE §8, and `document-creation` is a retired name. No ruling closes it (log Q11).
-
-    (raised 2026-08-16; Ed: "look forward to designing the founding ceremony!"). §9.0a specifies the rule — blind collection of each member's lowest acceptable quorum and threshold, maximum of each, distribution published without names — but not the surface. It is the only moment where the mechanism chooses its own parameters, it happens before any drafting, and the record of what people asked for is itself part of what the convention produced. Related: the `document-creation` screen (Ed, 2026-08-16), which is where every §9.0 setting is chosen and which Ed wants to see in full before any options are cut. **Naming**: Ed called it a "draft creation screen"; `draft` already means a candidate patch throughout this project, so the surface is `document-creation` and the thing it makes is a document.
 
 ## Spent numbers
 
