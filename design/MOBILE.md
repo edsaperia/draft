@@ -82,7 +82,7 @@ The chip is 34×30 and `fitStacks` and the probe depend on it; the commit row is
 
 ### 1.6 The two-tap confirm as one helper (decision 4; Q661)
 
-Three hold sites today, each owning its own `pointerdown` → timer → fire body: the charter ✏️ (`session.js:3175`), the wallet family (`penHold`, `session-view.html:11475` onward — 🪶 ✒️ 🍾 and the motion ✏️ alike), the assembly — every one of them `SESSION.holdMs`, 1000ms, since backlog 206. The fire bodies are the valuable part and are already id-resolving. Extract each into a named `fire()` and route the *gesture* through **`SESSION.press(ev, spec)`**, `spec = { ms, floorAt, fire, flight: {start, stop, nudgeHome}, arm: {lean, unlean}, key }`:
+Three hold sites today, each owning its own `pointerdown` → timer → fire body: the charter ✏️ (`session.js:3175`), the wallet family (`holdWallet` names the wallet a commit spends from, `penHold` is the hold's state; `session-view.html:11452` onward — 🪶 ✒️ 🍾 and the motion ✏️ alike), the assembly — every one of them `SESSION.holdMs`, 1000ms, since backlog 206. The fire bodies are the valuable part and are already id-resolving. Extract each into a named `fire()` and route the *gesture* through **`SESSION.press(ev, spec)`**, `spec = { ms, floorAt, fire, flight: {start, stop, nudgeHome}, arm: {lean, unlean}, key }`:
 
 - `pointerType !== 'touch'` → the hold exactly as now; W16 untouched; `spec-check`'s release-set assertion keeps passing because the release binding stays where it is.
 - `pointerType === 'touch'` → **arm**: the control takes `.armed`, its label becomes the confirm phrase (*Tap again to propose* / *…to ask everyone* / *…to begin* — one string per glyph, STYLE.md-audited), the token leans, and **the armed state lives in module state keyed by `spec.key` (card id or setting key, never the node)** with a 6s timeout. A second tap on the re-found live control calls `fire()` immediately, then plays the flight **as announcement over `REFUND_MS` 640** — already the surface's length for *an object arriving*; W13 is satisfied by construction because the act has landed. Tap elsewhere / Escape / timeout disarms (token home via the quarter floor, label restored).
@@ -261,7 +261,7 @@ Where each stage lands. Lines checked 2026-08-23 and re-checked 2026-09-07; the 
 |---|---|---|
 | `design/system.css` | the six dormant rules (§1.9), the `(hover: hover)` sweep, the hit-area pseudos, `--border-strong` | 1, 2 |
 | `design/session.js` | the four passes — `layoutQueue` (:1014, `anchorForEntry` :958), `drawWires`, `fitStacks`, `readLine()` (:173) — and the charter's ✏️ hold (`HOLD_MS`, :3175) | 1, 2 |
-| `design/session-view.html` | the viewport meta; the wallet hold (`penHold`, :11475) and the assembly (the other two `SESSION.press` sites); the poll and `SESSION.beat()` (:866); `ACK_KEYS` (:1594); `mayJudge()`/`acked()` (:4100) — the offline gate of §3.c | 1, 2, 5 |
+| `design/session-view.html` | the viewport meta; the wallet hold (`holdWallet` / `penHold`, :11452 onward) and the assembly (the other two `SESSION.press` sites); the poll and `SESSION.beat()` (:866); `ACK_KEYS` (:1594); `mayJudge()`/`acked()` (:4100) — the offline gate of §3.c | 1, 2, 5 |
 | `design/setup.js` | `fitBand` and its `\|left − left\| < 20` neighbour filter (:514) — why the gutter stays a column | 1 |
 | `scripts/journey-walk.mjs` | the source of `scripts/walk-lib.mjs`; `scripts/mobile-walk.mjs` is its sibling (Q664) | 0, 2, 4 |
 | `scripts/probe.mjs` | the viewport parametrised from argv; the narrow baseline (§1.9) | 0, 1 |
