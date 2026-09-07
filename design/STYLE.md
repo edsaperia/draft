@@ -30,12 +30,31 @@ the audit log (§7); this is the checklist. §§1–6 state the rules by subject
 | **the standard rate** | v1 defaults | No project-speak. |
 | *A, B and C* | *A and B and C*, *A, B, and C* | Three or more things in one sentence take commas and a final *and*, with no serial comma — the register these documents already write in. The shape is a decision and it is made **once**: `listOf` in `design/setup.js` is the only joiner, never a join written at the site (Q630). |
 
-Glyph names are stable: title 🪶, link 📍, membership 🪪, applications 🤝,
-lapse 💤, removal 🥾, rate ⏱️, ending ⏰, quorum 👥, threshold 🌡️,
-pacing 🪜, naming 👤, signing ✍️, reveal 👁️, visibility 🌍, text 📝 (📄 until backlog 204; the applicant's words 👋),
-founder-is-member 🎩, proposing gate 💡, voting gate ⚖️, crown 👑, horn 📯.
-💡 keeps its glyph on the card titled *Proposals* — Ed's ruling of 2026-09-01
-(Q1121), the gate being what the tab and the preamble stack show.
+Glyph names are stable (tabulated 2026-09-07, Q1208; the founding order's own glyph column is SURFACE §8's `ORDER`):
+
+| Setting | Glyph | Note |
+|---|---|---|
+| title | 🪶 | — |
+| link | 📍 | — |
+| membership | 🪪 | — |
+| applications | 🤝 | — |
+| lapse | 💤 | — |
+| removal | 🥾 | — |
+| rate | ⏱️ | — |
+| ending | ⏰ | — |
+| quorum | 👥 | — |
+| threshold | 🌡️ | — |
+| pacing | 🪜 | — |
+| naming | 👤 | — |
+| signing | ✍️ | — |
+| reveal | 👁️ | — |
+| visibility | 🌍 | — |
+| text | 📝 | 📄 until backlog 204; the applicant's words are 👋 |
+| founder-is-member | 🎩 | — |
+| proposing gate | 💡 | keeps its glyph on the card titled *Proposals* — Ed's ruling of 2026-09-01 (Q1121), the gate being what the tab and the preamble stack show |
+| voting gate | ⚖️ | — |
+| crown | 👑 | — |
+| horn | 📯 | — |
 
 ## 2. Addresses and numbers
 
