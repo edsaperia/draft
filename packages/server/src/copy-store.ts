@@ -20,9 +20,9 @@
  * state are overwritten with the source's (the source is the truth while
  * the importer runs).
  */
-import { ConstitutionSession } from '../../constitution/src/index.js';
+import { ConstitutionSession, InMemoryPeople } from '../../constitution/src/index.js';
 import type { LogEntry } from '../../constitution/src/index.js';
-import type { Persistence } from './persistence.js';
+import type { Persistence, PersonRow } from './persistence.js';
 
 interface Chained { seq: number; hash: string; prevHash: string; event: unknown; schemaVersion?: number }
 
@@ -91,8 +91,17 @@ export async function assertIdentical(id: string, from: Persistence, to: Persist
   }
   prefixMatches(id, 'document log', srcDoc, dstDoc);
   prefixMatches(id, 'engine log', srcEng, dstEng);
+  // **The rows beside the log go with it** (decision 1253): a backup that
+  // dropped them would be a room of erased people. No chain covers them —
+  // that is the point of the split — so the oracle here is the set itself,
+  // row for row.
+  const [srcPeople, dstPeople] = await Promise.all([from.readPeople(id), to.readPeople(id)]);
+  if (peopleKey(srcPeople) !== peopleKey(dstPeople)) {
+    throw new Error(`${id}: the people rows differ (${srcPeople.length} at the source, ` +
+      `${dstPeople.length} at the destination)`);
+  }
   // the chain itself, from genesis: replay re-verifies every link
-  const replayed = ConstitutionSession.replay(dstDoc);
+  const replayed = ConstitutionSession.replay(dstDoc, asPeople(dstPeople));
   const last = replayed.logEntries().at(-1)?.hash ?? '';
   const want = srcDoc.at(-1)?.hash ?? '';
   if (last !== want) {
@@ -107,6 +116,15 @@ export async function assertIdentical(id: string, from: Persistence, to: Persist
   if (srcBridge !== dstBridge) throw new Error(`${id}: bridge state differs`);
   return { docEntries: srcDoc.length, engineEntries: srcEng.length };
 }
+
+/** The rows as one comparable string, order-free. */
+const peopleKey = (rows: readonly PersonRow[]): string =>
+  JSON.stringify([...rows].sort((a, b) => (a.personId < b.personId ? -1 : 1))
+    .map((r) => [r.personId, r.email, r.name, r.picture]));
+
+const asPeople = (rows: readonly PersonRow[]): InMemoryPeople =>
+  new InMemoryPeople(rows.map((r) => [r.personId,
+    { email: r.email, name: r.name, picture: r.picture }] as const));
 
 export async function copyStore(from: Persistence, to: Persistence,
   opts: CopyOptions = {}): Promise<CopyReport> {
@@ -128,7 +146,15 @@ export async function copyStore(from: Persistence, to: Persistence,
     // is a torn genesis
     const bridge = await from.readBridgeState(id);
     if (bridge !== null) await to.writeBridgeState(id, bridge);
-    if (haveDoc < srcDoc.length) await to.appendDocLog(id, srcDoc.slice(haveDoc) as LogEntry[]);
+    // the people rows ride with the entries, as the server writes them; a
+    // document already complete still has its rows brought up to date, since
+    // an erasure at the source is a row gone rather than an entry added —
+    // and that is copied by the whole set, never by a diff
+    const people = await from.readPeople(id);
+    await to.appendDocLog(id, srcDoc.slice(haveDoc) as LogEntry[], people);
+    for (const dst of await to.readPeople(id)) {
+      if (!people.some((p) => p.personId === dst.personId)) await to.deletePerson(id, dst.personId);
+    }
     if (haveEng < srcEng.length) await to.appendEngineLog(id, srcEng.slice(haveEng));
     await to.writeProvisional(id, await from.readProvisional(id));
     const { docEntries, engineEntries } = await assertIdentical(id, from, to);

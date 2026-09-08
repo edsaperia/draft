@@ -12,24 +12,64 @@
  * bytes live is the Persistence seam's business, and this file keeps only
  * the logic — replay, the slug index, the fresh-entry slice.
  */
-import { ConstitutionSession, slugify } from '../../constitution/src/index.js';
-import type { LogEntry } from '../../constitution/src/index.js';
+import { ConstitutionSession, InMemoryPeople, PEOPLE_SCHEMA_VERSION, slugify, versionOf }
+  from '../../constitution/src/index.js';
+import type { LogEntry, PersonFields, PersonId } from '../../constitution/src/index.js';
 import type { OpenInput } from '../../constitution/src/index.js';
-import type { Persistence } from './persistence.js';
+import type { Persistence, PersonRow } from './persistence.js';
+
+/**
+ * The module's `People` port over the store (decision 1253): the rows a
+ * document was loaded with, plus which of them a command has touched since
+ * the last persist. `persist` takes the dirty set and writes it beside the
+ * fresh entries in one act; the module itself never learns that anything
+ * is being persisted, which is what keeps it pure.
+ */
+export class StorePeople extends InMemoryPeople {
+  private dirty = new Set<PersonId>();
+
+  constructor(rows: readonly PersonRow[] = []) {
+    super(rows.map((r) => [r.personId, { email: r.email, name: r.name, picture: r.picture }] as const));
+  }
+
+  override set(id: PersonId, patch: Partial<PersonFields>): void {
+    super.set(id, patch);
+    this.dirty.add(id);
+  }
+
+  /** The rows touched since the last call, as the store writes them. */
+  takeDirty(): PersonRow[] {
+    const out: PersonRow[] = [];
+    for (const id of this.dirty) {
+      const row = this.get(id);
+      if (row !== null) out.push({ personId: id, ...row });
+    }
+    this.dirty.clear();
+    return out;
+  }
+}
 
 export interface LoadedDoc {
   id: string;
   cs: ConstitutionSession;
+  /** The rows beside the log, the same object `cs.people` is (decision 1253). */
+  people: StorePeople;
   /** How many log entries are already persisted. */
   persisted: number;
   /** The founder's unconfirmed starting text (§9.7a v0.55), or null. */
   provisional: string | null;
 }
 
+/** The one loud line a skipped document earns at boot (decision 1253). */
+export const preShapeLine = (id: string): string =>
+  `[store] ${id} is the pre-people shape (decision 1253): not loaded`;
+
 export class DocStore {
   private readonly docs = new Map<string, LoadedDoc>();
   /** Every slug a document has ever worn routes to it (§9.7: no link breaks). */
   private readonly slugIndex = new Map<string, string>();
+  /** Documents whose logs hold the pre-people shape, skipped at boot (decision 1253). */
+  private readonly preShape: string[] = [];
 
   constructor(private readonly persistence: Persistence) {}
 
@@ -37,9 +77,19 @@ export class DocStore {
     for (const id of await this.persistence.listDocIds()) {
       try {
         const log = await this.persistence.readDocLog(id);
-        const cs = ConstitutionSession.replay(log);
+        // **The old shape is refused, never read** (decision 1253): named
+        // once, counted for `/healthz`, and neither migrated nor allowed to
+        // crash the host — a dev data dir may hold such a document until its
+        // own wipe; production holds none after it
+        if (log.some((e) => versionOf(e) < PEOPLE_SCHEMA_VERSION)) {
+          console.error(preShapeLine(id));
+          this.preShape.push(id);
+          continue;
+        }
+        const people = new StorePeople(await this.persistence.readPeople(id));
+        const cs = ConstitutionSession.replay(log, people);
         const provisional = await this.persistence.readProvisional(id);
-        this.register({ id, cs, persisted: log.length, provisional });
+        this.register({ id, cs, people, persisted: log.length, provisional });
       } catch (e) {
         // one corrupt log must not stop every other document serving
         // (review #1, finding 11): quarantine loudly — the document 404s
@@ -49,11 +99,17 @@ export class DocStore {
     }
   }
 
+  /** The documents `loadAll` skipped as the pre-people shape (decision 1253). */
+  skippedPreShape(): readonly string[] {
+    return this.preShape;
+  }
+
   async create(id: string, input: OpenInput, t: number): Promise<LoadedDoc> {
     if (this.docs.has(id)) throw new Error(`document '${id}' already exists`);
     await this.persistence.createDoc(id);
-    const cs = ConstitutionSession.open(input, t);
-    const doc: LoadedDoc = { id, cs, persisted: 0, provisional: null };
+    const people = new StorePeople();
+    const cs = ConstitutionSession.open(input, t, people);
+    const doc: LoadedDoc = { id, cs, people, persisted: 0, provisional: null };
     this.register(doc);
     await this.persist(doc);
     return doc;
@@ -82,12 +138,14 @@ export class DocStore {
     return this.docs.values();
   }
 
-  /** Append everything emitted since the last persist; re-index slugs. */
+  /** Append everything emitted since the last persist, with the person rows
+   *  those entries were written beside (decision 1253); re-index slugs. */
   async persist(doc: LoadedDoc): Promise<LogEntry[]> {
     const log = doc.cs.logEntries();
     const fresh = log.slice(doc.persisted);
-    if (fresh.length > 0) {
-      await this.persistence.appendDocLog(doc.id, fresh);
+    const rows = doc.people.takeDirty();
+    if (fresh.length > 0 || rows.length > 0) {
+      await this.persistence.appendDocLog(doc.id, fresh, rows);
       doc.persisted = log.length;
       for (const slug of doc.cs.slugs) this.slugIndex.set(slug, doc.id);
     }

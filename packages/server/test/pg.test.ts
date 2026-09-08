@@ -21,7 +21,7 @@ import type { OutboxRow } from '../src/persistence.js';
 import { DocStore } from '../src/store.js';
 import { copyStore, verifyStores } from '../src/copy-store.js';
 import { main as tools } from '../src/tools.js';
-import { ConstitutionSession } from '../../constitution/src/index.js';
+import { ConstitutionSession, InMemoryPeople } from '../../constitution/src/index.js';
 import type { LogEntry } from '../../constitution/src/index.js';
 
 const URL = process.env.DRAFT_TEST_DATABASE_URL ?? null;
@@ -150,6 +150,57 @@ d('PgPersistence contract', () => {
     expect(await p.takeToken('h2')).toBeNull();
   });
 
+  it('person rows ride the log append in one transaction, read back, and delete (decision 1253)', async () => {
+    const p = await open();
+    const cs = ConstitutionSession.open({ title: 'T', slug: 't',
+      convenor: { id: 'founder', email: 'f@example.org', isMember: true } }, 5);
+    const bo = cs.invite(6, 'bo@example.org');
+    cs.arrive(6, bo);
+    cs.setIdentity(7, bo, { name: 'Bo', picture: 'e🦊' });
+    await p.createDoc('d1');
+    const rows = (cs.people as InMemoryPeople).entries()
+      .map(([personId, r]) => ({ personId, ...r }));
+    await p.appendDocLog('d1', cs.logEntries(), rows);
+    expect(await p.readPeople('d1')).toEqual([
+      { personId: 'p-1', email: 'f@example.org', name: null, picture: null },
+      { personId: 'p-2', email: 'bo@example.org', name: 'Bo', picture: 'e🦊' },
+    ]);
+    // rows alone, no entries: an upsert
+    await p.appendDocLog('d1', [], [{ personId: 'p-2', email: 'bo@example.org', name: 'Bo Vane', picture: null }]);
+    expect((await p.readPeople('d1')).find((r) => r.personId === 'p-2'))
+      .toEqual({ personId: 'p-2', email: 'bo@example.org', name: 'Bo Vane', picture: null });
+    expect(await p.readDocLog('d1')).toHaveLength(cs.logEntries().length);
+    // a failed append rolls the rows back with it: the primary key on the
+    // log refuses the duplicate seq, and the row written beside it never lands
+    await expect(p.appendDocLog('d1', cs.logEntries().slice(0, 1),
+      [{ personId: 'p-9', email: 'ghost@example.org', name: null, picture: null }])).rejects.toThrow();
+    expect((await p.readPeople('d1')).some((r) => r.personId === 'p-9')).toBe(false);
+    // erasure
+    expect(await p.deletePerson('d1', 'p-2')).toBe(true);
+    expect(await p.deletePerson('d1', 'p-2')).toBe(false);
+    expect((await p.readPeople('d1')).map((r) => r.personId)).toEqual(['p-1']);
+    // the log stands, and replays with the row gone
+    const back = ConstitutionSession.replay(await p.readDocLog('d1'),
+      new InMemoryPeople((await p.readPeople('d1')).map((r) => [r.personId, r] as const)));
+    expect(back.rollingHash()).toBe(cs.rollingHash());
+    expect(back.memberRecords().get(bo)).toMatchObject({ erased: true, email: null, name: null });
+  });
+
+  it('the wipe empties a throwaway schema and leaves it migrated', async () => {
+    const p = await open();
+    const store = new DocStore(p);
+    await store.create('d-w', { title: 'W', slug: 'w',
+      convenor: { id: 'founder', email: 'w@example.org', isMember: true } }, 1);
+    await p.putTokens([['tw', { kind: 'login', email: 'w@example.org', expMs: 9e12 }]]);
+    expect(await p.listDocIds()).toEqual(['d-w']);
+    expect(await p.wipe()).toBe(1);
+    expect(await p.listDocIds()).toEqual([]);
+    expect(await p.readPeople('d-w')).toEqual([]);
+    expect(await p.takeToken('tw')).toBeNull();
+    // still this build's schema: a reopen migrates nothing and refuses nothing
+    await (await reopen(p)).close();
+  });
+
   it('stashes upsert, read, delete and sweep', async () => {
     const p = await open();
     await p.putStash('k', { text: '', expMs: 500 });
@@ -230,7 +281,30 @@ d('the copier: the importer, the export and the oracle', () => {
     const fromPg = new DocStore(pg); await fromPg.loadAll();
     for (const id of ids) {
       expect(lastHash(fromPg.byId(id)!.cs.logEntries())).toBe(lastHash(fromDisk.byId(id)!.cs.logEntries()));
+      // …rows included (decision 1253): the people resolve at the destination
+      expect(await pg.readPeople(id)).toEqual(await disk.readPeople(id));
+      expect([...fromPg.byId(id)!.cs.memberRecords().values()].map((m) => m.email))
+        .toEqual([`f${id.slice(2)}@example.org`, 'ada@example.org', 'bo@example.org']);
     }
+  });
+
+  it('an erasure at the source is an erasure at the destination on the next run (decision 1253)', async () => {
+    const dataDir = tmp();
+    await seedDisk(dataDir, 1);
+    const disk = new FilePersistence(dataDir);
+    const pg = await open();
+    await copyStore(disk, pg);
+    expect((await pg.readPeople('d-0')).map((r) => r.personId)).toEqual(['p-1', 'p-2', 'p-3']);
+    // the operator erases a person on the file side; the export/import
+    // carries the deletion, since the rows are copied as a whole set
+    expect(await disk.deletePerson('d-0', 'p-2')).toBe(true);
+    const again = await copyStore(disk, pg);
+    expect(again.unchanged).toEqual(['d-0']);
+    expect((await pg.readPeople('d-0')).map((r) => r.personId)).toEqual(['p-1', 'p-3']);
+    expect(await verifyStores(disk, pg)).toBe(1);
+    // and a destination whose rows differ is a divergence the oracle names
+    await pg.appendDocLog('d-0', [], [{ personId: 'p-2', email: 'x@example.org', name: null, picture: null }]);
+    await expect(verifyStores(disk, pg)).rejects.toThrow(/d-0: the people rows differ/);
   });
 
   it('re-running is a no-op, and a partial run is finished rather than forked', async () => {

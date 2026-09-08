@@ -1,10 +1,32 @@
 /**
- * The operator's store tools (PRODUCTION.md stages 6 and 11), built to
- * dist/draft-tools.mjs beside the server. Five verbs, none of them
+ * The operator's store tools (PRODUCTION.md stages 6, 11 and 12), built to
+ * dist/draft-tools.mjs beside the server. Five copying verbs, none of them
  * deleting anything, and each safe while the service serves from the
  * *other* store (import beside a file-served service, export beside a
  * Postgres-served one): the copier takes no lock on its destination, so
- * never run it against the store that is live.
+ * never run it against the store that is live. Then three for the people
+ * rows (decision 1253) — two that read or delete one row, and the wipe.
+ *
+ *   people <store> <docId>              list a document's person rows: id,
+ *                                        address, whether a name and a
+ *                                        picture stand — so an operator can
+ *                                        find the one to erase
+ *   erase  <store> <docId> <personId>   erasure: delete the row and print
+ *                                        what it held; the log stands and
+ *                                        every hash holds. **Run against a
+ *                                        stopped service, or restart it
+ *                                        after**: a running server holds the
+ *                                        rows in memory until it reloads.
+ *   wipe   <store> --i-understand-this-deletes-every-document=<name>
+ *                                        every document and every sidecar,
+ *                                        gone. Refuses without the flag, and
+ *                                        with any <name> but the store's own
+ *                                        (the data directory's basename, or
+ *                                        the database's name), printing the
+ *                                        count it would have deleted. **Runs
+ *                                        only on Ed's word at the time.**
+ *
+ * `<store>` is a data directory, or a `postgres://` URL.
  *
  *   import  <dataDir> <databaseUrl>     disk → Postgres, hash-asserted,
  *                                        re-runnable (finishes a partial
@@ -35,7 +57,7 @@
  */
 import { copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ConstitutionSession } from '../../constitution/src/index.js';
 import type { LogEntry } from '../../constitution/src/index.js';
@@ -44,14 +66,40 @@ import { PgPersistence } from './pg-persistence.js';
 import { copyStore, verifyStores } from './copy-store.js';
 import type { CopyReport } from './copy-store.js';
 
+/** The one flag the wipe accepts, spelled out in full so it cannot be typed by habit. */
+export const WIPE_FLAG = '--i-understand-this-deletes-every-document';
+
 const USAGE = `usage:
   draft-tools import <dataDir> <databaseUrl>
   draft-tools export <databaseUrl> <dataDir>
   draft-tools verify <dataDir> <databaseUrl>
   draft-tools drill  <dataDir> <databaseUrl>
-  draft-tools repair-tail <dataDir> <docId> [--write]`;
+  draft-tools repair-tail <dataDir> <docId> [--write]
+  draft-tools people <store> <docId>
+  draft-tools erase  <store> <docId> <personId>
+  draft-tools wipe   <store> ${WIPE_FLAG}=<name>
+    <store> is a data directory or a postgres:// URL; <name> is the data
+    directory's basename or the database's name, typed in full`;
 
 const say = (line: string): void => console.log(line);
+
+const isPgUrl = (s: string): boolean => /^postgres(ql)?:\/\//.test(s);
+
+/** A store by its address: a directory, or a Postgres URL. `name` is what
+ *  the wipe must be told; `shown` is the address with any credential removed. */
+async function openStore(where: string): Promise<{
+  p: FilePersistence | PgPersistence; name: string; shown: string; close: () => Promise<void>;
+}> {
+  if (isPgUrl(where)) {
+    const u = new URL(where);
+    const p = await PgPersistence.open(where);
+    return { p, name: u.pathname.replace(/^\//, ''), shown: `${u.protocol}//${u.host}${u.pathname}`,
+      close: () => p.close() };
+  }
+  const dir = resolve(where);
+  if (!existsSync(dir)) throw new Error(`no data directory at ${dir}`);
+  return { p: new FilePersistence(dir), name: basename(dir), shown: dir, close: async () => undefined };
+}
 
 function summarise(verb: string, r: CopyReport): void {
   say(`${verb}: ${r.documents} documents (${r.copied.length} copied, ` +
@@ -90,12 +138,74 @@ export function inspectTail(path: string): {
 }
 
 export async function main(argv: readonly string[]): Promise<number> {
-  const [verb, a, b] = argv;
-  if (verb === undefined || a === undefined || b === undefined) {
+  const [verb, a, b0, c] = argv;
+  if (verb === undefined || a === undefined) {
     console.error(USAGE);
     return 2;
   }
+  if (verb === 'wipe') {
+    // **Written and not run** (PRODUCTION.md decision 1253): the wipe runs
+    // only on Ed's word at the time, and this refusal is what stands
+    // between a typed verb and the alpha's documents.
+    const flag = argv.slice(2).find((x) => x.startsWith(`${WIPE_FLAG}=`));
+    const store = await openStore(a);
+    try {
+      const n = (await store.p.listDocIds()).length;
+      const would = `${n} document${n === 1 ? '' : 's'} in ${store.shown}`;
+      if (flag === undefined) {
+        console.error(`wipe: refusing — this would delete ${would}. To proceed, pass ` +
+          `${WIPE_FLAG}=<name>, where <name> is the data directory's basename or the ` +
+          'database\'s name, typed in full. Nothing was deleted.');
+        return 1;
+      }
+      const given = flag.slice(WIPE_FLAG.length + 1);
+      if (given !== store.name) {
+        console.error(`wipe: refusing — '${given}' does not name this store, which holds ${would}. ` +
+          'Nothing was deleted.');
+        return 1;
+      }
+      const gone = await store.p.wipe();
+      say(`wipe: deleted ${gone} document${gone === 1 ? '' : 's'} and every sidecar from ${store.shown}`);
+    } finally { await store.close(); }
+    return 0;
+  }
+  if (b0 === undefined) {
+    console.error(USAGE);
+    return 2;
+  }
+  const b: string = b0;
   switch (verb) {
+    /* -- the people rows (decision 1253) ---------------------------------- */
+    case 'people': {
+      const store = await openStore(a);
+      try {
+        const rows = await store.p.readPeople(b);
+        if (rows.length === 0) { say(`${b}: no person rows`); return 0; }
+        say(`${b}: ${rows.length} person row${rows.length === 1 ? '' : 's'}`);
+        for (const r of rows.sort((x, y) => (x.personId < y.personId ? -1 : 1))) {
+          say(`  ${r.personId}  ${r.email}  name: ${r.name === null ? '—' : 'set'}  ` +
+            `picture: ${r.picture === null ? '—' : 'set'}`);
+        }
+      } finally { await store.close(); }
+      return 0;
+    }
+    case 'erase': {
+      if (c === undefined) { console.error(USAGE); return 2; }
+      const store = await openStore(a);
+      try {
+        const row = (await store.p.readPeople(b)).find((r) => r.personId === c);
+        if (row === undefined) {
+          console.error(`${b}: no person row '${c}' — nothing to erase (draft-tools people ${a} ${b} lists them)`);
+          return 1;
+        }
+        await store.p.deletePerson(b, c);
+        say(`${b}: erased ${c} — the row held ${row.email}` +
+          `${row.name === null ? '' : ', a name'}${row.picture === null ? '' : ', a picture'}; ` +
+          'the log stands and every hash holds');
+        say('if a server is serving this store, restart it: it holds the rows in memory until it reloads');
+      } finally { await store.close(); }
+      return 0;
+    }
     case 'repair-tail': {
       const path = join(a, 'docs', b, 'log.jsonl');
       if (!existsSync(path)) { console.error(`no log at ${path}`); return 2; }

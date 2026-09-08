@@ -97,8 +97,13 @@ const schemaName = () => 't_' + Math.random().toString(36).slice(2, 10);
 const booted: Booted[] = [];
 
 async function boot(over: { trustProxy?: boolean; proxyHops?: number;
-  notifyEmail?: string | null; mailOff?: boolean } = {}): Promise<Booted> {
-  const dataDir = mkdtempSync(join(tmpdir(), 'draft-server-'));
+  notifyEmail?: string | null; mailOff?: boolean;
+  /** Write into the store before the server boots over it (the pre-people skip). */
+  seed?: (p: Persistence) => Promise<void>;
+  /** Boot over an earlier boot's store rather than a fresh one (a restart). */
+  reuse?: Booted } = {}): Promise<Booted> {
+  const { seed, reuse, ...rest } = over;
+  const dataDir = reuse?.dataDir ?? mkdtempSync(join(tmpdir(), 'draft-server-'));
   const cfg = {
     port: 0,
     dataDir,
@@ -115,12 +120,16 @@ async function boot(over: { trustProxy?: boolean; proxyHops?: number;
     notifyEmail: null,
     // the test adopts twice inside one second; a room would be paced
     engineTuning: { cooldownMs: 0 },
-    ...over,
+    ...rest,
   };
   let persistence: Persistence;
   let schema: PgPersistence | null = null;
   let reopen: () => Promise<Persistence>;
-  if (STORE === 'pg') {
+  if (reuse !== undefined) {
+    persistence = await reuse.reopen();
+    reopen = reuse.reopen;
+    // a reused pg schema is dropped by the boot that owns it
+  } else if (STORE === 'pg') {
     const name = schemaName();
     schema = await PgPersistence.open(PG_URL!, { schema: name });
     persistence = schema;
@@ -129,6 +138,7 @@ async function boot(over: { trustProxy?: boolean; proxyHops?: number;
     persistence = new FilePersistence(dataDir);
     reopen = async () => new FilePersistence(dataDir);
   }
+  if (seed !== undefined) await seed(persistence);
   // the same object the server holds: listen() picks the port, and the
   // baseUrl the server mints links from is patched in place below
   const draft = await createDraftServer(cfg, persistence);
@@ -1493,7 +1503,7 @@ describe("the stranger's door (Q452/455/456)", () => {
     expect(k.body.canRead).toBe(true);
     // and with it the membership: the Members list is a section of the very
     // constitution the door is showing (Q508(c), Ed 2026-08-21)
-    expect(k.body.members.list).toEqual([{ name: 'Ada Lovell', picture: null }]);
+    expect(k.body.members.list).toEqual([{ name: 'Ada Lovell', picture: null, erased: false }]);
     expect(k.body.text).toBe('# The orchard\nThe apples are shared at harvest.');
 
     // the poll's short answer works for a stranger too
@@ -2738,5 +2748,95 @@ describe('askable races and the pair that rides the view (Q1202)', () => {
       expect(r.askable).toBe(false);
       expect(r.ask).toBeNull();
     }
+  });
+});
+
+describe('the people split (decision 1253): identity beside the log, never in it', () => {
+  it('a birth writes a row and an id-only event; mail resolves through the row; erasure holds', async () => {
+    const first = await boot();
+    const { base, dataDir, draft } = first;
+    const created = await (await post(base, '/api/docs', {
+      title: 'People Charter', email: 'ada@example.org',
+    })).json() as { ok: boolean; slug: string; devLink: string };
+    const ada = cookieOf(await consume(created.devLink));
+    const doc = draft.store.bySlug(created.slug)!;
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const res = await post(base, `/api/d/${created.slug}/cmd`, { cmd: name, args }, cookie);
+      const body = await res.json() as { error?: string; result?: unknown };
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+      return body.result;
+    };
+    const viewOf = async (cookie: string) =>
+      (await (await fetch(`${base}/api/d/${created.slug}/view`, { headers: { cookie } })).json()) as
+        MemberViewPayload & { view: { members: Array<{ id: string; email: string | null;
+          name: string | null; erased: boolean }> }; convenor: { erased: boolean } };
+
+    // -- the log names the person; the row holds who they are --------------
+    await cmd(ada, 'invite', { email: 'bo@example.org' });
+    const bo = cookieOf(await consume((await lastMailTo(dataDir, 'bo@example.org')).link!));
+    await cmd(bo, 'set-identity', { name: 'Bo Vane' });
+    const p = await first.reopen();
+    const logText = JSON.stringify(await p.readDocLog(doc.id));
+    expect(logText).not.toContain('@example.org');
+    expect(logText).not.toContain('Bo Vane');
+    expect(logText).toContain('"person":"p-1"');
+    expect(logText).toContain('"person":"p-2"');
+    expect(logText).toContain('"nameSet":true');
+    expect(await p.readPeople(doc.id)).toEqual([
+      { personId: 'p-1', email: 'ada@example.org', name: null, picture: null },
+      { personId: 'p-2', email: 'bo@example.org', name: 'Bo Vane', picture: null },
+    ]);
+    const boRow = (await viewOf(ada)).view.members.find((m) => m.email === 'bo@example.org')!;
+    expect(boRow).toMatchObject({ name: 'Bo Vane', erased: false });
+    const boId = boRow.id;
+
+    // -- erasure: the operator's road — stop, delete the row, start --------
+    await draft.close();
+    expect(await (await first.reopen()).deletePerson(doc.id, 'p-2')).toBe(true);
+    const second = await boot({ reuse: first });
+    const cmd2 = async (cookie: string, name: string, args: unknown) => {
+      const res = await post(second.base, `/api/d/${created.slug}/cmd`, { cmd: name, args }, cookie);
+      const body = await res.json() as { error?: string };
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+    };
+    const v = (await (await fetch(`${second.base}/api/d/${created.slug}/view`,
+      { headers: { cookie: ada } })).json()) as Awaited<ReturnType<typeof viewOf>>;
+    expect(v.view.members.find((m) => m.id === boId))
+      .toMatchObject({ erased: true, email: null, name: null });
+    expect(v.convenor.erased).toBe(false);
+    // the chain is what it was
+    expect(second.draft.store.bySlug(created.slug)!.cs.rollingHash()).toBe(doc.cs.rollingHash());
+    // no login link can be minted for them: the address names nobody now
+    const mailsToBo = () => readFileSync(join(dataDir, 'outbox.jsonl'), 'utf8')
+      .split('\n').filter(Boolean).map((l) => JSON.parse(l) as { to: string }).filter((m) => m.to === 'bo@example.org').length;
+    const before = mailsToBo();
+    const login = await (await post(second.base, `/api/d/${created.slug}/login`, { email: 'bo@example.org' })).json() as { devLink?: string };
+    expect(login.devLink).toBeUndefined();
+    // and a mail the document would have sent them is not sent: exile at
+    // will relays a `removed` mail to the address — there is none
+    await cmd2(ada, 'remove', { member: boId });
+    await second.draft.outbox.drain();
+    expect(mailsToBo()).toBe(before);
+  });
+
+  it('/healthz counts the documents the boot skipped as the pre-people shape', async () => {
+    const { base } = await boot({ seed: async (p) => {
+      // a document as the code of 2026-09-07 wrote it: unversioned entries,
+      // the address in the event — which is the shape the store refuses
+      const store = new DocStore(p);
+      const doc = await store.create('d-old', { title: 'Old', slug: 'old',
+        convenor: { id: 'founder', email: 'old@example.org', isMember: true } }, 1);
+      await store.persist(doc);
+      await p.createDoc('d-older');
+      await p.appendDocLog('d-older', doc.cs.logEntries().map((e) => {
+        const { schemaVersion: _v, ...rest } = e;
+        return rest as typeof e;
+      }));
+    } });
+    const health = await (await fetch(`${base}/healthz`)).json() as
+      { documents: number; documentsSkipped: number };
+    expect(health.documents).toBe(1);
+    expect(health.documentsSkipped).toBe(1);
+    expect((await fetch(`${base}/api/d/old/view`)).status).not.toBe(404);
   });
 });

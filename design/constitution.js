@@ -1785,13 +1785,14 @@ var CONSTITUTION = (() => {
         }
         case "application-started": {
           this.notePerson(event.person);
-          this.applicants.set(event.applicant, {
+          const state = {
             id: event.applicant,
             person: event.person,
             status: "started",
             words: null,
             motion: null
-          });
+          };
+          this.applicants.set(event.applicant, this.withPerson(state));
           this.nextApplicantN += 1;
           break;
         }
@@ -1877,7 +1878,7 @@ var CONSTITUTION = (() => {
       st.pendingRelease = { unilateral: false, assent: false };
     }
     freshMember(id, person, invitedAtT, arrivedAtT, arrival) {
-      return {
+      const state = {
         id,
         person,
         invitedAtT,
@@ -1902,6 +1903,30 @@ var CONSTITUTION = (() => {
         invitationExpired: false,
         closingAck: null
       };
+      return this.withPerson(state);
+    }
+    /**
+     * **The row, read live** (decision 1253): `email`, `name`, `picture` and
+     * `erased` are enumerable getters on the fold's own record, resolving
+     * through `people` on every read — so a reader holding a record sees an
+     * erasure the moment the row goes, the record stays the one object the
+     * fold mutates (a reference taken before a tick is still good after it),
+     * and a spread, `JSON.stringify` or a deep-equal sees four plain fields.
+     */
+    withPerson(state) {
+      const people = this.people;
+      const field = (key) => ({
+        enumerable: true,
+        get() {
+          return resolvePerson(people, this.person)[key];
+        }
+      });
+      return Object.defineProperties(state, {
+        email: field("email"),
+        name: field("name"),
+        picture: field("picture"),
+        erased: field("erased")
+      });
     }
     foldSet(id, value, by, t) {
       const st = this.settings.get(id);
@@ -3532,16 +3557,9 @@ var CONSTITUTION = (() => {
     amendedFrom(motion) {
       return this.penFrom.get(motion) ?? null;
     }
-    /**
-     * The roster with every person resolved **at read time** (decision 1253): a
-     * fresh map per call, each record the fold's state plus the row as it
-     * stands now, so an erasure shows on the very next read. The sets on a
-     * record (`okOwed` and the rest) are the fold's own, shared by reference.
-     */
+    /** The roster; each record's person resolves live through the rows (`withPerson`). */
     memberRecords() {
-      const out = /* @__PURE__ */ new Map();
-      for (const [id, m] of this.members) out.set(id, { ...m, ...this.personOf(m.person) });
-      return out;
+      return this.members;
     }
     /**
      * Every member who left the membership after arriving, in log order, with
@@ -3570,11 +3588,9 @@ var CONSTITUTION = (() => {
     crownQuestionRecords() {
       return this.crownQuestions;
     }
-    /** The applicants, each resolved through their row at read time (decision 1253). */
+    /** The applicants; each record's person resolves live through the rows (`withPerson`). */
     applicantRecords() {
-      const out = /* @__PURE__ */ new Map();
-      for (const [id, a] of this.applicants) out.set(id, { ...a, ...this.personOf(a.person) });
-      return out;
+      return this.applicants;
     }
     E() {
       return eOf(this.members.values()).length;

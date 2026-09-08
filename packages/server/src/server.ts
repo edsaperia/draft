@@ -213,17 +213,25 @@ export async function createDraftServer(cfg: ServerConfig,
       queue.push({ to, ...mail, documentId: doc.id,
         ...(tokenHash === undefined ? {} : { tokenHash }) });
     };
+    /** An address a mail can go to: the row's, where the row still stands
+     *  (decision 1253) — an erased person is not written to. */
+    const mailable = (email: string | null | undefined): email is string =>
+      typeof email === 'string' && email.length > 0;
     for (const { event } of fresh) {
       if (event.type === 'member-invited') {
-        const l = loginLink(event.member, event.email);
-        push(event.email, MAILS.invite(title, l.link), l.tokenHash);
+        // the event names the person; the address is the row's
+        const m = cs.memberRecords().get(event.member);
+        if (m !== undefined && mailable(m.email)) {
+          const l = loginLink(event.member, m.email);
+          push(m.email, MAILS.invite(title, l.link), l.tokenHash);
+        }
       } else if (event.type === 'mail-resent') {
         // 📨 (SURFACE E34): the arm above, again. A fresh link, because the
         // one the dead mail carried was revoked when the outbox gave up on
         // it; an ordinary queued mail from here on, so a re-send that dies
         // too raises its own give-up batch.
         const m = cs.memberRecords().get(event.member);
-        if (m !== undefined && m.email.length > 0) {
+        if (m !== undefined && mailable(m.email)) {
           const l = loginLink(event.member, m.email);
           push(m.email, MAILS.invite(title, l.link), l.tokenHash);
         }
@@ -232,7 +240,7 @@ export async function createDraftServer(cfg: ServerConfig,
         // cookie can only submit, and nothing tells them they are in
         // (review #1, finding 7)
         const m = cs.memberRecords().get(event.member);
-        if (m !== undefined && m.email.length > 0) {
+        if (m !== undefined && mailable(m.email)) {
           const l = loginLink(event.member, m.email);
           push(m.email, MAILS.admitted(title, l.link), l.tokenHash);
         }
@@ -256,14 +264,14 @@ export async function createDraftServer(cfg: ServerConfig,
         // removal (`viaMotion`, E10/E11's outcome) and a resignation (the
         // member's own act) relay nothing.
         const m = cs.memberRecords().get(event.member);
-        if (m !== undefined && m.email.length > 0) {
+        if (m !== undefined && mailable(m.email)) {
           push(m.email, MAILS.removed(title, `${cfg.baseUrl}/d/${cs.slug}`));
         }
       } else if (event.type === 'lapse-warned' || event.type === 'member-lapsed') {
         const m = cs.memberRecords().get(event.member);
         const email = m?.email ?? (event.member === cs.convenorRecord().id
           ? cs.convenorRecord().email : null);
-        if (email !== null) {
+        if (mailable(email)) {
           const make = event.type === 'lapse-warned' ? MAILS.lapseWarning : MAILS.lapsed;
           const l = loginLink(event.member, email);
           push(email, make(title, l.link), l.tokenHash);
@@ -387,10 +395,13 @@ export async function createDraftServer(cfg: ServerConfig,
     // and behind the same `authorVisible` gate — one gate, two fields — so
     // §3.5 is untouched: where the name is withheld the whole object is.
     const namedAuthor = (c: Candidate):
-    { id: string; name: string | null; picture: string | null } | undefined => {
+    { id: string; name: string | null; picture: string | null; erased: boolean } | undefined => {
       if (!authorVisible(c, engine.constitution, { closed: engine.closed })) return undefined;
       const rec = recordOf(c.author);
-      return { id: c.author, name: rec?.name ?? null, picture: rec?.picture ?? null };
+      // `erased` rides with the name (decision 1253): the page prints
+      // *withdrawn* rather than Anonymous where the row is gone
+      return { id: c.author, name: rec?.name ?? null, picture: rec?.picture ?? null,
+        erased: rec?.erased ?? false };
     };
     // **The hand is dealt before the clause rows are built** (Q1202), because
     // each row says whether the hand holds a card on its race and, where it
@@ -804,6 +815,11 @@ export async function createDraftServer(cfg: ServerConfig,
         catalogue: CATALOGUE.map((e) => e.id).sort(),
         store: cfg.store,
         documents: [...store.all()].length,
+        // documents the boot skipped as the pre-people shape (decision 1253):
+        // a count, never an id, on the same public-endpoint argument as the
+        // errors below; production holds none after the wipe, so a non-zero
+        // here is a data dir that has not had its own
+        documentsSkipped: store.skippedPreShape().length,
         uptimeSeconds: Math.floor((nowMs - bootedAtMs) / 1000),
         mail: cfg.mailOff ? 'off' : 'on',
         outbox: mail,
@@ -1102,7 +1118,7 @@ export async function createDraftServer(cfg: ServerConfig,
          the address it promised already holds a document this very founder
          made, so it forwards there rather than founding a twin beside it. */
       const twin = store.bySlug(p.slug);
-      if (twin && twin.cs.convenorRecord().email.toLowerCase() === p.email.toLowerCase()) {
+      if (twin && twin.cs.convenorRecord().email?.toLowerCase() === p.email.toLowerCase()) {
         setCookie(res, twin.id, auth.cookieFor(twin.id, twin.cs.convenorRecord().id, nowMs), httpsOn);
         redirect(res, `/d/${p.slug}`);
         return;
@@ -1387,14 +1403,15 @@ export async function createDraftServer(cfg: ServerConfig,
         list: canRead
           ? [...cs.memberRecords().values()]
             .filter((m) => m.arrivedAtT !== null && !m.removed)
-            .map((m) => ({ name: m.name, picture: m.picture }))
+            .map((m) => ({ name: m.name, picture: m.picture, erased: m.erased }))
           : null,
         // the departure lines are register text (E31–E32), so a stranger
         // reads them exactly where 🌍 lets them read the register
         departures: canRead
           ? cs.departures().map((d) => {
             const m = cs.memberRecords().get(d.member);
-            return { name: m?.name ?? null, picture: m?.picture ?? null, t: d.t, by: d.by };
+            return { name: m?.name ?? null, picture: m?.picture ?? null,
+              erased: m?.erased ?? false, t: d.t, by: d.by };
           })
           : null,
       },
@@ -1504,7 +1521,7 @@ export async function createDraftServer(cfg: ServerConfig,
             me: memberId,
             isFounder: false,
             applicant: app === null ? null : { id: app.id, email: app.email,
-              status: app.status, name: app.name, picture: app.picture,
+              status: app.status, name: app.name, picture: app.picture, erased: app.erased,
               words: app.words, motion: app.motion,
               // how many have judged the admit motion: a count, never who —
               // the applicant's own card promises *n of E have voted on it*
@@ -1541,6 +1558,7 @@ export async function createDraftServer(cfg: ServerConfig,
             email: doc.cs.convenorRecord().email,
             name: doc.cs.convenorRecord().name,
             picture: doc.cs.convenorRecord().picture,
+            erased: doc.cs.convenorRecord().erased,
             // whether 🎩 was ever put, which its value cannot say (Q682)
             membershipSet: doc.cs.convenorRecord().membershipSet },
           // the unconfirmed starting text (§9.7a v0.55): readable by any
@@ -1741,11 +1759,13 @@ function memberIdByEmail(cs: ConstitutionSession, email: string): string | null 
   // case-blind (review #1, finding 18): older logs hold addresses as they
   // were typed, and an invitee who capitalizes differently at login must
   // not get the silent-nothing response forever
+  // an erased person has no address to match (decision 1253), so their seat
+  // cannot be reached by login — which is the point of erasure
   const want = email.toLowerCase();
   for (const m of cs.memberRecords().values()) {
-    if (!m.removed && m.email.toLowerCase() === want) return m.id;
+    if (!m.removed && m.email !== null && m.email.toLowerCase() === want) return m.id;
   }
-  return cs.convenorRecord().email.toLowerCase() === want
+  return cs.convenorRecord().email?.toLowerCase() === want
     ? cs.convenorRecord().id : null;
 }
 

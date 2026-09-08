@@ -170,6 +170,130 @@ describe('DocStore', () => {
   });
 });
 
+describe('the people split (decision 1253): rows beside the log', () => {
+  const found = async (dir: string) => {
+    const store = new DocStore(new FilePersistence(dir));
+    const doc = await store.create('d-1', {
+      title: 'Charter', slug: 'charter',
+      convenor: { id: 'founder', email: 'ada@x.org', isMember: true },
+    }, 1000);
+    const bo = doc.cs.invite(1001, 'bo@x.org');
+    doc.cs.arrive(1002, bo);
+    doc.cs.setIdentity(1003, bo, { name: 'Bo Vane', picture: 'e🦊' });
+    await store.persist(doc);
+    return { store, doc, bo };
+  };
+
+  it('a birth writes a row and an id-only event, and the rows ride each persist', async () => {
+    const dir = tmp();
+    const { doc, bo } = await found(dir);
+    const log = readFileSync(join(dir, 'docs', 'd-1', 'log.jsonl'), 'utf8');
+    expect(log).not.toContain('@x.org');
+    expect(log).not.toContain('Bo Vane');
+    expect(log).toContain('"person":"p-1"');
+    expect(log).toContain('"person":"p-2"');
+    expect(log).toContain('"nameSet":true');
+    const rows = JSON.parse(readFileSync(join(dir, 'docs', 'd-1', 'people.json'), 'utf8'));
+    expect(rows).toEqual({
+      'p-1': { email: 'ada@x.org', name: null, picture: null },
+      'p-2': { email: 'bo@x.org', name: 'Bo Vane', picture: 'e🦊' },
+    });
+    // a reload resolves through the rows
+    const back = new DocStore(new FilePersistence(dir));
+    await back.loadAll();
+    const again = back.byId('d-1')!;
+    expect(again.cs.rollingHash()).toBe(doc.cs.rollingHash());
+    expect(again.cs.memberRecords().get(bo)).toMatchObject(
+      { email: 'bo@x.org', name: 'Bo Vane', picture: 'e🦊', erased: false });
+    expect(again.cs.convenorRecord().email).toBe('ada@x.org');
+  });
+
+  it('erasing a row leaves the log and every hash standing; the person reads as erased', async () => {
+    const dir = tmp();
+    const { doc, bo } = await found(dir);
+    const p = new FilePersistence(dir);
+    const person = doc.cs.memberRecords().get(bo)!.person;
+    expect(await p.deletePerson('d-1', person)).toBe(true);
+    expect(await p.deletePerson('d-1', person)).toBe(false);
+    expect((await p.readPeople('d-1')).map((r) => r.personId)).toEqual(['p-1']);
+    const back = new DocStore(new FilePersistence(dir));
+    await back.loadAll();
+    const again = back.byId('d-1')!;
+    expect(again.cs.rollingHash()).toBe(doc.cs.rollingHash());
+    expect(again.cs.memberRecords().get(bo)).toMatchObject(
+      { erased: true, email: null, name: null, picture: null, arrivedAtT: 1002 });
+    expect(again.cs.E()).toBe(2);
+  });
+
+  it('a pre-people log is skipped at boot, named once, and never read', async () => {
+    const dir = tmp();
+    await found(dir);
+    // the same document as the code of 2026-09-07 would have written it:
+    // entries without a version, which is the pre-people shape by definition
+    const path = join(dir, 'docs', 'd-1', 'log.jsonl');
+    const { writeFileSync } = await import('node:fs');
+    const stripped = readFileSync(path, 'utf8').split('\n').filter(Boolean).map((l) => {
+      const { schemaVersion: _v, ...rest } = JSON.parse(l) as Record<string, unknown>;
+      return JSON.stringify(rest);
+    }).join('\n') + '\n';
+    writeFileSync(path, stripped, 'utf8');
+    const said: string[] = [];
+    const orig = console.error;
+    console.error = (...args: unknown[]) => { said.push(args.map(String).join(' ')); };
+    try {
+      const store = new DocStore(new FilePersistence(dir));
+      await store.loadAll();
+      expect(store.byId('d-1')).toBeNull();
+      expect(store.bySlug('charter')).toBeNull();
+      expect(store.skippedPreShape()).toEqual(['d-1']);
+    } finally { console.error = orig; }
+    expect(said).toEqual(['[store] d-1 is the pre-people shape (decision 1253): not loaded']);
+    // and the bytes were not touched
+    expect(readFileSync(path, 'utf8')).toBe(stripped);
+  });
+
+  it('the three tool verbs: people lists, erase deletes one row, wipe refuses without its flag', async () => {
+    const { main, WIPE_FLAG } = await import('../src/tools.js');
+    const dir = tmp();
+    const { bo, doc } = await found(dir);
+    const person = doc.cs.memberRecords().get(bo)!.person;
+    const out: string[] = [];
+    const err: string[] = [];
+    const origLog = console.log;
+    const origErr = console.error;
+    console.log = (...a: unknown[]) => { out.push(a.map(String).join(' ')); };
+    console.error = (...a: unknown[]) => { err.push(a.map(String).join(' ')); };
+    try {
+      expect(await main(['people', dir, 'd-1'])).toBe(0);
+      expect(out.join('\n')).toContain('d-1: 2 person rows');
+      expect(out.join('\n')).toContain(`${person}  bo@x.org  name: set  picture: set`);
+      // erase: a wrong id is a refusal; the right one prints what it held
+      expect(await main(['erase', dir, 'd-1', 'p-9'])).toBe(1);
+      expect(err.at(-1)).toContain("no person row 'p-9'");
+      out.length = 0;
+      expect(await main(['erase', dir, 'd-1', person])).toBe(0);
+      expect(out[0]).toBe(`d-1: erased ${person} — the row held bo@x.org, a name, a picture; the log stands and every hash holds`);
+      expect((await new FilePersistence(dir).readPeople('d-1')).map((r) => r.personId)).toEqual(['p-1']);
+      // the wipe: refused bare, refused with the wrong name, and only then run —
+      // against this scratch directory and nothing else
+      err.length = 0;
+      expect(await main(['wipe', dir])).toBe(1);
+      expect(err[0]).toBe(`wipe: refusing — this would delete 1 document in ${dir}. To proceed, pass ` +
+        `${WIPE_FLAG}=<name>, where <name> is the data directory's basename or the database's name, ` +
+        'typed in full. Nothing was deleted.');
+      expect(await main(['wipe', dir, `${WIPE_FLAG}=not-this-one`])).toBe(1);
+      expect(err[1]).toBe(`wipe: refusing — 'not-this-one' does not name this store, which holds 1 document in ${dir}. ` +
+        'Nothing was deleted.');
+      expect((await new FilePersistence(dir).listDocIds())).toEqual(['d-1']);
+      const { basename } = await import('node:path');
+      out.length = 0;
+      expect(await main(['wipe', dir, `${WIPE_FLAG}=${basename(dir)}`])).toBe(0);
+      expect(out[0]).toBe(`wipe: deleted 1 document and every sidecar from ${dir}`);
+      expect((await new FilePersistence(dir).listDocIds())).toEqual([]);
+    } finally { console.log = origLog; console.error = origErr; }
+  });
+});
+
 describe('stage 7: the two cutover switches, read inertly', () => {
   it('absent DRAFT_STORE means file; pg needs a URL; anything else refuses', async () => {
     const { configFromEnv } = await import('../src/config.js');

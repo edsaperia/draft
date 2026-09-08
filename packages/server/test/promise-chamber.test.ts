@@ -305,7 +305,8 @@ describe('🌍 the rungs, at the door (entry 82)', () => {
     expect(atLink.body.canRead).toBe(true);
     expect(atLink.body.text).toBe('# The orchard\nThe apples are shared at harvest.');
     expect(atLink.body.members.list)
-      .toEqual([{ name: 'Ada Lovell', picture: null }, { name: 'Bo Vane', picture: null }]);
+      .toEqual([{ name: 'Ada Lovell', picture: null, erased: false },
+        { name: 'Bo Vane', picture: null, erased: false }]);
     assertRedacted(atLink.raw, true);
 
     // ---- public: **the same payload**, byte for byte but its own row ------

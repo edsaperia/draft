@@ -22,7 +22,20 @@ import {
   rmSync, writeFileSync,
 } from 'node:fs';
 import { join } from 'node:path';
-import type { LogEntry, ShapeName } from '../../constitution/src/index.js';
+import type { LogEntry, PersonId, ShapeName } from '../../constitution/src/index.js';
+
+/**
+ * One person's row (PRODUCTION.md decision 436, landed under 1253): the
+ * identity the log never carries, keyed by the id its events do. Deleting a
+ * row is erasure; the log stands and every hash holds. `docs/<id>/people.json`
+ * on disk, the `people` table in Postgres.
+ */
+export interface PersonRow {
+  personId: PersonId;
+  email: string;
+  name: string | null;
+  picture: string | null;
+}
 
 export interface PendingCreate {
   title: string;
@@ -121,7 +134,21 @@ export interface Persistence {
   listDocIds(): Promise<string[]>;
   createDoc(id: string): Promise<void>;
   readDocLog(id: string): Promise<LogEntry[]>;
-  appendDocLog(id: string, entries: readonly LogEntry[]): Promise<void>;
+  /**
+   * Append the entries and upsert the person rows they were written beside,
+   * **as one act** (decision 1253): a command that invites somebody writes
+   * the row the event names, and a log naming a row that never landed would
+   * be a member with no address. Postgres makes it one transaction; the file
+   * store writes the rows first, then the log, so a crash between the two
+   * leaves a row nothing names rather than a name nothing resolves. Either
+   * list may be empty.
+   */
+  appendDocLog(id: string, entries: readonly LogEntry[],
+    people?: readonly PersonRow[]): Promise<void>;
+  /** Every person row the document holds, in no particular order. */
+  readPeople(id: string): Promise<PersonRow[]>;
+  /** Erasure: drop one row. Returns whether one was there. */
+  deletePerson(id: string, personId: PersonId): Promise<boolean>;
   readProvisional(id: string): Promise<string | null>;
   writeProvisional(id: string, text: string | null): Promise<void>;
 
@@ -230,8 +257,30 @@ export class FilePersistence implements Persistence {
     return readJsonl<LogEntry>(join(this.docsDir, id, 'log.jsonl'));
   }
 
-  async appendDocLog(id: string, entries: readonly LogEntry[]): Promise<void> {
+  async appendDocLog(id: string, entries: readonly LogEntry[],
+    people: readonly PersonRow[] = []): Promise<void> {
+    // rows first (decision 1253): a crash after this and before the append
+    // leaves a row nothing names, which is harmless; the other order leaves
+    // an event naming a row that is not there
+    if (people.length > 0) {
+      const path = join(this.docsDir, id, 'people.json');
+      const rows = readPeopleFile(path);
+      for (const row of people) rows.set(row.personId, row);
+      writePeopleFile(path, rows);
+    }
     appendJsonl(join(this.docsDir, id, 'log.jsonl'), entries);
+  }
+
+  async readPeople(id: string): Promise<PersonRow[]> {
+    return [...readPeopleFile(join(this.docsDir, id, 'people.json')).values()];
+  }
+
+  async deletePerson(id: string, personId: PersonId): Promise<boolean> {
+    const path = join(this.docsDir, id, 'people.json');
+    const rows = readPeopleFile(path);
+    if (!rows.delete(personId)) return false;
+    writePeopleFile(path, rows);
+    return true;
   }
 
   async readProvisional(id: string): Promise<string | null> {
@@ -397,6 +446,30 @@ export class FilePersistence implements Persistence {
     return [...this.outbox.values()].sort((a, b) => (a.id < b.id ? -1 : 1));
   }
 
+  /* -- the wipe (decision 1253) — the tool's, never the server's ---------- */
+
+  /**
+   * **Every document, every sidecar, gone.** Not on the `Persistence`
+   * contract, so nothing the server holds can reach it: `draft-tools wipe`
+   * calls it on a store it opened itself, after its own refusal has been
+   * passed. Returns how many documents were deleted. The dev inbox
+   * (`outbox.jsonl`) goes too — it holds every magic link ever minted here —
+   * and `secret.txt` stays, being the deployment's key rather than data.
+   */
+  async wipe(): Promise<number> {
+    const ids = await this.listDocIds();
+    rmSync(this.docsDir, { recursive: true, force: true });
+    mkdirSync(this.docsDir, { recursive: true });
+    for (const path of [this.tokensPath, this.stashPath, this.outboxPath,
+      join(this.docsDir, '..', 'outbox.jsonl')]) {
+      rmSync(path, { force: true });
+    }
+    this.tokens.clear();
+    this.stashes.clear();
+    this.outbox.clear();
+    return ids.length;
+  }
+
   private saveOutbox(): void {
     writeFileSync(this.outboxPath,
       JSON.stringify(Object.fromEntries(this.outbox), null, 2), 'utf8');
@@ -421,6 +494,23 @@ function loadJsonMap<T>(path: string): Map<string, T> {
       ? Object.entries(JSON.parse(readFileSync(path, 'utf8')) as Record<string, T>)
       : [],
   );
+}
+
+/** `people.json`: one object keyed by person id, written whole (it is small). */
+function readPeopleFile(path: string): Map<string, PersonRow> {
+  if (!existsSync(path)) return new Map();
+  const raw = JSON.parse(readFileSync(path, 'utf8')) as
+    Record<string, Omit<PersonRow, 'personId'>>;
+  return new Map(Object.entries(raw).map(([personId, r]) => [personId, { personId, ...r }]));
+}
+
+function writePeopleFile(path: string, rows: Map<string, PersonRow>): void {
+  const out: Record<string, Omit<PersonRow, 'personId'>> = {};
+  for (const [id, r] of rows) out[id] = { email: r.email, name: r.name, picture: r.picture };
+  // temp-then-rename, as the bridge state is: a crash mid-write must not
+  // leave a half-written file that fails to parse at the next boot
+  writeFileSync(path + '.tmp', JSON.stringify(out, null, 2), 'utf8');
+  renameSync(path + '.tmp', path);
 }
 
 function readJsonl<T>(path: string): T[] {

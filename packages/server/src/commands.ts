@@ -9,7 +9,7 @@
 import type { ConstitutionSession } from '../../constitution/src/index.js';
 import type { EngineBridge } from '../../constitution/src/engine-bridge.js';
 import type {
-  MotionAnswer, MotionPayload, Power, PowerKey, SettingId, SettingValue,
+  MotionAnswer, MotionInput, Power, PowerKey, SettingId, SettingValue,
 } from '../../constitution/src/index.js';
 import type { PatchSet } from '../../engine-core/src/text/types.js';
 import { emojiFaceOf } from './faces.js';
@@ -325,7 +325,9 @@ const HANDLERS: Record<string, Handler> = {
   'open-motion': (cs, a, t, args, bridge) => {
     const why = typeof args.why === 'string'
       ? cap(args.why, LIMITS.why, 'the rationale') : undefined;
-    const payload = capValue(args.payload as MotionPayload, 'that proposal');
+    // the wire's invite payload names an address; the module turns it into
+    // the person row the event carries (decision 1253) — `MotionInput`
+    const payload = capValue(args.payload as MotionInput, 'that proposal');
     if (payload !== null && typeof payload === 'object' &&
         payload.kind === 'invite') emailOk(str(payload as never, 'email'));
     // a live document's set-motions go through the bridge (Q391): an

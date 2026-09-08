@@ -176,7 +176,7 @@ export class ConstitutionSession {
     membershipSet: boolean;
     lastActivityT: number; lapseWarned: boolean };
   private crownLapsedFlag = false;
-  private members = new Map<MemberId, MemberState>();
+  private members = new Map<MemberId, MemberRecord>();
   /** The departures, folded (Q901): see `departures()`. */
   private departed: Array<{ member: MemberId; t: number; by: DepartureBy }> = [];
   private settings = new Map<PowerKey, SettingState>();
@@ -193,7 +193,7 @@ export class ConstitutionSession {
   private anchors: ThresholdAnchors | null = null;
   private motions = new Map<MotionId, MotionRecord>();
   private crownQuestions = new Map<string, CrownQuestionRecord>();
-  private applicants = new Map<string, ApplicantState>();
+  private applicants = new Map<string, ApplicantRecord>();
   /**
    * The release batches, by id (entry 162, Q1013), and the two fields that
    * decide whether a further release **joins** one or opens a new one. All
@@ -1031,13 +1031,14 @@ export class ConstitutionSession {
       }
       case 'application-started': {
         this.notePerson(event.person);
-        this.applicants.set(event.applicant, {
+        const state: ApplicantState = {
           id: event.applicant,
           person: event.person,
           status: 'started',
           words: null,
           motion: null,
-        });
+        };
+        this.applicants.set(event.applicant, this.withPerson(state));
         this.nextApplicantN += 1;
         break;
       }
@@ -1139,8 +1140,8 @@ export class ConstitutionSession {
   }
 
   private freshMember(id: MemberId, person: PersonId, invitedAtT: number,
-    arrivedAtT: number | null, arrival: Arrival): MemberState {
-    return {
+    arrivedAtT: number | null, arrival: Arrival): MemberRecord {
+    const state: MemberState = {
       id, person, invitedAtT, arrivedAtT, arrival,
       removed: false, removedBy: null, lapsed: false, lapseWarned: false,
       nameSet: false, pictureSet: false,
@@ -1151,6 +1152,26 @@ export class ConstitutionSession {
       mailGaveUpOwed: new Set(), mailGaveUpGiven: new Set(), mailGaveUp: false,
       invitationExpired: false, closingAck: null,
     };
+    return this.withPerson(state);
+  }
+
+  /**
+   * **The row, read live** (decision 1253): `email`, `name`, `picture` and
+   * `erased` are enumerable getters on the fold's own record, resolving
+   * through `people` on every read — so a reader holding a record sees an
+   * erasure the moment the row goes, the record stays the one object the
+   * fold mutates (a reference taken before a tick is still good after it),
+   * and a spread, `JSON.stringify` or a deep-equal sees four plain fields.
+   */
+  private withPerson<T extends { person: PersonId }>(state: T): T & ResolvedPerson {
+    const people = this.people;
+    const field = (key: keyof ResolvedPerson): PropertyDescriptor => ({
+      enumerable: true,
+      get(this: T) { return resolvePerson(people, this.person)[key]; },
+    });
+    return Object.defineProperties(state, {
+      email: field('email'), name: field('name'), picture: field('picture'), erased: field('erased'),
+    }) as T & ResolvedPerson;
   }
 
   private foldSet(id: SettingId, value: SettingValue, by: 'convenor' | 'crown',
@@ -3047,17 +3068,8 @@ export class ConstitutionSession {
     return this.penFrom.get(motion) ?? null;
   }
 
-  /**
-   * The roster with every person resolved **at read time** (decision 1253): a
-   * fresh map per call, each record the fold's state plus the row as it
-   * stands now, so an erasure shows on the very next read. The sets on a
-   * record (`okOwed` and the rest) are the fold's own, shared by reference.
-   */
-  memberRecords(): ReadonlyMap<MemberId, MemberRecord> {
-    const out = new Map<MemberId, MemberRecord>();
-    for (const [id, m] of this.members) out.set(id, { ...m, ...this.personOf(m.person) });
-    return out;
-  }
+  /** The roster; each record's person resolves live through the rows (`withPerson`). */
+  memberRecords(): ReadonlyMap<MemberId, MemberRecord> { return this.members; }
   /**
    * Every member who left the membership after arriving, in log order, with
    * the time and whose act it was (Q901, SURFACE E31–E32). Folded from
@@ -3079,12 +3091,8 @@ export class ConstitutionSession {
     return this.mailGiveUpBatches;
   }
   crownQuestionRecords(): ReadonlyMap<string, CrownQuestionRecord> { return this.crownQuestions; }
-  /** The applicants, each resolved through their row at read time (decision 1253). */
-  applicantRecords(): ReadonlyMap<string, ApplicantRecord> {
-    const out = new Map<string, ApplicantRecord>();
-    for (const [id, a] of this.applicants) out.set(id, { ...a, ...this.personOf(a.person) });
-    return out;
-  }
+  /** The applicants; each record's person resolves live through the rows (`withPerson`). */
+  applicantRecords(): ReadonlyMap<string, ApplicantRecord> { return this.applicants; }
 
   E(): number { return eOf(this.members.values()).length; }
   motionElectorate(): MemberId[] {

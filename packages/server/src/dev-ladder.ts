@@ -353,7 +353,7 @@ export function seatsOf(cs: ConstitutionSession): { id: string; name: string; fo
   const seats = [{ id: founder.id, name: founder.name ?? 'The Founder', founder: true }];
   for (const m of cs.memberRecords().values()) {
     if (m.removed || m.id === founder.id) continue;
-    seats.push({ id: m.id, name: m.name ?? m.email, founder: false });
+    seats.push({ id: m.id, name: m.name ?? m.email ?? m.id, founder: false });
   }
   return seats;
 }

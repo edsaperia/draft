@@ -29,9 +29,9 @@
  * one has moved past.
  */
 import pg from 'pg';
-import type { LogEntry } from '../../constitution/src/index.js';
+import type { LogEntry, PersonId } from '../../constitution/src/index.js';
 import { OUTBOX_MAX_ATTEMPTS, outboxBackoffMs } from './persistence.js';
-import type { OutboxRow, Persistence, StashRecord, TokenRecord } from './persistence.js';
+import type { OutboxRow, Persistence, PersonRow, StashRecord, TokenRecord } from './persistence.js';
 
 /** Each migration runs once, in order, inside one transaction. */
 const MIGRATIONS: ReadonlyArray<{ version: number; sql: string }> = [
@@ -125,6 +125,26 @@ const MIGRATIONS: ReadonlyArray<{ version: number; sql: string }> = [
         sent_ms         bigint
       );
       CREATE INDEX outbox_unsent ON outbox (sent_ms, attempts, created_ms);
+    `,
+  },
+  {
+    // The people split (decision 436, landed under decision 1253 on
+    // 2026-09-08): a person's email, name and picture live here, keyed by
+    // the id the log's events carry, and nowhere in the log — so deleting a
+    // row is erasure and breaks no hash. Upserted in the same transaction
+    // as the entries written beside it (`appendDocLog`). The database was
+    // cleared before this migration ran anywhere real, so no row is ever
+    // reconstructed from an old-shape event.
+    version: 5,
+    sql: `
+      CREATE TABLE people (
+        document_id text NOT NULL REFERENCES documents(id),
+        person_id   text NOT NULL,
+        email       text NOT NULL,
+        name        text,
+        picture     text,
+        PRIMARY KEY (document_id, person_id)
+      );
     `,
   },
 ];
@@ -287,8 +307,23 @@ export class PgPersistence implements Persistence {
     return (await this.readChain('document_log', id)) as LogEntry[];
   }
 
-  async appendDocLog(id: string, entries: readonly LogEntry[]): Promise<void> {
-    await this.appendChain('document_log', id, entries);
+  async appendDocLog(id: string, entries: readonly LogEntry[],
+    people: readonly PersonRow[] = []): Promise<void> {
+    await this.appendChain('document_log', id, entries, people);
+  }
+
+  async readPeople(id: string): Promise<PersonRow[]> {
+    const { rows } = await this.pool.query<{ person_id: string; email: string;
+      name: string | null; picture: string | null }>(
+      'SELECT person_id, email, name, picture FROM people WHERE document_id = $1 ORDER BY person_id',
+      [id]);
+    return rows.map((r) => ({ personId: r.person_id, email: r.email, name: r.name, picture: r.picture }));
+  }
+
+  async deletePerson(id: string, personId: PersonId): Promise<boolean> {
+    const { rowCount } = await this.pool.query(
+      'DELETE FROM people WHERE document_id = $1 AND person_id = $2', [id, personId]);
+    return (rowCount ?? 0) > 0;
   }
 
   async readProvisional(id: string): Promise<string | null> {
@@ -507,6 +542,23 @@ export class PgPersistence implements Persistence {
       ...(r.doc_id === null ? {} : { docId: r.doc_id }) }] as const);
   }
 
+  /* -- the wipe (decision 1253) — the tool's, never the server's ---------- */
+
+  /**
+   * **Every document, every sidecar, gone**, in one transaction; the
+   * migrations table stays, so the schema is still this build's. Not on the
+   * `Persistence` contract, so nothing the server holds can reach it:
+   * `draft-tools wipe` calls it on a store it opened itself, after its own
+   * refusal has been passed. Returns how many documents were deleted.
+   */
+  async wipe(): Promise<number> {
+    const ids = await this.listDocIds();
+    await this.pool.query(
+      'TRUNCATE people, document_log, engine_log, provisional, bridge_state, ' +
+      'documents, tokens, stashes, outbox');
+    return ids.length;
+  }
+
   /* -- lifecycle ------------------------------------------------------------ */
 
   async close(): Promise<void> {
@@ -543,25 +595,37 @@ export class PgPersistence implements Persistence {
   }
 
   private async appendChain(table: 'document_log' | 'engine_log', id: string,
-    entries: readonly ChainedEntry[]): Promise<void> {
-    if (entries.length === 0) return;
+    entries: readonly ChainedEntry[], people: readonly PersonRow[] = []): Promise<void> {
+    if (entries.length === 0 && people.length === 0) return;
     const c = await this.pool.connect();
     try {
       await c.query('BEGIN');
       // one writer per document per batch; the primary key catches the
       // writer that slipped in between
       await c.query('SELECT pg_advisory_xact_lock(1, hashtext($1))', [id]);
-      await c.query(
-        `INSERT INTO ${table} (document_id, seq, prev_hash, hash, event, schema_version)
-          SELECT $1, * FROM unnest($2::int[], $3::text[], $4::text[], $5::text[], $6::int[])`,
-        [
-          id,
-          entries.map((e) => e.seq),
-          entries.map((e) => e.prevHash),
-          entries.map((e) => e.hash),
-          entries.map((e) => JSON.stringify(e.event)),
-          entries.map((e) => e.schemaVersion ?? null),
-        ]);
+      // the rows the entries name, in the same transaction (decision 1253)
+      if (people.length > 0) {
+        await c.query(
+          `INSERT INTO people (document_id, person_id, email, name, picture)
+            SELECT $1, * FROM unnest($2::text[], $3::text[], $4::text[], $5::text[])
+            ON CONFLICT (document_id, person_id) DO UPDATE SET
+              email = EXCLUDED.email, name = EXCLUDED.name, picture = EXCLUDED.picture`,
+          [id, people.map((p) => p.personId), people.map((p) => p.email),
+            people.map((p) => p.name), people.map((p) => p.picture)]);
+      }
+      if (entries.length > 0) {
+        await c.query(
+          `INSERT INTO ${table} (document_id, seq, prev_hash, hash, event, schema_version)
+            SELECT $1, * FROM unnest($2::int[], $3::text[], $4::text[], $5::text[], $6::int[])`,
+          [
+            id,
+            entries.map((e) => e.seq),
+            entries.map((e) => e.prevHash),
+            entries.map((e) => e.hash),
+            entries.map((e) => JSON.stringify(e.event)),
+            entries.map((e) => e.schemaVersion ?? null),
+          ]);
+      }
       await c.query('COMMIT');
     } catch (e) {
       await c.query('ROLLBACK').catch(() => undefined);
