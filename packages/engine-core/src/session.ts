@@ -2198,6 +2198,59 @@ export class Session {
     return !usable.some((c) => c.participantId === participantId);
   }
 
+  /**
+   * **What can still be asked of a participant on one race** (SPEC §8.3,
+   * §8.3b; Q1202): the best pair `bestPairFor` would deal them — their own
+   * incumbent pair skipped (R-062), every pair judged on this ground skipped
+   * (§4.4), incumbent pairs first while the rival gate is shut — or null
+   * once nothing is left; a deadlocked race asks only the members it has
+   * never heard from (`deadlockStillAsks`). The one test, read by the feed's
+   * two dealing loops, by the empty-queue check and by `askOn`, so the hand
+   * and the per-race read can never disagree about whether a race still
+   * wants this participant.
+   */
+  private askOnRace(
+    r: RaceView,
+    participantId: string,
+  ): { aId: string; bId: string; value: number } | null {
+    if (r.deadlocked && !this.deadlockStillAsks(r, participantId)) return null;
+    const fit = this.fitRaceMembers(r.members, r.incumbentId);
+    return this.bestPairFor(fit, r.members, r.incumbentId, participantId, r.rivalGateOpen);
+  }
+
+  /** The edge card `feed` deals for a pair `askOnRace` found on a race. */
+  private edgeCard(r: RaceView, best: { aId: string; bId: string; value: number }): Card {
+    return {
+      kind: 'edge',
+      subtype: best.aId === r.incumbentId || best.bId === r.incumbentId ? 'incumbent' : 'rival',
+      aId: best.aId,
+      bId: best.bId,
+      raceId: r.id,
+      value: best.value,
+    };
+  }
+
+  /**
+   * **The pair a race can still ask this participant, dealt or not**
+   * (Q1202, Ed 2026-09-07: *if there are things you can do, it shows the
+   * symbol of that action, even if it is not urgent*). The feed is a hand
+   * of `n` drawn from the hot set, so a race can hold an unjudged pair for a
+   * participant and still be absent from their hand; this is the per-race
+   * read that says so, and hands over the pair — exactly the card `feed`
+   * would deal on the race, built by the same test, so `judge` accepts it
+   * as it accepts any dealt pair. Null for a race that has nothing left to
+   * ask them, an unknown race, or a race of their own text alone (R-062).
+   * Pure, like `feed`; blind, like `feed` — the routing value rides the
+   * `Card` and the participant API strips it.
+   */
+  askOn(participantId: string, raceId: string): Card | null {
+    this.activeParticipant(participantId);
+    const r = this.races().find((x) => x.id === raceId);
+    if (!r) return null;
+    const best = this.askOnRace(r, participantId);
+    return best === null ? null : this.edgeCard(r, best);
+  }
+
   feed(participantId: string, n: number, t: number = this.lastT): Card[] {
     this.activeParticipant(participantId);
     const allRaces = this.races();
@@ -2269,22 +2322,10 @@ export class Session {
         .sort((a, b) => a.comparisons - b.comparisons || a.id.localeCompare(b.id));
       for (const r of starving) {
         if (cards.length >= n) break;
-        const fit = this.fitRaceMembers(r.members, r.incumbentId);
-        const best = this.bestPairFor(
-          fit, r.members, r.incumbentId, participantId, r.rivalGateOpen);
+        const best = this.askOnRace(r, participantId);
         if (best === null) continue;
         served.add(pairKey(best.aId, best.bId));
-        cards.push({
-          kind: 'edge',
-          subtype:
-            best.aId === r.incumbentId || best.bId === r.incumbentId
-              ? 'incumbent'
-              : 'rival',
-          aId: best.aId,
-          bId: best.bId,
-          raceId: r.id,
-          value: best.value,
-        });
+        cards.push(this.edgeCard(r, best));
       }
     }
     // §8.3a idle serving: with the audience gate open and nothing else to
@@ -2316,27 +2357,8 @@ export class Session {
       if (card === null && hot.length > 0) {
         for (let tries = 0; tries < hot.length && card === null; tries++) {
           const { race } = hot[(hotIndex + tries) % hot.length]!;
-          const fit = this.fitRaceMembers(race.members, race.incumbentId);
-          const best = this.bestPairFor(
-            fit,
-            race.members,
-            race.incumbentId,
-            participantId,
-            race.rivalGateOpen,
-          );
-          if (best) {
-            card = {
-              kind: 'edge',
-              subtype:
-                best.aId === race.incumbentId || best.bId === race.incumbentId
-                  ? 'incumbent'
-                  : 'rival',
-              aId: best.aId,
-              bId: best.bId,
-              raceId: race.id,
-              value: best.value,
-            };
-          }
+          const best = this.askOnRace(race, participantId);
+          if (best) card = this.edgeCard(race, best);
         }
         hotIndex++;
       }
@@ -2418,11 +2440,7 @@ export class Session {
       if (this.deadlockStillAsks(r, participantId)) return false;
     }
     for (const r of races) {
-      const fit = this.fitRaceMembers(r.members, r.incumbentId);
-      if (this.bestPairFor(fit, r.members, r.incumbentId, participantId,
-        r.rivalGateOpen) !== null) {
-        return false;
-      }
+      if (this.askOnRace(r, participantId) !== null) return false;
     }
     if (cheap && this.explorationCard(races, participantId) !== null) return false;
     return true;

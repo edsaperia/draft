@@ -10271,13 +10271,21 @@
       // on this race, in the router's order — `nextCards` keeps the feed's
       // order and the engine has already excluded every pair this member
       // judged on the current ground — and the front one is the card. The
-      // race wants your vote while any is dealt, voted on or not; it files
-      // as ⏳ only when your hand on it is empty and a vote of yours stands.
-      // The card carries its `raceId`; matching by candidate id survives as
-      // the fallback for a card that does not.
+      // card carries its `raceId`; matching by candidate id survives as the
+      // fallback for a card that does not.
+      // **And ⏳ means *waiting for other people to vote*** (Q1202, Ed
+      // 2026-09-07: *if there are things you can do, it should show the
+      // symbol of that action, even if it's not urgent*). The hand is ten
+      // cards from the hot set, so a race can still have a pair to ask you
+      // and be out of it; the view says per race whether anything is left
+      // to ask you (`askable`, the engine's own test) and, where the hand
+      // holds no card on the race, hands over that pair (`ask`) so the lit
+      // entry opens a card without a round trip. The race files as ⏳ only
+      // when nothing on it is left for you and a vote of yours stands.
       const dealt = cards.filter((rc) => rc.kind === 'edge' &&
         (rc.raceId ? rc.raceId === r.id : !!sideOf(rc, ids)));
-      const rc = dealt[0] || null;
+      const rc = dealt[0] || r.ask || null;
+      const canAsk = !!(r.askable || rc);
       // the contested footprint is a list of spans; the page anchors the race
       // at their union (one clause run)
       const csp = spanOf(r.contested && r.contested.length ? r.contested : r.candidates.flatMap((c) => c.hunks));
@@ -10307,7 +10315,7 @@
         a: sideOfId(j.a), b: sideOfId(j.b), outcome: j.outcome,
         locked: !!j.locked, note: j.locked ? SHIFTED_NOTE : null }));
       const base = {
-        id: r.id, keys, state: rc ? 'needs' : r.judged ? 'deciding' : 'needs',
+        id: r.id, keys, state: canAsk ? 'needs' : r.judged ? 'deciding' : 'needs',
         qLabel: labelFor(keys[0]),
         // urgency is the router's own (SPEC §8.1): the served card's value
         // over the best in this feed; the fill is the race's closeness to
@@ -10315,7 +10323,7 @@
         urgency: rc && rc.urgency != null ? rc.urgency : 0.3,
         pct: Math.round((r.closeness || 0) * 100),
         judges: r.judges || 0, floor: r.floor,
-        cap: rc || !r.judged ? RAIL.wantsVote : RAIL.votedStillRunning,
+        cap: canAsk || !r.judged ? RAIL.wantsVote : RAIL.votedStillRunning,
         shifted: r.shifted ? SHIFTED_NOTE : false,
         deadlocked: !!r.deadlocked,
         crownWaits: textAssent,

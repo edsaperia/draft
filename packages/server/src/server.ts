@@ -32,6 +32,7 @@ import { MailOutbox } from './outbox.js';
 import type { QueuedMail } from './outbox.js';
 import { asEngineDoc, driveBridge, persistEngine, resumeBridge } from './engine-host.js';
 import { ParticipantApi, authorVisible } from '../../engine-core/src/participant-api.js';
+import type { CardView } from '../../engine-core/src/participant-api.js';
 import type { Candidate } from '../../engine-core/src/types.js';
 import type { Mail, Mailer } from './mailer.js';
 import { LIMITS, cap, emailOk, runCommand, str } from './commands.js';
@@ -348,8 +349,20 @@ export async function createDraftServer(cfg: ServerConfig,
     const engine = ed.bridge.engine;
     const api = new ParticipantApi(engine, memberId);
     const myJ = api.myJudgments();
+    // either side among the ids: the records' test, fed candidate ids alone
     const touches = (ids: Set<string>) => (j: { aId: string; bId: string }) =>
       ids.has(j.aId) || ids.has(j.bId);
+    // **A judgment is on a live race when both its sides are the race's**
+    // (Q1202's walk, 2026-09-08). The incumbent is positional — the hash of
+    // the text it displaces (§4.4) — so every gap race, and any two clauses
+    // with the same wording, share one incumbent id; matching on *either*
+    // side against a set that holds the incumbent filed a judgment on one gap
+    // under every other, marking a race the member had never judged as
+    // judged and listing a foreign pair in its ledger. Both sides also keeps
+    // a salience diagonal (one side in each of two races) out of a clause's
+    // ledger, where the page could never draw it.
+    const onRace = (ids: Set<string>) => (j: { aId: string; bId: string }) =>
+      ids.has(j.aId) && ids.has(j.bId);
     // per-race judge counts are the record's own numbers (§8.2): a count,
     // never who or which way
     const allJ = engine.judgments();
@@ -379,10 +392,31 @@ export async function createDraftServer(cfg: ServerConfig,
       const rec = recordOf(c.author);
       return { id: c.author, name: rec?.name ?? null, picture: rec?.picture ?? null };
     };
+    // **The hand is dealt before the clause rows are built** (Q1202), because
+    // each row says whether the hand holds a card on its race and, where it
+    // does not, carries the pair the race can still ask — so every lit entry
+    // on the page opens a card without a second read. Null where the seat
+    // has no hand at all: a closed document, a clerk, a seat out of E.
+    const served = ((): { t: number; wallet: ReturnType<typeof api.wallet>; cards: CardView[] } | null => {
+      if (engine.closed) return null;
+      try {
+        const t = tOf(doc.cs, nowMs);
+        return { t, wallet: api.wallet(t), cards: api.nextCards(10, t) };
+      } catch { return null; }
+    })();
     const clauses = engine.races().filter((r) => r.settingId === undefined).map((r) => {
       const ids = new Set([...r.members, r.incumbentId]);
-      const here = myJ.filter(touches(ids));
+      const here = myJ.filter(onRace(ids));
       const standing = here.some((j) => !j.superseded && !j.locked);
+      // **What can still be asked of you here, dealt or not** (Q1202, Ed
+      // 2026-09-07: *⏳ should mean "waiting for other people to vote"*). A
+      // race the hand holds a card on is askable by construction; a race it
+      // does not is asked of the engine, which answers with the pair `feed`
+      // would deal — the same blind `CardView` the hand carries, no value,
+      // no standing, an author only where `namedAuthor`'s rule already
+      // allows — or null once nothing on the race is left to ask this seat.
+      const dealt = served !== null && served.cards.some((c) => c.kind === 'edge' && c.raceId === r.id);
+      const ask = served === null || dealt ? null : api.askOn(r.id);
       return {
         id: r.id,
         contested: r.contested,
@@ -392,6 +426,8 @@ export async function createDraftServer(cfg: ServerConfig,
         closeness: r.closeness,
         judges: r.distinctMovers,
         floor,
+        askable: dealt || ask !== null,
+        ask,
         candidates: r.members.map((id) => {
           const c = engine.getCandidate(id);
           const author = namedAuthor(c);
@@ -570,18 +606,14 @@ export async function createDraftServer(cfg: ServerConfig,
     })();
     const base = { text: engine.document(), textVersion: engine.currentVersion(),
       clauses, mine, records, floor, record, awaitingAssent, amendments };
-    if (engine.closed) return { ...base, raceCards: [], wallet: null, walletInfo: null };
-    try {
-      const t = tOf(doc.cs, nowMs);
-      const w = api.wallet(t);
-      // JSON has no Infinity: a document that does not drip says null
-      const fin = (x: number) => (Number.isFinite(x) ? x : null);
-      return { ...base, raceCards: api.nextCards(10, t), wallet: w.balance,
-        walletInfo: { balance: w.balance, nextDripInMs: fin(w.nextDripInMs),
-          dripIntervalMs: fin(w.dripIntervalMs), cap: w.cap } };
-    } catch {
-      return { ...base, raceCards: [], wallet: null, walletInfo: null }; // a clerk, or a seat out of E
-    }
+    // closed, a clerk, or a seat out of E: no hand and no wallet
+    if (served === null) return { ...base, raceCards: [], wallet: null, walletInfo: null };
+    const w = served.wallet;
+    // JSON has no Infinity: a document that does not drip says null
+    const fin = (x: number) => (Number.isFinite(x) ? x : null);
+    return { ...base, raceCards: served.cards, wallet: w.balance,
+      walletInfo: { balance: w.balance, nextDripInMs: fin(w.nextDripInMs),
+        dripIntervalMs: fin(w.dripIntervalMs), cap: w.cap } };
   };
 
   const tick = async (nowMs: number = Date.now()): Promise<void> => {

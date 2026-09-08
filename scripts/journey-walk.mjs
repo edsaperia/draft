@@ -2228,8 +2228,8 @@ if (caret) {
           ((v.clauses || []).find((c) => (c.contested || []).some((sp) => sp.start === n)) || {}).id || null);
       }, line);
       // the entry as the founder sees it: how many for this race, its mark,
-      // its tooltip and its teasers
-      const entry = () => page.evaluate((id) => {
+      // its tooltip and its teasers (the deck's race unless another is named)
+      const entry = (id = raceId) => page.evaluate((id) => {
         const q = String(id).replace(/["\\]/g, '\\$&');
         const lis = [...document.querySelectorAll('#rail li[data-q="' + q + '"]')];
         const li = lis[0];
@@ -2237,15 +2237,15 @@ if (caret) {
         const b = li.querySelector('button');
         return { n: lis.length, mark: ((li.querySelector('.qmark') || {}).textContent || '').trim(),
           cap: b ? b.title : '', teasers: [...li.querySelectorAll('.qwhy')].map((e) => e.textContent.trim()) };
-      }, raceId);
+      }, id);
       // open the entry from the rail — the page's own route in — and read the
       // card: its kind, the reasons on its blocks, the radios
-      const openEntry = async () => {
+      const openEntry = async (id = raceId) => {
         await page.evaluate((id) => {
           const q = String(id).replace(/["\\]/g, '\\$&');
           const b = document.querySelector('#rail li[data-q="' + q + '"] button');
           if (b) b.click();
-        }, raceId);
+        }, id);
         await T(1400);
         return page.evaluate((id) => {
           const q = String(id).replace(/["\\]/g, '\\$&');
@@ -2262,9 +2262,9 @@ if (caret) {
               on: [...p.querySelectorAll('.lside')].map((s) => s.classList.contains('on')),
               onIsCurrent: !!p.querySelector('.lside.on .rsub'),
             })) };
-        }, raceId);
+        }, id);
       };
-      const judge = async (v) => {
+      const judge = async (v, id = raceId) => {
         const okJ = await page.evaluate(([id, val]) => {
           const q = String(id).replace(/["\\]/g, '\\$&');
           const card = document.querySelector('.sugg[data-card="' + q + '"]');
@@ -2275,7 +2275,7 @@ if (caret) {
           if (!s || s.disabled) return false;
           s.click();
           return true;
-        }, [raceId, v]);
+        }, [id, v]);
         await T(2400);                             // the receipt, the command, its refresh
         return okJ;
       };
@@ -2389,6 +2389,144 @@ if (caret) {
           : 'FAIL: judged ' + jr + ' · ' + JSON.stringify(l3)));
         if (!okL3) stuck.push('the ledger revision');
         await closeCard();
+
+        /* ---- askable but undealt (Q1202) ----------------------------------
+         * Ed, 2026-09-07: *⏳ should mean "waiting for other people to vote".
+         * If there are things you can do, it should show the symbol of that
+         * action, even if it's not urgent.* The hand is ten cards drawn from a
+         * hot set of three races, so a race can hold an unjudged pair for the
+         * founder and be out of their hand — and until this the entry filed
+         * ⏳ the moment the hand was empty on it, hiding a vote they could
+         * still cast (the deck step above never meets it: two races, both
+         * hot). The shape: the second invitee lands with three unspent
+         * proposals and puts two wordings on the gap after the last clause —
+         * the target, T — and one on the gap before it (A); the founder puts
+         * one on the gap at the top (B). Five races. The founder approves A's
+         * challenger, whose value climbs, and keeps the text against both of
+         * T's, whose leader then sits at the coin flip, below every other
+         * race's — so T is fifth of five by value and out of the hot set
+         * while its rival pair is still unjudged by the founder. Read off the
+         * view: the hand holds no card on T. Asserted: the entry is lit, not
+         * ⏳; the press opens the rival pair as a race card; the judgment
+         * lands; and only then does the entry file as ⏳ — the ruling's other
+         * half. The floor goes to four first: a third seat makes E three, and
+         * three is what the deck step set. Skipped, and said, under
+         * --new-clause and --empty-text, whose own gap proposals stand where
+         * T would go. */
+        if (NEW_CLAUSE || EMPTY_TEXT) {
+          say('askable    · skipped under --new-clause / --empty-text (the gaps are taken)');
+        } else {
+          const floored4 = await fetch(BASE + '/api/d/' + slug + '/cmd', { method: 'POST',
+            headers: { 'content-type': 'application/json', cookie: jar },
+            body: JSON.stringify({ cmd: 'set-setting', args: { setting: 'quorum', value: { form: 'count', n: 4 } } }) })
+            .then((r) => r.json()).catch((e) => ({ error: String(e && e.message) }));
+          if (floored4 && floored4.error) {
+            say('askable    · FAIL: could not raise the floor above three seats · ' + JSON.stringify(floored4.error));
+            stuck.push('the askable case’s floor');
+          }
+          const link2 = await invitationLink(GUEST2);
+          let cyPage = null;
+          if (!link2) {
+            say('askable    · FAIL: no invitation link in the outbox for ' + GUEST2);
+            stuck.push('the third seat’s link');
+          } else {
+            const ctx2 = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+            cyPage = await ctx2.newPage();
+            cyPage.on('pageerror', (e) => errors.push('[cy] ' + String(e)));
+            await cyPage.goto(link2);
+            for (let i = 0; i < 40 && !cyPage.url().includes('/d/'); i++) await cyPage.waitForTimeout(500);
+            await cyPage.waitForTimeout(2600);
+          }
+          // a proposal at the wire from whichever seat, on a gap: a pure
+          // insertion at line n, `start === end` (Q261)
+          const proposeGap = (from, n, text, why) => from.evaluate(([n, text, why]) => {
+            const api = location.pathname.replace('/d/', '/api/d/');
+            return fetch(api + '/view').then((r) => r.json()).then((v) => fetch(api + '/cmd', {
+              method: 'POST', headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ cmd: 'propose-text', args: { baseVersion: v.textVersion,
+                hunks: [{ start: n, end: n, lines: [text] }], why } }),
+            })).then((r) => r.json()).catch((e) => ({ error: String(e && e.message) }));
+          }, [n, text, why]);
+          const nLines = await page.evaluate(() => {
+            const api = location.pathname.replace('/d/', '/api/d/');
+            return fetch(api + '/view').then((r) => r.json()).then((v) => String(v.text || '').split('\n').length);
+          });
+          const WHY_T1 = 'Dogs are welcome', WHY_T2 = 'Cats are welcome', WHY_A = 'The book matters';
+          const sends = cyPage ? [
+            await proposeGap(cyPage, nLines, 'A member may bring a dog.', WHY_T1),
+            await proposeGap(cyPage, nLines, 'A member may bring a cat.', WHY_T2),
+            await proposeGap(cyPage, nLines - 1, 'Guests sign the book.', WHY_A),
+            await proposeGap(page, 0, 'The club is a club.', 'Tautology'),
+          ] : [];
+          const bad = sends.filter((s) => !s || s.error);
+          const tId = sends[0] && sends[0].result && sends[0].result.raceId;
+          const aId = sends[2] && sends[2].result && sends[2].result.raceId;
+          if (!cyPage) { /* said above */ }
+          else if (bad.length || !tId || !aId || (sends[1].result || {}).raceId !== tId) {
+            say('askable    · FAIL: the four gap proposals did not land · ' + JSON.stringify(sends));
+            stuck.push('the askable case’s proposals');
+          } else {
+            await closeCard();
+            await T(5600);                               // one poll in the founder's seat
+            // where T stands as the founder's view has it: dealt, askable, judged
+            const tRow = () => page.evaluate((id) => {
+              const api = location.pathname.replace('/d/', '/api/d/');
+              return fetch(api + '/view').then((r) => r.json()).then((v) => {
+                const r = (v.clauses || []).find((c) => c.id === id) || {};
+                return { dealt: (v.raceCards || []).filter((c) => c.kind === 'edge' && c.raceId === id).length,
+                  askable: r.askable, ask: !!r.ask, judged: !!r.judged,
+                  judgments: (r.myJudgments || []).length };
+              });
+            }, tId);
+            // 1 — A: approve its challenger; its value climbs
+            const cA = await openEntry(aId);
+            const jA = cA.card && /quick-open/.test(cA.cls) && await judge('approve', aId);
+            say('askable 1  · ' + (jA ? 'A approved from its quick card' : 'FAIL: ' + JSON.stringify(cA)));
+            if (!jA) stuck.push('the askable case’s A');
+            // 2 — T: keep against both wordings, one press each; lit between
+            let okT = true;
+            for (const k of [1, 2]) {
+              const e = await entry(tId);
+              const c = await openEntry(tId);
+              const j = c.card && /quick-open/.test(c.cls) && c.keepLane && await judge('keep', tId);
+              const ok = isNeeds(e) && j;
+              say('askable 2' + (k === 1 ? 'a' : 'b') + ' · ' + (ok ? 'T ' + e.mark + ' · kept the text against “' + (c.whys[0] || '') + '”'
+                : 'FAIL: entry ' + JSON.stringify(e) + ' · card ' + JSON.stringify(c) + ' · judged ' + j));
+              if (!ok) { stuck.push('the askable case’s T, pair ' + k); okT = false; break; }
+            }
+            if (okT) {
+              // 3 — the precondition, off the wire: no card on T in the hand
+              const t3 = await tRow();
+              const setUp = t3.dealt === 0 && t3.judged;
+              say('askable 3  · ' + (setUp ? 'T is out of the hand (' + t3.judgments + ' judged) — the case stands'
+                : 'FAIL: the case was not exercised · ' + JSON.stringify(t3)));
+              if (!setUp) stuck.push('the askable case’s precondition (T stayed in the hand)');
+              // 4 — the ruling: the entry is lit, not ⏳, with the rival pair's two cases
+              const e4 = await entry(tId);
+              const ok4 = isNeeds(e4) && e4.teasers.length === 2 && e4.teasers.includes(WHY_T1) && e4.teasers.includes(WHY_T2);
+              say('askable 4  · ' + (ok4 ? 'the entry stays ' + e4.mark + ' “' + e4.cap + '” with the rival pair’s two cases — nothing dealt, still askable'
+                : 'FAIL: ' + JSON.stringify(e4) + ' · view ' + JSON.stringify(t3)));
+              if (!ok4) stuck.push('the askable entry (lit on what can still be asked, not on the hand)');
+              // 5 — the press opens that pair as a race card, and the judgment lands
+              const c5 = await openEntry(tId);
+              const ok5 = c5.card && /race-open/.test(c5.cls) && !c5.keepLane && c5.whys.length === 2 &&
+                c5.whys.includes(WHY_T1) && c5.whys.includes(WHY_T2);
+              say('askable 5  · ' + (ok5 ? 'the press opens the rival pair: a race card, two blocks, no keep lane'
+                : 'FAIL: ' + JSON.stringify(c5)));
+              if (!ok5) stuck.push('the askable case’s card');
+              const j5 = ok5 && await judge('a', tId);
+              const t5 = await tRow();
+              const e5 = await entry(tId);
+              const landed = j5 && t5.judged && t5.judgments === 3 && t5.askable === false && !t5.ask;
+              const ok6 = landed && e5.mark === '⏳' && e5.teasers.length === 0;
+              say('askable 6  · ' + (ok6 ? 'judged · 3 pairs of the founder’s stand on T · nothing left to ask, and only now the entry files as ⏳ “' + e5.cap + '”'
+                : 'FAIL: judged ' + j5 + ' · view ' + JSON.stringify(t5) + ' · entry ' + JSON.stringify(e5)));
+              if (!ok6) stuck.push('the askable case’s judgment' + (landed ? '’s ⏳ afterwards' : ''));
+              await closeCard();
+            }
+          }
+          if (cyPage) await cyPage.context().close();
+        }
       }
     }
   }

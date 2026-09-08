@@ -2598,3 +2598,145 @@ describe('the pair deck and the judged-pairs ledger (Q1200, Q1201)', () => {
     expect(JSON.stringify([adaV.clauses, boV.clauses])).not.toContain('"outcome"');
   });
 });
+
+/**
+ * **A race's row says what can still be asked of you, dealt or not** (Q1202;
+ * Ed, 2026-09-07: *⏳ should mean "waiting for other people to vote". If there
+ * are things you can do, it should show the symbol of that action, even if
+ * it's not urgent*). The hand is ten cards, so with eleven races wanting a
+ * member the eleventh is out of it; its row carries `askable: true` and the
+ * pair the race would deal (`ask`), so the page lights the entry and the
+ * press opens a card without a second read. A dealt race carries no `ask`
+ * (the hand's card is the card); a race the member has judged out carries
+ * `askable: false, ask: null`. Blind throughout: an `ask` is the same
+ * `CardView` the hand serves, and nothing on the wire is a routing value.
+ */
+describe('askable races and the pair that rides the view (Q1202)', () => {
+  it('lights a race the hand lacks with its own pair, and files one that is judged out', async () => {
+    const { base, dataDir } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Askable', email: 'ada@example.org',
+    })).json() as { slug: string; devLink: string };
+    const slug = created.slug;
+    const ada = cookieOf(await consume(created.devLink));
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const body = await (await post(base, `/api/d/${slug}/cmd`,
+        { cmd: name, args }, cookie)).json() as { error?: string; result?: unknown };
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+      return body.result;
+    };
+    type Row = { id: string; judged: boolean; askable: boolean;
+      ask: null | { kind: string; raceId: string; urgency: number; a: CardOption; b: CardOption } };
+    type Payload = Omit<MemberViewPayload, 'clauses'> & { clauses: Row[] };
+    const viewOf = async (cookie: string) => (await (await fetch(
+      `${base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as unknown as Payload;
+
+    const LINES = Array.from({ length: 11 }, (_, i) => `Clause ${i + 1} stands.`);
+    await cmd(ada, 'confirm-starting-text', { text: LINES.join('\n') });
+    for (const who of ['bo', 'cy', 'dee']) await cmd(ada, 'invite', { email: `${who}@example.org` });
+    const follow = async (email: string): Promise<string> =>
+      cookieOf(await consume((await lastMailTo(dataDir, email)).link!));
+    const bo = await follow('bo@example.org');
+    const cy = await follow('cy@example.org');
+    const dee = await follow('dee@example.org');
+    await cmd(ada, 'set-setting', { setting: 'rate', value: { grant: 6, cap: 8, dripMinutes: 240 } });
+    const values: Record<string, unknown> = {
+      pace: { shape: 'fixed' }, quorum: { form: 'count', n: 4 },
+      authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
+      applications: { apply: false }, admission: { price: 'assembly' },
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+      ending: { endsAtMs: Date.now() + 3600_000 }, bar: { pct: 66 }, chamber: { rung: 'link' },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await cmd(ada, 'reclaim', { setting });
+      await cmd(ada, 'set-setting', { setting, value });
+    }
+    await cmd(ada, 'begin', {});
+
+    // eleven single-challenger races, one per line, by three authors — one
+    // more than the hand of ten holds for dee
+    const authors = [ada, ada, ada, ada, bo, bo, bo, bo, cy, cy, cy];
+    const races: string[] = [];
+    for (let i = 0; i < 11; i++) {
+      const r = await cmd(authors[i]!, 'propose-text', { baseVersion: 0,
+        hunks: [{ start: i, end: i + 1, lines: [`Clause ${i + 1} is rewritten.`] }],
+        why: `line ${i + 1}` }) as { id: string; raceId: string };
+      races.push(r.raceId);
+    }
+    const v1 = await viewOf(dee);
+    expect(v1.clauses).toHaveLength(11);
+    const inHand = new Set(v1.raceCards.filter((c) => c.kind === 'edge').map((c) => c.raceId));
+    expect(inHand.size).toBe(10);
+    // the row of the race outside the hand: askable, with a pair whose ids
+    // are that race's — its challenger and its incumbent
+    const out = v1.clauses.filter((r) => !inHand.has(r.id));
+    expect(out).toHaveLength(1);
+    const row = out[0]!;
+    expect(row.askable).toBe(true);
+    expect(row.ask).not.toBeNull();
+    expect(row.ask!.kind).toBe('edge');
+    expect(row.ask!.raceId).toBe(row.id);
+    expect(row.ask!.urgency).toBe(0);
+    const cand = (v1.clauses.find((r) => r.id === row.id) as unknown as
+      { candidates: Array<{ id: string }>; incumbentId: string });
+    expect(new Set([row.ask!.a.id, row.ask!.b.id]))
+      .toEqual(new Set([cand.candidates[0]!.id, cand.incumbentId]));
+    // a dealt race is askable by construction and carries no pair of its own
+    for (const r of v1.clauses.filter((x) => inHand.has(x.id))) {
+      expect(r.askable).toBe(true);
+      expect(r.ask).toBeNull();
+    }
+    // the undealt pair is judgeable as it stands, and the race is then out of
+    // dee's asking: the row files
+    await cmd(dee, 'judge-race', { a: row.ask!.a.id, b: row.ask!.b.id, outcome: 'a' });
+    const v2 = await viewOf(dee);
+    const after = v2.clauses.find((r) => r.id === row.id)!;
+    expect(after.judged).toBe(true);
+    expect(after.askable).toBe(false);
+    expect(after.ask).toBeNull();
+    // and a race judged out of the hand itself files the same way
+    const dealt = v1.raceCards.find((c) => c.kind === 'edge')!;
+    await cmd(dee, 'judge-race', { a: dealt.a.id, b: dealt.b.id, outcome: 'b' });
+    const v3 = await viewOf(dee);
+    const judged = v3.clauses.find((r) => r.id === dealt.raceId)!;
+    expect(judged.judged).toBe(true);
+    expect(judged.askable).toBe(false);
+    expect(judged.ask).toBeNull();
+    // **A judgment is on a race only when both its sides are the race's.**
+    // The incumbent is positional (§4.4) — the hash of the displaced text —
+    // so two gap races share one incumbent id: a judgment on one must not
+    // mark the other judged or appear in its ledger (found by Q1202's walk)
+    const g1 = await cmd(bo, 'propose-text', { baseVersion: 0,
+      hunks: [{ start: 3, end: 3, lines: ['A clause slipped in before the fourth.'] }],
+      why: 'gap 3' }) as { id: string; raceId: string };
+    const g2 = await cmd(cy, 'propose-text', { baseVersion: 0,
+      hunks: [{ start: 7, end: 7, lines: ['A clause slipped in before the eighth.'] }],
+      why: 'gap 7' }) as { id: string; raceId: string };
+    expect(g2.raceId).not.toBe(g1.raceId);
+    const v4 = await viewOf(dee);
+    const gap1 = v4.clauses.find((r) => r.id === g1.raceId) as unknown as
+      { incumbentId: string; candidates: Array<{ id: string }> };
+    const gap2 = v4.clauses.find((r) => r.id === g2.raceId) as unknown as { incumbentId: string };
+    expect(gap1.incumbentId).toBe(gap2.incumbentId);
+    await cmd(dee, 'judge-race', { a: g1.id, b: gap1.incumbentId, outcome: 'a' });
+    const v5 = await viewOf(dee);
+    const r1 = v5.clauses.find((r) => r.id === g1.raceId) as unknown as Row & { myJudgments: unknown[] };
+    const r2 = v5.clauses.find((r) => r.id === g2.raceId) as unknown as Row & { myJudgments: unknown[] };
+    expect(r1.judged).toBe(true);
+    expect(r1.myJudgments).toHaveLength(1);
+    expect(r1.askable).toBe(false);
+    expect(r2.judged).toBe(false);
+    expect(r2.myJudgments).toEqual([]);
+    expect(r2.askable).toBe(true);
+    // blind: no routing value on any card, dealt or asked, and no standing
+    const adaV = await viewOf(ada);
+    for (const v of [v1, v2, v3, v4, v5, adaV]) {
+      expect(JSON.stringify([v.clauses, v.raceCards])).not.toMatch(/"value"|leaderP|certification|author/);
+    }
+    // an author's own single-challenger race asks nothing of them (R-062)
+    for (const r of adaV.clauses.slice(0, 4)) {
+      expect(r.askable).toBe(false);
+      expect(r.ask).toBeNull();
+    }
+  });
+});

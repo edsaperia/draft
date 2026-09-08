@@ -10,7 +10,7 @@
 
 import { INC_PREFIX } from './session.js';
 import type { JudgmentView, Session } from './session.js';
-import type { Candidate, Constitution, EdgeSubtype } from './types.js';
+import type { Candidate, Card, Constitution, EdgeSubtype } from './types.js';
 import type { PatchSet, Span } from './text/types.js';
 
 /**
@@ -142,15 +142,42 @@ export class ParticipantApi {
   nextCards(n: number, now: number): CardView[] {
     const feed = this.session.feed(this.participantId, n, now);
     const top = feed.reduce((m, c) => Math.max(m, c.value), 0);
-    return feed
-      .map((card) => ({
-        raceId: card.raceId,
-        urgency: top > 0 ? Math.max(0, Math.min(1, card.value / top)) : 1,
-        kind: card.kind === 'diagonal' ? ('diagonal' as const) : ('edge' as const),
-        ...(card.subtype ? { subtype: card.subtype } : {}),
-        a: this.renderOption(card.aId),
-        b: this.renderOption(card.bId),
-      }));
+    return feed.map((card) => this.renderCard(card, top > 0 ? Math.max(0, Math.min(1, card.value / top)) : 1));
+  }
+
+  /**
+   * **What one race can still ask this participant, whether or not the hand
+   * holds it** (Q1202, Ed 2026-09-07). The feed is a hand of `n`, so a race
+   * with an unjudged pair for this participant can be out of it; a client
+   * that marks a race *waiting on other people* only when nothing is left
+   * to ask needs the per-race answer, and a mark that says *you can act*
+   * needs the pair to act on. This is both: the card `feed` would deal on
+   * the race, rendered blind exactly as `nextCards` renders it, or null
+   * when the race has nothing left to ask — its `urgency` is 0, since a
+   * pair outside the hand is by construction below everything in it and
+   * has no feed to be relative to. `judge` takes it like any dealt card.
+   * No clock: unlike the feed, which prices races against the threshold
+   * now, whether a pair is left to ask does not depend on the time.
+   */
+  askOn(raceId: string): CardView | null {
+    const card = this.session.askOn(this.participantId, raceId);
+    return card === null ? null : this.renderCard(card, 0);
+  }
+
+  /**
+   * The blind rendering of a routed card: texts and rationales, never the
+   * routing value — `urgency` is the caller's ratio of magnitudes, and
+   * `Card.value` never reaches the wire.
+   */
+  private renderCard(card: Card, urgency: number): CardView {
+    return {
+      raceId: card.raceId,
+      urgency,
+      kind: card.kind === 'diagonal' ? ('diagonal' as const) : ('edge' as const),
+      ...(card.subtype ? { subtype: card.subtype } : {}),
+      a: this.renderOption(card.aId),
+      b: this.renderOption(card.bId),
+    };
   }
 
   /**
