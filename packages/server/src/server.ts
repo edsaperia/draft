@@ -272,9 +272,14 @@ export async function createDraftServer(cfg: ServerConfig,
         const email = m?.email ?? (event.member === cs.convenorRecord().id
           ? cs.convenorRecord().email : null);
         if (mailable(email)) {
-          const make = event.type === 'lapse-warned' ? MAILS.lapseWarning : MAILS.lapsed;
           const l = loginLink(event.member, email);
-          push(email, make(title, l.link), l.tokenHash);
+          if (event.type === 'lapse-warned') {
+            // each of the three warnings names its own lead (R-097): a
+            // week, a day, an hour — the event carries it
+            push(email, MAILS.lapseWarning(title, l.link, event.lead), l.tokenHash);
+          } else {
+            push(email, MAILS.lapsed(title, l.link), l.tokenHash);
+          }
         }
       }
     }

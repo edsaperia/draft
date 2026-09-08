@@ -29,7 +29,7 @@ export { BAR_CEILING_PCT, VOTES_NEEDED, VOTES_NEEDED_HI_PCT, VOTES_NEEDED_LO_PCT
 export type { ThresholdAnchors } from './threshold.js';
 export { BAR_RUNGS, MEANING_MAX, OWN_RUNG_LABEL, meaningOf, roomPhrase, winsNeededPct } from './meaning.js';
 export type { Room } from './meaning.js';
-export { lapseDue, WARN_FRACTION } from './clocks.js';
+export { WARN_LEADS, lapseDue, warningDue } from './clocks.js';
 export { SHAPES, SHAPED, UNSHAPED, shapeOf, isShapeName } from './shapes.js';
 export type { Shape, ShapeName } from './shapes.js';
 export { view, constitutionBlock, roomSettings } from './view.js';

@@ -4,17 +4,19 @@ import { buildConstituted } from './helpers.js';
 
 describe('lapsing (§9.5a): absence read by the clock', () => {
   it('warns, lapses, and revival is just logging in again', () => {
-    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 } });
+    const HOUR = 3_600_000;
+    // a three-hour spell: the hour's warning is the one that fits (R-097)
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 3 * HOUR }, endsAtMs: 10 * HOUR });
     // keep ada and bo active late; cy goes quiet after t=2
-    s.setIdentity(9_000, 'ada', { name: 'Ada' });
-    s.setIdentity(9_000, bo, { name: 'Bo' });
-    s.tick(9_600); // cy quiet since t≈1: warn point (75%) long passed
+    s.setIdentity(2 * HOUR + 1, 'ada', { name: 'Ada' });
+    s.setIdentity(2 * HOUR + 1, bo, { name: 'Bo' });
+    s.tick(2 * HOUR + 30_000); // cy quiet since t≈1: the hour's point has passed
     expect(s.memberRecords().get(cy)!.lapseWarned).toBe(true);
     expect(s.memberRecords().get(cy)!.lapsed).toBe(false);
-    s.tick(10_500); // past the consented quiet spell
+    s.tick(3 * HOUR + 30_000); // past the consented quiet spell
     expect(s.memberRecords().get(cy)!.lapsed).toBe(true);
     expect(s.E()).toBe(2); // a lapsed member leaves E entirely (v0.48)
-    s.memberReturn(11_000, cy); // revival needs no motion — the rule was consented
+    s.memberReturn(3 * HOUR + 60_000, cy); // revival needs no motion — the rule was consented
     expect(s.memberRecords().get(cy)!.lapsed).toBe(false);
     expect(s.E()).toBe(3);
   });
@@ -121,36 +123,39 @@ describe('the invite door holds its own pair (entry 94; was 🤝’s, §9.7 v0.5
 
 describe('the crown lapses like a member (§9.7 v0.49): automatic assent', () => {
   it('a quiet clerk-crown lapses; pending 👑 questions pass; nothing changes hands; return revives', () => {
-    const { s, bo, cy } = buildConstituted({ clerk: true, lapse: { afterMs: 10_000 } });
+    // a three-hour spell, so the hour's warning is the one that fits (R-097);
+    // every clock time below rides on H
+    const H = 3 * 3_600_000;
+    const { s, bo, cy } = buildConstituted({ clerk: true, lapse: { afterMs: H }, endsAtMs: 4 * H });
     const m = s.openMotion(3, bo, { kind: 'set', setting: 'rate',
       value: { grant: 6, cap: 10, dripMinutes: 120 } });
     s.adjudicateOrdinaryMotion(4, m, 'carried');
     expect(s.motionRecords().get(m)!.status).toBe('awaiting-crown');
     // keep the members active; the convenor stays silent after t=2
-    s.setIdentity(9_000, bo, { name: 'Bo' });
-    s.setIdentity(9_000, cy, { name: 'Cy' });
-    s.tick(9_700);
+    s.setIdentity(H - 3_600_000 + 1, bo, { name: 'Bo' });
+    s.setIdentity(H - 3_600_000 + 1, cy, { name: 'Cy' });
+    s.tick(H - 3_600_000 + 30_000); // past the hour's point
     expect(s.convenorRecord().lapseWarned).toBe(true); // warned by email first
-    s.tick(12_500);
+    s.tick(H + 12_500);
     expect(s.crownLapsed).toBe(true);
     // lapse is automatic abstention, and on an assent, abstaining is granting
     expect(s.motionRecords().get(m)!.status).toBe('carried');
     expect(s.settingState('rate').value).toEqual({ grant: 6, cap: 10, dripMinutes: 120 });
     expect(s.settingState('title').holder).toBe('convenor'); // nothing changes hands (v0.49)
-    expect(() => s.answerCrownQuestion(13_000, 'cq-1', 'reject')).toThrow(); // passed already
+    expect(() => s.answerCrownQuestion(H + 13_000, 'cq-1', 'reject')).toThrow(); // passed already
     // while the crown sleeps, a members-passed change on a reserved setting
     // applies as if accepted
-    const m2 = s.openMotion(13_500, bo, { kind: 'set', setting: 'title',
+    const m2 = s.openMotion(H + 13_500, bo, { kind: 'set', setting: 'title',
       value: { text: 'The Hollow Oak Charter' } });
-    s.adjudicateOrdinaryMotion(14_000, m2, 'carried');
+    s.adjudicateOrdinaryMotion(H + 14_000, m2, 'carried');
     expect(s.motionRecords().get(m2)!.status).toBe('carried');
     expect(s.titleOf).toBe('The Hollow Oak Charter');
     // revival is logging in: the assent requirement resumes from that moment
-    s.memberReturn(15_000, 'ada');
+    s.memberReturn(H + 15_000, 'ada');
     expect(s.crownLapsed).toBe(false);
-    const m3 = s.openMotion(15_500, bo, { kind: 'set', setting: 'rate',
+    const m3 = s.openMotion(H + 15_500, bo, { kind: 'set', setting: 'rate',
       value: { grant: 5, cap: 9, dripMinutes: 180 } });
-    s.adjudicateOrdinaryMotion(16_000, m3, 'carried');
+    s.adjudicateOrdinaryMotion(H + 16_000, m3, 'carried');
     expect(s.motionRecords().get(m3)!.status).toBe('awaiting-crown');
   });
 });

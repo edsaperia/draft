@@ -106,6 +106,21 @@ export function makeMailer(opts: {
   };
 }
 
+/**
+ * The three leads in words (R-097): the warning says how long it has, in
+ * the unit the lead was chosen in. Anything else — a lead a future ladder
+ * might add — falls to the nearest whole unit.
+ */
+const leadPhrase = (ms: number): string => {
+  const HOUR = 3_600_000, DAY = 24 * HOUR;
+  if (ms === 7 * DAY) return 'a week';
+  if (ms === DAY) return 'a day';
+  if (ms === HOUR) return 'an hour';
+  if (ms >= DAY) return `${Math.round(ms / DAY)} days`;
+  if (ms >= HOUR) return `${Math.round(ms / HOUR)} hours`;
+  return `${Math.max(1, Math.round(ms / 60_000))} minutes`;
+};
+
 export const MAILS = {
   // Q460: clicking the link IS the creation — the document comes into
   // being at the address promised, and not before
@@ -143,10 +158,15 @@ export const MAILS = {
     text: `Here is your login link for “${title}”:\n${link}`,
     link,
   }),
-  lapseWarning: (title: string, link: string): Omit<Mail, 'to'> => ({
+  /**
+   * Each of the three warnings names its own lead (R-097): a week, a day,
+   * an hour before the lapse. A member gets all three that fit their spell.
+   */
+  lapseWarning: (title: string, link: string, leadMs: number): Omit<Mail, 'to'> => ({
     subject: `Your membership of “${title}” is about to lapse`,
-    text: `You have been inactive long enough that your membership of ` +
-      `“${title}” is about to lapse. Logging in is all it takes to stay:\n${link}`,
+    text: `You have been inactive for a while, and your membership of ` +
+      `“${title}” will lapse in about ${leadPhrase(leadMs)}. ` +
+      `Logging in is all it takes to stay:\n${link}`,
     link,
   }),
   /** To the operator (cfg.notifyEmail), never to a member. */

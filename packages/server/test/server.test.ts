@@ -2006,15 +2006,17 @@ describe('💤 the lapse mails (§9.5a, SURFACE E22)', () => {
     await cmd(ada, 'set-setting',
       { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
     // the founder keeps every question (a delegated one never resolves on a
-    // single voice), and the spell is a minute — expressible only here, since
-    // the card collects whole days, 7–365
+    // single voice), and the spell is five hours — expressible only here,
+    // since the card collects whole days, 7–365 — so exactly one of the
+    // three warnings fits: the hour's (R-097)
+    const HOUR = 3_600_000;
     const values: Record<string, unknown> = {
       ending: { endsAtMs: null }, // perpetual: the tick must not close instead
       pace: { shape: 'fixed' }, bar: { pct: 66 },
       quorum: { form: 'count', n: 1 }, chamber: { rung: 'link' },
       authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
       applications: { apply: false }, admission: { price: 'assembly' },
-      machines: { enabled: false, budget: 0 }, lapse: { afterMs: 60_000 },
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: 5 * HOUR },
     };
     for (const [setting, value] of Object.entries(values)) {
       await cmd(ada, 'reclaim', { setting });
@@ -2032,11 +2034,17 @@ describe('💤 the lapse mails (§9.5a, SURFACE E22)', () => {
     const WARN = 'Your membership of “Quiet Meadow Charter” is about to lapse';
     const GONE = 'Your membership of “Quiet Meadow Charter” has lapsed';
 
-    // -- 75% of the spell: the warning, and only the warning ---------------
-    await draft.tick(t0 + 50_000);
+    // -- an hour before the lapse (R-097): the warning, and only the warning
+    await draft.tick(t0 + 4 * HOUR + 50_000);
     await draft.outbox.drain();
     expect(mailsTo('bo@example.org', WARN)).toHaveLength(1);
     expect(mailsTo('bo@example.org', WARN)[0]!.link).toContain('/auth/login?token=');
+    // the warning names its lead
+    const warnBody = readFileSync(join(dataDir, 'outbox.jsonl'), 'utf8')
+      .split('\n').filter((l) => l.length > 0)
+      .map((l) => JSON.parse(l) as { to: string; subject: string; text: string })
+      .filter((m) => m.to === 'bo@example.org' && m.subject === WARN)[0]!.text;
+    expect(warnBody).toContain('will lapse in about an hour');
     expect(mailsTo('bo@example.org', GONE)).toHaveLength(0);
     const live = draft.store.bySlug(slug)!;
     const boRec = [...live.cs.memberRecords().values()]
@@ -2045,7 +2053,7 @@ describe('💤 the lapse mails (§9.5a, SURFACE E22)', () => {
     expect(boRec.lapsed).toBe(false);
 
     // -- past the spell: the lapse, once, with its own link ----------------
-    await draft.tick(t0 + 70_000);
+    await draft.tick(t0 + 5 * HOUR + 10_000);
     await draft.outbox.drain();
     expect(boRec.lapsed).toBe(true);
     const gone = mailsTo('bo@example.org', GONE);
@@ -2061,7 +2069,7 @@ describe('💤 the lapse mails (§9.5a, SURFACE E22)', () => {
     expect(body).not.toContain('The meadow is mown in June.');
 
     // -- and the sweep does not re-send next minute ------------------------
-    await draft.tick(t0 + 130_000);
+    await draft.tick(t0 + 5 * HOUR + 70_000);
     await draft.outbox.drain();
     expect(mailsTo('bo@example.org', GONE)).toHaveLength(1);
     expect(mailsTo('bo@example.org', WARN)).toHaveLength(1);

@@ -44,7 +44,7 @@ var CONSTITUTION = (() => {
     VOTES_NEEDED_HI_PCT: () => VOTES_NEEDED_HI_PCT,
     VOTES_NEEDED_LO_PCT: () => VOTES_NEEDED_LO_PCT,
     VOTES_NEEDED_MAX_N: () => VOTES_NEEDED_MAX_N,
-    WARN_FRACTION: () => WARN_FRACTION,
+    WARN_LEADS: () => WARN_LEADS,
     adoptionFloor: () => adoptionFloor,
     adoptionFloorTerm: () => adoptionFloorTerm,
     barAt: () => barAt,
@@ -80,6 +80,7 @@ var CONSTITUTION = (() => {
     versionOf: () => versionOf,
     view: () => view,
     votesNeeded: () => votesNeeded,
+    warningDue: () => warningDue,
     winsNeededPct: () => winsNeededPct
   });
 
@@ -912,13 +913,25 @@ var CONSTITUTION = (() => {
   }
 
   // src/clocks.ts
-  var WARN_FRACTION = 0.75;
+  var HOUR_MS = 36e5;
+  var DAY_MS = 24 * HOUR_MS;
+  var WARN_LEADS = [7 * DAY_MS, DAY_MS, HOUR_MS];
   function lapseDue(lastActivityT, afterMs) {
     if (afterMs === null) return null;
+    const lapseAtT = lastActivityT + afterMs;
     return {
-      warnAtT: lastActivityT + afterMs * WARN_FRACTION,
-      lapseAtT: lastActivityT + afterMs
+      warnAt: WARN_LEADS.filter((lead) => lead < afterMs).map((lead) => ({ lead, t: lapseAtT - lead })),
+      lapseAtT
     };
+  }
+  function warningDue(due, warnedLead, t) {
+    let owed = null;
+    for (const w of due.warnAt) {
+      if (t < w.t) break;
+      if (warnedLead !== null && w.lead >= warnedLead) continue;
+      owed = w.lead;
+    }
+    return owed;
   }
 
   // src/shapes.ts
@@ -943,7 +956,7 @@ var CONSTITUTION = (() => {
     "displayName",
     "picture"
   ];
-  var DAY_MS = 24 * 3600 * 1e3;
+  var DAY_MS2 = 24 * 3600 * 1e3;
   var SHAPES = [
     {
       name: "meeting",
@@ -1019,7 +1032,7 @@ var CONSTITUTION = (() => {
         // drip in days
         rate: { grant: 3, cap: 3, dripMinutes: 1440 },
         // Ed: about 30 days for ongoing
-        lapse: { afterMs: 30 * DAY_MS },
+        lapse: { afterMs: 30 * DAY_MS2 },
         machines: { enabled: false, budget: 0 },
         // an ongoing room needs the door
         removal: { price: "assembly" }
@@ -1237,7 +1250,8 @@ var CONSTITUTION = (() => {
             // and answers nothing about whether the founder was put the question
             membershipSet: false,
             lastActivityT: event.t,
-            lapseWarned: false
+            lapseWarned: false,
+            lapseWarnedLead: null
           };
           for (const id of HELD) {
             this.settings.set(id, {
@@ -1715,7 +1729,6 @@ var CONSTITUTION = (() => {
         }
         case "crown-returned": {
           this.crownLapsedFlag = false;
-          this.convenor.lapseWarned = false;
           this.touch(this.convenor.id, event.t);
           break;
         }
@@ -1731,7 +1744,6 @@ var CONSTITUTION = (() => {
         case "member-returned": {
           const m = this.members.get(event.member);
           m.lapsed = false;
-          m.lapseWarned = false;
           this.touch(event.member, event.t);
           break;
         }
@@ -1739,11 +1751,10 @@ var CONSTITUTION = (() => {
           this.touch(event.member, event.t);
           break;
         case "lapse-warned": {
-          if (event.member === this.convenor.id && !this.members.has(event.member)) {
-            this.convenor.lapseWarned = true;
-          } else {
-            this.members.get(event.member).lapseWarned = true;
-          }
+          const lead = typeof event.lead === "number" ? event.lead : Number.POSITIVE_INFINITY;
+          const who = event.member === this.convenor.id && !this.members.has(event.member) ? this.convenor : this.members.get(event.member);
+          who.lapseWarned = true;
+          who.lapseWarnedLead = who.lapseWarnedLead === null ? lead : Math.min(who.lapseWarnedLead, lead);
           break;
         }
         case "member-lapsed": {
@@ -1888,6 +1899,7 @@ var CONSTITUTION = (() => {
         removedBy: null,
         lapsed: false,
         lapseWarned: false,
+        lapseWarnedLead: null,
         nameSet: false,
         pictureSet: false,
         lastActivityT: arrivedAtT ?? invitedAtT,
@@ -1994,10 +2006,12 @@ var CONSTITUTION = (() => {
       if (m) {
         m.lastActivityT = t;
         m.lapseWarned = false;
+        m.lapseWarnedLead = null;
       }
       if (member === this.convenor.id) {
         this.convenor.lastActivityT = t;
         this.convenor.lapseWarned = false;
+        this.convenor.lapseWarnedLead = null;
       }
     }
     // -------------------------------------------------------------------------
@@ -3106,16 +3120,17 @@ var CONSTITUTION = (() => {
     rereadLapse(t) {
       const lapse = this.settings.get("lapse").value;
       const afterMs = lapse ? lapse.afterMs : null;
-      const stillDue = (lastT, at) => afterMs !== null && t >= lapseDue(lastT, afterMs)[at];
+      const lapseStillDue = (lastT) => afterMs !== null && t >= lapseDue(lastT, afterMs).lapseAtT;
+      const warningStillDue = (lastT, lead) => afterMs !== null && lead !== null && t >= lastT + afterMs - lead;
       for (const m of [...this.members.values()]) {
         if (m.removed || m.arrivedAtT === null) continue;
-        const revive = m.lapsed ? !stillDue(m.lastActivityT, "lapseAtT") : m.lapseWarned && !stillDue(m.lastActivityT, "warnAtT");
+        const revive = m.lapsed ? !lapseStillDue(m.lastActivityT) : m.lapseWarned && !warningStillDue(m.lastActivityT, m.lapseWarnedLead);
         if (!revive) continue;
         const wasLapsed = m.lapsed;
         this.emit({ type: "member-returned", t, member: m.id });
         if (wasLapsed) this.afterRosterChange(t, "arrival", m.id);
       }
-      if (this.crownLapsedFlag && !stillDue(this.convenor.lastActivityT, "lapseAtT")) {
+      if (this.crownLapsedFlag && !lapseStillDue(this.convenor.lastActivityT)) {
         this.emit({ type: "crown-returned", t });
       }
     }
@@ -3141,8 +3156,9 @@ var CONSTITUTION = (() => {
           if (t >= due.lapseAtT) {
             this.emit({ type: "member-lapsed", t, member: m.id });
             this.afterRosterChange(t, "departure", m.id);
-          } else if (t >= due.warnAtT && !m.lapseWarned) {
-            this.emit({ type: "lapse-warned", t, member: m.id });
+          } else {
+            const lead = warningDue(due, m.lapseWarnedLead, t);
+            if (lead !== null) this.emit({ type: "lapse-warned", t, member: m.id, lead });
           }
         }
         if (!this.crownLapsedFlag && this.holdsAnythingReserved()) {
@@ -3157,8 +3173,9 @@ var CONSTITUTION = (() => {
                 this.settleCarriedEffects(t, mrec, mrec.route === "constitutional");
               }
             }
-          } else if (t >= due.warnAtT && !this.convenor.lapseWarned && !this.members.has(this.convenor.id)) {
-            this.emit({ type: "lapse-warned", t, member: this.convenor.id });
+          } else if (!this.members.has(this.convenor.id)) {
+            const lead = warningDue(due, this.convenor.lapseWarnedLead, t);
+            if (lead !== null) this.emit({ type: "lapse-warned", t, member: this.convenor.id, lead });
           }
         }
       }

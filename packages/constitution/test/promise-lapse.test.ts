@@ -56,7 +56,7 @@
 import { describe, it, expect } from 'vitest';
 import { ConstitutionSession } from '../src/session.js';
 import { CATALOGUE } from '../src/catalogue.js';
-import { WARN_FRACTION, lapseDue } from '../src/clocks.js';
+import { WARN_LEADS, lapseDue, warningDue } from '../src/clocks.js';
 import { view } from '../src/view.js';
 import { buildConstituted } from './helpers.js';
 
@@ -70,25 +70,112 @@ const busy = (s: ConstitutionSession, bo: string, t: number): void => {
   s.setIdentity(t, bo, { name: 'Bo' });
 };
 
+const HOUR = 3_600_000, DAY = 24 * HOUR;
+
+/**
+ * **Three warnings, a week, a day and an hour before the lapse, and a member
+ * gets all three** (R-097, Ed 2026-09-08, Q1285: *only three — a week, a
+ * day, and an hour — and you get all three*). Until this date one warning
+ * went at three quarters of the spell. Only the leads that fit inside the
+ * spell fire, so a seven-day spell warns twice and a spell under an hour —
+ * the sim rooms, most of these tests — warns nobody.
+ */
+describe('💤 the three warnings (R-097)', () => {
+  it('the leads are a week, a day and an hour, longest first', () => {
+    expect([...WARN_LEADS]).toEqual([7 * DAY, DAY, HOUR]);
+  });
+  it('lapseDue keeps the leads that fit inside the spell', () => {
+    const month = lapseDue(1_000, 30 * DAY)!;
+    expect(month.lapseAtT).toBe(1_000 + 30 * DAY);
+    expect(month.warnAt).toEqual([
+      { lead: 7 * DAY, t: 1_000 + 23 * DAY },
+      { lead: DAY, t: 1_000 + 29 * DAY },
+      { lead: HOUR, t: 1_000 + 30 * DAY - HOUR },
+    ]);
+    expect(lapseDue(0, 7 * DAY)!.warnAt.map((w) => w.lead)).toEqual([DAY, HOUR]); // the card's shortest spell
+    expect(lapseDue(0, 8 * DAY)!.warnAt.map((w) => w.lead)).toEqual([7 * DAY, DAY, HOUR]);
+    expect(lapseDue(0, 3 * HOUR)!.warnAt.map((w) => w.lead)).toEqual([HOUR]);
+    expect(lapseDue(0, HOUR)!.warnAt).toEqual([]);   // a lead equal to the spell is no warning
+    expect(lapseDue(0, 10_000)!.warnAt).toEqual([]);
+    expect(lapseDue(0, null)).toBeNull();
+  });
+  it('warningDue owes the shortest lead that has passed, and never one longer than a lead already sent', () => {
+    const due = lapseDue(0, 30 * DAY)!;
+    expect(warningDue(due, null, 23 * DAY - 1)).toBeNull();
+    expect(warningDue(due, null, 23 * DAY)).toBe(7 * DAY);
+    expect(warningDue(due, 7 * DAY, 23 * DAY)).toBeNull();       // sent; nothing shorter is due yet
+    expect(warningDue(due, 7 * DAY, 29 * DAY)).toBe(DAY);
+    expect(warningDue(due, DAY, 30 * DAY - HOUR)).toBe(HOUR);
+    expect(warningDue(due, HOUR, 30 * DAY - 1)).toBeNull();      // all three sent
+    // a host down across two points sends the one that is still true
+    expect(warningDue(due, null, 29 * DAY + 1)).toBe(DAY);
+    expect(warningDue(due, DAY, 29 * DAY + 2)).toBeNull();       // and the stale week never follows
+  });
+});
+
 describe('💤 promise 1 · live · a quiet member leaves E and every electorate', () => {
-  it('warns at exactly 75% of the spell and lapses at 100%', () => {
-    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 } });
+  it('warns a week, a day and an hour before the lapse — once each — and lapses at the spell', () => {
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 30 * DAY }, endsAtMs: 100 * DAY });
     const quietSince = s.memberRecords().get(cy)!.lastActivityT;
-    const due = lapseDue(quietSince, 10_000)!;
-    expect(due.warnAtT).toBe(quietSince + 10_000 * WARN_FRACTION);
-    busy(s, bo, 7_000); // ada and bo act; their own clocks restart here
-    s.tick(due.warnAtT - 1); // a millisecond short of the warning point
+    const due = lapseDue(quietSince, 30 * DAY)!;
+    const [week, day, hour] = due.warnAt.map((w) => w.t) as [number, number, number];
+    busy(s, bo, 20 * DAY); // ada and bo act; their own clocks restart here
+    s.tick(week - 1); // a millisecond short of the first warning point
     expect(s.memberRecords().get(cy)!.lapseWarned).toBe(false);
-    s.tick(due.warnAtT);
+    s.tick(week);
     expect(s.memberRecords().get(cy)!.lapseWarned).toBe(true);
+    expect(s.memberRecords().get(cy)!.lapseWarnedLead).toBe(7 * DAY);
+    s.tick(week + HOUR); // the sweep does not re-send the week
+    expect(types(s).filter((x) => x === 'lapse-warned')).toHaveLength(1);
+    s.tick(day);
+    expect(s.memberRecords().get(cy)!.lapseWarnedLead).toBe(DAY);
+    s.tick(hour);
+    expect(s.memberRecords().get(cy)!.lapseWarnedLead).toBe(HOUR);
+    const warned = s.logEntries().map((e) => e.event)
+      .filter((e): e is Extract<typeof e, { type: 'lapse-warned' }> => e.type === 'lapse-warned');
+    expect(warned.map((e) => e.lead)).toEqual([7 * DAY, DAY, HOUR]);
+    expect(warned.every((e) => e.member === cy)).toBe(true);
     s.tick(due.lapseAtT - 1);
     expect(s.memberRecords().get(cy)!.lapsed).toBe(false);
     s.tick(due.lapseAtT);
     expect(s.memberRecords().get(cy)!.lapsed).toBe(true);
-    // warned once, lapsed once — the sweep does not re-emit either
-    expect(types(s).filter((x) => x === 'lapse-warned')).toHaveLength(1);
+    // warned three times, lapsed once — the sweep does not re-emit either
+    expect(types(s).filter((x) => x === 'lapse-warned')).toHaveLength(3);
     s.tick(due.lapseAtT + 100);
     expect(types(s).filter((x) => x === 'member-lapsed')).toHaveLength(1);
+    // and the log replays to the same clock
+    const r = ConstitutionSession.replay([...s.logEntries()]);
+    expect(r.memberRecords().get(cy)!.lapseWarnedLead).toBe(HOUR);
+    expect(r.rollingHash()).toBe(s.rollingHash());
+  });
+
+  it('a host down across two warning points sends the one still true, and a return clears them all', () => {
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 30 * DAY }, endsAtMs: 100 * DAY });
+    const due = lapseDue(s.memberRecords().get(cy)!.lastActivityT, 30 * DAY)!;
+    busy(s, bo, 20 * DAY);
+    s.tick(due.warnAt[1]!.t + 1); // straight past the week's point and the day's
+    const leads = () => s.logEntries().map((e) => e.event)
+      .filter((e): e is Extract<typeof e, { type: 'lapse-warned' }> => e.type === 'lapse-warned')
+      .map((e) => e.lead);
+    expect(leads()).toEqual([DAY]);          // *a day*, never the stale *a week*
+    s.tick(due.warnAt[1]!.t + 2);
+    expect(leads()).toEqual([DAY]);
+    // cy comes back: the warnings are cleared and the clock restarts
+    s.setIdentity(due.warnAt[1]!.t + 3, cy, { name: 'Cy' });
+    expect(s.memberRecords().get(cy)!.lapseWarned).toBe(false);
+    expect(s.memberRecords().get(cy)!.lapseWarnedLead).toBeNull();
+    s.tick(due.warnAt[2]!.t);
+    expect(leads()).toEqual([DAY]);          // no hour: the spell restarted
+  });
+
+  it('a spell under an hour warns nobody, and lapses on the clock as ever', () => {
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 } });
+    busy(s, bo, 7_000);
+    s.tick(9_999);
+    expect(s.memberRecords().get(cy)!.lapseWarned).toBe(false);
+    s.tick(10_000 + s.memberRecords().get(cy)!.lastActivityT);
+    expect(s.memberRecords().get(cy)!.lapsed).toBe(true);
+    expect(types(s)).not.toContain('lapse-warned');
   });
 
   it('takes them out of E, out of the motion electorate, and off the proposing gate', () => {
@@ -179,12 +266,12 @@ describe('💤 promise 6 · live · the founder’s clock runs too', () => {
   });
 
   it('the crown’s own warning is the clerk’s alone — a member founder is warned as a member', () => {
-    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 } });
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 3 * HOUR }, endsAtMs: 10 * HOUR });
     // ada is a member here, so the convenor branch's `!members.has(convenor)`
     // guard withholds the second warning: one mail, not two
-    s.setIdentity(9_000, bo, { name: 'Bo' });
-    s.setIdentity(9_000, cy, { name: 'Cy' });
-    s.tick(9_600);
+    s.setIdentity(2 * HOUR + 1, bo, { name: 'Bo' });
+    s.setIdentity(2 * HOUR + 1, cy, { name: 'Cy' });
+    s.tick(2 * HOUR + 30_000); // past the hour's point on a three-hour spell
     expect(s.memberRecords().get('ada')!.lapseWarned).toBe(true);
     expect(types(s).filter((x) => x === 'lapse-warned')).toHaveLength(1);
   });
@@ -262,7 +349,9 @@ describe('💤 · before 🍾 · the fold runs the clock the host never ticks', 
     const { s, bo } = founding();
     expect(s.constitutedAtT).toBeNull();
     s.tick(9_000);
-    expect(s.memberRecords().get(bo)!.lapseWarned).toBe(true);
+    // a ten-second spell fits none of the three warnings (R-097); the
+    // pre-start clock is the point here, and the warnings have their own block
+    expect(s.memberRecords().get(bo)!.lapseWarned).toBe(false);
     s.tick(12_000);
     expect(s.memberRecords().get(bo)!.lapsed).toBe(true);
     // and the founder's own clock has been running since `created`, so a

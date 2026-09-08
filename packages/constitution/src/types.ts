@@ -274,7 +274,8 @@ export type ConstitutionEvent =
   /** legacy (v0.99, Q1196): there is no sign-out; a log written before R-088 replays this as a no-op. */
   | { type: 'signed-out'; t: number; member: MemberId; mode: 'holding' | 'abstaining' }
   | { type: 'member-returned'; t: number; member: MemberId }
-  | { type: 'lapse-warned'; t: number; member: MemberId }
+  /** One of the three warnings (R-097): `lead` is how long before the lapse it went, in ms. */
+  | { type: 'lapse-warned'; t: number; member: MemberId; lead: number }
   /** Presence is presence (Q459a): an authenticated read refreshed the member's clock — at most hourly. */
   | { type: 'member-seen'; t: number; member: MemberId }
   | { type: 'member-lapsed'; t: number; member: MemberId }
@@ -400,7 +401,10 @@ export interface MemberState {
   /** Whose act the removal was, null while they are here (entry 94). */
   removedBy: DepartureBy | null;
   lapsed: boolean;
+  /** At least one of the three warnings has gone in this quiet spell (R-097). */
   lapseWarned: boolean;
+  /** The shortest lead warned for in this quiet spell, null where none has been — what the next warning is judged against. */
+  lapseWarnedLead: number | null;
   /**
    * Whether this member has ever *answered* ✋ and 🖼️ (Q645). Null is not the
    * answer to that question: a blank name is a real answer — §9.0c shows it as

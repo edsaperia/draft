@@ -28,7 +28,7 @@ import { eOf, inE, motionElectorateOf, quorumCount,
   adoptionFloorTerm } from './populations.js';
 import type { ThresholdAnchors } from './threshold.js';
 import { barAt, reAnchor, seedAnchors } from './threshold.js';
-import { lapseDue } from './clocks.js';
+import { lapseDue, warningDue } from './clocks.js';
 import type { ShapeName } from './shapes.js';
 import { shapeOf } from './shapes.js';
 
@@ -174,7 +174,7 @@ export class ConstitutionSession {
      * no envelope change, hash chain untouched.
      */
     membershipSet: boolean;
-    lastActivityT: number; lapseWarned: boolean };
+    lastActivityT: number; lapseWarned: boolean; lapseWarnedLead: number | null };
   private crownLapsedFlag = false;
   private members = new Map<MemberId, MemberRecord>();
   /** The departures, folded (Q901): see `departures()`. */
@@ -334,7 +334,7 @@ export class ConstitutionSession {
           // 🎩 is asked, never assumed: `isMember` arrives with the creation
           // and answers nothing about whether the founder was put the question
           membershipSet: false,
-          lastActivityT: event.t, lapseWarned: false };
+          lastActivityT: event.t, lapseWarned: false, lapseWarnedLead: null };
         // **Nothing arrives delegated** (Ed, 2026-08-21, amending SPEC §9.0a,
         // closing Q511). Every held setting is born with the founder holding
         // it, both powers intact and its question shut, because a default
@@ -956,8 +956,7 @@ export class ConstitutionSession {
       case 'crown-returned': {
         // Revival is logging in (§9.5a): the assent requirement resumes.
         this.crownLapsedFlag = false;
-        this.convenor.lapseWarned = false;
-        this.touch(this.convenor.id, event.t);
+        this.touch(this.convenor.id, event.t); // clears the warnings too
         break;
       }
       default:
@@ -976,19 +975,22 @@ export class ConstitutionSession {
       case 'member-returned': {
         const m = this.members.get(event.member)!;
         m.lapsed = false;
-        m.lapseWarned = false;
-        this.touch(event.member, event.t);
+        this.touch(event.member, event.t); // clears the warnings too
         break;
       }
       case 'member-seen':
         this.touch(event.member, event.t);
         break;
       case 'lapse-warned': {
-        if (event.member === this.convenor.id && !this.members.has(event.member)) {
-          this.convenor.lapseWarned = true;
-        } else {
-          this.members.get(event.member)!.lapseWarned = true;
-        }
+        // three warnings per quiet spell (R-097), each shorter than the
+        // last; the shortest sent is what the next is judged against. A
+        // log written before the leads carried no `lead`: read as the old
+        // single warning, which blocks the rest as a week would.
+        const lead = typeof event.lead === 'number' ? event.lead : Number.POSITIVE_INFINITY;
+        const who = event.member === this.convenor.id && !this.members.has(event.member)
+          ? this.convenor : this.members.get(event.member)!;
+        who.lapseWarned = true;
+        who.lapseWarnedLead = who.lapseWarnedLead === null ? lead : Math.min(who.lapseWarnedLead, lead);
         break;
       }
       case 'member-lapsed': {
@@ -1143,7 +1145,7 @@ export class ConstitutionSession {
     arrivedAtT: number | null, arrival: Arrival): MemberRecord {
     const state: MemberState = {
       id, person, invitedAtT, arrivedAtT, arrival,
-      removed: false, removedBy: null, lapsed: false, lapseWarned: false,
+      removed: false, removedBy: null, lapsed: false, lapseWarned: false, lapseWarnedLead: null,
       nameSet: false, pictureSet: false,
       lastActivityT: arrivedAtT ?? invitedAtT,
       okOwed: new Set(), okGiven: new Set(),
@@ -1245,10 +1247,11 @@ export class ConstitutionSession {
 
   private touch(member: MemberId, t: number): void {
     const m = this.members.get(member);
-    if (m) { m.lastActivityT = t; m.lapseWarned = false; }
+    if (m) { m.lastActivityT = t; m.lapseWarned = false; m.lapseWarnedLead = null; }
     if (member === this.convenor.id) {
       this.convenor.lastActivityT = t;
       this.convenor.lapseWarned = false;
+      this.convenor.lapseWarnedLead = null;
     }
   }
 
@@ -2598,18 +2601,23 @@ export class ConstitutionSession {
   private rereadLapse(t: number): void {
     const lapse = this.settings.get('lapse')!.value as LapseValue | null;
     const afterMs = lapse ? lapse.afterMs : null;
-    const stillDue = (lastT: number, at: 'lapseAtT' | 'warnAtT'): boolean =>
-      afterMs !== null && t >= lapseDue(lastT, afterMs)![at];
+    const lapseStillDue = (lastT: number): boolean =>
+      afterMs !== null && t >= lapseDue(lastT, afterMs)!.lapseAtT;
+    // a warning still stands if the point of the shortest lead sent is
+    // still in the past under the new spell (R-097); a lengthened 💤 moves
+    // it into the future and the member is returned, to be warned afresh
+    const warningStillDue = (lastT: number, lead: number | null): boolean =>
+      afterMs !== null && lead !== null && t >= lastT + afterMs - lead;
     for (const m of [...this.members.values()]) {
       if (m.removed || m.arrivedAtT === null) continue;
-      const revive = m.lapsed ? !stillDue(m.lastActivityT, 'lapseAtT')
-        : m.lapseWarned && !stillDue(m.lastActivityT, 'warnAtT');
+      const revive = m.lapsed ? !lapseStillDue(m.lastActivityT)
+        : m.lapseWarned && !warningStillDue(m.lastActivityT, m.lapseWarnedLead);
       if (!revive) continue;
       const wasLapsed = m.lapsed;
       this.emit({ type: 'member-returned', t, member: m.id });
       if (wasLapsed) this.afterRosterChange(t, 'arrival', m.id); // E grew back
     }
-    if (this.crownLapsedFlag && !stillDue(this.convenor.lastActivityT, 'lapseAtT')) {
+    if (this.crownLapsedFlag && !lapseStillDue(this.convenor.lastActivityT)) {
       this.emit({ type: 'crown-returned', t });
     }
   }
@@ -2638,8 +2646,10 @@ export class ConstitutionSession {
         if (t >= due.lapseAtT) {
           this.emit({ type: 'member-lapsed', t, member: m.id });
           this.afterRosterChange(t, 'departure', m.id);
-        } else if (t >= due.warnAtT && !m.lapseWarned) {
-          this.emit({ type: 'lapse-warned', t, member: m.id });
+        } else {
+          // a week, a day, an hour before (R-097): one per tick, in order
+          const lead = warningDue(due, m.lapseWarnedLead, t);
+          if (lead !== null) this.emit({ type: 'lapse-warned', t, member: m.id, lead });
         }
       }
       // The §9.5a clock runs on the convenor too (§9.7): a quiet crown
@@ -2657,9 +2667,9 @@ export class ConstitutionSession {
               this.settleCarriedEffects(t, mrec, mrec.route === 'constitutional');
             }
           }
-        } else if (t >= due.warnAtT && !this.convenor.lapseWarned &&
-          !this.members.has(this.convenor.id)) {
-          this.emit({ type: 'lapse-warned', t, member: this.convenor.id });
+        } else if (!this.members.has(this.convenor.id)) {
+          const lead = warningDue(due, this.convenor.lapseWarnedLead, t);
+          if (lead !== null) this.emit({ type: 'lapse-warned', t, member: this.convenor.id, lead });
         }
       }
     }

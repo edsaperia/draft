@@ -32,6 +32,13 @@ export function buildConstituted(opts: {
    * before this had. Anything here sends `begin` the list instead.
    */
   keepText?: { unilateral?: boolean; assent?: boolean };
+  /**
+   * When the document ends (the longest answer wins, so this is bo's);
+   * default 1_000_000. The lapse warnings are a week, a day and an hour
+   * before the lapse (R-097), so a test that wants one needs a spell of
+   * hours and an ending past it.
+   */
+  endsAtMs?: number;
 } = {}) {
   const s = ConstitutionSession.open({
     title: 'Hollow Oak Club Charter',
@@ -50,7 +57,7 @@ export function buildConstituted(opts: {
   s.delegate(1, 'bar');
   s.delegate(1, 'chamber');
   // ending resolves first: bar waits on it (§9.0a deps)
-  s.answer(1, bo, 'ending', { endsAtMs: 1_000_000 });
+  s.answer(1, bo, 'ending', { endsAtMs: opts.endsAtMs ?? 1_000_000 });
   s.answer(1, cy, 'ending', { endsAtMs: 800_000 });
   if (!opts.clerk) s.answer(1, 'ada', 'ending', { endsAtMs: 500_000 });
   s.answer(1, bo, 'bar', { pct: opts.bar ?? 66 });

@@ -317,18 +317,19 @@ say('\n== the crown, v0.49: assent ends either route; a lapsed crown assents by 
 /* ========================================================================= */
 say('\n== membership lifecycle: the lapse (there is no sign-out and no freeze, R-088) ===');
 {
-  const { s, bo, cy } = threeRoom({ lapse: { afterMs: 10_000 } });
+  const HOUR = 3_600_000;
+  const { s, bo, cy } = threeRoom({ lapse: { afterMs: 3 * HOUR }, ending: 10 * HOUR });
   check(s.canJudge() && s.E() === 3, 'three in E, judging open: plain silence is nothing (§9.5)');
 
-  say('  the clock: cy is quiet from the founding; lapse is 10 000 with warning at 75%');
-  s.setIdentity(7_000, 'ada', { name: 'Ada' });
-  s.setIdentity(7_000, bo, { name: 'Bo' });
-  s.tick(8_000);
+  say('  the clock: cy is quiet from the founding; lapse is three hours, so the hour\'s warning fits (R-097)');
+  s.setIdentity(2 * HOUR + 1, 'ada', { name: 'Ada' });
+  s.setIdentity(2 * HOUR + 1, bo, { name: 'Bo' });
+  s.tick(2 * HOUR + 30_000);
   check(s.memberRecords().get(cy)!.lapseWarned, 'cy was warned by email first');
-  s.tick(13_500);
+  s.tick(3 * HOUR + 30_000);
   check(s.memberRecords().get(cy)!.lapsed, 'then lapsed, with the package sent');
   eq(s.E(), 2, 'a lapsed membership leaves E (v0.48)');
-  s.memberReturn(14_000, cy);
+  s.memberReturn(3 * HOUR + 60_000, cy);
   check(!s.memberRecords().get(cy)!.lapsed && s.E() === 3,
     'revival is just logging in again — the rule was consented at the founding');
 
@@ -340,7 +341,7 @@ say('\n== membership lifecycle: the lapse (there is no sign-out and no freeze, R
 
 /* ========================================================================= */
 
-function threeRoom(opts: { lapse?: { afterMs: number | null } } = {}) {
+function threeRoom(opts: { lapse?: { afterMs: number | null }; ending?: number } = {}) {
   const s = ConstitutionSession.open({
     title: 'Hollow Oak Club Charter', slug: 'hollow-oak',
     convenor: { id: 'ada', email: 'ada@example.org', isMember: true },
@@ -353,7 +354,7 @@ function threeRoom(opts: { lapse?: { afterMs: number | null } } = {}) {
   // these three for answering
   for (const q of ['ending', 'bar', 'chamber'] as const) s.delegate(1, q);
   s.answer(1, 'ada', 'ending', { endsAtMs: 500_000 });
-  s.answer(1, bo, 'ending', { endsAtMs: 1_000_000 });
+  s.answer(1, bo, 'ending', { endsAtMs: opts.ending ?? 1_000_000 }); // the longest wins
   s.answer(1, cy, 'ending', { endsAtMs: 800_000 }); // resolved — bar may follow
   // bar and chamber resolve by ceremony, so they are members-held and a
   // motion on them applies without the crown (§9.7 v0.49)
