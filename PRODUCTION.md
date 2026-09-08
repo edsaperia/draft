@@ -224,7 +224,7 @@ unless another path is given.
 |---|---|
 | The mail outbox and sender loop (finding 15) | done — above |
 | Projection tables (stage 6's plan: members, settings, motions, applications, slugs, rebuildable from the log, a CI test asserting rebuild == live) | not built, by decision: the server replays into memory and reads nothing from them; build them when a consumer appears |
-| `person_id` / `people` (436) | **built 2026-09-08, half (1)** — the schema and the module; the wipe (the other half of decision 1253) is written and pending Ed's word; stage 12's state note above |
+| `person_id` / `people` (436) | **built 2026-09-08, both halves** — the schema and the module deployed at 3feb77b; the wipe run by Ed the same evening from the service's Render shell, 25 alpha documents deleted, the store never holding the old shape again; stage 12's state note above |
 | Review #2's second pass on the surface | done 2026-08-21 (the stranger's door); the next is stage 19's targeted review of the command whitelist, cookie auth, the poll/re-render path and `PgPersistence` |
 | The sim-harness sweep baseline (`hotSetSize` 6 against an engine default of 3) | fixed 2026-08-27 with the alpha preset, below |
 
@@ -244,7 +244,7 @@ unless another path is given.
 | 434 | ESLint only, **no Prettier** — it would reflow ten thousand lines of hand-wrapped prose comments and destroy the authorial voice. | adopted on recommendation |
 | 435 | Build: **esbuild bundle** (already pinned, 0.28.2) rather than tsc project references. | adopted on recommendation |
 | 436 | PII behind a `person_id` in a deletable `people` table **from the first schema** — nearly free now, structurally impossible later (see stage 12). | adopted on recommendation; how it lands after the window closed is 1253; **built 2026-09-08, half (1)** |
-| 1253 | **Clear the database, split from now on.** The alpha's documents are wiped rather than migrated; the `people` split is the schema every document is born into afterwards, so there is one erasure story and no hash migration. The wipe runs only on Ed's word at the time. | decided by Ed 2026-09-07; **half (1) built 2026-09-08** — the schema, the module, the tool verbs; **the wipe is written and pending Ed's word** |
+| 1253 | **Clear the database, split from now on.** The alpha's documents are wiped rather than migrated; the `people` split is the schema every document is born into afterwards, so there is one erasure story and no hash migration. The wipe runs only on Ed's word at the time. | decided by Ed 2026-09-07; **half (1) built 2026-09-08** — the schema, the module, the tool verbs; **the wipe run by Ed on 2026-09-08** from the service's Render shell (`docs/runbooks/wipe.md`): 25 documents and every sidecar deleted, the refusal exercised first |
 | 476 | **Auto-deploy on green during alpha**: CI deploys and then verifies the live environment, failing the build if what came back is wrong. | decided 2026-08-20 |
 | 480 | Schema version **on the log envelope**, outside the hash; absent means 1, read through `versionOf`. Both logs carry their own number. | decided 2026-08-20 |
 | 437 | `/api/dev/outbox` **deleted from the production build**, not flag-gated — half the defect is that the app can boot into a dangerous mode. | adopted on recommendation |

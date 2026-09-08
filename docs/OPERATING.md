@@ -250,8 +250,12 @@ Five things to know about it:
    directory's basename or the database's name, typed in full. Nothing was deleted.
    ```
 
-   **The wipe runs only on Ed's word at the time** (PRODUCTION.md decision
-   1253). It has not been run.
+   **The wipe ran once, on Ed's word, on 2026-09-08** (PRODUCTION.md decision
+   1253; the procedure is `docs/runbooks/wipe.md`): the refusal first, then 25
+   documents and every sidecar deleted from the frankfurt database, the schema
+   left migrated. The store has held only the people shape since. `export`
+   cannot write a restore point for the old shape — it replays through the
+   oracle, which refuses it — so Render's backups were the restore point.
 
 ## 6. Local development
 
