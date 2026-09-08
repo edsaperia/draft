@@ -11,6 +11,7 @@
  * act** — the flags Q645 needs, with the values on the row.
  */
 import { describe, expect, it } from 'vitest';
+import { EngineBridge } from '../src/engine-bridge.js';
 import { stableStringify } from '../src/hash.js';
 import { InMemoryPeople } from '../src/people.js';
 import { ConstitutionSession } from '../src/session.js';
@@ -65,6 +66,32 @@ describe('no event carries a person’s fields', () => {
     const motion = [...s.motionRecords().values()].find((m) => m.payload.kind === 'invite')!;
     const person = (motion.payload as { person: string }).person;
     expect(s.people.get(person)).toEqual({ email: 'eve@example.org', name: null, picture: null });
+    // the view resolves the address onto the wire, and serves null once the row is gone
+    const wire = () => view(s, bo).motions.find((m) => m.id === motion.id)!.payload as
+      { kind: string; person: string; email: string | null };
+    expect(wire()).toEqual({ kind: 'invite', person, email: 'eve@example.org' });
+    (s.people as InMemoryPeople).erase(person);
+    expect(wire()).toEqual({ kind: 'invite', person, email: null });
+  });
+
+  it('nor does the engine’s own log: the bridge hands the engine ids as handles', () => {
+    // the engine log is a hash chain too, and until 2026-09-08 the bridge
+    // seeded each participant's `handle` with their name or address
+    const { s, bo, cy } = buildConstituted({ admission: { price: 'proposal' },
+      applications: { apply: true } });
+    s.setIdentity(3, bo, { name: 'Ash Bellamy', picture: 'e🦊' });
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'people' });
+    bridge.openSetMotion(4, cy, 'ending', { endsAtMs: 2_000_000 }, 'later is better');
+    const eve = s.startApplication(5, 'eve@example.org');
+    s.verifyApplication(5, eve);
+    s.submitApplication(6, eve, { name: 'Eve', words: 'I keep bees.' });
+    bridge.sync(6);
+    const bytes = JSON.stringify(bridge.engine.log);
+    expect(bytes).not.toContain('@example.org');
+    expect(bytes).not.toContain('Ash Bellamy');
+    // the quoted value, not the bare letters: `explorationEvery` is tuning
+    expect(bytes).not.toMatch(/"Eve"/);
+    expect(bytes).toContain('"handle":"' + bo + '"');
   });
 
   it('the `created` event names the founder’s row and carries the answered flags only', () => {

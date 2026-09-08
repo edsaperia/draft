@@ -1009,11 +1009,13 @@
     if (cs.isRemote) return (cs.v && cs.v.view && cs.v.view.departures) || [];
     return cs.departures ? cs.departures().map((d) => {
       const r = cs.memberRecords().get(d.member);
-      return { id: d.member, name: r ? r.name : null, picture: r ? r.picture : null, t: d.t, by: d.by };
+      return { id: d.member, name: r ? r.name : null, picture: r ? r.picture : null,
+        erased: !!(r && r.erased), t: d.t, by: d.by };
     }) : [];
   };
   const departureLine = (d) => {
-    const who = esc(d.name || PAGE_COPY.departed.someone);
+    // an erased person's line still says somebody left — it names no name
+    const who = esc(d.erased ? PAGE_COPY.synth.withdrawn : (d.name || PAGE_COPY.departed.someone));
     return d.by === 'self' ? PAGE_COPY.departed.lineSelf(who, dayOf(d.t))
       : d.by === 'members' ? PAGE_COPY.departed.lineMembers(who, dayOf(d.t))
       : PAGE_COPY.departed.lineFounder(who, dayOf(d.t));
@@ -2517,7 +2519,16 @@
     return RECCACHE[k];
   };
   const applicantById = (id) => allApplicants().find((ap) => ap.id === id);
-  const applicantName = (ap) => ap.name || ap.email || PAGE_COPY.synth.anonymous;
+  const applicantName = (ap) => (ap.erased ? PAGE_COPY.synth.withdrawn
+    : ap.name || ap.email || PAGE_COPY.synth.anonymous);
+  // **A named author, as the speaker's disc shows them** (SURFACE K30): the
+  // server serves `author` only where the anonymity ladder allows, so its
+  // presence is the whole gate here. Null where the seal holds. An erased
+  // author (decision 1253) is still an author the record names — the row is
+  // gone, so the seat stands as *[withdrawn]* under the anonymous disc.
+  const authorBy = (a) => (!a ? null
+    : a.erased ? { n: PAGE_COPY.synth.withdrawn, pic: '', erased: true }
+    : a.name ? { n: a.name, pic: a.picture || '' } : null);
   // **An open door makes news, not a task** (Ed, 2026-08-26). At ✒️ an
   // application is admitted the moment it is submitted, so nobody is being
   // asked anything — what is left is that somebody joined, which every member
@@ -4210,6 +4221,17 @@
     const row = S.roster.find((r) => (r.mid || 'founder') === mid2);
     return row ? (row.n || row.e || mid2) : mid2;
   };
+  // **The invitee an invite motion names** (decision 1253): the payload
+  // carries a person row's id, and the address the page shows comes off the
+  // row — the view resolves it onto the wire; the fixture reads the module's
+  // own rows. Null where the row has been erased, and then the handle is
+  // *[withdrawn]* rather than a name nobody holds any more.
+  const inviteeHandle = (p) => {
+    const e = p.email !== undefined ? p.email
+      : (cs && cs.people && typeof cs.people.get === 'function'
+        ? ((cs.people.get(p.person) || {}).email || null) : null);
+    return e ? e.split('@')[0] : PAGE_COPY.synth.withdrawn;
+  };
   // what a typed motion proposes, said in the page's own vocabulary
   const motionDisplay = (rec) => {
     const p = rec.payload;
@@ -4217,7 +4239,7 @@
       const rc = card(pkeyOf(p.setting));
       return 'Returns ' + (rc ? '“' + nounOf(rc) + '”' : p.setting) + ' to the founder’s reserve';
     }
-    if (p.kind === 'invite') return p.email.split('@')[0] + ' joins the membership';
+    if (p.kind === 'invite') return inviteeHandle(p) + ' joins the membership';
     if (p.kind === 'remove') return nameOfMember(p.member) + ' leaves the membership';
     if (p.kind === 'admit') return 'an applicant joins the membership';
     const k = pkeyOf(p.setting);
@@ -4233,7 +4255,7 @@
   };
   const pageMotion = (rec) => ({ id: rec.id, kind: rec.route, by: rec.by,
     why: rec.why || '', to: motionDisplay(rec), status: rec.status,
-    invite: rec.payload.kind === 'invite' ? rec.payload.email.split('@')[0] : undefined,
+    invite: rec.payload.kind === 'invite' ? inviteeHandle(rec.payload) : undefined,
     removee: rec.payload.kind === 'remove' ? rec.payload.member : undefined });
   const liveMotionRec = (c) => {
     if (!cs || !c || c.isGate || c.ansFor || !motionsLive()) return null;
@@ -4841,8 +4863,12 @@
   // which is what the Founded line says.
   const syncIdentity = (row, rec) => {
     if (!row || row === viewerRow()) return;
-    row.n = rec.name || (row.founder ? '' : String(rec.email || '').split('@')[0]);
-    row.pic = rec.picture || '';
+    // an erased person (decision 1253) has no name and no address left to
+    // fall back on: the row says so, and wears the anonymous disc
+    row.erased = !!rec.erased;
+    row.n = rec.erased ? PAGE_COPY.synth.withdrawn
+      : (rec.name || (row.founder ? '' : String(rec.email || '').split('@')[0]));
+    row.pic = rec.erased ? '' : (rec.picture || '');
   };
   const syncFromCs = () => {
     if (!cs) return;
@@ -4855,8 +4881,11 @@
       // duplicated — which is the whole of why the skip could simply go
       const row = S.roster.find((r) => r.mid === mid2);
       if (!row && !rec.removed) {
-        S.roster.push({ n: rec.name || rec.email.split('@')[0], pic: rec.picture || '',
-          e: rec.email,
+        S.roster.push({
+          n: rec.erased ? PAGE_COPY.synth.withdrawn : (rec.name || String(rec.email || '').split('@')[0]),
+          pic: rec.erased ? '' : (rec.picture || ''),
+          e: rec.email || '',
+          erased: !!rec.erased,
           // **the row carries its own lapse** (entry 95): *Lapsed* is a
           // subsection of the register, so the fact has to be on the row the
           // list is built from, not only on the member record behind it
@@ -4890,7 +4919,7 @@
     const f = S.roster.find((r) => r.founder);
     if (f && !cs.memberRecords().has(f.mid || FOUNDER) && cs.convenorRecord) {
       const c = cs.convenorRecord();
-      if (c) syncIdentity(f, { name: c.name, picture: c.picture, email: c.email || f.e });
+      if (c) syncIdentity(f, { name: c.name, picture: c.picture, email: c.email || f.e, erased: !!c.erased });
     }
   };
   // ...stated in the composers' own vocabulary, so a lane equal to what
@@ -9247,8 +9276,10 @@
     if (!list) return null;
     return '<div class="memlist">' + (list.length === 0
       ? '<div class="memrow nobody">(nobody here yet)</div>'
-      : list.map((m) => '<div class="memrow">' + avHtml({ n: m.name || '', pic: m.picture || '' }) +
-        '<span class="mn">' + esc(m.name || 'Anonymous') + '</span></div>').join('')) + '</div>';
+      : list.map((m) => '<div class="memrow">' +
+        avHtml({ n: m.name || '', pic: m.picture || '', erased: !!m.erased }) +
+        '<span class="mn">' + esc(m.erased ? PAGE_COPY.synth.withdrawn : (m.name || 'Anonymous')) +
+        '</span></div>').join('')) + '</div>';
   };
   // the band, read-only: the rule as it stands, no composer, no radios
   const strCtx = Object.create(ctx, {
@@ -9519,7 +9550,7 @@
       },
       memberRecords: () => index().members || (index().members = new Map(
         self.v.view.members.map((r) => [r.id, { id: r.id, email: r.email,
-          name: r.name, picture: r.picture, arrivedAtT: r.arrived ? 1 : null,
+          name: r.name, picture: r.picture, erased: !!r.erased, arrivedAtT: r.arrived ? 1 : null,
           arrival: r.arrival,
           lapsed: r.lapsed, removed: false,
           okOwed: r.id === self.v.me ? self.v.view.owedOks : [],
@@ -10158,7 +10189,8 @@
     out.push({ t: 'h', level: 1, x: 'Signatures', key: 'S:head' });
     if (!sigs.length) out.push({ t: 'p', x: 'Nobody has signed the document yet.', key: 'S:none' });
     sigs.forEach((sg, i) => out.push({ t: 'p',
-      x: (sg.name || 'A member, unnamed') + (sg.comment ? ' — ' + sg.comment : ' — signed without a comment') +
+      x: (sg.erased ? PAGE_COPY.synth.withdrawn : (sg.name || 'A member, unnamed')) +
+        (sg.comment ? ' — ' + sg.comment : ' — signed without a comment') +
         (sg.t ? ' · ' + whenOf(sg.t) : ''), key: 'S:' + i }));
     return out;
   };
@@ -10314,8 +10346,7 @@
       // proposal, Q770, or one made under `public`): the live card shows it,
       // and since backlog 255 their face with it — the picture rides the same
       // `author` object and is blind at exactly the same gate (K30)
-      const byOf = (c) => (c.author && c.author.name
-        ? { n: c.author.name, pic: c.author.picture || '' } : null);
+      const byOf = (c) => authorBy(c.author);
       // **Your ledger** (Q1201): every pair you have a standing judgment on
       // in this race, oldest first, each side resolved to what the card can
       // draw — the incumbent as the current text, a candidate as its reading
@@ -10395,8 +10426,7 @@
           state: 'needs', qLabel: labelFor(keys[0]), urgency: 1, pct: 100,
           cap: 'the membership passed this — it waits on you',
           marked: markedOf(plain(lines, sp), applyIn(lines, sp, c.hunks)),
-          rationale: c.rationale, by: (c.author && c.author.name
-            ? { n: c.author.name, pic: c.author.picture || '' } : null) });
+          rationale: c.rationale, by: authorBy(c.author) });
       }
     }
     for (const m of v.mine || []) {
@@ -10428,9 +10458,8 @@
     const madeUnder = new Map();
     if (v.record) for (const o of (v.record.adopted || []).concat(v.record.undecided || [])) {
       for (const f of o.field || []) {
-        if (f.author && f.author.name) {
-          unsealed.set(f.id || f.candidateId, { n: f.author.name, pic: f.author.picture || '' });
-        }
+        const by = authorBy(f.author);
+        if (by) unsealed.set(f.id || f.candidateId, by);
         if (f.madeUnder) madeUnder.set(f.id || f.candidateId, f.madeUnder);
       }
     }
@@ -10457,9 +10486,7 @@
       const textOfF = (f) => f.hunks.flatMap((h) => h.lines).map(unhead).join('\n');
       // the seal lifts at the record (§3.5a): `records` stays sealed, the
       // closed `record` carries the names where the anonymity ladder allows
-      const byName = (f) => (f.author && f.author.name
-        ? { n: f.author.name, pic: f.author.picture || '' }
-        : unsealed.get(f.id || f.candidateId) || null);
+      const byName = (f) => authorBy(f.author) || unsealed.get(f.id || f.candidateId) || null;
       const best = field.slice().sort((x, y) => (y.p ?? -1) - (x.p ?? -1))[0];
       const winner = field.find((f) => f.outcome === 'adopted') || (undecided ? best : null) || field[0] || {};
       const replaced = (o.displaced || []).filter((l) => l.trim()).map(unhead).join('\n') || undefined;
@@ -11385,7 +11412,8 @@
     }
     const sigs = closeSignatures();
     const sigList = sigs.length ? '<div class="gatelist sigs">' + sigs.map((sg) =>
-      '<span class="gaterow">' + (sg.name ? esc(sg.name) : '<span class="disc small" aria-hidden="true"></span>a member') +
+      '<span class="gaterow">' + (sg.erased ? esc(PAGE_COPY.synth.withdrawn)
+        : sg.name ? esc(sg.name) : '<span class="disc small" aria-hidden="true"></span>a member') +
       (sg.comment ? '<span class="rsub"> · ' + esc(sg.comment) + '</span>' : '') + '</span>').join('') + '</div>' : '';
     const mine = mySignature();
     return '<div class="unlocks"><b>The document is final as of' + esc(closedAtWords().replace(/^ at /, ' ')) + '.</b></div>' +

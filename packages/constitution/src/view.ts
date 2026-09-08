@@ -12,6 +12,7 @@ import type { Arrival, DepartureBy, MemberId, MotionPayload, Power, PowerKey,
   PowerSource } from './types.js';
 import type { MotionRoute, SettingId } from './catalogue.js';
 import { CATALOGUE, entryOf } from './catalogue.js';
+import type { PersonId } from './people.js';
 import type { SettingValue } from './values.js';
 import type { ShapeName } from './shapes.js';
 
@@ -71,11 +72,20 @@ export interface SettingView {
   shaped: boolean;
 }
 
+/**
+ * A motion's payload as the wire carries it: the log's own, except that an
+ * invitation names a person row and the page needs the address — so the
+ * projection resolves it here (decision 1253), null where the row is gone.
+ */
+export type MotionPayloadView =
+  | Exclude<MotionPayload, { kind: 'invite' }>
+  | { kind: 'invite'; person: PersonId; email: string | null };
+
 export interface MotionView {
   id: string;
   route: MotionRoute;
   /** The amendment itself is public — what is blind is who stands where. */
-  payload: MotionPayload;
+  payload: MotionPayloadView;
   why: string | null;
   status: string;
   mine: boolean;
@@ -304,7 +314,10 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
     motions.push({
       id: rec.id,
       route: rec.route,
-      payload: rec.payload,
+      payload: rec.payload.kind === 'invite'
+        ? { kind: 'invite', person: rec.payload.person,
+            email: s.people.get(rec.payload.person)?.email ?? null }
+        : rec.payload,
       why: rec.why,
       status: rec.status,
       mine: rec.by === member,

@@ -3870,7 +3870,11 @@ var CONSTITUTION = (() => {
       motions.push({
         id: rec.id,
         route: rec.route,
-        payload: rec.payload,
+        payload: rec.payload.kind === "invite" ? {
+          kind: "invite",
+          person: rec.payload.person,
+          email: s.people.get(rec.payload.person)?.email ?? null
+        } : rec.payload,
         why: rec.why,
         status: rec.status,
         mine: rec.by === member,

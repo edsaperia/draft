@@ -476,8 +476,9 @@ window.CARDS = (function () {
     // anything else stored here is the empty answer — a ground index, a mark
     // index, a string nobody audited — and renders as nobody, never as markup
     if (pic) return '<span class="' + c + ' anon">' + PERSON + '</span>';
-    // no name yet: the anonymous person, so a disc never reads as a bullet
-    if (!person || !person.n) return '<span class="' + c + ' anon">' + PERSON + '</span>';
+    // no name yet: the anonymous person, so a disc never reads as a bullet —
+    // and an erased person (decision 1253) the same, whatever stands in `n`
+    if (!person || !person.n || person.erased) return '<span class="' + c + ' anon">' + PERSON + '</span>';
     return '<span class="' + c + '">' + esc(initials(person.n)) + '</span>';
   }
 

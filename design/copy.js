@@ -462,6 +462,10 @@ window.COPY = (function () {
       passedLead: 'Passed: ',
       rejectedLead: 'Rejected: ',
       anonymous: 'Anonymous',
+      // a person whose row has been erased (PRODUCTION.md stage 12, decision
+      // 1253): the log still names their seat, the record still holds what
+      // they did, and this stands where their name would
+      withdrawn: '[withdrawn]',
     },
     // the Founder's two powers: the joined verb phrases (Q516i), the nouns
     // the veto sentence names, the option blocks and the release notes. The

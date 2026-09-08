@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 462
+  "entries": 463
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -328,6 +328,7 @@
   "page.synth.passedLead": "Passed: ",
   "page.synth.rejectedLead": "Rejected: ",
   "page.synth.released": "What the Founder Has Laid Down",
+  "page.synth.withdrawn": "[withdrawn]",
   "page.theFounder": "The Founder",
   "page.titledLead": "The document is titled ",
   "page.underMotion": "Under motion — ",
