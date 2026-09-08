@@ -20,11 +20,19 @@ import { describe, expect, it } from 'vitest';
 import { chainHash } from '../src/hash.js';
 import { ConstitutionSession } from '../src/session.js';
 import type { ConstitutionEvent, LogEntry } from '../src/types.js';
+import { SCHEMA_VERSION } from '../src/types.js';
+import type { People } from '../src/people.js';
 import { view } from '../src/view.js';
 import { goldenWalk } from './golden/walk.js';
 
-/** Today's golden walk with the three retired events appended after the last entry, chained. */
-function legacyLog(): { log: LogEntry[]; member: string } {
+/**
+ * Today's golden walk with the three retired events appended after the last
+ * entry, chained. The tail is stamped with today's version: what is legacy
+ * here is the event *type*, and a log below the people version is refused
+ * outright (decision 1253) rather than read — that refusal has its own test
+ * in `golden-log.test.ts`. The walk's rows ride along: a replay is handed them.
+ */
+function legacyLog(): { log: LogEntry[]; member: string; people: People } {
   const s = goldenWalk();
   const member = [...s.memberRecords().values()].find((m) => m.id !== 'ada' && m.arrivedAtT !== null)!.id;
   const log: LogEntry[] = s.logEntries().map((e) => ({ ...e }));
@@ -37,10 +45,10 @@ function legacyLog(): { log: LogEntry[]; member: string } {
   ];
   for (const event of tail) {
     const hash = chainHash(prev, event);
-    log.push({ seq: log.length, hash, prevHash: prev, event });
+    log.push({ seq: log.length, hash, prevHash: prev, event, schemaVersion: SCHEMA_VERSION });
     prev = hash;
   }
-  return { log, member };
+  return { log, member, people: s.people };
 }
 
 describe('a log carrying the retired presence events', () => {
@@ -52,8 +60,8 @@ describe('a log carrying the retired presence events', () => {
   });
 
   it('replays into a loaded session with judging open and no freeze anywhere in the view', () => {
-    const { log, member } = legacyLog();
-    const s = ConstitutionSession.replay(log);
+    const { log, member, people } = legacyLog();
+    const s = ConstitutionSession.replay(log, people);
     expect(s.verifyChain()).toBe(true);
     expect(s.rollingHash()).toBe(log[log.length - 1]!.hash);
     expect(s.constitutedAtT).not.toBeNull();
@@ -67,8 +75,8 @@ describe('a log carrying the retired presence events', () => {
   });
 
   it('replays to the same state as the walk without them', () => {
-    const { log } = legacyLog();
-    const withEvents = ConstitutionSession.replay(log);
+    const { log, people } = legacyLog();
+    const withEvents = ConstitutionSession.replay(log, people);
     const without = goldenWalk();
     expect(withEvents.E()).toBe(without.E());
     expect(withEvents.motionElectorate()).toEqual(without.motionElectorate());

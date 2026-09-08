@@ -7,11 +7,17 @@
  * Blindness note (NOTES.md): answers ride in events in plaintext — the
  * projection layer (view.ts) is what withholds. The log is not a member
  * surface; view() is the only sanctioned member-facing read path.
+ *
+ * **Identity never rides an event** (decision 1253, 2026-09-08): a person's
+ * email, name and picture live in a `People` row keyed by `PersonId`
+ * (people.ts), and every event that used to carry one carries the id instead.
+ * The hash chain covers events, so erasing a row breaks no hash.
  */
 
 import type { MotionRoute, SettingId } from './catalogue.js';
 import type { SettingValue } from './values.js';
 import type { ShapeName } from './shapes.js';
+import type { PersonId } from './people.js';
 
 export type MemberId = string;
 export type ApplicantId = string;
@@ -57,7 +63,8 @@ export function holderOf(powers: Powers): 'convenor' | 'members' {
 /** What a motion proposes. Membership changes ride motions as actions, never as a scalar. */
 export type MotionPayload =
   | { kind: 'set'; setting: SettingId; value: SettingValue }
-  | { kind: 'invite'; email: string }
+  /** The invitee's person row holds the address (decision 1253). */
+  | { kind: 'invite'; person: PersonId }
   | { kind: 'remove'; member: MemberId }
   | { kind: 'admit'; applicant: ApplicantId }
   // returning powers to the convenor's reserve (§9.7 v0.52; v0.54 names
@@ -75,6 +82,8 @@ export type MotionPayload =
    */
   | { kind: 'text'; candidateId: string; summary: string };
 
+/** What `open` is handed: the founder as the host knows them. The fields go
+ *  to the person row; only `ConvenorRef` reaches the log. */
 export interface ConvenorInput {
   id: MemberId;
   email: string;
@@ -82,6 +91,20 @@ export interface ConvenorInput {
   isMember: boolean;
   name?: string;
   picture?: string;
+}
+
+/**
+ * The founder as the `created` event records them (decision 1253): the seat,
+ * the person row, the hat — and, only where the input carried one, that a
+ * name or picture arrived with them, which is Q645's *answered* flag for the
+ * founder. Both optional, so the common birth serialises without them.
+ */
+export interface ConvenorRef {
+  id: MemberId;
+  person: PersonId;
+  isMember: boolean;
+  nameSet?: true;
+  pictureSet?: true;
 }
 
 export type ConstitutionEvent =
@@ -93,7 +116,7 @@ export type ConstitutionEvent =
    * bit-identically. The shape's own values are not on this event — the
    * save folds them as the convenor's `setting-set` events right after it.
    */
-  | { type: 'created'; t: number; title: string; slug: string; convenor: ConvenorInput;
+  | { type: 'created'; t: number; title: string; slug: string; convenor: ConvenorRef;
       shape?: ShapeName }
   | { type: 'convenor-membership-set'; t: number; isMember: boolean }
   /**
@@ -128,12 +151,18 @@ export type ConstitutionEvent =
   | { type: 'text-amended'; t: number; candidateId: string; summary: string; why?: string }
   /** The form is the convenor's even when the number is the room's (§9.0a). */
   | { type: 'quorum-form-set'; t: number; form: 'count' | 'share' }
+  /**
+   * **The act, never the value** (Q645; decision 1253): a flag present says
+   * the member answered that question, and the answer itself — a name, a
+   * picture, or the blank that is a real answer — went to their person row.
+   */
   | { type: 'identity-set'; t: number; member: MemberId;
-      name?: string | null; picture?: string | null }
+      nameSet?: true; pictureSet?: true }
   /* -- the roster (§9.6a: membership begins at first arrival) ------------- */
   /** `viaMotion` where a motion carried it; `by` where a member's own word
-   *  did, 🪪 standing at ✒️ (entry 94, Q2b); neither is the founder's pen. */
-  | { type: 'member-invited'; t: number; member: MemberId; email: string;
+   *  did, 🪪 standing at ✒️ (entry 94, Q2b); neither is the founder's pen.
+   *  `person` is the row holding the address (decision 1253). */
+  | { type: 'member-invited'; t: number; member: MemberId; person: PersonId;
       viaMotion?: MotionId; by?: MemberId }
   | { type: 'member-uninvited'; t: number; member: MemberId }
   | { type: 'member-arrived'; t: number; member: MemberId }
@@ -205,14 +234,15 @@ export type ConstitutionEvent =
    * killed three mails is one card and one OK, exactly as a release batch is.
    *
    * `member` is who is *told*, and it is **null when nobody was**: the
-   * addresses still have to be recorded, because the founder's ✉️ row reads
+   * subjects still have to be recorded, because the founder's ✉️ row reads
    * the subject's own flag rather than anybody's owed set, and a document
-   * whose founder is a clerk has no member to tell. `addresses` rides every
+   * whose founder is a clerk has no member to tell. `people` rides every
    * copy of the event, so the fold marks the subjects whichever one it meets
-   * first and the batch's contents never need a second event.
+   * first and the batch's contents never need a second event. **Persons, not
+   * addresses** (decision 1253): the address is read off the row at view time.
    */
   | { type: 'mail-gave-up'; t: number; batch: string; member: MemberId | null;
-      addresses: string[] }
+      people: PersonId[] }
   | { type: 'mail-gave-up-ok'; t: number; batch: string; member: MemberId }
   /** 📨: the founder puts the invitation back in the queue (SURFACE E34). */
   | { type: 'mail-resent'; t: number; member: MemberId; by: MemberId }
@@ -256,10 +286,12 @@ export type ConstitutionEvent =
   | { type: 'floor-recomputed'; t: number; E: number; quorumN: number | null;
       floorTerm: number }
   /* -- applications (§9.7½) ----------------------------------------------- */
-  | { type: 'application-started'; t: number; applicant: ApplicantId; email: string }
+  /** `person` is the row holding the address (decision 1253). */
+  | { type: 'application-started'; t: number; applicant: ApplicantId; person: PersonId }
   | { type: 'application-verified'; t: number; applicant: ApplicantId }
-  | { type: 'application-submitted'; t: number; applicant: ApplicantId;
-      name?: string; picture?: string; words?: string }
+  /** Name and picture went to the row; `words` is free text and stays
+   *  (stage 12's second part, redaction at the projection, is not this). */
+  | { type: 'application-submitted'; t: number; applicant: ApplicantId; words?: string }
   | { type: 'application-proposed'; t: number; applicant: ApplicantId; by: MemberId }
   | { type: 'member-admitted'; t: number; applicant: ApplicantId; member: MemberId }
   | { type: 'application-refused'; t: number; applicant: ApplicantId }
@@ -281,8 +313,16 @@ export type ConstitutionEvent =
  * changes in a way a reader must know about — a field gaining a meaning,
  * a value changing units — never for a new event type, which old readers
  * simply do not encounter, and never for a change confined to the fold.
+ *
+ * 2 (2026-09-08, decision 1253): identity left the events for the `People`
+ * rows. **A log holding any entry below `PEOPLE_SCHEMA_VERSION` is refused
+ * by `replay`, never read** — the alpha's documents were wiped rather than
+ * migrated, so nothing in a store carries the old shape, and a reader that
+ * met one would fold an event with no `person` into a roster of ghosts.
  */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
+/** The first version whose events carry person ids and no identity. */
+export const PEOPLE_SCHEMA_VERSION = 2;
 
 export interface LogEntry {
   seq: number;
@@ -343,9 +383,15 @@ export type DepartureBy = 'members' | 'convenor' | 'self';
 /** Where a held crown power came from (Q524): the birth, or a reserve motion. */
 export type PowerSource = 'founding' | 'motion';
 
-export interface MemberRecord {
+/**
+ * What the fold holds about a member: everything the log says, and the
+ * `person` whose row says the rest. **No email, name or picture** — those are
+ * read off the row at read time (decision 1253), which is what lets an
+ * erasure take effect without a log entry.
+ */
+export interface MemberState {
   id: MemberId;
-  email: string;
+  person: PersonId;
   invitedAtT: number;
   arrivedAtT: number | null;
   /** How this member got in, and whose act it was (Q524). */
@@ -355,8 +401,6 @@ export interface MemberRecord {
   removedBy: DepartureBy | null;
   lapsed: boolean;
   lapseWarned: boolean;
-  name: string | null;
-  picture: string | null;
   /**
    * Whether this member has ever *answered* ✋ and 🖼️ (Q645). Null is not the
    * answer to that question: a blank name is a real answer — §9.0c shows it as
@@ -420,6 +464,18 @@ export interface MemberRecord {
 }
 
 /**
+ * A member as a reader meets them: the fold's state plus the person row
+ * resolved at read time. `erased` is true, and the three fields null, where
+ * the row the log names is gone (decision 1253).
+ */
+export interface MemberRecord extends MemberState {
+  email: string | null;
+  name: string | null;
+  picture: string | null;
+  erased: boolean;
+}
+
+/**
  * One act's worth of laid-down powers (entry 162, Q1013). The contents are
  * kept here, once, rather than copied into every member's record: the members
  * hold only the id. Folded from the `release-owed` events themselves, so a
@@ -433,13 +489,14 @@ export interface ReleaseBatchRecord {
 
 /**
  * One sender pass's worth of mail that gave up (SURFACE E34), folded from the
- * `mail-gave-up` events themselves like `ReleaseBatchRecord`. The addresses are
- * kept here, once; the members hold only the id.
+ * `mail-gave-up` events themselves like `ReleaseBatchRecord`. The subjects are
+ * kept here, once, as person ids; the members hold only the batch id, and the
+ * view reads each address off its row (decision 1253).
  */
 export interface MailGiveUpBatchRecord {
   id: string;
   t: number;
-  addresses: string[];
+  people: PersonId[];
 }
 
 export type SettledBy = 'convenor' | 'ceremony' | 'motion' | 'crown';
@@ -525,12 +582,19 @@ export interface CrownQuestionRecord {
 export type ApplicationStatus =
   | 'started' | 'verified' | 'submitted' | 'proposed' | 'admitted' | 'refused';
 
-export interface ApplicantRecord {
+/** The fold's state about an applicant: the log's facts and the person row's id. */
+export interface ApplicantState {
   id: ApplicantId;
-  email: string;
+  person: PersonId;
   status: ApplicationStatus;
-  name: string | null;
-  picture: string | null;
   words: string | null;
   motion: MotionId | null;
+}
+
+/** An applicant as a reader meets them — the row resolved (decision 1253). */
+export interface ApplicantRecord extends ApplicantState {
+  email: string | null;
+  name: string | null;
+  picture: string | null;
+  erased: boolean;
 }

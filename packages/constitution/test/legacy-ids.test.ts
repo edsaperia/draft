@@ -23,9 +23,16 @@ import { describe, expect, it } from 'vitest';
 import { chainHash } from '../src/hash.js';
 import { ConstitutionSession } from '../src/session.js';
 import type { LogEntry } from '../src/types.js';
+import { SCHEMA_VERSION } from '../src/types.js';
+import type { People } from '../src/people.js';
 import { goldenWalk } from './golden/walk.js';
 
-/** Today's golden walk, rewritten to name 🪪 as `membership`, and re-chained. */
+/**
+ * Today's golden walk, rewritten to name 🪪 as `membership`, and re-chained.
+ * Stamped with today's version, because what is legacy here is the *id*: a
+ * log below the people version is refused outright (decision 1253), and that
+ * refusal has its own test. The walk's rows ride along for the replay.
+ */
 function legacyLog(): LogEntry[] {
   const back = (id: unknown) => (id === 'admission' ? 'membership' : id);
   const out: LogEntry[] = [];
@@ -37,11 +44,13 @@ function legacyLog(): LogEntry[] {
     if (e.settings !== undefined) e.settings = e.settings.map(back);
     if (e.payload?.setting !== undefined) e.payload.setting = back(e.payload.setting);
     const hash = chainHash(prev, e);
-    out.push({ seq: out.length, hash, prevHash: prev, event: e as never });
+    out.push({ seq: out.length, hash, prevHash: prev, event: e as never,
+      schemaVersion: SCHEMA_VERSION });
     prev = hash;
   }
   return out;
 }
+const people = (): People => goldenWalk().people;
 
 describe('a log written under the retired id `membership`', () => {
   it('names it — the fixture would prove nothing otherwise', () => {
@@ -53,13 +62,13 @@ describe('a log written under the retired id `membership`', () => {
   });
 
   it('replays into a session that holds 🪪 as `admission`', () => {
-    const s = ConstitutionSession.replay(legacyLog());
+    const s = ConstitutionSession.replay(legacyLog(), people());
     expect(s.verifyChain()).toBe(true);
     expect(s.settingState('admission').value).toEqual({ price: 'proposal' });
   });
 
   it('folds the id everywhere it can appear, not only on `setting-set`', () => {
-    const s = ConstitutionSession.replay(legacyLog());
+    const s = ConstitutionSession.replay(legacyLog(), people());
     // the golden walk owes two members an OK on 🪪 — an `ok-owed` carries the
     // id in a *list*, which is the second of the three shapes the fold reads
     const owed = [...s.memberRecords().values()].filter((m) => m.okOwed.has('admission'));
@@ -71,7 +80,7 @@ describe('a log written under the retired id `membership`', () => {
 
   it('leaves the log’s own bytes alone', () => {
     const log = legacyLog();
-    const s = ConstitutionSession.replay(log);
+    const s = ConstitutionSession.replay(log, people());
     expect(s.rollingHash()).toBe(log[log.length - 1]!.hash);
     const written = JSON.stringify(s.logEntries());
     expect(written).toContain('"membership"');

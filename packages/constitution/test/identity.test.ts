@@ -130,7 +130,7 @@ describe('🎩 re-tick keeps the founder’s identity (Q646)', () => {
     s.setIdentity(1, 'ada', { name: 'Ash Bellamy', picture: 'e🦊' });
     s.setConvenorMembership(2, false);
     s.setConvenorMembership(3, true);
-    const replayed = ConstitutionSession.replay([...s.logEntries()]);
+    const replayed = ConstitutionSession.replay([...s.logEntries()], s.people);
     expect(replayed.logEntries()).toEqual(s.logEntries());
     expect(replayed.memberRecords().get('ada')!.nameSet).toBe(true);
     expect(replayed.memberRecords().get('ada')!.picture).toBe('e🦊');

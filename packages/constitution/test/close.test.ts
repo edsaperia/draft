@@ -108,7 +108,7 @@ describe('the constitution closes on its ending (SPEC §4.6)', () => {
     const { s, bo } = windowed();
     s.tick(1_000_000);
     s.acknowledgeClose(1_000_100, bo, 'signed');
-    const replayed = ConstitutionSession.replay([...s.logEntries()]);
+    const replayed = ConstitutionSession.replay([...s.logEntries()], s.people);
     expect(replayed.rollingHash()).toBe(s.rollingHash());
     expect(replayed.closedAt).toBe(s.closedAt);
     expect(replayed.closingSignatures()).toEqual(s.closingSignatures());

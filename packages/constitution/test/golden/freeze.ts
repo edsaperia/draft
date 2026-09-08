@@ -11,6 +11,7 @@
  */
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import type { InMemoryPeople } from '../../src/people.js';
 import { goldenWalk, snapshotOf } from './walk.js';
 
 const dir = import.meta.dirname;
@@ -19,18 +20,13 @@ writeFileSync(join(dir, 'founding.jsonl'),
   s.logEntries().map((e) => JSON.stringify(e)).join('\n') + '\n');
 writeFileSync(join(dir, 'founding.state.json'),
   JSON.stringify(snapshotOf(s), null, 2) + '\n');
-// **founding-v0.jsonl is the same walk with the field stripped** (Q767,
-// 2026-08-25). It had been the literal bytes the code of 2026-08-20 wrote,
-// and stayed correct until a setting was deleted from the catalogue: a log
-// naming a setting this build does not have cannot be replayed, and a
-// hash-chained file cannot be hand-patched. What the fixture is *for* is a
-// log that genuinely lacks `schemaVersion`, so it is rebuilt from today's
-// entries with the field removed — and because the version rides outside
-// the hash, the stripped copy must chain to exactly the hash above, which
-// is now the assertion rather than an accident of history.
-writeFileSync(join(dir, 'founding-v0.jsonl'),
-  s.logEntries().map((e) => {
-    const { schemaVersion: _v, ...rest } = e as unknown as Record<string, unknown>;
-    return JSON.stringify(rest);
-  }).join('\n') + '\n');
+// **The rows beside the log** (decision 1253, 2026-09-08): the walk's people,
+// frozen so the replay test can be handed exactly what the host would hand
+// it — and so the same replay *without* them proves the erasure claim, every
+// hash identical over a roster that reads as erased. `founding-v0.jsonl`, the
+// same walk with `schemaVersion` stripped (Q767), went with the old shape:
+// an unversioned log is the pre-people shape now, and is refused rather than
+// read, which `golden-log.test.ts` asserts from a log it builds on the spot.
+writeFileSync(join(dir, 'founding.people.json'),
+  JSON.stringify(Object.fromEntries((s.people as InMemoryPeople).entries()), null, 2) + '\n');
 console.log(`froze ${s.logEntries().length} entries; rolling hash ${s.rollingHash()}`);

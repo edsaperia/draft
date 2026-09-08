@@ -100,9 +100,11 @@ export interface MotionView {
  */
 export interface MemberRowView {
   id: MemberId;
-  email: string;
+  /** Null, with `erased` true, where the person's row is gone (decision 1253). */
+  email: string | null;
   name: string | null;
   picture: string | null;
+  erased: boolean;
   arrived: boolean;
   lapsed: boolean;
   isConvenor: boolean;
@@ -126,9 +128,11 @@ export interface MemberRowView {
 
 export interface ApplicantRowView {
   id: string;
-  email: string;
+  /** Null, with `erased` true, where the person's row is gone (decision 1253). */
+  email: string | null;
   name: string | null;
   picture: string | null;
+  erased: boolean;
   words: string | null;
   status: string;
   /** The admit motion, once one is open — the page joins it to its race. */
@@ -162,7 +166,7 @@ export interface MemberView {
    * email, since the address of somebody who is gone is nobody's business.
    */
   departures: Array<{ id: MemberId; name: string | null; picture: string | null;
-    t: number; by: DepartureBy }>;
+    erased: boolean; t: number; by: DepartureBy }>;
   register: RegisterView;
   /** ✉️ and ❌ (entry 94): the founder's powers over the act, per door. */
   doors: { invite: DoorView; remove: DoorView };
@@ -211,7 +215,8 @@ export interface MemberView {
   closed: {
     at: number;
     mySignature: { t: number; comment: string } | null;
-    signatures: Array<{ member: MemberId; name: string | null; comment: string; t: number }>;
+    signatures: Array<{ member: MemberId; name: string | null; erased: boolean;
+      comment: string; t: number }>;
   } | null;
 }
 
@@ -339,7 +344,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
   for (const a of s.applicantRecords().values()) {
     if (a.status === 'started') continue; // an unverified address is nobody's business yet
     applicants.push({ id: a.id, email: a.email, name: a.name,
-      picture: a.picture, words: a.words, status: a.status, motion: a.motion });
+      picture: a.picture, erased: a.erased, words: a.words, status: a.status, motion: a.motion });
   }
 
   const convenorId = s.convenorRecord().id;
@@ -351,6 +356,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
       email: rec.email,
       name: rec.name,
       picture: rec.picture,
+      erased: rec.erased,
       arrived: rec.arrivedAtT !== null,
       lapsed: rec.lapsed,
       isConvenor: rec.id === convenorId,
@@ -362,7 +368,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
   const departures = s.departures().map((d) => {
     const rec = s.memberRecords().get(d.member);
     return { id: d.member, name: rec?.name ?? null, picture: rec?.picture ?? null,
-      t: d.t, by: d.by };
+      erased: rec?.erased ?? false, t: d.t, by: d.by };
   });
 
   return {
@@ -392,7 +398,13 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
       ? [...s.mailGiveUpBatchRecords().values()]
           .filter((b) => me.mailGaveUpOwed.has(b.id))
           .sort((a, b) => a.t - b.t)
-          .map((b) => ({ id: b.id, at: b.t, addresses: [...b.addresses] }))
+          // the addresses read off the rows now (decision 1253): a subject
+          // erased since the pass has no address left to name, and is dropped
+          .map((b) => ({ id: b.id, at: b.t,
+            addresses: b.people.flatMap((p) => {
+              const email = s.people.get(p)?.email;
+              return email === undefined ? [] : [email];
+            }) }))
       : [],
     // the amendment's own record is the motion the pen carried (R-058), so
     // nothing about it is stored twice; an id whose record cannot be found is

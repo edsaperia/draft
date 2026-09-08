@@ -553,7 +553,8 @@ describe('replay (SPEC §11)', () => {
     s.answer(8, bo, 'bar', { pct: 82 }); // the last gate answer constitutes
     expect(s.verifyChain()).toBe(true);
 
-    const r = ConstitutionSession.replay([...s.logEntries()]);
+    // the rows ride beside the log (decision 1253): a replay is handed them
+    const r = ConstitutionSession.replay([...s.logEntries()], s.people);
     expect(r.rollingHash()).toBe(s.rollingHash());
     expect(r.constitutedAtT).toBe(s.constitutedAtT);
     expect(r.settingState('bar').value).toEqual({ pct: 82 });

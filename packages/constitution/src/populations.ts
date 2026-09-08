@@ -7,15 +7,16 @@
  * question, is E evaluated live. Invited-but-not-arrived count nowhere.
  */
 
-import type { MemberRecord } from './types.js';
+import type { MemberState } from './types.js';
 import type { QuorumValue } from './values.js';
 
-/** A member of E: arrived, not removed, not lapsed (§8.2). */
-export function inE(m: MemberRecord): boolean {
+/** A member of E: arrived, not removed, not lapsed (§8.2). Fold state is
+ *  enough — nothing here reads who the person is. */
+export function inE(m: MemberState): boolean {
   return m.arrivedAtT !== null && !m.removed && !m.lapsed;
 }
 
-export function eOf(members: Iterable<MemberRecord>): MemberRecord[] {
+export function eOf<M extends MemberState>(members: Iterable<M>): M[] {
   return [...members].filter(inE);
 }
 
@@ -24,7 +25,7 @@ export function eOf(members: Iterable<MemberRecord>): MemberRecord[] {
  * question (§9.0a, §9.5, R-088): E, evaluated live — no snapshot, re-checked
  * on every answer and every roster event.
  */
-export function motionElectorateOf(members: Iterable<MemberRecord>): MemberRecord[] {
+export function motionElectorateOf<M extends MemberState>(members: Iterable<M>): M[] {
   return eOf(members);
 }
 

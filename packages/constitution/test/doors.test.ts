@@ -154,7 +154,7 @@ describe('departures — what the view says about who left (Q901)', () => {
     s.remove(7, cy);
     const v = view(s, bo);
     expect(v.departures).toEqual([{ id: cy, name: v.departures[0]!.name,
-      picture: v.departures[0]!.picture, t: 7, by: 'convenor' }]);
+      picture: v.departures[0]!.picture, erased: false, t: 7, by: 'convenor' }]);
     expect(v.members.some((m) => m.id === cy)).toBe(false);
     // no email: the address of somebody who is gone is nobody's business
     expect(Object.keys(v.departures[0]!)).not.toContain('email');

@@ -124,9 +124,15 @@ export function snapshotOf(s: ConstitutionSession): unknown {
     chainVerifies: s.verifyChain(),
     constitutedAtT: s.constitutedAtT,
     E: s.E(),
+    // `person` is frozen too (decision 1253): the ids the log names are minted
+    // by the fold, and a mint that drifted would orphan every row
     members: [...s.memberRecords().values()].map((m) => ({
-      id: m.id, email: m.email, arrivedAtT: m.arrivedAtT, removed: m.removed,
+      id: m.id, person: m.person, email: m.email, arrivedAtT: m.arrivedAtT, removed: m.removed,
       lapsed: m.lapsed, name: m.name, picture: m.picture,
+    })),
+    applicants: [...s.applicantRecords().values()].map((a) => ({
+      id: a.id, person: a.person, email: a.email, status: a.status, name: a.name,
+      picture: a.picture, words: a.words,
     })),
     settings,
   };

@@ -18,8 +18,10 @@ export type {
 export { resolveConsent } from './consent.js';
 export type { ConsentResolution } from './consent.js';
 export * from './types.js';
+export { ERASED, InMemoryPeople, resolvePerson } from './people.js';
+export type { People, PersonFields, PersonId, ResolvedPerson } from './people.js';
 export { ConstitutionSession } from './session.js';
-export type { OpenInput, WaitingHold, WaitingWhy } from './session.js';
+export type { MotionInput, OpenInput, WaitingHold, WaitingWhy } from './session.js';
 export { eOf, inE, motionElectorateOf, quorumCount,
   adoptionFloorTerm, adoptionFloor } from './populations.js';
 export { BAR_CEILING_PCT, VOTES_NEEDED, VOTES_NEEDED_HI_PCT, VOTES_NEEDED_LO_PCT, VOTES_NEEDED_MAX_N,

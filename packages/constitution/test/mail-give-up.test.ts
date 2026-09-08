@@ -20,7 +20,12 @@ describe('the give-up batch (SURFACE E34)', () => {
 
     const batches = [...s.mailGiveUpBatchRecords().values()];
     expect(batches).toHaveLength(1);
-    expect(batches[0]!.addresses).toEqual(['dead@example.org', 'gone@example.org']);
+    // the batch names the persons, never the addresses (decision 1253) — the
+    // view reads each address back off its row
+    expect(batches[0]!.people).toEqual([
+      s.memberRecords().get(dead)!.person, s.memberRecords().get(alsoDead)!.person]);
+    expect(view(s, bo).owedMailGiveUps[0]!.addresses)
+      .toEqual(['dead@example.org', 'gone@example.org']);
 
     // the convenor is **not** skipped: in `oweReleases` the founder is the
     // actor, and here nobody in the room is
@@ -152,7 +157,7 @@ describe('the view and the replay', () => {
     s.resendInvite(6, dead, 'ada');
     s.mailGaveUp(7, ['dead@example.org']);
 
-    const again = ConstitutionSession.replay([...s.logEntries()]);
+    const again = ConstitutionSession.replay([...s.logEntries()], s.people);
     expect(again.logEntries()).toEqual(s.logEntries());
     expect(again.mailGiveUpBatchRecords()).toEqual(s.mailGiveUpBatchRecords());
     expect(view(again, bo)).toEqual(view(s, bo));

@@ -109,9 +109,12 @@ export class EngineBridge {
       opts.tuning ?? DEFAULT_TUNING,
       opts.rngSeed,
     );
+    // **The handle is the id** (decision 1253): the engine never interprets
+    // it, and its log is a hash chain like the constitution's, so a name or
+    // an address there would be the very thing the people split removes.
     const roster = [...cs.memberRecords().values()].filter(inE).map((m) => ({
       id: m.id,
-      handle: m.name ?? m.email,
+      handle: m.id,
     }));
     for (const p of roster) this.known.add(p.id);
     const settings: Record<string, unknown> = {};
@@ -531,7 +534,7 @@ export class EngineBridge {
       // for exactly this act, suspended in the same breath (out of E).
       author = applicant;
       if (!this.known.has(applicant)) {
-        this.engine.addParticipant(t, { id: applicant, handle: a?.name ?? a?.email ?? applicant });
+        this.engine.addParticipant(t, { id: applicant, handle: applicant });
         this.known.add(applicant);
         transientVoice = true;
       }
@@ -582,8 +585,7 @@ export class EngineBridge {
         case 'member-admitted': {
           const id = e.member;
           if (!this.known.has(id)) {
-            const m = this.cs.memberRecords().get(id);
-            this.engine.addParticipant(t, { id, handle: m?.name ?? m?.email ?? id });
+            this.engine.addParticipant(t, { id, handle: id });
             this.known.add(id);
           }
           break;

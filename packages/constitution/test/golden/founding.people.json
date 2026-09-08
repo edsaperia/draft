@@ -1,0 +1,27 @@
+{
+  "p-1": {
+    "email": "ada@example.org",
+    "name": "Ada",
+    "picture": "e🦉"
+  },
+  "p-2": {
+    "email": "bo@example.org",
+    "name": "Bo",
+    "picture": "e🦊"
+  },
+  "p-3": {
+    "email": "cy@example.org",
+    "name": "Cy",
+    "picture": null
+  },
+  "p-4": {
+    "email": "dee@example.org",
+    "name": null,
+    "picture": null
+  },
+  "p-5": {
+    "email": "eve@example.org",
+    "name": "Eve",
+    "picture": "e🦡"
+  }
+}

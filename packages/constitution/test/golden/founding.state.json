@@ -1,12 +1,13 @@
 {
   "entries": 68,
-  "rollingHash": "acee6d7ed5afd4707563d7f919f1e8528f2b26f3a413569a02216f0272b1d6b0",
+  "rollingHash": "fa010b35abc1ce43e8770812502f626a0395e847d3f8df4f6426f824a3b808af",
   "chainVerifies": true,
   "constitutedAtT": 8,
   "E": 3,
   "members": [
     {
       "id": "ada",
+      "person": "p-1",
       "email": "ada@example.org",
       "arrivedAtT": 0,
       "removed": false,
@@ -16,6 +17,7 @@
     },
     {
       "id": "m-1",
+      "person": "p-2",
       "email": "bo@example.org",
       "arrivedAtT": 2,
       "removed": false,
@@ -25,6 +27,7 @@
     },
     {
       "id": "m-2",
+      "person": "p-3",
       "email": "cy@example.org",
       "arrivedAtT": 2,
       "removed": false,
@@ -34,12 +37,24 @@
     },
     {
       "id": "m-3",
+      "person": "p-4",
       "email": "dee@example.org",
       "arrivedAtT": null,
       "removed": true,
       "lapsed": false,
       "name": null,
       "picture": null
+    }
+  ],
+  "applicants": [
+    {
+      "id": "ap-1",
+      "person": "p-5",
+      "email": "eve@example.org",
+      "status": "submitted",
+      "name": "Eve",
+      "picture": "e🦡",
+      "words": "I keep bees."
     }
   ],
   "settings": {

@@ -9,12 +9,15 @@
 
 import { chainHash } from './hash.js';
 import type {
-  ApplicantRecord, ConstitutionEvent, ConvenorInput, CrownQuestionId, CrownQuestionRecord,
-  LogEntry, MemberId, MemberRecord, MotionAnswer, MotionId, MotionPayload,
+  ApplicantRecord, ApplicantState, ConstitutionEvent, ConvenorInput, ConvenorRef,
+  CrownQuestionId, CrownQuestionRecord,
+  LogEntry, MemberId, MemberRecord, MemberState, MotionAnswer, MotionId, MotionPayload,
   MotionRecord, Power, Powers, SettingState, Arrival, PowerSource, DoorId, PowerKey,
   DepartureBy, ReleaseBatchRecord, MailGiveUpBatchRecord,
 } from './types.js';
-import { DOORS, holderOf, isDoor, SCHEMA_VERSION } from './types.js';
+import { DOORS, holderOf, isDoor, PEOPLE_SCHEMA_VERSION, SCHEMA_VERSION, versionOf } from './types.js';
+import type { People, PersonId, ResolvedPerson } from './people.js';
+import { InMemoryPeople, resolvePerson } from './people.js';
 import type { MotionRoute, SettingId } from './catalogue.js';
 import { CATALOGUE, entryOf, mayApply, motionRouteOf, validateFor } from './catalogue.js';
 import type { ApplicationsValue, EndingValue, LapseValue, PaceValue,
@@ -36,6 +39,16 @@ export interface OpenInput {
   /** The 🧭 shape chosen before the birth (entry 166); absent is custom. */
   shape?: ShapeName;
 }
+
+/**
+ * What `openMotion` is handed. The one difference from `MotionPayload` is the
+ * invitation: the caller names an **address**, and the session turns it into
+ * the person row the event carries (decision 1253) — the email must never
+ * reach the log, and the caller has no business minting person ids.
+ */
+export type MotionInput =
+  | Exclude<MotionPayload, { kind: 'invite' }>
+  | { kind: 'invite'; email: string };
 
 /**
  * Why 🍾 is waiting on one question (Q826). Five of the six are a state the
@@ -128,9 +141,23 @@ export class ConstitutionSession {
   private log: LogEntry[] = [];
   private lastT = -Infinity;
 
+  /**
+   * **The rows beside the log** (decision 1253): every person's email, name
+   * and picture, keyed by the `PersonId` the events carry. An argument, never
+   * a global — the host hands in the store's own; a test or the page hands in
+   * an `InMemoryPeople`, which is also what a session gets when handed
+   * nothing, that being the only sensible meaning of *no port*. The fold
+   * never writes it; commands write it beside the event they emit; readers
+   * resolve through it at read time, so an erased row reads as erased at once.
+   */
+  readonly people: People;
+
+  constructor(people: People = new InMemoryPeople()) {
+    this.people = people;
+  }
+
   // ---- fold state ----------------------------------------------------------
-  private convenor!: { id: MemberId; email: string; isMember: boolean;
-    name: string | null; picture: string | null;
+  private convenor!: { id: MemberId; person: PersonId; isMember: boolean;
     // the clerk's half of Q645's *was it ever answered* — a clerk is never a
     // MemberRecord, and their name and picture are optional (§9.6a), so the
     // question is asked of them exactly as it is of anybody
@@ -149,7 +176,7 @@ export class ConstitutionSession {
     membershipSet: boolean;
     lastActivityT: number; lapseWarned: boolean };
   private crownLapsedFlag = false;
-  private members = new Map<MemberId, MemberRecord>();
+  private members = new Map<MemberId, MemberState>();
   /** The departures, folded (Q901): see `departures()`. */
   private departed: Array<{ member: MemberId; t: number; by: DepartureBy }> = [];
   private settings = new Map<PowerKey, SettingState>();
@@ -166,7 +193,7 @@ export class ConstitutionSession {
   private anchors: ThresholdAnchors | null = null;
   private motions = new Map<MotionId, MotionRecord>();
   private crownQuestions = new Map<string, CrownQuestionRecord>();
-  private applicants = new Map<string, ApplicantRecord>();
+  private applicants = new Map<string, ApplicantState>();
   /**
    * The release batches, by id (entry 162, Q1013), and the two fields that
    * decide whether a further release **joins** one or opens a new one. All
@@ -187,20 +214,30 @@ export class ConstitutionSession {
   private nextMotionN = 1;
   private nextCrownN = 1;
   private nextApplicantN = 1;
+  /** Person ids are minted like member ids and rebuilt from the log (`notePerson`). */
+  private nextPersonN = 1;
 
   // -------------------------------------------------------------------------
   // Opening and replay
 
-  static open(input: OpenInput, t: number): ConstitutionSession {
-    const s = new ConstitutionSession();
+  static open(input: OpenInput, t: number, people?: People): ConstitutionSession {
+    const s = new ConstitutionSession(people);
     if (!input.title.trim()) throw new Error('a document begins with its title (§9.7a)');
     const slugErr = validateFor(entryOf('link'), { slug: input.slug });
     if (slugErr) throw new Error(slugErr);
     // a shape the table does not know is refused here, before anything is
     // written — the server has already dropped anything but a row's name
     const shape = input.shape === undefined ? null : shapeOf(input.shape);
+    // the founder's row first, the event after it (decision 1253): the log
+    // names the person, the row holds who they are
+    const c = input.convenor;
+    const person = s.personFor(c.email);
+    s.people.set(person, { email: c.email, name: c.name ?? null, picture: c.picture ?? null });
+    const ref: ConvenorRef = { id: c.id, person, isMember: c.isMember,
+      ...(c.name !== undefined ? { nameSet: true as const } : {}),
+      ...(c.picture !== undefined ? { pictureSet: true as const } : {}) };
     s.emit({ type: 'created', t, title: input.title, slug: input.slug,
-      convenor: input.convenor,
+      convenor: ref,
       ...(shape === null ? {} : { shape: shape.name }) });
     // **The shape is folded as the founder's own sets** (entry 166, SPEC
     // §9.0a): ordinary `setting-set` events at the birth's own `t`, so the
@@ -222,9 +259,24 @@ export class ConstitutionSession {
     return s;
   }
 
-  /** Rebuild a session by replaying a log (verifies the hash chain). */
-  static replay(log: LogEntry[]): ConstitutionSession {
-    const s = new ConstitutionSession();
+  /**
+   * Rebuild a session by replaying a log (verifies the hash chain). The rows
+   * are handed in, never rebuilt: replay writes nothing to `people`.
+   *
+   * **The pre-people shape is refused, never read** (decision 1253): an entry
+   * written below `PEOPLE_SCHEMA_VERSION` carries addresses and names in the
+   * event and no `person`, and folding it would make a roster of ghosts. The
+   * alpha's documents were wiped rather than migrated, so a store never holds
+   * one; a dev data dir might, until its own wipe, and the host skips the
+   * document by name on this error rather than crashing.
+   */
+  static replay(log: LogEntry[], people?: People): ConstitutionSession {
+    const s = new ConstitutionSession(people);
+    const old = log.find((e) => versionOf(e) < PEOPLE_SCHEMA_VERSION);
+    if (old !== undefined) {
+      throw new Error(`entry ${old.seq} is schema version ${versionOf(old)}, below ` +
+        `${PEOPLE_SCHEMA_VERSION}: the pre-people shape (decision 1253) is not read`);
+    }
     let prev = '';
     for (const entry of log) {
       const expected = chainHash(prev, entry.event);
@@ -275,9 +327,10 @@ export class ConstitutionSession {
         const c = event.convenor;
         this.createdT = event.t;
         this.shapeName = event.shape ?? null;
-        this.convenor = { ...c, name: c.name ?? null, picture: c.picture ?? null,
+        this.notePerson(c.person);
+        this.convenor = { id: c.id, person: c.person, isMember: c.isMember,
           // a founder who arrives already carrying one has answered it (Q645)
-          nameSet: c.name !== undefined, pictureSet: c.picture !== undefined,
+          nameSet: c.nameSet === true, pictureSet: c.pictureSet === true,
           // 🎩 is asked, never assumed: `isMember` arrives with the creation
           // and answers nothing about whether the founder was put the question
           membershipSet: false,
@@ -321,13 +374,12 @@ export class ConstitutionSession {
         this.foldSet('link', { slug: event.slug }, 'convenor', event.t);
         this.slugHistory.push(event.slug);
         if (c.isMember) {
-          const rec = this.freshMember(c.id, c.email, event.t, event.t,
+          const rec = this.freshMember(c.id, c.person, event.t, event.t,
             { via: 'founding', by: null });
           // readers prefer the MemberRecord over the convenor struct, so a
-          // founder created already carrying a name has to arrive with it here
-          // too, or the two disagree from the first event (Q645)
-          rec.name = this.convenor.name;
-          rec.picture = this.convenor.picture;
+          // founder created already carrying a name has to arrive with the
+          // answered flags here too, or the two disagree from the first event
+          // (Q645); the values themselves are the row's, shared by construction
           rec.nameSet = this.convenor.nameSet;
           rec.pictureSet = this.convenor.pictureSet;
           this.members.set(c.id, rec);
@@ -353,11 +405,11 @@ export class ConstitutionSession {
           break;
         }
         if (event.isMember) {
-          const rec = this.freshMember(this.convenor.id, this.convenor.email,
+          const rec = this.freshMember(this.convenor.id, this.convenor.person,
             event.t, event.t, { via: 'founding', by: null });
           const prev = this.members.get(this.convenor.id);
-          rec.name = prev ? prev.name : this.convenor.name;
-          rec.picture = prev ? prev.picture : this.convenor.picture;
+          // the name and picture need no carrying since decision 1253: seat
+          // and struct name the same person row, so both read the same values
           rec.nameSet = prev ? prev.nameSet : this.convenor.nameSet;
           rec.pictureSet = prev ? prev.pictureSet : this.convenor.pictureSet;
           if (prev) {
@@ -383,8 +435,6 @@ export class ConstitutionSession {
         } else {
           const prev = this.members.get(this.convenor.id);
           if (prev) {
-            this.convenor.name = prev.name;
-            this.convenor.picture = prev.picture;
             this.convenor.nameSet = prev.nameSet;
             this.convenor.pictureSet = prev.pictureSet;
             this.convenor.lastActivityT = prev.lastActivityT;
@@ -526,14 +576,16 @@ export class ConstitutionSession {
         // perfectly well be null — a blank name is Anonymous (§9.0c) and a
         // picture is removed by choosing initials — so `!== undefined` is the
         // test, never truthiness.
+        // The values went to the person row when the command ran (decision
+        // 1253); the fold records only that the question was answered.
         if (event.member === this.convenor.id && !this.members.has(event.member)) {
-          if (event.name !== undefined) { this.convenor.name = event.name; this.convenor.nameSet = true; }
-          if (event.picture !== undefined) { this.convenor.picture = event.picture; this.convenor.pictureSet = true; }
+          if (event.nameSet) this.convenor.nameSet = true;
+          if (event.pictureSet) this.convenor.pictureSet = true;
           break;
         }
         const m = this.members.get(event.member)!;
-        if (event.name !== undefined) { m.name = event.name; m.nameSet = true; }
-        if (event.picture !== undefined) { m.picture = event.picture; m.pictureSet = true; }
+        if (event.nameSet) m.nameSet = true;
+        if (event.pictureSet) m.pictureSet = true;
         this.touch(event.member, event.t);
         break;
       }
@@ -545,8 +597,9 @@ export class ConstitutionSession {
           : event.by !== undefined
             ? { via: 'invitation', by: 'member', inviter: event.by }
             : { via: 'invitation', by: 'convenor' };
+        this.notePerson(event.person);
         this.members.set(event.member,
-          this.freshMember(event.member, event.email, event.t, null, arrival));
+          this.freshMember(event.member, event.person, event.t, null, arrival));
         this.nextMemberN += 1;
         break;
       }
@@ -712,17 +765,15 @@ export class ConstitutionSession {
         // batch is, so a replay rebuilds the counter without it being written
         if (!this.mailGiveUpBatches.has(event.batch)) {
           this.mailGiveUpBatches.set(event.batch,
-            { id: event.batch, t: event.t, addresses: [...event.addresses] });
+            { id: event.batch, t: event.t, people: [...event.people] });
           this.nextMailGiveUpN += 1;
         }
         // **The subject is marked whoever is told** (SURFACE E34): the row's
-        // fact belongs to the address, not to the audience, so it is set from
-        // every copy of the event and from the told-nobody one too. Case-blind:
-        // an older log holds an address as it was typed.
+        // fact belongs to the person, not to the audience, so it is set from
+        // every copy of the event and from the told-nobody one too. By person
+        // id (decision 1253): the command resolved the dead address to its row.
         for (const rec of this.members.values()) {
-          if (event.addresses.some((a) => a.toLowerCase() === rec.email.toLowerCase())) {
-            rec.mailGaveUp = true;
-          }
+          if (event.people.includes(rec.person)) rec.mailGaveUp = true;
         }
         if (event.member !== null) {
           this.members.get(event.member)!.mailGaveUpOwed.add(event.batch);
@@ -979,11 +1030,12 @@ export class ConstitutionSession {
         break;
       }
       case 'application-started': {
+        this.notePerson(event.person);
         this.applicants.set(event.applicant, {
           id: event.applicant,
-          email: event.email,
+          person: event.person,
           status: 'started',
-          name: null, picture: null, words: null,
+          words: null,
           motion: null,
         });
         this.nextApplicantN += 1;
@@ -996,8 +1048,7 @@ export class ConstitutionSession {
       case 'application-submitted': {
         const a = this.applicants.get(event.applicant)!;
         a.status = 'submitted';
-        a.name = event.name ?? null;
-        a.picture = event.picture ?? null;
+        // the name and picture went to the row when the command ran
         a.words = event.words ?? null;
         break;
       }
@@ -1009,11 +1060,11 @@ export class ConstitutionSession {
       case 'member-admitted': {
         const a = this.applicants.get(event.applicant)!;
         a.status = 'admitted';
-        // an application is admitted by an ordinary motion, always the room's act
-        const rec = this.freshMember(event.member, a.email, event.t, event.t,
+        // an application is admitted by an ordinary motion, always the room's
+        // act; the member is the same person the application was, so the row
+        // — and with it the name and picture they gave — comes with them
+        const rec = this.freshMember(event.member, a.person, event.t, event.t,
           { via: 'application', by: 'members' });
-        rec.name = a.name;
-        rec.picture = a.picture;
         this.members.set(event.member, rec);
         this.nextMemberN += 1;
         break;
@@ -1087,12 +1138,12 @@ export class ConstitutionSession {
     st.pendingRelease = { unilateral: false, assent: false };
   }
 
-  private freshMember(id: MemberId, email: string, invitedAtT: number,
-    arrivedAtT: number | null, arrival: Arrival): MemberRecord {
+  private freshMember(id: MemberId, person: PersonId, invitedAtT: number,
+    arrivedAtT: number | null, arrival: Arrival): MemberState {
     return {
-      id, email, invitedAtT, arrivedAtT, arrival,
+      id, person, invitedAtT, arrivedAtT, arrival,
       removed: false, removedBy: null, lapsed: false, lapseWarned: false,
-      name: null, picture: null, nameSet: false, pictureSet: false,
+      nameSet: false, pictureSet: false,
       lastActivityT: arrivedAtT ?? invitedAtT,
       okOwed: new Set(), okGiven: new Set(),
       releasesOwed: new Set(), releasesGiven: new Set(),
@@ -1439,9 +1490,14 @@ export class ConstitutionSession {
     if (member !== this.convenor.id && !this.members.has(member)) {
       throw new Error(`unknown member '${member}'`);
     }
+    // the answer to the row, the act to the log (decision 1253); a key present
+    // is an answer, null included — a blank name is Anonymous (§9.0c)
+    const person = this.members.get(member)?.person ?? this.convenor.person;
+    const patch: { name?: string | null; picture?: string | null } = {};
     const e: ConstitutionEvent = { type: 'identity-set', t, member };
-    if (identity.name !== undefined) (e as { name?: string | null }).name = identity.name;
-    if (identity.picture !== undefined) (e as { picture?: string | null }).picture = identity.picture;
+    if (identity.name !== undefined) { patch.name = identity.name; e.nameSet = true; }
+    if (identity.picture !== undefined) { patch.picture = identity.picture; e.pictureSet = true; }
+    this.people.set(person, patch);
     this.emit(e);
   }
 
@@ -1474,7 +1530,12 @@ export class ConstitutionSession {
     }
     this.requireEmailFree(email);
     const id = `m-${this.nextMemberN}`;
-    this.emit({ type: 'member-invited', t, member: id, email,
+    // the row before the event (decision 1253): the address lives there, and
+    // an address already on a row — a removed member re-invited — is the same
+    // person, so the row is theirs again rather than a second one
+    const person = this.personFor(email);
+    this.people.set(person, { email });
+    this.emit({ type: 'member-invited', t, member: id, person,
       ...(byMember ? { by } : {}) });
     // An invitee counts toward nothing until they arrive — no roster
     // follow-ons: E is unchanged (§9.6a).
@@ -1891,7 +1952,7 @@ export class ConstitutionSession {
         // owed questions while `answered`/`electorate` exclude them reported
         // somebody holding the founding up whom `maybeResolve` never waits for.
         const out = !eIds.has(m.id);
-        return { id: m.id, name: m.name, arrived: m.arrivedAtT !== null,
+        return { id: m.id, name: this.personOf(m.person).name, arrived: m.arrivedAtT !== null,
           owed: out ? 0 : open.length,
           answered: out ? 0
             : open.filter((id) => this.settings.get(id)!.answers.has(m.id)).length };
@@ -2088,21 +2149,23 @@ export class ConstitutionSession {
    */
   mailGaveUp(t: number, addresses: readonly string[]): void {
     if (addresses.length === 0) return;
+    // each dead address to the person holding it (decision 1253); one whose
+    // row nobody holds — erased since the mail was queued, or never a person
+    // of this document — is nobody's news and is dropped here
+    const list: PersonId[] = [];
+    for (const a of addresses) {
+      const person = this.people.byEmail(a);
+      if (person !== null && !list.includes(person)) list.push(person);
+    }
+    if (list.length === 0) return;
     const batch = `mgu-${this.nextMailGiveUpN}`;
-    const seen = new Set<string>();
-    const list = addresses.filter((a) => {
-      const key = a.toLowerCase();
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
     let told = false;
     for (const m of this.closedFlag ? [] : [...this.members.values()]) {
       if (m.arrivedAtT === null || m.removed) continue;
       told = true;
-      this.emit({ type: 'mail-gave-up', t, batch, member: m.id, addresses: list });
+      this.emit({ type: 'mail-gave-up', t, batch, member: m.id, people: list });
     }
-    if (!told) this.emit({ type: 'mail-gave-up', t, batch, member: null, addresses: list });
+    if (!told) this.emit({ type: 'mail-gave-up', t, batch, member: null, people: list });
   }
 
   /** The OK on one pass's dead mail — `ackRelease`'s posture exactly: a batch
@@ -2158,7 +2221,7 @@ export class ConstitutionSession {
   // Motions (§9.6, v0.48): the one act by which a settled document changes
   // its own rules. The route is a fact about the setting.
 
-  openMotion(t: number, by: MemberId, payload: MotionPayload, why?: string): MotionId {
+  openMotion(t: number, by: MemberId, input: MotionInput, why?: string): MotionId {
     this.requireOpen('a motion');
     if (this.constitutedT === null) {
       throw new Error('before the start nothing is amended — only set (§9.6a)');
@@ -2166,6 +2229,15 @@ export class ConstitutionSession {
     const mover = this.members.get(by);
     if (!mover || !inE(mover)) throw new Error(`'${by}' is not an arrived member`);
     let route: MotionRoute;
+    // the invitation's address becomes a person row here, and only the row's
+    // id rides the motion (decision 1253); every other payload is what it was
+    let payload: MotionPayload;
+    if (input.kind === 'invite') {
+      this.requireEmailFree(input.email);
+      const person = this.personFor(input.email);
+      this.people.set(person, { email: input.email });
+      payload = { kind: 'invite', person };
+    } else payload = input;
     if (payload.kind === 'set') {
       const entry = entryOf(payload.setting);
       if (entry.kind === 'personal') throw new Error(`${payload.setting} is yours alone (§9.0c)`);
@@ -2198,7 +2270,6 @@ export class ConstitutionSession {
       }
       route = 'constitutional'; // returning a decision to one hand needs everyone (§9.7 v0.52)
     } else if (payload.kind === 'invite') {
-      this.requireEmailFree(payload.email);
       // The route is 🪪's price (entry 94): at `pen` nobody proposes — the
       // invite command admits outright — so a motion here is a mistake.
       const price = this.priceOf('admission');
@@ -2366,7 +2437,7 @@ export class ConstitutionSession {
     if (rec.payload.kind === 'invite') {
       const id = `m-${this.nextMemberN}`;
       this.emit({ type: 'member-invited', t, member: id,
-        email: rec.payload.email, viaMotion: rec.id });
+        person: rec.payload.person, viaMotion: rec.id });
       // an invitee counts toward nothing until they arrive — no roster follow-ons
     } else if (rec.payload.kind === 'remove') {
       const target = rec.payload.member;
@@ -2648,13 +2719,16 @@ export class ConstitutionSession {
       throw new Error('this document is invitation-only (§9.7½)');
     }
     this.requireEmailFree(email);
+    const known = this.people.byEmail(email);
     for (const a of this.applicants.values()) {
-      if (a.email === email && a.status !== 'refused') {
+      if (known !== null && a.person === known && a.status !== 'refused') {
         throw new Error('an application from that address is already underway');
       }
     }
     const id = `ap-${this.nextApplicantN}`;
-    this.emit({ type: 'application-started', t, applicant: id, email });
+    const person = known ?? this.personFor(email);
+    this.people.set(person, { email });
+    this.emit({ type: 'application-started', t, applicant: id, person });
     return id;
   }
 
@@ -2682,10 +2756,14 @@ export class ConstitutionSession {
     if (!a || a.status !== 'verified') {
       throw new Error('an application is verified by magic link before it can be submitted (§9.7½)');
     }
+    // the name and picture to the row, the words to the log (decision 1253;
+    // free text is stage 12's second part and stays in the event)
+    const patch: { name?: string; picture?: string } = {};
+    if (fields.name !== undefined) patch.name = fields.name;
+    if (fields.picture !== undefined) patch.picture = fields.picture;
+    this.people.set(a.person, patch);
     const e: ConstitutionEvent = { type: 'application-submitted', t, applicant };
-    if (fields.name !== undefined) (e as { name?: string }).name = fields.name;
-    if (fields.picture !== undefined) (e as { picture?: string }).picture = fields.picture;
-    if (fields.words !== undefined) (e as { words?: string }).words = fields.words;
+    if (fields.words !== undefined) e.words = fields.words;
     this.emit(e);
     // An application is a stranger proposing their own invitation (entry
     // 94), so it pays 🪪's price: at `pen` the act is its own consent and
@@ -2839,15 +2917,39 @@ export class ConstitutionSession {
     return id;
   }
 
+  /**
+   * **Email is the identity and stays unique per document** (§9.7½), checked
+   * through the rows since decision 1253: the address names a person, and the
+   * membership is asked whether that person is on it now. Case-blind, as
+   * `byEmail` is.
+   */
   private requireEmailFree(email: string): void {
+    const person = this.people.byEmail(email);
+    if (person === null) return;
     for (const m of this.members.values()) {
-      if (!m.removed && m.email === email) {
+      if (!m.removed && m.person === person) {
         throw new Error('that address is already on the membership — log in instead (§9.7½)');
       }
     }
-    if (this.convenor.email === email && this.members.has(this.convenor.id)) {
+    if (this.convenor.person === person && this.members.has(this.convenor.id)) {
       throw new Error('that address is already on the membership — log in instead (§9.7½)');
     }
+  }
+
+  /** The row holding this address, or the next id to hold it (minted, not yet written). */
+  private personFor(email: string): PersonId {
+    return this.people.byEmail(email) ?? `p-${this.nextPersonN}`;
+  }
+
+  /** The fold's half of minting: the counter is rebuilt from every id the log names. */
+  private notePerson(id: PersonId): void {
+    const m = /^p-(\d+)$/.exec(id);
+    if (m !== null) this.nextPersonN = Math.max(this.nextPersonN, Number(m[1]) + 1);
+  }
+
+  /** One person's fields as they stand now — null throughout once erased. */
+  private personOf(id: PersonId): ResolvedPerson {
+    return resolvePerson(this.people, id);
   }
 
   // -------------------------------------------------------------------------
@@ -2893,13 +2995,19 @@ export class ConstitutionSession {
    * opposite act — deliberate, after every decision is made — and an unnamed
    * signature is an anonymous comment rather than a signature.
    */
-  closingSignatures(): Array<{ member: MemberId; name: string | null; comment: string; t: number }> {
-    const out: Array<{ member: MemberId; name: string | null; comment: string; t: number }> = [];
+  closingSignatures(): Array<{ member: MemberId; name: string | null; erased: boolean;
+    comment: string; t: number }> {
+    const out: Array<{ member: MemberId; name: string | null; erased: boolean;
+      comment: string; t: number }> = [];
     for (const m of this.members.values()) {
       if (m.closingAck === null) continue;
+      const who = this.personOf(m.person);
       out.push({
         member: m.id,
-        name: m.name,
+        name: who.name,
+        // an erased signatory is still a signatory: the act stands in the
+        // log, the name is gone from the row (decision 1253)
+        erased: who.erased,
         comment: m.closingAck.comment,
         t: m.closingAck.t,
       });
@@ -2922,8 +3030,9 @@ export class ConstitutionSession {
    * (entry 94); the fold keeps the field in step as well, for any reader of
    * the struct itself.
    */
-  convenorRecord(): Readonly<typeof this.convenor> {
-    return { ...this.convenor, isMember: this.members.has(this.convenor.id) };
+  convenorRecord(): Readonly<typeof this.convenor & ResolvedPerson> {
+    return { ...this.convenor, ...this.personOf(this.convenor.person),
+      isMember: this.members.has(this.convenor.id) };
   }
   /**
    * **Every change the pen has made, in order** (Q530, Ed 2026-08-22, asking
@@ -2938,7 +3047,17 @@ export class ConstitutionSession {
     return this.penFrom.get(motion) ?? null;
   }
 
-  memberRecords(): ReadonlyMap<MemberId, MemberRecord> { return this.members; }
+  /**
+   * The roster with every person resolved **at read time** (decision 1253): a
+   * fresh map per call, each record the fold's state plus the row as it
+   * stands now, so an erasure shows on the very next read. The sets on a
+   * record (`okOwed` and the rest) are the fold's own, shared by reference.
+   */
+  memberRecords(): ReadonlyMap<MemberId, MemberRecord> {
+    const out = new Map<MemberId, MemberRecord>();
+    for (const [id, m] of this.members) out.set(id, { ...m, ...this.personOf(m.person) });
+    return out;
+  }
   /**
    * Every member who left the membership after arriving, in log order, with
    * the time and whose act it was (Q901, SURFACE E31–E32). Folded from
@@ -2960,7 +3079,12 @@ export class ConstitutionSession {
     return this.mailGiveUpBatches;
   }
   crownQuestionRecords(): ReadonlyMap<string, CrownQuestionRecord> { return this.crownQuestions; }
-  applicantRecords(): ReadonlyMap<string, ApplicantRecord> { return this.applicants; }
+  /** The applicants, each resolved through their row at read time (decision 1253). */
+  applicantRecords(): ReadonlyMap<string, ApplicantRecord> {
+    const out = new Map<string, ApplicantRecord>();
+    for (const [id, a] of this.applicants) out.set(id, { ...a, ...this.personOf(a.person) });
+    return out;
+  }
 
   E(): number { return eOf(this.members.values()).length; }
   motionElectorate(): MemberId[] {

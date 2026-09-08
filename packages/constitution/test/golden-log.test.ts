@@ -19,10 +19,17 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ConstitutionSession } from '../src/session.js';
 import type { LogEntry } from '../src/types.js';
-import { SCHEMA_VERSION, versionOf } from '../src/types.js';
+import { PEOPLE_SCHEMA_VERSION, SCHEMA_VERSION, versionOf } from '../src/types.js';
+import { InMemoryPeople } from '../src/people.js';
+import type { PersonFields } from '../src/people.js';
 import { goldenWalk, snapshotOf } from './golden/walk.js';
 
 const dir = join(import.meta.dirname, 'golden');
+
+/** The rows frozen beside the log (decision 1253): what the host hands a replay. */
+const frozenPeople = (): InMemoryPeople => new InMemoryPeople(Object.entries(
+  JSON.parse(readFileSync(join(dir, 'founding.people.json'), 'utf8')) as
+    Record<string, PersonFields>));
 
 // **The separator is not part of the entry.** `freeze.ts` writes LF and git
 // stores LF, but this repo's Windows checkouts run `core.autocrlf=true`, so
@@ -44,53 +51,56 @@ describe('the golden log', () => {
     }
   });
 
-  it('replays from the frozen bytes to the frozen state', () => {
+  it('replays from the frozen bytes and the frozen rows to the frozen state', () => {
     const log = frozenLines.map((l) => JSON.parse(l) as LogEntry);
-    const s = ConstitutionSession.replay(log);
+    const s = ConstitutionSession.replay(log, frozenPeople());
     expect(s.verifyChain()).toBe(true);
     expect(s.rollingHash()).toBe(frozenState.rollingHash);
     expect(snapshotOf(s)).toEqual(JSON.parse(
       readFileSync(join(dir, 'founding.state.json'), 'utf8')));
   });
 
-  // **It proves the versioning fold and nothing else.** Since Q767 this
-  // fixture is derived from today's walk rather than frozen at its own date,
-  // so it can never carry a retired setting id or a retired value shape —
-  // reach for `legacy-ids.test.ts` for those (Q903, 2026-08-27).
-  it('reads a log written before versioning existed (Q480)', () => {
-    // founding-v0.jsonl is this same walk as the code wrote it on the
-    // morning of 2026-08-20, before entries carried schemaVersion — the
-    // shape every document on staging is written in. It is frozen forever:
-    // the claim that "absent means 1" is worth nothing without a log that
-    // actually lacks the field.
-    const old = readFileSync(join(dir, 'founding-v0.jsonl'), 'utf8')
-      .split(/\r?\n/).filter((l) => l.length > 0)
-      .map((l) => JSON.parse(l) as LogEntry);
-    expect(old.every((e) => e.schemaVersion === undefined)).toBe(true);
-    expect(old.every((e) => versionOf(e) === 1)).toBe(true);
-
-    const s = ConstitutionSession.replay(old);
+  // **The erasure claim, at golden strength** (decision 1253, PRODUCTION.md
+  // stage 12): the rows are beside the log and never in it, so the same
+  // bytes with no rows at all chain to the same hash — every person simply
+  // reads as erased. This is the whole reason for the split.
+  it('replays to the same hash with every row erased', () => {
+    const log = frozenLines.map((l) => JSON.parse(l) as LogEntry);
+    const s = ConstitutionSession.replay(log, new InMemoryPeople());
     expect(s.verifyChain()).toBe(true);
-    // The version rides outside the hash, so this log chains to exactly
-    // where it did the morning it was written — and to today's golden: the
-    // start's lay-down of the Text's powers is derived at the fold, never
-    // emitted, so a log written before 2026-08-21 replays to a valid state.
-    expect(s.settingState('startingText').powers).toEqual({ unilateral: false, assent: false });
-
-    // **It chains to exactly today's golden, and that is the point.** The
-    // version rides outside the hash, so the same walk with the field
-    // stripped must land on the same rolling hash — which is the whole of
-    // what *absent means 1* claims. Until 2026-08-25 this file was the
-    // literal bytes of 2026-08-20 and the two hashes deliberately differed;
-    // it stopped being replayable when 'signing' left the catalogue (Q767),
-    // and a hash-chained file is rebuilt or discarded, never patched, so
-    // freeze.ts now derives it from the walk beside it.
-    const today = JSON.parse(readFileSync(join(dir, 'founding.state.json'), 'utf8')) as
-      { entries: number; rollingHash: string };
-    expect(s.rollingHash()).toBe(today.rollingHash);
-    // it replays into something coherent, not into wreckage
+    expect(s.rollingHash()).toBe(frozenState.rollingHash);
     expect(s.constitutedAtT).not.toBeNull();
     expect(s.E()).toBeGreaterThan(0);
+    for (const m of s.memberRecords().values()) {
+      expect(m).toMatchObject({ erased: true, email: null, name: null, picture: null });
+    }
+    for (const a of s.applicantRecords().values()) {
+      expect(a).toMatchObject({ erased: true, email: null, name: null, picture: null });
+    }
+    expect(s.convenorRecord().erased).toBe(true);
+  });
+
+  // **The pre-people shape is refused, never read** (decision 1253). Until
+  // 2026-09-08 `founding-v0.jsonl` stood here — this walk with the version
+  // stripped — proving that *absent means 1* replays; the alpha's documents
+  // were wiped rather than migrated, so an unversioned log is now by
+  // definition one that carries addresses in its events, and the module
+  // refuses it by name. `versionOf` still reads absent as 1; 1 is refused.
+  it('refuses a log written below the people version (Q480 → decision 1253)', () => {
+    const old = frozenLines.map((l) => {
+      const { schemaVersion: _v, ...rest } = JSON.parse(l) as LogEntry;
+      return rest as LogEntry;
+    });
+    expect(old.every((e) => e.schemaVersion === undefined)).toBe(true);
+    expect(old.every((e) => versionOf(e) === 1)).toBe(true);
+    expect(PEOPLE_SCHEMA_VERSION).toBeGreaterThan(1);
+    expect(() => ConstitutionSession.replay(old, frozenPeople()))
+      .toThrow(/pre-people shape \(decision 1253\)/);
+    // one old entry among new ones is enough: the whole document is refused
+    const mixed = frozenLines.map((l) => JSON.parse(l) as LogEntry);
+    delete mixed[mixed.length - 1]!.schemaVersion;
+    expect(() => ConstitutionSession.replay(mixed, frozenPeople()))
+      .toThrow(/pre-people shape \(decision 1253\)/);
   });
 
   it('stamps what this build writes', () => {
