@@ -431,7 +431,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1288** — claim by writing the block here, then commit it alone.
+**The next free number is 1289** — claim by writing the block here, then commit it alone.
+
+**1288 is the one-character address** (claimed 2026-09-08, asked and answered in chat the same day): Ed could not found a document at `docs.vote/d/1`. The link grammar the server and the page share (`SLUG_OK`, Q460's build of 2026-08-21) demanded three characters or more — a floor no ruling ever set, a session's own call while building 📍, recorded nowhere but the regex and its refusal line. Ed: **we should allow one character addresses.** The floor goes to one on both sides; the refusal sentence, the page's one member-readable literal outside `copy.js`, moves into it on the way. Verbatim in DECISIONS.md. **Spent.**
 
 **1287 is the people split's two residuals** (claimed 2026-09-08, building half (1) of decision 1253): (a) erasure while the service runs — `draft-tools erase` deletes the row in the store, and a running server holds its rows in memory until it reloads, so the operator's road today is *stop, erase, start* (or erase, then restart); whether a hot path is wanted (an operator route, a store watch) or the restart is the honest procedure for an alpha; (b) the surface word for an erased person — `[withdrawn]` is PRODUCTION.md stage 12's own word and stands where a name would, in the register, the departures, the signatures, a named author and the door; whether it passes STYLE (brackets, lower case, a state rather than a name) or wants another. Filed under *Open*. Answered by Ed 2026-09-08: (a) the operator route, built when go-live is scheduled and not before — the restart is the procedure until then; the item moves to *Backlog*; (b) `[redacted]` — the brackets stay, the word changes, since an erasure strikes the record rather than reporting a departure; STYLE T49. Both verbatim in DECISIONS.md.
 
