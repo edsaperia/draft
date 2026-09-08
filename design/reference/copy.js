@@ -375,6 +375,9 @@ window.COPY = (function () {
     },
     // 📍's verdict fragments, composed around the bold address
     slugNote: {
+      // why the ✒️ is dark on an address that fails the grammar; one
+      // character is enough (Q1288, Ed 2026-09-08)
+      illegal: 'Lower case, digits and hyphens',
       taken: ' is taken.',
       free: ' is free.',
       suggested: 'Suggested from the title — ',
@@ -462,6 +465,13 @@ window.COPY = (function () {
       passedLead: 'Passed: ',
       rejectedLead: 'Rejected: ',
       anonymous: 'Anonymous',
+      // a person whose row has been erased (PRODUCTION.md stage 12, decision
+      // 1253): the log still names their seat, the record still holds what
+      // they did, and this stands where their name would. The one bracketed
+      // stand-in on the surface (STYLE T49; Ed, 2026-09-08, Q1287 (b)): the
+      // brackets say *this is not a name*, the word says the record was
+      // struck rather than that the person left
+      redacted: '[redacted]',
     },
     // the Founder's two powers: the joined verb phrases (Q516i), the nouns
     // the veto sentence names, the option blocks and the release notes. The

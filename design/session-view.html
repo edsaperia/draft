@@ -5013,8 +5013,13 @@
     },
     ending: (d) => {
       const never = /never/i.test(d.to);
+      // **the field shows the date being proposed** (Q1289, Ed 2026-09-08:
+      // *the datetime I picked is not submitted*): it printed the standing
+      // `S.endsAt` on every render, so each pick snapped back to the old date
+      // while the draft quietly held the new one
       return inputBlock('The drafting process will end on ' +
-          '<input type="datetime-local" data-mdate="1" value="' + esc(S.endsAt || '') + '">.',
+          '<input type="datetime-local" data-mdate="1" value="' +
+          esc(d.val && isNum(d.val.endsAtMs) ? msToLocal(d.val.endsAtMs) : (S.endsAt || '')) + '">.',
           '', d, 'ending', !!d.to && !never) +
         lanesFor(d, [['Never — it runs until too few members are active',
           'The drafting process has no set end — it runs until too few members are active.']], 'ending') +
@@ -5536,10 +5541,24 @@
     : n + '% of the membership') + ' must vote on a proposal ✏️ before it can pass.';
   // a ramp that starts where it ends is not a ramp (Ed: *if there is no
   // ramp, the clause can just be blank*)
-  const BAR_RULE = (pct, start) =>
-    (isNum(start) && +start < +pct
-      ? 'The members must be ' + pct + '% sure a proposal is better for it to pass by the end, starting at ' + start + '% when voting opens.'
-      : 'The members must be ' + pct + '% sure a proposal is better for it to pass.');
+  // **The clause is the card's sentence** (Q1290, Ed 2026-09-08: *they should
+  // match, and it should be the text on the decision card*): a rung answer
+  // prints its own `BAR_RUNGS` sentence word for word, a number of its own
+  // the same sentence with the percent in it. The old *N% sure a proposal is
+  // better* wording is gone from the document. A ramp adds one sentence in
+  // 🪜's own terms — the rung names, as `meaningOf('pace')` says them.
+  const barRungName = (p) => {
+    const r = M.BAR_RUNGS.find((x) => x.pct === +p);
+    return r ? r.label.charAt(0).toLowerCase() + r.label.slice(1) + ' (' + p + '%)' : p + '%';
+  };
+  const BAR_RULE = (pct, start) => {
+    const rung = M.BAR_RUNGS.find((r) => r.pct === +pct);
+    const plain = rung ? rung.sentence
+      : 'For a proposal ✏️ to pass, ' + pct + '% of the members that voted on it must prefer it to the alternatives';
+    return plain + '.' + (isNum(start) && +start < +pct
+      ? ' Voting opens at ' + barRungName(start) + ' and climbs to ' + barRungName(pct) + ' by the end.'
+      : '');
+  };
   // Ed's sentences (card review 2026-09-02, Q1149 — the options swap so the
   // card leads with lapsing; Q1168 — *automatically abstain* is §9.5a's own
   // mechanism, stated accurately)
@@ -8074,7 +8093,26 @@
         ? new Date(ev.target.value).toLocaleString(undefined,
           { weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }) : '';
       S.draft.val = ev.target.value ? { endsAtMs: Date.parse(ev.target.value) } : null;
-      return render();
+      // **In place, never a render** (Q1289): Chrome's picker fires `change`
+      // on each pick and stays open, with no OK of its own — so a render
+      // here replaces the very field the popup is bound to, and everything
+      // picked after lands in a detached input. The block lights, its
+      // siblings go dark and the commit is swapped, exactly as typing into
+      // ⏰'s field does on the founder's card.
+      const pick = ev.target.closest('.pick');
+      if (pick) {
+        const sibs = pick.parentElement ? pick.parentElement.querySelectorAll('.pick') : [];
+        sibs.forEach((p) => { const on = p === pick && !!ev.target.value;
+          p.classList.toggle('on', on);
+          const b = p.querySelector('.lanepick'); if (b) b.setAttribute('aria-pressed', String(on)); });
+      }
+      const c = card(S.open);
+      if (c && founderPairOn(c)) refreshCommit();
+      else {
+        const slot = document.querySelector('.setupcard [data-putmotion], .setupcard [data-holdmotion]');
+        if (slot && c) slot.outerHTML = commitFor(c);
+      }
+      return;
     }
     if (ev.target.matches('[data-mnum]')) {
       S.draft.to = ev.target.value + ev.target.dataset.mnum;

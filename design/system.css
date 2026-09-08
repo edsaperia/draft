@@ -881,7 +881,15 @@
      and `.doc`'s own bottom border and corners step aside for it. */
   .doc::after { content: ''; display: block; height: 95vh; }
   .doc.editing::after { height: 0; }
-  .doc.editing { border-bottom-color: transparent; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  .doc.editing { border-bottom: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  /* **The card's foot is the page's foot** (Q1292, Ed 2026-09-08: *I can see
+     the bottom edge of this card - it should go off the bottom of the
+     screen*): the body keeps 60px of ground under `.doc`, so at the end of
+     the scroll the card stopped 61px short of the viewport and its edge and
+     shadow showed. While editing the ground goes, and so does the
+     transparent 1px border above it, so the scroll ends exactly where the
+     card does. */
+  body:has(.doc.editing) { padding-bottom: 0; }
   /* the pre-🍾 row's mount is not a box: a sticky row inside a wrapper
      exactly its own height has nowhere to stick, so the wrapper is `contents`
      and the row's containing block is `.doc`, as `#charter` is post-🍾 */

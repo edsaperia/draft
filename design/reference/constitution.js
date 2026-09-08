@@ -30,9 +30,12 @@ var CONSTITUTION = (() => {
     CATALOGUE_BY_ID: () => CATALOGUE_BY_ID,
     ConstitutionSession: () => ConstitutionSession,
     DOORS: () => DOORS,
+    ERASED: () => ERASED,
+    InMemoryPeople: () => InMemoryPeople,
     JUDGE_GATES: () => JUDGE_GATES,
     MEANING_MAX: () => MEANING_MAX,
     OWN_RUNG_LABEL: () => OWN_RUNG_LABEL,
+    PEOPLE_SCHEMA_VERSION: () => PEOPLE_SCHEMA_VERSION,
     SCHEMA_VERSION: () => SCHEMA_VERSION,
     SHAPED: () => SHAPED,
     SHAPES: () => SHAPES,
@@ -41,7 +44,7 @@ var CONSTITUTION = (() => {
     VOTES_NEEDED_HI_PCT: () => VOTES_NEEDED_HI_PCT,
     VOTES_NEEDED_LO_PCT: () => VOTES_NEEDED_LO_PCT,
     VOTES_NEEDED_MAX_N: () => VOTES_NEEDED_MAX_N,
-    WARN_FRACTION: () => WARN_FRACTION,
+    WARN_LEADS: () => WARN_LEADS,
     adoptionFloor: () => adoptionFloor,
     adoptionFloorTerm: () => adoptionFloorTerm,
     barAt: () => barAt,
@@ -63,6 +66,7 @@ var CONSTITUTION = (() => {
     quorumCount: () => quorumCount,
     reAnchor: () => reAnchor,
     resolveConsent: () => resolveConsent,
+    resolvePerson: () => resolvePerson,
     roomPhrase: () => roomPhrase,
     roomSettings: () => roomSettings,
     seedAnchors: () => seedAnchors,
@@ -76,6 +80,7 @@ var CONSTITUTION = (() => {
     versionOf: () => versionOf,
     view: () => view,
     votesNeeded: () => votesNeeded,
+    warningDue: () => warningDue,
     winsNeededPct: () => winsNeededPct
   });
 
@@ -688,10 +693,52 @@ var CONSTITUTION = (() => {
   function holderOf(powers) {
     return powers.unilateral || powers.assent ? "convenor" : "members";
   }
-  var SCHEMA_VERSION = 1;
+  var SCHEMA_VERSION = 2;
+  var PEOPLE_SCHEMA_VERSION = 2;
   function versionOf(entry) {
     return entry.schemaVersion ?? 1;
   }
+
+  // src/people.ts
+  var ERASED = Object.freeze({ email: null, name: null, picture: null, erased: true });
+  function resolvePerson(people, id) {
+    const row = people.get(id);
+    if (row === null) return ERASED;
+    return { email: row.email, name: row.name, picture: row.picture, erased: false };
+  }
+  var InMemoryPeople = class {
+    constructor(rows = []) {
+      __publicField(this, "rows", /* @__PURE__ */ new Map());
+      for (const [id, fields] of rows) this.rows.set(id, { ...fields });
+    }
+    get(id) {
+      const row = this.rows.get(id);
+      return row === void 0 ? null : { ...row };
+    }
+    set(id, patch) {
+      const had = this.rows.get(id) ?? { email: "", name: null, picture: null };
+      const next = { ...had };
+      if (patch.email !== void 0) next.email = patch.email;
+      if (patch.name !== void 0) next.name = patch.name;
+      if (patch.picture !== void 0) next.picture = patch.picture;
+      this.rows.set(id, next);
+    }
+    byEmail(email) {
+      const want = email.toLowerCase();
+      for (const [id, row] of this.rows) {
+        if (row.email.toLowerCase() === want) return id;
+      }
+      return null;
+    }
+    /** Erasure: the row goes, the log stands. Returns whether a row was there. */
+    erase(id) {
+      return this.rows.delete(id);
+    }
+    /** Every row, for freezing and for the store's first write. */
+    entries() {
+      return [...this.rows.entries()].map(([id, row]) => [id, { ...row }]);
+    }
+  };
 
   // src/populations.ts
   function inE(m) {
@@ -866,13 +913,25 @@ var CONSTITUTION = (() => {
   }
 
   // src/clocks.ts
-  var WARN_FRACTION = 0.75;
+  var HOUR_MS = 36e5;
+  var DAY_MS = 24 * HOUR_MS;
+  var WARN_LEADS = [7 * DAY_MS, DAY_MS, HOUR_MS];
   function lapseDue(lastActivityT, afterMs) {
     if (afterMs === null) return null;
+    const lapseAtT = lastActivityT + afterMs;
     return {
-      warnAtT: lastActivityT + afterMs * WARN_FRACTION,
-      lapseAtT: lastActivityT + afterMs
+      warnAt: WARN_LEADS.filter((lead) => lead < afterMs).map((lead) => ({ lead, t: lapseAtT - lead })),
+      lapseAtT
     };
+  }
+  function warningDue(due, warnedLead, t) {
+    let owed = null;
+    for (const w of due.warnAt) {
+      if (t < w.t) break;
+      if (warnedLead !== null && w.lead >= warnedLead) continue;
+      owed = w.lead;
+    }
+    return owed;
   }
 
   // src/shapes.ts
@@ -897,7 +956,7 @@ var CONSTITUTION = (() => {
     "displayName",
     "picture"
   ];
-  var DAY_MS = 24 * 3600 * 1e3;
+  var DAY_MS2 = 24 * 3600 * 1e3;
   var SHAPES = [
     {
       name: "meeting",
@@ -973,7 +1032,7 @@ var CONSTITUTION = (() => {
         // drip in days
         rate: { grant: 3, cap: 3, dripMinutes: 1440 },
         // Ed: about 30 days for ongoing
-        lapse: { afterMs: 30 * DAY_MS },
+        lapse: { afterMs: 30 * DAY_MS2 },
         machines: { enabled: false, budget: 0 },
         // an ongoing room needs the door
         removal: { price: "assembly" }
@@ -1017,9 +1076,19 @@ var CONSTITUTION = (() => {
   }
   var SEEN_EVERY_MS = 60 * 6e4;
   var ConstitutionSession = class _ConstitutionSession {
-    constructor() {
+    constructor(people = new InMemoryPeople()) {
       __publicField(this, "log", []);
       __publicField(this, "lastT", -Infinity);
+      /**
+       * **The rows beside the log** (decision 1253): every person's email, name
+       * and picture, keyed by the `PersonId` the events carry. An argument, never
+       * a global — the host hands in the store's own; a test or the page hands in
+       * an `InMemoryPeople`, which is also what a session gets when handed
+       * nothing, that being the only sensible meaning of *no port*. The fold
+       * never writes it; commands write it beside the event they emit; readers
+       * resolve through it at read time, so an erased row reads as erased at once.
+       */
+      __publicField(this, "people");
       // ---- fold state ----------------------------------------------------------
       __publicField(this, "convenor");
       __publicField(this, "crownLapsedFlag", false);
@@ -1061,6 +1130,8 @@ var CONSTITUTION = (() => {
       __publicField(this, "nextMotionN", 1);
       __publicField(this, "nextCrownN", 1);
       __publicField(this, "nextApplicantN", 1);
+      /** Person ids are minted like member ids and rebuilt from the log (`notePerson`). */
+      __publicField(this, "nextPersonN", 1);
       /**
        * **A lapsed member is owed it too** (Q530, Ed 2026-08-22). E excludes the
        * lapsed, and for every other purpose that is right: they are out of the
@@ -1081,21 +1152,32 @@ var CONSTITUTION = (() => {
        *  never needs the old one, so this rides alongside rather than bending the
        *  payload every other amendment shares. */
       __publicField(this, "penFrom", /* @__PURE__ */ new Map());
+      this.people = people;
     }
     // -------------------------------------------------------------------------
     // Opening and replay
-    static open(input, t) {
-      const s = new _ConstitutionSession();
+    static open(input, t, people) {
+      const s = new _ConstitutionSession(people);
       if (!input.title.trim()) throw new Error("a document begins with its title (§9.7a)");
       const slugErr = validateFor(entryOf("link"), { slug: input.slug });
       if (slugErr) throw new Error(slugErr);
       const shape = input.shape === void 0 ? null : shapeOf(input.shape);
+      const c = input.convenor;
+      const person = s.personFor(c.email);
+      s.people.set(person, { email: c.email, name: c.name ?? null, picture: c.picture ?? null });
+      const ref = {
+        id: c.id,
+        person,
+        isMember: c.isMember,
+        ...c.name !== void 0 ? { nameSet: true } : {},
+        ...c.picture !== void 0 ? { pictureSet: true } : {}
+      };
       s.emit({
         type: "created",
         t,
         title: input.title,
         slug: input.slug,
-        convenor: input.convenor,
+        convenor: ref,
         ...shape === null ? {} : { shape: shape.name }
       });
       if (shape !== null) {
@@ -1108,9 +1190,23 @@ var CONSTITUTION = (() => {
       }
       return s;
     }
-    /** Rebuild a session by replaying a log (verifies the hash chain). */
-    static replay(log) {
-      const s = new _ConstitutionSession();
+    /**
+     * Rebuild a session by replaying a log (verifies the hash chain). The rows
+     * are handed in, never rebuilt: replay writes nothing to `people`.
+     *
+     * **The pre-people shape is refused, never read** (decision 1253): an entry
+     * written below `PEOPLE_SCHEMA_VERSION` carries addresses and names in the
+     * event and no `person`, and folding it would make a roster of ghosts. The
+     * alpha's documents were wiped rather than migrated, so a store never holds
+     * one; a dev data dir might, until its own wipe, and the host skips the
+     * document by name on this error rather than crashing.
+     */
+    static replay(log, people) {
+      const s = new _ConstitutionSession(people);
+      const old = log.find((e) => versionOf(e) < PEOPLE_SCHEMA_VERSION);
+      if (old !== void 0) {
+        throw new Error(`entry ${old.seq} is schema version ${versionOf(old)}, below ${PEOPLE_SCHEMA_VERSION}: the pre-people shape (decision 1253) is not read`);
+      }
       let prev = "";
       for (const entry of log) {
         const expected = chainHash(prev, entry.event);
@@ -1142,18 +1238,20 @@ var CONSTITUTION = (() => {
           const c = event.convenor;
           this.createdT = event.t;
           this.shapeName = event.shape ?? null;
+          this.notePerson(c.person);
           this.convenor = {
-            ...c,
-            name: c.name ?? null,
-            picture: c.picture ?? null,
+            id: c.id,
+            person: c.person,
+            isMember: c.isMember,
             // a founder who arrives already carrying one has answered it (Q645)
-            nameSet: c.name !== void 0,
-            pictureSet: c.picture !== void 0,
+            nameSet: c.nameSet === true,
+            pictureSet: c.pictureSet === true,
             // 🎩 is asked, never assumed: `isMember` arrives with the creation
             // and answers nothing about whether the founder was put the question
             membershipSet: false,
             lastActivityT: event.t,
-            lapseWarned: false
+            lapseWarned: false,
+            lapseWarnedLead: null
           };
           for (const id of HELD) {
             this.settings.set(id, {
@@ -1179,13 +1277,11 @@ var CONSTITUTION = (() => {
           if (c.isMember) {
             const rec = this.freshMember(
               c.id,
-              c.email,
+              c.person,
               event.t,
               event.t,
               { via: "founding", by: null }
             );
-            rec.name = this.convenor.name;
-            rec.picture = this.convenor.picture;
             rec.nameSet = this.convenor.nameSet;
             rec.pictureSet = this.convenor.pictureSet;
             this.members.set(c.id, rec);
@@ -1200,14 +1296,12 @@ var CONSTITUTION = (() => {
           if (event.isMember) {
             const rec = this.freshMember(
               this.convenor.id,
-              this.convenor.email,
+              this.convenor.person,
               event.t,
               event.t,
               { via: "founding", by: null }
             );
             const prev = this.members.get(this.convenor.id);
-            rec.name = prev ? prev.name : this.convenor.name;
-            rec.picture = prev ? prev.picture : this.convenor.picture;
             rec.nameSet = prev ? prev.nameSet : this.convenor.nameSet;
             rec.pictureSet = prev ? prev.pictureSet : this.convenor.pictureSet;
             if (prev) {
@@ -1228,8 +1322,6 @@ var CONSTITUTION = (() => {
           } else {
             const prev = this.members.get(this.convenor.id);
             if (prev) {
-              this.convenor.name = prev.name;
-              this.convenor.picture = prev.picture;
               this.convenor.nameSet = prev.nameSet;
               this.convenor.pictureSet = prev.pictureSet;
               this.convenor.lastActivityT = prev.lastActivityT;
@@ -1332,33 +1424,22 @@ var CONSTITUTION = (() => {
         }
         case "identity-set": {
           if (event.member === this.convenor.id && !this.members.has(event.member)) {
-            if (event.name !== void 0) {
-              this.convenor.name = event.name;
-              this.convenor.nameSet = true;
-            }
-            if (event.picture !== void 0) {
-              this.convenor.picture = event.picture;
-              this.convenor.pictureSet = true;
-            }
+            if (event.nameSet) this.convenor.nameSet = true;
+            if (event.pictureSet) this.convenor.pictureSet = true;
             break;
           }
           const m = this.members.get(event.member);
-          if (event.name !== void 0) {
-            m.name = event.name;
-            m.nameSet = true;
-          }
-          if (event.picture !== void 0) {
-            m.picture = event.picture;
-            m.pictureSet = true;
-          }
+          if (event.nameSet) m.nameSet = true;
+          if (event.pictureSet) m.pictureSet = true;
           this.touch(event.member, event.t);
           break;
         }
         case "member-invited": {
           const arrival = event.viaMotion !== void 0 ? { via: "invitation", by: "members" } : event.by !== void 0 ? { via: "invitation", by: "member", inviter: event.by } : { via: "invitation", by: "convenor" };
+          this.notePerson(event.person);
           this.members.set(
             event.member,
-            this.freshMember(event.member, event.email, event.t, null, arrival)
+            this.freshMember(event.member, event.person, event.t, null, arrival)
           );
           this.nextMemberN += 1;
           break;
@@ -1490,14 +1571,12 @@ var CONSTITUTION = (() => {
           if (!this.mailGiveUpBatches.has(event.batch)) {
             this.mailGiveUpBatches.set(
               event.batch,
-              { id: event.batch, t: event.t, addresses: [...event.addresses] }
+              { id: event.batch, t: event.t, people: [...event.people] }
             );
             this.nextMailGiveUpN += 1;
           }
           for (const rec of this.members.values()) {
-            if (event.addresses.some((a) => a.toLowerCase() === rec.email.toLowerCase())) {
-              rec.mailGaveUp = true;
-            }
+            if (event.people.includes(rec.person)) rec.mailGaveUp = true;
           }
           if (event.member !== null) {
             this.members.get(event.member).mailGaveUpOwed.add(event.batch);
@@ -1650,7 +1729,6 @@ var CONSTITUTION = (() => {
         }
         case "crown-returned": {
           this.crownLapsedFlag = false;
-          this.convenor.lapseWarned = false;
           this.touch(this.convenor.id, event.t);
           break;
         }
@@ -1666,7 +1744,6 @@ var CONSTITUTION = (() => {
         case "member-returned": {
           const m = this.members.get(event.member);
           m.lapsed = false;
-          m.lapseWarned = false;
           this.touch(event.member, event.t);
           break;
         }
@@ -1674,11 +1751,10 @@ var CONSTITUTION = (() => {
           this.touch(event.member, event.t);
           break;
         case "lapse-warned": {
-          if (event.member === this.convenor.id && !this.members.has(event.member)) {
-            this.convenor.lapseWarned = true;
-          } else {
-            this.members.get(event.member).lapseWarned = true;
-          }
+          const lead = typeof event.lead === "number" ? event.lead : Number.POSITIVE_INFINITY;
+          const who = event.member === this.convenor.id && !this.members.has(event.member) ? this.convenor : this.members.get(event.member);
+          who.lapseWarned = true;
+          who.lapseWarnedLead = who.lapseWarnedLead === null ? lead : Math.min(who.lapseWarnedLead, lead);
           break;
         }
         case "member-lapsed": {
@@ -1719,15 +1795,15 @@ var CONSTITUTION = (() => {
           break;
         }
         case "application-started": {
-          this.applicants.set(event.applicant, {
+          this.notePerson(event.person);
+          const state = {
             id: event.applicant,
-            email: event.email,
+            person: event.person,
             status: "started",
-            name: null,
-            picture: null,
             words: null,
             motion: null
-          });
+          };
+          this.applicants.set(event.applicant, this.withPerson(state));
           this.nextApplicantN += 1;
           break;
         }
@@ -1738,8 +1814,6 @@ var CONSTITUTION = (() => {
         case "application-submitted": {
           const a = this.applicants.get(event.applicant);
           a.status = "submitted";
-          a.name = event.name ?? null;
-          a.picture = event.picture ?? null;
           a.words = event.words ?? null;
           break;
         }
@@ -1753,13 +1827,11 @@ var CONSTITUTION = (() => {
           a.status = "admitted";
           const rec = this.freshMember(
             event.member,
-            a.email,
+            a.person,
             event.t,
             event.t,
             { via: "application", by: "members" }
           );
-          rec.name = a.name;
-          rec.picture = a.picture;
           this.members.set(event.member, rec);
           this.nextMemberN += 1;
           break;
@@ -1816,10 +1888,10 @@ var CONSTITUTION = (() => {
       st.holder = holderOf(powers);
       st.pendingRelease = { unilateral: false, assent: false };
     }
-    freshMember(id, email, invitedAtT, arrivedAtT, arrival) {
-      return {
+    freshMember(id, person, invitedAtT, arrivedAtT, arrival) {
+      const state = {
         id,
-        email,
+        person,
         invitedAtT,
         arrivedAtT,
         arrival,
@@ -1827,8 +1899,7 @@ var CONSTITUTION = (() => {
         removedBy: null,
         lapsed: false,
         lapseWarned: false,
-        name: null,
-        picture: null,
+        lapseWarnedLead: null,
         nameSet: false,
         pictureSet: false,
         lastActivityT: arrivedAtT ?? invitedAtT,
@@ -1844,6 +1915,30 @@ var CONSTITUTION = (() => {
         invitationExpired: false,
         closingAck: null
       };
+      return this.withPerson(state);
+    }
+    /**
+     * **The row, read live** (decision 1253): `email`, `name`, `picture` and
+     * `erased` are enumerable getters on the fold's own record, resolving
+     * through `people` on every read — so a reader holding a record sees an
+     * erasure the moment the row goes, the record stays the one object the
+     * fold mutates (a reference taken before a tick is still good after it),
+     * and a spread, `JSON.stringify` or a deep-equal sees four plain fields.
+     */
+    withPerson(state) {
+      const people = this.people;
+      const field = (key) => ({
+        enumerable: true,
+        get() {
+          return resolvePerson(people, this.person)[key];
+        }
+      });
+      return Object.defineProperties(state, {
+        email: field("email"),
+        name: field("name"),
+        picture: field("picture"),
+        erased: field("erased")
+      });
     }
     foldSet(id, value, by, t) {
       const st = this.settings.get(id);
@@ -1911,10 +2006,12 @@ var CONSTITUTION = (() => {
       if (m) {
         m.lastActivityT = t;
         m.lapseWarned = false;
+        m.lapseWarnedLead = null;
       }
       if (member === this.convenor.id) {
         this.convenor.lastActivityT = t;
         this.convenor.lapseWarned = false;
+        this.convenor.lapseWarnedLead = null;
       }
     }
     // -------------------------------------------------------------------------
@@ -2124,9 +2221,18 @@ var CONSTITUTION = (() => {
       if (member !== this.convenor.id && !this.members.has(member)) {
         throw new Error(`unknown member '${member}'`);
       }
+      const person = this.members.get(member)?.person ?? this.convenor.person;
+      const patch = {};
       const e = { type: "identity-set", t, member };
-      if (identity.name !== void 0) e.name = identity.name;
-      if (identity.picture !== void 0) e.picture = identity.picture;
+      if (identity.name !== void 0) {
+        patch.name = identity.name;
+        e.nameSet = true;
+      }
+      if (identity.picture !== void 0) {
+        patch.picture = identity.picture;
+        e.pictureSet = true;
+      }
+      this.people.set(person, patch);
       this.emit(e);
     }
     // -------------------------------------------------------------------------
@@ -2156,11 +2262,13 @@ var CONSTITUTION = (() => {
       }
       this.requireEmailFree(email);
       const id = `m-${this.nextMemberN}`;
+      const person = this.personFor(email);
+      this.people.set(person, { email });
       this.emit({
         type: "member-invited",
         t,
         member: id,
-        email,
+        person,
         ...byMember ? { by } : {}
       });
       return id;
@@ -2460,7 +2568,7 @@ var CONSTITUTION = (() => {
         const out = !eIds.has(m.id);
         return {
           id: m.id,
-          name: m.name,
+          name: this.personOf(m.person).name,
           arrived: m.arrivedAtT !== null,
           owed: out ? 0 : open.length,
           answered: out ? 0 : open.filter((id) => this.settings.get(id).answers.has(m.id)).length
@@ -2622,21 +2730,20 @@ var CONSTITUTION = (() => {
      */
     mailGaveUp(t, addresses) {
       if (addresses.length === 0) return;
+      const list = [];
+      for (const a of addresses) {
+        const person = this.people.byEmail(a);
+        if (person !== null && !list.includes(person)) list.push(person);
+      }
+      if (list.length === 0) return;
       const batch = `mgu-${this.nextMailGiveUpN}`;
-      const seen = /* @__PURE__ */ new Set();
-      const list = addresses.filter((a) => {
-        const key = a.toLowerCase();
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
       let told = false;
       for (const m of this.closedFlag ? [] : [...this.members.values()]) {
         if (m.arrivedAtT === null || m.removed) continue;
         told = true;
-        this.emit({ type: "mail-gave-up", t, batch, member: m.id, addresses: list });
+        this.emit({ type: "mail-gave-up", t, batch, member: m.id, people: list });
       }
-      if (!told) this.emit({ type: "mail-gave-up", t, batch, member: null, addresses: list });
+      if (!told) this.emit({ type: "mail-gave-up", t, batch, member: null, people: list });
     }
     /** The OK on one pass's dead mail — `ackRelease`'s posture exactly: a batch
      *  this member is not owed returns silently rather than throwing at a page
@@ -2684,7 +2791,7 @@ var CONSTITUTION = (() => {
     // -------------------------------------------------------------------------
     // Motions (§9.6, v0.48): the one act by which a settled document changes
     // its own rules. The route is a fact about the setting.
-    openMotion(t, by, payload, why) {
+    openMotion(t, by, input, why) {
       this.requireOpen("a motion");
       if (this.constitutedT === null) {
         throw new Error("before the start nothing is amended — only set (§9.6a)");
@@ -2692,6 +2799,13 @@ var CONSTITUTION = (() => {
       const mover = this.members.get(by);
       if (!mover || !inE(mover)) throw new Error(`'${by}' is not an arrived member`);
       let route;
+      let payload;
+      if (input.kind === "invite") {
+        this.requireEmailFree(input.email);
+        const person = this.personFor(input.email);
+        this.people.set(person, { email: input.email });
+        payload = { kind: "invite", person };
+      } else payload = input;
       if (payload.kind === "set") {
         const entry = entryOf(payload.setting);
         if (entry.kind === "personal") throw new Error(`${payload.setting} is yours alone (§9.0c)`);
@@ -2722,7 +2836,6 @@ var CONSTITUTION = (() => {
         }
         route = "constitutional";
       } else if (payload.kind === "invite") {
-        this.requireEmailFree(payload.email);
         const price = this.priceOf("admission");
         if (price === "pen") throw new Error("admission is at ✒️ — invite directly, nothing to propose (§9.7½)");
         route = price === "assembly" ? "constitutional" : "ordinary";
@@ -2883,7 +2996,7 @@ var CONSTITUTION = (() => {
           type: "member-invited",
           t,
           member: id,
-          email: rec.payload.email,
+          person: rec.payload.person,
           viaMotion: rec.id
         });
       } else if (rec.payload.kind === "remove") {
@@ -3007,16 +3120,17 @@ var CONSTITUTION = (() => {
     rereadLapse(t) {
       const lapse = this.settings.get("lapse").value;
       const afterMs = lapse ? lapse.afterMs : null;
-      const stillDue = (lastT, at) => afterMs !== null && t >= lapseDue(lastT, afterMs)[at];
+      const lapseStillDue = (lastT) => afterMs !== null && t >= lapseDue(lastT, afterMs).lapseAtT;
+      const warningStillDue = (lastT, lead) => afterMs !== null && lead !== null && t >= lastT + afterMs - lead;
       for (const m of [...this.members.values()]) {
         if (m.removed || m.arrivedAtT === null) continue;
-        const revive = m.lapsed ? !stillDue(m.lastActivityT, "lapseAtT") : m.lapseWarned && !stillDue(m.lastActivityT, "warnAtT");
+        const revive = m.lapsed ? !lapseStillDue(m.lastActivityT) : m.lapseWarned && !warningStillDue(m.lastActivityT, m.lapseWarnedLead);
         if (!revive) continue;
         const wasLapsed = m.lapsed;
         this.emit({ type: "member-returned", t, member: m.id });
         if (wasLapsed) this.afterRosterChange(t, "arrival", m.id);
       }
-      if (this.crownLapsedFlag && !stillDue(this.convenor.lastActivityT, "lapseAtT")) {
+      if (this.crownLapsedFlag && !lapseStillDue(this.convenor.lastActivityT)) {
         this.emit({ type: "crown-returned", t });
       }
     }
@@ -3042,8 +3156,9 @@ var CONSTITUTION = (() => {
           if (t >= due.lapseAtT) {
             this.emit({ type: "member-lapsed", t, member: m.id });
             this.afterRosterChange(t, "departure", m.id);
-          } else if (t >= due.warnAtT && !m.lapseWarned) {
-            this.emit({ type: "lapse-warned", t, member: m.id });
+          } else {
+            const lead = warningDue(due, m.lapseWarnedLead, t);
+            if (lead !== null) this.emit({ type: "lapse-warned", t, member: m.id, lead });
           }
         }
         if (!this.crownLapsedFlag && this.holdsAnythingReserved()) {
@@ -3058,8 +3173,9 @@ var CONSTITUTION = (() => {
                 this.settleCarriedEffects(t, mrec, mrec.route === "constitutional");
               }
             }
-          } else if (t >= due.warnAtT && !this.convenor.lapseWarned && !this.members.has(this.convenor.id)) {
-            this.emit({ type: "lapse-warned", t, member: this.convenor.id });
+          } else if (!this.members.has(this.convenor.id)) {
+            const lead = warningDue(due, this.convenor.lapseWarnedLead, t);
+            if (lead !== null) this.emit({ type: "lapse-warned", t, member: this.convenor.id, lead });
           }
         }
       }
@@ -3133,13 +3249,16 @@ var CONSTITUTION = (() => {
         throw new Error("this document is invitation-only (§9.7½)");
       }
       this.requireEmailFree(email);
+      const known = this.people.byEmail(email);
       for (const a of this.applicants.values()) {
-        if (a.email === email && a.status !== "refused") {
+        if (known !== null && a.person === known && a.status !== "refused") {
           throw new Error("an application from that address is already underway");
         }
       }
       const id = `ap-${this.nextApplicantN}`;
-      this.emit({ type: "application-started", t, applicant: id, email });
+      const person = known ?? this.personFor(email);
+      this.people.set(person, { email });
+      this.emit({ type: "application-started", t, applicant: id, person });
       return id;
     }
     verifyApplication(t, applicant) {
@@ -3158,9 +3277,11 @@ var CONSTITUTION = (() => {
       if (!a || a.status !== "verified") {
         throw new Error("an application is verified by magic link before it can be submitted (§9.7½)");
       }
+      const patch = {};
+      if (fields.name !== void 0) patch.name = fields.name;
+      if (fields.picture !== void 0) patch.picture = fields.picture;
+      this.people.set(a.person, patch);
       const e = { type: "application-submitted", t, applicant };
-      if (fields.name !== void 0) e.name = fields.name;
-      if (fields.picture !== void 0) e.picture = fields.picture;
       if (fields.words !== void 0) e.words = fields.words;
       this.emit(e);
       if (this.priceOf("admission") === "pen") {
@@ -3307,15 +3428,36 @@ var CONSTITUTION = (() => {
       this.emit({ type: "crown-question-opened", t, question: id, motion: null, text });
       return id;
     }
+    /**
+     * **Email is the identity and stays unique per document** (§9.7½), checked
+     * through the rows since decision 1253: the address names a person, and the
+     * membership is asked whether that person is on it now. Case-blind, as
+     * `byEmail` is.
+     */
     requireEmailFree(email) {
+      const person = this.people.byEmail(email);
+      if (person === null) return;
       for (const m of this.members.values()) {
-        if (!m.removed && m.email === email) {
+        if (!m.removed && m.person === person) {
           throw new Error("that address is already on the membership — log in instead (§9.7½)");
         }
       }
-      if (this.convenor.email === email && this.members.has(this.convenor.id)) {
+      if (this.convenor.person === person && this.members.has(this.convenor.id)) {
         throw new Error("that address is already on the membership — log in instead (§9.7½)");
       }
+    }
+    /** The row holding this address, or the next id to hold it (minted, not yet written). */
+    personFor(email) {
+      return this.people.byEmail(email) ?? `p-${this.nextPersonN}`;
+    }
+    /** The fold's half of minting: the counter is rebuilt from every id the log names. */
+    notePerson(id) {
+      const m = /^p-(\d+)$/.exec(id);
+      if (m !== null) this.nextPersonN = Math.max(this.nextPersonN, Number(m[1]) + 1);
+    }
+    /** One person's fields as they stand now — null throughout once erased. */
+    personOf(id) {
+      return resolvePerson(this.people, id);
     }
     // -------------------------------------------------------------------------
     // Plain accessors (host-facing; blind projections live in view.ts)
@@ -3377,9 +3519,13 @@ var CONSTITUTION = (() => {
       const out = [];
       for (const m of this.members.values()) {
         if (m.closingAck === null) continue;
+        const who = this.personOf(m.person);
         out.push({
           member: m.id,
-          name: m.name,
+          name: who.name,
+          // an erased signatory is still a signatory: the act stands in the
+          // log, the name is gone from the row (decision 1253)
+          erased: who.erased,
           comment: m.closingAck.comment,
           t: m.closingAck.t
         });
@@ -3410,7 +3556,11 @@ var CONSTITUTION = (() => {
      * the struct itself.
      */
     convenorRecord() {
-      return { ...this.convenor, isMember: this.members.has(this.convenor.id) };
+      return {
+        ...this.convenor,
+        ...this.personOf(this.convenor.person),
+        isMember: this.members.has(this.convenor.id)
+      };
     }
     /**
      * **Every change the pen has made, in order** (Q530, Ed 2026-08-22, asking
@@ -3424,6 +3574,7 @@ var CONSTITUTION = (() => {
     amendedFrom(motion) {
       return this.penFrom.get(motion) ?? null;
     }
+    /** The roster; each record's person resolves live through the rows (`withPerson`). */
     memberRecords() {
       return this.members;
     }
@@ -3454,6 +3605,7 @@ var CONSTITUTION = (() => {
     crownQuestionRecords() {
       return this.crownQuestions;
     }
+    /** The applicants; each record's person resolves live through the rows (`withPerson`). */
     applicantRecords() {
       return this.applicants;
     }
@@ -3735,7 +3887,11 @@ var CONSTITUTION = (() => {
       motions.push({
         id: rec.id,
         route: rec.route,
-        payload: rec.payload,
+        payload: rec.payload.kind === "invite" ? {
+          kind: "invite",
+          person: rec.payload.person,
+          email: s.people.get(rec.payload.person)?.email ?? null
+        } : rec.payload,
         why: rec.why,
         status: rec.status,
         mine: rec.by === member,
@@ -3775,6 +3931,7 @@ var CONSTITUTION = (() => {
         email: a.email,
         name: a.name,
         picture: a.picture,
+        erased: a.erased,
         words: a.words,
         status: a.status,
         motion: a.motion
@@ -3789,6 +3946,7 @@ var CONSTITUTION = (() => {
         email: rec.email,
         name: rec.name,
         picture: rec.picture,
+        erased: rec.erased,
         arrived: rec.arrivedAtT !== null,
         lapsed: rec.lapsed,
         isConvenor: rec.id === convenorId,
@@ -3803,6 +3961,7 @@ var CONSTITUTION = (() => {
         id: d.member,
         name: rec?.name ?? null,
         picture: rec?.picture ?? null,
+        erased: rec?.erased ?? false,
         t: d.t,
         by: d.by
       };
@@ -3825,7 +3984,14 @@ var CONSTITUTION = (() => {
       // newest last, so the rail meets the acts in the order they happened; a
       // seat with no member record gets [], exactly as `owedOks` does
       owedReleases: me ? [...s.releaseBatchRecords().values()].filter((b) => me.releasesOwed.has(b.id)).sort((a, b) => a.t - b.t).map((b) => ({ id: b.id, at: b.t, releases: b.releases.map((r) => ({ ...r })) })) : [],
-      owedMailGiveUps: me ? [...s.mailGiveUpBatchRecords().values()].filter((b) => me.mailGaveUpOwed.has(b.id)).sort((a, b) => a.t - b.t).map((b) => ({ id: b.id, at: b.t, addresses: [...b.addresses] })) : [],
+      owedMailGiveUps: me ? [...s.mailGiveUpBatchRecords().values()].filter((b) => me.mailGaveUpOwed.has(b.id)).sort((a, b) => a.t - b.t).map((b) => ({
+        id: b.id,
+        at: b.t,
+        addresses: b.people.flatMap((p) => {
+          const email = s.people.get(p)?.email;
+          return email === void 0 ? [] : [email];
+        })
+      })) : [],
       // the amendment's own record is the motion the pen carried (R-058), so
       // nothing about it is stored twice; an id whose record cannot be found is
       // **skipped** rather than served half-empty, the card having nothing to

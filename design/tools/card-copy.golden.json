@@ -870,22 +870,22 @@
     "eyebrow": "",
     "head": "What Type of Document Is This?",
     "lock": "",
-    "body": "This document is for a meeting.The members must be 80% sure a proposal is better for it to pass by the end, starting at 60% when voting opens.50% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️.Choose thisThis document is for a conference.The members must be 80% sure a proposal is better for it to pass by the end, starting at 60% when voting opens.33% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️.Choose thisThis document is perpetual.Changes to the document may be made perpetually.The members must be 80% sure a proposal is better for it to pass.25% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️.Choose thisThe Founder will decide every setting by hand.Choose this",
+    "body": "This document is for a meeting.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives. Voting opens at a bare majority (60%) and climbs to broad agreement (80%) by the end.50% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️.Choose thisThis document is for a conference.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives. Voting opens at a bare majority (60%) and climbs to broad agreement (80%) by the end.33% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️.Choose thisThis document is perpetual.Changes to the document may be made perpetually.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives.25% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️.Choose thisThe Founder will decide every setting by hand.Choose this",
     "options": [
      {
       "set": "docShape",
       "val": "meeting",
-      "label": "This document is for a meeting.The members must be 80% sure a proposal is better for it to pass by the end, starting at 60% when voting opens.50% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️."
+      "label": "This document is for a meeting.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives. Voting opens at a bare majority (60%) and climbs to broad agreement (80%) by the end.50% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️."
      },
      {
       "set": "docShape",
       "val": "conference",
-      "label": "This document is for a conference.The members must be 80% sure a proposal is better for it to pass by the end, starting at 60% when voting opens.33% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️."
+      "label": "This document is for a conference.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives. Voting opens at a bare majority (60%) and climbs to broad agreement (80%) by the end.33% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️."
      },
      {
       "set": "docShape",
       "val": "ongoing",
-      "label": "This document is perpetual.Changes to the document may be made perpetually.The members must be 80% sure a proposal is better for it to pass.25% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️."
+      "label": "This document is perpetual.Changes to the document may be made perpetually.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives.25% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️."
      },
      {
       "set": "docShape",
@@ -3638,22 +3638,22 @@
     "eyebrow": "",
     "head": "What Type of Document Is This?",
     "lock": "",
-    "body": "This document is for a meeting.The members must be 80% sure a proposal is better for it to pass by the end, starting at 60% when voting opens.50% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️.Choose thisThis document is for a conference.The members must be 80% sure a proposal is better for it to pass by the end, starting at 60% when voting opens.33% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️.Choose thisThis document is perpetual.Changes to the document may be made perpetually.The members must be 80% sure a proposal is better for it to pass.25% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️.Choose thisThe Founder will decide every setting by hand.Choose this",
+    "body": "This document is for a meeting.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives. Voting opens at a bare majority (60%) and climbs to broad agreement (80%) by the end.50% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️.Choose thisThis document is for a conference.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives. Voting opens at a bare majority (60%) and climbs to broad agreement (80%) by the end.33% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️.Choose thisThis document is perpetual.Changes to the document may be made perpetually.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives.25% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️.Choose thisThe Founder will decide every setting by hand.Choose this",
     "options": [
      {
       "set": "docShape",
       "val": "meeting",
-      "label": "This document is for a meeting.The members must be 80% sure a proposal is better for it to pass by the end, starting at 60% when voting opens.50% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️."
+      "label": "This document is for a meeting.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives. Voting opens at a bare majority (60%) and climbs to broad agreement (80%) by the end.50% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️."
      },
      {
       "set": "docShape",
       "val": "conference",
-      "label": "This document is for a conference.The members must be 80% sure a proposal is better for it to pass by the end, starting at 60% when voting opens.33% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️."
+      "label": "This document is for a conference.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives. Voting opens at a bare majority (60%) and climbs to broad agreement (80%) by the end.33% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️."
      },
      {
       "set": "docShape",
       "val": "ongoing",
-      "label": "This document is perpetual.Changes to the document may be made perpetually.The members must be 80% sure a proposal is better for it to pass.25% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️."
+      "label": "This document is perpetual.Changes to the document may be made perpetually.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives.25% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️."
      },
      {
       "set": "docShape",
@@ -4540,22 +4540,22 @@
     "eyebrow": "",
     "head": "What Type of Document Is This?",
     "lock": "",
-    "body": "This document is for a meeting.The members must be 80% sure a proposal is better for it to pass by the end, starting at 60% when voting opens.50% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️.Choose thisThis document is for a conference.The members must be 80% sure a proposal is better for it to pass by the end, starting at 60% when voting opens.33% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️.Choose thisThis document is perpetual.Changes to the document may be made perpetually.The members must be 80% sure a proposal is better for it to pass.25% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️.Choose thisThe Founder will decide every setting by hand.Choose this",
+    "body": "This document is for a meeting.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives. Voting opens at a bare majority (60%) and climbs to broad agreement (80%) by the end.50% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️.Choose thisThis document is for a conference.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives. Voting opens at a bare majority (60%) and climbs to broad agreement (80%) by the end.33% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️.Choose thisThis document is perpetual.Changes to the document may be made perpetually.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives.25% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️.Choose thisThe Founder will decide every setting by hand.Choose this",
     "options": [
      {
       "set": "docShape",
       "val": "meeting",
-      "label": "This document is for a meeting.The members must be 80% sure a proposal is better for it to pass by the end, starting at 60% when voting opens.50% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️."
+      "label": "This document is for a meeting.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives. Voting opens at a bare majority (60%) and climbs to broad agreement (80%) by the end.50% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️."
      },
      {
       "set": "docShape",
       "val": "conference",
-      "label": "This document is for a conference.The members must be 80% sure a proposal is better for it to pass by the end, starting at 60% when voting opens.33% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️."
+      "label": "This document is for a conference.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives. Voting opens at a bare majority (60%) and climbs to broad agreement (80%) by the end.33% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️."
      },
      {
       "set": "docShape",
       "val": "ongoing",
-      "label": "This document is perpetual.Changes to the document may be made perpetually.The members must be 80% sure a proposal is better for it to pass.25% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️."
+      "label": "This document is perpetual.Changes to the document may be made perpetually.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives.25% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️."
      },
      {
       "set": "docShape",
@@ -4765,7 +4765,7 @@
    },
    "bar": {
     "eyebrow": "",
-    "head": "The members must be 82% sure a proposal is better for it to pass by the end, starting at 55% when voting opens.Chosen by the membership",
+    "head": "For a proposal ✏️ to pass, 82% of the members that voted on it must prefer it to the alternatives. Voting opens at 55% and climbs to 82% by the end.Chosen by the membership",
     "lock": "",
     "body": "A proposal passes when the members are % sure at the end.Propose thisdocs.vote uses the Bradley–Terry–Davidson voting method to decide whether a proposal ✏️ passes. It uses probability to compensate for when only a small fraction of the membership vote — read more.",
     "options": [],
@@ -6109,7 +6109,7 @@
     "eyebrow": "",
     "head": "82% sure at the end",
     "lock": "",
-    "body": "D Month YYYY · PassedThe members must be 82% sure a proposal is better for it to pass by the end, starting at 55% when voting opens.The charter should not change on a bare majority of the evidence.Chosen by the membership",
+    "body": "D Month YYYY · PassedFor a proposal ✏️ to pass, 82% of the members that voted on it must prefer it to the alternatives. Voting opens at 55% and climbs to 82% by the end.The charter should not change on a bare majority of the evidence.Chosen by the membership",
     "options": [],
     "inputs": [],
     "foot": [
@@ -6642,7 +6642,7 @@
    },
    "bar": {
     "eyebrow": "",
-    "head": "The members must be 82% sure a proposal is better for it to pass by the end, starting at 55% when voting opens.Chosen by the membership",
+    "head": "For a proposal ✏️ to pass, 82% of the members that voted on it must prefer it to the alternatives. Voting opens at 55% and climbs to 82% by the end.Chosen by the membership",
     "lock": "",
     "body": "A proposal passes when the members are % sure at the end.Propose thisdocs.vote uses the Bradley–Terry–Davidson voting method to decide whether a proposal ✏️ passes. It uses probability to compensate for when only a small fraction of the membership vote — read more.",
     "options": [],
@@ -8255,7 +8255,7 @@
     "eyebrow": "",
     "head": "82% sure at the end",
     "lock": "",
-    "body": "D Month YYYY · PassedThe members must be 82% sure a proposal is better for it to pass by the end, starting at 55% when voting opens.The charter should not change on a bare majority of the evidence.Chosen by the membership",
+    "body": "D Month YYYY · PassedFor a proposal ✏️ to pass, 82% of the members that voted on it must prefer it to the alternatives. Voting opens at 55% and climbs to 82% by the end.The charter should not change on a bare majority of the evidence.Chosen by the membership",
     "options": [],
     "inputs": [],
     "foot": [

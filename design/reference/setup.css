@@ -466,10 +466,12 @@
      avatars*, which is what an `.emojiface` takes on a `.memrow` — the
      roster's rows are set in `--t-small`. The grid alone; the *Currently*
      line beneath it keeps `.big`. */
-  /* slightly larger than the member row's --t-small (Ed's card review,
-     2026-09-02: *Emoji should be slighty larger*) — the next stop on the
-     type scale that reads as a change */
-  .emojiface.grid { font-size: var(--t-body); }
+  /* **the size your own face has in the topbar** (Q1291, Ed 2026-09-08: *the
+     size that they appear on the right of the topbar is good*), which is
+     `.navbar .me .emojiface.face`'s 20px in system.css — one glyph size, the
+     one literal a glyph is allowed. It superseded the type-scale stop of the
+     card review (2026-09-02, *slightly larger*). */
+  .emojiface.grid { font-size: 20px; }
   /* 👑/📯 beside the founder's name (entry 197): the same four declarations,
      so the mark takes the size of the text it stands in — but its own class,
      since an `.emojiface` inside a member row is read as that member's face. */
@@ -543,7 +545,16 @@
 
   .avpick { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s2); }
   .avopt { border: 2px solid transparent; border-radius: 50%; padding: 2px; background: none;
-    cursor: pointer; line-height: 0; }
+    cursor: pointer; line-height: 0;
+    /* **Drawn at once, painted as you scroll** (Q1291, Ed 2026-09-08: *very
+       slow to open*): the grid is 1,912 colour glyphs in a 15rem box, and
+       the cost was never the HTML — 11ms to build, 3ms to parse — but the
+       first shaping of every glyph, about a second on the cold open. The
+       whole list stays in the DOM (entry 186); a button below the fold is
+       simply not laid out or painted until it scrolls into view, which
+       cut the open to a quarter. The placeholder is the button's own box
+       at 20px, so the scroll height does not shift as it fills in. */
+    content-visibility: auto; contain-intrinsic-size: 32px 32px; }
   .avopt[aria-pressed="true"] { border-color: var(--primary); }
   /* the title's composer. The same `.lanebox` the `editing-card` writes in, at
      the size the title is actually read at, because the whole point of writing
