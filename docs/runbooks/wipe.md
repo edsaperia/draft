@@ -12,15 +12,11 @@ Nothing here runs from a laptop: the internal string does not resolve outside Re
 
 ## Steps
 
-1. **A restore point first**, even for throwaways — it costs a minute and answers *what was there*
-   for ever:
-
-       node dist/draft-tools.mjs export "$DATABASE_URL" /tmp/before-wipe-$(date +%F)
-       ls /tmp/before-wipe-*/docs | wc -l
-
-   The instance filesystem is ephemeral; if the export should outlive the next deploy, copy it
-   out (the shell has no outbound file route by default — Render's disk is gone, so for a test
-   store the count is the record).
+1. **No restore point can be written by the tool** — `export` replays every log through the hash
+   oracle, and the oracle refuses the pre-people shape by the same decision this wipe serves
+   (found on the day: *entry 0 is schema version 1, below 2 … STOPPED*). Render's managed
+   backups of the database are the restore point, on Render's own schedule; nothing else is
+   possible, and for a store of test documents nothing else is wanted.
 
 2. **The refusal, first.** Run the wipe without its flag. It prints the count it would delete and
    the store it is looking at, deletes nothing, and exits 1:
