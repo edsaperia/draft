@@ -431,7 +431,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1289** — claim by writing the block here, then commit it alone.
+**The next free number is 1293** — claim by writing the block here, then commit it alone.
+
+**1289–1292 are Ed's QA of 2026-09-08 (evening)**, four reports in chat, claimed together and built the same night: **1289** ⏰'s picker — *I click the datetime picker button, choose date and time, and then there's no "OK" button, and when I click outside of it the datetime I picked is not submitted*; **1290** 🌡️'s two sentences — *the text on the decision card doesn't match the text put on the document; they should match, and it should be the text on the decision card*; **1291** the emoji picker — *very slow to open* and *the emoji in the picker are too small; the size that they appear on the right of the topbar is good*; **1292** the text card — *I can see the bottom edge of this card - it should "go off the bottom of the screen"*. Each verbatim in DECISIONS.md with what was found. **Spent.**
 
 **1288 is the one-character address** (claimed 2026-09-08, asked and answered in chat the same day): Ed could not found a document at `docs.vote/d/1`. The link grammar the server and the page share (`SLUG_OK`, Q460's build of 2026-08-21) demanded three characters or more — a floor no ruling ever set, a session's own call while building 📍, recorded nowhere but the regex and its refusal line. Ed: **we should allow one character addresses.** The floor goes to one on both sides; the refusal sentence, the page's one member-readable literal outside `copy.js`, moves into it on the way. Verbatim in DECISIONS.md. **Spent.**
 
