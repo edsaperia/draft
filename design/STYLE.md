@@ -90,7 +90,7 @@ Glyph names are stable (tabulated 2026-09-07, Q1208; the founding order's own gl
   (Q753). A clerk has no row there, so the list reads *(nobody here yet)*.
   Each subsection that stands when empty says so the same way, level with its
   own control: *(no outstanding invitations)* · *(no applicants at the
-  moment)* · *(nobody proposed for removal)* — SURFACE F21.
+  moment)* · *(nobody proposed for removal)* — SURFACE §8's statuses table (F21).
 - T10's second exception, the birth's title clause, where the Founder meets
   the word for the first time, says *(that’s you!)* once and only there (Ed,
   2026-08-27, entry 140) — only the Founder ever sees the birth, and after the
