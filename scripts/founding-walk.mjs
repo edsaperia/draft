@@ -384,11 +384,28 @@ const seen = new Set();
 // business containing. The rail column of every step records it either way, which
 // is the whole of what the golden is for here.
 const DOORS = new Set(['invite', 'remove']);
+/* ---- Q331 (b): the rail asks, the settled tab names (Q1209) ------------
+   Two labels on one card (Ed, 2026-09-07): the rail entry reads the ask while
+   the card is outstanding — *Choose the Quorum* — and the band's tab reads the
+   noun once it is settled — *Quorum* — `labelOf` in setup.js being the one
+   reader. 👥 is the card, Ed's own example. The settled half is skipped when
+   👥 is the delegated card, a delegated setting not being settled here. */
+const TWO_LABELS = 'quorum';
+const TWO_LABELS_ASK = 'Choose the Quorum';
+const TWO_LABELS_NOUN = 'Quorum';
+const tabLabel = (k) => page.evaluate((kk) => {
+  const el = document.querySelector('#band .achip[data-tab="' + kk + '"] .sr');
+  return el ? el.textContent.trim() : null;
+}, k);
 for (let i = 0; i < 40; i++) {
   const s = await snap();
   const next = s.rail.find((e) => e.k && !seen.has(e.k) && !DOORS.has(e.k));
   if (!next) break;
   seen.add(next.k);
+  if (next.k === TWO_LABELS && next.title !== TWO_LABELS_ASK) {
+    errors.push('👥 outstanding, but its rail entry reads “' + next.title + '”, not the ask “' +
+      TWO_LABELS_ASK + '” (Q331 (b), Q1209)');
+  }
   const opened = await openCard(next.k);
   if (!opened) {
     log.push({ step: 'cannot open ' + next.k, rail: s.rail, paras: s.paras, card: null });
@@ -428,6 +445,13 @@ for (let i = 0; i < 40; i++) {
   const committed = (await clickIn('.setupcard [data-confirm]')) ||
     (await clickIn('.setupcard [data-ok]')) || (await clickIn('.setupcard [data-hatgo]'));
   await record('commit ' + next.k, committed ? null : 'no commit control');
+  if (next.k === TWO_LABELS && next.k !== DELEGATE && committed) {
+    const said = await tabLabel(next.k);
+    if (said !== TWO_LABELS_NOUN) {
+      errors.push('👥 settled, but its tab reads ' + (said === null ? 'nothing (no front tab with a name)' : '“' + said + '”') +
+        ', not the noun “' + TWO_LABELS_NOUN + '” (Q331 (b), Q1209)');
+    }
+  }
   if (next.k === PEN_RELEASE) await releasePen(next.k);
   if (next.k === 'text') errors.push('📝 the text was served as a task; it is a card with two modes, never a task (backlog 204)');
 }

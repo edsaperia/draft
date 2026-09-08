@@ -1284,22 +1284,8 @@
 
   /* The switch (entry 254) lived here for two days — 🍾's power table was its
      one user, and Q1103 (b) redrew that as option blocks (CP1): the pattern
-     admits no second control. Removed 2026-08-31 with its user. */
-  .switch[disabled]:hover .track { box-shadow: none; }
-  /* **Mixed draws the off position, and the label says why** (entry 254). A
-     zone is mixed when one of its powers has already been given away on its own
-     card, and keeping there lays nothing further down — so the position *is*
-     off, and a third colour would be claiming a third position the control does
-     not have. The word is the whole difference, and the sentence under the
-     table explains it. So the modifier states the off position rather than
-     decorating it: written after the `aria-checked` pair, it wins on order, and
-     a mixed zone draws off even if something upstream ever calls it checked. */
-  .switch.mixed .track { background: var(--border); }
-  .switch.mixed .thumb { transform: none; }
-  .switch.mixed .lab { color: var(--muted); }
-  @media (prefers-reduced-motion: reduce) {
-    .switch .track, .switch .thumb, .switch .lab { transition: none; }
-  }
+     admits no second control. Removed 2026-08-31 with its user; its last
+     rules, orphaned until then, left 2026-09-07 (Q1235). */
 
   /* propose-edit, on either lane (Ed, 228). Writing from a lane is free — the
      edit is charged at Propose, which is where the price is stated — so this
@@ -1420,7 +1406,9 @@
     position: relative; z-index: 1;
   }
   .clausehead .achip.wmark:hover {
-    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 42%, var(--bg)); transform: none;
+    /* the active tab keeps the hover lift every other tab has (Ed,
+       2026-09-06; a `transform: none` here had pinned it flat) */
+    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 42%, var(--bg));
     box-shadow: -1px 1px 1px rgba(0, 0, 0, 0.09), -4px 3px 6px rgba(0, 0, 0, 0.16);
   }
   .clausehead .achip.wmark:active { transform: none; }

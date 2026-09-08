@@ -170,7 +170,7 @@ One glyph per entry, the same alphabet in all three columns (contents rail · gu
 | ⏸ | filedUndecided | nothing; undecided at the close | none | no | no | gutter · queue | the record card | yes | no |
 | ✏️ | propose | nothing — withdraw is the remaining act | yours | yes | draft: the rationale as you type; proposed: one line | all three | your proposal | no | yes |
 
-**The setup alphabet** (`stateOf` / `markOf`, setup.js) — five states, tested in the order yours · news · wait · ask · done. A setup entry's wash takes the same urgency ramp as a charter entry's, from its own `RAIL_U` (Q623).
+**The setup alphabet** (`stateOf` / `markOf`, setup.js) — five states, tested in the order yours · news · wait · ask · done. A setup entry's wash takes the same urgency ramp as a charter entry's, from its own `RAIL_U` (Q623). A setup entry's **name** follows the card's state, not the rail's: the ask in ask · wait · yours, the noun in done · news — §9's two-label rule, stated once there.
 
 | state | rail mark | tab mark | wants | hue | in the rail? | pins? | opens |
 |---|---|---|---|---|---|---|---|
@@ -289,31 +289,31 @@ The refund flight and every grant's inbound flight take 640 ms.
 `ORDER` in session-view.html **is** the dependency list: each task is born as the one before it settles. A member's answer tasks ride the same order (Q619). The checker asserts the key column equals `ORDER` and each row's section against `SEC`.
 
 <!-- spec-check: order -->
-| # | key | glyph | kind | section | blocks? | hidden until | asks |
+| # | key | glyph | kind | section | blocks? | hidden until | asks · settled (§9's two-label rule) |
 |---|---|---|---|---|---|---|---|
-| 1 | title | 🪶 | birth · ordinary | lead | yes | — | Title |
-| 2 | slug | 📍 | birth · ordinary | lead | yes | title | Link |
-| 2a | shape | 🧭 | birth · decision, not a setting | lead — its own clause until the save, none after | yes | slug | What Type of Document Is This? |
-| 3 | myemail | 📧 | birth · identity | lead (pre-save); your own row after | yes | shape | Your Email |
-| 4 | myname | ✋ | personal | members — your own row | no | the save | Your Name |
-| 5 | mypic | 🖼️ | personal | members — your own row | no | the save | Your Picture |
+| 1 | title | 🪶 | birth · ordinary | lead | yes | — | Name the Document · Title |
+| 2 | slug | 📍 | birth · ordinary | lead | yes | title | Choose the Link · Link |
+| 2a | shape | 🧭 | birth · decision, not a setting | lead — its own clause until the save, none after | yes | slug | What Type of Document Is This? · Document Type |
+| 3 | myemail | 📧 | birth · identity | lead (pre-save); your own row after | yes | shape | Enter Your Email · Your Email |
+| 4 | myname | ✋ | personal | members — your own row | no | the save | Choose Your Name · Your Name |
+| 5 | mypic | 🖼️ | personal | members — your own row | no | the save | Choose Your Picture · Your Picture |
 | 6 | grant-pen | ✒️ | grant | lead — a tab on the Founded line, no clause | yes | the save | Founder Actions |
 | 7 | grant-shield | 🛡️ | grant | lead — a tab on the Founded line, no clause | no | the save | Founder Veto |
-| 8 | chamber | 🌍 | constitutional · judge-gate | lead, penultimate | yes | the pen's OK | Visibility |
-| 9 | admission | 🪪 | constitutional — **the price of admission** (entry 94) | members, first — its own clause, above 🤝 (Ed, 2026-08-26) | yes | chamber | Admissions (the ✉️ door is the **remedy** while 🍾 waits on `one-voice`, F19) |
-| 10 | applications | 🤝 | constitutional | members — above *Members*, ahead of 💤 🥾 (Q617) | yes | admission | Applications |
-| 11 | hat | 🎩 | decision, not a setting | members — a tab on the list; no sentence | yes | applications | Is the Founder a Member? |
-| 12 | lapse | 💤 | constitutional · judge-gate | members — above *Members*, with 🤝 (Q865) | yes | hat | Do Memberships Lapse? |
-| 13 | removal | 🥾 | constitutional | members — the last rule above *Members* | yes | lapse | How Is a Member Removed? |
+| 8 | chamber | 🌍 | constitutional · judge-gate | lead, penultimate | yes | the pen's OK | Who Can See the Document? · Visibility |
+| 9 | admission | 🪪 | constitutional — **the price of admission** (entry 94) | members, first — its own clause, above 🤝 (Ed, 2026-08-26) | yes | chamber | How Does Somebody Join? · Admissions (the ✉️ door is the **remedy** while 🍾 waits on `one-voice`, F19) |
+| 10 | applications | 🤝 | constitutional | members — above *Members*, ahead of 💤 🥾 (Q617) | yes | admission | Can Strangers Apply? · Applications |
+| 11 | hat | 🎩 | decision, not a setting | members — a tab on the list; no sentence | yes | applications | Is the Founder a Member? · Founder’s Membership |
+| 12 | lapse | 💤 | constitutional · judge-gate | members — above *Members*, with 🤝 (Q865) | yes | hat | Do Memberships Lapse? · Lapsing |
+| 13 | removal | 🥾 | constitutional | members — the last rule above *Members* | yes | lapse | How Is a Member Removed? · Removals |
 | 14 | canpropose | 💡 | gate (and the ✏️ grant) | rate — in the preamble's stack | no | 🍾 | Proposals |
 | 15 | canjudge | ⚖️ | gate | rate — in the preamble's stack | no | 🍾 | Voting |
 | 16 | grant-voice | 🏛️ | grant | rate — in the preamble's stack (Y23) | no | its clause is pinned; the **news** still arrives with the first blind question you are asked — else, **before the start, under 🪪**, and under ⚖️ after it (Q605, Q750, Q829; F20) | Constitutional Proposals |
-| 17 | rate | ⏱️ | ordinary, delegable | rate | yes | removal | Proposal Rate |
-| 18 | ending | ⏰ | constitutional, route inside it | deciding, first | yes | rate | When Does It End? |
-| 19 | bar | 🌡️ | constitutional · judge-gate; its commit sets 🪜 | deciding | yes | ending | Proposal Pass Threshold |
-| 20 | quorum | 👥 | constitutional · judge-gate | deciding, last | yes | bar | Quorum |
-| 21 | authorship | 👤 | constitutional · judge-gate | privacy | yes | quorum | Anonymous Proposals |
-| 22 | judgments | 👁️ | constitutional · judge-gate | privacy | yes | authorship | When Are Votes Revealed? |
+| 17 | rate | ⏱️ | ordinary, delegable | rate | yes | removal | Set the Proposal Rate · Proposal Rate |
+| 18 | ending | ⏰ | constitutional, route inside it | deciding, first | yes | rate | When Does It End? · Ending |
+| 19 | bar | 🌡️ | constitutional · judge-gate; its commit sets 🪜 | deciding | yes | ending | Set the Proposal Pass Threshold · Proposal Pass Threshold |
+| 20 | quorum | 👥 | constitutional · judge-gate | deciding, last | yes | bar | Choose the Quorum · Quorum |
+| 21 | authorship | 👤 | constitutional · judge-gate | privacy | yes | quorum | Are Proposals Anonymous? · Anonymous Proposals |
+| 22 | judgments | 👁️ | constitutional · judge-gate | privacy | yes | authorship | When Are Votes Revealed? · Vote Reveal |
 | 23 | text | 📝 | ordinary | doc — the charter heading under the hairline; **never a task** — a card with two modes, settled from the save, its OK struck (K31, Q1082) | yes | judgments | Text |
 | 24 | begin | 🍾 | decision, not a setting | rate — the preamble's stack, first (Y21, Y23) | no | until the founder can press it — `readiness().ready` and 🏛️ not still being served — **or until nothing but the ✉️ remedy is being served** (F5, F9, F18, F19); members never see it pre-start | Begin |
 
@@ -321,7 +321,7 @@ The refund flight and every grant's inbound flight take 640 ms.
 
 | what | where its tab stands | clause · rail entry | rule |
 |---|---|---|---|
-| 🪜 | 🌡️'s stack | none · none — answered by 🌡️'s commit on both its branches | Q512, F18 |
+| 🪜 | 🌡️'s stack — *Does the Threshold Rise Over Time?* · *Rising Threshold* | none · none — answered by 🌡️'s commit on both its branches | Q512, F18 |
 | the `ans-*` answer tasks | the delegated setting's own stack; `stackOrder` puts the question in front while it is asking and the watcher in front once it is answered | none of their own · a rail ask | Q786–Q788 |
 | ✉️ · ❌ | ✉️ on *Invitees*, ❌ on *Proposed for removal*, both from the birth — **a door stands by its result** — each wearing its own ✒️/🛡️ pair over the act | the subsection · ✉️ stands in the founder's rail as a task once the Membership rules stand, until the first invitation or 🍾 (F23) | entries 94, 96, 181 |
 | the `adm:` admit cards | the *Applicants* pile, one per applicant still asking; absent at 🪪 *pen*, where an application is admitted on submit | the applicant's row · a task at *proposal* and *assembly*, news at *pen* (E21) | entry 96 |
@@ -392,7 +392,11 @@ Exceptions beyond §3:
 
 ## 9. The card kinds, the commit row, the composer
 
-Two implementations of one shell (`suggCardHtml` in session.js for the charter; `cardHtml` in setup.js for the band), one shape: `clause-head` → field → commit row. Every card the surface draws:
+Two implementations of one shell (`suggCardHtml` in session.js for the charter; `cardHtml` in setup.js for the band), one shape: `clause-head` → field → commit row.
+
+**A settings card is titled by its ask while it is outstanding and by its noun once it is settled; the tab and the rail follow the card.** The ask (`t`) is an imperative or a question and says what kind of answer is wanted (STYLE T2); the noun (`n`) is what the rule is called. The noun shows in `done` and in `news` — a decided rule that owes you an OK offers no choice, and an ask would say it did — the ask in `ask`, `wait` and `yours`. `labelOf` in setup.js is the one reader: the tab's name and tooltip, the rail entry and a card head take their label from it, and no title literal stands anywhere but `design/copy.js`. A setting named **inside a sentence or a readout line** — 🍾's readiness, a record's *Returns “…” to the founder's reserve*, the amendment news, 👑's list — is a name, not a title, and takes the noun in every state (`nounOf`). The doors ✉️ ❌ and 📝 carry one label, having no settled state or never being a task (K31); the power tabs are questions in every state (Q615). Both labels per card: §8's table. → why: Q331 (b), Q1209; DECISIONS.md, *Every settings title is an ask; a settled card wears its noun* (2026-09-08).
+
+Every card the surface draws:
 
 | kind | opened from | head | field | radios | left | right | closes | files as |
 |---|---|---|---|---|---|---|---|---|

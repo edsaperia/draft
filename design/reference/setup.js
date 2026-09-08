@@ -161,6 +161,27 @@ window.SETUP = (function () {
     : (ctx.news && ctx.news(c)) ? 'news'
     : (ctx.waiting && ctx.waiting(c)) ? 'wait'
     : ctx.mustAct(c) ? 'ask' : 'done';
+  /* **Two labels on one card** (Ed, 2026-09-07, Q331 (b) and Q1209): the ask
+     (`c.t`, an imperative or a question — STYLE T2) while the card is
+     outstanding, the noun (`c.n`) once the decision stands, which shows
+     being the card's state; the tab and the rail follow the card, so the
+     pile at the head of the document reads as rules and the rail as asks.
+     `news` wears the noun too: a rule that is decided and owes you an OK
+     offers no choice, and an ask-shaped title would say it did — the whole
+     point of the ask (Ed: *it should be clear the user has a choice to
+     make*). A card with no `n` — a door, 📝, an applicant's task — wears its
+     one label in every state. **This is the one reader**: every tab, rail
+     entry and card head takes its label from here, and nothing else decides
+     it. A setting named *inside a sentence* — 🍾's readiness lines, a
+     record's *Returns “…” to the founder's reserve*, the amendment news —
+     is a name, not a title, and takes `nounOf`: the noun in every state,
+     because *🌍 Who Can See the Document? is waiting on 🪪* is not a
+     sentence. */
+  const labelOf = (c, ctx) => {
+    const st = stateOf(c, ctx);
+    return (st === 'done' || st === 'news') && c.n ? c.n : c.t;
+  };
+  const nounOf = (c) => c.n || c.t;
   const HUE = { ask: 'open', wait: 'closed', news: 'changed', yours: 'yours', done: 'closed' };
   const hueOf = (c, ctx) => HUE[stateOf(c, ctx)];
   // **One wash ramp for both columns** (Q623 (a), 2026-08-22). The charter's
@@ -249,12 +270,12 @@ window.SETUP = (function () {
     ' data-chip="' + c.k + '"' +
     (o.inert ? ' aria-hidden="true"' : ' role="button" tabindex="0" data-tab="' + c.k + '"') +
     ' style="--chiphue: var(--lc-' + HUE[st] + ')' + (o.z ? '; z-index:' + o.z : '') + '"' +
-    (o.inert ? '' : ' title="' + esc(c.t + (o.active ? ' — close it'
+    (o.inert ? '' : ' title="' + esc(labelOf(c, ctx) + (o.active ? ' — close it'
       : st === 'ask' ? ' — waiting on you' : st === 'wait' ? ' — waiting on others'
       : st === 'news' ? (c.grants ? ' — yours to take' : ' — decided; it waits for your OK')
       : st === 'yours' ? ' — yours, being voted on' : ' — settled')) + '"') +
     '><span aria-hidden="true">' + markOf(c, ctx, true) + '</span>' +
-    (o.inert ? '' : '<span class="sr">' + esc(c.t) + '</span>') + '</span>';
+    (o.inert ? '' : '<span class="sr">' + esc(labelOf(c, ctx)) + '</span>') + '</span>';
   };
 
   /* **The front of a pile is what most wants you**, which is deliberately not
@@ -536,10 +557,10 @@ window.SETUP = (function () {
       '<button class="' + (st === 'ask' || st === 'news' ? 'needs' : 'qwait') + ' st-' + st + '"' +
       ' data-card="' + c.k + '" data-washkey="set:' + c.k + '"' +
       ' aria-current="' + (ctx.open === c.k) + '"' +
-      ' title="' + esc(room ? (c.in || 0) + ' of ' + ctx.E + ' have answered' : c.t) + '"' +
+      ' title="' + esc(room ? (c.in || 0) + ' of ' + ctx.E + ' have answered' : labelOf(c, ctx)) + '"' +
       ' style="--washcol: ' + w.col + '; --washbg: ' + w.bg + '; --fill: ' + fill + '">' +
       '<span class="ql"><span class="subj" aria-hidden="true">' + markOf(c, ctx) + '</span>' +
-      '<span class="qt">' + esc(c.t) + '</span></span>' +
+      '<span class="qt">' + esc(labelOf(c, ctx)) + '</span></span>' +
       (ctx.summary(c) ? '<span class="qwhy">' + ctx.summary(c) + '</span>' : '') + '</button></li>';
   }
 
@@ -597,7 +618,7 @@ window.SETUP = (function () {
         marks: stripHtml(siblings || [c], ctx),
         html: (rule ? '<div class="headrule' + (asBlock ? ' asblock' : '') + '">' + rule + '</div>'
             : noTitle ? ''
-            : '<div class="headtitle">' + esc(c.t) + '</div>') +
+            : '<div class="headtitle">' + esc(labelOf(c, ctx)) + '</div>') +
           clauseHtml,
         v: oo.v, edit: false,
       }) +
@@ -1615,7 +1636,7 @@ window.SETUP = (function () {
     '<span class="pf' + (p.n === meName ? ' me' : '') + '">' + avHtml(p) +
     esc(p.n) + (p.n === meName ? ' (you)' : '') + '</span>').join('') + '</div>';
 
-  return { esc, TICK, initials, avHtml, hueOf, washOf, stateOf, markOf, railEntry,
+  return { esc, TICK, initials, avHtml, hueOf, washOf, stateOf, labelOf, nounOf, markOf, railEntry,
     bandHtml, fitBand, pileHtml, stripHtml, cardHtml, readBody,
     nameBody, pictureBody, opt, setPickWords, num, numIn, ctlWord, faces, someIn, FACE_EMOJI,
     FACE_TONES, faceToneRow, faceToned, setFaceTone,

@@ -64,7 +64,7 @@
      }
     ],
     "hints": [
-     "Admissions — close it",
+     "How Does Somebody Join? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
@@ -101,8 +101,8 @@
      }
     ],
     "hints": [
-     "Visibility — close it",
-     "Visibility — waiting on others",
+     "Who Can See the Document? — close it",
+     "Who Can See the Document? — waiting on others",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
@@ -144,7 +144,7 @@
      }
     ],
     "hints": [
-     "Applications — close it",
+     "Can Strangers Apply? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
@@ -201,7 +201,7 @@
      }
     ],
     "hints": [
-     "Anonymous Proposals — close it",
+     "Are Proposals Anonymous? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
@@ -248,7 +248,7 @@
      }
     ],
     "hints": [
-     "Proposal Pass Threshold — close it",
+     "Set the Proposal Pass Threshold — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
@@ -325,7 +325,7 @@
      }
     ],
     "hints": [
-     "Visibility — close it",
+     "Who Can See the Document? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
@@ -635,7 +635,7 @@
     ],
     "hints": [
      "you@example.com",
-     "Your Email — close it",
+     "Enter Your Email — close it",
      "Put it back as it stands",
      "Save"
     ],
@@ -676,8 +676,8 @@
     ],
     "hints": [
      "Your name",
-     "Your Name — close it",
-     "Your Picture — waiting on you",
+     "Choose Your Name — close it",
+     "Choose Your Picture — waiting on you",
      "Your Email — settled",
      "Put it back as it stands",
      "Save"
@@ -718,7 +718,7 @@
      }
     ],
     "hints": [
-     "Your Picture — close it",
+     "Choose Your Picture — close it",
      "Your Name — settled",
      "Your Email — settled",
      "Put it back as it stands",
@@ -769,7 +769,7 @@
      }
     ],
     "hints": [
-     "Quorum — close it",
+     "Choose the Quorum — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
@@ -811,7 +811,7 @@
      }
     ],
     "hints": [
-     "Proposal Rate — close it",
+     "Set the Proposal Rate — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
@@ -934,7 +934,7 @@
      }
     ],
     "hints": [
-     "Link — close it",
+     "Choose the Link — close it",
      "Put it back as it stands",
      "Set it"
     ],
@@ -961,7 +961,7 @@
     ],
     "hints": [
      "Give this document a title",
-     "Title — close it",
+     "Name the Document — close it",
      "Put it back as it stands",
      "Give it a name first"
     ],
@@ -3132,7 +3132,7 @@
      }
     ],
     "hints": [
-     "Admissions — close it",
+     "How Does Somebody Join? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
@@ -3174,7 +3174,7 @@
      }
     ],
     "hints": [
-     "Applications — close it",
+     "Can Strangers Apply? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
@@ -3231,7 +3231,7 @@
      }
     ],
     "hints": [
-     "Anonymous Proposals — close it",
+     "Are Proposals Anonymous? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
@@ -3278,7 +3278,7 @@
      }
     ],
     "hints": [
-     "Proposal Pass Threshold — close it",
+     "Set the Proposal Pass Threshold — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
@@ -3320,7 +3320,7 @@
      }
     ],
     "hints": [
-     "Visibility — close it",
+     "Who Can See the Document? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
@@ -3488,7 +3488,7 @@
     ],
     "hints": [
      "you@example.com",
-     "Your Email — close it",
+     "Enter Your Email — close it",
      "Put it back as it stands",
      "Save"
     ],
@@ -3537,7 +3537,7 @@
      }
     ],
     "hints": [
-     "Quorum — close it",
+     "Choose the Quorum — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
@@ -3579,7 +3579,7 @@
      }
     ],
     "hints": [
-     "Proposal Rate — close it",
+     "Set the Proposal Rate — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
@@ -3702,7 +3702,7 @@
      }
     ],
     "hints": [
-     "Link — close it",
+     "Choose the Link — close it",
      "Put it back as it stands",
      "Set it"
     ],
@@ -3729,7 +3729,7 @@
     ],
     "hints": [
      "Give this document a title",
-     "Title — close it",
+     "Name the Document — close it",
      "Put it back as it stands",
      "Give it a name first"
     ],
@@ -3778,7 +3778,7 @@
      }
     ],
     "hints": [
-     "Admissions — close it",
+     "How Does Somebody Join? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
@@ -3820,7 +3820,7 @@
      }
     ],
     "hints": [
-     "Applications — close it",
+     "Can Strangers Apply? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
@@ -3877,7 +3877,7 @@
      }
     ],
     "hints": [
-     "Anonymous Proposals — close it",
+     "Are Proposals Anonymous? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
@@ -3924,7 +3924,7 @@
      }
     ],
     "hints": [
-     "Proposal Pass Threshold — close it",
+     "Set the Proposal Pass Threshold — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
@@ -3997,7 +3997,7 @@
      }
     ],
     "hints": [
-     "Visibility — close it",
+     "Who Can See the Document? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
@@ -4305,7 +4305,7 @@
     ],
     "hints": [
      "you@example.com",
-     "Your Email — close it",
+     "Enter Your Email — close it",
      "Put it back as it stands",
      "Save"
     ],
@@ -4346,8 +4346,8 @@
     ],
     "hints": [
      "Your name",
-     "Your Name — close it",
-     "Your Picture — waiting on you",
+     "Choose Your Name — close it",
+     "Choose Your Picture — waiting on you",
      "Your Email — settled",
      "Put it back as it stands",
      "Save"
@@ -4388,7 +4388,7 @@
      }
     ],
     "hints": [
-     "Your Picture — close it",
+     "Choose Your Picture — close it",
      "Your Name — settled",
      "Your Email — settled",
      "Put it back as it stands",
@@ -4439,7 +4439,7 @@
      }
     ],
     "hints": [
-     "Quorum — close it",
+     "Choose the Quorum — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
@@ -4481,7 +4481,7 @@
      }
     ],
     "hints": [
-     "Proposal Rate — close it",
+     "Set the Proposal Rate — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
@@ -4604,7 +4604,7 @@
      }
     ],
     "hints": [
-     "Link — close it",
+     "Choose the Link — close it",
      "Put it back as it stands",
      "Set it"
     ],
@@ -4631,7 +4631,7 @@
     ],
     "hints": [
      "Give this document a title",
-     "Title — close it",
+     "Name the Document — close it",
      "Put it back as it stands",
      "Give it a name first"
     ],
@@ -4754,7 +4754,7 @@
      }
     ],
     "hints": [
-     "Anonymous Proposals — close it",
+     "Are Proposals Anonymous? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "A member wrote this. Who, is sealed until the closing record.",
@@ -4788,7 +4788,7 @@
     "hints": [
      "We should change this because…",
      "Proposal Pass Threshold — close it",
-     "Rising Approval Threshold? — settled",
+     "Rising Threshold — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Passed: 82% sure at the end — settled",
@@ -4932,7 +4932,7 @@
     ],
     "hints": [
      "We should change this because…",
-     "When Does It End? — close it",
+     "Ending — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Propose this — nothing leaves the card until you submit",
@@ -4986,7 +4986,7 @@
      }
     ],
     "hints": [
-     "Is the Founder a Member? — close it",
+     "Founder’s Membership — close it",
      "Put it back as it stands"
     ],
     "helpers": [
@@ -5054,7 +5054,7 @@
     ],
     "hints": [
      "We should change this because…",
-     "When Are Votes Revealed? — close it",
+     "Vote Reveal — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Propose this — nothing leaves the card until you submit",
@@ -5090,7 +5090,7 @@
     ],
     "hints": [
      "We should change this because…",
-     "Do Memberships Lapse? — close it",
+     "Lapsing — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Propose this — nothing leaves the card until you submit",
@@ -5260,7 +5260,7 @@
     "hints": [
      "We should change this because…",
      "Proposal Pass Threshold — settled",
-     "Rising Approval Threshold? — close it",
+     "Rising Threshold — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Passed: 82% sure at the end — settled",
@@ -5342,7 +5342,7 @@
      }
     ],
     "hints": [
-     "Anonymous Proposals — waiting on you",
+     "Are Proposals Anonymous? — waiting on you",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
      "Put it back as it stands"
@@ -5368,7 +5368,7 @@
     ],
     "hints": [
      "Proposal Pass Threshold — settled",
-     "Rising Approval Threshold? — settled",
+     "Rising Threshold — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
      "Passed: 82% sure at the end — settled",
@@ -5420,7 +5420,7 @@
      }
     ],
     "hints": [
-     "When Does It End? — settled",
+     "Ending — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
      "Put it back as it stands"
@@ -5470,7 +5470,7 @@
      }
     ],
     "hints": [
-     "When Are Votes Revealed? — settled",
+     "Vote Reveal — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
      "Put it back as it stands"
@@ -5495,7 +5495,7 @@
      }
     ],
     "hints": [
-     "Do Memberships Lapse? — settled",
+     "Lapsing — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
      "Put it back as it stands"
@@ -5571,7 +5571,7 @@
      }
     ],
     "hints": [
-     "How Is a Member Removed? — settled",
+     "Removals — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
      "Put it back as it stands"
@@ -5721,7 +5721,7 @@
      }
     ],
     "hints": [
-     "Anonymous Proposals — waiting on you",
+     "Are Proposals Anonymous? — waiting on you",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands"
@@ -5747,7 +5747,7 @@
     ],
     "hints": [
      "Proposal Pass Threshold — settled",
-     "Rising Approval Threshold? — settled",
+     "Rising Threshold — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
      "Passed: 82% sure at the end — settled",
@@ -5799,7 +5799,7 @@
      }
     ],
     "hints": [
-     "When Does It End? — settled",
+     "Ending — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands"
@@ -5849,7 +5849,7 @@
      }
     ],
     "hints": [
-     "When Are Votes Revealed? — settled",
+     "Vote Reveal — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands"
@@ -5874,7 +5874,7 @@
      }
     ],
     "hints": [
-     "Do Memberships Lapse? — settled",
+     "Lapsing — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands"
@@ -5950,7 +5950,7 @@
      }
     ],
     "hints": [
-     "How Is a Member Removed? — settled",
+     "Removals — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands"
@@ -6124,7 +6124,7 @@
     ],
     "hints": [
      "Proposal Pass Threshold — settled",
-     "Rising Approval Threshold? — settled",
+     "Rising Threshold — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Passed: 82% sure at the end — close it",
@@ -6217,7 +6217,7 @@
     ],
     "hints": [
      "We should change this because…",
-     "How Is a Member Removed? — close it",
+     "Removals — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Propose this — nothing leaves the card until you submit",
@@ -6631,7 +6631,7 @@
      }
     ],
     "hints": [
-     "Anonymous Proposals — close it",
+     "Are Proposals Anonymous? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "A member wrote this. Who, is sealed until the closing record.",
@@ -6665,7 +6665,7 @@
     "hints": [
      "We should change this because…",
      "Proposal Pass Threshold — close it",
-     "Rising Approval Threshold? — settled",
+     "Rising Threshold — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Passed: 82% sure at the end — settled",
@@ -6778,7 +6778,7 @@
      }
     ],
     "hints": [
-     "Visibility — close it",
+     "Who Can See the Document? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Passed: Anyone with the link — settled",
@@ -6819,7 +6819,7 @@
     ],
     "hints": [
      "We should change this because…",
-     "When Does It End? — close it",
+     "Ending — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Propose this — nothing leaves the card until you submit",
@@ -6927,7 +6927,7 @@
      }
     ],
     "hints": [
-     "Is the Founder a Member? — close it",
+     "Founder’s Membership — close it",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -6993,7 +6993,7 @@
     ],
     "hints": [
      "We should change this because…",
-     "When Are Votes Revealed? — close it",
+     "Vote Reveal — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Propose this — nothing leaves the card until you submit",
@@ -7029,7 +7029,7 @@
     ],
     "hints": [
      "We should change this because…",
-     "Do Memberships Lapse? — close it",
+     "Lapsing — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Propose this — nothing leaves the card until you submit",
@@ -7213,7 +7213,7 @@
     "hints": [
      "I am changing this because…",
      "Proposal Pass Threshold — settled",
-     "Rising Approval Threshold? — close it",
+     "Rising Threshold — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Passed: 82% sure at the end — settled",
@@ -7298,7 +7298,7 @@
      }
     ],
     "hints": [
-     "Anonymous Proposals — waiting on others",
+     "Are Proposals Anonymous? — waiting on others",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
      "Put it back as it stands"
@@ -7324,7 +7324,7 @@
     ],
     "hints": [
      "Proposal Pass Threshold — settled",
-     "Rising Approval Threshold? — settled",
+     "Rising Threshold — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
      "Passed: 82% sure at the end — settled",
@@ -7361,7 +7361,7 @@
      }
     ],
     "hints": [
-     "Visibility — waiting on others",
+     "Who Can See the Document? — waiting on others",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
      "Passed: Anyone with the link — settled",
@@ -7391,7 +7391,7 @@
      }
     ],
     "hints": [
-     "When Does It End? — settled",
+     "Ending — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
      "Put it back as it stands"
@@ -7456,7 +7456,7 @@
      }
     ],
     "hints": [
-     "When Are Votes Revealed? — settled",
+     "Vote Reveal — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
      "Put it back as it stands"
@@ -7481,7 +7481,7 @@
      }
     ],
     "hints": [
-     "Do Memberships Lapse? — settled",
+     "Lapsing — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
      "Put it back as it stands"
@@ -7572,7 +7572,7 @@
      }
     ],
     "hints": [
-     "How Is a Member Removed? — settled",
+     "Removals — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
      "Put it back as it stands"
@@ -7767,7 +7767,7 @@
      }
     ],
     "hints": [
-     "Anonymous Proposals — waiting on others",
+     "Are Proposals Anonymous? — waiting on others",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands"
@@ -7793,7 +7793,7 @@
     ],
     "hints": [
      "Proposal Pass Threshold — settled",
-     "Rising Approval Threshold? — settled",
+     "Rising Threshold — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
      "Passed: 82% sure at the end — settled",
@@ -7830,7 +7830,7 @@
      }
     ],
     "hints": [
-     "Visibility — waiting on others",
+     "Who Can See the Document? — waiting on others",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
      "Passed: Anyone with the link — settled",
@@ -7860,7 +7860,7 @@
      }
     ],
     "hints": [
-     "When Does It End? — settled",
+     "Ending — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands"
@@ -7925,7 +7925,7 @@
      }
     ],
     "hints": [
-     "When Are Votes Revealed? — settled",
+     "Vote Reveal — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands"
@@ -7950,7 +7950,7 @@
      }
     ],
     "hints": [
-     "Do Memberships Lapse? — settled",
+     "Lapsing — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands"
@@ -8041,7 +8041,7 @@
      }
     ],
     "hints": [
-     "How Is a Member Removed? — settled",
+     "Removals — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands"
@@ -8270,7 +8270,7 @@
     ],
     "hints": [
      "Proposal Pass Threshold — settled",
-     "Rising Approval Threshold? — settled",
+     "Rising Threshold — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Passed: 82% sure at the end — close it",
@@ -8297,7 +8297,7 @@
      }
     ],
     "hints": [
-     "Visibility — waiting on others",
+     "Who Can See the Document? — waiting on others",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Passed: Anyone with the link — close it",
@@ -8363,7 +8363,7 @@
     ],
     "hints": [
      "We should change this because…",
-     "How Is a Member Removed? — close it",
+     "Removals — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Propose this — nothing leaves the card until you submit",

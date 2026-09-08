@@ -241,7 +241,7 @@
 <script>
 (function () {
   const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml,
-    nameBody, pictureBody, opt, num, numIn, ctlWord, someIn, ANSWER, stateOf,
+    nameBody, pictureBody, opt, num, numIn, ctlWord, someIn, ANSWER, stateOf, labelOf, nounOf,
     MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml, stripHtml, readBody,
     motionBody, routeFor, motionCommitHtml, BLINDNOTE, methodNote, listOf, syncSlider } = window.SETUP;
   // every member-readable string this script renders lives in copy.js (Ed's
@@ -2130,7 +2130,9 @@
     // arriving at docs.vote you are asked exactly one thing.
     // inDoc: the document's own heading IS the title (Ed, 2026-08-18) — no
     // paragraph restates it; the heading opens the card
-    { k: 'title', g: '🪶', t: PAGE_COPY.cards.title.t, kind: 'ordinary', inDoc: true, changeable: true,
+    // every settings card carries two labels (Q1209, Q331 (b)): `t` the ask,
+    // `n` the noun once settled — read only through setup.js's `labelOf`
+    { k: 'title', g: '🪶', t: PAGE_COPY.cards.title.t, n: PAGE_COPY.cards.title.n, kind: 'ordinary', inDoc: true, changeable: true,
       ready: () => !!S.title },
     // **The birth is 🪶 → 📍 → 📧** (Q460, Ed 2026-08-20): the link is
     // pre-filled from the title, checked live against the addresses that
@@ -2151,13 +2153,13 @@
     // click ✒️, not ask separately*) — so the card is ready to commit as soon
     // as the address is a real one, and the commit does the sending. Settling
     // still waits for the link to be clicked: that is what verification is.
-    { k: 'myemail', g: '📧', t: PAGE_COPY.cards.myemail.t, kind: 'personal', own: 'you',
+    { k: 'myemail', g: '📧', t: PAGE_COPY.cards.myemail.t, n: PAGE_COPY.cards.myemail.n, kind: 'personal', own: 'you',
       hide: () => S.viewer === 'applicant', changeable: true,
       ready: () => S.emailVerified || (!S.emailSent && EMAIL_OK.test(S.myemail)) },
     // `slugKnown` is what stops a fast founder committing inside the window
     // between a keystroke and the answer about it — the address is legal,
     // nothing has refused it *yet*, and the send would be the first to ask
-    { k: 'slug', g: '📍', t: PAGE_COPY.cards.slug.t, kind: 'ordinary',
+    { k: 'slug', g: '📍', t: PAGE_COPY.cards.slug.t, n: PAGE_COPY.cards.slug.n, kind: 'ordinary',
       ready: () => SLUG_OK.test(S.slug) && !slugRefused() && slugKnown(), changeable: true },
     // **The founder chooses a shape before the birth** (Ed, 2026-08-27, entry
     // 166): a meeting, a conference, ongoing, or custom — folded at the save
@@ -2168,7 +2170,7 @@
     // …and once the document exists the choice is made whatever the page
     // remembers — a reload has no `S.docShape`, and a hidden card that is
     // not settled still blocks the order (`blocksOrder`)
-    { k: 'shape', g: '🧭', t: PAGE_COPY.cards.shape.t, kind: 'ordinary', changeable: true,
+    { k: 'shape', g: '🧭', t: PAGE_COPY.cards.shape.t, n: PAGE_COPY.cards.shape.n, kind: 'ordinary', changeable: true,
       ready: () => !!S.docShape || !!cs, hide: () => !!cs },
     // — the rest, together once the document exists ----------------------
     // 🎩 folded into 🪪 (Ed, 2026-08-18): whether the founder is a
@@ -2188,7 +2190,7 @@
     // clause above 🤝. The register it used to be is a fact of the document
     // — the list under *Members* — and the Founder's powers over the act of
     // inviting are the ✉️ door's, not this setting's.
-    { k: 'admission', g: '🪪', t: PAGE_COPY.cards.admission.t, kind: 'constitutional', key: 'admission', p: 0.40, changeable: true,
+    { k: 'admission', g: '🪪', t: PAGE_COPY.cards.admission.t, n: PAGE_COPY.cards.admission.n, kind: 'constitutional', key: 'admission', p: 0.40, changeable: true,
       rule: PAGE_COPY.cards.admission.rule,
       // what the document took is the clause it took (Q1112 (b)); the strip's
       // two ends stay an **axis**, the T42 gradient in its shortest form —
@@ -2213,14 +2215,14 @@
     { k: 'remove', g: '❌', t: PAGE_COPY.cards.remove.t, kind: 'constitutional',
       routeOf: () => (removalPrice() === 'proposal' ? 'ordinary' : 'constitutional'),
       ready: () => true, door: true },
-    { k: 'hat', g: '🎩', t: PAGE_COPY.cards.hat.t, kind: 'personal', changeable: true },
+    { k: 'hat', g: '🎩', t: PAGE_COPY.cards.hat.t, n: PAGE_COPY.cards.hat.n, kind: 'personal', changeable: true },
     // **The register and the door are two decisions** (Ed, 2026-08-18: *We
     // should separate "Membership" which is the register of people who are
     // members from "Membership Policy" which is how people become members
     // after the ceremony*). The one-card test agrees: who is in the room
     // now, and how anybody gets in later, can be answered differently and
     // on their own.
-    { k: 'applications', g: '🤝', t: PAGE_COPY.cards.applications.t, kind: 'constitutional', key: 'policyBy', p: 0.41, changeable: true,
+    { k: 'applications', g: '🤝', t: PAGE_COPY.cards.applications.t, n: PAGE_COPY.cards.applications.n, kind: 'constitutional', key: 'policyBy', p: 0.41, changeable: true,
       rule: PAGE_COPY.cards.applications.rule },
     // optional for a clerk (Ed, 2026-08-18): an anonymous founder is a
     // perfectly ordinary thing — they can simply not set a name or picture
@@ -2230,11 +2232,11 @@
     // blank picture is initials (§9.0c), so there is nothing the constitution
     // is waiting to learn from either. Read by `blocksOrder`; the two arrive
     // *together* because 🖼️ follows ✋ in `ORDER` and ✋ no longer blocks.
-    { k: 'myname', g: '✋', t: PAGE_COPY.cards.myname.t, kind: 'personal', own: 'you',
+    { k: 'myname', g: '✋', t: PAGE_COPY.cards.myname.t, n: PAGE_COPY.cards.myname.n, kind: 'personal', own: 'you',
       // a blank is no answer since Q1164: the ✓ arms once a block is chosen
       // (typing chooses the name block, F6) — and ✋ still blocks nothing
       ready: () => namePickNow() !== null, changeable: true, blocks: false },
-    { k: 'mypic', g: '🖼️', t: PAGE_COPY.cards.mypic.t, kind: 'personal', own: 'you',
+    { k: 'mypic', g: '🖼️', t: PAGE_COPY.cards.mypic.t, n: PAGE_COPY.cards.mypic.n, kind: 'personal', own: 'you',
       ready: () => picPickNow() !== null, changeable: true, blocks: false },
     // A document may start empty, which is why this is not a blocker on having
     // content but on having *decided*: a page nobody has looked at and a page
@@ -2250,7 +2252,7 @@
     // **never** is one of the answers to *when*. What made them look like two
     // decisions is that they take different routes to change afterwards, and
     // that is a fact about the motion rather than about the question (Q329).
-    { k: 'ending', g: '⏰', t: PAGE_COPY.cards.ending.t, kind: 'constitutional', motionKind: 'ordinary',
+    { k: 'ending', g: '⏰', t: PAGE_COPY.cards.ending.t, n: PAGE_COPY.cards.ending.n, kind: 'constitutional', motionKind: 'ordinary',
       key: 'ending', p: 0.5,
       // 329(a): *never* is the constitutional answer; any date is ordinary.
       routeOf: (v) => (/never|perpetual|no end/i.test(v) ? 'constitutional' : 'ordinary'),
@@ -2278,7 +2280,7 @@
     // the module on any document that has one. Every other card on this page
     // still draws the Hollow Oak histogram wherever it is opened, which is a
     // defect of its own and not this entry's to fix.
-    { k: 'bar', g: '🌡️', t: PAGE_COPY.cards.bar.t, kind: 'constitutional', gate: 'judge', key: 'barBy', p: 0.64,
+    { k: 'bar', g: '🌡️', t: PAGE_COPY.cards.bar.t, n: PAGE_COPY.cards.bar.n, kind: 'constitutional', gate: 'judge', key: 'barBy', p: 0.64,
       rule: PAGE_COPY.cards.bar.rule,
       takes: PAGE_COPY.cards.bar.takes, result: 'Broad agreement — 80%', strip: 'rungs',
       taken: { pct: 80 },
@@ -2291,11 +2293,11 @@
     // the ramp is part of what the threshold says rather than a question of
     // its own. Its tab stands in 🌡️'s stack for anybody who wants to change
     // it, and 🌡️'s own commit sets it.
-    { k: 'pace', g: '🪜', t: PAGE_COPY.cards.pace.t, kind: 'ordinary', dep: ['bar'], changeable: true },
+    { k: 'pace', g: '🪜', t: PAGE_COPY.cards.pace.t, n: PAGE_COPY.cards.pace.n, kind: 'ordinary', dep: ['bar'], changeable: true },
     // The number is the room's; the **form** — count or share — is the
     // founder's wording of the question (Ed, 2026-08-18: *quorum can either be
     // a fixed number or a proportion of membership size*; §9.0a).
-    { k: 'quorum', g: '👥', t: PAGE_COPY.cards.quorum.t, kind: 'constitutional', gate: 'judge', key: 'quorumBy', p: 0.79,
+    { k: 'quorum', g: '👥', t: PAGE_COPY.cards.quorum.t, n: PAGE_COPY.cards.quorum.n, kind: 'constitutional', gate: 'judge', key: 'quorumBy', p: 0.79,
       rule: PAGE_COPY.cards.quorum.rule,
       takes: PAGE_COPY.cards.quorum.takes, result: '10 of 14', taken: { form: 'count', n: 10 },
       dist: [0, 0, 1, 1, 2, 3, 2, 2, 1, 1, 1, 0, 0, 0], distTop: 9, distEnds: ['1 of 14', 'all of them'] },
@@ -2307,11 +2309,11 @@
     // second time — which is what made *nobody is ever named* and *everybody
     // signs* both settable at once. The opt-in is not a second axis; it is
     // two steps on this ladder, and the ladder is total.
-    { k: 'authorship', g: '👤', t: PAGE_COPY.cards.authorship.t, kind: 'constitutional', gate: 'judge', key: 'authorship', p: 0.5,
+    { k: 'authorship', g: '👤', t: PAGE_COPY.cards.authorship.t, n: PAGE_COPY.cards.authorship.n, kind: 'constitutional', gate: 'judge', key: 'authorship', p: 0.5,
       rule: PAGE_COPY.cards.authorship.rule,
       takes: PAGE_COPY.cards.authorship.takes, result: 'Nobody’s name, ever',
       dist: [8, 2, 2, 1, 1], distTop: 0, distEnds: ['No names, ever', 'Names from the start'] },
-    { k: 'judgments', g: '👁️', t: PAGE_COPY.cards.judgments.t, kind: 'constitutional', gate: 'judge', key: 'judgments', p: 0.86,
+    { k: 'judgments', g: '👁️', t: PAGE_COPY.cards.judgments.t, n: PAGE_COPY.cards.judgments.n, kind: 'constitutional', gate: 'judge', key: 'judgments', p: 0.86,
       // Q763: this field is *how answers aggregate* and nothing else — it had
       // been carrying the whichever-you-choose fact, which the card's own `why`
       // states already and which the delegate rung has no use for.
@@ -2330,7 +2332,7 @@
     // mechanism does not have (Ed, 2026-08-18: *isn’t the stake fixed at 1?*).
     // **One decision, not two** (Ed, 2026-08-18: the grant and the drip
     // merged — the rate is one thought, stated as one sentence)
-    { k: 'rate', g: '⏱️', t: PAGE_COPY.cards.rate.t, kind: 'ordinary', key: 'rateBy', p: 0.36,
+    { k: 'rate', g: '⏱️', t: PAGE_COPY.cards.rate.t, n: PAGE_COPY.cards.rate.n, kind: 'ordinary', key: 'rateBy', p: 0.36,
       rule: PAGE_COPY.cards.rate.rule,
       // `meanwhile` retired with the delegated card's pre-start frame (Ed's
       // QA, 2026-09-02 pm) — the standard-rate fact goes unsaid until the 🍾
@@ -2343,7 +2345,7 @@
     // gate 'judge': constitutional (§9.6 disclosure family), so judging waits
     // on it — the member surface already did, and the two disagreed (review
     // finding, 2026-08-18)
-    { k: 'chamber', g: '🌍', t: PAGE_COPY.cards.chamber.t, kind: 'constitutional', gate: 'judge', key: 'chamber', p: 0.43,
+    { k: 'chamber', g: '🌍', t: PAGE_COPY.cards.chamber.t, n: PAGE_COPY.cards.chamber.n, kind: 'constitutional', gate: 'judge', key: 'chamber', p: 0.43,
       rule: PAGE_COPY.cards.chamber.rule,
       takes: PAGE_COPY.cards.chamber.takes, result: 'Members only',
       dist: [5, 9], distTop: 1, distEnds: ['Members only', 'Anyone with the link'] },
@@ -2356,11 +2358,11 @@
     // three routes, the middle one a decision class of its own: everyone's
     // consent minus the subject. The subject always sees a removal proposed
     // against them, whichever route holds.
-    { k: 'removal', g: '🥾', t: PAGE_COPY.cards.removal.t, kind: 'constitutional', key: 'removal', p: 0.24,
+    { k: 'removal', g: '🥾', t: PAGE_COPY.cards.removal.t, n: PAGE_COPY.cards.removal.n, kind: 'constitutional', key: 'removal', p: 0.24,
       rule: PAGE_COPY.cards.removal.rule },
     // hidden outright where the shape says so (entry 166): a meeting and a
     // conference have no lapse question — a decision nobody has
-    { k: 'lapse', g: '💤', t: PAGE_COPY.cards.lapse.t, kind: 'constitutional', gate: 'judge', key: 'lapse', p: 0.29,
+    { k: 'lapse', g: '💤', t: PAGE_COPY.cards.lapse.t, n: PAGE_COPY.cards.lapse.n, kind: 'constitutional', gate: 'judge', key: 'lapse', p: 0.29,
       hide: () => shapeHides('lapse'),
       rule: PAGE_COPY.cards.lapse.rule,
       takes: PAGE_COPY.cards.lapse.takes, result: 'Never', taken: { afterMs: null },
@@ -2771,7 +2773,7 @@
     let said;
     if (rec.payload.kind === 'reserve') {
       const rc = card(pkeyOf(rec.payload.setting));
-      const what = rc ? LD + rc.t + RD : rec.payload.setting;
+      const what = rc ? LD + nounOf(rc) + RD : rec.payload.setting;
       said = '<p class="cpv">' + (carried
         ? PAGE_COPY.motionRec.reserveReturned(esc(what))
         : PAGE_COPY.motionRec.reserveKept(esc(what))) + '</p>';
@@ -3439,7 +3441,7 @@
   // over and gone if it is taken back. Same glyph, same title — it is the
   // same question — told apart by whose pile it stands in.
   const ANS = CARDS.filter((c) => c.key && ANSWER[c.k]).map((c) => ({
-    k: 'ans-' + c.k, g: c.g, t: c.t, kind: c.kind, own: 'you', ansFor: c.k }));
+    k: 'ans-' + c.k, g: c.g, t: c.t, n: c.n, kind: c.kind, own: 'you', ansFor: c.k }));
   const LIVE = () => CARDS.concat(ANS, GATES).filter(visible);
   // **The watcher waits for your own answer** (Ed, 2026-08-19: *we shouldn't
   // see the watcher for a group task until I have given my answer for that
@@ -4206,7 +4208,7 @@
     const p = rec.payload;
     if (p.kind === 'reserve') {
       const rc = card(pkeyOf(p.setting));
-      return 'Returns ' + (rc ? '“' + rc.t + '”' : p.setting) + ' to the founder’s reserve';
+      return 'Returns ' + (rc ? '“' + nounOf(rc) + '”' : p.setting) + ' to the founder’s reserve';
     }
     if (p.kind === 'invite') return p.email.split('@')[0] + ' joins the membership';
     if (p.kind === 'remove') return nameOfMember(p.member) + ' leaves the membership';
@@ -6971,14 +6973,16 @@
   const MEMBER_EMAILS = { has: (e2) => S.roster.some((r) => (r.e || '').toLowerCase() === e2) };
   const APPCARDS = () => {
     const a = S.app;
-    const base = [{ k: 'apply', g: '🪪', t: 'Apply for Membership', own: 'you',
+    // one label each (not settings, so no `n`); the words are copy.js's
+    const T = PAGE_COPY.appcards;
+    const base = [{ k: 'apply', g: '🪪', t: T.apply, own: 'you',
       kind: 'personal', done: () => a.submitted }];
     if (!a.started) return base;
     return base.concat([
-      { k: 'appmail', g: '📧', t: 'Your Email', own: 'you', kind: 'personal', done: () => a.emailVerified },
-      { k: 'appname', g: '✋', t: 'Your Name', own: 'you', kind: 'personal', done: () => !!a.name.trim() },
-      { k: 'apppic', g: '🖼️', t: 'Your Picture', own: 'you', kind: 'personal', done: () => !!a.pic },
-      { k: 'apptext', g: '👋', t: 'Your Application', own: 'you', kind: 'personal', optional: true, done: () => !!a.text.trim() },
+      { k: 'appmail', g: '📧', t: T.appmail, own: 'you', kind: 'personal', done: () => a.emailVerified },
+      { k: 'appname', g: '✋', t: T.appname, own: 'you', kind: 'personal', done: () => !!a.name.trim() },
+      { k: 'apppic', g: '🖼️', t: T.apppic, own: 'you', kind: 'personal', done: () => !!a.pic },
+      { k: 'apptext', g: '👋', t: T.apptext, own: 'you', kind: 'personal', optional: true, done: () => !!a.text.trim() },
     ]);
   };
   // **An application refused at the door** (Q901, SURFACE E33, entry 97): 🤝
@@ -7514,7 +7518,7 @@
         const was = wordsFor(k, from);
         const now2 = wordsFor(k, (csState(k) || {}).value);
         if (!was) return '';
-        const what = esc(WHAT[k] || (k === 'title' ? 'the document’s title' : cc.t.toLowerCase()));
+        const what = esc(WHAT[k] || (k === 'title' ? 'the document’s title' : nounOf(cc).toLowerCase()));
         const who = am.route === 'pen' ? 'The Founder has changed ' : 'The membership has changed ';
         // **Long values are shown, not narrated** (2026-08-22). *from x to y*
         // reads well for a rung, a percentage or a date, and badly for ⏱️,
@@ -11066,9 +11070,10 @@
     okd: [...S.okd], owed: [...(owedSettings() || [])],
   });
   const glyphOfSetting = (mid) => { const c = card(pkeyOf(mid)); return c ? c.g + ' ' : ''; };
-  // a setting named as the founder meets it — its glyph and its own title
+  // a setting named inside a sentence — its glyph and its noun (`nounOf`:
+  // a name, not a title, so the noun in every state)
   const settingNamed = (mid) => glyphOfSetting(mid) +
-    esc(card(pkeyOf(mid)) ? card(pkeyOf(mid)).t : mid);
+    esc(card(pkeyOf(mid)) ? nounOf(card(pkeyOf(mid))) : mid);
   // **The 👑 news card's body** (entry 162, Q1013): what one act laid down,
   // grouped by the constitution's own sections. `SEC` is the page's existing
   // idea of a zone, and 158's editable zone table does not exist yet — when
@@ -11302,7 +11307,7 @@
       const k = pkeyOf(q.setting);
       let line;
       if (q.settled) {
-        line = esc(card(k) ? card(k).t : q.setting) + '<span class="rsub"> · settled</span>';
+        line = esc(card(k) ? nounOf(card(k)) : q.setting) + '<span class="rsub"> · settled</span>';
       } else if (q.collecting) {
         const subject = decidingOf(k)
           .replace(/^The membership (?:will decide|(?:are|is) deciding) /, '')
@@ -11310,7 +11315,7 @@
         line = esc(q.answered + ' out of ' + q.electorate + ' of the membership ' +
           (q.answered === 1 ? 'has' : 'have') + ' voted on ' + subject + '.');
       } else {
-        line = esc(card(k) ? card(k).t : q.setting) + '<span class="rsub"> · still being decided</span>';
+        line = esc(card(k) ? nounOf(card(k)) : q.setting) + '<span class="rsub"> · still being decided</span>';
       }
       return '<span class="gaterow"><span class="gg">' + glyphOfSetting(q.setting) + '</span>' + line + '</span>';
     }).join('');

@@ -123,12 +123,18 @@ Glyph names are stable (tabulated 2026-09-07, Q1208; the founding order's own gl
   whichever reads most naturally; a bare noun is not an ask** (Ed,
   2026-09-07, Q1209: *it should be clear the user has a choice to make, and
   what the nature of that choice is* — reversing the exemption that had kept
-  *Quorum* and *Proposal Pass Threshold* as nouns). The review of every title
-  against this is owed (Q1209 in QUESTIONS.md's Backlog). **A card wears the
-  ask while it is outstanding and its noun once it is settled** — two labels
-  on one card, which shows being the card's state, the tab and the rail
-  following the card (Ed, 2026-09-07, Q331 (b)): the pile at the head of the
-  document reads as rules, the rail as asks.
+  *Quorum* and *Proposal Pass Threshold* as nouns). Every title was reviewed
+  against this and re-titled on 2026-09-08, Ed approving the table as it
+  stood; the table (today · ask · noun · why) is in `design/DECISIONS.md`,
+  *Every settings title is an ask; a settled card wears its noun*. **A card
+  wears the ask while it is outstanding and its noun once it is settled** —
+  two labels on one card, which shows being the card's state, the tab and
+  the rail following the card (Ed, 2026-09-07, Q331 (b)): the pile at the
+  head of the document reads as rules, the rail as asks. The noun shows on a
+  decided rule that still owes you an OK, since it offers no choice. The
+  doors and 📝 have one label; the power tabs stay questions in every state.
+  Both labels live in `design/copy.js`'s CARDS (`t` and `n`); SURFACE §9
+  states the rule and §8's table lists every pair.
 - **T5 · A rename reaches the option labels**, not just the headings — **one
   label per rung, everywhere**: the founder's radio, the member's ladder and
   the composer's lane say the same words (Q620), which since Q1112 (b) they do
@@ -190,7 +196,7 @@ The rules the audit log (§7) audits against, lifted from CLAUDE.md's glossary a
 | # | Rule | Example · where enforced |
 |---|---|---|
 | T1 | §4 · Task titles are Title Case | *Title*, *Link*, *Text*; *Is the Founder a Member?* |
-| T2 | §4 · A title says what kind of answer it wants | *Proposal Pass Threshold* (Ed's own words, entry 215; Title Case and no question mark by his QA of 2026-08-30 — a noun title takes T1's case like any other) / *Quorum* / *Admissions*; the power tabs: *Can the Founder Make Amendments at Will?* / *Does the Founder Have a Veto?* (Q615); on the doors, the act: *Can the Founder Invite at Will?* / *Does the Founder Have a Veto over Invitations?* / *Can the Founder Remove at Will?* / *Does the Founder Have a Veto over Removals?* (entry 94) |
+| T2 | §4 · A title says what kind of answer it wants | while outstanding, the ask: *Set the Proposal Pass Threshold* / *Choose the Quorum* / *How Does Somebody Join?*; once settled, the noun: *Proposal Pass Threshold* (Ed's own words, entry 215; Title Case and no question mark by his QA of 2026-08-30 — a noun title takes T1's case like any other) / *Quorum* / *Admissions* (Q1209, Q331 (b)); the power tabs: *Can the Founder Make Amendments at Will?* / *Does the Founder Have a Veto?* (Q615); on the doors, the act: *Can the Founder Invite at Will?* / *Does the Founder Have a Veto over Invitations?* / *Can the Founder Remove at Will?* / *Does the Founder Have a Veto over Removals?* (entry 94) |
 | T3 | §4 · A settled card's head is the rule, not the task's name | `headFor` |
 | T4 | §4 · A task you have to do carries no subtitle | `summary` |
 | T5 | §4 · A rename reaches the option labels; one label per rung, everywhere | *Votes are revealed when the document is finished, and not before.*; *Removing a member needs every member to agree, including them 🏛️.*; `card-audit` T5 |
