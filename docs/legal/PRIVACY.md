@@ -254,7 +254,7 @@ than after you ask.
 `[[PLACEHOLDER: the mechanism behind this promise is half built (2026-09-08,
 decision 1253). Your name, your picture and your email address live in a
 separate row that an operator deletes with one command, and the record then
-shows [withdrawn] where your name was — that half works. Your proposals, your
+shows [redacted] where your name was — that half works. Your proposals, your
 reasons and what you wrote in an application are still recorded as written;
 redacting them at the point they are displayed, so the record's seals still
 hold, is not yet built. Until it is, that part of an erasure request has to be

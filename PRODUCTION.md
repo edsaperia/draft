@@ -116,7 +116,7 @@ early, painful once real logs exist:
    `people` table. Deleting a person breaks no hash.
 2. Free text that genuinely rides events is redacted at the projection (bytes
    stay, so hashes hold; `view()` never renders them; the record shows
-   *[withdrawn]*). Stronger option: per-member encryption of free text,
+   *[redacted]*). Stronger option: per-member encryption of free text,
    delete the key.
 3. **Be honest in advance about the remainder.** Unattributed judgments cannot
    be withdrawn — they were inputs to a collective decision others relied on.
@@ -144,8 +144,12 @@ the `people` table in Postgres, migration 5) hold every email, name and
 picture; every event carries the id; a log below schema version 2 is skipped
 at boot and named, never read; `draft-tools people` · `erase` · `wipe` are the
 operator's verbs (`docs/OPERATING.md` §5), the wipe refusing without its full
-flag and **not yet run**. The reasoning and the calls made: `design/DECISIONS.md`
-(2026-09-08). Part 2 — redaction of free text at the projection — is not
+flag and **run by Ed on 2026-09-08** from the service's Render shell
+(`docs/runbooks/wipe.md`). The reasoning and the calls made: `design/DECISIONS.md`
+(2026-09-08). Two residuals ruled the same day (Q1287): erasure on a running
+server is *erase, then restart* until go-live is scheduled, and the operator
+route that does both in one act is owed then; the erased person stands as
+*[redacted]* (STYLE T49). Part 2 — redaction of free text at the projection — is not
 built: rationales, application words and closing comments still ride events.
 Part 3 is written into `docs/legal/PRIVACY.md` as a marked draft. Q500's eight
 decisions are parked until go-live is scheduled.
@@ -244,7 +248,7 @@ unless another path is given.
 | 434 | ESLint only, **no Prettier** — it would reflow ten thousand lines of hand-wrapped prose comments and destroy the authorial voice. | adopted on recommendation |
 | 435 | Build: **esbuild bundle** (already pinned, 0.28.2) rather than tsc project references. | adopted on recommendation |
 | 436 | PII behind a `person_id` in a deletable `people` table **from the first schema** — nearly free now, structurally impossible later (see stage 12). | adopted on recommendation; how it lands after the window closed is 1253; **built 2026-09-08, half (1)** |
-| 1253 | **Clear the database, split from now on.** The alpha's documents are wiped rather than migrated; the `people` split is the schema every document is born into afterwards, so there is one erasure story and no hash migration. The wipe runs only on Ed's word at the time. | decided by Ed 2026-09-07; **half (1) built 2026-09-08** — the schema, the module, the tool verbs; **the wipe run by Ed on 2026-09-08** from the service's Render shell (`docs/runbooks/wipe.md`): 25 documents and every sidecar deleted, the refusal exercised first |
+| 1253 | **Clear the database, split from now on.** The alpha's documents are wiped rather than migrated; the `people` split is the schema every document is born into afterwards, so there is one erasure story and no hash migration. The wipe runs only on Ed's word at the time. | decided by Ed 2026-09-07; **half (1) built 2026-09-08** — the schema, the module, the tool verbs; **the wipe run by Ed on 2026-09-08** from the service's Render shell (`docs/runbooks/wipe.md`): 25 documents and every sidecar deleted, the refusal exercised first; the running-server erase route **owed at go-live** (Q1287 (a), Ed 2026-09-08) |
 | 476 | **Auto-deploy on green during alpha**: CI deploys and then verifies the live environment, failing the build if what came back is wrong. | decided 2026-08-20 |
 | 480 | Schema version **on the log envelope**, outside the hash; absent means 1, read through `versionOf`. Both logs carry their own number. | decided 2026-08-20 |
 | 437 | `/api/dev/outbox` **deleted from the production build**, not flag-gated — half the defect is that the app can boot into a dangerous mode. | adopted on recommendation |

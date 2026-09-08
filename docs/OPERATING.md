@@ -220,7 +220,7 @@ Five things to know about it:
 3. **Nothing here is ever deleted, except a person's row.** No JSONL log is
    removed, by hand or by tooling; erasure is deleting one row from
    `people.json` (or the `people` table), which the log never covered, so
-   every hash holds and the person's seat stands as *[withdrawn]* wherever
+   every hash holds and the person's seat stands as *[redacted]* wherever
    a name was printed. Their judgments stay, as the privacy policy says they
    do.
 4. **Slugs are not identities.** The directory name is the document id;
@@ -238,6 +238,10 @@ Five things to know about it:
 
    `erase` is run **against a stopped service, or the service is restarted
    after it** — a running server holds the rows in memory until it reloads.
+   That is the procedure until go-live is scheduled (Ed, 2026-09-08, decision
+   1287): an operator route on the running server, so the row leaves memory
+   and store in one act, is owed then and not before, the restart being
+   honest while the store holds only alpha documents.
    `wipe` deletes every document and every sidecar (tokens, stashes, queued
    mail, the dev inbox) and leaves the schema migrated; it **refuses**
    without the flag, and with any `<name>` but the store's own — the data

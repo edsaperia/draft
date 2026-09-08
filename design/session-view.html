@@ -1015,7 +1015,7 @@
   };
   const departureLine = (d) => {
     // an erased person's line still says somebody left — it names no name
-    const who = esc(d.erased ? PAGE_COPY.synth.withdrawn : (d.name || PAGE_COPY.departed.someone));
+    const who = esc(d.erased ? PAGE_COPY.synth.redacted : (d.name || PAGE_COPY.departed.someone));
     return d.by === 'self' ? PAGE_COPY.departed.lineSelf(who, dayOf(d.t))
       : d.by === 'members' ? PAGE_COPY.departed.lineMembers(who, dayOf(d.t))
       : PAGE_COPY.departed.lineFounder(who, dayOf(d.t));
@@ -2519,15 +2519,15 @@
     return RECCACHE[k];
   };
   const applicantById = (id) => allApplicants().find((ap) => ap.id === id);
-  const applicantName = (ap) => (ap.erased ? PAGE_COPY.synth.withdrawn
+  const applicantName = (ap) => (ap.erased ? PAGE_COPY.synth.redacted
     : ap.name || ap.email || PAGE_COPY.synth.anonymous);
   // **A named author, as the speaker's disc shows them** (SURFACE K30): the
   // server serves `author` only where the anonymity ladder allows, so its
   // presence is the whole gate here. Null where the seal holds. An erased
   // author (decision 1253) is still an author the record names — the row is
-  // gone, so the seat stands as *[withdrawn]* under the anonymous disc.
+  // gone, so the seat stands as *[redacted]* under the anonymous disc.
   const authorBy = (a) => (!a ? null
-    : a.erased ? { n: PAGE_COPY.synth.withdrawn, pic: '', erased: true }
+    : a.erased ? { n: PAGE_COPY.synth.redacted, pic: '', erased: true }
     : a.name ? { n: a.name, pic: a.picture || '' } : null);
   // **An open door makes news, not a task** (Ed, 2026-08-26). At ✒️ an
   // application is admitted the moment it is submitted, so nobody is being
@@ -4225,12 +4225,12 @@
   // carries a person row's id, and the address the page shows comes off the
   // row — the view resolves it onto the wire; the fixture reads the module's
   // own rows. Null where the row has been erased, and then the handle is
-  // *[withdrawn]* rather than a name nobody holds any more.
+  // *[redacted]* rather than a name nobody holds any more.
   const inviteeHandle = (p) => {
     const e = p.email !== undefined ? p.email
       : (cs && cs.people && typeof cs.people.get === 'function'
         ? ((cs.people.get(p.person) || {}).email || null) : null);
-    return e ? e.split('@')[0] : PAGE_COPY.synth.withdrawn;
+    return e ? e.split('@')[0] : PAGE_COPY.synth.redacted;
   };
   // what a typed motion proposes, said in the page's own vocabulary
   const motionDisplay = (rec) => {
@@ -4866,7 +4866,7 @@
     // an erased person (decision 1253) has no name and no address left to
     // fall back on: the row says so, and wears the anonymous disc
     row.erased = !!rec.erased;
-    row.n = rec.erased ? PAGE_COPY.synth.withdrawn
+    row.n = rec.erased ? PAGE_COPY.synth.redacted
       : (rec.name || (row.founder ? '' : String(rec.email || '').split('@')[0]));
     row.pic = rec.erased ? '' : (rec.picture || '');
   };
@@ -4882,7 +4882,7 @@
       const row = S.roster.find((r) => r.mid === mid2);
       if (!row && !rec.removed) {
         S.roster.push({
-          n: rec.erased ? PAGE_COPY.synth.withdrawn : (rec.name || String(rec.email || '').split('@')[0]),
+          n: rec.erased ? PAGE_COPY.synth.redacted : (rec.name || String(rec.email || '').split('@')[0]),
           pic: rec.erased ? '' : (rec.picture || ''),
           e: rec.email || '',
           erased: !!rec.erased,
@@ -9278,7 +9278,7 @@
       ? '<div class="memrow nobody">(nobody here yet)</div>'
       : list.map((m) => '<div class="memrow">' +
         avHtml({ n: m.name || '', pic: m.picture || '', erased: !!m.erased }) +
-        '<span class="mn">' + esc(m.erased ? PAGE_COPY.synth.withdrawn : (m.name || 'Anonymous')) +
+        '<span class="mn">' + esc(m.erased ? PAGE_COPY.synth.redacted : (m.name || 'Anonymous')) +
         '</span></div>').join('')) + '</div>';
   };
   // the band, read-only: the rule as it stands, no composer, no radios
@@ -10189,7 +10189,7 @@
     out.push({ t: 'h', level: 1, x: 'Signatures', key: 'S:head' });
     if (!sigs.length) out.push({ t: 'p', x: 'Nobody has signed the document yet.', key: 'S:none' });
     sigs.forEach((sg, i) => out.push({ t: 'p',
-      x: (sg.erased ? PAGE_COPY.synth.withdrawn : (sg.name || 'A member, unnamed')) +
+      x: (sg.erased ? PAGE_COPY.synth.redacted : (sg.name || 'A member, unnamed')) +
         (sg.comment ? ' — ' + sg.comment : ' — signed without a comment') +
         (sg.t ? ' · ' + whenOf(sg.t) : ''), key: 'S:' + i }));
     return out;
@@ -11412,7 +11412,7 @@
     }
     const sigs = closeSignatures();
     const sigList = sigs.length ? '<div class="gatelist sigs">' + sigs.map((sg) =>
-      '<span class="gaterow">' + (sg.erased ? esc(PAGE_COPY.synth.withdrawn)
+      '<span class="gaterow">' + (sg.erased ? esc(PAGE_COPY.synth.redacted)
         : sg.name ? esc(sg.name) : '<span class="disc small" aria-hidden="true"></span>a member') +
       (sg.comment ? '<span class="rsub"> · ' + esc(sg.comment) + '</span>' : '') + '</span>').join('') + '</div>' : '';
     const mine = mySignature();

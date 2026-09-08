@@ -399,7 +399,7 @@ export async function createDraftServer(cfg: ServerConfig,
       if (!authorVisible(c, engine.constitution, { closed: engine.closed })) return undefined;
       const rec = recordOf(c.author);
       // `erased` rides with the name (decision 1253): the page prints
-      // *withdrawn* rather than Anonymous where the row is gone
+      // *[redacted]* rather than Anonymous where the row is gone
       return { id: c.author, name: rec?.name ?? null, picture: rec?.picture ?? null,
         erased: rec?.erased ?? false };
     };
