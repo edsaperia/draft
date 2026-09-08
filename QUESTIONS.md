@@ -376,6 +376,7 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 
 | # | Title | Raised | State | Pointers |
 |---|---|---|---|---|
+| 1285 | The lapse warning arrives a proportionate absolute lead before the lapse — a day, an hour — not at three quarters of the spell | 2026-09-08 | raised by Ed, owed — the lead ladder is his to set | `WARN_FRACTION`, `lapseDue` (clocks.ts); `MAILS.lapseWarning`; SPEC §9.5a; SURFACE E22 |
 | 1239 | Three checkers for SURFACE's L table, setup alphabet and socket states — a disagreement is a finding for Ed, not a fix | 2026-09-07 | answered 2026-09-07, owed — a tooling plan | SURFACE §2 L1–L9, §6, §7.1; `journey-walk.mjs`; `spec-check.mjs`; `stateOf`/`markOf` |
 | 1237 | Trim F5, F19, F21 and K31 to their rulings; the card detail moves to §9's rows and §8's table | 2026-09-07 | answered 2026-09-07 (b), owed — a docs plan, no code | SURFACE F5, F19, F21, K31, §8, §9 |
 | 1209 | Every settings title is an ask — imperative or question, case by case; the noun titles go | 2026-09-07 | answered 2026-09-07, owed — a copy pass over the 22 titles, two labels each (Q331 (b)) | STYLE T1–T2; `design/copy.js` CARDS; the copy and founding goldens; Q331 |
@@ -389,6 +390,10 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 | 244 | A flow entry can overlap a pinned one | 2026-08-16 | open — cosmetic | `freeFor` (session.js) |
 | 248 | The ⌈E/3⌉ has never been calibrated | 2026-08-16 | open — wants a sweep | SPEC §8.2 |
 | 252 | A perpetual document loses the reset | 2026-08-16 | open | SPEC §9.4, §4.5 |
+
+1285. **The lapse warning arrives a proportionate absolute lead before the lapse, not at three quarters of the spell**
+
+    **Raised by Ed, 2026-09-08:** *we should notify a member by email when their membership is about to lapse (proportionate to lapse rate, e.g. one day / one hour before lapsing depending how fast it is).* **What exists:** the warning mail is built (SURFACE E22, `MAILS.lapseWarning`, sent on the module's `lapse-warned` event), and its moment is `WARN_FRACTION` = 0.75 of the consented spell (`lapseDue` in clocks.ts): a thirty-day 💤 warns a week out, a seven-day one forty hours out, a one-hour one fifteen minutes out. A fraction scales the lead with the spell, which is the wrong shape at both ends — a week's notice on a month's spell is more than anybody needs to act on, and fifteen minutes on an hour's is less than a mail takes to be read. **The build:** the warning moment becomes an absolute lead chosen from the spell — a ladder, most likely *one day* for a spell of some days or longer, *one hour* for a spell of some hours, something shorter for a spell of minutes (the sim rooms run at ten to twenty minutes) — with the fraction surviving only as a ceiling so a lead is never most of the spell. **Owed, and the ladder's steps are Ed's to set**: a plan should present the steps as a table (spell → lead) first. Touches `lapseDue` and its callers (`tick`'s warn loop, `rereadLapse`'s *still due* test), `clocks.test.ts`, SPEC §9.5a (*warnings go by mail before it happens* — the lead joins the sentence), SURFACE E22's channel cell, and the mail's own copy if it names the time left (STYLE §6). **Since R-096 the warning is the one thing a lapsed-to-be member is served that a read does not answer**, so it is the whole of what brings them back before the clock does.
 
 1239. **Three checkers for SURFACE's L table, setup alphabet and socket states — a disagreement is a finding for Ed, not a fix**
 
@@ -446,7 +451,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1285** — claim by writing the block here, then commit it alone.
+**The next free number is 1286** — claim by writing the block here, then commit it alone.
+
+**1285 is the lapse-warning lead** Ed raised on 2026-09-08 for the backlog: the warning mail a proportionate absolute time before the lapse rather than at three quarters of the spell.
 
 **1284 is the E21 audience question** the seat-matrix raised when Q1282 was built (2026-09-07): whether a lapsed member carries the admit card — answered by Ed on 2026-09-08 (*every active member*; DECISIONS.md).
 
