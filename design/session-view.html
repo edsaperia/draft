@@ -1254,7 +1254,9 @@
   const REVERTKEYS = () => ['title', 'slug', 'docShape', 'ending', 'endsAt', 'endChip', 'tClose', 'shape', 'tStart',
     'quorumForm', 'quorumPct', 'quorumN', 'joinBy', 'policyBy', 'titleBy', 'slugBy',
     'lapse', 'lapseDays', 'removal', 'removeWho', 'admission', 'authorship', 'judgments',
-    'grant', 'dripMin', 'cap', 'chamber',
+    // ⏱️'s number and unit fields (Q1161) — missing until Q1286 (e), so 🗑️ on
+    // ⏱️ left the typed number on the card and a later ✒️ would have committed it
+    'grant', 'dripMin', 'dripN', 'dripUnit', 'cap', 'chamber',
     'barBy', 'quorumBy', 'rateBy', 'myname', 'mypic', 'myemail', 'hatPick',
     'namePick', 'picPick', 'appPicPick',
     // the title's provisional lane rides the snapshot like every other
@@ -1296,6 +1298,11 @@
     if (el.querySelector('[data-titlelane]')) ks.add('titleDraft');
     // ❌'s subject is provisional input like any other, so 🗑️ puts it back
     if (el.querySelector('[data-removewho]')) ks.add('removeWho');
+    // **A derived value rides with its field** (Q1286 (e), Ed 2026-09-08):
+    // ⏱️'s typed number rescales `dripMin` and claims `rateBy` as it is typed
+    // (Q1161), so a bin that put back `dripN` alone left the minutes standing
+    // and the reopened card read them back as the number
+    if (el.querySelector('[data-num="dripN"], [data-dripunit]')) { ks.add('dripMin'); ks.add('dripUnit'); ks.add('rateBy'); }
     // **The picture card names itself by its uploader, not by its grid.**
     // `[data-pic]` used to be the always-present row of grounds; since Q732
     // the only `[data-pic]` elements are the picker's own buttons and the
@@ -3831,14 +3838,14 @@
       .flatMap((c) => [c].concat(tasksFor(c)))
       .filter((c) => !owesOwnAnswer(c))
       .filter((c) => ((c.isGate && !c.isBegin && !c.isClosing) ? stateOf(c, ctx) === 'news' : stateOf(c, ctx) !== 'done'))
-      // **A constitutional question waiting on the room is not a task**
-      // (Ed, 2026-08-21): nothing is being asked of you — you have either
-      // answered it or were never asked — so it keeps its own glyph on the
-      // grey tab in the band and leaves the rail. It covers the three ways
-      // a constitutional card waits: the watcher on a setting you handed
-      // over, your own question once you have answered it, and a
-      // constitutional motion you have answered.
-      .filter((c) => !(c.kind === 'constitutional' && stateOf(c, ctx) === 'wait'))
+      // **A setting you handed over and do not answer is not a task** (Ed,
+      // 2026-08-21): nothing is being asked of you, so the watcher keeps its
+      // glyph on the grey tab in the band and leaves the rail. **A vote of
+      // yours waiting on the room stays, as ⏳** (Ed, 2026-09-08, Q1286 (a):
+      // it stays in the rail like a race's ⏳, Q1202) — ordinary or
+      // constitutional alike; until this date the constitutional ones left
+      // and the ordinary ones stayed, which was the kind and not the wait.
+      .filter((c) => !(isRoom(c) && !ctx.voted(c) && stateOf(c, ctx) === 'wait'))
       // the closed page asks nothing but the signature (Q470): a grant or
       // a question outstanding at the close is moot, and leaves the rail
       .filter((c) => !(cs && cs.closed) || c.isClosing);
@@ -5890,6 +5897,12 @@
     // exists and wears the grey the band gives a settled thing.
     mustAct: (c) => (c.power || c.record ? false : mustAct(c)),
     waiting: (c) => (c.power || c.record ? false : waiting(c)),
+    // which wait is a vote of yours (Ed, 2026-09-08, Q1286 (a)): a delegated
+    // question you answered, or a motion you answered — those wear ⏳ and
+    // stay in the rail like a race's ⏳ (Q1202); every other wait keeps its
+    // glyph, and the watcher on a setting you handed over leaves the rail
+    voted: (c) => !c.power && !c.record &&
+      (motionOn(c) ? answeredMotion(c) : !!c.ansFor && answered(c)),
     news: (c) => (c.power || c.record ? false : news(c)),
     // the paragraph seam, so 🏛️ draws no clause of its own where the
     // preamble is standing to carry it (Q750). The rail reads `tasksFor`
@@ -10719,23 +10732,22 @@
     // already held all of it. Now every socket renders its own tool and a
     // reader can see what their role can do — *nothing* included.
     //
-    // `notApp` survives for one case only: **the closed page**, where the
-    // farewell has flown the tools out and the page is deliberately grey and
-    // filed. Arguably Ed's rule reaches there too — the tools were taken away,
-    // which is exactly what a row of empty sockets would say — but that is a
-    // change to a finished ceremony rather than to a live toolbar, so it is
-    // held as the residual on Q532 rather than made here.
+    // **…and the closed page too** (Ed, 2026-09-08, Q1286 (b): *all sockets
+    // should show at all times; empty sockets show with a strikethrough. We
+    // show the sockets to educate the user on what the different powers are*).
+    // After the farewell every tool is gone, so every socket stands struck —
+    // the same row a stranger sees. Until this date the closed page hid the
+    // sockets outright (`gonewallet`, the residual on Q532), retired here.
     const gone = cs && cs.closed && (farewellDone || signedClose() || !viewerIsMember());
     const socket = (el, held, inner, glyph) => {
-      const h = gone ? '' : (held ? inner : '<i>' + glyph + '</i>');
+      const h = held && !gone ? inner : '<i>' + glyph + '</i>';
       // the idempotent write the quill has always had, extended to the rest
       // (Q531): these strings almost never change, and rewriting identical
       // markup every render destroys any animation running on the token —
       // which is why `.navbar .quill i`'s own 240ms transition could never run
       // here, and what the spend-preview would have stuttered against.
       if (el.innerHTML !== h) el.innerHTML = h;
-      el.classList.toggle('notheld', !gone && !held);
-      el.classList.toggle('gonewallet', !!gone);
+      el.classList.toggle('notheld', gone || !held);
     };
     socket(pen, showPen, penh, '✒️');
     // 🛡️ joins the toolbar (Q532(3)). It is the pen's other half and behaves

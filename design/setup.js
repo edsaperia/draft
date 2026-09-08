@@ -218,7 +218,15 @@ window.SETUP = (function () {
     // entry leaves the rail entirely (see the rail's own filter). ⏳ survives
     // where the wait is about **you**: 📧 waiting on your own verification,
     // a gate waiting on its conditions, 🍾 waiting on the founder.
-    if (st === 'wait' && c.kind === 'constitutional') return c.g;
+    // **⏳ means you have voted and the room has not finished** (Ed, 2026-09-08,
+    // Q1286 (a): *⏳ is shown when a decision is being voted on, you have
+    // already voted, and the outcome is waiting on the room. Otherwise it
+    // should be another glyph*) — a setting exactly as a race (Q1202). Every
+    // other wait keeps its subject glyph: 📧 awaiting your verification, a gate
+    // awaiting its blockers, 🍾 awaiting the founder, a setting you handed over
+    // and do not answer. The surface says which wait is a vote (`ctx.voted`);
+    // a surface with no such predicate has no votes to wait on.
+    if (st === 'wait' && !(ctx.voted && ctx.voted(c))) return c.g;
     // **A grant wears the glyph of the power it grants** (entry 180, Ed: *users
     // don't realise that anything will change when they click OK, it just looks
     // like information*). Every other news card is decided-and-owed-a-reading;

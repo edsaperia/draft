@@ -4917,12 +4917,16 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   const setWalletGhost = (v) => { if (walletGhost !== !!v) { walletGhost = !!v; renderWallet(); } };
   const setWalletTitle = (s) => { if (walletTitle !== s) { walletTitle = s; if (walletEl) walletEl.title = s || ''; } };
   function renderWallet(showAs) {
-    if (closedMode) { walletEl.className = 'wallet'; walletEl.innerHTML = ''; walletEl.title = ''; return; }
-    if (!walletHeld) {
+    // **Every socket shows at all times; a tool you do not hold is struck**
+    // (Ed, 2026-09-08, Q1286 (b): *we show the sockets to educate the user on
+    // what the different powers are*) — the closed page included: after the
+    // farewell the ✏️ socket stands struck like every other, where it used to
+    // empty into a bare pill (the `gonewallet` state, retired with this).
+    if (!walletHeld || closedMode) {
       walletEl.className = 'wallet notheld';
       const nh = '<span class="pencils"><i>✏️</i></span>';
       if (walletEl.innerHTML !== nh) walletEl.innerHTML = nh;
-      walletEl.title = walletTitle || '';
+      walletEl.title = closedMode ? '' : (walletTitle || '');
       applyLean();
       return;
     }
@@ -4956,9 +4960,12 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       // The countdown carries the drip's own wash: the fill *is* how far the
       // tenth has run, so the thing that says **when** and the thing that shows
       // **how far** are one object rather than two saying it twice. That
-      // retires the ghost pencil, whose only job was the fraction.
-      (full ? '' : '<span class="pwhen" style="--fill: ' +
-        (Math.max(0, Math.min(1, editsToNext)) * 100).toFixed(1) + '%">' + dripIn() + '</span>') +
+      // retires the ghost pencil, whose only job was the fraction. Drawn at the
+      // cap too: the stylesheet hides it there (`.wallet.full .pwhen`), so
+      // `full` is a class with a look and the socket table is true of the CSS
+      // (Ed, 2026-09-08, Q1286 (d)).
+      '<span class="pwhen" style="--fill: ' +
+        (Math.max(0, Math.min(1, editsToNext)) * 100).toFixed(1) + '%">' + dripIn() + '</span>' +
       '</span>';
     applyLean();
   }

@@ -478,11 +478,15 @@ function checkSetupAlphabet() {
   // *a delegated card waiting on the room … ordinary or constitutional alike* —
   // and the code's guard names its own; where the cell says *alike* the guard
   // may not name a kind. (Finding (a) of QUESTIONS 1286 on the first run.)
-  const waitGuard = (mo.match(/if \(st === 'wait' && ([^)]*)\) return c\.g;/) || [])[1];
+  // **⏳ means you have voted and the room has not finished** (Ed, 2026-09-08,
+  // Q1286 (a)): markOf keeps the subject glyph on every wait that is not a
+  // vote of yours, and the surface says which wait is a vote (`ctx.voted`)
   const waitCell = cell('wait', 'rail mark');
-  if (!waitGuard) find('setup-alphabet', 'markOf: no wait branch keeping the subject glyph — the table says a delegated card waiting on the room keeps it');
-  else if (/ordinary or constitutional alike/.test(waitCell) && /c\.kind === '(?:constitutional|ordinary)'/.test(waitGuard))
-    find('setup-alphabet', `wait: the rail-mark cell says a delegated card keeps its glyph "ordinary or constitutional alike"; markOf keeps it only where \`${waitGuard}\` — every other wait wears ⏳ (finding (a), QUESTIONS 1286)`);
+  if (!/if \(st === 'wait' && !\(ctx\.voted && ctx\.voted\(c\)\)\) return c\.g;/.test(mo))
+    find('setup-alphabet', 'markOf: the wait branch no longer asks `ctx.voted` — the table says ⏳ where you have voted, else the subject glyph (Q1286 (a))');
+  if (!/where you have voted/.test(waitCell) || !/otherwise the subject glyph/.test(waitCell))
+    find('setup-alphabet', `wait: markOf hands ⏳ to a vote of yours and the glyph to every other wait; the rail-mark cell says "${waitCell.slice(0, 80)}…"`);
+  if (!/voted: \(c\) =>/.test(page)) find('setup-alphabet', 'session-view.html: the ctx has no `voted` predicate, so markOf can never draw ⏳');
   // in the rail? — `servedCards`: done leaves, a gate shows only as news, and
   // which waits leave is the same guard as above read at its second site
   const sc = (page.match(/const servedCards = \(\) =>([\s\S]*?\);\r?\n)/) || [])[1];
@@ -496,10 +500,14 @@ function checkSetupAlphabet() {
     }
     if (!yes(cell('news', 'in the rail?'))) find('setup-alphabet', `news: the table says "${cell('news', 'in the rail?')}", servedCards keeps every news card`);
     if (!/c\.isGate[^\n]*stateOf\(c, ctx\) === 'news'/.test(sc)) find('setup-alphabet', 'servedCards: the gate rule (a gate shows only as news) is not where it was');
-    const waitDrop = (sc.match(/\.filter\(\(c\) => !\(([^)]*) && stateOf\(c, ctx\) === 'wait'\)\)/) || [])[1];
-    if (!waitDrop) find('setup-alphabet', 'servedCards: no wait filter — the table says a delegated card waiting on the room leaves the rail');
-    else if (/ordinary or constitutional alike/.test(waitCell) && /c\.kind === '(?:constitutional|ordinary)'/.test(waitDrop))
-      find('setup-alphabet', `wait: the in-the-rail cell says "${cell('wait', 'in the rail?')}" and the rail-mark cell says a delegated card leaves "ordinary or constitutional alike"; servedCards drops a wait only where \`${waitDrop}\` (finding (a), QUESTIONS 1286)`);
+    // a vote of yours waiting on the room stays in the rail as ⏳, like a
+    // race's (Q1202); the watcher on a setting you handed over leaves (Ed,
+    // 2026-09-08, Q1286 (a); Ed, 2026-08-21)
+    if (!/\.filter\(\(c\) => !\(isRoom\(c\) && !ctx\.voted\(c\) && stateOf\(c, ctx\) === 'wait'\)\)/.test(sc))
+      find('setup-alphabet', 'servedCards: the wait filter no longer drops exactly the unvoted watcher (`isRoom(c) && !ctx.voted(c)`) — the table says a vote of yours stays and the watcher alone leaves (Q1286 (a))');
+    const railCell = cell('wait', 'in the rail?');
+    if (!/^yes/.test(railCell) || !/watcher alone leaves/.test(railCell))
+      find('setup-alphabet', `wait: servedCards keeps every wait but the unvoted watcher; the in-the-rail cell says "${railCell}"`);
   }
   // pins? — `entryOf`: everything but wait and done pins, and yours is force-kept (`mine`)
   const eo = fnBody(page, 'function entryOf(c, cx)');
@@ -559,15 +567,26 @@ function checkSockets() {
     if (!/visibility:\s*hidden/.test(m[2]) || /display:\s*none/.test(m[2]))
       find('sockets', `ghost: \`${m[1].trim()}\` is not \`visibility: hidden\` — the ghost must never become a removal`);
   }
-  if (!/\.navbar \.gonewallet \{ display: none; \}/.test(css)) find('sockets', 'gone: `.navbar .gonewallet { display: none; }` (the socket absent) is not where it was');
+  // **Every socket shows at all times; a tool you do not hold is struck** (Ed,
+  // 2026-09-08, Q1286 (b)) — the closed page included, so no socket is ever
+  // absent and the retired `gonewallet` class must not come back as a
+  // selector or a class the renderers set (comments may name it as history)
+  if (/\.gonewallet\b/.test(css)) find('sockets', 'system.css styles `.gonewallet` — the socket-absent state is retired (Q1286 (b)): every socket shows, struck where not held');
+  for (const [file, src] of [['session.js', sess], ['session-view.html', page]]) {
+    if (/'gonewallet'|"gonewallet"/.test(src)) find('sockets', `${file} sets \`gonewallet\` — the socket-absent state is retired (Q1286 (b))`);
+  }
+  if (rows.some((r) => /absent/.test(r.look))) find('sockets', 'the table has a socket-absent state — every socket shows at all times (Q1286 (b))');
+  if (!/if \(!walletHeld \|\| closedMode\) \{/.test(sockets[0]))
+    find('sockets', 'renderWallet: the closed page no longer renders the ✏️ socket as `notheld` (Q1286 (b))');
+  if (!/closed page/.test((rows.find((r) => r.state === 'not held') || { when: '' }).when))
+    find('sockets', 'not held: the `when` cell does not name the closed page, where every socket is struck (Q1286 (b))');
+  if (!/\.wallet\.full \.pwhen \{ display: none; \}/.test(css))
+    find('sockets', 'full: `.wallet.full .pwhen { display: none; }` is not in system.css — the look belongs to the stylesheet (Q1286 (d))');
+  if (/full \? '' : '<span class="pwhen"/.test(sockets[0]))
+    find('sockets', 'renderWallet withholds the countdown at the cap itself — the stylesheet does that (Q1286 (d))');
   // the `gone` row's *when* — the closed page — against the ✏️ socket's own
   // closed branch: the class the row names must be what that branch sets.
   // (Finding (b) of QUESTIONS 1286 on the first run.)
-  const goneRow = rows.find((r) => r.state === 'gone');
-  const closedBranch = (sockets[0].match(/if \(closedMode\) \{([^}]*)\}/) || [])[1];
-  if (!closedBranch) find('sockets', 'renderWallet: no `closedMode` branch — the table says the socket is absent on the closed page');
-  else if (goneRow && !closedBranch.includes(goneRow.class.replace(/`/g, '')))
-    find('sockets', `gone: the table says the closed page's socket is absent under \`${goneRow.class.replace(/`/g, '')}\`; renderWallet's closed branch runs \`${closedBranch.trim()}\` — the ✏️ socket keeps \`.navbar .wallet\`'s pill and takes no such class, only the three power sockets do (finding (b), QUESTIONS 1286)`);
   note(`  ${rows.length} socket states; the renderers set ${set.size} classes`);
 }
 

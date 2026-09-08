@@ -177,7 +177,7 @@ One glyph per entry, the same alphabet in all three columns (contents rail · gu
 | state | rail mark | tab mark | wants | hue | in the rail? | pins? | opens |
 |---|---|---|---|---|---|---|---|
 | ask | the subject glyph | the subject glyph | an answer or a set | open, by urgency | yes | yes | the setting's card |
-| wait | ⏳ **only where the wait is about you** (📧, a gate, 🍾); a **delegated** card waiting on the room keeps its glyph and leaves the rail, ordinary or constitutional alike (Q517, Ed 2026-08-29) — the tab says the rule, the queue says nothing | ⏳, or the glyph | nothing; fill = how far the room has got | closed | only where the wait is about you | no | the watching card |
+| wait | ⏳ **where you have voted and the room has not finished** — a delegated question you answered, a motion you answered, ordinary or constitutional alike (Ed, 2026-09-08, Q1286 (a); as a race's ⏳, Q1202) — **otherwise the subject glyph**: 📧 awaiting your verification, a gate awaiting its blockers, 🍾 awaiting the founder, the watcher on a setting you handed over and do not answer | ⏳ where you have voted, else the glyph | nothing; fill = how far the room has got | closed | yes — as a race's ⏳ stays (Q1202); **the watcher alone leaves** — the tab says the rule, the queue says nothing | no | the watching card, your own answer revisable |
 | news | drawn ✔; **a grant wears the glyph of the power it grants** (✒️ 🛡️ 🏛️, and ✏️ on 💡 — entry 180) | drawn ✔; **a grant wears the glyph of the power it grants** | OK | changed | yes | yes | the news card |
 | yours | ✏️ | ✏️ | nothing — withdraw | yours | yes | yes, force-kept | the application |
 | done | drawn grey ✔, and it leaves | **the subject glyph** on grey | nothing | closed | no | — | the settled card (= the composer) |
@@ -241,13 +241,13 @@ Parsed by `spec-check`'s `checkSockets`: every class has a rule in `system.css` 
 <!-- spec-check: sockets -->
 | state | class | look | when |
 |---|---|---|---|
-| not held | `notheld` | the tool greyed, a `--slash` strike on the socket, never inside the glyph | your role does not include it: stranger, applicant, clerk, a member before 🍾 or before the OK, the founder before the pen's OK |
+| not held | `notheld` | the tool greyed, a `--slash` strike on the socket, never inside the glyph | your role does not include it: stranger, applicant, clerk, a member before 🍾 or before the OK, the founder before the pen's OK — **and everybody on the closed page, after the farewell**: every socket shows at all times, to say what the powers are (Ed, 2026-09-08, Q1286 (b)) |
 | empty | `empty` | ✏️ only: muted, a countdown to the next | held, none left — **never struck** |
 | count | `pencils` | up to four glyphs; past four, three glyphs and +n | ✏️ held |
 | full | `full` | no countdown | at the cap |
 | ∞ | `pmore` | the text ∞, never an `<i>` | ✒️ 🛡️ held |
 | ghost | `gone` | `visibility: hidden`, the slot kept | a token is in the air, or a 🏛️ is out |
-| gone | `gonewallet` | the socket absent | the closed page, after the farewell |
+| countdown | `pwhen` | the drip's fill under the next ✏️ | ✏️ held, below the cap (Q1286 (c)) |
 | bubble | `walletsay` | the socket's own title, under it | any press on a socket |
 
 ### 7.2 The hold ladder

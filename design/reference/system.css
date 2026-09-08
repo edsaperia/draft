@@ -340,6 +340,9 @@
     background: linear-gradient(90deg,
       rgba(var(--lc-yours), 0.22) var(--fill), rgba(var(--lc-yours), 0.07) var(--fill));
   }
+  /* At the cap there is nothing to count down to (SURFACE §7.1, `full`;
+     Q1286 (d): the look lives here, so the class means something). */
+  .wallet.full .pwhen { display: none; }
   /* Nothing held: the label goes quiet, and the tray is the only thing left
      with anything to say. */
   .wallet.empty { color: var(--muted); }
@@ -2128,7 +2131,6 @@
      its countdown; only `.notheld` is struck. */
   /* the closed page keeps its own answer: the farewell flew the tools out and
      the surface is grey and filed, so the sockets go with them (Q532 residual) */
-  .navbar .gonewallet { display: none; }
   .navbar .notheld { position: relative; }
   .navbar .notheld i { opacity: 0.55; filter: grayscale(1); }
   /* The strike hangs on the **socket**, not inside the glyph. A `::after` on
