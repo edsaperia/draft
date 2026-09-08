@@ -33,13 +33,13 @@ Without `RESEND_API_KEY` the server runs a **dev inbox**: every mail, magic link
 
 ## Packages
 
-TypeScript end to end; `pg` is the only runtime dependency. Tests measured 2026-09-07 with `npm test`: **1,073 passing** (9 todo, 14 skipped without Postgres).
+TypeScript end to end; `pg` is the only runtime dependency. Tests measured 2026-09-08 with `npm test`: **1,106 passing** (9 todo, 17 skipped without Postgres).
 
 | Package | What it is | Tests |
 |---|---|---|
-| `packages/engine-core` | The mechanism as a pure, deterministic, dependency-free library: diffs and footprints, the races, Bradley–Terry ranking with ties, the session state machine, the hash-chained event log, the feed router, and the participant API — the one blind surface that people, simulated members and personal AIs all speak identically. Notes: [`NOTES.md`](packages/engine-core/NOTES.md). | 289 |
-| `packages/constitution` | The document's rules as a module, equally pure: the settings catalogue, the blind founding (each member states the least they will accept; the document takes the maximum), motions on both routes — ordinary ones race, constitutional ones need everybody — applications, lapse, its own hash-chained log. Runs in the browser too, as the committed bundle `design/constitution.js`. Notes: [`NOTES.md`](packages/constitution/NOTES.md). | 666 |
-| `packages/server` | The product host: `node:http` with no framework, one hash-chained log per document as the only persistence (JSONL on disk or one row per entry in Postgres), magic-link login, stateless HMAC cookies, the engine riding every commit. Notes: [`NOTES.md`](packages/server/NOTES.md). | 86 (+14 Postgres) |
+| `packages/engine-core` | The mechanism as a pure, deterministic, dependency-free library: diffs and footprints, the races, Bradley–Terry ranking with ties, the session state machine, the hash-chained event log, the feed router, and the participant API — the one blind surface that people, simulated members and personal AIs all speak identically. Notes: [`NOTES.md`](packages/engine-core/NOTES.md). | 295 |
+| `packages/constitution` | The document's rules as a module, equally pure: the settings catalogue, the blind founding (each member states the least they will accept; the document takes the maximum), motions on both routes — ordinary ones race, constitutional ones need everybody — applications, lapse, its own hash-chained log. Runs in the browser too, as the committed bundle `design/constitution.js`. Notes: [`NOTES.md`](packages/constitution/NOTES.md). | 685 |
+| `packages/server` | The product host: `node:http` with no framework, one hash-chained log per document as the only persistence (JSONL on disk or one row per entry in Postgres), magic-link login, stateless HMAC cookies, the engine riding every commit. Notes: [`NOTES.md`](packages/server/NOTES.md). | 94 (+17 Postgres) |
 | `packages/sim-harness` | Simulated members driving whole sessions: deterministic scripted personas with ground-truth welfare scoring, LLM personas speaking the same participant API with no back door, a calibration sweep whose findings are folded into SPEC §4.2 and §8.3, and a live commentator. [`README.md`](packages/sim-harness/README.md). | 32 |
 | `design/` | The surface itself, served by the server off disk: `session-view.html` is the one page — arrival, founding and the live document — with its machinery in `session.js`, `setup.js` and `cards.js`, and every string a member can read in `copy.js`. | — |
 
