@@ -988,6 +988,9 @@ describe('the address is chosen before the email, and reserved on send (Q460/462
 
     expect(await ask('hollow-oak')).toEqual({ available: true, legal: true });
     expect((await ask('No Caps')).legal).toBe(false);
+    // one character is enough (Q1288, Ed 2026-09-08); the grammar otherwise stands
+    expect(await ask('1')).toEqual({ available: true, legal: true });
+    expect((await ask('-a')).legal).toBe(false);
 
     // the founder names the address; the mail promises it
     const first = await post(base, '/api/docs',

@@ -375,6 +375,9 @@ window.COPY = (function () {
     },
     // 📍's verdict fragments, composed around the bold address
     slugNote: {
+      // why the ✒️ is dark on an address that fails the grammar; one
+      // character is enough (Q1288, Ed 2026-09-08)
+      illegal: 'Lower case, digits and hyphens',
       taken: ' is taken.',
       free: ' is free.',
       suggested: 'Suggested from the title — ',

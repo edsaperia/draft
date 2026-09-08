@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 463
+  "entries": 464
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -316,6 +316,7 @@
   "page.shape.meeting": "This document is for a meeting.",
   "page.shape.ongoing": "This document is perpetual.",
   "page.slugNote.free": " is free.",
+  "page.slugNote.illegal": "Lower case, digits and hyphens",
   "page.slugNote.suggested": "Suggested from the title — ",
   "page.slugNote.taken": " is taken.",
   "page.slugNote.takenSo": " is taken, so this one is ",
@@ -326,9 +327,9 @@
   "page.synth.hasJoined": " Has Joined",
   "page.synth.mailGaveUp": "An Invitation Did Not Send",
   "page.synth.passedLead": "Passed: ",
+  "page.synth.redacted": "[redacted]",
   "page.synth.rejectedLead": "Rejected: ",
   "page.synth.released": "What the Founder Has Laid Down",
-  "page.synth.redacted": "[redacted]",
   "page.theFounder": "The Founder",
   "page.titledLead": "The document is titled ",
   "page.underMotion": "Under motion — ",

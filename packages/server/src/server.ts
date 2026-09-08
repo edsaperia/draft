@@ -44,8 +44,10 @@ import { LIMITS, cap, emailOk, runCommand, str } from './commands.js';
  * is still read, for its own document only, until those cookies expire.
  */
 /** The address grammar the page shares (Q460): lower case, digits,
- *  hyphens, three characters or more. */
-const SLUG_OK = /^[a-z0-9][a-z0-9-]{2,}$/;
+ *  hyphens, starting with a letter or digit. One character is enough
+ *  (Q1288, Ed 2026-09-08: *we should allow one character addresses*) —
+ *  the floor of three that stood from Q460 was never ruled. */
+const SLUG_OK = /^[a-z0-9][a-z0-9-]*$/;
 const LEGACY_COOKIE = 'draft_session';
 const cookieName = (docId: string): string =>
   `draft_session_${docId.replace(/[^A-Za-z0-9_-]/g, '')}`;
