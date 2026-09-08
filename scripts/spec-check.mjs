@@ -410,6 +410,183 @@ function checkMarks() {
   note(`  ${rows.length} marks; KEEP_ORDER ${keep.length}, STACK_ORDER ${stack.length}`);
 }
 
+// ---- Q1239 (Ed, 2026-09-07; built 2026-09-08): three tables SURFACE states in words that the code holds in literals ----
+// The rule the three carry above every other: a disagreement is a finding for
+// Ed, quoting the cell and the code (QUESTIONS 1286), never a checker bent,
+// a table reworded or a line of code changed to make it pass. Each reads its
+// table by marker and the code by regex — `checkMarks` above is the template.
+
+// the body of a function or arrow, from its head to the brace that closes it
+const fnBody = (src, head) => {
+  const i = src.indexOf(head);
+  if (i < 0) throw new Error(`${head} not found`);
+  let depth = 0; let j = src.indexOf('{', i);
+  for (; j < src.length; j++) { if (src[j] === '{') depth++; else if (src[j] === '}' && --depth === 0) break; }
+  return src.slice(i, j + 1);
+};
+
+/** The word a §6 hue cell opens with → the `HUE` literal's value (setup.js). */
+const SETUP_HUE_WORDS = { open: 'open', closed: 'closed', changed: 'changed', yours: 'yours', deciding: 'closed' };
+
+function checkSetupAlphabet() {
+  note('Setup alphabet — SURFACE.md §6 against stateOf/markOf (setup.js), servedCards and entryOf (session-view.html)');
+  const setup = js('design/setup.js'); const page = js('design/session-view.html'); const surf = read('SURFACE.md');
+  const rows = tableAfter('SURFACE.md', 'setup-alphabet');
+  const byState = new Map(rows.map((r) => [r.state, r]));
+  const states = rows.map((r) => r.state);
+  // the state set and its test order, off `stateOf`'s ternary
+  const st = setup.match(/const stateOf = \(c, ctx\) =>([\s\S]*?);/);
+  if (!st) { find('setup-alphabet', 'stateOf not found in setup.js'); return; }
+  const tested = [...st[1].matchAll(/'([a-z]+)'/g)].map((x) => x[1]);
+  for (const s of tested) if (!states.includes(s)) find('setup-alphabet', `stateOf returns '${s}', the table has no row for it`);
+  for (const s of states) if (!tested.includes(s)) find('setup-alphabet', `the table has '${s}', stateOf never returns it`);
+  const intro = surf.match(/tested in the order ([a-z ·]+)\./);
+  const said = intro ? intro[1].trim().split(/\s*·\s*/) : [];
+  if (JSON.stringify(said) !== JSON.stringify(tested))
+    find('setup-alphabet', `the intro says the states are tested ${said.join(' · ')}, the ternary tests ${tested.join(' · ')}`);
+  // hue: the cell's first word against the literal
+  const hue = Object.fromEntries([...objLit(setup, 'HUE').matchAll(/([a-z]+): '([a-z]+)'/g)].map((m) => [m[1], m[2]]));
+  for (const r of rows) {
+    const word = (r.hue.match(/^[a-z]+/) || [])[0];
+    const want = SETUP_HUE_WORDS[word];
+    if (!want) find('setup-alphabet', `${r.state}: hue cell "${r.hue}" opens with no hue this checker knows`);
+    else if (hue[r.state] !== want) find('setup-alphabet', `${r.state}: table says hue "${r.hue}", HUE says '${hue[r.state]}'`);
+  }
+  // the two mark columns against `markOf`'s branches, each branch a cell and each cell a branch
+  const mo = fnBody(setup, 'const markOf = (c, ctx, tab) =>');
+  const cell = (s, col) => (byState.get(s) || {})[col] || '';
+  const glyph = (c) => /subject glyph/.test(c);
+  // branch 1: a done tab keeps the subject glyph; the done rail entry retires to the drawn ✔
+  if (!/if \(tab && st === 'done'\) return c\.g;/.test(mo)) find('setup-alphabet', "markOf: no `tab && st === 'done'` branch — the table says a done tab wears the subject glyph");
+  if (!glyph(cell('done', 'tab mark'))) find('setup-alphabet', `done: markOf hands a done tab the subject glyph, the tab-mark cell says "${cell('done', 'tab mark')}"`);
+  if (!/drawn.*✔/.test(cell('done', 'rail mark'))) find('setup-alphabet', `done: markOf hands a done rail entry TICK, the rail-mark cell says "${cell('done', 'rail mark')}"`);
+  // branch 2: a grant's news wears the power's glyph, in both columns
+  if (!/if \(st === 'news' && c\.grants\) return c\.grants;/.test(mo)) find('setup-alphabet', 'markOf: no grant branch — the table says a grant wears the glyph of the power it grants');
+  for (const col of ['rail mark', 'tab mark']) {
+    if (!/glyph of the power it grants/.test(cell('news', col))) find('setup-alphabet', `news: markOf hands a grant its power's glyph, the ${col} cell says "${cell('news', col)}"`);
+    if (!/drawn.*✔/.test(cell('news', col))) find('setup-alphabet', `news: markOf hands every other news card TICK, the ${col} cell says "${cell('news', col)}"`);
+  }
+  // branch 3: the fall-through — ask the glyph, wait ⏳, yours ✏️, else TICK
+  if (!/return st === 'ask' \? c\.g : st === 'wait' \? '⏳' : st === 'yours' \? '✏️' : TICK;/.test(mo))
+    find('setup-alphabet', "markOf: the fall-through is no longer `ask → glyph · wait → ⏳ · yours → ✏️ · else TICK`");
+  for (const col of ['rail mark', 'tab mark']) {
+    if (!glyph(cell('ask', col))) find('setup-alphabet', `ask: markOf hands ask the subject glyph, the ${col} cell says "${cell('ask', col)}"`);
+    if (!/^✏️/.test(cell('yours', col))) find('setup-alphabet', `yours: markOf hands yours ✏️, the ${col} cell says "${cell('yours', col)}"`);
+    if (!/^⏳/.test(cell('wait', col))) find('setup-alphabet', `wait: markOf hands wait ⏳, the ${col} cell opens "${cell('wait', col).slice(0, 40)}"`);
+  }
+  // branch 4: which waits keep their glyph instead. The cell names the set —
+  // *a delegated card waiting on the room … ordinary or constitutional alike* —
+  // and the code's guard names its own; where the cell says *alike* the guard
+  // may not name a kind. (Finding (a) of QUESTIONS 1286 on the first run.)
+  const waitGuard = (mo.match(/if \(st === 'wait' && ([^)]*)\) return c\.g;/) || [])[1];
+  const waitCell = cell('wait', 'rail mark');
+  if (!waitGuard) find('setup-alphabet', 'markOf: no wait branch keeping the subject glyph — the table says a delegated card waiting on the room keeps it');
+  else if (/ordinary or constitutional alike/.test(waitCell) && /c\.kind === '(?:constitutional|ordinary)'/.test(waitGuard))
+    find('setup-alphabet', `wait: the rail-mark cell says a delegated card keeps its glyph "ordinary or constitutional alike"; markOf keeps it only where \`${waitGuard}\` — every other wait wears ⏳ (finding (a), QUESTIONS 1286)`);
+  // in the rail? — `servedCards`: done leaves, a gate shows only as news, and
+  // which waits leave is the same guard as above read at its second site
+  const sc = (page.match(/const servedCards = \(\) =>([\s\S]*?\);\r?\n)/) || [])[1];
+  if (!sc) find('setup-alphabet', 'servedCards not found in session-view.html');
+  else {
+    if (!/stateOf\(c, ctx\) !== 'done'/.test(sc)) find('setup-alphabet', "servedCards no longer drops 'done' — the table says done leaves the rail");
+    if (yes(cell('done', 'in the rail?'))) find('setup-alphabet', 'done: the table says in the rail, servedCards drops it');
+    for (const s of ['ask', 'yours']) {
+      if (!yes(cell(s, 'in the rail?'))) find('setup-alphabet', `${s}: the table says "${cell(s, 'in the rail?')}", servedCards never drops it`);
+      if (new RegExp(`'${s}'`).test(sc)) find('setup-alphabet', `servedCards names '${s}' — the table says ${s} is always in the rail`);
+    }
+    if (!yes(cell('news', 'in the rail?'))) find('setup-alphabet', `news: the table says "${cell('news', 'in the rail?')}", servedCards keeps every news card`);
+    if (!/c\.isGate[^\n]*stateOf\(c, ctx\) === 'news'/.test(sc)) find('setup-alphabet', 'servedCards: the gate rule (a gate shows only as news) is not where it was');
+    const waitDrop = (sc.match(/\.filter\(\(c\) => !\(([^)]*) && stateOf\(c, ctx\) === 'wait'\)\)/) || [])[1];
+    if (!waitDrop) find('setup-alphabet', 'servedCards: no wait filter — the table says a delegated card waiting on the room leaves the rail');
+    else if (/ordinary or constitutional alike/.test(waitCell) && /c\.kind === '(?:constitutional|ordinary)'/.test(waitDrop))
+      find('setup-alphabet', `wait: the in-the-rail cell says "${cell('wait', 'in the rail?')}" and the rail-mark cell says a delegated card leaves "ordinary or constitutional alike"; servedCards drops a wait only where \`${waitDrop}\` (finding (a), QUESTIONS 1286)`);
+  }
+  // pins? — `entryOf`: everything but wait and done pins, and yours is force-kept (`mine`)
+  const eo = fnBody(page, 'function entryOf(c, cx)');
+  const notPinned = (eo.match(/pinned: ((?:st !== '[a-z]+'(?: && )?)+)/) || [])[1];
+  if (!notPinned) find('setup-alphabet', 'entryOf: the `pinned:` literal not found');
+  else {
+    const unpinned = [...notPinned.matchAll(/'([a-z]+)'/g)].map((x) => x[1]);
+    for (const r of rows) {
+      const pins = /^yes/.test(r['pins?']);
+      const inCode = !unpinned.includes(r.state);
+      if (r['pins?'] === '—') { if (inCode) find('setup-alphabet', `${r.state}: pins cell is —, entryOf pins it`); continue; }
+      if (pins !== inCode) find('setup-alphabet', `${r.state}: table says pins=${r['pins?']}, entryOf says ${inCode}`);
+    }
+  }
+  if (!/mine: st === 'yours'/.test(eo)) find('setup-alphabet', 'entryOf: `mine: st === \'yours\'` not found — the table says yours is force-kept');
+  if (!/force-kept/.test(cell('yours', 'pins?'))) find('setup-alphabet', `yours: entryOf force-keeps it (mine), the pins cell says "${cell('yours', 'pins?')}"`);
+  note(`  ${rows.length} states; stateOf tests ${tested.join(' · ')}`);
+}
+
+function checkSockets() {
+  note('Sockets — SURFACE.md §7.1 against system.css and the wallet renderers');
+  const css = js('design/system.css'); const sess = js('design/session.js'); const page = js('design/session-view.html');
+  const rows = tableAfter('SURFACE.md', 'sockets');
+  const classes = rows.map((r) => r.class.replace(/`/g, ''));
+  // every class cell names a selector system.css has a rule for
+  for (const c of classes) if (!new RegExp(`\\.${c}(?![A-Za-z0-9_-])`).test(css)) find('sockets', `\`${c}\` has no rule in system.css`);
+  // the renderers, and every class each can put on a socket or inside one:
+  // `className = …` and its `' full'`-style fragments, `classList.add/toggle`,
+  // and the `class="…"` of the markup written into the socket. The bubble
+  // (`showSay`) is read for its `className` only — its own anatomy (the
+  // symbol, the text, the slide-in) is not a socket state by any reading of
+  // the table, where the socket's inner spans (pencils, pmore, gone) are rows.
+  const sockets = [fnBody(sess, 'function renderWallet(showAs)'), fnBody(page, 'function renderPowerWallets()')];
+  const bubble = fnBody(page, 'function showSay(el)');
+  const set = new Map();
+  const put = (c, where) => { if (!set.has(c)) set.set(c, where); };
+  sockets.forEach((body, i) => {
+    const where = i === 0 ? 'renderWallet (session.js)' : 'renderPowerWallets (session-view.html)';
+    for (const m of body.matchAll(/className = '([^']+)'/g)) m[1].split(/\s+/).forEach((c) => put(c, where));
+    for (const m of body.matchAll(/\? ' ([a-z]+)' : ''/g)) put(m[1], where);
+    for (const m of body.matchAll(/classList\.(?:add|toggle)\('([^']+)'/g)) put(m[1], where);
+    for (const m of body.matchAll(/class="([a-z][a-z-]*)/g)) put(m[1], where);
+  });
+  for (const m of bubble.matchAll(/className = '([^']+)'/g)) m[1].split(/\s+/).forEach((c) => put(c, 'showSay (session-view.html)'));
+  // the sockets' own names are §7's socket column, not states
+  const socketNames = new Set(tableAfter('SURFACE.md', 'wallets').map((r) => r.socket).filter((s) => s !== '—'));
+  for (const [c, where] of set) {
+    if (socketNames.has(c) || classes.includes(c)) continue;
+    find('sockets', `${where} draws \`${c}\`, and the table has no row for it (finding (c), QUESTIONS 1286: the \`pwhen\` countdown)`);
+  }
+  for (const c of classes) if (!set.has(c)) find('sockets', `the table's \`${c}\` is a class no wallet renderer sets`);
+  // two rules the table states in words that the CSS can hold
+  if (/\.empty::after/.test(css)) find('sockets', 'empty: the table says never struck, system.css strikes `.empty::after`');
+  if (!/\.navbar \.notheld::after/.test(css)) find('sockets', 'not held: the strike (`.navbar .notheld::after`) is not where it was');
+  // `.gone` exactly — `.gonewallet` is the next row's class, and a prefix match read it as a ghost on the first run
+  for (const m of css.matchAll(/([^\n{}]*\.gone(?![A-Za-z0-9_-])[^{\n]*)\{([^}]*)\}/g)) {
+    if (!/visibility:\s*hidden/.test(m[2]) || /display:\s*none/.test(m[2]))
+      find('sockets', `ghost: \`${m[1].trim()}\` is not \`visibility: hidden\` — the ghost must never become a removal`);
+  }
+  if (!/\.navbar \.gonewallet \{ display: none; \}/.test(css)) find('sockets', 'gone: `.navbar .gonewallet { display: none; }` (the socket absent) is not where it was');
+  // the `gone` row's *when* — the closed page — against the ✏️ socket's own
+  // closed branch: the class the row names must be what that branch sets.
+  // (Finding (b) of QUESTIONS 1286 on the first run.)
+  const goneRow = rows.find((r) => r.state === 'gone');
+  const closedBranch = (sockets[0].match(/if \(closedMode\) \{([^}]*)\}/) || [])[1];
+  if (!closedBranch) find('sockets', 'renderWallet: no `closedMode` branch — the table says the socket is absent on the closed page');
+  else if (goneRow && !closedBranch.includes(goneRow.class.replace(/`/g, '')))
+    find('sockets', `gone: the table says the closed page's socket is absent under \`${goneRow.class.replace(/`/g, '')}\`; renderWallet's closed branch runs \`${closedBranch.trim()}\` — the ✏️ socket keeps \`.navbar .wallet\`'s pill and takes no such class, only the three power sockets do (finding (b), QUESTIONS 1286)`);
+  note(`  ${rows.length} socket states; the renderers set ${set.size} classes`);
+}
+
+function checkLifecycle() {
+  note('Lifecycle — SURFACE.md §2 L rows against journey-walk.mjs');
+  const rows = tableAfter('SURFACE.md', 'lifecycle');
+  const ids = rows.map((r) => r['#']);
+  const want = Array.from({ length: 9 }, (_, i) => 'L' + (i + 1));
+  if (JSON.stringify(ids) !== JSON.stringify(want)) find('lifecycle', `the table's rows are ${ids.join(' ')}, expected exactly ${want.join(' ')}`);
+  const walk = js('scripts/journey-walk.mjs');
+  const keys = topKeys(objLit(walk, 'LIFECYCLE'));
+  for (const id of ids) if (!keys.includes(id)) find('lifecycle', `${id} has no step in journey-walk's LIFECYCLE`);
+  for (const k of keys) {
+    if (!ids.includes(k)) find('lifecycle', `LIFECYCLE names ${k}, the table has no such row`);
+    if (!walk.includes(`L('${k}')`)) find('lifecycle', `LIFECYCLE.${k} is named but the walk prints no L('${k}') line`);
+  }
+  note(`  ${rows.length} rows, ${keys.length} walk steps`);
+}
+
 function checkWallets(pm) {
   note('Wallets and holds — SURFACE.md §7 against the page');
   const page = js('design/session-view.html'); const sess = js('design/session.js');
@@ -1407,6 +1584,9 @@ function checkMergeable() {
 }
 
 checkMarks();
+checkSetupAlphabet();
+checkSockets();
+checkLifecycle();
 checkWallets(pm);
 checkOrder(pm);
 checkFIds();

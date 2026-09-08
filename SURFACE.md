@@ -2,7 +2,7 @@
 
 The communication rules of the one page (`design/session-view.html`), as a matrix — **event × audience × channel × ask × close × persistence** — plus the rules that quantify over it, the exceptions, and the map from the page's keys to the spec's settings. SPEC.md says what the mechanism does; this file says what a member is told when it does it, and what pressing a control does. Reasoning is in `design/DECISIONS.md`; the history this file used to carry is there under *SURFACE.md, the history lifted 2026-09-07*.
 
-**The reader contract.** `npm run spec-check` parses every table under a `<!-- spec-check: … -->` marker (§2 `events`, §4 `keys`, §6 `marks`, §7 `wallets` and `holds`, §8 `order`, §9 `picture`) by its header cells, the `| Yn |` exception rows, §8.1's `- **Fn ` definitions (exactly F1–F23, in order, defined nowhere else), §7.2's bold gesture word and the §8 band row naming the Proposals preamble's tab run (against `PROPOSAL_CHIPS`); `scripts/seat-matrix.mjs` matches §2's **Audience** cells verbatim; CLAUDE.md's `SURFACE §n` pointers need the `## n.` headings. Those shapes are frozen: a free-text cell may be reworded, a column, a row order or a heading number may not. **Every rule label** — C, E, L, Y, M, W, F, K, CP — is a citation target from the other documents, the code and the walks, and is **never renumbered or reused**; a retired rule stays as a struck line naming its ruling (E23).
+**The reader contract.** `npm run spec-check` parses every table under a `<!-- spec-check: … -->` marker (§2 `events` and `lifecycle`, §4 `keys`, §6 `marks` and `setup-alphabet`, §7 `wallets`, `sockets` and `holds`, §8 `order`, §9 `picture`) by its header cells, the `| Yn |` exception rows, §8.1's `- **Fn ` definitions (exactly F1–F23, in order, defined nowhere else), §7.2's bold gesture word and the §8 band row naming the Proposals preamble's tab run (against `PROPOSAL_CHIPS`); `scripts/seat-matrix.mjs` matches §2's **Audience** cells verbatim; CLAUDE.md's `SURFACE §n` pointers need the `## n.` headings. Those shapes are frozen: a free-text cell may be reworded, a column, a row order or a heading number may not. **Every rule label** — C, E, L, Y, M, W, F, K, CP — is a citation target from the other documents, the code and the walks, and is **never renumbered or reused**; a retired rule stays as a struck line naming its ruling (E23).
 
 Vocabulary: **audience** — nobody / the actor / one member / every member owed / the membership / invitees / strangers. **channel** — rail entry · clause in the band · card · gutter tab · topbar · wallet · mail · record. **ask** — nothing / OK / an answer / a judgment / a draft. **close** — what makes the card go. **persistence** — leaves the rail / stays in the clause / reaches the record / remembered per seat.
 
@@ -67,8 +67,9 @@ Vocabulary: **audience** — nobody / the actor / one member / every member owed
 | E34 | An invitation mail gave up — the outbox's attempt cap reached, the token revoked (Q947 (c), backlog 173) | the founder; every member — **never the invitee**, who is exactly the person the mail could not reach | the founder's ✉️ row under *Invitees* says *that did not send*, with 📨 re-send beside it; every member: one news card stating the address that could not be reached, OK closes | nothing | the row line: on the re-send, never on the mail sending (Q1030); the news card: OK | the row line stands until re-sent or withdrawn | invite |
 | E35 | The Founder amends the text with ✒️ — it passes the instant it is submitted (R-058) | every arrived member but the Founder, the lapsed included; a later joiner reads it as the document | the document itself, changed under them; **a news card beside the amended clause**, in the charter rail against the paragraph that moved — the clause as it now reads, the reason, and the text it replaced; **one card and one OK per amendment**, so a run at three clauses is three cards (Q1021, Q1034) | OK | OK | the record's Amendments, by the office and the date, never the wording | — |
 
-The card lifecycle, as the rows of the matrix a single card passes through:
+The card lifecycle, as the rows of the matrix a single card passes through — parsed by `spec-check`'s `checkLifecycle` (rows L1–L9 exactly, each mapped to a step of `scripts/journey-walk.mjs` by its `LIFECYCLE` literal), and the *Close* and *Persistence* cells walked live by `npm run journey`'s `L1`–`L9` lines (Q1239):
 
+<!-- spec-check: lifecycle -->
 | # | Event | Audience | Channel | Ask | Close | Persistence |
 |---|---|---|---|---|---|---|
 | L1 | A setting of yours is set (✒️) | the actor | the card | a value (+ reason once it is a change) | on commit | clause states the rule; tab goes grey |
@@ -170,8 +171,9 @@ One glyph per entry, the same alphabet in all three columns (contents rail · gu
 | ⏸ | filedUndecided | nothing; undecided at the close | none | no | no | gutter · queue | the record card | yes | no |
 | ✏️ | propose | nothing — withdraw is the remaining act | yours | yes | draft: the rationale as you type; proposed: one line | all three | your proposal | no | yes |
 
-**The setup alphabet** (`stateOf` / `markOf`, setup.js) — five states, tested in the order yours · news · wait · ask · done. A setup entry's wash takes the same urgency ramp as a charter entry's, from its own `RAIL_U` (Q623). A setup entry's **name** follows the card's state, not the rail's: the ask in ask · wait · yours, the noun in done · news — §9's two-label rule, stated once there.
+**The setup alphabet** (`stateOf` / `markOf`, setup.js) — five states, tested in the order yours · news · wait · ask · done. A setup entry's wash takes the same urgency ramp as a charter entry's, from its own `RAIL_U` (Q623). A setup entry's **name** follows the card's state, not the rail's: the ask in ask · wait · yours, the noun in done · news — §9's two-label rule, stated once there. Parsed by `spec-check`'s `checkSetupAlphabet`: the state set and test order against `stateOf`, the hue column against `HUE`, the two mark columns against `markOf`'s branches, *in the rail?* against `servedCards` and *pins?* against the rail's `entryOf` (Q1239).
 
+<!-- spec-check: setup-alphabet -->
 | state | rail mark | tab mark | wants | hue | in the rail? | pins? | opens |
 |---|---|---|---|---|---|---|---|
 | ask | the subject glyph | the subject glyph | an answer or a set | open, by urgency | yes | yes | the setting's card |
@@ -234,6 +236,9 @@ Every power is an object you hold, kept where you can see it, spent by flying it
 
 ### 7.1 Socket states
 
+Parsed by `spec-check`'s `checkSockets`: every class has a rule in `system.css` and is one the wallet renderers (`renderWallet`, `renderPowerWallets`, `showSay`) can set, every class they set has a row, `empty` is never struck and `gone` is `visibility: hidden` (Q1239).
+
+<!-- spec-check: sockets -->
 | state | class | look | when |
 |---|---|---|---|
 | not held | `notheld` | the tool greyed, a `--slash` strike on the socket, never inside the glyph | your role does not include it: stranger, applicant, clerk, a member before 🍾 or before the OK, the founder before the pen's OK |

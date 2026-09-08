@@ -87,6 +87,28 @@ const SHAPED_RUN = SHAPE !== 'custom';
 const GESTURE = (process.argv.find((a) => a.startsWith('--gesture=')) || '').split('=')[1] || '';
 const PROPOSALS = ['begin', 'canpropose', 'canjudge', 'grant-voice'];
 const say = (...a) => console.log(...a);
+/**
+ * **SURFACE §2's card lifecycle, L1–L9, each row mapped to the step of this
+ * walk that performs it** (Q1239, Ed 2026-09-07; built 2026-09-08).
+ * `spec-check`'s `checkLifecycle` reads this literal: every row of the table
+ * has a key here and every key is printed by an `L('Ln')` line below, so the
+ * table and the walk cannot drift apart in silence. Each line asserts the
+ * row's *Close* and *Persistence* cells on the live path — the value is the
+ * line's label, the comment the cells it holds. Where a cell reads false the
+ * red line is the finding (QUESTIONS 1286), never a line softened to pass.
+ */
+const LIFECYCLE = {
+  L1: 'L1 set',        // a setting of yours is set: on commit; the tab goes grey (every founder set in the loop)
+  L2: 'L2 ✋ saved',    // an answer about yourself: on Save; your member row, and still there after a reload
+  L3: 'L3 answered',   // a blind question answered (--delegate-all): on ✓; the entry leaves the rail, the card shows the count
+  L4: 'L4 judged',     // a judgment cast: ✓ closes; the entry keeps its mark while a pair is left, files as ⏳ once none is (deck 3, deck 7)
+  L5: 'L5 proposed',   // a motion committed: on Propose; the ✏️ entry pinned
+  L6: 'L6 📧 sent',    // 📧 send: the card closes on send; the clause says to check your inbox
+  L7: 'L7 owed OK',    // a decision you are owed: on OK, one press, persisted per member; the clause keeps the change line
+  L8: 'L8 grant OK',   // a power arrives: on OK; ACK_KEYS per seat — not served again after a reload, the socket held
+  L9: 'L9 🗑️',        // 🗑️: always closes; un-actioned input reverted (⏱️'s number, ✋'s text), the set value untouched
+};
+const L = (k) => LIFECYCLE[k].padEnd(11) + '· ';
 // Q911: a walk on a default port will drive whatever process is listening,
 // and a stale one serves today's page over a week-old engine — so the first
 // thing this does is refuse a server that is not this tree.
@@ -261,6 +283,22 @@ await typeIn('.setupcard input[type="email"]', 'ada@example.org');
 await press(1250);
 say('birth      · 📧 sent');
 await T(1600);
+// L6 — the card closes on send, and the clause reads the cell's own words:
+// *checking their email* (the ⏳ it wears is the wait that is about you). Y2's
+// re-open on refusal is not driven here: the address is fresh, and a refused
+// birth address is `slug-walk`'s ground.
+{
+  const l6 = await page.evaluate(() => {
+    const chip = document.querySelector('.achip[data-chip="myemail"]');
+    const para = document.querySelector('.cpara[data-para="myemail"]') || (chip && chip.closest('.cpara'));
+    return { card: !!document.querySelector('.setupcard'),
+      clause: para ? para.textContent.replace(/\s+/g, ' ').trim() : null };
+  });
+  const l6Ok = !l6.card && !!l6.clause && /checking their email/i.test(l6.clause);
+  say(L('L6') + (l6Ok ? 'the card closed on send; the clause reads “' + l6.clause.slice(0, 80) + '”'
+    : 'FAIL: card still open ' + l6.card + ' · clause ' + JSON.stringify(l6.clause)));
+  if (!l6Ok) stuck.push('L6: 📧 closes on send and the clause says to check your inbox');
+}
 
 const outbox = await (await fetch(BASE + '/api/dev/outbox')).json();
 const held = outbox.mails || outbox;
@@ -808,6 +846,76 @@ const identityReachesEverySeat = async () => {
   if (!reached) stuck.push('the member’s name and face in the founder’s register');
 };
 
+/* ---- L2 and L9 (SURFACE §2, Q1239) --------------------------------------
+ * The two presses the walk did not make. **L2**: an answer about yourself is
+ * saved — ✋ typed and Saved on the live path closes on Save, lands on your
+ * member row, and is still there after a reload. **L9**: 🗑️ on a card with
+ * un-actioned input puts it back — ⏱️'s set number typed over and binned is
+ * untouched in the document and the reopened card shows the set value; text
+ * typed on ✋ and binned is gone on reopen, the row unchanged. Both at the
+ * last moment before 🍾, where every founder card is still the founder's own
+ * and the register is on the page. Read with the card shut where the rows
+ * are read (`memSub` draws the card in place of its rows). */
+const lifecycleL2 = async () => {
+  if (!(await open('myname'))) { say(L('L2') + 'FAIL: no ✋ tab to open'); stuck.push('L2: the ✋ tab'); return; }
+  await typeIn('.setupcard input[data-txt="myname"]', FOUNDER_NAME);
+  await T(200);
+  const label = await press(1250);
+  const closed = !(await page.evaluate(() => !!document.querySelector('.setupcard')));
+  const rowNow = ((await rowsUnder('members')) || []).find((r) => r.t.includes(FOUNDER_NAME)) || null;
+  await page.reload();
+  await T(3200);
+  const rowAfter = ((await rowsUnder('members')) || []).find((r) => r.t.includes(FOUNDER_NAME)) || null;
+  const ok = !!label && closed && !!rowNow && !!rowAfter;
+  say(L('L2') + (ok ? '✋ Saved (' + label + ') closes the card; the member row reads “' + rowNow.t + '” and still does after a reload'
+    : 'FAIL: pressed ' + JSON.stringify(label) + ' · closed ' + closed + ' · row ' + JSON.stringify(rowNow) +
+      ' · after reload ' + JSON.stringify(rowAfter)));
+  if (!ok) stuck.push('L2: ✋ saved on the live path');
+};
+const lifecycleL9 = async () => {
+  const rateValue = () => page.evaluate(() => fetch(location.pathname.replace('/d/', '/api/d/') + '/view')
+    .then((r) => r.json())
+    // the module's view rides under `view` on the wire (`cs.v.view` in the page)
+    .then((v) => JSON.stringify((((v.view || v).settings || []).find((s) => s.setting === 'rate') || {}).value)));
+  const field = (sel) => page.evaluate((s) => (document.querySelector(s) || {}).value, sel);
+  const cardOpen = () => page.evaluate(() => !!document.querySelector('.setupcard'));
+  // ⏱️ — the set number typed over, then binned
+  if (!(await open('rate'))) { say(L('L9') + 'FAIL: no ⏱️ tab to open'); stuck.push('L9: the ⏱️ tab'); return; }
+  const before = await rateValue();
+  const v0 = await field('.setupcard input[data-num="dripN"]');
+  const typed = String((+v0 || 5) + 7);
+  await typeIn('.setupcard input[data-num="dripN"]', typed);
+  await T(250);
+  await clickIn('.setupcard [data-revert]');
+  const closed = !(await cardOpen());
+  const after = await rateValue();
+  const reopened = (await open('rate')) ? await field('.setupcard input[data-num="dripN"]') : '(would not reopen)';
+  await closeCard();
+  const rateOk = closed && before === after && reopened === v0 && v0 !== undefined;
+  say(L('L9') + (rateOk ? '⏱️ ' + v0 + ' typed over as ' + typed + ', 🗑️ closes; the document still holds ' + before +
+      ' and the reopened card reads ' + reopened
+    : 'FAIL: ⏱️ · closed ' + closed + ' · value ' + before + ' → ' + after + ' · reopened reads ' +
+      JSON.stringify(reopened) + ' (set ' + JSON.stringify(v0) + ')'));
+  if (!rateOk) stuck.push('L9: 🗑️ on ⏱️');
+  // ✋ — text typed, then binned: gone on reopen, the row untouched
+  if (!(await open('myname'))) { say(L('L9') + 'FAIL: no ✋ tab to open'); stuck.push('L9: the ✋ tab'); return; }
+  const n0 = await field('.setupcard input[data-txt="myname"]');
+  await typeIn('.setupcard input[data-txt="myname"]', 'Scratch Name');
+  await T(250);
+  await clickIn('.setupcard [data-revert]');
+  const closed2 = !(await cardOpen());
+  const n1 = (await open('myname')) ? await field('.setupcard input[data-txt="myname"]') : '(would not reopen)';
+  await closeCard();
+  const rows = (await rowsUnder('members')) || [];
+  const nameOk = closed2 && n1 === n0 && rows.some((r) => r.t.includes(FOUNDER_NAME)) &&
+    !rows.some((r) => r.t.includes('Scratch Name'));
+  say(L('L9') + (nameOk ? '✋ typed “Scratch Name”, 🗑️ closes; reopened, the field reads ' + JSON.stringify(n1) +
+      ' and the row still reads ' + FOUNDER_NAME
+    : 'FAIL: ✋ · closed ' + closed2 + ' · field before ' + JSON.stringify(n0) + ' after ' + JSON.stringify(n1) +
+      ' · rows ' + JSON.stringify(rows.map((r) => r.t))));
+  if (!nameOk) stuck.push('L9: 🗑️ on ✋');
+};
+
 const secondSeatOnAmendment = async () => {
   if (!guestPage) return; // its own failure, already reported
   // the founder amends a constitutional setting they still hold, at the wire:
@@ -880,6 +988,28 @@ const secondSeatOnAmendment = async () => {
   say('give-ok    · ' + (guestOks - before) + ' sent for one press' +
     (guestOks - before === 1 ? '' : '  FAIL: expected exactly one'));
   if (guestOks - before !== 1) stuck.push('give-ok was sent ' + (guestOks - before) + ' times');
+  // L7 — the close and the persistence are the three lines above (one press,
+  // gone through a poll, still gone after a reload); what is left is the
+  // clause keeping the change line: the settled card, opened from its tab
+  // after the reload, carries `changeHalf`'s *has changed … from … to …*.
+  const opened = await guestPage.evaluate((k) => {
+    const t = document.querySelector('#band [data-tab="' + k + '"]');
+    if (!t) return false;
+    t.click();
+    return true;
+  }, AMENDED);
+  await guestPage.waitForTimeout(700);
+  const l7 = await guestPage.evaluate(() => {
+    const c = document.querySelector('.setupcard');
+    const ch = c && c.querySelector('.body.changed');
+    return { card: !!c, changed: ch ? ch.textContent.replace(/\s+/g, ' ').trim().slice(0, 140) : null };
+  });
+  const l7Ok = opened && l7.card && !!l7.changed && /has changed/.test(l7.changed);
+  say(L('L7') + (l7Ok ? 'one press, kept through a poll and a reload; the clause keeps the change line: “' + l7.changed + '”'
+    : 'FAIL: tab ' + opened + ' · ' + JSON.stringify(l7)));
+  if (!l7Ok) stuck.push('L7: the change line on the acknowledged clause');
+  await guestPage.evaluate(() => { const a = document.querySelector('.setupcard .chipcol .achip'); if (a) a.click(); });
+  await guestPage.waitForTimeout(400);
 };
 
 /* ---- the room, as a row of faces (backlog 15, Q858–Q864) ----------------
@@ -1160,6 +1290,9 @@ const order = [];
 // the whole of what summons the ✉️ task below
 const MEMBERSHIP_RULES = ['admission', 'applications', 'hat', 'lapse', 'removal'];
 const handedOver = [];
+// L1's ledger: every setting the founder set in the loop, and whether its tab
+// went grey (`st-done`) on the commit — said once after the loop
+const l1Set = [], l1Miss = [];
 let waitingAtBegin = false;
 let doorWalked = false;
 for (let i = 0; i < 60; i++) {
@@ -1270,9 +1403,14 @@ for (let i = 0; i < 60; i++) {
       // an invitation is a seat, so one of them is taken here: what a member
       // is owed on arrival can only be read from the member's own page
       await secondSeatPreBegin();
+      // L2 — ✋ typed and Saved through its own card, before the wire sets
+      // the same name below (Q1239)
+      await lifecycleL2();
       // …and once there are two seats, whether each of them can see who the
       // other is (Q850–Q853)
       await identityReachesEverySeat();
+      // L9 — 🗑️ puts back what was typed and touches nothing set (Q1239)
+      await lifecycleL9();
     } else {
       say('invite ×2  · FAIL: no ✉️ tab in the band to invite from');
       stuck.push('the ✉️ tab');
@@ -1370,9 +1508,49 @@ for (let i = 0; i < 60; i++) {
       JSON.stringify(await page.evaluate(() =>
         [...document.querySelectorAll('.setupcard .commitrow button')]
           .map((b) => (b.textContent.trim() || b.getAttribute('title') || '?') + (b.disabled ? ' [dark]' : '')))));
-  } else say('  committed· ' + next + ' (' + label + ')' + (chose ? ' — ' + short(chose) : ''));
+  } else {
+    say('  committed· ' + next + ' (' + label + ')' + (chose ? ' — ' + short(chose) : ''));
+    // L1 — a setting of yours is set: the tab goes grey on the commit. The
+    // personal pair is L2's, the grants L8's, a handed-over setting is
+    // waiting rather than set, and the door and 🍾 are neither.
+    if (!next.startsWith('ans-') && !next.startsWith('grant-') && !PROPOSALS.includes(next) &&
+        !['myname', 'mypic', 'invite'].includes(next) && !handedOver.includes(next)) {
+      const cls = await page.evaluate((k) => {
+        const t = document.querySelector('.achip[data-chip="' + k + '"]');
+        return t ? t.className : null;
+      }, next);
+      if (cls && /\bst-done\b/.test(cls)) l1Set.push(next); else l1Miss.push(next + ' (' + (cls || 'no tab') + ')');
+    }
+    // L3 — a blind question answered (--delegate-all): the entry leaves the
+    // rail on ✓, and the host's card shows how far the room has got. Where
+    // the entry stays, the red line is finding (a) of QUESTIONS 1286.
+    if (next.startsWith('ans-')) {
+      const host = next.slice(4);
+      const left = !(await rail()).includes(next);
+      // the count — *(n of E have answered so far)* — is drawn only where the
+      // page says a room exists (`roomExists()`, session-view.html); in a room
+      // of one there is nobody else to have answered, so the cell's precondition
+      // is read off the page rather than assumed, and said on the line
+      const room = !!(((await founding()) || {}).roomExists);
+      let count = null, text = null;
+      if (await open(host)) {
+        text = await page.evaluate(() => ((document.querySelector('.setupcard') || {}).textContent || '').replace(/\s+/g, ' ').trim());
+        count = (text.match(/\b\d+ of \d+\b/) || [])[0] || null;
+        await closeCard();
+      }
+      const l3Ok = left && (room ? !!count : text !== null);
+      say(L('L3') + (l3Ok ? next + ' · the entry left the rail; ' + host + '’s card ' +
+          (room ? 'reads “' + count + '”' : 'shows no count yet — roomExists false, a room of one')
+        : 'FAIL: ' + next + ' · left the rail ' + left + ' · room ' + room + ' · count ' + JSON.stringify(count) +
+          (text === null ? ' · ' + host + ' would not open' : count ? '' : ' · card “' + text.slice(0, 120) + '”')));
+      if (!l3Ok) stuck.push('L3: ' + next + (left ? '' : ' stays in the rail') + (room && !count ? ' shows no count' : ''));
+    }
+  }
 }
 say('founding   · rail ' + JSON.stringify(await rail()) + (stuck.length ? ' STUCK: ' + stuck.join(', ') : ''));
+say(L('L1') + (l1Miss.length ? 'FAIL: committed but the tab is not grey: ' + l1Miss.join(', ')
+  : l1Set.length + ' settings set, every tab grey (st-done) on the commit'));
+if (l1Miss.length) stuck.push('L1: a set tab not grey: ' + l1Miss.join(','));
 // what the press actually laid down, read back off the ✒️/🛡️ tabs
 await beginZonesAfterStart();
 if (SHAPED_RUN && order.includes('begin')) {
@@ -1384,6 +1562,31 @@ if (SHAPED_RUN && order.includes('begin')) {
   // and the unavoidable cards were the whole of what the founder was asked
   const asked = order.filter((k) => !k.startsWith('grant-') && !['begin', 'canpropose', 'canjudge'].includes(k));
   say('asked      · ' + JSON.stringify(asked));
+}
+
+// L8 — a power arrives and is OK'd (`ok · grant-…` above); the acknowledgement
+// is the seat's (`ACK_KEYS` per seat), so after a reload no grant is served
+// again and the sockets read held rather than struck. *Re-asked on every
+// not-held → held* is not driven here: nothing in this walk takes a power
+// back and hands it out again. Under --delegate-all the document has not
+// begun, so ✏️ is legitimately not yet held and only the pen is read.
+{
+  const okd = order.filter((k) => k.startsWith('grant-') || k === 'canpropose' || k === 'canjudge');
+  await page.reload();
+  await T(3200);
+  const l8 = await page.evaluate((keys) => {
+    const f = window.__founding ? window.__founding() : null;
+    const served = (f && f.served) || [];
+    const cls = (id) => ((document.getElementById(id) || {}).className || '(none)');
+    return { back: keys.filter((k) => served.includes(k)), served, pen: cls('penwallet'), wallet: cls('wallet') };
+  }, okd);
+  const struck = (DELEGATE_ALL ? ['pen'] : ['pen', 'wallet']).filter((k) => /\bnotheld\b/.test(l8[k]));
+  const l8Ok = okd.length > 0 && l8.back.length === 0 && struck.length === 0;
+  say(L('L8') + (l8Ok ? okd.length + ' grants OK’d; after a reload none is served again and the sockets read held (✏️ “' +
+      l8.wallet + '”, ✒️ “' + l8.pen + '”)'
+    : 'FAIL: OK’d ' + JSON.stringify(okd) + ' · served again ' + JSON.stringify(l8.back) + ' · struck ' +
+      JSON.stringify(struck) + ' · served ' + JSON.stringify(l8.served)));
+  if (!l8Ok) stuck.push('L8: a grant served again, or a socket struck, after a reload');
 }
 
 if (DELEGATE_ALL) {
@@ -1985,6 +2188,23 @@ if (caret) {
           Math.round(bx.width) + '→' + Math.round(mid.w) + ')')));
   }
   if (!ok) stuck.push('propose hold');
+  // L5 — committed on Propose (the hold above): the proposal's ✏️ entry stands
+  // in the rail, pinned (M1). *Answered 🏛️ leaves the rail* is the row's other
+  // half and is not driven here: this walk raises no constitutional motion.
+  if (ok) {
+    await T(600);
+    const l5 = await page.evaluate(() => {
+      const d = (window.SESSION.SUGGS || []).find((x) => x.mine && x.unproposed !== true);
+      if (!d) return { id: null };
+      const q = String(d.id).replace(/["\\]/g, '\\$&');
+      const li = document.querySelector('#rail li[data-q="' + q + '"]');
+      return { id: d.id, entry: !!li, mark: li ? ((li.querySelector('.qmark') || {}).textContent || '').trim() : null,
+        pinned: !!(li && li.classList.contains('pinned')) };
+    });
+    const l5Ok = l5.entry && l5.mark === '✏️' && l5.pinned;
+    say(L('L5') + (l5Ok ? 'the proposal’s ✏️ entry is in the rail and pinned' : 'FAIL: ' + JSON.stringify(l5)));
+    if (!l5Ok) stuck.push('L5: the ✏️ entry pinned');
+  }
 
   /* ---- --new-clause: the wire holds a pure insertion at the end ---------- */
   if (ok && NEW_CLAUSE && !EMPTY_TEXT) {
@@ -2330,6 +2550,11 @@ if (caret) {
         say('deck 7     · ' + (ok7 ? 'judged · the entry files as ⏳ “' + e4.cap + '”, no teaser — the hand is empty'
           : 'FAIL: judged ' + j3 + ' · ' + JSON.stringify(e4)));
         if (!ok7) stuck.push('the entry once the deck is empty');
+        // L4 — the row's close and persistence are deck 3 and deck 7: ✓ closes
+        // the card and the entry keeps its mark while a pair is left; it files
+        // as ⏳ once nothing on the race can be asked of you
+        say(L('L4') + (ok3 && ok7 ? '✓ closes the card, the entry keeps its mark while a pair is left (deck 3), and files as ⏳ once the hand is empty (deck 7)'
+          : 'FAIL: deck 3 ' + ok3 + ' · deck 7 ' + ok7 + ' — see the lines above'));
 
         // 4 — the ledger, after a reload: three blocks, the verdicts given
         await page.reload();
