@@ -334,10 +334,14 @@ describe('🍾 begin — the founder starts the document (Q443)', () => {
       s.seen(t, bo);
     }
     expect(s.memberRecords().get(bo)!.lapsed).toBe(false);
-    // a lapsed member's read records nothing — revival is an act (memberReturn)
+    // **a lapsed member's read returns them** (Ed, 2026-09-08: *if they were
+    // seeing things they wouldn't be lapsed*) — the read is the revival, and
+    // there is something to commit
     for (let t = t0 + 4 * hour; t <= t0 + 8 * hour; t += 30 * 60_000) s.tick(t);
     expect(s.memberRecords().get(bo)!.lapsed).toBe(true);
-    expect(s.seen(t0 + 9 * hour, bo)).toBe(false);
+    expect(s.seen(t0 + 9 * hour, bo)).toBe(true);
+    expect(s.memberRecords().get(bo)!.lapsed).toBe(false);
+    expect(s.memberRecords().get(bo)!.lastActivityT).toBe(t0 + 9 * hour);
     const r = ConstitutionSession.replay([...s.logEntries()]);
     expect(r.rollingHash()).toBe(s.rollingHash());
     expect(r.memberRecords().get(bo)!.lastActivityT).toBe(s.memberRecords().get(bo)!.lastActivityT);

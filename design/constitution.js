@@ -2482,7 +2482,10 @@ var CONSTITUTION = (() => {
       const rec = m ?? (member === this.convenor.id ? this.convenor : null);
       if (!rec || m && m.removed) return false;
       if (m && m.arrivedAtT === null) return false;
-      if (m && m.lapsed) return false;
+      if (m && m.lapsed || member === this.convenor.id && this.crownLapsedFlag) {
+        this.memberReturn(t, member);
+        return true;
+      }
       if (t - rec.lastActivityT < SEEN_EVERY_MS) return false;
       this.emit({ type: "member-seen", t, member });
       return true;

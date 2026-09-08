@@ -69,7 +69,10 @@
  *    page that merely polls does not keep a seat alive under a one-minute 💤 —
  *    every quiet seat lapses, page open or not. The non-lapsing seats here
  *    therefore *act* before every snapshot (`keepAlive`: a `set-identity`
- *    re-stating the seat's own name), which is what the module counts.
+ *    re-stating the seat's own name), which is what the module counts. And
+ *    since R-096 (Ed, 2026-09-08) **a read returns a lapsed member**: the
+ *    lapsed seat's page is shut until the clock lapses it, and reopening it
+ *    is the revival the `wait` step asserts.
  *  · **E9 is asserted, and no row here is filed** (2026-09-01). It was the one
  *    exception until then: on 2026-08-27 the news entry was unbuilt on both
  *    sides, so the `lay-down` row carried no key and was filed as Q918. Both
@@ -206,17 +209,19 @@ const AUDIENCE = {
   // (`APPCARDS`), never `STRCARDS` — so the door's two keys belong to the
   // stranger seat alone (entry 78).
   strangers: (s) => s.role === 'stranger',
-  // E10, a constitutional motion put (promise-coverage entry 84). Two things
-  // narrow *active* from `every member`, and both are the table's own
-  // arithmetic rather than an opinion about the page:
-  //  · **the lapsed seat is out** — a lapsed membership leaves the motion
-  //    electorate (§9.5a), so nothing is being asked of it;
+  // E10, a constitutional motion put (promise-coverage entry 84), and E21
+  // since Q1284. One thing narrows *active* from `every member` here, and it
+  // is the table's own arithmetic rather than an opinion about the page:
   //  · **the mover is not asked** — §9.6 stands the mover at accept from the
   //    moment the motion is put (R-021), and §2's own Close column for this
   //    row is *answered entry leaves*, so the seat that put it carries no ask.
+  // The lapsed seat used to be out too (a lapsed membership leaves the motion
+  // electorate, §9.5a) — but since R-096 (Ed, 2026-09-08) a read returns a
+  // lapsed member, so the seat this harness lapses is active again from the
+  // moment `wait-lapsed` reopens its page, and every seat with a page is
+  // active by construction. A lapsed member is served nothing but mail (E22).
   'every active member': (s, step, ctx, ev) => isMember(s) &&
-    s.name !== ctx.actorOf(ev) &&
-    !(s.lapses === true && ev.at > stepIndex('wait-lapsed')),
+    s.name !== ctx.actorOf(ev),
 };
 
 /* ---- table 2: the steps ------------------------------------------------ *
@@ -900,12 +905,20 @@ const RUN = {
       const row = (((v && v.view) || {}).members || []).find((m) => m.email === s.email);
       if (row && row.lapsed) { lapsed = true; break; }
     }
-    // reopened for its snapshots: a read does not revive (session.ts `seen`)
+    if (!lapsed) { s.stood = false; throw new Error(`seat ${step.seat} could not be stood: the clock did not lapse it within ${LAPSE_WAIT_MS / 1000}s`); }
+    // **Seeing is presence** (Ed, 2026-09-08, R-096): reopening the page is
+    // the revival — the read returns the seat, E grows back, and from here on
+    // it is an ordinary member again, served every open question. Until this
+    // date a read did not revive, and the seat stayed lapsed for the rest of
+    // the run with its page open, which is the state Ed says never exists.
     s.page = await s.ctx.newPage(); attachNets(D, step.seat, s.page);
     await s.page.goto(D.docbase + '/d/' + D.slug);
     await s.page.waitForTimeout(2600);
-    if (!lapsed) { s.stood = false; throw new Error(`seat ${step.seat} could not be stood: the clock did not lapse it within ${LAPSE_WAIT_MS / 1000}s`); }
-    return `${step.seat} lapsed after ${Math.round((Date.now() - t0) / 1000)}s quiet; page reopened, sends nothing from here on`;
+    const after = await viewAs(D, 'founder');
+    const back = (((after && after.view) || {}).members || []).find((m) => m.email === s.email);
+    if (!back || back.lapsed) throw new Error(`seat ${step.seat} opened the page lapsed and was not returned by the read (R-096)`);
+    s.quiet = false; // an ordinary member again: kept alive like the others
+    return `${step.seat} lapsed after ${Math.round((Date.now() - t0) / 1000)}s quiet; page reopened, and the read returned them (R-096)`;
   },
   /** A stranger knocks, verifies, and submits an application (applicants-walk's shape). */
   knock: async (step, D) => {

@@ -19,6 +19,28 @@ describe('lapsing (§9.5a): absence read by the clock', () => {
     expect(s.E()).toBe(3);
   });
 
+  // **Seeing is presence** (Ed, 2026-09-08, Q1284's follow-up): a lapsed
+  // member who opens the document is returned by the read itself — *if they
+  // were seeing things they wouldn't be lapsed* — so a live cookie never
+  // shows the room to somebody the room is not counting. The same for the
+  // crown, which lapses like a member (§9.7 rule 6).
+  it('a read returns a lapsed member, and a lapsed crown', () => {
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 } });
+    s.setIdentity(9_000, 'ada', { name: 'Ada' });
+    s.setIdentity(9_000, bo, { name: 'Bo' });
+    s.tick(10_500);
+    expect(s.memberRecords().get(cy)!.lapsed).toBe(true);
+    expect(s.E()).toBe(2);
+    expect(s.seen(11_000, cy)).toBe(true); // something to commit: the return
+    expect(s.memberRecords().get(cy)!.lapsed).toBe(false);
+    expect(s.memberRecords().get(cy)!.lapseWarned).toBe(false);
+    expect(s.E()).toBe(3);
+    expect(s.seen(11_001, cy)).toBe(false); // and then the hourly stamp as ever
+    const r = ConstitutionSession.replay([...s.logEntries()]);
+    expect(r.memberRecords().get(cy)!.lapsed).toBe(false);
+    expect(r.rollingHash()).toBe(s.rollingHash());
+  });
+
   it('never means no clock runs at all', () => {
     const { s, cy } = buildConstituted(); // lapse: never
     s.tick(50_000_000);

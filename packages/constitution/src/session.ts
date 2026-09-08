@@ -1913,7 +1913,17 @@ export class ConstitutionSession {
     const rec = m ?? (member === this.convenor.id ? this.convenor : null);
     if (!rec || (m && m.removed)) return false;
     if (m && m.arrivedAtT === null) return false;
-    if (m && m.lapsed) return false; // revival is memberReturn's — an act, not a read
+    // **Seeing is presence** (Ed, 2026-09-08, Q1284's follow-up): a lapsed
+    // member who opens the document is back — *if they were seeing things
+    // they wouldn't be lapsed* — so a read returns them exactly as a login
+    // or an act does, and the questions still open are served to them. The
+    // crown lapses like a member (§9.7 rule 6) and returns the same way.
+    // Until this date a read recorded nothing for the lapsed (*an act, not a
+    // read*), and a member with a live cookie could read the room lapsed.
+    if ((m && m.lapsed) || (member === this.convenor.id && this.crownLapsedFlag)) {
+      this.memberReturn(t, member);
+      return true;
+    }
     if (t - rec.lastActivityT < SEEN_EVERY_MS) return false;
     this.emit({ type: 'member-seen', t, member });
     return true;

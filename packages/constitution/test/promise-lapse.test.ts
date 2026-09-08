@@ -118,19 +118,19 @@ describe('💤 promise 1 · live · a quiet member leaves E and every electorate
   });
 });
 
-describe('💤 promise 3 · live · coming back is logging in, and nothing else', () => {
-  it('a read does not revive; an act does, and costs nothing', () => {
+describe('💤 promise 3 · live · coming back is being here again, and nothing else', () => {
+  it('a read revives, as an act does, and costs nothing', () => {
     const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 } });
     busy(s, bo, 9_000);
     s.tick(10_500);
-    // `seen` is the host's presence stamp on every authenticated read. It
-    // refuses for a lapsed member on purpose: revival is an act.
-    expect(s.seen(11_000, cy)).toBe(false);
-    expect(s.memberRecords().get(cy)!.lapsed).toBe(true);
-    // no motion, no price, no acknowledgement — one call, one event
-    s.memberReturn(11_000, cy);
+    // `seen` is the host's presence stamp on every authenticated read.
+    // **Seeing is presence** (Ed, 2026-09-08, R-096): for a lapsed member the
+    // read is the revival — it used to refuse them on purpose, and a member
+    // with a live cookie could read the room lapsed.
+    expect(s.seen(11_000, cy)).toBe(true);
     expect(s.memberRecords().get(cy)!.lapsed).toBe(false);
     expect(s.E()).toBe(3);
+    // no motion, no price, no acknowledgement — one event
     expect(types(s).filter((x) => x === 'member-returned')).toHaveLength(1);
     // returning twice writes nothing: the clock only moves on events
     s.memberReturn(11_500, cy);
