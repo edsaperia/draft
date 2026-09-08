@@ -183,6 +183,9 @@ reads. Under `DRAFT_DATA_DIR`:
 ```
 docs/<documentId>/
   log.jsonl          the constitution's hash-chained log — the source of truth
+  people.json        the people rows (decision 1253): every member's and
+                     applicant's email, name and picture, keyed by the
+                     person id the log's events carry — and nowhere else
   provisional.json   the founder's pasted pre-save text (a deliberate sidecar,
                      not a log event: nothing about it has been decided yet)
   engine.jsonl       the engine's own hash-chained log
@@ -193,24 +196,62 @@ outbox.jsonl         dev mail only — every mail and its magic link
 secret.txt           only when DRAFT_SECRET is unset (so: dev only)
 ```
 
-Four things to know about it:
+Five things to know about it:
 
-1. **The log is the only persistence, and loading is replay.** There is no
-   database, no snapshot, no second source of truth. A document exists
-   exactly when `docs/<id>/log.jsonl` exists; the server lists documents by
-   scanning for that file.
-2. **It is as sensitive as the room.** The log carries member email
-   addresses and every founding answer **in plaintext** — the blindness
-   design withholds at the projection, not at storage — and
+1. **The log and the people rows are the persistence, and loading is
+   replay.** There is no snapshot and no second source of truth. A document
+   exists exactly when `docs/<id>/log.jsonl` exists; the server lists
+   documents by scanning for that file, replays the log, and hands the
+   replay its `people.json`. The rows are state *beside* the log, never
+   derived from it: a replay writes none, and a person whose row is gone
+   reads as erased on the next view. A log holding any entry below schema
+   version 2 — the shape every document had before 2026-09-08, with the
+   addresses in the events — is **skipped at boot and named once**
+   (`[store] <id> is the pre-people shape (decision 1253): not loaded`),
+   never migrated; `/healthz` counts them as `documentsSkipped`. Production
+   holds none after the wipe.
+2. **It is as sensitive as the room.** `people.json` carries every address,
+   name and picture, and the log every founding answer **in plaintext** —
+   the blindness design withholds at the projection, not at storage — and
    `provisional.json` is somebody's draft charter. Treat a copy of this
    directory as you would treat the members' inboxes. `data/`, `secret.txt`,
    `tokens.json` and `outbox.jsonl` are all gitignored so a careless
    `git add` cannot publish them.
-3. **Nothing here is ever deleted.** No JSONL log is removed, by hand or by
-   tooling, while the file store is the live fallback.
+3. **Nothing here is ever deleted, except a person's row.** No JSONL log is
+   removed, by hand or by tooling; erasure is deleting one row from
+   `people.json` (or the `people` table), which the log never covered, so
+   every hash holds and the person's seat stands as *[withdrawn]* wherever
+   a name was printed. Their judgments stay, as the privacy policy says they
+   do.
 4. **Slugs are not identities.** The directory name is the document id;
    every slug a document has ever worn routes to it, out of the registry
    inside its own log.
+5. **The three people verbs of `draft-tools`** (`node dist/draft-tools.mjs`;
+   `<store>` is a data directory or a `postgres://` URL):
+
+   ```
+   draft-tools people <store> <docId>              list the rows: id, address,
+                                                   whether a name and a picture stand
+   draft-tools erase  <store> <docId> <personId>   delete one row; prints what it held
+   draft-tools wipe   <store> --i-understand-this-deletes-every-document=<name>
+   ```
+
+   `erase` is run **against a stopped service, or the service is restarted
+   after it** — a running server holds the rows in memory until it reloads.
+   `wipe` deletes every document and every sidecar (tokens, stashes, queued
+   mail, the dev inbox) and leaves the schema migrated; it **refuses**
+   without the flag, and with any `<name>` but the store's own — the data
+   directory's basename, or the database's name — printing the count it
+   would have deleted:
+
+   ```
+   wipe: refusing — this would delete N documents in <store>. To proceed, pass
+   --i-understand-this-deletes-every-document=<name>, where <name> is the data
+   directory's basename or the database's name, typed in full. Nothing was deleted.
+   ```
+
+   **The wipe runs only on Ed's word at the time** (PRODUCTION.md decision
+   1253). It has not been run.
 
 ## 6. Local development
 

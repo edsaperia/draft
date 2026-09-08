@@ -251,13 +251,16 @@ decision that other people relied on when they agreed to it.
 We think that is the honest trade, and we would rather say it before you join
 than after you ask.
 
-`[[PLACEHOLDER: the mechanism behind this promise is being built. Personal
-details are moving into a separate table that can simply be deleted, and free
-text is being redacted at the point it is displayed so the record's seals still
-hold. Until that work has landed, an erasure request has to be carried out by
-hand, and this policy should not be published as though the automatic path
-exists. Decide whether to publish with a plainly stated manual process, or to
-wait for the mechanism.]]`
+`[[PLACEHOLDER: the mechanism behind this promise is half built (2026-09-08,
+decision 1253). Your name, your picture and your email address live in a
+separate row that an operator deletes with one command, and the record then
+shows [withdrawn] where your name was — that half works. Your proposals, your
+reasons and what you wrote in an application are still recorded as written;
+redacting them at the point they are displayed, so the record's seals still
+hold, is not yet built. Until it is, that part of an erasure request has to be
+carried out by hand, and this policy should not be published as though the
+whole automatic path exists. Decide whether to publish with a plainly stated
+manual process for the free text, or to wait for the mechanism.]]`
 
 ## Your other rights
 

@@ -29,7 +29,7 @@ Without `RESEND_API_KEY` the server runs a **dev inbox**: every mail, magic link
 | `npm run design` | Serves `design/` at `http://localhost:8137/` with the fixture documents: `/` a blank arrival, `/?fixture=session` a session mid-flight, `&closed=1` a closed one. Needs no server and no account. |
 | `npm run sim -w @draft/sim-harness -- --mode scripted --scenario clubhouse --seeds 5` | A deterministic simulated session, scored against the scenario's ground truth. No network. |
 | `npm run sweep -w @draft/sim-harness` | The calibration sweep: ~575 scripted runs over the constitution's knobs. LLM-free. |
-| `npm run test:pg` | The server suite against a real Postgres (a local `postgres:17` on `127.0.0.1:5433`); `npm test` skips those 14 tests without one. |
+| `npm run test:pg` | The server suite against a real Postgres (a local `postgres:17` on `127.0.0.1:5433`); `npm test` skips those 17 tests without one. |
 
 ## Packages
 
