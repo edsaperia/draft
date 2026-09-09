@@ -204,6 +204,87 @@ const pick = <K extends EngineEvent['type']>(bridge: EngineBridge, type: K,
 const questionFor = (s: ConstitutionSession, id: string) =>
   [...s.crownQuestionRecords().values()].find((q) => q.text?.candidateId === id)!;
 
+/**
+ * **Parks are per footprint** (R-100, Ed 2026-09-09, Q1179): a second
+ * non-overlapping adoption parks beside the first as its own 👑 question, and
+ * the two are answered in either order. The second proposal is an insertion
+ * after the one line the document has — a distinct site under the classifier
+ * — so the two parks never share a span.
+ */
+describe('several 👑 questions stand at once (R-100)', () => {
+  function twoParked(seed: string) {
+    const first = parked({}, seed);
+    const { bridge, bo, cy } = first;
+    const v = bridge.engine.currentVersion();
+    const second = bridge.proposeText(30, cy,
+      { baseVersion: v, hunks: [{ start: 1, end: 1, lines: ['Visitors sign the book.'] }] }, 'a record');
+    const race = bridge.engine.races().find((r) => r.id === second.raceId)!;
+    bridge.judge(40, bo, second.id, race.incumbentId, 'a');
+    return { ...first, second: second.id };
+  }
+
+  it('the second park stands beside the first, each its own question', () => {
+    const { s, bridge, id, second } = twoParked('two-parks');
+    expect(bridge.engine.getCandidate(id).state).toBe('awaiting-assent');
+    expect(bridge.engine.getCandidate(second).state).toBe('awaiting-assent');
+    expect(bridge.engine.document()).toBe(START);
+    const tasks = view(s, 'ada').crownTasks.filter((t) => t.text);
+    expect(tasks.map((t) => t.text!.candidateId).sort()).toEqual([id, second].sort());
+    expect(new Set(tasks.map((t) => t.id)).size).toBe(2);
+  });
+
+  it('answered second-first: the first is rebased across the lines it does not touch and then accepts', () => {
+    const { s, bridge, id, second } = twoParked('second-first');
+    bridge.answerCrownQuestion(50, questionFor(s, second).id, 'accept');
+    expect(bridge.engine.document()).toBe(START + '\nVisitors sign the book.');
+    const park = bridge.engine.getCandidate(id);
+    expect(park.state).toBe('awaiting-assent');
+    expect(park.patch!.hunks).toEqual([{ start: 0, end: 1, lines: ['Open every day.'] }]);
+    bridge.answerCrownQuestion(60, questionFor(s, id).id, 'accept');
+    expect(bridge.engine.document()).toBe('Open every day.\nVisitors sign the book.');
+    expect(view(s, 'ada').crownTasks.filter((t) => t.text)).toHaveLength(0);
+  });
+
+  it('answered first-first, one refused: the other is untouched and accepts alone', () => {
+    const { s, bridge, id, second, bo } = twoParked('first-first');
+    const before = bridge.engine.balance(bo, 49);
+    bridge.answerCrownQuestion(50, questionFor(s, id).id, 'reject');
+    expect(bridge.engine.getCandidate(id).state).toBe('retired');
+    expect(bridge.engine.balance(bo, 51)).toBe(before);
+    const park = bridge.engine.getCandidate(second);
+    expect(park.state).toBe('awaiting-assent');
+    expect(park.patch!.hunks).toEqual([{ start: 1, end: 1, lines: ['Visitors sign the book.'] }]);
+    bridge.answerCrownQuestion(60, questionFor(s, second).id, 'accept');
+    expect(bridge.engine.document()).toBe(START + '\nVisitors sign the book.');
+  });
+
+  it('a sleeping crown grants both, and the engine follows both', () => {
+    const first = parked({ lapse: { afterMs: 100 } }, 'lapse-two');
+    const { s, bridge, bo, cy, id } = first;
+    const v = bridge.engine.currentVersion();
+    const second = bridge.proposeText(30, cy,
+      { baseVersion: v, hunks: [{ start: 1, end: 1, lines: ['Visitors sign the book.'] }] }, 'a record');
+    const race = bridge.engine.races().find((r) => r.id === second.raceId)!;
+    bridge.judge(40, bo, second.id, race.incumbentId, 'a');
+    expect(bridge.engine.getCandidate(second.id).state).toBe('awaiting-assent');
+    s.tick(40 + 1000);          // the crown lapses; every pending question auto-passes
+    expect(s.crownQuestionRecords().get(questionFor(s, id).id)!.status).toBe('auto-passed');
+    expect(s.crownQuestionRecords().get(questionFor(s, second.id).id)!.status).toBe('auto-passed');
+    bridge.tick(40 + 1000);     // and the engine hears both in the cursor walk
+    expect(bridge.engine.getCandidate(id).state).toBe('adopted');
+    expect(bridge.engine.getCandidate(second.id).state).toBe('adopted');
+    expect(bridge.engine.document()).toBe('Open every day.\nVisitors sign the book.');
+  });
+
+  it('replays bit-identically with two parks standing', () => {
+    const { s } = twoParked('replay-two');
+    const r = ConstitutionSession.replay([...s.logEntries()]);
+    expect(r.rollingHash()).toBe(s.rollingHash());
+    expect([...r.crownQuestionRecords().values()].filter((q) => q.status === 'pending' && q.text))
+      .toHaveLength(2);
+  });
+});
+
 describe('🛡️ on the Text parks the adoption (R-056)', () => {
   it('parks rather than adopting: the document stands, the race is gone, the 👑 is asked', () => {
     const { s, bridge, id, raceId, bo } = parked();

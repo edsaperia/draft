@@ -1027,13 +1027,16 @@ export class Session {
     }
     if (input.patch.hunks.length === 0) throw new Error('empty patch');
     validateHunks(this.currentLines().length, input.patch.hunks);
-    // **R-056's one-at-a-time rule reaching the second door** (R-058). The
-    // sweep's own comment names this obligation on any later door that adopts
-    // text: a parked candidate is not `live`, so `rebaseOthers` skips it, and
-    // `assent`'s accept re-emits `adopted` with the patch recorded at the park
-    // — against a version the decree would have moved out from under it.
-    // Refusing is honest rather than restrictive: a Founder holding both
-    // powers on the Text already owes the room an answer.
+    // **§4.2's park rule reaching the second door** (R-058, narrowed by
+    // R-100). The sweep adopts no text across a parked span, and since R-100
+    // `rebaseOthers` does rebase a parked patch — but only where the rebase
+    // cannot cross its span, which the sweep guarantees by parking nothing
+    // that overlaps and adopting nothing that overlaps. A decree is bound by
+    // no footprint test at all, so the one way to keep the guarantee at this
+    // door is to refuse the act while any park stands; whether a decree that
+    // touches no parked line should pass instead is Ed's to rule, not this
+    // door's to assume. Refusing is honest rather than restrictive: a Founder
+    // holding both powers on the Text already owes the room an answer.
     if ([...this.candidates.values()].some((c) => c.state === 'awaiting-assent')) {
       throw new Error(
         'a text adoption is parked awaiting assent — answer it before amending (§9.7 rule 8)',
@@ -1272,9 +1275,21 @@ export class Session {
       else groups.set(root, [c.id]);
     }
     const views: RaceView[] = [];
+    // **Waiting behind a park** (R-100): a text race whose leader would carry
+    // this batch but whose footprint overlaps a standing park is passed over
+    // by the sweep, and the view says so. The same two tests the sweep runs —
+    // `clearsBarAndFloor` and `overlapsPark` — so the flag and the batch
+    // cannot disagree about which race is waiting.
+    const parks = this.parkedFootprints();
+    const threshold = this.adoptionThreshold();
+    const floor = this.adoptionFloor();
     for (const members of groups.values()) {
       members.sort((a, b) => candidateNum(a) - candidateNum(b));
-      views.push(this.buildRaceView(members));
+      const view = this.buildRaceView(members);
+      if (parks.length && this.clearsBarAndFloor(view, threshold, floor)) {
+        view.blockedByPark = this.overlapsPark(this.candidate(view.leaderId!).footprint, parks);
+      }
+      views.push(view);
     }
     // Setting races (SPEC §9.6, Q390): all live values on one setting are
     // one race — rivalry needs no footprint test, the setting is the site.
@@ -1365,8 +1380,36 @@ export class Session {
       deadlocked,
       rivalGateOpen,
       closeness,
+      // set by `races()` for a text race, which alone can wait behind a park
+      blockedByPark: false,
       ...(setting ? { settingId: setting.settingId } : {}),
     };
+  }
+
+  /** The footprints of every candidate parked `awaiting-assent` (R-100). */
+  private parkedFootprints(): Span[][] {
+    return [...this.candidates.values()]
+      .filter((c) => c.state === 'awaiting-assent')
+      .map((c) => c.footprint);
+  }
+
+  /** Does this footprint touch any of these parks? The classifier's own test. */
+  private overlapsPark(fp: Span[], parks: Span[][]): boolean {
+    return parks.some((p) => footprintsConflict(fp, p));
+  }
+
+  /**
+   * **Ready to carry** (SPEC §4.2): the leader clears bar and floor, and the
+   * room has spoken at least once — or, at E = 1, the author is the room
+   * (`soleMemberIsLeadersAuthor`). One function, read by the sweep's snapshot
+   * and by `races()`'s `blockedByPark`, so the two cannot drift.
+   */
+  private clearsBarAndFloor(r: RaceView, threshold: number, floor: number): boolean {
+    return r.distinctMovers >= floor &&
+      r.leaderId !== null &&
+      r.leaderP !== null &&
+      r.leaderP > threshold &&
+      (r.comparisons > 0 || this.soleMemberIsLeadersAuthor(r));
   }
 
   /**
@@ -1639,12 +1682,11 @@ export class Session {
     const threshold = this.adoptionThreshold(t);
     const floor = this.adoptionFloor();
     const ready = this.races()
-      .filter(
-        (r) =>
-          r.distinctMovers >= floor &&
-          r.leaderId !== null &&
-          r.leaderP !== null &&
-          r.leaderP > threshold &&
+      // `clearsBarAndFloor` is the test, shared with `races()`'s
+      // `blockedByPark` (R-100). What it asks, and why:
+      .filter((r) => this.clearsBarAndFloor(r, threshold, floor))
+          // Bar and floor, and then the helper's last clause, whose reason is
+          // long enough to keep here beside the batch it governs.
           // The room must have spoken here at least once: two rival authors
           // meet a floor of 2 on derived self-preferences alone, and the
           // old one-race trigger enforced this structurally (adoption fired
@@ -1670,8 +1712,6 @@ export class Session {
           // the author, has said nothing, and *is* served the pair; letting the
           // bypass fire would carry text past the one person left before they
           // could answer it.
-          (r.comparisons > 0 || this.soleMemberIsLeadersAuthor(r)),
-      )
       // **The cap mark is read here, in the snapshot, and not at the `adopt`
       // call** (SPEC §4.2, R-051). `fitRaceMembers` is memoised on the
       // members, the incumbent and the last usable comparison's `seq`, so
@@ -1698,22 +1738,29 @@ export class Session {
             : { cappedFit: { iterations: fit.iterations, gradMax: fit.gradMax } }),
         };
       });
-    // **NO TEXT ADOPTION OF ANY KIND WHILE A CANDIDATE IS PARKED** (R-056).
-    // This is the invariant the whole park rests on, and it is stated here
-    // because it is the only thing standing between a parked patch and a
-    // document that moved out from under it. `assent`'s accept re-emits
-    // `adopted` with nothing but the numbers recorded at the park, so the
-    // parked patch must still be against the current version when the
-    // answer comes; `adopt`'s rebase loop takes only `live` candidates, so
-    // a parked one is never rebased and cannot be made safe after the fact.
-    // Any other door that adopts text — one added later, bypassing this
-    // sweep — has to honour the same rule, or it silently applies hunks
-    // against a version they were never written for.
+    // **NO TEXT ADOPTION ACROSS A PARKED SPAN** (R-056 as narrowed by R-100;
+    // Ed, 2026-09-09, Q1179). This is the invariant the park rests on, and it
+    // is stated here because it is the only thing standing between a parked
+    // patch and a document that moved out from under it. `assent`'s accept
+    // re-emits `adopted` with nothing but the numbers recorded at the park,
+    // so the parked patch must still say what the room passed when the
+    // answer comes. Since R-100 `rebaseOthers` does rebase a parked patch —
+    // but a three-way rebase changes a patch's *lines* only where the
+    // adopted hunks overlap its own, and this sweep never lets that happen:
+    // nothing parks over a standing park, and nothing adopts over one. So
+    // every rebase a park ever meets is textual composition (gate 1) — its
+    // offsets move, its words cannot — which is what makes accept-in-any-
+    // order safe, and what makes *park per footprint* still *the change the
+    // room passed*. Any other door that adopts text has to honour the same
+    // rule (`decreeText` refuses outright, being bound by no footprint), or
+    // it silently applies hunks against lines they were never written for.
     //
-    // Its consequence, plainly: drafting stands still while the convenor
-    // owes an answer. That is what 🛡️ on the Text *means*, and a convenor
-    // who never answers is covered by lapse (§9.5a, which auto-passes).
-    let blocked = [...this.candidates.values()].some((c) => c.state === 'awaiting-assent');
+    // A leader whose footprint overlaps a park — one standing, or one made
+    // earlier in this batch — **waits like anybody** (§4.2's phrase for a
+    // failed mid-batch rebase): it stays live and judgeable, `races()` marks
+    // it `blockedByPark`, and it is looked at again next batch. Everything
+    // else parks beside the standing parks, each its own 👑 question, oldest
+    // race first as always.
     for (const { leaderId, p, cappedFit } of ready) {
       const c = this.candidate(leaderId);
       if (c.state !== 'live') continue;
@@ -1723,12 +1770,14 @@ export class Session {
       if (c.patch === undefined) {
         this.adopt(t, leaderId, p, threshold, undefined, cappedFit); continue;
       }
-      if (blocked) continue;
+      // read fresh each time: a park made earlier in this batch is in the
+      // set by its fold, and an adoption earlier in this batch has moved
+      // every standing park's offsets through `rebaseOthers`
+      if (this.overlapsPark(c.footprint, this.parkedFootprints())) continue;
       if (this.constitutionValue.textAssent) {
         this.emit({ type: 'candidate-awaiting-assent', t, id: leaderId,
           raceId: this.raceIdOf(leaderId), p, threshold,
           ...(cappedFit ? { cappedFit } : {}) });
-        blocked = true; // one park per batch, and none beside a standing one
         continue;
       }
       this.adopt(t, leaderId, p, threshold, undefined, cappedFit);
@@ -1793,10 +1842,21 @@ export class Session {
    * rebased, or put into `rebase-pending` where the rebase genuinely
    * conflicts; **nothing retires anything**.
    *
-   * Setting candidates have no text ground and are untouched (Q390), and a
-   * candidate parked `awaiting-assent` is not `live`, so it is skipped — which
-   * is exactly why `decreeText` refuses while one stands (R-056's one-at-a-time
-   * rule, extended to the second door rather than rebased around).
+   * Setting candidates have no text ground and are untouched (Q390).
+   *
+   * **A parked candidate is rebased too, and only ever across lines it does
+   * not touch** (R-100, narrowing R-056's *never rebased*). `sweepAdoptions`
+   * parks nothing over a standing park and adopts nothing over one, so the
+   * hunks arriving here can never overlap a park's own span: the rebase is
+   * textual composition (gate 1), the offsets move and the words do not,
+   * and `awaiting` — the numbers the room decided on — is untouched. That is
+   * the whole of what keeps a park *the change the room passed* while its
+   * neighbours accept in any order. A rebase that fails on a park, or that
+   * hands back different lines, is therefore not a ground shift but a bug in
+   * the sweep's guarantee, and it **throws** naming both candidates rather
+   * than quietly returning a passed change to its author as rebase-pending.
+   * `decreeText` refuses while any park stands because a decree is bound by
+   * no footprint test and could break the guarantee from the other door.
    *
    * `spec-check`'s `checkPenRebase` asserts in source that the pen reaches
    * this helper rather than a copy of its own.
@@ -1808,10 +1868,24 @@ export class Session {
     newVersion: number,
   ): void {
     const others = [...this.candidates.values()].filter(
-      (c) => c.state === 'live' && c.id !== exceptId && c.patch !== undefined,
+      (c) => (c.state === 'live' || c.state === 'awaiting-assent') &&
+        c.id !== exceptId && c.patch !== undefined,
     );
     for (const c of others) {
       const result = rebaseHunks(c.patch!.hunks, adoptedHunks);
+      if (c.state === 'awaiting-assent') {
+        const same = result.ok && result.hunks.length === c.patch!.hunks.length &&
+          result.hunks.every((h, i) => {
+            const was = c.patch!.hunks[i]!;
+            return h.lines.length === was.lines.length && h.lines.every((l, j) => l === was.lines[j]);
+          });
+        if (!same) {
+          throw new Error(
+            `adopting ${exceptId} would rebase parked ${c.id} across its own span — ` +
+            'the sweep parks and adopts nothing over a standing park (R-100)',
+          );
+        }
+      }
       if (result.ok) {
         this.emit({
           type: 'candidate-rebased',

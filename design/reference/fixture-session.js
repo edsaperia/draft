@@ -685,6 +685,32 @@ window.FIXTURE_SESSION = (function () {
       rationale: 'Six months is two meetings. You cannot know how someone handles a hard evening in the house until you have seen one, and there is usually one a year.'
     },
     {
+      // **The room's side of a park** (SURFACE E36; Q1015, Ed 2026-09-09). The
+      // membership passed a change to the Accounts clause under the Founder's
+      // 🛡️ and the Founder has not answered: a ⏳ entry whose card is the
+      // clause, one sentence, and OK. No wording and no speaker — the words
+      // are the Founder's 👑 card's. `parkNote` is the sentence, read from
+      // copy by the live page and written here as the fixture's own literal.
+      id: 'park-accounts', kind: 'park', keys: ['accounts'], state: 'deciding',
+      qLabel: '§ Accounts and Inspection', urgency: 0, pct: 100,
+      cap: 'Awaiting assent from the Founder 🛡️', parkNote: 'Awaiting assent from the Founder 🛡️',
+      unread: true
+    },
+    {
+      // **A race waiting behind that park on the same clause** (E36, Q1179):
+      // its leader would carry, but it overlaps the park, so the batch passes
+      // it over until the Founder answers. Live and judgeable as it was — you
+      // have voted here, so it files ⏳ — and its card carries the waiting
+      // sentence as a note, the way a shielded race carries `crownWaits`.
+      id: 'quick-accounts-blocked', kind: 'quick', keys: ['accounts'], state: 'deciding',
+      verdict: 'preferred the proposal', pick: 'approve',
+      qLabel: '§ Accounts and Inspection', urgency: 0.3,
+      pct: 100, cap: 'Waiting on the Founder’s answer about another change to this clause 🛡️',
+      blockedByPark: 'Waiting on the Founder’s answer about another change to this clause 🛡️',
+      marked: 'The Purse-holder keeps the accounts in whatever way suits them, and shows them to any member who asks<ins>, within a week of being asked</ins>.',
+      rationale: 'Asking is not the same as being shown. A week is long enough to find the book and short enough to matter.'
+    },
+    {
       // The one **ground shift** on the surface (SPEC §4.4), rebuilt 2026-08-17
       // so that it is actually one. It had the 🔄 glyph and a tooltip, and a
       // `marked` string identical to the clause — so the card showed a proposal

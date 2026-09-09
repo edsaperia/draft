@@ -2642,9 +2642,14 @@
       // act has become the fact of it, which is what the judgment row's ✓ does
       // when it is pressed. Nothing moves between the two cards, which is the
       // point — it is one lifecycle, not two screens.
+      // **A passed proposal is not its author's to withdraw** (SPEC §9.7 rule
+      // 8, SURFACE E37): once the membership has passed it and it waits on the
+      // Founder, 🗑️ is dead — the room has decided, and the line on the rail
+      // says so. The row otherwise stands exactly as it did.
       '<div class="race-mid commitrow">' +
-      '<button class="btn btn-withdraw glyphbtn" data-act="draft-withdraw" title="' + T.row.withdraw +
-      (n > 1 ? T.row.allPlaces(n) : '') + T.row.withdrawCost + '">🗑️</button>' +
+      '<button class="btn btn-withdraw glyphbtn" data-act="draft-withdraw"' + (d.awaiting ? ' disabled' : '') +
+      ' title="' + (d.awaiting ? esc(d.cap || '') : T.row.withdraw +
+      (n > 1 ? T.row.allPlaces(n) : '') + T.row.withdrawCost) + '">🗑️</button>' +
       '<button class="btn btn-propose" aria-pressed="true" disabled' +
       ' title="' + T.row.submittedTitle + '">' + T.row.submitted + '</button>' +
       '</div>' +
@@ -2915,6 +2920,14 @@
   // and the card says a carried change waits on the Founder before it lands
   const crownNote = (s) => (s.crownWaits
     ? '<p class="setnote">' + T.crown.waits + '</p>' : '');
+  // **A race waiting behind a park on the same clause** (SURFACE E36, R-100;
+  // Ed, 2026-09-09, Q1015): the batch passes it over until the Founder
+  // answers a park it overlaps, and every card the race can open says so in
+  // one sentence — the live card, the ledger card, the race card alike. The
+  // item carries the sentence itself (`blockedByPark`), read off copy by the
+  // page, so this draws it and never words it.
+  const parkNote = (s) => (s.blockedByPark
+    ? '<p class="setnote">' + esc(s.blockedByPark) + '</p>' : '');
   // ---- the ledger (Q1201) -------------------------------------------------
   // The pairs you judged on this race, oldest first: under the live card
   // while the deck still holds a pair for you, and alone on the ⏳ card once
@@ -2966,7 +2979,7 @@
     return (
       '<div class="sugg quick-open ledger-open" data-card="' + s.id + '" data-site="' + (key || '') + '">' +
       clauseHeadHtml(s, { text: currentTextFor(key), key: key, chips: chipsFor(key, s.id) }) +
-      ledgerHtml(s) + crownNote(s) +
+      ledgerHtml(s) + crownNote(s) + parkNote(s) +
       '<div class="race-mid commitrow">' +
       '<button class="btn glyphbtn" data-act="clear-close" title="' + G.commit.binLocked + '">🗑️</button>' +
       '<span class="rightpair"><button class="btn btn-approve glyphbtn" disabled data-act="submit"' +
@@ -3052,6 +3065,32 @@
         '</div>'
       );
     }
+    // **The room's side of a park** (SURFACE E36; Ed, 2026-09-09, Q1015; Ed
+    // 2026-08-29: *a ⏳ whose card says "Awaiting assent from the Founder 🛡️"
+    // [OK]*). The membership passed a change to this clause and the Founder
+    // has not answered: the clause at the head, one sentence, and OK — the
+    // card asks nothing but to have been seen. No wording and no author: the
+    // words are the Founder's 👑 card's, one seat over. The mark is ⏳ like a
+    // race you have voted on, and the sentence is what says which wait this
+    // is — the room has finished, the Founder has not (Q1286 (a)). OK is
+    // `data-seen`, so it is remembered per seat the way a sealed record's is,
+    // and the entry stays ⏳ until the park resolves (E36's Close cell).
+    if (s.kind === 'park') {
+      const pkey = (s.keys ?? [])[0];
+      return (
+        '<div class="sugg quick-open park-open" data-card="' + s.id + '" data-site="' + (pkey || '') + '">' +
+        clauseHeadHtml(s, { text: currentTextFor(pkey), key: pkey, chips: chipsFor(pkey, s.id) }) +
+        '<p class="setnote">' + esc(s.parkNote || '') + '</p>' +
+        (s.unread && !readSeals.has(s.id)
+          ? '<div class="race-mid commitrow"><span></span>' +
+            '<button class="btn btn-approve okbtn" data-seen="' + s.id + '"' +
+            ' title="' + T.record.okTitle + '">' + T.record.ok + '</button></div>'
+          : '<div class="race-mid commitrow">' +
+            '<button class="btn glyphbtn" data-act="clear-close" title="' + window.COPY.grammar.commit.binLocked + '">🗑️</button>' +
+            '<span></span></div>') +
+        '</div>'
+      );
+    }
     // **The card is about one pair** (Q1200, Q1201): the ledger block you
     // pressed, else the front of the deck — `cardViewOf` reshapes the item
     // to that pair and the two judgment cards below draw it; the ledger of
@@ -3075,7 +3114,7 @@
         fieldHtml(
           proposalHtml(sv, { v: 'a', html: wordingHtml(cur, sv.race.a.text), why: sv.race.a.rationale, by: sv.race.a.by }) +
           proposalHtml(sv, { v: 'b', html: wordingHtml(cur, sv.race.b.text), why: sv.race.b.rationale, by: sv.race.b.by }), 2) +
-        reviseNote(sv) + crownNote(sv) +
+        reviseNote(sv) + crownNote(sv) + parkNote(sv) +
         ledgerHtml(s) +
         // The one thing a race card cannot say any other way: neither of its
         // two candidates has an incumbent radio, so nothing on the card votes
@@ -3139,7 +3178,7 @@
                           chips: chipsFor(key, sv.id) }) +
       groundNote(sv) +
       fieldHtml(proposalHtml(sv, { v: 'approve', html: prop, why: sv.rationale, by: sv.by, edit: noEdit })) +
-      reviseNote(sv) + crownNote(sv) +
+      reviseNote(sv) + crownNote(sv) + parkNote(sv) +
       ledgerHtml(s) +
       commitRowHtml(sv) +
       '</div>'

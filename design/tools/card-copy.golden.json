@@ -1,6 +1,6 @@
 {
  "meta": {
-  "cards": 271,
+  "cards": 275,
   "walks": [
    "answers",
    "charter",
@@ -1051,6 +1051,29 @@
     ],
     "helpers": []
    },
+   "park-accounts": {
+    "eyebrow": "The clause as it stands",
+    "head": "The Purse-holder keeps the accounts in whatever way suits them, and shows them to any member who asks.",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "OK",
+      "title": "It leaves your margin and stays in the record"
+     }
+    ],
+    "hints": [
+     "Whole charter · place n of m — open it",
+     "Accounts and Inspection — open it",
+     "Close this one",
+     "It leaves your margin and stays in the record"
+    ],
+    "helpers": [
+     "Awaiting assent from the Founder 🛡️"
+    ]
+   },
    "patch-rename": {
     "eyebrow": "The clause as it stands",
     "head": "The Purse-holder pays the bills and reimburses what seems fair, and keeps the receipts in the tin.",
@@ -1080,6 +1103,38 @@
      "Choose one of the three first"
     ],
     "helpers": []
+   },
+   "quick-accounts-blocked": {
+    "eyebrow": "The clause as it stands",
+    "head": "The Purse-holder keeps the accounts in whatever way suits them, and shows them to any member who asks.",
+    "lock": "",
+    "body": "ProposedThe Purse-holder keeps the accounts in whatever way suits them, and shows them to any member who asks, within a week of being asked.Asking is not the same as being shown. A week is long enough to find the book and short enough to matter.Preferred✏️ propose edit",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
+     },
+     {
+      "label": "Recorded — choose again to change it",
+      "title": "Recorded — choose again to change it"
+     }
+    ],
+    "hints": [
+     "Whole charter · place n of m — open it",
+     "Close this one",
+     "Accounts and Inspection — open it",
+     "Say you prefer this proposal — nothing leaves the card until you submit",
+     "Write your own version of this proposal. Free to open — proposing costs one edit.",
+     "A member wrote this. Who, is sealed until the closing record.",
+     "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
+     "Recorded — choose again to change it"
+    ],
+    "helpers": [
+     "Waiting on the Founder’s answer about another change to this clause 🛡️"
+    ]
    },
    "quick-armchair": {
     "eyebrow": "The clause as it stands",
@@ -2172,6 +2227,29 @@
     ],
     "helpers": []
    },
+   "park-accounts": {
+    "eyebrow": "The clause as it stands",
+    "head": "The Purse-holder keeps the accounts in whatever way suits them, and shows them to any member who asks.",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "OK",
+      "title": "It leaves your margin and stays in the record"
+     }
+    ],
+    "hints": [
+     "Whole charter · place n of m — open it",
+     "Accounts and Inspection — open it",
+     "Close this one",
+     "It leaves your margin and stays in the record"
+    ],
+    "helpers": [
+     "Awaiting assent from the Founder 🛡️"
+    ]
+   },
    "patch-rename": {
     "eyebrow": "The clause as it stands",
     "head": "The Purse-holder pays the bills and reimburses what seems fair, and keeps the receipts in the tin.",
@@ -2195,6 +2273,33 @@
      "Close — your vote stays on the record"
     ],
     "helpers": []
+   },
+   "quick-accounts-blocked": {
+    "eyebrow": "The clause as it stands",
+    "head": "The Purse-holder keeps the accounts in whatever way suits them, and shows them to any member who asks.",
+    "lock": "",
+    "body": "ProposedThe Purse-holder keeps the accounts in whatever way suits them, and shows them to any member who asks, within a week of being asked.Asking is not the same as being shown. A week is long enough to find the book and short enough to matter.Preferred✏️ propose edit",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Close — your vote stays on the record"
+     }
+    ],
+    "hints": [
+     "Whole charter · place n of m — open it",
+     "Close this one",
+     "Accounts and Inspection — open it",
+     "Say you prefer this proposal — nothing leaves the card until you submit",
+     "Write your own version of this proposal. Free to open — proposing costs one edit.",
+     "A member wrote this. Who, is sealed until the closing record.",
+     "I can’t split them",
+     "Close — your vote stays on the record"
+    ],
+    "helpers": [
+     "Waiting on the Founder’s answer about another change to this clause 🛡️"
+    ]
    },
    "quick-armchair": {
     "eyebrow": "The clause as it stands",

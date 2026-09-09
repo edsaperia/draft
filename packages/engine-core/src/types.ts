@@ -151,7 +151,10 @@ export type CandidateState =
    * the room has decided and nothing has been applied. Out of every feed
    * and every race, unjudgeable, unwithdrawable, and not the author's to
    * pull back — the room has decided. It leaves this state only by the
-   * convenor's answer, or *undecided* at the close.
+   * convenor's answer, or *undecided* at the close. Since R-100 several may
+   * stand at once, none overlapping another: a park is rebased beneath a
+   * neighbouring park's accept only across lines it does not touch, which
+   * moves its offsets and never its words.
    */
   | 'awaiting-assent'
   /** Unresolved at the close (SPEC §4.6): the incumbent stood, but this is not *kept*. */
@@ -251,6 +254,15 @@ export interface RaceView {
    * rival-vs-rival pairs for ordinary value-based sampling.
    */
   rivalGateOpen: boolean;
+  /**
+   * **Waiting behind a park** (SPEC §4.2, R-100; Q1179): the leader clears
+   * bar and floor — the sweep's own readiness test, one function for both —
+   * and its footprint overlaps a candidate parked `awaiting-assent`, so the
+   * batch passes it over until the convenor answers. The race stays live and
+   * judgeable throughout; this flag is what lets the surface say why the
+   * text has not moved (SURFACE E36). Always false on a setting race.
+   */
+  blockedByPark: boolean;
   /**
    * Present on a setting race (SPEC §9.6, Q390): the race is over this
    * setting's standing value rather than over contested text, and
