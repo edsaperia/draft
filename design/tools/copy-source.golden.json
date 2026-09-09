@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 464
+  "entries": 460
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -77,14 +77,10 @@
   "page.ask.mostOpen": "The most open you will accept",
   "page.ask.shortest": "The shortest you will accept",
   "page.begin.downTip": "Laid down at the start — press to keep it",
+  "page.begin.givenTip": "Already given up on its own card — it comes back only there",
   "page.begin.keptTip": "Kept — press to lay it down at the start",
-  "page.begin.mixedTip": "Partly given up already on its own cards — press to keep the rest",
-  "page.begin.zones.Everything else.a": "The Founder may refuse every other change that the membership pass.",
-  "page.begin.zones.Everything else.u": "The Founder may amend every other rule at will.",
-  "page.begin.zones.Membership.a": "The Founder may refuse membership changes that the membership pass.",
-  "page.begin.zones.Membership.u": "The Founder may change the membership rules, and invite or remove members, at will.",
-  "page.begin.zones.The Text.a": "The Founder may refuse changes to the text that the membership pass.",
-  "page.begin.zones.The Text.u": "The Founder may amend the text at will.",
+  "page.begin.penCol": "Founder Actions — amend at will",
+  "page.begin.shieldCol": "Founder Veto — refuse what the membership passes",
   "page.binPutBack": "Put it back as it stands",
   "page.cards.admission.n": "Admissions",
   "page.cards.admission.rule": "Each member says the <b>cheapest</b> admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.",
