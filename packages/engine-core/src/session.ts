@@ -2303,31 +2303,19 @@ export class Session {
     const cards: Card[] = [];
     const served = new Set<string>();
     let hotIndex = 0;
-    // **The unheard slots** (SPEC §8.2 made structural; Q1178, 2026-09-05).
-    // The hand's leading slots go to the races this participant hasn't
-    // judged that are still short of the floor, least-measured first — all
-    // of them, up to the hand, not one: a single slot re-starves the next
-    // fresh race behind whichever unheard race sorts first. The hot set is
-    // the top-`hotSetSize` *valued* races and a race with no evidence values
-    // below every race with some, so without this a fresh proposal reached
-    // nobody: every seat's whole hand held older races, and the new card
-    // arrived only after a member had cleared 3–11 of them (`room-walk`
-    // reproduces it). §8.2's own sentence — *the unheard are asked at the
-    // moment their silence would be foreclosed* — and §8.1's *new-candidate
-    // measurement scores as exploration* both point here; what the spec does
-    // not state is the guarantee, hence the question number.
-    {
-      const starving = races
-        .filter((r) => !judgedRaces.has(r.id) && r.distinctMovers < floor)
-        .sort((a, b) => a.comparisons - b.comparisons || a.id.localeCompare(b.id));
-      for (const r of starving) {
-        if (cards.length >= n) break;
-        const best = this.askOnRace(r, participantId);
-        if (best === null) continue;
-        served.add(pairKey(best.aId, best.bId));
-        cards.push(this.edgeCard(r, best));
-      }
-    }
+    // **No unheard slot** (Q1178, ruled by Ed 2026-09-09). From 2026-09-05
+    // to 2026-09-09 the hand's leading slots went to the races this
+    // participant had not judged that were still short of the floor,
+    // least-measured first — a guarantee built against `room-walk`'s
+    // finding that a fresh proposal reached nobody while the hot set held
+    // older races. It went on Ed's ordering: serving never considers how
+    // recently a card was made, only how close it is to resolving; the
+    // least-measured are not prioritised; the races closest to sealing come
+    // first — v / c_p alone, the exploration roll below the only push toward
+    // a new race, §8.2's ×1.25 on `valued` a value and not a slot.
+    // Reaching every live race is `askOn`'s job (Q1202): the server's view
+    // carries a working pair per race the hand did not deal, so the hand
+    // is an emphasis, never a gate on what a member can be asked.
     // §8.3a idle serving: with the audience gate open and nothing else to
     // judge, the diagonal simply arrives — capped so the participant is
     // never asked more than three in a row, counting ones already judged.

@@ -2624,13 +2624,15 @@ describe('the pair deck and the judged-pairs ledger (Q1200, Q1201)', () => {
  * **A race's row says what can still be asked of you, dealt or not** (Q1202;
  * Ed, 2026-09-07: *⏳ should mean "waiting for other people to vote". If there
  * are things you can do, it should show the symbol of that action, even if
- * it's not urgent*). The hand is ten cards, so with eleven races wanting a
- * member the eleventh is out of it; its row carries `askable: true` and the
- * pair the race would deal (`ask`), so the page lights the entry and the
- * press opens a card without a second read. A dealt race carries no `ask`
- * (the hand's card is the card); a race the member has judged out carries
- * `askable: false, ask: null`. Blind throughout: an `ask` is the same
- * `CardView` the hand serves, and nothing on the wire is a routing value.
+ * it's not urgent*). The hand is drawn from the hot set — three races, an
+ * emphasis and not a gate (Q1178, Ed 2026-09-09; until then the unheard slot
+ * filled it with every fresh race) — so with eleven races wanting a member
+ * most are out of it; each such row carries `askable: true` and the pair the
+ * race would deal (`ask`), so the page lights the entry and the press opens
+ * a card without a second read. A dealt race carries no `ask` (the hand's
+ * card is the card); a race the member has judged out carries `askable:
+ * false, ask: null`. Blind throughout: an `ask` is the same `CardView` the
+ * hand serves, and nothing on the wire is a routing value.
  */
 describe('askable races and the pair that rides the view (Q1202)', () => {
   it('lights a race the hand lacks with its own pair, and files one that is judged out', async () => {
@@ -2674,8 +2676,9 @@ describe('askable races and the pair that rides the view (Q1202)', () => {
     }
     await cmd(ada, 'begin', {});
 
-    // eleven single-challenger races, one per line, by three authors — one
-    // more than the hand of ten holds for dee
+    // eleven single-challenger races, one per line, by three authors — far
+    // more than the hot set of three deals dee (an exploration roll may add
+    // a race or two; it never reaches eleven)
     const authors = [ada, ada, ada, ada, bo, bo, bo, bo, cy, cy, cy];
     const races: string[] = [];
     for (let i = 0; i < 11; i++) {
@@ -2687,21 +2690,24 @@ describe('askable races and the pair that rides the view (Q1202)', () => {
     const v1 = await viewOf(dee);
     expect(v1.clauses).toHaveLength(11);
     const inHand = new Set(v1.raceCards.filter((c) => c.kind === 'edge').map((c) => c.raceId));
-    expect(inHand.size).toBe(10);
-    // the row of the race outside the hand: askable, with a pair whose ids
-    // are that race's — its challenger and its incumbent
+    expect(inHand.size).toBeGreaterThanOrEqual(3);
+    expect(inHand.size).toBeLessThan(11);
+    // every row outside the hand: askable, with a pair whose ids are that
+    // race's — its challenger and its incumbent
     const out = v1.clauses.filter((r) => !inHand.has(r.id));
-    expect(out).toHaveLength(1);
+    expect(out.length).toBe(11 - inHand.size);
+    for (const o of out) {
+      expect(o.askable).toBe(true);
+      expect(o.ask).not.toBeNull();
+      expect(o.ask!.kind).toBe('edge');
+      expect(o.ask!.raceId).toBe(o.id);
+      expect(o.ask!.urgency).toBe(0);
+      const cand = (v1.clauses.find((r) => r.id === o.id) as unknown as
+        { candidates: Array<{ id: string }>; incumbentId: string });
+      expect(new Set([o.ask!.a.id, o.ask!.b.id]))
+        .toEqual(new Set([cand.candidates[0]!.id, cand.incumbentId]));
+    }
     const row = out[0]!;
-    expect(row.askable).toBe(true);
-    expect(row.ask).not.toBeNull();
-    expect(row.ask!.kind).toBe('edge');
-    expect(row.ask!.raceId).toBe(row.id);
-    expect(row.ask!.urgency).toBe(0);
-    const cand = (v1.clauses.find((r) => r.id === row.id) as unknown as
-      { candidates: Array<{ id: string }>; incumbentId: string });
-    expect(new Set([row.ask!.a.id, row.ask!.b.id]))
-      .toEqual(new Set([cand.candidates[0]!.id, cand.incumbentId]));
     // a dealt race is askable by construction and carries no pair of its own
     for (const r of v1.clauses.filter((x) => inHand.has(x.id))) {
       expect(r.askable).toBe(true);
