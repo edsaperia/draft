@@ -399,8 +399,8 @@ window.COPY = (function () {
       admission: { t: 'How Does Somebody Join?', n: 'Admissions',
         rule: 'Each member says the <b>cheapest</b> admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.',
         takes: 'The document takes the dearest' },
-      invite: { t: 'Invite a Member' },
-      remove: { t: 'Remove a Member' },
+      invite: { t: 'Invite a Member', n: 'Invites' },
+      remove: { t: 'Remove a Member', n: 'Removals' },
       hat: { t: 'Is the Founder a Member?', n: 'Founder’s Membership' },
       applications: { t: 'Can Strangers Apply?', n: 'Applications',
         rule: 'Each member says the <b>most open</b> door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.' },
@@ -656,8 +656,6 @@ window.COPY = (function () {
     // surface's own words, and each cell's glyph toggle carries one of the
     // three tooltips — kept, laid down, or already given on its own tab
     begin: {
-      penCol: 'Founder Actions — amend at will',
-      shieldCol: 'Founder Veto — refuse what the membership passes',
       keptTip: 'Kept — press to lay it down at the start',
       downTip: 'Laid down at the start — press to keep it',
       givenTip: 'Already given up on its own card — it comes back only there',

@@ -1045,8 +1045,12 @@ function checkBeginRows(M, pm) {
   const toId = new Map(tableAfter('SURFACE.md', 'keys').map((r) => [r['page key'], r.setting]));
   // the doors ride the page's own MID, having no catalogue row to map
   const idOf = (k) => pm.MID[k] || toId.get(k) || k;
+  // `machines` is a catalogue setting for replay alone — no card since R-078,
+  // and not a row here (Ed, 2026-09-09: *we are not having machines*); the
+  // start keeps both powers on it and nothing can be proposed on it
+  const RETIRED = new Set(['machines']);
   const want = new Set([
-    ...M.CATALOGUE.filter((e) => e.kind !== 'personal').map((e) => e.id),
+    ...M.CATALOGUE.filter((e) => e.kind !== 'personal' && !RETIRED.has(e.id)).map((e) => e.id),
     ...M.DOORS,
   ]);
   const seen = new Map();
@@ -1063,8 +1067,7 @@ function checkBeginRows(M, pm) {
   const ordered = pm.ORDER.filter((k) => inOrder.includes(k));
   if (inOrder.join(',') !== ordered.join(','))
     find('begin', `BEGIN_ROWS is not in the document's order — ORDER has ${ordered.join(' ')}, the table ${inOrder.join(' ')}`);
-  if (pm.BEGIN_ROWS[pm.BEGIN_ROWS.length - 1] !== 'machines')
-    find('begin', `BEGIN_ROWS ends with '${pm.BEGIN_ROWS[pm.BEGIN_ROWS.length - 1]}' — 'machines', having no card, is last`);
+  for (const id of RETIRED) if (seen.has(id)) find('begin', `BEGIN_ROWS has the retired '${id}'`);
   note(`  ${pm.BEGIN_ROWS.length} rows, ${seen.size} of ${want.size} power-holders covered once each, ${inOrder.length} in ORDER's order`);
 }
 

@@ -11353,12 +11353,11 @@
     'admission', 'applications', 'lapse', 'removal', 'invite', 'remove',
     'rate', 'ending', 'bar', 'pace', 'quorum', 'authorship', 'judgments',
     'text',
-    // `machines` has no card since 🤖 left the surface (R-078), but it is
-    // still a catalogue setting the founder holds both powers on, and this
-    // table is authoritative over `HELD` at the start: drop the key and the
-    // start keeps a power with no control anywhere saying so. Last, having
-    // no place in the document.
-    'machines',
+    // `machines` is not here (Ed, 2026-09-09: *we are not having machines*):
+    // it has had no card since 🤖 left the surface (R-078) and stays in the
+    // catalogue for replay alone, so the start keeps both powers on it and
+    // nothing can ever be proposed on it — `checkBeginRows` exempts it by
+    // name rather than the table pretending it is a setting anybody meets.
   ];
   // **A switch reflects the tabs** (Ed's rule (i)): the hand actually on a key
   // less what its own ✒️/🛡️ tab has already promised away — the same two
@@ -11463,19 +11462,18 @@
       '<span class="tg">' + (pw === 'u' ? '✒️' : '🛡️') + '</span></button></td>';
   };
   // the setting cell: the card's glyph and its noun through `settingNamed`,
-  // the one reader of a setting's name inside a sentence; `machines`, having
-  // no card, names itself by the catalogue's own id and takes no glyph
+  // the one reader of a setting's name inside a sentence — the doors read
+  // *Invites* / *Removals*, their `n` (Ed, 2026-09-09)
   const beginRowHtml = (k) => '<tr data-bkey="' + k + '">' +
     '<td class="bname">' + settingNamed(midOf(k)) + '</td>' +
     beginCellHtml(k, 'u') + beginCellHtml(k, 'a') + '</tr>';
   const beginTableHtml = () => {
     if (constituted() || !amFounder()) return '';
-    const th = (pw) => '<th class="eyebrow bcell" scope="col" title="' + esc(PAGE_COPY.begin[pw]) + '">' +
-      '<span aria-label="' + esc(PAGE_COPY.begin[pw]) + '">' + (pw === 'penCol' ? '✒️' : '🛡️') + '</span></th>';
+    // no header row (Ed, 2026-09-09: *no column heads*): each cell's own
+    // glyph says which power it is
     return '<div class="unlocks"><b>What the Founder keeps.</b></div>' +
       '<p class="why">Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.</p>' +
-      '<table class="begintable"><thead><tr><th class="eyebrow bname" scope="col"></th>' +
-      th('penCol') + th('shieldCol') + '</tr></thead><tbody>' +
+      '<table class="begintable"><tbody>' +
       BEGIN_ROWS.map(beginRowHtml).join('') + '</tbody></table>';
   };
   const beginBody = (c, rd) => {
@@ -11546,7 +11544,7 @@
       '<div class="readiness"><div class="fieldlab">The questions</div><div class="gatelist">' + qs + '</div>' +
       '<div class="fieldlab">The people</div><div class="gatelist">' + ms + '</div></div>' +
       '<p class="setnote">' + (rd.ready
-        ? 'Nobody is kept waiting by this: whoever has not answered can still answer after the start, and the document takes what was said. Hold ✒️ to begin.'
+        ? 'Nobody is kept waiting by this: whoever has not answered can still answer after the start, and the document takes what was said.'
         // *it comes back to you* is a promise about a wait that ends by
         // itself, and `one-voice` is the one that does not (Q827)
         : ov.length ? 'It comes back to you the moment somebody else can answer.'
