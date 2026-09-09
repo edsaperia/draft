@@ -18,7 +18,6 @@ The index, in the section's own order (nothing is pinned — Ed, 2026-09-07, Q12
 | 49 | Naming and typing disputes | 2026-08-14 | partly answered — interim `race-labeler` landed; the type is unwired from routing | SPEC §8; Q102 |
 | 52 | Composer design decisions | 2026-08-14 | partly answered — narrowed to the briefing and the dedup-gate | SPEC §3.5 |
 | 53 | Candidate states missing from the spec | 2026-08-14 | open — SPEC §2.6 still lacks `rebase-pending` (log Q20) | SPEC §2.6 |
-| 70 | design/race-card.html is retired | 2026-08-15 | answered, owed — delete the file (Ed, 2026-08-28) | CLAUDE.md `race-card` |
 | 72 | Queue-wire reach | 2026-08-15 | waiting on Ed | `queue-wire` |
 | 77 | Where the scroll runway lives | 2026-08-15 | waiting on Ed | `design/system.css` (the 95vh) |
 | 89 | Where Skip lives, and how its decay is shown | 2026-08-16 | partly answered — not on the card (Ed); (a) (b) open | SPEC §8.3; Q174 |
@@ -119,12 +118,6 @@ The index, in the section's own order (nothing is pinned — Ed, 2026-09-07, Q12
     **Where it stands (docs pass, 2026-09-07):** still open — SPEC §2.6 lists neither state today (`rebase-pending` is declared in `packages/engine-core/src/types.ts:144` and appears nowhere in SPEC.md), so the fold is a spec amendment wanting Ed's sign-off.
 
     (found 2026-08-14): SPEC §2.6 lists state {live, adopted, retired, merged, carried, withdrawn}, but engine-core's types.ts carries `displaced` and `rebase-pending`, which the mechanism needs. Fold them into §2.6, or rule them implementation detail and note why.
-
-70. **design/race-card.html is retired**
-
-    **Where it stands (docs pass, 2026-09-07):** answered, owed — Ed ruled *delete* on 2026-08-28, and `design/race-card.html` is still in the tree; the deletion carries CLAUDE.md's `race-card` entry, `design/spec-pass/card-audit.html`'s citation and the race footer's stale promise with it.
-
-    (opened 2026-08-15; settled by Ed 2026-08-16). The overlay model and the comparison modes (marked-up / fair copy / differences) are dropped rather than ported — session-view's lanes do the job, and a toggle between three renderings of the same pair is machinery a surface built for typo-fixes should not carry. The one thing race-card.html held that mattered, the **salience diagonal**, is now built here (Q221). What remains: **answered by Ed 2026-08-28 (from the CLAUDE.md audit's C4) — delete `design/race-card.html`.** Owed, not built, and left here until it is, because the deletion is not a one-liner: `CLAUDE.md`'s `race-card` glossary entry names the path with a `[file]` kind and `spec-check` resolves those, `design/spec-pass/card-audit.html` cites it, and the stale promise in session-view's race footer — *full race view has comparison modes and the whole queue* — goes with it. Nothing further should be built on that file meanwhile.
 
 72. **Queue-wire reach** (found 2026-08-15, from Q71; trigger settled by Q78 — the wire belongs to the open card only). Two calls I made that Ed hasn't ruled on. (a) The wire lands on the anchored **paragraph(s)**; Ed's phrasing was "left into the decision cards", which could instead mean the open inline card. (b) There is no wire in the other direction — hovering a paragraph in the document doesn't light its queue entry — though the relationship is symmetrical and the return trip is arguably the more useful one when you are reading rather than working the queue.
 
