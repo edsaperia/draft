@@ -179,6 +179,15 @@ window.COPY = (function () {
         ' people can’t agree on a proposal even after ' + comparisons +
         ' votes. Can you propose something everyone will agree on?',
     },
+    // the room's side of a park (SURFACE E36, E37; Ed, 2026-09-09, Q1015):
+    // the membership passed a change and the Founder has not answered. The
+    // ⏳ card's one sentence, the sentence a race waiting behind that park on
+    // the same clause wears instead, and the author's own line — Ed's words
+    park: {
+      awaiting: 'Awaiting assent from the Founder 🛡️',
+      blocked: 'Waiting on the Founder’s answer about another change to this clause 🛡️',
+      yours: 'Yours · passed — awaiting the Founder 🛡️',
+    },
     // the ledger (Q1201): the pairs you judged on this race, on the ⏳ card
     // and beneath a live one, each a press to revise
     ledger: {

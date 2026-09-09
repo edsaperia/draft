@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 460
+  "entries": 463
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -407,6 +407,9 @@
   "session.nav.next": "The next place",
   "session.nav.placeOf": "ƒ (i, n) => ' · place ' + i + ' of ' + n",
   "session.nav.prev": "The place before",
+  "session.park.awaiting": "Awaiting assent from the Founder 🛡️",
+  "session.park.blocked": "Waiting on the Founder’s answer about another change to this clause 🛡️",
+  "session.park.yours": "Yours · passed — awaiting the Founder 🛡️",
   "session.patch.foot": "ƒ (n) => 'One vote for all ' + n + ' places — choosing here chooses everywhere.'",
   "session.race.foot": "Neither of these has to win — the clause above stands unless the leader clears the approval threshold.",
   "session.rail.deadlocked": "ƒ (judges, comparisons) => 'Deadlocked — ' + judges +\n        ' people can’t agree on a proposal even after ' + comparisons +\n        ' votes. Can you propose something everyone will agree on?'",

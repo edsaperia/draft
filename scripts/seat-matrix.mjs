@@ -222,6 +222,13 @@ const AUDIENCE = {
   // active by construction. A lapsed member is served nothing but mail (E22).
   'every active member': (s, step, ctx, ev) => isMember(s) &&
     s.name !== ctx.actorOf(ev),
+  // E36, the room's side of a park (Q1015, Ed 2026-09-09): every active
+  // member but the Founder, whose own channel is the 👑 card (E12) — and the
+  // author, told on their own line (E37), is the actor of the `park` step
+  // here, which is the founder on both hats, so one exclusion covers both.
+  'every active member except the Founder': (s) => isMember(s) && s.role !== 'founder',
+  // E37, the author's line: the seat that proposed the parked text
+  'the author': (s, step, ctx, ev) => s.name === ctx.actorOf(ev),
 };
 
 /* ---- table 2: the steps ------------------------------------------------ *
@@ -311,7 +318,11 @@ const STEPS = [
   // not in this table (E8 here is the founder's pen and shield).
   { id: 'ok-voice', epoch: 'before', kind: 'ok', seat: 'founder', key: 'grant-voice', ifHat: 'member', events: [] },
   // ---- live ---------------------------------------------------------------
-  { id: 'begin', epoch: 'live', kind: 'hold', seat: 'founder', key: 'begin',
+  // `keep`: 🛡️ kept on the Text at 🍾 (the table's own toggle, journey's
+  // `brSet`), so the `park` step below has a shield to park under — the one
+  // precondition of E36/E37, and the state every text adoption on this
+  // document is in from here: `propose-text`'s race parks rather than adopts.
+  { id: 'begin', epoch: 'live', kind: 'hold', seat: 'founder', key: 'begin', keep: [['text', 'a']],
     events: [E4('canpropose'), E4('canjudge'), { id: 'E25', key: 'strapply', at: 'begin' }] },
   // `ok-propose` and `ok-judge` are **retired** (2026-09-07). They opened 💡
   // and ⚖️ on the founder's page and pressed their OK; since Ed's ruling of
@@ -469,6 +480,21 @@ const STEPS = [
     },
     events: [{ id: 'E13', key: null, at: 'judge-text',
       noKey: 'E13\'s audience is *whoever the router serves*: the page files the entry the feed hands it, and no seat-side key states the router\'s choice' }] },
+  // **The park** (SURFACE E36, E37; Q1015, Q1179; Ed 2026-09-09). 🛡️ was
+  // kept on the Text at `begin`, so the text race `propose-text` opened parks
+  // the moment its leader clears bar and floor: every member seat that has
+  // not judged for the challenger does so, one at a time, until the founder's
+  // view carries a text 👑 question for it. `seat: 'founder'` names the
+  // **author** — the founder proposed the text — which is what E37's cell
+  // reads through `actorOf`; the judging is done as the other seats. Two
+  // assertions on one snapshot: every member but the founder carries the
+  // `park:` entry (E36, the founder outside the audience by the cell and the
+  // author excluded with it, being the same seat), and the author carries
+  // their own `mine:` line (E37) — the matrix reads keys, not copy, so the
+  // line's wording is `copy-check`'s to hold. `ifHat` for `remove-motion`'s
+  // reason: the clerk document never reaches the live epoch at HEAD (Q920).
+  { id: 'park', epoch: 'live', kind: 'park', seat: 'founder', ifHat: 'member',
+    events: [{ id: 'E36', key: 'park:', at: 'park' }, { id: 'E37', key: 'mine:', at: 'park' }] },
   // ✒️ laid down on ⏱️ `rate`, not ⏰ (B14, 2026-08-27): the ladder drives
   // `ending` with the founder's pen and would stall on a relinquished one.
   // **E9's news entry, asserted since 2026-09-01** (Q918). The page files one
@@ -879,6 +905,20 @@ const RUN = {
       const f = await page.evaluate(() => (window.__founding ? window.__founding() : null));
       throw new Error(`no ${step.key} card to hold · readiness ${JSON.stringify(f && f.readiness)} · rail ${JSON.stringify(f && f.rail)}`);
     }
+    // `keep`: cells of 🍾's power table pressed to *keep* before the hold —
+    // the toggle is a flip, so it is pressed only where it does not already
+    // stand kept (journey-walk's `brSet`, on the same `.pwtoggle` controls)
+    for (const [k, pw] of step.keep || []) {
+      const kept = await page.evaluate((sel) => {
+        const b = document.querySelector(sel);
+        if (!b) return null;
+        if (b.getAttribute('aria-pressed') === 'true') return true;
+        if (b.disabled) return false;
+        b.click(); return true;
+      }, '.setupcard .begintable .pwtoggle[data-bkey="' + k + '"][data-bpw="' + pw + '"]');
+      if (kept !== true) throw new Error(`${step.key}: the power table has no live ${k}/${pw} cell to keep`);
+      await page.waitForTimeout(200);
+    }
     const label = await press(page, BEGIN_HOLD_MS);
     if (label === null) {
       const f = await page.evaluate(() => (window.__founding ? window.__founding() : null));
@@ -890,6 +930,41 @@ const RUN = {
       if (!begun) throw new Error('🍾 was held for ' + BEGIN_HOLD_MS + 'ms and the document did not begin');
     }
     return `held ${label} for ${BEGIN_HOLD_MS}ms`;
+  },
+  /**
+   * **A text adoption parks** (SURFACE E36, E37): the member seats judge for
+   * the challenger on the text race `propose-text` opened, one at a time,
+   * until the founder's view carries a text 👑 question — the park. Stops at
+   * the first sight of it; refuses if every seat has spoken and nothing
+   * parked, since the row's assertions would then be about nothing.
+   */
+  park: async (step, D) => {
+    if (step.ifHat && step.ifHat !== D.hat) return `skipped: the founder is a ${D.hat}`;
+    const parkedNow = async () => {
+      const f = await viewAs(D, 'founder');
+      return ((((f || {}).view) || {}).crownTasks || []).filter((t) => t.text);
+    };
+    let tasks = await parkedNow();
+    const voted = [];
+    for (const name of ['early', 'late', 'lapsed']) {
+      if (tasks.length) break;
+      const s = D.seats[name];
+      if (!s || !s.stood || !s.page) continue;
+      const v = await viewAs(D, name);
+      const text = new Set(((v || {}).clauses || []).map((c) => c.id));
+      // the pair the hand dealt on the text race, else the one the race can still ask (Q1202)
+      const dealt = ((v || {}).raceCards || []).find((c) => text.has(c.raceId));
+      const clause = ((v || {}).clauses || []).find((c) => c.ask);
+      const card = dealt || (clause && clause.ask);
+      if (!card) continue; // nothing left to ask this seat here
+      const outcome = card.a.incumbent ? 'b' : card.b.incumbent ? 'a' : 'a';
+      const r = await cmdAs(D, name, 'judge-race', { a: card.a.id, b: card.b.id, outcome });
+      if (r.status !== 200) throw new Error(`judge-race as ${name} → ${r.status} ${JSON.stringify(r.body)}`);
+      voted.push(name);
+      tasks = await parkedNow();
+    }
+    if (!tasks.length) throw new Error('no text 👑 question stands after ' + (voted.join(', ') || 'nobody') + ' judged for the challenger — nothing parked, so E36/E37 have nothing to assert');
+    return `parked: ${tasks.length} text 👑 question(s) on the founder's view after ${voted.length ? voted.join(', ') + ' judged for the challenger' : 'no further judgment'}`;
   },
   /** The lapsed seat goes quiet: page shut, no act, until the clock lapses it. */
   wait: async (step, D) => {
@@ -1176,8 +1251,8 @@ say(`tables     · SURFACE §2 events ${EVENTS.length} rows · seats ${SEATS.len
 // a row means there are events this table does not cover, which is the same
 // condition as an unread audience cell — so it goes to the same exit code
 // rather than printing a ✗ into a run that then reports itself green.
-const shape = EVENTS.length === 35 ? []
-  : [`SURFACE §2 has ${EVENTS.length} event rows, not the 35 this table was written against`];
+const shape = EVENTS.length === 37 ? []
+  : [`SURFACE §2 has ${EVENTS.length} event rows, not the 37 this table was written against`];
 for (const s of shape) say('  ? ' + s);
 
 const browser = await chromium.launch();

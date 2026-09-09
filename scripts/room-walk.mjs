@@ -262,11 +262,13 @@ say(`  built ${SLUG}, seated ${lad.seats.length}`);
     die(`seed ${SEED} no longer reserves 🛡️ on the Text — phase B needs one that does`);
   }
   say(`  ✓ the Text carries the founder's 🛡️ (the park precondition)`);
-  // Drain the standing parks first. R-056: no text adoption of any kind
-  // while a candidate is parked — and each reject immediately parks the
-  // next ready candidate, so this is a loop, not a pass. Without it the
-  // walk's own proposal queues invisibly behind the seed's, which is the
-  // exact silence the 2026-09-05 probe found.
+  // Drain the standing parks first. Since R-100 parks are per footprint —
+  // the seed's own parks stand together, and a reject can park several
+  // ready candidates at once where they overlap nothing standing — so this
+  // is a loop, not a pass, until the founder's view holds no text question.
+  // Without it the walk's own proposal would race beside the seed's, and the
+  // silence the 2026-09-05 probe found (a leader queued behind a park and
+  // told nobody) is now a `blockedByPark` the view states, not a hole.
   for (let i = 0; i < 20; i++) {
     const tasks = ((await view('founder')).view.crownTasks ?? []).filter((t) => t.text);
     if (tasks.length === 0) break;
