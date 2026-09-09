@@ -7467,7 +7467,7 @@
         // the three grants (✒️ 🛡️ 🏛️) keep their sentence, being news of a
         // power rather than a gate.
         const gateOpenBare = c.isGate && !c.isGrant && c.open();
-        return cardHtml(c, ctx, gateOpenBare ? '' : grantProv(c) + gateBody(c) + grantNote(c),
+        return cardHtml(c, ctx, gateOpenBare ? '' : grantProv(c) + gateBody(c),
           acked(c.k) ? binBtn() + '<button class="btn btn-approve okbtn" data-close="1">OK</button>'
             : binBtn() +
               '<button class="btn btn-approve okbtn"' +
@@ -11707,16 +11707,10 @@
     const from = grantedBy(c);
     return from ? '<p class="setnote grantline">' + esc(from) + '</p>' : '';
   };
-  // the card's own ✏️ grant line (Q461a: the 💡 card is the grant card)
-  const grantNote = (c) => {
-    if (c.k !== 'canpropose' || !c.open() || !viewerIsMember()) return '';
-    const nHeld = cs && cs.isRemote && cs.v ? Math.floor(cs.v.wallet || 0) : (SESSION.editsHeld || 0);
-    // the count, and nothing about the button (T45, Q1129): *— OK puts them in
-    // your wallet* named the commit, so the line read one way before the OK
-    // and another after it. How many ✏️s you hold is true in both states.
-    return '<p class="setnote grantline">You hold <b>' + nHeld + ' ✏️' + (nHeld === 1 ? '' : 's') +
-      '</b> to propose with.</p>';
-  };
+  // 💡's own count line (*You hold 5 ✏️s to propose with.*, Q1129) went with
+  // the rest of the open gate's body at the card review (46, 2026-09-05) and
+  // the cut stands (Q1195 (d), Ed 2026-09-09): the number lives in the ✏️
+  // socket, where every power is kept (W1).
   // the grant's flight, after the render that took its card away
   function launchGrant() {
     if (!pendingGrant) return;
