@@ -378,6 +378,13 @@ const releasePen = async (k) => {
 };
 
 const seen = new Set();
+// **Began means the cork was pressed, not that 🍾 was visited** (Q1177,
+// 2026-09-09). The two post-🍾 checks below once gated on the *step* `commit
+// begin` being in the log, which `record` writes whether or not the press
+// landed — so in `--delegate` mode, where 🍾 is rightly refused on one voice
+// (R-015, R-045), three assertions about a begun document ran against one
+// that had never begun and read as three product defects for a week.
+let began = false;
 // **A door is recorded in the rail, never driven** (entry 181). ✉️ stands as the
 // founder's task once the Membership rules stand, and this loop answers whatever
 // it picks up — it would delegate a door, or send an invitation the golden has no
@@ -445,6 +452,7 @@ for (let i = 0; i < 40; i++) {
   const committed = (await clickIn('.setupcard [data-confirm]')) ||
     (await clickIn('.setupcard [data-ok]')) || (await clickIn('.setupcard [data-hatgo]'));
   await record('commit ' + next.k, committed ? null : 'no commit control');
+  if (next.k === 'begin' && committed) began = true;
   if (next.k === TWO_LABELS && next.k !== DELEGATE && committed) {
     const said = await tabLabel(next.k);
     if (said !== TWO_LABELS_NOUN) {
@@ -452,12 +460,15 @@ for (let i = 0; i < 40; i++) {
         ', not the noun “' + TWO_LABELS_NOUN + '” (Q331 (b), Q1209)');
     }
   }
-  if (next.k === PEN_RELEASE) await releasePen(next.k);
+  // …and not when 👥 is the delegated card: delegation already took both
+  // powers (SPEC §9.0a), so there is no pen to lay down and the clause reads
+  // the membership's *waiting* sentence, never R-048's *from the start*
+  if (next.k === PEN_RELEASE && next.k !== DELEGATE) await releasePen(next.k);
   if (next.k === 'text') errors.push('📝 the text was served as a task; it is a card with two modes, never a task (backlog 204)');
 }
 
 /* ---- and what was written after the first ✒️ is what began (Q824) ------ */
-if (proseWasLive && log.some((e) => e.step === 'commit begin')) {
+if (proseWasLive && began) {
   const charter = await page.evaluate(() => {
     const el = document.getElementById('charter');
     return el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
@@ -469,7 +480,7 @@ if (proseWasLive && log.some((e) => e.step === 'commit begin')) {
 }
 
 /* ---- and at 🍾 the release is spent (R-048) ---------------------------- */
-if (penReleased && log.some((e) => e.step === 'commit begin')) {
+if (penReleased && began) {
   const said = await clauseText(PEN_RELEASE);
   if (/may (not )?amend this at will/.test(said || '')) {
     errors.push(PEN_RELEASE + ' still speaks of the pen after 🍾: ' + said);
@@ -481,6 +492,36 @@ if (penReleased && log.some((e) => e.step === 'commit begin')) {
     errors.push('🍾 did not spend the release — the wallet counted ' + penHeldAtRelease +
       ' settings before it and ' + now + ' after, where ' + (penHeldAtRelease - 2) +
       ' is 👥 released and 📝 laid down');
+  }
+}
+
+/* ---- --delegate: 🍾 is refused on one voice (R-015, R-045) ------------- */
+// The founder alone answers the question they delegated, and that resolves
+// nothing: *never on one voice* (SPEC §9.0a) and *the start is refused while
+// a delegated question is still collecting* (§9.0b). So this mood ends short
+// of a begun document by design, and what is asserted is the refusal itself —
+// the cork dark, the card saying why (Q826–Q830's readout), the clause still
+// waiting — rather than skipping the two blocks above in silence.
+if (DELEGATE) {
+  if (began) {
+    errors.push('🍾 began the document with ' + DELEGATE + ' delegated and the founder its only voice (R-015)');
+  } else {
+    const st = await page.evaluate(() => {
+      const t = (el) => (el ? el.textContent.replace(/\s+/g, ' ').trim() : '');
+      const c = document.querySelector('.setupcard');
+      const cork = c && [...c.querySelectorAll('.commitrow button')].find((b) => /🍾/.test(t(b) || b.title));
+      return { open: !!c, cork: cork ? (cork.disabled ? 'off' : 'on') : 'none', said: t(c) };
+    });
+    if (!st.open || st.cork !== 'off') {
+      errors.push('🍾 is ' + (st.open ? st.cork : 'not the open card') + ' with ' + DELEGATE +
+        ' delegated and one voice on it — the start should be refused (R-045)');
+    } else if (!/answered by one voice has not been handed to anybody/.test(st.said)) {
+      errors.push('🍾 is refused but does not say why (one voice, R-015): ' + st.said.slice(0, 200));
+    }
+    const said = await clauseText(DELEGATE);
+    if (!/waiting for members\.$/.test(said || '')) {
+      errors.push(DELEGATE + ' is delegated and unresolved, but its clause does not say it is waiting: ' + said);
+    }
   }
 }
 
@@ -537,4 +578,8 @@ if (AS_JSON) {
 }
 await browser.close();
 srv.close();
-if (verdict && !verdict.ok) process.exit(1);
+// **An error is red** (Q1177): a walk that prints `page errors:` and exits 0
+// cannot guard anything. Under `--json` the verdict is the reader's —
+// `founding-golden.mjs` lifts `errors` from the payload and prints its own
+// diff line, and a non-zero status there would make it dump the raw JSON.
+if ((verdict && !verdict.ok) || (!AS_JSON && errors.length)) process.exit(1);
