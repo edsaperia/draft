@@ -201,6 +201,67 @@ describe('departures — what the view says about who left (Q901)', () => {
   });
 });
 
+/**
+ * Q1033 (Ed, 2026-08-29, (a)): a motion-backed 👑 question standing when the
+ * convenor's seat is vacated auto-passes *exactly as the lapse case does* —
+ * the carried effects apply — and the record says the seat was vacant, not
+ * that the convenor agreed. R-060's text half is `text-powers.test.ts`.
+ */
+describe('a vacated seat auto-passes a motion-backed 👑 question too (Q1033)', () => {
+  it('a carried invitation parked on ✉️’s 🛡️ lands when the convenor is removed, marked vacancy', () => {
+    const { s, bo, cy } = buildConstituted({ removal: { price: 'assembly' },
+      doors: { invite: { unilateral: false, assent: true } } });
+    const m = s.openMotion(3, bo, { kind: 'invite', email: 'dee@example.org' });
+    s.answerMotion(4, 'ada', m, 'accept');
+    s.answerMotion(5, cy, m, 'accept');
+    expect(s.motionRecords().get(m)!.status).toBe('awaiting-crown');
+    const q = crownQuestionFor(s, m)!;
+    expect(q.autoPassedBy).toBeNull();
+
+    // the seat empties: cy moves ada's removal (bo's 🏛️ is still out on the
+    // parked invitation, §9.6), bo accepts, ada is not asked
+    const rm = s.openMotion(6, cy, { kind: 'remove', member: 'ada' });
+    s.answerMotion(7, bo, rm, 'accept');
+    expect(s.memberRecords().get('ada')!.removed).toBe(true);
+    expect(s.convenorSeatVacant()).toBe(true);
+
+    // passed by nobody's hand, and the record says which nobody
+    expect(q.status).toBe('auto-passed');
+    expect(q.autoPassedBy).toBe('vacancy');
+    expect(s.crownLapsed).toBe(false); // a vacancy is not a lapse
+    const passed = s.logEntries().map((e) => e.event)
+      .find((e) => e.type === 'crown-question-auto-passed' && e.question === q.id);
+    expect(passed).toMatchObject({ cause: 'vacancy' });
+    // and the motion the room carried lands: dee is invited by the members
+    expect(s.motionRecords().get(m)!.status).toBe('carried');
+    const dee = [...s.memberRecords().values()].find((r) => r.email === 'dee@example.org')!;
+    expect(dee).toBeDefined();
+    expect(dee.arrival).toEqual({ via: 'invitation', by: 'members' });
+    expect([...s.crownQuestionRecords().values()].filter((x) => x.status === 'pending'))
+      .toHaveLength(0);
+  });
+
+  it('a carried rule change parked on the crown lands the same way, the setting still the membership’s', () => {
+    // 🪜 is ordinary and the founder's with both powers intact after the
+    // founding, so the room's race carries it and it parks on the assent
+    const { s, bo } = buildConstituted({ removal: { price: 'assembly' } });
+    const m = s.openMotion(3, bo, { kind: 'set', setting: 'pace',
+      value: { shape: 'ramp', startPct: 50 } });
+    s.adjudicateOrdinaryMotion(4, m, 'carried');
+    expect(s.motionRecords().get(m)!.status).toBe('awaiting-crown');
+    const q = crownQuestionFor(s, m)!;
+
+    s.resign(6, 'ada'); // free, immediate, nobody's to refuse (entry 248)
+    expect(q.status).toBe('auto-passed');
+    expect(q.autoPassedBy).toBe('vacancy');
+    expect(s.motionRecords().get(m)!.status).toBe('carried');
+    expect(s.settingState('pace').value).toEqual({ shape: 'ramp', startPct: 50 });
+    // the value is the membership's: `crown` is the route it took, and the
+    // page's provenance reads it as chosen by the membership
+    expect(s.settingState('pace').settledBy).toBe('crown');
+  });
+});
+
 describe('lapse counts as abstaining (ruling 5)', () => {
   it('a running 🏛️ does not wait on a lapsed member, and logging in puts them back', () => {
     const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 } });

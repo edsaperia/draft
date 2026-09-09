@@ -909,6 +909,7 @@ export class ConstitutionSession {
           ...(event.text ? { text: event.text } : {}),
           openedAtT: event.t,
           status: 'pending',
+          autoPassedBy: null,
         });
         // Either route parks here (§9.7 v0.49): the change is the members'
         // and the assent is still owed. A text question (Q440) parks no
@@ -929,6 +930,9 @@ export class ConstitutionSession {
         q.status = event.type === 'crown-question-auto-passed'
           ? 'auto-passed'
           : accepted ? 'accepted' : 'rejected';
+        // a log written before Q1033 carries no cause: it was the lapse
+        q.autoPassedBy = event.type === 'crown-question-auto-passed'
+          ? (event.cause ?? 'lapse') : null;
         if (q.motion !== null) {
           const rec = this.motions.get(q.motion)!;
           rec.status = accepted ? 'carried' : 'held';
@@ -2527,17 +2531,23 @@ export class ConstitutionSession {
    *   accepted, and the bridge's cursor walk already turns it into
    *   `engine.assent(t, parked, 'accept')`. A new kind would move the log's
    *   rolling hash and need a bridge arm to do what an arm already does.
+   *   What it adds is the event's `cause: 'vacancy'` (Q1033), so the record
+   *   says the seat was vacant rather than that the convenor agreed — a
+   *   lapse carries no cause and reads as it always did.
    * - **It does not emit `crown-lapsed`.** A vacancy is not a lapse:
    *   `crownLapsedFlag` is about a crown that may wake up again
    *   (`member-returned` revives it) and a removed member does not return to
    *   the seat. The shield goes down through `convenorSeatVacant()` instead.
-   * - **Text questions only** — this is a *narrowing* of the lapse loop in
-   *   `tick`, not a copy of it. That loop also auto-passes motion-backed
-   *   questions and settles their carried effects; applying a carried
-   *   removal or invitation without assent because the convenor left is a
-   *   governance consequence nobody has ruled on, and such a question blocks
-   *   nothing while it stands, where a parked text adoption blocks
-   *   everything. Filed as Q1033; the asymmetry is the point.
+   * - **Every pending question, motion-backed ones included** (Q1033, Ed
+   *   2026-08-29: *auto-pass them too, exactly as the lapse case does*).
+   *   Until that ruling this was a *narrowing* of `tick`'s lapse loop to
+   *   text questions, on the ground that a carried invitation or removal
+   *   applying without assent because the convenor left was a governance
+   *   consequence nobody had ruled on. Ed's ground for the reversal is the
+   *   one to keep: a seat nobody occupies cannot refuse anything, and a
+   *   motion the room carried should land. So it is the lapse loop now —
+   *   `settleCarriedEffects` runs for each, a carried removal's own arm
+   *   calling back in here for the questions it did not reach.
    *
    * Two call sites, both the last word of an act that may have emptied the
    * seat: the carried `remove` arm of `settleCarriedEffects` and `resign`
@@ -2547,8 +2557,12 @@ export class ConstitutionSession {
   private crownSeatVacated(t: number): void {
     if (!this.convenorSeatVacant()) return;
     for (const q of [...this.crownQuestions.values()]) {
-      if (q.status !== 'pending' || !q.text) continue;
-      this.emit({ type: 'crown-question-auto-passed', t, question: q.id });
+      if (q.status !== 'pending') continue;
+      this.emit({ type: 'crown-question-auto-passed', t, question: q.id, cause: 'vacancy' });
+      if (q.motion !== null) {
+        const mrec = this.motions.get(q.motion)!;
+        this.settleCarriedEffects(t, mrec, mrec.route === 'constitutional');
+      }
     }
   }
 

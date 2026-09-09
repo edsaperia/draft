@@ -266,7 +266,13 @@ export type ConstitutionEvent =
       motion: MotionId | null; text?: { candidateId: string; summary: string } }
   | { type: 'crown-question-answered'; t: number; question: CrownQuestionId;
       outcome: 'accept' | 'reject' }
-  | { type: 'crown-question-auto-passed'; t: number; question: CrownQuestionId }
+  /** Passed by no hand: the crown's clock (`lapse`, the default — a log
+   *  written before Q1033 carries no `cause` and reads as it always did) or
+   *  a seat nobody occupies (`vacancy`, R-060 and Q1033). The record keeps
+   *  the cause, so it can say the seat was vacant rather than that the
+   *  convenor agreed. */
+  | { type: 'crown-question-auto-passed'; t: number; question: CrownQuestionId;
+      cause?: 'lapse' | 'vacancy' }
   | { type: 'setting-handed-over'; t: number; setting: PowerKey }
   | { type: 'crown-lapsed'; t: number }
   | { type: 'crown-returned'; t: number }
@@ -581,6 +587,12 @@ export interface CrownQuestionRecord {
   openedAtT: number;
   /** `failed-closed`: pending at T=0 (SPEC §4.6) — carried-but-unassented, into the backlog. */
   status: 'pending' | 'accepted' | 'rejected' | 'auto-passed' | 'failed-closed';
+  /**
+   * How an `auto-passed` question passed (Q1033): the crown's lapse — its
+   * holder's silence, abstaining grants — or a vacant seat, which cannot
+   * refuse anything because nobody sits in it. Null on every other status.
+   */
+  autoPassedBy: 'lapse' | 'vacancy' | null;
 }
 
 export type ApplicationStatus =
