@@ -125,7 +125,12 @@ describe('sim regression: dedup off is byte-identical to before the gate existed
   // all move. Both variants still agree with each other, which is the
   // invariant this test defends
   // (was 0f18a6b0eb3e0a74fb6e95ab84eec53c2e5f5f7365561617fd4252f26812e46d).
-  const PINNED = 'dc729ecd80686db4a3c78ed725af3143bb40a481b71786b894373c422a34727f';
+  // Re-pinned 2026-09-09 (Q1178 ruled by Ed: the least-measured slot goes,
+  // the hand is v / c_p alone): the pin returns to exactly the 2026-08-29
+  // value above, which is the proof that removing the slot restored `feed()`
+  // byte for byte on this run. Both variants still agree with each other
+  // (was dc729ecd80686db4a3c78ed725af3143bb40a481b71786b894373c422a34727f).
+  const PINNED = '0f18a6b0eb3e0a74fb6e95ab84eec53c2e5f5f7365561617fd4252f26812e46d';
 
   const run = (withGate: boolean) =>
     runSession({

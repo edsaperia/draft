@@ -487,48 +487,70 @@ describe('session lifecycle', () => {
   });
 
   /**
-   * **The unheard slot** (SPEC §8.2 made structural; Q1178, 2026-09-05): a
-   * race this participant hasn't judged, still short of the adoption floor,
-   * takes the hand's first card — least-measured first. Without it a fresh
-   * proposal in a document whose hot set is already full of evidenced races
-   * reached nobody: the hot set is the top-`hotSetSize` *valued* races, and
-   * a race with no evidence values below every race with some, so the new
-   * card arrived only after a member cleared their whole hand (found by
-   * `scripts/room-walk.mjs` playing a real room over HTTP). Exploration is
-   * switched off here so the slot is proven structural, not a lucky roll;
-   * the hot set is narrowed to 2 so the evidenced races genuinely crowd
-   * the fresh one out.
+   * **The hand is ordered by value, and by nothing else** (Q1178, Ed
+   * 2026-09-09): serving never considers how recently a card was made, only
+   * how close the race is to resolving; the least-measured are not
+   * prioritised; the races closest to sealing come first. From 2026-09-05
+   * to 2026-09-09 the hand's leading slots were reserved for the races this
+   * participant had not judged, least-measured first — the slot this test
+   * used to prove. It asserts the ordering now, in a room built to tell the
+   * two apart: two unanimous races A and B (leaderP ≈ 0.97, floor met, no
+   * boost), a fresh race C nobody has judged (≈ 0.80, boosted ×1.25 by
+   * §8.2 — a value, not a slot) and a fresh race D one member has judged
+   * for (≈ 0.89, boosted). By value D leads C leads A and B; the slot would
+   * have dealt C before D, having fewer comparisons. Exploration is
+   * switched off so the order is structural, not a roll. What keeps a race
+   * off the hand reachable is `askOn` (Q1202), and the last assertion is
+   * that seam.
    */
-  it('reserves the first slot for an unheard race a full hot set would starve', () => {
-    const s = openSession({
-      // bar out of reach, so the evidenced races stay live and hot
-      adoptionThresholdStart: 0.999, adoptionThresholdEnd: 0.999,
-      hotSetSize: 2, explorationEvery: 1_000_000,
-    }, 12); // floor 4
-    const { id: cA } = s.submitCandidate(1000, {
-      author: 'p1', patch: rewrite(0, 1, 'A.'), rationale: 'r' });
-    const { id: cB } = s.submitCandidate(2000, {
-      author: 'p2', patch: rewrite(0, 2, 'B.'), rationale: 'r' });
-    // four judges each: both races meet the floor and carry real evidence
-    for (const [i, p] of ['p3', 'p4', 'p5', 'p6'].entries()) {
-      s.judge(3000 + 2 * i, p, cA, s.raceOf(cA).incumbentId, 'a');
-      s.judge(3001 + 2 * i, p, cB, s.raceOf(cB).incumbentId, 'a');
+  it('deals races by value alone: closest to sealing first, never least-measured first', () => {
+    const room = (hotSetSize: number) => {
+      const s = openSession({
+        // bar out of reach, so the evidenced races stay live and hot
+        adoptionThresholdStart: 0.999, adoptionThresholdEnd: 0.999,
+        hotSetSize, explorationEvery: 1_000_000,
+      }, 12); // floor 4
+      const { id: cA } = s.submitCandidate(1000, {
+        author: 'p1', patch: rewrite(0, 1, 'A.'), rationale: 'r' });
+      const { id: cB } = s.submitCandidate(2000, {
+        author: 'p2', patch: rewrite(0, 2, 'B.'), rationale: 'r' });
+      // four judges each: both races meet the floor and carry real evidence
+      for (const [i, p] of ['p3', 'p4', 'p5', 'p6'].entries()) {
+        s.judge(3000 + 2 * i, p, cA, s.raceOf(cA).incumbentId, 'a');
+        s.judge(3001 + 2 * i, p, cB, s.raceOf(cB).incumbentId, 'a');
+      }
+      // C: no measured comparisons, floor unmet; D: one judgment for it
+      const { id: cC } = s.submitCandidate(5000, {
+        author: 'p7', patch: rewrite(0, 3, 'C.'), rationale: 'r' });
+      const { id: cD } = s.submitCandidate(5500, {
+        author: 'p9', patch: rewrite(0, 0, 'D.'), rationale: 'r' });
+      s.judge(5600, 'p10', cD, s.raceOf(cD).incumbentId, 'a');
+      const race = (id: string) => s.raceOf(id);
+      expect(race(cD).comparisons).toBeGreaterThan(race(cC).comparisons);
+      expect(race(cD).leaderP!).toBeGreaterThan(race(cC).leaderP!);
+      expect(race(cA).leaderP!).toBeGreaterThan(race(cD).leaderP!);
+      return { s, raceA: race(cA).id, raceB: race(cB).id, raceC: race(cC).id, raceD: race(cD).id, cA };
+    };
+
+    // The default hand of three, to p8 who has judged nothing: D, then C,
+    // then the first of the tied unanimous pair — the value order, where
+    // the slot would have led with C
+    {
+      const { s, raceA, raceB, raceC, raceD } = room(3);
+      const order = s.feed('p8', 3, 6000).map((c) => c.raceId);
+      expect(order).toEqual([raceD, raceC, raceA]);
+      expect(order).not.toContain(raceB);
     }
-    // the fresh proposal: no measured comparisons, floor unmet
-    const { id: cC } = s.submitCandidate(5000, {
-      author: 'p7', patch: rewrite(0, 3, 'C.'), rationale: 'r' });
-    const raceC = s.raceOf(cC).id;
-    // p8 has judged nothing: their very next hand leads with the unheard race
-    const hand = s.feed('p8', 4, 6000);
-    expect(hand.length).toBeGreaterThan(0);
-    expect(hand[0]!.raceId).toBe(raceC);
-    expect([hand[0]!.aId, hand[0]!.bId]).toContain(cC);
-    // and the slot is per-participant: once p8 has judged it, their next
-    // hand's first card is one of the evidenced races again
-    s.judge(7000, 'p8', cC, s.raceOf(cC).incumbentId, 'a');
-    const next = s.feed('p8', 4, 8000);
-    expect(next.length).toBeGreaterThan(0);
-    expect(next[0]!.raceId).not.toBe(raceC);
+    // A hand of two holds the two boosted fresh races; the unanimous races
+    // are off it — and still askable of p8, which is what the view carries
+    {
+      const { s, raceA, raceC, raceD, cA } = room(2);
+      const order = s.feed('p8', 4, 6000).map((c) => c.raceId);
+      expect(order).toEqual([raceD, raceC]);
+      const ask = s.askOn('p8', raceA);
+      expect(ask).not.toBeNull();
+      expect([ask!.aId, ask!.bId]).toContain(cA);
+    }
   });
 
   /**

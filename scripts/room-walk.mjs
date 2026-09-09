@@ -21,9 +21,14 @@
  *     a candidate is parked — correct, and completely silent).
  *
  * So this walk asserts the serving *strictly*: every member who views the
- * document before the race resolves must find the new race's card in that
- * very view. Do not weaken that to "within K judgments" — on the day, K
- * judgments of other races reads as "nothing happened".
+ * document before the race resolves must find the new race **askable** in
+ * that very view — its clause row carrying a working pair, dealt in the
+ * hand or riding the row as `ask` (Q1202) — and judges with whichever it
+ * finds. What it guarantees is reachability, not a place in the hand: the
+ * hand is the hot set, an emphasis and not a gate, ordered by value alone
+ * (Q1178, Ed 2026-09-09 — the unheard slot that filled it from 2026-09-05
+ * went with that ruling). Do not weaken this to "within K judgments" — on
+ * the day, K judgments of other races reads as "nothing happened".
  *
  *   DRAFT_COOLDOWN_MS=0 npm run server   # in another shell
  *   node scripts/room-walk.mjs [<base-url>] [--seed=<n>]
@@ -106,8 +111,8 @@ const outboxLinkTo = async (addr) => {
 /**
  * The loop itself, shared by both phases: `author` proposes `newLine` over the
  * document line matching `pick`, then every other seat views once — the new
- * race's card must be in that view — and judges for it, until the race
- * resolves. `resolved(v)` says what resolution means here (adopted for phase
+ * race must be askable in that view, dealt or by `ask` — and judges for it,
+ * until the race resolves. `resolved(v)` says what resolution means here (adopted for phase
  * A, parked for phase B); returns the candidate id.
  */
 async function proposeAndVote({ author, seats, pick, newLine, why, resolved }) {
@@ -124,30 +129,39 @@ async function proposeAndVote({ author, seats, pick, newLine, why, resolved }) {
   const cid = p.id;
   say(`  ${author} proposed ${cid} over line ${li}`);
   let voters = 0;
+  let viaAsk = 0; // judged from the clause row's `ask`, the race off the hand
   for (const m of seats) {
     if (m === author) continue;
     const x = await view(m);
     if (await resolved(cid)) {
-      say(`  race resolved after ${voters} judgments — ${seats.length - 1 - voters} seats never needed asking`);
+      say(`  race resolved after ${voters} judgments (${voters - viaAsk} from the hand, ` +
+        `${viaAsk} by ask) — ${seats.length - 1 - voters} seats never needed asking`);
       return cid;
     }
     // The strict serving assertion, the point of this walk: the very next
     // view after the proposal (or after any number of *other* members'
-    // judgments) must hold the new race's card. SPEC §8.1 prices
-    // new-candidate measurement as exploration and §8.2 asks the unheard
-    // before their silence is foreclosed; a member who has to clear their
-    // whole hand first is starvation, not routing.
-    const card = (x.raceCards ?? []).find((c) => c.a.id === cid || c.b.id === cid);
-    if (!card) {
-      fail(`${m} was NOT served ${cid} in their next view — hand held ` +
-        `[${(x.raceCards ?? []).map((c) => c.raceId).join(', ')}]`);
+    // judgments) must carry the new race with a working pair — dealt in the
+    // hand (`raceCards`) or riding its clause row as `ask` (Q1202); either
+    // is a card `judge-race` accepts. The hand is the hot set, an emphasis
+    // and not a gate (Q1178, Ed 2026-09-09), so a race off it is not
+    // starvation; a race that is *not askable* of a member who has never
+    // judged it is.
+    const clause = (x.clauses ?? []).find((c) => c.candidates?.some((k) => k.id === cid));
+    const dealt = (x.raceCards ?? []).find((c) => c.a.id === cid || c.b.id === cid);
+    const card = dealt ?? clause?.ask ?? null;
+    if (!clause || !clause.askable || !card) {
+      fail(`${m}: ${cid} was NOT askable in their next view — ` +
+        (clause ? `row askable=${clause.askable}, ask=${clause.ask ? 'pair' : 'null'}` : 'no clause row') +
+        `; hand held [${(x.raceCards ?? []).map((c) => c.raceId).join(', ')}]`);
       continue;
     }
     await cmd(m, 'judge-race', { a: card.a.id, b: card.b.id,
       outcome: card.a.id === cid ? 'a' : 'b' });
     voters++;
+    if (!dealt) viaAsk++;
   }
-  must(await resolved(cid), `the race resolved by the time the whole room had spoken (${voters} judgments)`);
+  must(await resolved(cid), `the race resolved by the time the whole room had spoken ` +
+    `(${voters} judgments, ${viaAsk} by ask)`);
   return cid;
 }
 
