@@ -355,11 +355,11 @@ export async function createDraftServer(cfg: ServerConfig,
     text: string; textVersion: number; clauses: unknown[]; mine: unknown[];
     records: unknown[]; raceCards: unknown[]; wallet: number | null;
     walletInfo: unknown; floor: number; awaitingAssent?: unknown[];
-    amendments?: unknown[];
+    amendments?: unknown[]; parked?: unknown[];
   } => {
     const ed = asEngineDoc(doc);
     const idle = { clauses: [], mine: [], records: [], raceCards: [], wallet: null, record: null,
-      walletInfo: null, floor: 0, awaitingAssent: [], amendments: [] };
+      walletInfo: null, floor: 0, awaitingAssent: [], amendments: [], parked: [] };
     if (ed.bridge === null) return { text: doc.cs.text ?? '', textVersion: 0, ...idle };
     const engine = ed.bridge.engine;
     const api = new ParticipantApi(engine, memberId);
@@ -446,6 +446,11 @@ export async function createDraftServer(cfg: ServerConfig,
         floor,
         askable: dealt || ask !== null,
         ask,
+        // **waiting behind a park on the same span** (R-100, SURFACE E36): the
+        // batch passes this race over until the Founder answers a park it
+        // overlaps, and the room is told so (Ed, 2026-09-09, Q1015) — the one
+        // thing here that says a leader would carry, by Ed's ruling
+        blockedByPark: r.blockedByPark,
         candidates: r.members.map((id) => {
           const c = engine.getCandidate(id);
           const author = namedAuthor(c);
@@ -496,6 +501,17 @@ export async function createDraftServer(cfg: ServerConfig,
             footprint: c.footprint, ...(author ? { author } : {}) };
         })
       : [];
+    // **The room's side of a park** (SURFACE E36, E37; Ed, 2026-09-09, Q1015):
+    // every seat is told *where* a change the membership passed waits on the
+    // Founder — the race it cleared in and the span it rewrites — and whether
+    // it is their own. No wording, no rationale, no author: the card says who
+    // is being waited on and asks only to have been seen; the words are the
+    // Founder's alone, one screen up. Keyed by race so a later park on the
+    // same clause is a new entry.
+    const parked = engine.allCandidates().filter((c) => c.state === 'awaiting-assent').map((c) => ({
+      raceId: c.awaiting?.raceId ?? `r:${c.id}`, candidateId: c.id,
+      contested: c.footprint, mine: c.author === memberId,
+    }));
     // ✒️ on the Text (R-058, SURFACE E35): the wording of an amendment this
     // viewer is still owed the news of. **The owed set is the module's**, read
     // here rather than walked over every candidate the document has ever
@@ -623,7 +639,7 @@ export async function createDraftServer(cfg: ServerConfig,
       };
     })();
     const base = { text: engine.document(), textVersion: engine.currentVersion(),
-      clauses, mine, records, floor, record, awaitingAssent, amendments };
+      clauses, mine, records, floor, record, awaitingAssent, amendments, parked };
     // closed, a clerk, or a seat out of E: no hand and no wallet
     if (served === null) return { ...base, raceCards: [], wallet: null, walletInfo: null };
     const w = served.wallet;

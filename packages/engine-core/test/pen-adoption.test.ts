@@ -12,6 +12,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { Session, makeConstitution } from '../src/session.js';
+import type { Event } from '../src/types.js';
 import { roster } from './helpers.js';
 
 const HOUR = 3600_000;
@@ -177,5 +178,188 @@ describe('✒️ on the Text: the direct adoption (R-058)', () => {
     const v1 = s.currentVersion();
     expect(() => s.decreeText(100, { author: 'p1',
       patch: rewrite(v1, 3, 'Meetings happen monthly.'), rationale: 'now' })).not.toThrow();
+  });
+});
+
+/**
+ * **Parks are per footprint** (SPEC §4.2, R-100; Ed, 2026-09-09, Q1179). Any
+ * number of parks may stand at once so long as none overlaps another; a
+ * leader whose span overlaps a standing park waits like anybody, live and
+ * judgeable, and the view says so (`blockedByPark`); a park is rebased under
+ * a neighbour's accept only across lines it does not touch, its words and
+ * its recorded numbers unchanged.
+ */
+describe('🛡️ on the Text parks per footprint (R-100)', () => {
+  const parksOf = (s: Session) => s.log.map((e) => e.event)
+    .filter((e): e is Extract<Event, { type: 'candidate-awaiting-assent' }> =>
+      e.type === 'candidate-awaiting-assent');
+  const judgeFor = (s: Session, t: number, by: string, id: string, raceId: string | null) => {
+    const race = s.races().find((r) => r.id === raceId)!;
+    s.judge(t, by, id, race.incumbentId, 'a');
+  };
+  /**
+   * Two non-overlapping races ready in **one** batch: the cooldown holds the
+   * sweep after a first (unshielded) adoption sets the metronome, the shield
+   * goes up, two proposals on different paragraphs are judged inside the
+   * cooldown, and one `tick` releases both.
+   */
+  function twoReady() {
+    const s = openSession({ cooldownMs: 1000 }, 5);
+    const v0 = s.currentVersion();
+    const first = s.submitCandidate(50, { author: 'p2',
+      patch: rewrite(v0, 1, 'Membership is open to anyone who asks.'), rationale: 'asks' });
+    judgeFor(s, 60, 'p3', first.id, first.raceId);
+    expect(s.getCandidate(first.id).state).toBe('adopted'); // lastAdoptionT = 60
+    s.amend(70, { textAssent: true });
+    const v1 = s.currentVersion();
+    // `a` grows its paragraph into two lines, so an accept shifts everything below it
+    const a = s.submitCandidate(80, { author: 'p2',
+      patch: { baseVersion: v1, hunks: [{ start: 2, end: 3,
+        lines: ['Decisions are made by a show of hands.', 'Ties go to the chair.'] }] },
+      rationale: 'hands' });
+    const b = s.submitCandidate(85, { author: 'p4',
+      patch: rewrite(v1, 3, 'Meetings happen monthly.'), rationale: 'monthly' });
+    judgeFor(s, 90, 'p3', a.id, a.raceId);
+    judgeFor(s, 95, 'p5', b.id, b.raceId);
+    // inside the cooldown: both ready, neither parked yet
+    expect(s.getCandidate(a.id).state).toBe('live');
+    expect(s.getCandidate(b.id).state).toBe('live');
+    return { s, a, b, v1 };
+  }
+
+  it('two non-overlapping leaders both park in one batch, each its own event', () => {
+    const { s, a, b, v1 } = twoReady();
+    s.tick(2000);
+    expect(s.getCandidate(a.id).state).toBe('awaiting-assent');
+    expect(s.getCandidate(b.id).state).toBe('awaiting-assent');
+    const parks = parksOf(s);
+    expect(parks.map((e) => e.id)).toEqual([a.id, b.id]);
+    expect(parks.every((e) => e.t === 2000)).toBe(true);
+    expect(parks[0]!.raceId).toBe(a.raceId);
+    expect(parks[1]!.raceId).toBe(b.raceId);
+    expect(parks[0]!.raceId).not.toBe(parks[1]!.raceId);
+    // the document did not move, and neither park is in any race
+    expect(s.currentVersion()).toBe(v1);
+    expect(s.races()).toHaveLength(0);
+  });
+
+  it('accepting the first rebases the second across lines it does not touch — words unchanged — and it then accepts cleanly', () => {
+    const { s, a, b } = twoReady();
+    s.tick(2000);
+    const before = s.getCandidate(b.id);
+    const parkedNumbers = { ...before.awaiting! };
+    const wordsBefore = before.patch!.hunks.map((h) => h.lines.slice());
+    s.assent(3000, a.id, 'accept');
+    const after = s.getCandidate(b.id);
+    expect(after.state).toBe('awaiting-assent');
+    expect(after.patch!.baseVersion).toBe(s.currentVersion());
+    expect(after.patch!.hunks.map((h) => [h.start, h.end])).toEqual([[4, 5]]);
+    expect(after.patch!.hunks.map((h) => h.lines)).toEqual(wordsBefore);
+    expect(after.awaiting).toEqual(parkedNumbers);
+    expect(after.footprint).toEqual([{ start: 4, end: 5 }]);
+    s.assent(3100, b.id, 'accept');
+    expect(s.getCandidate(b.id).state).toBe('adopted');
+    expect(s.document().split('\n')).toEqual([
+      '# Charter',
+      'Membership is open to anyone who asks.',
+      'Decisions are made by a show of hands.',
+      'Ties go to the chair.',
+      'Meetings happen monthly.',
+    ]);
+  });
+
+  it('non-overlapping parks accept in either order', () => {
+    const { s, a, b } = twoReady();
+    s.tick(2000);
+    s.assent(3000, b.id, 'accept');
+    expect(s.getCandidate(a.id).state).toBe('awaiting-assent');
+    expect(s.getCandidate(a.id).patch!.hunks.map((h) => [h.start, h.end])).toEqual([[2, 3]]);
+    s.assent(3100, a.id, 'accept');
+    expect(s.document()).toContain('Decisions are made by a show of hands.');
+    expect(s.document()).toContain('Meetings happen monthly.');
+  });
+
+  it('an overlapping leader does not park: it stays live, blockedByPark, and parks once the standing park is refused', () => {
+    const s = openSession({ textAssent: true }, 5);
+    const v0 = s.currentVersion();
+    const first = s.submitCandidate(50, { author: 'p2',
+      patch: rewrite(v0, 2, 'Decisions are made by a show of hands.'), rationale: 'hands' });
+    judgeFor(s, 60, 'p3', first.id, first.raceId);
+    expect(s.getCandidate(first.id).state).toBe('awaiting-assent');
+    // a rival on the same paragraph, against the same version (the park moved nothing)
+    const rival = s.submitCandidate(70, { author: 'p4',
+      patch: rewrite(v0, 2, 'Decisions are made by lot.'), rationale: 'lot' });
+    expect(s.races().find((r) => r.id === rival.raceId)!.blockedByPark).toBe(false);
+    judgeFor(s, 80, 'p5', rival.id, rival.raceId);
+    // ready, and passed over: live, judgeable, in its race, and marked
+    const c = s.getCandidate(rival.id);
+    expect(c.state).toBe('live');
+    const race = s.races().find((r) => r.id === rival.raceId)!;
+    expect(race.blockedByPark).toBe(true);
+    expect(parksOf(s).map((e) => e.id)).toEqual([first.id]);
+    // refuse retires the park at refund 0 (unchanged), and the next batch parks the waiter
+    const balance = s.balance('p2', 89);
+    s.assent(90, first.id, 'refuse', 'no');
+    expect(s.getCandidate(first.id).state).toBe('retired');
+    expect(s.getCandidate(first.id).exit).toMatchObject({ refund: 0 });
+    expect(s.balance('p2', 91)).toBe(balance);
+    s.tick(100);
+    expect(s.getCandidate(rival.id).state).toBe('awaiting-assent');
+    expect(parksOf(s).map((e) => e.id)).toEqual([first.id, rival.id]);
+  });
+
+  it('an overlapping leader whose park is accepted is ground-shifted like anybody, never parked over the new text', () => {
+    const s = openSession({ textAssent: true }, 5);
+    const v0 = s.currentVersion();
+    const first = s.submitCandidate(50, { author: 'p2',
+      patch: rewrite(v0, 2, 'Decisions are made by a show of hands.'), rationale: 'hands' });
+    judgeFor(s, 60, 'p3', first.id, first.raceId);
+    const rival = s.submitCandidate(70, { author: 'p4',
+      patch: rewrite(v0, 2, 'Decisions are made by lot.'), rationale: 'lot' });
+    judgeFor(s, 80, 'p5', rival.id, rival.raceId);
+    expect(s.races().find((r) => r.id === rival.raceId)!.blockedByPark).toBe(true);
+    s.assent(90, first.id, 'accept');
+    // the text it was written against is gone: rebase-pending (SPEC §2.4), not a park
+    expect(s.getCandidate(rival.id).state).toBe('rebase-pending');
+    s.tick(100);
+    expect(parksOf(s).map((e) => e.id)).toEqual([first.id]);
+  });
+
+  it('a park is rebased under an ordinary adoption too, and nothing adopts across its span', () => {
+    const s = openSession({ textAssent: true }, 5);
+    const v0 = s.currentVersion();
+    const park = s.submitCandidate(50, { author: 'p2',
+      patch: rewrite(v0, 2, 'Decisions are made by a show of hands.'), rationale: 'hands' });
+    judgeFor(s, 60, 'p3', park.id, park.raceId);
+    expect(s.getCandidate(park.id).state).toBe('awaiting-assent');
+    // the shield comes down with the park still standing: adoptions are direct again
+    s.amend(70, { textAssent: false });
+    const above = s.submitCandidate(80, { author: 'p4',
+      patch: { baseVersion: v0, hunks: [{ start: 1, end: 2,
+        lines: ['Membership is open to anyone.', 'Guests are welcome.'] }] }, rationale: 'guests' });
+    const over = s.submitCandidate(85, { author: 'p5',
+      patch: rewrite(v0, 2, 'Decisions are made by lot.'), rationale: 'lot' });
+    judgeFor(s, 90, 'p3', above.id, above.raceId);
+    // the paragraph above grew: adopted, and the park moved down one line with its words intact
+    expect(s.getCandidate(above.id).state).toBe('adopted');
+    const p = s.getCandidate(park.id);
+    expect(p.state).toBe('awaiting-assent');
+    expect(p.patch!.hunks).toEqual([{ start: 3, end: 4, lines: ['Decisions are made by a show of hands.'] }]);
+    expect(p.patch!.baseVersion).toBe(s.currentVersion());
+    // the rival over the parked span is ready and blocked — no shield needed for the rule to bite
+    judgeFor(s, 95, 'p4', over.id, over.raceId);
+    expect(s.getCandidate(over.id).state).toBe('live');
+    expect(s.races().find((r) => r.id === over.raceId)!.blockedByPark).toBe(true);
+    expect(s.document()).not.toContain('by lot');
+    s.assent(100, park.id, 'accept');
+    expect(s.document().split('\n')[3]).toBe('Decisions are made by a show of hands.');
+  });
+
+  it('replays bit for bit with several parks standing', () => {
+    const { s } = twoReady();
+    s.tick(2000);
+    const r = Session.replay(s.log);
+    expect(r.rollingHash()).toBe(s.rollingHash());
+    expect(r.races()).toEqual(s.races());
   });
 });
