@@ -11,6 +11,7 @@
     "preset": "tsx src/alpha-preset.ts",
     "soak": "tsx src/soak.ts",
     "evidence": "tsx src/deferred-evidence.ts",
+    "ab:serve": "tsx src/serve-all-ab.ts",
     "score": "tsx src/score.ts",
     "founding": "tsx src/founding-evidence.ts",
     "motions": "tsx src/motions-evidence.ts"

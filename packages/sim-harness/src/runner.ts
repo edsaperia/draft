@@ -71,6 +71,9 @@ interface PersonaState {
   draftedThisBout: boolean;
   judgments: number;
   drafts: number;
+  /** Actions taken, and the ones whose card draw came back empty. */
+  turns: number;
+  idleTurns: number;
 }
 
 export async function runSession(config: RunConfig): Promise<RunResult> {
@@ -109,6 +112,8 @@ export async function runSession(config: RunConfig): Promise<RunResult> {
       draftedThisBout: false,
       judgments: 0,
       drafts: 0,
+      turns: 0,
+      idleTurns: 0,
     };
   };
   const states: PersonaState[] = scenario.personas.map((p) => makeState(p, 0));
@@ -178,6 +183,7 @@ export async function runSession(config: RunConfig): Promise<RunResult> {
     }
 
     actions++;
+    next.turns++;
     lastActionT = t;
     let acted = false;
 
@@ -246,6 +252,7 @@ export async function runSession(config: RunConfig): Promise<RunResult> {
     if (!acted) {
       const cards = next.api.nextCards(1, t);
       const card = cards[0];
+      if (!card) next.idleTurns++;
       // Propose C (SPEC §3.3, QUESTIONS #9): a persona with the policy may
       // answer the card by drafting. Since SPEC v0.16 this costs no
       // comparison — the forfeit priced a peek at mid-flight state, and the
@@ -326,7 +333,7 @@ export async function runSession(config: RunConfig): Promise<RunResult> {
   const participation = new Map(
     states.map((s) => [
       s.persona.profile.id,
-      { judgments: s.judgments, drafts: s.drafts },
+      { judgments: s.judgments, drafts: s.drafts, turns: s.turns, idleTurns: s.idleTurns },
     ]),
   );
   const metrics = computeMetrics(session, scenario, participation);

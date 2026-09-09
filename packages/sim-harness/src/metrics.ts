@@ -40,7 +40,19 @@ export interface Metrics {
   welfareRatio: number;
   backlogSize: number;
   finalThreshold: number;
-  participation: Record<string, { judgments: number; drafts: number; tokensLeft: number }>;
+  /**
+   * The serving's own numbers (Q1178's A/B, 2026-09-09). A turn is one
+   * persona action in the runner; an idle turn is one that reached the
+   * card draw and drew nothing — the bout ends there. A candidate is never
+   * judged when no comparison by anybody but its author ever named it.
+   */
+  turns: number;
+  idleTurns: number;
+  /** Simulated ms of the first `adopted` event; null when nothing adopted. */
+  firstAdoptionMs: number | null;
+  candidatesNeverJudged: number;
+  participation: Record<string, {
+    judgments: number; drafts: number; turns: number; idleTurns: number; tokensLeft: number }>;
   finalText: string;
   rollingHash: string;
 }
@@ -48,7 +60,7 @@ export interface Metrics {
 export function computeMetrics(
   session: Session,
   scenario: Scenario,
-  participation: Map<string, { judgments: number; drafts: number }>,
+  participation: Map<string, { judgments: number; drafts: number; turns: number; idleTurns: number }>,
 ): Metrics {
   const finalText = session.finalRender().text;
   const finalLines = finalText.split('\n');
@@ -58,15 +70,25 @@ export function computeMetrics(
   let candidates = 0;
   const adoptionsPerIssue = new Map<string, number>();
   let adoptions = 0;
+  let firstAdoptionMs: number | null = null;
+  // text candidates by author, and the ones somebody else's judgment named:
+  // a submission precedes any comparison naming it, so one pass suffices
+  const authorOf = new Map<string, string>();
+  const judgedByOthers = new Set<string>();
   for (const entry of session.log) {
     const e = entry.event;
     if (e.type === 'comparison') {
       if (e.kind === 'edge') edge++;
       else diagonal++;
+      for (const id of [e.aId, e.bId]) {
+        if (authorOf.has(id) && authorOf.get(id) !== e.participantId) judgedByOthers.add(id);
+      }
     } else if (e.type === 'candidate-submitted') {
       candidates++;
+      if (e.patch) authorOf.set(e.id, e.author);
     } else if (e.type === 'adopted') {
       adoptions++;
+      if (firstAdoptionMs === null) firstAdoptionMs = e.t;
       // Attribute by line number, not by matching text against the alternatives
       // menu — LLM drafts are almost always off-menu, which left adoptions
       // unattributed and reported overturns as 0 on runs that had several.
@@ -131,6 +153,10 @@ export function computeMetrics(
     welfareRatio,
     backlogSize: session.backlog().length,
     finalThreshold: session.adoptionThreshold(),
+    turns: [...participation.values()].reduce((a, p) => a + p.turns, 0),
+    idleTurns: [...participation.values()].reduce((a, p) => a + p.idleTurns, 0),
+    firstAdoptionMs,
+    candidatesNeverJudged: [...authorOf.keys()].filter((id) => !judgedByOthers.has(id)).length,
     participation: participationOut,
     finalText,
     rollingHash: session.rollingHash(),

@@ -116,6 +116,7 @@ All `npm run <name> -w @draft/sim-harness`; each says what it needs.
 | `preset` | The alpha preset: whole candidate constitutions over roster × window at the ten-to-twenty-minute operating point, scored on `alive` (did the document change at all); exits non-zero if the preset stops beating the shipped defaults. Numbers: PRODUCTION.md § Measurements | nothing — scripted, in-process |
 | `soak` | N clients against the **real server** at the same time: real personas over the real HTTP login path, one cookie jar per seat, every command fired in one tick. Assertions, not metrics | a running dev server |
 | `evidence` | The four deferred-question studies (Q8/Q9/Q10/Q13) behind `REPORT-deferred-evidence.md`; `--q all\|8\|9\|10\|13 --seeds N --hours H`, CSVs to `runs/` | nothing — deterministic |
+| `ab:serve` | The serve-all A/B (Q1178) behind `REPORT-serve-all-ab.md`: the hot-3 hand against a hand of every live race, rosters × seeds × both scenarios, welfare read paired per seed; `--seeds N --hours H --rosters 5,10,14,20 --scenario clubhouse\|charter\|both`, CSV to `runs/` | nothing — deterministic |
 | `founding` | Deterministic acceptance walks over `@draft/constitution` with a narrative log; the same hash every run. Part of `npm test` | nothing |
 | `motions` | The same over the engine-bridge: ordinary motions racing in engine-core, the crown's assent between verdict and application, an amendment binding a race in flight. Part of `npm test` | nothing |
 | `score` | The welfare judge, below | Claude credentials |
