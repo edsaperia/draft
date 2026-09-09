@@ -1459,9 +1459,7 @@ var CONSTITUTION = (() => {
           const m = this.members.get(event.member);
           m.removed = true;
           m.removedBy = event.by ?? "members";
-          if (m.arrivedAtT !== null) {
-            this.departed.push({ member: event.member, t: event.t, by: m.removedBy });
-          }
+          this.departed.push({ member: event.member, t: event.t, by: m.removedBy });
           break;
         }
         case "answer-given": {

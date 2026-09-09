@@ -180,6 +180,25 @@ describe('departures — what the view says about who left (Q901)', () => {
     expect(s.departures()).toEqual([]);
     expect(view(s, 'ada').departures).toEqual([]);
   });
+
+  it('a removed invitee who never arrived is a departure all the same (Q1012)', () => {
+    // Ed, 2026-08-28: *keep the mail and also record the departure* — the
+    // `member-removed` mail tells them they are no longer a member of the
+    // document, so the register says the same about the same act. The
+    // page routes an invitee to `uninvite`, so this is the module's own
+    // door (`remove`, and a carried removal by the same fold).
+    const { s, bo } = buildConstituted({ admission: { price: 'pen' },
+      doors: { remove: { unilateral: true, assent: false } } });
+    const dee = s.invite(3, 'dee@example.org', bo);
+    expect(s.memberRecords().get(dee)!.arrivedAtT).toBeNull();
+    s.remove(4, dee);
+    expect(s.departures()).toEqual([{ member: dee, t: 4, by: 'convenor' }]);
+    // nameless, since they never gave one: the view carries the fact and
+    // the page's line says *a member* rather than an address
+    const v = view(s, bo);
+    expect(v.departures.map((d) => [d.id, d.name, d.t, d.by])).toEqual([[dee, null, 4, 'convenor']]);
+    expect(Object.keys(v.departures[0]!)).not.toContain('email');
+  });
 });
 
 describe('lapse counts as abstaining (ruling 5)', () => {

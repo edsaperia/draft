@@ -621,11 +621,13 @@ export class ConstitutionSession {
         // Q901 / E31–E32: a departure is a fact about the membership and the
         // record keeps no time for it, so it is folded here — once per event,
         // at replay or at the act — rather than read off the log by every
-        // `view()`. An invitee who never arrived is not a departure: nobody
-        // left the membership (entry 96).
-        if (m.arrivedAtT !== null) {
-          this.departed.push({ member: event.member, t: event.t, by: m.removedBy });
-        }
+        // `view()`. **Whether or not the person ever arrived** (Q1012, Ed
+        // 2026-08-28: *keep the mail and also record the departure*): a
+        // removed invitee is mailed that they are no longer a member of the
+        // document, so the register says the same thing about the same act.
+        // Withdrawing an invitation is still not a departure — that is
+        // `member-uninvited`, its own event, and nobody left (entry 96).
+        this.departed.push({ member: event.member, t: event.t, by: m.removedBy });
         break;
       }
       case 'answer-given': {
