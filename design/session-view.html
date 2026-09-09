@@ -7718,6 +7718,16 @@
           : '<p class="eyebrow fieldlab">Last amended' +
             (am.at ? ' ' + esc(new Date(am.at).toLocaleDateString(undefined,
               { day: 'numeric', month: 'long' })) : '') + '</p>';
+        // **A 💤 change names the members it returned** (SURFACE Y26, Q902):
+        // turning it off or lengthening it past somebody's quiet returns them
+        // at once (entry 97), and who the change put back is part of what
+        // changed. The module's own record of the set (`returned`, ids) is
+        // named off the register — who is a member is public (§9.0c).
+        const back = k === 'lapse' ? ((csState(k) || {}).returned || []) : [];
+        const returned = back.length
+          ? '<p class="cpv">' + PAGE_COPY.lapseReturned(
+            listOf(back.map((mid2) => esc(nameOfMember(mid2)))), back.length) + '</p>'
+          : '';
         return '<div class="body changed">' + dated +
           (longish
             ? '<p class="cpv">' + who + what + '.</p>' +
@@ -7725,6 +7735,7 @@
               (now2 ? '<p class="waswas"><span>now</span>' + esc(now2) + '</p>' : '')
             : '<p class="cpv">' + who + what +
               ' from ' + esc(was) + (now2 ? ' to ' + esc(now2) : '') + '.</p>') +
+          returned +
           (am.route === 'pen' ? founderSpeaker(am.why)
             : window.CARDS.speakerHtml(am.why)) + '</div>';
       }

@@ -1266,6 +1266,7 @@ var CONSTITUTION = (() => {
               setWhy: null,
               settledBy: null,
               settledAtT: null,
+              returned: [],
               collecting: false,
               answers: /* @__PURE__ */ new Map(),
               distribution: null
@@ -1743,6 +1744,9 @@ var CONSTITUTION = (() => {
           break;
         case "member-returned": {
           const m = this.members.get(event.member);
+          if (event.cause === "rule" && m.lapsed) {
+            this.settings.get("lapse").returned.push(event.member);
+          }
           m.lapsed = false;
           this.touch(event.member, event.t);
           break;
@@ -1850,6 +1854,7 @@ var CONSTITUTION = (() => {
       st.value = value;
       st.settledBy = by;
       st.settledAtT = t;
+      st.returned = [];
       st.collecting = false;
       this.foldLegacy(st, t);
       if (id === "quorum") this.quorumFormValue = value.form;
@@ -1946,6 +1951,7 @@ var CONSTITUTION = (() => {
       st.value = value;
       st.settledBy = by === "crown" ? "crown" : "convenor";
       st.settledAtT = t;
+      st.returned = [];
       this.foldLegacy(st, t);
     }
     /**
@@ -3137,7 +3143,7 @@ var CONSTITUTION = (() => {
         const revive = m.lapsed ? !lapseStillDue(m.lastActivityT) : m.lapseWarned && !warningStillDue(m.lastActivityT, m.lapseWarnedLead);
         if (!revive) continue;
         const wasLapsed = m.lapsed;
-        this.emit({ type: "member-returned", t, member: m.id });
+        this.emit({ type: "member-returned", t, member: m.id, cause: "rule" });
         if (wasLapsed) this.afterRosterChange(t, "arrival", m.id);
       }
       if (this.crownLapsedFlag && !lapseStillDue(this.convenor.lastActivityT)) {
@@ -3842,6 +3848,7 @@ var CONSTITUTION = (() => {
         setWhy: null,
         settledBy: null,
         settledAtT: null,
+        returned: [],
         collecting: false,
         shaped: false
       });
@@ -3861,6 +3868,7 @@ var CONSTITUTION = (() => {
         setWhy: st.setWhy,
         settledBy: st.settledBy,
         settledAtT: st.settledAtT,
+        returned: [...st.returned],
         collecting: st.collecting,
         shaped: s.shaped(entry.id)
       });

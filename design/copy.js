@@ -340,6 +340,11 @@ window.COPY = (function () {
       lineMembers: (who, day) => 'The membership removed ' + who + ' on ' + day + '.',
       lineFounder: (who, day) => 'The Founder removed ' + who + ' on ' + day + '.',
     },
+    // 💤's change line names the members the change returned (SURFACE Y26,
+    // Q902): `names` is already `listOf`-joined and escaped by the caller
+    lapseReturned: (names, n) => names + (n === 1 ? ' is' : ' are') +
+      ' active again — ' + (n === 1 ? 'their membership had' : 'their memberships had') +
+      ' lapsed under the old rule.',
     // 📝's value slot: the column, counted
     prose: {
       nothingYet: 'Nothing written yet.',

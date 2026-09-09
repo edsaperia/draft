@@ -89,7 +89,6 @@ The index, in the section's own order (nothing is pinned — Ed, 2026-09-07, Q12
 | 526 | A grant is acknowledged once, so a power restored later is never announced | 2026-08-21 | built (b); the drop is unverified end to end | `syncGrantAcks` |
 | 631 | *Session* or *document*: Ed's rule-to-be is that it depends on whether the document has an ending | 2026-08-22 | deferred by Ed 2026-09-07 (Q1218): *return to this later* | `design/copy.js`; STYLE §1; ⏰ |
 | 901 | Three acts have no communication designed | 2026-08-26 | built; two unnumbered residuals | SURFACE E31–E33 |
-| 902 | A 💤 change names the members it returned | 2026-08-26 | answered, owed | SURFACE Y26 |
 | 924 | Gate 1 merges at the paragraph | 2026-08-27 | answered, owed | SPEC §2.2; `text/compose.ts` |
 | 1015 | What is a member told while a text adoption awaits assent? | 2026-08-29 | answered (b), owed — needs a SURFACE §2 row | R-056 |
 | 1016 | The seat-matrix row for a shielded Text | 2026-08-29 | a rider on the next harness change | `scripts/seat-matrix.mjs` |
@@ -327,12 +326,6 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
     **Where it stands (docs pass, 2026-09-07):** built 2026-08-27 (SURFACE E31–E33); open inside it, unnumbered: whether the room is owed an OK for a departure, and what a member removed by a *carried* motion is told.
 
     (Same sweep.) Entry 94 added exile at will and resignation, and entry 97 added the refusal of an application verified before 🤝 shut — three acts with real audiences and no row in SURFACE's event matrix, which is meant to be complete. **Ed, 2026-08-26: add them, and put designing them on the backlog.** Added as **E31–E33**, each marked *undesigned and unbuilt* so `spec-check` counts them beside E28–E30; the design itself is plan-queue backlog **98**. What each audience is told — and above all whether an exiled member is told anything at all, and by what channel — is the design work this holds open. **Built 2026-08-27 (plan-queue 69):** E31–E33 designed and built — see SURFACE §2 and `design/DECISIONS.md` *Three acts nobody was told about*. Exile mails the member (the document's address, no login link) and their dead seat's door says why; resignation gets the door sentence and no mail; both leave a grey departure line under *Members*; the refused application gets Y25's sentence before and after the press, Submit dark. Two things stay open, unnumbered here: whether the room is owed an OK for a departure (the plan builds the sentence and not the OK), and what a member removed by a *carried* motion is told.
-
-902. **A 💤 change names the members it returned.**
-
-    **Where it stands (docs pass, 2026-09-07):** answered, owed — SURFACE Y26 still reads **Unbuilt**.
-
-    (Same sweep, off entry 97.) Turning 💤 off, or lengthening it past somebody's quiet, returns lapsed members at once — a fact about people that today rides E5's change line as though it were only a fact about the rule. **Ed, 2026-08-26: agreed — the change to the lapse setting is the news, and it should include a list of the lapsed members that have now been made active.** Written as SURFACE **Y26**, marked unbuilt.
 
 924. **Gate 1 merges at the paragraph, so two typo fixes in one paragraph become a rivalry**
 

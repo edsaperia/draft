@@ -320,6 +320,44 @@ describe('💤 promise 8 · live · the rule is re-read when it changes', () => 
     // cy's quiet is now well inside the spell: the reading is no longer true
     expect(s.memberRecords().get(cy)!.lapsed).toBe(false);
     expect(s.E()).toBe(3);
+    // **and the change names who it returned** (Y26, Q902): the set's own
+    // record carries cy, the event says the rule did it, and the view serves
+    // the ids for the change line to name
+    expect(s.settingState('lapse').returned).toEqual([cy]);
+    expect(types(s).filter((x) => x === 'member-returned')).toHaveLength(1);
+    const ev = s.logEntries().map((e) => e.event)
+      .find((e) => e.type === 'member-returned');
+    expect(ev).toMatchObject({ member: cy, cause: 'rule' });
+    expect(view(s, bo).settings.find((x) => x.setting === 'lapse')!.returned).toEqual([cy]);
+  });
+
+  it('the list is the latest set’s alone, and a member’s own return is not on it (Y26)', () => {
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 } });
+    busy(s, bo, 9_000);
+    s.tick(10_500);
+    expect(s.memberRecords().get(cy)!.lapsed).toBe(true);
+    // cy logs in: a return, but the rule did not make it
+    s.memberReturn(10_600, cy);
+    expect(s.settingState('lapse').returned).toEqual([]);
+    const own = s.logEntries().map((e) => e.event)
+      .find((e) => e.type === 'member-returned');
+    expect(own).not.toHaveProperty('cause');
+    // bo lapses next (quiet since 9_000; ada and cy act at 15_000); the pen
+    // turns 💤 off and returns them, then sets it again — the second set
+    // returned nobody, and says so
+    s.setIdentity(15_000, 'ada', { name: 'Ada' });
+    s.setIdentity(15_000, cy, { name: 'Cy' });
+    s.tick(20_700);
+    expect(s.memberRecords().get(bo)!.lapsed).toBe(true);
+    expect(s.memberRecords().get(cy)!.lapsed).toBe(false);
+    s.setSetting(20_800, 'lapse', { afterMs: null });
+    expect(s.memberRecords().get(bo)!.lapsed).toBe(false);
+    expect(s.settingState('lapse').returned).toEqual([bo]);
+    // a replay folds the same list from the same bytes
+    expect(ConstitutionSession.replay([...s.logEntries()]).settingState('lapse').returned)
+      .toEqual([bo]);
+    s.setSetting(20_900, 'lapse', { afterMs: 50_000 });
+    expect(s.settingState('lapse').returned).toEqual([]);
   });
 });
 

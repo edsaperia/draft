@@ -365,6 +365,7 @@ export class ConstitutionSession {
             setWhy: null,
             settledBy: null,
             settledAtT: null,
+            returned: [],
             collecting: false,
             answers: new Map(),
             distribution: null,
@@ -980,6 +981,13 @@ export class ConstitutionSession {
         break;
       case 'member-returned': {
         const m = this.members.get(event.member)!;
+        // **A 💤 change names the members it returned** (Y26, Q902): a return
+        // the rule made, of somebody who was lapsed rather than merely
+        // warned, is part of what the set changed — the set's fold has just
+        // emptied the list, so it holds exactly this set's returns.
+        if (event.cause === 'rule' && m.lapsed) {
+          this.settings.get('lapse')!.returned.push(event.member);
+        }
         m.lapsed = false;
         this.touch(event.member, event.t); // clears the warnings too
         break;
@@ -1094,6 +1102,7 @@ export class ConstitutionSession {
     st.value = value;
     st.settledBy = by;
     st.settledAtT = t;
+    st.returned = []; // this set's own returns follow it (Y26)
     st.collecting = false;
     this.foldLegacy(st, t);
     if (id === 'quorum') this.quorumFormValue = (value as QuorumValue).form;
@@ -1191,6 +1200,7 @@ export class ConstitutionSession {
     st.value = value;
     st.settledBy = by === 'crown' ? 'crown' : 'convenor';
     st.settledAtT = t;
+    st.returned = []; // this set's own returns follow it (Y26)
     this.foldLegacy(st, t);
   }
 
@@ -2630,7 +2640,7 @@ export class ConstitutionSession {
         : m.lapseWarned && !warningStillDue(m.lastActivityT, m.lapseWarnedLead);
       if (!revive) continue;
       const wasLapsed = m.lapsed;
-      this.emit({ type: 'member-returned', t, member: m.id });
+      this.emit({ type: 'member-returned', t, member: m.id, cause: 'rule' });
       if (wasLapsed) this.afterRosterChange(t, 'arrival', m.id); // E grew back
     }
     if (this.crownLapsedFlag && !lapseStillDue(this.convenor.lastActivityT)) {
