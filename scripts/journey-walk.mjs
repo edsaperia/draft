@@ -1243,10 +1243,12 @@ const beginRowsBeforeStart = async () => {
   const rows = await brRows();
   say('rows       · ' + JSON.stringify(rows.map((r) => r.key + ' ' +
     r.cells.map((c) => c.pw + '=' + c.says).join(' '))));
-  // one row per power-holder, ⏱️'s ✒️ the one given cell, 📝 alone laid down
+  // one row per power-holder — seventeen, since the machines row went (Ed,
+  // 2026-09-09: *we are not having machines*; BEGIN_ROWS in session-view.html
+  // is the literal) — ⏱️'s ✒️ the one given cell, 📝 alone laid down
   const givenPen = rows.filter((r) => r.cells.some((c) => c.pw === 'u' && c.says === 'Given')).map((r) => r.key);
   const downPen = rows.filter((r) => r.cells.some((c) => c.pw === 'u' && c.says === 'Laid down')).map((r) => r.key);
-  const ok = rows.length === 18 && givenPen.join() === 'rate' && downPen.join() === 'text';
+  const ok = rows.length === 17 && givenPen.join() === 'rate' && downPen.join() === 'text';
   say('given      · ' + (ok ? '⏱️’s ✒️ cell reads Given and no other row’s does; 📝 alone starts laid down'
     : 'FAIL: ' + rows.length + ' rows · given ' + JSON.stringify(givenPen) +
       ' · laid down ' + JSON.stringify(downPen)));
