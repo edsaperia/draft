@@ -1266,6 +1266,7 @@ var CONSTITUTION = (() => {
               setWhy: null,
               settledBy: null,
               settledAtT: null,
+              returned: [],
               collecting: false,
               answers: /* @__PURE__ */ new Map(),
               distribution: null
@@ -1459,9 +1460,7 @@ var CONSTITUTION = (() => {
           const m = this.members.get(event.member);
           m.removed = true;
           m.removedBy = event.by ?? "members";
-          if (m.arrivedAtT !== null) {
-            this.departed.push({ member: event.member, t: event.t, by: m.removedBy });
-          }
+          this.departed.push({ member: event.member, t: event.t, by: m.removedBy });
           break;
         }
         case "answer-given": {
@@ -1689,7 +1688,8 @@ var CONSTITUTION = (() => {
             motion: event.motion,
             ...event.text ? { text: event.text } : {},
             openedAtT: event.t,
-            status: "pending"
+            status: "pending",
+            autoPassedBy: null
           });
           if (event.motion !== null) {
             const parked = this.motions.get(event.motion);
@@ -1704,6 +1704,7 @@ var CONSTITUTION = (() => {
           const q = this.crownQuestions.get(event.question);
           const accepted = event.type === "crown-question-auto-passed" || event.outcome === "accept";
           q.status = event.type === "crown-question-auto-passed" ? "auto-passed" : accepted ? "accepted" : "rejected";
+          q.autoPassedBy = event.type === "crown-question-auto-passed" ? event.cause ?? "lapse" : null;
           if (q.motion !== null) {
             const rec = this.motions.get(q.motion);
             rec.status = accepted ? "carried" : "held";
@@ -1743,6 +1744,9 @@ var CONSTITUTION = (() => {
           break;
         case "member-returned": {
           const m = this.members.get(event.member);
+          if (event.cause === "rule" && m.lapsed) {
+            this.settings.get("lapse").returned.push(event.member);
+          }
           m.lapsed = false;
           this.touch(event.member, event.t);
           break;
@@ -1850,6 +1854,7 @@ var CONSTITUTION = (() => {
       st.value = value;
       st.settledBy = by;
       st.settledAtT = t;
+      st.returned = [];
       st.collecting = false;
       this.foldLegacy(st, t);
       if (id === "quorum") this.quorumFormValue = value.form;
@@ -1946,6 +1951,7 @@ var CONSTITUTION = (() => {
       st.value = value;
       st.settledBy = by === "crown" ? "crown" : "convenor";
       st.settledAtT = t;
+      st.returned = [];
       this.foldLegacy(st, t);
     }
     /**
@@ -3052,17 +3058,23 @@ var CONSTITUTION = (() => {
      *   accepted, and the bridge's cursor walk already turns it into
      *   `engine.assent(t, parked, 'accept')`. A new kind would move the log's
      *   rolling hash and need a bridge arm to do what an arm already does.
+     *   What it adds is the event's `cause: 'vacancy'` (Q1033), so the record
+     *   says the seat was vacant rather than that the convenor agreed — a
+     *   lapse carries no cause and reads as it always did.
      * - **It does not emit `crown-lapsed`.** A vacancy is not a lapse:
      *   `crownLapsedFlag` is about a crown that may wake up again
      *   (`member-returned` revives it) and a removed member does not return to
      *   the seat. The shield goes down through `convenorSeatVacant()` instead.
-     * - **Text questions only** — this is a *narrowing* of the lapse loop in
-     *   `tick`, not a copy of it. That loop also auto-passes motion-backed
-     *   questions and settles their carried effects; applying a carried
-     *   removal or invitation without assent because the convenor left is a
-     *   governance consequence nobody has ruled on, and such a question blocks
-     *   nothing while it stands, where a parked text adoption blocks
-     *   everything. Filed as Q1033; the asymmetry is the point.
+     * - **Every pending question, motion-backed ones included** (Q1033, Ed
+     *   2026-08-29: *auto-pass them too, exactly as the lapse case does*).
+     *   Until that ruling this was a *narrowing* of `tick`'s lapse loop to
+     *   text questions, on the ground that a carried invitation or removal
+     *   applying without assent because the convenor left was a governance
+     *   consequence nobody had ruled on. Ed's ground for the reversal is the
+     *   one to keep: a seat nobody occupies cannot refuse anything, and a
+     *   motion the room carried should land. So it is the lapse loop now —
+     *   `settleCarriedEffects` runs for each, a carried removal's own arm
+     *   calling back in here for the questions it did not reach.
      *
      * Two call sites, both the last word of an act that may have emptied the
      * seat: the carried `remove` arm of `settleCarriedEffects` and `resign`
@@ -3072,8 +3084,12 @@ var CONSTITUTION = (() => {
     crownSeatVacated(t) {
       if (!this.convenorSeatVacant()) return;
       for (const q of [...this.crownQuestions.values()]) {
-        if (q.status !== "pending" || !q.text) continue;
-        this.emit({ type: "crown-question-auto-passed", t, question: q.id });
+        if (q.status !== "pending") continue;
+        this.emit({ type: "crown-question-auto-passed", t, question: q.id, cause: "vacancy" });
+        if (q.motion !== null) {
+          const mrec = this.motions.get(q.motion);
+          this.settleCarriedEffects(t, mrec, mrec.route === "constitutional");
+        }
       }
     }
     /** Follow-ons of a held motion: a refused application is told so (§9.7½). */
@@ -3127,7 +3143,7 @@ var CONSTITUTION = (() => {
         const revive = m.lapsed ? !lapseStillDue(m.lastActivityT) : m.lapseWarned && !warningStillDue(m.lastActivityT, m.lapseWarnedLead);
         if (!revive) continue;
         const wasLapsed = m.lapsed;
-        this.emit({ type: "member-returned", t, member: m.id });
+        this.emit({ type: "member-returned", t, member: m.id, cause: "rule" });
         if (wasLapsed) this.afterRosterChange(t, "arrival", m.id);
       }
       if (this.crownLapsedFlag && !lapseStillDue(this.convenor.lastActivityT)) {
@@ -3832,6 +3848,7 @@ var CONSTITUTION = (() => {
         setWhy: null,
         settledBy: null,
         settledAtT: null,
+        returned: [],
         collecting: false,
         shaped: false
       });
@@ -3851,6 +3868,7 @@ var CONSTITUTION = (() => {
         setWhy: st.setWhy,
         settledBy: st.settledBy,
         settledAtT: st.settledAtT,
+        returned: [...st.returned],
         collecting: st.collecting,
         shaped: s.shaped(entry.id)
       });

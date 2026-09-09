@@ -340,8 +340,22 @@ window.COPY = (function () {
       lineMembers: (who, day) => 'The membership removed ' + who + ' on ' + day + '.',
       lineFounder: (who, day) => 'The Founder removed ' + who + ' on ' + day + '.',
     },
-    // 📝's value slot: the column, counted
+    // 💤's change line names the members the change returned (SURFACE Y26,
+    // Q902): `names` is already `listOf`-joined and escaped by the caller
+    lapseReturned: (names, n) => names + (n === 1 ? ' is' : ' are') +
+      ' active again — ' + (n === 1 ? 'their membership had' : 'their memberships had') +
+      ' lapsed under the old rule.',
+    // 📝's value slot: the column, counted — and, before anything is written,
+    // **the empty document's placeholder** (Q518 (c), Ed 2026-08-29): grey,
+    // not document text, drawn out of the flow (`.prose.empty.writeready::before`
+    // reads it off `data-placeholder`), never seen by `proseText()`, gone for
+    // good at the first keystroke. The first line suggests the shape of a
+    // charter; the invitation beneath it says how to begin. Ed's wording to
+    // come; the shape is the point.
     prose: {
+      writeready: 'What this document is for, in a sentence or two.\n\n' +
+        'Start writing whenever you like — press 📝, or just begin typing. ' +
+        'Markdown headings become its sections, and the contents appear beside you as you go.',
       nothingYet: 'Nothing written yet.',
       paragraph: 'paragraph',
       heading: 'heading',

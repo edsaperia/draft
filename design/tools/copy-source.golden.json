@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 465
+  "entries": 466
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -225,6 +225,7 @@
   "page.prose.heading": "heading",
   "page.prose.nothingYet": "Nothing written yet.",
   "page.prose.paragraph": "paragraph",
+  "page.prose.writeready": "What this document is for, in a sentence or two.\n\nStart writing whenever you like — press 📝, or just begin typing. Markdown headings become its sections, and the contents appear beside you as you go.",
   "page.proseRow.discard": "Put the column back to the text as it stands",
   "page.proseRow.save": "Save the text — the document begins from whatever stands here",
   "page.proseRow.saved": "Saved — the document begins from whatever stands here",
