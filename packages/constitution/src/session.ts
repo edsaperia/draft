@@ -365,6 +365,7 @@ export class ConstitutionSession {
             setWhy: null,
             settledBy: null,
             settledAtT: null,
+            returned: [],
             collecting: false,
             answers: new Map(),
             distribution: null,
@@ -621,11 +622,13 @@ export class ConstitutionSession {
         // Q901 / E31–E32: a departure is a fact about the membership and the
         // record keeps no time for it, so it is folded here — once per event,
         // at replay or at the act — rather than read off the log by every
-        // `view()`. An invitee who never arrived is not a departure: nobody
-        // left the membership (entry 96).
-        if (m.arrivedAtT !== null) {
-          this.departed.push({ member: event.member, t: event.t, by: m.removedBy });
-        }
+        // `view()`. **Whether or not the person ever arrived** (Q1012, Ed
+        // 2026-08-28: *keep the mail and also record the departure*): a
+        // removed invitee is mailed that they are no longer a member of the
+        // document, so the register says the same thing about the same act.
+        // Withdrawing an invitation is still not a departure — that is
+        // `member-uninvited`, its own event, and nobody left (entry 96).
+        this.departed.push({ member: event.member, t: event.t, by: m.removedBy });
         break;
       }
       case 'answer-given': {
@@ -907,6 +910,7 @@ export class ConstitutionSession {
           ...(event.text ? { text: event.text } : {}),
           openedAtT: event.t,
           status: 'pending',
+          autoPassedBy: null,
         });
         // Either route parks here (§9.7 v0.49): the change is the members'
         // and the assent is still owed. A text question (Q440) parks no
@@ -927,6 +931,9 @@ export class ConstitutionSession {
         q.status = event.type === 'crown-question-auto-passed'
           ? 'auto-passed'
           : accepted ? 'accepted' : 'rejected';
+        // a log written before Q1033 carries no cause: it was the lapse
+        q.autoPassedBy = event.type === 'crown-question-auto-passed'
+          ? (event.cause ?? 'lapse') : null;
         if (q.motion !== null) {
           const rec = this.motions.get(q.motion)!;
           rec.status = accepted ? 'carried' : 'held';
@@ -974,6 +981,13 @@ export class ConstitutionSession {
         break;
       case 'member-returned': {
         const m = this.members.get(event.member)!;
+        // **A 💤 change names the members it returned** (Y26, Q902): a return
+        // the rule made, of somebody who was lapsed rather than merely
+        // warned, is part of what the set changed — the set's fold has just
+        // emptied the list, so it holds exactly this set's returns.
+        if (event.cause === 'rule' && m.lapsed) {
+          this.settings.get('lapse')!.returned.push(event.member);
+        }
         m.lapsed = false;
         this.touch(event.member, event.t); // clears the warnings too
         break;
@@ -1088,6 +1102,7 @@ export class ConstitutionSession {
     st.value = value;
     st.settledBy = by;
     st.settledAtT = t;
+    st.returned = []; // this set's own returns follow it (Y26)
     st.collecting = false;
     this.foldLegacy(st, t);
     if (id === 'quorum') this.quorumFormValue = (value as QuorumValue).form;
@@ -1185,6 +1200,7 @@ export class ConstitutionSession {
     st.value = value;
     st.settledBy = by === 'crown' ? 'crown' : 'convenor';
     st.settledAtT = t;
+    st.returned = []; // this set's own returns follow it (Y26)
     this.foldLegacy(st, t);
   }
 
@@ -2525,17 +2541,23 @@ export class ConstitutionSession {
    *   accepted, and the bridge's cursor walk already turns it into
    *   `engine.assent(t, parked, 'accept')`. A new kind would move the log's
    *   rolling hash and need a bridge arm to do what an arm already does.
+   *   What it adds is the event's `cause: 'vacancy'` (Q1033), so the record
+   *   says the seat was vacant rather than that the convenor agreed — a
+   *   lapse carries no cause and reads as it always did.
    * - **It does not emit `crown-lapsed`.** A vacancy is not a lapse:
    *   `crownLapsedFlag` is about a crown that may wake up again
    *   (`member-returned` revives it) and a removed member does not return to
    *   the seat. The shield goes down through `convenorSeatVacant()` instead.
-   * - **Text questions only** — this is a *narrowing* of the lapse loop in
-   *   `tick`, not a copy of it. That loop also auto-passes motion-backed
-   *   questions and settles their carried effects; applying a carried
-   *   removal or invitation without assent because the convenor left is a
-   *   governance consequence nobody has ruled on, and such a question blocks
-   *   nothing while it stands, where a parked text adoption blocks
-   *   everything. Filed as Q1033; the asymmetry is the point.
+   * - **Every pending question, motion-backed ones included** (Q1033, Ed
+   *   2026-08-29: *auto-pass them too, exactly as the lapse case does*).
+   *   Until that ruling this was a *narrowing* of `tick`'s lapse loop to
+   *   text questions, on the ground that a carried invitation or removal
+   *   applying without assent because the convenor left was a governance
+   *   consequence nobody had ruled on. Ed's ground for the reversal is the
+   *   one to keep: a seat nobody occupies cannot refuse anything, and a
+   *   motion the room carried should land. So it is the lapse loop now —
+   *   `settleCarriedEffects` runs for each, a carried removal's own arm
+   *   calling back in here for the questions it did not reach.
    *
    * Two call sites, both the last word of an act that may have emptied the
    * seat: the carried `remove` arm of `settleCarriedEffects` and `resign`
@@ -2545,8 +2567,12 @@ export class ConstitutionSession {
   private crownSeatVacated(t: number): void {
     if (!this.convenorSeatVacant()) return;
     for (const q of [...this.crownQuestions.values()]) {
-      if (q.status !== 'pending' || !q.text) continue;
-      this.emit({ type: 'crown-question-auto-passed', t, question: q.id });
+      if (q.status !== 'pending') continue;
+      this.emit({ type: 'crown-question-auto-passed', t, question: q.id, cause: 'vacancy' });
+      if (q.motion !== null) {
+        const mrec = this.motions.get(q.motion)!;
+        this.settleCarriedEffects(t, mrec, mrec.route === 'constitutional');
+      }
     }
   }
 
@@ -2614,7 +2640,7 @@ export class ConstitutionSession {
         : m.lapseWarned && !warningStillDue(m.lastActivityT, m.lapseWarnedLead);
       if (!revive) continue;
       const wasLapsed = m.lapsed;
-      this.emit({ type: 'member-returned', t, member: m.id });
+      this.emit({ type: 'member-returned', t, member: m.id, cause: 'rule' });
       if (wasLapsed) this.afterRosterChange(t, 'arrival', m.id); // E grew back
     }
     if (this.crownLapsedFlag && !lapseStillDue(this.convenor.lastActivityT)) {

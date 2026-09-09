@@ -114,11 +114,17 @@
      grey, asking nothing, until 🍾 — keyed on the column being empty and the
      founder's (`writeready`), never on a task's turn: since backlog 204 the
      text is no task at all, 📄's OK is gone and 📝 is the door in. **Q518
-     lands here** (Ed, 2026-08-29: pre-fill as a grey placeholder — not
-     document text, gone at the first keystroke); whoever builds it replaces
-     this sentence with the placeholder text and keeps the key. */
+     landed here** (Ed, 2026-08-29: pre-fill as a grey placeholder — not
+     document text, gone at the first keystroke): the first line suggests the
+     shape of a charter and the invitation follows it, one string in copy.js
+     (`prose.writeready`) read off `data-placeholder`, so the words live where
+     every member-readable string lives. A pseudo-element is what keeps it out
+     of the flow: `proseText()` never sees it, and the `empty` class it hangs
+     on goes at the first keystroke. Distinct from `.doc p.editable.blank`'s
+     block placeholder in system.css, which says a block is empty; this one
+     says what a charter looks like. */
   .prose.empty.writeready::before {
-    content: "Start writing whenever you like — press 📝, or just begin typing.\A\A Markdown headings become its sections, and the contents appear beside you as you go.";
+    content: attr(data-placeholder);
     white-space: pre-wrap; color: var(--muted); font-size: var(--t-body); line-height: 1.6;
   }
 
@@ -6379,8 +6385,13 @@
       (cs || S.open === 'title' || settled(card('title'))) ? '' : pileHtml([card('title')], ctx);
     // from the save until 🍾, the empty column says you may write in it
     // (Q1084: keyed on the column being the founder's and empty, not on a
-    // task's turn — there is no task)
-    prose.classList.toggle('writeready', !!cs && !constituted() && amFounder());
+    // task's turn — there is no task); the words are copy.js's, handed to
+    // the `::before` through the attribute (Q518), carried only while the
+    // state is, so the column's markup is untouched everywhere else
+    const writeready = !!cs && !constituted() && amFounder();
+    if (writeready) prose.dataset.placeholder = PAGE_COPY.prose.writeready;
+    else delete prose.dataset.placeholder;
+    prose.classList.toggle('writeready', writeready);
     // **The caret leaves with the founder's hand** (Ed's QA, 2026-08-19: he
     // went looking for how to relinquish direct editing on the text — there
     // is nothing to relinquish, because the text is never held (§9.7): once
@@ -7718,6 +7729,16 @@
           : '<p class="eyebrow fieldlab">Last amended' +
             (am.at ? ' ' + esc(new Date(am.at).toLocaleDateString(undefined,
               { day: 'numeric', month: 'long' })) : '') + '</p>';
+        // **A 💤 change names the members it returned** (SURFACE Y26, Q902):
+        // turning it off or lengthening it past somebody's quiet returns them
+        // at once (entry 97), and who the change put back is part of what
+        // changed. The module's own record of the set (`returned`, ids) is
+        // named off the register — who is a member is public (§9.0c).
+        const back = k === 'lapse' ? ((csState(k) || {}).returned || []) : [];
+        const returned = back.length
+          ? '<p class="cpv">' + PAGE_COPY.lapseReturned(
+            listOf(back.map((mid2) => esc(nameOfMember(mid2)))), back.length) + '</p>'
+          : '';
         return '<div class="body changed">' + dated +
           (longish
             ? '<p class="cpv">' + who + what + '.</p>' +
@@ -7725,6 +7746,7 @@
               (now2 ? '<p class="waswas"><span>now</span>' + esc(now2) + '</p>' : '')
             : '<p class="cpv">' + who + what +
               ' from ' + esc(was) + (now2 ? ' to ' + esc(now2) : '') + '.</p>') +
+          returned +
           (am.route === 'pen' ? founderSpeaker(am.why)
             : window.CARDS.speakerHtml(am.why)) + '</div>';
       }

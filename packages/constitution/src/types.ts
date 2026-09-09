@@ -266,14 +266,23 @@ export type ConstitutionEvent =
       motion: MotionId | null; text?: { candidateId: string; summary: string } }
   | { type: 'crown-question-answered'; t: number; question: CrownQuestionId;
       outcome: 'accept' | 'reject' }
-  | { type: 'crown-question-auto-passed'; t: number; question: CrownQuestionId }
+  /** Passed by no hand: the crown's clock (`lapse`, the default — a log
+   *  written before Q1033 carries no `cause` and reads as it always did) or
+   *  a seat nobody occupies (`vacancy`, R-060 and Q1033). The record keeps
+   *  the cause, so it can say the seat was vacant rather than that the
+   *  convenor agreed. */
+  | { type: 'crown-question-auto-passed'; t: number; question: CrownQuestionId;
+      cause?: 'lapse' | 'vacancy' }
   | { type: 'setting-handed-over'; t: number; setting: PowerKey }
   | { type: 'crown-lapsed'; t: number }
   | { type: 'crown-returned'; t: number }
   /* -- presence (§9.5, §9.5a) --------------------------------------------- */
   /** legacy (v0.99, Q1196): there is no sign-out; a log written before R-088 replays this as a no-op. */
   | { type: 'signed-out'; t: number; member: MemberId; mode: 'holding' | 'abstaining' }
-  | { type: 'member-returned'; t: number; member: MemberId }
+  /** Coming back. Absent `cause` is the member's own return — logging in;
+   *  `rule` is 💤 re-read (entry 97) returning them by a change of rule
+   *  they did not make, which is what a 💤 change line names (Y26, Q902). */
+  | { type: 'member-returned'; t: number; member: MemberId; cause?: 'rule' }
   /** One of the three warnings (R-097): `lead` is how long before the lapse it went, in ms. */
   | { type: 'lapse-warned'; t: number; member: MemberId; lead: number }
   /** Presence is presence (Q459a): an authenticated read refreshed the member's clock — at most hourly. */
@@ -548,6 +557,13 @@ export interface SettingState {
   setWhy: string | null;
   settledBy: SettledBy | null;
   settledAtT: number | null;
+  /**
+   * Who the latest set of this setting returned from lapse (Y26, Q902):
+   * 💤 turned off or lengthened past somebody's quiet returns them at once
+   * (entry 97), and the change line names them. Reset by every set; only
+   * ever filled on `lapse`.
+   */
+  returned: MemberId[];
   /** A delegated question, while it collects (pre-resolution). */
   collecting: boolean;
   answers: Map<MemberId, SettingValue>;
@@ -581,6 +597,12 @@ export interface CrownQuestionRecord {
   openedAtT: number;
   /** `failed-closed`: pending at T=0 (SPEC §4.6) — carried-but-unassented, into the backlog. */
   status: 'pending' | 'accepted' | 'rejected' | 'auto-passed' | 'failed-closed';
+  /**
+   * How an `auto-passed` question passed (Q1033): the crown's lapse — its
+   * holder's silence, abstaining grants — or a vacant seat, which cannot
+   * refuse anything because nobody sits in it. Null on every other status.
+   */
+  autoPassedBy: 'lapse' | 'vacancy' | null;
 }
 
 export type ApplicationStatus =

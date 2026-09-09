@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 460
+  "entries": 462
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -191,6 +191,7 @@
   "page.gate.shield.why": "As the founder of this document, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to.",
   "page.gate.voice.title": "Constitutional Proposals",
   "page.gate.voice.waiting": "Waiting on your arrival.",
+  "page.lapseReturned": "ƒ (names, n) => names + (n === 1 ? ' is' : ' are') +\n      ' active again — ' + (n === 1 ? 'their membership had' : 'their memberships had') +\n      ' lapsed under the old rule.'",
   "page.motionRec.gone": "This record is no longer on the document.",
   "page.motionRec.keptAsStood": " as it stood",
   "page.motionRec.keptAsStoodWas": " as it stood: ",
@@ -220,6 +221,7 @@
   "page.prose.heading": "heading",
   "page.prose.nothingYet": "Nothing written yet.",
   "page.prose.paragraph": "paragraph",
+  "page.prose.writeready": "What this document is for, in a sentence or two.\n\nStart writing whenever you like — press 📝, or just begin typing. Markdown headings become its sections, and the contents appear beside you as you go.",
   "page.proseRow.discard": "Put the column back to the text as it stands",
   "page.proseRow.save": "Save the text — the document begins from whatever stands here",
   "page.proseRow.saved": "Saved — the document begins from whatever stands here",

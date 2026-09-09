@@ -140,6 +140,8 @@ describe('the crown lapses like a member (§9.7 v0.49): automatic assent', () =>
     expect(s.crownLapsed).toBe(true);
     // lapse is automatic abstention, and on an assent, abstaining is granting
     expect(s.motionRecords().get(m)!.status).toBe('carried');
+    // and the record says which nobody passed it (Q1033): the lapse, not a vacancy
+    expect(s.crownQuestionRecords().get('cq-1')!.autoPassedBy).toBe('lapse');
     expect(s.settingState('rate').value).toEqual({ grant: 6, cap: 10, dripMinutes: 120 });
     expect(s.settingState('title').holder).toBe('convenor'); // nothing changes hands (v0.49)
     expect(() => s.answerCrownQuestion(H + 13_000, 'cq-1', 'reject')).toThrow(); // passed already

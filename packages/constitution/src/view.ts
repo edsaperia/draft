@@ -60,6 +60,12 @@ export interface SettingView {
   setWhy: string | null;
   settledBy: 'convenor' | 'ceremony' | 'motion' | 'crown' | null;
   settledAtT: number | null;
+  /**
+   * Who the latest set returned from lapse (Y26, Q902) — 💤 only, empty
+   * everywhere else. Member ids, which the page names off the register:
+   * who is a member is public (§9.0c), so nothing here is a leak.
+   */
+  returned: MemberId[];
   collecting: boolean;
   /**
    * **Given by the shape and untouched, before the start** (entry 166): the
@@ -249,7 +255,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
       holder: st.holder, powers: { ...st.powers }, powerFrom: { ...st.powerFrom },
       pendingRelease: { ...st.pendingRelease },
       value: null, previousValue: null, setWhy: null, settledBy: null,
-      settledAtT: null, collecting: false, shaped: false });
+      settledAtT: null, returned: [], collecting: false, shaped: false });
   }
   for (const entry of MANAGED) {
     const st = s.settingState(entry.id);
@@ -266,6 +272,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
       setWhy: st.setWhy,
       settledBy: st.settledBy,
       settledAtT: st.settledAtT,
+      returned: [...st.returned],
       collecting: st.collecting,
       shaped: s.shaped(entry.id),
     });

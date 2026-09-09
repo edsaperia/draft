@@ -210,14 +210,14 @@ window.SETUP = (function () {
     // names nothing. The grey wash still says settled; only the rail entry
     // retires to the drawn ✔, because an entry is leaving, not filing.
     if (tab && st === 'done') return c.g;
-    // **A constitutional question waiting on the room keeps its own glyph**
-    // (Ed, 2026-08-21). ⏳ replaces the subject with a state, and the state
-    // is one nobody can act on — the room is answering, and the reader is
-    // either not being asked or has already answered. So the tab stays
-    // *which rule it is*, on the grey the wait state already wears, and the
-    // entry leaves the rail entirely (see the rail's own filter). ⏳ survives
-    // where the wait is about **you**: 📧 waiting on your own verification,
-    // a gate waiting on its conditions, 🍾 waiting on the founder.
+    // **A delegated card waiting on the room keeps its own glyph** (SURFACE
+    // §6's `wait` row; Ed, 2026-08-21, widened from *constitutional* to every
+    // delegated setting by Q517 (a), 2026-08-29: what makes the wait nothing
+    // is that nothing is being asked of *you*, whichever route the setting
+    // takes). ⏳ replaces the subject with a state, and a state nobody can act
+    // on names nothing — so the tab stays *which rule it is*, on the grey the
+    // wait state already wears, and the watcher's entry leaves the rail (the
+    // rail's own filter, session-view.html). The kind never enters into it.
     // **⏳ means you have voted and the room has not finished** (Ed, 2026-09-08,
     // Q1286 (a): *⏳ is shown when a decision is being voted on, you have
     // already voted, and the outcome is waiting on the room. Otherwise it
