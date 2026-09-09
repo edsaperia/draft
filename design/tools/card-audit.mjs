@@ -281,6 +281,12 @@ const IN_PAGE = () => {
   const strings = (card) => ({
     eyebrow: txt(card.querySelector('.headlab')),
     head: txt(card.querySelector('.headrule, .headtitle, .clausehead .rtext')),
+    // the standing rule drawn as block one (Q1167 (a)) — the F6 lens below
+    // asks whether anything beneath it repeats or pre-answers it (Q1293)
+    standing: (() => { const h = card.querySelector('.headrule.asblock');
+      if (!h) return null;
+      const r = h.querySelector('.lanepick');
+      return txt(h).replace(r ? txt(r) : '', '').trim(); })(),
     lock: txt(card.querySelector('.lockline')),
     body: txt(card.querySelector('.field, .lanes')),
     options: Array.from(card.querySelectorAll('[data-set],[data-ans],[data-val],[data-mval],[data-motion]')).map((el) => ({
@@ -815,6 +821,29 @@ function rulesFor(card, tok) {
     if (sentences.get(norm) === 2) {
       at('T36', 'copy', 'one fact, one home — a sentence stating a rule appears once on a card',
         'said twice', s.trim().slice(0, 90));
+    }
+  }
+
+  // **F6 — what stands is not offered back, and nothing is pre-answered**
+  // (Q1293, Ed 2026-09-09, reading (a)). Under a standing block — the
+  // settled rule drawn as block one with its provenance radio (Q1167 (a)) —
+  // the founder's own ladder drew every rung, the standing one lit from `S`:
+  // the same sentence twice, two pressed radios meaning two things. T36 never
+  // saw it, its `said` being the copy lens's strings rather than the blocks.
+  // Two claims, read off the blocks themselves: no option beneath a standing
+  // block repeats its sentence, and none of them is pressed on open.
+  if (card.strings.standing) {
+    const stand = normalise(card.strings.standing);
+    for (const o of card.strings.options || []) {
+      const lab = normalise(o.label || '');
+      if (lab.length >= 20 && (stand === lab || stand.startsWith(lab + ' ') || lab.startsWith(stand + ' '))) {
+        at('F6', 'pattern', 'what stands is not offered back — the standing block is block one and no option repeats it (Q620, Q1293)',
+          'an option repeats the standing rule', (o.label || '').slice(0, 90));
+      }
+      if (o.on && o.set) {
+        at('F6', 'pattern', 'nothing is pre-answered — under a standing block no rung is pressed on open (F6, Q1293)',
+          'pressed on open', (o.label || '').slice(0, 90));
+      }
     }
   }
 

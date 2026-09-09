@@ -1131,9 +1131,29 @@
   // (Q1188): the membership, by a founding question or a carried motion; or
   // the Founder ✒️, by a founding choice or an amendment at will — one
   // wording for both eras, the pen being the mark of the Founder's own hand.
+  // …and `crown` is two hands (found with Q1293, 2026-09-09): the module
+  // writes it for the Founder's own post-start pen (`foldSet`) and for a
+  // membership motion the Founder assented to (`applyPayloadSet`), so a rule
+  // the Founder amended at will read *Chosen by the membership*. The record
+  // tells them apart — a pen set files as a carried motion on the `pen`
+  // route (Q530) — and the latest carried set on the setting decides.
+  const lastCarriedRoute = (k) => {
+    if (!cs || !cs.motionRecords) return null;
+    const mid = midOf(k);
+    let best = null;
+    try {
+      for (const m of cs.motionRecords().values()) {
+        if (m.status !== 'carried' || !m.payload || m.payload.kind !== 'set' || m.payload.setting !== mid) continue;
+        const at = m.at !== undefined && m.at !== null ? m.at : (m.settledAtT || 0);
+        if (!best || at >= best.at) best = { at, route: m.route };
+      }
+    } catch (e) { return null; }
+    return best ? best.route : null;
+  };
   const provOf = (k) => { const st = csState(k);
-    return st && st.settledBy && st.settledBy !== 'convenor'
-      ? PAGE_COPY.motionRec.provMembers : PAGE_COPY.motionRec.provPen; };
+    const by = st && st.settledBy;
+    const pen = !by || by === 'convenor' || (by === 'crown' && lastCarriedRoute(k) === 'pen');
+    return pen ? PAGE_COPY.motionRec.provPen : PAGE_COPY.motionRec.provMembers; };
   const chosenRadio = (label) => '<button class="lanepick" aria-pressed="true" disabled>' +
     '<span class="dot"></span><span>' + esc(label) + '</span></button>';
   const clauseOf = (k, v) => window.CARDS.clauseOf(k, v, clauseCtx());
@@ -3075,9 +3095,12 @@
   const ready = (c) => (c.ansFor ? filled(c) : c.ready ? c.ready() : chosen(c.k));
   // what the commit control asks: is there something here to commit? The
   // same as `ready` everywhere except the title, whose lane is provisional
+  // …and under a standing block a card that still equals what stands has
+  // nothing to commit either (Q1293): the composer's own rule, read here for
+  // the founder's ladder. `ready` itself is untouched — `settled` reads it.
   const commitReady = (c) => (c.k === 'title'
     ? (!!titlePending() && titlePending() !== cs_titleNow())
-    : ready(c));
+    : ready(c) && !unchangedCard(c.k));
   const settled = (c) => {
     // 🎩 used to be *always answered — member by default*, which is why it
     // never appeared as a task: the founder was made a member by a default
@@ -5891,7 +5914,17 @@
         // by the membership* or *Chosen by the Founder ✒️* — one wording for
         // a founding choice and a later amendment alike.
         const asBlock = OPTHEADLESS.has(c.k) || c.k === 'title' || c.k === 'slug';
-        return breakLines(linkify(esc(decisionLine(c)))) +
+        // **The standing block states what stands, never the founder's
+        // provisional pick** (Q1293): `decisionLine` reads the founder's own
+        // fields, which under an open card are the draft — so block one used
+        // to follow every rung pressed beneath it and restate the pick with a
+        // provenance it had not earned. Under a standing block the sentence
+        // is the module's value through `sentenceFor`, the paragraph's own
+        // shaped line kept; everywhere else the line is what it always was.
+        const stV = standingBlock(c.k) ? (csState(c.k) || {}).value : null;
+        const sent = stV !== null && stV !== undefined ? sentenceFor(c.k, stV) : null;
+        const line = sent ? clauseText(sent, c.k, false) : decisionLine(c);
+        return breakLines(linkify(esc(line))) +
           (asBlock ? chosenRadio(provOf(c.k)) : '');
       }
       if (composerOn(c)) return esc(standsOf(c.k));
@@ -6440,7 +6473,7 @@
     // Blindness is still said to the person it protects, on the member's own
     // answer card (`BLINDNOTE`).
     return '<div class="choice delegrung">' +
-      opt(S, dk, 'roster', decidingOf(c.k) + '.', '') +
+      opt(ladderView(c.k), dk, 'roster', decidingOf(c.k) + '.', '') +
       '</div>';
   };
   // **One fact, one home** (Q763, STYLE T36). How blind answers aggregate had
@@ -6583,14 +6616,88 @@
   // 🌡️ alone): *A number of my own* and its box are gone from this card —
   // the pattern survives on 🪜, 👥 and ⏱️, and the composer still takes a
   // number for a motion.
-  const barRungs = () =>
-    M.BAR_RUNGS.map((r) => pctRung({
+  // ---- **What stands is not offered back** (Q1293, Ed 2026-09-09, reading
+  // (a)) ------------------------------------------------------------------
+  // A settled option-block card drawn for the founder's own hand carries the
+  // standing rule as block one, wearing its provenance radio (Q1167 (a)), and
+  // beneath it the founding ladder — which drew every rung, the standing one
+  // lit from `S` and reading *Chosen ✒️ or Proposed 🏛️*, a press nobody had
+  // made. The same sentence stood twice with two pressed radios that meant
+  // two things. The composer had the rule already — *what stands omitted by
+  // value* (Q620) — and the founder's ladder takes it now: the ladder draws
+  // against a **view** of `S` in which what stands is blank, the pure rung
+  // equal to what stands is omitted, the standing form's field-carrying
+  // block stays with its field empty (📍 and 🪶's own rule since round 3's
+  // 29/30), nothing is pressed on open (F6) and the commit is dark until the
+  // card differs from what stands. `S` itself is untouched: every other
+  // reader of the founder's fields — the meanings, 🪜's dimming, the bin's
+  // snapshot — goes on reading the standing value.
+  //
+  // `standingBlock(k)` is the same test the head uses to draw the rule as
+  // block one: the founder's ladder branch is the only caller of `BODY`, so
+  // the seat is implied.
+  const standingBlock = (k) => !!cs && OPTHEADLESS.has(k) && !!card(k) && settled(card(k));
+  // the rung key(s) a card's blocks light on — blanked in the view only while
+  // the whole card equals what stands, so a number typed into the standing
+  // form lights its block (F6: typing into a rung's field is choosing it)
+  const RUNG_KEYS = new Set(['chamber', 'joinBy', 'admission', 'removal', 'authorship',
+    'judgments', 'lapse', 'ending', 'quorumForm', 'rateBy', 'barBy', 'tClose', 'shape',
+    'quorumBy', 'policyBy']);
+  // the standing value as the page's own fields, on a scratch object — the
+  // holder keys ride along, since a founder-set value is held `'founder'`
+  const standingFields = (k) => {
+    const st = csState(k);
+    if (!st || st.value === null || st.value === undefined) return null;
+    const T = {};
+    fieldsOf(midOf(k), st.value, T);
+    if (k === 'quorum') { T.quorumForm = st.value.form; T.quorumBy = 'founder'; }
+    if (k === 'bar') T.barBy = 'founder';
+    if (k === 'rate') T.rateBy = 'founder';
+    if (k === 'applications') T.policyBy = 'founder';
+    return T;
+  };
+  // does the card, as the founder's fields hold it, equal what stands — the
+  // composer's own comparison (`founderProposal`), by value and never by
+  // label (Q620); ⏱️ compares the one number the card can say (Q1160)
+  const unchangedCard = (k) => {
+    if (!standingBlock(k)) return false;
+    if (CHOSEN[k] && !CHOSEN[k]()) return false;
+    let v = null;
+    try { v = TYPED[k] ? TYPED[k]() : null; } catch (e) { return false; }
+    const s = standsTyped(k);
+    if (!v || !s) return false;
+    if (k === 'rate') return +v.dripMinutes === +s.dripMinutes;
+    return JSON.stringify(v) === JSON.stringify(s);
+  };
+  const sameField = (a, b) => (a === b) || (isNum(a) && isNum(b) && +a === +b);
+  // `S`, or — under a standing block — a copy of it with what stands blank.
+  // `__stand` carries the standing fields for `rungOpt`'s omission.
+  const ladderView = (k) => {
+    if (!standingBlock(k)) return S;
+    const st = standingFields(k);
+    if (!st) return S;
+    const V = Object.assign({}, S);
+    const same = unchangedCard(k);
+    for (const f of Object.keys(st)) {
+      if (RUNG_KEYS.has(f) ? same : sameField(S[f], st[f])) V[f] = '';
+    }
+    V.__stand = st;
+    return V;
+  };
+  // a pure rung — no field of its own — is omitted where it is what stands;
+  // a field-carrying block is drawn with `opt` directly and stays
+  const rungOpt = (V, key, val, ttl, exp, inner, off, extra) =>
+    (V.__stand && sameField(V.__stand[key], val) ? '' : opt(V, key, val, ttl, exp, inner, off, extra));
+
+  const barRungs = (V) =>
+    M.BAR_RUNGS.filter((r) => !(V.__stand && V.__stand.barBy === 'founder' && sameField(V.__stand.tClose, r.pct)))
+    .map((r) => pctRung({
       // the block text is the rule as it would stand (Q1104 (b)); the short
       // label stays the strip's and 🪜's. No % figure on the rung (Ed's QA,
       // 2026-09-02 pm: *Remove %s*) — the sentence is the whole rung; 🪜's
       // start ladder keeps its numbers, being a ladder *of* numbers.
       set: 'tClose', val: r.pct, label: r.sentence,
-      on: S.barBy === 'founder' && +S.tClose === r.pct,
+      on: V.barBy === 'founder' && +V.tClose === r.pct,
       exp: meaning('bar', { pct: r.pct }),
     })).join('');
   // 🪜's, inside *Rising*: the same three percents read as a starting bar, and
@@ -6866,25 +6973,27 @@
       // Q506: the holder left this card for the power tabs; delegated by
       // default like every constitutional setting, so the members' option
       // leads the list the way it does on ⏰ or 🌍.
-      '<div class="choice" role="radiogroup" aria-label="Who may join">' +
+      (() => { const V = ladderView('applications');
+      return '<div class="choice" role="radiogroup" aria-label="Who may join">' +
       theyDecide('applications') +
-      opt(S, 'joinBy', 'invite', APPL_RULE('invite')) +
-      opt(S, 'joinBy', 'apply', APPL_RULE('apply')) +
-      '</div>',
+      rungOpt(V, 'joinBy', 'invite', APPL_RULE('invite')) +
+      rungOpt(V, 'joinBy', 'apply', APPL_RULE('apply')) +
+      '</div>'; })(),
     // **Admissions** (Ed, 2026-08-26, entry 94): one price for every route
     // in — a member's invitation, a stranger's application — on the same
     // three-verb scale as 🥾. The Founder's own hand is the ✉️ door's.
     admission: () =>
       // the options are the clause sentences themselves (Q1109) — the why
       // paragraph and per-option explainers went with the same ruling
-      '<div class="choice" role="radiogroup" aria-label="The price of admission">' +
+      (() => { const V = ladderView('admission');
+      return '<div class="choice" role="radiogroup" aria-label="The price of admission">' +
       theyDecide('admission') +
-      opt(S, 'admission', 'assembly', ADM_RULE.assembly) +
-      opt(S, 'admission', 'proposal', ADM_RULE.proposal) +
-      opt(S, 'admission', 'pen', ADM_RULE.pen) +
-      '</div>',
-    ending: () =>
-      '<div class="choice" role="radiogroup">' +
+      rungOpt(V, 'admission', 'assembly', ADM_RULE.assembly) +
+      rungOpt(V, 'admission', 'proposal', ADM_RULE.proposal) +
+      rungOpt(V, 'admission', 'pen', ADM_RULE.pen) +
+      '</div>'; })(),
+    ending: () => (() => { const V = ladderView('ending');
+      return '<div class="choice" role="radiogroup">' +
       theyDecide('ending') +
       // under a shaped document that did not set ⏰ (a meeting, a conference)
       // the rung grows chips in the shape's unit above the field (entry 166,
@@ -6892,18 +7001,18 @@
       // inside the sentence** (Ed's card review 2026-09-02, Q1137's pattern):
       // the block states the rule with the date where its number goes, so
       // *At a set time* retired with the stacked field.
-      opt(S, 'ending', 'ends',
+      opt(V, 'ending', 'ends',
         'No more changes to the document may be made after ' +
-        '<input class="num numin datein" type="datetime-local" data-txt="endsAt" value="' + S.endsAt + '">.',
+        '<input class="num numin datein" type="datetime-local" data-txt="endsAt" value="' + V.endsAt + '">.',
         '', endChipsHtml()) +
-      opt(S, 'ending', 'perpetual', ENDING_NEVER) +
-      '</div>',
+      rungOpt(V, 'ending', 'perpetual', ENDING_NEVER) +
+      '</div>'; })(),
     bar: () =>
       // read before choosing whether to set it or hand it over (entry 163)
       methodNote() +
       '<div class="choice" role="radiogroup">' +
       theyDecide('bar') +
-      barRungs() +
+      barRungs(ladderView('bar')) +
       '</div>',
     pace: () =>
       '<div class="choice" role="radiogroup">' +
@@ -6933,36 +7042,39 @@
       // *The number* eyebrows and the *I set it* rung fold into them;
       // picking a block or typing in its box chooses that form (F6) and
       // takes the question back.
-      '<div class="choice" role="radiogroup">' +
+      (() => { const V = ladderView('quorum');
+      return '<div class="choice" role="radiogroup">' +
       theyDecide('quorum') +
-      opt(S, 'quorumForm', 'share',
-        numIn(S, 'quorumPct', 1, 100) +
+      opt(V, 'quorumForm', 'share',
+        numIn(V, 'quorumPct', 1, 100) +
         '% of the membership must vote on a proposal ✏️ before it can pass.', '',
-        (S.quorumForm === 'share'
+        (V.quorumForm === 'share'
           ? meanLine('quorum', CHOSEN.quorum() ? TYPED.quorum() : null) : '')) +
-      opt(S, 'quorumForm', 'count',
-        numIn(S, 'quorumN', 1, 40) +
+      opt(V, 'quorumForm', 'count',
+        numIn(V, 'quorumN', 1, 40) +
         ' members must vote on a proposal ✏️ before it can pass.', '',
-        (S.quorumForm === 'count'
+        (V.quorumForm === 'count'
           ? meanLine('quorum', CHOSEN.quorum() ? TYPED.quorum() : null) : '')) +
-      '</div>',
+      '</div>'; })(),
     authorship: () =>
-      '<div class="choice" role="radiogroup">' +
+      (() => { const V = ladderView('authorship');
+      return '<div class="choice" role="radiogroup">' +
       theyDecide('authorship') +
-      opt(S, 'authorship', 'anonymous', AUTH_RULE.anonymous) +
-      opt(S, 'authorship', 'anonymousElective', AUTH_RULE.anonymousElective) +
-      opt(S, 'authorship', 'sealed', AUTH_RULE.sealed) +
-      opt(S, 'authorship', 'sealedElective', AUTH_RULE.sealedElective) +
-      opt(S, 'authorship', 'public', AUTH_RULE.public) +
+      rungOpt(V, 'authorship', 'anonymous', AUTH_RULE.anonymous) +
+      rungOpt(V, 'authorship', 'anonymousElective', AUTH_RULE.anonymousElective) +
+      rungOpt(V, 'authorship', 'sealed', AUTH_RULE.sealed) +
+      rungOpt(V, 'authorship', 'sealedElective', AUTH_RULE.sealedElective) +
+      rungOpt(V, 'authorship', 'public', AUTH_RULE.public) +
       // the choose-this-yourself warning cut by Ed with the review
       // (2026-09-02) — §3.5a's protection is unchanged, only the note goes
-      '</div>',
+      '</div>'; })(),
     judgments: () =>
-      '<div class="choice" role="radiogroup">' +
+      (() => { const V = ladderView('judgments');
+      return '<div class="choice" role="radiogroup">' +
       theyDecide('judgments') +
-      opt(S, 'judgments', 'never', JUDG_RULE.never) +
-      opt(S, 'judgments', 'after', JUDG_RULE.after) +
-      '</div>',
+      rungOpt(V, 'judgments', 'never', JUDG_RULE.never) +
+      rungOpt(V, 'judgments', 'after', JUDG_RULE.after) +
+      '</div>'; })(),
     rate: () =>
       '<div class="choice" role="radiogroup">' +
       theyDecide('rate') +
@@ -6970,47 +7082,53 @@
       // and the maximum are the mechanism's fixed 3 and are not on the card;
       // the sentence carries the number in the card's own unit with a
       // minutes/hours/days selector beside it — input only, minutes stored.
-      (() => { const p = dripParts(S.dripMin);
-        const unit = S.dripUnit || (p ? p.unit : 'minutes');
-        const shown = isNum(S.dripN) ? S.dripN : (p ? p.n : '');
+      (() => { const V = ladderView('rate');
+        const p = dripParts(V.dripMin);
+        const unit = V.dripUnit || (p ? p.unit : 'minutes');
+        // the typed number rides only while the minutes do (Q1161 rescales
+        // one from the other): blank minutes are a blank block
+        const shown = isNum(V.dripN) && p ? V.dripN : (p ? p.n : '');
         const sel = '<select class="num numin dripunit" data-dripunit="1">' +
           ['minutes', 'hours', 'days'].map((u) =>
             '<option value="' + u + '"' + (u === unit ? ' selected' : '') + '>' + u + '</option>').join('') +
           '</select>';
-        return opt(S, 'rateBy', 'founder',
+        return opt(V, 'rateBy', 'founder',
           'Members may make a new proposal ✏️ every ' +
           '<input class="num numin" type="number" data-num="dripN" min="1" max="2880"' +
           (shown === '' ? '' : ' value="' + shown + '"') + '> ' + sel + '.', '',
           meanLine('rate', CHOSEN.rate() ? TYPED.rate() : null)); })() +
       '</div>',
     chamber: () =>
-      '<div class="choice" role="radiogroup">' +
+      (() => { const V = ladderView('chamber');
+      return '<div class="choice" role="radiogroup">' +
       theyDecide('chamber') +
       // most-private-first, the order every ladder on the surface reads in
-      opt(S, 'chamber', 'closed', CHAMBER_RULE.closed()) +
-      opt(S, 'chamber', 'link', CHAMBER_RULE.link()) + '</div>',
+      rungOpt(V, 'chamber', 'closed', CHAMBER_RULE.closed()) +
+      rungOpt(V, 'chamber', 'link', CHAMBER_RULE.link()) + '</div>'; })(),
     lapse: () =>
-      '<div class="choice" role="radiogroup">' +
+      (() => { const V = ladderView('lapse');
+      return '<div class="choice" role="radiogroup">' +
       theyDecide('lapse') +
       // **The card leads with lapsing** (Ed, 2026-09-02, Q1149 — the options
       // swap, the sentences stand as he wrote them; display order is not
       // aggregation order, so the consent direction is untouched). The day
       // count stands inside the clause (Q1137's pattern), and typing into it
       // still chooses the rung (F6).
-      opt(S, 'lapse', 'days',
-        'After ' + numIn(S, 'lapseDays', 7, 365) +
+      opt(V, 'lapse', 'days',
+        'After ' + numIn(V, 'lapseDays', 7, 365) +
         ' days, inactive members lapse and automatically abstain from votes.', '',
-        meanLine('lapse', isNum(S.lapseDays) ? { afterMs: +S.lapseDays * 86400000 } : null)) +
-      opt(S, 'lapse', 'never', LAPSE_RULE('never'), '',
+        meanLine('lapse', isNum(V.lapseDays) ? { afterMs: +V.lapseDays * 86400000 } : null)) +
+      rungOpt(V, 'lapse', 'never', LAPSE_RULE('never'), '',
         meanLine('lapse', { afterMs: null })) +
-      '</div>',
+      '</div>'; })(),
     removal: () =>
-      '<div class="choice" role="radiogroup">' +
+      (() => { const V = ladderView('removal');
+      return '<div class="choice" role="radiogroup">' +
       theyDecide('removal') +
-      opt(S, 'removal', 'consent', REMOVAL_RULE.consent) +
-      opt(S, 'removal', 'assembly', REMOVAL_RULE.assembly) +
-      opt(S, 'removal', 'proposal', REMOVAL_RULE.proposal) +
-      '</div>',
+      rungOpt(V, 'removal', 'consent', REMOVAL_RULE.consent) +
+      rungOpt(V, 'removal', 'assembly', REMOVAL_RULE.assembly) +
+      rungOpt(V, 'removal', 'proposal', REMOVAL_RULE.proposal) +
+      '</div>'; })(),
   };
 
 
@@ -7772,7 +7890,8 @@
         // the route's commit group at the far right (Q1154).
         '<button class="btn btn-approve glyphbtn' + (commitGlyph === TICK ? '' : ' emojibtn') + '"' +
         // the card decides the ✒️, the wallet decides the sentence (entry 62)
-        (ready(c) && penOkFor(commitGlyph, c) ? '' : ' disabled') +
+        // — and a card equal to what stands is dark (Q1293, `commitReady`)
+        (commitReady(c) && penOkFor(commitGlyph, c) ? '' : ' disabled') +
         ' data-confirm="1" title="' +
         (penOkFor(commitGlyph) ? commitTitle(c) : penWaitTitle) + '">' + commitGlyph + '</button>' +
         // the route's own commit, after the pen (entry 161) — see the title
@@ -8600,7 +8719,17 @@
       // the founder's own answer — it takes the question back exactly as
       // picking a value does anywhere (*Picking a value here takes it back*)
       if (o.dataset.set === 'quorumForm') S.quorumBy = 'founder';
-      return render(); }
+      render();
+      // under a standing block the standing form's rung is drawn with its
+      // field blank (Q1293), so picking it changes nothing `S` can see and the
+      // press would land on nothing: it puts the caret in the empty field
+      if (S.open && standingBlock(S.open)) {
+        const again = document.querySelector('.setupcard [data-set="' + o.dataset.set +
+          '"][data-val="' + o.dataset.val + '"]');
+        const f = again && again.closest('.pick') && again.closest('.pick').querySelector('input');
+        if (f && f.value === '') f.focus();
+      }
+      return; }
     const pic = ev.target.closest('[data-pic]');
     if (pic) { S.mypic = pic.dataset.pic; return pickerRender(); }
     const d = ev.target.closest('[data-drop]');
@@ -9025,13 +9154,16 @@
     // gone it is the first thing a founder does (Ed, 2026-08-21).
     const rungOf = t.closest && t.closest('.pick');
     const rung = rungOf && rungOf.querySelector('[data-set][data-val]');
-    if (rung && S[rung.dataset.set] !== setVal(rung.dataset.val)) {
+    // …and a block drawn dark though `S` already holds its rung — the
+    // standing form under a standing block (Q1293) — lights on the keystroke
+    // too, or the number would be typed into a rung still reading *Choose this*
+    if (rung && (S[rung.dataset.set] !== setVal(rung.dataset.val) || !rungOf.classList.contains('on'))) {
       S[rung.dataset.set] = setVal(rung.dataset.val);
       if (rung.dataset.set === 'quorumForm') S.quorumBy = 'founder';   // Q1162
-      rungOf.classList.add('on');
+      rungOf.classList.add('on'); rung.setAttribute('aria-pressed', 'true');
       const others = rungOf.parentElement ? rungOf.parentElement.querySelectorAll('.pick') : [];
       others.forEach((p) => { const b = p.querySelector('[data-set="' + rung.dataset.set + '"]');
-        if (b && b !== rung) p.classList.remove('on'); });
+        if (b && b !== rung) { p.classList.remove('on'); b.setAttribute('aria-pressed', 'false'); } });
     }
     const lane = t.closest && t.closest('[data-titlelane]');
     if (lane) { S.titleDraft = lane.textContent.trim();
@@ -9705,35 +9837,45 @@
   // the value half alone: the door has no provisional layer of its own, so
   // what it prints must come from the module — the same mapping the member
   // surface hydrates through, never a second copy of it
-  function hydrateFromModule(skipKey) {
-    const val2 = (mid) => { const st = cs.settingState(mid); return st && st.value; };
-    const MAPV = {
-      ending: (x) => { S.ending = x.endsAtMs === null ? 'perpetual' : 'ends';
-        if (x.endsAtMs !== null) S.endsAt = msToLocal(x.endsAtMs); },
-      bar: (x) => { S.tClose = x.pct; },
-      pace: (x) => { S.shape = x.shape; if (x.startPct) S.tStart = x.startPct; },
-      quorum: (x) => { if (x.form === 'share') S.quorumPct = x.n; else S.quorumN = x.n; },
-      authorship: (x) => { S.authorship = x.rung; },
-      judgments: (x) => { S.judgments = x.rung; },
-      chamber: (x) => { S.chamber = x.rung; },
-      rate: (x) => { S.grant = x.grant; S.cap = x.cap; S.dripMin = x.dripMinutes; },
+  // **One mapping, two targets** (Q1293): the module's value written into the
+  // page's own fields on `T` — `S` when hydrating, a scratch object when the
+  // founder's settled ladder asks what stands (`standingFields`), so the two
+  // cannot disagree about how a value lands. A function declaration rather
+  // than a table, so it is hoisted past every caller above it.
+  function fieldsOf(mid, x, T) {
+    switch (mid) {
+      case 'ending': T.ending = x.endsAtMs === null ? 'perpetual' : 'ends';
+        if (x.endsAtMs !== null) T.endsAt = msToLocal(x.endsAtMs); return;
+      case 'bar': T.tClose = x.pct; return;
+      case 'pace': T.shape = x.shape; if (x.startPct) T.tStart = x.startPct; return;
+      case 'quorum': if (x.form === 'share') T.quorumPct = x.n; else T.quorumN = x.n; return;
+      case 'authorship': T.authorship = x.rung; return;
+      case 'judgments': T.judgments = x.rung; return;
+      case 'chamber': T.chamber = x.rung; return;
+      case 'rate': T.grant = x.grant; T.cap = x.cap; T.dripMin = x.dripMinutes; return;
       // the rung and its number are two fields (entry 166): this wrote the
       // day count into the rung's own key, so a finite 💤 — which no walk had
       // ever founded until the ongoing shape set one — read as unanswered
       // (`CHOSEN.lapse` wants `'days'` and a numeric `lapseDays`) and was
       // served to the founder as a task on every reload
-      lapse: (x) => { if (x.afterMs === null) S.lapse = 'never';
-        else { S.lapse = 'days'; S.lapseDays = Math.round(x.afterMs / 86400000); } },
-      removal: (x) => { S.removal = x.price; },
-      admission: (x) => { S.admission = x.price; },
-      applications: (x) => { S.joinBy = mayApply(x) ? 'apply' : 'invite'; },
-    };
-    for (const mid of Object.keys(MAPV)) {
+      case 'lapse': if (x.afterMs === null) T.lapse = 'never';
+        else { T.lapse = 'days'; T.lapseDays = Math.round(x.afterMs / 86400000); } return;
+      case 'removal': T.removal = x.price; return;
+      case 'admission': T.admission = x.price; return;
+      case 'applications': T.joinBy = mayApply(x) ? 'apply' : 'invite'; return;
+      default: return;
+    }
+  }
+  const FIELDED_MIDS = ['ending', 'bar', 'pace', 'quorum', 'authorship', 'judgments',
+    'chamber', 'rate', 'lapse', 'removal', 'admission', 'applications'];
+  function hydrateFromModule(skipKey) {
+    const val2 = (mid) => { const st = cs.settingState(mid); return st && st.value; };
+    for (const mid of FIELDED_MIDS) {
       if (pkeyOf(mid) === skipKey) continue;
       const x = val2(mid);
       // value non-null implies settled (every module fold sets or nulls
       // the pair together), so this guard is the whole condition
-      if (x) MAPV[mid](x);
+      if (x) fieldsOf(mid, x, S);
     }
   }
 
