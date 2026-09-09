@@ -1410,11 +1410,11 @@
     // a provisional value like any other, so it survives a close
     setWhy: {},
     hatPick: null,
-    // 🍾's power switches, unsent until the press (entry 158): one position
-    // per zone × power, keyed `<zone name>:u|a`, absent meaning the zone
-    // table's own start. A provisional value like a radio position and
-    // nothing more — the act it composes is `begin`'s list.
-    beginZones: {},
+    // 🍾's power table, unsent until the press (entry 158; per setting since
+    // Q1195 (c)): one position per setting × power, keyed `<page key>:u|a`,
+    // absent meaning the row's own start. A provisional value like a radio
+    // position and nothing more — the act it composes is `begin`'s list.
+    beginRows: {},
     roster: [{ n: '', e: '', role: 'member', founder: true, in: true, ans: {}, okd: new Set(), mid: 'founder' }],
     // **Confirmed, not merely defaulted** (Ed, 2026-08-17). A default nobody
     // read is not a decision, and these are the decisions that cannot be changed
@@ -8674,21 +8674,21 @@
         : (v === 'date') ? (S.myAns[an.dataset.ans] === 'never' ? null : S.myAns[an.dataset.ans])
         : v;
       return render(); }
-    // 🍾's zone switches (entry 158). **The write is one direction only**:
-    // *lay down* sends every power in the zone that is still the Founder's,
-    // and *keep* means lay nothing further down here — it never reclaims a
-    // power promised away on a tab, which is `reclaim`'s and stays on the
-    // setting's own card. Unsent until the press, like any radio position.
-    const bz = ev.target.closest('[data-bzone]');
+    // 🍾's power table (entry 158; one cell per setting × power since Q1195
+    // (c)). **The write is one direction only**: *lay down* sends the power
+    // at the start, and *keep* means lay nothing further down here — it never
+    // reclaims a power promised away on a tab, which is `reclaim`'s and stays
+    // on the setting's own card. Unsent until the press, like any radio
+    // position.
+    const bz = ev.target.closest('.pwtoggle[data-bkey][data-bpw]');
     if (bz) {
-      const z = BEGIN_ZONES.find((x) => x.name === bz.dataset.bzone);
       // **a toggle since Q1181** (Ed's card review round 3, 2026-09-05): the
-      // power's glyph flips between kept and laid down — plain or struck.
-      // Pressing a mixed zone's glyph reads as *keep*, which lays nothing
-      // further down (the note beneath the table says so).
-      if (z) {
-        const key = z.name + ':' + bz.dataset.bpw;
-        S.beginZones[key] = beginPos(z, bz.dataset.bpw) === 'down' ? 'keep' : 'down';
+      // power's glyph flips between kept and laid down — plain or struck. A
+      // cell whose power is already given on its own tab is disabled and
+      // never reaches here; the guard is for a press that arrives anyway.
+      const k = bz.dataset.bkey, pw = bz.dataset.bpw;
+      if (BEGIN_ROWS.includes(k) && beginStillHeld(k, pw)) {
+        S.beginRows[k + ':' + pw] = beginPos(k, pw) === 'down' ? 'keep' : 'down';
       }
       return render();
     }
@@ -11332,29 +11332,33 @@
     '<ul class="batch">' +
     b.addresses.map((a) => '<li>' + esc(a) + '</li>').join('') + '</ul>';
   // **The zones 🍾 asks about, and the one place that knows what is in them**
-  // (entry 158, Ed 2026-08-27). Three zones × two powers is the whole table,
-  // and it is a source literal on purpose: QA reshapes the zones by editing
-  // *this* and nothing else, so nothing anywhere else in the page may
-  // reconstruct what a zone contains. `keys` are page keys and cover `PW_KEYS`
-  // exactly once each (`checkBeginZones` in `scripts/spec-check.mjs`); `down`
-  // is where the switch starts, and only 📄 carries it — SPEC §9.7 rule 8 as
-  // amended reads *the start lays down whatever 🍾 was not told to keep*, so
-  // not told is laid down and a Founder who never opens the table gets exactly
-  // the document they got before this existed.
-  const BEGIN_ZONES = [
-    // 📄 is a live switch pair like every other zone's — nothing greyed,
-    // nothing hidden, no sentence apologising for it. A 🛡️ kept here parks an
-    // adoption awaiting the Founder's assent from this commit (entry 159);
-    // a ✒️ kept here is the Founder's own amendment passing on submission,
-    // which lands one entry later (160). A switch that is inert for one slot
-    // is not an interim, and the 🍾 card is where the question is asked.
-    { name: 'The Text', glyph: '📝', down: true, keys: ['text'] },
-    { name: 'Membership', glyph: '🪪', keys: ['invite', 'remove', 'admission', 'applications', 'removal', 'lapse'] },
+  // (entry 158, Ed 2026-08-27; **one row per setting since Q1195 (c)**, Ed
+  // 2026-09-09, R-098). Eighteen settings × two powers is the whole table, and
+  // it is a source literal on purpose: it is the one place the page knows the
+  // table, and nothing anywhere else in the page may reconstruct it. The keys
+  // are page keys, **in the order the settings appear in the document** — the
+  // band's `ORDER` for the settings in it, the doors after the four membership
+  // rules they stand under, 🪜 beside 🌡️, the Text after the constitution —
+  // and cover `PW_KEYS` exactly once each (`checkBeginRows` in
+  // `scripts/spec-check.mjs`, which also holds the order against `ORDER`).
+  // Only 📝 starts at *lay down* — SPEC §9.7 rule 8 as amended reads *the
+  // start lays down whatever 🍾 was not told to keep*, so not told is laid
+  // down and a Founder who never opens the table gets exactly the document
+  // they got before this existed. 📝 is a live pair like every other row's —
+  // nothing greyed, nothing hidden, no sentence apologising for it: a 🛡️ kept
+  // there parks an adoption awaiting the Founder's assent (entry 159), a ✒️
+  // kept there is the Founder's own amendment passing on submission (160).
+  const BEGIN_ROWS = [
+    'title', 'slug', 'chamber',
+    'admission', 'applications', 'lapse', 'removal', 'invite', 'remove',
+    'rate', 'ending', 'bar', 'pace', 'quorum', 'authorship', 'judgments',
+    'text',
     // `machines` has no card since 🤖 left the surface (R-078), but it is
     // still a catalogue setting the founder holds both powers on, and this
     // table is authoritative over `HELD` at the start: drop the key and the
-    // start keeps a power with no control anywhere saying so.
-    { name: 'Everything else', glyph: '📜', keys: ['title', 'slug', 'ending', 'bar', 'pace', 'quorum', 'authorship', 'judgments', 'chamber', 'rate', 'machines'] },
+    // start keeps a power with no control anywhere saying so. Last, having
+    // no place in the document.
+    'machines',
   ];
   // **A switch reflects the tabs** (Ed's rule (i)): the hand actually on a key
   // less what its own ✒️/🛡️ tab has already promised away — the same two
@@ -11364,40 +11368,37 @@
     const p = pwPair(k), pend = pwPend(k);
     return pw === 'u' ? (p.u && !pend.u) : (p.a && !pend.a);
   };
-  // where a zone's switch stands: the founder's unsent position if they have
-  // touched it, else the table's own start
-  const beginPos = (z, pw) => {
-    const v = S.beginZones[z.name + ':' + pw];
-    return v === undefined ? (z.down ? 'down' : 'keep') : v;
+  // where a cell's toggle stands: the founder's unsent position if they have
+  // touched it, else the row's own start — down on 📝, keep everywhere else
+  const beginPos = (k, pw) => {
+    const v = S.beginRows[k + ':' + pw];
+    return v === undefined ? (k === 'text' ? 'down' : 'keep') : v;
   };
-  // …and what it reads as, three-valued over the zone's keys. **Mixed is shown
-  // as mixed and never as kept**: a power promised away on one setting is not
-  // a zone the Founder is keeping.
-  const beginZoneState = (z, pw) => {
-    if (beginPos(z, pw) === 'down') return 'down';
-    const held = z.keys.filter((k) => beginStillHeld(k, pw)).length;
-    return held === z.keys.length ? 'keep' : held === 0 ? 'down' : 'mixed';
-  };
-  // **The collector, pure and the press's only source** (entry 158): the zone
-  // table and the switch positions in, one deduplicated list of
+  // …and what the cell reads as, three-valued: **given** where the power is
+  // already promised away on the setting's own tab — struck and disabled, it
+  // comes back only there — else the toggle's own position. One cell is one
+  // power on one setting, so there is no *mixed* (Q1195 (c)): the zones had
+  // one, drawn struck like laid down, whose press laid the rest down and
+  // moved nothing on the glyph.
+  const beginCellState = (k, pw) => !beginStillHeld(k, pw) ? 'given' : beginPos(k, pw);
+  // **The collector, pure and the press's only source** (entry 158): the row
+  // table and the toggle positions in, one deduplicated list of
   // `{ setting, power }` in **module** ids out, with what is no longer the
   // Founder's already dropped. Written as a function of the table so the walk
   // and the module tests can exercise it without a press — and so the
-  // post-start zone switch, when it is built, reuses it and reaches a door
-  // that takes the whole list at one `t`. It must never be N `relinquish`
-  // calls: post-start that is N news cards (entry 162), pre-start it delegates.
+  // post-start table, when it is built, reuses it and reaches a door that
+  // takes the whole list at one `t`. It must never be N `relinquish` calls:
+  // post-start that is N news cards (entry 162), pre-start it delegates.
   const beginLayDown = () => {
     const out = [], seen = new Set();
-    for (const z of BEGIN_ZONES) {
+    for (const k of BEGIN_ROWS) {
       for (const pw of ['u', 'a']) {
-        if (beginPos(z, pw) !== 'down') continue;
-        for (const k of z.keys) {
-          if (!beginStillHeld(k, pw)) continue;
-          const setting = midOf(k), power = pw === 'u' ? 'unilateral' : 'assent';
-          if (seen.has(setting + ':' + power)) continue;
-          seen.add(setting + ':' + power);
-          out.push({ setting, power });
-        }
+        if (beginPos(k, pw) !== 'down') continue;
+        if (!beginStillHeld(k, pw)) continue;
+        const setting = midOf(k), power = pw === 'u' ? 'unilateral' : 'assent';
+        if (seen.has(setting + ':' + power)) continue;
+        seen.add(setting + ':' + power);
+        out.push({ setting, power });
       }
     }
     return out;
@@ -11440,45 +11441,42 @@
     const noun = SHAPE_NOUN[cs.shape];
     return '<p class="setnote shapeline">The rules are as for ' + noun +
       (changed.length ? ', except ' + listOf(changed.map(settingNamed)) + ', which the Founder changed.' : '.') + '</p>'; };
-  // **The table itself** (entry 158): one row per zone, two switches per row.
-  // Drawn only before the press and only for the Founder — after it there is
-  // nothing left to choose, and the batch list above says what was chosen.
-  // **…and option blocks are what draw them** (CP1, Q1103 (b), 2026-08-31 —
-  // reversing entry 254's switch ruling two days on): the pattern admits no
-  // second control, so each zone × power is a pair of blocks — *Kept* and
-  // *Laid down* — under the same *Choose this* radio as every founder choice.
-  // The card is unique in drawing them in **two columns**, a ✒️ column and a
-  // 🛡️ column (Ed's own shape for it). **Mixed presses neither radio**, and
-  // the sentence under the table explains what that means.
-  // **Six clause blocks, the power's glyph as the toggle** (Ed's card review
-  // round 3, 2026-09-05, Q1181 — replacing the twelve *Kept / Laid down*
-  // radios): each zone × power is one option block stating the rule that
-  // holds if the power is *kept*, and where a radio would sit the glyph
-  // itself stands — plain for kept, wearing the wallets' red strike for laid
-  // down — pressed to flip. The sentences are `PAGE_COPY.begin.zones`'.
-  // **Mixed reads as struck**: a power promised away on one of the zone's
-  // own tabs is not a zone the Founder is keeping, and the sentence under
-  // the table says what pressing it then does.
-  const beginZoneBlock = (z, pw) => {
-    const st = beginZoneState(z, pw);
+  // **The table itself** (entry 158): drawn only before the press and only
+  // for the Founder — after it there is nothing left to choose, and the batch
+  // list above says what was chosen. Its shape has moved three times: twelve
+  // *Kept / Laid down* radios in two columns (CP1, Q1103 (b)); six clause
+  // blocks, one per zone × power, the power's glyph as the toggle where a
+  // radio would sit (Q1181, Ed's card review round 3); and since **Q1195 (c)**
+  // (Ed, 2026-09-09) **one row per setting, in document order** — the
+  // setting's glyph and noun, then ✒️ and 🛡️ as the same glyph toggles:
+  // plain for kept, wearing the wallets' red strike for laid down, pressed to
+  // flip; struck **and disabled** where the power was already given on the
+  // setting's own tab, the tooltip saying it comes back only there. The zones
+  // hid *which* power was mixed and made a press on a mixed zone invisible;
+  // a cell is one power on one setting and has no mixed state.
+  const beginCellHtml = (k, pw) => {
+    const st = beginCellState(k, pw);
     const kept = st === 'keep';
-    return '<div class="pick' + (kept ? ' on' : '') + '">' +
-      '<span class="opttext">' + esc(PAGE_COPY.begin.zones[z.name][pw]) + '</span>' +
-      '<button class="pwtoggle" type="button" aria-pressed="' + kept + '"' +
-      ' data-bzone="' + esc(z.name) + '" data-bpw="' + pw + '"' +
-      ' title="' + (kept ? PAGE_COPY.begin.keptTip : st === 'mixed' ? PAGE_COPY.begin.mixedTip : PAGE_COPY.begin.downTip) + '">' +
-      '<span class="tg">' + (pw === 'u' ? '✒️' : '🛡️') + '</span></button></div>';
+    return '<td class="bcell"><button class="pwtoggle" type="button" aria-pressed="' + kept + '"' +
+      ' data-bkey="' + k + '" data-bpw="' + pw + '"' + (st === 'given' ? ' disabled' : '') +
+      ' title="' + (st === 'given' ? PAGE_COPY.begin.givenTip : kept ? PAGE_COPY.begin.keptTip : PAGE_COPY.begin.downTip) + '">' +
+      '<span class="tg">' + (pw === 'u' ? '✒️' : '🛡️') + '</span></button></td>';
   };
-  const beginZonesHtml = () => {
+  // the setting cell: the card's glyph and its noun through `settingNamed`,
+  // the one reader of a setting's name inside a sentence; `machines`, having
+  // no card, names itself by the catalogue's own id and takes no glyph
+  const beginRowHtml = (k) => '<tr data-bkey="' + k + '">' +
+    '<td class="bname">' + settingNamed(midOf(k)) + '</td>' +
+    beginCellHtml(k, 'u') + beginCellHtml(k, 'a') + '</tr>';
+  const beginTableHtml = () => {
     if (constituted() || !amFounder()) return '';
-    const anyMixed = BEGIN_ZONES.some((z) => ['u', 'a'].some((pw) => beginZoneState(z, pw) === 'mixed'));
+    const th = (pw) => '<th class="eyebrow bcell" scope="col" title="' + esc(PAGE_COPY.begin[pw]) + '">' +
+      '<span aria-label="' + esc(PAGE_COPY.begin[pw]) + '">' + (pw === 'penCol' ? '✒️' : '🛡️') + '</span></th>';
     return '<div class="unlocks"><b>What the Founder keeps.</b></div>' +
       '<p class="why">Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.</p>' +
-      BEGIN_ZONES.map((z) => '<div class="beginzone">' +
-        '<div class="fieldlab">' + (z.glyph ? z.glyph + ' ' : '') + esc(z.name) + '</div>' +
-        '<div class="choice">' + beginZoneBlock(z, 'u') + beginZoneBlock(z, 'a') + '</div></div>').join('') +
-      (anyMixed ? '<p class="setnote">Where neither is marked, some of these have already been given up on their own cards. ' +
-        'Keeping here lays nothing further down — a power already given comes back only on the card it went from.</p>' : '');
+      '<table class="begintable"><thead><tr><th class="eyebrow bname" scope="col"></th>' +
+      th('penCol') + th('shieldCol') + '</tr></thead><tbody>' +
+      BEGIN_ROWS.map(beginRowHtml).join('') + '</tbody></table>';
   };
   const beginBody = (c, rd) => {
     const batch = shapeLine() +
@@ -11544,7 +11542,7 @@
       esc(m.name || 'Anonymous') + '<span class="rsub"> · ' +
       (!m.arrived ? 'invited, not yet arrived' : m.owed === 0 ? 'nothing owed'
         : m.answered >= m.owed ? 'answered everything' : m.answered + ' of ' + m.owed + ' answered') + '</span></span>').join('');
-    return batch + hold + why + deps + beginZonesHtml() +
+    return batch + hold + why + deps + beginTableHtml() +
       '<div class="readiness"><div class="fieldlab">The questions</div><div class="gatelist">' + qs + '</div>' +
       '<div class="fieldlab">The people</div><div class="gatelist">' + ms + '</div></div>' +
       '<p class="setnote">' + (rd.ready

@@ -102,17 +102,17 @@ function pageMaps() {
   // that have no SURFACE §4 row to fall back on
   for (const [, k, v] of s.match(/const MID = \{([^}]*)\}/)[1].matchAll(/([a-z]+): '([A-Za-z:]+)'/g)) mid[k] = v;
   const cards = [...new Set([...s.matchAll(/\{ k: '([a-z-]+)'/g)].map((x) => x[1]))];
-  // 🍾's zone table (entry 158): one `{ name, glyph?, down?, keys }` per zone.
-  // Pulled out row by row so a reshape that keeps the literal's shape needs no
-  // edit here, and a reshape that does not goes red with a sentence rather
-  // than an empty list quietly passing.
-  const zoneSrc = s.match(/const BEGIN_ZONES = \[([\s\S]*?)\n  \];/);
-  if (!zoneSrc) throw new Error('BEGIN_ZONES not found in session-view.html');
-  const BEGIN_ZONES = [...zoneSrc[1].matchAll(/name: '([^']+)'[\s\S]*?keys: \[([^\]]*)\]/g)]
-    .map((m) => ({ name: m[1], keys: [...m[2].matchAll(/'([a-z-]+)'/g)].map((x) => x[1]) }));
-  if (!BEGIN_ZONES.length) throw new Error('BEGIN_ZONES holds no zone the checker can read');
+  // 🍾's row table (entry 158; per setting since Q1195 (c)): one page key per
+  // row, in the document's order. The literal carries comments, so they are
+  // stripped before the keys are read — a quoted word in a comment must not
+  // become a row — and an empty read goes red with a sentence rather than an
+  // empty list quietly passing.
+  const rowSrc = s.match(/const BEGIN_ROWS = \[([\s\S]*?)\n  \];/);
+  if (!rowSrc) throw new Error('BEGIN_ROWS not found in session-view.html');
+  const BEGIN_ROWS = [...rowSrc[1].replace(/\/\/[^\n]*/g, '').matchAll(/'([a-z-]+)'/g)].map((x) => x[1]);
+  if (!BEGIN_ROWS.length) throw new Error('BEGIN_ROWS holds no row the checker can read');
   return { ORDER: arr('ORDER'), ACK_KEYS: grant.concat(arr('ACK_KEYS')), CHOSEN: objKeys('CHOSEN'),
-    PROPOSE: objKeys('PROPOSE'), MID: mid, cards, BEGIN_ZONES };
+    PROPOSE: objKeys('PROPOSE'), MID: mid, cards, BEGIN_ROWS };
 }
 
 // ---- table parsing ----------------------------------------------------------
@@ -1021,23 +1021,27 @@ function checkApplicantJudged() {
 }
 
 /**
- * 🍾's power table covers every power-holder exactly once (entry 158).
+ * 🍾's power table covers every power-holder exactly once, in document order
+ * (entry 158; per setting since Q1195 (c), R-098).
  *
- * `BEGIN_ZONES` is the one place the page knows what a zone contains, and the
- * list it collects is handed to `begin` as **authoritative and complete over
- * `HELD`** — the fold applies it and does nothing else. So a key missing from
- * the table is a power silently kept past the start with no control anywhere
- * that says so, and a key in two zones is one the two switches disagree
- * about. Neither is visible on the surface: the card would draw three
- * perfectly ordinary rows.
+ * `BEGIN_ROWS` is the one place the page knows the table, and the list it
+ * collects is handed to `begin` as **authoritative and complete over `HELD`**
+ * — the fold applies it and does nothing else. So a key missing from the
+ * table is a power silently kept past the start with no control anywhere
+ * that says so, and a key twice is one the two cells disagree about. Neither
+ * is visible on the surface: the card would draw perfectly ordinary rows.
  *
  * `HELD` is not exported from the bundle, so it is rebuilt from what is —
  * every `CATALOGUE` entry that is not personal, plus `DOORS` — and the page's
  * keys are page keys, so they are translated through SURFACE §4's own map,
  * which `checkKeys` has already asserted against the catalogue.
+ *
+ * The order is the document's (Ed, 2026-09-09): the rows that are in `ORDER`
+ * keep `ORDER`'s relative order; the four outside it — the doors, 🪜 and
+ * `machines` — are placed by hand, and `machines`, having no card, is last.
  */
-function checkBeginZones(M, pm) {
-  note('🍾’s power table — BEGIN_ZONES against the catalogue’s power-holders');
+function checkBeginRows(M, pm) {
+  note('🍾’s power table — BEGIN_ROWS against the catalogue’s power-holders, and against ORDER');
   const toId = new Map(tableAfter('SURFACE.md', 'keys').map((r) => [r['page key'], r.setting]));
   // the doors ride the page's own MID, having no catalogue row to map
   const idOf = (k) => pm.MID[k] || toId.get(k) || k;
@@ -1046,18 +1050,22 @@ function checkBeginZones(M, pm) {
     ...M.DOORS,
   ]);
   const seen = new Map();
-  for (const z of pm.BEGIN_ZONES) {
-    for (const k of z.keys) {
-      const id = idOf(k);
-      if (!want.has(id)) find('begin', `BEGIN_ZONES puts '${k}' in ${JSON.stringify(z.name)}, which is not a power-holder`);
-      else if (seen.has(id)) find('begin', `BEGIN_ZONES names '${k}' twice — ${JSON.stringify(seen.get(id))} and ${JSON.stringify(z.name)}`);
-      else seen.set(id, z.name);
-    }
+  for (const k of pm.BEGIN_ROWS) {
+    const id = idOf(k);
+    if (!want.has(id)) find('begin', `BEGIN_ROWS has '${k}', which is not a power-holder`);
+    else if (seen.has(id)) find('begin', `BEGIN_ROWS names '${k}' twice`);
+    else seen.set(id, k);
   }
   for (const id of want) {
-    if (!seen.has(id)) find('begin', `'${id}' carries a crown pair and is in no 🍾 zone — the start would keep it with nothing on the card saying so`);
+    if (!seen.has(id)) find('begin', `'${id}' carries a crown pair and is in no 🍾 row — the start would keep it with nothing on the card saying so`);
   }
-  note(`  ${pm.BEGIN_ZONES.length} zones, ${seen.size} of ${want.size} power-holders covered once each`);
+  const inOrder = pm.BEGIN_ROWS.filter((k) => pm.ORDER.includes(k));
+  const ordered = pm.ORDER.filter((k) => inOrder.includes(k));
+  if (inOrder.join(',') !== ordered.join(','))
+    find('begin', `BEGIN_ROWS is not in the document's order — ORDER has ${ordered.join(' ')}, the table ${inOrder.join(' ')}`);
+  if (pm.BEGIN_ROWS[pm.BEGIN_ROWS.length - 1] !== 'machines')
+    find('begin', `BEGIN_ROWS ends with '${pm.BEGIN_ROWS[pm.BEGIN_ROWS.length - 1]}' — 'machines', having no card, is last`);
+  note(`  ${pm.BEGIN_ROWS.length} rows, ${seen.size} of ${want.size} power-holders covered once each, ${inOrder.length} in ORDER's order`);
 }
 
 function checkComposer(M, pm) {
@@ -1613,7 +1621,7 @@ checkGateSeat();
 checkAuthorNeverAsked();
 checkPenRebase();
 checkApplicantJudged();
-checkBeginZones(M, pm);
+checkBeginRows(M, pm);
 checkComposer(M, pm);
 checkPicture();
 checkBannedWords();

@@ -60,9 +60,10 @@ describe('🍾 begin — the founder starts the document (Q443)', () => {
     expect(s.readiness().ready).toBe(false); // nothing left to begin
   });
 
-  /* ---- 🍾's power switches (entry 158, Q1018, R-057) --------------------
-   * The card carries a switch per zone × power and hands `begin` one list of
-   * what to lay down. Absent, the fold is the one it always was — which is
+  /* ---- 🍾's power table (entry 158, Q1018, R-057; per setting since
+   * Q1195 (c), R-098) -------------------------------------------------------
+   * The card carries a toggle per setting × power and hands `begin` one list
+   * of what to lay down. Absent, the fold is the one it always was — which is
    * what keeps `golden-log.test.ts` green without a re-freeze. */
   const readyDoc = (slug: string) => {
     const s = ConstitutionSession.open({ title: 'T', slug,
@@ -148,8 +149,8 @@ describe('🍾 begin — the founder starts the document (Q443)', () => {
 
   it('the start owes no release acknowledgement, however much it lays down (Q1184, R-087)', () => {
     const { s, bo } = readyDoc('z7');
-    // the Membership zone, as `BEGIN_ZONES` has it: both doors and the four
-    // rules — twelve pairs in one press, the Text's own pair with them
+    // the Membership section's six rows of `BEGIN_ROWS`: both doors and the
+    // four rules — twelve pairs in one press, the Text's own pair with them
     const zone = ['door:invite', 'door:remove', 'admission', 'applications',
       'removal', 'lapse'] as const;
     s.begin(2, [...zone, 'startingText' as const].flatMap((k) => [

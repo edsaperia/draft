@@ -237,19 +237,20 @@
      rung's sentence, at the clause's own size (round 3, 03) */
   .pick .opttext .shapeclause { display: block; margin-top: var(--s1); }
   /* Q1181 (Ed, 2026-09-05, card review round 3): 🍾's power table asks one
-     question per zone — keep it, or lay it down — so it takes one control,
-     not a radio pair. Sits where a `.lanepick` sits under any other option
-     block's text; the glyph itself is the option, so the box is small and
-     square rather than a radio's row. */
-  .pick > .pwtoggle {
+     question per cell — keep it, or lay it down — so it takes one control,
+     not a radio pair; the glyph itself is the option, so the box is small and
+     square rather than a radio's row. It sat under an option block's text
+     until Q1195 (c) (Ed, 2026-09-09) put it in a table cell with no text
+     above it, so it carries no top margin and centres in its row. */
+  .pwtoggle {
     display: inline-flex; align-items: center; justify-content: center;
-    margin-top: var(--s2); appearance: none; position: relative;
+    appearance: none; position: relative;
     width: 2.5rem; height: 2rem; padding: 0;
     border: 1px solid var(--border); border-radius: var(--r-md); background: var(--bg);
     font: inherit; font-size: 1.1rem; line-height: 1; cursor: pointer;
   }
-  .pick > .pwtoggle:hover { border-color: var(--primary-hover); background: var(--light); }
-  .pick > .pwtoggle:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .pwtoggle:not([disabled]):hover { border-color: var(--primary-hover); background: var(--light); }
+  .pwtoggle:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
   /* laid down: the same idiom the wallet sockets use for a power not held
      (system.css's `.notheld` — grey glyph, red strike on the socket rather
      than the glyph, so the strike keeps its own colour under the grayscale
@@ -260,6 +261,8 @@
     width: 1.5rem; height: 2px; margin: -1px 0 0 -0.75rem; border-radius: 1px;
     background: var(--slash); transform: rotate(45deg);
   }
+  /* given: already promised away on the setting's own tab — struck like laid
+     down, and not a control here, since it comes back only there (R-057) */
   .pwtoggle[disabled] { cursor: default; opacity: 0.6; }
   /* a hairline separates adjacent blocks without boxing them — the same
      separator the power cards' `.propblock + .propblock` draws; the margin is
@@ -311,11 +314,19 @@
   /* a row of fields *inside* a card — distinct from `.setrow`, which is the
      band row a pile stands in */
   .setrow2 { display: flex; gap: var(--s3); align-items: baseline; flex-wrap: wrap; }
-  /* 🍾's power table (entry 158; redrawn 2026-08-31, Q1103 (b); redrawn again
-     Q1181, Ed 2026-09-05, card review round 3): the two-column ✒️/🛡️ layout
-     of the first redraw is retired — one zone per block, no columns — for a
-     glyph toggle under each option's text (`.pwtoggle`, below). */
-  .beginzone + .beginzone { margin-top: var(--s4); }
+  /* 🍾's power table (entry 158; redrawn 2026-08-31, Q1103 (b); again Q1181,
+     Ed 2026-09-05, card review round 3; and again **Q1195 (c)**, Ed
+     2026-09-09): one row per setting in document order — the setting's glyph
+     and noun left, ✒️ and 🛡️ as narrow centred toggle columns, a hairline
+     between rows (the option-block hairline, `.pick + .pick`'s), the header
+     row in the eyebrow treatment. No zone blocks and no clause sentences. */
+  .begintable { width: 100%; border-collapse: collapse; margin-top: var(--s3); }
+  .begintable th, .begintable td { padding: var(--s2) 0; vertical-align: middle; }
+  .begintable .bname { text-align: left; font-size: var(--t-ui); }
+  .begintable .bcell { width: 3rem; text-align: center; }
+  .begintable tbody tr + tr td { border-top: 1px solid var(--border); }
+  .begintable thead th { padding-bottom: var(--s1); border-bottom: 1px solid var(--border); }
+  .begintable thead .bcell { font-size: 1.1rem; }
   .fld { display: flex; flex-direction: column; gap: var(--s1); }
   .fld > label { font-size: var(--t-cap); color: var(--muted); }
   .sugg input, .sugg textarea { font: inherit; font-size: var(--t-ui); color: var(--fg); background: var(--bg);

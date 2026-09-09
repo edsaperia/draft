@@ -651,24 +651,16 @@ window.COPY = (function () {
       removeSelfWhy: 'Whether <b>you</b> leave the membership. Under this document’s rule that is decided by <b>everyone but you</b> — you see it running, and your answer is not asked.',
       removeSelfCount: (judged, others) => judged + ' of ' + others + ' have answered. One refusal keeps you in.',
     },
-    // 🍾's power table (Q1181, Ed 2026-09-05): one clause per zone × power,
-    // the rule that holds if the power is kept; the glyph toggle beside it
-    // carries the ✒️ / 🛡️, so the sentence does not repeat it
+    // 🍾's power table (Q1181, Ed 2026-09-05; one row per setting since
+    // Q1195 (c), Ed 2026-09-09): the two column heads name the powers in the
+    // surface's own words, and each cell's glyph toggle carries one of the
+    // three tooltips — kept, laid down, or already given on its own tab
     begin: {
-      zones: {
-        'The Text': {
-          u: 'The Founder may amend the text at will.',
-          a: 'The Founder may refuse changes to the text that the membership pass.' },
-        'Membership': {
-          u: 'The Founder may change the membership rules, and invite or remove members, at will.',
-          a: 'The Founder may refuse membership changes that the membership pass.' },
-        'Everything else': {
-          u: 'The Founder may amend every other rule at will.',
-          a: 'The Founder may refuse every other change that the membership pass.' },
-      },
+      penCol: 'Founder Actions — amend at will',
+      shieldCol: 'Founder Veto — refuse what the membership passes',
       keptTip: 'Kept — press to lay it down at the start',
       downTip: 'Laid down at the start — press to keep it',
-      mixedTip: 'Partly given up already on its own cards — press to keep the rest',
+      givenTip: 'Already given up on its own card — it comes back only there',
     },
     // 🧭's rungs, Ed's sentences (card review round 3, 2026-09-05, 03); the
     // clauses each shape sets follow them on the card, built from the rules

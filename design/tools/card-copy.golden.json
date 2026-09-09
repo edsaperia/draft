@@ -260,7 +260,7 @@
     "eyebrow": "",
     "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ passes when it meets the approval threshold.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
-    "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens, and the approval threshold begins its course.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.The document cannot begin while 🌍 Visibility is still being decided.🌍 Visibility is delegated to the membership, and you are its only member: a question answered by one voice has not been handed to anybody. Invite somebody at 🪪 Membership, or take it back on its own card and set it yourself.What the Founder keeps.Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.📝 The TextThe Founder may amend the text at will.✒️The Founder may refuse changes to the text that the membership pass.🛡️🪪 MembershipThe Founder may change the membership rules, and invite or remove members, at will.✒️The Founder may refuse membership changes that the membership pass.🛡️📜 Everything elseThe Founder may amend every other rule at will.✒️The Founder may refuse every other change that the membership pass.🛡️Where neither is marked, some of these have already been given up on their own cards. Keeping here lays nothing further down — a power already given comes back only on the card it went from.The questions🌍 1 out of 1 of the membership has voted on whether the document can only be seen by members or by anyone with the link.The peopleAda Lovell · answered everythingIt comes back to you the moment somebody else can answer.",
+    "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens, and the approval threshold begins its course.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.The document cannot begin while 🌍 Visibility is still being decided.🌍 Visibility is delegated to the membership, and you are its only member: a question answered by one voice has not been handed to anybody. Invite somebody at 🪪 Membership, or take it back on its own card and set it yourself.What the Founder keeps.Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.✒️🛡️🪶 Title✒️🛡️📍 Link✒️🛡️🌍 Visibility✒️🛡️🪪 Admissions✒️🛡️🤝 Applications✒️🛡️💤 Lapsing✒️🛡️🥾 Removals✒️🛡️✉️ Invite a Member✒️🛡️❌ Remove a Member✒️🛡️⏱️ Proposal Rate✒️🛡️⏰ Ending✒️🛡️🌡️ Proposal Pass Threshold✒️🛡️🪜 Rising Threshold✒️🛡️👥 Quorum✒️🛡️👤 Anonymous Proposals✒️🛡️👁️ Vote Reveal✒️🛡️📝 Text✒️🛡️machines✒️🛡️The questions🌍 1 out of 1 of the membership has voted on whether the document can only be seen by members or by anyone with the link.The peopleAda Lovell · answered everythingIt comes back to you the moment somebody else can answer.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -276,9 +276,11 @@
     "hints": [
      "Begin — close it",
      "Constitutional Proposals — settled",
-     "Laid down at the start — press to keep it",
+     "Founder Actions — amend at will",
+     "Founder Veto — refuse what the membership passes",
      "Kept — press to lay it down at the start",
-     "Partly given up already on its own cards — press to keep the rest",
+     "Already given up on its own card — it comes back only there",
+     "Laid down at the start — press to keep it",
      "Put it back as it stands",
      "The document cannot begin yet"
     ],
@@ -286,7 +288,6 @@
      "The document cannot begin while 🌍 Visibility is still being decided.",
      "🌍 Visibility is delegated to the membership, and you are its only member: a question answered by one voice has not been handed to anybody. Invite somebody at 🪪 Membership, or take it back on its own card and set it yourself.",
      "Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.",
-     "Where neither is marked, some of these have already been given up on their own cards. Keeping here lays nothing further down — a power already given comes back only on the card it went from.",
      "· answered everything",
      "It comes back to you the moment somebody else can answer."
     ]
@@ -3936,7 +3937,7 @@
     "eyebrow": "",
     "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ passes when it meets the approval threshold.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
-    "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens, and the approval threshold begins its course.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.What the Founder keeps.Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.📝 The TextThe Founder may amend the text at will.✒️The Founder may refuse changes to the text that the membership pass.🛡️🪪 MembershipThe Founder may change the membership rules, and invite or remove members, at will.✒️The Founder may refuse membership changes that the membership pass.🛡️📜 Everything elseThe Founder may amend every other rule at will.✒️The Founder may refuse every other change that the membership pass.🛡️The questionsThe peopleAda Lovell · nothing owedNobody is kept waiting by this: whoever has not answered can still answer after the start, and the document takes what was said. Hold ✒️ to begin.",
+    "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens, and the approval threshold begins its course.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.What the Founder keeps.Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.✒️🛡️🪶 Title✒️🛡️📍 Link✒️🛡️🌍 Visibility✒️🛡️🪪 Admissions✒️🛡️🤝 Applications✒️🛡️💤 Lapsing✒️🛡️🥾 Removals✒️🛡️✉️ Invite a Member✒️🛡️❌ Remove a Member✒️🛡️⏱️ Proposal Rate✒️🛡️⏰ Ending✒️🛡️🌡️ Proposal Pass Threshold✒️🛡️🪜 Rising Threshold✒️🛡️👥 Quorum✒️🛡️👤 Anonymous Proposals✒️🛡️👁️ Vote Reveal✒️🛡️📝 Text✒️🛡️machines✒️🛡️The questionsThe peopleAda Lovell · nothing owedNobody is kept waiting by this: whoever has not answered can still answer after the start, and the document takes what was said. Hold ✒️ to begin.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -3952,8 +3953,10 @@
     "hints": [
      "Begin — close it",
      "Constitutional Proposals — settled",
-     "Laid down at the start — press to keep it",
+     "Founder Actions — amend at will",
+     "Founder Veto — refuse what the membership passes",
      "Kept — press to lay it down at the start",
+     "Laid down at the start — press to keep it",
      "Put it back as it stands",
      "Begin the document — a full one-second hold"
     ],
