@@ -41,8 +41,13 @@ window.FIXTURE_SESSION = (function () {
     { t: 'p', key: 'larderfood', x: 'Food in the larder marked with a name belongs to that member. Food not marked belongs to the house and may be eaten by anyone.' },
     { t: 'p', key: 'knives', x: 'The good knives are sharpened by the Steward and are not to be used on bone, frozen food, or the garden.' },
     { t: 'h', level: 3, x: 'The Larder' },
-    { t: 'p', x: 'The house keeps a standing larder of the things nobody wants to discover are missing: flour, salt, tinned tomatoes, tea, coffee, and a bottle of something for emergencies.' },
-    { t: 'p', x: 'Any member who takes the last of a standing item writes it on the board. This is the whole of the system and it works about half the time.' },
+    { t: 'p', x: 'The house keeps a standing larder of the things nobody wants to discover are missing:' },
+    // a bullet run and an inline mark (Q1294): one block per line, `bullet`
+    // where the stored line began `- `, so the probes carry the rendering
+    { t: 'p', bullet: true, x: 'flour, salt, and tinned tomatoes;' },
+    { t: 'p', bullet: true, x: 'tea and coffee — the *good* coffee, not the tin at the back;' },
+    { t: 'p', bullet: true, x: 'a bottle of something for emergencies.' },
+    { t: 'p', x: 'Any member who takes the last of a standing item writes it on the board. This is **the whole of the system** and it works about half the time.' },
     { t: 'h', level: 2, x: 'The Upper Floors' },
     { t: 'h', level: 3, x: 'The Guest Bedroom' },
     { t: 'p', x: 'The Guest Bedroom goes to whoever claims it first, and guests leave it as they found it.' },

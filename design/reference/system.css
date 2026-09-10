@@ -894,6 +894,32 @@
   }
   .doc .doctitle { font-size: var(--t-lead); font-weight: 600; margin: 0 0 18px; text-wrap: balance; }
   .doc p { margin: 0 0 var(--s3); position: relative; }
+  /* **The bullet block** (Q1294, Ed 2026-09-10): a line beginning `- `, one
+     block per line like a heading — the charter's `p.bullet`, the founder's
+     pre-🍾 `div.bullet` and a lane's `.lp.bullet` all take this one rule. The
+     dot is drawn, never content, so nothing counts it; a run of bullets reads
+     as one list by adjacency alone — the engine knows no list, so the
+     tightening is `:has()` on the next sibling and nothing more. */
+  .doc .bullet, .lp.bullet { padding-left: var(--s5); }
+  .doc .bullet::before, .lp.bullet::before {
+    content: '•'; display: inline-block; width: var(--s5); margin-left: calc(-1 * var(--s5));
+    color: var(--muted); pointer-events: none; user-select: none;
+  }
+  .doc .bullet:has(+ .bullet), .lp.bullet:has(+ .lp.bullet) { margin-bottom: var(--s1); }
+  /* the marker itself, where the source is shown: in the column with `[]`
+     pressed, put back before the block in a `.nocaret` span; in a lane, the
+     characters the author typed, dimmed and still text (`laneBlocks`) — and
+     where they stand the dot does not */
+  .mdmark { color: var(--muted); }
+  .lp.bullet:has(.mdmark) { padding-left: 0; }
+  .lp.bullet:has(.mdmark)::before, .doc .prose.mdsrc .bullet::before { content: none; }
+  .doc .prose.mdsrc .bullet { padding-left: 0; }
+  /* source mode is the whole column at once: the same monospace the lane's
+     markdown mode wears, so the two never disagree about what a character is */
+  .doc .prose.mdsrc, .doc .prose.mdsrc .docline {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: var(--t-small); line-height: 1.6;
+  }
   /* **An empty document has one clause, and it is empty** (Q649 (a), Ed
      2026-08-22). The block keeps a line's height so it can be clicked, and
      its sentence is drawn out of the text flow — as inline content it would
@@ -907,7 +933,7 @@
   /* three ranks of heading: part, chapter, section — by class, not tag: the
      charter draws them as h2, the founder's pre-🍾 column as div.docline
      (`relabel`, `textDivs`), and the two must look alike (Q1304, Ed's bot
-     room 2026-09-09: a typed heading lost its # and its rank at once) */
+     room 2026-09-10: a typed heading lost its # and its rank at once) */
   .doc .docline {
     font-size: var(--t-cap); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
     color: var(--muted); margin: 22px 0 var(--s2); position: relative;
@@ -968,6 +994,9 @@
     margin-left: calc(-1 * var(--s3)); margin-right: calc(-1 * var(--s2));
     border-radius: var(--r-sm);
   }
+  /* an anchored bullet keeps the anchor's own left padding under the indent */
+  .doc .anch.bullet { padding-left: calc(var(--s3) + var(--s5)); }
+  .doc .prose.mdsrc .anch.bullet { padding-left: var(--s3); }
   .anch.active:hover { box-shadow: none; }
   /* **The prose carries no highlight** (Ed, 2026-08-17). A contested clause
      used to wear its lifecycle hue behind the words; it now wears nothing, and
@@ -1036,6 +1065,13 @@
   /* a heading inside a lane or a head keeps its weight, so editing a section
      title alongside its paragraph does not silently flatten it to body text */
   .lp.hblock { font-weight: 700; }
+  /* …and since Q1294 at the rank it will land at — the three heading ranks'
+     own treatment (`.doc .docline`) without their margins and rule, so a
+     typed `# ` previews as the heading it becomes */
+  .lp.hblock.lvl1, .lp.hblock.lvl2, .lp.hblock.lvl3 { text-transform: uppercase; letter-spacing: 0.05em; }
+  .lp.hblock.lvl1 { font-size: var(--t-body); letter-spacing: 0.08em; }
+  .lp.hblock.lvl2 { font-size: var(--t-small); }
+  .lp.hblock.lvl3 { font-size: var(--t-cap); color: var(--muted); }
   /* **Spaces are preserved** (Ed, 2026-08-17: "I can't write spaces into the
      proposal text"). The lane rewrites its own markup on every keystroke so the
      green marking can follow the caret, which means a space you have just typed
@@ -1730,6 +1766,10 @@
   }
   .lmode[aria-pressed="true"] { background: var(--primary); color: #fff; font-weight: 600; }
   .lmode[aria-pressed="true"]:hover { background: var(--primary-hover); color: #fff; }
+  /* on the proposal-row since Q1294: beside 🗑️, a control like the row's
+     buttons (the row is click-transparent everywhere else), the column's
+     one view switch */
+  .proposalrow .lmode { pointer-events: auto; margin-left: var(--s2); align-self: center; }
   .lanebox .editlane code {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 0.9em; background: var(--light); padding: 0 3px; border-radius: 3px;

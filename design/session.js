@@ -100,7 +100,7 @@
     esc, resultOnly, stripTags, pct, plainLabel,
     TICK, CROSS, MARK, DRAWN, mkHtml, markHtml,
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks,
-    headFlags, originText, mdToHtml, htmlToMd, mdStrip,
+    headFlags, originText, mdToHtml, htmlToMd, mdStrip, mdLine,
     richToSource, sourceToRich, readLane,
     laneSeed, laneProposeHtml, speakerHtml, fieldHtml, fieldOf, groundNote,
     headOnlyHeight, cardBody, COLLAPSE_MS, EXPAND_MS,
@@ -200,8 +200,24 @@
   // …and since backlog 204 the caret is edit mode's alone: in read mode the
   // column is prose you can read and select, and a click there beats the 📝
   // tab (the host's job — `#ridetab`), which is the door in.
-  const PROSE = () => '<div class="prose" contenteditable="' + (MAY_PROPOSE() && EDITING() ? 'true' : 'false') +
-    '" spellcheck="false">';
+  const PROSE = () => '<div class="prose' + (srcMode() ? ' mdsrc' : '') + '" contenteditable="' +
+    (MAY_PROPOSE() && EDITING() ? 'true' : 'false') + '" spellcheck="false">';
+
+  // ---- one rendering of a block for reading (Q1294, Ed 2026-09-10) ---------
+  // The column renders markdown: `mdLine` draws the inline marks and links
+  // the docs.vote addresses, and a bullet block (`line.bullet`, read off a
+  // `- ` prefix by the host's `blocksOf` exactly as `# ` makes a heading)
+  // takes its class here. In edit mode with the `[]` toggle pressed the whole
+  // column shows its **source** instead — the characters as stored, and the
+  // block's marker put back in front of it in a `.nocaret` span, so it is
+  // read and never counted: the caret offsets `startDraftFromTyping`
+  // measures stay offsets into `line.x`, which carries no marker.
+  const srcMode = () => laneRaw() && EDITING() && !closedMode;
+  const markerOf = (l) => (l.t === 'h' ? '#'.repeat(l.level || 1) + ' ' : l.bullet ? '- ' : '');
+  const blockHtml = (l) => (srcMode()
+    ? (markerOf(l) ? '<span class="nocaret mdmark" contenteditable="false">' + markerOf(l) + '</span>' : '') + esc(l.x)
+    : mdLine(l.x));
+  const bulletCls = (l) => (l.bullet ? ' bullet' : '');
 
   // ---- gap sites (backlog 204, Q261) ---------------------------------------
   // A **gap** is the place between two clauses, or after the last: key `G<n>`,
@@ -2064,7 +2080,7 @@
     // the card's head can say which gap and the host can send an insertion
     if (isGapKey(key)) return { key, text: '', note: seed ? seed.note : null, t: 'p', gap: true };
     return { key, text: seed ? seed.text : currentTextFor(key), note: seed ? seed.note : null,
-             t: l.t, level: l.level };
+             t: l.t, level: l.level, bullet: !!l.bullet };
   }
 
   // A **run** of blocks taken as one site. Ed's ruling (2026-08-17): four
@@ -2417,6 +2433,10 @@
   // Rich by default; markdown is the checking view (Ed, 2026-08-17). One
   // preference rather than one per card \u2014 it is how *you* like to work, and it
   // would be strange for it to reset every time a different clause opened.
+  // **And since Q1294 it is the column's, not the lane's** (Ed, 2026-09-10):
+  // the `[]` toggle sits on the proposal-row at the foot of the window and
+  // flips every clause and every open lane at once (`srcMode`, `laneBlocks`);
+  // outside edit mode there is no toggle and the column is always rendered.
   let laneMode = 'rich';
   const laneRaw = () => laneMode === 'md';
 
@@ -2471,6 +2491,15 @@
    * first; either press opens the editing card, where the two holds live.
    * Pre-🍾 there is no membership to propose to, so the page never asks for
    * the pair and the confirm stays one ✒️.
+   *
+   * **The `[]` markdown toggle** (`o.mode`, Q1294 — Ed, 2026-09-10): beside
+   * 🗑️, drawn only where the host hands the mode in, which is the charter
+   * post-🍾; the page's pre-🍾 row passes none, its column being the
+   * characters already. **One button, not a pair** (Ed, 2026-08-17, when it
+   * stood on the lane): off by default, pressed for markdown, the state in
+   * its own pressed-ness like every other control on the surface. Pressed,
+   * it flips the whole column — every clause and every open lane — between
+   * rendered and source.
    */
   function proposalRowHtml(o) {
     o = o || {};
@@ -2479,9 +2508,12 @@
     const btn = (pen, title) => '<button class="btn btn-propose glyphbtn emojibtn" data-act="row-commit"' +
       (pen ? ' data-pen="1"' : '') + (o.disabled ? ' disabled' : '') +
       ' title="' + esc(title || '') + '">' + (pen ? '✒️' : '✏️') + '</button>';
+    const raw = o.mode === 'md';
     return '<div class="race-mid commitrow proposalrow" data-proposalrow="1">' +
       '<button class="btn btn-withdraw glyphbtn" data-act="row-discard"' + (o.discardDisabled ? ' disabled' : '') +
       ' title="' + esc(o.discardTitle || T.row.discardAll) + '">🗑️</button>' +
+      (o.mode ? '<button class="lmode" data-act="row-mode" data-mode="' + (raw ? 'rich' : 'md') + '"' +
+        ' aria-pressed="' + raw + '" title="' + esc(window.COPY.grammar.fmt.mdMode) + '">[]</button>' : '') +
       '<span class="rowmid">' + esc(mid) + '</span>' +
       (o.pen ? btn(true, o.title) + (o.pair ? btn(false, o.proposeTitle) : '') : btn(false, o.title)) +
       '</div>';
@@ -2578,7 +2610,8 @@
       clauseHeadHtml(d, {
         // a gap's head names the gap, there being no clause to show
         label: seeded ? seeded.note : site.origin[0] && site.origin[0].gap ? gapLabel(site.keys[0]) : undefined,
-        html: site.origin.map((o) => '<div class="lp' + (o.t === 'h' ? ' hblock' : '') + '" data-key="' + o.key + '">' + esc(o.text) + '</div>').join(''),
+        html: site.origin.map((o) => '<div class="lp' + (o.t === 'h' ? ' hblock lvl' + (o.level || 1) : o.bullet ? ' bullet' : '') +
+          '" data-key="' + o.key + '">' + blockHtml({ x: o.text, t: o.t, level: o.level, bullet: o.bullet }) + '</div>').join(''),
       }) +
       // and your draft as the one reply, in the reply's own order: the wording,
       // then the argument for it behind the same blank disc everybody else's
@@ -3611,7 +3644,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         html += '<h2 class="docline editable' + (marks ? ' marked' : '') +
           ' lvl' + (line.level ?? 1) + '" id="sec-' + secN + '"' +
           ' data-key="' + line.key + '">' + marks +
-          '<span class="nocaret" contenteditable="false">' + toggleHtml(secN) + '</span>' + esc(line.x) +
+          '<span class="nocaret" contenteditable="false">' + toggleHtml(secN) + '</span>' + blockHtml(line) +
           (inside ? '<span class="sechint" contenteditable="false">' + inside +
             (inside === 1 ? ' suggestion' : ' suggestions') + ' inside</span>' : '') +
           '</h2>';
@@ -3634,10 +3667,10 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
 
         if (!swallow.swallowed) {
           html +=
-            '<p class="anch editable' + (openId === primary.id ? ' active' : '') + '" data-key="' + line.key +
+            '<p class="anch editable' + (openId === primary.id ? ' active' : '') + bulletCls(line) + '" data-key="' + line.key +
             '" data-anchor="' + primary.id + '"' +
             anchWash(primary, openId === primary.id, line.key) + '>' +
-            chipStackHtml(live, line.key) + esc(line.x) + '</p>';
+            chipStackHtml(live, line.key) + blockHtml(line) + '</p>';
         }
       } else {
         // a settled clause opens its record the same way — the record's head is
@@ -3654,7 +3687,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
           const blank = line.key && !line.x && !wasResolved;
           // …and the gap block takes the same treatment with its own sentence
           // (Q1090: one rule, two sentences — the rule is the geometry)
-          html += '<p class="editable' + (wasResolved ? ' anch resolved' : '') + (blank ? ' blank' : '') + (line.gap ? ' gap' : '') + '"' +
+          html += '<p class="editable' + (wasResolved ? ' anch resolved' : '') + (blank ? ' blank' : '') + (line.gap ? ' gap' : '') + bulletCls(line) + '"' +
             (wasResolved ? ' data-anchor="' + wasResolved.id + '"' +
               anchWash(wasResolved, openId === wasResolved.id, line.key) : '') +
             (line.key ? ' data-key="' + line.key + '"' : '') +
@@ -3663,7 +3696,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
               : T.blank.plain) + '"' : '') + '>' +
             (wasResolved ? '<span class="chipcol" contenteditable="false"><span class="achip" tabindex="0"' + chipStyle(wasResolved) + ' data-anchor="' + wasResolved.id +
               '" title="' + esc(plainLabel(wasResolved.qLabel)) + T.chip.decided + '">' + mkHtml(markKindOf(wasResolved)) + '</span></span>' : '') +
-            esc(line.x) + '</p>';
+            blockHtml(line) + '</p>';
         }
       }
 
@@ -3696,7 +3729,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       const idle = T.row.idle;
       html += proposalRowHtml({
         count: rs.changedCount, changed: rs.changed, pen, pair: pen, disabled: !rs.changed,
-        discardDisabled: !rs.count,
+        discardDisabled: !rs.count, mode: laneMode,
         title: !rs.changed ? idle : pen ? T.row.reviewAmend : T.row.reviewPropose,
         proposeTitle: !rs.changed ? idle : T.row.reviewPropose,
       });
@@ -3716,6 +3749,37 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         ev.stopPropagation();
         dropDraft();
         renderAll(); drawWires();
+      })
+    );
+    // **The `[]` toggle flips the whole column** (Q1294): one preference, one
+    // rebuild — every clause and every open lane redrawn rendered or as
+    // source. A mousedown, prevented, so the lane keeps its selection through
+    // the press; the caret is read out first and put back in the rebuilt
+    // lane, its offset converted between the two views, because markdown
+    // mode counts the syntax characters and rich mode does not
+    // (richToSource / sourceToRich).
+    doc.querySelectorAll('[data-proposalrow] [data-act="row-mode"]').forEach((b) =>
+      b.addEventListener('mousedown', (ev) => {
+        ev.preventDefault(); ev.stopPropagation();
+        const d = draftOf();
+        const ae = document.activeElement;
+        const focused = ae && ae.closest ? ae.closest('[data-lane]') : null;
+        let land = null;
+        if (focused && d) {
+          const site = siteFor(d, focused.dataset.lane);
+          let off = laneCaret(focused);
+          if (off != null && site) off = laneRaw() ? sourceToRich(site.text, off) : richToSource(site.text, off);
+          land = { key: focused.dataset.lane, off };
+        }
+        laneMode = laneRaw() ? 'rich' : 'md';
+        renderAll();
+        if (land) {
+          const lane = doc.querySelector('[data-lane="' + land.key + '"]');
+          if (lane) {
+            lane.focus({ preventScroll: true });
+            if (land.off != null) placeCaret(lane, land.off);
+          }
+        }
       })
     );
     // **The row's commit is the card's** (Q1296, Q1297 — Ed's bot room,
@@ -3884,34 +3948,8 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
           }
           remark();
         }));
-        // Switching view keeps your place — but the offset has to be converted,
-        // because markdown mode counts the syntax characters and rich mode does
-        // not (see richToSource / sourceToRich).
-        box.querySelectorAll('.lmode').forEach((b) => b.addEventListener('mousedown', (ev) => {
-          ev.preventDefault();
-          if (laneMode === b.dataset.mode) return;
-          const site0 = (() => { const d0 = draftOf(); return d0 && siteFor(d0, el.dataset.lane); })();
-          let off = laneCaret(el);
-          if (off != null && site0) {
-            off = b.dataset.mode === 'md'
-              ? richToSource(site0.text, off)
-              : sourceToRich(site0.text, off);
-          }
-          laneMode = b.dataset.mode;
-          // one button now, so it carries the state and the *next* mode both:
-          // pressed while markdown is on, and its data-mode is where it would
-          // take you
-          b.dataset.mode = laneRaw() ? 'rich' : 'md';
-          b.setAttribute('aria-pressed', String(laneRaw()));
-          const d = draftOf();
-          const site = d && siteFor(d, el.dataset.lane);
-          if (!site) return;
-          el.classList.toggle('md', laneRaw());
-          el.innerHTML = laneBlocks(site.text, originText(site), headFlags(site), laneRaw());
-          el.focus({ preventScroll: true });
-          if (off != null) placeCaret(el, off);
-          layoutQueue(); drawWires();
-        }));
+        // Switching view is the proposal-row's `[]` since Q1294 — the whole
+        // column at once, wired with the row above.
       }
       // The lane is a rich editable, because Enter has to make a real paragraph
       // (Ed, 231) and `plaintext-only` gives a line break instead. The one cost
