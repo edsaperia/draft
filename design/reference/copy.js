@@ -154,7 +154,7 @@ window.COPY = (function () {
     fmt: {
       bold: 'Bold (the markdown is **like this**)',
       italic: 'Italic (the markdown is *like this*)',
-      mdMode: 'Markdown — see and type the characters exactly as they are stored',
+      mdMode: 'Markdown — see and type the characters exactly as they are stored, the whole text at once',
     },
     whyPlaceholder: 'We should change this because…',
   };
@@ -630,7 +630,7 @@ window.COPY = (function () {
     // the member's answer card: the ask line and the readback frame
     said: (s) => 'You said: “' + s + '”',
     // …and on the Founder's own answer card, which hat is answering (Q1300,
-    // Ed 2026-09-09: *a blue box that says something like "This is your
+    // Ed 2026-09-10: *a blue box that says something like "This is your
     // answer to this question as a member"*)
     asMember: 'This is your answer to this question as a member.',
     ask: {

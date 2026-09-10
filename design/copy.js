@@ -160,7 +160,7 @@ window.COPY = (function () {
     fmt: {
       bold: 'Bold (the markdown is **like this**)',
       italic: 'Italic (the markdown is *like this*)',
-      mdMode: 'Markdown — see and type the characters exactly as they are stored',
+      mdMode: 'Markdown — see and type the characters exactly as they are stored, the whole text at once',
     },
     whyPlaceholder: 'We should change this because…',
   };

@@ -259,11 +259,21 @@ window.CARDS = (function () {
   }
   // Blocks are split on newlines *after* the diff, so a run of new wording that
   // spans a paragraph break is still one comparison rather than two.
-  // `heads` marks which blocks of the run were headings, so a section title
-  // still reads as one wherever the run is shown. Matched by position, which
-  // holds while the block count does — and where the author has added or
-  // removed lines it simply stops claiming, which is the honest failure.
-  function laneBlocks(text, oldText, heads, raw) {
+  // `kinds` says what each block of the run *was* — `{ h: level }` for a
+  // heading, `{ b: true }` for a bullet, null for a paragraph (`headFlags`) —
+  // so a section title still reads as one wherever the run is shown. Matched
+  // by position, which holds while the block count does — and where the
+  // author has added or removed lines it simply stops claiming, which is the
+  // honest failure.
+  //
+  // **A typed marker previews as it will land** (Q1294, Ed 2026-09-10): a
+  // block whose text begins `# ` or `- ` wears the heading or bullet treatment
+  // here, with the marker itself dimmed in a `.mdmark` span — still text, so
+  // the caret counts it and `htmlToMd` writes it back: what is proposed is the
+  // source, and the engine's `blocksOf` reads the same prefix on landing. The
+  // marker outranks the origin, since a paragraph retyped as a heading *is*
+  // one now. In markdown mode nothing is dressed at all.
+  function laneBlocks(text, oldText, kinds, raw) {
     // `raw` is markdown mode: the characters as they are, monospace, nothing
     // rendered — which is the whole point of the mode, since it exists to let
     // somebody check that their edit is exactly what they meant.
@@ -284,12 +294,31 @@ window.CARDS = (function () {
     // drawn without being *content*: nothing for `htmlToMd` to serialise back
     // into the candidate, and nothing for the caret to land after.
     return blocks.map((ps, i) => {
-      const inner = ps.map(([t, mark]) => (mark ? markHtml2(t, mark, render) : render(t))).join('');
-      return '<div class="lp' + (heads && heads[i] ? ' hblock' : '') +
+      const src = ps.map(([t]) => t).join('');
+      const typed = raw ? null : mdBlock(src);
+      // the marker's characters come off the front of the pieces, whatever
+      // the diff made of them — a marker is never marked green
+      let lead = typed ? typed.marker.length : 0;
+      let marker = '';
+      const body = [];
+      for (const [t, mark] of ps) {
+        let s = t;
+        if (lead > 0) {
+          const take = s.slice(0, lead);
+          marker += take; s = s.slice(take.length); lead -= take.length;
+          if (!s) continue;
+        }
+        body.push(mark ? markHtml2(s, mark, render) : render(s));
+      }
+      const kind = typed ? (typed.t === 'h' ? { h: typed.level } : { b: true }) : (kinds && kinds[i]) || null;
+      const inner = (marker ? '<span class="mdmark">' + esc(marker) + '</span>' : '') + body.join('');
+      return '<div class="lp' + (kind && kind.h ? ' hblock lvl' + kind.h : '') +
+        (kind && kind.b ? ' bullet' : '') +
         (inner ? '' : ' empty') + '">' + (inner || '<br>') + '</div>';
     }).join('');
   }
-  const headFlags = (site) => site.origin.map((o) => o.t === 'h');
+  const headFlags = (site) => site.origin.map((o) =>
+    (o.t === 'h' ? { h: o.level || 1 } : o.bullet ? { b: true } : null));
 
   // ---- markdown -------------------------------------------------------
   // A candidate's text **is** markdown (Ed, 2026-08-17). Most people want to
@@ -299,9 +328,18 @@ window.CARDS = (function () {
   // rendering of it, which is also the one arrangement where the two views
   // cannot disagree.
   //
-  // Inline only, and deliberately: bold, italic, code. A charter is prose. The
-  // block structure is already carried by the run of clauses, so headings and
-  // lists have nowhere to go that `draft-site` does not already handle.
+  // **The grammar is small, and deliberately** (Q1294, Ed 2026-09-10): three
+  // inline marks — bold, italic, code — and two block kinds a line may begin
+  // with, `# ` (to `### `) a heading and `- ` a bullet. A block kind is
+  // decided **per line**, never as an object spanning lines: one block is one
+  // engine line and one hunk, and the engine never learns the word "list" —
+  // consecutive bullets read as one list by CSS adjacency alone. Left out on
+  // purpose, because each either spans lines or needs a mapping layer between
+  // the page and the footprint: nested lists (a depth is a relation between
+  // lines), numbered lists (a number is a count over lines), tables (a row is
+  // several cells and the header is another row), block quotes (a run), and
+  // link syntax (a docs.vote address is already a link by `linkify`, and any
+  // other target is a door out of the document).
   const MD_RX = /(\*\*[^*\n]+\*\*|\*[^*\n]+\*|`[^`\n]+`)/g;
   function mdToHtml(src) {
     return String(src).split(MD_RX).map((part) => {
@@ -311,6 +349,39 @@ window.CARDS = (function () {
       return esc(part);
     }).join('');
   }
+  // The one reading of a line's block marker — the page's `blocksOf`,
+  // `relabel` and `textDivs` and the lane's preview all ask this, so a line
+  // that is a heading in one place is a heading in every place. `marker` is
+  // the prefix as typed (the hashes or the dash, and the whitespace after),
+  // `text` what follows; null for a paragraph.
+  function mdBlock(line) {
+    const m = String(line).match(/^(#{1,3}|-)(\s+)(.*)$/);
+    if (!m) return null;
+    const marker = m[1] + m[2];
+    return m[1] === '-' ? { t: 'b', marker, text: m[3] }
+      : { t: 'h', level: m[1].length, marker, text: m[3] };
+  }
+  // The constitution's links are real links: docs.vote addresses wrapped in
+  // `.doclink` anchors, applied **after escaping**. Over rendered markdown it
+  // runs over the text between the tags only — never inside a `<code>` span,
+  // where an address is being quoted rather than given — which is what
+  // `mdLine` is: the one rendering of a clause for reading, everywhere one is
+  // read (the column, a card's head, the closed page).
+  const LINK_RX = /\bdocs\.vote\/(?:d\/)?[a-z0-9][a-z0-9-]*/g;
+  const linkify = (s) => String(s).replace(LINK_RX,
+    (m) => '<a class="doclink" href="https://' + m + '" target="_blank" rel="noopener">' + m + '</a>');
+  function linkifyHtml(html) {
+    let code = 0;
+    return String(html).split(/(<[^>]*>)/).map((seg) => {
+      if (seg.startsWith('<')) {
+        if (/^<code[\s>]/.test(seg)) code++;
+        else if (/^<\/code>/.test(seg)) code = Math.max(0, code - 1);
+        return seg;
+      }
+      return code > 0 ? seg : linkify(seg);
+    }).join('');
+  }
+  const mdLine = (src) => linkifyHtml(mdToHtml(src));
   // …and back. Walks what the browser made of the lane and writes the markdown
   // for it, so editing rich never silently drops the marks it is showing.
   // `<ins>`/`<del>` are the diff's own wrappers and contribute nothing.
@@ -734,7 +805,7 @@ window.CARDS = (function () {
           ? '<div class="rtext">' + o.html + '</div>'
           : o.text === null
           ? '<div class="rtext none">' + esc(o.nothing != null ? o.nothing : G.head.nothingAtAll) + '</div>'
-          : '<div class="rtext">' + esc(o.text) + '</div>') +
+          : '<div class="rtext">' + mdLine(o.text) + '</div>') +
         '</div>' +
         (opt ? laneBarHtml(s, o.v, { lane: 'keep', key: o.key, edit: o.edit }) : '') +
         '</div>';
@@ -877,18 +948,15 @@ window.CARDS = (function () {
         // rather than as a letter, which is the one thing a letterform button
         // must not do. The serifs are what make it an I while it is still leaning.
         //
-        // And the mode control is **one button, not a pair** (Ed, 2026-08-17):
-        // `[]` off by default, pressed for markdown. A two-segment Rich/Markdown
-        // switch spent a lot of the strip saying that a thing which is off is
-        // off; a single toggle says the same with the state in its own pressed-
-        // ness, which is what every other control on this surface does.
+        // The `[]` markdown toggle is **not here since Q1294** (Ed, 2026-09-10):
+        // it flips the whole column — every clause and every open lane at
+        // once — so it sits on the proposal-row at the foot of the window
+        // (session.js's `proposalRowHtml`), and `env.laneRaw()` is that one
+        // state read here. B and I stay on the lane, being acts on a selection.
         '<div class="lanectl">' +
         '<button class="lfmt" data-fmt="bold" title="' + G.fmt.bold + '"><b>B</b></button>' +
         '<button class="lfmt" data-fmt="italic" title="' + G.fmt.italic + '">' +
         '<span class="ital">I</span></button>' +
-        '<button class="lmode" data-mode="' + (env.laneRaw() ? 'rich' : 'md') + '"' +
-        ' aria-pressed="' + env.laneRaw() + '"' +
-        ' title="' + G.fmt.mdMode + '">[]</button>' +
         '</div>' +
         (blank
           ? '<div class="editlane" contenteditable="true" data-deadlane data-key="' + blank +
@@ -1128,7 +1196,7 @@ window.CARDS = (function () {
     RULES, clauseOf, clauseRungs,
     TICK, CROSS, PAUSE, VS16, MARK, DRAWN, mkHtml, markHtml,
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks,
-    headFlags, originText, MD_RX, mdToHtml, htmlToMd, mdStrip,
+    headFlags, originText, MD_RX, mdToHtml, htmlToMd, mdStrip, mdBlock, linkify, linkifyHtml, mdLine,
     MD_ONE, mdLead, mdInner, mdParts, richToSource, sourceToRich, readLane,
     laneSeed, laneProposeHtml, speakerHtml, secToggleHtml, fieldHtml, fieldOf, groundNote,
     initials, PERSON, avHtml,

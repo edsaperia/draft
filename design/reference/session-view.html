@@ -261,10 +261,14 @@
   const CC = window.CARDS.make({ onExpand: () => SESSION.drawWires() });
   // one rendering of stored text as document lines — the settled 📄 card
   // and the live document column must escape and wrap identically
+  // — a `- ` line is a bullet block on the same footing as a `# ` heading
+  // (Q1294): the marker becomes the class and the text stands without it,
+  // `proseText` putting it back on read-out exactly as it does the hashes
   const textDivs = (text) => String(text).split(/\n/).filter((l) => l.trim())
-    .map((l) => { const m = l.match(/^(#{1,3})\s+(.*)$/);
-      return m ? '<div class="docline lvl' + m[1].length + '" data-h="' + esc(m[2]) + '">' + esc(m[2]) + '</div>'
-        : '<div>' + esc(l) + '</div>'; }).join('');
+    .map((l) => { const m = window.CARDS.mdBlock(l);
+      return !m ? '<div>' + esc(l) + '</div>'
+        : m.t === 'b' ? '<div class="bullet">' + esc(m.text) + '</div>'
+        : '<div class="docline lvl' + m.level + '" data-h="' + esc(m.text) + '">' + esc(m.text) + '</div>'; }).join('');
   // **The address the surface states is the route the server serves** (Ed,
   // backlog 70: *the Link clause says the document lives at docs.vote/[slug]
   // whereas in fact it lives at docs.vote/d/[slug]*). The server has one
@@ -444,7 +448,7 @@
     setEditMode(true);
   }
   // **The beat**: the birth's own lift on the tab — `beatEl`, the same two
-  // rises F17 gives a waiting task (Q1295, Ed 2026-09-09: *the pump that 📝
+  // rises F17 gives a waiting task (Q1295, Ed 2026-09-10: *the pump that 📝
   // does should be like the pump that the title card does during the birth*).
   // It replaced a one-shot halo of its own; no copy, ever (Ed: no nudge copy).
   function ringTab() { beatEl(tabFor('text')); }
@@ -1191,7 +1195,7 @@
   // column reads its headings from it (stage 8)
   const proseText = () => [...prose.children].map((b) => {
     const m = b.className.match(/lvl(\d)/);
-    return (m ? '#'.repeat(+m[1]) + ' ' : '') + b.textContent;
+    return (m ? '#'.repeat(+m[1]) + ' ' : b.classList.contains('bullet') ? '- ' : '') + b.textContent;
   }).join('\n').trim();
   // **The column, counted once** — 📄's own value, the 📄 clause and the rail
   // entry all state the same fact about the same blocks, and each used to
@@ -1881,18 +1885,20 @@
     const at = sel.rangeCount ? sel.getRangeAt(0).startContainer : null;
     for (const b of [...prose.children]) {
       const t = b.textContent;
-      const m = t.match(/^(#{1,3})\s+/);
+      // a typed `# ` or `- ` becomes the block's class (Q1304, Q1294): the
+      // marker leaves the text and `proseText` puts it back on read-out
+      const m = window.CARDS.mdBlock(t);
       if (m) {
         const liveHere = at && b.contains(at);
-        b.textContent = t.slice(m[0].length);
-        b.className = 'docline lvl' + m[1].length;
-        b.dataset.h = b.textContent;
+        b.textContent = m.text;
+        b.className = m.t === 'b' ? 'bullet' : 'docline lvl' + m.level;
+        if (m.t === 'b') delete b.dataset.h; else b.dataset.h = b.textContent;
         if (liveHere && b.firstChild) {
           const r = document.createRange();
           r.setStart(b.firstChild, 0); r.collapse(true);
           sel.removeAllRanges(); sel.addRange(r);
         }
-      } else if (b.className) { b.dataset.h = t; } else { delete b.dataset.h; }
+      } else if (/lvl\d/.test(b.className)) { b.dataset.h = t; } else { delete b.dataset.h; }
     }
     prose.classList.toggle('empty', prose.textContent.trim() === '');
     renderToc(); render();
@@ -5729,9 +5735,10 @@
   // sentence can never smuggle markup in. The `d/` is optional so a member's
   // own sentence naming a bare address still becomes a link — but the route
   // segment has to be in the pattern, or the clause's own address links as
-  // far as `docs.vote/d` and stops (backlog 70)
-  const linkify = (s) => String(s).replace(/\bdocs\.vote\/(?:d\/)?[a-z0-9][a-z0-9-]*/g,
-    (m2) => '<a class="doclink" href="https://' + m2 + '" target="_blank" rel="noopener">' + m2 + '</a>');
+  // far as `docs.vote/d` and stops (backlog 70). Shared since Q1294: the
+  // charter's clauses link the same addresses after their markdown renders
+  // (`mdLine`, text nodes only, never inside a code span).
+  const linkify = window.CARDS.linkify;
   // the clause's own line break, made after escaping for the same reason
   // `linkify` is: the sentence carries member text, and a `<br>` written into
   // the plain string would print as characters. Applied **only** to the
@@ -7611,7 +7618,7 @@
       // 🌍's clerk deviation and 🤝's price — and a ladder that omitted it
       // would say the rung a second way, which is the T5 finding this ends
       // **The Founder's own answer card says which hat is answering** (Q1300,
-      // Ed 2026-09-09): a founder who is a member answers what they delegated
+      // Ed 2026-09-10): a founder who is a member answers what they delegated
       // on a separate card (§9.0b) that otherwise wears the setting's own
       // title, so the note is the one thing telling the two apart. `.unlocks`
       // is the surface's blue box; a clerk-founder owes no answer and sees none.
@@ -10286,7 +10293,9 @@
   // entries (extra), the contents rail's lead, and the open-card arbitration.
   //
   // **The document model is one block per line**: the stored text is one
-  // line per block (a leading '# ' … '### ' marks a heading), and the engine's
+  // line per block (a leading '# ' … '### ' marks a heading, a leading '- '
+  // a bullet — Q1294; the block kind is decided per line and never spans
+  // lines, so the engine never learns the word "list"), and the engine's
   // document is the same lines — so a clause key is its line index and a
   // proposal on a block is one hunk over that line.
   // …and `withGap` appends the **trailing gap** (backlog 204): a block keyed
@@ -10297,8 +10306,10 @@
     const nLines = text === '' || text == null ? 0 : String(text).split('\n').length;
     const blocks = String(text || '').split(/\n/).flatMap((l, i) => {
       if (!l.trim()) return [];                      // a blank line is a line the engine counts, and nothing to read
-      const m = l.match(/^(#{1,3})\s+(.*)$/);
-      return [m ? { t: 'h', level: m[1].length, x: m[2], key: 'L' + i } : { t: 'p', x: l, key: 'L' + i }];
+      const m = window.CARDS.mdBlock(l);
+      return [!m ? { t: 'p', x: l, key: 'L' + i }
+        : m.t === 'b' ? { t: 'p', bullet: true, x: m.text, key: 'L' + i }
+        : { t: 'h', level: m.level, x: m.text, key: 'L' + i }];
     });
     // **An empty document has one clause, and it is empty** (Q649 (a), Ed
     // 2026-08-22). §9.0b allows a confirmed-empty text, and the engine holds
@@ -10452,7 +10463,7 @@
   // drip clock, no judge counts.
   const lineIdx = (key) => +String(key).slice(1);
   const unhead = (l) => String(l).replace(/^#{1,3}\s+/, '');
-  const headOf = (o) => (o && o.t === 'h' ? '#'.repeat(o.level || 1) + ' ' : '');
+  const headOf = (o) => (o && o.t === 'h' ? '#'.repeat(o.level || 1) + ' ' : o && o.bullet ? '- ' : '');
   // the keys of a span, the ones the charter actually shows first (a blank
   // line is a line the engine counts and nothing the page anchors to)
   const keysOfSpan = (sp, lines) => {
@@ -10477,7 +10488,7 @@
   const markedOf = (before, after) => window.CARDS.diffPieces(before, after, true)
     .map(([t, mk]) => (mk ? window.CARDS.markHtml2(t, mk) : esc(t))).join('');
   // the nearest heading above; on a document with none, the document's own
-  // title — the outermost heading (Q1303, Ed 2026-09-09) — and only with no
+  // title — the outermost heading (Q1303, Ed 2026-09-10) — and only with no
   // title either, the clause's first words
   const labelFor = (key) => {
     let h = '';
