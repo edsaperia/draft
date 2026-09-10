@@ -237,6 +237,19 @@
     DOC.forEach((l, i) => { if (!l.gap && l.key && keyNum(l.key) < n) at = i; });
     return at;
   };
+  // **A gap site carries its own bookkeeping** (Q1311, Ed 2026-09-10): the
+  // gap's key and the block it follows — `insertAfterKey`, null at the very
+  // start — live on the *site*, so a patch holding two gaps draws two anchors
+  // and two cards. They lived on the draft until this, and a second gap had
+  // nowhere to stand. A live item from the host (a race, a crown, a park —
+  // `siteOfSpan`) is one site and carries the same two fields on itself, so
+  // `gapOf` finds whichever holds a key's gap and `gapHolders` lists every
+  // held-open anchor the column draws: one per gap site, one per live item.
+  const gapFields = (key) => { const at = blockBeforeGap(key); return { gapKey: key, insertAfterKey: at >= 0 ? DOC[at].key : null }; };
+  const gapOf = (s, key) => (s && s.sites ? s.sites.find((x) => x.gapKey === key) || null : s);
+  const gapHolders = () => SUGGS.flatMap((g) => (g.sites
+    ? g.sites.filter((x) => x.gapKey).map((x) => ({ g, key: x.gapKey, after: x.insertAfterKey ?? null, site: true }))
+    : g.gapKey || g.insertAfterKey ? [{ g, key: g.gapKey ?? null, after: g.insertAfterKey ?? null, site: false }] : []));
   // the head label of a draft on a gap: which gap, in the reader's terms
   const gapLabel = (key) => {
     const at = blockBeforeGap(key);
@@ -278,7 +291,7 @@
   // the head of a card keyed to a clause or to a gap: the run's text, or the
   // gap's own label and sentence
   function headOpts(s, key) {
-    if ((s && s.isInsert) || isGapKey(key)) return { text: null, nothing: gapNothing(s), label: T.insert.headLabel, key: key };
+    if ((s && s.isInsert) || isGapKey(key)) return { text: null, nothing: gapNothing(gapOf(s, key)), label: T.insert.headLabel, key: key };
     return { text: runTextFor(s, key), key: key };
   }
 
@@ -315,7 +328,9 @@
     const s = SUGGS.find((x) => x.id === id);
     if (!s) return [];
     const keys = [...(s.keys ?? [])];
-    if (s.insertAfterKey) keys.push(s.insertAfterKey);
+    // a gap stands in the section of the block before it — each gap site's
+    // own (Q1311), or the item's where it is one site
+    for (const h of s.sites ? s.sites : [s]) if (h.insertAfterKey) keys.push(h.insertAfterKey);
     if (s.pair) keys.push(...s.pair.map((c) => c.key));      // a diagonal sits in two
     return [...new Set(keys.map(sectionForKey).filter((n) => n >= 0))];
   }
@@ -1005,7 +1020,11 @@
     if (!g) return null;
     // a gap draft hangs on its own held-open anchor, including the one at the
     // very start of the column, whose `insertAfterKey` is null (backlog 204)
-    if (g.insertAfterKey || g.gapKey) return doc.querySelector('.insert-anchor[data-anchor="' + id + '"]');
+    // — **each gap site on its own** (Q1311): a draft's anchors carry the
+    // site's key, a live item's one anchor carries none
+    if (g.sites) {
+      if (isGapKey(siteKey)) return doc.querySelector('.insert-anchor[data-anchor="' + id + '"][data-site="' + siteKey + '"]');
+    } else if (g.insertAfterKey || g.gapKey) return doc.querySelector('.insert-anchor[data-anchor="' + id + '"]');
     const k = siteKey || (g.keys ?? [])[0] || (g.pair && g.pair[0].key);
     // The entry has to stand where its wire lands (Ed, 264): while the composer
     // is open the clause is a card, and a rail entry levelled against the
@@ -2094,6 +2113,10 @@
       }
     }
     const s = { keys: [key], origin: [orig], text, label: headingForKey(key) };
+    // a gap site is born with its own anchor's bookkeeping (Q1311): the
+    // held-open `.insert-anchor` after the block before it is where its card
+    // stands (the read side's shape for a proposed section, Q261's smaller half)
+    if (isGapKey(key)) Object.assign(s, gapFields(key));
     d.sites.push(s);
     d.sites.sort((a, b) => docIndexOfKey(a.keys[0]) - docIndexOfKey(b.keys[0]));
     return { site: s, offset: 0 };
@@ -2149,21 +2172,15 @@
   // for the edit in one place should only discard that edit, not the whole
   // patch*). The site's blocks become the paragraph again and the rest of the
   // draft stands; with one site left the patch is a plain candidate, which the
-  // row already says by counting; with none left the draft goes. The gap
-  // bookkeeping lives on the draft rather than the site (`startDraft`), so it
-  // is read back off whatever remains. Returns the draft, or null once it is gone.
+  // row already says by counting; with none left the draft goes. A gap site
+  // takes its anchor with it, the bookkeeping being its own (Q1311) — nothing
+  // is re-derived. Returns the draft, or null once it is gone.
   function dropDraftSite(site) {
     const d = draftOf();
     if (!d || !site) return d || null;
     d.sites = d.sites.filter((s) => s !== site);
     if (!d.sites.length) { dropDraft(); return null; }
     syncDraftKeys(d);
-    const gap = d.sites.find((s) => isGapKey(s.keys[0]));
-    if (gap) {
-      const at = blockBeforeGap(gap.keys[0]);
-      d.insertAfterKey = at >= 0 ? DOC[at].key : null;
-      d.gapKey = gap.keys[0];
-    } else { delete d.gapKey; delete d.insertAfterKey; }
     if (d.focusKey && site.keys.includes(d.focusKey)) d.focusKey = d.sites[0].keys[0];
     return d;
   }
@@ -2294,14 +2311,8 @@
       site = added.site; offset = added.offset;
     }
     syncDraftKeys(d);
-    // a draft on a gap renders in the gap: the held-open `.insert-anchor`
-    // after the block before it is where its card stands (the read side's
-    // existing shape for a proposed section, Q261's smaller half)
-    if (isGapKey(key)) {
-      const at = blockBeforeGap(key);
-      d.insertAfterKey = at >= 0 ? DOC[at].key : null;
-      d.gapKey = key;
-    }
+    // a draft on a gap renders in the gap, on the site's own anchor
+    // (`addDraftSite`, Q1311) — the draft itself holds no gap
     d.focusKey = key;                    // what holdSel keeps still, and where the caret goes
     const caret = initial ? offset + initial.caret : null;
     const land = () => {
@@ -3606,21 +3617,33 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // neighbour — it is emitted here, above the first block, or the draft
     // would render nowhere at all and the keystroke that opened it would look
     // as though it had done nothing.
-    const headIns = SUGGS.find((g) => g.gapKey && g.insertAfterKey == null);
-    if (headIns) {
-      html += '<div class="insert-anchor" data-anchor="' + headIns.id + '" title="' +
-        esc(plainLabel(headIns.qLabel)) + T.chip.gapSection + '"' +
-        anchWash(headIns, openId === headIns.id) + '>' +
-        '<span class="chipcol"><span class="achip"' + chipStyle(headIns) + ' data-anchor="' + headIns.id + '">' +
-        markOf(headIns) + '</span></span></div>';
-      if (openId === headIns.id && !cardDone) {
-        // …and the anchor draws **the gap's own site** (Q1134's other half):
-        // `suggCardHtml` falls back to `sites[0]`, which on a draft that also
-        // holds a clause site is that clause's card — the very duplicate the
-        // gap branch below now avoids, drawn here instead.
-        cardDone = true; html += '</div>' + suggCardHtml(headIns, headIns.gapKey) + PROSE();
+    //
+    // **Every gap site stands on its own anchor** (Q1311, Ed 2026-09-10; Q1308
+    // for two races at one gap): the holders are listed once, and the anchors
+    // after a block are emitted by one helper at every way out of the loop
+    // below — a gap after a heading, or after a clause the draft has
+    // swallowed, used to fall through the `continue` above the old loop and
+    // draw nothing. The gap stays inside the prose column so its gutter mark
+    // lines up with every other mark in the margin. The anchor draws **the
+    // gap's own site** (Q1134's other half): `suggCardHtml` falls back to
+    // `sites[0]`, which on a draft that also holds a clause site is that
+    // clause's card — the very duplicate the gap block branch avoids. A draft's
+    // anchors carry `data-site`, so a rail entry and a wire find their own; a
+    // draft draws a card on each, a live item once.
+    const holders = gapHolders();
+    const anchorHtml = (h) => {
+      let out = '<div class="insert-anchor" data-anchor="' + h.g.id + '"' + (h.site ? ' data-site="' + h.key + '"' : '') +
+        ' title="' + esc(plainLabel(h.g.qLabel)) + T.chip.gapSection + '"' +
+        anchWash(h.g, openId === h.g.id) + '>' +
+        '<span class="chipcol"><span class="achip"' + chipStyle(h.g) + ' data-anchor="' + h.g.id + '">' +
+        markOf(h.g) + '</span></span></div>';
+      if (openId === h.g.id && (h.site || !cardDone)) {
+        cardDone = true; out += '</div>' + suggCardHtml(h.g, h.key) + PROSE();
       }
-    }
+      return out;
+    };
+    const gapsAfter = (key) => (key ? holders.filter((h) => h.after === key).map(anchorHtml).join('') : '');
+    for (const h of holders.filter((h) => h.after == null)) html += anchorHtml(h);
 
     for (const line of DOC) {
       if (line.t === 'title') { html += '<div class="doctitle">' + esc(line.x) + '</div>'; continue; }
@@ -3656,6 +3679,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         if (!line.gap && site.keys[0] === line.key) {
           html += '</div>' + editCardHtml(writing, site) + PROSE();
         }
+        html += gapsAfter(line.key);
         continue;
       }
 
@@ -3680,12 +3704,13 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         let marks = '';
         if (hlive.length) {
           const swallow = swallowOpen(line.key, hlive);
-          if (swallow.swallowed) { html += swallow.html; continue; }
+          if (swallow.swallowed) { html += swallow.html + gapsAfter(line.key); continue; }
           marks = chipStackHtml(hlive, line.key);
         } else if (hDecided) {
           if (openId === hDecided.id && !cardDone) {
             html += '</div>' + suggCardHtml(hDecided) + PROSE();
             cardDone = true;
+            html += gapsAfter(line.key);
             continue;
           }
           marks = '<span class="chipcol" contenteditable="false"><span class="achip" tabindex="0"' +
@@ -3700,6 +3725,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
           (inside ? '<span class="sechint" contenteditable="false">' + inside +
             (inside === 1 ? ' suggestion' : ' suggestions') + ' inside</span>' : '') +
           '</h2>';
+        html += gapsAfter(line.key);
         continue;
       }
 
@@ -3752,20 +3778,9 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         }
       }
 
-      // every item standing in this gap, each on its own anchor (Q1308: two
-      // insertions at one gap are two races, and `find` left the second with
-      // nowhere to stand)
-      for (const ins of line.key ? SUGGS.filter((g) => g.insertAfterKey === line.key) : []) {
-        // the gap stays inside the prose column so its gutter mark lines up
-        // with every other mark in the margin
-        html += '<div class="insert-anchor" data-anchor="' + ins.id + '" title="' +
-          esc(plainLabel(ins.qLabel)) + T.chip.gapSection + '"' +
-          anchWash(ins, openId === ins.id) + '>' +
-          '<span class="chipcol"><span class="achip"' + chipStyle(ins) + ' data-anchor="' + ins.id + '">' +
-          markOf(ins) + '</span></span></div>';
-        // the gap's own site, never `sites[0]` — see the head anchor above
-        if (openId === ins.id && !cardDone) { cardDone = true; html += '</div>' + suggCardHtml(ins, ins.gapKey) + PROSE(); }
-      }
+      // everything standing in the gap after this block, each on its own
+      // anchor (Q1308, Q1311 — see `holders` above)
+      html += gapsAfter(line.key);
     }
     html += '</div>';
     // **the proposal-row, in edit mode** (backlog 204): the foot of the text's
@@ -5592,6 +5607,8 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     SUGGS.filter((s) => s.kind === 'draft').forEach((d) => {
       d.sites.forEach((s) => {
         if (!s.origin) s.origin = s.keys.map((k) => ({ key: k, text: currentTextFor(k), note: null }));
+        // a site keyed to a gap carries its own anchor's bookkeeping (Q1311)
+        if (isGapKey(s.keys[0]) && !s.gapKey) Object.assign(s, gapFields(s.keys[0]));
       });
       syncDraftKeys(d);
     });
