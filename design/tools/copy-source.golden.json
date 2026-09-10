@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 465
+  "entries": 466
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -68,6 +68,7 @@
   "page.appcards.appname": "Your Name",
   "page.appcards.apppic": "Your Picture",
   "page.appcards.apptext": "Your Application",
+  "page.asMember": "This is your answer to this question as a member.",
   "page.ask.cheapest": "The cheapest you will accept",
   "page.ask.easiest": "The easiest you will accept",
   "page.ask.latest": "The latest you will accept",

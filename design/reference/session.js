@@ -2296,11 +2296,53 @@
       case 'insertParagraph': case 'insertLineBreak': ins = '\n'; break;
       case 'insertFromPaste':
         ins = (ev.dataTransfer && ev.dataTransfer.getData('text/plain')) || ''; break;
-      case 'deleteContentBackward': if (a === b) { if (a === 0) return; a -= 1; } break;
-      case 'deleteContentForward': if (a === b) { if (b >= orig.length) return; b += 1; } break;
+      case 'deleteContentBackward':
+        if (a === b) { if (a === 0) return joinWithNeighbour(key, -1, d0); a -= 1; }
+        break;
+      case 'deleteContentForward':
+        if (a === b) { if (b >= orig.length) return joinWithNeighbour(key, 1, d0); b += 1; }
+        break;
       default: return;                       // formatting commands have nothing to do here
     }
     startDraft(key, null, { text: orig.slice(0, a) + ins + orig.slice(b), caret: a + ins.length });
+  }
+
+  // **Backspace at the start of a clause joins it to the one above** (Q1302,
+  // Ed's bot room 2026-09-09: *I should be able to backspace at the start of a
+  // clause to join it to the previous clause*), and Delete at its end joins
+  // the one below: a run of the two blocks with their texts run together and
+  // the caret at the seam — K15's two-block run, one site, one candidate,
+  // made by the keystroke a text editor makes it with. It used to be swallowed
+  // and do nothing. Nothing to join at a gap, above the first clause or
+  // below the last; a neighbour already in a draft keeps its own lane. The
+  // joined line takes the upper block's rank (`hunksOf` prefixes the one
+  // line from `origin[0]`), so a paragraph pulled up into a heading becomes
+  // part of the heading, as it would anywhere.
+  function joinWithNeighbour(key, dir, d0) {
+    if (isGapKey(key)) return;
+    const at = docIndexOfKey(key);
+    const nb = at >= 0 ? DOC[at + dir] : null;
+    if (!nb || !nb.key || isGapKey(nb.key)) return;
+    if (d0 && (siteFor(d0, key) || siteFor(d0, nb.key))) return;
+    const [k1, k2] = dir < 0 ? [nb.key, key] : [key, nb.key];
+    const t1 = currentTextFor(k1);
+    const d = ensureDraft();
+    const site = addDraftRun(d, [k1, k2], t1 + currentTextFor(k2));
+    syncDraftKeys(d);
+    d.focusKey = k1;
+    const caret = t1.length;
+    const land = () => {
+      const lane = doc.querySelector('[data-lane="' + site.keys[0] + '"]');
+      if (!lane) return;
+      lane.focus({ preventScroll: true });
+      placeCaret(lane, caret);
+      caretPulse();
+    };
+    if (openId === d.id) {
+      keepStill(() => renderAll(), '[data-key="' + k1 + '"]');
+      land(); layoutQueue(); drawWires(); return;
+    }
+    toggle(d.id, true, land);
   }
 
   // What the same keystroke means when the selection spans more than one block
@@ -3403,9 +3445,16 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // submitted-proposal half was never lifted with it.
     const swallowOpen = (key, live) => {
       const openSugg = live.find((x) => x.id === openId);
-      const openFiled = filedFor(key).find((x) => x.id === openId);
+      // **The open record is looked up by id, read or not** (Q1298, Ed's bot
+      // room 2026-09-09: a green ✔ entry whose click opened nothing). This
+      // door read `filedFor(key)`, which files only what has been read (M13),
+      // so a decided-but-unread record at a clause that also carried a live
+      // item had no door at all — `live` never holds a sealed item — and the
+      // press changed nothing on the page, against M17.
+      const openSealed = SUGGS.find((x) => x.id === openId && stateOf(x) === 'sealed' &&
+        (x.keys ?? []).includes(key));
       const card = (s, k) => ({ html: '</div>' + suggCardHtml(s, k) + PROSE(), swallowed: true });
-      if (openFiled && !cardDone) { cardDone = true; return card(openFiled, undefined); }
+      if (openSealed && !cardDone) { cardDone = true; return card(openSealed, undefined); }
       if (!openSugg) return { html: '', swallowed: false };
       if (openSugg.kind === 'patch') {
         // a card at *every* place a patch touches (Ed, 181)
@@ -3571,8 +3620,11 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
 
       const live = line.key ? suggFor(line.key) : [];
       // a settled clause still opens its record from the document side (Ed, 112)
+      // the open one first, where two records share a clause (Q1298): the
+      // first in `SUGGS` order is otherwise the only one this door can draw
+      const sealedAt = (g) => (resolved.has(frontKeyOf(g)) || g.state === 'sealed') && (g.keys ?? []).includes(line.key);
       const wasResolved = line.key && !live.length
-        ? SUGGS.find((g) => (resolved.has(frontKeyOf(g)) || g.state === 'sealed') && (g.keys ?? []).includes(line.key))
+        ? (SUGGS.find((g) => g.id === openId && sealedAt(g)) ?? SUGGS.find(sealedAt))
         : undefined;
 
       if (live.length) {
@@ -3666,12 +3718,28 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         renderAll(); drawWires();
       })
     );
+    // **The row's commit is the card's** (Q1296, Q1297 — Ed's bot room,
+    // 2026-09-09: *the 📝 area ✏️ button at the bottom of the screen should
+    // submit that proposal*; *as the founder … click on ✒️ to submit it*).
+    // With no card open the press opens the editing card; with the card
+    // already open on this draft — which is where typing leaves you — the
+    // press is the card's own commit of the same glyph: the same flight,
+    // started on the card's button so it lands by the draft's id exactly as
+    // a press there would, inert while one is in the air. It used to return
+    // in that state, and a commit that takes the press and does nothing is
+    // worse than none. Under the hold gesture a click is not the gesture on
+    // either button, so the row stays as inert as the card.
     doc.querySelectorAll('[data-proposalrow] [data-act="row-commit"]').forEach((b) =>
       b.addEventListener('click', (ev) => {
         ev.stopPropagation();
         const d = draftOf();
-        if (!d || openId === d.id) return;
-        toggle(d.id, true);
+        if (!d) return;
+        if (openId !== d.id) { toggle(d.id, true); return; }
+        if (GESTURE === 'hold' || holding) return;
+        const cb = doc.querySelector('.sugg[data-card="' + d.id + '"] [data-act="draft-propose"]' +
+          (b.dataset.pen === '1' ? '[data-pen="1"]' : ':not([data-pen])'));
+        if (!cb || cb.disabled || cb.getAttribute('aria-disabled') === 'true') return;
+        flyStart(cb);
       })
     );
     // Opening a decision card from the document is now the **mark's** job and

@@ -335,7 +335,9 @@ const answerFor = (seat, q, m) => {
   const now = Date.now();
   switch (q.setting) {
     case 'ending': return { endsAtMs: now + Math.round(between(r, 90, 240)) * 60_000 };
-    case 'bar': return { pct: Math.round(between(r, 55, 80)) };
+    // 🌡️ is three rungs and no number (R-085; Q1301, Ed 2026-09-09: a bot's
+    // 79 put a percentage on a card the surface itself cannot make)
+    case 'bar': return { pct: pick(r, BAR_RUNGS) };
     case 'quorum': return r() < 0.7
       ? { form: 'share', n: Math.round(between(r, 30, 60)) }
       : { form: 'count', n: Math.max(1, Math.round(m.members.length * between(r, 0.3, 0.6))) };
@@ -449,11 +451,16 @@ const propose = async (seat, p, m) => {
 };
 
 const MOVABLE = ['bar', 'quorum', 'rate', 'lapse', 'chamber', 'judgments', 'ending'];
+const BAR_RUNGS = [60, 80, 90];       // SURFACE §9's 🌡️ ladder, least-protective first
 const motionValue = (seat, s) => {
   const r = seat.r, v = s.value;
   if (v === null || v === undefined) return null;
   switch (s.setting) {
-    case 'bar': { const pct = Math.min(100, Math.max(50, v.pct + pick(r, [-10, -5, 5, 10]))); return pct === v.pct ? null : { pct }; }
+    case 'bar': {                      // a rung either side, never a number (Q1301)
+      const i = BAR_RUNGS.indexOf(v.pct);
+      const pct = i < 0 ? pick(r, BAR_RUNGS) : BAR_RUNGS[Math.max(0, Math.min(BAR_RUNGS.length - 1, i + pick(r, [-1, 1])))];
+      return pct === v.pct ? null : { pct };
+    }
     case 'quorum': {
       const n = v.form === 'share' ? Math.min(100, Math.max(0, v.n + pick(r, [-10, 10])))
         : Math.max(0, v.n + pick(r, [-1, 1]));

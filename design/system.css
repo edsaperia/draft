@@ -904,19 +904,22 @@
     position: absolute; left: 0; top: 0; right: 0; pointer-events: none;
   }
 
-  /* three ranks of heading: part, chapter, section */
-  .doc h2.docline {
+  /* three ranks of heading: part, chapter, section — by class, not tag: the
+     charter draws them as h2, the founder's pre-🍾 column as div.docline
+     (`relabel`, `textDivs`), and the two must look alike (Q1304, Ed's bot
+     room 2026-09-09: a typed heading lost its # and its rank at once) */
+  .doc .docline {
     font-size: var(--t-cap); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
     color: var(--muted); margin: 22px 0 var(--s2); position: relative;
   }
-  .doc h2.docline.lvl1 {
+  .doc .docline.lvl1 {
     --head-rule: 14px;
     font-size: var(--t-body); color: var(--fg); letter-spacing: 0.08em;
     margin: 46px 0 14px; padding-top: var(--head-rule); border-top: 1px solid var(--border);
   }
-  .doc h2.docline.lvl2 { font-size: var(--t-small); color: var(--fg); margin: 30px 0 10px; }
-  .doc h2.docline.lvl3 { font-size: var(--t-cap); color: var(--muted); margin: 22px 0 var(--s2); }
-  .doc .prose > h2.docline.lvl1:first-child { margin-top: var(--s5); }
+  .doc .docline.lvl2 { font-size: var(--t-small); color: var(--fg); margin: 30px 0 10px; }
+  .doc .docline.lvl3 { font-size: var(--t-cap); color: var(--muted); margin: 22px 0 var(--s2); }
+  .doc .prose > .docline.lvl1:first-child { margin-top: var(--s5); }
   /* the fold triangle sits in the chip-gutter, in line with the anchor marks */
   .doc h2.docline .sectoggle { position: absolute; right: 100%; margin-right: var(--s3); top: -2px; }
   .doc h2.docline .sechint {

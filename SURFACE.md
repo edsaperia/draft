@@ -330,7 +330,7 @@ The refund flight and every grant's inbound flight take 640 ms.
 | what | where its tab stands | clause · rail entry | rule |
 |---|---|---|---|
 | 🪜 | 🌡️'s stack — *Does the Threshold Rise Over Time?* · *Rising Threshold* | none · none — answered by 🌡️'s commit on both its branches | Q512, F18 |
-| the `ans-*` answer tasks | the delegated setting's own stack; `stackOrder` puts the question in front while it is asking and the watcher in front once it is answered | none of their own · a rail ask | Q786–Q788 |
+| the `ans-*` answer tasks | the delegated setting's own stack, **behind the setting's own tab** — the host of a pile is its front in every state (Ed, 2026-09-09, Q1299, reversing Q786–Q788's question-in-front while asking); the rail entry is where the question asks | none of their own · a rail ask | Q786–Q788, Q1299 |
 | ✉️ · ❌ | ✉️ on *Invitees*, ❌ on *Proposed for removal*, both from the birth — **a door stands by its result** — each wearing its own ✒️/🛡️ pair over the act | the subsection · ✉️ stands in the founder's rail as a task once the Membership rules stand, until the first invitation or 🍾 (F23) | entries 94, 96, 181 |
 | the `adm:` admit cards | the *Applicants* pile, one per applicant still asking; absent at 🪪 *pen*, where an application is admitted on submit | the applicant's row · a task at *proposal* and *assembly*, news at *pen* (E21) | entry 96 |
 | the ✒️/🛡️ power tabs | under every held-able setting — *Can the Founder Make Amendments at Will?* / *Does the Founder Have a Veto?*; on the doors *Can the Founder Invite / Remove at Will?* / *Does the Founder Have a Veto over Invitations / Removals?* | none · none | Q615 |

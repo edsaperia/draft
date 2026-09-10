@@ -2296,11 +2296,53 @@
       case 'insertParagraph': case 'insertLineBreak': ins = '\n'; break;
       case 'insertFromPaste':
         ins = (ev.dataTransfer && ev.dataTransfer.getData('text/plain')) || ''; break;
-      case 'deleteContentBackward': if (a === b) { if (a === 0) return; a -= 1; } break;
-      case 'deleteContentForward': if (a === b) { if (b >= orig.length) return; b += 1; } break;
+      case 'deleteContentBackward':
+        if (a === b) { if (a === 0) return joinWithNeighbour(key, -1, d0); a -= 1; }
+        break;
+      case 'deleteContentForward':
+        if (a === b) { if (b >= orig.length) return joinWithNeighbour(key, 1, d0); b += 1; }
+        break;
       default: return;                       // formatting commands have nothing to do here
     }
     startDraft(key, null, { text: orig.slice(0, a) + ins + orig.slice(b), caret: a + ins.length });
+  }
+
+  // **Backspace at the start of a clause joins it to the one above** (Q1302,
+  // Ed's bot room 2026-09-09: *I should be able to backspace at the start of a
+  // clause to join it to the previous clause*), and Delete at its end joins
+  // the one below: a run of the two blocks with their texts run together and
+  // the caret at the seam — K15's two-block run, one site, one candidate,
+  // made by the keystroke a text editor makes it with. It used to be swallowed
+  // and do nothing. Nothing to join at a gap, above the first clause or
+  // below the last; a neighbour already in a draft keeps its own lane. The
+  // joined line takes the upper block's rank (`hunksOf` prefixes the one
+  // line from `origin[0]`), so a paragraph pulled up into a heading becomes
+  // part of the heading, as it would anywhere.
+  function joinWithNeighbour(key, dir, d0) {
+    if (isGapKey(key)) return;
+    const at = docIndexOfKey(key);
+    const nb = at >= 0 ? DOC[at + dir] : null;
+    if (!nb || !nb.key || isGapKey(nb.key)) return;
+    if (d0 && (siteFor(d0, key) || siteFor(d0, nb.key))) return;
+    const [k1, k2] = dir < 0 ? [nb.key, key] : [key, nb.key];
+    const t1 = currentTextFor(k1);
+    const d = ensureDraft();
+    const site = addDraftRun(d, [k1, k2], t1 + currentTextFor(k2));
+    syncDraftKeys(d);
+    d.focusKey = k1;
+    const caret = t1.length;
+    const land = () => {
+      const lane = doc.querySelector('[data-lane="' + site.keys[0] + '"]');
+      if (!lane) return;
+      lane.focus({ preventScroll: true });
+      placeCaret(lane, caret);
+      caretPulse();
+    };
+    if (openId === d.id) {
+      keepStill(() => renderAll(), '[data-key="' + k1 + '"]');
+      land(); layoutQueue(); drawWires(); return;
+    }
+    toggle(d.id, true, land);
   }
 
   // What the same keystroke means when the selection spans more than one block

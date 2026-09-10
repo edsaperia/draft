@@ -443,18 +443,11 @@
     if (S.open) { closeThen(() => { S.open = null; setEditMode(true); }); return; }
     setEditMode(true);
   }
-  // **The beat**: `room-pulse`'s ring on the tab, in the tab's own colour — a
-  // DOM poke in `beatEl`'s shape, no copy, ever (Ed: no nudge copy).
-  function ringTab() {
-    const el = tabFor('text');
-    if (!el) return;
-    el.classList.remove('ring');
-    void el.offsetWidth;
-    el.classList.add('ring');
-    const off = () => el.classList.remove('ring');
-    el.addEventListener('animationend', off, { once: true });
-    setTimeout(off, 1000);
-  }
+  // **The beat**: the birth's own lift on the tab — `beatEl`, the same two
+  // rises F17 gives a waiting task (Q1295, Ed 2026-09-09: *the pump that 📝
+  // does should be like the pump that the title card does during the birth*).
+  // It replaced a one-shot halo of its own; no copy, ever (Ed: no nudge copy).
+  function ringTab() { beatEl(tabFor('text')); }
   // **The riding tab** (SURFACE K31): the text's pile — 📝 in front, the ✒️ 🛡️
   // power tabs beneath — drawn once, in `#ridetab`, a sticky child of `.doc`
   // that rests beside the charter heading and travels with the reader. Empty
@@ -7617,7 +7610,14 @@
       // two of the clause sentences name a fact outside their own setting —
       // 🌍's clerk deviation and 🤝's price — and a ladder that omitted it
       // would say the rung a second way, which is the T5 finding this ends
-      const body = c.ansFor ? ANSWER[c.ansFor](S.myAns, E(),
+      // **The Founder's own answer card says which hat is answering** (Q1300,
+      // Ed 2026-09-09): a founder who is a member answers what they delegated
+      // on a separate card (§9.0b) that otherwise wears the setting's own
+      // title, so the note is the one thing telling the two apart. `.unlocks`
+      // is the surface's blue box; a clerk-founder owes no answer and sees none.
+      const body = c.ansFor ? (amFounder() && viewerIsMember()
+            ? '<p class="unlocks">' + esc(PAGE_COPY.asMember) + '</p>' : '') +
+          ANSWER[c.ansFor](S.myAns, E(),
           c.ansFor === 'quorum' ? S.quorumForm : undefined, roomNow(), ANSTYPED,
           clauseCtx())
         // a card that is not yours to answer reads as the rule it is —
@@ -10476,10 +10476,13 @@
   // (resultOnly drops the dels where the card states the result)
   const markedOf = (before, after) => window.CARDS.diffPieces(before, after, true)
     .map(([t, mk]) => (mk ? window.CARDS.markHtml2(t, mk) : esc(t))).join('');
+  // the nearest heading above; on a document with none, the document's own
+  // title — the outermost heading (Q1303, Ed 2026-09-09) — and only with no
+  // title either, the clause's first words
   const labelFor = (key) => {
     let h = '';
     for (const l of SESSION.DOC) { if (l.t === 'h') h = l.x; if (l.key === key) break; }
-    return h || ((SESSION.DOC.find((l) => l.key === key) || {}).x || '').split(/\s+/).slice(0, 5).join(' ');
+    return h || cs_titleNow() || ((SESSION.DOC.find((l) => l.key === key) || {}).x || '').split(/\s+/).slice(0, 5).join(' ');
   };
   // **Raw values are not copy**: a record's moment reads like a diary entry
   const whenOf = (ms) => {

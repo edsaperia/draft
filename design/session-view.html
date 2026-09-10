@@ -7610,7 +7610,14 @@
       // two of the clause sentences name a fact outside their own setting —
       // 🌍's clerk deviation and 🤝's price — and a ladder that omitted it
       // would say the rung a second way, which is the T5 finding this ends
-      const body = c.ansFor ? ANSWER[c.ansFor](S.myAns, E(),
+      // **The Founder's own answer card says which hat is answering** (Q1300,
+      // Ed 2026-09-09): a founder who is a member answers what they delegated
+      // on a separate card (§9.0b) that otherwise wears the setting's own
+      // title, so the note is the one thing telling the two apart. `.unlocks`
+      // is the surface's blue box; a clerk-founder owes no answer and sees none.
+      const body = c.ansFor ? (amFounder() && viewerIsMember()
+            ? '<p class="unlocks">' + esc(PAGE_COPY.asMember) + '</p>' : '') +
+          ANSWER[c.ansFor](S.myAns, E(),
           c.ansFor === 'quorum' ? S.quorumForm : undefined, roomNow(), ANSTYPED,
           clauseCtx())
         // a card that is not yours to answer reads as the rule it is —

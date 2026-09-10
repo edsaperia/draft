@@ -76,7 +76,7 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "The document can only be seen by members.Prefer thisThe document can be seen by anyone with the link.Prefer this",
+    "body": "This is your answer to this question as a member.The document can only be seen by members.Prefer thisThe document can be seen by anyone with the link.Prefer this",
     "options": [
      {
       "set": "chamber",
@@ -101,8 +101,8 @@
      }
     ],
     "hints": [
-     "Who Can See the Document? — close it",
      "Who Can See the Document? — waiting on others",
+     "Who Can See the Document? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",

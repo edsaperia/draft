@@ -629,6 +629,10 @@ window.COPY = (function () {
     },
     // the member's answer card: the ask line and the readback frame
     said: (s) => 'You said: “' + s + '”',
+    // …and on the Founder's own answer card, which hat is answering (Q1300,
+    // Ed 2026-09-09: *a blue box that says something like "This is your
+    // answer to this question as a member"*)
+    asMember: 'This is your answer to this question as a member.',
     ask: {
       lowest: 'The lowest you will accept',
       latest: 'The latest you will accept',

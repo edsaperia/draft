@@ -293,19 +293,28 @@ window.SETUP = (function () {
      opens into is the pile expanded and the two never disagree about what sits
      where. */
   const RANK = { ask: 0, news: 1, yours: 2, wait: 3, done: 4 };
-  const stackOrder = (cards, ctx) =>
-    cards.slice().sort((a, b) => RANK[stateOf(a, ctx)] - RANK[stateOf(b, ctx)]);
+  /* **The setting's own tab is the front of its own pile** (Q1299, Ed
+     2026-09-09: *for constitutional settings, the tab for the setting itself
+     should always be on top*) — `host` is that setting's key, ranked ahead of
+     every state. It reverses Q786–Q788, which put the founder-member's own
+     answer task in front while it was asking; that task was the only thing
+     that ever displaced a host, and it exists only on a delegated setting, so
+     the rule is written for every setting and changes only the 🏛️ ones. A
+     pile with no host (the membership's) passes none and sorts by state alone. */
+  const stackOrder = (cards, ctx, host = cards.host) =>
+    cards.slice().sort((a, b) => rankOf(a, ctx, host) - rankOf(b, ctx, host));
+  const rankOf = (c, ctx, host) => (host && c.k === host ? -1 : RANK[stateOf(c, ctx)]);
 
   /* Closed: the pile, in the gutter, standing where the card's strip will be.
      Open: the same tabs lined up down the side of the card. One list, two
      postures — `stripHtml` is `pileHtml` with the peek taken off. */
-  const pileHtml = (cards, ctx) => {
-    const gs = stackOrder(cards, ctx);
+  const pileHtml = (cards, ctx, host) => {
+    const gs = stackOrder(cards, ctx, host);
     return '<span class="chipcol' + (gs.length > 1 ? ' stack' : '') + '">' +
       gs.map((c, i) => chipHtml(c, ctx, { inert: i > 0, z: gs.length - i })).join('') + '</span>';
   };
-  const stripHtml = (cards, ctx) => '<span class="chipcol">' +
-    stackOrder(cards, ctx).map((c) => chipHtml(c, ctx, { active: ctx.open === c.k })).join('') + '</span>';
+  const stripHtml = (cards, ctx, host) => '<span class="chipcol">' +
+    stackOrder(cards, ctx, host).map((c) => chipHtml(c, ctx, { active: ctx.open === c.k })).join('') + '</span>';
 
   /* The band at the head of the document: one row per pile, in flow, so the
      second pile stands under the first exactly as a second clause's marks stand
@@ -356,6 +365,10 @@ window.SETUP = (function () {
         // group as the strip.
         const para = (c) => {
           const chips = ctx.chipsFor ? ctx.chipsFor(c) : [c];
+          // the paragraph's own setting is the pile's host (Q1299): carried
+          // on the list itself, since `cardFor` hands this same array to the
+          // strip as `siblings` from every card kind's own call
+          chips.host = c.k;
           const openHere = ctx.open === c.k || chips.some((x) => x.k === ctx.open);
           // data-para carries the decision's own key so a birth is
           // detectable across wholesale re-renders (Ed, 2026-08-19: new
