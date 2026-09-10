@@ -205,6 +205,12 @@ unless another path is given.
 | The rate limiter never limited: it keyed on the rightmost `x-forwarded-for` entry, which behind Cloudflare is a rotating edge address | `288845a`; three tests pin one bucket per stated client, two clients two buckets, a prepended entry failing to evade; `verify-deploy --limits` |
 | The whole of `design/tools/` and `design/reference/` was public (Q478) | top-level assets only, no path separator survives; `verify-deploy` check *design assets serve, design notes do not* |
 
+### Q1310 — the bot outbox route (Ed, 2026-09-10) — a keyed door that ships by design
+
+| Surface | What it exposes | Guard | Evidence |
+|---|---|---|---|
+| `GET /api/bots/outbox`, in the production artifact and outside the `DEV:` label | The host's filed mail to `*@bots.docs.vote` only — the mailer files nothing else there and hands none of it to Resend — so a key in the wrong hands acts as the bots in bot rooms and nothing more. Accepted by Ed: *we can have bot users in prod — we're still in alpha* | `DRAFT_BOT_KEY` as `Authorization: Bearer`, compared with `timingSafeEqual`; unset, the route is a 404 with an unknown path's body; wrong keys rate-limited per IP (`tooMany('bots')`), right ones never; 401 carries no detail; rotated by changing the variable | `packages/server/src/server.ts` `bearerOk` and the route; `bots.test.ts` (404 without a key, 401 wrong or missing, 200 right, the domain rule exact against `bots.docs.vote.evil.com` and `notbots.docs.vote`); `verify-deploy` check *the bot outbox is closed to a stranger (Q1310)*; OPERATING §10 |
+
 ### Review #1 (stages 2–3; 19 findings, 14 fixed in `3ccc78a`) — the residuals
 
 | Finding | State | Evidence |

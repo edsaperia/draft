@@ -52,6 +52,7 @@ in the repo).
 | `DRAFT_MAIL_FROM` | The `From` header on every mail | `docs.vote <invitations@mail.docs.vote>` | Dashboard, `sync: false` — **read §8, trap 2 before trusting it** |
 | `DRAFT_MAIL_OFF` | The mail kill-switch (stage 16): `1` holds every queued mail **pending** — nothing is lost and nothing goes out — and clearing it delivers the backlog. `/healthz` reports it as `mail: off` | unset (mail on) | Not set. An env-var change and a restart; no deploy |
 | `DRAFT_NOTIFY_EMAIL` | Operator notification: every document birth is mailed here | `edsaperia@gmail.com`, compiled in | Not set. Setting it **empty** switches the notification off |
+| `DRAFT_BOT_KEY` | The key to the bot outbox (§10, Q1310): mail to any address at `bots.docs.vote` is filed on the host instead of sent, and `GET /api/bots/outbox` serves the file to the bearer of this key. Unset or empty, the route is a 404 like any unknown path | unset | Dashboard, `sync: false`, on both services. Rotate by changing it; a restart applies it |
 | `DRAFT_STORE` | `file` or `pg` — where the bytes live. Absent means `file`. An unrecognised value is a **boot refusal**, never a fallback | `file` | Not set. This is the Postgres cutover switch (§7) |
 | `DATABASE_URL` | Postgres connection string; required when `DRAFT_STORE=pg` | unset | Dashboard, when it exists — the frankfurt database's **internal** connection string |
 | `DRAFT_TRUST_PROXY` | `1`/`0`. Trust `x-forwarded-*` for the client IP and the original protocol | On in the built artifact, off in dev | Not set — the build's default is already right on Render |
@@ -399,7 +400,7 @@ and `verify-deploy` are all untouched by its existence.
 
 | Property | Value | Why |
 |---|---|---|
-| Store | `file`, on the instance filesystem | **Every deploy or restart wipes every document.** A feature: the host holds only throwaways |
+| Store | `file`, on the instance filesystem | **Every deploy or restart wipes every document.** A feature: the host holds only throwaways. And on the free plan **idle sleep is a restart** (Q1309, 2026-09-10: Ed's test room vanished under him with no deploy in a day) — a dev room lives until the next fifteen quiet minutes, which is why bot rooms run on docs.vote instead (§10) |
 | Mail | dev outbox (`mailer.dev`) | No key set. The 📬 button on every page reads the tail; magic links are followed from there, no inbox involved |
 | Deploys | `autoDeploy: true`, every push to `main` | No gate: red or green, the dev host updates. CI's deploy hook only knows the production service |
 | Plan | `free` | Sleeps after ~15 min idle; the first load then takes up to a minute. A dashboard upgrade to `starter` keeps it warm |
@@ -412,3 +413,47 @@ finds the URL can read every magic link and **log in as anyone, on any
 document there**. The host must never hold anything real. That posture is
 the reason it exists at all: it is what docs.vote itself was *not* allowed
 to become (decisions 437, Q674).
+
+## 10. Bots on docs.vote
+
+Bot rooms run on the production host (Ed, 2026-09-10, Q1310: *we can have
+bot users in prod — we're still in alpha*), because a dev room dies at the
+next idle sleep (§9). What makes that safe is one rule at the mailer:
+
+**Any address at `bots.docs.vote` is a bot's.** The domain must match
+exactly — `x@bots.docs.vote.evil.com` and `x@notbots.docs.vote` are
+strangers — and case does not matter. Mail to a bot is never handed to
+Resend and is never a bounce: it is filed in the **bot outbox**
+(`bots-outbox.jsonl` in the data dir, the dev outbox's shape) on the host,
+in the production branch and the dev branch alike. Ed's reason for the
+subdomain over a local-part convention: *they could never be confused for a
+real email address*. A dev server (no `RESEND_API_KEY`) files a bot's mail in
+**both** outboxes, so `room-bots` works there with or without a key.
+
+**The key.** `GET /api/bots/outbox` serves the file's tail, newest first,
+to whoever sends `Authorization: Bearer <DRAFT_BOT_KEY>` — compared in
+constant time, wrong keys rate-limited per IP, a right key never. With the
+variable unset the route answers 404 with the same body as any unknown path,
+so a host without a key exposes nothing; `verify-deploy` asserts a stranger
+never gets 200 from it. The route ships in the production artifact and is
+deliberately **not** under the `DEV:` label — it is the one dev-shaped door
+that is meant to exist on docs.vote.
+
+**Running a room against production.** Found a document in your own
+browser, invite the bots through ✉️ at any addresses at `bots.docs.vote`
+(`ada.lovelace@bots.docs.vote` → *Ada Lovelace*), then:
+
+    npm run room-bots -- https://docs.vote/d/<slug> --key=<DRAFT_BOT_KEY>
+
+or export `DRAFT_BOT_KEY` and omit `--key`. The bots follow their
+invitations out of the bot outbox and act like members from then on. The
+file is ephemeral — a deploy takes it — and that is fine: a magic link is
+one-use, and a bot whose link is spent asks for a fresh login, which lands in
+the same outbox.
+
+**What a leaked key allows.** Reading every mail the host has filed to
+`bots.docs.vote`, and therefore acting as those bots in the rooms they were
+invited to: judging, proposing, moving, signing as them. Nothing more — no
+real member's mail is ever in that file, and a bot has no power a member
+lacks. Rotate by changing the variable in the dashboard and restarting;
+every link already filed stays one-use as before.

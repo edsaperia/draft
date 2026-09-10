@@ -68,7 +68,7 @@ The rest of `package.json`'s scripts are instruments, in two kinds:
 | Kind | Scripts | Needs |
 |---|---|---|
 | Headless over `design/` | `probe`, `probe-coverage`, `card-audit`, `toc-travel`, `slider-walk`, `founder-answers`, `founding-golden`, `copy-check -- --walk` | Playwright's Chromium (`npm run playwright:install`); each serves `design/` itself. `clock-check` needs only node. |
-| Against a running dev server | `journey`, `applicants-walk`, `slug-walk`, `powers-walk`, `ladder`, `room-walk`, `seat-matrix`, `room-bots -- <document url>` | `npm run server` in another terminal, with no `RESEND_API_KEY`. Each checks it is talking to a server built from your tree before it starts. |
+| Against a running dev server | `journey`, `applicants-walk`, `slug-walk`, `powers-walk`, `ladder`, `room-walk`, `seat-matrix`, `room-bots -- <document url>` | `npm run server` in another terminal, with no `RESEND_API_KEY`. Each checks it is talking to a server built from your tree before it starts. `room-bots` alone also runs against docs.vote itself: invite bots at `*@bots.docs.vote`, whose mail the host catches, and pass `--key=<DRAFT_BOT_KEY>` (`docs/OPERATING.md` §10). |
 
 What each asserts is in `CLAUDE.md`'s glossary under *Tooling*.
 

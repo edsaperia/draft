@@ -117,6 +117,21 @@ await check('the phase ladder is not in the artifact (Q674)', async () => {
   return '404 on POST ladder · POST seat · GET ladder';
 });
 
+// The one dev-shaped route that *does* ship (Q1310): the bot outbox, which
+// serves only mail to bots.docs.vote and only to the bearer of
+// DRAFT_BOT_KEY. Without the key set it is an unknown path; with it, a
+// request without the key is refused. Either way, never 200 to a stranger.
+await check('the bot outbox is closed to a stranger (Q1310)', async () => {
+  const bare = await get('/api/bots/outbox');
+  const wrong = await get('/api/bots/outbox', { headers: { authorization: 'Bearer not-the-key' } });
+  for (const r of [bare, wrong]) {
+    expect(r.status === 401 || r.status === 404,
+      `status ${r.status} — the bot outbox answered a stranger`);
+  }
+  return bare.status === 404 ? '404 — no DRAFT_BOT_KEY on this host'
+    : `401 without the key · ${wrong.status} with a wrong one`;
+});
+
 await check('api responses are never cached (finding 10)', async () => {
   const r = await get('/api/dev/outbox');
   expect((r.headers.get('cache-control') ?? '') === 'no-store',
