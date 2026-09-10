@@ -1312,16 +1312,43 @@ describe('a document of one (Q837, backlog 253)', () => {
 
   it('a bar above the coin flip is untouched by the floor', () => {
     // `max` picks the real span for every threshold the surface can set above
-    // the minimum, so nothing else on the surface moves: at 0.9 the reading is
-    // still |2p − 1| / (2θ − 1) exactly, unclamped
+    // the minimum, so nothing else on the surface moves: at 0.9 the bar's
+    // reading is still |2p − 1| / (2θ − 1) exactly, unclamped — read here
+    // once the adoption floor is met, so the floor's own distance is 1
     const s = openSession({ adoptionThresholdStart: 0.9, adoptionThresholdEnd: 0.9 }, 5);
     const { id } = s.submitCandidate(1000, {
       author: 'p1', patch: rewrite(0, 1, 'Membership needs a sponsor.'), rationale: 'r',
     });
+    const inc = s.raceOf(id).incumbentId;
+    s.judge(2000, 'p2', id, inc, 'a'); // the author and one judge: F = 2 at E = 5
     const race = s.raceOf(id);
+    expect(race.distinctMovers).toBeGreaterThanOrEqual(s.adoptionFloor());
     const want = Math.abs(2 * (race.leaderP as number) - 1) / (2 * 0.9 - 1);
     expect(want).toBeLessThan(1);
     expect(race.closeness).toBeCloseTo(want, 10);
+  });
+
+  it('closeness is the lesser of the distance to the bar and to the floor (Q1305, R-101)', () => {
+    // a room of sixteen: F = 6. The author's derived preference alone fits
+    // p ≈ 0.8, past the span of a bar of 60 — so on the bar's distance alone
+    // a newborn race read full, and Ed's wash had nowhere to fill (Q1305).
+    const s = openSession({ adoptionThresholdStart: 0.6, adoptionThresholdEnd: 0.6 }, 16);
+    const { id } = s.submitCandidate(1000, {
+      author: 'p1', patch: rewrite(0, 1, 'Membership needs a sponsor.'), rationale: 'r',
+    });
+    const inc = s.raceOf(id).incumbentId;
+    const born = s.raceOf(id);
+    expect(Math.abs(2 * (born.leaderP as number) - 1) / (2 * 0.6 - 1)).toBeGreaterThanOrEqual(1);
+    expect(s.adoptionFloor()).toBe(6);
+    expect(born.closeness).toBeCloseTo(1 / 6, 10);      // one mover of six
+    // each new judge is one step of the floor's distance, whichever way they vote
+    s.judge(2000, 'p2', id, inc, 'a');
+    expect(s.raceOf(id).closeness).toBeCloseTo(2 / 6, 10);
+    s.judge(3000, 'p3', id, inc, 'b');
+    expect(s.raceOf(id).closeness).toBeCloseTo(3 / 6, 10);
+    // and a judge who has already moved is not a second mover
+    s.judge(4000, 'p3', id, inc, 'a');
+    expect(s.raceOf(id).closeness).toBeCloseTo(3 / 6, 10);
   });
 });
 

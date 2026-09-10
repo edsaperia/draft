@@ -235,13 +235,16 @@ export interface RaceView {
   deadlocked: boolean;
   /**
    * Closeness to resolution as a magnitude, never a direction (SPEC §8.3:
-   * "closeness-to-resolution as a single number"): how far the room's
-   * evidence has moved the leader from a coin flip, scaled so the carry
-   * boundary is 1 — |2p − 1| / (2θ − 1) with p = P(leader beats incumbent)
-   * and θ the adoption threshold now, clamped to [0, 1]. A fresh race
-   * (p = ½) sits at 0; a race about to carry and a race the incumbent is
-   * about to see off both read 1, because |2p − 1| is exactly invariant
-   * under p ↔ 1 − p — the number cannot be inverted into "which way".
+   * "closeness-to-resolution as a single number"): the lesser of the two
+   * distances a race must cover to resolve (R-101). The bar's — how far the
+   * room's evidence has moved the leader from a coin flip, scaled so the
+   * carry boundary is 1: |2p − 1| / (2θ − 1) with p = P(leader beats
+   * incumbent) and θ the adoption threshold now, clamped to [0, 1] — and the
+   * floor's, distinct movers over F (§4.2). A fresh race sits at 1/F (its
+   * author is one mover); a race about to carry and a race the incumbent is
+   * about to see off both read 1 once the floor is met, because |2p − 1| is
+   * exactly invariant under p ↔ 1 − p — the number cannot be inverted into
+   * "which way", and nothing says which of the two distances is the shorter.
    *
    * The denominator never falls below `MIN_CLOSENESS_SPAN` (Q836), so a bar
    * of exactly ½ — where there is no distance from the coin flip to the bar

@@ -1361,8 +1361,19 @@ export class Session {
     // above the minimum, so only the singular point moves, and it moves to the
     // reading its neighbour already gave.
     const span = Math.max(2 * this.adoptionThreshold() - 1, MIN_CLOSENESS_SPAN);
-    const closeness = leaderP === null ? 0
+    const barCloseness = leaderP === null ? 0
       : Math.max(0, Math.min(1, Math.abs(2 * leaderP - 1) / span));
+    // **The lesser of two distances** (Q1305, Ed 2026-09-10, R-101). A race
+    // resolves when its leader clears the bar *and* the floor is met (§4.2),
+    // so its closeness is the shorter of the two: the bar's, above, and the
+    // floor's — distinct movers over F. The bar's alone was full at birth:
+    // the author's derived preference (§3.3) fits p ≈ 0.8 before anybody has
+    // judged, which is past the span of a bar of 60 and 99% of a bar of 80,
+    // so the meter had nowhere left to fill and only ever dipped. The author
+    // is one mover, so a newborn race reads 1/F and each new judge is a step.
+    // Nothing says which of the two is the shorter — a magnitude, as before.
+    const floorCloseness = Math.min(1, movers.size / Math.max(1, this.adoptionFloor()));
+    const closeness = Math.min(barCloseness, floorCloseness);
     return {
       id,
       members,
