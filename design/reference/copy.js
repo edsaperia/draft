@@ -227,7 +227,8 @@ window.COPY = (function () {
     row: {
       placesChanged: (n) => (n === 1 ? '1 place changed' : n + ' places changed'),
       discardAll: 'Discard the whole draft — nothing has been spent on it',
-      discardDraft: 'Discard this draft — nothing has been spent on it yet',
+      // a card's 🗑️ is its own site's; the row's above is the whole draft's (Q1306)
+      discardThis: 'Discard this change — nothing has been spent on it',
       closeNothing: 'Close — there is nothing here to put back',
       broke: 'No ✏️ left — another arrives as the drip accrues',
       holdPropose: 'Hold to propose this',

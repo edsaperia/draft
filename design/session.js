@@ -102,7 +102,7 @@
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks,
     headFlags, originText, mdToHtml, htmlToMd, mdStrip, mdLine,
     richToSource, sourceToRich, readLane,
-    laneSeed, laneProposeHtml, speakerHtml, fieldHtml, fieldOf, groundNote,
+    laneSeed, laneProposeHtml, laneCtlHtml, speakerHtml, fieldHtml, fieldOf, groundNote,
     headOnlyHeight, cardBody, COLLAPSE_MS, EXPAND_MS,
   } = window.CARDS;
   // **A power is not held until it has been acknowledged** (Ed, 2026-08-21).
@@ -2495,11 +2495,33 @@
   // preference rather than one per card \u2014 it is how *you* like to work, and it
   // would be strange for it to reset every time a different clause opened.
   // **And since Q1294 it is the column's, not the lane's** (Ed, 2026-09-10):
-  // the `[]` toggle sits on the proposal-row at the foot of the window and
-  // flips every clause and every open lane at once (`srcMode`, `laneBlocks`);
-  // outside edit mode there is no toggle and the column is always rendered.
+  // the `[]` toggle sits with B and I in the one strip at the top right of
+  // the lifted column (`laneCtlHtml`, Q1294 (b): *top right of the edit box*)
+  // and flips every clause and every open lane at once (`srcMode`,
+  // `laneBlocks`); outside edit mode there is no strip and the column is
+  // always rendered.
   let laneMode = 'rich';
   const laneRaw = () => laneMode === 'md';
+  // ---- the strip's state (Q1294 (b)) ----------------------------------------
+  // Each editing lane's re-mark (the rewrite of its own markup after a change,
+  // bound in `renderDoc`), keyed by the lane, so the column's B and I can reach
+  // the lane the caret is in.
+  const laneRemark = new WeakMap();
+  // Two things the strip reads off the page rather than off a render: whether
+  // an editing lane holds the caret — B and I are acts on a selection, so they
+  // are disabled while none does — and whether the strip has left its rest at
+  // the card's top edge and is riding over the prose, when it takes a ground
+  // and a shadow as the riding tab does (`detached`). Read at every focus
+  // change, every scroll frame and every render.
+  function syncEditCtl() {
+    const strip = doc.querySelector('.editctl');
+    if (!strip) return;
+    const ae = document.activeElement;
+    const inLane = !!(ae && ae.closest && ae.closest('[data-lane]') && doc.contains(ae));
+    strip.querySelectorAll('.lfmt').forEach((b) => { b.disabled = !inLane; });
+    const rest = parseFloat(getComputedStyle(strip).top) || 0;
+    strip.classList.toggle('detached', strip.getBoundingClientRect().top <= rest + 0.5);
+  }
 
   // **The sign control** (Q770, Ed 2026-08-25: *a new control that's part of
   // the rationale composer area that switches between signed and anonymous,
@@ -2553,14 +2575,10 @@
    * Pre-🍾 there is no membership to propose to, so the page never asks for
    * the pair and the confirm stays one ✒️.
    *
-   * **The `[]` markdown toggle** (`o.mode`, Q1294 — Ed, 2026-09-10): beside
-   * 🗑️, drawn only where the host hands the mode in, which is the charter
-   * post-🍾; the page's pre-🍾 row passes none, its column being the
-   * characters already. **One button, not a pair** (Ed, 2026-08-17, when it
-   * stood on the lane): off by default, pressed for markdown, the state in
-   * its own pressed-ness like every other control on the surface. Pressed,
-   * it flips the whole column — every clause and every open lane — between
-   * rendered and source.
+   * The `[]` markdown toggle stood beside 🗑️ for one morning (Q1294 (a)) and
+   * is the column's strip since Q1294 (b) (Ed, 2026-09-10: *top right of the
+   * edit box*) — `laneCtlHtml`, drawn by `renderDoc` before the column. The
+   * row is 🗑️, the count and the commit, and nothing else.
    */
   function proposalRowHtml(o) {
     o = o || {};
@@ -2569,12 +2587,9 @@
     const btn = (pen, title) => '<button class="btn btn-propose glyphbtn emojibtn" data-act="row-commit"' +
       (pen ? ' data-pen="1"' : '') + (o.disabled ? ' disabled' : '') +
       ' title="' + esc(title || '') + '">' + (pen ? '✒️' : '✏️') + '</button>';
-    const raw = o.mode === 'md';
     return '<div class="race-mid commitrow proposalrow" data-proposalrow="1">' +
       '<button class="btn btn-withdraw glyphbtn" data-act="row-discard"' + (o.discardDisabled ? ' disabled' : '') +
       ' title="' + esc(o.discardTitle || T.row.discardAll) + '">🗑️</button>' +
-      (o.mode ? '<button class="lmode" data-act="row-mode" data-mode="' + (raw ? 'rich' : 'md') + '"' +
-        ' aria-pressed="' + raw + '" title="' + esc(window.COPY.grammar.fmt.mdMode) + '">[]</button>' : '') +
       '<span class="rowmid">' + esc(mid) + '</span>' +
       (o.pen ? btn(true, o.title) + (o.pair ? btn(false, o.proposeTitle) : '') : btn(false, o.title)) +
       '</div>';
@@ -3505,7 +3520,14 @@ document.addEventListener('pointerup', () => { if (GESTURE === 'hold') flyStop(f
 document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flyStop(false); });
 
   function renderDoc() {
-    let html = PROSE();
+    // **The lane controls, one strip for the column** (Q1294 (b), Ed
+    // 2026-09-10: *top right of the edit box*): drawn exactly where the
+    // proposal-row is — edit mode, a reader who may propose, the document
+    // open — as a sticky box before the column so it rides at the card's top
+    // right as the row sticks to its foot (the viewport is the card). Outside
+    // the contenteditable, since a button inside one is harvested text.
+    const strip = EDITING() && MAY_PROPOSE() && !closedMode;
+    let html = (strip ? '<div class="editctl">' + laneCtlHtml(laneRaw()) + '</div>' : '') + PROSE();
     let cardDone = false;
     let headIdx = 0;
     // The draft being written, if the composer is open on it. `pendingId`
@@ -3796,7 +3818,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       const idle = T.row.idle;
       html += proposalRowHtml({
         count: rs.changedCount, changed: rs.changed, pen, pair: pen, disabled: !rs.changed,
-        discardDisabled: !rs.count, mode: laneMode,
+        discardDisabled: !rs.count,
         title: !rs.changed ? idle : pen ? T.row.reviewAmend : T.row.reviewPropose,
         proposeTitle: !rs.changed ? idle : T.row.reviewPropose,
       });
@@ -3824,8 +3846,8 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // the press; the caret is read out first and put back in the rebuilt
     // lane, its offset converted between the two views, because markdown
     // mode counts the syntax characters and rich mode does not
-    // (richToSource / sourceToRich).
-    doc.querySelectorAll('[data-proposalrow] [data-act="row-mode"]').forEach((b) =>
+    // (richToSource / sourceToRich). On the column's strip since Q1294 (b).
+    doc.querySelectorAll('[data-editctl] [data-act="col-mode"]').forEach((b) =>
       b.addEventListener('mousedown', (ev) => {
         ev.preventDefault(); ev.stopPropagation();
         const d = draftOf();
@@ -3847,8 +3869,36 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
             if (land.off != null) placeCaret(lane, land.off);
           }
         }
+        syncEditCtl();
       })
     );
+    // **B and I act on the lane that holds the caret** (Q1294 (b)): the
+    // strip is the column's, so the lane is found at the press — the focused
+    // editable, which the prevented mousedown leaves focused — and the act is
+    // what it always was: execCommand in rich mode, the cheapest thing that
+    // produces real elements for `htmlToMd` to write back; in markdown mode
+    // the selection wrapped in the characters themselves, because that is
+    // what the mode is *for*. Then the lane's own re-mark (`laneRemark`),
+    // since the diff and the site's text are the lane's to keep. With no lane
+    // focused the two are disabled (`syncEditCtl`) and no press arrives.
+    doc.querySelectorAll('[data-editctl] .lfmt').forEach((b) =>
+      b.addEventListener('mousedown', (ev) => {
+        ev.preventDefault(); ev.stopPropagation();  // keep the selection in the lane
+        const ae = document.activeElement;
+        const lane = ae && ae.closest ? ae.closest('[data-lane]') : null;
+        if (!lane || !doc.contains(lane)) return;
+        lane.focus({ preventScroll: true });
+        if (laneRaw()) {
+          const marks = b.dataset.fmt === 'bold' ? '**' : '*';
+          document.execCommand('insertText', false, marks + getSelection().toString() + marks);
+        } else {
+          document.execCommand(b.dataset.fmt);
+        }
+        const remark = laneRemark.get(lane);
+        if (remark) remark();
+      })
+    );
+    syncEditCtl();
     // **The row's commit is the card's** (Q1296, Q1297 — Ed's bot room,
     // 2026-09-10: *the 📝 area ✏️ button at the bottom of the screen should
     // submit that proposal*; *as the founder … click on ✒️ to submit it*).
@@ -3998,26 +4048,10 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       };
       el.addEventListener('input', (ev) => { if (!ev.isComposing) remark(); });
       el.addEventListener('compositionend', remark);
-      // The lane's own controls. Bold and italic go through execCommand in rich
-      // mode, which is the cheapest thing that produces real elements for
-      // `htmlToMd` to write back; in markdown mode they wrap the selection in
-      // the characters themselves, because that is what the mode is *for*.
-      const box = el.closest('.lanebox');
-      if (box) {
-        box.querySelectorAll('.lfmt').forEach((b) => b.addEventListener('mousedown', (ev) => {
-          ev.preventDefault();                    // keep the selection in the lane
-          el.focus({ preventScroll: true });
-          if (laneRaw()) {
-            const marks = b.dataset.fmt === 'bold' ? '**' : '*';
-            document.execCommand('insertText', false, marks + getSelection().toString() + marks);
-          } else {
-            document.execCommand(b.dataset.fmt);
-          }
-          remark();
-        }));
-        // Switching view is the proposal-row's `[]` since Q1294 — the whole
-        // column at once, wired with the row above.
-      }
+      // The lane has no controls of its own since Q1294 (b): B, I and `[]`
+      // are the column's strip, wired above, and reach this lane's re-mark
+      // through `laneRemark` when the caret is here.
+      laneRemark.set(el, remark);
       // The lane is a rich editable, because Enter has to make a real paragraph
       // (Ed, 231) and `plaintext-only` gives a line break instead. The one cost
       // of that is paste, which would otherwise arrive carrying somebody else's
@@ -5447,7 +5481,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     ticking = true;
     // Pinned entries are measured against the viewport, so the margin has to be
     // re-laid on every scroll, not only on structural change (Ed, 110).
-    requestAnimationFrame(() => { layoutQueue(); markCurrentSection(); drawWires(); ticking = false; });
+    requestAnimationFrame(() => { layoutQueue(); markCurrentSection(); drawWires(); syncEditCtl(); ticking = false; });
   };
 
   // ---- room-pulse (Ed, 2026-08-17) -------------------------------------
@@ -5543,6 +5577,11 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     });
 
     addEventListener('scroll', onViewportChange, { passive: true });
+    // the strip's B and I follow the caret: live while an editing lane holds
+    // it, disabled otherwise (focusout fires before the new focus lands, so
+    // the read waits a tick)
+    document.addEventListener('focusin', syncEditCtl);
+    document.addEventListener('focusout', () => setTimeout(syncEditCtl, 0));
 
     // the fixture's other members are a timer; a live host beats the pulse
     // itself, once per movement the poll sees

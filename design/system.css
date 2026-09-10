@@ -1707,8 +1707,9 @@
   .editcard .lp:last-child, .lanebox .lp:last-child { margin-bottom: 0; }
   /* the one box left on the surface: a text editor says it is one by looking
      like one, and nothing else here is typed into */
-  /* The box is the editor; the controls sit in its top right (Ed, 2026-08-17)
-     and the lane is the rest of it, so the border is drawn once around both. */
+  /* The box is the editor and the lane is the whole of it: its controls —
+     B, I and the `[]` view switch — are the column's one strip since Q1294
+     (b) (Ed, 2026-09-10: *top right of the edit box*), `.editctl` below. */
   /* The drafting box lifts too (Ed, 2026-08-17). It is the one place a border
      was doing real work — a text editor says it is one by looking like one —
      so it is replaced rather than simply removed: the box sits *above* the
@@ -1723,13 +1724,38 @@
   }
   .lanebox:focus-within { box-shadow: var(--shadow-xl); }
   @media (prefers-reduced-motion: reduce) { .lanebox { transition: none; } }
-  .lanebox .lanectl {
-    display: flex; align-items: center; justify-content: flex-end; gap: var(--s2);
-    padding: var(--s1) var(--s2) 0;
-  }
   .lanebox .editlane {
-    border: 0; padding: var(--s2) 14px var(--s3);
+    border: 0; padding: var(--s3) 14px;
   }
+  /* **The lane controls, one strip at the top right of the lifted column**
+     (Q1294 (b), Ed 2026-09-10: *top right of the edit box, identical to the
+     existing composer control. You can put bold and italic there too*).
+     `.editctl` is a zero-height sticky box drawn before the column's
+     `.prose`, on the column's own measure box. **Its top is the card's top
+     edge by margin collapse**: the column's negative top margin (the one
+     that pays for the card's padding, above) collapses *through* an empty
+     block, so the box lands where the card begins and needs no lift of its
+     own — the strip hangs 1px in (22px centred in the card's 24px of top
+     padding) beside the right corner, and the sticky `top` is 1px less than
+     the tab's, so riding it rests under the navbar level with the 📝 tab —
+     the viewport is the card, tab and strip at its top edge, row at its
+     foot. Riding over the prose it takes a ground and the tab's own
+     `--shadow-md` (`detached`, set by session.js's `syncEditCtl`). Only in
+     edit mode: the host draws it where it draws the row. Measured: the
+     strip's top is the card's top + 1 at rest and the tab's top riding. */
+  .editctl {
+    position: sticky; top: calc(var(--nav-h) + var(--s2) - 1px); height: 0; z-index: 8;
+    box-sizing: border-box; max-width: calc(var(--measure) + 2 * var(--measure-gutter));
+    margin: 0 auto;
+  }
+  .editctl .lanectl {
+    position: absolute; top: 1px; right: var(--s2);
+    display: flex; align-items: center; gap: var(--s2);
+    background: var(--bg); border-radius: var(--r-sm);
+    transition: box-shadow 140ms ease;
+  }
+  .editctl.detached .lanectl { box-shadow: var(--shadow-md); }
+  @media (prefers-reduced-motion: reduce) { .editctl .lanectl { transition: none; } }
   /* markdown mode: the characters, exactly, and nothing rendered */
   .lanebox .editlane.md {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -1753,6 +1779,10 @@
     display: inline-flex; align-items: center; justify-content: center;
   }
   .lfmt:hover, .lmode:hover { background: var(--light); color: var(--fg); }
+  /* B and I are acts on a selection: quiet while no editing lane holds the
+     caret (Q1294 (b)); `[]` needs no lane and is never disabled */
+  .lfmt:disabled { opacity: 0.35; cursor: default; }
+  .lfmt:disabled:hover { background: none; color: var(--muted); }
   .lfmt b { font-size: var(--t-ui); }
   /* a serif italic I: the serifs are what stop it being a slash (Ed, 2026-08-17) */
   .lfmt .ital {
@@ -1766,10 +1796,6 @@
   }
   .lmode[aria-pressed="true"] { background: var(--primary); color: #fff; font-weight: 600; }
   .lmode[aria-pressed="true"]:hover { background: var(--primary-hover); color: #fff; }
-  /* on the proposal-row since Q1294: beside 🗑️, a control like the row's
-     buttons (the row is click-transparent everywhere else), the column's
-     one view switch */
-  .proposalrow .lmode { pointer-events: auto; margin-left: var(--s2); align-self: center; }
   .lanebox .editlane code {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 0.9em; background: var(--light); padding: 0 3px; border-radius: 3px;
