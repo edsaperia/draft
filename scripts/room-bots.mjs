@@ -6,25 +6,32 @@
  * see them get voted on and pass and fail … The thing I mostly want to test
  * is the UX rather than the mechanism.*)
  *
- *   npm run room-bots -- https://dev.docs.vote/d/<slug> [--min 30s] [--max 7m]
- *       [--heat 0.6] [--motions 0.08] [--seed <word>]
+ *   npm run room-bots -- https://docs.vote/d/<slug> --key=<DRAFT_BOT_KEY>
+ *       [--min 30s] [--max 7m] [--heat 0.6] [--motions 0.08] [--seed <word>]
  *
  * You found the document in your own browser and invite the bots through ✉️
- * like anybody else, at addresses ending `.bot@` — `ada.lovelace.bot@docs.vote`
- * — as many as you like, before or after 🍾. This script watches the dev
- * outbox, follows every invitation addressed to a bot, and from then on each
- * bot is a member: it names itself after its address, picks a face, answers
- * the questions the founder delegated, OKs the news it is owed, and — at a
- * random interval between `--min` and `--max`, independently of every other
- * bot — judges a card it was served, proposes a change to the text, answers
- * or raises a motion, or withdraws something of its own. Text proposals are
- * most of what it does, and `--heat` is how often a proposal lands on a
- * clause that is already contested, which is what makes the many-candidate
- * races and the ⚔️ card appear.
+ * like anybody else, at any address at `bots.docs.vote` —
+ * `ada.lovelace@bots.docs.vote` — as many as you like, before or after 🍾.
+ * **Mail to that domain is caught by the host and never sent** (Q1310; Ed,
+ * 2026-09-10: *they could never be confused for a real email address*): it
+ * is filed in the bot outbox, which this script reads. It follows every
+ * invitation addressed to a bot, and from then on each bot is a member: it
+ * names itself after its address, picks a face, answers the questions the
+ * founder delegated, OKs the news it is owed, and — at a random interval
+ * between `--min` and `--max`, independently of every other bot — judges a
+ * card it was served, proposes a change to the text, answers or raises a
+ * motion, or withdraws something of its own. Text proposals are most of what
+ * it does, and `--heat` is how often a proposal lands on a clause that is
+ * already contested, which is what makes the many-candidate races and the
+ * ⚔️ card appear.
  *
- * **It needs a dev server** — one without `RESEND_API_KEY`, because the
- * invitations are read back out of `GET /api/dev/outbox`. dev.docs.vote is
- * one; so is `npm run server` on your own machine.
+ * **Two outboxes it can read.** With `--key` (or `DRAFT_BOT_KEY` in the
+ * environment) it reads `GET /api/bots/outbox` bearing the key — the route
+ * ships in the production artifact, so this is how a room runs on docs.vote
+ * itself. Without a key it reads `GET /api/dev/outbox` as it always did,
+ * which needs a dev server: dev.docs.vote, or `npm run server` without
+ * `RESEND_API_KEY`. A dev server files a bot's mail in both, so either way
+ * works there.
  *
  * **Not a walk.** Nothing here asserts anything; it runs until you stop it
  * (Ctrl+C prints the tally). The seats are the same plain HTTP the page
@@ -44,7 +51,10 @@
 /* -- arguments --------------------------------------------------------- */
 
 const argv = process.argv.slice(2);
+/** `--name value` or `--name=value`, the latter so a key never splits on a shell. */
 const flag = (name, dflt) => {
+  const eq = argv.find((a) => a.startsWith(`--${name}=`));
+  if (eq !== undefined) return eq.slice(name.length + 3);
   const i = argv.indexOf(`--${name}`);
   return i >= 0 && argv[i + 1] !== undefined ? argv[i + 1] : dflt;
 };
@@ -52,9 +62,11 @@ const has = (name) => argv.includes(`--${name}`);
 const urlArg = argv.find((a) => /^https?:\/\//.test(a));
 
 const usage = () => {
-  console.error(`usage: npm run room-bots -- <document url> [--min 30s] [--max 7m] ` +
+  console.error(`usage: npm run room-bots -- <document url> [--key <DRAFT_BOT_KEY>] [--min 30s] [--max 7m] ` +
     `[--heat 0.6] [--motions 0.08] [--seed <word>]\n` +
-    `  the url is the document's own, e.g. https://dev.docs.vote/d/hollow-oak`);
+    `  the url is the document's own, e.g. https://docs.vote/d/hollow-oak\n` +
+    `  --key (or DRAFT_BOT_KEY in the environment) reads the host's bot outbox, which is how a room ` +
+    `runs on docs.vote; without it the dev outbox is read, which needs a dev server`);
   process.exit(2);
 };
 if (!urlArg || has('help')) usage();
@@ -78,6 +90,11 @@ const HEAT = Math.min(1, Math.max(0, Number(flag('heat', '0.6'))));
 const MOTIONS = Math.min(1, Math.max(0, Number(flag('motions', '0.08'))));
 const SEED = flag('seed', 'room');
 const OUTBOX_EVERY = duration(flag('outbox', '3s'));
+/** The outbox the bots read: the host's keyed bot outbox with a key, else the dev outbox. */
+const KEY = flag('key', process.env.DRAFT_BOT_KEY || null);
+const OUTBOX = KEY
+  ? { path: '/api/bots/outbox', init: { headers: { authorization: `Bearer ${KEY}` } } }
+  : { path: '/api/dev/outbox', init: {} };
 const TEND_MIN = duration(flag('tend', '10s'));
 const TEND_MAX = TEND_MIN * 3;
 const REPORT_EVERY = duration(flag('report', '5m'));
@@ -161,10 +178,12 @@ const follow = async (link) => {
 
 /* -- who a bot is ------------------------------------------------------- */
 
-/** `ada.lovelace.bot@docs.vote` → *Ada Lovelace*. */
-const nameOf = (email) => email.split('@')[0].replace(/\.bot$/i, '').split(/[._-]+/)
+/** A bot is any address at this domain (Q1310); the server's `isBotAddress` is the same rule. */
+const BOT_DOMAIN = 'bots.docs.vote';
+const isBot = (email) => (email ?? '').slice((email ?? '').lastIndexOf('@') + 1).toLowerCase() === BOT_DOMAIN;
+/** `ada.lovelace@bots.docs.vote` → *Ada Lovelace*. */
+const nameOf = (email) => email.split('@')[0].split(/[._-]+/)
   .filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1)).join(' ');
-const isBot = (email) => /\.bot@/i.test(email ?? '');
 
 /** Faces none of which are the surface's furniture (server `RESERVED_EMOJI`). */
 const FACES = ['🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐔', '🐧',
@@ -604,7 +623,7 @@ const forThisDocument = (mail) => TITLE === null || !mail.subject || mail.subjec
 const watchOutbox = async () => {
   while (!stopping) {
     try {
-      const r = await fetch(`${BASE}/api/dev/outbox`);
+      const r = await fetch(BASE + OUTBOX.path, OUTBOX.init);
       if (r.ok) {
         const { mails } = await r.json();
         for (const mail of [...mails].reverse()) {
@@ -640,11 +659,14 @@ const summary = () => {
 const main = async () => {
   const health = await fetch(`${BASE}/healthz`).then((r) => r.json()).catch(() => null);
   if (!health?.ok) { console.error(`${BASE} does not answer /healthz — is the server up?`); process.exit(1); }
-  const outbox = await fetch(`${BASE}/api/dev/outbox`);
+  const outbox = await fetch(BASE + OUTBOX.path, OUTBOX.init);
   if (!outbox.ok) {
-    console.error(`${BASE} has no dev outbox (GET /api/dev/outbox → ${outbox.status}). ` +
-      `The bots read their invitations from it, so this needs a dev server: dev.docs.vote, ` +
-      `or npm run server without RESEND_API_KEY.`);
+    console.error(`${BASE} will not serve the bots' outbox (GET ${OUTBOX.path} → ${outbox.status}). ` +
+      `The bots read their invitations from it. Two routes serve one: GET /api/bots/outbox on any host ` +
+      `with DRAFT_BOT_KEY set, read with --key=<that key> (docs.vote is one); or GET /api/dev/outbox ` +
+      `on a dev server — dev.docs.vote, or npm run server without RESEND_API_KEY — with no key at all.` +
+      (KEY && outbox.status === 401 ? ' The key given was refused.' : '') +
+      (KEY && outbox.status === 404 ? ' That host has no DRAFT_BOT_KEY set.' : ''));
     process.exit(1);
   }
   const door = await fetch(`${BASE}/api/d/${SLUG}/view`);
@@ -653,7 +675,8 @@ const main = async () => {
   TITLE = title ?? null;
   console.log(`room-bots on ${BASE}/d/${SLUG}${title ? ` — “${title}”` : ''} · build ${(health.build ?? '').slice(0, 7) || 'unreported'}`);
   console.log(`  each bot acts every ${MIN / 1000}–${Math.round(MAX / 1000)}s · heat ${HEAT} · motions ${MOTIONS} · seed “${SEED}”`);
-  console.log(`  invite bots through ✉️ at any address ending .bot@ — e.g. ada.lovelace.bot@docs.vote — and they arrive here.\n`);
+  console.log(`  reading ${OUTBOX.path}${KEY ? ' with the key' : ' (no key — the dev outbox)'}`);
+  console.log(`  invite bots through ✉️ at any address at ${BOT_DOMAIN} — e.g. ada.lovelace@${BOT_DOMAIN} — and they arrive here.\n`);
   const ticker = setInterval(summary, REPORT_EVERY);
   process.on('SIGINT', () => { stopping = true; clearInterval(ticker); summary(); process.exit(0); });
   await watchOutbox();

@@ -5,8 +5,12 @@
  * developer's inbox is a tail of one file. These templates are the real
  * copy; design/setup.js's MAILS is fixture-only preview text and the two
  * are free to differ.
+ *
+ * And since Q1310 a third destination in both branches: **a bot's mail is
+ * caught by the host** (Ed, 2026-09-10) — filed in the bot outbox, never
+ * handed to Resend — so `room-bots` can seat a room on docs.vote itself.
  */
-import { appendFileSync, mkdirSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 export interface Mail {
@@ -50,11 +54,58 @@ export const deliverable = (to: string): boolean => {
   return !UNDELIVERABLE_TLDS.has(tld);
 };
 
+/**
+ * **A bot's address is any address at `bots.docs.vote`** (Q1310; Ed,
+ * 2026-09-10: *why don't we catch all emails to \*@bots.docs.vote instead,
+ * since they could never be confused for a real email address*). The domain
+ * must match exactly, case aside: `x@bots.docs.vote.evil.com` and
+ * `x@notbots.docs.vote` are strangers' addresses like any other. A bot's
+ * mail is never handed to Resend and never a bounce — it is filed in the
+ * bot outbox instead, in the production branch and the dev branch alike,
+ * so `room-bots` seats the same room against docs.vote as against a dev
+ * server. Different from `deliverable`, which refuses; this one redirects.
+ */
+export const BOT_DOMAIN = 'bots.docs.vote';
+export const isBotAddress = (to: string): boolean => {
+  const at = to.lastIndexOf('@');
+  return at >= 0 && to.slice(at + 1).toLowerCase() === BOT_DOMAIN;
+};
+
+/**
+ * The bot outbox: the dev outbox's shape (`at`, `to`, `subject`, `text`,
+ * `link`), one JSONL row per mail, in the data dir beside it. Ephemeral by
+ * nature and by design — on the production host the data dir is the
+ * instance's own filesystem and goes with every deploy — which is fine: a
+ * magic link is one-use, and `room-bots` asks for a fresh login when the
+ * one it finds is spent.
+ */
+export const BOT_OUTBOX_FILE = 'bots-outbox.jsonl';
+export const botOutboxPath = (dataDir: string): string => join(dataDir, BOT_OUTBOX_FILE);
+
+/**
+ * The tail of an outbox file, newest first — the one reader behind both
+ * `GET /api/dev/outbox` and `GET /api/bots/outbox`, so the two routes
+ * answer in one shape and `room-bots` reads them with one function.
+ */
+export function outboxTail(file: string, n = 30): unknown[] {
+  if (!existsSync(file)) return [];
+  return readFileSync(file, 'utf8').split('\n').filter(Boolean).slice(-n)
+    .map((l) => { try { return JSON.parse(l) as unknown; } catch { return null; } })
+    .filter((m) => m !== null).reverse();
+}
+
 export function makeMailer(opts: {
   resendApiKey: string | null;
   mailFrom: string;
   dataDir: string;
 }): Mailer {
+  const botOutbox = botOutboxPath(opts.dataDir);
+  /** One row in an outbox file; the directory is made on the first write,
+   *  never at boot (config.ts: an eager mkdir once crash-looped a host). */
+  const file = (path: string, mail: Mail): void => {
+    mkdirSync(opts.dataDir, { recursive: true });
+    appendFileSync(path, JSON.stringify({ at: Date.now(), ...mail }) + '\n', 'utf8');
+  };
   if (opts.resendApiKey === null) {
     const outbox = join(opts.dataDir, 'outbox.jsonl');
     mkdirSync(opts.dataDir, { recursive: true });
@@ -68,7 +119,11 @@ export function makeMailer(opts: {
           console.log(`[mail dropped→${mail.to}] reserved address, never delivered`);
           return;
         }
-        appendFileSync(outbox, JSON.stringify({ at: Date.now(), ...mail }) + '\n', 'utf8');
+        file(outbox, mail);
+        // a bot's mail lands in both: the dev outbox as ever (📬 shows it,
+        // the walks read it), and the bot outbox so that `room-bots --key`
+        // works against a dev server exactly as against docs.vote
+        if (isBotAddress(mail.to)) file(botOutbox, mail);
         console.log(`[mail→${mail.to}] ${mail.subject}${mail.link ? ` :: ${mail.link}` : ''}`);
       },
     };
@@ -77,6 +132,13 @@ export function makeMailer(opts: {
   return {
     dev: false,
     send: async (mail) => {
+      // a bot's: filed on the host, never sent (Q1310) — the provider never
+      // hears of it, so it is not a bounce either
+      if (isBotAddress(mail.to)) {
+        file(botOutbox, mail);
+        console.log(`[mail→bot outbox→${mail.to}] ${mail.subject}`);
+        return;
+      }
       // never handed to the provider: a guaranteed bounce, and on a young
       // sending domain bounces are the expensive kind of mistake
       if (!deliverable(mail.to)) {

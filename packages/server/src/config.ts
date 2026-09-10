@@ -64,6 +64,17 @@ export interface ServerConfig {
    * by hand. An env-var change and a restart; no deploy.
    */
   mailOff: boolean;
+  /**
+   * The operator's key to the bot outbox (`DRAFT_BOT_KEY`, Q1310): mail to
+   * any address at `bots.docs.vote` is filed on the host instead of sent,
+   * and `GET /api/bots/outbox` serves the file to whoever bears this key
+   * — `room-bots --key`. Unset (or empty) the route answers 404 exactly
+   * like an unknown path, so a host without a key exposes nothing. Rotated
+   * by changing the variable; a leaked key lets a stranger act as the bots
+   * in bot rooms and nothing more, since no real member's mail ever lands
+   * in that file. Optional on the type so a test boot need not state it.
+   */
+  botKey?: string | null;
   /** HMAC secret for cookies and tokens at rest. */
   secret: string;
   /**
@@ -198,6 +209,9 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfi
     // keeps deliverability reputation off the domain the product lives on
     mailFrom: env.DRAFT_MAIL_FROM ?? 'docs.vote <invitations@mail.docs.vote>',
     mailOff: env.DRAFT_MAIL_OFF === '1',
+    // empty is unset: a cleared dashboard field must close the route, not
+    // open it to whoever sends an empty bearer
+    botKey: (env.DRAFT_BOT_KEY ?? '').trim() || null,
     notifyEmail: (env.DRAFT_NOTIFY_EMAIL ?? 'edsaperia@gmail.com') || null,
     secret: env.DRAFT_SECRET ?? persistedSecret(dataDir),
     trustProxy: env.DRAFT_TRUST_PROXY !== undefined

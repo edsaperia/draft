@@ -55,6 +55,14 @@ services:
         sync: false
       - key: DRAFT_STORE
         sync: false
+      # Q1310 (Ed, 2026-09-10): bot rooms run on docs.vote. Mail to any
+      # address at bots.docs.vote is caught by the host and filed in a bot
+      # outbox, served at GET /api/bots/outbox to the bearer of this key
+      # (room-bots --key). Unset, the route is a 404 like any unknown path.
+      # Set in the dashboard; rotate by changing it. A leaked key acts as
+      # the bots in bot rooms and nothing more (docs/OPERATING.md §10).
+      - key: DRAFT_BOT_KEY
+        sync: false
 
   # The dev host — dev.docs.vote (Ed, 2026-09-01): the *dev path* at a
   # public URL, so the phase ladder's ⏭ bar, the seat switcher and the 📬
@@ -94,3 +102,8 @@ services:
       # the dev path defaults trust-proxy off; Render terminates TLS
       - key: DRAFT_TRUST_PROXY
         value: '1'
+      # the same key as production's (Q1310): a dev server files a bot's
+      # mail in the public dev outbox AND the keyed bot outbox, so
+      # room-bots works here with or without --key. Optional.
+      - key: DRAFT_BOT_KEY
+        sync: false

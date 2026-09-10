@@ -13,8 +13,8 @@
  */
 import { createServer } from 'node:http';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
-import { randomBytes } from 'node:crypto';
-import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
+import { randomBytes, timingSafeEqual } from 'node:crypto';
+import { createReadStream, existsSync, statSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
 import { CATALOGUE, ConstitutionSession, isShapeName, mayApply, sha256Hex, view } from '../../constitution/src/index.js';
 import type { ApplicantRecord, ApplicationsValue, LogEntry, Price, PriceValue } from '../../constitution/src/index.js';
@@ -27,7 +27,7 @@ import { FilePersistence, WriteChain } from './persistence.js';
 import type { OutboxRow, Persistence } from './persistence.js';
 import { PgPersistence } from './pg-persistence.js';
 import { Stash } from './stash.js';
-import { MAILS, makeMailer } from './mailer.js';
+import { MAILS, botOutboxPath, makeMailer, outboxTail } from './mailer.js';
 import { MailOutbox } from './outbox.js';
 import type { QueuedMail } from './outbox.js';
 import { asEngineDoc, driveBridge, persistEngine, resumeBridge } from './engine-host.js';
@@ -60,6 +60,17 @@ function rateLimited(key: string, nowMs: number, max = 20, windowMs = 600_000): 
   if (!b || b.resetMs < nowMs) { BUCKET.set(key, { n: 1, resetMs: nowMs + windowMs }); return false; }
   b.n += 1;
   return b.n > max;
+}
+
+/** `Authorization: Bearer <key>` against the configured key, in constant
+ *  time (the cookie check's own discipline, auth.ts): a comparison must not
+ *  leak how far it matched. */
+function bearerOk(header: string | undefined, key: string): boolean {
+  const m = /^Bearer\s+(\S+)$/i.exec(header ?? '');
+  if (m === null) return false;
+  const given = Buffer.from(m[1]!, 'utf8');
+  const want = Buffer.from(key, 'utf8');
+  return given.length === want.length && timingSafeEqual(given, want);
 }
 
 export interface DraftServer {
@@ -864,13 +875,27 @@ export async function createDraftServer(cfg: ServerConfig,
     // misconfiguration can serve magic links — the code is not there.
     DEV: if (req.method === 'GET' && path === '/api/dev/outbox') {
       if (!mailer.dev) { json(res, 404, { error: 'not found' }); return; }
-      const p = join(cfg.dataDir, 'outbox.jsonl');
-      const mails = existsSync(p)
-        ? readFileSync(p, 'utf8').split('\n').filter(Boolean).slice(-30)
-            .map((l) => { try { return JSON.parse(l) as unknown; } catch { return null; } })
-            .filter((m) => m !== null).reverse()
-        : [];
-      json(res, 200, { mails });
+      json(res, 200, { mails: outboxTail(join(cfg.dataDir, 'outbox.jsonl')) });
+      return;
+    }
+
+    /* -- the bot outbox (Q1310) ------------------------------------------
+       Ships in the production artifact, and is deliberately **not** under
+       the DEV label: bot rooms run on docs.vote (Ed, 2026-09-10, *we can
+       have bot users in prod — we're still in alpha*). What it serves is
+       mail to `bots.docs.vote` only — the mailer files nothing else there —
+       so a key in the wrong hands acts as the bots in bot rooms and nothing
+       more. Without a key configured the route is an unknown path: 404,
+       the same body as any other. The limiter counts wrong keys only, so a
+       poller every few seconds is never throttled and a guesser is. */
+    if (req.method === 'GET' && path === '/api/bots/outbox') {
+      if (!cfg.botKey) { json(res, 404, { error: 'not found' }); return; }
+      if (!bearerOk(req.headers.authorization, cfg.botKey)) {
+        if (tooMany('bots')) return;
+        json(res, 401, { error: 'unauthorized' });
+        return;
+      }
+      json(res, 200, { mails: outboxTail(botOutboxPath(cfg.dataDir)) });
       return;
     }
 
