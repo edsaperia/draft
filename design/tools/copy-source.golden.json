@@ -442,7 +442,7 @@
   "session.row.broke": "No ✏️ left — another arrives as the drip accrues",
   "session.row.closeNothing": "Close — there is nothing here to put back",
   "session.row.discardAll": "Discard the whole draft — nothing has been spent on it",
-  "session.row.discardDraft": "Discard this draft — nothing has been spent on it yet",
+  "session.row.discardThis": "Discard this change — nothing has been spent on it",
   "session.row.editCost": " — one edit leaves your wallet to pay for it",
   "session.row.holdPropose": "Hold to propose this",
   "session.row.idle": "Nothing has changed yet — type in the document to start a draft",

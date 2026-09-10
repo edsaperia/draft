@@ -2027,6 +2027,105 @@ if (caret) {
   }));
   say('typing     · ' + (r.editCard ? 'opens the editing card' : 'FAIL: no editing card') +
     ' · propose control ' + (r.proposeBtn ? 'present and live' : 'MISSING'));
+  /* ---- **🗑️ per site on a patch** (Q1306 (a), Ed 2026-09-10: *the 🗑️ for the
+   * edit in one place should only discard that edit, not the whole patch*).
+   * A second site makes the draft a patch — two cards, one draft — and the
+   * second card's 🗑️ must take its own place alone: one site left, the first
+   * card still open on what it holds, edit mode still on. The second site is
+   * a clause two blocks clear of the first where the document has one (a
+   * neighbour would join the run instead, K15), and otherwise **a gap** after
+   * the last clause outside the draft, since a gap never joins a run (Q261) —
+   * which is this walk's own case, its document being two adjacent clauses.
+   * When the first site is the gap (`--new-clause`) any clause serves. The
+   * **second** site is the one discarded so that what the walk goes on to
+   * propose is the site it typed first, in both branches. Before the fix the
+   * press dropped the whole draft, which this reads as `sites 0`. An empty
+   * document has one clause and nowhere for a second site, so the step
+   * stands down there rather than inventing one. */
+  if (EMPTY_TEXT) {
+    say('site bin   · skipped — an empty document has one clause, so there is no patch to make');
+  } else {
+    // a paragraph's words without its gutter: the tab and the fold are text too
+    const second = await page.evaluate(() => {
+      const strip = (p) => { const c = p.cloneNode(true); c.querySelectorAll('.chipcol, .nocaret').forEach((el) => el.remove()); return c.textContent.trim(); };
+      const d = (window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours');
+      if (!d || d.sites.length !== 1) return null;
+      const DOC = window.SESSION.DOC;
+      const idx = (k) => DOC.findIndex((l) => l.key === k);
+      const first = { key: d.sites[0].keys[0], text: d.sites[0].text };
+      const gapFirst = /^G\d+$/.test(first.key);
+      const held = d.sites[0].keys.map(idx);
+      const ps = [...document.querySelectorAll('#charter .prose p.editable[data-key]')]
+        .filter((p) => !p.closest('.sugg') && !p.classList.contains('gap') && strip(p).length > 5);
+      const sel = (r) => { const s = getSelection(); s.removeAllRanges(); s.addRange(r); };
+      const p = gapFirst ? ps[0] : ps.find((x) => held.every((i) => Math.abs(idx(x.dataset.key) - i) > 1));
+      if (p) {
+        const tn = [...p.childNodes].find((n) => n.nodeType === 3);
+        if (!tn) return null;
+        p.scrollIntoView({ block: 'center' });
+        const r = document.createRange(); r.setStart(tn, Math.min(3, tn.length)); r.collapse(true); sel(r);
+        return { kind: 'clause', key: p.dataset.key, text: strip(p), first };
+      }
+      const last = ps[ps.length - 1];
+      if (gapFirst || !last || d.keys.includes(last.dataset.key)) return null;
+      last.scrollIntoView({ block: 'center' });
+      const r = document.createRange(); r.selectNodeContents(last); r.collapse(false); sel(r);
+      return { kind: 'gap', key: null, text: null, first, after: last.dataset.key };
+    });
+    if (!second) {
+      say('site bin   · FAIL: nowhere to make a second site — no clause clear of the draft, and no clause end outside it');
+      stuck.push('a second site');
+    } else {
+      if (second.kind === 'gap') {
+        await page.keyboard.press('Enter');
+        await T(700);
+        second.key = await page.evaluate((firstKey) => {
+          const d = (window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours');
+          const s = d && d.sites.find((x) => x.keys[0] !== firstKey);
+          return s ? s.keys[0] : null;
+        }, second.first.key);
+      }
+      await page.keyboard.type('Y');
+      await T(700);
+      const two = await page.evaluate(() => {
+        const d = (window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours');
+        return { sites: d ? d.sites.length : 0, cards: document.querySelectorAll('.sugg.editcard').length,
+          keys: d ? d.sites.map((s) => s.keys[0]) : [] };
+      });
+      const twoOk = two.sites === 2 && two.cards === 2 && !!second.key && two.keys.includes(second.key);
+      const bin = twoOk && await handle('.sugg.editcard[data-site="' + second.key + '"] [data-act="draft-cancel"]',
+        'the second card’s 🗑️');
+      let binTitle = null;
+      if (bin) {
+        binTitle = await bin.getAttribute('title');
+        await bin.scrollIntoViewIfNeeded();
+        await bin.click();
+        await T(700);
+      }
+      const one = await page.evaluate((k) => {
+        const strip = (p) => { const c = p.cloneNode(true); c.querySelectorAll('.chipcol, .nocaret').forEach((el) => el.remove()); return c.textContent.trim(); };
+        const d = (window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours');
+        const p = document.querySelector('#charter .prose p.editable[data-key="' + k + '"]');
+        return { sites: d ? d.sites.length : 0, first: d && d.sites[0] ? d.sites[0].keys[0] : null,
+          firstText: d && d.sites[0] ? d.sites[0].text : null,
+          cards: document.querySelectorAll('.sugg.editcard').length,
+          back: !!(p && !p.closest('.sugg')), paraText: p ? strip(p) : null,
+          gapKey: d ? d.gapKey : null, anchor: !!document.querySelector('.insert-anchor[data-anchor="draft-yours"]'),
+          openId: window.SESSION.openId, editing: document.getElementById('doc').classList.contains('editing'),
+          row: !!document.querySelector('#charter [data-proposalrow]') };
+      }, second.key);
+      // its own place back: a clause's words as they were, a gap closed with its anchor gone
+      const placeBack = second.kind === 'clause' ? one.back && one.paraText === second.text
+        : !one.anchor && !one.gapKey;
+      const oneOk = twoOk && !!bin && one.sites === 1 && one.first === second.first.key && one.firstText === second.first.text &&
+        one.cards === 1 && placeBack && one.openId === 'draft-yours' && one.editing && one.row;
+      say('site bin   · ' + (oneOk
+        ? 'two sites, and the second card’s 🗑️ takes its own: ' + (second.kind === 'gap' ? 'the gap ' + second.key + ' after ' + second.after + ' closed' : second.key + ' back in the column') +
+          ', ' + one.first + ' still open · “' + binTitle + '”'
+        : 'FAIL: ' + JSON.stringify({ two, one, second: { kind: second.kind, key: second.key, firstKey: second.first.key } })));
+      if (!oneOk) stuck.push('🗑️ per site');
+    }
+  }
   /* ---- **the door in both directions** (Q1133, Ed's QA 2026-09-02) ---------
    * The walk already leaves edit mode twice, above — but both from a column
    * with **no draft on it**, and that is the half that worked. Ed's step 5 is
