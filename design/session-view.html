@@ -10461,6 +10461,20 @@
     if (!out.length) out.push('L' + Math.min(sp.start, Math.max(0, lines.length - 1)));
     return out;
   };
+  // **A race on a gap stands in the gap** (Q1308, Ed's bot room 2026-09-10):
+  // an insertion's contested span is empty, so keying it to the line at
+  // `start` filed it beside the clause *after* the gap and drew its card as
+  // that clause's replacement. It takes the draft's own shape instead (Q261,
+  // `gap-site`): the gap key, the block before it as `insertAfterKey` — the
+  // read side's held-open anchor — and the insert head. A crown question and
+  // a park on an inserted line take the same site.
+  const siteOfSpan = (sp, lines) => {
+    if (sp.end > sp.start) return { keys: keysOfSpan(sp, lines) };
+    let at = -1;
+    for (let i = Math.min(sp.start, lines.length) - 1; i >= 0; i--) if ((lines[i] || '').trim()) { at = i; break; }
+    const gapKey = 'G' + sp.start;
+    return { keys: [gapKey], gapKey, insertAfterKey: at >= 0 ? 'L' + at : null, isInsert: true };
+  };
   // a candidate's reading of a span: the current lines with its hunks applied
   const applyIn = (lines, sp, hunks) => {
     const region = lines.slice(sp.start, sp.end);
@@ -10546,7 +10560,8 @@
       // the contested footprint is a list of spans; the page anchors the race
       // at their union (one clause run)
       const csp = spanOf(r.contested && r.contested.length ? r.contested : r.candidates.flatMap((c) => c.hunks));
-      const keys = keysOfSpan(csp, lines);
+      const site = siteOfSpan(csp, lines);
+      const keys = site.keys;
       const inc = plain(lines, csp);
       const textOf = (c) => applyIn(lines, csp, c.hunks);
       const byId = (id) => r.candidates.find((c) => c.id === id);
@@ -10571,8 +10586,8 @@
         a: sideOfId(j.a), b: sideOfId(j.b), outcome: j.outcome,
         locked: !!j.locked, note: j.locked ? SHIFTED_NOTE : null }));
       const base = {
-        id: r.id, keys, state: canAsk ? 'needs' : r.judged ? 'deciding' : 'needs',
-        qLabel: labelFor(keys[0]),
+        id: r.id, ...site, state: canAsk ? 'needs' : r.judged ? 'deciding' : 'needs',
+        qLabel: labelFor(site.insertAfterKey || keys[0]),
         // urgency is the router's own (SPEC §8.1): the served card's value
         // over the best in this feed; the fill is the race's closeness to
         // resolution — a magnitude the engine cannot be made to sign (Q501)
@@ -10636,9 +10651,9 @@
         const c = parked.get(q.text.candidateId);
         if (!c || !(c.hunks || []).length) continue;
         const sp = spanOf(c.hunks);
-        const keys = keysOfSpan(sp, lines);
-        items.push({ id: 'crown:' + q.id, kind: 'crown', question: q.id, keys,
-          state: 'needs', qLabel: labelFor(keys[0]), urgency: 1, pct: 100,
+        const site = siteOfSpan(sp, lines);
+        items.push({ id: 'crown:' + q.id, kind: 'crown', question: q.id, ...site,
+          state: 'needs', qLabel: labelFor(site.insertAfterKey || site.keys[0]), urgency: 1, pct: 100,
           cap: 'the membership passed this — it waits on you',
           marked: markedOf(plain(lines, sp), applyIn(lines, sp, c.hunks)),
           rationale: c.rationale, by: authorBy(c.author) });
@@ -10662,9 +10677,9 @@
       parkKeys.add(pid);
       if (amFounder() || p.mine) continue;
       const sp = spanOf(p.contested && p.contested.length ? p.contested : [{ start: 0, end: 0 }]);
-      const keys = keysOfSpan(sp, lines);
-      items.push({ id: pid, kind: 'park', keys, state: 'deciding',
-        qLabel: labelFor(keys[0]), urgency: 0, pct: 100,
+      const site = siteOfSpan(sp, lines);
+      items.push({ id: pid, kind: 'park', ...site, state: 'deciding',
+        qLabel: labelFor(site.insertAfterKey || site.keys[0]), urgency: 0, pct: 100,
         cap: PARK.awaiting, parkNote: PARK.awaiting,
         unread: !SESSION.readSeals.has(pid) });
     }

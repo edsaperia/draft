@@ -237,6 +237,34 @@
     const line = DOC.find((l) => l.key === key);
     return line ? line.x : '';
   }
+  // **The head is the whole run** (Q1308, Ed's bot room 2026-09-10): a race
+  // whose contested span covers several blocks — a merge, a patch across
+  // neighbours — is keyed to every block in the run, and its head showed the
+  // first block alone while every candidate ran on into the second. The head
+  // reads the run as one piece, as a composer site does (225).
+  function runTextFor(s, key) {
+    const keys = (s && s.keys) || [];
+    if (keys.length < 2 || !keys.includes(key) || keys.some(isGapKey)) return currentTextFor(key);
+    return keys.map(currentTextFor).filter(Boolean).join(' ');
+  }
+  // the insert head's sentence: what the charter runs straight from and to
+  // (Q1308 — it was one fixture sentence naming the fixture's own headings)
+  function gapNothing(s) {
+    const at = s && s.insertAfterKey ? DOC.findIndex((l) => l.key === s.insertAfterKey) : -1;
+    // a neighbour in its own first words: a short one whole, with its own
+    // stop; a long one cut at a word, its dangling comma dropped, ending in …
+    const words = (l) => { const w = String((l && l.x) || '').trim(); return w.length > 40 ? w.slice(0, 40).replace(/\s+\S*$/, '').replace(/[\s,;:—–-]+$/, '') + '…' : w; };
+    const next = DOC.slice(at + 1).find((l) => !l.gap && l.key && String(l.x || '').trim());
+    const H = window.COPY.grammar.head;          // the head's copy is the card grammar's
+    if (at < 0) return next ? H.nothingBefore(words(next)) : H.nothingAtAll;
+    return next ? H.nothing(words(DOC[at]), words(next)) : H.nothingAfter(words(DOC[at]));
+  }
+  // the head of a card keyed to a clause or to a gap: the run's text, or the
+  // gap's own label and sentence
+  function headOpts(s, key) {
+    if ((s && s.isInsert) || isGapKey(key)) return { text: null, nothing: gapNothing(s), label: T.insert.headLabel, key: key };
+    return { text: runTextFor(s, key), key: key };
+  }
 
   // Headings form a tree: level 1 parts, level 2 chapters, level 3 sections. A
   // heading owns everything until the next heading of its own level or above, so
@@ -3020,7 +3048,7 @@
     const G = window.COPY.grammar;
     return (
       '<div class="sugg quick-open ledger-open" data-card="' + s.id + '" data-site="' + (key || '') + '">' +
-      clauseHeadHtml(s, { text: currentTextFor(key), key: key, chips: chipsFor(key, s.id) }) +
+      clauseHeadHtml(s, Object.assign(headOpts(s, key), { chips: chipsFor(key, s.id) })) +
       ledgerHtml(s) + crownNote(s) + parkNote(s) +
       '<div class="race-mid commitrow">' +
       '<button class="btn glyphbtn" data-act="clear-close" title="' + G.commit.binLocked + '">🗑️</button>' +
@@ -3093,7 +3121,7 @@
       const ckey = (s.keys ?? [])[0];
       return (
         '<div class="sugg quick-open" data-card="' + s.id + '" data-site="' + (ckey || '') + '">' +
-        clauseHeadHtml(s, { text: currentTextFor(ckey), key: ckey, chips: chipsFor(ckey, s.id) }) +
+        clauseHeadHtml(s, Object.assign(headOpts(s, ckey), { chips: chipsFor(ckey, s.id) })) +
         fieldHtml(proposalHtml(s, { html: resultOnly(s.marked), why: s.rationale, by: s.by })) +
         '<div class="foot">' + T.crown.foot + '</div>' +
         '<div class="race-mid commitrow">' +
@@ -3121,7 +3149,7 @@
       const pkey = (s.keys ?? [])[0];
       return (
         '<div class="sugg quick-open park-open" data-card="' + s.id + '" data-site="' + (pkey || '') + '">' +
-        clauseHeadHtml(s, { text: currentTextFor(pkey), key: pkey, chips: chipsFor(pkey, s.id) }) +
+        clauseHeadHtml(s, Object.assign(headOpts(s, pkey), { chips: chipsFor(pkey, s.id) })) +
         '<p class="setnote">' + esc(s.parkNote || '') + '</p>' +
         (s.unread && !readSeals.has(s.id)
           ? '<div class="race-mid commitrow"><span></span>' +
@@ -3147,10 +3175,9 @@
       // race can vote to keep it: displacement is settled by the
       // adoption-threshold, not by this judgment (SPEC §5).
       const rkey = (sv.keys ?? [])[0];
-      const cur = currentTextFor(rkey);
       return (
         '<div class="sugg race-open" data-card="' + sv.id + '" data-site="' + rkey + '">' +
-        clauseHeadHtml(sv, { text: cur, key: rkey, chips: chipsFor(rkey, sv.id) }) +
+        clauseHeadHtml(sv, Object.assign(headOpts(sv, rkey), { chips: chipsFor(rkey, sv.id) })) +
         // two replies to the same post; each states its own change against the
         // clause above, and carries its own argument and controls
         fieldHtml(
@@ -3206,18 +3233,18 @@
     // lane offers ✏️ — writing a rival section is a different gesture and
     // nobody has designed it (Q261).
     const key = (sv.keys ?? [])[0];
-    const cur = sv.isInsert ? null : currentTextFor(key);
     const noEdit = sv.isInsert ? false : undefined;
     // a proposed section is the one case with no clause to redline against, so
-    // it states itself whole and its new heading is all-new
+    // it states itself whole and its new heading, where it brings one, is
+    // all-new (a live insertion is one line and brings none — Q1308)
     const prop = sv.isInsert
-      ? '<div class="rtext"><ins>' + esc(sv.newHeading) + '</ins></div><div class="rtext">' + resultOnly(sv.marked) + '</div>'
+      ? (sv.newHeading ? '<div class="rtext"><ins>' + esc(sv.newHeading) + '</ins></div>' : '') +
+        '<div class="rtext">' + resultOnly(sv.marked) + '</div>'
       : resultOnly(sv.marked);
     return (
       '<div class="sugg quick-open" data-card="' + sv.id + '" data-site="' + (key || '') + '">' +
-      clauseHeadHtml(sv, { text: cur, key: key, v: 'keep', edit: noEdit,
-                          label: sv.isInsert ? T.insert.headLabel : undefined,
-                          chips: chipsFor(key, sv.id) }) +
+      clauseHeadHtml(sv, Object.assign(headOpts(sv, key), { v: 'keep', edit: noEdit,
+                          chips: chipsFor(key, sv.id) })) +
       groundNote(sv) +
       fieldHtml(proposalHtml(sv, { v: 'approve', html: prop, why: sv.rationale, by: sv.by, edit: noEdit })) +
       reviseNote(sv) + crownNote(sv) + parkNote(sv) +
@@ -3667,10 +3694,10 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         }
       }
 
-      const ins = line.key
-        ? SUGGS.find((g) => g.insertAfterKey === line.key)
-        : undefined;
-      if (ins) {
+      // every item standing in this gap, each on its own anchor (Q1308: two
+      // insertions at one gap are two races, and `find` left the second with
+      // nowhere to stand)
+      for (const ins of line.key ? SUGGS.filter((g) => g.insertAfterKey === line.key) : []) {
         // the gap stays inside the prose column so its gutter mark lines up
         // with every other mark in the margin
         html += '<div class="insert-anchor" data-anchor="' + ins.id + '" title="' +
