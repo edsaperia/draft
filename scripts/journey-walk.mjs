@@ -2007,7 +2007,7 @@ if (caret) {
         const d = (window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours');
         const head = document.querySelector('.sugg.editcard .clausehead .headlab');
         return { key: d && d.sites[0] ? d.sites[0].keys[0] : null, text: d && d.sites[0] ? d.sites[0].text : null,
-          insertAfter: d ? d.insertAfterKey : null, label: head ? head.textContent.trim() : null,
+          insertAfter: d && d.sites[0] ? d.sites[0].insertAfterKey : null, label: head ? head.textContent.trim() : null,
           anchor: !!document.querySelector('.insert-anchor[data-anchor="draft-yours"]') };
       });
       const gapOk = /^G\d+$/.test(g.key || '') && g.text === '' && /new clause/i.test(g.label || '');
@@ -2110,13 +2110,15 @@ if (caret) {
           firstText: d && d.sites[0] ? d.sites[0].text : null,
           cards: document.querySelectorAll('.sugg.editcard').length,
           back: !!(p && !p.closest('.sugg')), paraText: p ? strip(p) : null,
-          gapKey: d ? d.gapKey : null, anchor: !!document.querySelector('.insert-anchor[data-anchor="draft-yours"]'),
+          // the gap bookkeeping is each site's own since Q1311, never the draft's
+          gapKeys: d ? d.sites.filter((s) => s.gapKey).map((s) => s.gapKey) : [],
+          anchor: !!document.querySelector('.insert-anchor[data-anchor="draft-yours"]'),
           openId: window.SESSION.openId, editing: document.getElementById('doc').classList.contains('editing'),
           row: !!document.querySelector('#charter [data-proposalrow]') };
       }, second.key);
       // its own place back: a clause's words as they were, a gap closed with its anchor gone
       const placeBack = second.kind === 'clause' ? one.back && one.paraText === second.text
-        : !one.anchor && !one.gapKey;
+        : !one.anchor && !one.gapKeys.includes(second.key);
       const oneOk = twoOk && !!bin && one.sites === 1 && one.first === second.first.key && one.firstText === second.first.text &&
         one.cards === 1 && placeBack && one.openId === 'draft-yours' && one.editing && one.row;
       say('site bin   · ' + (oneOk
@@ -2124,6 +2126,128 @@ if (caret) {
           ', ' + one.first + ' still open · “' + binTitle + '”'
         : 'FAIL: ' + JSON.stringify({ two, one, second: { kind: second.kind, key: second.key, firstKey: second.first.key } })));
       if (!oneOk) stuck.push('🗑️ per site');
+    }
+  }
+  /* ---- **two gap sites, each on its own anchor** (Q1311, Ed 2026-09-10) ----
+   * A patch may hold two gaps — a new clause after clause 2 and another after
+   * clause 6 — and until this the gap bookkeeping (`gapKey`, `insertAfterKey`)
+   * sat on the draft, so a second gap had nowhere to stand: one anchor, one
+   * card, whichever gap wrote last. It is each site's own now. The step adds
+   * gaps until the draft holds two, at the edges of clauses outside it (Enter
+   * at a clause's start makes the gap before it, at its end the gap after —
+   * K31), which on this walk's two-clause document means, in the default
+   * shape, the gap **after the clause the draft has swallowed** (`G1` after
+   * `L0` — no anchor was drawn there before this, the column's writing branch
+   * leaving the loop above the anchors) and the gap after the last; under
+   * `--new-clause`, whose draft already holds the last gap, the gap before
+   * `L0` (the head anchor, `insertAfterKey` null) and the one between. Two
+   * anchors keyed by site, a card on each with its own typing, a rail entry
+   * per site, none hidden, and nothing on the draft itself; then the
+   * first-added gap's card 🗑️ takes its own — the other gap's anchor, card
+   * and text stand — and the rest of what was added is binned the same way,
+   * so the draft is back to the site it typed first and what the walk goes on
+   * to propose is unchanged. */
+  if (EMPTY_TEXT) {
+    say('two gaps   · skipped — an empty document has one clause, so there is no gap to add');
+  } else {
+    const before = await page.evaluate(() => {
+      const d = (window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours');
+      return d ? { sites: d.sites.map((s) => ({ key: s.keys[0], text: s.text })), gaps: d.sites.filter((s) => s.gapKey).map((s) => s.gapKey) } : null;
+    });
+    // where the gaps can go: each clause outside the draft offers the gap
+    // before it and the gap after, less any the draft already holds
+    const plan = before && before.sites.length === 1 ? await page.evaluate((need) => {
+      const strip = (p) => { const c = p.cloneNode(true); c.querySelectorAll('.chipcol, .nocaret').forEach((el) => el.remove()); return c.textContent.trim(); };
+      const d = (window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours');
+      const held = new Set(d.sites.map((s) => s.keys[0]));
+      const num = (k) => { const m = /(\d+)$/.exec(k); return m ? +m[1] : -1; };
+      const ps = [...document.querySelectorAll('#charter .prose p.editable[data-key]')]
+        .filter((p) => !p.closest('.sugg') && !p.classList.contains('gap') && strip(p).length > 5);
+      const out = [];
+      for (const p of ps) for (const edge of ['start', 'end']) {
+        const gap = 'G' + (num(p.dataset.key) + (edge === 'end' ? 1 : 0));
+        if (held.has(gap) || out.some((o) => o.gap === gap)) continue;
+        out.push({ key: p.dataset.key, edge, gap });
+      }
+      return out.slice(0, need);
+    }, 2 - before.gaps.length) : null;
+    if (!before || before.sites.length !== 1 || !plan || plan.length !== 2 - before.gaps.length) {
+      say('two gaps   · FAIL: no draft of one site to add gaps to, or nowhere to add them · ' + JSON.stringify({ before, plan }));
+      stuck.push('two gaps');
+    } else {
+      const added = [];
+      for (const step of plan) {
+        await page.evaluate(({ key, edge }) => {
+          const p = document.querySelector('#charter .prose p.editable[data-key="' + key + '"]');
+          p.scrollIntoView({ block: 'center' });
+          const r = document.createRange();
+          if (edge === 'end') { r.selectNodeContents(p); r.collapse(false); }
+          else { const tn = [...p.childNodes].find((n) => n.nodeType === 3); r.setStart(tn, 0); r.collapse(true); }
+          const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+        }, step);
+        await page.keyboard.press('Enter');
+        await T(700);
+        await page.keyboard.type('New clause in ' + step.gap + '.');
+        await T(500);
+        added.push(step.gap);
+      }
+      const read = () => page.evaluate(() => {
+        const d = (window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours');
+        const lanes = {};
+        document.querySelectorAll('.sugg.editcard[data-site]').forEach((c) => { const l = c.querySelector('[data-lane]'); lanes[c.dataset.site] = l ? l.textContent : null; });
+        return {
+          sites: d ? d.sites.map((s) => ({ key: s.keys[0], text: s.text, gapKey: s.gapKey ?? null, after: s.insertAfterKey === undefined ? 'undef' : s.insertAfterKey })) : [],
+          gaps: d ? d.sites.filter((s) => s.gapKey).map((s) => s.gapKey) : [],
+          onDraft: d ? ('gapKey' in d) || ('insertAfterKey' in d) : false,
+          anchors: [...document.querySelectorAll('.insert-anchor[data-anchor="draft-yours"]')].map((a) => a.dataset.site || null),
+          cards: [...document.querySelectorAll('.sugg.editcard')].map((c) => c.dataset.site),
+          rail: [...document.querySelectorAll('.qitem[data-q="draft-yours"]')].map((q) => ({ site: q.dataset.site, shown: q.style.display !== 'none' })),
+          lanes,
+        };
+      });
+      const same = (a, b) => a.length === b.length && a.every((x) => b.includes(x));
+      const two = await read();
+      const gapsHere = [...before.gaps, ...added];
+      const gapsOk = same(two.gaps, gapsHere) && two.sites.every((s) => !s.gapKey || s.after !== 'undef') && !two.onDraft;
+      const twoOk = gapsOk && two.gaps.length === 2 && same(two.anchors, two.gaps) && same(two.cards, two.sites.map((s) => s.key)) &&
+        two.rail.length === two.sites.length && two.rail.every((r) => r.shown) &&
+        added.every((g) => two.lanes[g] === 'New clause in ' + g + '.');
+      say('two gaps   · ' + (twoOk
+        ? 'two gap sites ' + two.gaps.join(' and ') + ' (after ' + two.sites.filter((s) => s.gapKey).map((s) => s.after === null ? 'the start' : s.after).join(', ') +
+          '), two anchors keyed by site, ' + two.cards.length + ' cards, ' + two.rail.length + ' rail entries shown, nothing on the draft'
+        : 'FAIL: ' + JSON.stringify({ two, added, before })));
+      if (!twoOk) stuck.push('two gap sites');
+      // the first-added gap's own 🗑️, and the other stands
+      const other = gapsHere.find((g) => g !== added[0]);
+      let stood = null;
+      const bin1 = twoOk && await handle('.sugg.editcard[data-site="' + added[0] + '"] [data-act="draft-cancel"]', 'the first gap’s 🗑️');
+      if (bin1) {
+        await bin1.scrollIntoViewIfNeeded();
+        await bin1.click();
+        await T(700);
+        stood = await read();
+        const otherText = before.gaps.includes(other) ? before.sites.find((s) => s.key === other).text : 'New clause in ' + other + '.';
+        const stoodOk = same(stood.gaps, [other]) && same(stood.anchors, [other]) && stood.cards.includes(other) && !stood.cards.includes(added[0]) &&
+          stood.lanes[other] === otherText && stood.sites.length === two.sites.length - 1 && !stood.onDraft;
+        say('gap bin    · ' + (stoodOk
+          ? added[0] + '’s 🗑️ takes its own: its anchor and card gone, ' + other + ' standing on its anchor with its text'
+          : 'FAIL: ' + JSON.stringify({ stood, added, other })));
+        if (!stoodOk) stuck.push('the other gap standing');
+      }
+      // …and what this step added goes the same way, so the draft is what it was
+      for (const g of added.slice(1)) {
+        const b = await handle('.sugg.editcard[data-site="' + g + '"] [data-act="draft-cancel"]', 'the gap’s 🗑️');
+        if (!b) break;
+        await b.scrollIntoViewIfNeeded();
+        await b.click();
+        await T(700);
+      }
+      const after = await read();
+      const backOk = same(after.sites.map((s) => s.key), before.sites.map((s) => s.key)) &&
+        before.sites.every((s) => after.sites.find((x) => x.key === s.key && x.text === s.text)) && same(after.anchors, before.gaps);
+      say('gaps back  · ' + (backOk ? 'the draft is its first site again, ' + before.sites.map((s) => s.key).join(', ')
+        : 'FAIL: ' + JSON.stringify({ before, after })));
+      if (!backOk) stuck.push('the draft back to one site');
     }
   }
   /* ---- **the door in both directions** (Q1133, Ed's QA 2026-09-02) ---------
