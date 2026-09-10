@@ -1721,8 +1721,23 @@ const editState = await page.evaluate(() => {
     firstTag: first ? first.tagName + '.' + first.className + (first === col.firstElementChild ? '' : ' (not the column’s first child: ' + col.firstElementChild.tagName + '.' + col.firstElementChild.className + ')') : null,
     // the runway is the card's: no .doc padding under it, and the card's foot is .doc's
     runway: Math.round(parseFloat(getComputedStyle(document.getElementById('doc')).paddingBottom)),
-    gap: !!document.querySelector('#charter .prose p.editable.blank.gap[data-key^="G"]') };
+    gap: !!document.querySelector('#charter .prose p.editable.blank.gap[data-key^="G"]'),
+    // **the lane controls are the column's one strip** (Q1294 (b), Ed
+    // 2026-09-10: *top right of the edit box*): B · I · [] at the card's top
+    // right — 1px inside its top edge, --s2 (8px) inside its right — no lane
+    // carrying controls of its own, and no [] left on the row
+    strip: (() => {
+      const st = document.querySelector('#charter .editctl .lanectl');
+      if (!st || !col) return null;
+      const r = st.getBoundingClientRect(), c = col.getBoundingClientRect();
+      return { order: [...st.querySelectorAll('button')].map((x) => x.textContent.trim()).join(''),
+        top: Math.round(r.top - c.top), right: Math.round(c.right - r.right),
+        laneCtl: document.querySelectorAll('.lanebox .lanectl').length,
+        rowMode: document.querySelectorAll('#charter [data-proposalrow] .lmode').length };
+    })() };
 });
+const stripOk = !!editState.strip && editState.strip.order === 'BI[]' && editState.strip.top === 1 &&
+  editState.strip.right === 8 && editState.strip.laneCtl === 0 && editState.strip.rowMode === 0;
 const rowBare = editState.rowGround && /rgba\(0, 0, 0, 0\)|transparent/.test(editState.rowGround.bg) &&
   editState.rowGround.shadow === 'none' && editState.rowGround.border === 'none';
 // ✏️ always; ✒️ only ever *beside* it, never instead (the founder has not
@@ -1732,9 +1747,9 @@ const pairOk = editState.commits[editState.commits.length - 1] === '✏️' &&
 const editOk = (await hostEditable()) === 'true' && editState.editing && editState.row && editState.greyed &&
   pairOk && rowBare && editState.rideTabs === 3 &&
   editState.rideRight === editState.consRight + 2 && editState.padTop === 24 &&
-  Math.abs(editState.lineDelta) <= 1 && editState.runway === 0 &&
+  Math.abs(editState.lineDelta) <= 1 && editState.runway === 0 && stripOk &&
   (EMPTY_TEXT ? !editState.gap : editState.gap);
-say('edit mode  · ' + JSON.stringify(editState) + (editOk ? '' : '  FAIL: 📝 should lift the column (24px over the first line), fan the pile to three tabs on the constitution\'s gutter, draw the bare row greyed with ✏️ (✒️ only beside it), and the trailing gap'));
+say('edit mode  · ' + JSON.stringify(editState) + (editOk ? '' : '  FAIL: 📝 should lift the column (24px over the first line), fan the pile to three tabs on the constitution\'s gutter, draw the bare row greyed with ✏️ (✒️ only beside it), the B · I · [] strip at the card\'s top right with no lane carrying controls, and the trailing gap'));
 if (!editOk) stuck.push('edit mode');
 await page.evaluate(() => document.querySelector('#ridetab .achip[data-tab="text"]').click());
 await T(300);

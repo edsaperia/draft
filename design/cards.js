@@ -685,6 +685,29 @@ window.CARDS = (function () {
   // everything except the clause: what the opening gap reveals
   const cardBody = (el) => [...el.children].filter((c) => !c.classList.contains('clausehead'));
 
+  // ---- the lane controls (Q1294 (b), Ed 2026-09-10) -------------------------
+  // **One strip for the whole column**, at the top right of the text's card
+  // in edit mode: B and I act on the selection in whichever editing lane
+  // holds the caret (and are disabled while none does), `[]` flips every
+  // clause and every open lane between rendered and source, its pressed-ness
+  // carrying the state. Drawn by the column's host beside the column, never
+  // inside the contenteditable (a button inside one becomes harvested text),
+  // and never per lane — a patch with three sites has one strip.
+  // The italic button is a **serif capital I** (Ed, 2026-08-17): a sans
+  // italic I is a slash with no serifs on it — it reads as punctuation rather
+  // than as a letter. The serifs are what make it an I while it is still
+  // leaning. `[]` is one button, not a pair (Ed, 2026-08-17): off by default,
+  // pressed for markdown.
+  function laneCtlHtml(raw) {
+    return '<div class="lanectl" data-editctl="1">' +
+      '<button class="lfmt" data-fmt="bold" disabled title="' + G.fmt.bold + '"><b>B</b></button>' +
+      '<button class="lfmt" data-fmt="italic" disabled title="' + G.fmt.italic + '">' +
+      '<span class="ital">I</span></button>' +
+      '<button class="lmode" data-act="col-mode" data-mode="' + (raw ? 'rich' : 'md') + '"' +
+      ' aria-pressed="' + !!raw + '" title="' + G.fmt.mdMode + '">[]</button>' +
+      '</div>';
+  }
+
   // ---- the factory --------------------------------------------------------
   // `env` keys are functions, read at call time. Defaults are the inert
   // surface: nothing picked, nothing locked beyond what `s` says, no wash, no
@@ -942,22 +965,14 @@ window.CARDS = (function () {
     // `always-on-typing`, applied to a box instead of to a paragraph — the same
     // idea and, it turns out, the same function underneath.
     function laneBoxHtml(d, site, blank) {
+      // **No controls of its own since Q1294 (b)** (Ed, 2026-09-10: *top right
+      // of the edit box, identical to the existing composer control. You can
+      // put bold and italic there too*): the lane is the text and nothing
+      // else. B, I and `[]` are one strip at the top right of the lifted
+      // column — `laneCtlHtml` below, drawn by session.js beside the column —
+      // so a patch with three sites has one strip, not three, and
+      // `env.laneRaw()` is the one view state read here.
       return '<div class="lanebox' + (blank ? ' blanklane' : '') + '">' +
-        // The italic button is a **serif capital I** (Ed, 2026-08-17). A sans
-        // italic I is a slash with no serifs on it — it reads as punctuation
-        // rather than as a letter, which is the one thing a letterform button
-        // must not do. The serifs are what make it an I while it is still leaning.
-        //
-        // The `[]` markdown toggle is **not here since Q1294** (Ed, 2026-09-10):
-        // it flips the whole column — every clause and every open lane at
-        // once — so it sits on the proposal-row at the foot of the window
-        // (session.js's `proposalRowHtml`), and `env.laneRaw()` is that one
-        // state read here. B and I stay on the lane, being acts on a selection.
-        '<div class="lanectl">' +
-        '<button class="lfmt" data-fmt="bold" title="' + G.fmt.bold + '"><b>B</b></button>' +
-        '<button class="lfmt" data-fmt="italic" title="' + G.fmt.italic + '">' +
-        '<span class="ital">I</span></button>' +
-        '</div>' +
         (blank
           ? '<div class="editlane" contenteditable="true" data-deadlane data-key="' + blank +
             '" spellcheck="false"><div class="lp">' + esc(env.currentTextFor(blank)) + '</div></div>'
@@ -1198,7 +1213,7 @@ window.CARDS = (function () {
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks,
     headFlags, originText, MD_RX, mdToHtml, htmlToMd, mdStrip, mdBlock, linkify, linkifyHtml, mdLine,
     MD_ONE, mdLead, mdInner, mdParts, richToSource, sourceToRich, readLane,
-    laneSeed, laneProposeHtml, speakerHtml, secToggleHtml, fieldHtml, fieldOf, groundNote,
+    laneSeed, laneProposeHtml, laneCtlHtml, speakerHtml, secToggleHtml, fieldHtml, fieldOf, groundNote,
     initials, PERSON, avHtml,
     headOnlyHeight, cardBody, COLLAPSE_MS, EXPAND_MS,
     make,
