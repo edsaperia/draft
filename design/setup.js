@@ -294,7 +294,7 @@ window.SETUP = (function () {
      where. */
   const RANK = { ask: 0, news: 1, yours: 2, wait: 3, done: 4 };
   /* **The setting's own tab is the front of its own pile** (Q1299, Ed
-     2026-09-09: *for constitutional settings, the tab for the setting itself
+     2026-09-10: *for constitutional settings, the tab for the setting itself
      should always be on top*) — `host` is that setting's key, ranked ahead of
      every state. It reverses Q786–Q788, which put the founder-member's own
      answer task in front while it was asking; that task was the only thing

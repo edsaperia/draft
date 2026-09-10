@@ -335,7 +335,7 @@ const answerFor = (seat, q, m) => {
   const now = Date.now();
   switch (q.setting) {
     case 'ending': return { endsAtMs: now + Math.round(between(r, 90, 240)) * 60_000 };
-    // 🌡️ is three rungs and no number (R-085; Q1301, Ed 2026-09-09: a bot's
+    // 🌡️ is three rungs and no number (R-085; Q1301, Ed 2026-09-10: a bot's
     // 79 put a percentage on a card the surface itself cannot make)
     case 'bar': return { pct: pick(r, BAR_RUNGS) };
     case 'quorum': return r() < 0.7

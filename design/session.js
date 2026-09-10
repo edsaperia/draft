@@ -2308,7 +2308,7 @@
   }
 
   // **Backspace at the start of a clause joins it to the one above** (Q1302,
-  // Ed's bot room 2026-09-09: *I should be able to backspace at the start of a
+  // Ed's bot room 2026-09-10: *I should be able to backspace at the start of a
   // clause to join it to the previous clause*), and Delete at its end joins
   // the one below: a run of the two blocks with their texts run together and
   // the caret at the seam — K15's two-block run, one site, one candidate,
@@ -3446,7 +3446,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     const swallowOpen = (key, live) => {
       const openSugg = live.find((x) => x.id === openId);
       // **The open record is looked up by id, read or not** (Q1298, Ed's bot
-      // room 2026-09-09: a green ✔ entry whose click opened nothing). This
+      // room 2026-09-10: a green ✔ entry whose click opened nothing). This
       // door read `filedFor(key)`, which files only what has been read (M13),
       // so a decided-but-unread record at a clause that also carried a live
       // item had no door at all — `live` never holds a sealed item — and the
@@ -3719,7 +3719,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       })
     );
     // **The row's commit is the card's** (Q1296, Q1297 — Ed's bot room,
-    // 2026-09-09: *the 📝 area ✏️ button at the bottom of the screen should
+    // 2026-09-10: *the 📝 area ✏️ button at the bottom of the screen should
     // submit that proposal*; *as the founder … click on ✒️ to submit it*).
     // With no card open the press opens the editing card; with the card
     // already open on this draft — which is where typing leaves you — the
