@@ -2924,7 +2924,7 @@
   // largely a conversation in which each wording answers the ones before it.
   function deadlockCardHtml(s) {
     const key = (s.keys ?? [])[0];
-    const cur = currentTextFor(key);
+    const cur = runTextFor(s, key);        // the run's text: what a candidate is diffed against (Q1308)
     const field = fieldOf(s);
     const yours = verdicts.get(pairKeyOf(s)) || s.verdict;
     // **The desk is on the card** (Ed, 2026-08-17: *at the bottom we should have
@@ -3049,7 +3049,7 @@
     const L = s.ledger || [];
     if (!L.length) return '';
     const key = (s.keys ?? [])[0];
-    const cur = currentTextFor(key);
+    const cur = runTextFor(s, key);        // the run's text: what a candidate is diffed against (Q1308)
     const active = ledgerEntryOf(s);
     const G = window.COPY.grammar;
     const mark = (on) => '<span class="lanepick lmark" aria-pressed="' + on + '"><i class="dot" aria-hidden="true"></i></span>';
@@ -3208,6 +3208,7 @@
       // race can vote to keep it: displacement is settled by the
       // adoption-threshold, not by this judgment (SPEC §5).
       const rkey = (sv.keys ?? [])[0];
+      const cur = runTextFor(sv, rkey);    // the run's text, as the head reads it (Q1308)
       return (
         '<div class="sugg race-open" data-card="' + sv.id + '" data-site="' + rkey + '">' +
         clauseHeadHtml(sv, Object.assign(headOpts(sv, rkey), { chips: chipsFor(rkey, sv.id) })) +

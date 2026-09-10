@@ -804,7 +804,7 @@ window.CARDS = (function () {
         (o.html !== undefined
           ? '<div class="rtext">' + o.html + '</div>'
           : o.text === null
-          ? '<div class="rtext none">' + G.head.nothing + '</div>'
+          ? '<div class="rtext none">' + esc(o.nothing != null ? o.nothing : G.head.nothingAtAll) + '</div>'
           : '<div class="rtext">' + mdLine(o.text) + '</div>') +
         '</div>' +
         (opt ? laneBarHtml(s, o.v, { lane: 'keep', key: o.key, edit: o.edit }) : '') +

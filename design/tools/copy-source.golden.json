@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 466
+  "entries": 469
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -43,7 +43,10 @@
   "grammar.ground.sub": "the clause changed after you voted",
   "grammar.ground.tag": "The text you voted on",
   "grammar.head.label": "The clause as it stands",
-  "grammar.head.nothing": "Nothing stands here — the charter runs straight from Bringing a Guest to Guests Staying Over.",
+  "grammar.head.nothing": "ƒ (prev, next) => 'Nothing stands here — the charter runs straight from ' + prev + ' to ' + next",
+  "grammar.head.nothingAfter": "ƒ (prev) => 'Nothing stands here yet — the charter ends with ' + prev",
+  "grammar.head.nothingAtAll": "Nothing stands here yet.",
+  "grammar.head.nothingBefore": "ƒ (next) => 'Nothing stands here yet — the charter begins with ' + next",
   "grammar.lane.pickTitle": "Say you prefer this proposal — nothing leaves the card until you submit",
   "grammar.lane.prefer": "Prefer this",
   "grammar.lane.preferred": "Preferred",

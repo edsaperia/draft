@@ -121,7 +121,13 @@ window.COPY = (function () {
     // clauseHeadHtml: the clause lifted into the head
     head: {
       label: 'The clause as it stands',
-      nothing: 'Nothing stands here — the charter runs straight from Bringing a Guest to Guests Staying Over.',
+      // the gap's head (Q1308): what the charter runs straight from and to,
+      // in their own first words — a heading by its name
+      // (the neighbour brings its own stop, or an ellipsis where it was cut)
+      nothing: (prev, next) => 'Nothing stands here — the charter runs straight from ' + prev + ' to ' + next,
+      nothingBefore: (next) => 'Nothing stands here yet — the charter begins with ' + next,
+      nothingAfter: (prev) => 'Nothing stands here yet — the charter ends with ' + prev,
+      nothingAtAll: 'Nothing stands here yet.',
     },
     // commitRowHtml: the row every decision card ends in
     commit: {

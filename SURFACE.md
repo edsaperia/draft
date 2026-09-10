@@ -206,6 +206,7 @@ One glyph per entry, the same alphabet in all three columns (contents rail · gu
 - **M16 ⚔️ is tested before ⏳ everywhere**, being the state that replaces it.
 - **M17 A rail click always arrives somewhere.** An entry naming a heading inside something folded unfolds it and then travels — the unfold first, the scroll measured after it — and no click on any entry, in any fold state, leaves the reader where they were with nothing changed. The rail lists what is folded, never hides it: a contents list that drops what is shut is a worse contents list.
 - **M18 A rail entry is one per clause, and it holds a deck** (Q1200): the router's pairs on that race, in the router's order, one at a time; its teaser is the front pair's case, and nothing counts what is behind it.
+- **M19 A race on a gap stands in the gap** (Q1308, Ed's bot room 2026-09-10): an insertion between two clauses is keyed to the gap, not to the clause after it — its entry stands on the held-open anchor after the block before, as a draft on that gap does (K31, `gap-site`), its head is *The gap as it stands* naming the two neighbours, and two insertions at one gap are two entries. A race whose contested span covers several blocks is keyed to every block in the run, and its head reads the whole run. The ledger beneath a live pair is M18's.
 
 Exceptions to these, beyond §3:
 
