@@ -10469,10 +10469,13 @@
   // (resultOnly drops the dels where the card states the result)
   const markedOf = (before, after) => window.CARDS.diffPieces(before, after, true)
     .map(([t, mk]) => (mk ? window.CARDS.markHtml2(t, mk) : esc(t))).join('');
+  // the nearest heading above; on a document with none, the document's own
+  // title — the outermost heading (Q1303, Ed 2026-09-09) — and only with no
+  // title either, the clause's first words
   const labelFor = (key) => {
     let h = '';
     for (const l of SESSION.DOC) { if (l.t === 'h') h = l.x; if (l.key === key) break; }
-    return h || ((SESSION.DOC.find((l) => l.key === key) || {}).x || '').split(/\s+/).slice(0, 5).join(' ');
+    return h || cs_titleNow() || ((SESSION.DOC.find((l) => l.key === key) || {}).x || '').split(/\s+/).slice(0, 5).join(' ');
   };
   // **Raw values are not copy**: a record's moment reads like a diary entry
   const whenOf = (ms) => {

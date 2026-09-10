@@ -3403,9 +3403,16 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // submitted-proposal half was never lifted with it.
     const swallowOpen = (key, live) => {
       const openSugg = live.find((x) => x.id === openId);
-      const openFiled = filedFor(key).find((x) => x.id === openId);
+      // **The open record is looked up by id, read or not** (Q1298, Ed's bot
+      // room 2026-09-09: a green ✔ entry whose click opened nothing). This
+      // door read `filedFor(key)`, which files only what has been read (M13),
+      // so a decided-but-unread record at a clause that also carried a live
+      // item had no door at all — `live` never holds a sealed item — and the
+      // press changed nothing on the page, against M17.
+      const openSealed = SUGGS.find((x) => x.id === openId && stateOf(x) === 'sealed' &&
+        (x.keys ?? []).includes(key));
       const card = (s, k) => ({ html: '</div>' + suggCardHtml(s, k) + PROSE(), swallowed: true });
-      if (openFiled && !cardDone) { cardDone = true; return card(openFiled, undefined); }
+      if (openSealed && !cardDone) { cardDone = true; return card(openSealed, undefined); }
       if (!openSugg) return { html: '', swallowed: false };
       if (openSugg.kind === 'patch') {
         // a card at *every* place a patch touches (Ed, 181)
@@ -3571,8 +3578,11 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
 
       const live = line.key ? suggFor(line.key) : [];
       // a settled clause still opens its record from the document side (Ed, 112)
+      // the open one first, where two records share a clause (Q1298): the
+      // first in `SUGGS` order is otherwise the only one this door can draw
+      const sealedAt = (g) => (resolved.has(frontKeyOf(g)) || g.state === 'sealed') && (g.keys ?? []).includes(line.key);
       const wasResolved = line.key && !live.length
-        ? SUGGS.find((g) => (resolved.has(frontKeyOf(g)) || g.state === 'sealed') && (g.keys ?? []).includes(line.key))
+        ? (SUGGS.find((g) => g.id === openId && sealedAt(g)) ?? SUGGS.find(sealedAt))
         : undefined;
 
       if (live.length) {
