@@ -2145,6 +2145,28 @@
     const i = SUGGS.findIndex((x) => x.id === DRAFT_ID);
     if (i >= 0) SUGGS.splice(i, 1);
   }
+  // **A card's 🗑️ discards its own site** (Q1306 (a), Ed 2026-09-10: *the 🗑️
+  // for the edit in one place should only discard that edit, not the whole
+  // patch*). The site's blocks become the paragraph again and the rest of the
+  // draft stands; with one site left the patch is a plain candidate, which the
+  // row already says by counting; with none left the draft goes. The gap
+  // bookkeeping lives on the draft rather than the site (`startDraft`), so it
+  // is read back off whatever remains. Returns the draft, or null once it is gone.
+  function dropDraftSite(site) {
+    const d = draftOf();
+    if (!d || !site) return d || null;
+    d.sites = d.sites.filter((s) => s !== site);
+    if (!d.sites.length) { dropDraft(); return null; }
+    syncDraftKeys(d);
+    const gap = d.sites.find((s) => isGapKey(s.keys[0]));
+    if (gap) {
+      const at = blockBeforeGap(gap.keys[0]);
+      d.insertAfterKey = at >= 0 ? DOC[at].key : null;
+      d.gapKey = gap.keys[0];
+    } else { delete d.gapKey; delete d.insertAfterKey; }
+    if (d.focusKey && site.keys.includes(d.focusKey)) d.focusKey = d.sites[0].keys[0];
+    return d;
+  }
 
   // ---- the caret ------------------------------------------------------
   // Typing has to survive the clause turning into a card: the character you
@@ -2656,8 +2678,10 @@
       // available to pressed. Cancel was a word on the right, which put *leave
       // this* where every other card puts *finish this*.
       '<div class="race-mid commitrow">' +
+      // …and 🗑️ here is *this* site's (Q1306): on a patch each place's card
+      // puts its own place back, and the row at the foot is the bin for all
       '<button class="btn btn-withdraw glyphbtn" data-act="draft-cancel"' +
-      ' title="' + T.row.discardDraft + '">🗑️</button>' +
+      ' title="' + T.row.discardThis + '">🗑️</button>' +
       // **✏️, and a second press to mean it** (Ed, 2026-08-17). Proposing is
       // the one irreversible-feeling act on this surface — it spends an edit and
       // puts your wording in front of the room — and it was a single click on a
@@ -3006,7 +3030,7 @@
       // the card, and with nothing to put back it simply closes it.
           '<div class="race-mid commitrow">' +
           '<button class="btn btn-withdraw glyphbtn" data-act="draft-cancel"' +
-          ' title="' + (site ? T.row.discardDraft : T.row.closeNothing) + '">🗑️</button>' +
+          ' title="' + (site ? T.row.discardThis : T.row.closeNothing) + '">🗑️</button>' +
           commitBtnHtml({
             disabled: !(site && !broke),
             title: T.row.holdPropose + T.row.editCost,
@@ -4074,11 +4098,14 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         }
         // the sign choice patches the open card rather than re-rendering it
         if (b.dataset.act === 'draft-sign') { setDraftSigned(b.dataset.signed === '1'); return; }
-        const id = b.closest('.sugg').dataset.card;
+        const card = b.closest('.sugg');
+        const id = card.dataset.card;
         const what = b.dataset.act === 'submit'
           ? pickOf(SUGGS.find((x) => x.id === id) || {}) : b.dataset.act;
         if (!what) return;                       // nothing chosen yet
-        act(id, what);
+        // the card's own site travels with the press: a 🗑️ on a patch is that
+        // place's (Q1306), and the card at each place knows which it is
+        act(id, what, card.dataset.site);
       })
     );
     // acknowledging a sealed decision: the only thing that marks it read, and
@@ -4417,7 +4444,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     }
   }
 
-  function act(id, what) {
+  function act(id, what, siteKey) {
     // your own moves beat too — the pulse is *the room*, and you are in it
     if (what !== 'propose') beat();
     const s = SUGGS.find((x) => x.id === id);
@@ -4429,17 +4456,26 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // Cancelling leaves nothing behind — no candidate, no cost, no trace in the
     // rail (Ed, 2026-08-16). That is what makes the always-on caret an offer
     // rather than a commitment.
+    // **On a patch, a card's 🗑️ takes its own site and no other** (Q1306 (a),
+    // Ed 2026-09-10): that card closes onto its paragraph, the draft stays open
+    // at every other place, and the row at the foot of the window is still the
+    // bin for the whole of it. A one-site draft is the whole draft, so its
+    // card's 🗑️ and the row's mean the same thing.
     if (what === 'draft-cancel') {
       const d = draftOf();
-      const key = d && d.sites[0] ? d.sites[0].keys[0] : null;
+      const own = d && d.sites.length > 1 ? siteFor(d, siteKey) : null;
+      const key = own ? own.keys[0] : d && d.sites[0] ? d.sites[0].keys[0] : null;
       const shut = () => {
-        if (openId === DRAFT_ID) openId = null;
-        dropDraft();
+        if (own) dropDraftSite(own);
+        else { if (openId === DRAFT_ID) openId = null; dropDraft(); }
         // the lanes become the paragraph again, and it does not move while they do
         keepStill(() => renderAll(), key ? '[data-key="' + key + '"]' : null);
         drawWires();
       };
-      if (openId === DRAFT_ID) collapseCards(DRAFT_ID, shut); else shut();
+      const ownCard = own && doc.querySelector('.sugg[data-card="' + DRAFT_ID + '"][data-site="' + key + '"]');
+      if (ownCard) collapseCard(ownCard, shut);
+      else if (openId === DRAFT_ID && !own) collapseCards(DRAFT_ID, shut);
+      else shut();
       return;
     }
 
