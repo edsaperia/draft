@@ -2998,6 +2998,64 @@ if (caret) {
     }
   }
 
+  /* ---- races wait behind the ⚖️ OK (Q1328) --------------------------------
+   * Ed, 2026-09-11: *I shouldn't be served a task until I can do its main
+   * action, so until I accept ⚖️ I shouldn't be given races.* Two races stand
+   * by now — the founder's on line 0 and the guest's on line 1 — and the guest
+   * has never acknowledged ⚖️ (their OK is remembered per seat and per
+   * browser, and this context has never given one). So their rail must hold
+   * no race entry and their gutter no tab for one, whatever the race's state;
+   * their own proposal is a *yours* line and stands in either state. Then the
+   * OK is pressed on the ⚖️ card and the founder's race must arrive — the
+   * capability is part of the charter column's data key, so the acknowledgment
+   * re-keys and hands the full set back (`withheld`, session.js; SURFACE C9).
+   * Read off the DOM and off `SESSION.SUGGS` both: the rail is what the
+   * member sees, the array is what every other column draws from. */
+  if (guestPage && ok) {
+    const railOf = () => guestPage.evaluate(() => ({
+      rail: [...document.querySelectorAll('#rail li')].map((li) => li.dataset.q ||
+        ((li.querySelector('[data-card]') || { dataset: {} }).dataset.card) || '?'),
+      suggs: (window.SESSION.SUGGS || []).map((g) => g.kind + ':' + g.state + (g.mine ? ':mine' : '')),
+      tabs: document.querySelectorAll('#charter .achip').length,
+      judgeServed: !!document.querySelector('#rail [data-card="canjudge"]'),
+    }));
+    // a race's rail id is the race's (`r:<candidate>`), a sealed record's `rec:`;
+    // a park is `park:` and the member's own proposal `mine:` — neither is a race entry
+    const isRace = (q) => /^(r:|rec:)/.test(q);
+    const g0 = await railOf();
+    const none = !g0.rail.some(isRace) && g0.suggs.every((s) => /^(park|draft|crown):/.test(s));
+    say('⚖️ waits   · ' + (none
+      ? 'before the OK the member’s rail holds no race · rail ' + JSON.stringify(g0.rail) +
+        ' · suggs ' + JSON.stringify(g0.suggs) + ' · tabs ' + g0.tabs
+      : 'FAIL: a race is served before ⚖️ is acknowledged · rail ' + JSON.stringify(g0.rail) +
+        ' · suggs ' + JSON.stringify(g0.suggs)));
+    if (!none) stuck.push('a race served before the ⚖️ OK (Q1328)');
+    if (!g0.judgeServed) {
+      say('⚖️ OK      · FAIL: ⚖️ is not served to the member, so its OK cannot be walked · rail ' + JSON.stringify(g0.rail));
+      stuck.push('⚖️ is not served to the member (Q1328)');
+    } else {
+      await guestPage.evaluate(() => document.querySelector('#rail [data-card="canjudge"]').click());
+      await guestPage.waitForTimeout(500);
+      const pressed = await guestPage.evaluate(() => {
+        const b = document.querySelector('.setupcard [data-ok]');
+        if (!b || b.disabled) return false;
+        b.scrollIntoView({ block: 'center' });
+        b.click();
+        return true;
+      });
+      await T(2500);                             // the OK's own round trip and refresh
+      const g1 = await railOf();
+      const arrived = pressed && g1.rail.some(isRace) && g1.tabs > g0.tabs &&
+        g1.suggs.some((s) => !/^(park|draft|crown):/.test(s));
+      say('⚖️ OK      · ' + (arrived
+        ? 'the OK lands and the races arrive · rail ' + JSON.stringify(g1.rail) +
+          ' · suggs ' + JSON.stringify(g1.suggs) + ' · tabs ' + g0.tabs + '→' + g1.tabs
+        : 'FAIL: pressed ' + pressed + ' · rail ' + JSON.stringify(g1.rail) +
+          ' · suggs ' + JSON.stringify(g1.suggs) + ' · tabs ' + g0.tabs + '→' + g1.tabs));
+      if (!arrived) stuck.push('the races did not arrive on the ⚖️ OK (Q1328)');
+    }
+  }
+
   /* ---- the pair deck (Q1200) and the ledger (Q1201) ------------------------
    * The guest proposes a **second** wording on the same clause as their
    * first, so the founder's deck on that race holds two incumbent pairs and,
