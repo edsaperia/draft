@@ -6,7 +6,7 @@
  * key cannot interleave. The integration walk lives in server.test.ts;
  * this file tests the parts alone.
  */
-import { mkdtempSync, readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -167,6 +167,65 @@ describe('DocStore', () => {
     const back = new DocStore(new FilePersistence(dir));
     await back.loadAll();
     expect(back.bySlug('charter')!.cs.rollingHash()).toBe(doc.cs.rollingHash());
+  });
+
+  // **A command applied during a slow append is still persisted** (Q1322,
+  // docs.vote 2026-09-11): under a room of thirty an append took seconds,
+  // commands kept landing on the live log meanwhile, and the cursor was set
+  // to the log's length rather than advanced by what was written — so the
+  // entries that arrived mid-append were never persisted, the chain on disk
+  // broke at the gap, and the document was quarantined at the next boot.
+  it('a command applied during a slow append is still persisted', async () => {
+    const dir = tmp();
+    const slow = new FilePersistence(dir);
+    let release: () => void = () => {};
+    const gate = new Promise<void>((r) => { release = r; });
+    const realAppend = slow.appendDocLog.bind(slow);
+    let appends = 0;
+    slow.appendDocLog = async (id, entries, rows) => {
+      appends += 1;
+      if (appends === 2) await gate;          // the second append is the slow one
+      return realAppend(id, entries, rows);
+    };
+    const store = new DocStore(slow);
+    const doc = await store.create('d-1', {
+      title: 'Charter', slug: 'charter',
+      convenor: { id: 'founder', email: 'a@x.org', isMember: true },
+    }, 1000);
+    doc.cs.invite(1001, 'b@x.org');
+    const inFlight = store.persist(doc);       // slow: holds at the gate
+    await new Promise((r) => setTimeout(r, 10));
+    doc.cs.invite(1002, 'c@x.org');            // lands on the live log meanwhile
+    release();
+    await inFlight;
+    await store.persist(doc);                  // the entry from mid-append goes now
+    const back = new DocStore(new FilePersistence(dir));
+    await back.loadAll();
+    expect(back.quarantined()).toEqual([]);
+    expect(back.bySlug('charter')!.cs.logEntries().length).toBe(doc.cs.logEntries().length);
+    expect(back.bySlug('charter')!.cs.rollingHash()).toBe(doc.cs.rollingHash());
+  });
+
+  it('a document whose replay throws is quarantined and counted', async () => {
+    const dir = tmp();
+    const p = new FilePersistence(dir);
+    const store = new DocStore(p);
+    const doc = await store.create('d-1', {
+      title: 'Charter', slug: 'charter',
+      convenor: { id: 'founder', email: 'a@x.org', isMember: true },
+    }, 1000);
+    doc.cs.invite(1001, 'b@x.org');
+    doc.cs.invite(1002, 'c@x.org');
+    await store.persist(doc);
+    // break the chain the way the lost append did: drop a middle entry
+    const path = join(dir, 'docs', 'd-1', 'log.jsonl');
+    const lines = readFileSync(path, 'utf8').split('\n').filter((l) => l.length > 0);
+    expect(lines.length).toBeGreaterThanOrEqual(3);
+    writeFileSync(path, [lines[0], ...lines.slice(2)].join('\n') + '\n', 'utf8');
+    const back = new DocStore(new FilePersistence(dir));
+    await back.loadAll();
+    expect(back.quarantined()).toEqual(['d-1']);
+    expect(back.bySlug('charter')).toBeNull();
   });
 });
 

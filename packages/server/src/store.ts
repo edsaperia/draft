@@ -70,6 +70,7 @@ export class DocStore {
   private readonly slugIndex = new Map<string, string>();
   /** Documents whose logs hold the pre-people shape, skipped at boot (decision 1253). */
   private readonly preShape: string[] = [];
+  private readonly quarantine: string[] = [];
 
   constructor(private readonly persistence: Persistence) {}
 
@@ -94,9 +95,16 @@ export class DocStore {
         // one corrupt log must not stop every other document serving
         // (review #1, finding 11): quarantine loudly — the document 404s
         // until its log is repaired, and nothing here ever rewrites it
+        // — and counted (Q1322): the health route said *errors 0* over a
+        // production document that had just vanished
         console.error(`document '${id}' failed to load — quarantined:`, e);
+        this.quarantine.push(id);
       }
     }
+  }
+  /** The documents `loadAll` could not replay (review #1 finding 11; counted since Q1322). */
+  quarantined(): readonly string[] {
+    return this.quarantine;
   }
 
   /** The documents `loadAll` skipped as the pre-people shape (decision 1253). */
@@ -146,7 +154,15 @@ export class DocStore {
     const rows = doc.people.takeDirty();
     if (fresh.length > 0 || rows.length > 0) {
       await this.persistence.appendDocLog(doc.id, fresh, rows);
-      doc.persisted = log.length;
+      // **Advance by what was written, never to the log's length** (Q1322,
+      // docs.vote 2026-09-11): `logEntries()` is the live array, and a
+      // command applied while the append was in flight — seconds, under a
+      // room of thirty — had already lengthened it. Setting the cursor to
+      // the length skipped those entries for ever: the next append started
+      // past them, the persisted chain broke at the gap, and the document
+      // was quarantined at the next boot. Guard: unit.test.ts, *a command
+      // applied during a slow append is still persisted*.
+      doc.persisted += fresh.length;
       for (const slug of doc.cs.slugs) this.slugIndex.set(slug, doc.id);
     }
     return [...fresh];

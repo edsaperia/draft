@@ -210,7 +210,12 @@ Five things to know about it:
    addresses in the events — is **skipped at boot and named once**
    (`[store] <id> is the pre-people shape (decision 1253): not loaded`),
    never migrated; `/healthz` counts them as `documentsSkipped`. Production
-   holds none after the wipe.
+   holds none after the wipe. A log whose replay **throws** — a broken hash
+   chain, most likely — is **quarantined**: named once in the boot log
+   (`document '<id>' failed to load — quarantined: <error>`), answering 404
+   until repaired, and counted as `documentsQuarantined` (Q1322, the day a
+   production document vanished behind `errors: 0`). A non-zero there is
+   the boot log's line to read, then §5's tools.
 2. **It is as sensitive as the room.** `people.json` carries every address,
    name and picture, and the log every founding answer **in plaintext** —
    the blindness design withholds at the projection, not at storage — and

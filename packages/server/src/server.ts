@@ -854,6 +854,10 @@ export async function createDraftServer(cfg: ServerConfig,
         // errors below; production holds none after the wipe, so a non-zero
         // here is a data dir that has not had its own
         documentsSkipped: store.skippedPreShape().length,
+        // a document whose replay threw at boot (Q1322): it answers 404
+        // until its log is repaired, and the count here is the only place
+        // an operator sees it without the boot log
+        documentsQuarantined: store.quarantined().length,
         uptimeSeconds: Math.floor((nowMs - bootedAtMs) / 1000),
         mail: cfg.mailOff ? 'off' : 'on',
         outbox: mail,
