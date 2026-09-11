@@ -3178,9 +3178,28 @@ if (caret) {
    * Read off the DOM and off `SESSION.SUGGS` both: the rail is what the
    * member sees, the array is what every other column draws from. */
   if (guestPage && ok) {
+    // **A setting motion waits behind the same OK** (Q1344, Ed 2026-09-11 on
+    // the moon room: *seeing proposals before I've accepted any powers*). The
+    // founder moves ⏱️ — ordinary, so its main action is a judgment — and
+    // the guest's rail must not hold ⏱️'s entry until the ⚖️ OK, then must.
+    {
+      const slug = new URL(page.url()).pathname.replace(/^\/d\//, '');
+      const jar = (await page.context().cookies(BASE)).map((c) => c.name + '=' + c.value).join('; ');
+      const moved = await fetch(BASE + '/api/d/' + slug + '/cmd', { method: 'POST',
+        headers: { 'content-type': 'application/json', cookie: jar },
+        body: JSON.stringify({ cmd: 'open-motion', args: { payload: { kind: 'set', setting: 'rate',
+          value: { grant: 3, cap: 9, dripMinutes: 300 } }, why: 'a slower drip for a smaller room' } }) })
+        .then((r) => r.json()).catch((e) => ({ error: String(e && e.message) }));
+      if (moved && moved.error) {
+        say('⏱️ motion  · FAIL: could not put the ordinary motion · ' + JSON.stringify(moved.error));
+        stuck.push('the ⏱️ motion (Q1344)');
+      }
+      await T(4600);                                 // the guest's poll takes the motion
+    }
     const railOf = () => guestPage.evaluate(() => ({
       rail: [...document.querySelectorAll('#rail li')].map((li) => li.dataset.q ||
         ((li.querySelector('[data-card]') || { dataset: {} }).dataset.card) || '?'),
+      motion: !!document.querySelector('#rail [data-q="rate"], #rail [data-card="rate"]'),
       suggs: (window.SESSION.SUGGS || []).map((g) => g.kind + ':' + g.state + (g.mine ? ':mine' : '')),
       tabs: document.querySelectorAll('#charter .achip').length,
       judgeServed: !!document.querySelector('#rail [data-card="canjudge"]'),
@@ -3189,9 +3208,9 @@ if (caret) {
     // a park is `park:` and the member's own proposal `mine:` — neither is a race entry
     const isRace = (q) => /^(r:|rec:)/.test(q);
     const g0 = await railOf();
-    const none = !g0.rail.some(isRace) && g0.suggs.every((s) => /^(park|draft|crown):/.test(s));
+    const none = !g0.rail.some(isRace) && !g0.motion && g0.suggs.every((s) => /^(park|draft|crown):/.test(s));
     say('⚖️ waits   · ' + (none
-      ? 'before the OK the member’s rail holds no race · rail ' + JSON.stringify(g0.rail) +
+      ? 'before the OK the member’s rail holds no race and no ⏱️ motion · rail ' + JSON.stringify(g0.rail) +
         ' · suggs ' + JSON.stringify(g0.suggs) + ' · tabs ' + g0.tabs
       : 'FAIL: a race is served before ⚖️ is acknowledged · rail ' + JSON.stringify(g0.rail) +
         ' · suggs ' + JSON.stringify(g0.suggs)));
@@ -3211,10 +3230,10 @@ if (caret) {
       });
       await T(2500);                             // the OK's own round trip and refresh
       const g1 = await railOf();
-      const arrived = pressed && g1.rail.some(isRace) && g1.tabs > g0.tabs &&
+      const arrived = pressed && g1.rail.some(isRace) && g1.motion && g1.tabs > g0.tabs &&
         g1.suggs.some((s) => !/^(park|draft|crown):/.test(s));
       say('⚖️ OK      · ' + (arrived
-        ? 'the OK lands and the races arrive · rail ' + JSON.stringify(g1.rail) +
+        ? 'the OK lands and the races arrive, the ⏱️ motion with them · rail ' + JSON.stringify(g1.rail) +
           ' · suggs ' + JSON.stringify(g1.suggs) + ' · tabs ' + g0.tabs + '→' + g1.tabs
         : 'FAIL: pressed ' + pressed + ' · rail ' + JSON.stringify(g1.rail) +
           ' · suggs ' + JSON.stringify(g1.suggs) + ' · tabs ' + g0.tabs + '→' + g1.tabs));

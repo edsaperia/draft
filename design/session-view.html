@@ -4747,11 +4747,25 @@
     why: rec.why || '', to: motionDisplay(rec), status: rec.status,
     invite: rec.payload.kind === 'invite' ? inviteeHandle(rec.payload) : undefined,
     removee: rec.payload.kind === 'remove' ? rec.payload.member : undefined });
+  // **A running motion waits behind the grant its main action needs** (Q1344,
+  // Ed 2026-09-11, the moon room: *seeing proposals before I've accepted any
+  // powers*). C9's test since Q1328 is *can you take the entry's main action*:
+  // an ordinary motion is judged, so it waits on the ⚖️ OK as a text race
+  // does; a constitutional one is answered, so it waits on 🏛️'s. Only for a
+  // member — the gate is about a power you hold and have not yet taken up —
+  // and only while it runs: a motion awaiting the crown is the Founder's own
+  // question, served whatever they have acknowledged. The mover's own motion
+  // stands in either state, as an author's own proposal does (M3): what is
+  // waited for is the power to answer other people's, and their own entry is
+  // the ⏳ line saying it runs.
+  const motionWaitsOnMe = (rec) => rec.status === 'running' && viewerIsMember() &&
+    !(rec.by !== null && rec.by !== undefined && rec.by === viewerId()) &&
+    !(rec.route === 'constitutional' ? mayVoice() : mayJudge());
   const liveMotionRec = (c) => {
     if (!cs || !c || c.isGate || c.ansFor || !motionsLive()) return null;
     for (const rec of cs.motionRecords().values()) {
       if (rec.status !== 'running' && rec.status !== 'awaiting-crown') continue;
-      if (motionTargets(rec) === c.k) return rec;
+      if (motionTargets(rec) === c.k) return motionWaitsOnMe(rec) ? null : rec;
     }
     return null;
   };
