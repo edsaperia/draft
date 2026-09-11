@@ -35,6 +35,8 @@ import { asEngineDoc, driveBridge, foldTime, persistEngine, resumeBridge } from 
 import { ParticipantApi, authorVisible } from '../../engine-core/src/participant-api.js';
 import type { CardView } from '../../engine-core/src/participant-api.js';
 import type { Candidate } from '../../engine-core/src/types.js';
+import { adoptedSpan, spanNow, versionSteps } from './record-spans.js';
+import type { Span } from './record-spans.js';
 import type { Mail, Mailer } from './mailer.js';
 import { LIMITS, cap, emailOk, runCommand, str } from './commands.js';
 
@@ -595,6 +597,16 @@ export async function createDraftServer(cfg: ServerConfig,
        */
       cappedFit?: { iterations: number; gradMax: number };
       footprint: unknown; displaced: string[]; judges: number; judgedByMe: boolean;
+      /**
+       * **Where the record stands now** (Q1333): the field's span, decided in
+       * `version`'s coordinates, carried through every adoption and decree
+       * since to the current text — the lines that descend from what it
+       * decided. A clause changed again maps to its replacement; a clause
+       * deleted maps to the gap where it stood (`start === end`). The page
+       * keys the entry, the tab and the card by this; `footprint` and
+       * `version` stay as they were, and `displaced` still reads `version`.
+       */
+      at: Span;
       field: Array<{ candidateId: string; outcome: string; p: number | null;
         threshold: number | null; hunks: Array<{ start: number; end: number; lines: string[] }>;
         rationale: string; judgedByMe: boolean;
@@ -622,7 +634,8 @@ export async function createDraftServer(cfg: ServerConfig,
       if (!rec) {
         rec = { raceId: o.raceId, candidateId: o.candidateId, outcome: o.outcome, when: o.t,
           p: o.p ?? null, threshold: o.threshold ?? null, version: o.version,
-          footprint: c.footprint, displaced: [], judges: 0, judgedByMe: false, field: [] };
+          footprint: c.footprint, displaced: [], judges: 0, judgedByMe: false,
+          at: { start: 0, end: 0 }, field: [] };
         byRace.set(o.raceId, rec);
       }
       rec.field.push(entry);
@@ -638,12 +651,31 @@ export async function createDraftServer(cfg: ServerConfig,
         if (o.cappedFit) rec.cappedFit = o.cappedFit; else delete rec.cappedFit;
       }
     }
+    // **A record's span, carried to the current text** (Q1333): once per
+    // state, not once per seat — the walk over the log's version steps and
+    // the per-race result are the engine's facts alone, so both ride its
+    // per-state memo beside `host:judgedBy`. The map fills lazily: a race is
+    // mapped the first time any seat's view reaches it after an event.
+    const steps = engine.derived('host:versionSteps', () => versionSteps(engine));
+    const recordSpans = engine.derived('host:recordSpans', () => new Map<string, Span>());
     for (const rec of byRace.values()) {
       const hs = rec.field.flatMap((f) => f.hunks);
       const span = { start: Math.min(...hs.map((h) => h.start)), end: Math.max(...hs.map((h) => h.end)) };
       let prev: string[] = [];
       try { prev = linesAt(rec.version); } catch { prev = []; }
       rec.displaced = prev.slice(span.start, span.end);
+      let at = recordSpans.get(rec.raceId);
+      if (!at) {
+        // an adopted record starts from the lines its winner put there, in
+        // `version + 1`; a retired or undecided one from the field's span,
+        // the incumbent standing, in `version` itself
+        const winner = rec.outcome === 'adopted'
+          ? rec.field.find((f) => f.candidateId === rec.candidateId)?.hunks : undefined;
+        at = winner ? spanNow(adoptedSpan(span, winner), rec.version + 1, steps)
+          : spanNow(span, rec.version, steps);
+        recordSpans.set(rec.raceId, at);
+      }
+      rec.at = at;
       if (rec.outcome === 'adopted') {
         // **The number the floor tested** (Q1337, R-102): the distinct
         // members who judged the candidate that carried — its own author

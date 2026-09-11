@@ -115,19 +115,21 @@ const outboxLinkTo = async (addr) => {
  * until the race resolves. `resolved(v)` says what resolution means here (adopted for phase
  * A, parked for phase B); returns the candidate id.
  */
-async function proposeAndVote({ author, seats, pick, newLine, why, resolved }) {
+async function proposeAndVote({ author, seats, pick, newLine, why, resolved, insertBefore = false }) {
   const v = await view(author);
   const lines = v.text.split('\n');
   const contested = new Set((v.clauses ?? []).flatMap((c) => c.contested.map((x) => x.start)));
   const li = lines.findIndex((l, i) => pick(l, i) && !contested.has(i));
   if (li < 0) die(`no line to propose over (pick found nothing uncontested)`);
+  // `insertBefore`: a new line in the gap before the picked one, the line
+  // itself untouched — what moves every record below it (Q1333)
   const p = await cmd(author, 'propose-text', {
     baseVersion: v.textVersion,
-    hunks: [{ start: li, end: li + 1, lines: [newLine] }],
+    hunks: [{ start: li, end: insertBefore ? li : li + 1, lines: [newLine] }],
     why,
   });
   const cid = p.id;
-  say(`  ${author} proposed ${cid} over line ${li}`);
+  say(`  ${author} proposed ${cid} ${insertBefore ? 'before' : 'over'} line ${li}`);
   let voters = 0;
   let viaAsk = 0; // judged from the clause row's `ask`, the race off the hand
   for (const m of seats) {
@@ -244,6 +246,40 @@ for (const [round, [pickWord, newLine]] of [
   must(rec?.outcome === 'adopted', `round ${round + 1}: a record with outcome 'adopted' exists`);
   const mine = (after.mine ?? []).find((c) => c.id === cid);
   must(mine && mine.state !== 'live', `round ${round + 1}: the author's own entry left 'live' (${mine?.state})`);
+}
+{
+  // **A sealed record follows its clause** (Q1333, Ed 2026-09-11, the moon
+  // room: a ✔ beside the Food heading). A third adoption inserts a line
+  // *above* round 1's clause; both earlier records must then stand beside
+  // the clause each changed — the served `at` moved by one, the text at
+  // `at.start` the adopted wording — with `displaced` as it was.
+  say(`\n  round 3 (an insertion above round 1's clause):`);
+  const before = await view('founder');
+  const recAt = (v, word) => (v.records ?? []).find((r) => r.field?.some((f) =>
+    f.hunks?.some((h) => h.lines?.some((l) => l.includes(word)))));
+  const r1 = recAt(before, 'twice weekly'), r2 = recAt(before, 'agreed each month');
+  must(r1 && r2, `both records are served before the insertion`);
+  must(r1 && before.text.split('\n')[r1.at?.start] === before.text.split('\n').find((l) => l.includes('twice weekly')),
+    `round 1's record stands on its clause before the insertion (at ${JSON.stringify(r1?.at)})`);
+  const inserted = 'The oak room is booked for the club on those evenings.';
+  await proposeAndVote({
+    author: members[2], seats: seatsA, insertBefore: true,
+    pick: (l) => l.includes('twice weekly'),
+    newLine: inserted, why: 'room-walk round 3', resolved: adoptedState,
+  });
+  const after = await view('founder');
+  const lines = after.text.split('\n');
+  must(lines.indexOf(inserted) >= 0 && lines.indexOf(inserted) < lines.findIndex((l) => l.includes('twice weekly')),
+    `round 3: the new line stands above round 1's clause`);
+  const a1 = recAt(after, 'twice weekly'), a2 = recAt(after, 'agreed each month'), a3 = recAt(after, 'booked for the club');
+  must(a1?.at?.start === r1.at.start + 1 && lines[a1.at.start].includes('twice weekly') && a1.at.end === a1.at.start + 1,
+    `round 1's record moved down one line with its clause (at ${JSON.stringify(r1.at)} → ${JSON.stringify(a1?.at)})`);
+  must(a2?.at?.start === r2.at.start + 1 && lines[a2.at.start].includes('agreed each month'),
+    `round 2's record moved down one line with its clause (at ${JSON.stringify(r2.at)} → ${JSON.stringify(a2?.at)})`);
+  must(JSON.stringify(a1?.displaced) === JSON.stringify(r1.displaced) && a1?.version === r1.version,
+    `round 1's record still says what it displaced, at the version it did`);
+  must(a3?.at?.start === lines.indexOf(inserted) && a3.at.end === a3.at.start + 1 && (a3.displaced ?? []).length === 0,
+    `round 3's own record stands on the line it inserted (at ${JSON.stringify(a3?.at)}), displacing nothing`);
 }
 {
   // and no crown question anywhere: an ordinary 🍾 laid the powers down, so

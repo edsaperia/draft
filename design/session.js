@@ -247,7 +247,12 @@
   // held-open anchor the column draws: one per gap site, one per live item.
   const gapFields = (key) => { const at = blockBeforeGap(key); return { gapKey: key, insertAfterKey: at >= 0 ? DOC[at].key : null }; };
   const gapOf = (s, key) => (s && s.sites ? s.sites.find((x) => x.gapKey === key) || null : s);
-  const gapHolders = () => SUGGS.flatMap((g) => (g.sites
+  // **A deleted clause's record holds its gap open while it is unread, and
+  // leaves the margin once filed** (Q1333): the record stands where the clause
+  // stood, asking for its OK; filed, it wants nothing, and there is no clause
+  // for a pile of its own — a room's every deletion held open as a grey ✔ for
+  // ever would be the closed gutter M13 keeps filed marks off.
+  const gapHolders = () => SUGGS.filter((g) => !(g.state === 'sealed' && !isUnread(g))).flatMap((g) => (g.sites
     ? g.sites.filter((x) => x.gapKey).map((x) => ({ g, key: x.gapKey, after: x.insertAfterKey ?? null, site: true }))
     : g.gapKey || g.insertAfterKey ? [{ g, key: g.gapKey ?? null, after: g.insertAfterKey ?? null, site: false }] : []));
   // the head label of a draft on a gap: which gap, in the reader's terms
@@ -1904,7 +1909,11 @@
     // belongs to was dropped off the card altogether. `atHead` had been written
     // for exactly this and never called.
     const top = skey ? ranked.find(atHead) : null;
-    const rest = ranked.filter((c) => c !== top);
+    // **Where the clause has changed again since** (Q1333), the head is the
+    // clause as it stands *now* — which is no longer the top of this ranking
+    // — so the top entry prints in the field like everything else: the head
+    // keeps its machinery and a line under it says why the two differ.
+    const rest = s.changedSince ? ranked : ranked.filter((c) => c !== top);
 
     // Where the incumbent is in the list its right-hand slot now names it, so the
     // left-hand tag would be saying it twice; where it is at the *head* it kept
@@ -1977,11 +1986,18 @@
       (d.capped
         ? '<span class="rsub">' + T.record.capped + '</span>'
         : '') +
+      // a deleted clause's record heads with its gap, as a race on a gap does
+      // (M19, `headOpts`): the two neighbours named, no text
       (top
-        ? clauseHeadHtml(s, {
-            text: currentTextFor(skey), key: skey, chips: chipsFor(skey, s.id),
-            label: null,
-          }) + spk(top)
+        ? clauseHeadHtml(s, Object.assign(headOpts(s, skey), {
+            key: skey, chips: chipsFor(skey, s.id), label: null,
+          })) +
+          // **This clause has changed again since** (Q1333): one line under
+          // the head where the clause no longer reads as this record left it,
+          // and *removed* where the clause is gone and the head is its gap
+          (s.changedSince
+            ? '<span class="rsub">' + esc(s.gone ? T.record.gone : T.record.changedSince) + '</span>'
+            : spk(top))
         : '') +
       // No label on the rest of the field (Ed, 2026-08-17): the hairline above it
       // already says *and here is everything else*, and the axis those numbers are

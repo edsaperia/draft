@@ -11269,14 +11269,30 @@
     for (const o of v.records || []) {
       const field = o.field || [];
       const hs = field.flatMap((f) => f.hunks);
-      const sp = hs.length ? spanOf(hs) : spanOf(o.footprint || o.hunks || []);
+      // **A record stands beside the lines that descend from what it decided**
+      // (Q1333, Ed 2026-09-11, the moon room: a ✔ on the Food heading). The
+      // hunks are in the coordinates of the version the race was decided
+      // against, and every adoption since that inserted or deleted lines
+      // above has moved the clause; the host carries the span forward as
+      // `at` — a clause changed again maps to its replacement, a clause
+      // deleted to the gap where it stood — and the entry, the tab and the
+      // card key on that. The fixture's records carry no `at`, so the span
+      // of the hunks is the fallback, which is what it always was.
+      const sp = o.at && typeof o.at.start === 'number' ? o.at
+        : hs.length ? spanOf(hs) : spanOf(o.footprint || o.hunks || []);
       const adopted = o.outcome === 'adopted';
       // undecided at the close (§4.6): the race files at its backlog
       // paragraph — its best wording IS the paragraph — under the PAUSE mark,
       // never pinned (the 🥂 card is the acknowledgment the close asks for)
       const undecided = o.outcome === 'undecided';
-      const keys = undecided ? ['U:' + (o.raceId || o.candidateId)] : keysOfSpan(sp, lines);
+      // a deleted clause's record takes the gap's own site, as a race on a gap
+      // does (M19): the gap key, the block before it, the insert head
+      const site = undecided ? { keys: ['U:' + (o.raceId || o.candidateId)] } : siteOfSpan(sp, lines);
+      const keys = site.keys;
+      const gapSite = site.isInsert
+        ? { gapKey: site.gapKey, insertAfterKey: site.insertAfterKey, isInsert: true } : {};
       const textOfF = (f) => f.hunks.flatMap((h) => h.lines).map(unhead).join('\n');
+      const plainOfF = (f) => f.hunks.flatMap((h) => h.lines).filter((l) => l.trim()).map(unhead).join('\n');
       // the seal lifts at the record (§3.5a): `records` stays sealed, the
       // closed `record` carries the names where the anonymity ladder allows
       const byName = (f) => authorBy(f.author) || unsealed.get(f.id || f.candidateId) || null;
@@ -11287,8 +11303,21 @@
         ? { slate: field.map((f) => ({ text: textOfF(f), rationale: f.rationale, by: byName(f),
             underNote: underNoteOf(f), refusal: f.reason || null,
             p: f.p == null ? undefined : f.p, won: f === winner && (adopted || undecided) })) } : {};
+      // **The card says which text it changed** where the clause under it has
+      // changed again since (Q1333): the head is the clause as it stands, so
+      // where that is no longer the wording this record put there — or, on a
+      // retired record, the wording that stood — one line under the head
+      // says so, and a clause since deleted says that instead. Compared on
+      // the page against the current lines, blank lines and heading marks
+      // aside, exactly as the head reads them.
+      const standsNow = undecided ? null : adopted ? (winner.hunks ? plainOfF(winner) : '') : (replaced || '');
+      const nowText = undecided ? null : plain(lines, sp);
+      const gone = !undecided && sp.start === sp.end;
+      const changedSince = standsNow !== null && (gone || nowText !== standsNow);
       items.push({ id: 'rec:' + (o.raceId || o.candidateId), kind: 'quick', keys, state: 'sealed',
-        qLabel: labelFor(keys[0]), urgency: 0, pct: 100,
+        ...gapSite, ...(changedSince ? { changedSince: true, gone } : {}),
+        // a gap record is titled by the block before its gap, as a gap draft is
+        qLabel: labelFor(site.insertAfterKey || keys[0]), urgency: 0, pct: 100,
         cap: adopted ? 'decided — adopted' : undecided ? 'undecided at the close — the text stood' : 'decided — the current text stood',
         decided: { outcome: adopted ? 'adopted' : undecided ? 'undecided' : 'retired — the current text stood',
           when: whenOf(o.when), p: o.p == null && best ? best.p : o.p, bar: o.threshold, judges: o.judges,
