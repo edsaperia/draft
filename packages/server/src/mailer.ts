@@ -199,14 +199,13 @@ export const MAILS = {
     subject: `You are invited to “${title}”`,
     text: `You have been invited to become a member of “${title}”.\n\n` +
       `Open your invitation:\n${link}\n\n` +
-      `Membership begins when you arrive; until then you count toward nothing.`,
+      `Your membership begins when you click the link; until then votes may happen without you.`,
     link,
   }),
   applyVerify: (title: string, link: string): Omit<Mail, 'to'> => ({
     subject: `Your application to “${title}”`,
     text: `This address is how “${title}” will know you.\n\n` +
-      `Verify it to continue your application:\n${link}\n\n` +
-      `Nothing has been sent to the members yet — nothing is, until you submit.`,
+      `Verify it to continue your application:\n${link}`,
     link,
   }),
   admitted: (title: string, link: string): Omit<Mail, 'to'> => ({
@@ -228,7 +227,7 @@ export const MAILS = {
     subject: `Your membership of “${title}” is about to lapse`,
     text: `You have been inactive for a while, and your membership of ` +
       `“${title}” will lapse in about ${leadPhrase(leadMs)}. ` +
-      `Logging in is all it takes to stay:\n${link}`,
+      `To prevent your membership from lapsing, click this link:\n${link}`,
     link,
   }),
   /** To the operator (cfg.notifyEmail), never to a member. */
@@ -247,8 +246,7 @@ ${url}`,
 ${link}
 
 ` +
-      `Members may add a closing comment — dissent as welcome as praise — which ` +
-      `signs the document.`,
+      `Members may add a closing comment.`,
     link,
   }),
   /**
@@ -260,15 +258,15 @@ ${link}
    */
   removed: (title: string, link: string): Omit<Mail, 'to'> => ({
     subject: `You are no longer a member of “${title}”`,
-    text: `The Founder has removed you from the membership of “${title}”. ` +
-      `Your answers and votes no longer count in it.\n\n` +
+    text: `The Founder has removed you from the membership of “${title}” ` +
+      `and so you are no longer eligible to vote in it.\n\n` +
       `The document is here, if its visibility lets you read it:\n${link}`,
     link,
   }),
   lapsed: (title: string, link: string): Omit<Mail, 'to'> => ({
     subject: `Your membership of “${title}” has lapsed`,
-    text: `Your membership of “${title}” has lapsed. Your votes still ` +
-      `count; you have simply left the quorum base. Reviving is logging in:\n${link}`,
+    text: `Your membership of “${title}” has lapsed. This means you automatically ` +
+      `abstain on all votes. To re-activate your membership, click this link:\n${link}`,
     link,
   }),
 } as const;

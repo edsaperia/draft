@@ -2068,7 +2068,7 @@ describe('💤 the lapse mails (§9.5a, SURFACE E22)', () => {
       .split('\n').filter((l) => l.length > 0)
       .map((l) => JSON.parse(l) as { to: string; subject: string; text: string })
       .filter((m) => m.to === 'bo@example.org' && m.subject === GONE)[0]!.text;
-    expect(body).toContain('Reviving is logging in');
+    expect(body).toContain('To re-activate your membership, click this link:');
     expect(body).not.toContain('The meadow is mown in June.');
 
     // -- and the sweep does not re-send next minute ------------------------
