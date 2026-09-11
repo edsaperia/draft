@@ -3686,7 +3686,12 @@
     // a gate or a grant belongs to a document that exists: before the save
     // there is nothing to gate and no pen to be given, and its paragraph
     // would otherwise stand in the birth's own band saying so
-    : !(c.hide && c.hide()) && (!c.isGate || !!cs) && (orderReady(c) || !!(c.early && c.early())));
+    // **the founding order paces the founder, and stops at the start** (Q1325,
+    // Ed 2026-09-11, the moon room): after 🍾 every paragraph stands, an unset
+    // rule reading as undecided (Q510) — with 🥾 never set, the order had hidden
+    // 💡 ⚖️ ⏱️ ⏰ 🌡️ 👥 👤 👁️ and their three sections from every reader
+    : !(c.hide && c.hide()) && (!c.isGate || !!cs) &&
+      (constituted() || orderReady(c) || !!(c.early && c.early())));
   // the first delegated question this viewer is being asked, in ORDER — the
   // question 🏛️ arrives with, and the paragraph it hangs off (Q605 (a))
   // Re-entrant by construction, so it guards itself: `visible(ans)` asks
