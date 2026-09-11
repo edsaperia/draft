@@ -28,6 +28,7 @@ import type { OutboxRow, Persistence } from './persistence.js';
 import { PgPersistence } from './pg-persistence.js';
 import { Stash } from './stash.js';
 import { MAILS, botOutboxPath, makeMailer, outboxTail } from './mailer.js';
+import { errorTail, logError } from './error-log.js';
 import { MailOutbox } from './outbox.js';
 import type { QueuedMail } from './outbox.js';
 import { asEngineDoc, driveBridge, foldTime, persistEngine, resumeBridge } from './engine-host.js';
@@ -754,6 +755,16 @@ export async function createDraftServer(cfg: ServerConfig,
           + `${(req.url ?? '/').split('?')[0]}:`, e);
       }
       const message = e instanceof Error ? e.message : String(e);
+      // **and every request that failed lands in the error log** (Q1330) —
+      // a refusal the cmd route already wrote carries `logged`; everything
+      // else is written here with what the catch knows: the path, the
+      // status and the reason. The 500's reason is the full message, which
+      // the wire never gets (stage 3, defect 9) and the operator's file may.
+      if (!(e as { logged?: boolean }).logged) {
+        logError(cfg.dataDir, { kind: internal ? 'failed' : 'refused',
+          status: internal ? 500 : 400, method: req.method ?? '-', path: pathOf(req),
+          reason: message });
+      }
       if (!res.headersSent) {
         if (internal) json(res, 500, { error: 'something went wrong' });
         else json(res, 400, { error: message });
@@ -908,6 +919,17 @@ export async function createDraftServer(cfg: ServerConfig,
     DEV: if (req.method === 'GET' && path === '/api/dev/outbox') {
       if (!mailer.dev) { json(res, 404, { error: 'not found' }); return; }
       json(res, 200, { mails: outboxTail(join(cfg.dataDir, 'outbox.jsonl')) });
+      return;
+    }
+
+    /* **The error log's tail** (Q1330), the way the outbox's is served:
+       newest first, dev only, dropped bodily from the production artifact
+       with the rest of this label — on docs.vote the file is read on the
+       host (`draft-tools errors <dataDir>`, docs/OPERATING.md §11). */
+    DEV: if (req.method === 'GET' && path === '/api/dev/errors') {
+      if (!mailer.dev) { json(res, 404, { error: 'not found' }); return; }
+      res.setHeader('cache-control', 'no-store');
+      json(res, 200, { errors: errorTail(cfg.dataDir) });
       return;
     }
 
@@ -1689,8 +1711,16 @@ export async function createDraftServer(cfg: ServerConfig,
         const cmd = expectString(body, 'cmd');
         const args = (body.args ?? {}) as Record<string, unknown>;
         const t = tOf(doc);
+        // **every refusal lands in the error log** (Q1330): the document,
+        // the seat as its id — never the address — the command, its
+        // arguments and the reason, so a refusal a member met on the page
+        // can be looked up on the host afterwards
+        const refused = (status: number, reason: string): void => logError(cfg.dataDir, {
+          kind: 'refused', status, method: 'POST', path: pathOf(req),
+          doc: doc.id, slug: doc.cs.slug, seat: applicantId ?? memberId, cmd, args, reason });
         // an applicant's one act: submit — nothing else speaks for them
         if (applicantId !== null && cmd !== 'submit-application') {
+          refused(403, 'applicants may only submit their application');
           json(res, 403, { error: 'applicants may only submit their application' });
           return;
         }
@@ -1706,6 +1736,14 @@ export async function createDraftServer(cfg: ServerConfig,
           // sit in memory waiting to ride an unrelated commit (review #1,
           // finding 6): memory and disk never diverge, even on a 400
           await commit(doc, nowMs);
+          // logged here, where the command and the seat are known; the
+          // catch below sees it once more and skips it (`logged`). A throw
+          // carrying a system code is the route failing, not a refusal,
+          // and stays the catch's to log as `failed`.
+          if (typeof (e as { code?: unknown }).code !== 'string') {
+            refused(400, e instanceof Error ? e.message : String(e));
+            (e as { logged?: boolean }).logged = true;
+          }
           throw e;
         }
         // confirming the starting text supersedes the provisional draft
@@ -2016,6 +2054,9 @@ function json(res: ServerResponse, code: number, payload: unknown): void {
   res.writeHead(code, { 'content-type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(payload));
 }
+
+/** The request's path with the query dropped — magic-link tokens travel there. */
+const pathOf = (req: IncomingMessage): string => (req.url ?? '/').split('?')[0]!;
 
 function redirect(res: ServerResponse, to: string): void {
   res.writeHead(302, { location: to });

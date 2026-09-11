@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 469
+  "entries": 471
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -208,6 +208,7 @@
   "page.motionRec.reserveReturned": "ƒ (what) => 'The membership returned ' + what + ' to the founder’s reserve.'",
   "page.motionRec.ruleNoun": "this rule",
   "page.motionRec.titleNoun": "the document’s title",
+  "page.noAnswer": "ƒ (status) => (status ? 'the server answered ' + status : 'the server could not be reached')",
   "page.nothingToPut": "That could not be proposed: nothing is chosen on this card.",
   "page.penWait": "Founder Actions ✒️ are waiting in your tasks — accept them and this turns.",
   "page.preamble.andVote": ", and may vote on proposals.",
@@ -308,6 +309,7 @@
   "page.pwTitle.removeA": "Does the Founder Have a Veto over Removals?",
   "page.pwTitle.removeU": "Can the Founder Remove at Will?",
   "page.refuseSet": "ƒ (reason) => 'That could not be set: ' + reason + '.'",
+  "page.refused": "ƒ (reason) => 'That was refused: ' + reason + '.'",
   "page.ride.pressToWrite": "press to write",
   "page.ride.readOnly": "read only",
   "page.ride.textDash": "Text — ",

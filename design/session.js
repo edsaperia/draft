@@ -5631,14 +5631,25 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   // honest about what it means: this reader's document does not contain
   // these questions yet.
   //
-  // The line is the palette's own: **hot for actions, cold for information**.
-  // Only 'needs' goes — a ⏳ you have judged, a filed ✔✖ and a draft of your
-  // own report where things stand and are owed to you whatever you hold.
-  // ⚔️ and 🌶️ need no clause here, since neither can arise before you have
-  // judged. What makes this safe to re-run is that the capability is part of
-  // the charter column's data key, so an acknowledgment re-keys and the full
-  // set is handed back in.
-  const withheld = (g) => stateOf(g) === 'needs' && !MAY_JUDGE();
+  // **No task is served until its main action can be taken** (SURFACE C9 as
+  // amended by Q1328 — Ed, 2026-09-11: *I shouldn't be served a task until I
+  // can do its main action, so until I accept ⚖️ I shouldn't be given
+  // races*). Until Q1328 only 'needs' went — a pair asked of you — and a
+  // race in any other state stood in the rail and the gutter as grey
+  // information. Now **every entry a race made** waits behind the ⚖️ OK,
+  // whatever its state: the pair asked of you, a race being weighed by other
+  // people, a deadlock, a diagonal, a shifted judgment and the sealed record
+  // alike — the record's OK is remembered per seat (`readSeals`), so it is
+  // owed exactly as it was once the OK lands. What stays is what no race
+  // made and ⚖️ is not the action of: a **park** (E36 — information to
+  // everyone, one sentence and an OK), a draft of **your own** (✏️ is its
+  // action, and `mayPropose()` gates that elsewhere) and the Founder's 👑
+  // crown card (the Founder's gates are self-set, Y27, so this is never
+  // reached for them). What makes this safe to re-run is that the
+  // capability is part of the charter column's data key, so an
+  // acknowledgment re-keys and the full set is handed back in.
+  const KEPT_UNJUDGED = new Set(['park', 'draft', 'crown']);
+  const withheld = (g) => !KEPT_UNJUDGED.has(g.kind) && !g.mine && !MAY_JUDGE();
 
   // The data, keyed and seeded exactly as the page did it at load.
   function bindData(d, s) {

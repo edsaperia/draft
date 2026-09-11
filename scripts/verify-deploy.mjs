@@ -100,6 +100,14 @@ await check('/api/dev/outbox is not in the artifact (437)', async () => {
   return '404';
 });
 
+// the error log's tail rides the same label (Q1330): the file is read on
+// the host with `draft-tools errors`, never over the wire in production
+await check('/api/dev/errors is not in the artifact (Q1330)', async () => {
+  const r = await get('/api/dev/errors');
+  expect(r.status === 404, `status ${r.status} — the error log is reachable`);
+  return '404';
+});
+
 // **Asked with each route's real method** (Q674). A 404 for a GET on a
 // POST-only route proves nothing at all — it is what a *present* route
 // answers — so the ladder and the seat switch are asked the way they would

@@ -194,6 +194,9 @@ docs/<documentId>/
 tokens.json          magic-link tokens, sha256-hashed, single-use, expiring
 pending.json         the pre-save text stash, keyed by hashed capability id
 outbox.jsonl         dev mail only — every mail and its magic link
+bots-outbox.jsonl    mail to *@bots.docs.vote, under either store (§10)
+errors.jsonl         the error log (§11): every refused command and every
+                     failed request, one JSON line each, under either store
 secret.txt           only when DRAFT_SECRET is unset (so: dev only)
 ```
 
@@ -476,3 +479,61 @@ invited to: judging, proposing, moving, signing as them. Nothing more — no
 real member's mail is ever in that file, and a bot has no power a member
 lacks. Rotate by changing the variable in the dashboard and restarting;
 every link already filed stays one-use as before.
+
+## 11. The error log
+
+A member is not expected to meet a refusal at all (Ed, 2026-09-11, Q1330:
+*we don't expect users to encounter refusals — refusals should print an
+error on screen with a debug message, and create some kind of error log we
+can debug*), so one that happens is a defect, and this is where it is
+written down. **Every refused command and every failed request** appends
+one JSON line to `errors.jsonl` in the data dir — under the file store and
+the Postgres store alike, since the file's reader is `tail` and the bot
+outbox already lives beside Postgres the same way (§10). On docs.vote the
+data dir is the ephemeral disk, so **a deploy takes the file**: read it
+while the room is running, or copy it off first.
+
+A line, newest last:
+
+```
+{"at":1789152834133,"kind":"refused","status":400,"method":"POST",
+ "path":"/api/d/moon/cmd","doc":"d-cea25a9578","slug":"moon","seat":"m-4",
+ "cmd":"answer","reason":"'chamber' is not collecting answers",
+ "args":"{\"setting\":\"chamber\",\"value\":{\"rung\":\"link\"}}"}
+```
+
+- `kind` is `refused` (the module or a route said no; the member was told,
+  4xx) or `failed` (the route threw something carrying a system code — an
+  `ENOENT`, a pg error — and the member was told *something went wrong*,
+  500). `/healthz` keeps counting the second kind as `errors.request`; the
+  first is not counted there, by design (a 400 is the product working), but
+  it is logged here, because the page now prints it and somebody will ask.
+- `seat` is the member's or applicant's **id**, never an address — the
+  people rows are the only place an address belongs (§5). `doc` and `slug`
+  name the document; a refusal before any document was found (a body that
+  is not JSON, a missing content-type) carries the path alone.
+- `args` is the command's arguments as one string, **capped at 2,000
+  characters** (`argsTruncated: true` says when) — a refused picture is
+  forty thousand of base64. An invitation's arguments carry the invitee's
+  address, and that stays: the file is as private as the data dir, which
+  already holds every answer in plaintext, and a refused invitation with
+  its address blanked cannot be debugged.
+- `reason` is the sentence the wire got, with the module's own `(§…)`
+  pointer where it had one; for a 500 it is the full message, which the
+  wire never gets.
+
+**Reading it.** On a dev server, `GET /api/dev/errors` serves the last
+fifty, newest first, the outbox's own shape — the route is under the `DEV`
+label and is not in the production artifact (`verify-deploy` asserts the
+404). On docs.vote, in a shell on the host:
+
+    node dist/draft-tools.mjs errors <dataDir> [n]
+
+prints the last `n` (50), newest first, one event per line with its reason
+beneath. A Postgres URL is the wrong address for this verb and it says so.
+
+**What the page shows for the same event** (SURFACE Y25): the sentence
+under the card the command left from, and a stagehand's line at the foot of
+the window — the sentence, then the command, its arguments, the document,
+the seat and the time — so a member's screenshot and a line in this file
+can be matched on the seat and the timestamp.

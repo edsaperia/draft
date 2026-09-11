@@ -955,6 +955,9 @@ const secondSeatPreBegin = async () => {
   guestPage.on('response', (r) => { if (r.request().method() === 'POST' &&
     /give-ok/.test(r.request().postData() || '')) guestOks += 1; });
   guestPage.on('response', (r) => { if (r.url().includes('/api/') && r.status() >= 400) {
+    // the same allowance as the founder's listener: a refusal a step is
+    // *about*, named by its body for as long as the step runs (Q1330's step)
+    if (expectRefused.some((re) => re.test(String(r.request().postData() || '')))) return;
     refused.push('[guest] ' + r.status() + ' ' + r.request().method() + ' ' +
       new URL(r.url()).pathname + ' ' + String(r.request().postData() || '').slice(0, 120));
   } });
@@ -2996,6 +2999,107 @@ if (caret) {
       if (!blank) stuck.push('the sealed speaker on somebody else’s proposal');
       await closeCard();
     }
+  }
+
+  /* ---- races wait behind the ⚖️ OK (Q1328) --------------------------------
+   * Ed, 2026-09-11: *I shouldn't be served a task until I can do its main
+   * action, so until I accept ⚖️ I shouldn't be given races.* Two races stand
+   * by now — the founder's on line 0 and the guest's on line 1 — and the guest
+   * has never acknowledged ⚖️ (their OK is remembered per seat and per
+   * browser, and this context has never given one). So their rail must hold
+   * no race entry and their gutter no tab for one, whatever the race's state;
+   * their own proposal is a *yours* line and stands in either state. Then the
+   * OK is pressed on the ⚖️ card and the founder's race must arrive — the
+   * capability is part of the charter column's data key, so the acknowledgment
+   * re-keys and hands the full set back (`withheld`, session.js; SURFACE C9).
+   * Read off the DOM and off `SESSION.SUGGS` both: the rail is what the
+   * member sees, the array is what every other column draws from. */
+  if (guestPage && ok) {
+    const railOf = () => guestPage.evaluate(() => ({
+      rail: [...document.querySelectorAll('#rail li')].map((li) => li.dataset.q ||
+        ((li.querySelector('[data-card]') || { dataset: {} }).dataset.card) || '?'),
+      suggs: (window.SESSION.SUGGS || []).map((g) => g.kind + ':' + g.state + (g.mine ? ':mine' : '')),
+      tabs: document.querySelectorAll('#charter .achip').length,
+      judgeServed: !!document.querySelector('#rail [data-card="canjudge"]'),
+    }));
+    // a race's rail id is the race's (`r:<candidate>`), a sealed record's `rec:`;
+    // a park is `park:` and the member's own proposal `mine:` — neither is a race entry
+    const isRace = (q) => /^(r:|rec:)/.test(q);
+    const g0 = await railOf();
+    const none = !g0.rail.some(isRace) && g0.suggs.every((s) => /^(park|draft|crown):/.test(s));
+    say('⚖️ waits   · ' + (none
+      ? 'before the OK the member’s rail holds no race · rail ' + JSON.stringify(g0.rail) +
+        ' · suggs ' + JSON.stringify(g0.suggs) + ' · tabs ' + g0.tabs
+      : 'FAIL: a race is served before ⚖️ is acknowledged · rail ' + JSON.stringify(g0.rail) +
+        ' · suggs ' + JSON.stringify(g0.suggs)));
+    if (!none) stuck.push('a race served before the ⚖️ OK (Q1328)');
+    if (!g0.judgeServed) {
+      say('⚖️ OK      · FAIL: ⚖️ is not served to the member, so its OK cannot be walked · rail ' + JSON.stringify(g0.rail));
+      stuck.push('⚖️ is not served to the member (Q1328)');
+    } else {
+      await guestPage.evaluate(() => document.querySelector('#rail [data-card="canjudge"]').click());
+      await guestPage.waitForTimeout(500);
+      const pressed = await guestPage.evaluate(() => {
+        const b = document.querySelector('.setupcard [data-ok]');
+        if (!b || b.disabled) return false;
+        b.scrollIntoView({ block: 'center' });
+        b.click();
+        return true;
+      });
+      await T(2500);                             // the OK's own round trip and refresh
+      const g1 = await railOf();
+      const arrived = pressed && g1.rail.some(isRace) && g1.tabs > g0.tabs &&
+        g1.suggs.some((s) => !/^(park|draft|crown):/.test(s));
+      say('⚖️ OK      · ' + (arrived
+        ? 'the OK lands and the races arrive · rail ' + JSON.stringify(g1.rail) +
+          ' · suggs ' + JSON.stringify(g1.suggs) + ' · tabs ' + g0.tabs + '→' + g1.tabs
+        : 'FAIL: pressed ' + pressed + ' · rail ' + JSON.stringify(g1.rail) +
+          ' · suggs ' + JSON.stringify(g1.suggs) + ' · tabs ' + g0.tabs + '→' + g1.tabs));
+      if (!arrived) stuck.push('the races did not arrive on the ⚖️ OK (Q1328)');
+    }
+  }
+
+  /* ---- a refusal prints (Q1330) ---------------------------------------------
+   * Ed, 2026-09-11: *refusals should print an error on screen with a debug
+   * message*. The member sends the moon room's own refusal through the page's
+   * wire — an `answer` on 🌍, which the founder holds and which is collecting
+   * nothing — with a card open, so both channels are exercised: the sentence
+   * under the card that was open when the command left (Y25's mechanism,
+   * *That was refused: …*) and the stagehand's line at the foot of the
+   * window carrying the command, its arguments, the document and the seat.
+   * A click on the line dismisses it. The wire's 400 is expected here and is
+   * not a walk failure: the listener above counts it off. */
+  if (guestPage && ok) {
+    await guestPage.evaluate(() => { const t = document.querySelector('#rail [data-card="canpropose"]'); if (t) t.click(); });
+    await guestPage.waitForTimeout(500);
+    expectRefused.push(/"cmd":"answer".*"setting":"chamber"/);
+    let sent = null;
+    try {
+      sent = await guestPage.evaluate(() => window.__cmd('answer', { setting: 'chamber', value: { rung: 'link' } }));
+      await guestPage.waitForTimeout(400);
+    } finally { expectRefused.length = 0; }
+    const shown = await guestPage.evaluate(() => {
+      const line = document.getElementById('errline');
+      const onCard = document.querySelector('.setupcard .why.refusal');
+      return { line: line ? line.textContent.replace(/\s+/g, ' ').trim() : null,
+        card: onCard ? onCard.textContent.trim() : null,
+        open: document.querySelector('.setupcard') ? document.querySelector('.setupcard').dataset.setupcard : null };
+    });
+    const refusedOk = !!(sent && sent.error) && !!shown.line &&
+      shown.line.includes(String(sent.error).replace(/\s*\(§[^)]*\)\s*$/, '').replace(/\.$/, '')) &&
+      /answer \{"setting":"chamber"/.test(shown.line) && /seat /.test(shown.line) &&
+      !!shown.card && /That was refused/.test(shown.card);
+    say('refusal    · ' + (refusedOk
+      ? 'printed under the card “' + shown.card + '” and at the foot “' + shown.line.slice(0, 120) + '…”'
+      : 'FAIL: ' + JSON.stringify({ sent, shown })));
+    if (!refusedOk) stuck.push('a refusal did not print (Q1330)');
+    // the line goes on a click; the card's sentence retires on the next keystroke there (Y25)
+    await guestPage.evaluate(() => { const l = document.getElementById('errline'); if (l) l.click(); });
+    const gone = await guestPage.evaluate(() => !document.getElementById('errline'));
+    say('dismissed  · ' + (gone ? 'the foot line goes on a click' : 'FAIL: the foot line stayed'));
+    if (!gone) stuck.push('the refusal line did not dismiss (Q1330)');
+    await guestPage.evaluate(() => { const a = document.querySelector('.setupcard .chipcol .achip'); if (a) a.click(); });
+    await guestPage.waitForTimeout(400);
   }
 
   /* ---- the pair deck (Q1200) and the ledger (Q1201) ------------------------
