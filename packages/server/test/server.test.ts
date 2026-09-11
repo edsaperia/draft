@@ -2857,3 +2857,81 @@ describe('the people split (decision 1253): identity beside the log, never in it
     expect((await fetch(`${base}/api/d/old/view`)).status).not.toBe(404);
   });
 });
+
+describe('the slim view (the moon room, 2026-09-11): a poll that says what it holds is answered without it', () => {
+  it('leaves out the text, the records and the projection the page already has, and names them', async () => {
+    const { base } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Slim Charter', email: 'ada@example.org',
+    })).json() as { ok: boolean; slug: string; devLink: string };
+    const ada = cookieOf(await consume(created.devLink));
+    const slug = created.slug;
+    const ok = async (name: string, args: unknown) => {
+      const body = await (await post(base, `/api/d/${slug}/cmd`, { cmd: name, args }, ada))
+        .json() as { error?: string };
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+    };
+    type V = { seq: number; eseq: number; short?: boolean; slim?: string[];
+      text?: string; textVersion: number; records?: unknown[]; recordsKey: number; view?: unknown };
+    const viewOf = async (q = '') =>
+      (await (await fetch(`${base}/api/d/${slug}/view${q}`, { headers: { cookie: ada } })).json()) as V;
+    // before 🍾 the text version is 0 for ever while the founder's text still
+    // changes: a poll holding version 0 is never denied the text
+    const unborn = await viewOf();
+    expect(unborn.textVersion).toBe(0);
+    await ok('confirm-starting-text', { text: 'The latch lifts from inside.' });
+    const reborn = await viewOf(`?since=${unborn.seq}.${unborn.eseq}&tv=0&rk=0`);
+    expect(reborn.slim).toEqual([]);
+    expect(reborn.text).toBe('The latch lifts from inside.');
+    await ok('set-setting', { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
+    const values: Record<string, unknown> = {
+      ending: { endsAtMs: null }, pace: { shape: 'fixed' }, bar: { pct: 60 },
+      // a quorum of two in a room of one: the proposal below stays live
+      // (E = 1 would adopt it on the author's own preference at once)
+      quorum: { form: 'count', n: 2 }, chamber: { rung: 'link' },
+      authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
+      applications: { apply: false }, admission: { price: 'proposal' },
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await ok('reclaim', { setting });
+      await ok('set-setting', { setting, value });
+    }
+    await ok('set-convenor-membership', { isMember: true });
+    await ok('begin', {});
+
+    // a poll that says nothing gets everything, as before
+    const full = await viewOf();
+    expect(full.short).toBeUndefined();
+    expect(full.slim).toEqual([]);
+    expect(full.text).toBe('The latch lifts from inside.');
+    expect(Array.isArray(full.records)).toBe(true);
+    expect(typeof full.recordsKey).toBe('number');
+    expect(full.view).toBeDefined();
+
+    // the same state, stated: the seqs alone
+    const short = await viewOf(`?since=${full.seq}.${full.eseq}`);
+    expect(short.short).toBe(true);
+    expect(short.view).toBeUndefined();
+
+    // the engine moved (a proposal) but the document log, the text and the
+    // outcomes did not: the poll that holds all three gets none of them back
+    await ok('propose-text', { baseVersion: full.textVersion,
+      hunks: [{ start: 0, end: 1, lines: ['The latch lifts from outside.'] }], why: '' });
+    const slim = await viewOf(`?since=${full.seq}.${full.eseq}&tv=${full.textVersion}&rk=${full.recordsKey}`);
+    expect(slim.short).toBeUndefined();
+    expect(slim.eseq).toBeGreaterThan(full.eseq);
+    expect(slim.slim!.sort()).toEqual(['records', 'text', 'view']);
+    expect(slim.text).toBeUndefined();
+    expect(slim.records).toBeUndefined();
+    expect(slim.view).toBeUndefined();
+    expect(slim.textVersion).toBe(full.textVersion);
+    expect(slim.recordsKey).toBe(full.recordsKey);
+
+    // a stale text version gets the text back, and a stale document seq the projection
+    const stale = await viewOf(`?since=${full.seq - 1}.${full.eseq}&tv=${full.textVersion - 1}&rk=${full.recordsKey}`);
+    expect(stale.slim).toEqual(['records']);
+    expect(stale.text).toBe('The latch lifts from inside.');
+    expect(stale.view).toBeDefined();
+  });
+});

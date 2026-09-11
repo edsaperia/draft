@@ -362,15 +362,21 @@ export async function createDraftServer(cfg: ServerConfig,
    * member's own judgments and resolved outcomes; never standings, never
    * anybody else's judgments, never an author.
    */
-  const raceView = (doc: LoadedDoc, memberId: string, nowMs: number): {
+  /**
+   * `opts.records === false` skips the sealed records — the heaviest part of
+   * a busy room's view, and one that changes only when a race resolves — for
+   * a poll that already holds them (`recordsKey`, the slim view below).
+   */
+  const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
+    opts: { records?: boolean } = {}): {
     text: string; textVersion: number; clauses: unknown[]; mine: unknown[];
-    records: unknown[]; raceCards: unknown[]; wallet: number | null;
+    records: unknown[]; recordsKey: number; raceCards: unknown[]; wallet: number | null;
     walletInfo: unknown; floor: number; awaitingAssent?: unknown[];
     amendments?: unknown[]; parked?: unknown[];
   } => {
     const ed = asEngineDoc(doc);
-    const idle = { clauses: [], mine: [], records: [], raceCards: [], wallet: null, record: null,
-      walletInfo: null, floor: 0, awaitingAssent: [], amendments: [], parked: [] };
+    const idle = { clauses: [], mine: [], records: [], recordsKey: 0, raceCards: [], wallet: null,
+      record: null, walletInfo: null, floor: 0, awaitingAssent: [], amendments: [], parked: [] };
     if (ed.bridge === null) return { text: doc.cs.text ?? '', textVersion: 0, ...idle };
     const engine = ed.bridge.engine;
     const api = new ParticipantApi(engine, memberId);
@@ -597,7 +603,10 @@ export async function createDraftServer(cfg: ServerConfig,
     const byRace = new Map<string, Rec>();
     // an author's derived preference is a mover (§3.3, §8.2): counted, never named
     const authorsOf = new Map<string, Set<string>>();
-    for (const o of api.outcomes()) {
+    // the records' key is the count of outcomes: a record exists per resolved
+    // race and never leaves, so the count moves exactly when a record would
+    const recordsKey = api.outcomes().length;
+    for (const o of opts.records === false ? [] : api.outcomes()) {
       const c = engine.getCandidate(o.candidateId);
       if (c.patch === undefined) continue;
       const mineJ = myJ.some((j) => j.aId === o.candidateId || j.bId === o.candidateId);
@@ -669,7 +678,7 @@ export async function createDraftServer(cfg: ServerConfig,
       };
     })();
     const base = { text: engine.document(), textVersion: engine.currentVersion(),
-      clauses, mine, records, floor, record, awaitingAssent, amendments, parked };
+      clauses, mine, records, recordsKey, floor, record, awaitingAssent, amendments, parked };
     // closed, a clerk, or a seat out of E: no hand and no wallet
     if (served === null) return { ...base, raceCards: [], wallet: null, walletInfo: null };
     const w = served.wallet;
@@ -1564,10 +1573,25 @@ export async function createDraftServer(cfg: ServerConfig,
         const eseq = engineDoc.bridge === null ? 0 : engineDoc.bridge.engine.log.length;
         // the page polls (4s): when it says what it has seen and nothing
         // moved in either log, answer with the seqs alone and build no view
-        if (url.searchParams.get('since') === seq + '.' + eseq) {
-          json(res, 200, { seq, eseq });
+        const since = url.searchParams.get('since');
+        if (since === seq + '.' + eseq) {
+          json(res, 200, { seq, eseq, short: true });
           return;
         }
+        // **The slim view** (the moon room, 2026-09-11): in a busy room
+        // something has always moved inside a poll, so the short answer never
+        // fires and every poll is a full view — 260 KB by a hundred races, of
+        // which the sealed records were two fifths, the constitution's own
+        // projection a quarter and the text a tenth, and none of the three
+        // moves with a judgment. A poll that says what it holds — the document
+        // seq it has seen (`since`'s first half: the projection is a function
+        // of the document log), the text version (`tv`) and the records' key
+        // (`rk`) — is answered without whichever of the three it already has,
+        // and `slim` names them so the page keeps its own. A client that says
+        // nothing gets everything, as before.
+        const pageSeq = since === null ? null : Number(since.split('.')[0]);
+        const pageTv = url.searchParams.get('tv');
+        const pageRk = url.searchParams.get('rk');
         // **An applicant is a stranger who has knocked** (Q1281, 2026-09-07):
         // they are served the door's own payload — the rules, the text where
         // 🌍 lets a link-holder read it, the register on the same rung — plus
@@ -1635,8 +1659,28 @@ export async function createDraftServer(cfg: ServerConfig,
           // the unconfirmed starting text (§9.7a v0.55): readable by any
           // member — the charter is what the founding questions are about
           provisionalText: doc.cs.textConfirmed ? null : doc.provisional,
-          ...raceView(doc, memberId, nowMs),
-          view: view(doc.cs, memberId),
+          ...((): Record<string, unknown> => {
+            const ed = asEngineDoc(doc);
+            const rkNow = ed.bridge === null ? 0
+              : new ParticipantApi(ed.bridge.engine, memberId).outcomes().length;
+            const slim: string[] = [];
+            // before 🍾 there is no engine: the text version reads 0 while
+            // the founder's text still changes (confirm-starting-text), so
+            // neither the text nor the records are ever left out then —
+            // journey's *paste ✒️* step held a stale column otherwise
+            const versioned = ed.bridge !== null;
+            const keepRecords = versioned && pageRk !== null && Number(pageRk) === rkNow;
+            const rv = raceView(doc, memberId, nowMs, { records: !keepRecords });
+            const out: Record<string, unknown> = { ...rv };
+            if (keepRecords) { delete out.records; slim.push('records'); }
+            if (versioned && pageTv !== null && Number(pageTv) === rv.textVersion) {
+              delete out.text; slim.push('text');
+            }
+            if (pageSeq !== null && pageSeq === seq) slim.push('view');
+            else out.view = view(doc.cs, memberId);
+            out.slim = slim;
+            return out;
+          })(),
         });
         return;
       }

@@ -975,13 +975,18 @@
     refresh() {
       // the poll says what it has seen (document seq . engine seq); a
       // quiet server answers with the seqs alone and builds no view
+      // …and what it holds of the three heavy, slow-moving parts (the slim
+      // view, 2026-09-11): the text version and the records' key ride beside
+      // the seqs, and the server leaves out whichever has not moved
       const since = cs && cs.isRemote
-        ? '?since=' + encodeURIComponent(cs.v.seq + '.' + (cs.v.eseq || 0)) : '';
+        ? '?since=' + encodeURIComponent(cs.v.seq + '.' + (cs.v.eseq || 0)) +
+          (typeof cs.v.textVersion === 'number' ? '&tv=' + cs.v.textVersion : '') +
+          (typeof cs.v.recordsKey === 'number' ? '&rk=' + cs.v.recordsKey : '') : '';
       return fetch('/api/d/' + LIVESLUG + '/view' + since)
         .then((r) => (r.status === 401 ? null : r.json()))
         .then((data) => {
           if (!data || !cs || !cs.isRemote) return;
-          if (!data.view) return; // unchanged — the short answer has no view
+          if (data.short) return; // unchanged — the short answer carries the seqs alone
           // **A view older than the one we hold is not news, it is a
           // rollback** (Q846's last window). `api.cmd` resolves after its own
           // refresh, but a 4s poll already in flight when the command was sent
@@ -994,6 +999,14 @@
           if (cs.v && typeof data.seq === 'number' && typeof cs.v.seq === 'number' &&
             (data.seq < cs.v.seq ||
               (data.seq === cs.v.seq && (data.eseq || 0) < (cs.v.eseq || 0)))) return;
+          // **a slim answer is completed from what the page holds** (2026-09-11):
+          // the server names the parts it left out because the poll said it
+          // already had them, and each is the page's own copy from the last
+          // full view — merged here, at the one boundary, so nothing
+          // downstream knows a view can arrive in pieces
+          if (Array.isArray(data.slim) && cs.v) {
+            for (const k of data.slim) if (data[k] === undefined) data[k] = cs.v[k];
+          }
           // the stranger's payload is reshaped to what the predicates read
           // a seat can die mid-session (removal, §9.5a): the door is what
           // the poll starts serving, so the viewer moves to it — the boot

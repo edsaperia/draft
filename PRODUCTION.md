@@ -418,6 +418,72 @@ store; on docs.vote a command is three round trips inside the write chain,
 which is its floor); RSS grew 108 → 303 MB over twenty minutes and 4,800
 engine events on both the before and the after server, and was not chased.
 
+### The host under two hundred bots — measured 2026-09-11 (Q1326)
+
+**The run.** Ed's moon room on docs.vote (*We should do a stress test with
+lots of active bots*; he chose 200 bots and a bot founder): a 97-line
+charter, `room-bots --min 5s --max 30s`, one invitation every 12 s (the
+login door follows sixty links per ten minutes from one address, and the
+bot outbox serves its newest thirty mails), the founder's full view and one
+real judgment sampled every 15 s. Times from the monitor, Render's starter:
+
+| bots acting | view | judge | healthz (no work — pure queueing) | payload |
+| --- | --- | --- | --- | --- |
+| ~30 | 62 ms | 58 ms | 56 ms | 77 KB |
+| ~70 | 65 ms | 104 ms | 53 ms | 173 KB |
+| ~90 | 103–144 ms | 481–792 ms | 64–398 ms | 200–216 KB |
+| ~104 | 93 ms | 1,472 ms | 135 ms | 236 KB |
+| ~116 | 2,803 ms | 11,204 ms | 2,700 ms | 255 KB |
+| ~123 | 330–7,493 ms | 3,577–18,590 ms | 3,212–7,853 ms | 258 KB |
+
+At 17:23:53 the proxy answered 502 for everything; the instance came back
+with all three documents intact (the Q1322 fix's first live test) and the
+bots were stopped. **The knee is 115–120 bots at this act rate** — about
+seven full views and seven commands a second — and Ed's bar (p95 view under
+100 ms, command under 500 ms) held to seventy bots for views and ninety for
+commands. A bot's act is a full view plus a command every seventeen seconds
+on average, so this is a harsher shape than Q1324's polling members: read it
+as a few hundred readers with a hundred concurrent writers.
+
+**The limiting factor is one thread, shared by every document.** The
+server is one Node process and one event loop; views, folds and
+serialisation are synchronous on it, so a hot document queues every other
+document's requests behind its own (healthz at 8 s is the proof). Only the
+write chain — a document's commands landing in order — is per document.
+
+**The profile, locally** (fifty bots at 2–8 s, eighty races, the same event
+rate): `buildUsableComparisons` 23% of samples — every judgment in the room
+walked once per race per state version, and again uncached inside every
+command's fold — `runCommand` 30% inclusive, views 12%. And the process's
+live heap was 60 MB under an RSS of 345 MB (107 after a forced GC): V8 was
+not collecting, and on a 512 MB instance that is the kill.
+
+**Built the same day (Ed: *do any straightforward optimisations now*):**
+
+1. **Edge judgments indexed as they land**, by ground and by candidate
+   (`Session.edgesByGround` / `edgesByCandidate`, filled in `apply`); the
+   usable-set scan and the locked-evidence scan read their own bucket.
+   After, same load: `usableComparisons` 7%, `runCommand` 16%.
+2. **V8 told the container's size**: `--max-old-space-size=384` in
+   render.yaml's start command.
+3. **The slim view** (Ed: *do it now*): the page's poll states the
+   document seq it has seen (`since`), its text version (`tv`) and the
+   records' key (`rk`, the count of outcomes); the server leaves out the
+   constitution's projection, the text and the sealed records it already
+   holds and names them in `slim`; the page fills them from its last full
+   view at the poll boundary. Of a 148 KB view, the records were 62 KB, the
+   projection 37 KB, the text 11 KB and candidate wording 5 KB — so in a
+   real room, where the document log moves rarely, a busy poll drops to
+   about a third. Before 🍾 the text version is 0 for ever while the
+   founder's text still changes, so text and records slim only once the
+   engine exists (journey's *paste ✒️* step caught it). The short answer
+   now says `short: true`; a client that states nothing gets everything.
+
+**Not built:** the fold's uncached `races()` reads (a version bump per
+mutation inside `apply` would let the memo hold within a fold); more than
+one process. The next instrument to run is this room again on docs.vote
+after the push, to move the knee's number.
+
 
 ## History
 
