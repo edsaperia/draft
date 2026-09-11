@@ -453,13 +453,23 @@ function checkSetupAlphabet() {
     else if (hue[r.state] !== want) find('setup-alphabet', `${r.state}: table says hue "${r.hue}", HUE says '${hue[r.state]}'`);
   }
   // the two mark columns against `markOf`'s branches, each branch a cell and each cell a branch
-  const mo = fnBody(setup, 'const markOf = (c, ctx, tab) =>');
+  const mo = fnBody(setup, 'const markOf = (c, ctx, tab, host) =>');
   const cell = (s, col) => (byState.get(s) || {})[col] || '';
   const glyph = (c) => /subject glyph/.test(c);
   // branch 1: a done tab keeps the subject glyph; the done rail entry retires to the drawn ✔
   if (!/if \(tab && st === 'done'\) return c\.g;/.test(mo)) find('setup-alphabet', "markOf: no `tab && st === 'done'` branch — the table says a done tab wears the subject glyph");
   if (!glyph(cell('done', 'tab mark'))) find('setup-alphabet', `done: markOf hands a done tab the subject glyph, the tab-mark cell says "${cell('done', 'tab mark')}"`);
   if (!/drawn.*✔/.test(cell('done', 'rail mark'))) find('setup-alphabet', `done: markOf hands a done rail entry TICK, the rail-mark cell says "${cell('done', 'rail mark')}"`);
+  // branch 1a: the front of a setting's own pile keeps the subject glyph while
+  // the rule is news (Q1320, Ed 2026-09-11) — `host` is the pile's word, and
+  // pileHtml/stripHtml have to hand it to the chip or the branch is dead
+  if (!/if \(tab && host && st === 'news'\) return c\.g;/.test(mo))
+    find('setup-alphabet', "markOf: no `tab && host && st === 'news'` branch — the table says the front of a setting's pile keeps the subject glyph while the rule is news (Q1320)");
+  if (!/except the front of a setting's own pile, which keeps the subject glyph/.test(cell('news', 'tab mark')))
+    find('setup-alphabet', `news: markOf hands the front of a setting's pile the subject glyph, the tab-mark cell says "${cell('news', 'tab mark')}"`);
+  for (const site of ['inert: i > 0, z: gs.length - i, host: !!h && c.k === h', 'active: ctx.open === c.k, host: !!h && c.k === h'])
+    if (!setup.includes('chipHtml(c, ctx, { ' + site + ' })'))
+      find('setup-alphabet', `setup.js: chipHtml is no longer told which chip is the host at \`{ ${site} }\` — the news-glyph branch has nothing to key on`);
   // branch 2: a grant's news wears the power's glyph, in both columns
   if (!/if \(st === 'news' && c\.grants\) return c\.grants;/.test(mo)) find('setup-alphabet', 'markOf: no grant branch — the table says a grant wears the glyph of the power it grants');
   for (const col of ['rail mark', 'tab mark']) {
