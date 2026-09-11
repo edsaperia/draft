@@ -3726,8 +3726,17 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         // was filed. A paragraph has had the `wasResolved` half for as long as
         // it has had the live one, so the heading takes both or neither.
         const hlive = line.key ? suggFor(line.key) : [];
+        const hSealedAt = (g) => (resolved.has(frontKeyOf(g)) || g.state === 'sealed') && (g.keys ?? []).includes(line.key);
+        // **The open record is the one that opens, not the first one found**
+        // (Ed, 2026-09-11, the moon room: *queue card that does not open
+        // decision card* — a ✔ on the Food heading). Two records landed on
+        // one heading, `find` returned the first, and a press on the second
+        // compared its id against the first's and drew nothing — Q1298's
+        // defect again, one branch over. The mark still shows the front one.
+        const hOpen = line.key && !hlive.length
+          ? SUGGS.find((g) => g.id === openId && hSealedAt(g)) : undefined;
         const hDecided = line.key && !hlive.length
-          ? SUGGS.find((g) => (resolved.has(frontKeyOf(g)) || g.state === 'sealed') && (g.keys ?? []).includes(line.key))
+          ? (hOpen || SUGGS.find(hSealedAt))
           : undefined;
         let marks = '';
         if (hlive.length) {
