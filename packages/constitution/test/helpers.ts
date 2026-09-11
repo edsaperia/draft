@@ -21,8 +21,7 @@ export function buildConstituted(opts: {
   /**
    * The founder's powers over the acts at the doors (entry 94), spent at 🍾:
    * default neither door holds anything, so a carried invitation or removal
-   * lands without the crown, as the old members-held register did. A legacy
-   * `applications.holder` defines ✉️'s pair itself and wins over this.
+   * lands without the crown, as the old members-held register did.
    */
   doors?: { invite?: { unilateral: boolean; assent: boolean };
     remove?: { unilateral: boolean; assent: boolean } };
@@ -86,9 +85,7 @@ export function buildConstituted(opts: {
     s.setSetting(2, id as never, v as never);
   }
   // the doors: laid down before the start, spent at 🍾 (R-048)
-  const legacyHolder = opts.applications?.holder !== undefined;
   for (const door of ['door:invite', 'door:remove'] as const) {
-    if (door === 'door:invite' && legacyHolder) continue;
     const keep = (door === 'door:invite' ? opts.doors?.invite : opts.doors?.remove)
       ?? { unilateral: false, assent: false };
     if (!keep.unilateral) s.relinquish(2, door, 'unilateral');

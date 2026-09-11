@@ -18,6 +18,8 @@ import type { Persistence } from '../src/persistence.js';
 import { PgPersistence } from '../src/pg-persistence.js';
 import { asEngineDoc, resumeBridge } from '../src/engine-host.js';
 import { LIMITS } from '../src/commands.js';
+import { SCHEMA_VERSION, chainHash } from '../../constitution/src/index.js';
+import type { ConstitutionEvent } from '../../constitution/src/index.js';
 
 const DESIGN_DIR = join(import.meta.dirname, '..', '..', '..', 'design');
 
@@ -276,7 +278,7 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
       quorum: { form: 'share', n: 60 },
       authorship: { rung: 'sealed' },
       judgments: { rung: 'after' },
-      applications: { holder: 'members', apply: true },
+      applications: { apply: true },
       admission: { price: 'proposal' },
       machines: { enabled: false, budget: 0 },
       lapse: { afterMs: null },
@@ -284,6 +286,12 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     for (const [setting, value] of Object.entries(values)) {
       await cmd(ada, 'reclaim', { setting });
       await cmd(ada, 'set-setting', { setting, value });
+    }
+    // ✉️'s pair laid down at the door itself (§9.7 rule 9), so the admit
+    // race below lands without the crown; the legacy `holder` that once did
+    // this from inside 🤝's value is not read (Q1329)
+    for (const power of ['unilateral', 'assent']) {
+      await cmd(ada, 'relinquish', { setting: 'door:invite', power });
     }
     // nothing arrives delegated (Ed, 2026-08-21, amending §9.0a): the founder
     // hands each question to the room, which is what opens it for answering
@@ -2855,6 +2863,35 @@ describe('the people split (decision 1253): identity beside the log, never in it
     expect(health.documents).toBe(1);
     expect(health.documentsSkipped).toBe(1);
     expect((await fetch(`${base}/api/d/old/view`)).status).not.toBe(404);
+  });
+
+  it('a log carrying a legacy value shape is quarantined at boot, counted, and every other document loads (Q1329)', async () => {
+    const { base } = await boot({ seed: async (p) => {
+      const store = new DocStore(p);
+      const live = await store.create('d-live', { title: 'Live', slug: 'live',
+        convenor: { id: 'founder', email: 'live@example.org', isMember: true } }, 1);
+      await store.persist(live);
+      // a document founded as the moon room was (docs.vote, 2026-09-11): 🤝
+      // set with the pre-Q506 `holder` key beside the switch — a shape the
+      // command refuses today and the fold no longer reads, chained validly
+      // so that the hash chain is not what fails
+      const moon = await store.create('d-moon', { title: 'Moon', slug: 'moon',
+        convenor: { id: 'founder', email: 'moon@example.org', isMember: true } }, 1);
+      await store.persist(moon);
+      const entries = moon.cs.logEntries();
+      const last = entries[entries.length - 1]!;
+      const event = { type: 'setting-set', t: 2, setting: 'applications',
+        value: { holder: 'members', apply: true }, by: 'convenor' } as unknown as ConstitutionEvent;
+      await p.appendDocLog('d-moon', [{ seq: entries.length, prevHash: last.hash,
+        hash: chainHash(last.hash, event), event, schemaVersion: SCHEMA_VERSION }]);
+    } });
+    const health = await (await fetch(`${base}/healthz`)).json() as
+      { documents: number; documentsSkipped: number; documentsQuarantined: number };
+    expect(health.documents).toBe(1);
+    expect(health.documentsSkipped).toBe(0);
+    expect(health.documentsQuarantined).toBe(1);
+    expect((await fetch(`${base}/api/d/live/view`)).status).not.toBe(404);
+    expect((await fetch(`${base}/api/d/moon/view`)).status).toBe(404);
   });
 });
 

@@ -137,12 +137,7 @@ describe('catalogue integrity (SPEC §9.0–§9.7½)', () => {
           [30, 60, 240].map((dripMinutes) => ({ grant, cap, dripMinutes })))),
       machines: [false, true].flatMap((enabled) =>
         range(0, 4, 2).map((budget) => ({ enabled, budget }))),
-      // the legacy `holder` field rides along deliberately: an old log
-      // carries it, the fold strips it, and the order must not read it
-      applications: [
-        { apply: false }, { apply: true },
-        { apply: false, holder: 'members' as const }, { apply: true, holder: 'members' as const },
-      ],
+      applications: [{ apply: false }, { apply: true }],
     };
 
     it('every consent question in the catalogue has a value set here', () => {

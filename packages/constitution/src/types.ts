@@ -276,9 +276,12 @@ export type ConstitutionEvent =
   | { type: 'setting-handed-over'; t: number; setting: PowerKey }
   | { type: 'crown-lapsed'; t: number }
   | { type: 'crown-returned'; t: number }
-  /* -- presence (§9.5, §9.5a) --------------------------------------------- */
-  /** legacy (v0.99, Q1196): there is no sign-out; a log written before R-088 replays this as a no-op. */
-  | { type: 'signed-out'; t: number; member: MemberId; mode: 'holding' | 'abstaining' }
+  /* -- presence (§9.5, §9.5a) --------------------------------------------- *
+   * There is no sign-out and no freeze (v0.99, Q1196, R-088). The three
+   * events a pre-R-088 log carried for them — `signed-out`, `frozen`,
+   * `thawed` — replayed as no-ops until Q1329 (Ed, 2026-09-11: *there are no
+   * old documents*); a log carrying one now throws at replay, so the host
+   * quarantines it.                                                        */
   /** Coming back. Absent `cause` is the member's own return — logging in;
    *  `rule` is 💤 re-read (entry 97) returning them by a change of rule
    *  they did not make, which is what a 💤 change line names (Y26, Q902). */
@@ -288,10 +291,6 @@ export type ConstitutionEvent =
   /** Presence is presence (Q459a): an authenticated read refreshed the member's clock — at most hourly. */
   | { type: 'member-seen'; t: number; member: MemberId }
   | { type: 'member-lapsed'; t: number; member: MemberId }
-  /** legacy (v0.99, Q1196): there is no freeze; replays as a no-op. */
-  | { type: 'frozen'; t: number }
-  /** legacy (v0.99, Q1196): there is no thaw; replays as a no-op. */
-  | { type: 'thawed'; t: number }
   /** Follow-on of every roster change (§9.3/Q10): the gazette's floor announcement. */
   | { type: 'floor-recomputed'; t: number; E: number; quorumN: number | null;
       floorTerm: number }

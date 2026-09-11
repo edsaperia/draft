@@ -172,7 +172,7 @@ describe('an admit motion is its own race (§9.7½ v0.56, Q397)', () => {
     buildConstituted({
       bar: 55,
       quorum: { form: 'count', n: 2 },
-      applications: { holder: 'members', apply: true },
+      applications: { apply: true },
       admission: { price },
     });
 

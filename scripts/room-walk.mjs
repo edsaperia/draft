@@ -202,7 +202,7 @@ for (const [setting, value] of Object.entries({
   quorum: { form: 'share', n: 60 },
   authorship: { rung: 'sealed' },
   judgments: { rung: 'after' },
-  applications: { holder: 'members', apply: true },
+  applications: { apply: true },
   admission: { price: 'proposal' },
   machines: { enabled: false, budget: 0 },
   lapse: { afterMs: null },

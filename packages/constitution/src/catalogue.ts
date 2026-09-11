@@ -104,15 +104,12 @@ const priceOrder = (rungs: readonly string[]) =>
     rungs.indexOf((b as PriceValue).price) - rungs.indexOf((a as PriceValue).price);
 
 /**
- * 🤝 read through its legacy: a value written before entry 94 carried a
- * four-rung `joinPolicy`, of which `invite` is the door shut and the rest
- * are the door open. Exported for the fold and the server, so the mapping
- * lives in one place.
+ * 🤝 as it stands: unset is the door shut. Exported for the session and the
+ * server, so the one reading lives in one place. The pre-entry-94
+ * `joinPolicy` this once read through is not read at all since Q1329.
  */
 export function mayApply(v: ApplicationsValue | null): boolean {
-  if (v === null) return false;
-  if (v.apply !== undefined) return v.apply;
-  return v.joinPolicy !== undefined && v.joinPolicy !== 'invite';
+  return v !== null && v.apply === true;
 }
 
 /** null reads as +∞ — never is the most protective duration/date. */
@@ -317,8 +314,9 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
   // setting's. Not judge-gated, for 🤝's reason.
   //
   // The id was `membership` until Q903 (Ed, 2026-08-26): it named the
-  // register this setting stopped being at entry 94, and a log written
-  // under the old id folds to this one at load (`foldLegacyId`).
+  // register this setting stopped being at entry 94. A log written under
+  // the old id is not folded since Q1329: an unknown id throws at replay
+  // and the document is quarantined at boot — there are no old documents.
   { id: 'admission', glyph: '🪪', kind: 'constitutional',
     delegable: true, valueType: 'price',
     rungs: ['assembly', 'proposal', 'pen'],

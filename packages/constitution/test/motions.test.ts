@@ -186,7 +186,7 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
       quorum: { form: 'share', n: 60 }, authorship: { rung: 'sealed' },
       judgments: { rung: 'after' },
       chamber: { rung: 'link' },
-      applications: { holder: 'reserved-unilateral', apply: false },
+      applications: { apply: false },
       admission: { price: 'assembly' },
       machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
     } as const;

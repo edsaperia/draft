@@ -43,20 +43,14 @@ export type Price = 'consent' | 'assembly' | 'proposal' | 'pen';
 export type PriceValue = { price: Price };
 /** 🤝 — may strangers apply? (§9.7½, entry 94). An application is a
  * stranger proposing their own invitation, admitted at 🪪's price; this
- * setting is only the switch on that door. Since Q506 (2026-08-21) the
- * register's crown no longer rides inside the value: 🤝 is in the
- * governance-tabs pattern like every held-able setting, its pair on
- * `SettingState.powers`. `holder` and `joinPolicy` survive only as
- * **legacy** fields that older logs (and the golden walk) carry; the fold
- * maps them and strips them, so an old log and a fresh session agree. */
-export type ApplicationsValue = {
-  /** @deprecated legacy (pre-Q506) — read by the fold, never written anew. */
-  holder?: 'members' | 'reserved' | 'reserved-unilateral' | 'reserved-assent';
-  /** @deprecated legacy (pre-entry-94) — `invite` folds to apply:false, the
-   * rest to apply:true; `open` also seeds 🪪 to `pen` where 🪪 stands unset. */
-  joinPolicy?: 'invite' | 'proposed' | 'apply' | 'open';
-  apply?: boolean;
-};
+ * setting is only the switch on that door. The register's crown is the
+ * setting's own pair on `SettingState.powers` (Q506), like every held-able
+ * setting's. **The value is the switch and nothing else** (Q1329, Ed
+ * 2026-09-11: *we are still in alpha — there are no old documents*): the
+ * pre-Q506 `holder` and the pre-entry-94 `joinPolicy` that older logs
+ * carried are not read — a value carrying either is refused, and a log
+ * carrying one is quarantined at boot. */
+export type ApplicationsValue = { apply: boolean };
 
 export type SettingValue =
   | TextValue
@@ -146,18 +140,15 @@ export function validateValue(type: ValueTypeName, v: unknown): string | null {
       return isInt(v.budget) && (v.budget as number) >= 0
         ? null
         : 'machines: budget must be an integer ≥ 0';
-    case 'applications':
-      if (v.holder !== undefined && v.holder !== 'members' && v.holder !== 'reserved' &&
-          v.holder !== 'reserved-unilateral' && v.holder !== 'reserved-assent')
-        return "applications: holder (legacy) must be 'members' | 'reserved' | 'reserved-unilateral' | 'reserved-assent'";
-      if (v.joinPolicy !== undefined && v.joinPolicy !== 'invite' && v.joinPolicy !== 'proposed' &&
-          v.joinPolicy !== 'apply' && v.joinPolicy !== 'open')
-        return 'applications: joinPolicy (legacy) must be invite | proposed | apply | open';
-      if (v.apply === undefined && v.joinPolicy === undefined)
-        return 'applications: { apply: boolean } required';
-      return v.apply === undefined || typeof v.apply === 'boolean'
-        ? null
-        : 'applications: apply must be a boolean';
+    case 'applications': {
+      // exactly the switch (Q1329): a key this build does not write is a
+      // refusal naming it, so a script still sending the pre-entry-94
+      // shape is told which key, not merely that the value is wrong
+      const stray = Object.keys(v).find((k) => k !== 'apply');
+      if (stray !== undefined)
+        return `applications: unknown key '${stray}' — the value is { apply: boolean } and nothing else`;
+      return typeof v.apply === 'boolean' ? null : 'applications: { apply: boolean } required';
+    }
     case 'price':
       return v.price === 'consent' || v.price === 'assembly' ||
         v.price === 'proposal' || v.price === 'pen'
