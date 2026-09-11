@@ -285,8 +285,16 @@ export class ParticipantApi {
       });
   }
 
-  /** Every resolution so far, oldest first — adopted and retired alike. */
+  /**
+   * Every resolution so far, oldest first — adopted and retired alike. The
+   * same for every participant, and a walk over the whole log, so it is
+   * derived once per state version on the session (Q1324) and copied out.
+   */
   outcomes(): OutcomeEntry[] {
+    return this.session.derived('outcomes', () => this.buildOutcomes()).slice();
+  }
+
+  private buildOutcomes(): OutcomeEntry[] {
     const out: OutcomeEntry[] = [];
     for (const e of this.session.log) {
       const ev = e.event;
@@ -315,7 +323,10 @@ export class ParticipantApi {
   // -------------------------------------------------------------------------
 
   private renderOption(id: string): OptionView {
-    const lines = this.session.document().split('\n');
+    // the document's lines, split once per state rather than once per option
+    // rendered (Q1324): a view renders two options per card and one card per
+    // askable race, each of which joined and re-split a hundred lines
+    const lines = this.session.derived('api:lines', () => this.session.document().split('\n'));
     if (id.startsWith(INC_PREFIX)) {
       const race = this.session
         .races()

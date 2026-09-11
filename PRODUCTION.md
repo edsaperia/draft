@@ -352,6 +352,72 @@ friends. Also fixed on the way past: `sweep.ts`'s `hotSetSize` baseline was
 sweep since the default moved had been scored against the old value as its
 control.
 
+### The host under thirty-one members — measured 2026-09-11 (Q1324)
+
+**The finding.** docs.vote document 1 — about a hundred lines, thirty-one
+bot members acting every 5–30 s, a dozen live text races — saturated the
+Render starter instance: every view 500–1000 ms, every command 2–13 s, then
+502s and a restart (Ed: *we should be able to handle far more than 31 users
+acting every 30 seconds*). The cause was the view route, which rebuilt the
+whole race picture — union-find, incumbent hashes, every race's fit over
+every judgment — once per race per seat per poll (`askOn` began with
+`races()`), O(races² × judgments) per view. Fixed on the engine side by
+`Session.derived`, one memo per state version (the reasoning, the profiles
+and what was rejected: `design/DECISIONS.md` § *Q1324*).
+
+**The instrument.** A room of the same shape on a local file-store server
+with the cooldown at 0: a 97-line charter, a bot founder, thirty-one bots
+over the API, `room-bots --min 5s --max 30s`, a monitor sampling every 15 s
+with the founder's cookie (one full view, then one real judgment on the pair
+offered), and *N* member pages polling every 4 s as the real page does. **In
+a busy room every poll is a full view** — one of the two seqs has always
+moved inside 4 s, so the `since` short-circuit never fires — which makes
+*members × 4 s* the view rate. Numbers are one desktop core (this machine);
+before the fix the same shape ran here at about a seventh of the Render
+latencies, so read Render as roughly seven times these.
+
+| load (31 bots acting, plus …) | view p50 / p95 | judge p50 / p95 | core busy | pages dropped |
+| --- | --- | --- | --- | --- |
+| **before**, nothing, 25–31 races | 91 / 117 ms | 14 / 29 ms | 37% | — |
+| **before**, 19 pages at 4 s, 36–51 races | 4,218 / 10,541 ms (max 13.4 s) | 5,798 / 11,669 ms | 98–102% | 47 of 639 |
+| **after**, nothing, 15–25 races | 9 / 13 ms | 16 / 34 ms | 3% | — |
+| **after**, 19 pages at 4 s, 25–54 races | 21 / 27 ms (max 51) | 20 / 40 ms | 6% | 0 of 1,193 |
+| **after**, 60 pages at 4 s, 59–64 races | 22 / 37 ms (max 179) | 44 / 69 ms | 15% | 0 of 2,234 |
+| **after**, 120 pages at 4 s, 55–61 races | 22 / 41 ms (max 103) | 35 / 38 ms | 24% | 0 of 4,468 |
+| **after**, 240 pages at 4 s, 50–54 races | 23 / 57 ms (max 196) | 46 / 57 ms | 38% | 0 of 8,932 |
+
+(The 60–240-page rows share twenty logged-in seats — the login door allows
+twenty per ten minutes — so the per-seat hand memo is hit more than real
+members would hit it; everything else a view does is per request.)
+
+**The operating point.** On this machine, **thirty-one members acting every
+5–30 s plus 240 pages polling every 4 s hold p95 view under 60 ms and p95
+command under 60 ms at 38% of one core**; Ed's bar — p95 view under 100 ms,
+command under 500 ms — is still met at 240 pages, and a linear read of the
+busy column puts one core at about 600 pages. On the Render starter, at
+about a seventh of this, the same shape sits near 40% for thirty-one
+members, and the honest envelope is **sixty to a hundred members polling
+every 4 s on one instance** before the core fills; the number to watch on
+docs.vote is `/api/d/:slug/view` latency in the Render log, which should now
+read tens of milliseconds. **What remains at the top of the profile at 240
+pages** (self time, 38% busy): `json` 8.2% — the serialisation of a 117 KB
+view sixty times a second — the view builder itself 4.5%, socket writes
+3.5%, `buildUsableComparisons` 2.2% (one rebuild per event, with ~2 events a
+second). The next lever is therefore the payload, not the engine: a hundred
+lines of text and every candidate's hunks ride every poll, and a page that
+asked for the races' deltas by seq would cut the byte rate by an order of
+magnitude. That is a page-contract change and was not made here. Beyond
+that, the structural options — a worker per document, a read replica of the
+view, or pushing on change instead of polling every 4 s — are not needed
+for the rooms v1 tunes to (5–20 members); at 100+ the push is the one that
+changes the shape, since it makes the view rate the event rate rather than
+members × 4 s.
+
+**Not measured.** Postgres in the command path (the local room ran the file
+store; on docs.vote a command is three round trips inside the write chain,
+which is its floor); RSS grew 108 → 303 MB over twenty minutes and 4,800
+engine events on both the before and the after server, and was not chased.
+
 
 ## History
 

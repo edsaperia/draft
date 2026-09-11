@@ -218,8 +218,45 @@ export class Session {
   /** Standing values for settings (SPEC §9.6, Q390): opaque, hash-only. */
   private settingsMap = new Map<string, unknown>();
   private fitCache = new Map<string, { key: string; fit: Fit }>();
+  /**
+   * **Everything the session knows is a function of its log** (Q1324): the
+   * state changes in `apply` and nowhere else, so a value derived from the
+   * state alone is exact until the next event. `stateVersion` is bumped by
+   * every `apply`, and `derived` keeps one map per version. **While an event
+   * is being folded nothing is memoised at all** (`applying`): the fold
+   * reads `races()` more than once with the state changing between the
+   * reads — `markJudged` takes the ground before the comparison is pushed,
+   * `updatePeaks` needs the fit after — and a memo taken between the two
+   * paid the wrong refund (two engine tests said so). Before this the view
+   * route rebuilt `races()` once per race per seat per poll (`askOn`),
+   * which was 91% of a saturated host.
+   */
+  private stateVersion = 0;
+  private applying = false;
+  private derivedVersion = -1;
+  private derivedMap = new Map<string, unknown>();
 
   private constructor() {}
+
+  /**
+   * A value derived from the state alone, computed once per state version
+   * and handed back until the next event. The caller's `compute` must read
+   * nothing but the session and its arguments (folded into `key`); the
+   * result is shared, so it is read and never mutated. Public so that the
+   * participant API and the host can key their own per-state work on the
+   * engine's own notion of change, rather than guessing at it from `log.length`.
+   */
+  derived<T>(key: string, compute: () => T): T {
+    if (this.applying) return compute(); // a fold reads live state, uncached
+    if (this.derivedVersion !== this.stateVersion) {
+      this.derivedMap.clear();
+      this.derivedVersion = this.stateVersion;
+    }
+    if (this.derivedMap.has(key)) return this.derivedMap.get(key) as T;
+    const value = compute();
+    this.derivedMap.set(key, value);
+    return value;
+  }
 
   // -------------------------------------------------------------------------
   // Opening
@@ -278,6 +315,19 @@ export class Session {
 
   private apply(event: Event, seq: number): void {
     if (event.t < this.lastT) throw new Error('timestamps must be non-decreasing');
+    // the state is about to change: nothing derived before this survives,
+    // and nothing is derived *during* it (see `derived`)
+    const outer = this.applying; // a fold that folds (never today) stays uncached throughout
+    this.applying = true;
+    try {
+      this.applyEvent(event, seq);
+    } finally {
+      this.applying = outer;
+      this.stateVersion += 1;
+    }
+  }
+
+  private applyEvent(event: Event, seq: number): void {
     this.lastT = event.t;
     switch (event.type) {
       case 'opened': {
@@ -811,7 +861,17 @@ export class Session {
    * later; it is locked when its question ended: the session closed, an
    * endpoint left play, or the race's ground materially shifted.
    */
+  /**
+   * Every comparison with its supersession and lock flags, once per state
+   * version (Q1324): the host reads it for every seat's ledger on every
+   * poll, and it is a walk over every judgment the session holds. A fresh
+   * array each call over shared, read-only entries.
+   */
   judgments(): JudgmentView[] {
+    return this.derived('judgments', () => this.buildJudgments()).slice();
+  }
+
+  private buildJudgments(): JudgmentView[] {
     const races = this.races();
     const raceOfMember = new Map<string, RaceView>();
     for (const r of races) for (const m of r.members) raceOfMember.set(m, r);
@@ -1249,7 +1309,18 @@ export class Session {
   // -------------------------------------------------------------------------
   // Races (derived state, SPEC §2.3)
 
+  /**
+   * The live races, built once per state version (Q1324) and shared: the
+   * array is a fresh copy each call, the `RaceView`s in it are the same
+   * objects and are read, never written. `askOn`, `feed`, `judgments` and
+   * the host's view all read this, so one judgment costs one rebuild
+   * however many seats poll between it and the next.
+   */
   races(): RaceView[] {
+    return this.derived('races', () => this.buildRaces()).slice();
+  }
+
+  private buildRaces(): RaceView[] {
     const liveAll = [...this.candidates.values()].filter((c) => c.state === 'live');
     const live = liveAll.filter((c) => !c.setting);
     // Union-find over footprint conflicts (text candidates).
@@ -1515,7 +1586,18 @@ export class Session {
   // -------------------------------------------------------------------------
   // Ranking (SPEC §4.1) — per-race Davidson fit over usable comparisons
 
+  /**
+   * Per race and per state version (Q1324): the race view, its fit, the
+   * rival gate, the deadlock test and the feed each asked for this, and each
+   * walked every comparison the session holds — once per race per seat per
+   * poll. Shared and read-only, like `races()`.
+   */
   private usableComparisons(members: string[], incumbentId: string): StoredComparison[] {
+    return this.derived(`usable|${members.join(',')}|${incumbentId}`,
+      () => this.buildUsableComparisons(members, incumbentId));
+  }
+
+  private buildUsableComparisons(members: string[], incumbentId: string): StoredComparison[] {
     const memberSet = new Set(members);
     const filtered = this.comparisons.filter((c) => {
       if (c.kind !== 'edge') return false;
@@ -2136,6 +2218,11 @@ export class Session {
    * exists.
    */
   private hasLockedEvidence(race: RaceView): boolean {
+    // a walk over every comparison, per race — once per state version (Q1324)
+    return this.derived(`locked|${race.id}`, () => this.scanLockedEvidence(race));
+  }
+
+  private scanLockedEvidence(race: RaceView): boolean {
     const memberSet = new Set(race.members);
     for (const c of this.comparisons) {
       if (c.kind !== 'edge') continue;
@@ -2338,6 +2425,18 @@ export class Session {
 
   feed(participantId: string, n: number, t: number = this.lastT): Card[] {
     this.activeParticipant(participantId);
+    // **One hand per seat per state version** (Q1324). The clock enters the
+    // feed in exactly one place — `adoptionThreshold(t)` divides every race's
+    // value below — and a common divisor moves no race past another, so the
+    // hot order, and with it every card dealt, is the same at every `t` for
+    // one state: the memo is exact, not approximate, and `feed.test.ts`
+    // holds it (*the hand does not depend on the clock*). The page's 4s
+    // poll and `askOn`'s per-race read each took a fresh deal before this.
+    return this.derived(`feed|${participantId}|${n}`, () => this.dealFeed(participantId, n, t))
+      .slice();
+  }
+
+  private dealFeed(participantId: string, n: number, t: number): Card[] {
     const allRaces = this.races();
     // a deadlocked race leaves everybody's feed except the members it has
     // never heard from (§8.3b; until Q1283 it left every feed, and the
