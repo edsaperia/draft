@@ -923,6 +923,46 @@ function switchRules(switches) {
   return out;
 }
 
+/**
+ * **P8 — the rule's own tab tops its pile, and names its rule** (Q1299, Q1320;
+ * SURFACE §6's news row and §8's `ans-*` row). Two promises about a band
+ * paragraph's pile, closed or opened into a strip: the setting the paragraph is
+ * about is the first chip — the front of the pile, the top of the strip — with
+ * the records, the power tabs and the answer task behind it; and that front
+ * chip wears the setting's own glyph rather than the drawn ✔, in every state
+ * but a vote of yours. Ed's 2026-09-11 screenshot was the second promise
+ * broken while the first held: 🤝's own tab, in `news`, wearing the ✔ a filed
+ * record wears, so a green ✔ stood on the pile where the rule's glyph should.
+ *
+ * Read off the DOM rather than the payload because a pile is not a card: the
+ * cards are measured one at a time and the order of the chips beside them is a
+ * fact about the paragraph. Paragraphs whose pile has no host — *Founded by*,
+ * which holds the two grants — are exempt by name.
+ */
+const HOSTLESS_PARAS = new Set(['founded']);
+function pileRules(piles) {
+  const out = [];
+  const seen = new Set();
+  const file = (rule, said, saw, note) => {
+    if (seen.has(saw)) return;
+    seen.add(saw);
+    out.push({ rule, lens: 'positioning', said, saw, note });
+  };
+  for (const p of piles) {
+    if (HOSTLESS_PARAS.has(p.para)) continue;
+    const where = (p.open ? 'the strip' : 'the pile') + ' at ' + p.para +
+      (p.opened && p.opened !== p.para ? ' (opened by ' + p.opened + ')' : '');
+    if (p.front !== p.para) {
+      file('P8', 'the rule\'s own tab is the first chip of its pile and of its strip — the records, the power tabs and the answer task behind it (Q1299, Q1320)',
+        where + ' leads with ' + p.front + ' — ' + p.order.join(' · '), p.walk);
+    } else if (p.tick) {
+      file('P8', 'the front of a setting\'s pile wears the setting\'s own glyph, never the drawn ✔ (Q1320: *setting itself with setting icon should sit at the top of setting tab stacks*)',
+        where + ' wears the drawn ✔ on its front tab, in state ' + p.state, p.walk);
+    }
+  }
+  return out;
+}
+
 /* ============================================================================
    The cross-card lenses. These are the findings the per-pass audits
    structurally cannot see, and they only exist once every card is in one
@@ -1246,7 +1286,7 @@ const walkDelegated = (page, base, cards, errors) =>
  * is over, which is where a settled card's head, its composer and the ✒️/🛡️
  * power tabs live. ⏩ is the stagehand that gets there in one press.
  */
-async function walkSettled(page, base, cards, errors, seat, switches) {
+async function walkSettled(page, base, cards, errors, seat, switches, piles) {
   await page.goto(base + '/session-view.html');
   await page.waitForSelector('#rail .qitem', { timeout: 20_000 });
   await page.evaluate(() => window.scrollTo(0, 0));
@@ -1343,12 +1383,38 @@ async function walkSettled(page, base, cards, errors, seat, switches) {
     sel.dispatchEvent(new Event('change', { bubbles: true }));
   }, seat || null);
   await wait(page, 600);
+  /**
+   * The piles as they stand, for P8: every band paragraph holding more than
+   * one chip, the front chip's key, its state, whether its mark is the drawn
+   * ✔, and the whole order. Read closed here, and again as each card opens
+   * (the open paragraph only — its pile is now the strip).
+   */
+  const readPiles = (opened) => page.evaluate((opened) => {
+    const out = [];
+    for (const para of document.querySelectorAll('#band [data-para]')) {
+      const chips = [...para.querySelectorAll('.chipcol .achip')];
+      if (chips.length < 2) continue;
+      const front = chips[0];
+      const mark = front.firstElementChild;
+      out.push({ para: para.dataset.para, open: para.classList.contains('open'), opened,
+        front: front.dataset.chip, state: (front.className.match(/st-([a-z]+)/) || [])[1] || null,
+        tick: !!(mark && mark.querySelector('svg.mkg')),
+        order: chips.map((c) => c.dataset.chip) });
+    }
+    return out;
+  }, opened);
+  const filePiles = async (opened) => {
+    if (!piles) return;
+    for (const p of await readPiles(opened)) if (opened === null || p.open) piles.push({ walk, ...p });
+  };
+  await filePiles(null);
   const keys = await page.evaluate(() => window.__CA.offered());
   const seen = new Set(keys);
   const strip = () => page.evaluate(() =>
     [...document.querySelectorAll('.setupcard .chipcol .achip[data-tab]')].map((el) => el.dataset.tab));
   for (const k of keys) {
     await openAndMeasure(page, k, '.setupcard', walk, cards, errors);
+    await filePiles(k);
     /**
      * **A tab behind the front of a pile has no key on it.** `pileHtml` marks
      * every chip after the first `inert`, and `chipHtml`'s inert branch emits
@@ -1362,6 +1428,7 @@ async function walkSettled(page, base, cards, errors, seat, switches) {
       if (seen.has(t)) continue;
       seen.add(t);
       await openAndMeasure(page, t, '.setupcard', walk, cards, errors);
+      await filePiles(t);
     }
     // a card is closed by its own mark — the **active** one, since clicking any
     // other chip in the strip morphs to that card rather than closing this one,
@@ -1462,6 +1529,7 @@ async function main() {
 
   const cards = [];
   const switches = [];
+  const piles = [];
   const t0 = Date.now();
   const run = async (name, fn) => {
     if (!WALKS.includes(name)) return;
@@ -1477,7 +1545,7 @@ async function main() {
   await run('founding', () => walkFounding(page, base, cards, errors));
   await run('answers', () => walkAnswers(page, base, cards, errors));
   await run('delegated', () => walkDelegated(page, base, cards, errors));
-  await run('settled', () => walkSettled(page, base, cards, errors, null, switches));
+  await run('settled', () => walkSettled(page, base, cards, errors, null, switches, piles));
   await run('outsiders', async () => {
     // one seat at a time, each with its own net: the three seats are three
     // separate audits sharing a name, and a seat that throws must not take
@@ -1488,7 +1556,7 @@ async function main() {
     // live path, by `npm run applicants-walk` at all three prices.
     for (const seat of ['1', 'stranger']) {
       const n = cards.length;
-      try { await walkSettled(page, base, cards, errors, seat); }
+      try { await walkSettled(page, base, cards, errors, seat, null, piles); }
       catch (e) { errors.push('seat:' + seat + ' threw: ' + (e && e.message)); }
       if (cards.length === n) errors.push('seat:' + seat + ' offered no cards — nothing was measured for it');
     }
@@ -1501,7 +1569,7 @@ async function main() {
   server.close();
 
   for (const c of cards) c.findings = rulesFor(c, tok);
-  const cross = [...crossCard(cards), ...switchRules(switches)];
+  const cross = [...crossCard(cards), ...switchRules(switches), ...pileRules(piles)];
   /**
    * **The rollup is the finding; the card is where it shows.** A stylesheet
    * fact — `.headclause` padded 6px, an OK label at --t-cap — is one defect
