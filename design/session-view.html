@@ -2150,13 +2150,54 @@
   function renderToc() { SESSION.renderToc(); }
   prose.addEventListener('paste', (ev) => {
     ev.preventDefault();
-    const txt = (ev.clipboardData || window.clipboardData).getData('text');
+    const cd = ev.clipboardData || window.clipboardData;
+    let txt = cd.getData('text');
+    // **A clipboard with no plain text still pastes** (Q1314, Ed 2026-09-11:
+    // *I am pasting the starting text … I can't submit it by clicking ✒️*):
+    // some sources hand over HTML alone, `getData('text')` is '' there, the
+    // paste inserted nothing and ✒️ stayed dark over an unchanged column.
+    // The words are read out of the HTML instead — block ends as line ends,
+    // tags gone — through a DOMParser document, which runs nothing and
+    // loads nothing.
+    if (!txt.trim()) {
+      const html = cd.getData('text/html') || '';
+      const parsed = new DOMParser().parseFromString(
+        html.replace(/<(br|\/p|\/div|\/li|\/h[1-6]|\/tr)[^>]*>/gi, '\n'), 'text/html');
+      txt = parsed.body ? parsed.body.textContent || '' : '';
+    }
     let lines = txt.split(/\n{2,}|\n/).filter((l) => l.trim());
     const first = lines[0] && lines[0].match(/^#\s+(.+)$/);
     if (first && !S.title) { S.title = first[1]; lines = lines.slice(1);
       S.seen.add('title');
       if (!S.slug) { fillSuggestedSlug(); } }
-    document.execCommand('insertHTML', false, lines.map((l) => '<div>' + esc(l) + '</div>').join(''));
+    // **Pasted paragraphs stand at the column's level** (Q1314): with the
+    // caret in an empty block — what Enter makes — Chromium's `insertHTML`
+    // nested the pasted divs inside it, the `input` it fires re-marked that
+    // block from its text, and three paragraphs became one line, which ✒️
+    // confirmed as one. So paragraphs are placed as blocks of the column
+    // itself: replacing the empty block the caret is in, or after the block
+    // it is in, the caret landing at the end of the last. One line into a
+    // block that has words is the one inline case, and stays a text insert.
+    const sel = getSelection();
+    let block = sel.rangeCount ? sel.getRangeAt(0).startContainer : null;
+    if (block && block.nodeType !== 1) block = block.parentElement;
+    while (block && block !== prose && block.parentElement !== prose) block = block.parentElement;
+    if (block === prose) block = null;
+    const inline = lines.length === 1 && block && block.textContent.trim();
+    if (inline) {
+      document.execCommand('insertText', false, lines[0]);
+    } else if (lines.length) {
+      const divs = lines.map((l) => { const d = document.createElement('div'); d.textContent = l; return d; });
+      const frag = document.createDocumentFragment();
+      divs.forEach((d) => frag.appendChild(d));
+      if (block && !block.textContent.trim()) prose.replaceChild(frag, block);
+      else if (block) block.after(frag);
+      else prose.appendChild(frag);
+      const r = document.createRange(); r.selectNodeContents(divs[divs.length - 1]); r.collapse(false);
+      sel.removeAllRanges(); sel.addRange(r);
+      prose.classList.remove('empty');
+      prose.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertFromPaste' }));
+    }
     setTimeout(relabel, 0);
   });
   prose.addEventListener('input', relabel);

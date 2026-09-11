@@ -560,23 +560,40 @@ if (!EMPTY_TEXT) {
     const s = getSelection(); s.removeAllRanges(); s.addRange(r);
     const b = document.querySelector('#proserow [data-act="row-commit"]');
     const darkBefore = !!(b && b.disabled);
+    // two paragraphs into an **empty block** — Chromium nests the pasted
+    // divs inside it, and the column must unwrap them (Q1314's second shape)
     const dt = new DataTransfer();
-    dt.setData('text/plain', 'Members pay dues by March.');
+    dt.setData('text/plain', 'Members pay dues by March.\nGuests sign the book.');
     pr.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
     return { darkBefore };
+  });
+  await T(400);
+  // …and a clipboard carrying **HTML alone** (Q1314's first shape: nothing
+  // was inserted and ✒️ stayed dark), on a fresh empty line at the end (a
+  // one-line paste into a block that has words stays inline, by design)
+  await page.evaluate(() => {
+    const pr = document.getElementById('prose');
+    const d = document.createElement('div'); d.innerHTML = '<br>'; pr.appendChild(d);
+    const r = document.createRange(); r.setStart(d, 0); r.collapse(true);
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    const dt = new DataTransfer();
+    dt.setData('text/html', '<p>The bar closes at <b>eleven</b>.</p>');
+    pr.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
   });
   await T(400);
   Object.assign(pasteLit, await page.evaluate(() => {
     const b = document.querySelector('#proserow [data-act="row-commit"]');
     const lit = !!(b && !b.disabled);
+    const blocks = [...document.getElementById('prose').children].map((c) => c.textContent);
     if (lit) b.click();
-    return { lit };
+    return { lit, blocks };
   }));
   await T(700);
   const confirmedAgain = await page.evaluate(() =>
     fetch(location.pathname.replace('/d/', '/api/d/') + '/view').then((r) => r.json()).then((v) => v.text));
-  const pasteLitOk = pasteLit.darkBefore && pasteLit.lit && confirmedAgain === expectedText + '\nMembers pay dues by March.';
-  say('paste ✒️   · ' + (pasteLitOk ? 'a paste into the confirmed column lights ✒️, and the press confirms the line'
+  const pasteLitOk = pasteLit.darkBefore && pasteLit.lit &&
+    confirmedAgain === expectedText + '\nMembers pay dues by March.\nGuests sign the book.\nThe bar closes at eleven.';
+  say('paste ✒️   · ' + (pasteLitOk ? 'a two-paragraph paste into an empty block stands as two lines, an HTML-only clipboard pastes its words, the row lights, and the press confirms all three'
     : 'FAIL: ' + JSON.stringify({ pasteLit, confirmedAgain })));
   if (!pasteLitOk) stuck.push('✒️ after a paste (Q1314)');
   /* ---- a click outside leaves edit mode before 🍾 (Q1315, Ed 2026-09-11:
