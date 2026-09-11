@@ -285,8 +285,16 @@ export class ParticipantApi {
       });
   }
 
-  /** Every resolution so far, oldest first — adopted and retired alike. */
+  /**
+   * Every resolution so far, oldest first — adopted and retired alike. The
+   * same for every participant, and a walk over the whole log, so it is
+   * derived once per state version on the session (Q1324) and copied out.
+   */
   outcomes(): OutcomeEntry[] {
+    return this.session.derived('outcomes', () => this.buildOutcomes()).slice();
+  }
+
+  private buildOutcomes(): OutcomeEntry[] {
     const out: OutcomeEntry[] = [];
     for (const e of this.session.log) {
       const ev = e.event;
