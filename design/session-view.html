@@ -225,6 +225,10 @@
         <p id="holding" hidden></p>
         <div id="charter"></div>
         <div class="redacted" id="redacted" hidden></div>
+        <!-- the column's control strip before the start (Q1313): B · I · []
+             at the lifted column's top right in edit mode, the same strip
+             session.js draws before the charter; empty outside edit mode -->
+        <div id="prosectl"></div>
         <div class="prose empty" id="prose" contenteditable="false" spellcheck="false"></div>
         <!-- the proposal-row before the start: the founder's ✒️ under #prose,
              drawn by session.js's own helper so the two eras share one row -->
@@ -264,11 +268,25 @@
   // — a `- ` line is a bullet block on the same footing as a `# ` heading
   // (Q1294): the marker becomes the class and the text stands without it,
   // `proseText` putting it back on read-out exactly as it does the hashes
+  // — and the inline marks render (Q1313, Ed 2026-09-11: *same strip as after
+  // 🍾*): `mdToHtml` draws bold, italic and code as the charter draws them,
+  // `htmlToMd` writing them back on read-out (`proseText`); a heading's
+  // `data-h` carries the plain words, since it names the block in the
+  // contents rail and keys its fold. No links: this column is an editor, and
+  // an anchor inside a contenteditable is a door out of the caret.
   const textDivs = (text) => String(text).split(/\n/).filter((l) => l.trim())
+    .map((l) => { const m = window.CARDS.mdBlock(l); const md = window.CARDS.mdToHtml;
+      return !m ? '<div>' + md(l) + '</div>'
+        : m.t === 'b' ? '<div class="bullet">' + md(m.text) + '</div>'
+        : '<div class="docline lvl' + m.level + '" data-h="' + esc(window.CARDS.mdStrip(m.text)) + '">' + md(m.text) + '</div>'; }).join('');
+  // the same text as **source** (Q1313): the characters exactly, one block per
+  // line, the block's marker in the text and nothing dressed — the lane's own
+  // markdown mode (`laneBlocks` raw); a heading keeps `data-h` and `data-lvl`
+  // so the contents rail and the folds still know it is one
+  const srcDivs = (text) => String(text).split(/\n/).filter((l) => l.trim())
     .map((l) => { const m = window.CARDS.mdBlock(l);
-      return !m ? '<div>' + esc(l) + '</div>'
-        : m.t === 'b' ? '<div class="bullet">' + esc(m.text) + '</div>'
-        : '<div class="docline lvl' + m.level + '" data-h="' + esc(m.text) + '">' + esc(m.text) + '</div>'; }).join('');
+      return '<div' + (m && m.t === 'h' ? ' data-h="' + esc(window.CARDS.mdStrip(m.text)) + '" data-lvl="' + m.level + '"' : '') +
+        '>' + esc(l) + '</div>'; }).join('');
   // **The address the surface states is the route the server serves** (Ed,
   // backlog 70: *the Link clause says the document lives at docs.vote/[slug]
   // whereas in fact it lives at docs.vote/d/[slug]*). The server has one
@@ -438,14 +456,18 @@
     // asymmetry is what made *leave* mean *close the card and stay*. The draft
     // is untouched: leaving is not discarding, and 🗑️ on the row is the only
     // bin (K31).
-    if (S.editMode) {
-      if (SESSION.openId != null) SESSION.closeCard();
-      setEditMode(false);
-      return;
-    }
+    if (S.editMode) { leaveEditMode(); return; }
     if (SESSION.openId != null) SESSION.closeCard();
     if (S.open) { closeThen(() => { S.open = null; setEditMode(true); }); return; }
     setEditMode(true);
+  }
+  // **One way out, whichever act takes it** (Q1315, Ed 2026-09-11: *clicking
+  // outside of cards should close them*): 📝 again and a click on nothing
+  // outside the lifted column both leave through here — the editing card
+  // closed into its clause, the mode off, the draft kept in either era.
+  function leaveEditMode() {
+    if (SESSION.openId != null) SESSION.closeCard();
+    setEditMode(false);
   }
   // **The beat**: the birth's own lift on the tab — `beatEl`, the same two
   // rises F17 gives a waiting task (Q1295, Ed 2026-09-10: *the pump that 📝
@@ -520,7 +542,9 @@
     const detached = !!line && line.bottom < navH + 8;
     rt.classList.toggle('detached', detached);
   }
-  addEventListener('scroll', syncRideTab, { passive: true });
+  // …and the column's strip rides on the same scroll (Q1313): its ground and
+  // shadow come once it has left the card's top edge
+  addEventListener('scroll', () => { syncRideTab(); syncProseCtl(); }, { passive: true });
   // **the row before the start**: the founder's ✒️ under `#prose`, drawn by
   // session.js's helper. Live until the column matches what the server holds;
   // a never-confirmed column is always sendable (an empty text is a real
@@ -548,6 +572,140 @@
     const bin = pr.querySelector('[data-act="row-discard"]');
     if (bin) bin.disabled = !dirty;
   }
+  // ---- the column's strip before the start (Q1313) --------------------------
+  // **The same strip as after 🍾** (Ed, 2026-09-11 14:08): B · I · `[]` at
+  // the top right of the lifted column, `laneCtlHtml` from cards.js in the
+  // `.editctl` box system.css places for the charter, drawn where the row is
+  // drawn — edit mode, the founder's seat, before the start — and empty
+  // otherwise. The `[]` preference is session.js's (`laneRaw`), one for both
+  // columns; outside edit mode the column is always rendered (K22).
+  const proseStrip = () => document.getElementById('prosectl');
+  const proseStripShown = () => !!cs && !constituted() && S.editMode && amFounder();
+  // the view the column should wear: source with `[]` pressed, in edit mode only
+  const proseWantRaw = () => proseStripShown() && SESSION.laneRaw();
+  // …and the view it wears now — what every read-out asks, never the wish
+  const proseIsRaw = () => prose.classList.contains('mdsrc');
+  function renderProseCtl() {
+    const pc = proseStrip();
+    if (!pc) return;
+    const show = proseStripShown();
+    const raw = show && SESSION.laneRaw();
+    pc.className = show ? 'editctl' : '';
+    // rewritten only when its state changed: `render` follows every keystroke
+    const mode = pc.querySelector('.lmode');
+    if (!show) pc.innerHTML = '';
+    else if (!mode || mode.getAttribute('aria-pressed') !== String(raw)) pc.innerHTML = window.CARDS.laneCtlHtml(raw);
+    syncProseView();
+    syncProseCtl();
+  }
+  // B and I follow the caret — live while the column holds it — and the strip
+  // takes its ground and shadow once it rides: session.js's own sync, handed
+  // this strip and this column's answer
+  function syncProseCtl() {
+    const pc = proseStrip();
+    if (!pc || !pc.firstChild) return;
+    SESSION.syncEditCtl(pc, document.activeElement === prose);
+  }
+  document.addEventListener('focusin', () => syncProseCtl());
+  document.addEventListener('focusout', () => setTimeout(syncProseCtl, 0));
+  // **Where the caret is, as an offset into the block's source** — a sentinel
+  // dropped at the caret and read out of the block's markdown, so a caret
+  // inside a rendered mark counts the mark's characters too; and the caret
+  // put back at a source offset in whichever view the block wears
+  // (`sourceToRich`, the lane's own conversion — Q1294). The block's marker
+  // is the class in rendered view and text in source view, so a whole-column
+  // position (`proseCaret`) counts it in and takes it off again.
+  const SENTINEL = ' ';   // private use: never in anybody's text
+  function sourceOffsetIn(b) {
+    const sel = getSelection();
+    if (!sel || !sel.rangeCount) return null;
+    const r = sel.getRangeAt(0);
+    if (!(b === r.endContainer || b.contains(r.endContainer))) return null;
+    const mark = document.createTextNode(SENTINEL);
+    const r2 = r.cloneRange(); r2.collapse(false); r2.insertNode(mark);
+    const src = proseIsRaw() ? b.textContent : window.CARDS.htmlToMd(b);
+    mark.remove();
+    return Math.max(0, src.indexOf(SENTINEL));
+  }
+  function caretAtSource(b, off) {
+    const n = proseIsRaw() ? off : window.CARDS.sourceToRich(window.CARDS.htmlToMd(b), off);
+    const r = document.createRange();
+    const w = document.createTreeWalker(b, NodeFilter.SHOW_TEXT);
+    let node, rest = n, placed = false;
+    while ((node = w.nextNode())) {
+      if (rest <= node.length) { r.setStart(node, rest); placed = true; break; }
+      rest -= node.length;
+    }
+    if (!placed) r.selectNodeContents(b);
+    r.collapse(placed);
+    const sel = getSelection();
+    if (sel) { sel.removeAllRanges(); sel.addRange(r); }
+  }
+  const markerLen = (b) => {
+    if (proseIsRaw()) return 0;
+    const m = b.className.match(/lvl(\d)/);
+    return m ? +m[1] + 1 : b.classList.contains('bullet') ? 2 : 0;
+  };
+  function proseCaret() {
+    if (document.activeElement !== prose) return null;
+    const sel = getSelection();
+    if (!sel || !sel.rangeCount) return null;
+    const end = sel.getRangeAt(0).endContainer;
+    const blocks = [...prose.children];
+    const b = blocks.find((x) => x === end || x.contains(end));
+    if (!b) return null;
+    // the block's index among the blocks a rebuild keeps (blank ones go)
+    let i = 0;
+    for (const x of blocks) { if (x === b) break; if (x.textContent.trim()) i++; }
+    const off = sourceOffsetIn(b);
+    return off == null ? null : { i, off: markerLen(b) + off };
+  }
+  function placeProseCaret(at) {
+    const blocks = [...prose.children].filter((x) => x.textContent.trim());
+    const b = blocks[Math.min(at.i, blocks.length - 1)];
+    if (!b) return;
+    try { prose.focus({ preventScroll: true }); } catch (e) { prose.focus(); }
+    caretAtSource(b, Math.max(0, at.off - markerLen(b)));
+  }
+  // **The column in the view the strip says** (Q1313): rebuilt only when the
+  // view it wears and the view wanted disagree — never on the 4s poll, never
+  // under the caret for nothing — through `proseText`, the one read-out both
+  // views share, so the stash, ✒️ and 🍾 see the same text whichever is
+  // showing; the caret survives as a source offset.
+  function syncProseView() {
+    const raw = proseWantRaw();
+    if (proseIsRaw() === raw) return;
+    const at = proseCaret();
+    const text = proseText();
+    prose.classList.toggle('mdsrc', raw);
+    prose.innerHTML = raw ? srcDivs(text) : textDivs(text);
+    prose.classList.toggle('empty', prose.innerHTML === '');
+    if (at) placeProseCaret(at);
+    renderToc();
+  }
+  // **The strip's presses** — a prevented mousedown, so the column keeps its
+  // selection (the charter's handlers do the same): `[]` flips the view
+  // through `render`, which converts the column with its caret; B and I act
+  // on the selection where the caret is — execCommand rendered, the
+  // characters themselves in source — and `relabel` redraws the marks.
+  document.addEventListener('mousedown', (ev) => {
+    const b = ev.target.closest('#prosectl [data-act="col-mode"], #prosectl .lfmt');
+    if (!b || ev.button !== 0) return;
+    ev.preventDefault(); ev.stopPropagation();
+    if (b.dataset.act === 'col-mode') {
+      SESSION.setLaneRaw(!SESSION.laneRaw());
+      render();
+      return;
+    }
+    if (b.disabled || document.activeElement !== prose) return;
+    if (proseIsRaw()) {
+      const marks = b.dataset.fmt === 'bold' ? '**' : '*';
+      document.execCommand('insertText', false, marks + getSelection().toString() + marks);
+    } else {
+      document.execCommand(b.dataset.fmt);
+    }
+    prose.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'formatText' }));
+  });
   // **A keystroke in read mode enters edit mode with that character applied**
   // (Q1085): a read-mode column is not a keydown target — the event fires at
   // `body` — so the listener is the document's and filters by reading
@@ -1193,9 +1351,13 @@
   // the '# ' as a class while you type (relabel), so it is put back when the
   // text is read out — the stored text is the document, and the charter
   // column reads its headings from it (stage 8)
+  // **One read-out for both views** (Q1313): in source view the block's
+  // characters already are the line; rendered, the marks are written back
+  // (`htmlToMd`, as the lane reads itself) behind the marker the class holds.
   const proseText = () => [...prose.children].map((b) => {
+    if (prose.classList.contains('mdsrc')) return b.textContent;
     const m = b.className.match(/lvl(\d)/);
-    return (m ? '#'.repeat(+m[1]) + ' ' : b.classList.contains('bullet') ? '- ' : '') + b.textContent;
+    return (m ? '#'.repeat(+m[1]) + ' ' : b.classList.contains('bullet') ? '- ' : '') + window.CARDS.htmlToMd(b);
   }).join('\n').trim();
   // **The column, counted once** — 📄's own value, the 📄 clause and the rail
   // entry all state the same fact about the same blocks, and each used to
@@ -1206,7 +1368,8 @@
     let paras = 0; let heads = 0;
     for (const b of prose.children) {
       if (!b.textContent.trim()) continue;
-      if (/lvl\d/.test(b.className)) heads++; else paras++;
+      const src = prose.classList.contains('mdsrc') && window.CARDS.mdBlock(b.textContent);
+      if (/lvl\d/.test(b.className) || (src && src.t === 'h')) heads++; else paras++;
     }
     return { paras, heads, blocks: paras + heads };
   };
@@ -1880,11 +2043,38 @@
   };
 
   // ---- the document ------------------------------------------------------
+  // **Inline marks render as they are typed** (Q1313, K22): a block whose
+  // markup is not the rendering of its own markdown — `**x**` just closed, a
+  // `<b>` from the strip's B, a pasted span — is redrawn from that markdown
+  // with the caret put back by source offset (the lane's own re-mark); a
+  // block already in its rendered form is left alone, which keeps the
+  // browser's undo stack for ordinary typing. An emptied block keeps its
+  // `<br>`, since a line you can put a caret in is still a line.
+  const remarkScratch = document.createElement('div');
+  function remarkInline(b) {
+    const src = window.CARDS.htmlToMd(b);
+    if (!src) return;
+    remarkScratch.innerHTML = window.CARDS.mdToHtml(src);
+    if (remarkScratch.innerHTML === b.innerHTML) return;
+    const at = sourceOffsetIn(b);
+    b.innerHTML = remarkScratch.innerHTML;
+    if (at != null) caretAtSource(b, at);
+  }
   function relabel() {
     const sel = getSelection();
     const at = sel.rangeCount ? sel.getRangeAt(0).startContainer : null;
     for (const b of [...prose.children]) {
       const t = b.textContent;
+      // **source view consumes nothing and dresses nothing** (Q1313): the
+      // characters are the line; a heading is still named, for the contents
+      // rail and the folds
+      if (prose.classList.contains('mdsrc')) {
+        const s = window.CARDS.mdBlock(t);
+        if (s && s.t === 'h') { b.dataset.h = window.CARDS.mdStrip(s.text); b.dataset.lvl = s.level; }
+        else { delete b.dataset.h; delete b.dataset.lvl; }
+        continue;
+      }
+      delete b.dataset.lvl;
       // a typed `# ` or `- ` becomes the block's class (Q1304, Q1294): the
       // marker leaves the text and `proseText` puts it back on read-out
       const m = window.CARDS.mdBlock(t);
@@ -1899,6 +2089,7 @@
           sel.removeAllRanges(); sel.addRange(r);
         }
       } else if (/lvl\d/.test(b.className)) { b.dataset.h = t; } else { delete b.dataset.h; }
+      remarkInline(b);
     }
     prose.classList.toggle('empty', prose.textContent.trim() === '');
     renderToc(); render();
@@ -1912,7 +2103,7 @@
     let hideLvl = null;
     for (const b of [...prose.children]) {
       const isH = b.dataset.h !== undefined;
-      const lvl = isH ? +((b.className.match(/lvl(\d)/) || [0, 9])[1]) : 9;
+      const lvl = isH ? +(b.dataset.lvl || (b.className.match(/lvl(\d)/) || [0, 9])[1]) : 9;
       if (isH && hideLvl !== null && lvl <= hideLvl) hideLvl = null;
       const hidden = hideLvl !== null;
       b.classList.toggle('pfolded', hidden);
@@ -1952,7 +2143,7 @@
       '<li class="lvl1"><a href="#dochead">' + esc(S.title || 'Untitled') + '</a></li>') +
       hs.map((b, i) => {
       b.id = 'h' + i;
-      const lvl = (b.className.match(/lvl(\d)/) || [0, 2])[1];
+      const lvl = b.dataset.lvl || (b.className.match(/lvl(\d)/) || [0, 2])[1];
       return '<li class="lvl' + lvl + '">' + secToggleHtml('ph:' + b.dataset.h) + '<a href="#h' + i + '">' + esc(b.dataset.h) + '</a></li>';
     }).join('');
   }
@@ -6226,11 +6417,11 @@
   document.addEventListener('pointerdown', (ev) => { downOn = ev.target; }, true);
   const WAY_IN = 'a, button, input, textarea, select, label, [role="button"], [contenteditable="true"], ' +
     '.achip, .insert-anchor, [data-tab], [data-card], [data-anchor], [data-q], [data-toc], [data-sec-toggle]';
-  const CARD_SIDE = '.setupcard, .sugg, #ridetab, #proserow, [data-proposalrow], .walletsay, ' +
+  const CARD_SIDE = '.setupcard, .sugg, #ridetab, #proserow, [data-proposalrow], .editctl, #prosefolds, .walletsay, ' +
     '#mailmodal, #devoutbox, .devswitch, .ladderbar';
   document.addEventListener('click', (ev) => {
-    const bandOpen = S.open, charterOpen = SESSION.openId;
-    if (!bandOpen && charterOpen == null) return;
+    const bandOpen = S.open, charterOpen = SESSION.openId, editing = !!S.editMode;
+    if (!bandOpen && charterOpen == null && !editing) return;
     if (ev.button !== 0 || ev.shiftKey || ev.metaKey || ev.ctrlKey || ev.altKey) return;
     if (penHoldFired) return;            // a hold's own click lands on its commit
     const origin = (downOn && document.contains(downOn)) ? downOn : ev.target;
@@ -6240,9 +6431,15 @@
     }
     const sel = window.getSelection();
     if (sel && !sel.isCollapsed && String(sel).trim()) return;
-    if (S.editMode && charterOpen === 'draft-yours') return;
     closedByClick = true;
     setTimeout(() => { closedByClick = false; }, 0);
+    // **Edit mode is a card too** (Q1315, Ed 2026-09-11: *clicking outside
+    // of cards should close them*): a click on nothing outside the lifted
+    // column — the strip, the row, the riding tab and any editing card are
+    // its sides, and the column itself is a caret — leaves through the
+    // door's own path, the draft kept (K31), before the start and after.
+    // It used to keep the mode and the editing card both.
+    if (editing) { leaveEditMode(); return; }
     if (charterOpen != null) SESSION.closeCard();
     if (bandOpen) closeThen(() => { S.open = null; });
   }, true);
@@ -6438,6 +6635,7 @@
       S.viewer !== 'applicant' && amFounder() && (!cs || S.editMode));
     document.getElementById('doc').classList.toggle('begun', charterOn());
     document.getElementById('doc').classList.toggle('editing', !!S.editMode);
+    renderProseCtl();
     renderProseRow();
     renderRideTab();
     // **The ✏️ socket stands whether or not you may propose** (Q532). It used
@@ -9869,7 +10067,9 @@
   // the document column, filled from the server's text (confirmed, or the
   // founder's provisional draft riding the §9.7a stash)
   function setProse(text) {
-    const html = textDivs(text);
+    // in the view the column wears (Q1313): 🗑️ puts the text back as source
+    // while the source is showing
+    const html = prose.classList.contains('mdsrc') ? srcDivs(text) : textDivs(text);
     prose.innerHTML = html;
     prose.classList.toggle('empty', html === '');
     relabel();

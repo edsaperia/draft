@@ -372,8 +372,21 @@ if (!EMPTY_TEXT) {
       // the charter's empty pre-🍾 column must stay invisible: no height,
       // no card (Ed's QA, 2026-08-30 — the edit-mode lift once gave it 100vh)
       ghostH: ghost ? Math.round(ghost.getBoundingClientRect().height) : 0 };
-    pr.innerHTML = '<div>The clubhouse shall be kept open on Tuesdays.</div>' +
-      '<div>Every member may bring one guest.</div>';
+    // **a paste first, into the empty column** (Q1314's shape; Q1313): several
+    // paragraphs as a ClipboardEvent carrying text/plain — a heading, a bold
+    // word, a bullet — through the page's own paste handler, as a founder
+    // pasting a starting text does. Into the *empty* column: with the caret
+    // in an empty block Chromium's insertHTML flattens the pasted blocks into
+    // one line (a finding of 2026-09-11, recorded under Q1314, not fixed here).
+    // The two lines the walk has always written lead, so the column's first
+    // block stays a paragraph: the geometry rules below (the tab level with
+    // the first line, the lift of 24px) are measured against a paragraph,
+    // and a lvl1 heading first brings its own top margin and rule.
+    pr.focus({ preventScroll: true });
+    const dt = new DataTransfer();
+    dt.setData('text/plain', 'The clubhouse shall be kept open on Tuesdays.\n\nEvery member may bring one guest.\n\n' +
+      '# House rules\n\nGuests sign the **book** at the door.\n\n- No dogs');
+    pr.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
     pr.classList.remove('empty');
     pr.dispatchEvent(new InputEvent('input', { bubbles: true }));
     // **the card's geometry before 🍾** (Ed's QA, 2026-08-30): the tab rests
@@ -396,6 +409,125 @@ if (!EMPTY_TEXT) {
     return o;
   }));
   await T(300);
+  /* ---- the strip before 🍾 (Q1313, Ed 2026-09-11: *same strip as after 🍾*)
+   * B · I · [] at the lifted column's top right — the charter's own strip,
+   * measured as the edit-mode step measures it after 🍾: 1px inside the card's
+   * top edge, --s2 inside its right, no lane controls and no [] on the row; B
+   * and I dark until the column holds the caret. Then Q1314's shape — a paste
+   * of several paragraphs, as a ClipboardEvent carrying text/plain — after
+   * which the row's ✒️ must be live; then [] pressed: the exact characters,
+   * monospace, the caret converted (the lane's own arithmetic); released,
+   * rendered again; and ✒️ confirms the same text whichever view showed. */
+  const stripAt = () => page.evaluate(() => {
+    const pr = document.getElementById('prose');
+    const st = document.querySelector('#prosectl .lanectl');
+    if (!st) return null;
+    const r = st.getBoundingClientRect(), c = pr.getBoundingClientRect();
+    return { order: [...st.querySelectorAll('button')].map((x) => x.textContent.trim()).join(''),
+      top: Math.round(r.top - c.top), right: Math.round(c.right - r.right),
+      laneCtl: document.querySelectorAll('.lanebox .lanectl').length,
+      rowMode: document.querySelectorAll('#proserow .lmode').length,
+      fmtDark: [...st.querySelectorAll('.lfmt')].every((x) => x.disabled),
+      pressed: st.querySelector('.lmode').getAttribute('aria-pressed') === 'true',
+      src: pr.classList.contains('mdsrc'),
+      mono: /mono|Menlo|Consolas/i.test(getComputedStyle(pr).fontFamily) };
+  });
+  const caretIn = (which) => page.evaluate((w) => {
+    // the caret placed, or read back: offset in characters into the block that holds it
+    const pr = document.getElementById('prose');
+    const sel = getSelection();
+    if (w) {
+      pr.focus({ preventScroll: true });
+      const blk = [...pr.children].find((b) => /book/.test(b.textContent));
+      if (!blk) return null;
+      const strong = blk.querySelector('strong');
+      const r = document.createRange();
+      if (strong) r.setStart(strong.firstChild, 2); else { const t = blk.firstChild; r.setStart(t, blk.textContent.indexOf('book') + 2); }
+      r.collapse(true); sel.removeAllRanges(); sel.addRange(r);
+    }
+    if (!sel.rangeCount) return null;
+    const rg = sel.getRangeAt(0);
+    const blk = [...pr.children].find((b) => b === rg.endContainer || b.contains(rg.endContainer));
+    if (!blk) return null;
+    const r2 = document.createRange(); r2.selectNodeContents(blk); r2.setEnd(rg.endContainer, rg.endOffset);
+    return { off: r2.toString().length, text: blk.textContent };
+  }, which);
+  const pressStrip = async (sel) => {
+    const box = await page.evaluate((s) => {
+      const b = document.querySelector(s);
+      if (!b || b.disabled) return null;
+      const r = b.getBoundingClientRect();
+      return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+    }, sel);
+    if (!box) return false;
+    await page.mouse.click(box.x, box.y);
+    await T(300);
+    return true;
+  };
+  const stripRest = await stripAt();
+  // B and I follow the caret a tick behind focusout, so each state is read
+  // after one
+  const fmtDark = () => page.evaluate(() => [...document.querySelectorAll('#prosectl .lfmt')].every((x) => x.disabled));
+  await page.evaluate(() => { if (document.activeElement) document.activeElement.blur(); });
+  await T(60);
+  const wasDark = await fmtDark();
+  await page.evaluate(() => document.getElementById('prose').focus({ preventScroll: true }));
+  await T(60);
+  const darkThenLit = { dark: wasDark, lit: !(await fmtDark()) };
+  const pasted = true;
+  const afterPaste = await page.evaluate(() => {
+    const pr = document.getElementById('prose');
+    const b = document.querySelector('#proserow [data-act="row-commit"]');
+    return { blocks: pr.children.length, penLive: !!(b && !b.disabled),
+      heading: !!pr.querySelector('.docline.lvl1'), strong: !!pr.querySelector('strong'),
+      bullet: !!pr.querySelector('.bullet') };
+  });
+  const caretRich = await caretIn(true);
+  const flipped = await pressStrip('#prosectl [data-act="col-mode"]');
+  const stripSrc = await stripAt();
+  const caretSrc = await caretIn(false);
+  const srcChars = await page.evaluate(() => {
+    const pr = document.getElementById('prose');
+    return { stars: [...pr.children].some((b) => /\*\*book\*\*/.test(b.textContent)),
+      hash: [...pr.children].some((b) => /^# House rules$/.test(b.textContent)),
+      dash: [...pr.children].some((b) => /^- No dogs$/.test(b.textContent)),
+      dressed: !!pr.querySelector('strong, .docline, .bullet') };
+  });
+  const flippedBack = await pressStrip('#prosectl [data-act="col-mode"]');
+  const stripBack = await stripAt();
+  const caretBack = await caretIn(false);
+  const stripPreOk = !!stripRest && stripRest.order === 'BI[]' && stripRest.top === 1 && stripRest.right === 8 &&
+    stripRest.laneCtl === 0 && stripRest.rowMode === 0 && !stripRest.pressed && !stripRest.src &&
+    !!darkThenLit && darkThenLit.dark && darkThenLit.lit &&
+    pasted && afterPaste.blocks === 5 && afterPaste.penLive && afterPaste.heading && afterPaste.strong && afterPaste.bullet &&
+    !!caretRich && caretRich.off === 18 && flipped && !!stripSrc && stripSrc.pressed && stripSrc.src && stripSrc.mono &&
+    !!caretSrc && caretSrc.off === 20 && srcChars.stars && srcChars.hash && srcChars.dash && !srcChars.dressed &&
+    flippedBack && !!stripBack && !stripBack.pressed && !stripBack.src && !stripBack.mono && !!caretBack && caretBack.off === 18;
+  say('strip pre  · ' + (stripPreOk ? 'B · I · [] at the card\'s top right before 🍾, dark until the caret, a pasted text lights ✒️, [] shows the characters in monospace with the caret converted (18 → 20 → 18), released rendered'
+    : 'FAIL: ' + JSON.stringify({ stripRest, darkThenLit, afterPaste, caretRich, stripSrc, caretSrc, srcChars, stripBack, caretBack })));
+  if (!stripPreOk) stuck.push('the strip before 🍾');
+  // the strip rides with the tab: at the page's end both are stuck under the
+  // navbar, level, and the strip wears its ground
+  const rode = await page.evaluate(() => {
+    window.scrollTo(0, document.body.scrollHeight);
+    return new Promise((res) => requestAnimationFrame(() => setTimeout(() => {
+      const st = document.getElementById('prosectl');
+      const tab = document.querySelector('#ridetab .achip[data-tab="text"]');
+      const o = { detached: st.classList.contains('detached'),
+        level: Math.round(st.querySelector('.lanectl').getBoundingClientRect().top - tab.getBoundingClientRect().top) };
+      window.scrollTo(0, 0);
+      res(o);
+    }, 120)));
+  });
+  await T(200);
+  const rodeOk = rode.detached && Math.abs(rode.level) <= 1;
+  say('strip ride · ' + (rodeOk ? 'stuck under the navbar level with the 📝 tab, ground on' : 'FAIL: ' + JSON.stringify(rode)));
+  if (!rodeOk) stuck.push('the strip riding before 🍾');
+  // what ✒️ will send: the column read as the page reads it, marks written back
+  const expectedText = await page.evaluate(() => [...document.getElementById('prose').children].map((b) => {
+    const m = b.className.match(/lvl(\d)/);
+    return (m ? '#'.repeat(+m[1]) + ' ' : b.classList.contains('bullet') ? '- ' : '') + window.CARDS.htmlToMd(b);
+  }).join('\n').trim());
   const saved = await page.evaluate(() => {
     const b = document.querySelector('#proserow [data-act="row-commit"]');
     const glyph = b ? b.textContent.trim() : null;
@@ -409,10 +541,77 @@ if (!EMPTY_TEXT) {
       .then((v) => ({ textConfirmed: !!v.textConfirmed, text: v.text })));
   const wroteOk = wrote.tab && wrote.editable === 'true' && wrote.editing && wrote.row && wrote.ghostH === 0 &&
     Math.abs(wrote.lineDelta) <= 1 && Math.abs(wrote.footDelta) <= 1 && Math.abs(wrote.rowAtFoot) <= 2 && wrote.tabRode &&
-    saved.glyph === '✒️' && saved.live && confirmed.textConfirmed && /Tuesdays/.test(String(confirmed.text || ''));
-  say('text       · ' + (wroteOk ? '📝 enters edit mode, the row wears ✒️, the charter column stays invisible, and one press saves the column — no OK'
-    : 'FAIL: ' + JSON.stringify({ wrote, saved, confirmed })));
+    saved.glyph === '✒️' && saved.live && confirmed.textConfirmed && /Tuesdays/.test(String(confirmed.text || '')) &&
+    // …and the text confirmed is the column as read, marks written back as source (Q1313)
+    confirmed.text === expectedText && /\*\*book\*\*/.test(confirmed.text) && /^# House rules$/m.test(confirmed.text);
+  say('text       · ' + (wroteOk ? '📝 enters edit mode, the row wears ✒️, the charter column stays invisible, and one press saves the column — no OK; the marks saved as source'
+    : 'FAIL: ' + JSON.stringify({ wrote, saved, confirmed, expectedText })));
   if (!wroteOk) stuck.push('writing the text from the save');
+  /* ---- Q1314's enable path: a paste into a **confirmed** column must light
+   * ✒️ (Ed, 2026-09-11: after pasting the starting text the row's ✒️ stayed
+   * dark). One paragraph pasted at the end, as a ClipboardEvent carrying
+   * text/plain; the row lit through the column's input listener; pressed,
+   * the second confirm carries the line. */
+  const pasteLit = await page.evaluate(() => {
+    const pr = document.getElementById('prose');
+    pr.focus({ preventScroll: true });
+    const d = document.createElement('div'); d.innerHTML = '<br>'; pr.appendChild(d);
+    const r = document.createRange(); r.setStart(d, 0); r.collapse(true);
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    const b = document.querySelector('#proserow [data-act="row-commit"]');
+    const darkBefore = !!(b && b.disabled);
+    const dt = new DataTransfer();
+    dt.setData('text/plain', 'Members pay dues by March.');
+    pr.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+    return { darkBefore };
+  });
+  await T(400);
+  Object.assign(pasteLit, await page.evaluate(() => {
+    const b = document.querySelector('#proserow [data-act="row-commit"]');
+    const lit = !!(b && !b.disabled);
+    if (lit) b.click();
+    return { lit };
+  }));
+  await T(700);
+  const confirmedAgain = await page.evaluate(() =>
+    fetch(location.pathname.replace('/d/', '/api/d/') + '/view').then((r) => r.json()).then((v) => v.text));
+  const pasteLitOk = pasteLit.darkBefore && pasteLit.lit && confirmedAgain === expectedText + '\nMembers pay dues by March.';
+  say('paste ✒️   · ' + (pasteLitOk ? 'a paste into the confirmed column lights ✒️, and the press confirms the line'
+    : 'FAIL: ' + JSON.stringify({ pasteLit, confirmedAgain })));
+  if (!pasteLitOk) stuck.push('✒️ after a paste (Q1314)');
+  /* ---- a click outside leaves edit mode before 🍾 (Q1315, Ed 2026-09-11:
+   * *clicking outside of cards should close them*) — on nothing, in the
+   * rail's empty space: the mode off, the row gone, the column's text kept;
+   * 📝 again brings the mode back with the same text. */
+  const outsidePre = await (async () => {
+    const before = await page.evaluate(() => document.getElementById('prose').textContent);
+    const pt = await page.evaluate(() => {
+      const r = document.querySelector('aside.queue').getBoundingClientRect();
+      const x = Math.round(r.x + r.width / 2), y = Math.round(Math.max(40, Math.min(innerHeight - 40, r.bottom - 40)));
+      const hit = document.elementFromPoint(x, y);
+      return { x, y, hit: hit ? hit.tagName + (hit.id ? '#' + hit.id : '') + '.' + hit.className : null };
+    });
+    await page.mouse.click(pt.x, pt.y);
+    await T(400);
+    const left = await page.evaluate(() => ({
+      editing: document.getElementById('doc').classList.contains('editing'),
+      editable: document.getElementById('prose').getAttribute('contenteditable'),
+      row: !!document.querySelector('#proserow [data-proposalrow]'),
+      strip: !!document.querySelector('#prosectl .lanectl'),
+      text: document.getElementById('prose').textContent }));
+    await page.evaluate(() => document.querySelector('#ridetab .achip[data-tab="text"]').click());
+    await T(300);
+    const back = await page.evaluate(() => ({
+      editing: document.getElementById('doc').classList.contains('editing'),
+      strip: !!document.querySelector('#prosectl .lanectl'),
+      text: document.getElementById('prose').textContent }));
+    return { hit: pt.hit, left, back, kept: left.text === before && back.text === before };
+  })();
+  const outsidePreOk = !outsidePre.left.editing && outsidePre.left.editable === 'false' && !outsidePre.left.row &&
+    !outsidePre.left.strip && outsidePre.back.editing && outsidePre.back.strip && outsidePre.kept;
+  say('outside pre· ' + (outsidePreOk ? 'a click on ' + outsidePre.hit + ' leaves edit mode — no row, no strip, the text kept — and 📝 brings it back'
+    : 'FAIL: ' + JSON.stringify(outsidePre)));
+  if (!outsidePreOk) stuck.push('the outside click before 🍾');
   // leaving: 📝 again, the column back to read mode
   await page.evaluate(() => document.querySelector('#ridetab .achip[data-tab="text"]').click());
   await T(200);
@@ -1824,6 +2023,36 @@ const editOk = (await hostEditable()) === 'true' && editState.editing && editSta
   (EMPTY_TEXT ? !editState.gap : editState.gap);
 say('edit mode  · ' + JSON.stringify(editState) + (editOk ? '' : '  FAIL: 📝 should lift the column (24px over the first line), fan the pile to three tabs on the constitution\'s gutter, draw the bare row greyed with ✏️ (✒️ only beside it), the B · I · [] strip at the card\'s top right with no lane carrying controls, and the trailing gap'));
 if (!editOk) stuck.push('edit mode');
+/* ---- a click outside leaves edit mode after 🍾 too (Q1315, Ed 2026-09-11:
+ * *clicking outside of cards should close them*, ruled for both eras): on
+ * nothing in the rail's empty space — the mode off, the row and the strip
+ * gone, the column read-only; 📝 brings it back. The draft's survival is
+ * asserted at the typing step below, where there is a draft to keep. */
+const outsidePost = await (async () => {
+  const pt = await page.evaluate(() => {
+    const r = document.querySelector('aside.queue').getBoundingClientRect();
+    const x = Math.round(r.x + r.width / 2), y = Math.round(Math.max(40, Math.min(innerHeight - 40, r.bottom - 40)));
+    const hit = document.elementFromPoint(x, y);
+    return { x, y, hit: hit ? hit.tagName + (hit.id ? '#' + hit.id : '') + '.' + hit.className : null };
+  });
+  await page.mouse.click(pt.x, pt.y);
+  await T(400);
+  const left = { editing: await page.evaluate(() => document.getElementById('doc').classList.contains('editing')),
+    editable: await hostEditable(),
+    row: await page.evaluate(() => !!document.querySelector('#charter [data-proposalrow]')),
+    strip: await page.evaluate(() => !!document.querySelector('#charter .editctl .lanectl')) };
+  await page.evaluate(() => document.querySelector('#ridetab .achip[data-tab="text"]').click());
+  await T(300);
+  const back = { editing: await page.evaluate(() => document.getElementById('doc').classList.contains('editing')),
+    editable: await hostEditable(),
+    strip: await page.evaluate(() => !!document.querySelector('#charter .editctl .lanectl')) };
+  return { hit: pt.hit, left, back };
+})();
+const outsidePostOk = !outsidePost.left.editing && outsidePost.left.editable === 'false' && !outsidePost.left.row &&
+  !outsidePost.left.strip && outsidePost.back.editing && outsidePost.back.editable === 'true' && outsidePost.back.strip;
+say('outside    · ' + (outsidePostOk ? 'a click on ' + outsidePost.hit + ' leaves edit mode — no row, no strip, no caret — and 📝 brings it back'
+  : 'FAIL: ' + JSON.stringify(outsidePost)));
+if (!outsidePostOk) stuck.push('the outside click after 🍾');
 await page.evaluate(() => document.querySelector('#ridetab .achip[data-tab="text"]').click());
 await T(300);
 const readAgain = (await hostEditable()) === 'false' && !(await page.evaluate(() => !!document.querySelector('#charter [data-proposalrow]')));
@@ -2119,6 +2348,53 @@ if (caret) {
   }));
   say('typing     · ' + (r.editCard ? 'opens the editing card' : 'FAIL: no editing card') +
     ' · propose control ' + (r.proposeBtn ? 'present and live' : 'MISSING'));
+  /* ---- the draft survives a click outside (Q1315, K31: leaving is not
+   * discarding): with the editing card open, a click on nothing in the
+   * rail's empty space leaves edit mode and closes the card into its clause;
+   * the draft stands, unproposed, with its typing; 📝 brings the mode back
+   * and the row's commit reopens the card on it (Q1296), which is where the
+   * steps below expect to find it. */
+  const draftKept = await (async () => {
+    const draftOf = () => page.evaluate(() => {
+      const d = (window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours');
+      return d ? { text: d.sites[0] ? d.sites[0].text : null, unproposed: !!d.unproposed, sites: d.sites.length } : null;
+    });
+    const before = await draftOf();
+    const pt = await page.evaluate(() => {
+      const r = document.querySelector('aside.queue').getBoundingClientRect();
+      const x = Math.round(r.x + r.width / 2), y = Math.round(Math.max(40, Math.min(innerHeight - 40, r.bottom - 40)));
+      const hit = document.elementFromPoint(x, y);
+      return { x, y, hit: hit ? hit.tagName + (hit.id ? '#' + hit.id : '') + '.' + hit.className : null };
+    });
+    await page.mouse.click(pt.x, pt.y);
+    await T(700);
+    const left = await page.evaluate(() => ({
+      editing: document.getElementById('doc').classList.contains('editing'),
+      card: !!document.querySelector('.sugg.editcard'), openId: window.SESSION.openId }));
+    const after = await draftOf();
+    await page.evaluate(() => document.querySelector('#ridetab .achip[data-tab="text"]').click());
+    await T(300);
+    const reopened = await page.evaluate(() => {
+      const bs = document.querySelectorAll('#charter [data-proposalrow] [data-act="row-commit"]');
+      const b = bs[bs.length - 1];
+      if (!b) return { row: false };
+      b.click();
+      return { row: true };
+    });
+    await T(700);
+    Object.assign(reopened, await page.evaluate(() => ({
+      editing: document.getElementById('doc').classList.contains('editing'),
+      card: !!document.querySelector('.sugg.editcard'), openId: window.SESSION.openId })));
+    const again = await draftOf();
+    return { hit: pt.hit, before, left, after, reopened, again };
+  })();
+  const draftKeptOk = !!draftKept.before && !draftKept.left.editing && !draftKept.left.card && draftKept.left.openId == null &&
+    !!draftKept.after && draftKept.after.text === draftKept.before.text && draftKept.after.unproposed &&
+    draftKept.reopened.row && draftKept.reopened.editing && draftKept.reopened.card && draftKept.reopened.openId === 'draft-yours' &&
+    !!draftKept.again && draftKept.again.text === draftKept.before.text;
+  say('outside+dr · ' + (draftKeptOk ? 'a click on ' + draftKept.hit + ' leaves edit mode with the card closed and the draft kept; 📝 and the row\'s commit reopen it'
+    : 'FAIL: ' + JSON.stringify(draftKept)));
+  if (!draftKeptOk) stuck.push('the draft across an outside click');
   /* ---- **🗑️ per site on a patch** (Q1306 (a), Ed 2026-09-10: *the 🗑️ for the
    * edit in one place should only discard that edit, not the whole patch*).
    * A second site makes the draft a patch — two cards, one draft — and the
