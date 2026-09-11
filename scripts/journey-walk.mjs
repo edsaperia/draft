@@ -2133,6 +2133,43 @@ await T(300);
 const readAgain = (await hostEditable()) === 'false' && !(await page.evaluate(() => !!document.querySelector('#charter [data-proposalrow]')));
 say('read mode  · ' + (readAgain ? '📝 again leaves edit mode: no caret, no row' : 'FAIL: still in edit mode'));
 if (!readAgain) stuck.push('leaving edit mode');
+/* ---- the floating 📝 (Q1335, Ed 2026-09-11: *after begin, there should be
+ * an additional way to open 📝 edit mode on a floating action button in the
+ * bottom right, in the same place and size as the floating ✏️ appears in
+ * edit mode*). In read mode after 🍾 the `edit-door` stands at the window's
+ * foot for a member who may propose; pressing it is pressing the riding tab
+ * — edit mode on, the row drawn, the door gone — and the row's ✏️ takes the
+ * door's box to the pixel, so the eye sees one control change role; 📝 on
+ * the tab leaves, and the door is back in the same box. */
+const door = await (async () => {
+  const box = (sel) => page.evaluate((s) => {
+    const els = document.querySelectorAll(s);
+    const el = els[els.length - 1];
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return [Math.round(r.left * 100) / 100, Math.round(r.top * 100) / 100, Math.round(r.width * 100) / 100, Math.round(r.height * 100) / 100,
+      getComputedStyle(el).fontSize, el.title];
+  }, sel);
+  const DOOR = '#editdoor [data-act="edit-door"]', ROW = '#charter [data-proposalrow] [data-act="row-commit"]';
+  const before = await box(DOOR);
+  if (!before) return { before };
+  await page.click(DOOR);
+  await T(400);
+  const entered = { editing: await page.evaluate(() => document.getElementById('doc').classList.contains('editing')),
+    editable: await hostEditable(), door: await box(DOOR), commit: await box(ROW) };
+  await page.evaluate(() => document.querySelector('#ridetab .achip[data-tab="text"]').click());
+  await T(400);
+  const left = { editing: await page.evaluate(() => document.getElementById('doc').classList.contains('editing')),
+    row: !!(await box(ROW)), door: await box(DOOR) };
+  return { before, entered, left };
+})();
+const sameBox = (a, b) => !!a && !!b && a.slice(0, 4).every((v, i) => Math.abs(v - b[i]) <= 0.5);
+const doorOk = !!door.before && door.before[4] === '21.6px' && door.entered.editing && door.entered.editable === 'true' &&
+  !door.entered.door && sameBox(door.before, door.entered.commit) &&
+  !door.left.editing && !door.left.row && sameBox(door.before, door.left.door);
+say('door       · ' + (doorOk ? 'the floating 📝 at ' + door.before.slice(0, 4).join('×') + ' (“' + door.before[5] + '”) enters edit mode, the row\'s ✏️ takes its box, and 📝 on the tab brings it back in the same box'
+  : 'FAIL: ' + JSON.stringify(door)));
+if (!doorOk) stuck.push('the floating 📝 (Q1335)');
 
 // the other half of backlog 50: what *is* news to a member is a rule changed
 // while they were here, and one press of OK is what dismisses it
@@ -2340,6 +2377,77 @@ const editAgainOk = doorPressed && editAgain.editable === 'true' && editAgain.ed
 say('edit again · ' + (editAgainOk ? 'editable=true editing=true'
   : 'FAIL: 📝 did not re-enter edit mode · ' + JSON.stringify(editAgain)));
 if (!editAgainOk) stuck.push('edit mode again');
+/* ---- the column above the editing card (Q1336, Ed 2026-09-11 on the moon
+ * room: *blank gap appears when I am making a text edit proposal*). An open
+ * card splits the lifted column into a `.prose` segment before it and one
+ * after, and the runway meant for the column's foot (95vh of padding) was
+ * given to every segment — so a viewport of blank card stood between the
+ * clauses above the card and the card, and the clauses, a screen up, read
+ * as gone. Typed into the **last** clause so that blocks stand above the
+ * card (the walk's own document has four), then measured: every block of
+ * the document before the site is on the page with height, the card follows
+ * the last of them within a paragraph's air, and only the segment nothing
+ * follows carries the runway. The draft is dropped through the row's own 🗑️
+ * afterwards, so the steps below type into the clause they always did. */
+const column = await (async () => {
+  if (EMPTY_TEXT) return { skipped: 'an empty document has nothing to stand above the card' };
+  const at = await page.evaluate(() => {
+    const ps = [...document.querySelectorAll('#charter .prose p.editable[data-key]')]
+      .filter((p) => !p.classList.contains('gap') && !p.closest('.sugg') && p.textContent.trim().length > 5);
+    const p = ps[ps.length - 1];
+    if (!p) return null;
+    p.scrollIntoView({ block: 'center' });
+    const tn = [...p.childNodes].find((n) => n.nodeType === 3);
+    if (!tn) return null;
+    const r = document.createRange(); r.setStart(tn, Math.min(3, tn.length)); r.collapse(true);
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    return p.dataset.key;
+  });
+  if (!at) return { at };
+  await page.keyboard.type('Z');
+  await T(700);
+  const m = await page.evaluate((k) => {
+    const card = document.querySelector('.sugg.editcard');
+    if (!card) return { card: false };
+    const top = card.getBoundingClientRect().top + scrollY;
+    const DOC = window.SESSION.DOC;
+    const idx = DOC.findIndex((l) => l.key === k);
+    const expected = DOC.slice(0, idx).filter((l) => l.key && !l.gap && l.t !== 'title').length;
+    const above = [...document.querySelectorAll('#charter .prose .editable[data-key]')]
+      .filter((el) => !el.closest('.sugg') && el.getBoundingClientRect().top + scrollY < top);
+    const last = above[above.length - 1];
+    const segs = [...document.querySelectorAll('#charter > .prose')].map((p) => Math.round(parseFloat(getComputedStyle(p).paddingBottom)));
+    return { card: true, expected, above: above.length,
+      flat: above.filter((el) => el.getBoundingClientRect().height < 1).length,
+      blank: last ? Math.round(top - (last.getBoundingClientRect().bottom + scrollY)) : null,
+      segs };
+  }, at);
+  const binned = await page.evaluate(() => {
+    const b = document.querySelector('#charter [data-proposalrow] [data-act="row-discard"]');
+    if (!b || b.disabled) return false;
+    b.click();
+    return true;
+  });
+  await T(500);
+  const after = await page.evaluate(() => ({
+    draft: !!(window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours'),
+    card: !!document.querySelector('.sugg.editcard'),
+    editing: document.getElementById('doc').classList.contains('editing') }));
+  return { at, ...m, binned, after };
+})();
+if (column.skipped) {
+  say('column     · skipped — ' + column.skipped);
+} else {
+  const segsOk = !!column.segs && column.segs.length >= 2 &&
+    column.segs.slice(0, -1).every((p) => p === 0) && column.segs[column.segs.length - 1] > 0;
+  const columnOk = !!column.at && column.card && column.above === column.expected && column.expected > 0 &&
+    column.flat === 0 && column.blank !== null && column.blank <= 80 && segsOk &&
+    column.binned && !column.after.draft && !column.after.card && column.after.editing;
+  say('column     · ' + (columnOk ? 'a draft on ' + column.at + ': ' + column.above + ' blocks stand above the card, all with height, ' +
+      'the card ' + column.blank + 'px under the last; the runway is the last segment\'s alone (' + column.segs.join(' · ') + 'px); 🗑️ on the row drops it'
+    : 'FAIL: ' + JSON.stringify(column)));
+  if (!columnOk) stuck.push('the column above the editing card (Q1336)');
+}
 const caret = await page.evaluate((empty) => {
   const r = document.createRange();
   let p;

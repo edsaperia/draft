@@ -106,6 +106,16 @@
   .devswitch select { font: inherit; color: var(--fg); border: none; background: transparent; }
   .devswitch button { font: inherit; color: var(--muted); background: transparent;
     border: 1px dashed var(--border); border-radius: 4px; cursor: pointer; padding: 1px 6px; }
+  /* the stagehand's refusal line (Q1330): bottom right, off the design
+     system like the flag and the dropdown — addressed to whoever is
+     debugging, not to a member. `--slash` is the one red on the surface and
+     this is off it; a click dismisses, the next refusal replaces. */
+  #errline { position: fixed; bottom: 10px; right: 10px; z-index: 60; max-width: 64ch;
+    font: 11px/1.45 ui-monospace, Consolas, monospace; color: var(--fg);
+    background: var(--bg); border: 1px solid var(--border); border-left: 3px solid var(--slash);
+    border-radius: 6px; padding: 6px 10px; cursor: pointer; box-shadow: var(--shadow-sm); }
+  #errline b { display: block; font-weight: 600; margin-bottom: 2px; }
+  #errline .dbg { color: var(--muted); overflow-wrap: anywhere; }
 
   /* **The column invites you before it asks you** (Q513(c), Ed 2026-08-21).
      The column the text will be written in exists from the save, and a
@@ -233,6 +243,12 @@
         <!-- the proposal-row before the start: the founder's ✒️ under #prose,
              drawn by session.js's own helper so the two eras share one row -->
         <div id="proserow"></div>
+        <!-- the floating 📝 after 🍾 (Q1335): read mode's runway stands here,
+             ahead of the door, so the door sticks to the window's foot for the
+             whole scroll exactly as the proposal-row does in edit mode; the
+             door itself is a proposal-row of one button, drawn by renderEditDoor -->
+        <div id="runway"></div>
+        <div id="editdoor"></div>
       </div>
     </main>
     <aside class="queue stack"><ul id="rail"></ul></aside>
@@ -250,10 +266,18 @@
 <script src="session.js"></script>
 <script>
 (function () {
-  const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml,
+  const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml: cardHtml0,
     nameBody, pictureBody, opt, num, numIn, ctlWord, someIn, ANSWER, stateOf, labelOf, nounOf,
     MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml, stripHtml, readBody,
     routeFor, motionCommitHtml, BLINDNOTE, methodNote, listOf, syncSlider } = window.SETUP;
+  // **Every card can carry a refusal** (Q1330, SURFACE Y25): the settings,
+  // motion and door bodies draw `doorErrHtml` where the control that tried
+  // stands, and every other kind — a gate, a grant, an answer, news — drew
+  // nothing, so a refusal against one of those keys was set and never seen.
+  // The one wrapper every card passes through adds the line under the body
+  // where the body has not already drawn it.
+  const cardHtml = (c, ctx, body, ...rest) => cardHtml0(c, ctx,
+    String(body || '') + (String(body || '').includes('why refusal') ? '' : doorErrHtml(c.k)), ...rest);
   // every member-readable string this script renders lives in copy.js (Ed's
   // brief, 2026-09-05, Part 3: copy edits touch that file only)
   const PAGE_COPY = window.COPY.page;
@@ -444,7 +468,36 @@
       if (on) focusProse();
     }
     renderRideTab();
+    renderEditDoor();
   }
+  // **The door has two handles after 🍾** (Q1335, Ed 2026-09-11: *an
+  // additional way to open 📝 edit mode on a floating action button in the
+  // bottom right, in the same place and size as the floating ✏️ appears in
+  // edit mode*). The `edit-door` is not a control placed at a number: it is
+  // **the proposal-row itself** with one button — the same `.proposalrow`
+  // box on the same containing width, the same `--s2` of padding, the same
+  // `.btn.glyphbtn` — wearing 📝 and the riding tab's own tooltip, so the
+  // row's ✏️ takes its box to the pixel when edit mode opens and the eye sees
+  // one control change role (card-audit's D1 holds them equal). Drawn in
+  // read mode only, under the tab's own gate — a member who may propose, not
+  // the stranger, the applicant or a closed document (C9) — and only once the
+  // document has begun: before 🍾 the founder's row is `#proserow`'s.
+  function renderEditDoor() {
+    const ed = document.getElementById('editdoor');
+    if (!ed) return;
+    const show = !!cs && constituted() && !S.editMode && canEditText();
+    ed.innerHTML = show
+      ? '<div class="race-mid commitrow proposalrow" data-editdoor="1"><span class="rowmid"></span>' +
+        '<button class="btn btn-propose glyphbtn emojibtn" data-act="edit-door" title="' +
+        esc(PAGE_COPY.ride.textDash + PAGE_COPY.ride.pressToWrite) + '">📝</button></div>'
+      : '';
+  }
+  document.addEventListener('click', (ev) => {
+    const b = ev.target.closest('#editdoor [data-act="edit-door"]');
+    if (!b) return;
+    ev.stopPropagation();
+    toggleEditMode();
+  });
   // 📝 pressed: the door. With a card open the card closes into its paragraph
   // first (one card at a time, and the closing is animated); a reader who may
   // not write gets the beat and nothing else (SURFACE K31).
@@ -960,15 +1013,36 @@
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(body || {}) }).then((r) => r.json());
     },
-    cmd(name, args) {
+    cmd(name, args, opts) {
       // resolves with the server's answer ({ok, result} or {error}) after the
       // refresh that follows it — a hook that has to act on a refusal (a
-      // stale base under a text proposal) reads it here
+      // stale base under a text proposal) reads it here.
+      // **And every refusal prints** (Q1330): the card open when the command
+      // left is the control that sent it, where there is one, and
+      // `refusalNoted` puts the sentence under it and the stagehand's line
+      // at the foot of the window. A wire that answers with a status and no
+      // sentence (a 502, a body that is not JSON) or does not answer at all
+      // is a refusal too, with the status for its reason.
       let answer = null;
+      const card = (opts && opts.card) || S.open || null;
+      const sentAt = Date.now();
       this.chain = this.chain
-        .then(() => this.post('/api/d/' + LIVESLUG + '/cmd', { cmd: name, args: args || {} }))
-        .then((res) => { answer = res; if (res && res.error) console.warn('[live]', name, res.error); })
-        .catch((e) => { answer = { error: String(e && e.message) }; console.warn('[live]', name, e && e.message); })
+        .then(() => fetch('/api/d/' + LIVESLUG + '/cmd', { method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ cmd: name, args: args || {} }) })
+          .then((r) => r.json().then((j) => ({ status: r.status, j }), () => ({ status: r.status, j: null }))))
+        .then(({ status, j }) => {
+          answer = j && (j.error || j.ok) ? j : { error: PAGE_COPY.noAnswer(status), status };
+          if (answer.error) {
+            console.warn('[live]', name, answer.error);
+            refusalNoted({ name, args, card, status, error: answer.error, at: sentAt });
+          }
+        })
+        .catch((e) => {
+          answer = { error: PAGE_COPY.noAnswer(0), status: 0 };
+          console.warn('[live]', name, e && e.message);
+          refusalNoted({ name, args, card, status: 0, error: answer.error, detail: String(e && e.message), at: sentAt });
+        })
         .then(() => this.refresh());
       return this.chain.then(() => answer);
     },
@@ -1155,6 +1229,55 @@
     }
     return r;
   };
+  // **Every refusal prints** (Q1330; Ed, 2026-09-11: *we don't expect users
+  // to encounter refusals — refusals should print an error on screen with a
+  // debug message, and create some kind of error log we can debug*). Q811
+  // gave the doors a sentence and entry 62 gave the founder's sets one, and
+  // every other caller of `api.cmd` — an answer, an OK, a judgment, a
+  // proposal, an identity — dropped the answer: Ed's 🏛️ on a card the module
+  // refused as *not collecting* left the card yellow and said nothing.
+  //
+  // Two channels, from one place. Where the command left from a card the
+  // page can name — the card open when it was sent — the sentence lands
+  // under that card by Y25's own mechanism: `S.doorErr` against the key,
+  // the card re-opened so the line is looked at, retired by the next
+  // keystroke on it. The set family keeps `refuseSet`'s wording; the rest
+  // read *That was refused*. And **always** the stagehand's line at the foot
+  // of the window: the sentence, then the command, its arguments, the
+  // document, the seat and the time — off the design system like the alpha
+  // flag and the dev dropdown, because it is addressed to whoever is
+  // debugging, not to a member. A click dismisses it, the next refusal
+  // replaces it. The doors keep their own wording: their handlers write the
+  // line after this has, and the later write wins.
+  const SET_FAMILY = ['set-setting', 'delegate', 'reclaim', 'relinquish', 'set-quorum-form',
+    'confirm-starting-text', 'set-convenor-membership'];
+  const refusalNoted = (info) => {
+    if (LIVEMODE && info.card && card(info.card)) {
+      S.open = info.card;
+      setDoorErr(info.card, (SET_FAMILY.includes(info.name) ? PAGE_COPY.refuseSet : PAGE_COPY.refused)(plainRefusal(info.error)));
+    }
+    showErrLine(info);
+  };
+  const showErrLine = (info) => {
+    let el = document.getElementById('errline');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'errline';
+      el.title = 'Dev only — a refusal, with what was sent; click to dismiss';
+      el.addEventListener('click', () => el.remove());
+      document.body.appendChild(el);
+    }
+    let argsText;
+    try { argsText = JSON.stringify(info.args || {}); } catch (e) { argsText = String(info.args); }
+    if (argsText.length > 200) argsText = argsText.slice(0, 200) + '…';
+    const seat = viewerId() || S.viewer || '?';
+    const when = new Date(info.at || Date.now()).toISOString();
+    el.innerHTML = '<b>' + esc(plainRefusal(info.error) || String(info.error)) + '</b>' +
+      '<span class="dbg">' + esc(info.name + ' ' + argsText) + '<br>' +
+      esc((LIVESLUG ? '/d/' + LIVESLUG : location.pathname) + ' · seat ' + seat + ' · ' +
+        (info.status ? 'HTTP ' + info.status : 'no answer' + (info.detail ? ' (' + info.detail + ')' : '')) +
+        ' · ' + when) + '</span>';
+  };
   // which card a control sits on, from the card itself rather than from
   // whatever happens to be open
   const cardKeyAt = (el) => (el && el.dataset && el.dataset.setupcard) || S.open || 'admission';
@@ -1255,10 +1378,8 @@
     admission: () => ({ price: S.admission }),
     applications: () => ({ apply: S.joinBy === 'apply' }),
   };
-  // 🤝 read through its legacy (entry 94): a value written before the switch
-  // carried a four-rung joinPolicy, of which only `invite` was the door shut
-  const mayApply = (v) => !!v && (v.apply !== undefined ? !!v.apply
-    : (v.joinPolicy !== undefined && v.joinPolicy !== 'invite'));
+  // 🤝 is the one switch and nothing else (Q1329): the module's `mayApply`
+  const mayApply = (v) => !!v && v.apply === true;
   // a member's page-vocabulary answer → typed, and back — one place each way
   const ANSTYPED = {
     // the form is the member's own since Q1162 — the block they chose, never
@@ -6570,7 +6691,7 @@
   const WAY_IN = 'a, button, input, textarea, select, label, [role="button"], [contenteditable="true"], ' +
     '.achip, .insert-anchor, [data-tab], [data-card], [data-anchor], [data-q], [data-toc], [data-sec-toggle]';
   const CARD_SIDE = '.setupcard, .sugg, #ridetab, #proserow, [data-proposalrow], .editctl, #prosefolds, .walletsay, ' +
-    '#mailmodal, #devoutbox, .devswitch, .ladderbar';
+    '#mailmodal, #devoutbox, .devswitch, .ladderbar, #errline';
   document.addEventListener('click', (ev) => {
     const bandOpen = S.open, charterOpen = SESSION.openId, editing = !!S.editMode;
     if (!bandOpen && charterOpen == null && !editing) return;
@@ -6790,6 +6911,7 @@
     renderProseCtl();
     renderProseRow();
     renderRideTab();
+    renderEditDoor();
     // **The ✏️ socket stands whether or not you may propose** (Q532). It used
     // to be `display: none` for everybody who could not — a stranger, an
     // applicant, a clerk, a member before 🍾, a member who has not accepted the
@@ -11780,6 +11902,9 @@
   // as session.js's `__q291`, and for the same reason: the state a walk needs
   // lives inside a closure, and reconstructing it from the DOM is a second
   // implementation of the thing under test.
+  // a walk's way to send one command through the page's own wire, so a
+  // deliberate refusal prints the way a member's would (Q1330, `npm run journey`)
+  window.__cmd = (name, args) => api.cmd(name, args);
   window.__founding = () => ({
     constituted: constituted(),
     // which seat booted, and — for an applicant — where their application
