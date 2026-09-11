@@ -243,6 +243,12 @@
         <!-- the proposal-row before the start: the founder's ✒️ under #prose,
              drawn by session.js's own helper so the two eras share one row -->
         <div id="proserow"></div>
+        <!-- the floating 📝 after 🍾 (Q1335): read mode's runway stands here,
+             ahead of the door, so the door sticks to the window's foot for the
+             whole scroll exactly as the proposal-row does in edit mode; the
+             door itself is a proposal-row of one button, drawn by renderEditDoor -->
+        <div id="runway"></div>
+        <div id="editdoor"></div>
       </div>
     </main>
     <aside class="queue stack"><ul id="rail"></ul></aside>
@@ -462,7 +468,36 @@
       if (on) focusProse();
     }
     renderRideTab();
+    renderEditDoor();
   }
+  // **The door has two handles after 🍾** (Q1335, Ed 2026-09-11: *an
+  // additional way to open 📝 edit mode on a floating action button in the
+  // bottom right, in the same place and size as the floating ✏️ appears in
+  // edit mode*). The `edit-door` is not a control placed at a number: it is
+  // **the proposal-row itself** with one button — the same `.proposalrow`
+  // box on the same containing width, the same `--s2` of padding, the same
+  // `.btn.glyphbtn` — wearing 📝 and the riding tab's own tooltip, so the
+  // row's ✏️ takes its box to the pixel when edit mode opens and the eye sees
+  // one control change role (card-audit's D1 holds them equal). Drawn in
+  // read mode only, under the tab's own gate — a member who may propose, not
+  // the stranger, the applicant or a closed document (C9) — and only once the
+  // document has begun: before 🍾 the founder's row is `#proserow`'s.
+  function renderEditDoor() {
+    const ed = document.getElementById('editdoor');
+    if (!ed) return;
+    const show = !!cs && constituted() && !S.editMode && canEditText();
+    ed.innerHTML = show
+      ? '<div class="race-mid commitrow proposalrow" data-editdoor="1"><span class="rowmid"></span>' +
+        '<button class="btn btn-propose glyphbtn emojibtn" data-act="edit-door" title="' +
+        esc(PAGE_COPY.ride.textDash + PAGE_COPY.ride.pressToWrite) + '">📝</button></div>'
+      : '';
+  }
+  document.addEventListener('click', (ev) => {
+    const b = ev.target.closest('#editdoor [data-act="edit-door"]');
+    if (!b) return;
+    ev.stopPropagation();
+    toggleEditMode();
+  });
   // 📝 pressed: the door. With a card open the card closes into its paragraph
   // first (one card at a time, and the closing is animated); a reader who may
   // not write gets the beat and nothing else (SURFACE K31).
@@ -6876,6 +6911,7 @@
     renderProseCtl();
     renderProseRow();
     renderRideTab();
+    renderEditDoor();
     // **The ✏️ socket stands whether or not you may propose** (Q532). It used
     // to be `display: none` for everybody who could not — a stranger, an
     // applicant, a clerk, a member before 🍾, a member who has not accepted the

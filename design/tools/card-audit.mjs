@@ -1499,7 +1499,61 @@ async function walkSettled(page, base, cards, errors, seat, switches, piles) {
  * `SESSION.toggle(id, false)` so nothing scrolls and every rect is
  * viewport-stable — session-probe's own discipline.
  */
-async function walkCharter(page, base, cards, errors, { closed } = {}) {
+/**
+ * **D1 — the floating 📝 stands in the row's ✏️'s box** (Q1335, Ed
+ * 2026-09-11: *in the same place and size as the floating ✏️ appears in edit
+ * mode*). Three boxes in viewport coordinates at scroll 0: the door before
+ * entering, the row's ✏️ once edit mode is open (the door gone), the door
+ * again once 📝 on the tab has left — equal within half a pixel, and the
+ * glyph at B6's one size. Not a fact about a card, so it files with the
+ * cross-card findings; the per-card lenses never see the row.
+ */
+async function walkDoor(page, doors, errors, walk) {
+  const DOOR = '#editdoor [data-act="edit-door"]';
+  const ROW = '#charter [data-proposalrow] [data-act="row-commit"]';
+  const box = (sel) => page.evaluate((s) => {
+    const els = document.querySelectorAll(s);
+    const el = els[els.length - 1];
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    const R = (x) => Math.round(x * 100) / 100;
+    return { r: [R(r.left), R(r.top), R(r.width), R(r.height)], fontSize: R(parseFloat(getComputedStyle(el).fontSize)), title: el.title };
+  }, sel);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await wait(page, 150);
+  const before = await box(DOOR);
+  if (!before) { errors.push(walk + ': no floating 📝 in read mode (Q1335)'); return; }
+  await page.click(DOOR);
+  await wait(page, 400);
+  const commit = await box(ROW);
+  const doorWhileEditing = await box(DOOR);
+  const editing = await page.evaluate(() => document.getElementById('doc').classList.contains('editing'));
+  await page.evaluate(() => document.querySelector('#ridetab .achip[data-tab="text"]').click());
+  await wait(page, 400);
+  const after = await box(DOOR);
+  doors.push({ walk, before, commit, doorWhileEditing, editing, after });
+}
+function doorRules(doors) {
+  const out = [];
+  const same = (a, b) => !!a && !!b && a.r.every((v, i) => Math.abs(v - b.r[i]) <= 0.5);
+  for (const d of doors) {
+    const said = 'the floating 📝 stands in the proposal-row\'s ✏️\'s box — same place, same size, before and after edit mode (Q1335)';
+    if (!d.editing || !d.commit) {
+      out.push({ rule: 'D1', lens: 'positioning', said, saw: 'pressing the door ' + (d.editing ? 'drew no row' : 'did not enter edit mode'), note: d.walk });
+      continue;
+    }
+    if (d.doorWhileEditing) out.push({ rule: 'D1', lens: 'positioning', said, saw: 'the door is still drawn in edit mode, beside the row', note: d.walk });
+    if (!same(d.before, d.commit)) out.push({ rule: 'D1', lens: 'positioning', said,
+      saw: 'the door at ' + d.before.r.join('×') + ', the row\'s ✏️ at ' + d.commit.r.join('×'), note: d.walk });
+    if (!same(d.before, d.after)) out.push({ rule: 'D1', lens: 'positioning', said,
+      saw: 'the door at ' + d.before.r.join('×') + ' before, ' + (d.after ? d.after.r.join('×') : 'gone') + ' after leaving', note: d.walk });
+    if (!near(d.before.fontSize, 21.6, 0.3)) out.push({ rule: 'B6', lens: 'buttons', said: 'a glyph commit is 1.35rem (21.6px) inert, armed or held',
+      saw: 'the floating 📝 at ' + d.before.fontSize + 'px', note: d.walk });
+  }
+  return out;
+}
+
+async function walkCharter(page, base, cards, errors, { closed, doors } = {}) {
   await page.goto(base + '/session-view.html?fixture=session' + (closed ? '&closed=1&band=1' : ''));
   await page.waitForFunction(() => !!(window.SESSION && window.SESSION.SUGGS.length && document.querySelector('.qitem')),
     null, { timeout: 20_000 });
@@ -1542,6 +1596,8 @@ async function walkCharter(page, base, cards, errors, { closed } = {}) {
     await page.evaluate((k) => { try { window.SESSION.toggle(k, false); } catch (e) { /* already closed */ } }, id);
     await wait(page, 120);
   }
+  // the floating 📝 (D1): the live session only — a closed document draws no door
+  if (!closed && doors) await walkDoor(page, doors, errors, walk);
   if (closed) {
     // the closed page's own furniture: the backlog's ⏸ records and the
     // signatures, which exist nowhere else
@@ -1577,6 +1633,7 @@ async function main() {
   const cards = [];
   const switches = [];
   const piles = [];
+  const doors = [];
   const t0 = Date.now();
   const run = async (name, fn) => {
     if (!WALKS.includes(name)) return;
@@ -1608,7 +1665,7 @@ async function main() {
       if (cards.length === n) errors.push('seat:' + seat + ' offered no cards — nothing was measured for it');
     }
   });
-  await run('charter', () => walkCharter(page, base, cards, errors));
+  await run('charter', () => walkCharter(page, base, cards, errors, { doors }));
   await run('closed', () => walkCharter(page, base, cards, errors, { closed: true }));
 
   const tok = await page.evaluate(() => window.__CA.tokens());
@@ -1616,7 +1673,7 @@ async function main() {
   server.close();
 
   for (const c of cards) c.findings = rulesFor(c, tok);
-  const cross = [...crossCard(cards), ...switchRules(switches), ...pileRules(piles)];
+  const cross = [...crossCard(cards), ...switchRules(switches), ...pileRules(piles), ...doorRules(doors)];
   /**
    * **The rollup is the finding; the card is where it shows.** A stylesheet
    * fact — `.headclause` padded 6px, an OK label at --t-cap — is one defect
@@ -1679,7 +1736,7 @@ async function main() {
 
   const payload = {
     meta: { viewport: VIEWPORT, walks: WALKS, cards: cards.length, seconds: Math.round((Date.now() - t0) / 100) / 10 },
-    tokens: tok, cards, switches, rollup, cross, errors,
+    tokens: tok, cards, switches, doors, rollup, cross, errors,
   };
 
   if (AS_JSON) { console.log(JSON.stringify(payload, null, 1)); return; }

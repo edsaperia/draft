@@ -2133,6 +2133,43 @@ await T(300);
 const readAgain = (await hostEditable()) === 'false' && !(await page.evaluate(() => !!document.querySelector('#charter [data-proposalrow]')));
 say('read mode  · ' + (readAgain ? '📝 again leaves edit mode: no caret, no row' : 'FAIL: still in edit mode'));
 if (!readAgain) stuck.push('leaving edit mode');
+/* ---- the floating 📝 (Q1335, Ed 2026-09-11: *after begin, there should be
+ * an additional way to open 📝 edit mode on a floating action button in the
+ * bottom right, in the same place and size as the floating ✏️ appears in
+ * edit mode*). In read mode after 🍾 the `edit-door` stands at the window's
+ * foot for a member who may propose; pressing it is pressing the riding tab
+ * — edit mode on, the row drawn, the door gone — and the row's ✏️ takes the
+ * door's box to the pixel, so the eye sees one control change role; 📝 on
+ * the tab leaves, and the door is back in the same box. */
+const door = await (async () => {
+  const box = (sel) => page.evaluate((s) => {
+    const els = document.querySelectorAll(s);
+    const el = els[els.length - 1];
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return [Math.round(r.left * 100) / 100, Math.round(r.top * 100) / 100, Math.round(r.width * 100) / 100, Math.round(r.height * 100) / 100,
+      getComputedStyle(el).fontSize, el.title];
+  }, sel);
+  const DOOR = '#editdoor [data-act="edit-door"]', ROW = '#charter [data-proposalrow] [data-act="row-commit"]';
+  const before = await box(DOOR);
+  if (!before) return { before };
+  await page.click(DOOR);
+  await T(400);
+  const entered = { editing: await page.evaluate(() => document.getElementById('doc').classList.contains('editing')),
+    editable: await hostEditable(), door: await box(DOOR), commit: await box(ROW) };
+  await page.evaluate(() => document.querySelector('#ridetab .achip[data-tab="text"]').click());
+  await T(400);
+  const left = { editing: await page.evaluate(() => document.getElementById('doc').classList.contains('editing')),
+    row: !!(await box(ROW)), door: await box(DOOR) };
+  return { before, entered, left };
+})();
+const sameBox = (a, b) => !!a && !!b && a.slice(0, 4).every((v, i) => Math.abs(v - b[i]) <= 0.5);
+const doorOk = !!door.before && door.before[4] === '21.6px' && door.entered.editing && door.entered.editable === 'true' &&
+  !door.entered.door && sameBox(door.before, door.entered.commit) &&
+  !door.left.editing && !door.left.row && sameBox(door.before, door.left.door);
+say('door       · ' + (doorOk ? 'the floating 📝 at ' + door.before.slice(0, 4).join('×') + ' (“' + door.before[5] + '”) enters edit mode, the row\'s ✏️ takes its box, and 📝 on the tab brings it back in the same box'
+  : 'FAIL: ' + JSON.stringify(door)));
+if (!doorOk) stuck.push('the floating 📝 (Q1335)');
 
 // the other half of backlog 50: what *is* news to a member is a rule changed
 // while they were here, and one press of OK is what dismisses it

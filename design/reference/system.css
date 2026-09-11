@@ -884,6 +884,15 @@
      and `.doc`'s own bottom border and corners step aside for it. */
   .doc::after { content: ''; display: block; height: 95vh; }
   .doc.editing::after { height: 0; }
+  /* **After 🍾 in read mode the runway is `#runway`, ahead of the door**
+     (Q1335). A sticky row rests at its own normal position once that comes
+     into view, and `::after` follows every child — so a door at `.doc`'s
+     foot would have parked at the top of the runway and scrolled away with
+     the last screen. The block before the door carries the same 95vh
+     instead, the pseudo-element steps aside, and the page is exactly as tall
+     as it was. In edit mode the column carries the runway (above). */
+  .doc.begun:not(.editing) #runway { height: 95vh; }
+  .doc.begun:not(.editing)::after { height: 0; }
   .doc.editing { border-bottom: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
   /* **The card's foot is the page's foot** (Q1292, Ed 2026-09-08: *I can see
      the bottom edge of this card - it should go off the bottom of the
@@ -897,6 +906,19 @@
      exactly its own height has nowhere to stick, so the wrapper is `contents`
      and the row's containing block is `.doc`, as `#charter` is post-🍾 */
   #proserow { display: contents; }
+  /* …and the floating 📝's mount after 🍾 is the same non-box (Q1335): the
+     door is a proposal-row of one button whose containing block is `.doc`,
+     so its box is the row's own — same width, same padding, same control.
+     **And so is the charter's** (Q1335's journey step): the post-🍾 row is
+     drawn inside `#charter`, and a sticky row cannot rise above its
+     containing block's top — so on a page whose charter begins below the
+     fold (the founder's, with the band open) the row sat off-screen while
+     the door had been at the window's foot, and the press did not read as
+     one control changing role. `#charter` carries no style of its own and
+     nothing reads its box, so it is `contents` too: the row's containing
+     block is `.doc`, the door's, and `#charter > .prose` still matches. */
+  #editdoor { display: contents; }
+  #charter { display: contents; }
   .doc .prose {
     max-width: calc(var(--measure) + 2 * var(--measure-gutter));
     padding: 0 var(--measure-gutter);
@@ -1778,6 +1800,11 @@
      itself, and the two negative margins collapse into one: the card's top
      edge again, measured 1. Keyed on the era exactly as the lift is. */
   .doc.editing:not(.begun) #prosectl.editctl { margin-top: calc(-1 * var(--measure-gutter)); }
+  /* …and the same after 🍾 since `#charter` became `contents` (Q1335): the
+     strip is a sibling of the column with no block parent to carry the
+     column's negative margin up through it, so it takes the gutter itself
+     exactly as `#prosectl` does — the card's top edge again, measured 1. */
+  .doc.editing.begun #charter > .editctl { margin-top: calc(-1 * var(--measure-gutter)); }
   .editctl .lanectl {
     position: absolute; top: 1px; right: var(--s2);
     display: flex; align-items: center; gap: var(--s2);
