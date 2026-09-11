@@ -185,6 +185,20 @@ const AUDIENCE = {
     (s, step, ctx, ev) => isMember(s) && s.name !== ctx.actorOf(ev) &&
       ctx.stoodAt[s.name] !== undefined && ctx.stoodAt[s.name] < ev.at,
   'the membership': (s) => isMember(s),
+  // E13, a text race wants a judgment (Q1340, Ed 2026-09-11: *every member
+  // who could still judge it, except the author*). *Could still judge* is
+  // the module's own word — the seat's view carries the race's clause row
+  // with `askable` (Q1202: dealt into the hand or riding the row as `ask`),
+  // and a member who has spent every pair on it is outside the audience from
+  // then on, their entry ⏳ rather than 💡. The author is the seat of the step
+  // named on the event (`ev.author`), not the judging step's own seat. The
+  // room of one (Q835) is outside this table: every hat seats several.
+  'every member who could still judge it, except the author (Q1340, Ed 2026-09-11; the room of one, Q835, aside)':
+    (s, step, ctx, ev, own) => {
+      if (!isMember(s) || s.name === (STEPS[stepIndex(ev.author)] || {}).seat) return false;
+      const v = (own && own.view) || {};
+      return (v.clauses || []).some((c) => c.id === ev.key && c.askable);
+    },
   // E9, a power laid down (Q918, Ed 2026-08-29 — *rewrite the cell as `every
   // member but the actor`*). The actor's own channel is the power card's
   // confirmation, which is not a news entry and is not this row; the entry
@@ -464,22 +478,30 @@ const STEPS = [
         why: 'one guest is thin for a clubhouse this size' };
     },
     events: [] },
-  // E13's audience is *whoever the router serves*, which has no `AUDIENCE`
-  // predicate and cannot have one until `view()` states the router's choice —
-  // the same cell E11 reports, and reported here the same way. The row's
-  // worth is that a judgment was really cast: `early` is served the pair from
-  // its own feed and answers it, so every snapshot after this one carries a
-  // document with a live judgment in it.
+  // E13's audience read *whoever the router serves* until Q1340 (Ed,
+  // 2026-09-11): a router's choice no seat-side key could state, so the row
+  // stood as the member hat's no-rule exit. Since Q1202 the entry shows
+  // while anything on the race can still be asked of the member, dealt or by
+  // `ask`, and that is a fact about the seat — so the row is keyed now: the
+  // race the early seat judges is the event's key, resolved at the assertion
+  // (`key` as a function of `D`), and `author` names the step whose seat
+  // proposed it. The row's other worth stands: a judgment is really cast, so
+  // every snapshot after this one carries a document with a live judgment.
   { id: 'judge-text', epoch: 'live', kind: 'cmd', seat: 'early', cmd: 'judge-race', ifHat: 'member',
     args: async (D) => {
       const v = await viewAs(D, 'early');
-      const text = new Set(((v || {}).clauses || []).map((c) => c.id));
-      const card = ((v || {}).raceCards || []).find((c) => text.has(c.raceId));
-      if (!card) throw new Error('no text race card served to the early seat — nothing to judge');
+      const rows = (v || {}).clauses || [];
+      const text = new Set(rows.map((c) => c.id));
+      // the hand first, then the row's own `ask` (Q1202): either is a pair
+      // `judge-race` accepts, and a race off the hot set is not starvation
+      const dealt = ((v || {}).raceCards || []).find((c) => text.has(c.raceId));
+      const row = dealt ? rows.find((c) => c.id === dealt.raceId) : rows.find((c) => c.askable && c.ask);
+      const card = dealt || (row && row.ask);
+      if (!card || !row) throw new Error('no text race askable of the early seat — nothing to judge');
+      D.textRace = row.id;
       return { a: card.a.id, b: card.b.id, outcome: 'a' };
     },
-    events: [{ id: 'E13', key: null, at: 'judge-text',
-      noKey: 'E13\'s audience is *whoever the router serves*: the page files the entry the feed hands it, and no seat-side key states the router\'s choice' }] },
+    events: [{ id: 'E13', key: (D) => D.textRace || null, at: 'judge-text', author: 'propose-text' }] },
   // **The park** (SURFACE E36, E37; Q1015, Q1179; Ed 2026-09-09). 🛡️ was
   // kept on the Text at `begin`, so the text race `propose-text` opened parks
   // the moment its leader clears bar and floor: every member seat that has
@@ -562,9 +584,10 @@ async function runDocument(hat) {
   }
   for (let i = 0; i < STEPS.length; i++) {
     const step = STEPS[i];
-    const evs = step.events.map((e) => ({ ...e, at: stepIndex(e.at ?? step.id) }));
+    let evs = step.events.map((e) => ({ ...e, at: stepIndex(e.at ?? step.id) }));
     const label = `${step.epoch.padEnd(6)} · ${step.id}` +
-      (evs.length ? ' · ' + evs.map((e) => e.id + ' ' + (e.key ?? '(no key)')).join(', ') : '');
+      (evs.length ? ' · ' + evs.map((e) => e.id + ' ' +
+        (typeof e.key === 'function' ? '(key at the assertion)' : (e.key ?? '(no key)'))).join(', ') : '');
     say(`⏭ ${label}`);
     // the runner's own `ifHat` test, read here so the assertion can see it:
     // each runner decides whether to act, and only this loop knows which
@@ -585,6 +608,11 @@ async function runDocument(hat) {
     }
     if (note) say('   · ' + note);
     if (step.kind === 'ladder' && step.to === 'closed') D.closed = true;
+    // a key the step only learns by running (E13's race id, Q1340) resolves
+    // here, once, so the label, the payload and the assertion agree on it; a
+    // function that has nothing to say is a `null` key and reads as no rule
+    evs = evs.map((e) => (typeof e.key === 'function'
+      ? { ...e, key: e.key(D) ?? null, noKey: e.noKey || `${e.id}'s key was not learned by ${step.id}` } : e));
     const snap = await snapshot(D);
     D.steps.push({ id: step.id, epoch: step.epoch, seats: snap,
       // `filed` rides along so the payload says why a row was not asserted
@@ -1173,7 +1201,9 @@ function assertStep(D, step, evs, snap) {
     for (const [name, s] of Object.entries(D.seats)) {
       if (!s.stood || !snap[name] || snap[name].unstood) continue;
       const seat = { ...s.def, name };
-      const inAud = !!pred(seat, step, D, ev);
+      // the seat's own snapshot rides fifth, for a cell whose rule reads the
+      // seat's view (E13's *could still judge it*, Q1340)
+      const inAud = !!pred(seat, step, D, ev, snap[name]);
       const rail = snap[name].rail.map((e) => e.key);
       const match = (k) => k === ev.key || (ev.key.endsWith(':') && k.startsWith(ev.key));
       // a settled tab (`done`) asks nothing; every other state is a task standing
