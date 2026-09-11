@@ -222,6 +222,9 @@ window.COPY = (function () {
       undecided: 'Undecided at the close',
       decided: 'Decided',
       capped: 'the ranking maths stopped short on this one; the decision stands',
+      // under the head, where the clause no longer reads as the record left it (Q1333)
+      changedSince: 'This clause has changed again since.',
+      gone: 'This clause has since been removed.',
     },
     // the proposal row and the commit titles either side of the ✏️ hold
     row: {

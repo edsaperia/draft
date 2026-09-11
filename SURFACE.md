@@ -188,7 +188,7 @@ One glyph per entry, the same alphabet in all three columns (contents rail · gu
 
 ### 6.1 Rail rules
 
-- **M1 Four kinds of entry pin for what they are, and the open entry pins for being open** (C6).
+- **M1 Four kinds of entry pin for what they are, and the open entry pins for being open** (C6). **A sealed record stands beside the lines that descend from what it decided** (Q1333): its span is carried through every adoption and decree since, so a clause changed again puts the record on its replacement, and a clause deleted puts it on the gap where it stood — held open while the record is unread, gone from the margin once filed. The card says *This clause has changed again since* under its head where the clause no longer reads as the record left it, and *removed* where it is gone.
 - **M2 Admission is a ranking by leverage, never a threshold.** Nothing is too unimportant to appear; the rail runs out of room; what does not fit is not shown and not counted.
 - **M3 Three things are exempt from the fit cap: 🔥, the open entry, anything of your own.**
 - **M4 The open entry's claim on its clause's line is absolute**; entries that cannot fit around it are dropped, never displace it.

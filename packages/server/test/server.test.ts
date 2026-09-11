@@ -34,6 +34,8 @@ type CandidateOutcome = { candidateId: string; outcome: string; p: number | null
   madeUnder?: string; signed?: boolean };
 type RaceRecord = { raceId: string; candidateId: string; outcome: string; when: number;
   p: number | null; threshold: number | null; version: number; footprint: unknown;
+  /** the span in the current text — the lines that descend from what it decided (Q1333) */
+  at: { start: number; end: number };
   displaced: string[]; judges: number; judgedByMe: boolean; field: CandidateOutcome[] };
 type CardOption = { id: string; incumbent?: true;
   setting?: { settingId: string; value: { endsAtMs?: number } } };
@@ -2970,5 +2972,110 @@ describe('the slim view (the moon room, 2026-09-11): a poll that says what it ho
     expect(stale.slim).toEqual(['records']);
     expect(stale.text).toBe('The latch lifts from inside.');
     expect(stale.view).toBeDefined();
+  });
+});
+
+describe('a sealed record follows its clause (Q1333)', () => {
+  /**
+   * Three adoptions in one document: the first rewrites the rota line, the
+   * second inserts two lines above it, the third deletes the rewritten line.
+   * The first record's `at` moves by two and then becomes a gap, its
+   * `footprint`, `version` and `displaced` untouched throughout; the second
+   * record stands on its two lines; the third stands on the gap it made.
+   */
+  it('serves each record’s span in the current text: moved under an insertion, a gap after a deletion', async () => {
+    const { base, dataDir } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Records follow', email: 'ada@example.org',
+    })).json() as { slug: string; devLink: string };
+    const slug = created.slug;
+    const ada = cookieOf(await consume(created.devLink));
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const body = await (await post(base, `/api/d/${slug}/cmd`,
+        { cmd: name, args }, cookie)).json() as { error?: string; result?: unknown };
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+      return body.result;
+    };
+    type Rec = { raceId: string; candidateId: string; outcome: string; version: number;
+      footprint: unknown; displaced: string[]; at: { start: number; end: number } };
+    const viewOf = async (cookie: string) => (await (await fetch(
+      `${base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as
+      MemberViewPayload & { records: Rec[] };
+
+    await cmd(ada, 'confirm-starting-text',
+      { text: 'The clubhouse is open.\nThe rota is weekly.\nGuests sign the book.' });
+    await cmd(ada, 'invite', { email: 'bo@example.org' });
+    await cmd(ada, 'invite', { email: 'cy@example.org' });
+    const follow = async (email: string): Promise<string> =>
+      cookieOf(await consume((await lastMailTo(dataDir, email)).link!));
+    const bo = await follow('bo@example.org');
+    const cy = await follow('cy@example.org');
+    await cmd(ada, 'set-setting', { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
+    const values: Record<string, unknown> = {
+      pace: { shape: 'fixed' }, quorum: { form: 'count', n: 2 },
+      authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
+      applications: { apply: false }, admission: { price: 'assembly' },
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+      ending: { endsAtMs: Date.now() + 3600_000 }, bar: { pct: 66 }, chamber: { rung: 'link' },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await cmd(ada, 'reclaim', { setting });
+      await cmd(ada, 'set-setting', { setting, value });
+    }
+    await cmd(ada, 'begin', {});
+
+    // one proposal, one judgment for it: with a count quorum of 2 the author's
+    // own preference and one vote carry it (the authorship walk's own recipe)
+    const adopt = async (hunks: Hunk[], why: string) => {
+      const v = await viewOf(bo);
+      const p = await cmd(bo, 'propose-text', { baseVersion: v.textVersion, hunks, why }) as { id: string; raceId: string };
+      const cards = (await viewOf(cy)).raceCards;
+      const card = cards.find((c) => c.a.id === p.id || c.b.id === p.id)!;
+      expect(card, `${why}: cy is served the race`).toBeTruthy();
+      await cmd(cy, 'judge-race', { a: card.a.id, b: card.b.id, outcome: card.a.id === p.id ? 'a' : 'b' });
+      const after = await viewOf(bo);
+      const rec = after.records.find((r) => r.raceId === p.raceId)!;
+      expect(rec?.outcome, `${why}: adopted`).toBe('adopted');
+      return { rec, text: after.text, records: after.records };
+    };
+    const recOf = (records: Rec[], raceId: string) => records.find((r) => r.raceId === raceId)!;
+
+    // 1 — the rota line rewritten: the record stands on line 1 of version 1
+    const first = await adopt([{ start: 1, end: 2, lines: ['The rota is daily.'] }], 'daily');
+    expect(first.text.split('\n')).toEqual(['The clubhouse is open.', 'The rota is daily.', 'Guests sign the book.']);
+    expect(first.rec.version).toBe(0);
+    expect(first.rec.at).toEqual({ start: 1, end: 2 });
+    expect(first.rec.displaced).toEqual(['The rota is weekly.']);
+    const footprint = JSON.stringify(first.rec.footprint);
+
+    // 2 — two lines inserted above: the first record moves by two, its
+    // footprint, version and displaced text as they were; the new record
+    // stands on the two lines it put there
+    const second = await adopt([{ start: 0, end: 0, lines: ['# Rules', 'Members keep them.'] }], 'a heading');
+    expect(second.text.split('\n')).toEqual(['# Rules', 'Members keep them.', 'The clubhouse is open.', 'The rota is daily.', 'Guests sign the book.']);
+    const r1b = recOf(second.records, first.rec.raceId);
+    expect(r1b.at).toEqual({ start: 3, end: 4 });
+    expect(r1b.version).toBe(0);
+    expect(r1b.displaced).toEqual(['The rota is weekly.']);
+    expect(JSON.stringify(r1b.footprint)).toBe(footprint);
+    expect(second.rec.at).toEqual({ start: 0, end: 2 });
+    expect(second.rec.displaced).toEqual([]);
+
+    // 3 — the rewritten line deleted: the first record stands on the gap
+    // where it stood (start === end), still saying what it displaced; the
+    // deletion's own record stands on the same gap; the second is untouched
+    const third = await adopt([{ start: 3, end: 4, lines: [] }], 'no rota');
+    expect(third.text.split('\n')).toEqual(['# Rules', 'Members keep them.', 'The clubhouse is open.', 'Guests sign the book.']);
+    const r1c = recOf(third.records, first.rec.raceId);
+    expect(r1c.at).toEqual({ start: 3, end: 3 });
+    expect(r1c.displaced).toEqual(['The rota is weekly.']);
+    expect(JSON.stringify(r1c.footprint)).toBe(footprint);
+    expect(recOf(third.records, second.rec.raceId).at).toEqual({ start: 0, end: 2 });
+    expect(third.rec.at).toEqual({ start: 3, end: 3 });
+    expect(third.rec.displaced).toEqual(['The rota is daily.']);
+
+    // every seat reads the same spans: the walk is the engine's, not the seat's
+    const cyRecs = (await viewOf(cy)).records;
+    expect(cyRecs.map((r) => [r.raceId, r.at])).toEqual(third.records.map((r) => [r.raceId, r.at]));
   });
 });
