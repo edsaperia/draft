@@ -1,6 +1,6 @@
 {
  "meta": {
-  "cards": 275,
+  "cards": 312,
   "walks": [
    "answers",
    "charter",
@@ -6434,6 +6434,515 @@
    }
   },
   "seat:stranger": {
+   "admission": {
+    "eyebrow": "",
+    "head": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.Chosen by the membership",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Admissions — close it",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "applications": {
+    "eyebrow": "",
+    "head": "New members may only join by invitation.Chosen by the membership",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Applications — close it",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "authorship": {
+    "eyebrow": "",
+    "head": "",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Anonymous Proposals — close it",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "bar": {
+    "eyebrow": "",
+    "head": "For a proposal ✏️ to pass, 82% of the members that voted on it must prefer it to the alternatives. Voting opens at 55% and climbs to 82% by the end.Chosen by the membership",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Proposal Pass Threshold — close it",
+     "Rising Threshold — settled",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Passed: 82% sure at the end — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "chamber": {
+    "eyebrow": "",
+    "head": "",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Visibility — close it",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Passed: Anyone with the link — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "ending": {
+    "eyebrow": "",
+    "head": "No more changes to the document may be made after Weekday at HH:MM.Chosen by the membership",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Ending — close it",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "judgments": {
+    "eyebrow": "",
+    "head": "Votes are never revealed.Chosen by the membership",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Vote Reveal — close it",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "lapse": {
+    "eyebrow": "",
+    "head": "Inactive members never lapse and are still counted towards votes.Chosen by the membership",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Lapsing — close it",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "pace": {
+    "eyebrow": "",
+    "head": "The approval threshold starts at 55% and rises to 82% by the end.",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Proposal Pass Threshold — settled",
+     "Rising Threshold — close it",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Passed: 82% sure at the end — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "pw:a:admission": {
+    "eyebrow": "",
+    "head": "The Founder may not refuse proposals that the membership pass.",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Admissions — settled",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — close it",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "pw:a:applications": {
+    "eyebrow": "",
+    "head": "The Founder may not refuse proposals that the membership pass.",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Applications — settled",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — close it",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "pw:a:authorship": {
+    "eyebrow": "",
+    "head": "The Founder may not refuse proposals that the membership pass.",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Anonymous Proposals — settled",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — close it",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "pw:a:bar": {
+    "eyebrow": "",
+    "head": "The Founder may not refuse proposals that the membership pass.",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Proposal Pass Threshold — settled",
+     "Rising Threshold — settled",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — close it",
+     "Passed: 82% sure at the end — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "pw:a:chamber": {
+    "eyebrow": "",
+    "head": "The Founder may refuse proposals that the membership pass.",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Visibility — settled",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — close it",
+     "Passed: Anyone with the link — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "pw:a:ending": {
+    "eyebrow": "",
+    "head": "The Founder may not refuse proposals that the membership pass.",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Ending — settled",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — close it",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "pw:a:judgments": {
+    "eyebrow": "",
+    "head": "The Founder may not refuse proposals that the membership pass.",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Vote Reveal — settled",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — close it",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "pw:a:lapse": {
+    "eyebrow": "",
+    "head": "The Founder may not refuse proposals that the membership pass.",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Lapsing — settled",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — close it",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "pw:a:quorum": {
+    "eyebrow": "",
+    "head": "The Founder may not refuse proposals that the membership pass.",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Quorum — settled",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — close it",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "pw:a:rate": {
+    "eyebrow": "",
+    "head": "The Founder may refuse proposals that the membership pass.",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Proposal Rate — settled",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — close it",
+     "Rejected: a new proposal every 90 minutes — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "pw:a:removal": {
+    "eyebrow": "",
+    "head": "The Founder may not refuse proposals that the membership pass.",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Removals — settled",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — close it",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
    "pw:a:slug": {
     "eyebrow": "",
     "head": "The Founder may refuse proposals that the membership pass.",
@@ -6484,6 +6993,285 @@
     ],
     "helpers": []
    },
+   "pw:u:admission": {
+    "eyebrow": "",
+    "head": "The Founder may not amend this at will.",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Admissions — settled",
+     "Can the Founder Make Amendments at Will? — close it",
+     "Does the Founder Have a Veto? — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "pw:u:applications": {
+    "eyebrow": "",
+    "head": "The Founder may not amend this at will.",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Applications — settled",
+     "Can the Founder Make Amendments at Will? — close it",
+     "Does the Founder Have a Veto? — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "pw:u:authorship": {
+    "eyebrow": "",
+    "head": "The Founder may not amend this at will.",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Anonymous Proposals — settled",
+     "Can the Founder Make Amendments at Will? — close it",
+     "Does the Founder Have a Veto? — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "pw:u:bar": {
+    "eyebrow": "",
+    "head": "The Founder may not amend this at will.",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Proposal Pass Threshold — settled",
+     "Rising Threshold — settled",
+     "Can the Founder Make Amendments at Will? — close it",
+     "Does the Founder Have a Veto? — settled",
+     "Passed: 82% sure at the end — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "pw:u:chamber": {
+    "eyebrow": "",
+    "head": "The Founder may amend this at will.",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Visibility — settled",
+     "Can the Founder Make Amendments at Will? — close it",
+     "Does the Founder Have a Veto? — settled",
+     "Passed: Anyone with the link — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "pw:u:ending": {
+    "eyebrow": "",
+    "head": "The Founder may not amend this at will.",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Ending — settled",
+     "Can the Founder Make Amendments at Will? — close it",
+     "Does the Founder Have a Veto? — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "pw:u:judgments": {
+    "eyebrow": "",
+    "head": "The Founder may not amend this at will.",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Vote Reveal — settled",
+     "Can the Founder Make Amendments at Will? — close it",
+     "Does the Founder Have a Veto? — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "pw:u:lapse": {
+    "eyebrow": "",
+    "head": "The Founder may not amend this at will.",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Lapsing — settled",
+     "Can the Founder Make Amendments at Will? — close it",
+     "Does the Founder Have a Veto? — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "pw:u:quorum": {
+    "eyebrow": "",
+    "head": "The Founder may not amend this at will.",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Quorum — settled",
+     "Can the Founder Make Amendments at Will? — close it",
+     "Does the Founder Have a Veto? — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "pw:u:rate": {
+    "eyebrow": "",
+    "head": "The Founder may amend this at will.",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Proposal Rate — settled",
+     "Can the Founder Make Amendments at Will? — close it",
+     "Does the Founder Have a Veto? — settled",
+     "Rejected: a new proposal every 90 minutes — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "pw:u:removal": {
+    "eyebrow": "",
+    "head": "The Founder may not amend this at will.",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Removals — settled",
+     "Can the Founder Make Amendments at Will? — close it",
+     "Does the Founder Have a Veto? — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
    "pw:u:slug": {
     "eyebrow": "",
     "head": "The Founder may amend this at will.",
@@ -6529,6 +7317,164 @@
     "hints": [
      "Title — settled",
      "Can the Founder Make Amendments at Will? — close it",
+     "Does the Founder Have a Veto? — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "quorum": {
+    "eyebrow": "",
+    "head": "33% of the membership must vote on a proposal ✏️ before it can pass.Chosen by the membership",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Quorum — close it",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "rate": {
+    "eyebrow": "",
+    "head": "Members may make a new proposal ✏️ every 3 hours.Chosen by the Founder ✒️",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Proposal Rate — close it",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Rejected: a new proposal every 90 minutes — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "rec:bar:0": {
+    "eyebrow": "",
+    "head": "82% sure at the end",
+    "lock": "",
+    "body": "D Month YYYY · PassedFor a proposal ✏️ to pass, 82% of the members that voted on it must prefer it to the alternatives. Voting opens at 55% and climbs to 82% by the end.The charter should not change on a bare majority of the evidence.Chosen by the membership",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Proposal Pass Threshold — settled",
+     "Rising Threshold — settled",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Passed: 82% sure at the end — close it",
+     "A member wrote this. Who, is sealed until the closing record.",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "rec:chamber:0": {
+    "eyebrow": "",
+    "head": "Anyone with the link",
+    "lock": "",
+    "body": "D Month YYYY · PassedThe document can only be seen by members.The document can be seen by anyone with the link.ABAsh Bellamy 👑Readers who are not members should see what we are building.Chosen by the Founder ✒️",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Visibility — settled",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Passed: Anyone with the link — close it",
+     "The founder’s own hand — a Founder Action ✒️, not a proposal",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "rec:rate:0": {
+    "eyebrow": "",
+    "head": "a new proposal every 90 minutes",
+    "lock": "",
+    "body": "D Month YYYY · RejectedMembers may make a new proposal ✏️ every 3 hours.Chosen by the Founder ✒️Members may make a new proposal ✏️ every 90 minutes.Half the wait would let people write while the thought is warm.",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Proposal Rate — settled",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Rejected: a new proposal every 90 minutes — close it",
+     "A member wrote this. Who, is sealed until the closing record.",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "removal": {
+    "eyebrow": "",
+    "head": "To remove a member, all members must agree 🏛️.Chosen by the membership",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Removals — close it",
+     "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands"
     ],

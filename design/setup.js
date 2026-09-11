@@ -740,12 +740,17 @@ window.SETUP = (function () {
     // committing on it, changes nothing — and the composer beneath starts
     // empty, being the *new* name. With no name yet the composer leads.
     const keep = (me.n || '').trim();
+    // **The composer holds the draft, never the standing name** (Q1327): the
+    // page keeps the two apart (`S.mynameDraft`) so a render mid-typing
+    // redraws the field with what was typed and the *keep* block with what
+    // stands. A caller passing no draft reads one value for both, as before.
+    const draft = o.draft !== undefined ? o.draft : (keep ? '' : (me.n || ''));
     // `locked` is the closed document (CP9): the blocks stay readable and
     // nothing on them commits
     return '<div class="choice" role="radiogroup">' +
       (keep ? opt(pk, 'namePick', 'keep', esc(keep), '', '', o.locked) : '') +
       opt(pk, 'namePick', 'name',
-        '<input id="myname" class="namein" data-txt="myname" value="' + (keep ? '' : esc(me.n || '')) +
+        '<input id="myname" class="namein" data-txt="myname" value="' + esc(draft) +
         '" placeholder="Your name"' + (o.locked ? ' disabled' : '') + '>', '', '', o.locked) +
       opt(pk, 'namePick', 'anon', ctlWord('Anonymous'),
         (o.optional ? 'The Founded by line shows no name.' : ''), '', o.locked) +
@@ -841,7 +846,14 @@ window.SETUP = (function () {
     const into = oo.into || 'me';
     const pk = oo.pickKey || 'picPick';
     const pic = me.pic || '';
-    const uploaded = pic[0] === 'u';
+    // **What stands and what is in hand are two values** (Q1327): the *keep*
+    // block wears the standing picture, while the upload's preview and the
+    // grid's pressed glyph are the draft — a face picked and not yet
+    // committed. A caller passing no draft (the applicant, whose application
+    // has no standing half) reads one value for both. In the grid the
+    // standing face stays pressed until another is picked.
+    const draft = oo.draft !== undefined ? oo.draft : pic;
+    const uploaded = draft[0] === 'u';
     const pickState = { [pk]: oo.pick || null };
     // **The standing picture is the first block** (Ed's QA, 2026-09-02 pm):
     // a picture already worn heads the card as the status quo, drawn at
@@ -859,10 +871,10 @@ window.SETUP = (function () {
           ? '<div class="picdrop" data-picinto="' + into + '"><div class="picact">' +
             '<label class="btn">' + (uploaded ? 'Choose another' : 'Choose a picture') +
             '<input type="file" accept="image/*" data-picfile="1"></label>' +
-            (uploaded ? avHtml(me, 'big') : '') + '</div></div>'
+            (uploaded ? avHtml({ n: me.n, pic: draft }, 'big') : '') + '</div></div>'
           : '', oo.locked) +
       opt(pickState, pk, 'emoji', ctlWord('Pick an emoji'), '',
-        oo.pick === 'emoji' && !oo.locked ? emojiPicker(pic, me.n, at) : '', oo.locked) +
+        oo.pick === 'emoji' && !oo.locked ? emojiPicker(draft || pic, me.n, at) : '', oo.locked) +
       '</div>';
   };
 
