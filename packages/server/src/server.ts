@@ -375,9 +375,6 @@ export async function createDraftServer(cfg: ServerConfig,
     const engine = ed.bridge.engine;
     const api = new ParticipantApi(engine, memberId);
     const myJ = api.myJudgments();
-    // either side among the ids: the records' test, fed candidate ids alone
-    const touches = (ids: Set<string>) => (j: { aId: string; bId: string }) =>
-      ids.has(j.aId) || ids.has(j.bId);
     // **A judgment is on a live race when both its sides are the race's**
     // (Q1202's walk, 2026-09-08). The incumbent is positional — the hash of
     // the text it displaces (§4.4) — so every gap race, and any two clauses
@@ -393,6 +390,28 @@ export async function createDraftServer(cfg: ServerConfig,
     // never who or which way
     const allJ = engine.judgments();
     const floor = engine.adoptionFloor();
+    // **Once per state, not once per seat** (Q1324). Two things below were
+    // proportional to the document's whole history on every poll: the lines
+    // of every version a record displaced text from (a join and a split of
+    // the whole text per record), and the judge count of every race ever
+    // resolved (a filter over every judgment per record). Both are the
+    // engine's facts alone, so they ride its own per-state memo and are
+    // rebuilt only when an event lands, whichever seat asks first.
+    const linesAt = (version: number): string[] =>
+      engine.derived(`host:lines@${version}`, () => engine.documentAt(version).split('\n'));
+    // who has judged a pair touching each candidate: the record's mover count
+    // (§8.2) is the union over its field — a count, never who or which way
+    const judgedBy = engine.derived('host:judgedBy', () => {
+      const m = new Map<string, Set<string>>();
+      for (const j of allJ) {
+        for (const id of [j.aId, j.bId]) {
+          let s = m.get(id);
+          if (!s) { s = new Set(); m.set(id, s); }
+          s.add(j.participantId);
+        }
+      }
+      return m;
+    });
     // **Who is named, live and at the record, is one rule** (§3.5a, Q770,
     // entry 31): `authorVisible` — signed, or made under `public`, or closed
     // and made under `sealed`. Read here for every author the view carries,
@@ -545,7 +564,7 @@ export async function createDraftServer(cfg: ServerConfig,
             let displaced: string[] = [];
             if (c.patch && hunks.length) {
               try {
-                const prev = engine.documentAt(c.patch.baseVersion).split('\n');
+                const prev = linesAt(c.patch.baseVersion);
                 displaced = prev.slice(Math.min(...hunks.map((h) => h.start)),
                   Math.max(...hunks.map((h) => h.end)));
               } catch { displaced = []; }
@@ -612,11 +631,11 @@ export async function createDraftServer(cfg: ServerConfig,
       const hs = rec.field.flatMap((f) => f.hunks);
       const span = { start: Math.min(...hs.map((h) => h.start)), end: Math.max(...hs.map((h) => h.end)) };
       let prev: string[] = [];
-      try { prev = engine.documentAt(rec.version).split('\n'); } catch { prev = []; }
+      try { prev = linesAt(rec.version); } catch { prev = []; }
       rec.displaced = prev.slice(span.start, span.end);
-      const ids = new Set(rec.field.map((f) => f.candidateId));
-      rec.judges = new Set([...allJ.filter(touches(ids)).map((j) => j.participantId),
-        ...(authorsOf.get(rec.raceId) ?? [])]).size;
+      const movers = new Set(authorsOf.get(rec.raceId) ?? []);
+      for (const f of rec.field) for (const p of judgedBy.get(f.candidateId) ?? []) movers.add(p);
+      rec.judges = movers.size;
     }
     const records = [...byRace.values()].sort((a, b) => a.when - b.when).slice(-50);
     // **The record** (SPEC §4.6, the shape record-builder renders), once closed:
