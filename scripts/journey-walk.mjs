@@ -1091,6 +1091,59 @@ const lifecycleL2 = async () => {
       ' · after reload ' + JSON.stringify(rowAfter)));
   if (!ok) stuck.push('L2: ✋ saved on the live path');
 };
+/* ---- Q1327: a draft on ✋ survives a render ------------------------------
+ * The member types a new name and does not commit it; somebody else moves
+ * the room (the founder re-sets their own face by wire — `setIdentity`
+ * always emits, so the seq moves and nothing else changes); the member's
+ * next 4s poll renders. What must hold (Ed, 2026-09-11: *draft jumped to the
+ * head block, picker reset*): the field still reads the draft with the caret
+ * where it was, no *keep* block wears the draft, the register still reads the
+ * committed name, and the card is still open. Second-seat by construction:
+ * in a quiet room no render lands between typing and the commit. */
+const DRAFT_NAME = 'Draft Name';
+const draftSurvivesRender = async () => {
+  if (!guestPage) return; // its own failure, already reported
+  const opened = await guestPage.evaluate(() => {
+    const el = document.querySelector('#rail [data-card="myname"], #band [data-tab="myname"]');
+    if (!el) return false;
+    el.click();
+    return true;
+  });
+  await guestPage.waitForTimeout(420);
+  if (!opened) { say('draft      · FAIL: no ✋ tab in the member seat'); stuck.push('Q1327: the ✋ tab'); return; }
+  const typed = await guestPage.evaluate((v) => {
+    const el = document.querySelector('.setupcard input[data-txt="myname"]');
+    if (!el) return false;
+    el.focus();
+    el.value = v;
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.setSelectionRange(5, 5);
+    return true;
+  }, DRAFT_NAME);
+  if (!typed) { say('draft      · FAIL: no ✋ field in the member seat'); stuck.push('Q1327: the ✋ field'); return; }
+  const said = await setIdentityAt(page, { picture: FOUNDER_FACE });
+  if (said && said.error) { say('draft      · FAIL: the founder could not move the room · ' + JSON.stringify(said.error)); stuck.push('Q1327: the movement'); return; }
+  await T(5500); // one poll in the member's seat, and a little air
+  const after = await guestPage.evaluate((v) => {
+    const el = document.querySelector('.setupcard input[data-txt="myname"]');
+    const blocks = [...document.querySelectorAll('.setupcard .choice .pick .opttext')]
+      .map((b) => b.textContent.trim()).filter((t) => t.includes(v));
+    return { open: !!document.querySelector('.setupcard'), value: el ? el.value : null,
+      focused: !!el && document.activeElement === el, caret: el ? el.selectionStart : null,
+      draftAsBlock: blocks.length };
+  }, DRAFT_NAME);
+  // the register's rows, read the way `rowsUnder` reads them
+  const rows = (await guestPage.evaluate(() => [...document.querySelectorAll('.memrow .mn')]
+    .map((r) => r.textContent.replace(/\s+/g, ' ').trim()))) || [];
+  const ok = after.open && after.value === DRAFT_NAME && after.focused && after.caret === 5 &&
+    after.draftAsBlock === 0 && !rows.some((t) => t.includes(DRAFT_NAME));
+  say('draft      · ' + (ok ? '✋ typed “' + DRAFT_NAME + '”, the room moved, the poll rendered: the field still reads it at caret 5 and no block wears it'
+    : 'FAIL: ' + JSON.stringify(after) + ' · rows with the draft ' + rows.filter((t) => t.includes(DRAFT_NAME)).length));
+  if (!ok) stuck.push('Q1327: a draft on ✋ survives a render');
+  // 🗑️ puts the draft back and closes, so the seat carries nothing on
+  await guestPage.evaluate(() => { const b = document.querySelector('.setupcard [data-revert]'); if (b) b.click(); });
+  await guestPage.waitForTimeout(420);
+};
 const lifecycleL9 = async () => {
   const rateValue = () => page.evaluate(() => fetch(location.pathname.replace('/d/', '/api/d/') + '/view')
     .then((r) => r.json())
@@ -1707,6 +1760,8 @@ for (let i = 0; i < 60; i++) {
       // …and once there are two seats, whether each of them can see who the
       // other is (Q850–Q853)
       await identityReachesEverySeat();
+      // Q1327 — a draft typed on ✋ in the member seat survives the poll's render
+      await draftSurvivesRender();
       // L9 — 🗑️ puts back what was typed and touches nothing set (Q1239)
       await lifecycleL9();
     } else {

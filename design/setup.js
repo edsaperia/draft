@@ -740,12 +740,17 @@ window.SETUP = (function () {
     // committing on it, changes nothing — and the composer beneath starts
     // empty, being the *new* name. With no name yet the composer leads.
     const keep = (me.n || '').trim();
+    // **The composer holds the draft, never the standing name** (Q1327): the
+    // page keeps the two apart (`S.mynameDraft`) so a render mid-typing
+    // redraws the field with what was typed and the *keep* block with what
+    // stands. A caller passing no draft reads one value for both, as before.
+    const draft = o.draft !== undefined ? o.draft : (keep ? '' : (me.n || ''));
     // `locked` is the closed document (CP9): the blocks stay readable and
     // nothing on them commits
     return '<div class="choice" role="radiogroup">' +
       (keep ? opt(pk, 'namePick', 'keep', esc(keep), '', '', o.locked) : '') +
       opt(pk, 'namePick', 'name',
-        '<input id="myname" class="namein" data-txt="myname" value="' + (keep ? '' : esc(me.n || '')) +
+        '<input id="myname" class="namein" data-txt="myname" value="' + esc(draft) +
         '" placeholder="Your name"' + (o.locked ? ' disabled' : '') + '>', '', '', o.locked) +
       opt(pk, 'namePick', 'anon', ctlWord('Anonymous'),
         (o.optional ? 'The Founded by line shows no name.' : ''), '', o.locked) +
@@ -841,7 +846,14 @@ window.SETUP = (function () {
     const into = oo.into || 'me';
     const pk = oo.pickKey || 'picPick';
     const pic = me.pic || '';
-    const uploaded = pic[0] === 'u';
+    // **What stands and what is in hand are two values** (Q1327): the *keep*
+    // block wears the standing picture, while the upload's preview and the
+    // grid's pressed glyph are the draft — a face picked and not yet
+    // committed. A caller passing no draft (the applicant, whose application
+    // has no standing half) reads one value for both. In the grid the
+    // standing face stays pressed until another is picked.
+    const draft = oo.draft !== undefined ? oo.draft : pic;
+    const uploaded = draft[0] === 'u';
     const pickState = { [pk]: oo.pick || null };
     // **The standing picture is the first block** (Ed's QA, 2026-09-02 pm):
     // a picture already worn heads the card as the status quo, drawn at
@@ -859,10 +871,10 @@ window.SETUP = (function () {
           ? '<div class="picdrop" data-picinto="' + into + '"><div class="picact">' +
             '<label class="btn">' + (uploaded ? 'Choose another' : 'Choose a picture') +
             '<input type="file" accept="image/*" data-picfile="1"></label>' +
-            (uploaded ? avHtml(me, 'big') : '') + '</div></div>'
+            (uploaded ? avHtml({ n: me.n, pic: draft }, 'big') : '') + '</div></div>'
           : '', oo.locked) +
       opt(pickState, pk, 'emoji', ctlWord('Pick an emoji'), '',
-        oo.pick === 'emoji' && !oo.locked ? emojiPicker(pic, me.n, at) : '', oo.locked) +
+        oo.pick === 'emoji' && !oo.locked ? emojiPicker(draft || pic, me.n, at) : '', oo.locked) +
       '</div>';
   };
 
@@ -925,46 +937,15 @@ window.SETUP = (function () {
   // stated once. "Ordinary" stays engine vocabulary only — SPEC, code,
   // never a card.
 
-  /* An **ordinary motion in flight**: the value as it stands, the value as
-     proposed, a `lane-bar` radio on each, the rationale behind a
-     `sealed-speaker`. Nothing here is new — it is the decision card with a
-     setting where the prose would be, which is the point.
-
-     There is no constitutional equivalent of this function, and that is the
-     good news: a constitutional motion re-opens the **ceremony question**, so
-     the card that answers it is the one the surface already had. What a
-     constitutional motion draws is `motionReopen` below — a line saying the
-     question is live again — and then the ordinary consent control underneath
-     it. */
-  function motionBody(c, ctx, m) {
-    // **The card grammar proper** (3b, 2026-08-18): what stands is the
-    // card's head, wearing the keep-lane — the quick card's own shape —
-    // so the body holds only the proposal: one propblock, the sealed
-    // speaker, the lane radio, all session-view's builders. The route is
-    // said once (the old KIND header + kindNote pair stated the threshold
-    // twice in two sentences — Ed's copy pass, 2026-08-19).
-    return '<div class="unlocks"><b>✏️ A proposed change.</b> It carries at the approval threshold, with quorum.' +
-      // **Reserved is assent, not silence** (Ed, 2026-08-18): the room may
-      // pass a change to a reserved setting; what reservation means is that
-      // it then goes to the founder as a 👑 question, theirs to accept or
-      // reject.
-      (ctx.reserved && ctx.reserved(c)
-        ? ' It is <b>reserved</b>: carrying does not change it by itself — it goes to the founder as a <b>👑 question</b>, theirs to assent to or refuse.'
-        : '') + '</div>' +
-      CB.proposalHtml(m, { tag: 'As proposed', html: esc(m.to), why: m.why, v: 'proposed', edit: false }) +
-      // Indifferent is a full option block — textless, its radio naming the
-      // act instead of *Prefer this* (CP4, Q1099); it left the commit row on
-      // 2026-08-31
-      '<div class="pick' + (m.pick === 'either' ? ' on' : '') + '">' +
-      '<button class="lanepick" aria-pressed="' + (m.pick === 'either') + '" data-motion="either">' +
-      '<span class="dot"></span><span>Indifferent</span></button></div>' +
-      '<p class="setnote">' + (m.judged || 0) + ' of ' + ctx.E + ' have voted on it.</p>';
-  }
-
-  /* A **constitutional motion** has no explanatory band any more: the
-     *Re-opened…* paragraph and its count left with Ed's card review round 3
-     (2026-09-05, Q1182) — the consent card is the settled card's own three
-     blocks, drawn by session-view's `consentBlocks`. */
+  /* **A motion in flight, on either route, is the settled card's own shape**
+     — the standing rule as block one, the proposed rule as block two with the
+     proposer's sealed reason, then the textless block — drawn by
+     session-view's `motionBlocks`. The consent card took it at Ed's card
+     review round 3 (2026-09-05, Q1182); the ordinary card, which had kept the
+     race card's head-with-keep-lane, the *A proposed change…* explainer, an
+     *As proposed* eyebrow and a count that was always zero (judgments are
+     blind), took it with Q1331 (Ed, 2026-09-11: *all of it*). Nothing of
+     that card is drawn here any more. */
 
   /* Writing one. The same `.lanebox` the `editing-card` writes a clause in,
      because a motion is a proposal and proposing is one gesture on this
@@ -1691,6 +1672,6 @@ window.SETUP = (function () {
     nameBody, pictureBody, opt, setPickWords, num, numIn, ctlWord, faces, someIn, FACE_EMOJI,
     FACE_TONES, faceToneRow, faceToned, setFaceTone,
     setFaceTaken, faceTakenBy, faceBtn, emojiPicker,
-    motionBody, routeFor, motionCommitHtml,
+    routeFor, motionCommitHtml,
     slider, syncSlider, ladder, ANSWER, BLINDNOTE, methodNote, meaningLine, listOf, gateBody, wirePicDrop, MAILS, renderMailModal, birthPass };
 })();

@@ -5643,7 +5643,7 @@
      }
     ],
     "hints": [
-     "Proposal Rate — settled",
+     "Set the Proposal Rate — waiting on you",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
      "Rejected: a new proposal every 90 minutes — settled",
@@ -6022,7 +6022,7 @@
      }
     ],
     "hints": [
-     "Proposal Rate — settled",
+     "Set the Proposal Rate — waiting on you",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
      "Rejected: a new proposal every 90 minutes — settled",
@@ -6168,40 +6168,46 @@
    },
    "rate": {
     "eyebrow": "",
-    "head": "Members may make a new proposal ✏️ every 3 hours.Chosen by the Founder ✒️",
+    "head": "",
     "lock": "",
-    "body": "Members may make a new proposal ✏️ every minutes.Propose this",
-    "options": [],
-    "inputs": [
+    "body": "Members may make a new proposal ✏️ every 3 hours.Keep thisMembers may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer.Prefer thisIndifferent",
+    "options": [
      {
-      "type": "number",
-      "ph": null
+      "set": null,
+      "val": "stands",
+      "label": "Members may make a new proposal ✏️ every 3 hours."
+     },
+     {
+      "set": null,
+      "val": "proposed",
+      "label": "Members may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer."
+     },
+     {
+      "set": null,
+      "val": "either",
+      "label": "Indifferent"
      }
     ],
+    "inputs": [],
     "foot": [
      {
       "label": "🗑️",
-      "title": "Discard this motion"
+      "title": "Withdraw it — the ✏️ comes back in full"
      },
      {
-      "label": "✏️",
-      "title": "Propose it"
+      "label": "",
+      "title": null
      }
     ],
     "hints": [
-     "We should change this because…",
-     "Proposal Rate — close it",
+     "Set the Proposal Rate — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Rejected: a new proposal every 90 minutes — settled",
-     "Propose this — nothing leaves the card until you submit",
-     "This is how your reason will reach everybody else: with your name off it.",
-     "Discard this motion",
-     "Propose it"
+     "A member wrote this. Who, is sealed until the closing record.",
+     "Withdraw it — the ✏️ comes back in full"
     ],
-    "helpers": [
-     "We should change this because…"
-    ]
+    "helpers": []
    },
    "rec:bar:0": {
     "eyebrow": "",
@@ -6276,7 +6282,7 @@
      }
     ],
     "hints": [
-     "Proposal Rate — settled",
+     "Set the Proposal Rate — waiting on you",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Rejected: a new proposal every 90 minutes — close it",
@@ -6486,7 +6492,7 @@
    },
    "authorship": {
     "eyebrow": "",
-    "head": "",
+    "head": "All proposals are made anonymously.Chosen by the membership",
     "lock": "",
     "body": "",
     "options": [],
@@ -6538,7 +6544,7 @@
    },
    "chamber": {
     "eyebrow": "",
-    "head": "",
+    "head": "The document can be seen by anyone with the link.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
@@ -8586,7 +8592,7 @@
      }
     ],
     "hints": [
-     "Proposal Rate — settled",
+     "Set the Proposal Rate — waiting on you",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
      "Rejected: a new proposal every 90 minutes — settled",
@@ -9055,7 +9061,7 @@
      }
     ],
     "hints": [
-     "Proposal Rate — settled",
+     "Set the Proposal Rate — waiting on you",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
      "Rejected: a new proposal every 90 minutes — settled",
@@ -9250,50 +9256,46 @@
    },
    "rate": {
     "eyebrow": "",
-    "head": "Members may make a new proposal ✏️ every 3 hours.Chosen by the Founder ✒️",
+    "head": "",
     "lock": "",
-    "body": "Members may make a new proposal ✏️ every minuteshoursdays.Choose ✒️ or Propose ✏️ thisWhy are you changing this?ABAsh Bellamy 👑",
+    "body": "Members may make a new proposal ✏️ every 3 hours.Keep thisMembers may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer.Prefer thisIndifferent",
     "options": [
      {
-      "set": "rateBy",
-      "val": "founder",
-      "label": "Members may make a new proposal ✏️ every minuteshoursdays."
-     }
-    ],
-    "inputs": [
+      "set": null,
+      "val": "stands",
+      "label": "Members may make a new proposal ✏️ every 3 hours."
+     },
      {
-      "type": "number",
-      "ph": null
+      "set": null,
+      "val": "proposed",
+      "label": "Members may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer."
+     },
+     {
+      "set": null,
+      "val": "either",
+      "label": "Indifferent"
      }
     ],
+    "inputs": [],
     "foot": [
      {
       "label": "🗑️",
       "title": "Put it back as it stands"
      },
      {
-      "label": "✒️",
-      "title": "Set it"
-     },
-     {
-      "label": "✏️",
-      "title": "Propose it"
+      "label": "",
+      "title": null
      }
     ],
     "hints": [
-     "I am changing this because…",
-     "Proposal Rate — close it",
+     "Set the Proposal Rate — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Rejected: a new proposal every 90 minutes — settled",
-     "The founder’s own hand — a Founder Action ✒️, not a proposal",
-     "Put it back as it stands",
-     "Set it",
-     "Propose it"
+     "A member wrote this. Who, is sealed until the closing record.",
+     "Put it back as it stands"
     ],
-    "helpers": [
-     "I am changing this because…"
-    ]
+    "helpers": []
    },
    "rec:bar:0": {
     "eyebrow": "",
@@ -9368,7 +9370,7 @@
      }
     ],
     "hints": [
-     "Proposal Rate — settled",
+     "Set the Proposal Rate — waiting on you",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Rejected: a new proposal every 90 minutes — close it",

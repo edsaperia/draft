@@ -202,7 +202,7 @@ window.SETUP = (function () {
   };
   /* The ✔ is drawn rather than an emoji plate for the session-view's own
      reason: one function draws it, so the columns cannot drift. */
-  const markOf = (c, ctx, tab) => {
+  const markOf = (c, ctx, tab, host) => {
     const st = stateOf(c, ctx);
     // **A retired tab keeps its subject glyph** (Ed, 2026-08-18): the piles
     // stand in one place, hold the whole constitution, and most of what is
@@ -210,6 +210,18 @@ window.SETUP = (function () {
     // names nothing. The grey wash still says settled; only the rail entry
     // retires to the drawn ✔, because an entry is leaving, not filing.
     if (tab && st === 'done') return c.g;
+    // **And the front of a setting's own pile keeps it while the rule is news**
+    // (Q1320, Ed 2026-09-11: *setting itself with setting icon should sit at
+    // the top of setting tab stacks*). Q1299 put the rule's tab in front of
+    // everything; a rule decided by the room, or changed over your head, then
+    // wore the ✔ that means *read me* — and from three feet away a green ✔
+    // over a pile reads as a filed record standing on the rule. The wash
+    // still says news, the rail entry still wears the ✔ and the title still
+    // says the OK is owed; only the front tab names its rule. `host` is the
+    // pile's word (`pileHtml` / `stripHtml`), so a news tab that is not the
+    // front of a setting's pile — a grant behind 🍾, 📭 on *Invitees* — is
+    // untouched.
+    if (tab && host && st === 'news') return c.g;
     // **A delegated card waiting on the room keeps its own glyph** (SURFACE
     // §6's `wait` row; Ed, 2026-08-21, widened from *constitutional* to every
     // delegated setting by Q517 (a), 2026-08-29: what makes the wait nothing
@@ -282,7 +294,7 @@ window.SETUP = (function () {
       : st === 'ask' ? ' — waiting on you' : st === 'wait' ? ' — waiting on others'
       : st === 'news' ? (c.grants ? ' — yours to take' : ' — decided; it waits for your OK')
       : st === 'yours' ? ' — yours, being voted on' : ' — settled')) + '"') +
-    '><span aria-hidden="true">' + markOf(c, ctx, true) + '</span>' +
+    '><span aria-hidden="true">' + markOf(c, ctx, true, !!o.host) + '</span>' +
     (o.inert ? '' : '<span class="sr">' + esc(labelOf(c, ctx)) + '</span>') + '</span>';
   };
 
@@ -301,20 +313,30 @@ window.SETUP = (function () {
      that ever displaced a host, and it exists only on a delegated setting, so
      the rule is written for every setting and changes only the 🏛️ ones. A
      pile with no host (the membership's) passes none and sorts by state alone. */
-  const stackOrder = (cards, ctx, host = cards.host) =>
-    cards.slice().sort((a, b) => rankOf(a, ctx, host) - rankOf(b, ctx, host));
+  const hostOf = (cards, host) => (host === undefined ? cards.host : host);
+  const stackOrder = (cards, ctx, host) => {
+    const h = hostOf(cards, host);
+    return cards.slice().sort((a, b) => rankOf(a, ctx, h) - rankOf(b, ctx, h));
+  };
   const rankOf = (c, ctx, host) => (host && c.k === host ? -1 : RANK[stateOf(c, ctx)]);
 
   /* Closed: the pile, in the gutter, standing where the card's strip will be.
      Open: the same tabs lined up down the side of the card. One list, two
-     postures — `stripHtml` is `pileHtml` with the peek taken off. */
+     postures — `stripHtml` is `pileHtml` with the peek taken off. The host is
+     resolved once here and handed to both the sort and the chip (`o.host`, the
+     mark's word — Q1320), so the tab in front and the tab wearing the rule's
+     glyph are always the same tab. */
   const pileHtml = (cards, ctx, host) => {
-    const gs = stackOrder(cards, ctx, host);
+    const h = hostOf(cards, host);
+    const gs = stackOrder(cards, ctx, h);
     return '<span class="chipcol' + (gs.length > 1 ? ' stack' : '') + '">' +
-      gs.map((c, i) => chipHtml(c, ctx, { inert: i > 0, z: gs.length - i })).join('') + '</span>';
+      gs.map((c, i) => chipHtml(c, ctx, { inert: i > 0, z: gs.length - i, host: !!h && c.k === h })).join('') + '</span>';
   };
-  const stripHtml = (cards, ctx, host) => '<span class="chipcol">' +
-    stackOrder(cards, ctx, host).map((c) => chipHtml(c, ctx, { active: ctx.open === c.k })).join('') + '</span>';
+  const stripHtml = (cards, ctx, host) => {
+    const h = hostOf(cards, host);
+    return '<span class="chipcol">' +
+      stackOrder(cards, ctx, h).map((c) => chipHtml(c, ctx, { active: ctx.open === c.k, host: !!h && c.k === h })).join('') + '</span>';
+  };
 
   /* The band at the head of the document: one row per pile, in flow, so the
      second pile stands under the first exactly as a second clause's marks stand
@@ -381,7 +403,7 @@ window.SETUP = (function () {
             // a group whose other members are not being served yet leaves one
             // chip standing on the host's paragraph, and it must be that one
             : '<div class="cpara" data-para="' + c.k + '">' + (chips.length > 1 ? pileHtml(chips, ctx)
-              : '<span class="chipcol">' + (chips.length ? chipHtml(chips[0], ctx, {}) : '') + '</span>') +
+              : '<span class="chipcol">' + (chips.length ? chipHtml(chips[0], ctx, { host: chips[0].k === chips.host }) : '') + '</span>') +
               '<div class="cptext"><p class="cpv">' +
               (ctx.decisionLine ? ctx.decisionLine(c) : ctx.summary(c)) + '</p></div></div>';
         };
@@ -718,12 +740,17 @@ window.SETUP = (function () {
     // committing on it, changes nothing — and the composer beneath starts
     // empty, being the *new* name. With no name yet the composer leads.
     const keep = (me.n || '').trim();
+    // **The composer holds the draft, never the standing name** (Q1327): the
+    // page keeps the two apart (`S.mynameDraft`) so a render mid-typing
+    // redraws the field with what was typed and the *keep* block with what
+    // stands. A caller passing no draft reads one value for both, as before.
+    const draft = o.draft !== undefined ? o.draft : (keep ? '' : (me.n || ''));
     // `locked` is the closed document (CP9): the blocks stay readable and
     // nothing on them commits
     return '<div class="choice" role="radiogroup">' +
       (keep ? opt(pk, 'namePick', 'keep', esc(keep), '', '', o.locked) : '') +
       opt(pk, 'namePick', 'name',
-        '<input id="myname" class="namein" data-txt="myname" value="' + (keep ? '' : esc(me.n || '')) +
+        '<input id="myname" class="namein" data-txt="myname" value="' + esc(draft) +
         '" placeholder="Your name"' + (o.locked ? ' disabled' : '') + '>', '', '', o.locked) +
       opt(pk, 'namePick', 'anon', ctlWord('Anonymous'),
         (o.optional ? 'The Founded by line shows no name.' : ''), '', o.locked) +
@@ -819,7 +846,14 @@ window.SETUP = (function () {
     const into = oo.into || 'me';
     const pk = oo.pickKey || 'picPick';
     const pic = me.pic || '';
-    const uploaded = pic[0] === 'u';
+    // **What stands and what is in hand are two values** (Q1327): the *keep*
+    // block wears the standing picture, while the upload's preview and the
+    // grid's pressed glyph are the draft — a face picked and not yet
+    // committed. A caller passing no draft (the applicant, whose application
+    // has no standing half) reads one value for both. In the grid the
+    // standing face stays pressed until another is picked.
+    const draft = oo.draft !== undefined ? oo.draft : pic;
+    const uploaded = draft[0] === 'u';
     const pickState = { [pk]: oo.pick || null };
     // **The standing picture is the first block** (Ed's QA, 2026-09-02 pm):
     // a picture already worn heads the card as the status quo, drawn at
@@ -837,10 +871,10 @@ window.SETUP = (function () {
           ? '<div class="picdrop" data-picinto="' + into + '"><div class="picact">' +
             '<label class="btn">' + (uploaded ? 'Choose another' : 'Choose a picture') +
             '<input type="file" accept="image/*" data-picfile="1"></label>' +
-            (uploaded ? avHtml(me, 'big') : '') + '</div></div>'
+            (uploaded ? avHtml({ n: me.n, pic: draft }, 'big') : '') + '</div></div>'
           : '', oo.locked) +
       opt(pickState, pk, 'emoji', ctlWord('Pick an emoji'), '',
-        oo.pick === 'emoji' && !oo.locked ? emojiPicker(pic, me.n, at) : '', oo.locked) +
+        oo.pick === 'emoji' && !oo.locked ? emojiPicker(draft || pic, me.n, at) : '', oo.locked) +
       '</div>';
   };
 
@@ -903,46 +937,15 @@ window.SETUP = (function () {
   // stated once. "Ordinary" stays engine vocabulary only — SPEC, code,
   // never a card.
 
-  /* An **ordinary motion in flight**: the value as it stands, the value as
-     proposed, a `lane-bar` radio on each, the rationale behind a
-     `sealed-speaker`. Nothing here is new — it is the decision card with a
-     setting where the prose would be, which is the point.
-
-     There is no constitutional equivalent of this function, and that is the
-     good news: a constitutional motion re-opens the **ceremony question**, so
-     the card that answers it is the one the surface already had. What a
-     constitutional motion draws is `motionReopen` below — a line saying the
-     question is live again — and then the ordinary consent control underneath
-     it. */
-  function motionBody(c, ctx, m) {
-    // **The card grammar proper** (3b, 2026-08-18): what stands is the
-    // card's head, wearing the keep-lane — the quick card's own shape —
-    // so the body holds only the proposal: one propblock, the sealed
-    // speaker, the lane radio, all session-view's builders. The route is
-    // said once (the old KIND header + kindNote pair stated the threshold
-    // twice in two sentences — Ed's copy pass, 2026-08-19).
-    return '<div class="unlocks"><b>✏️ A proposed change.</b> It carries at the approval threshold, with quorum.' +
-      // **Reserved is assent, not silence** (Ed, 2026-08-18): the room may
-      // pass a change to a reserved setting; what reservation means is that
-      // it then goes to the founder as a 👑 question, theirs to accept or
-      // reject.
-      (ctx.reserved && ctx.reserved(c)
-        ? ' It is <b>reserved</b>: carrying does not change it by itself — it goes to the founder as a <b>👑 question</b>, theirs to assent to or refuse.'
-        : '') + '</div>' +
-      CB.proposalHtml(m, { tag: 'As proposed', html: esc(m.to), why: m.why, v: 'proposed', edit: false }) +
-      // Indifferent is a full option block — textless, its radio naming the
-      // act instead of *Prefer this* (CP4, Q1099); it left the commit row on
-      // 2026-08-31
-      '<div class="pick' + (m.pick === 'either' ? ' on' : '') + '">' +
-      '<button class="lanepick" aria-pressed="' + (m.pick === 'either') + '" data-motion="either">' +
-      '<span class="dot"></span><span>Indifferent</span></button></div>' +
-      '<p class="setnote">' + (m.judged || 0) + ' of ' + ctx.E + ' have voted on it.</p>';
-  }
-
-  /* A **constitutional motion** has no explanatory band any more: the
-     *Re-opened…* paragraph and its count left with Ed's card review round 3
-     (2026-09-05, Q1182) — the consent card is the settled card's own three
-     blocks, drawn by session-view's `consentBlocks`. */
+  /* **A motion in flight, on either route, is the settled card's own shape**
+     — the standing rule as block one, the proposed rule as block two with the
+     proposer's sealed reason, then the textless block — drawn by
+     session-view's `motionBlocks`. The consent card took it at Ed's card
+     review round 3 (2026-09-05, Q1182); the ordinary card, which had kept the
+     race card's head-with-keep-lane, the *A proposed change…* explainer, an
+     *As proposed* eyebrow and a count that was always zero (judgments are
+     blind), took it with Q1331 (Ed, 2026-09-11: *all of it*). Nothing of
+     that card is drawn here any more. */
 
   /* Writing one. The same `.lanebox` the `editing-card` writes a clause in,
      because a motion is a proposal and proposing is one gesture on this
@@ -1669,6 +1672,6 @@ window.SETUP = (function () {
     nameBody, pictureBody, opt, setPickWords, num, numIn, ctlWord, faces, someIn, FACE_EMOJI,
     FACE_TONES, faceToneRow, faceToned, setFaceTone,
     setFaceTaken, faceTakenBy, faceBtn, emojiPicker,
-    motionBody, routeFor, motionCommitHtml,
+    routeFor, motionCommitHtml,
     slider, syncSlider, ladder, ANSWER, BLINDNOTE, methodNote, meaningLine, listOf, gateBody, wirePicDrop, MAILS, renderMailModal, birthPass };
 })();

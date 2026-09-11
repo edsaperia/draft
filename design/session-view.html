@@ -263,7 +263,7 @@
   const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml: cardHtml0,
     nameBody, pictureBody, opt, num, numIn, ctlWord, someIn, ANSWER, stateOf, labelOf, nounOf,
     MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml, stripHtml, readBody,
-    motionBody, routeFor, motionCommitHtml, BLINDNOTE, methodNote, listOf, syncSlider } = window.SETUP;
+    routeFor, motionCommitHtml, BLINDNOTE, methodNote, listOf, syncSlider } = window.SETUP;
   // **Every card can carry a refusal** (Q1330, SURFACE Y25): the settings,
   // motion and door bodies draw `doorErrHtml` where the control that tried
   // stands, and every other kind — a gate, a grant, an answer, news — drew
@@ -1554,6 +1554,9 @@
     'grant', 'dripMin', 'dripN', 'dripUnit', 'cap', 'chamber',
     'barBy', 'quorumBy', 'rateBy', 'myname', 'mypic', 'myemail', 'hatPick',
     'namePick', 'picPick', 'appPicPick',
+    // ✋ 🖼️'s unsent value rides the snapshot too (Q1327): 🗑️ puts the draft
+    // back to what it was at the opening, and the standing value is untouched
+    'mynameDraft', 'mypicDraft',
     // the title's provisional lane rides the snapshot like every other
     // provisional value, so 🪶 needs no bin of its own (2026-08-21)
     'titleDraft']
@@ -1610,6 +1613,11 @@
     // card" — the applicant's body is the same one and must not reach across
     // to `mypic`.
     if (el.querySelector('[data-pic], [data-picinto="me"]')) ks.add('mypic');
+    // **A draft rides with its field** (Q1327): the composer's own key is
+    // what the input and the picker write, so the bin names it beside the
+    // standing one — the standing value is never the card's to change here
+    if (ks.has('myname')) ks.add('mynameDraft');
+    if (ks.has('mypic')) ks.add('mypicDraft');
     if (el.querySelector('[data-slide]')) {
       el.querySelectorAll('[data-slide]').forEach((b) => ks.add('ans:' + b.dataset.slide));
     }
@@ -1923,7 +1931,17 @@
   // to whoever was reading. The stubs carry roles of their own, so an
   // applicant and a stranger are not clerks either.
   const viewerIsClerk = () => viewerRow().role === 'clerk';
-  for (const [prop, key] of [['myname', 'n'], ['mypic', 'pic'], ['myemail', 'e']]) {
+  // **The unsent value is kept apart from the standing one** (Q1327, Ed
+  // 2026-09-11: *draft jumped to the head block, picker reset*). `myname` /
+  // `mypic` are what stands — written by `hydrateS` from the view, by the
+  // commit, and by ⏩ — and `mynameDraft` / `mypicDraft` are what the composer
+  // holds: the input's text, the picked face, the upload. The cards read the
+  // standing pair for the *keep* block and the draft pair for the composer,
+  // so a render landing mid-choice (every movement in the room, under the
+  // bots one every few seconds) draws the draft where it was typed and never
+  // as though it stood. Per seat, like everything on the row.
+  for (const [prop, key] of [['myname', 'n'], ['mypic', 'pic'], ['myemail', 'e'],
+    ['mynameDraft', 'nDraft'], ['mypicDraft', 'picDraft']]) {
     Object.defineProperty(S, prop, { get: () => viewerRow()[key] || '',
       set: (v) => { viewerRow()[key] = v; } });
   }
@@ -1944,13 +1962,45 @@
   // which commits nothing; an *answered* blank is the chosen Anonymous; an
   // unanswered card stands on nothing — nothing is preselected (F6). Typing
   // into the composer picks it explicitly (the input handler's job now that
-  // a standing name derives to *keep*).
+  // a standing name derives to *keep*). A draft in hand (Q1327) puts the card
+  // on the block that holds it — the composer, the upload, the grid — ahead
+  // of the standing value, so a render never moves the choice off it.
   const namePickNow = () => (S.namePick != null ? S.namePick
+    : S.mynameDraft ? 'name'
     : (S.myname || '').trim() ? 'keep' : (S.nameSet ? 'anon' : null));
   const picPickNow = () => (S.picPick != null ? S.picPick
+    : S.mypicDraft ? (S.mypicDraft[0] === 'u' ? 'upload' : 'emoji')
     : S.mypic ? 'keep' : (S.picSet ? 'anon' : null));
   const appPicPickNow = () => (S.appPicPick != null ? S.appPicPick
     : S.app && S.app.pic ? 'keep' : null);
+  // **✓ on ✋ / 🖼️ is the act** (Q1327, with Q1164/Q1165): the draft becomes
+  // the standing value and the draft is let go, whichever era. The *keep*
+  // block is the status quo — nothing sent, the draft let go (Ed's QA,
+  // 2026-09-02 pm); *Anonymous* sends null; a block with nothing in it yet
+  // (a chosen *Upload an image* with no file, an emptied field) is no
+  // answer, so it sends nothing rather than removing what stands. Before the
+  // save there is no module: the standing value rides the save (`clickmail`).
+  // Live, a refusal — a face somebody else took first — puts the draft back
+  // and the standing value with it, so the card re-opens on the pick.
+  const commitIdentity = (k) => {
+    const name = k === 'myname';
+    const pick = name ? namePickNow() : picPickNow();
+    const std = name ? 'myname' : 'mypic', dk = std + 'Draft', pk = name ? 'namePick' : 'picPick';
+    const prev = S[std], draft = S[dk];
+    S[pk] = null; S[dk] = '';
+    if (pick === 'keep' || pick === null) return;
+    if (pick !== 'anon' && !draft) return;
+    S[std] = pick === 'anon' ? '' : draft;
+    if (!cs) return;
+    if (name) S.nameSet = true; else S.picSet = true;
+    const back = () => { S[std] = prev; S[dk] = draft; };
+    let sent;
+    // the fixture's session refuses by throwing, the live one by answering
+    try { sent = cs.setIdentity(now(), viewerId(),
+      name ? { name: S.myname || null } : { picture: S.mypic || null }); }
+    catch (e) { back(); throw e; }
+    if (sent && sent.then) sent.then((res) => { if (res && res.error) { back(); render(); } });
+  };
   Object.defineProperty(S, 'myAns', { get: () => (viewerRow().ans || (viewerRow().ans = {})) });
   Object.defineProperty(S, 'okd', { get: () => (viewerRow().okd || (viewerRow().okd = new Set())) });
   // a motion draft and your consent answers are yours, not the room's
@@ -5254,12 +5304,12 @@
   // half: no live path has ever written it, the boot line setting `f.e`,
   // `f.role` and `f.n` once and nothing since.
   //
-  // **Your own row is not reconciled.** ✋ and 🖼️ write straight onto it as
-  // you type and as you pick, before anything is committed, so a render or a
-  // 4s poll landing mid-choice would put the module's answer back over the
-  // one you are making — the same rule the value hydration keeps for the
-  // open card. What you have committed is already on the row, by way of
-  // `hydrateS`'s own read of `view.identity`.
+  // **Your own row is not reconciled.** Its standing half is `hydrateS`'s
+  // read of `view.identity` plus your own commits, and its fallback differs
+  // from every other row's — a member with no name is *Anonymous* on their
+  // own card, never their address's local part. Since Q1327 the draft half
+  // (`nDraft` / `picDraft`) is the composer's alone and nothing in the module
+  // ever holds it, so there is nothing here to reconcile it against either.
   //
   // The fallback stays each row's own: an invitee is listed by their address
   // until a name exists (which is why the register carries emails at all),
@@ -5528,26 +5578,41 @@
   // the act as Indifferent does. Every block is clause text — the register
   // the whole surface reads in now — and nothing else is said: no consent
   // rule explained, no count, no blindness note.
+  // **…and the ordinary motion card is the same three blocks** (Q1331, Ed
+  // 2026-09-11: *all of it*): the values are the route's own — the consent
+  // answer's no · yes · abstain, the race judgment's stands · proposed ·
+  // either, which `judgeRaceCard` and the dev seam read — and the textless
+  // block names its act, *Abstain* on a consent, *Indifferent* on a judgment
+  // (CP4). What went with it: the race card's head wearing the keep lane,
+  // the *A proposed change…* explainer (where the Founder holds 🛡️ the wait
+  // on them is the entry's ⏳ after the vote, E36), the *As proposed* eyebrow
+  // and a count that always read zero, judgments being blind.
   const consentPicks = (key, opts) => '<div class="choice" role="radiogroup">' +
     opts.map(([v, html, kind]) => {
       const on = S.mAns[key] === v;
       const off = kind === 'keep' ? PAGE_COPY.consent.keepThis
-        : kind === 'prefer' ? window.COPY.grammar.lane.prefer : PAGE_COPY.consent.abstain;
+        : kind === 'prefer' ? window.COPY.grammar.lane.prefer
+        : kind === 'either' ? window.COPY.grammar.commit.indifferent : PAGE_COPY.consent.abstain;
       const onW = kind === 'keep' ? PAGE_COPY.consent.kept
-        : kind === 'prefer' ? window.COPY.grammar.lane.preferred : PAGE_COPY.consent.abstain;
+        : kind === 'prefer' ? window.COPY.grammar.lane.preferred
+        : kind === 'either' ? window.COPY.grammar.commit.indifferent : PAGE_COPY.consent.abstain;
       return '<div class="pick' + (on ? ' on' : '') + '">' +
         (html ? '<span class="opttext">' + html + '</span>' : '') +
         '<button class="lanepick" aria-pressed="' + on + '" data-motion="' + v + '"><span class="dot"></span>' +
         '<span class="off">' + off + '</span><span class="on">' + onW + '</span></button></div>';
     }).join('') + '</div>';
-  const consentBlocks = (key, stands, proposed, why) => consentPicks(key, [
-    ['no', esc(stands), 'keep'],
-    ['yes', esc(proposed) + (why ? window.CARDS.speakerHtml(why) : ''), 'prefer'],
-    ['abstain', '', 'abstain'],
-  ]);
-  const inviteBody = (m) =>
-    consentBlocks('invite', PAGE_COPY.consent.staysAsIs, PAGE_COPY.consent.joins(m.invite), m.why);
-  const removeBody = (m) => {
+  const MOTION_PICKS = { constitutional: ['no', 'yes', 'abstain'], ordinary: ['stands', 'proposed', 'either'] };
+  const motionBlocks = (key, stands, proposed, why, route) => {
+    const [k, p, t] = MOTION_PICKS[route] || MOTION_PICKS.constitutional;
+    return consentPicks(key, [
+      [k, esc(stands), 'keep'],
+      [p, esc(proposed) + (why ? window.CARDS.speakerHtml(why) : ''), 'prefer'],
+      [t, '', t],
+    ]);
+  };
+  const inviteBody = (m, route) =>
+    motionBlocks('invite', PAGE_COPY.consent.staysAsIs, PAGE_COPY.consent.joins(m.invite), m.why, route);
+  const removeBody = (m, route) => {
     const nm = nameOfMember(m.removee);
     // 🏛️ without [avatar] (Q401a): under 'others' the subject sees the
     // motion running against them — ruled, Ed 2026-08-19 — and is asked
@@ -5556,15 +5621,18 @@
       return '<p class="why">' + PAGE_COPY.consent.removeSelfWhy + '</p>' +
         '<p class="setnote">' + PAGE_COPY.consent.removeSelfCount(m.judged || 0, Math.max(E() - 1, 0)) + '</p>';
     }
-    return consentBlocks('remove', PAGE_COPY.consent.staysIn(nm), PAGE_COPY.consent.leaves(nm), m.why);
+    return motionBlocks('remove', PAGE_COPY.consent.staysIn(nm), PAGE_COPY.consent.leaves(nm), m.why, route);
   };
-  // a set motion: the standing clause against the proposed one, the latter
-  // the full sentence for the motion's own value (A3), never its short label
-  const consentBody = (c, m) => (m.invite ? inviteBody(m)
-    : m.removee !== undefined ? removeBody(m)
+  // a set motion: the standing clause against the proposed one — the
+  // paragraph's own sentence (`decisionLine`) against the full sentence for
+  // the motion's own value (A3), never its short label
+  const motionPairBody = (c, m, route) => (m.invite ? inviteBody(m, route)
+    : m.removee !== undefined ? removeBody(m, route)
     : (() => { const rec = liveMotionRec(c);
       const v = rec && rec.payload && rec.payload.kind === 'set' ? rec.payload.value : null;
-      return consentBlocks(c.k, decisionLine(c), (v !== null && sentenceFor(c.k, v)) || m.to, m.why); })());
+      return motionBlocks(c.k, decisionLine(c), (v !== null && sentenceFor(c.k, v)) || m.to, m.why, route); })());
+  const consentBody = (c, m) => motionPairBody(c, m, 'constitutional');
+  const ordinaryBody = (c, m) => motionPairBody(c, m, 'ordinary');
 
   // dev only (with the dropdown, Ed 362): complete the founding in one press,
   // because motions live on the far side of it and the mock has no persistence
@@ -6270,9 +6338,14 @@
         esc(S.title) + '</span>' + (cs ? RD + '.' : '') +
         (titleStands() ? chosenRadio(provOf('title')) : '');
       const m = motionOn(c);
-      // an ordinary motion's head is the value as it stands, wearing the
-      // keep-lane; a constitutional one re-opens the question, title head.
-      if (m) return routeOfM(m, c) === 'ordinary' ? esc(standsOf(c.k)) : null;
+      // a motion card on either route is the settled card's own shape — no
+      // head, what stands as block one (Q1182 for the consent card, Q1331
+      // for the ordinary one — Ed, 2026-09-11: *all of it*). **Not at the
+      // door**: a stranger's tab opens the settled card read-only (Q1183),
+      // and a motion in flight is the members' business — without this the
+      // door drew an empty card for every setting under a motion (found by
+      // Q1331's seeded ⏱️ motion; 👤 and 🌍 had read empty since Q1183)
+      if (m && !atTheDoor()) return null;
       // **The head is the rule, not the task's name** (Ed's QA, 2026-08-19):
       // a settled card is its own paragraph, opened, so what stands at its
       // head is the constitutional sentence the paragraph states. The
@@ -6319,9 +6392,12 @@
     // …and since Ed's card review round 3 (2026-09-05) neither does a record
     // (32/56: the eyebrow dates it, the blocks say what it did — Q1186), nor
     // 📍 at the birth (02: its field is the whole card)
+    // …nor a settings card under a motion on either route (Q1182, Q1331):
+    // its blocks state both rules, so 📍's motion card is headless too
     noTitleHead: (c) => !c.power && !c.isGate && !c.door &&
       (c.record || (c.k === 'slug' && !cs) ||
-        OPTHEADLESS.has(c.k) || (c.ansFor && OPTHEADLESS.has(c.ansFor))),
+        OPTHEADLESS.has(c.k) || (c.ansFor && OPTHEADLESS.has(c.ansFor)) ||
+        (c.k !== 'title' && !atTheDoor() && !!motionOn(c))),
     // 🪶 at the birth has a head — the title itself, or its placeholder —
     // over one lane, and the hairline between them went with Ed's round 3
     // (01): the head is the field's own value, not a rule over a control
@@ -6338,9 +6414,6 @@
     // approved mockup: the standing address wearing its provenance radio)
     blockHead: (c) => !c.power && !c.record && !c.isGate && !c.ansFor && !c.door &&
       (OPTHEADLESS.has(c.k) || (c.k === 'title' && titleStands()) || (c.k === 'slug' && !!cs)),
-    // reserved = held by the founder: the room may pass a change, and it
-    // then goes to the founder as a 👑 question (accept or reject)
-    reserved: (c) => !c.power && !c.record && !c.isGate && !c.ansFor && c.kind !== 'personal' && !membersHold(c),
     // a section never folds while it holds the open card or its tasks —
     // including a card pinned to its `lead` rather than enumerated by its
     // own keys: 🏛️ hangs on the Proposals preamble (Q750) and appears in
@@ -7300,9 +7373,12 @@
           ? '<p class="why">Your address is the only way back in — there are no passwords — so a new one has to prove it works before it replaces the old.</p>'
           : '') +
         '<span class="fld"><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" placeholder="you@example.com" style="width:20rem"></span>'),
+    // the standing pair for the *keep* block, the draft for the composer
+    // (Q1327); the applicant's `apppic` passes no draft and reads one value
     myname: () => nameBody(me(), { optional: viewerIsClerk(), pick: namePickNow(),
+      draft: S.mynameDraft, locked: !!(cs && !docOpen()) }),
+    mypic: () => pictureBody(me(), { pick: picPickNow(), draft: S.mypicDraft,
       locked: !!(cs && !docOpen()) }),
-    mypic: () => pictureBody(me(), { pick: picPickNow(), locked: !!(cs && !docOpen()) }),
     // **Whether the founder is in it is its own question** (Ed, 2026-08-18).
     // It had been the top half of the roster card, which made a decision about
     // one person a preamble to a list of everybody — and the founder is a hat
@@ -7943,8 +8019,15 @@
       }
       // a live motion takes the route its own value asks for (329a)
       if (m && routeOfM(m, c) === 'ordinary') {
-        const mLive = { ...m, judged: motionJudged(c.k), pick: S.mAns[c.k] };
-        return cardHtml(c, ctx, motionBody(c, ctx, mLive),
+        // **The ordinary motion card is the consent card's shape** (Q1331,
+        // Ed 2026-09-11: *all of it*): no head, the standing rule as block
+        // one with *Keep this*, the proposed rule beneath with the
+        // proposer's sealed reason and *Prefer this*, *Indifferent* as its
+        // own textless block; no explainer, no eyebrow, no count. The
+        // commit is ✓ — a judgment, binding nobody but you (§9.1) — and the
+        // pick still feeds `liveJudge` / the dev seam as stands · proposed ·
+        // either.
+        return cardHtml(c, ctx, ordinaryBody(c, m),
           // one bin on every card, always live (Q613 (a), 2026-08-22): for the
           // mover it withdraws, for anybody else it simply closes the card
           (m.by === viewerId()
@@ -7954,7 +8037,7 @@
             : binBtn()) +
           '<button class="btn btn-approve glyphbtn"' + (motionPicked(c) ? '' : ' disabled') +
           ' data-confirm="1">' + TICK + '</button>',
-          g.cards, { v: 'stands', s: { ...m, pick: S.mAns[c.k] } });
+          g.cards);
       }
       if (m) {
         // **The consent card takes the settled shape** (Ed's card review
@@ -8483,10 +8566,41 @@
     ? renderMailModal(S.app.mailOpen, MAILS.applyVerify(S.title || 'this document', S.app.email))
     : renderMailModal(S.mailOpen, MAILS.verify(S.title, S.myemail, S.slug)));
 
+  // **A render under the caret puts it back** (Q1327). The band is rebuilt
+  // wholesale, so a 4s poll landing while ✋'s field holds the caret, or while
+  // 🖼️'s grid is scrolled, replaced the very control in use: the text
+  // survived on the draft but the caret was gone and the grid was back at the
+  // top. Render state re-applied after the rebuild — the same shape as
+  // `settleLift` and the wallet's spend-preview — and only while the open
+  // card is the one it was: a card that has just opened takes `focusOpened`.
+  const renderKeep = () => {
+    const a = document.activeElement;
+    const inp = a && a.closest && a.closest('.setupcard') &&
+      a.matches('input[data-txt], input[data-num]') ? a : null;
+    const box = document.querySelector('.setupcard .emojibox');
+    let sel = null;
+    try { if (inp) sel = [inp.selectionStart, inp.selectionEnd]; } catch (e) { /* type=email has none */ }
+    return { open: S.open, key: inp ? (inp.dataset.txt || inp.dataset.num) : null,
+      attr: inp ? (inp.dataset.txt ? 'data-txt' : 'data-num') : null,
+      sel, scroll: box ? box.scrollTop : 0 };
+  };
+  const renderRestore = (k) => {
+    if (!k || !k.open || k.open !== S.open) return;
+    if (k.key) {
+      const el = document.querySelector('.setupcard input[' + k.attr + '="' + k.key + '"]');
+      if (el && document.activeElement !== el) {
+        el.focus({ preventScroll: true });
+        try { if (k.sel && typeof k.sel[0] === 'number') el.setSelectionRange(k.sel[0], k.sel[1]); } catch (e) { /* not a text control */ }
+      }
+    }
+    const box = document.querySelector('.setupcard .emojibox');
+    if (box && k.scroll) box.scrollTop = k.scroll;
+  };
   const render = () => {
+    const kept = renderKeep();
     // the roster rows ARE the people now (per-user state, Ed 362): the
-    // identity cards write straight onto the viewer's row — and the rows
-    // follow the module's register first
+    // identity cards write their commits onto the viewer's row — and the
+    // rows follow the module's register first
     syncFromCs();
     resolveCounts();
     syncGrantAcks();
@@ -8517,6 +8631,7 @@
       const el = document.querySelector('.setupcard');
       if (el) { CC.expandCard(el, () => {}); focusOpened(el, S.open); }
     }
+    renderRestore(kept);
     lastOpen = S.open;
     // what is born arrives (setup.js birthPass): a stagehand act — seat
     // switch, ⏩ — mutes the entrances rather than replaying fifteen at once
@@ -8547,7 +8662,9 @@
   // the drop zone names where its file lands, so one handler serves the
   // founder's 🖼️ and the applicant's (Q733)
   wirePicDrop((d, into) => {
-    if (into === 'app') S.app.pic = d; else S.mypic = d;
+    // the member's upload is a draft until ✓ (Q1327); the applicant's
+    // application has no standing half to keep it apart from
+    if (into === 'app') S.app.pic = d; else S.mypicDraft = d;
     render();
   });
   // the picker has no controls of its own to wire since entry 186 — no
@@ -8569,13 +8686,9 @@
   // not bite while the box held one category at a time behind a search. The
   // scroll position is picker state like `FACE_TONE` — not a value, not part
   // of the answer — so it is carried across the render rather than stored.
-  const pickerRender = () => {
-    const was = document.querySelector('.emojibox');
-    const top = was ? was.scrollTop : 0;
-    render();
-    const now = document.querySelector('.emojibox');
-    if (now && top) now.scrollTop = top;
-  };
+  // the grid's scroll survives every render since Q1327 (`renderKeep`), not
+  // only the picker's own; the name stays for its three callers
+  const pickerRender = () => render();
   document.addEventListener('change', (ev) => {
     // ❌'s subject picker (entry 96) — a select answers on `change`, and the
     // choice is provisional like every other value in `S` until the act. Two
@@ -8999,6 +9112,10 @@
           // the magic link** (the click is the instantiation), see the
           // clickmail handler; until then nothing exists anywhere
           if (was === 'slug' && !cs) return;
+          // ✋ and 🖼️ commit in every era (Q1327): before the save the draft
+          // becomes the standing value the save then sends (`clickmail`),
+          // after it the module is told as well
+          if (was === 'myname' || was === 'mypic') { commitIdentity(was); return; }
           if (!cs) return;
           // §9.7 v0.52: the delegation sentence preferred + ✒️ is the
           // hand-over — never a button
@@ -9013,19 +9130,7 @@
           if (was === 'slug') {
             if (S.slug !== cs.slug) watchSet('slug', cs.setSetting(now(), 'link', { slug: S.slug }));
             return; }
-          // committing is the act — and since Q1164 anonymity is the chosen
-          // block, so a commit on the Anonymous block clears the value it
-          // sends whatever the field held. The *keep* block is the status quo
-          // (Ed's QA, 2026-09-02 pm): committing on it changes nothing and
-          // sends nothing.
-          if (was === 'myname' && namePickNow() === 'keep') { S.namePick = null; return; }
-          if (was === 'mypic' && picPickNow() === 'keep') { S.picPick = null; return; }
-          if (was === 'myname') { if (namePickNow() === 'anon') S.myname = '';
-            S.nameSet = true; cs.setIdentity(now(), viewerId(), { name: S.myname || null });
-            S.namePick = null; return; }
-          if (was === 'mypic') { if (picPickNow() === 'anon') S.mypic = '';
-            S.picSet = true; cs.setIdentity(now(), viewerId(), { picture: S.mypic || null });
-            S.picPick = null; return; }
+          // (✋ 🖼️ committed above, before the pre-save bail — `commitIdentity`)
           // 🎩 commits here like every other setting (Q522, Ed 2026-08-21).
           // It used to carry a commit control of its own, which is how it
           // came to be the one card that did not close on being set.
@@ -9170,7 +9275,7 @@
       }
       return; }
     const pic = ev.target.closest('[data-pic]');
-    if (pic) { S.mypic = pic.dataset.pic; return pickerRender(); }
+    if (pic) { S.mypicDraft = pic.dataset.pic; return pickerRender(); }
     const d = ev.target.closest('[data-drop]');
     if (d) { const row = S.roster[+d.dataset.drop];
       // ✕ was as silent as the field beside it (Q811): post-start `uninvite`
@@ -9690,7 +9795,8 @@
     // this is the field under the caret
     if (t.matches && t.matches('[data-add]')) { S.inviteOne = t.value; refreshCommit(); return; }
     if (t.matches && t.matches('[data-emails]')) { S.inviteMany = t.value; return; }
-    if (t.dataset.txt === 'myname') { S.myname = t.value; S.namePick = 'name';
+    // the field is the draft, never the standing name (Q1327)
+    if (t.dataset.txt === 'myname') { S.mynameDraft = t.value; S.namePick = 'name';
       renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
     if (t.dataset.txt === 'myemail') { S.myemail = t.value.trim();
       S.emailSent = false; S.emailVerified = false; S.seen.delete('myemail');

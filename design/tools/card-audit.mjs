@@ -697,8 +697,12 @@ function rulesFor(card, tok) {
     // the founder's two-commit card names both acts, the route's glyph second (Ed, 2026-09-06)
     if (/^(Choose ✒️ or Propose|Chosen ✒️ or Proposed) (✏️|🏛️)( this)?$/u.test(r.label.trim())) continue;
     // …and Propose this / Proposed where the press creates a proposal (Ed, 2026-09-06)
-    if (!['Prefer this', 'Preferred', 'Choose this', 'Chosen', 'Propose this', 'Proposed', 'Indifferent'].includes(r.label.trim())) {
-      at('CP2', 'pattern', 'radio vocabulary — Prefer this / Preferred · Choose this / Chosen · Propose this / Proposed · Indifferent (§9.3)',
+    // …and the motion cards' act-naming forms (CP2, T48; Q1182, Q1331): Keep
+    // this / Kept on the rule that stands, Abstain on the consent card's
+    // textless block — the ordinary card's is Indifferent
+    if (!['Prefer this', 'Preferred', 'Choose this', 'Chosen', 'Propose this', 'Proposed', 'Indifferent',
+      'Keep this', 'Kept', 'Abstain'].includes(r.label.trim())) {
+      at('CP2', 'pattern', 'radio vocabulary — Prefer this / Preferred · Choose this / Chosen · Propose this / Proposed · Keep this / Kept · Indifferent · Abstain (§9.3)',
         '“' + r.label.trim().slice(0, 40) + '”');
     }
   }
@@ -1360,10 +1364,22 @@ async function walkSettled(page, base, cards, errors, seat, switches, piles) {
       const m4 = cs.openMotion(tick(), mover2,
         { kind: 'set', setting: 'authorship', value: { rung: av === 'anonymous' ? 'sealed' : 'anonymous' } },
         'Names put pressure on people; the writing should stand alone.');
+      // **…and an ordinary motion in flight** (Q1331): ⏱️ again, by the first
+      // mover — an ordinary motion costs a ✏️, not the one 🏛️ a member has
+      // out — so the race card the room is served on a setting is measured on
+      // every seat; the founder's too, since the motion card comes before the
+      // composer. m2 on the same setting is settled, so this one is the live
+      // one behind ⏱️'s tab.
+      const rate2 = cs.settingState('rate').value || rate;
+      const m5 = cs.openMotion(tick(), mover,
+        { kind: 'set', setting: 'rate',
+          value: { grant: rate2.grant, cap: rate2.cap, dripMinutes: rate2.dripMinutes * 2 } },
+        'Fewer, better proposals — let the wait be longer.');
       return { carried: [m1, cs.motionRecords().get(m1).status],
         held: [m2, cs.motionRecords().get(m2).status],
         crowned: [m3, cs.motionRecords().get(m3).status],
-        running: [m4, cs.motionRecords().get(m4).status] };
+        running: [m4, cs.motionRecords().get(m4).status],
+        ordinary: [m5, cs.motionRecords().get(m5).status] };
     } catch (e) { return { error: String((e && e.message) || e) }; }
   });
   if (seeded.error) errors.push(walk + ': the motion seed failed — ' + seeded.error);
@@ -1374,6 +1390,8 @@ async function walkSettled(page, base, cards, errors, seat, switches, piles) {
       errors.push(walk + ': the seeded ' + seeded.crowned[0] + ' is ' + seeded.crowned[1] + ', not awaiting-crown');
     if (seeded.running && seeded.running[1] !== 'running')
       errors.push(walk + ': the seeded ' + seeded.running[0] + ' is ' + seeded.running[1] + ', not running');
+    if (seeded.ordinary && seeded.ordinary[1] !== 'running')
+      errors.push(walk + ': the seeded ordinary ' + seeded.ordinary[0] + ' is ' + seeded.ordinary[1] + ', not running');
   }
   // a render, so the seeded records reach the piles before anything is
   // measured: the seat switch is one, and the seatless walk asks for one
