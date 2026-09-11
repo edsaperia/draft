@@ -888,6 +888,11 @@
   // the save (§9.7a: until the link exists, nothing does, anywhere).
   const M = window.CONSTITUTION;
   let cs = null;
+  // 💤's page number is a count of days, and the module's `spellWords` is
+  // the one writer of its words (Q1321): days where whole, else hours, else
+  // minutes — never *0 days* for a spell under a day
+  const spellOfDays = (d) => (d !== '' && d !== null && d !== undefined && isFinite(+d)
+    ? M.spellWords(+d * 86400000) : '');
   // ---- the charter column (stage 8) --------------------------------------
   // The document's text renders as clauses through session.js; the founder's
   // editor (#prose) is for the text before there is anywhere else to put it.
@@ -1232,7 +1237,7 @@
     judgments: () => ({ rung: S.judgments }),
     chamber: () => ({ rung: S.chamber }),
     rate: () => ({ grant: 3, cap: 3, dripMinutes: +S.dripMin }),   // Q1160: 3/3 fixed
-    lapse: () => (S.lapse === 'never' ? { afterMs: null } : { afterMs: +S.lapseDays * 86400000 }),
+    lapse: () => (S.lapse === 'never' ? { afterMs: null } : { afterMs: Math.round(+S.lapseDays * 86400000) }),
     removal: () => ({ price: S.removal }),
     admission: () => ({ price: S.admission }),
     applications: () => ({ apply: S.joinBy === 'apply' }),
@@ -1264,7 +1269,10 @@
     // rate's page scalar is the interval since Q1160
     quorum: (v) => v.n, bar: (v) => v.pct, rate: (v) => v.dripMinutes,
     ending: (v) => (v.endsAtMs === null ? 'never' : msToLocal(v.endsAtMs)),
-    lapse: (v) => (v.afterMs === null ? 'never' : Math.round(v.afterMs / 86400000)),
+    // **the day count is exact, never rounded** (Q1321): a spell the room
+    // set under a day rounded to *0 days* on every reader; the fraction
+    // survives here and `spellOfDays` words it in the unit that divides it
+    lapse: (v) => (v.afterMs === null ? 'never' : v.afterMs / 86400000),
     authorship: (v) => v.rung,
     judgments: (v) => v.rung, chamber: (v) => v.rung,
     removal: (v) => v.price,
@@ -4268,7 +4276,7 @@
     // (🌍 and 🤝 are stated once, above, module-first like every neighbour:
     // a second entry here used to override them and read S alone)
     lapse: () => (S.lapse === 'never' ? 'Never — however long you are away'
-      : PAGE_COPY.val.lapseAfter(S.lapseDays)),
+      : PAGE_COPY.val.lapseAfter(spellOfDays(S.lapseDays))),
     removal: () => REMOVAL_RULE[removalPrice()],
     canpropose: () => (canPropose() ? PAGE_COPY.val.open : PAGE_COPY.val.waitingStart),
     // the three grants carry no subtitle (Ed's card review, 2026-09-02:
@@ -4782,8 +4790,7 @@
     applications: (v) => (mayApply(v) ? 'anyone may apply' : 'invitation only'),
     admission: (v) => ({ assembly: 'all members agreeing', proposal: 'the membership deciding',
       pen: 'any member’s word' }[v.price] || v.price),
-    lapse: (v) => (v.afterMs === null ? 'never'
-      : Math.round(v.afterMs / 86400000) + ' days'),
+    lapse: (v) => (v.afterMs === null ? 'never' : M.spellWords(v.afterMs)),
     removal: (v) => ({ consent: 'all members agreeing, them included',
       assembly: 'all other members agreeing', proposal: 'the membership deciding' }[v.price] || v.price),
     ending: (v) => (v.endsAtMs === null ? 'never'
@@ -4833,7 +4840,7 @@
         case 'applications': return APPL_RULE(mayApply(v) ? 'apply' : 'invite');
         case 'admission': return ADM_RULE[v.price] || null;
         case 'removal': return REMOVAL_RULE[v.price] || null;
-        case 'lapse': return LAPSE_RULE(v.afterMs === null ? 'never' : Math.round(v.afterMs / 86400000));
+        case 'lapse': return LAPSE_RULE(v.afterMs === null ? 'never' : v.afterMs / 86400000);
         case 'rate': return RATE_RULE(v.dripMinutes);
         default: return wordsFor(k, v);
       }
@@ -5222,7 +5229,7 @@
     applications: (v) => ({ invite: 'Invitation only', apply: 'Anyone may apply' })[v],
     authorship: (v) => ({'anonymous':'Nobody’s name, ever','anonymousElective':'Nobody’s name unless they choose','sealed':'Names at the close','sealedElective':'Names at the close, or earlier by choice','public':'Names from the start'})[v],
     judgments: (v) => ({ never: 'Never revealed', after: 'Revealed at the end' })[v],
-    lapse: (v) => (v === 'never' ? 'Never — however long you are away' : 'After ' + v + ' days without logging in'),
+    lapse: (v) => (v === 'never' ? 'Never — however long you are away' : PAGE_COPY.val.lapseAfter(spellOfDays(v))),
     // `standsOf` feeds this `takenOf('removal')`, which is `PAGEVAL.removal`
     // — the price, `consent` · `assembly` · `proposal`. Keyed
     // `everyone`/`others`/`ordinary` it returned `undefined` for every value
@@ -5853,9 +5860,11 @@
   // Ed's sentences (card review 2026-09-02, Q1149 — the options swap so the
   // card leads with lapsing; Q1168 — *automatically abstain* is §9.5a's own
   // mechanism, stated accurately)
+  // `v` is the page's number of days, possibly fractional; the words are
+  // `spellWords`'s, in the unit that divides the spell (Q1321)
   const LAPSE_RULE = (v) => (v === 'never' || v === null
     ? 'Inactive members never lapse and are still counted towards votes.'
-    : 'After ' + v + ' days, inactive members lapse and automatically abstain from votes.');
+    : 'After ' + spellOfDays(v) + ', inactive members lapse and automatically abstain from votes.');
   // **⏱️ is one number** (Ed, 2026-09-02, Q1160/Q1161, R-083): the grant and
   // the maximum are the mechanism's fixed 3 (SPEC §7), the interval is the
   // setting, and **the unit is worked out from the stored minutes** — the
@@ -10187,7 +10196,9 @@
       // (`CHOSEN.lapse` wants `'days'` and a numeric `lapseDays`) and was
       // served to the founder as a task on every reload
       case 'lapse': if (x.afterMs === null) T.lapse = 'never';
-        else { T.lapse = 'days'; T.lapseDays = Math.round(x.afterMs / 86400000); } return;
+        // exact, never rounded (Q1321): a spell under a day is a fraction
+        // of one, and rounding it made every reader of the field say *0 days*
+        else { T.lapse = 'days'; T.lapseDays = x.afterMs / 86400000; } return;
       case 'removal': T.removal = x.price; return;
       case 'admission': T.admission = x.price; return;
       case 'applications': T.joinBy = mayApply(x) ? 'apply' : 'invite'; return;

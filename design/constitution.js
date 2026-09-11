@@ -74,6 +74,7 @@ var CONSTITUTION = (() => {
     shapeOf: () => shapeOf,
     slugify: () => slugify,
     smoothstep: () => smoothstep,
+    spellWords: () => spellWords,
     stableStringify: () => stableStringify,
     validateFor: () => validateFor,
     validateValue: () => validateValue,
@@ -3745,12 +3746,21 @@ var CONSTITUTION = (() => {
     return Math.round(ms / 864e5) + " days";
   }
   var dripPhrase = (dripMinutes) => dripMinutes < 5 ? "few minutes" : spanPhrase(dripMinutes * 6e4);
+  function spellWords(afterMs) {
+    if (typeof afterMs !== "number" || !Number.isFinite(afterMs) || afterMs <= 0) return "";
+    const ms = Math.round(afterMs);
+    const unit = (n, one) => n + " " + one + (n === 1 ? "" : "s");
+    if (ms % 864e5 === 0) return unit(ms / 864e5, "day");
+    if (ms % 36e5 === 0) return unit(ms / 36e5, "hour");
+    return unit(Math.max(1, Math.round(ms / 6e4)), "minute");
+  }
   function spellPhrase(afterMs) {
-    const days = Math.round(afterMs / 864e5);
+    const ms = Math.round(afterMs);
+    const days = ms % 864e5 === 0 ? ms / 864e5 : null;
     if (days === 7) return "a week";
     if (days === 14) return "two weeks";
-    if (days >= 28 && days <= 31) return "a month";
-    return spanPhrase(afterMs);
+    if (days !== null && days >= 28 && days <= 31) return "a month";
+    return spellWords(ms);
   }
   function quorumBody(q, n) {
     if (q > n) {

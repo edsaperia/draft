@@ -18,7 +18,7 @@
 import { describe, expect, it } from 'vitest';
 import { winsNeeded } from '../../engine-core/src/ranking/ceiling.js';
 import type { Room } from '../src/meaning.js';
-import { BAR_RUNGS, MEANING_MAX, OWN_RUNG_LABEL, meaningOf, roomPhrase, winsNeededPct } from '../src/meaning.js';
+import { BAR_RUNGS, MEANING_MAX, OWN_RUNG_LABEL, meaningOf, roomPhrase, spellWords, winsNeededPct } from '../src/meaning.js';
 import { VOTES_NEEDED_MAX_N, barCeilingPct } from '../src/threshold.js';
 import { CATALOGUE, CATALOGUE_BY_ID, validateFor } from '../src/catalogue.js';
 import { quorumCount } from '../src/populations.js';
@@ -280,6 +280,30 @@ describe('the meaning family', () => {
       .toBe('Over a session of 3 hours, about 10 proposals each — 4 to start with and one more every 30 minutes, never more than 6 in hand.');
     // a drip faster than five minutes is a rhythm, not a figure
     expect(meaningOf('rate', { grant: 4, cap: 6, dripMinutes: 2 }, room)).toMatch(/every few minutes/);
+  });
+
+  it('💤’s spell is worded in the unit that divides it, never as 0 days (Q1321)', () => {
+    const MIN = 60000, HOUR = 3600000, DAY = 86400000;
+    // days where whole days, else hours, else minutes; singular at one
+    expect(spellWords(7 * DAY)).toBe('7 days');
+    expect(spellWords(DAY)).toBe('1 day');
+    expect(spellWords(36 * HOUR)).toBe('36 hours');
+    expect(spellWords(HOUR)).toBe('1 hour');
+    expect(spellWords(90 * MIN)).toBe('90 minutes');
+    expect(spellWords(MIN)).toBe('1 minute');
+    // a spell that is not whole minutes is said to the nearest minute, and
+    // never as nothing; a value the page rounded through days survives
+    expect(spellWords(90 * MIN + 20000)).toBe('90 minutes');
+    expect(spellWords((5_000_000 / DAY) * DAY)).toBe('83 minutes');
+    // nothing to say is silence, not a number
+    expect(spellWords(0)).toBe('');
+    expect(spellWords(NaN)).toBe('');
+    // the meaning sentence reads the same words under a day (the screenshot
+    // read *0 days*), and its named lengths are exact days only
+    expect(meaningOf('lapse', { afterMs: 90 * MIN })).toMatch(/for 90 minutes /);
+    expect(meaningOf('lapse', { afterMs: 36 * HOUR })).toMatch(/for 36 hours /);
+    expect(meaningOf('lapse', { afterMs: 6 * DAY + 20 * HOUR })).toMatch(/for 164 hours /);
+    expect(meaningOf('lapse', { afterMs: DAY })).toMatch(/for 1 day /);
   });
 
   it('…and ⏱️ says nothing at all until ⏰ has been answered', () => {

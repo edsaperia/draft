@@ -194,13 +194,34 @@ function spanPhrase(ms: number): string {
 const dripPhrase = (dripMinutes: number): string =>
   (dripMinutes < 5 ? 'few minutes' : spanPhrase(dripMinutes * 60000));
 
-/** 💤's spell, which has three lengths people actually name. */
+/**
+ * **A lapse spell, worded in the unit that divides it** (Q1321, Ed
+ * 2026-09-11: *it's not actually 0 days — you should intelligently show days
+ * or hours or minutes*). Days where the spell is whole days, else hours where
+ * it is whole hours, else minutes — 7 days → *7 days*, 36 h → *36 hours*,
+ * 90 min → *90 minutes*, singular at one. The one writer of the number every
+ * lapse sentence carries: the meaning below, and the page's clause, value
+ * line and composer read it through the bundle, so a spell under a day can
+ * never again print as *0 days*. Nothing to say — no spell, or one that is
+ * not positive — is `''`, T13's silence rather than a stand-in.
+ */
+export function spellWords(afterMs: number): string {
+  if (typeof afterMs !== 'number' || !Number.isFinite(afterMs) || afterMs <= 0) return '';
+  const ms = Math.round(afterMs);
+  const unit = (n: number, one: string): string => n + ' ' + one + (n === 1 ? '' : 's');
+  if (ms % 86400000 === 0) return unit(ms / 86400000, 'day');
+  if (ms % 3600000 === 0) return unit(ms / 3600000, 'hour');
+  return unit(Math.max(1, Math.round(ms / 60000)), 'minute');
+}
+
+/** 💤's spell, which has three lengths people actually name; the rest is `spellWords`. */
 function spellPhrase(afterMs: number): string {
-  const days = Math.round(afterMs / 86400000);
+  const ms = Math.round(afterMs);
+  const days = ms % 86400000 === 0 ? ms / 86400000 : null;
   if (days === 7) return 'a week';
   if (days === 14) return 'two weeks';
-  if (days >= 28 && days <= 31) return 'a month';
-  return spanPhrase(afterMs);
+  if (days !== null && days >= 28 && days <= 31) return 'a month';
+  return spellWords(ms);
 }
 
 /* ---- 👥 -----------------------------------------------------------------
