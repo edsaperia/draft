@@ -484,6 +484,45 @@ mutation inside `apply` would let the memo hold within a fold); more than
 one process. The next instrument to run is this room again on docs.vote
 after the push, to move the knee's number.
 
+### The second moon room — measured 2026-09-11 19:00 (Q1326, after the three levers)
+
+**The run.** The same shape on the deployed 41da2ea: `docs.vote/d/moon`,
+the same 97-line charter, 🥾 set this time, one invitation every 12 s,
+`room-bots --min 5s --max 30s`, the founder's full view and one judgment
+sampled every 15 s. Stopped by hand at 161 bots seated, 19:25, with the
+knee found; the instance never restarted (uptime continuous, `errors`
+0). Samples bucketed by bots seated, p50 / max over eight samples each:
+
+| bots seated | view | judge | healthz | full view | races |
+| --- | --- | --- | --- | --- | --- |
+| 50–59 | 61 / 71 ms | 59 / 193 ms | 58 / 114 ms | 137 KB | 70 |
+| 70–79 | 62 / 78 ms | 65 / 95 ms | 64 / 82 ms | 184 KB | 98 |
+| 90–99 | 68 / 86 ms | 96 / 244 ms | 56 / 151 ms | 218 KB | 103 |
+| 110–119 | 70 / 170 ms | 147 / 343 ms | 55 / 185 ms | 244 KB | 99 |
+| 120–129 | 68 / 134 ms | 242 / 3,015 ms | 65 / 744 ms | 265 KB | 104 |
+| 130–139 | 124 / 984 ms | 309 / 5,193 ms | 206 / 2,186 ms | 281 KB | 107 |
+| 140–149 | 225 / 1,161 ms | 2,261 / 9,066 ms | 906 / 5,399 ms | 293 KB | 113 |
+| 150–159 | 230 / 3,358 ms | 6,296 / 19,193 ms | 576 / 4,372 ms | 303 KB | 108 |
+
+**The knee moved from 115–120 to about 140 bots**, and the collapse
+changed shape: views held under a quarter of a second at the median right
+through it while the judgment went past ten seconds — so what saturates
+now is the command path, which is the lever not built (the fold's
+uncached `races()` reads), not the view. Render's proxy timed out
+individual requests past the knee (67 views and 17 judgments answered 502
+to the bots) without the instance falling over, which is the Q1322 and
+Q1326 fixes doing their job. Ed's bar — p95 view under 100 ms, command
+under 500 ms — held to about 100 bots for views and about 110 for
+commands, against 70 and 90 in the afternoon.
+
+**Two findings for the next pass.** Eight judgments were refused
+*timestamps must be non-decreasing*: a command queued for seconds behind
+the load is stamped at receipt and folded after the minute `tick()` has
+stamped *now* on the log, so its time is in the past by the time it lands
+(Q1332). And the full view grew past 300 KB at a hundred races — the slim
+view spares the polling page, not the founder's monitor, and a first load
+at that size is the next payload to look at.
+
 
 ## History
 
