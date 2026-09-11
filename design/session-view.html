@@ -3210,6 +3210,17 @@
   const resolveCounts = () => CARDS.forEach((c) => { if (c.key || c.p != null) {
     const st = csState(c.k);
     if (st) liveStrip(c, st);
+    // **A 🏛️ motion in flight is the room's too** (Q1319, Ed 2026-09-11:
+    // *Constitutional setting proposals don't seem to have the wash progress
+    // bar*): every member answers it (§9.6a), so the rail's bar is its answers
+    // over the electorate — the mover's own accept counted from the put
+    // (§9.6). Kept **beside** `c.in`, never in its place: `c.in` is the
+    // setting's own question, and `ansTaskFor` reads `c.in < E()` as *the
+    // question is still open* — a motion's count written there would serve a
+    // resolved question's answer card again. `undefined` where nothing is in
+    // flight, which is what `railEntry` tests.
+    const mo = liveMotionRec(c);
+    c.motionIn = mo && mo.route === 'constitutional' ? mo.answers.size : undefined;
     if (!st) { c.in = 0; return; }
     if (st.settledBy === 'ceremony') { c.in = E(); return; }
     if (st.answeredCount !== undefined) { c.in = st.answeredCount; return; }

@@ -567,18 +567,25 @@ window.SETUP = (function () {
      mark only while the question is asking. `--fill` is the completion bar:
      100% for anything only yours to decide, how far the room has got on
      anything that is theirs, and how far judging has got on a thing of yours
-     in flight (a surface may override it with ctx.fillOf). */
+     in flight (a surface may override it with ctx.fillOf). **Theirs** is a
+     delegated question (`ctx.isRoom`) or, since Q1319, a 🏛️ motion in flight
+     on the setting — `c.motionIn`, the motion's answers, written by the
+     surface's `resolveCounts` and undefined where none is in flight — so a
+     constitutional proposal wears the same bar and the same *n of E have
+     answered* as a blind question, instead of the founder's 100%. */
   function railEntry(c, ctx) {
     const w = washOf(c, ctx);
     const st = stateOf(c, ctx);
-    const room = ctx.isRoom(c);
+    const motion = c.motionIn !== undefined;
+    const room = motion || ctx.isRoom(c);
+    const got = motion ? c.motionIn : (c.in || 0);
     const fill = ctx.fillOf ? ctx.fillOf(c)
-      : room ? Math.min(100, Math.round((c.in || 0) / ctx.E * 100)) + '%' : '100%';
+      : room ? Math.min(100, Math.round(got / ctx.E * 100)) + '%' : '100%';
     return '<li class="qitem" data-q="' + c.k + '">' +
       '<button class="' + (st === 'ask' || st === 'news' ? 'needs' : 'qwait') + ' st-' + st + '"' +
       ' data-card="' + c.k + '" data-washkey="set:' + c.k + '"' +
       ' aria-current="' + (ctx.open === c.k) + '"' +
-      ' title="' + esc(room ? (c.in || 0) + ' of ' + ctx.E + ' have answered' : labelOf(c, ctx)) + '"' +
+      ' title="' + esc(room ? got + ' of ' + ctx.E + ' have answered' : labelOf(c, ctx)) + '"' +
       ' style="--washcol: ' + w.col + '; --washbg: ' + w.bg + '; --fill: ' + fill + '">' +
       '<span class="ql"><span class="subj" aria-hidden="true">' + markOf(c, ctx) + '</span>' +
       '<span class="qt">' + esc(labelOf(c, ctx)) + '</span></span>' +

@@ -1012,6 +1012,79 @@ const secondSeatOnAmendment = async () => {
   await guestPage.waitForTimeout(400);
 };
 
+/* ---- a 🏛️ motion in flight fills its rail entry (Q1319) -----------------
+ * Ed, 2026-09-11, his bot room: *Constitutional setting proposals don't seem
+ * to have the wash progress bar.* A rail entry's `--fill` is how far the
+ * room has got on anything that is theirs, and a constitutional motion is
+ * the room's — every member answers it (§9.6a) — but the page read "the
+ * room's" as "a delegated question" and drew the founder's 100% from the
+ * moment the motion was put. So: the member puts 🌍 back to members-only on
+ * the assembly route (over the wire, as the amendment above — the composer's
+ * hold is powers-walk's), and the founder's entry must read the motion's
+ * answers over the electorate — the mover's own accept counts from the put
+ * (§9.6) — then move when the founder answers, and give the count back once
+ * the motion is withdrawn. Both seats are read: the mover's entry is a ⏳
+ * wait with the same bar. Fill and tooltip come off the entry's own
+ * attributes (`data-fill`, `title`), which is what the wash reads. */
+const motionFillOnAmended = async () => {
+  if (!guestPage) return; // its own failure, already reported
+  const entryAt = (pg) => pg.evaluate((k) => {
+    const li = document.querySelector('#rail li[data-q="' + k + '"]');
+    const b = li && li.querySelector('button');
+    if (!b) return null;
+    return { fill: b.dataset.fill || null, title: b.getAttribute('title'),
+      mark: ((b.querySelector('.subj') || {}).textContent || '').trim(),
+      state: [...b.classList].find((c) => c.startsWith('st-')) || null };
+  }, AMENDED);
+  const wire = (pg, cmd, args) => pg.evaluate(([c, a]) => fetch(location.pathname.replace('/d/', '/api/d/') + '/cmd', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ cmd: c, args: a }),
+  }).then((r) => r.json()).catch((e) => ({ error: String(e && e.message) })), [cmd, args]);
+  const put = await wire(guestPage, 'open-motion', { payload: { kind: 'set', setting: AMENDED, value: { rung: 'closed' } },
+    why: 'reading along is not the same as being in the room' });
+  const motion = put && put.result;
+  if (!motion || put.error) {
+    say('motion fill· FAIL: the member could not put a 🏛️ motion on 🌍 · ' + JSON.stringify(put));
+    stuck.push('the 🏛️ motion on 🌍'); return;
+  }
+  await T(5000); // one poll in each seat
+  const e1 = await entryAt(page);
+  const g1 = await entryAt(guestPage);
+  const ok1 = !!e1 && e1.fill === '50%' && e1.title === '1 of 2 have answered';
+  say('motion fill· ' + (ok1 ? 'the founder’s 🌍 entry reads the motion: ' + e1.title + ' · fill ' + e1.fill + ' · ' + e1.state
+    : 'FAIL: the founder’s 🌍 entry does not read the motion’s answers · ' + JSON.stringify(e1)));
+  if (!ok1) stuck.push('the 🏛️ motion’s fill on the founder’s entry');
+  const okG = !!g1 && g1.fill === '50%' && g1.title === '1 of 2 have answered' && g1.mark === '⏳';
+  say('mover’s ⏳ · ' + (okG ? 'the mover’s own entry is a ⏳ wait with the same bar: ' + g1.title
+    : 'FAIL: ' + JSON.stringify(g1)));
+  if (!okG) stuck.push('the 🏛️ motion’s fill on the mover’s entry');
+  // the founder answers *keep*: a keep blocks a 🏛️ motion rather than settling
+  // it (§9.6), so the motion stands with every answer in — and the bar is full
+  const kept = await wire(page, 'answer-motion', { motion, answer: 'keep' });
+  if (kept && kept.error) {
+    say('motion kept· FAIL: the founder could not answer · ' + JSON.stringify(kept));
+    stuck.push('the founder’s answer on the 🏛️ motion');
+  }
+  await T(5000);
+  const e2 = await entryAt(page);
+  const ok2 = !!e2 && e2.fill === '100%' && e2.title === '2 of 2 have answered' && e2.mark === '⏳';
+  say('motion moves· ' + (ok2 ? 'the founder’s answer moves it: ' + e2.title + ' · fill ' + e2.fill + ' · the entry files as ⏳'
+    : 'FAIL: ' + JSON.stringify(e2)));
+  if (!ok2) stuck.push('the 🏛️ motion’s fill after the founder answered');
+  // withdrawn: nothing is in flight, so the entry says the rule again, not a count
+  const drop = await wire(guestPage, 'withdraw-motion', { motion });
+  if (drop && drop.error) {
+    say('motion gone· FAIL: the member could not withdraw · ' + JSON.stringify(drop));
+    stuck.push('withdrawing the 🏛️ motion');
+  }
+  await T(5000);
+  const e3 = await entryAt(page);
+  const ok3 = !e3 || !/have answered/.test(e3.title || '');
+  say('motion gone· ' + (ok3 ? 'withdrawn, and the entry no longer counts answers' + (e3 ? ' · ' + JSON.stringify(e3) : ' · the entry left the rail')
+    : 'FAIL: the count survived the withdrawal · ' + JSON.stringify(e3)));
+  if (!ok3) stuck.push('the count after the withdrawal');
+};
+
 /* ---- the room, as a row of faces (backlog 15, Q858–Q864) ----------------
  * Ed: *where we currently say "n in the room" in the topbar we should show a
  * row / stack of user avatars.* Two seats is the smallest room in which the
@@ -1760,6 +1833,10 @@ if (!readAgain) stuck.push('leaving edit mode');
 // the other half of backlog 50: what *is* news to a member is a rule changed
 // while they were here, and one press of OK is what dismisses it
 await secondSeatOnAmendment();
+
+// Q1319: with the amendment acknowledged, a member puts 🌍 to the room and
+// the founder's rail entry must read the motion's progress
+await motionFillOnAmended();
 
 // and with two seats standing, each of them is the other's face in the topbar
 await topbarFaces();
