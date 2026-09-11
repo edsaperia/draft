@@ -559,6 +559,33 @@ export class PgPersistence implements Persistence {
     return ids.length;
   }
 
+  /**
+   * **One document and its rows, gone, in one transaction** (Q1322, Ed
+   * 2026-09-11: *delete 1, do your fixes, we'll start from scratch*). The
+   * tool's, never the server's, like the wipe: off the `Persistence`
+   * contract, behind `draft-tools delete`'s own refusal. Tokens, stashes
+   * and the outbox are keyed by other things and stay. Returns whether
+   * there was a document to delete.
+   */
+  async deleteDoc(id: string): Promise<boolean> {
+    const c = await this.pool.connect();
+    try {
+      await c.query('BEGIN');
+      await c.query('SELECT pg_advisory_xact_lock(1, hashtext($1))', [id]);
+      for (const table of ['people', 'document_log', 'engine_log', 'provisional', 'bridge_state']) {
+        await c.query(`DELETE FROM ${table} WHERE document_id = $1`, [id]);
+      }
+      const r = await c.query('DELETE FROM documents WHERE id = $1', [id]);
+      await c.query('COMMIT');
+      return (r.rowCount ?? 0) > 0;
+    } catch (e) {
+      await c.query('ROLLBACK').catch(() => undefined);
+      throw e;
+    } finally {
+      c.release();
+    }
+  }
+
   /* -- lifecycle ------------------------------------------------------------ */
 
   async close(): Promise<void> {

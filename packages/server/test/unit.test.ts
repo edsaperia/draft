@@ -15,6 +15,7 @@ import { Auth } from '../src/auth.js';
 import { Stash } from '../src/stash.js';
 import { DocStore, uniqueSlug } from '../src/store.js';
 import { MAILS, deliverable, makeMailer } from '../src/mailer.js';
+import { DELETE_FLAG, main as tools } from '../src/tools.js';
 
 const tmp = () => mkdtempSync(join(tmpdir(), 'draft-unit-'));
 
@@ -204,6 +205,31 @@ describe('DocStore', () => {
     expect(back.quarantined()).toEqual([]);
     expect(back.bySlug('charter')!.cs.logEntries().length).toBe(doc.cs.logEntries().length);
     expect(back.bySlug('charter')!.cs.rollingHash()).toBe(doc.cs.rollingHash());
+  });
+
+  // **One document, on the operator's word, typed twice** (Q1322): the tool
+  // refuses without the flag, refuses a flag naming another document,
+  // refuses an id the store does not hold, and deletes exactly one.
+  it('draft-tools delete removes one document and refuses everything short of its id twice', async () => {
+    const dir = tmp();
+    const p = new FilePersistence(dir);
+    const store = new DocStore(p);
+    for (const [id, slug] of [['d-1', 'one'], ['d-2', 'two']] as const) {
+      const doc = await store.create(id, {
+        title: slug, slug, convenor: { id: 'founder', email: 'a@x.org', isMember: true },
+      }, 1000);
+      await store.persist(doc);
+    }
+    expect(await tools(['delete', dir, 'd-1'])).toBe(1);
+    expect(await tools(['delete', dir, 'd-1', `${DELETE_FLAG}=d-2`])).toBe(1);
+    expect(await tools(['delete', dir, 'd-9', `${DELETE_FLAG}=d-9`])).toBe(1);
+    expect((await p.listDocIds()).sort()).toEqual(['d-1', 'd-2']);
+    expect(await tools(['delete', dir, 'd-1', `${DELETE_FLAG}=d-1`])).toBe(0);
+    expect(await p.listDocIds()).toEqual(['d-2']);
+    const back = new DocStore(new FilePersistence(dir));
+    await back.loadAll();
+    expect(back.bySlug('one')).toBeNull();
+    expect(back.bySlug('two')).not.toBeNull();
   });
 
   it('a document whose replay throws is quarantined and counted', async () => {

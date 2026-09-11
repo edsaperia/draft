@@ -470,6 +470,20 @@ export class FilePersistence implements Persistence {
     return ids.length;
   }
 
+  /**
+   * **One document and its sidecars, gone** (Q1322, Ed 2026-09-11: *delete
+   * 1, do your fixes, we'll start from scratch* — a quarantined document
+   * nothing could reopen). The tool's, never the server's, like the wipe:
+   * off the `Persistence` contract, behind `draft-tools delete`'s own
+   * refusal. Returns whether there was a document to delete.
+   */
+  async deleteDoc(id: string): Promise<boolean> {
+    const dir = join(this.docsDir, id);
+    if (!existsSync(dir)) return false;
+    rmSync(dir, { recursive: true, force: true });
+    return true;
+  }
+
   private saveOutbox(): void {
     writeFileSync(this.outboxPath,
       JSON.stringify(Object.fromEntries(this.outbox), null, 2), 'utf8');

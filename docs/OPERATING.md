@@ -240,7 +240,16 @@ Five things to know about it:
                                                    whether a name and a picture stand
    draft-tools erase  <store> <docId> <personId>   delete one row; prints what it held
    draft-tools wipe   <store> --i-understand-this-deletes-every-document=<name>
+   draft-tools delete <store> <docId> --i-understand-this-deletes-the-document=<docId>
    ```
+
+   `delete` (Q1322) removes one document and every row it holds — its log,
+   engine log, people, provisional text, bridge state — and nothing else;
+   the id is typed twice so it cannot be typed by habit. It is how a
+   quarantined document leaves the store once its rows are not worth
+   repairing. On Render: the service's *Shell* tab, then
+   `node dist/draft-tools.mjs delete "$DATABASE_URL" <docId> --i-understand-this-deletes-the-document=<docId>`,
+   then *Manual Deploy → Restart* so the running server forgets it.
 
    `erase` is run **against a stopped service, or the service is restarted
    after it** — a running server holds the rows in memory until it reloads.

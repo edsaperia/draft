@@ -68,6 +68,8 @@ import type { CopyReport } from './copy-store.js';
 
 /** The one flag the wipe accepts, spelled out in full so it cannot be typed by habit. */
 export const WIPE_FLAG = '--i-understand-this-deletes-every-document';
+/** The one flag the delete accepts: the id again, so it cannot be typed by habit (Q1322). */
+export const DELETE_FLAG = '--i-understand-this-deletes-the-document';
 
 const USAGE = `usage:
   draft-tools import <dataDir> <databaseUrl>
@@ -78,8 +80,10 @@ const USAGE = `usage:
   draft-tools people <store> <docId>
   draft-tools erase  <store> <docId> <personId>
   draft-tools wipe   <store> ${WIPE_FLAG}=<name>
+  draft-tools delete <store> <docId> ${DELETE_FLAG}=<docId>
     <store> is a data directory or a postgres:// URL; <name> is the data
-    directory's basename or the database's name, typed in full`;
+    directory's basename or the database's name, typed in full; <docId> is
+    the document's id (d-…), typed twice`;
 
 const say = (line: string): void => console.log(line);
 
@@ -172,6 +176,32 @@ export async function main(argv: readonly string[]): Promise<number> {
   if (b0 === undefined) {
     console.error(USAGE);
     return 2;
+  }
+  if (verb === 'delete') {
+    // **One document, on Ed's word, typed twice** (Q1322, 2026-09-11: a
+    // production document quarantined behind a broken chain, and *delete 1,
+    // do your fixes, we'll start from scratch*). The same discipline as the
+    // wipe: the refusal stands between a typed verb and a document, and
+    // the flag must carry the id itself. Run against a stopped service, or
+    // restart after — a running server keeps the document in memory.
+    const flag = argv.slice(3).find((x) => x.startsWith(`${DELETE_FLAG}=`));
+    const store = await openStore(a);
+    try {
+      const ids = await store.p.listDocIds();
+      if (!ids.includes(b0)) {
+        console.error(`delete: no document '${b0}' in ${store.shown}. Nothing was deleted.`);
+        return 1;
+      }
+      if (flag === undefined || flag.slice(DELETE_FLAG.length + 1) !== b0) {
+        console.error(`delete: refusing — this would delete document '${b0}' and every row it ` +
+          `holds from ${store.shown}. To proceed, pass ${DELETE_FLAG}=${b0}. Nothing was deleted.`);
+        return 1;
+      }
+      const gone = await store.p.deleteDoc(b0);
+      say(gone ? `delete: document '${b0}' and its rows are gone from ${store.shown}`
+        : `delete: document '${b0}' was already gone from ${store.shown}`);
+    } finally { await store.close(); }
+    return 0;
   }
   const b: string = b0;
   switch (verb) {
