@@ -17,7 +17,12 @@ services:
     plan: starter
     region: frankfurt
     buildCommand: npm ci && npm run build
-    startCommand: node dist/server.mjs
+    # V8 is told the container's size (the moon room, 2026-09-11): the
+    # starter has 512 MB, the live heap under a 200-bot room was ~60 MB, and
+    # V8 left the garbage uncollected until RSS passed 340 MB on a desktop —
+    # on the instance that is the OOM kill, not a collection. 384 leaves the
+    # rest for buffers and the runtime.
+    startCommand: node --max-old-space-size=384 dist/server.mjs
     # stage 7: a real health route (build, store, document count) rather
     # than the front page — set on the service too, since a blueprint edit
     # does not re-sync a service created from an earlier one

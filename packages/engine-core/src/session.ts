@@ -193,6 +193,20 @@ export class Session {
   private supporters = new Map<string, Set<string>>();
   private comparisons: StoredComparison[] = [];
   /**
+   * **Edge judgments indexed as they land** (the moon room, 2026-09-11): by
+   * the ground they were cast on, and by each candidate they touch. Both
+   * per-race scans below — the usable set behind every fit, and the
+   * locked-evidence test the feed asks per race — walked every judgment in
+   * the room once per race per state version, which at a hundred races
+   * over thousands of judgments was a quarter of a saturated host and the
+   * whole of a command's fold (the fold reads `races()` uncached). A race's
+   * usable judgments all share its incumbent as ground, and a locked one
+   * touches one of its members, so each scan reads its own bucket alone.
+   * Comparisons only ever append, in `apply`, so the buckets are exact.
+   */
+  private edgesByGround = new Map<string, StoredComparison[]>();
+  private edgesByCandidate = new Map<string, StoredComparison[]>();
+  /**
    * Contextual pair keys already judged, per participant (feed
    * exclusion only — revision stays open, SPEC §4.4). Edge keys carry
    * the ground id, so a ground shift re-opens the pair to everyone,
@@ -411,7 +425,7 @@ export class Session {
         // Computed before the push: race membership and incumbent ids
         // do not depend on comparisons.
         const groundId = event.kind === 'edge' ? this.groundOfPair(event.aId, event.bId) : null;
-        this.comparisons.push({
+        const stored: StoredComparison = {
           seq,
           t: event.t,
           participantId: event.participantId,
@@ -420,7 +434,17 @@ export class Session {
           kind: event.kind,
           outcome: event.outcome,
           groundId,
-        });
+        };
+        this.comparisons.push(stored);
+        if (event.kind === 'edge' && groundId !== null) {
+          const g = this.edgesByGround.get(groundId);
+          if (g) g.push(stored); else this.edgesByGround.set(groundId, [stored]);
+          for (const id of [event.aId, event.bId]) {
+            if (id.startsWith(INC_PREFIX)) continue;
+            const b = this.edgesByCandidate.get(id);
+            if (b) b.push(stored); else this.edgesByCandidate.set(id, [stored]);
+          }
+        }
         this.markJudged(
           this.judgedPairs,
           event.participantId,
@@ -1599,7 +1623,9 @@ export class Session {
 
   private buildUsableComparisons(members: string[], incumbentId: string): StoredComparison[] {
     const memberSet = new Set(members);
-    const filtered = this.comparisons.filter((c) => {
+    // only judgments cast on this race's ground can be usable (the ground
+    // lock below), and the ground bucket holds exactly those, in seq order
+    const filtered = (this.edgesByGround.get(incumbentId) ?? []).filter((c) => {
       if (c.kind !== 'edge') return false;
       // Ground lock (SPEC §4.4, Q50): a judgment cast on a different
       // ground — including rival-vs-rival pairs — no longer feeds the
@@ -2224,7 +2250,11 @@ export class Session {
 
   private scanLockedEvidence(race: RaceView): boolean {
     const memberSet = new Set(race.members);
-    for (const c of this.comparisons) {
+    // a locked judgment touches at least one member (the test below), so the
+    // members' own buckets hold every candidate; one between two members is
+    // read twice, harmlessly — the answer is a boolean
+    const pool = race.members.flatMap((m) => this.edgesByCandidate.get(m) ?? []);
+    for (const c of pool) {
       if (c.kind !== 'edge') continue;
       const aMember = memberSet.has(c.aId);
       const bMember = memberSet.has(c.bId);
