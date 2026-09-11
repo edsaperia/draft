@@ -209,10 +209,86 @@ describe('session lifecycle', () => {
     });
     expect(s.adoptionFloor()).toBe(2);
     expect(s.raceOf(c1).distinctMovers).toBe(1); // the author, alone, is short
+    expect(s.raceOf(c1).leaderJudges).toBe(1);   // and is one judge of their own text (Q1337)
     const inc = s.raceOf(c1).incumbentId;
     const events = s.judge(2000, 'p2', c1, inc, 'a');
     expect(events.some((e) => e.type === 'adopted')).toBe(true);
     expect(s.getCandidate(c1).state).toBe('adopted');
+  });
+
+  describe('the floor counts judges of the winner, not movers on the race (Q1337, R-102)', () => {
+    // A room of fifteen at a quorum of 60%: F = max(9, min(5, 12)) = 9. Three
+    // rivals on one line — the moon room's shape, where a race holding many
+    // rivals met F on rival judgments while its leader had been judged by
+    // almost nobody, and the record read *16 of 168* under a quorum of 60.
+    const crowded = () => {
+      const s = openSession({ quorum: { form: 'share', n: 60 },
+        adoptionThresholdStart: 0.6, adoptionThresholdEnd: 0.6 }, 15);
+      const { id: c1 } = s.submitCandidate(1000, { author: 'p1', patch: rewrite(0, 1, 'A.'), rationale: 'r' });
+      const { id: c2 } = s.submitCandidate(2000, { author: 'p2', patch: rewrite(0, 1, 'B.'), rationale: 'r' });
+      const { id: c3 } = s.submitCandidate(3000, { author: 'p3', patch: rewrite(0, 1, 'C.'), rationale: 'r' });
+      expect(s.adoptionFloor()).toBe(9);
+      const inc = s.raceOf(c1).incumbentId;
+      // one judge of c1, which makes it the leader
+      s.judge(4000, 'p4', c1, inc, 'a');
+      return { s, c1, c2, c3, inc };
+    };
+
+    it('nine members judging the rivals leave the leader short: thirteen movers, two judges, no adoption', () => {
+      const { s, c1, c2, c3 } = crowded();
+      // nine members judge the two rivals against each other — ties, so the
+      // fit moves neither toward the incumbent and c1 stays the leader
+      let t = 5000;
+      for (const p of ['p5', 'p6', 'p7', 'p8', 'p9', 'p10', 'p11', 'p12', 'p13']) {
+        const events = s.judge((t += 1000), p, c2, c3, 'tie');
+        expect(events.some((e) => e.type === 'adopted')).toBe(false);
+      }
+      const race = s.raceOf(c1);
+      expect(race.leaderId).toBe(c1);
+      expect(race.leaderP).toBeGreaterThan(0.6); // the bar is cleared …
+      expect(race.distinctMovers).toBe(13);      // … and the race is busy: three authors, ten judges
+      expect(race.leaderJudges).toBe(2);         // but only p1's own voice and p4 have judged c1
+      expect(race.leaderMeasured).toBe(1);
+      expect(s.getCandidate(c1).state).toBe('live');
+      // and the meter says so: the floor's distance is the leader's, 2 of 9,
+      // where movers over F would have read full
+      expect(race.closeness).toBeLessThanOrEqual(2 / 9 + 1e-9);
+    });
+
+    it('nine judges of the leader carry it — against the incumbent or against a rival alike', () => {
+      const { s, c1, c2, inc } = crowded();
+      // p1's voice and p4 make two; a judgment of c1 against a *rival* is a
+      // judgment of c1 (Ed: F members must have judged the winning candidate)
+      let t = 5000;
+      s.judge((t += 1000), 'p5', c1, c2, 'a');
+      expect(s.raceOf(c1).leaderJudges).toBe(3);
+      // six more against the incumbent: the ninth judge is the adoption
+      for (const [i, p] of ['p6', 'p7', 'p8', 'p9', 'p10', 'p11'].entries()) {
+        const events = s.judge((t += 1000), p, c1, inc, 'a');
+        const judges = 4 + i;
+        if (judges < 9) {
+          expect(events.some((e) => e.type === 'adopted'), `judge ${judges} of 9`).toBe(false);
+          expect(s.raceOf(c1).leaderJudges).toBe(judges);
+        } else {
+          expect(events.some((e) => e.type === 'adopted'), `judge ${judges} of 9`).toBe(true);
+        }
+      }
+      expect(s.getCandidate(c1).state).toBe('adopted');
+    });
+
+    it("a rival's author is nobody's judge but their own: two rivals, one judge each", () => {
+      const s = openSession();
+      const { id: c1 } = s.submitCandidate(1000, { author: 'p1', patch: rewrite(0, 1, 'A.'), rationale: 'r' });
+      const { id: c2 } = s.submitCandidate(2000, { author: 'p2', patch: rewrite(0, 1, 'B.'), rationale: 'r' });
+      const race = s.raceOf(c1);
+      expect(race.members).toEqual([c1, c2]);
+      expect(race.distinctMovers).toBe(2); // two voices on the race …
+      expect(race.leaderJudges).toBe(1);   // … one of them for whichever leads
+      expect(race.leaderMeasured).toBe(0); // and the room has not spoken
+      // the E = 5 floor is 2, and two rival authors do not meet it between them
+      expect(s.getCandidate(c1).state).toBe('live');
+      expect(s.getCandidate(c2).state).toBe('live');
+    });
   });
 
   it('respects the adoption cooldown', () => {
@@ -456,7 +532,7 @@ describe('session lifecycle', () => {
       patch: rewrite(0, 1, 'B.'),
       rationale: 'r',
     });
-    s.submitCandidate(3000, {
+    const { id: c3 } = s.submitCandidate(3000, {
       author: 'p3',
       patch: rewrite(0, 3, 'C.'),
       rationale: 'r',
@@ -471,8 +547,15 @@ describe('session lifecycle', () => {
         expect.arrayContaining(['aId', 'bId', 'kind', 'raceId', 'value']),
       );
     }
-    // A judged pair leaves the participant's feed.
+    // A judged pair leaves the participant's feed. The first card is c1
+    // against its incumbent: the crowded race carries two voices but its
+    // leader has one judge, so it is short of the floor as the batch reads
+    // it and takes the unheard boost (Q1337) — before the floor counted
+    // judges of the winner, the two rival authors met F = 2 between them
+    // and the boost went to c3's race alone.
     const first = feed1[0]!;
+    expect(first.raceId).toBe(s.raceOf(c1).id);
+    expect([first.aId, first.bId]).toContain(c1);
     s.judge(4000, 'p4', first.aId, first.bId, 'a');
     const after = s.feed('p4', 5);
     expect(
@@ -482,8 +565,10 @@ describe('session lifecycle', () => {
           (c.aId === first.bId && c.bId === first.aId),
       ),
     ).toBe(false);
-    // c1 still live (floor unmet with one mover).
-    expect(s.getCandidate(c1).state).toBe('live');
+    // p4 and p1's own voice are c1's two judges, the floor at E = 5: it
+    // carries, and the untouched race on line 3 stays live
+    expect(s.getCandidate(c1).state).toBe('adopted');
+    expect(s.getCandidate(c3).state).toBe('live');
   });
 
   /**

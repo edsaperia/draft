@@ -11,7 +11,7 @@
  *
  * | # | The promise, in the room's words | Epoch | Verdict |
  * |---|---|---|---|
- * | 1 | *Nothing changes the document until at least Q of us have weighed in* — and never fewer than ⌈E/3⌉ | live, close | **holds** — `engine-core` `adoptionFloor()`, `r.distinctMovers >= floor` in the batch and `< floor` skipped at the close |
+ * | 1 | *Nothing changes the document until at least Q of us have weighed in* — on the change itself, and never fewer than ⌈E/3⌉ | live, close | **holds** — `engine-core` `adoptionFloor()`, `r.leaderJudges >= floor` in `clearsBarAndFloor`, read by the batch and by the close alike (Q1337: judges of the winner, never movers on the race) |
  * | 2 | *The question was asked as a count (or a share), and that is how it is answered and how it stands* | pre-Begin | **holds** — `setQuorumForm`'s two refusals, `answer`'s third |
  * | 2 | …and live | live | **gap (fold)** — nothing after 🍾 checks the form: a `set` motion or the founder's own pen re-frames `quorumFormValue` silently, and the composer cannot express the re-frame it permits |
  * | 3 | *If the quorum is a share, it is a share of who is here now* | live | **holds** — `adoptionFloor()` re-derives from `eCount()` on every call; `floor-recomputed` on every roster change |

@@ -226,7 +226,31 @@ export interface RaceView {
   /** Pseudo-member id representing the incumbent text of the spans. */
   incumbentId: string;
   comparisons: number;
+  /**
+   * Distinct voices anywhere on the race — every usable comparison among the
+   * field, the authors' derived preferences included. **Not the floor since
+   * Q1337** (R-102): a crowded race met F while its leader had been judged by
+   * almost nobody. Kept for the sim's evidence and for what it says about a
+   * race's traffic; nothing in the engine gates on it.
+   */
   distinctMovers: number;
+  /**
+   * **The floor's number** (SPEC §4.2, §8.2; Q1337, R-102): distinct
+   * participants who have judged the leader — a usable comparison with the
+   * leader on either side, against the incumbent or against a rival alike —
+   * the leader's own author among them by their derived preference (§3.3),
+   * which is only ever a voice for its own candidate. A rival's author is
+   * not one: their preference touches their own draft and nothing else.
+   * 0 while there is no leader.
+   */
+  leaderJudges: number;
+  /**
+   * Measured (non-derived) usable comparisons touching the leader — the
+   * room's own judgments of X, R-063's line drawn at the winner: a race is
+   * ready only once somebody other than X's author has judged X, except at
+   * E = 1 (`soleMemberIsLeadersAuthor`).
+   */
+  leaderMeasured: number;
   /** P(leader beats incumbent) for the best live challenger, if any. */
   leaderP: number | null;
   leaderId: string | null;

@@ -1425,6 +1425,22 @@ export class Session {
       }
     }
     const certification = leaderId === null ? null : 1 - (leaderP ?? 0.5);
+    // **The floor counts judges of the winner** (Q1337, Ed 2026-09-11,
+    // R-102). The moon room carried changes on 3 to 16 judgments in a room of
+    // 168 under a quorum of 60%, and a room of fifteen adopted at p 0.88 with
+    // one comparison touching the winner: `movers` above is every voice on
+    // the race, and a race holding many rivals reaches F while its leader has
+    // been judged by almost nobody. So the floor is read on the leader alone:
+    // a usable comparison with the leader on either side — against the
+    // incumbent or a rival, both are a judgment of it — one voice each. The
+    // author's derived preference (§3.3) is a voice for its own candidate
+    // and never touches another, so the leader's author counts once and a
+    // rival's author not at all. `leaderMeasured` is R-063's line drawn at
+    // the winner: how many of those judgments the room actually made.
+    const onLeader = leaderId === null ? []
+      : usable.filter((c) => c.aId === leaderId || c.bId === leaderId);
+    const leaderJudges = new Set(onLeader.map((c) => c.participantId)).size;
+    const leaderMeasured = onLeader.filter((c) => !c.derived).length;
     const rivalGateOpen = this.rivalGateOpen(fit, members, incumbentId, usable);
     // Deadlock considers only servable pairs: while the rival gate is
     // closed, unmeasured rival pairs must not hold a race open — there
@@ -1461,13 +1477,15 @@ export class Session {
     // **The lesser of two distances** (Q1305, Ed 2026-09-10, R-101). A race
     // resolves when its leader clears the bar *and* the floor is met (§4.2),
     // so its closeness is the shorter of the two: the bar's, above, and the
-    // floor's — distinct movers over F. The bar's alone was full at birth:
-    // the author's derived preference (§3.3) fits p ≈ 0.8 before anybody has
-    // judged, which is past the span of a bar of 60 and 99% of a bar of 80,
-    // so the meter had nowhere left to fill and only ever dipped. The author
-    // is one mover, so a newborn race reads 1/F and each new judge is a step.
+    // floor's — judges of the leader over F (Q1337: the floor the batch
+    // tests, so the meter cannot read full while the leader has one judge).
+    // The bar's alone was full at birth: the author's derived preference
+    // (§3.3) fits p ≈ 0.8 before anybody has judged, which is past the span
+    // of a bar of 60 and 99% of a bar of 80, so the meter had nowhere left to
+    // fill and only ever dipped. The author is one judge of their own text,
+    // so a newborn race reads 1/F and each new judge of the leader is a step.
     // Nothing says which of the two is the shorter — a magnitude, as before.
-    const floorCloseness = Math.min(1, movers.size / Math.max(1, this.adoptionFloor()));
+    const floorCloseness = Math.min(1, leaderJudges / Math.max(1, this.adoptionFloor()));
     const closeness = Math.min(barCloseness, floorCloseness);
     return {
       id,
@@ -1480,6 +1498,8 @@ export class Session {
       // measurements, so they show up in `distinctMovers` and not here.
       comparisons: measured.length,
       distinctMovers: movers.size,
+      leaderJudges,
+      leaderMeasured,
       leaderP,
       leaderId,
       certification,
@@ -1505,17 +1525,19 @@ export class Session {
   }
 
   /**
-   * **Ready to carry** (SPEC §4.2): the leader clears bar and floor, and the
-   * room has spoken at least once — or, at E = 1, the author is the room
-   * (`soleMemberIsLeadersAuthor`). One function, read by the sweep's snapshot
-   * and by `races()`'s `blockedByPark`, so the two cannot drift.
+   * **Ready to carry** (SPEC §4.2): the leader clears the bar, F distinct
+   * participants have judged *it* (Q1337, R-102 — never the race at large),
+   * and the room has judged it at least once — or, at E = 1, the author is
+   * the room (`soleMemberIsLeadersAuthor`). One function, read by the sweep's
+   * snapshot, by `finalRender` and by `races()`'s `blockedByPark`, so none
+   * can drift.
    */
   private clearsBarAndFloor(r: RaceView, threshold: number, floor: number): boolean {
-    return r.distinctMovers >= floor &&
+    return r.leaderJudges >= floor &&
       r.leaderId !== null &&
       r.leaderP !== null &&
       r.leaderP > threshold &&
-      (r.comparisons > 0 || this.soleMemberIsLeadersAuthor(r));
+      (r.leaderMeasured > 0 || this.soleMemberIsLeadersAuthor(r));
   }
 
   /**
@@ -2172,14 +2194,14 @@ export class Session {
     const winners: Candidate[] = [];
     const appliedSettings: Array<{ settingId: string; candidateId: string }> = [];
     for (const r of races) {
-      if (r.leaderId === null || r.leaderP === null) continue;
-      if (r.leaderP <= threshold) continue;
-      if (r.distinctMovers < floor) continue;
+      // the batch's own test (Q1337): bar, F judges of the leader, and the
+      // room having judged it — the close renders nothing the sweep would not
+      if (!this.clearsBarAndFloor(r, threshold, floor)) continue;
       if (r.settingId !== undefined) {
-        appliedSettings.push({ settingId: r.settingId, candidateId: r.leaderId });
+        appliedSettings.push({ settingId: r.settingId, candidateId: r.leaderId! });
         continue;
       }
-      winners.push(this.candidate(r.leaderId));
+      winners.push(this.candidate(r.leaderId!));
     }
     winners.sort((a, b) =>
       sha256Hex(a.id + this.constitutionValue.rngSeed).localeCompare(
@@ -2490,13 +2512,14 @@ export class Session {
     }
     // Race value: closeness to adoption × salience; races short of the
     // floor that this participant hasn't judged get the unheard boost
-    // (SPEC §8.2); ground-shifted races get the re-opened boost until
+    // (SPEC §8.2) — short of it as the batch reads it, judges of the leader
+    // (Q1337); ground-shifted races get the re-opened boost until
     // re-measured (SPEC §4.4, Q50 — near-adoption by construction, so
     // their fresh pairs price like new-candidate measurement or better).
     const valued = races
       .map((r) => {
         let v = ((r.leaderP ?? 0.5) / threshold) * (weights.get(r.id) ?? 1);
-        if (r.distinctMovers < floor && !judgedRaces.has(r.id)) v *= 1.25;
+        if (r.leaderJudges < floor && !judgedRaces.has(r.id)) v *= 1.25;
         if (r.comparisons < r.members.length && this.hasLockedEvidence(r)) {
           v *= this.constitutionValue.reopenedBoost;
         }

@@ -464,7 +464,9 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     expect(adaV.clauses[0]!.candidates).toHaveLength(2);
     expect(adaV.clauses[0]!.closeness).toBeGreaterThanOrEqual(0);
     expect(adaV.clauses[0]!.closeness).toBeLessThanOrEqual(1);
-    expect(adaV.clauses[0]!.judges).toBe(2); // the two authors' own derived preferences
+    // the leader's judges (Q1337): its author's own voice — the rival's
+    // author is a voice for their own draft, not a judge of this one
+    expect(adaV.clauses[0]!.judges).toBe(1);
     expect(adaV.clauses[0]!.floor).toBe(adaV.floor);
     expect(adaV.floor).toBeGreaterThan(0);
     expect(JSON.stringify(adaV.clauses)).not.toMatch(/leaderP|certification|author|"value"/);
@@ -498,7 +500,8 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     expect(cyMine.state).not.toBe('live');
     expect(cyMine.state).not.toBe('adopted');
     expect(rec.displaced).toEqual(['The clubhouse shall be kept open all week.']);
-    // ada's judgment and bo's own derived preference: two movers on the record
+    // the judges of the candidate that carried (Q1337): ada's judgment and
+    // bo's own voice for it — two, and cy, who authored the rival, is not one
     expect(rec.judges).toBe(2);
     // one record per race: the adopted rival and the retired one do not file twice
     expect(done.records.filter((r) => r.raceId === r1.raceId)).toHaveLength(1);
@@ -2167,6 +2170,53 @@ describe('👁️ the door tells a stranger nothing of anybody’s judgments (en
       expect(raw, `seat ${seat.id}`).not.toContain(`"${seat.id}"`);
     }
     expect(raw).not.toContain('@example.org');
+  }, 120_000);
+});
+
+describe("the record counts the judges of the winner (Q1337, R-102)", () => {
+  it("an adopted record's judges are the members who judged the candidate that carried, its author among them", async () => {
+    const { base, draft } = await boot();
+    interface Step { slug: string; phase: string; error?: string }
+    let last: Step | null = null;
+    let cookie = '';
+    const press = async (to: string): Promise<Step> => {
+      const res = await post(base, '/api/dev/ladder',
+        { to, ...(last === null ? { seed: 9 } : { slug: last.slug }) });
+      const body = await res.json() as Step;
+      expect(body.error, `press to ${to} — ${res.status}: ${JSON.stringify(body)}`).toBeUndefined();
+      cookie = cookieOf(res);
+      last = body;
+      return body;
+    };
+    await press('constitution');
+    await press('ready');
+    const live = await press('session');
+    expect(live.phase).toBe('session');
+
+    const member = await (await fetch(`${base}/api/d/${live.slug}/view`,
+      { headers: { cookie } })).json() as MemberViewPayload;
+    const engine = asEngineDoc(draft.store.bySlug(live.slug)!).bridge!.engine;
+    const adopted = member.records.filter((r) => r.outcome === 'adopted');
+    expect(adopted.length).toBeGreaterThan(0);
+    // every adopted record's count, re-derived from the engine's own
+    // judgments: the winner's author and everybody with a judgment touching
+    // the winner — never more than the race-wide number the moon room's
+    // record printed (every author in the field, everybody who judged any of
+    // them). The ladder's voters judge each winner against every rival, so
+    // the two coincide here; the engine's Q1337 block holds the case where
+    // they differ, and the walk above the live card's (one judge, not two)
+    for (const rec of adopted) {
+      const winner = engine.getCandidate(rec.candidateId);
+      const judges = new Set<string>([winner.author]);
+      const raceWide = new Set<string>(rec.field.map((f) => engine.getCandidate(f.candidateId).author));
+      const ids = new Set(rec.field.map((f) => f.candidateId));
+      for (const j of engine.judgments()) {
+        if (j.aId === rec.candidateId || j.bId === rec.candidateId) judges.add(j.participantId);
+        if (ids.has(j.aId) || ids.has(j.bId)) raceWide.add(j.participantId);
+      }
+      expect(rec.judges, `record ${rec.raceId}`).toBe(judges.size);
+      expect(rec.judges).toBeLessThanOrEqual(raceWide.size);
+    }
   }, 120_000);
 });
 
