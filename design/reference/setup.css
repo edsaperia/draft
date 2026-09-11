@@ -758,59 +758,36 @@ button.cline:hover b { text-decoration: underline; }
 .doctitle[data-card]:hover { text-decoration: underline dotted 1.5px; text-underline-offset: 4px; }
 
 /* Members / Applications subsections (Ed, 2026-08-18): Members IS the list,
-   🪪 the invitations tab beside it, your own row first wearing ✋ 🖼️ 📧;
+   🎩 the tab beside it, your own row last wearing ✋ 🖼️ 📧 (Q1316);
    Applicants is the list under the Applications decision.
-   **The clearance is the list's, not the row's** (Q757). The Members block is
-   one paragraph carrying two tab columns in one gutter — 🪪 (with ✉️ ❌ 🎩) at
-   the paragraph's head, and your ✋🖼️📧 riding your own row, which is the
-   first list row since you moved to the top (Ed, 2026-08-21: *membership tab
-   and your name tab overlap*). At 12px they collided by 18px, and `fitStacks`
-   cannot help: it shrinks a *pile's* peek and bails under two tabs, and a lone
-   tab is 30px and cannot shrink (Q308's stated residual). So the whole list is
-   dropped clear of the head pile — 42px is the tallest that pile gets (38px
-   stacked) plus the gutter's own 4px. It hangs here rather than on the you-row
-   because the placeholder now stands above you (Q753) and a margin on the row
-   would double-count with it. **Padding, not margin**: the list is the first
-   in-flow child of a `.cpara` with no top border or padding, so a top *margin*
-   collapses straight out to the paragraph and carries the 🪪 pile down with
-   it — the head tab is `position: absolute` against `.cpara` — leaving the gap
-   exactly as it was. Measured: with a margin the clearance reads −3px.
-   It is the **you-row** that needs clearing, so the padding hangs on lists
-   that have one: a clerk founder has no row here (Q758) and a stranger reads
-   a list with no identity tabs at all, and neither has a second tab column
-   to clear — unscoped, both opened with 42px of nothing.
-   **The placeholder stands *inside* that clearance** (entry 183, Ed's QA of
-   batch Q). It was not dropped 42px on purpose: it is the list's first row and
-   the padding pushed it down with everything else, so the one paragraph of the
-   document whose text does not sit level with its own tab was this one. It is
-   lifted out of flow instead — the 42px is already empty and already there —
-   so the list's flow is your row and the arrived rows exactly as before, the
-   42 stays the single clearance number with the single reason above, and the
-   row lands level with the 🎩 pile at the paragraph's head. Only where there
-   *is* a you-row: everywhere else the padding is absent and the row is already
-   the list's first child at y = 0, needing no lifting.
-   **The two rules move together**, both keyed `:has(.memrow.meRow)`: anything
-   that stops the you-row being a `.memrow.meRow` inside this list unmatches
-   the clearance and the lift at once.
-   **And the open identity card is the you-row** (entry 188): ✋ 🖼️ 📧 replace
-   your row with their card, so for as long as one is open there is no
-   `.memrow.meRow` in the list — and both rules would unmatch together, dropping
-   the placeholder and everything under it 42px up on open and back down on
-   close. The `.cpara.open` that stands in your row's place is named beside it
-   in the same `:has()` list, on both rules, so the clearance is a fact about
-   *your place in the list* rather than about which of the two things is
-   currently standing in it. */
-.constsec .cpara .memlist:has(.memrow.meRow, > .cpara.open) { padding-top: 42px; position: relative; }
-.constsec .cpara .memlist:has(.memrow.meRow, > .cpara.open) > .memrow.nobody {
-  position: absolute; top: 0; left: 0; right: 0; }
+   **Your row clears the line above it by --s2** (Q1316, Ed 2026-09-11: *your
+   row last, the list above* — reversing *You are at the top*, 2026-08-21).
+   The Members block is one paragraph carrying two tab columns in one gutter:
+   🎩 at the paragraph's head, your ✋🖼️📧 riding your own row. While your row
+   led the list the whole list was dropped 42px clear of the head pile (Q757)
+   and the placeholder lifted back into that clearance (entry 183); with your
+   row last the placeholder is simply the list's first row, level with 🎩 as
+   every paragraph's text is with its tab, and the only thing left to clear
+   is the head tab's foot. The list is a wrapping flex row of 22px faces, so
+   whenever the membership fits on one line your row is the second line, at
+   y = 27, and your front tab — which sits at your row's top — overlaps the
+   30px 🎩 tab by 3px; `fitStacks` cannot help, since it shrinks a *pile's*
+   peek and 🎩 stands alone. 8px is the first step of the scale that clears
+   it: measured, your tab then stands 5px under 🎩's foot, which is exactly
+   the clearance the placeholder case already had, and under the placeholder
+   your row lands 43px down — within a pixel of the 42 it stood at before.
+   Every list, the same 8px: a founder alone, one line of faces, thirty. */
+.memrow.meRow, .constsec .cpara .memlist > .cpara.open { margin-top: var(--s2); }
 /* **Your card stands exactly where your row stood** (entry 188). The list is a
    wrapping flex row of faces and the card is a paragraph, not a face, so it
    takes the same full-width break `.memrow.meRow` takes — and nothing else:
    the strip's own y is `fitBand`'s, measured against a closed sibling's tab
    rather than written as a constant here, and it already lands where the pile
    on your row stood (`card-audit`'s P6 measures the pair at `[0, 0]`). A
-   `top` or a `margin-top` written here would fight that measurement, and did:
-   a −3px lift for `.memrow .chipcol`'s own offset moved the glyph 3px. */
+   `top` or a `margin-top` written here *alone* would fight that measurement,
+   and did: a −3px lift for `.memrow .chipcol`'s own offset moved the glyph
+   3px. The --s2 above is written on the row and the card in one rule, so the
+   two stand at the same y and the pair still measures `[0, 0]`. */
 .constsec .cpara .memlist > .cpara.open { flex-basis: 100%; }
 .memlist { display: flex; flex-wrap: wrap; gap: 5px 18px; }
 /* **The list's own subheadings** (Q868, Q869): Invitees, then Applicants —
@@ -820,7 +797,7 @@ button.cline:hover b { text-decoration: underline; }
    a little more air above than the 5px row gap, so a heading reads as belonging
    to what is under it rather than to what is over it. */
 /* "you" — the one sanctioned per-reader difference (Ed): in the members list
-   you are at the top, on your own line, your identity pile in the gutter
+   you are last (Q1316), on your own line, your identity pile in the gutter
    beside you; the min-height is the 30px front tab of that pile */
 .memrow.meRow { flex-basis: 100%; min-height: 30px; }
 /* only avatars and names keep the compact dress (Ed) */
@@ -832,9 +809,9 @@ button.cline:hover b { text-decoration: underline; }
 /* nobody else yet (407a): a full-width muted row where the members would
    stand — list furniture, not a clause, so it speaks quietly. It stands
    **above** your row (Q753), where it is a statement about the list rather
-   than a caption on you; the clearance job it used to do as well is the
-   list's own padding now. Since entry 183 the three subsections that stand
-   when empty carry one each too (F21). */
+   than a caption on you; since Q1316 it is the list's first row, level with
+   the 🎩 tab, and the clearance is your own row's --s2 above. Since entry 183
+   the three subsections that stand when empty carry one each too (F21). */
 .memrow.nobody { flex-basis: 100%; color: var(--muted); min-height: 22px; }
 /* **A placeholder beside a tab is the tab's own height** (entry 183): the head
    pile sits at `top: 0` of the `.cpara` and a gutter tab is 30px, so a row that

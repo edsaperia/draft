@@ -3565,10 +3565,13 @@
         // saying the true thing about an empty list, and giving the you-row
         // clearance from the 🪪 pile above. When *you* moved to the top of the
         // list (2026-08-21) the clearance job went with you onto the you-row's
-        // own margin — the list's padding now (Q757) — and the sentence was
-        // left dangling below your row, reading as a caption on you rather
-        // than a statement about the list. Its wording follows from whether
-        // there is a you-row at all, so neither string is chosen by hand.
+        // own margin — the list's padding for a while (Q757) — and the sentence
+        // was left dangling below your row, reading as a caption on you rather
+        // than a statement about the list. Since Q1316 your row stands last
+        // and the placeholder is the list's first row again, level with the
+        // 🎩 pile at the paragraph's head, and no clearance job is left for
+        // anybody to do (setup.css). Its wording follows from whether there
+        // is a you-row at all, so neither string is chosen by hand.
         // No avatar: a face here would
         // claim a person who does not exist.
         // **And it counts who is *here*, not who is on the roster** (Q870).
@@ -3584,7 +3587,7 @@
         // were one flat list distinguished by a chip on the row, which read as
         // *these are your members, some of them faintly* — the chip was doing a
         // heading's job. The arrived rows keep the order B2 gave them, you
-        // first, and the two subheadings are the only new furniture: no chip
+        // last since Q1316, and the two subheadings are the only new furniture: no chip
         // survives that its own heading now says (the *invited* chip goes, the
         // *applicant* chip stays out of this view, which never had one).
         // **A row says what is true of it, wherever it stands** (Ed,
@@ -3642,9 +3645,15 @@
         // statement about *Members* and nothing else.
         const nobody = here.length ? ''
           : '<div class="memrow nobody">(nobody' + (showMe ? ' else' : '') + ' here yet)</div>';
-        // **You are at the top** (Ed, 2026-08-21). A membership starts as one
-        // person, and that person is reading this: the list opens with your
-        // own row — the only one wearing your ✋🖼️ tabs.
+        // **Your row last, the list above** (Q1316, Ed 2026-09-11, reversing
+        // *You are at the top* of 2026-08-21 — founding a document with thirty
+        // members: *why does the members list appear under my name in the
+        // Members section, instead of above?*). The membership is listed
+        // first and your own row — the only one wearing your ✋🖼️📧 tabs, the
+        // *you* chip and, once begun, *Leave* — closes the list, after the
+        // arrived rows and before the departure sentences (Q901), which stay
+        // *after the rows*. The open identity card stands in the same place,
+        // since it is your row's card (entry 188).
         const meBlock = !showMe ? ''
           : openId ? h.paraWith(openId, my)
           : '<div class="memrow meRow">' + (my.length ? h.pile(my) : '') + avHtml(me()) +
@@ -3746,7 +3755,7 @@
           // table of words hidden where nobody reads copy.
           (isStranger()
             ? memSub('Members', strangerRows + departureLines(), [], true)
-            : memSub('Members', nobody + meBlock + here.map(memRow).join('') + departureLines(),
+            : memSub('Members', nobody + here.map(memRow).join('') + meBlock + departureLines(),
                 ['hat'], false, !!openId) +
               memSub('Invitees', invited.length ? invited.map(memRow).join('')
                 : '<div class="memrow nobody">(no outstanding invitations)</div>',
