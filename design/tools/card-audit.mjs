@@ -1599,17 +1599,26 @@ async function walkCharter(page, base, cards, errors, { closed, doors } = {}) {
   // the floating 📝 (D1): the live session only — a closed document draws no door
   if (!closed && doors) await walkDoor(page, doors, errors, walk);
   if (closed) {
-    // the closed page's own furniture: the backlog's ⏸ records and the
-    // signatures, which exist nowhere else
-    // `offered()` reads `data-card`/`data-tab`; a backlog paragraph's mark is
-    // an `.achip[data-anchor]`, so it has to be asked for by name or this
-    // block silently matches nothing and the closed page's own furniture
-    // never gets measured at all.
-    const keys = await page.evaluate(() => [...new Set([...document.querySelectorAll('[data-card],[data-tab],[data-anchor]')]
-      .map((el) => el.dataset.card || el.dataset.tab || el.dataset.anchor)
-      .filter((k) => k && /^U:/.test(k)))]);
-    if (!keys.length) errors.push(walk + ': no backlog (U:) records on the page — nothing measured for the backlog');
-    for (const k of keys.slice(0, 4)) await openAndMeasure(page, k, '.sugg, .setupcard', walk, cards, errors);
+    // **The backlog's own records, checked rather than re-opened** (Q1339).
+    // A backlog paragraph is keyed `U:<raceId>` **as a block of the document**
+    // and its mark carries the *record's* id, `rec:<raceId>` — two different
+    // names for two different things. This block read the marks and filtered
+    // them for `U:`, which matches none of them, so it announced *no backlog
+    // records on the page* on every run while the two the closed fixture
+    // draws sat at the end of the payload: the loop above walks
+    // `SESSION.SUGGS`, and a closed document's records are in it.
+    //
+    // So the guarantee is the one worth holding — every backlog record the
+    // closed page draws has been measured — and it is asked of the page's own
+    // structure rather than of a key shape: the paragraphs `U:` names, the
+    // marks they carry, and the walk's own cards.
+    const recs = await page.evaluate(() => [...new Set(
+      [...document.querySelectorAll('#charter [data-key^="U:"] .achip[data-anchor]')]
+        .map((el) => el.dataset.anchor).filter(Boolean))]);
+    if (!recs.length) errors.push(walk + ': no backlog records on the closed page — nothing measured for the backlog');
+    const measured = new Set(cards.filter((c) => c.walk === walk).map((c) => c.key));
+    const missed = recs.filter((k) => !measured.has(k));
+    if (missed.length) errors.push(walk + ': the backlog is drawn but unmeasured — ' + missed.join(', '));
   }
 }
 

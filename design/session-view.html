@@ -6600,11 +6600,17 @@
     return { id: c.k, html, pinned: st !== 'wait' && st !== 'done', rank: RAIL_RANK[st],
       u: RAIL_U[st], mine: st === 'yours', anchor: () => anchorOf(c.k) };
   }
-  // birthPass sees only the setup tasks: the charter's own entries arrive
-  // by session.js's rules, not by being reborn on every render
-  const setupRail = () => ({ querySelectorAll: (sel) => {
-    const ids = new Set(railEntries.map((e) => e.id));
-    return [...rail.querySelectorAll(sel)].filter((el) => ids.has(el.dataset.q)); } });
+  // **The birth-pass sees the whole rail** (Q1338, Ed 2026-09-11). It used to
+  // be scoped to the setup tasks, on the ground that a charter entry arrives
+  // by session.js's own rules — but session.js has exactly one, the next pair
+  // of a race you have just judged sliding in, and a race that is new to you
+  // has none at all. That never showed while a race was served the moment it
+  // existed; since Q1328 holds every race back until ⚖️ Voting is
+  // acknowledged, a dozen land in one render at the OK and pop. F14 is one
+  // rule over both columns — what is born arrives, it does not appear — and
+  // `bornKeys` already remembers across the wholesale rebuild the rail takes
+  // on every render and every poll, so a charter entry is keyed by its own
+  // item id exactly as a setup task is by its page key.
 
   // ---- `dead-click-nudge` (Q650–Q653, Ed 2026-08-23) ---------------------
   // A founder meeting the birth has never seen this surface, and the rail is
@@ -8671,7 +8677,7 @@
     lastOpen = S.open;
     // what is born arrives (setup.js birthPass): a stagehand act — seat
     // switch, ⏩ — mutes the entrances rather than replaying fifteen at once
-    window.SETUP.birthPass(band, setupRail(), birthsMuted, () => SESSION.drawWires());
+    window.SETUP.birthPass(band, rail, birthsMuted, () => SESSION.drawWires());
     launchGrant();
     launchFarewell();
     // the closed page: every clause grey, typing opens nothing, the wallets
