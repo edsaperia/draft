@@ -4347,7 +4347,16 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   // an angled wire is the price of a full rail. Dragging the document to hide
   // that price moved the one thing the reader was actually looking at.
   function bringIntoView(id, done) {
-    const targets = wireTargets(id);
+    let targets = wireTargets(id);
+    // **Every entry travels, whether or not its tab is drawn** (Ed, 2026-09-11:
+    // *when I click on green ✔ tasks whose clauses are outside the viewport,
+    // I'm not moved*). A wire target is a drawn tab, and a filed record in a
+    // crowded pile has none until the pile opens — which happens *after* the
+    // scroll, so the click opened the card somewhere off screen and looked
+    // dead; a candidate on a heading had none either, `wireTargets` keeping
+    // only paragraphs. The clause the entry stands beside is the fallback:
+    // `anchorForEntry` is what levels the entry against it, so the two agree.
+    if (!targets.length) { const a = anchorForEntry(id); if (a) targets = [a]; }
     if (!targets.length) { drawWires(); return done(); }
     const y = topTarget(targets).getBoundingClientRect().top;
     const arrive = () => { layoutQueue(); drawWires(); done(); };

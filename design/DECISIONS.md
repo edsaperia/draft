@@ -5442,3 +5442,9 @@ The record is PRODUCTION.md § *The host under two hundred bots*; here is what w
 **Built** the same evening: `foldTime(doc, nowMs = Date.now())` in `engine-host.ts` — the clock at the fold, never earlier than the last event of either log — and `tOf` in server.ts reads it. The request routes take the fresh clock; the tick, the commit's bridge drive and the outbox pass keep their own `nowMs`, because a test-driven tick states the time it is (the first cut dropped that and two chamber tests lapsed nobody). Not built: the receipt time is not recorded anywhere; if it ever matters for the record, it is a field on the event, not the stamp.
 
 **Guards:** `fold-time.test.ts` (five cases, the moon room's among them); server 108; lint, typecheck, build.
+
+## Every rail entry travels to its card (Ed, 2026-09-11)
+
+**Found** by Ed in the moon room: *when I click on green ✔ tasks whose clauses are outside of the current viewport, I'm not moved to where their cards open, unlike with 💡 tasks.* On the Hollow Oak fixture nine of forty-seven entries did not travel: the eight filed records on the Guests clause and one 💡 on a heading. `bringIntoView` aimed only at `wireTargets` — a drawn tab, or the paragraph behind it — and a filed record in a crowded pile has no drawn tab until the pile opens, which `toggle` does *after* the scroll; a heading has no `p` for the tab's `closest` to find. So the card opened off screen and the click read as dead.
+
+**Fix:** where no wire target exists, `bringIntoView` aims at `anchorForEntry(id)`, the element the entry is levelled against — so the scroll and the rail agree about where the clause is. Nothing else changes: the probes are identical, and every one of the fixture's forty-seven entries now moves the page when its clause is outside the viewport.
