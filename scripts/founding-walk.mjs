@@ -33,7 +33,22 @@ const AS_JSON = process.argv.includes('--json');
  * document. What it checks is pure page logic, identical in the fixture and
  * live, so the fixture is an honest place to check it.
  */
-const DELEGATE = (process.argv.find((a) => a.startsWith('--delegate')) || '')
+/**
+ * `--takeback=<key>` (Q1318, Ed 2026-09-11: *I should be able to choose a
+ * value to take it back with ✒️, but I wasn't able to do that here*). Hands
+ * the setting over exactly as `--delegate=` does, then re-opens its card,
+ * chooses a value and presses ✒️ — the take-back, `commitSetting` reclaiming
+ * and setting in one act — and asserts the setting is the founder's again:
+ * the card's own radios before the press (the delegate rung off, the value
+ * on), the module's holder after it, the clause no longer waiting, the
+ * founder's own answer card gone from the rail. With nothing left delegated
+ * the walk then ends on a begun document, as the plain walk does, so the
+ * one-voice refusal below is not asserted in this mood. Two shapes of card
+ * are worth walking: one whose value and holder are separate fields (🤝,
+ * Ed's own case) and one where they are the same field (🌍).
+ */
+const TAKEBACK = (process.argv.find((a) => a.startsWith('--takeback=')) || '').split('=')[1] || null;
+const DELEGATE = TAKEBACK || (process.argv.find((a) => a.startsWith('--delegate')) || '')
   .split('=')[1] || (process.argv.includes('--delegate') ? 'chamber' : null);
 /**
  * `--shape=<meeting|conference|ongoing|custom>` (entry 166) picks that rung on
@@ -94,6 +109,11 @@ const snap = () => page.evaluate(() => {
       set: el.dataset.set || el.dataset.ans || null,
       val: el.dataset.val || el.dataset.ansval || null,
       on: el.classList.contains('on') || el.getAttribute('aria-checked') === 'true',
+      // an option block's radio says it is chosen with `aria-pressed`, and
+      // `.on` sits on the block, not the button (CP1); `on` above is kept as
+      // it was so the plain walk's choices — and the founding golden — stand
+      pressed: el.getAttribute('aria-pressed') === 'true' ||
+        !!(el.closest('.pick') && el.closest('.pick').classList.contains('on')),
       label: txt(el),
     })),
     inputs: [...c.querySelectorAll('input,textarea')].map((i) => ({
@@ -404,6 +424,64 @@ const tabLabel = (k) => page.evaluate((kk) => {
   const el = document.querySelector('#band .achip[data-tab="' + kk + '"] .sr');
   return el ? el.textContent.trim() : null;
 }, k);
+/* ---- Q1318: a delegated card is taken back by choosing a value ---------
+   Before 🍾 the founder takes a delegated setting back by choosing a value on
+   its card and pressing ✒️ (`commitSetting` reclaims and sets in one act, and
+   🍾's hold sentence tells them to do exactly that). The module's holder is
+   the witness that the press reclaimed rather than delegated again; the
+   card's own radios are read *before* the press, since a value press already
+   moves the delegate rung off on a card that is working. The module id is the
+   page key for every delegable setting, so `settingState(k)` needs no map. */
+const holderOf = (k) => page.evaluate((kk) => {
+  try { const st = window.cs && window.cs.settingState(kk);
+    return st ? { holder: st.holder, value: st.value } : null; } catch { return null; }
+}, k);
+const takeBack = async (k) => {
+  const was = await holderOf(k);
+  if (!was || was.holder !== 'members') {
+    errors.push(k + ' was not delegated before the take-back (holder ' + JSON.stringify(was) + '), so the take-back proves nothing');
+    return;
+  }
+  if (!(await openCard(k))) { errors.push('cannot re-open ' + k + ' to take it back'); return; }
+  const before = await record('reopen ' + k + ' (delegated)');
+  const opts = (before.card && before.card.options) || [];
+  // the last value rung — Ed's own press on 🤝 was its second block — and
+  // never the delegate rung, which carries 'roster' whatever key it writes
+  const rung = [...opts].reverse().find((o) => o.set && o.val && o.val !== 'roster' && !o.pressed);
+  if (!rung) { errors.push(k + ' offers no value rung to take it back with: ' + JSON.stringify(opts)); return; }
+  await clickIn('.setupcard [data-set="' + rung.set + '"][data-val="' + rung.val + '"]');
+  const chosen = await record('take back ' + k + ' (' + rung.set + '=' + rung.val + ')');
+  const radios = (chosen.card && chosen.card.options) || [];
+  const delegOn = radios.some((o) => o.val === 'roster' && o.pressed);
+  const valOn = radios.some((o) => o.set === rung.set && o.val === rung.val && o.pressed);
+  if (delegOn || !valOn) {
+    errors.push(k + ': choosing ' + rung.val + ' did not take the card back on its own radios — delegate rung ' +
+      (delegOn ? 'still on' : 'off') + ', value ' + (valOn ? 'on' : 'off'));
+  }
+  const committed = await clickIn('.setupcard [data-confirm]');
+  const after = await record('commit take back ' + k, committed ? null : 'no commit control');
+  if (!committed) { errors.push(k + ': no ✒️ to take it back with'); return; }
+  const now = await holderOf(k);
+  if (!now || now.holder !== 'convenor' || now.value === null || now.value === undefined) {
+    errors.push(k + ': ✒️ after choosing ' + rung.val + ' did not take the setting back — the module holds ' +
+      JSON.stringify(now) + ' where convenor with a value was expected (✒️ delegated again, Q1318)');
+  }
+  const said = await clauseText(k);
+  if (/waiting for members\.$/.test(said || '')) {
+    errors.push(k + ' was taken back but its clause still says it is waiting: ' + said);
+  }
+  const left = (after.rail || []).filter((e) => e.k === k || e.k === 'ans-' + k).map((e) => e.k);
+  if (left.length) {
+    errors.push(k + ' was taken back but the rail still holds ' + JSON.stringify(left) +
+      ' — a founder-held setting has no question of its own to answer');
+  }
+  // …and the card, re-opened, is the founder's: the delegate rung is off
+  if (await openCard(k)) {
+    const again = await record('reopen ' + k + ' (taken back)');
+    const still = ((again.card && again.card.options) || []).some((o) => o.val === 'roster' && o.pressed);
+    if (still) errors.push(k + ' re-opened after the take-back with its delegate rung still on');
+  }
+};
 for (let i = 0; i < 40; i++) {
   const s = await snap();
   const next = s.rail.find((e) => e.k && !seen.has(e.k) && !DOORS.has(e.k));
@@ -453,6 +531,9 @@ for (let i = 0; i < 40; i++) {
     (await clickIn('.setupcard [data-ok]')) || (await clickIn('.setupcard [data-hatgo]'));
   await record('commit ' + next.k, committed ? null : 'no commit control');
   if (next.k === 'begin' && committed) began = true;
+  // Q1318: hand it over, then take it back before the rail can serve the
+  // founder their own question on it
+  if (next.k === TAKEBACK && committed) await takeBack(next.k);
   if (next.k === TWO_LABELS && next.k !== DELEGATE && committed) {
     const said = await tabLabel(next.k);
     if (said !== TWO_LABELS_NOUN) {
@@ -502,7 +583,11 @@ if (penReleased && began) {
 // of a begun document by design, and what is asserted is the refusal itself —
 // the cork dark, the card saying why (Q826–Q830's readout), the clause still
 // waiting — rather than skipping the two blocks above in silence.
-if (DELEGATE) {
+/* ---- --takeback: nothing is delegated any more, so 🍾 begins ------------ */
+if (TAKEBACK && !began) {
+  errors.push('🍾 did not begin after ' + TAKEBACK + ' was taken back — with nothing delegated the walk should end on a begun document');
+}
+if (DELEGATE && !TAKEBACK) {
   if (began) {
     errors.push('🍾 began the document with ' + DELEGATE + ' delegated and the founder its only voice (R-015)');
   } else {
@@ -527,7 +612,7 @@ if (DELEGATE) {
 
 /* ---- --delegate: is the founder served their own question? ------------ */
 let verdict = null;
-if (DELEGATE) {
+if (DELEGATE && !TAKEBACK) {
   const want = 'ans-' + DELEGATE;
   // **Offered, not still pending.** The founder answers their own question as
   // soon as it is served, so by the end of the walk it is settled and gone

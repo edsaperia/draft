@@ -4429,6 +4429,17 @@
   // without a special case.
   const docOpen = () => !(cs && cs.closed);
   const mayPenOn = (k) => mayPen() && docOpen() && pwPair(k).u;
+  // **The take-back is the one commit the lock must let through** (Q1318, Ed
+  // 2026-09-11). Before 🍾 a delegated setting is taken back by choosing a
+  // value on its card and pressing ✒️ — `commitSetting` reclaims and sets in
+  // one act, and 🍾's hold sentence sends the founder there — but delegation
+  // is holding neither power (§9.0a), so `pwPair(k).u` is false for as long
+  // as the membership holds it and the ✒️ was dark on every delegated card,
+  // whichever key it carried. Reclaiming is what restores the pen, so the
+  // commit that reclaims cannot wait on it: the pen is asked of the wallet
+  // and the document, and of the card only that a value stands chosen where
+  // the delegate rung stood. One-way after the start, like the rung.
+  const takingBack = (k) => !!cs && cs.constitutedAtT === null && csDelegated(k) && !wantsDelegate(k);
   // **The shield has a grant of its own** (`grant-shield`, since d20f67a — the
   // purer reading of *no power arrives without acknowledgment* that Q532 asked
   // for): it used to ride the pen's OK, since both powers arrive in the
@@ -6931,6 +6942,13 @@
   // label (Q620); ⏱️ compares the one number the card can say (Q1160)
   const unchangedCard = (k) => {
     if (!standingBlock(k)) return false;
+    // **A delegated card with no value has nothing to equal** (Q1318): it
+    // reads settled, so it has a standing block, but `standsTyped` falls
+    // back to the founder's own fields where nothing stands — a card compared
+    // with itself, *unchanged* on every press, its ✒️ dark before the
+    // take-back could be committed on any key
+    const st = csState(k);
+    if (!st || st.value === null || st.value === undefined) return false;
     if (CHOSEN[k] && !CHOSEN[k]()) return false;
     let v = null;
     try { v = TYPED[k] ? TYPED[k]() : null; } catch (e) { return false; }
@@ -8178,8 +8196,11 @@
         // the route's commit group at the far right (Q1154).
         '<button class="btn btn-approve glyphbtn' + (commitGlyph === TICK ? '' : ' emojibtn') + '"' +
         // the card decides the ✒️, the wallet decides the sentence (entry 62)
-        // — and a card equal to what stands is dark (Q1293, `commitReady`)
-        (commitReady(c) && penOkFor(commitGlyph, c) ? '' : ' disabled') +
+        // — and a card equal to what stands is dark (Q1293, `commitReady`);
+        // a delegated card with a value chosen is the take-back, which the
+        // per-setting lock cannot see (Q1318, `takingBack`)
+        (commitReady(c) && (penOkFor(commitGlyph, c) ||
+          (commitGlyph === '✒️' && mayPen() && docOpen() && takingBack(c.k))) ? '' : ' disabled') +
         ' data-confirm="1" title="' +
         (penOkFor(commitGlyph) ? commitTitle(c) : penWaitTitle) + '">' + commitGlyph + '</button>' +
         // the route's own commit, after the pen (entry 161) — see the title
@@ -9003,10 +9024,27 @@
       // a ⏰ chip lights by its own id, not by the date it happens to carry
       if (o.dataset.set === 'endsAt') S.endChip = o.dataset.chip || '';
       if (perpetual() && S.shape === 'ramp') S.shape = 'fixed';
-      // 👥's form blocks are the value rungs since Q1162, so picking one is
-      // the founder's own answer — it takes the question back exactly as
-      // picking a value does anywhere (*Picking a value here takes it back*)
-      if (o.dataset.set === 'quorumForm') S.quorumBy = 'founder';
+      // **Picking a value takes the question back, whatever the key** (Q1318,
+      // Ed 2026-09-11: *I should be able to choose a value to take it back
+      // with ✒️, but I wasn't able to do that here*). Where a card's value and
+      // its holder are one field (⏰ 👤 👁️ 🌍 🥾 💤) the press overwrites
+      // 'roster' by itself; where they are two — 🤝's `joinBy` beside
+      // `policyBy`, 👥's form blocks beside `quorumBy` (the one case this
+      // line used to handle, since Q1162) — the holder flag has to be told,
+      // or `wantsDelegate` stays true and ✒️ hands the setting over again
+      // instead of reclaiming it. The open card's own delegate key is the one
+      // written, and never by the delegate rung itself, which writes 'roster'
+      // into that same key. Written from blank as well as from 'roster' —
+      // *held and set reads founder* (the holder-radio rule beside
+      // `hydrateS`), which is what 👥's line and 🌡️'s `fillRung` always did,
+      // and what ⏩'s seed reads to tell a set flag from an untouched one.
+      // Before the start only: the rung is one-way after it
+      // (`delegateRung`), and past 🍾 the flag is hydration's record of who
+      // holds, not a choice in flight.
+      const dk = S.open && DKEY[S.open];
+      if (dk && o.dataset.set !== dk && S[dk] !== 'founder' && (!cs || cs.constitutedAtT === null)) {
+        S[dk] = 'founder';
+      }
       render();
       // under a standing block the standing form's rung is drawn with its
       // field blank (Q1293), so picking it changes nothing `S` can see and the
