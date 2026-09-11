@@ -342,7 +342,7 @@
   "page.val.closed": "Closed",
   "page.val.fixedNoEnd": "Fixed — no end date to rise towards",
   "page.val.initials": "Your initials",
-  "page.val.lapseAfter": "ƒ (d) => 'After ' + d + ' days without logging in'",
+  "page.val.lapseAfter": "ƒ (spell) => 'After ' + spell + ' without logging in'",
   "page.val.notBegun": "Not yet begun",
   "page.val.notGiven": "Not given yet",
   "page.val.notNamed": "Not named yet",

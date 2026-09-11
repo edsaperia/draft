@@ -625,7 +625,9 @@ window.COPY = (function () {
       quorumOf: (n, e) => n + ' of ' + e,
       quorumPct: (pct, n, e) => pct + '% — ' + n + ' of ' + e,
       oneEvery: (phrase) => 'One every ' + phrase,
-      lapseAfter: (d) => 'After ' + d + ' days without logging in',
+      // the spell arrives worded — *7 days*, *36 hours*, *90 minutes* — by
+      // the module's `spellWords`, never as a bare day count (Q1321)
+      lapseAfter: (spell) => 'After ' + spell + ' without logging in',
       open: 'Open',
       waitingStart: 'Waiting on the start',
       waitingConstitution: 'Waiting on the constitution',
