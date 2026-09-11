@@ -2513,11 +2513,17 @@
   // the card's top edge and is riding over the prose, when it takes a ground
   // and a shadow as the riding tab does (`detached`). Read at every focus
   // change, every scroll frame and every render.
-  function syncEditCtl() {
-    const strip = doc.querySelector('.editctl');
+  // **One sync for either column's strip** (Q1313, Ed 2026-09-11: *same
+  // strip as after 🍾*): the page hands in its own strip and its own answer
+  // to *does the founder's pre-🍾 column hold the caret*, since that column
+  // is `#prose` and not a `[data-lane]`; called bare, it is the charter's.
+  function syncEditCtl(strip, inLane) {
+    strip = strip || doc.querySelector('.editctl');
     if (!strip) return;
-    const ae = document.activeElement;
-    const inLane = !!(ae && ae.closest && ae.closest('[data-lane]') && doc.contains(ae));
+    if (inLane == null) {
+      const ae = document.activeElement;
+      inLane = !!(ae && ae.closest && ae.closest('[data-lane]') && doc.contains(ae));
+    }
     strip.querySelectorAll('.lfmt').forEach((b) => { b.disabled = !inLane; });
     const rest = parseFloat(getComputedStyle(strip).top) || 0;
     strip.classList.toggle('detached', strip.getBoundingClientRect().top <= rest + 0.5);
@@ -5580,8 +5586,8 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // the strip's B and I follow the caret: live while an editing lane holds
     // it, disabled otherwise (focusout fires before the new focus lands, so
     // the read waits a tick)
-    document.addEventListener('focusin', syncEditCtl);
-    document.addEventListener('focusout', () => setTimeout(syncEditCtl, 0));
+    document.addEventListener('focusin', () => syncEditCtl());
+    document.addEventListener('focusout', () => setTimeout(() => syncEditCtl(), 0));
 
     // the fixture's other members are a timer; a live host beats the pulse
     // itself, once per movement the poll sees
@@ -5767,6 +5773,9 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // edit mode's shared pieces (backlog 204): the row both hosts draw, the
     // read-mode keystroke, and what the riding tab says about the draft
     proposalRowHtml, typeAt, draftRowState, dropDraft,
+    // the column's one strip (Q1294 (b)), shared with the founder's pre-🍾
+    // column since Q1313: its sync, and the `[]` preference both columns read
+    syncEditCtl, laneRaw, setLaneRaw: (raw) => { laneMode = raw ? 'md' : 'rich'; },
     arcFrames, flyGlyph, pencilStorm, renderWallet, beat, act,
     // the hold vocabulary, shared with the founder's own wallets in the page:
     // `nudgeHome` brings a released flight back (never travelling less than a
