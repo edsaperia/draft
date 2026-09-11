@@ -30,7 +30,7 @@ import { Stash } from './stash.js';
 import { MAILS, botOutboxPath, makeMailer, outboxTail } from './mailer.js';
 import { MailOutbox } from './outbox.js';
 import type { QueuedMail } from './outbox.js';
-import { asEngineDoc, driveBridge, persistEngine, resumeBridge } from './engine-host.js';
+import { asEngineDoc, driveBridge, foldTime, persistEngine, resumeBridge } from './engine-host.js';
 import { ParticipantApi, authorVisible } from '../../engine-core/src/participant-api.js';
 import type { CardView } from '../../engine-core/src/participant-api.js';
 import type { Candidate } from '../../engine-core/src/types.js';
@@ -193,12 +193,11 @@ export async function createDraftServer(cfg: ServerConfig,
     await mailer.send(mail);
   };
 
-  /** Non-decreasing time per document (the module requires it). */
-  const tOf = (cs: ConstitutionSession, nowMs: number): number => {
-    const log = cs.logEntries();
-    const last = log.length > 0 ? log[log.length - 1]!.event.t : 0;
-    return Math.max(nowMs, last);
-  };
+  /** Non-decreasing time per document, taken at the fold (Q1332): the
+   *  clock now, or the last event of either of the document's logs if that
+   *  is later. `nowMs` from the request's receipt is not used here on
+   *  purpose — under load the two are seconds apart. */
+  const tOf = (doc: LoadedDoc, nowMs: number = Date.now()): number => foldTime(doc, nowMs);
 
   /**
    * Mail follows the fold: relay what freshly-persisted events imply.
@@ -308,7 +307,7 @@ export async function createDraftServer(cfg: ServerConfig,
     commits.run(doc.id, async () => {
       // the engine rides every commit (Q391): born at constitute, synced
       // with roster truth and ground shifts, closed when the ending passes
-      driveBridge(doc, tOf(doc.cs, nowMs), cfg.engineTuning);
+      driveBridge(doc, tOf(doc, nowMs), cfg.engineTuning);
       // the document log first — it is the source of truth, and the
       // bridge's persisted cursor points into it (review #2, finding 2):
       // a crash after this and before the engine persist leaves a cursor
@@ -349,7 +348,7 @@ export async function createDraftServer(cfg: ServerConfig,
     for (const [docId, addresses] of byDoc) {
       const doc = store.byId(docId);
       if (!doc) continue;
-      doc.cs.mailGaveUp(tOf(doc.cs, nowMs), addresses);
+      doc.cs.mailGaveUp(tOf(doc, nowMs), addresses);
       await commit(doc, nowMs);
     }
   };
@@ -454,7 +453,7 @@ export async function createDraftServer(cfg: ServerConfig,
     const served = ((): { t: number; wallet: ReturnType<typeof api.wallet>; cards: CardView[] } | null => {
       if (engine.closed) return null;
       try {
-        const t = tOf(doc.cs, nowMs);
+        const t = tOf(doc);
         return { t, wallet: api.wallet(t), cards: api.nextCards(10, t) };
       } catch { return null; }
     })();
@@ -710,8 +709,9 @@ export async function createDraftServer(cfg: ServerConfig,
         // the constitution closes, or a carried motion has nowhere to land —
         // driveBridge closes the engine at the ending and finishes the
         // constitution's close itself; cs.tick then finds it closed
-        driveBridge(doc, tOf(doc.cs, nowMs), cfg.engineTuning);
-        doc.cs.tick(tOf(doc.cs, nowMs));
+        // the tick's own clock: a test-driven tick states the time it is
+        driveBridge(doc, tOf(doc, nowMs), cfg.engineTuning);
+        doc.cs.tick(tOf(doc, nowMs));
         await commit(doc, nowMs);
       } catch (e) {
         noteError('tick', e);
@@ -1036,7 +1036,7 @@ export async function createDraftServer(cfg: ServerConfig,
       const rec = doc.cs.memberRecords().get(member);
       const isFounder = member === doc.cs.convenorRecord().id;
       if (!rec && !isFounder) { json(res, 404, { error: 'no such seat' }); return; }
-      const t = tOf(doc.cs, nowMs);
+      const t = tOf(doc);
       if (rec && rec.arrivedAtT === null) doc.cs.arrive(t, member);
       else if (rec && rec.lapsed) doc.cs.memberReturn(t, member);
       await commit(doc, nowMs);
@@ -1325,7 +1325,7 @@ export async function createDraftServer(cfg: ServerConfig,
       }
       const doc = docOr404(store.byId(rec.docId));
       if (!doc) return;
-      const t = tOf(doc.cs, nowMs);
+      const t = tOf(doc);
       // the log's first applicant entry lands here, after the address has
       // proved it works (stage 3, defect 8); the module re-checks policy
       // and membership, so a world that changed since the mail refuses
@@ -1372,7 +1372,7 @@ export async function createDraftServer(cfg: ServerConfig,
       }
       const doc = docOr404(store.byId(rec.docId));
       if (!doc) return;
-      const t = tOf(doc.cs, nowMs);
+      const t = tOf(doc);
       const m = doc.cs.memberRecords().get(rec.memberId);
       // membership begins at first arrival (§9.6a); revival is logging in
       if (m && m.arrivedAtT === null) doc.cs.arrive(t, rec.memberId);
@@ -1563,7 +1563,7 @@ export async function createDraftServer(cfg: ServerConfig,
         let ladderClock = false;
         DEV: { ladderClock = mailer.dev && doc.cs.slug.startsWith('ladder-'); }
         if (applicantId === null && !ladderClock &&
-            doc.cs.seen(tOf(doc.cs, nowMs), memberId)) {
+            doc.cs.seen(tOf(doc), memberId)) {
           await commit(doc, nowMs);
         }
         const seq = doc.cs.logEntries().length;
@@ -1688,7 +1688,7 @@ export async function createDraftServer(cfg: ServerConfig,
         const body = await readJson(req);
         const cmd = expectString(body, 'cmd');
         const args = (body.args ?? {}) as Record<string, unknown>;
-        const t = tOf(doc.cs, nowMs);
+        const t = tOf(doc);
         // an applicant's one act: submit — nothing else speaks for them
         if (applicantId !== null && cmd !== 'submit-application') {
           json(res, 403, { error: 'applicants may only submit their application' });

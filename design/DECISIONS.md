@@ -5432,3 +5432,13 @@ The record is PRODUCTION.md § *The host under two hundred bots*; here is what w
 **Why the heap cap.** 60 MB live under 345 MB resident is V8 deferring collection because nothing told it the box was small; a 512 MB starter kills the process before V8 would have collected. 384 leaves the rest to buffers and the runtime; the number is a guess to be revisited if RSS on the dashboard says so.
 
 **Guards:** engine 307, constitution 700, server 103 (the slim-view test: everything without params, `short` on the same seqs, the three omitted and named, the text back on a stale version, and the pre-🍾 case), sim 32; lint, typecheck, spec-check; both probes identical; journey on a fresh server, green after the pre-🍾 fix.
+
+## Q1332: a command is stamped at the fold (Ed, 2026-09-11)
+
+**Found** in the second moon room (`docs.vote/d/moon`, 19:20–19:25, 140–160 bots acting): eight of the bots' judgments refused *timestamps must be non-decreasing*. The command route stamped `t` from `nowMs`, taken at the top of `route()` when the request arrived; past the knee the body read and the write chain put seconds between that and the fold, and `tOf` raised the stamp only to the **constitution** log's last event. A judgment writes the engine log alone, so a fresher judgment folded first left the engine's last event ahead of the constitution's, and the queued one arrived in the engine's past.
+
+**Put to Ed** as stamp-at-the-fold / keep receipt time and raise a fallen stamp as `Pen` does / leave it. **Ruled: stamp at the fold** — the log records when the document changed, not when the member pressed, which is the honest time for an append-only log anyway.
+
+**Built** the same evening: `foldTime(doc, nowMs = Date.now())` in `engine-host.ts` — the clock at the fold, never earlier than the last event of either log — and `tOf` in server.ts reads it. The request routes take the fresh clock; the tick, the commit's bridge drive and the outbox pass keep their own `nowMs`, because a test-driven tick states the time it is (the first cut dropped that and two chamber tests lapsed nobody). Not built: the receipt time is not recorded anywhere; if it ever matters for the record, it is a field on the event, not the stamp.
+
+**Guards:** `fold-time.test.ts` (five cases, the moon room's among them); server 108; lint, typecheck, build.

@@ -41,6 +41,26 @@ export function asEngineDoc(doc: LoadedDoc): EngineDoc {
   return d;
 }
 
+/**
+ * **A command is stamped at the fold** (Q1332, Ed 2026-09-11: *stamp at the
+ * fold* — the log records when the document changed). The time is taken
+ * when the command is about to fold, never at the request's receipt, and is
+ * never earlier than the last event of *either* log: the constitution's, and
+ * the engine's where one exists. Past the moon room's knee a request waited
+ * seconds between receipt and fold, and a judgment stamped at receipt was
+ * refused by the engine log — *timestamps must be non-decreasing* — because a
+ * fresher one had folded first; the constitution log alone was already
+ * guarded, which is why only judgments were lost.
+ */
+export function foldTime(doc: LoadedDoc, nowMs: number = Date.now()): number {
+  const log = doc.cs.logEntries();
+  const csLast = log.length > 0 ? log[log.length - 1]!.event.t : 0;
+  const bridge = asEngineDoc(doc).bridge;
+  const eLog: ReadonlyArray<{ event: { t: number } }> = bridge ? bridge.engine.log : [];
+  const eLast = eLog.length > 0 ? eLog[eLog.length - 1]!.event.t : 0;
+  return Math.max(nowMs, csLast, eLast);
+}
+
 /** Resume a persisted bridge; called once per document at load. The host's
  *  tuning rides along so the bridge can re-state the host's cooldown on a
  *  document born under another (R-086) — at the first sweep, never here. */
