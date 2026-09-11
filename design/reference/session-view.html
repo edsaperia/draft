@@ -253,7 +253,7 @@
   const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml,
     nameBody, pictureBody, opt, num, numIn, ctlWord, someIn, ANSWER, stateOf, labelOf, nounOf,
     MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml, stripHtml, readBody,
-    motionBody, routeFor, motionCommitHtml, BLINDNOTE, methodNote, listOf, syncSlider } = window.SETUP;
+    routeFor, motionCommitHtml, BLINDNOTE, methodNote, listOf, syncSlider } = window.SETUP;
   // every member-readable string this script renders lives in copy.js (Ed's
   // brief, 2026-09-05, Part 3: copy edits touch that file only)
   const PAGE_COPY = window.COPY.page;
@@ -5492,26 +5492,41 @@
   // the act as Indifferent does. Every block is clause text — the register
   // the whole surface reads in now — and nothing else is said: no consent
   // rule explained, no count, no blindness note.
+  // **…and the ordinary motion card is the same three blocks** (Q1331, Ed
+  // 2026-09-11: *all of it*): the values are the route's own — the consent
+  // answer's no · yes · abstain, the race judgment's stands · proposed ·
+  // either, which `judgeRaceCard` and the dev seam read — and the textless
+  // block names its act, *Abstain* on a consent, *Indifferent* on a judgment
+  // (CP4). What went with it: the race card's head wearing the keep lane,
+  // the *A proposed change…* explainer (where the Founder holds 🛡️ the wait
+  // on them is the entry's ⏳ after the vote, E36), the *As proposed* eyebrow
+  // and a count that always read zero, judgments being blind.
   const consentPicks = (key, opts) => '<div class="choice" role="radiogroup">' +
     opts.map(([v, html, kind]) => {
       const on = S.mAns[key] === v;
       const off = kind === 'keep' ? PAGE_COPY.consent.keepThis
-        : kind === 'prefer' ? window.COPY.grammar.lane.prefer : PAGE_COPY.consent.abstain;
+        : kind === 'prefer' ? window.COPY.grammar.lane.prefer
+        : kind === 'either' ? window.COPY.grammar.commit.indifferent : PAGE_COPY.consent.abstain;
       const onW = kind === 'keep' ? PAGE_COPY.consent.kept
-        : kind === 'prefer' ? window.COPY.grammar.lane.preferred : PAGE_COPY.consent.abstain;
+        : kind === 'prefer' ? window.COPY.grammar.lane.preferred
+        : kind === 'either' ? window.COPY.grammar.commit.indifferent : PAGE_COPY.consent.abstain;
       return '<div class="pick' + (on ? ' on' : '') + '">' +
         (html ? '<span class="opttext">' + html + '</span>' : '') +
         '<button class="lanepick" aria-pressed="' + on + '" data-motion="' + v + '"><span class="dot"></span>' +
         '<span class="off">' + off + '</span><span class="on">' + onW + '</span></button></div>';
     }).join('') + '</div>';
-  const consentBlocks = (key, stands, proposed, why) => consentPicks(key, [
-    ['no', esc(stands), 'keep'],
-    ['yes', esc(proposed) + (why ? window.CARDS.speakerHtml(why) : ''), 'prefer'],
-    ['abstain', '', 'abstain'],
-  ]);
-  const inviteBody = (m) =>
-    consentBlocks('invite', PAGE_COPY.consent.staysAsIs, PAGE_COPY.consent.joins(m.invite), m.why);
-  const removeBody = (m) => {
+  const MOTION_PICKS = { constitutional: ['no', 'yes', 'abstain'], ordinary: ['stands', 'proposed', 'either'] };
+  const motionBlocks = (key, stands, proposed, why, route) => {
+    const [k, p, t] = MOTION_PICKS[route] || MOTION_PICKS.constitutional;
+    return consentPicks(key, [
+      [k, esc(stands), 'keep'],
+      [p, esc(proposed) + (why ? window.CARDS.speakerHtml(why) : ''), 'prefer'],
+      [t, '', t],
+    ]);
+  };
+  const inviteBody = (m, route) =>
+    motionBlocks('invite', PAGE_COPY.consent.staysAsIs, PAGE_COPY.consent.joins(m.invite), m.why, route);
+  const removeBody = (m, route) => {
     const nm = nameOfMember(m.removee);
     // 🏛️ without [avatar] (Q401a): under 'others' the subject sees the
     // motion running against them — ruled, Ed 2026-08-19 — and is asked
@@ -5520,15 +5535,18 @@
       return '<p class="why">' + PAGE_COPY.consent.removeSelfWhy + '</p>' +
         '<p class="setnote">' + PAGE_COPY.consent.removeSelfCount(m.judged || 0, Math.max(E() - 1, 0)) + '</p>';
     }
-    return consentBlocks('remove', PAGE_COPY.consent.staysIn(nm), PAGE_COPY.consent.leaves(nm), m.why);
+    return motionBlocks('remove', PAGE_COPY.consent.staysIn(nm), PAGE_COPY.consent.leaves(nm), m.why, route);
   };
-  // a set motion: the standing clause against the proposed one, the latter
-  // the full sentence for the motion's own value (A3), never its short label
-  const consentBody = (c, m) => (m.invite ? inviteBody(m)
-    : m.removee !== undefined ? removeBody(m)
+  // a set motion: the standing clause against the proposed one — the
+  // paragraph's own sentence (`decisionLine`) against the full sentence for
+  // the motion's own value (A3), never its short label
+  const motionPairBody = (c, m, route) => (m.invite ? inviteBody(m, route)
+    : m.removee !== undefined ? removeBody(m, route)
     : (() => { const rec = liveMotionRec(c);
       const v = rec && rec.payload && rec.payload.kind === 'set' ? rec.payload.value : null;
-      return consentBlocks(c.k, decisionLine(c), (v !== null && sentenceFor(c.k, v)) || m.to, m.why); })());
+      return motionBlocks(c.k, decisionLine(c), (v !== null && sentenceFor(c.k, v)) || m.to, m.why, route); })());
+  const consentBody = (c, m) => motionPairBody(c, m, 'constitutional');
+  const ordinaryBody = (c, m) => motionPairBody(c, m, 'ordinary');
 
   // dev only (with the dropdown, Ed 362): complete the founding in one press,
   // because motions live on the far side of it and the mock has no persistence
@@ -6234,9 +6252,14 @@
         esc(S.title) + '</span>' + (cs ? RD + '.' : '') +
         (titleStands() ? chosenRadio(provOf('title')) : '');
       const m = motionOn(c);
-      // an ordinary motion's head is the value as it stands, wearing the
-      // keep-lane; a constitutional one re-opens the question, title head.
-      if (m) return routeOfM(m, c) === 'ordinary' ? esc(standsOf(c.k)) : null;
+      // a motion card on either route is the settled card's own shape — no
+      // head, what stands as block one (Q1182 for the consent card, Q1331
+      // for the ordinary one — Ed, 2026-09-11: *all of it*). **Not at the
+      // door**: a stranger's tab opens the settled card read-only (Q1183),
+      // and a motion in flight is the members' business — without this the
+      // door drew an empty card for every setting under a motion (found by
+      // Q1331's seeded ⏱️ motion; 👤 and 🌍 had read empty since Q1183)
+      if (m && !atTheDoor()) return null;
       // **The head is the rule, not the task's name** (Ed's QA, 2026-08-19):
       // a settled card is its own paragraph, opened, so what stands at its
       // head is the constitutional sentence the paragraph states. The
@@ -6283,9 +6306,12 @@
     // …and since Ed's card review round 3 (2026-09-05) neither does a record
     // (32/56: the eyebrow dates it, the blocks say what it did — Q1186), nor
     // 📍 at the birth (02: its field is the whole card)
+    // …nor a settings card under a motion on either route (Q1182, Q1331):
+    // its blocks state both rules, so 📍's motion card is headless too
     noTitleHead: (c) => !c.power && !c.isGate && !c.door &&
       (c.record || (c.k === 'slug' && !cs) ||
-        OPTHEADLESS.has(c.k) || (c.ansFor && OPTHEADLESS.has(c.ansFor))),
+        OPTHEADLESS.has(c.k) || (c.ansFor && OPTHEADLESS.has(c.ansFor)) ||
+        (c.k !== 'title' && !atTheDoor() && !!motionOn(c))),
     // 🪶 at the birth has a head — the title itself, or its placeholder —
     // over one lane, and the hairline between them went with Ed's round 3
     // (01): the head is the field's own value, not a rule over a control
@@ -6302,9 +6328,6 @@
     // approved mockup: the standing address wearing its provenance radio)
     blockHead: (c) => !c.power && !c.record && !c.isGate && !c.ansFor && !c.door &&
       (OPTHEADLESS.has(c.k) || (c.k === 'title' && titleStands()) || (c.k === 'slug' && !!cs)),
-    // reserved = held by the founder: the room may pass a change, and it
-    // then goes to the founder as a 👑 question (accept or reject)
-    reserved: (c) => !c.power && !c.record && !c.isGate && !c.ansFor && c.kind !== 'personal' && !membersHold(c),
     // a section never folds while it holds the open card or its tasks —
     // including a card pinned to its `lead` rather than enumerated by its
     // own keys: 🏛️ hangs on the Proposals preamble (Q750) and appears in
@@ -7910,8 +7933,15 @@
       }
       // a live motion takes the route its own value asks for (329a)
       if (m && routeOfM(m, c) === 'ordinary') {
-        const mLive = { ...m, judged: motionJudged(c.k), pick: S.mAns[c.k] };
-        return cardHtml(c, ctx, motionBody(c, ctx, mLive),
+        // **The ordinary motion card is the consent card's shape** (Q1331,
+        // Ed 2026-09-11: *all of it*): no head, the standing rule as block
+        // one with *Keep this*, the proposed rule beneath with the
+        // proposer's sealed reason and *Prefer this*, *Indifferent* as its
+        // own textless block; no explainer, no eyebrow, no count. The
+        // commit is ✓ — a judgment, binding nobody but you (§9.1) — and the
+        // pick still feeds `liveJudge` / the dev seam as stands · proposed ·
+        // either.
+        return cardHtml(c, ctx, ordinaryBody(c, m),
           // one bin on every card, always live (Q613 (a), 2026-08-22): for the
           // mover it withdraws, for anybody else it simply closes the card
           (m.by === viewerId()
@@ -7921,7 +7951,7 @@
             : binBtn()) +
           '<button class="btn btn-approve glyphbtn"' + (motionPicked(c) ? '' : ' disabled') +
           ' data-confirm="1">' + TICK + '</button>',
-          g.cards, { v: 'stands', s: { ...m, pick: S.mAns[c.k] } });
+          g.cards);
       }
       if (m) {
         // **The consent card takes the settled shape** (Ed's card review
