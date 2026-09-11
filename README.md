@@ -33,7 +33,7 @@ Without `RESEND_API_KEY` the server runs a **dev inbox**: every mail, magic link
 
 ## Packages
 
-TypeScript end to end; `pg` is the only runtime dependency. Tests measured 2026-09-11 with `npm test`: **1,136 passing** (9 todo, 17 skipped without Postgres).
+TypeScript end to end; `pg` is the only runtime dependency. Tests measured 2026-09-11 with `npm test`: **1,140 passing** (9 todo, 17 skipped without Postgres).
 
 | Package | What it is | Tests |
 |---|---|---|
