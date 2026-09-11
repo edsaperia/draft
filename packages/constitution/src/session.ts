@@ -91,48 +91,17 @@ const CONSTITUTIONAL: ReadonlySet<SettingId> = new Set(
 );
 
 /**
- * Setting ids a log may name that the catalogue no longer has (Q903, Ed
- * 2026-08-26): 🪪 was `membership` while it *was* the register, and entry 94
- * made it the price of admission. Every log written before the rename names
- * the old id, so it is read onto the new one at the fold — the same
- * migration `foldLegacy` performs for 🤝's four-rung `joinPolicy`, one level
- * up, on the id rather than the value.
+ * **No legacy fold** (Q1329, Ed 2026-09-11: *we are still in alpha — please
+ * get rid of old formats, there are no old documents*). The module once read
+ * three older shapes onto the present ones at replay — 🪪 under its pre-Q903
+ * id `membership`, 🤝's pre-Q506 `holder` and pre-entry-94 `joinPolicy`,
+ * 🥾's pre-entry-94 `rung` — and replayed the pre-R-088 `signed-out` ·
+ * `frozen` · `thawed` as no-ops. Every one of them is gone: an event naming
+ * a setting the catalogue does not have, or carrying a value its entry does
+ * not validate, **throws at the fold** (`readValue`), and an event type the
+ * fold does not know throws as it always did. The host quarantines the
+ * document rather than half-reading it (`DocStore.loadAll`, Q1322).
  */
-const LEGACY_SETTING_IDS: ReadonlyMap<string, SettingId> = new Map([
-  ['membership', 'admission' as SettingId],
-]);
-
-/**
- * One event read through `LEGACY_SETTING_IDS`, or the event itself where
- * nothing is legacy. **The entry keeps its bytes**: only the copy handed to
- * the fold is rewritten, so the hash chain is exactly what was written and
- * an old log verifies as it always did.
- *
- * It rewrites by shape rather than by listing the event types, because the
- * shapes are the whole set: `setting` (setting-set · setting-delegated ·
- * setting-reclaimed · setting-handed-over · power-relinquished · answer-given ·
- * question-resolved · ok-given), `settings` (ok-owed · ceremony-ground-shifted) and
- * `payload.setting` (motion-opened, on a `set` or a `reserve`). A door key in
- * a `setting` field simply never matches.
- */
-function foldLegacyIds(event: ConstitutionEvent): ConstitutionEvent {
-  const e = event as unknown as
-    { setting?: string; settings?: string[]; payload?: { setting?: string } };
-  let out: Record<string, unknown> | null = null;
-  const touch = (): Record<string, unknown> =>
-    (out ??= { ...(event as unknown as Record<string, unknown>) });
-  if (e.setting !== undefined && LEGACY_SETTING_IDS.has(e.setting)) {
-    touch()['setting'] = LEGACY_SETTING_IDS.get(e.setting);
-  }
-  if (e.settings !== undefined && e.settings.some((s) => LEGACY_SETTING_IDS.has(s))) {
-    touch()['settings'] = e.settings.map((s) => LEGACY_SETTING_IDS.get(s) ?? s);
-  }
-  const ps = e.payload?.setting;
-  if (ps !== undefined && LEGACY_SETTING_IDS.has(ps)) {
-    touch()['payload'] = { ...e.payload, setting: LEGACY_SETTING_IDS.get(ps) };
-  }
-  return out === null ? event : (out as unknown as ConstitutionEvent);
-}
 
 /** Q459: a read refreshes the activity clock at most this often. */
 const SEEN_EVERY_MS = 60 * 60_000;
@@ -318,8 +287,7 @@ export class ConstitutionSession {
     this.apply(event, seq);
   }
 
-  private apply(rawEvent: ConstitutionEvent, _seq: number): void {
-    const event = foldLegacyIds(rawEvent);
+  private apply(event: ConstitutionEvent, _seq: number): void {
     if (event.t < this.lastT) throw new Error('timestamps must be non-decreasing');
     this.lastT = event.t;
     switch (event.type) {
@@ -632,13 +600,13 @@ export class ConstitutionSession {
         break;
       }
       case 'answer-given': {
-        const st = this.settings.get(event.setting)!;
+        const st = this.readValue(event.setting, event.value);
         st.answers.set(event.member, event.value);
         this.touch(event.member, event.t);
         break;
       }
       case 'question-resolved': {
-        const st = this.settings.get(event.setting)!;
+        const st = this.readValue(event.setting, event.value);
         st.collecting = false;
         st.value = event.value;
         st.settledBy = 'ceremony';
@@ -974,11 +942,6 @@ export class ConstitutionSession {
   /** Presence, lapsing and applications (§9.5, §9.5a, §9.7½). */
   private applyPresence(event: ConstitutionEvent): void {
     switch (event.type) {
-      case 'signed-out':
-        // legacy (v0.99, Q1196): a log written before R-088 may carry a
-        // sign-out; the record has no field for it now, so it replays as a
-        // no-op and the chain is untouched
-        break;
       case 'member-returned': {
         const m = this.members.get(event.member)!;
         // **A 💤 change names the members it returned** (Y26, Q902): a return
@@ -1011,10 +974,6 @@ export class ConstitutionSession {
         this.members.get(event.member)!.lapsed = true;
         break;
       }
-      case 'frozen':
-      case 'thawed':
-        // legacy (v0.99, Q1196): there is no freeze; both replay as no-ops
-        break;
       case 'closed': {
         this.closedFlag = true;
         this.closedT = event.t;
@@ -1098,13 +1057,12 @@ export class ConstitutionSession {
   /** A carried change lands on the setting, keeping who holds it. */
   private applyPayloadSet(id: SettingId, value: SettingValue,
     by: 'motion' | 'crown', t: number): void {
-    const st = this.settings.get(id)!;
+    const st = this.readValue(id, value);
     st.value = value;
     st.settledBy = by;
     st.settledAtT = t;
     st.returned = []; // this set's own returns follow it (Y26)
     st.collecting = false;
-    this.foldLegacy(st, t);
     if (id === 'quorum') this.quorumFormValue = (value as QuorumValue).form;
     if (id === 'link') {
       const slug = (value as SlugValue).slug;
@@ -1193,7 +1151,7 @@ export class ConstitutionSession {
 
   private foldSet(id: SettingId, value: SettingValue, by: 'convenor' | 'crown',
     t: number): void {
-    const st = this.settings.get(id)!;
+    const st = this.readValue(id, value);
     // holder untouched: setting a value never changes who holds the setting
     // (§9.7 v0.54 — a {unilateral, no-assent} crown must stay exactly that)
     st.collecting = false;
@@ -1201,60 +1159,27 @@ export class ConstitutionSession {
     st.settledBy = by === 'crown' ? 'crown' : 'convenor';
     st.settledAtT = t;
     st.returned = []; // this set's own returns follow it (Y26)
-    this.foldLegacy(st, t);
   }
 
   /**
-   * Legacy values, read onto the present shapes and stripped from what
-   * stands, so an old log and a fresh session reach the same state; the
-   * event keeps its bytes. Two migrations live here:
-   *
-   * - **Q506 (2026-08-21):** a legacy applications value carried the
-   *   register's crown as `holder`; the pair now lives on the setting's own
-   *   powers like every held-able setting.
-   * - **Entry 94 (2026-08-26):** 🤝's four-rung `joinPolicy` became the one
-   *   switch `apply`, the price moved to 🪪, and 🥾's rungs moved onto the
-   *   same price scale. `open` was "the door is open *and* free", so it also
-   *   seeds 🪪 to `pen` where 🪪 has no value yet — the only way a legacy log
-   *   keeps meaning what it meant.
+   * **The fold's one gate on a value** (Q1329): the setting it names must be
+   * in the catalogue and the value must be the shape its entry validates —
+   * on replay as on a command, since a command validated it once and replay
+   * is the only road a value written by an older build can take. Where
+   * `foldLegacy` once read the pre-entry-94 shapes onto today's, an unknown
+   * id or a stray key now throws with its name, and the host quarantines
+   * the document (`DocStore.loadAll`). Returns the setting's state.
    */
-  private foldLegacy(st: SettingState, t: number): void {
-    if (st.value === null) return;
-    if (st.id === 'applications') {
-      const v = st.value as ApplicationsValue;
-      if (v.holder !== undefined) {
-        const h = v.holder;
-        const powers = {
-          unilateral: h === 'reserved' || h === 'reserved-unilateral',
-          assent: h === 'reserved' || h === 'reserved-assent',
-        };
-        this.setPowers(st, powers);
-        // the legacy holder was the *register's* crown, which since entry 94
-        // is ✉️'s pair — so a log that laid it down laid the door's down
-        this.setPowers(this.settings.get('door:invite')!, powers);
-      }
-      if (v.apply === undefined || v.holder !== undefined || v.joinPolicy !== undefined) {
-        st.value = { apply: mayApply(v) };
-      }
-      if (v.joinPolicy === 'open') {
-        const adm = this.settings.get('admission')!;
-        if (adm.value === null) {
-          adm.value = { price: 'pen' };
-          adm.collecting = false;
-          adm.settledBy = st.settledBy;
-          adm.settledAtT = t;
-        }
-      }
-    } else if (st.id === 'removal') {
-      const rung = (st.value as { rung?: string }).rung;
-      if (rung === undefined) return;
-      const price: Price = rung === 'everyone' ? 'consent' : rung === 'others' ? 'assembly' : 'proposal';
-      st.value = { price };
-    }
+  private readValue(id: SettingId, value: SettingValue): SettingState {
+    const st = this.settings.get(id);
+    if (st === undefined) throw new Error(`unknown setting '${id}' (Q1329: no legacy id is read)`);
+    const err = validateFor(entryOf(id), value);
+    if (err !== null) throw new Error(`${err} (Q1329: no legacy value is read)`);
+    return st;
   }
 
   /** What an act on the membership costs, as the document stands — unset
-   *  reads as the most protective rung, exactly as a legacy log did. */
+   *  reads as the most protective rung. */
   private priceOf(id: 'admission' | 'removal'): Price {
     const st = this.settings.get(id);
     const v = st ? (st.value as PriceValue | null) : null;

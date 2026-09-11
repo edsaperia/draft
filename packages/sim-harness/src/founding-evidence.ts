@@ -112,7 +112,7 @@ say('\n== founding-8: a staggered ceremony with a never holdout ==============')
     s.answer(9, m, 'bar', { pct: m === hex ? 82 : 66 });
     s.answer(9, m, 'lapse', { afterMs: m === gus ? null : 90 * 86_400_000 });
     s.answer(9, m, 'machines', { enabled: false, budget: 0 });
-    s.answer(9, m, 'applications', { holder: 'members', joinPolicy: 'invite' });
+    s.answer(9, m, 'applications', { apply: false });
     // 🥾 is a **price** since Q401/entry 94 — consent · assembly · proposal,
     // consent (the subject included) being the most protective — where this
     // walk was written against the retired everyone/others ladder

@@ -214,8 +214,13 @@ Five things to know about it:
    chain, most likely — is **quarantined**: named once in the boot log
    (`document '<id>' failed to load — quarantined: <error>`), answering 404
    until repaired, and counted as `documentsQuarantined` (Q1322, the day a
-   production document vanished behind `errors: 0`). A non-zero there is
-   the boot log's line to read, then §5's tools.
+   production document vanished behind `errors: 0`). A log carrying a
+   shape this build no longer reads — 🤝's pre-entry-94 `holder` or
+   `joinPolicy` keys, 🪪 under its old id `membership`, a `signed-out` ·
+   `frozen` · `thawed` event — is quarantined the same way, the error
+   naming the key or id (Q1329: nothing is folded, there are no old
+   documents). A non-zero there is the boot log's line to read, then §5's
+   tools.
 2. **It is as sensitive as the room.** `people.json` carries every address,
    name and picture, and the log every founding answer **in plaintext** —
    the blindness design withholds at the projection, not at storage — and

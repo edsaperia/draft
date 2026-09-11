@@ -1,6 +1,6 @@
 {
   "entries": 68,
-  "rollingHash": "fa010b35abc1ce43e8770812502f626a0395e847d3f8df4f6426f824a3b808af",
+  "rollingHash": "bff05415d9a44d78a8520020bb07b509523ec93fb9c02f31aa6c42f4fd8143a9",
   "chainVerifies": true,
   "constitutedAtT": 8,
   "E": 3,
@@ -145,10 +145,10 @@
       "value": {
         "apply": true
       },
-      "holder": "members",
+      "holder": "convenor",
       "powers": {
-        "unilateral": false,
-        "assent": false
+        "unilateral": true,
+        "assent": true
       }
     },
     "admission": {

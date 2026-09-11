@@ -45,7 +45,7 @@ const settleAllReserved = (s: ConstitutionSession, t: number,
 
     judgments: { rung: 'after' },
     chamber: { rung: 'link' },
-    applications: { holder: 'members', apply: false },
+    applications: { apply: false },
     admission: { price: 'assembly' },
     rate: { grant: 4, cap: 8, dripMinutes: 240 },
     machines: { enabled: false, budget: 0 },
@@ -311,7 +311,7 @@ describe('📯 is reachable (§9.7 v0.51)', () => {
       quorum: { form: 'share', n: 60 },
       authorship: { rung: 'sealed' },
       judgments: { rung: 'after' }, chamber: { rung: 'link' },
-      applications: { holder: 'members', apply: false },
+      applications: { apply: false },
       admission: { price: 'assembly' },
       removal: { price: 'consent' }, // delegated too, so the room must answer it (Q626)
       lapse: { afterMs: null }, rate: { grant: 4, cap: 8, dripMinutes: 240 },
@@ -343,7 +343,11 @@ describe('constituted (§9.6a): the moment judging opens', () => {
     // a delegated question on any setting blocks the start, gate or not (Q626)
     expect(() => s.begin(1)).toThrow(/'applications' is still being decided/);
     s.reclaim(1, 'applications');
-    s.setSetting(1, 'applications', { holder: 'members', apply: false });
+    s.setSetting(1, 'applications', { apply: false });
+    // ✉️'s pen laid down at the door itself (§9.7 rule 9), so a post-start
+    // invitation goes by the motion; the legacy `holder` that once did this
+    // from inside 🤝's value is not read (Q1329)
+    s.relinquish(1, 'door:invite', 'unilateral');
     s.begin(1); // 🍾 (Q443): nothing starts until the founder says so
     expect(s.constitutedAtT).toBe(1);
     expect(s.canJudge()).toBe(true);

@@ -209,9 +209,12 @@ describe('the road back may restore one power (Q394)', () => {
 });
 
 describe("the register's powers (Ed's own example, §9.7½ v0.54)", () => {
-  it('reserved-unilateral: the founder invites directly, carried motions need no accept', () => {
+  it('✉️ pen only: the founder invites directly, carried motions need no accept', () => {
+    // the pair over the act is the door's (entry 94, §9.7 rule 9), so the
+    // test sets it there; the pre-Q506 `holder` that once laid it down is
+    // not read (Q1329)
     const { s, bo, cy } = buildConstituted({
-      applications: { holder: 'reserved-unilateral', apply: false },
+      applications: { apply: false }, doors: { invite: { unilateral: true, assent: false } },
     });
     const dee = s.invite(10, 'dee@example.org'); // unilateral invite, post-start
     expect(typeof dee).toBe('string');
@@ -222,9 +225,9 @@ describe("the register's powers (Ed's own example, §9.7½ v0.54)", () => {
     expect(crownQuestionFor(s, m)).toBeUndefined(); // no assent power on the register
   });
 
-  it('reserved-assent: no direct invite, and a carried invitation waits on the crown', () => {
+  it('✉️ shield only: no direct invite, and a carried invitation waits on the crown', () => {
     const { s, bo, cy } = buildConstituted({
-      applications: { holder: 'reserved-assent', apply: false },
+      applications: { apply: false }, doors: { invite: { unilateral: false, assent: true } },
     });
     expect(() => s.invite(10, 'dee@example.org'))
       .toThrow(/motion at 🪪/);

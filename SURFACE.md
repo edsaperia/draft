@@ -121,7 +121,7 @@ The card lifecycle, as the rows of the matrix a single card passes through — p
 
 The page speaks its own keys; the spec speaks the catalogue's ids. This table is the map (`MID` in `session-view.html` carries the non-identical pairs), and the checker asserts it.
 
-🪪 and 🤝 are `admission` and `applications` on both sides, so `MID` carries neither; a log written under their old ids folds at load (`foldLegacyIds` in `session.ts`). The page's word `'roster'` is the delegation sentinel — *the membership holds this setting* — not a key. → why: DECISIONS.md, *SURFACE.md, pruned* (Q903).
+🪪 and 🤝 are `admission` and `applications` on both sides, so `MID` carries neither; a log written under their old ids, or carrying 🤝's old `holder` / `joinPolicy` keys, is refused at replay and quarantined at boot, never folded (Q1329). The page's word `'roster'` is the delegation sentinel — *the membership holds this setting* — not a key. → why: DECISIONS.md, *SURFACE.md, pruned* (Q903).
 
 <!-- spec-check: keys -->
 | page key | setting |

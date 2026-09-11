@@ -32,13 +32,13 @@ describe('applications (§9.7½, entry 94): one switch, 🪪’s price, one iden
 
   it('a member address is told to log in instead — one address, one member', () => {
     const { s } = buildConstituted({
-      applications: { holder: 'members', apply: true }, admission: { price: 'proposal' } });
+      applications: { apply: true }, admission: { price: 'proposal' } });
     expect(() => s.startApplication(3, 'bo@example.org')).toThrow(/log in/);
   });
 
   it('at ✏️: verified before anything can be submitted; straight to the bar, free', () => {
     const { s } = buildConstituted({
-      applications: { holder: 'members', apply: true }, admission: { price: 'proposal' } });
+      applications: { apply: true }, admission: { price: 'proposal' } });
     const ap = s.startApplication(3, 'dee@example.org');
     expect(() => s.submitApplication(4, ap)).toThrow(/magic link/);
     s.verifyApplication(4, ap);
@@ -60,7 +60,7 @@ describe('applications (§9.7½, entry 94): one switch, 🪪’s price, one iden
 
   it('a refused application is told so', () => {
     const { s } = buildConstituted({
-      applications: { holder: 'members', apply: true }, admission: { price: 'proposal' } });
+      applications: { apply: true }, admission: { price: 'proposal' } });
     const ap = s.startApplication(3, 'dee@example.org');
     s.verifyApplication(4, ap);
     s.submitApplication(5, ap); // an empty application is a real application
@@ -71,7 +71,7 @@ describe('applications (§9.7½, entry 94): one switch, 🪪’s price, one iden
 
   it('at 🏛️: the application is its own constitutional motion, nobody’s mover, free', () => {
     const { s, bo, cy } = buildConstituted({
-      applications: { holder: 'members', apply: true } }); // 🪪 at assembly by default
+      applications: { apply: true } }); // 🪪 at assembly by default
     const ap = s.startApplication(3, 'dee@example.org');
     s.verifyApplication(4, ap);
     s.submitApplication(5, ap, { words: 'dee ran the sister club for two years' });
@@ -88,18 +88,9 @@ describe('applications (§9.7½, entry 94): one switch, 🪪’s price, one iden
     expect(s.E()).toBe(4);
   });
 
-  it('a legacy log’s `open` folds to the door open at ✒️ (entry 94)', () => {
-    const { s } = buildConstituted({
-      applications: { holder: 'members', joinPolicy: 'open' } });
-    expect(s.settingState('applications').value).toEqual({ apply: true });
-    // buildConstituted set 🪪 to assembly before 🤝, so the legacy seed does
-    // not override a standing value — the migration only fills an empty one
-    expect(s.settingState('admission').value).toEqual({ price: 'assembly' });
-  });
-
   it('open: 🤝 yes and 🪪 at ✒️ — anyone with the link joins on arrival, identity still verified', () => {
     const { s } = buildConstituted({
-      applications: { holder: 'members', apply: true }, admission: { price: 'pen' } });
+      applications: { apply: true }, admission: { price: 'pen' } });
     const ap = s.startApplication(3, 'dee@example.org');
     s.verifyApplication(4, ap);
     s.submitApplication(5, ap, { name: 'Dee' });

@@ -1255,10 +1255,8 @@
     admission: () => ({ price: S.admission }),
     applications: () => ({ apply: S.joinBy === 'apply' }),
   };
-  // 🤝 read through its legacy (entry 94): a value written before the switch
-  // carried a four-rung joinPolicy, of which only `invite` was the door shut
-  const mayApply = (v) => !!v && (v.apply !== undefined ? !!v.apply
-    : (v.joinPolicy !== undefined && v.joinPolicy !== 'invite'));
+  // 🤝 is the one switch and nothing else (Q1329): the module's `mayApply`
+  const mayApply = (v) => !!v && v.apply === true;
   // a member's page-vocabulary answer → typed, and back — one place each way
   const ANSTYPED = {
     // the form is the member's own since Q1162 — the block they chose, never

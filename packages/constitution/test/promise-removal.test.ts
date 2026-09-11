@@ -13,8 +13,8 @@
  * ── the table: rung × holder state × epoch ────────────────────────────────
  *
  * **The fourth column, unset.** `priceOf('removal')` reads an unset value as
- * `consent` — a legacy log and a still-collecting delegated question both read
- * that way, so *unset* is not a fourth behaviour, it is the `consent` row.
+ * `consent` — a still-collecting delegated question reads that way, so
+ * *unset* is not a fourth behaviour, it is the `consent` row.
  *
  * *Before 🍾 every cell is the same promise: **the price is not yet charged**.*
  * §9.6a — there are no past decisions for a removal to re-rate, so the founder

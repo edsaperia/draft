@@ -729,20 +729,7 @@ describe('✒️ on the Text: the Founder amends at will (R-058)', () => {
 });
 
 describe('🤝 keeps its crown pair on the setting (Q506)', () => {
-  it('a legacy value’s holder folds onto the powers and leaves the value', () => {
-    const { s } = buildConstituted({
-      applications: { holder: 'reserved-unilateral', joinPolicy: 'invite' } });
-    expect(s.settingState('applications').value).toEqual({ apply: false });
-    expect(s.settingState('applications').powers).toEqual({ unilateral: true, assent: false });
-    expect(s.registerPowers()).toEqual({ unilateral: true, assent: false });
-    expect(s.membershipReserved()).toBe(true);
-    const bo = view(s, 'bo');
-    expect(bo.register.powers).toEqual({ unilateral: true, assent: false });
-    expect(bo.settings.find((x) => x.setting === 'applications')!.powers)
-      .toEqual({ unilateral: true, assent: false });
-  });
-
-  it('new style: the policy is the value and the pair changes like any setting’s — the door apart', () => {
+  it('the policy is the value and the pair changes like any setting’s — the door apart', () => {
     const { s, bo, cy } = buildConstituted({ applications: { apply: false },
       doors: { invite: { unilateral: true, assent: true } } });
     // buildConstituted reclaims before it sets, so both powers are held
@@ -759,32 +746,5 @@ describe('🤝 keeps its crown pair on the setting (Q506)', () => {
     s.answerMotion(6, 'ada', m, 'accept');
     s.answerMotion(7, cy, m, 'accept');
     expect(s.settingState('applications').powers).toEqual({ unilateral: true, assent: true });
-  });
-
-  it('an old log and a fresh session reach the same state', () => {
-    const legacy = buildConstituted({
-      applications: { holder: 'reserved-assent', joinPolicy: 'apply' } }).s;
-    const replayed = ConstitutionSession.replay([...legacy.logEntries()]);
-    // a legacy holder was the register's crown, so it folds onto ✉️ too
-    const fresh = buildConstituted({ applications: { apply: true },
-      doors: { invite: { unilateral: false, assent: true } } }).s;
-    fresh.relinquish(3, 'applications', 'unilateral');
-    const pick = (x: ConstitutionSession) => {
-      const st = x.settingState('applications');
-      return { value: st.value, powers: st.powers, holder: st.holder, rp: x.registerPowers() };
-    };
-    expect(pick(replayed)).toEqual(pick(legacy));
-    expect(pick(replayed)).toEqual(pick(fresh));
-    expect(replayed.rollingHash()).toBe(legacy.rollingHash());
-  });
-
-  it('handing the setting over leaves the door crowned (entry 94: two pairs)', () => {
-    const { s } = buildConstituted({
-      applications: { holder: 'reserved', joinPolicy: 'invite' } });
-    expect(s.doorPowers('door:invite')).toEqual({ unilateral: true, assent: true });
-    s.delegate(3, 'applications');
-    expect(s.settingState('applications').powers).toEqual({ unilateral: false, assent: false });
-    expect(s.doorPowers('door:invite')).toEqual({ unilateral: true, assent: true });
-    expect(s.settingState('applications').value).toEqual({ apply: false });
   });
 });
