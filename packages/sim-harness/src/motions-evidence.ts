@@ -84,11 +84,14 @@ say('\n== motion-race: an ordinary motion is the race machinery whole (Q390) =='
   eq(race.members.length, 2, 'rival values join ONE race (Q390)');
   check(race.contested.length === 0, 'a setting race contests no text');
 
-  say('  t=20  dee judges bo’s date over what stands — and that is enough:');
-  say('        the two rival authors’ own voices already count toward the');
-  say('        floor (§8.2’s small-roster caveat, live), so F=3 is met');
+  say('  t=20  dee, then eve, judge bo’s date over what stands — and that is');
+  say('        enough: the floor counts judges of the winner (Q1337, §4.2), bo’s');
+  say('        own voice among them, so three judges of bo’s value meet F=3;');
+  say('        cy’s voice is for cy’s value alone and counts toward nothing here');
   bridge.judge(20, dee, a.candidate!, race.incumbentId, 'a');
-  void eve;
+  eq(s.motionRecords().get(a.motion)!.status, 'running',
+    'two judges of bo’s value are short of F=3, whatever the race holds');
+  bridge.judge(21, eve, a.candidate!, race.incumbentId, 'a');
   eq(s.motionRecords().get(a.motion)!.status, 'carried',
     'the race cleared bar and floor: adjudicated through the seam');
   eq(s.settingState('ending').value, { endsAtMs: 2_000_000 },

@@ -478,7 +478,9 @@ export async function createDraftServer(cfg: ServerConfig,
         deadlocked: r.deadlocked,
         // closeness to resolution as a magnitude (SPEC §8.3) — see RaceView
         closeness: r.closeness,
-        judges: r.distinctMovers,
+        // the floor's own number (Q1337): who has judged the leader, its
+        // author's voice among them — never the race's traffic
+        judges: r.leaderJudges,
         floor,
         askable: dealt || ask !== null,
         ask,
@@ -642,9 +644,23 @@ export async function createDraftServer(cfg: ServerConfig,
       let prev: string[] = [];
       try { prev = linesAt(rec.version); } catch { prev = []; }
       rec.displaced = prev.slice(span.start, span.end);
-      const movers = new Set(authorsOf.get(rec.raceId) ?? []);
-      for (const f of rec.field) for (const p of judgedBy.get(f.candidateId) ?? []) movers.add(p);
-      rec.judges = movers.size;
+      if (rec.outcome === 'adopted') {
+        // **The number the floor tested** (Q1337, R-102): the distinct
+        // members who judged the candidate that carried — its own author
+        // among them, whose derived preference (§3.3) is one voice for it —
+        // and nobody who only judged a rival, nor a rival's author who
+        // judged nothing. Read on the outcome's candidate rather than the
+        // field, so a withdrawn rival's judges neither swell nor drain it.
+        const judges = new Set(judgedBy.get(rec.candidateId) ?? []);
+        judges.add(engine.getCandidate(rec.candidateId).author);
+        rec.judges = judges.size;
+      } else {
+        // no winner to count: a retired or undecided race reads its whole
+        // field, the authors' voices and every judgment on any of them
+        const movers = new Set(authorsOf.get(rec.raceId) ?? []);
+        for (const f of rec.field) for (const p of judgedBy.get(f.candidateId) ?? []) movers.add(p);
+        rec.judges = movers.size;
+      }
     }
     const records = [...byRace.values()].sort((a, b) => a.when - b.when).slice(-50);
     // **The record** (SPEC §4.6, the shape record-builder renders), once closed:

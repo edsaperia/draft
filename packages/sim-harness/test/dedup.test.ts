@@ -130,7 +130,14 @@ describe('sim regression: dedup off is byte-identical to before the gate existed
   // value above, which is the proof that removing the slot restored `feed()`
   // byte for byte on this run. Both variants still agree with each other
   // (was dc729ecd80686db4a3c78ed725af3143bb40a481b71786b894373c422a34727f).
-  const PINNED = '0f18a6b0eb3e0a74fb6e95ab84eec53c2e5f5f7365561617fd4252f26812e46d';
+  // Re-pinned 2026-09-11 (Q1337, SPEC §4.2 v0.116, R-102): the adoption floor
+  // counts judges of the winner, not movers on the race — a race that met F
+  // on rival judgments now waits for judges of its leader, adoption timings
+  // move, and the router's unheard boost lands on different races, so every
+  // event after the first such race legitimately differs. Both variants
+  // still agree with each other, which is the invariant this test defends
+  // (was 0f18a6b0eb3e0a74fb6e95ab84eec53c2e5f5f7365561617fd4252f26812e46d).
+  const PINNED = 'af13ed609b74c053782ecdffe5b080b8218a4c217c34d0aa5e9d62438579c36c';
 
   const run = (withGate: boolean) =>
     runSession({
