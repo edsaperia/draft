@@ -388,7 +388,18 @@ const IN_PAGE = () => {
      * somewhere else entirely, which is the bug it is for.
      */
     const onRow = !!(tab && tab.closest('.memrow'));
+    /**
+     * **Was this tab on a held-open gap?** A gap site's anchor and a live
+     * insertion's are the one `.insert-anchor`, a box blank of text whose
+     * height is the whole of what it says — and Q1334 fixes that height at
+     * the tab's own 30px. Read closed, as the tab is: the gap is a resting
+     * object in the margin, and the card that opens beneath it has a head of
+     * its own.
+     */
+    const gap = tab ? tab.closest('.insert-anchor') : null;
     return { tab: rect(tab), glyph: glyphBox(tab), front, onRow,
+             gapH: gap ? R2(gap.getBoundingClientRect().height) : null,
+             gapTabTop: gap && tab ? R2(tab.getBoundingClientRect().top - gap.getBoundingClientRect().top) : null,
              tabW: tab ? R2(tab.getBoundingClientRect().width) : null,
              text: rect(para && (para.querySelector('.cpv') || para)) };
   };
@@ -547,6 +558,8 @@ const IN_PAGE = () => {
                closedW: before && before.tabW, openW: openTab ? Math.round(openTab.getBoundingClientRect().width * 100) / 100 : null,
                boxTravel: travel(before && before.tab, rect(openTab)),
                rightEdge: openTab && card ? R2(openTab.getBoundingClientRect().right - card.getBoundingClientRect().left) : null,
+               gapH: before && before.gapH != null ? before.gapH : null,
+               gapTabTop: before && before.gapTabTop != null ? before.gapTabTop : null,
                travel: travel(before && before.glyph, glyphBox(openTab)) },
         clause: { closed: before && before.text, open: rect(openText),
                   travel: travel(before && before.text, rect(openText)) },
@@ -654,6 +667,22 @@ function rulesFor(card, tok) {
     if (!near(grew, 10, 0.51) || (left !== null && !near(left, -8, 0.51))) {
       at('P3', 'positioning', 'the active tab grows 8px to the left, plus the 2px tuck under the card',
         'it grows ' + grew + 'px and its left edge moves ' + left + 'px');
+    }
+  }
+  // **P9 — a held-open gap is the height of a tab** (Q1334, Ed 2026-09-11:
+  // *gaps for proposed insertions should be the same vertical height as a
+  // tab*). The anchor a gap site or a live insertion stands on is a box with
+  // no text, so its height is the whole of what it says in the margin: the
+  // tab's own 30px, and the tab flush with it. Measured on the closed anchor
+  // before the card opened; it stood 51px with the tab 2.4px in.
+  if (card.tab.gapH !== null) {
+    if (!near(card.tab.gapH, 30, 0.51)) {
+      at('P9', 'positioning', 'a held-open gap is the height of a tab — 30px (K31, Q1334)',
+        'the gap stands ' + card.tab.gapH + 'px tall');
+    }
+    if (card.tab.gapTabTop !== null && !near(card.tab.gapTabTop, 0, 0.51)) {
+      at('P9', 'positioning', 'the gap\'s tab sits flush with its box (K31, Q1334)',
+        'the tab starts ' + card.tab.gapTabTop + 'px into the gap');
     }
   }
   // **P5 — stacked radio rows are spaced on the scale** (Q762). P1 was the

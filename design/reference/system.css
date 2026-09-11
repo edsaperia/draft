@@ -788,6 +788,16 @@
     padding-top: var(--measure-gutter); margin-top: calc(-1 * var(--measure-gutter));
     padding-bottom: 95vh;
   }
+  /* **The runway is the last segment's alone** (Q1336, Ed 2026-09-11: *blank
+     gap appears when I am making a text edit proposal*). An open card splits
+     the column — `renderDoc` closes the `.prose` before the editing card and
+     opens another after it — and the rule above gave *every* segment the
+     viewport of runway meant for the column's foot, so a viewport of blank
+     card stood between the clauses above the card and the card itself, and
+     the clauses, a screen up, read as gone (measured: 1,045px of padding on
+     the first segment, 1,116px between its last clause and the card). Only
+     the segment nothing follows carries the runway. */
+  .doc.editing.begun #charter > .prose:has(~ .prose) { padding-bottom: 0; }
   /* **The card is the decision card's width** (Ed's QA, 2026-08-30): the
      outline is a pseudo-element carrying the shadow and radius, so the
      column's own box and its text do not move; behind the text by z-index
@@ -1193,12 +1203,23 @@
      border and no caption (Ed, 201) — a labelled box made an absence look like
      something already in the charter — but it takes the same lifecycle wash as
      any other contested clause (Ed, 205), because the gap *is* the thing being
-     argued about. Blank of text, not blank of colour. */
+     argued about. Blank of text, not blank of colour.
+
+     **A held-open gap is the height of a tab** (Q1334, Ed 2026-09-11: *gaps
+     for proposed insertions should be the same vertical height as a tab*).
+     It stood 51px — 3.2rem of min-height with 6px of padding each side,
+     content-box — with its 30px tab 2.4px in from the top; the box is the
+     tab's own 30px now, border-box, and the tab it carries sits flush with
+     it rather than at the clause's 0.15em, so the wash and the mark are one
+     object of one height in the margin. The left inset and the trailing air
+     are a clause's (`.anch`), so the gap keeps the column's own measure. */
   .insert-anchor {
-    position: relative; min-height: 3.2rem; margin: 0 0 var(--s1) calc(-1 * var(--s3));
-    padding: 6px var(--s2) 6px var(--s3);
+    position: relative; box-sizing: border-box; min-height: 30px;
+    margin: 0 0 var(--s1) calc(-1 * var(--s3));
+    padding: 0 var(--s2) 0 var(--s3);
     border-radius: var(--r-sm); cursor: pointer;
   }
+  .insert-anchor .chipcol { top: 0; }
   .insert-anchor:hover { box-shadow: inset 0 0 0 1px var(--border); }
 
   /* ===================================================================

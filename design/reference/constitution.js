@@ -295,14 +295,12 @@ var CONSTITUTION = (() => {
       case "machines":
         if (typeof v.enabled !== "boolean") return "machines: enabled must be a boolean";
         return isInt(v.budget) && v.budget >= 0 ? null : "machines: budget must be an integer ≥ 0";
-      case "applications":
-        if (v.holder !== void 0 && v.holder !== "members" && v.holder !== "reserved" && v.holder !== "reserved-unilateral" && v.holder !== "reserved-assent")
-          return "applications: holder (legacy) must be 'members' | 'reserved' | 'reserved-unilateral' | 'reserved-assent'";
-        if (v.joinPolicy !== void 0 && v.joinPolicy !== "invite" && v.joinPolicy !== "proposed" && v.joinPolicy !== "apply" && v.joinPolicy !== "open")
-          return "applications: joinPolicy (legacy) must be invite | proposed | apply | open";
-        if (v.apply === void 0 && v.joinPolicy === void 0)
-          return "applications: { apply: boolean } required";
-        return v.apply === void 0 || typeof v.apply === "boolean" ? null : "applications: apply must be a boolean";
+      case "applications": {
+        const stray = Object.keys(v).find((k) => k !== "apply");
+        if (stray !== void 0)
+          return `applications: unknown key '${stray}' — the value is { apply: boolean } and nothing else`;
+        return typeof v.apply === "boolean" ? null : "applications: { apply: boolean } required";
+      }
       case "price":
         return v.price === "consent" || v.price === "assembly" || v.price === "proposal" || v.price === "pen" ? null : "price: price must be consent | assembly | proposal | pen";
     }
@@ -319,9 +317,7 @@ var CONSTITUTION = (() => {
   var ladderOrder = (rungs) => (a, b) => rungs.indexOf(b.rung) - rungs.indexOf(a.rung);
   var priceOrder = (rungs) => (a, b) => rungs.indexOf(b.price) - rungs.indexOf(a.price);
   function mayApply(v) {
-    if (v === null) return false;
-    if (v.apply !== void 0) return v.apply;
-    return v.joinPolicy !== void 0 && v.joinPolicy !== "invite";
+    return v !== null && v.apply === true;
   }
   var neverIsHighest = (of) => (a, b) => {
     const av = of(a);
@@ -590,8 +586,9 @@ var CONSTITUTION = (() => {
     // setting's. Not judge-gated, for 🤝's reason.
     //
     // The id was `membership` until Q903 (Ed, 2026-08-26): it named the
-    // register this setting stopped being at entry 94, and a log written
-    // under the old id folds to this one at load (`foldLegacyId`).
+    // register this setting stopped being at entry 94. A log written under
+    // the old id is not folded since Q1329: an unknown id throws at replay
+    // and the document is quarantined at boot — there are no old documents.
     {
       id: "admission",
       glyph: "🪪",
@@ -1056,25 +1053,6 @@ var CONSTITUTION = (() => {
   var CONSTITUTIONAL = new Set(
     CATALOGUE.filter((e) => e.kind === "constitutional").map((e) => e.id)
   );
-  var LEGACY_SETTING_IDS = /* @__PURE__ */ new Map([
-    ["membership", "admission"]
-  ]);
-  function foldLegacyIds(event) {
-    const e = event;
-    let out = null;
-    const touch = () => out ?? (out = { ...event });
-    if (e.setting !== void 0 && LEGACY_SETTING_IDS.has(e.setting)) {
-      touch()["setting"] = LEGACY_SETTING_IDS.get(e.setting);
-    }
-    if (e.settings !== void 0 && e.settings.some((s) => LEGACY_SETTING_IDS.has(s))) {
-      touch()["settings"] = e.settings.map((s) => LEGACY_SETTING_IDS.get(s) ?? s);
-    }
-    const ps = e.payload?.setting;
-    if (ps !== void 0 && LEGACY_SETTING_IDS.has(ps)) {
-      touch()["payload"] = { ...e.payload, setting: LEGACY_SETTING_IDS.get(ps) };
-    }
-    return out === null ? event : out;
-  }
   var SEEN_EVERY_MS = 60 * 6e4;
   var ConstitutionSession = class _ConstitutionSession {
     constructor(people = new InMemoryPeople()) {
@@ -1230,8 +1208,7 @@ var CONSTITUTION = (() => {
       this.log.push({ seq, hash, prevHash, event, schemaVersion: SCHEMA_VERSION });
       this.apply(event, seq);
     }
-    apply(rawEvent, _seq) {
-      const event = foldLegacyIds(rawEvent);
+    apply(event, _seq) {
       if (event.t < this.lastT) throw new Error("timestamps must be non-decreasing");
       this.lastT = event.t;
       switch (event.type) {
@@ -1465,13 +1442,13 @@ var CONSTITUTION = (() => {
           break;
         }
         case "answer-given": {
-          const st = this.settings.get(event.setting);
+          const st = this.readValue(event.setting, event.value);
           st.answers.set(event.member, event.value);
           this.touch(event.member, event.t);
           break;
         }
         case "question-resolved": {
-          const st = this.settings.get(event.setting);
+          const st = this.readValue(event.setting, event.value);
           st.collecting = false;
           st.value = event.value;
           st.settledBy = "ceremony";
@@ -1741,8 +1718,6 @@ var CONSTITUTION = (() => {
     /** Presence, lapsing and applications (§9.5, §9.5a, §9.7½). */
     applyPresence(event) {
       switch (event.type) {
-        case "signed-out":
-          break;
         case "member-returned": {
           const m = this.members.get(event.member);
           if (event.cause === "rule" && m.lapsed) {
@@ -1766,9 +1741,6 @@ var CONSTITUTION = (() => {
           this.members.get(event.member).lapsed = true;
           break;
         }
-        case "frozen":
-        case "thawed":
-          break;
         case "closed": {
           this.closedFlag = true;
           this.closedT = event.t;
@@ -1851,13 +1823,12 @@ var CONSTITUTION = (() => {
     }
     /** A carried change lands on the setting, keeping who holds it. */
     applyPayloadSet(id, value, by, t) {
-      const st = this.settings.get(id);
+      const st = this.readValue(id, value);
       st.value = value;
       st.settledBy = by;
       st.settledAtT = t;
       st.returned = [];
       st.collecting = false;
-      this.foldLegacy(st, t);
       if (id === "quorum") this.quorumFormValue = value.form;
       if (id === "link") {
         const slug = value.slug;
@@ -1947,62 +1918,31 @@ var CONSTITUTION = (() => {
       });
     }
     foldSet(id, value, by, t) {
-      const st = this.settings.get(id);
+      const st = this.readValue(id, value);
       st.collecting = false;
       st.value = value;
       st.settledBy = by === "crown" ? "crown" : "convenor";
       st.settledAtT = t;
       st.returned = [];
-      this.foldLegacy(st, t);
     }
     /**
-     * Legacy values, read onto the present shapes and stripped from what
-     * stands, so an old log and a fresh session reach the same state; the
-     * event keeps its bytes. Two migrations live here:
-     *
-     * - **Q506 (2026-08-21):** a legacy applications value carried the
-     *   register's crown as `holder`; the pair now lives on the setting's own
-     *   powers like every held-able setting.
-     * - **Entry 94 (2026-08-26):** 🤝's four-rung `joinPolicy` became the one
-     *   switch `apply`, the price moved to 🪪, and 🥾's rungs moved onto the
-     *   same price scale. `open` was "the door is open *and* free", so it also
-     *   seeds 🪪 to `pen` where 🪪 has no value yet — the only way a legacy log
-     *   keeps meaning what it meant.
+     * **The fold's one gate on a value** (Q1329): the setting it names must be
+     * in the catalogue and the value must be the shape its entry validates —
+     * on replay as on a command, since a command validated it once and replay
+     * is the only road a value written by an older build can take. Where
+     * `foldLegacy` once read the pre-entry-94 shapes onto today's, an unknown
+     * id or a stray key now throws with its name, and the host quarantines
+     * the document (`DocStore.loadAll`). Returns the setting's state.
      */
-    foldLegacy(st, t) {
-      if (st.value === null) return;
-      if (st.id === "applications") {
-        const v = st.value;
-        if (v.holder !== void 0) {
-          const h = v.holder;
-          const powers = {
-            unilateral: h === "reserved" || h === "reserved-unilateral",
-            assent: h === "reserved" || h === "reserved-assent"
-          };
-          this.setPowers(st, powers);
-          this.setPowers(this.settings.get("door:invite"), powers);
-        }
-        if (v.apply === void 0 || v.holder !== void 0 || v.joinPolicy !== void 0) {
-          st.value = { apply: mayApply(v) };
-        }
-        if (v.joinPolicy === "open") {
-          const adm = this.settings.get("admission");
-          if (adm.value === null) {
-            adm.value = { price: "pen" };
-            adm.collecting = false;
-            adm.settledBy = st.settledBy;
-            adm.settledAtT = t;
-          }
-        }
-      } else if (st.id === "removal") {
-        const rung = st.value.rung;
-        if (rung === void 0) return;
-        const price = rung === "everyone" ? "consent" : rung === "others" ? "assembly" : "proposal";
-        st.value = { price };
-      }
+    readValue(id, value) {
+      const st = this.settings.get(id);
+      if (st === void 0) throw new Error(`unknown setting '${id}' (Q1329: no legacy id is read)`);
+      const err = validateFor(entryOf(id), value);
+      if (err !== null) throw new Error(`${err} (Q1329: no legacy value is read)`);
+      return st;
     }
     /** What an act on the membership costs, as the document stands — unset
-     *  reads as the most protective rung, exactly as a legacy log did. */
+     *  reads as the most protective rung. */
     priceOf(id) {
       const st = this.settings.get(id);
       const v = st ? st.value : null;

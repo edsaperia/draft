@@ -1203,12 +1203,23 @@
      border and no caption (Ed, 201) — a labelled box made an absence look like
      something already in the charter — but it takes the same lifecycle wash as
      any other contested clause (Ed, 205), because the gap *is* the thing being
-     argued about. Blank of text, not blank of colour. */
+     argued about. Blank of text, not blank of colour.
+
+     **A held-open gap is the height of a tab** (Q1334, Ed 2026-09-11: *gaps
+     for proposed insertions should be the same vertical height as a tab*).
+     It stood 51px — 3.2rem of min-height with 6px of padding each side,
+     content-box — with its 30px tab 2.4px in from the top; the box is the
+     tab's own 30px now, border-box, and the tab it carries sits flush with
+     it rather than at the clause's 0.15em, so the wash and the mark are one
+     object of one height in the margin. The left inset and the trailing air
+     are a clause's (`.anch`), so the gap keeps the column's own measure. */
   .insert-anchor {
-    position: relative; min-height: 3.2rem; margin: 0 0 var(--s1) calc(-1 * var(--s3));
-    padding: 6px var(--s2) 6px var(--s3);
+    position: relative; box-sizing: border-box; min-height: 30px;
+    margin: 0 0 var(--s1) calc(-1 * var(--s3));
+    padding: 0 var(--s2) 0 var(--s3);
     border-radius: var(--r-sm); cursor: pointer;
   }
+  .insert-anchor .chipcol { top: 0; }
   .insert-anchor:hover { box-shadow: inset 0 0 0 1px var(--border); }
 
   /* ===================================================================

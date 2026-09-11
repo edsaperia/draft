@@ -397,6 +397,10 @@ window.COPY = (function () {
       anonymous: 'Anonymous',
     },
     refuseSet: (reason) => 'That could not be set: ' + reason + '.',
+    // every other refusal, under the card that sent it (Q1330, SURFACE Y25)
+    refused: (reason) => 'That was refused: ' + reason + '.',
+    // the wire did not answer, or answered with a status and no sentence
+    noAnswer: (status) => (status ? 'the server answered ' + status : 'the server could not be reached'),
     binPutBack: 'Put it back as it stands',
     // 👑/📯 in the topbar
     founderMark: {
