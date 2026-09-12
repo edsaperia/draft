@@ -59,7 +59,9 @@ await check('/healthz says which build and store are answering (stage 7)', async
   expect(body.ok === true, 'not ok');
   expect(body.store === 'file' || body.store === 'pg', `store ${body.store}`);
   expect(typeof body.documents === 'number', 'no document count');
-  return `store ${body.store} · ${body.documents} documents · build ${String(body.build ?? 'unknown').slice(0, 12)}`;
+  // the birth page reads this to ask for the stagehand's controls (Q1349)
+  expect(typeof body.devMail === 'boolean', 'no devMail');
+  return `store ${body.store} · ${body.documents} documents · devMail ${body.devMail} · build ${String(body.build ?? 'unknown').slice(0, 12)}`;
 });
 
 await check('security headers (defects 2/9)', async () => {

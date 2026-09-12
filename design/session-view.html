@@ -11182,8 +11182,12 @@
   function birthBoot() {
     const dev = document.querySelector('.devswitch');
     if (dev) dev.style.display = 'none';
-    devInboxButton();
-    ladderBar();
+    // the stagehand's controls only where the host says it has them (Q1349,
+    // Ed 2026-09-12): the birth has no view to read `devMail` from, so it
+    // asks /healthz, and a host that does not answer draws nothing
+    fetch('/healthz').then((r) => (r.ok ? r.json() : null)).then((h) => {
+      if (h && h.devMail === true) { devInboxButton(); ladderBar(); }
+    }).catch(() => {});
     // pasted text syncs against the pending creation (§9.7a v0.55)
     let deb = null;
     prose.addEventListener('input', () => {
