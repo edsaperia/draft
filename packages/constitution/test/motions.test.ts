@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ConstitutionSession } from '../src/session.js';
 import type { ConstitutionEvent } from '../src/types.js';
+import { view } from '../src/view.js';
 import { buildConstituted } from './helpers.js';
 
 /**
@@ -277,6 +278,85 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
     const m = s.openMotion(3, bo, { kind: 'set', setting: 'ending',
       value: { endsAtMs: null } });
     expect(s.motionRecords().get(m)!.route).toBe('constitutional');
+  });
+
+  /** The ground shifts the log holds, as `[motion, cause]` pairs in order. */
+  const shifts = (s: ConstitutionSession) => s.logEntries()
+    .filter((e) => e.event.type === 'motion-ground-shifted')
+    .map((e) => e.event.type === 'motion-ground-shifted'
+      ? [e.event.motion, e.event.cause] : []);
+
+  it('a carry is a ground shift on its rival: answers wiped but the mover’s, asked again (Q1348, R-105)', () => {
+    const { s, bo, cy } = constituted();
+    const m80 = s.openMotion(3, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } });
+    const m90 = s.openMotion(3, cy, { kind: 'set', setting: 'bar', value: { pct: 90 } });
+    s.answerMotion(4, 'ada', m90, 'accept'); // given against 66, the old ground
+    s.answerMotion(4, bo, m90, 'keep');
+    s.answerMotion(5, 'ada', m80, 'accept');
+    s.answerMotion(5, cy, m80, 'accept'); // bo's carries at 80
+    expect(s.motionRecords().get(m80)!.status).toBe('carried');
+    expect(s.settingState('bar').value).toEqual({ pct: 80 });
+    // cy's runs on, against 80 now — with only cy's own accept standing
+    const rival = s.motionRecords().get(m90)!;
+    expect(rival.status).toBe('running');
+    expect([...rival.answers]).toEqual([[cy, 'accept']]);
+    expect(view(s, cy).motions.find((mv) => mv.id === m90)!.answeredCount).toBe(1);
+    expect(view(s, 'ada').motions.find((mv) => mv.id === m90)!.myAnswer).toBeNull();
+    expect(shifts(s)).toEqual([[m90, m80]]);
+    // nothing else about it moved
+    expect(rival.stake).toBe(0);
+    expect(rival.settledAtT).toBeNull();
+    // (ii) the room answers again and it carries at 90 — its latest consent
+    s.answerMotion(6, 'ada', m90, 'accept');
+    s.answerMotion(7, bo, m90, 'accept');
+    expect(s.motionRecords().get(m90)!.status).toBe('carried');
+    expect(s.settingState('bar').value).toEqual({ pct: 90 });
+    expect(shifts(s)).toEqual([[m90, m80]]); // the carried one was not its own rival
+    // (v) replay reproduces the wipe and the same log bytes
+    const r = ConstitutionSession.replay([...s.logEntries()]);
+    expect(r.rollingHash()).toBe(s.rollingHash());
+    expect(r.settingState('bar').value).toEqual({ pct: 90 });
+    expect([...r.motionRecords().get(m90)!.answers]).toEqual([...rival.answers]);
+  });
+
+  it('a mover who stood down to abstain stands at accept again when the motion is re-put', () => {
+    const { s, bo, cy } = constituted();
+    const m80 = s.openMotion(3, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } });
+    const m90 = s.openMotion(3, cy, { kind: 'set', setting: 'bar', value: { pct: 90 } });
+    s.answerMotion(4, cy, m90, 'abstain');
+    s.answerMotion(5, 'ada', m80, 'accept');
+    s.answerMotion(5, cy, m80, 'accept');
+    expect([...s.motionRecords().get(m90)!.answers]).toEqual([[cy, 'accept']]);
+  });
+
+  it('the Founder’s ✒️ on the setting shifts a running motion the same way, cause pen', () => {
+    const { s, bo } = constituted();
+    // quorum is founder-held here: the pen is ada's, and a motion on it runs
+    const m = s.openMotion(3, bo, { kind: 'set', setting: 'quorum',
+      value: { form: 'share', n: 70 } });
+    s.answerMotion(4, 'ada', m, 'accept');
+    s.setSetting(5, 'quorum', { form: 'share', n: 80 });
+    expect(s.motionRecords().get(m)!.status).toBe('running');
+    expect([...s.motionRecords().get(m)!.answers]).toEqual([[bo, 'accept']]);
+    expect(shifts(s)).toEqual([[m, 'pen']]);
+    // a pen that restates what stands moves no ground
+    s.setSetting(6, 'quorum', { form: 'share', n: 80 });
+    expect(shifts(s)).toEqual([[m, 'pen']]);
+  });
+
+  it('an ordinary carry on the setting shifts a constitutional rival too (⏰: a date move against never)', () => {
+    const { s, bo, cy } = constituted();
+    const never = s.openMotion(3, bo, { kind: 'set', setting: 'ending',
+      value: { endsAtMs: null } }); // constitutional (Q329)
+    const later = s.openMotion(3, cy, { kind: 'set', setting: 'ending',
+      value: { endsAtMs: 2_000_000 } }); // ordinary: a race at the bar
+    expect(s.motionRecords().get(later)!.route).toBe('ordinary');
+    s.answerMotion(4, 'ada', never, 'accept');
+    s.adjudicateOrdinaryMotion(5, later, 'carried');
+    expect(s.settingState('ending').value).toEqual({ endsAtMs: 2_000_000 });
+    expect(s.motionRecords().get(never)!.status).toBe('running');
+    expect([...s.motionRecords().get(never)!.answers]).toEqual([[bo, 'accept']]);
+    expect(shifts(s)).toEqual([[never, later]]);
   });
 
   it('an amendment that predates a member is what the document says, not news', () => {

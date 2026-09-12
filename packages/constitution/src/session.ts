@@ -826,6 +826,19 @@ export class ConstitutionSession {
         rec.settledAtT = event.t;
         break;
       }
+      case 'motion-ground-shifted': {
+        // The count restarts (Q1348, R-105): every answer was given against
+        // a value that no longer stands, so none of them is consent to move
+        // from the one that does. The mover's is restored to accept rather
+        // than kept as it was — the motion is theirs and it is being re-put,
+        // exactly as at the open (§9.6) — and a mover who had stood down to
+        // abstain may stand down again. Nothing else moves: status, id,
+        // stake and rationale are the motion's own. No `touch`: nobody acted.
+        const rec = this.motions.get(event.motion)!;
+        rec.answers.clear();
+        if (rec.by !== null) rec.answers.set(rec.by, 'accept');
+        break;
+      }
       case 'motion-carried': {
         const rec = this.motions.get(event.motion)!;
         rec.status = 'carried';
@@ -1293,11 +1306,17 @@ export class ConstitutionSession {
     const reason = typeof why === 'string' && why.trim() !== '' ? why.trim() : undefined;
     // whether this is a *change* has to be read before the event folds
     const changed = st.value !== null;
+    // and whether the *value* moves: a pen that restates what stands shifts
+    // no ground (Q1348, R-105)
+    const moved = st.value === null || !eqValue(st.value, value);
     // Post-start a reserved setting is the convenor's to change directly —
     // the assent was consented on the way in (§9.7, Ed's 366; NOTES.md).
     this.emit({ type: 'setting-set', t, setting, value,
       by: postStart ? 'crown' : 'convenor',
       ...(reason === undefined ? {} : { why: reason }) });
+    // **The Founder's ✒️ on the setting shifts its rivals the same way** a
+    // carry does (Q1348, R-105): the ground moved, whoever moved it.
+    if (postStart && moved) this.shiftRivals(t, setting, 'pen');
     // **A change is owed an acknowledgement whatever its kind** (Q530, Ed
     // 2026-08-22). A constitutional setting owes one on any set, because a
     // rule you had no say in is a decision you are owed however it arose.
@@ -2368,6 +2387,29 @@ export class ConstitutionSession {
     return false;
   }
 
+  /**
+   * **A carry on a setting is a ground shift on every rival still running on
+   * it** (Ed, 2026-09-12, Q1348; SPEC §9.6, R-105): once the value moved
+   * from no longer stands, every answer on a rival was given against the
+   * wrong baseline, so the module wipes them but the mover's and the motion
+   * is served to everyone as a fresh ask. "The ground moved" is the same
+   * fact whoever moved it, so the Founder's ✒️ and an ordinary carry shift
+   * the rivals exactly as a unanimity carry does — `cause` says which.
+   * Called after the value has landed, never from a fold; `except` is the
+   * motion that moved it, which is settled and is not its own rival.
+   * Running motions only: one at `awaiting-crown` has already carried by
+   * unanimity and waits on nothing but the crown's assent.
+   */
+  private shiftRivals(t: number, setting: SettingId, cause: MotionId | 'pen',
+    except?: MotionId): void {
+    for (const rec of this.motions.values()) {
+      if (rec.id === except) continue;
+      if (rec.status !== 'running' || rec.route !== 'constitutional') continue;
+      if (rec.payload.kind !== 'set' || rec.payload.setting !== setting) continue;
+      this.emit({ type: 'motion-ground-shifted', t, motion: rec.id, cause });
+    }
+  }
+
   /** The live motion already putting exactly this payload, if any (Q1348). */
   private runningTwin(payload: MotionPayload): MotionId | null {
     for (const [id, rec] of this.motions) {
@@ -2446,6 +2488,11 @@ export class ConstitutionSession {
         this.emit({ type: 'ok-owed', t, member: m.id, settings: [rec.payload.setting] });
       }
       if (rec.payload.setting === 'lapse') this.rereadLapse(t); // entry 97
+    }
+    if (rec.payload.kind === 'set') {
+      // the value has landed (the fold applied it): every rival on the
+      // setting is asked again against it (Q1348, R-105)
+      this.shiftRivals(t, rec.payload.setting, rec.id, rec.id);
     }
     if (rec.payload.kind === 'admit') {
       const id = `m-${this.nextMemberN}`;

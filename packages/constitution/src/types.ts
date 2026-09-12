@@ -254,6 +254,15 @@ export type ConstitutionEvent =
   | { type: 'motion-withdrawn'; t: number; motion: MotionId }
   /** Constitutional: the live-electorate settle check fired. Applies the payload in the fold. */
   | { type: 'motion-carried'; t: number; motion: MotionId }
+  /**
+   * The ground moved under a running constitutional motion (Q1348, R-105):
+   * the setting it moves took a new standing value — a rival carried
+   * (`cause` names it) or the Founder's ✒️ set it (`'pen'`). The fold wipes
+   * the motion's answers but the mover's, which stands at accept again, so
+   * the motion is asked of everyone afresh against the value that stands.
+   */
+  | { type: 'motion-ground-shifted'; t: number; motion: MotionId;
+      cause: MotionId | 'pen' }
   /** Ordinary-route seam: the host/engine ran the race and reports the outcome. */
   | { type: 'motion-adjudicated'; t: number; motion: MotionId;
       outcome: 'carried' | 'held' }
