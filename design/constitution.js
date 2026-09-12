@@ -2793,6 +2793,10 @@ var CONSTITUTION = (() => {
       } else {
         route = this.priceOf("admission") === "assembly" ? "constitutional" : "ordinary";
       }
+      const twin = this.runningTwin(payload);
+      if (twin !== null) {
+        throw new Error(`already put — '${twin}' proposes the same; answer it instead (§9.6)`);
+      }
       if (route === "constitutional" && this.heldOutBy(by)) {
         throw new Error("one 🏛️ out per member at a time (§9.6)");
       }
@@ -2899,6 +2903,14 @@ var CONSTITUTION = (() => {
         }
       }
       return false;
+    }
+    /** The live motion already putting exactly this payload, if any (Q1348). */
+    runningTwin(payload) {
+      for (const [id, rec] of this.motions) {
+        if (rec.status !== "running" && rec.status !== "awaiting-crown") continue;
+        if (samePayload(rec.payload, payload)) return id;
+      }
+      return null;
     }
     /**
      * The settle check (v0.48): a constitutional motion carries at the moment
@@ -3624,6 +3636,23 @@ var CONSTITUTION = (() => {
       }).map((entry) => ({ seq: entry.seq, hash: entry.hash }));
     }
   };
+  function samePayload(a, b) {
+    if (a.kind !== b.kind) return false;
+    switch (a.kind) {
+      case "set":
+        return b.kind === "set" && a.setting === b.setting && eqValue(a.value, b.value);
+      case "invite":
+        return b.kind === "invite" && a.person === b.person;
+      case "remove":
+        return b.kind === "remove" && a.member === b.member;
+      case "admit":
+        return b.kind === "admit" && a.applicant === b.applicant;
+      case "reserve":
+        return b.kind === "reserve" && a.setting === b.setting && (a.power ?? "both") === (b.power ?? "both");
+      default:
+        return false;
+    }
+  }
 
   // src/meaning.ts
   var BAR_RUNGS = [

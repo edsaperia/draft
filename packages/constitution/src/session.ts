@@ -2252,6 +2252,15 @@ export class ConstitutionSession {
       // proposing their own invitation, so it pays 🪪's price like one.
       route = this.priceOf('admission') === 'assembly' ? 'constitutional' : 'ordinary';
     }
+    // **An identical motion is refused on either route** (Ed, 2026-09-12,
+    // Q1348; SPEC §9.6, R-103): the same payload already running is one
+    // motion, and the mover is pointed at it to answer. moon2 held
+    // twenty-six 🏛️ motions on 💤, each the same fortnight, because the
+    // only refusal here was *what already stands*.
+    const twin = this.runningTwin(payload);
+    if (twin !== null) {
+      throw new Error(`already put — '${twin}' proposes the same; answer it instead (§9.6)`);
+    }
     if (route === 'constitutional' && this.heldOutBy(by)) {
       throw new Error('one 🏛️ out per member at a time (§9.6)');
     }
@@ -2357,6 +2366,15 @@ export class ConstitutionSession {
       }
     }
     return false;
+  }
+
+  /** The live motion already putting exactly this payload, if any (Q1348). */
+  private runningTwin(payload: MotionPayload): MotionId | null {
+    for (const [id, rec] of this.motions) {
+      if (rec.status !== 'running' && rec.status !== 'awaiting-crown') continue;
+      if (samePayload(rec.payload, payload)) return id;
+    }
+    return null;
   }
 
   /**
@@ -3121,5 +3139,30 @@ export class ConstitutionSession {
         return e.member === memberId || e.by === memberId;
       })
       .map((entry) => ({ seq: entry.seq, hash: entry.hash }));
+  }
+}
+
+/**
+ * Whether two motion payloads put the same thing (Q1348, SPEC §9.6, R-103):
+ * the same value on the same setting, the same person, member or applicant,
+ * the same power back on the same setting. A pen amendment is folded, never
+ * opened, so it has no twin to meet.
+ */
+function samePayload(a: MotionPayload, b: MotionPayload): boolean {
+  if (a.kind !== b.kind) return false;
+  switch (a.kind) {
+    case 'set':
+      return b.kind === 'set' && a.setting === b.setting && eqValue(a.value, b.value);
+    case 'invite':
+      return b.kind === 'invite' && a.person === b.person;
+    case 'remove':
+      return b.kind === 'remove' && a.member === b.member;
+    case 'admit':
+      return b.kind === 'admit' && a.applicant === b.applicant;
+    case 'reserve':
+      return b.kind === 'reserve' && a.setting === b.setting &&
+        (a.power ?? 'both') === (b.power ?? 'both');
+    default:
+      return false;
   }
 }
