@@ -391,6 +391,21 @@
     .layout > .toc ul { overflow: visible; }
     /* `.layout > .queue` on both: the base `.qitem` rule is later in the sheet
        and would win a specificity tie */
+    /* **The task drawer is see-through** (Ed, 2026-09-12 pm: *so it looks
+       like the queue cards slide out over the document*): the entries come
+       out over the dimmed page as cards on no sheet — the panel keeps its
+       box, since it scrolls, and loses its ground, its border and its
+       shadow. A card's wash is translucent and was laid over the rail's
+       white; here the white is the entry's own and the wash rides on
+       `::after` beneath the bar and the text, so the fade over `--wash-ms`
+       survives and the dimmed document never shows through a card. */
+    .layout > .queue { background: transparent; border-left: 0; }
+    html[data-drawer="right"] .layout > .queue { box-shadow: none; }
+    .layout > .queue button:not(.sealdot) { background-color: var(--bg); isolation: isolate; }
+    .layout > .queue button:not(.sealdot)::after {
+      content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+      background-color: var(--washbg, transparent); transition: background-color var(--wash-ms) ease;
+    }
     .layout > .queue ul { position: static; height: auto !important; display: flex; flex-direction: column; }
     .layout > .queue .qitem { position: static; width: 100%; transition: none; margin: 0 0 var(--s2); }
     .layout > .queue .qitem:last-child { margin-bottom: 0; }
