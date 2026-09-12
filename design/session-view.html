@@ -1241,13 +1241,29 @@
           (typeof cs.v.textVersion === 'number' ? '&tv=' + cs.v.textVersion : '') +
           (typeof cs.v.recordsKey === 'number' ? '&rk=' + cs.v.recordsKey : '') : '';
       return fetch('/api/d/' + LIVESLUG + '/view' + since)
-        .then((r) => { noteBuild(r.headers.get('x-build')); return r.status === 401 ? null : r.json(); })
+        .then((r) => {
+          noteBuild(r.headers.get('x-build'));
+          // **An answer that is not a view is not news** (Ed's phone,
+          // 2026-09-12, the ?debug=1 strip: *undefined is not an object
+          // (evaluating 'v.view.settings')*). A 429 from the door's budget,
+          // a 500, a 503 with the pause — each is JSON, and each used to be
+          // taken as the view: `cs.v` became `{error}` and every render from
+          // then on threw at the first `v.view` read, until a reload. Only a
+          // 2xx body is read; a 503 still carries the pause, so it is heard.
+          if (r.status === 401) return null;
+          if (r.status === 503) return r.json().then((j) => (j && j.paused ? { hostOnly: true, paused: j.paused } : null), () => null);
+          if (!r.ok) { console.warn('[live] view answered', r.status); return null; }
+          return r.json().catch(() => null);
+        })
         .then((data) => {
           if (!data || !cs || !cs.isRemote) return;
           // the host's two flags ride every answer, the short one included
           // (Q1345, Q1346): heard before anything else is read
           noteHost(data);
-          if (data.short) return; // unchanged — the short answer carries the seqs alone
+          if (data.short || data.hostOnly) return; // unchanged — the short answer carries the seqs alone
+          // a body with no view in it (an error sentence with a 200 would be
+          // a server bug, but the page must not die of it)
+          if (!data.view && !data.stranger && !data.applicant) { console.warn('[live] view without a view', data); return; }
           // **A view older than the one we hold is not news, it is a
           // rollback** (Q846's last window). `api.cmd` resolves after its own
           // refresh, but a 4s poll already in flight when the command was sent

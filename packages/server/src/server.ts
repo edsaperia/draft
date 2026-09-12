@@ -1673,7 +1673,12 @@ export async function createDraftServer(cfg: ServerConfig,
       // still needs a seat
       if (session === null || !seatAlive(doc.cs, session.memberId, session.applicantId)) {
         if (req.method === 'GET' && seg[3] === 'view') {
-          if (tooMany('stranger', 240)) return;
+          // the door's budget is per IP, and a room's phones share one
+          // (venue Wi-Fi): a stranger's page polls every 4s, 150 in the
+          // ten-minute window, so 240 fell to two phones in eight minutes
+          // and the page died of the 429 it took for a view (Ed's phone,
+          // 2026-09-12). Ten phones' worth — still a brake on a scraper.
+          if (tooMany('stranger', 1500)) return;
           const seq = doc.cs.logEntries().length;
           const engineDoc0 = asEngineDoc(doc);
           const eseq = engineDoc0.bridge === null ? 0 : engineDoc0.bridge.engine.log.length;
