@@ -383,6 +383,37 @@ const CALLED = PRICE === 'pen' ? APPLICANT : NAME;
 await page.goto(DOCBASE + '/d/' + SLUG);
 await T(2500);
 
+// **A task waits behind the grant its main action needs** (Q1328, Q1344). At
+// 🏛️ the application is a constitutional motion, so a member's rail must
+// not hold it until the 🏛️ grant is acknowledged — and must once it is.
+// Asserted at `assembly`; the OK itself is pressed at every price, being the
+// member's own act rather than the price's, so the rest of the walk reads a
+// rail with the grant taken up, as journey's does.
+{
+  const railKeys = () => page.evaluate(() => [...document.querySelectorAll('#rail li')]
+    .map((li) => li.dataset.q || (li.querySelector('[data-card]') || { dataset: {} }).dataset.card || null));
+  const before = await railKeys();
+  if (PRICE === 'assembly') {
+    const early = before.find((k) => k && k.startsWith('adm:'));
+    if (early) {
+      say('FAIL: the admit motion was served before the 🏛️ OK (Q1344) · rail ' + JSON.stringify(before));
+      stuck.push('the entry waits on 🏛️');
+    } else say('waits      · no admit entry before the 🏛️ OK · rail ' + JSON.stringify(before));
+  }
+  if (before.includes('grant-voice')) {
+    const pressed = (await open('grant-voice')) && await page.evaluate(() => {
+      const b = document.querySelector('.setupcard [data-ok]');
+      if (!b || b.disabled) return false;
+      b.scrollIntoView({ block: 'center' });
+      b.click();
+      return true;
+    });
+    if (!pressed) { say('FAIL: no OK to press on the 🏛️ grant card'); stuck.push('the 🏛️ OK'); }
+    else say('🏛️ OK     · pressed on the grant card');
+    await T(5000); // >4s: a poll lands carrying the acknowledgement
+  }
+}
+
 const seen = await page.evaluate(() => ({
   rail: [...document.querySelectorAll('#rail li')].map((li) => ({
     k: li.dataset.q || (li.querySelector('[data-card]') || { dataset: {} }).dataset.card || null,

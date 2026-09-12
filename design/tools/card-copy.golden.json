@@ -20,9 +20,7 @@
    "whitespace"
   ]
  },
- "errors": [
-  "closed: no backlog (U:) records on the page — nothing measured for the backlog"
- ],
+ "errors": [],
  "cards": {
   "answers": {
    "admission": {

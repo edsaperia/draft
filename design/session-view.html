@@ -7900,9 +7900,12 @@
         // reached because `motionTargets` points this motion at this card.
         if (price === 'assembly') {
           // the consent card's own three blocks (Q1182): the applicant's
-          // words are the reason under the proposed block, 🏛️ commits
+          // words are the reason under the proposed block, 🏛️ commits.
+          // Drawn by the motion grammar on its constitutional row since
+          // Q1331 — this was the one caller the rename missed, and the card
+          // threw on open until the assembly-priced applicants-walk caught it.
           return cardHtml(c, ctx, said +
-            consentBlocks(c.k, PAGE_COPY.consent.staysAsIs, PAGE_COPY.consent.joins(applicantName(ap)), null),
+            motionBlocks(c.k, PAGE_COPY.consent.staysAsIs, PAGE_COPY.consent.joins(applicantName(ap)), null, 'constitutional'),
             binBtn() + '<button class="btn btn-approve glyphbtn emojibtn"' +
             (motionPicked(c) ? '' : ' disabled') + ' data-confirm="1" title="Give your answer">🏛️</button>',
             g.cards);
