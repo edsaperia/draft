@@ -867,6 +867,33 @@ const inviteDoorPreBegin = async () => {
   say('cleared    · ' + (cleared ? 'the next keystroke retires it'
     : 'FAIL: the refusal outlived the field'));
   if (!cleared) stuck.push('the refusal did not clear');
+  // **A pasted list names every address that did not go** (Q1342, Ed
+  // 2026-09-12: *one sentence per refused address, all standing*): three
+  // lines, one already on the membership, one that is not an address, one
+  // fresh — two refusal lines under the card, each naming its address, the
+  // box left holding exactly the two that were refused, the fresh one sent.
+  const GUEST3 = 'di' + STAMP + '@example.org';
+  expectRefused.push(/not-an-address@/); // the server's refusal of it is the point
+  await inviteFrom([GUEST1, 'not-an-address@', GUEST3].join('\n'));
+  await T(900);
+  const pasted = await page.evaluate(() => ({
+    lines: [...document.querySelectorAll('.setupcard .why.refusal')].map((e) => e.textContent.trim()),
+    box: ((document.querySelector('.setupcard [data-emails]') || {}).value || '').split('\n').filter(Boolean),
+  }));
+  // the rows are read with the card closed, as `invite ×2` reads them
+  await closeCard();
+  const rows3 = (await rowsUnder('invitees')) || [];
+  await open('invite');
+  const pastedOk = pasted.lines.length === 2 &&
+    pasted.lines.some((l) => l.includes(GUEST1) && /already on the membership/i.test(l)) &&
+    pasted.lines.some((l) => l.startsWith('not-an-address@') && /not sent/i.test(l)) &&
+    pasted.box.join() === [GUEST1, 'not-an-address@'].join() &&
+    rows3.some((r) => isRowFor(r, GUEST3));
+  say('paste ×3   · ' + (pastedOk ? 'two refusal lines, each naming its address · the box keeps the two · the third is under Invitees'
+    : 'FAIL: ' + JSON.stringify({ ...pasted, rows: rows3.map((r) => r.t) })));
+  if (!pastedOk) stuck.push('the pasted list\'s refusals (Q1342)');
+  await typeIn('.setupcard [data-emails]', '');
+  await T(220);
 
   // **The mark sits on the act, and the row only closes** (entry 37). The
   // direct ✉️ sends from the field, so the ✒️ belongs on the send; the row's
@@ -1355,6 +1382,99 @@ const motionFillOnAmended = async () => {
   say('motion gone· ' + (ok3 ? 'withdrawn, and the entry no longer counts answers' + (e3 ? ' · ' + JSON.stringify(e3) : ' · the entry left the rail')
     : 'FAIL: the count survived the withdrawal · ' + JSON.stringify(e3)));
   if (!ok3) stuck.push('the count after the withdrawal');
+};
+
+/* ---- a deck per setting (Q1348) runs last: the third seat it arrives
+ * changes the room every count below it was written against. */
+const motionDeckOnAmended = async () => {
+  if (!guestPage) return;
+  const entryAt = (pg) => pg.evaluate((k) => {
+    const li = document.querySelector('#rail li[data-q="' + k + '"]');
+    const b = li && li.querySelector('button');
+    if (!b) return null;
+    return { fill: b.dataset.fill || null, title: b.getAttribute('title'),
+      mark: ((b.querySelector('.subj') || {}).textContent || '').trim(),
+      state: [...b.classList].find((c) => c.startsWith('st-')) || null };
+  }, AMENDED);
+  const wire = (pg, cmd, args) => pg.evaluate(([c, a]) => fetch(location.pathname.replace('/d/', '/api/d/') + '/cmd', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ cmd: c, args: a }),
+  }).then((r) => r.json()).catch((e) => ({ error: String(e && e.message) })), [cmd, args]);
+  /* ---- a deck per setting (Q1348, Ed 2026-09-12: *a deck per setting, like
+   * the pair-deck*). Two members put two different values on 🌍 at once —
+   * bo re-puts *closed*, cy (the third seat, arriving here by their own
+   * invitation) puts *link* — and the founder's one 🌍 entry walks them: an
+   * ask showing the first unanswered, still an ask after the first answer
+   * (the card now showing the second, the ledger listing the first with the
+   * founder's answer), and ⏳ only once both are answered, that card listing
+   * both. Both are withdrawn afterwards so the steps below meet the room they
+   * always met. */
+  // cy has usually arrived by now (the askable section seats them and spends
+  // their invitation link), so the login door is the way in; a dev server
+  // answers the link itself. The invitation link is the fallback.
+  const slugNow = new URL(page.url()).pathname.split('/')[2];
+  const lj = await fetch(BASE + '/api/d/' + slugNow + '/login', { method: 'POST',
+    headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: GUEST2 }) })
+    .then((r) => r.json()).catch(() => null);
+  const cyLink = (lj && lj.devLink) || await invitationLink(GUEST2);
+  if (!cyLink) { say('mdeck seat · FAIL: no way in for ' + GUEST2); stuck.push('the third seat'); return; }
+  const ctx3 = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+  const cyPage = await ctx3.newPage();
+  cyPage.on('pageerror', (e) => errors.push('[cy] ' + String(e)));
+  await cyPage.goto(cyLink);
+  for (let i = 0; i < 40 && !cyPage.url().includes('/d/'); i++) await cyPage.waitForTimeout(500);
+  await cyPage.waitForTimeout(2600);
+  const putA = await wire(guestPage, 'open-motion', { payload: { kind: 'set', setting: AMENDED, value: { rung: 'closed' } }, why: 'members only, again' });
+  const putB = await wire(cyPage, 'open-motion', { payload: { kind: 'set', setting: AMENDED, value: { rung: 'link' } }, why: 'a link is enough' });
+  const mA = putA && putA.result, mB = putB && putB.result;
+  if (!mA || !mB || putA.error || putB.error) {
+    say('mdeck put  · FAIL: two motions on 🌍 · ' + JSON.stringify({ putA, putB }));
+    stuck.push('two 🏛️ motions on one setting'); return;
+  }
+  await T(5000);
+  const d1 = await entryAt(page);
+  const deckOk1 = !!d1 && d1.state === 'st-ask' && d1.title === '1 of 3 have answered';
+  say('mdeck 1    · ' + (deckOk1 ? 'two motions on 🌍, the founder’s entry asks: ' + d1.title
+    : 'FAIL: ' + JSON.stringify(d1)));
+  if (!deckOk1) stuck.push('the deck’s first ask');
+  const ansA = await wire(page, 'answer-motion', { motion: mA, answer: 'keep' });
+  if (ansA && ansA.error) { say('mdeck ansA · FAIL: ' + JSON.stringify(ansA)); stuck.push('the founder’s answer on the first of the deck'); }
+  await T(5000);
+  const d2 = await entryAt(page);
+  await open(AMENDED);
+  const card2 = await page.evaluate((k) => {
+    const c = document.querySelector('[data-setupcard="' + k + '"]');
+    if (!c) return null;
+    return { lanes: [...c.querySelectorAll('[data-motion]')].map((b) => b.dataset.motion + ':' + b.getAttribute('aria-pressed')),
+      opt: [...c.querySelectorAll('.opttext')].map((e) => e.textContent.trim().slice(0, 60)),
+      deck: [...c.querySelectorAll('.mdeck [data-mpick]')].map((e) => e.dataset.mpick + ':' + (e.dataset.answer || '')) };
+  }, AMENDED);
+  const deckOk2 = !!d2 && d2.state === 'st-ask' && d2.title === '1 of 3 have answered' && !!card2 &&
+    card2.lanes.length === 3 && card2.deck.length === 2 &&
+    card2.deck.some((x) => x === mA + ':keep') && card2.deck.some((x) => x === mB + ':');
+  say('mdeck 2    · ' + (deckOk2 ? 'the first answered, the entry still asks for the second: ' + d2.title + ' · the card lists both, the first with the founder’s keep'
+    : 'FAIL: ' + JSON.stringify({ d2, card2 })));
+  if (!deckOk2) stuck.push('the deck after the first answer');
+  await closeCard();
+  const ansB = await wire(page, 'answer-motion', { motion: mB, answer: 'keep' });
+  if (ansB && ansB.error) { say('mdeck ansB · FAIL: ' + JSON.stringify(ansB)); stuck.push('the founder’s answer on the second of the deck'); }
+  await T(5000);
+  const d3 = await entryAt(page);
+  await open(AMENDED);
+  const card3 = await page.evaluate((k) => {
+    const c = document.querySelector('[data-setupcard="' + k + '"]');
+    return c ? [...c.querySelectorAll('.mdeck [data-mpick]')].map((e) => e.dataset.mpick + ':' + (e.dataset.answer || '')) : null;
+  }, AMENDED);
+  const deckOk3 = !!d3 && d3.mark === '⏳' && /^2 of 3 have answered$/.test(d3.title || '') && !!card3 &&
+    card3.length === 2 && card3.every((x) => /:keep$/.test(x));
+  say('mdeck 3    · ' + (deckOk3 ? 'both answered, the entry files as ⏳: ' + d3.title + ' · the ⏳ card lists both with the founder’s answers'
+    : 'FAIL: ' + JSON.stringify({ d3, card3 })));
+  if (!deckOk3) stuck.push('the deck once every motion is answered');
+  await closeCard();
+  await wire(guestPage, 'withdraw-motion', { motion: mA });
+  await wire(cyPage, 'withdraw-motion', { motion: mB });
+  await T(5000);
+  await ctx3.close();
 };
 
 /* ---- the room, as a row of faces (backlog 15, Q858–Q864) ----------------
@@ -3656,6 +3776,7 @@ if (caret) {
     }
   }
 }
+await motionDeckOnAmended();
 say('errors     · ' + (errors.length ? errors.slice(0, 4).join(' / ') : 'none'));
 say('refused    · ' + (refused.length ? refused.join(' / ') : 'none'));
 await browser.close();

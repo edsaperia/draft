@@ -1409,8 +1409,16 @@
   // printed under the control that tried, the way a refused text proposal
   // comes back on its own draft card.
   const doorErrOn = (k) => (S.doorErr && S.doorErr.k === k ? S.doorErr.m : '');
-  const doorErrHtml = (k) => (doorErrOn(k)
-    ? '<p class="why refusal"><b>' + esc(doorErrOn(k)) + '</b></p>' : '');
+  // **A pasted list is the one exception to Y25's single sentence** (Q1342,
+  // Ed 2026-09-12: *one sentence per refused address, all standing*): ✉️
+  // stores its refusals as a list, one line per address, and every line
+  // stands until the card closes or the next send.
+  const doorErrHtml = (k) => {
+    const m = doorErrOn(k);
+    if (!m) return '';
+    return (Array.isArray(m) ? m : [m])
+      .map((line) => '<p class="why refusal"><b>' + esc(line) + '</b></p>').join('');
+  };
   // the module's sentences carry their own § pointer, which is this
   // repository's vocabulary and not a member's (STYLE.md §8): the pointer
   // goes and the sentence stays
@@ -1916,6 +1924,8 @@
     titleBy: 'founder', slugBy: 'founder', policyBy: '',
     mailOpen: false,
     sentAddr: '', inviteOne: '', inviteMany: '',
+    mPick: {}, // a deck per setting (Q1348): the motion the founder chose to look at, by setting
+    mAnsFor: {}, // …and which motion `mAns` was pressed for, so the deck's next motion starts unpressed
     // the last refusal, against the card it belongs to: {k, m} (Q811)
     doorErr: null,
     viewer: 0,
@@ -4757,7 +4767,12 @@
   // as news, where what happened is the whole point.
   const summary = (c) => {
     const m = motionOn(c);
-    if (m) return PAGE_COPY.underMotion + esc(m.to);
+    if (m) {
+      // the deck's count (Q1348): how many others on this rule still wait for you
+      const me = viewerId();
+      const others = deckMotions(c).filter((r) => r.id !== m.id && !(me && r.answers.has(me))).length;
+      return PAGE_COPY.underMotion + esc(m.to) + (others ? esc(PAGE_COPY.deck.more(others)) : '');
+    }
     if (stateOf(c, ctx) === 'news') return value(c);
     return '';
   };
@@ -4977,13 +4992,54 @@
   const motionWaitsOnMe = (rec) => rec.status === 'running' && viewerIsMember() &&
     !(rec.by !== null && rec.by !== undefined && rec.by === viewerId()) &&
     !(rec.route === 'constitutional' ? mayVoice() : mayJudge());
-  const liveMotionRec = (c) => {
-    if (!cs || !c || c.isGate || c.ansFor || !motionsLive()) return null;
+  // **A setting's entry holds a deck** (Q1348, Ed 2026-09-12: *a deck per
+  // setting, like the pair-deck*; SURFACE E10, M18): every motion running on
+  // the setting, in the order they were put. The card shows the one you
+  // chose from the ledger, else the first you have not answered, else the
+  // first — so the entry asks while anything is unanswered and files ⏳
+  // only once you have answered them all. Before this the first running
+  // motion was the whole of it, and a member who had answered it stood at
+  // ⏳ over every rival they could never reach (moon2, twenty-six on 💤).
+  const deckMotions = (c) => {
+    if (!cs || !c || c.isGate || c.ansFor || !motionsLive()) return [];
+    const out = [];
     for (const rec of cs.motionRecords().values()) {
       if (rec.status !== 'running' && rec.status !== 'awaiting-crown') continue;
-      if (motionTargets(rec) === c.k) return motionWaitsOnMe(rec) ? null : rec;
+      if (motionTargets(rec) !== c.k) continue;
+      if (motionWaitsOnMe(rec)) return [];
+      out.push(rec);
     }
-    return null;
+    return out;
+  };
+  const liveMotionRec = (c) => {
+    const deck = deckMotions(c);
+    if (!deck.length) return null;
+    const picked = S.mPick && S.mPick[c.k] ? deck.find((r) => r.id === S.mPick[c.k]) : null;
+    if (picked) return picked;
+    const me = viewerId();
+    return deck.find((r) => !(me && r.answers.has(me))) || deck[0];
+  };
+  // the ledger under the card: every motion on the setting, each with your
+  // answer, the one shown marked; pressing another shows it instead, its
+  // lane pre-pressed with the answer you gave, revisable until it settles
+  const deckAnswerWord = { accept: 'yes', keep: 'no', abstain: 'abstain' };
+  const deckLedgerHtml = (c) => {
+    const deck = deckMotions(c);
+    if (deck.length < 2) return '';
+    const me = viewerId();
+    const shown = liveMotionRec(c);
+    return '<div class="mdeck"><p class="eyebrow fieldlab">' + esc(PAGE_COPY.deck.heading(deck.length)) + '</p>' +
+      deck.map((rec) => {
+        const ans = me ? rec.answers.get(me) : undefined;
+        const v = rec.payload && rec.payload.kind === 'set' ? rec.payload.value : null;
+        const what = (v !== null && sentenceFor(c.k, v)) || motionDisplay(rec);
+        const you = ans ? PAGE_COPY.deck.yours[ans] : PAGE_COPY.deck.unanswered;
+        return '<button type="button" class="mdeck-item' + (shown && shown.id === rec.id ? ' on' : '') + '"' +
+          ' data-mpick="' + esc(rec.id) + '" data-answer="' + esc(ans || '') + '"' +
+          (shown && shown.id === rec.id ? ' aria-current="true"' : '') + '>' +
+          '<span class="mdeck-what">' + esc(what) + '</span>' +
+          '<span class="mdeck-you">' + esc(shown && shown.id === rec.id ? PAGE_COPY.deck.showing : you) + '</span></button>';
+      }).join('') + '</div>';
   };
   const motionOn = (c) => { const rec = liveMotionRec(c); return rec ? pageMotion(rec) : null; };
   // **A record is a settled motion on a setting** (Q942). Withdrawn and
@@ -5075,7 +5131,19 @@
   // Constitutional commits are answerMotion; ordinary judging is a page-side
   // marker feeding the dev adjudication seam (the engine's job post-368).
   const myMAnsOk = () => (viewerRow().mAnsOk || (viewerRow().mAnsOk = new Set()));
-  const motionPicked = (c) => S.mAns[c.k] !== undefined;
+  // **The pressed lane belongs to one motion** (Q1348): `mAns` is what you
+  // pressed and `mAnsFor` which motion it was pressed for. Where the deck
+  // now shows another motion, the lane reads the answer you gave *that*
+  // one from the record — nothing, where you have not answered it — so a
+  // press meant for the first motion never rides into the second.
+  const effMAns = (c) => {
+    const rec = liveMotionRec(c);
+    if (!rec || !S.mAnsFor[c.k] || S.mAnsFor[c.k] === rec.id) return S.mAns[c.k];
+    const me = viewerId();
+    const a = me ? rec.answers.get(me) : undefined;
+    return a ? deckAnswerWord[a] : undefined;
+  };
+  const motionPicked = (c) => effMAns(c) !== undefined;
   const answeredMotion = (c) => {
     const rec = liveMotionRec(c);
     if (!rec) return false;
@@ -5852,9 +5920,12 @@
   // the *A proposed change…* explainer (where the Founder holds 🛡️ the wait
   // on them is the entry's ⏳ after the vote, E36), the *As proposed* eyebrow
   // and a count that always read zero, judgments being blind.
+  // the pressed lane is the motion shown's (`effMAns`, Q1348): a card the
+  // page can name reads its own, everything else reads the key's press
+  const pressedOn = (key) => { const c = card(key); return c ? effMAns(c) : S.mAns[key]; };
   const consentPicks = (key, opts) => '<div class="choice" role="radiogroup">' +
     opts.map(([v, html, kind]) => {
-      const on = S.mAns[key] === v;
+      const on = pressedOn(key) === v;
       const off = kind === 'keep' ? PAGE_COPY.consent.keepThis
         : kind === 'prefer' ? window.COPY.grammar.lane.prefer
         : kind === 'either' ? window.COPY.grammar.commit.indifferent : PAGE_COPY.consent.abstain;
@@ -5895,7 +5966,8 @@
     : m.removee !== undefined ? removeBody(m, route)
     : (() => { const rec = liveMotionRec(c);
       const v = rec && rec.payload && rec.payload.kind === 'set' ? rec.payload.value : null;
-      return motionBlocks(c.k, decisionLine(c), (v !== null && sentenceFor(c.k, v)) || m.to, m.why, route); })());
+      return motionBlocks(c.k, decisionLine(c), (v !== null && sentenceFor(c.k, v)) || m.to, m.why, route) +
+        deckLedgerHtml(c); })());
   const consentBody = (c, m) => motionPairBody(c, m, 'constitutional');
   const ordinaryBody = (c, m) => motionPairBody(c, m, 'ordinary');
 
@@ -9120,7 +9192,22 @@
       return;
     }
     const mo2 = ev.target.closest('[data-motion]');
-    if (mo2) { S.mAns[S.open] = mo2.dataset.motion; return render(); }
+    if (mo2) {
+      S.mAns[S.open] = mo2.dataset.motion;
+      const shown = liveMotionRec(card(S.open));
+      if (shown) S.mAnsFor[S.open] = shown.id;
+      return render();
+    }
+    // the deck's ledger (Q1348): show that motion, its lane pre-pressed with
+    // the answer you gave it, so a change of mind is one press away
+    const mpick = ev.target.closest('[data-mpick]');
+    if (mpick && S.open) {
+      S.mPick[S.open] = mpick.dataset.mpick;
+      S.mAnsFor[S.open] = mpick.dataset.mpick;
+      const word = deckAnswerWord[mpick.dataset.answer];
+      if (word) S.mAns[S.open] = word; else delete S.mAns[S.open];
+      return render();
+    }
     const mval = ev.target.closest('[data-mval]');
     if (mval) {
       if (S.draft && S.draft.k === S.open && S.draft.to === mval.dataset.mval) {
@@ -9366,9 +9453,13 @@
           if (cw && motionOn(cw) && motionPicked(cw)) {
             const rec = liveMotionRec(cw);
             if (rec && rec.route === 'constitutional') {
+              const pressed = effMAns(cw);
               cs.answerMotion(now(), viewerId(), rec.id,
-                S.mAns[cw.k] === 'yes' ? 'accept'
-                  : S.mAns[cw.k] === 'abstain' ? 'abstain' : 'keep');
+                pressed === 'yes' ? 'accept' : pressed === 'abstain' ? 'abstain' : 'keep');
+              // the deck moves on (Q1348): the next press shows the next
+              // motion you have not answered, and the lane you pressed
+              // stays this motion's, so nothing rides into the next
+              S.mAns[cw.k] = pressed; S.mAnsFor[cw.k] = rec.id; delete S.mPick[cw.k];
               syncFromCs();
             } else if (rec && cs.isRemote) {
               liveJudge(cw); myMAnsOk().add(cw.k);
@@ -9623,9 +9714,18 @@
       // an empty press is owed the refusal sentence (Y25) — the one box is
       // the only field now (Q1166), so the sentence lands under it
       if (!ads.length) { setDoorErr(cardKeyAt(scope2) || 'invite', 'Type an address to send the invitation to.'); return render(); }
-      ads.forEach((x) => invite(x, cardKeyAt(scope2)));
-      S.inviteMany = '';
-      return render();
+      // **one line per refused address, all standing** (Q1342, Ed
+      // 2026-09-12): every address answers for itself, the refusals are
+      // written under the card together, and the box keeps exactly the
+      // addresses that did not go, so a corrected paste is one edit away
+      const key = cardKeyAt(scope2) || 'admission';
+      Promise.all(ads.map((x) => invite(x, key, true))).then((lines) => {
+        const refused = ads.filter((x, i) => lines[i]);
+        S.inviteMany = refused.join('\n');
+        S.doorErr = refused.length ? { k: key, m: lines.filter(Boolean) } : null;
+        render();
+      });
+      return;
     }
   });
   // **Sending closes the card** (Ed, 2026-08-21: *the "Your Email" card
@@ -9712,34 +9812,41 @@
   // `k` is the card the press came from — 🪪 before the start, ✉️ after it —
   // so a refusal is printed under the field that tried (Q811). Called from
   // the *Several at once* box too, one address at a time.
-  function invite(em, k) {
+  // **Every address answers for itself** (Q1342): `invite` resolves to its
+  // own refusal line, or null where the invitation went, and writes the
+  // line under the card itself only when called alone (`quiet` unset) — a
+  // pasted list collects the lines and writes them together, because each
+  // address's `setDoorErr` overwrote the last and the founder saw only the
+  // final refusal of several (Ed's room, 2026-09-11).
+  function invite(em, k, quiet) {
     const key = k || 'admission';
     const at = String(em == null ? '' : em).trim();
+    const refuse = (m) => { if (!quiet) setDoorErr(key, m); return Promise.resolve(m); };
     // **The two silences on this field** (Q815). An empty press returned
     // without a word, and the dedupe compared raw addresses while the store
     // lowercases every one it takes (`emailOk`) — so `Bo@…` walked past the
     // page's check into a server refusal nobody could see.
-    if (!at) return setDoorErr(key, 'Type an address to send the invitation to.');
+    if (!at) return refuse('Type an address to send the invitation to.');
     const low = at.toLowerCase();
     if (S.roster.some((p) => String(p.e || '').toLowerCase() === low)) {
-      return setDoorErr(key, at + ' is already on the membership — one address, one member.');
+      return refuse(at + ' is already on the membership — one address, one member.');
     }
     if (cs && cs.isRemote) {
       // the command's own answer, not the console's: what the server refuses
       // is what the founder is told, and what it accepts clears the field
-      api.cmd('invite', { email: at }).then((res) => {
+      return api.cmd('invite', { email: at }).then((res) => {
         if (res && res.error) {
-          setDoorErr(key, 'That invitation was not sent: ' + plainRefusal(res.error) + '.');
-        } else { S.inviteOne = ''; setDoorErr(key, ''); }
+          return refuse(at + ' was not sent: ' + plainRefusal(res.error) + '.');
+        }
+        S.inviteOne = ''; if (!quiet) setDoorErr(key, '');
+        return null;
       });
-      return;
     }
     let mid = null;
     if (cs) {
       try { mid = cs.invite(now(), at); }
       catch (e) {
-        return setDoorErr(key, 'That invitation was not sent: ' +
-          plainRefusal(e && e.message) + '.');
+        return refuse(at + ' was not sent: ' + plainRefusal(e && e.message) + '.');
       }
     }
     S.inviteOne = '';
@@ -9759,6 +9866,7 @@
           cs.setIdentity(now(), p.mid, { name: p.n }); } catch (e) {} }
         render(); } },
       1200 + Math.random() * 2600);
+    return Promise.resolve(null);
   }
   // ---- assembly-press (Ed, 2026-08-18) -----------------------------------
   // A constitutional change goes in by a **full hold**, and the progress
@@ -10634,7 +10742,7 @@
     const mid = midOf(cw.k);
     const rc = raceCardOf(mid);
     if (!rc) { console.warn('[live] no race card served for', mid); return; }
-    judgeRaceCard(rc, S.mAns[cw.k]); // 'stands' | 'proposed' | 'either'
+    judgeRaceCard(rc, effMAns(cw)); // 'stands' | 'proposed' | 'either'
   }
 
   // the document column, filled from the server's text (confirmed, or the

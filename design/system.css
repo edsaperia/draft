@@ -1581,6 +1581,16 @@
   .setupcard.textcard .field,
   .setupcard.rulehead .field { border-top: 0; padding-top: 0; }
   .fieldlab { margin-bottom: var(--s2); }
+  /* a deck per setting (Q1348): the ledger of every motion on a rule under
+     its card — one row each, the shown one marked, all pressable */
+  .mdeck { margin-top: var(--s3); border-top: 1px solid var(--border); padding-top: var(--s2); }
+  .mdeck-item { display: flex; gap: var(--s2); width: 100%; text-align: left; padding: var(--s1) 0;
+    background: none; border: 0; border-bottom: 1px solid var(--border); font: inherit; font-size: var(--t-small);
+    color: inherit; cursor: pointer; }
+  .mdeck-item:last-child { border-bottom: 0; }
+  .mdeck-item .mdeck-what { flex: 1 1 auto; }
+  .mdeck-item .mdeck-you { flex: 0 0 auto; color: var(--muted); white-space: nowrap; }
+  .mdeck-item.on .mdeck-you { color: var(--primary); }
   .propblock + .propblock {
     border-top: 1px solid var(--border); margin-top: var(--s3); padding-top: var(--s3);
   }

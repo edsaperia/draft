@@ -691,6 +691,16 @@ window.COPY = (function () {
     // 2026-09-05, Q1182; STYLE T48): what stands with *Keep this*, what is
     // proposed with *Prefer this*, and *Abstain* on its own. The explanations
     // of the consent rule, the counts and the blind note all went with it.
+    // a deck per setting (Q1348, Ed 2026-09-12): several 🏛️ motions running
+    // on one rule are one entry, the card showing the first you have not
+    // answered and listing every one beneath with your answer
+    deck: {
+      heading: (n) => n + ' proposals on this rule',
+      more: (n) => ' · ' + n + ' more waiting for you',
+      yours: { accept: 'you accepted', keep: 'you kept what stands', abstain: 'you abstained' },
+      unanswered: 'not yet answered',
+      showing: 'shown above',
+    },
     consent: {
       keepThis: 'Keep this',
       kept: 'Kept',

@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 477
+  "entries": 484
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -162,6 +162,13 @@
   "page.consent.staysAsIs": "The membership stays as it is.",
   "page.consent.staysIn": "ƒ (name) => name + ' stays in the membership.'",
   "page.crownHand": "The founder’s own hand — a Founder Action ✒️, not a proposal",
+  "page.deck.heading": "ƒ (n) => n + ' proposals on this rule'",
+  "page.deck.more": "ƒ (n) => ' · ' + n + ' more waiting for you'",
+  "page.deck.showing": "shown above",
+  "page.deck.unanswered": "not yet answered",
+  "page.deck.yours.abstain": "you abstained",
+  "page.deck.yours.accept": "you accepted",
+  "page.deck.yours.keep": "you kept what stands",
   "page.departed.byFounder": "ƒ (day) => 'The Founder removed you from this document on ' + day + '.'",
   "page.departed.byMembers": "ƒ (day) => 'The membership removed you from this document on ' + day + '.'",
   "page.departed.bySelf": "ƒ (day) => 'You left this document on ' + day + '.'",
