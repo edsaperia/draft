@@ -2286,6 +2286,13 @@
     .navbar .count { display: none; }
     .navbar .room { gap: 8px; }
     #ridetab, #editdoor, #prosectl, .lanepropose { display: none; }
+    /* **iOS zooms the page to any field smaller than 16px on focus**
+       (MOBILE.md §1.8; Ed's screenshot `bugs/mobile screen width.png`,
+       2026-09-12: the door's email field focused, the keyboard up, the whole
+       page scaled past the right edge — *cards are too wide*). Every field
+       a phone can focus is 16px or its own size, whichever is larger, so
+       the page keeps its scale. */
+    input, textarea, select, [contenteditable="true"], [contenteditable="plaintext-only"] { font-size: max(16px, 1em); }
     /* the 95vh runway keeps the last clause reachable above the dock */
   }
   /* Touch (MOBILE.md §1.5): no double-tap zoom or 300ms delay on a control,
