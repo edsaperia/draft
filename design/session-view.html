@@ -188,6 +188,9 @@
     <!-- `quill-wallet` (Q444b, Q447): four feathers at the birth, three spent
          on the founding acts, and the one that remains IS the logo — the mark
          of docs.vote is the act of making a document. -->
+    <!-- the two drawer doors, narrow only (Ed, 2026-09-12): the contents rail
+         slides in from the left, the task rail from the right -->
+    <button class="drawerbtn" id="drawerleft" type="button" aria-expanded="false" aria-controls="toc" title="Contents">☰</button>
     <p class="brand ph" id="title"><a class="quill" id="quill" href="/" title="docs.vote — make a new document"></a><span id="titletext">Untitled</span></p>
     <div class="stats">
       <!-- room-pulse: one content-free beat per action by anybody (session-view's) -->
@@ -210,9 +213,43 @@
       <span class="wallet powerwallet" id="shieldwallet"></span>
       <span class="wallet powerwallet" id="voicewallet"></span>
       <button class="me" id="mebtn" title="You, and the founder of this document."></button>
+      <button class="drawerbtn" id="drawerright" type="button" aria-expanded="false" aria-controls="rail" title="What needs you">≣<span class="n" id="drawercount"></span></button>
     </div>
   </div>
 </header>
+<script>
+  // The drawers (narrow only): one attribute on the root names the open one,
+  // the doors toggle it, and a tap anywhere outside the open drawer — the
+  // darkened ground, the document — closes it. Choosing inside a drawer
+  // closes it too, after the choice has landed: a rail entry opens its card
+  // in the document and a heading travels there, and both want the drawer
+  // out of the way to be seen. Self-contained on purpose: nothing else on the
+  // page knows a drawer exists.
+  (() => {
+    const root = document.documentElement;
+    const doors = { left: document.getElementById('drawerleft'), right: document.getElementById('drawerright') };
+    const set = (side) => {
+      if (side) root.setAttribute('data-drawer', side); else root.removeAttribute('data-drawer');
+      for (const k of Object.keys(doors)) doors[k].setAttribute('aria-expanded', String(side === k));
+    };
+    const open = () => root.getAttribute('data-drawer');
+    doors.left.addEventListener('click', () => set(open() === 'left' ? null : 'left'));
+    doors.right.addEventListener('click', () => set(open() === 'right' ? null : 'right'));
+    document.addEventListener('click', (ev) => {
+      const side = open();
+      if (!side) return;
+      if (ev.target.closest('.drawerbtn')) return;
+      const drawer = document.querySelector(side === 'left' ? '.layout > .toc' : '.layout > .queue');
+      if (drawer && drawer.contains(ev.target)) {
+        if (ev.target.closest('a, button')) setTimeout(() => set(null), 60);
+        return;
+      }
+      set(null);
+    });
+    document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && open()) set(null); });
+    matchMedia('(max-width: 900px)').addEventListener('change', (ev) => { if (!ev.matches) set(null); });
+  })();
+</script>
 <div class="devswitch" title="Dev only — not part of the product"><label for="devwho">dev · viewing as</label> <select id="devwho"></select> <button id="devff" title="Dev only — complete the founding: invite two members, answer everything, open the gates">⏩ settle the founding</button></div>
 <div class="alphaflag"><b>Warning:</b> docs.vote is in alpha!</div>
 <div class="wrap">

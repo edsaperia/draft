@@ -1,4 +1,5 @@
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>docs.vote</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪶</text></svg>">
 <link rel="stylesheet" href="system.css">
@@ -93,6 +94,9 @@
   .redacted .bar { display: block; height: .72em; border-radius: 3px; background: var(--border); margin: .42em 0; }
   .redacted .h1 .bar { height: 1.1em; } .redacted .h2 .bar { height: .95em; } .redacted .h3 .bar { height: .85em; }
   .redacted.black .bar { background: var(--fg); }
+  /* narrow: the dock owns the foot of the window and nothing may sit over the
+     text, so the flag is a strip in the flow under the topbar */
+  @media (max-width: 900px) { .alphaflag { position: static !important; display: block; width: fit-content; margin: 8px auto 0; } }
   .alphaflag { position: fixed; bottom: 10px; left: 10px; z-index: 55;
     font-size: var(--t-small); color: var(--muted); background: var(--bg);
     border: 1px solid var(--border); border-radius: var(--r-sm);
@@ -184,6 +188,9 @@
     <!-- `quill-wallet` (Q444b, Q447): four feathers at the birth, three spent
          on the founding acts, and the one that remains IS the logo — the mark
          of docs.vote is the act of making a document. -->
+    <!-- the two drawer doors, narrow only (Ed, 2026-09-12): the contents rail
+         slides in from the left, the task rail from the right -->
+    <button class="drawerbtn" id="drawerleft" type="button" aria-expanded="false" aria-controls="toc" title="Contents">☰</button>
     <p class="brand ph" id="title"><a class="quill" id="quill" href="/" title="docs.vote — make a new document"></a><span id="titletext">Untitled</span></p>
     <div class="stats">
       <!-- room-pulse: one content-free beat per action by anybody (session-view's) -->
@@ -206,9 +213,43 @@
       <span class="wallet powerwallet" id="shieldwallet"></span>
       <span class="wallet powerwallet" id="voicewallet"></span>
       <button class="me" id="mebtn" title="You, and the founder of this document."></button>
+      <button class="drawerbtn" id="drawerright" type="button" aria-expanded="false" aria-controls="rail" title="What needs you">≣<span class="n" id="drawercount"></span></button>
     </div>
   </div>
 </header>
+<script>
+  // The drawers (narrow only): one attribute on the root names the open one,
+  // the doors toggle it, and a tap anywhere outside the open drawer — the
+  // darkened ground, the document — closes it. Choosing inside a drawer
+  // closes it too, after the choice has landed: a rail entry opens its card
+  // in the document and a heading travels there, and both want the drawer
+  // out of the way to be seen. Self-contained on purpose: nothing else on the
+  // page knows a drawer exists.
+  (() => {
+    const root = document.documentElement;
+    const doors = { left: document.getElementById('drawerleft'), right: document.getElementById('drawerright') };
+    const set = (side) => {
+      if (side) root.setAttribute('data-drawer', side); else root.removeAttribute('data-drawer');
+      for (const k of Object.keys(doors)) doors[k].setAttribute('aria-expanded', String(side === k));
+    };
+    const open = () => root.getAttribute('data-drawer');
+    doors.left.addEventListener('click', () => set(open() === 'left' ? null : 'left'));
+    doors.right.addEventListener('click', () => set(open() === 'right' ? null : 'right'));
+    document.addEventListener('click', (ev) => {
+      const side = open();
+      if (!side) return;
+      if (ev.target.closest('.drawerbtn')) return;
+      const drawer = document.querySelector(side === 'left' ? '.layout > .toc' : '.layout > .queue');
+      if (drawer && drawer.contains(ev.target)) {
+        if (ev.target.closest('a, button')) setTimeout(() => set(null), 60);
+        return;
+      }
+      set(null);
+    });
+    document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && open()) set(null); });
+    matchMedia('(max-width: 900px)').addEventListener('change', (ev) => { if (!ev.matches) set(null); });
+  })();
+</script>
 <div class="devswitch" title="Dev only — not part of the product"><label for="devwho">dev · viewing as</label> <select id="devwho"></select> <button id="devff" title="Dev only — complete the founding: invite two members, answer everything, open the gates">⏩ settle the founding</button></div>
 <div class="alphaflag"><b>Warning:</b> docs.vote is in alpha!</div>
 <div class="wrap">
@@ -4747,11 +4788,25 @@
     why: rec.why || '', to: motionDisplay(rec), status: rec.status,
     invite: rec.payload.kind === 'invite' ? inviteeHandle(rec.payload) : undefined,
     removee: rec.payload.kind === 'remove' ? rec.payload.member : undefined });
+  // **A running motion waits behind the grant its main action needs** (Q1344,
+  // Ed 2026-09-11, the moon room: *seeing proposals before I've accepted any
+  // powers*). C9's test since Q1328 is *can you take the entry's main action*:
+  // an ordinary motion is judged, so it waits on the ⚖️ OK as a text race
+  // does; a constitutional one is answered, so it waits on 🏛️'s. Only for a
+  // member — the gate is about a power you hold and have not yet taken up —
+  // and only while it runs: a motion awaiting the crown is the Founder's own
+  // question, served whatever they have acknowledged. The mover's own motion
+  // stands in either state, as an author's own proposal does (M3): what is
+  // waited for is the power to answer other people's, and their own entry is
+  // the ⏳ line saying it runs.
+  const motionWaitsOnMe = (rec) => rec.status === 'running' && viewerIsMember() &&
+    !(rec.by !== null && rec.by !== undefined && rec.by === viewerId()) &&
+    !(rec.route === 'constitutional' ? mayVoice() : mayJudge());
   const liveMotionRec = (c) => {
     if (!cs || !c || c.isGate || c.ansFor || !motionsLive()) return null;
     for (const rec of cs.motionRecords().values()) {
       if (rec.status !== 'running' && rec.status !== 'awaiting-crown') continue;
-      if (motionTargets(rec) === c.k) return rec;
+      if (motionTargets(rec) === c.k) return motionWaitsOnMe(rec) ? null : rec;
     }
     return null;
   };
@@ -6600,11 +6655,17 @@
     return { id: c.k, html, pinned: st !== 'wait' && st !== 'done', rank: RAIL_RANK[st],
       u: RAIL_U[st], mine: st === 'yours', anchor: () => anchorOf(c.k) };
   }
-  // birthPass sees only the setup tasks: the charter's own entries arrive
-  // by session.js's rules, not by being reborn on every render
-  const setupRail = () => ({ querySelectorAll: (sel) => {
-    const ids = new Set(railEntries.map((e) => e.id));
-    return [...rail.querySelectorAll(sel)].filter((el) => ids.has(el.dataset.q)); } });
+  // **The birth-pass sees the whole rail** (Q1338, Ed 2026-09-11). It used to
+  // be scoped to the setup tasks, on the ground that a charter entry arrives
+  // by session.js's own rules — but session.js has exactly one, the next pair
+  // of a race you have just judged sliding in, and a race that is new to you
+  // has none at all. That never showed while a race was served the moment it
+  // existed; since Q1328 holds every race back until ⚖️ Voting is
+  // acknowledged, a dozen land in one render at the OK and pop. F14 is one
+  // rule over both columns — what is born arrives, it does not appear — and
+  // `bornKeys` already remembers across the wholesale rebuild the rail takes
+  // on every render and every poll, so a charter entry is keyed by its own
+  // item id exactly as a setup task is by its page key.
 
   // ---- `dead-click-nudge` (Q650–Q653, Ed 2026-08-23) ---------------------
   // A founder meeting the birth has never seen this surface, and the rail is
@@ -7880,9 +7941,12 @@
         // reached because `motionTargets` points this motion at this card.
         if (price === 'assembly') {
           // the consent card's own three blocks (Q1182): the applicant's
-          // words are the reason under the proposed block, 🏛️ commits
+          // words are the reason under the proposed block, 🏛️ commits.
+          // Drawn by the motion grammar on its constitutional row since
+          // Q1331 — this was the one caller the rename missed, and the card
+          // threw on open until the assembly-priced applicants-walk caught it.
           return cardHtml(c, ctx, said +
-            consentBlocks(c.k, PAGE_COPY.consent.staysAsIs, PAGE_COPY.consent.joins(applicantName(ap)), null),
+            motionBlocks(c.k, PAGE_COPY.consent.staysAsIs, PAGE_COPY.consent.joins(applicantName(ap)), null, 'constitutional'),
             binBtn() + '<button class="btn btn-approve glyphbtn emojibtn"' +
             (motionPicked(c) ? '' : ' disabled') + ' data-confirm="1" title="Give your answer">🏛️</button>',
             g.cards);
@@ -8671,7 +8735,7 @@
     lastOpen = S.open;
     // what is born arrives (setup.js birthPass): a stagehand act — seat
     // switch, ⏩ — mutes the entrances rather than replaying fifteen at once
-    window.SETUP.birthPass(band, setupRail(), birthsMuted, () => SESSION.drawWires());
+    window.SETUP.birthPass(band, rail, birthsMuted, () => SESSION.drawWires());
     launchGrant();
     launchFarewell();
     // the closed page: every clause grey, typing opens nothing, the wallets
@@ -11305,14 +11369,30 @@
     for (const o of v.records || []) {
       const field = o.field || [];
       const hs = field.flatMap((f) => f.hunks);
-      const sp = hs.length ? spanOf(hs) : spanOf(o.footprint || o.hunks || []);
+      // **A record stands beside the lines that descend from what it decided**
+      // (Q1333, Ed 2026-09-11, the moon room: a ✔ on the Food heading). The
+      // hunks are in the coordinates of the version the race was decided
+      // against, and every adoption since that inserted or deleted lines
+      // above has moved the clause; the host carries the span forward as
+      // `at` — a clause changed again maps to its replacement, a clause
+      // deleted to the gap where it stood — and the entry, the tab and the
+      // card key on that. The fixture's records carry no `at`, so the span
+      // of the hunks is the fallback, which is what it always was.
+      const sp = o.at && typeof o.at.start === 'number' ? o.at
+        : hs.length ? spanOf(hs) : spanOf(o.footprint || o.hunks || []);
       const adopted = o.outcome === 'adopted';
       // undecided at the close (§4.6): the race files at its backlog
       // paragraph — its best wording IS the paragraph — under the PAUSE mark,
       // never pinned (the 🥂 card is the acknowledgment the close asks for)
       const undecided = o.outcome === 'undecided';
-      const keys = undecided ? ['U:' + (o.raceId || o.candidateId)] : keysOfSpan(sp, lines);
+      // a deleted clause's record takes the gap's own site, as a race on a gap
+      // does (M19): the gap key, the block before it, the insert head
+      const site = undecided ? { keys: ['U:' + (o.raceId || o.candidateId)] } : siteOfSpan(sp, lines);
+      const keys = site.keys;
+      const gapSite = site.isInsert
+        ? { gapKey: site.gapKey, insertAfterKey: site.insertAfterKey, isInsert: true } : {};
       const textOfF = (f) => f.hunks.flatMap((h) => h.lines).map(unhead).join('\n');
+      const plainOfF = (f) => f.hunks.flatMap((h) => h.lines).filter((l) => l.trim()).map(unhead).join('\n');
       // the seal lifts at the record (§3.5a): `records` stays sealed, the
       // closed `record` carries the names where the anonymity ladder allows
       const byName = (f) => authorBy(f.author) || unsealed.get(f.id || f.candidateId) || null;
@@ -11323,8 +11403,21 @@
         ? { slate: field.map((f) => ({ text: textOfF(f), rationale: f.rationale, by: byName(f),
             underNote: underNoteOf(f), refusal: f.reason || null,
             p: f.p == null ? undefined : f.p, won: f === winner && (adopted || undecided) })) } : {};
+      // **The card says which text it changed** where the clause under it has
+      // changed again since (Q1333): the head is the clause as it stands, so
+      // where that is no longer the wording this record put there — or, on a
+      // retired record, the wording that stood — one line under the head
+      // says so, and a clause since deleted says that instead. Compared on
+      // the page against the current lines, blank lines and heading marks
+      // aside, exactly as the head reads them.
+      const standsNow = undecided ? null : adopted ? (winner.hunks ? plainOfF(winner) : '') : (replaced || '');
+      const nowText = undecided ? null : plain(lines, sp);
+      const gone = !undecided && sp.start === sp.end;
+      const changedSince = standsNow !== null && (gone || nowText !== standsNow);
       items.push({ id: 'rec:' + (o.raceId || o.candidateId), kind: 'quick', keys, state: 'sealed',
-        qLabel: labelFor(keys[0]), urgency: 0, pct: 100,
+        ...gapSite, ...(changedSince ? { changedSince: true, gone } : {}),
+        // a gap record is titled by the block before its gap, as a gap draft is
+        qLabel: labelFor(site.insertAfterKey || keys[0]), urgency: 0, pct: 100,
         cap: adopted ? 'decided — adopted' : undecided ? 'undecided at the close — the text stood' : 'decided — the current text stood',
         decided: { outcome: adopted ? 'adopted' : undecided ? 'undecided' : 'retired — the current text stood',
           when: whenOf(o.when), p: o.p == null && best ? best.p : o.p, bar: o.threshold, judges: o.judges,

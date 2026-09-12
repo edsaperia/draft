@@ -1087,17 +1087,23 @@
     // positioned. The wide layout's absolute tops would put each entry at a
     // large negative offset here, `aside.queue` sitting below `main`.
     if (NARROW()) {
+      let n = 0;
       for (const el of queueEl.children) {
         const a = anchorForEntry(el.dataset.q, el.dataset.site);
         el.style.display = a ? '' : 'none';
         el.style.top = '';
         el.classList.remove('pinned');
         if (a) {
+          n += 1;
           const ay = a.getBoundingClientRect().top;
           el.classList.toggle('offclause', ay < BAND_TOP || ay > innerHeight - BAND_BOT);
         }
       }
       queueEl.style.height = '';
+      // the right-hand door wears the count (the drawer is the page's, so
+      // the page may not have one)
+      const badge = document.getElementById('drawercount');
+      if (badge) badge.textContent = n ? String(n) : '';
       return;
     }
     const railRect = queueEl.getBoundingClientRect();

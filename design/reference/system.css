@@ -362,10 +362,51 @@
     .layout { grid-template-columns: minmax(0, 1fr) var(--rail-right); }
     .layout > .toc { display: none; }
   }
+  .drawerbtn { display: none; }   /* the two drawer doors exist below 900px only */
+  /* **Narrow: one column, the rail a dock, the contents rail gone** — the
+     first cut of design/MOBILE.md (§1.2, 2026-09-12). The literal is
+     `NARROW_Q` in session.js; the two must agree. The dock is fixed at the
+     foot of the window and lists every entry with a clause in document order
+     (`layoutQueue`'s narrow branch positions nothing); it scrolls inside
+     itself past 40% of the window. The contents rail has no drawer yet
+     (decision 8) — it is simply not there below 900. */
   @media (max-width: 900px) {
-    .layout { grid-template-columns: 1fr; }
-    .layout > .queue, .layout > .toc { position: static; max-height: none; }
-    .layout > .toc { display: flex; }
+    .layout { grid-template-columns: 1fr; gap: 0; margin-top: var(--s2); }
+    /* **Both rails are drawers** (Ed, 2026-09-12: *sidebars that slide out on
+       each side, opening with icons in the top left and top right*): the
+       contents rail from the left, the task rail from the right, each fixed
+       under the topbar, the window's height, and off its own edge until
+       `html[data-drawer]` names it. The document keeps the middle and the
+       tabs keep the left gutter. */
+    .layout > .toc, .layout > .queue {
+      position: fixed; top: var(--nav-h); bottom: 0; z-index: 45; display: flex; flex-direction: column;
+      width: min(86vw, 360px); max-height: none; margin: 0 !important; box-sizing: border-box;
+      overflow-y: auto; overscroll-behavior: contain; background: var(--bg);
+      padding: var(--s3) var(--s3) calc(var(--s3) + env(safe-area-inset-bottom, 0px));
+      transition: transform 220ms ease; will-change: transform;
+    }
+    .layout > .toc { left: 0; transform: translateX(-100%); border-right: 1px solid var(--border); box-shadow: none; }
+    .layout > .queue { right: 0; transform: translateX(100%); border-left: 1px solid var(--border); }
+    html[data-drawer="left"] .layout > .toc, html[data-drawer="right"] .layout > .queue { transform: none; box-shadow: var(--shadow-lg); }
+    .layout > .toc ul { overflow: visible; }
+    /* `.layout > .queue` on both: the base `.qitem` rule is later in the sheet
+       and would win a specificity tie */
+    .layout > .queue ul { position: static; height: auto !important; }
+    .layout > .queue .qitem { position: static; width: 100%; transition: none; margin: 0 0 var(--s2); }
+    .layout > .queue .qitem:last-child { margin-bottom: 0; }
+    /* the two doors, in the topbar; a count on the right one says how many
+       tasks the rail holds */
+    .drawerbtn {
+      display: inline-flex; align-items: center; gap: 4px; appearance: none; border: 1px solid var(--border);
+      background: var(--bg); border-radius: var(--r-md); padding: 4px 8px; font: inherit; font-size: var(--t-ui);
+      line-height: 1; color: var(--fg); cursor: pointer; flex: none;
+    }
+    .drawerbtn[aria-expanded="true"] { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .drawerbtn .n { font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+    .drawerbtn .n:empty { display: none; }
+    /* the ground darkens behind an open drawer; a tap on it closes */
+    html[data-drawer] body::after { content: ''; position: fixed; left: 0; right: 0; top: var(--nav-h); bottom: 0; background: rgba(0, 0, 0, 0.22); z-index: 44; }
+    @media (prefers-reduced-motion: reduce) { .layout > .toc, .layout > .queue { transition: none; } }
   }
 
   /* left rail: contents-rail, built from the document's own headings. A charter
@@ -873,7 +914,10 @@
        keeps .layout tall enough for the rails to stay pinned. */
     padding: 36px 44px 0 132px;
   }
-  @media (max-width: 900px) { .doc { padding: var(--s5) 20px 0; } }
+  /* Narrow: the gutter survives as a column at 56px (MOBILE.md §1.2) — the
+     two fitting passes measure a vertical gutter and keep working unchanged —
+     and the document *is* the page, so its box goes. */
+  @media (max-width: 900px) { .doc { padding: var(--s4) 12px 0 56px; border: 0; border-radius: 0; } }
   /* **The runway is content, not padding** (Ed's QA, 2026-08-30): a sticky
      element travels only inside its containing block's content box, so with
      the runway as padding the riding 📝 tab stopped where the text ended and
@@ -1002,11 +1046,8 @@
   /* A part heading's rule and the air under it sit above its words, so its
      marks clear both — the chipcol is positioned against the padding box. */
   .doc h2.docline.lvl1 .chipcol { top: calc(var(--head-rule) + 0.15em); }
-  @media (max-width: 900px) {
-    .doc h2.docline .sectoggle { position: static; margin: 0 6px 0 0; }
-    .doc h2.docline.marked .sectoggle { margin-right: 6px; }
-    .doc h2.docline .chipcol { margin: 0 0 var(--s1); }
-  }
+  /* (the 900px rule that flattened the heading's gutter went with MOBILE.md's
+     first cut, 2026-09-12: the gutter stays a column at every width) */
 
   /* A challenged clause wears its queue card's own lifecycle hue and has no
      left rule (Ed, 200): paragraph, gutter glyph and rail entry are one object
@@ -1217,8 +1258,12 @@
     .achip { transition: none; }
     .achip:hover, .achip:active { transform: none; }
   }
+  /* Narrow keeps the gutter a column (MOBILE.md §1.0: `fitStacks` and
+     `fitBand` measure a vertical gutter) and only pulls it in. */
   @media (max-width: 900px) {
-    .chipcol { position: static; flex-direction: row; align-items: baseline; margin: 0 0 var(--s1); }
+    .chipcol { margin-right: 8px; }
+    .doc h2.docline .chipcol { margin-right: calc(8px + var(--s2)); }
+    .doc h2.docline.marked .sectoggle { margin-right: calc(8px + var(--s2) + 34px + var(--s1)); }
   }
 
   /* insert-anchor: a held-open gap where a proposed section would stand. No
@@ -2207,6 +2252,36 @@
     #wires .ink, #wires .ink path, #wires .ink .cap { transition: none; }
   }
   @media (max-width: 900px) { #wires { display: none; } }
+
+  /* ---- narrow: the topbar, the doors that are not there, and touch --------
+     design/MOBILE.md's first cut (2026-09-12), read + judge only. The
+     sockets, the faces and the pulse leave the topbar (Q656, Q423): no
+     proposing from a phone yet, so no wallet to spend and no flight to land.
+     The doors into edit mode (📝's riding tab, the floating door, the lane
+     strip) are not drawn, so the column stays prose you can read. The wrap
+     loses its side padding to the document's own 8px. */
+  @media (max-width: 900px) {
+    .wrap { padding: 0 var(--s2); }
+    .navbar .wrap { padding: 10px var(--s3); gap: var(--s3); align-items: center; }
+    .navbar .brand { min-width: 0; flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .navbar .brand .sess { display: none; }
+    .navbar .stats { gap: 10px; flex: none; }
+    .navbar .pulse, .navbar .facestack, .navbar .wallet { display: none; }
+    #ridetab, #editdoor, #prosectl, .lanepropose { display: none; }
+    /* the 95vh runway keeps the last clause reachable above the dock */
+  }
+  /* Touch (MOBILE.md §1.5): no double-tap zoom or 300ms delay on a control,
+     no grey flash competing with depth, and a hold survives the finger — a
+     held commit must not be scrolled away and `pointercancel`led, nor bring
+     up the callout or a selection while the timer runs. */
+  @media (pointer: coarse) {
+    button, .achip, .qitem, .lanepick, .sectoggle, .toc a {
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    }
+    .btn, .holdmotion, .okbtn, .lanepick, .achip {
+      touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+    }
+  }
 
 
   /* ---- the wallet family (Q444, 2026-08-21) ---------------------------------

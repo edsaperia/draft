@@ -362,6 +362,7 @@
     .layout { grid-template-columns: minmax(0, 1fr) var(--rail-right); }
     .layout > .toc { display: none; }
   }
+  .drawerbtn { display: none; }   /* the two drawer doors exist below 900px only */
   /* **Narrow: one column, the rail a dock, the contents rail gone** — the
      first cut of design/MOBILE.md (§1.2, 2026-09-12). The literal is
      `NARROW_Q` in session.js; the two must agree. The dock is fixed at the
@@ -371,20 +372,41 @@
      (decision 8) — it is simply not there below 900. */
   @media (max-width: 900px) {
     .layout { grid-template-columns: 1fr; gap: 0; margin-top: var(--s2); }
-    .layout > .toc { display: none; }
-    .layout > .queue {
-      position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 45;
-      margin: 0 !important; width: auto; box-sizing: border-box;
-      max-height: 40vh; max-height: 40dvh; overflow-y: auto; overscroll-behavior: contain;
-      background: var(--light); border-top: 1px solid var(--border);
-      padding: var(--s2) var(--s3) calc(var(--s2) + env(safe-area-inset-bottom, 0px));
+    /* **Both rails are drawers** (Ed, 2026-09-12: *sidebars that slide out on
+       each side, opening with icons in the top left and top right*): the
+       contents rail from the left, the task rail from the right, each fixed
+       under the topbar, the window's height, and off its own edge until
+       `html[data-drawer]` names it. The document keeps the middle and the
+       tabs keep the left gutter. */
+    .layout > .toc, .layout > .queue {
+      position: fixed; top: var(--nav-h); bottom: 0; z-index: 45; display: flex; flex-direction: column;
+      width: min(86vw, 360px); max-height: none; margin: 0 !important; box-sizing: border-box;
+      overflow-y: auto; overscroll-behavior: contain; background: var(--bg);
+      padding: var(--s3) var(--s3) calc(var(--s3) + env(safe-area-inset-bottom, 0px));
+      transition: transform 220ms ease; will-change: transform;
     }
-    .layout > .queue:not(:has(.qitem:not([style*="display: none"]))) { display: none; }
+    .layout > .toc { left: 0; transform: translateX(-100%); border-right: 1px solid var(--border); box-shadow: none; }
+    .layout > .queue { right: 0; transform: translateX(100%); border-left: 1px solid var(--border); }
+    html[data-drawer="left"] .layout > .toc, html[data-drawer="right"] .layout > .queue { transform: none; box-shadow: var(--shadow-lg); }
+    .layout > .toc ul { overflow: visible; }
     /* `.layout > .queue` on both: the base `.qitem` rule is later in the sheet
        and would win a specificity tie */
     .layout > .queue ul { position: static; height: auto !important; }
     .layout > .queue .qitem { position: static; width: 100%; transition: none; margin: 0 0 var(--s2); }
     .layout > .queue .qitem:last-child { margin-bottom: 0; }
+    /* the two doors, in the topbar; a count on the right one says how many
+       tasks the rail holds */
+    .drawerbtn {
+      display: inline-flex; align-items: center; gap: 4px; appearance: none; border: 1px solid var(--border);
+      background: var(--bg); border-radius: var(--r-md); padding: 4px 8px; font: inherit; font-size: var(--t-ui);
+      line-height: 1; color: var(--fg); cursor: pointer; flex: none;
+    }
+    .drawerbtn[aria-expanded="true"] { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .drawerbtn .n { font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+    .drawerbtn .n:empty { display: none; }
+    /* the ground darkens behind an open drawer; a tap on it closes */
+    html[data-drawer] body::after { content: ''; position: fixed; left: 0; right: 0; top: var(--nav-h); bottom: 0; background: rgba(0, 0, 0, 0.22); z-index: 44; }
+    @media (prefers-reduced-motion: reduce) { .layout > .toc, .layout > .queue { transition: none; } }
   }
 
   /* left rail: contents-rail, built from the document's own headings. A charter
@@ -2245,12 +2267,13 @@
     .navbar .brand .sess { display: none; }
     .navbar .stats { gap: 10px; flex: none; }
     .navbar .pulse, .navbar .facestack, .navbar .wallet { display: none; }
+    /* the quorum reading goes too, for now: with two doors, the clock and
+       `me` in 390px the title was down to two dots (a first-cut cost, not a
+       ruling — MOBILE.md §1.2 keeps it) */
+    .navbar .count { display: none; }
+    .navbar .room { gap: 8px; }
     #ridetab, #editdoor, #prosectl, .lanepropose { display: none; }
     /* the 95vh runway keeps the last clause reachable above the dock */
-    /* While a card is open the dock keeps only that card's entry — the open
-       card needs the screen more than the list does, and the entry is the
-       way back (a second tap closes). Everything returns at the close. */
-    .layout > .queue:has(.qitem button[aria-current="true"]) .qitem:not(:has(button[aria-current="true"])) { display: none; }
   }
   /* Touch (MOBILE.md §1.5): no double-tap zoom or 300ms delay on a control,
      no grey flash competing with depth, and a hold survives the finger — a

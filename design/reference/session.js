@@ -247,7 +247,12 @@
   // held-open anchor the column draws: one per gap site, one per live item.
   const gapFields = (key) => { const at = blockBeforeGap(key); return { gapKey: key, insertAfterKey: at >= 0 ? DOC[at].key : null }; };
   const gapOf = (s, key) => (s && s.sites ? s.sites.find((x) => x.gapKey === key) || null : s);
-  const gapHolders = () => SUGGS.flatMap((g) => (g.sites
+  // **A deleted clause's record holds its gap open while it is unread, and
+  // leaves the margin once filed** (Q1333): the record stands where the clause
+  // stood, asking for its OK; filed, it wants nothing, and there is no clause
+  // for a pile of its own — a room's every deletion held open as a grey ✔ for
+  // ever would be the closed gutter M13 keeps filed marks off.
+  const gapHolders = () => SUGGS.filter((g) => !(g.state === 'sealed' && !isUnread(g))).flatMap((g) => (g.sites
     ? g.sites.filter((x) => x.gapKey).map((x) => ({ g, key: x.gapKey, after: x.insertAfterKey ?? null, site: true }))
     : g.gapKey || g.insertAfterKey ? [{ g, key: g.gapKey ?? null, after: g.insertAfterKey ?? null, site: false }] : []));
   // the head label of a draft on a gap: which gap, in the reader's terms
@@ -1075,6 +1080,32 @@
     : (g.urgency ?? 0));
 
   function layoutQueue() {
+    // **Narrow is a mode, not a stylesheet** (design/MOBILE.md §1.0, §1.3;
+    // the first cut, 2026-09-12): below `NARROW_Q` the rail is a dock fixed
+    // at the foot of the window, and *beside its clause* has no meaning — so
+    // every entry with a clause is listed in document order and nothing is
+    // positioned. The wide layout's absolute tops would put each entry at a
+    // large negative offset here, `aside.queue` sitting below `main`.
+    if (NARROW()) {
+      let n = 0;
+      for (const el of queueEl.children) {
+        const a = anchorForEntry(el.dataset.q, el.dataset.site);
+        el.style.display = a ? '' : 'none';
+        el.style.top = '';
+        el.classList.remove('pinned');
+        if (a) {
+          n += 1;
+          const ay = a.getBoundingClientRect().top;
+          el.classList.toggle('offclause', ay < BAND_TOP || ay > innerHeight - BAND_BOT);
+        }
+      }
+      queueEl.style.height = '';
+      // the right-hand door wears the count (the drawer is the page's, so
+      // the page may not have one)
+      const badge = document.getElementById('drawercount');
+      if (badge) badge.textContent = n ? String(n) : '';
+      return;
+    }
     const railRect = queueEl.getBoundingClientRect();
     const railTop = railRect.top + scrollY;
     const pinned = [], flow = [];
@@ -1426,6 +1457,9 @@
   function drawWires() {
     if (!wiresEl) return;
     while (wiresEl.firstChild) wiresEl.removeChild(wiresEl.firstChild);
+    // A wire from a dock at the foot of the window to a clause anywhere on
+    // the page says nothing (MOBILE.md §1.3): narrow draws none.
+    if (NARROW()) return;
     const id = openId ?? pendingId ?? (extra && extra.openId ? extra.openId() : null);
     if (!id) return;
     const s = SUGGS.find((x) => x.id === id) || (extraMeta.has(id) ? null : undefined);
@@ -1904,7 +1938,11 @@
     // belongs to was dropped off the card altogether. `atHead` had been written
     // for exactly this and never called.
     const top = skey ? ranked.find(atHead) : null;
-    const rest = ranked.filter((c) => c !== top);
+    // **Where the clause has changed again since** (Q1333), the head is the
+    // clause as it stands *now* — which is no longer the top of this ranking
+    // — so the top entry prints in the field like everything else: the head
+    // keeps its machinery and a line under it says why the two differ.
+    const rest = s.changedSince ? ranked : ranked.filter((c) => c !== top);
 
     // Where the incumbent is in the list its right-hand slot now names it, so the
     // left-hand tag would be saying it twice; where it is at the *head* it kept
@@ -1977,11 +2015,18 @@
       (d.capped
         ? '<span class="rsub">' + T.record.capped + '</span>'
         : '') +
+      // a deleted clause's record heads with its gap, as a race on a gap does
+      // (M19, `headOpts`): the two neighbours named, no text
       (top
-        ? clauseHeadHtml(s, {
-            text: currentTextFor(skey), key: skey, chips: chipsFor(skey, s.id),
-            label: null,
-          }) + spk(top)
+        ? clauseHeadHtml(s, Object.assign(headOpts(s, skey), {
+            key: skey, chips: chipsFor(skey, s.id), label: null,
+          })) +
+          // **This clause has changed again since** (Q1333): one line under
+          // the head where the clause no longer reads as this record left it,
+          // and *removed* where the clause is gone and the head is its gap
+          (s.changedSince
+            ? '<span class="rsub">' + esc(s.gone ? T.record.gone : T.record.changedSince) + '</span>'
+            : spk(top))
         : '') +
       // No label on the rest of the field (Ed, 2026-08-17): the hairline above it
       // already says *and here is everything else*, and the axis those numbers are
@@ -4378,6 +4423,12 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   // scroll, so doing both in one frame makes the page lurch. Collapse the old
   // card, *then* move, *then* expand the new one — three steps, never overlapping.
   const REDUCED = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // **How wide is the screen** — one literal, the same one `system.css`'s
+  // narrow rules key on (MOBILE.md §1.1), read per call and never captured:
+  // `layoutQueue` and `drawWires` ask it on every pass, so a window crossing
+  // the line re-lays on its next render without a reload.
+  const NARROW_Q = '(max-width: 900px)';
+  const NARROW = () => matchMedia(NARROW_Q).matches;
   // **The commit gesture is a switch** (backlog 184, Ed, 2026-08-28: *I'd like
   // to try this*). Every consequential commit on this product has been a hold:
   // the token flies for the length of the press and the act lands when it
