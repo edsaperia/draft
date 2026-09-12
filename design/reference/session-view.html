@@ -213,7 +213,7 @@
       <span class="wallet powerwallet" id="shieldwallet"></span>
       <span class="wallet powerwallet" id="voicewallet"></span>
       <button class="me" id="mebtn" title="You, and the founder of this document."></button>
-      <button class="drawerbtn" id="drawerright" type="button" aria-expanded="false" aria-controls="rail" title="What needs you">≣<span class="n" id="drawercount"></span></button>
+      <button class="drawerbtn" id="drawerright" type="button" aria-expanded="false" aria-controls="rail" title="What needs you"><span class="n" id="drawercount">0</span></button>
     </div>
   </div>
 </header>
@@ -246,8 +246,38 @@
       }
       set(null);
     });
+    // iOS dispatches no click for a tap on plain content unless something
+    // under it is clickable, so the ground's tap arrives as a pointerup
+    // instead (the CSS also gives the ground a pointer cursor while a drawer
+    // is open, the other half of the same WebKit rule)
+    document.addEventListener('pointerup', (ev) => {
+      const side = open();
+      if (!side || ev.target.closest('.drawerbtn')) return;
+      const drawer = document.querySelector(side === 'left' ? '.layout > .toc' : '.layout > .queue');
+      if (drawer && drawer.contains(ev.target)) return;
+      set(null);
+    });
     document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && open()) set(null); });
     matchMedia('(max-width: 900px)').addEventListener('change', (ev) => { if (!ev.matches) set(null); });
+    // **The title heads the document on a phone** (Ed, 2026-09-12: *remove
+    // the title from the top bar and put it at the top of the document area
+    // instead, where it can be written in full*): a mirror of the topbar's
+    // title text as the document column's first line, drawn on narrow only
+    // (CSS), kept in step by watching the one element the page writes.
+    // (this script runs under the header, before the document column is
+    // parsed, so the mirror waits for the DOM)
+    document.addEventListener('DOMContentLoaded', () => {
+      const src = document.getElementById('titletext');
+      const doc = document.getElementById('doc');
+      if (!src || !doc) return;
+      const h = document.createElement('h1');
+      h.className = 'mobtitle';
+      h.id = 'mobtitle';
+      const sync = () => { h.textContent = src.textContent; };
+      sync();
+      new MutationObserver(sync).observe(src, { childList: true, characterData: true, subtree: true });
+      doc.insertBefore(h, doc.firstChild);
+    });
   })();
 </script>
 <div class="devswitch" title="Dev only — not part of the product"><label for="devwho">dev · viewing as</label> <select id="devwho"></select> <button id="devff" title="Dev only — complete the founding: invite two members, answer everything, open the gates">⏩ settle the founding</button></div>

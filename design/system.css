@@ -402,10 +402,13 @@
       line-height: 1; color: var(--fg); cursor: pointer; flex: none;
     }
     .drawerbtn[aria-expanded="true"] { background: var(--primary); color: #fff; border-color: var(--primary); }
-    .drawerbtn .n { font-size: var(--t-small); font-variant-numeric: tabular-nums; }
-    .drawerbtn .n:empty { display: none; }
+    /* the right door is the count alone (Ed, 2026-09-12: *the number is
+       sufficient*), held to a box wide enough to be a target */
+    .drawerbtn .n { font-size: var(--t-ui); font-variant-numeric: tabular-nums; font-weight: 600; }
+    #drawerright { min-width: 34px; justify-content: center; }
     /* the ground darkens behind an open drawer; a tap on it closes */
     html[data-drawer] body::after { content: ''; position: fixed; left: 0; right: 0; top: var(--nav-h); bottom: 0; background: rgba(0, 0, 0, 0.22); z-index: 44; }
+    html[data-drawer] body { cursor: pointer; }
     @media (prefers-reduced-motion: reduce) { .layout > .toc, .layout > .queue { transition: none; } }
   }
 
@@ -2265,6 +2268,16 @@
     .navbar .wrap { padding: 10px var(--s3); gap: var(--s3); align-items: center; }
     .navbar .brand { min-width: 0; flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .navbar .brand .sess { display: none; }
+    /* the title leaves the topbar for the head of the document (Ed,
+       2026-09-12), where it is written in full; the quill stays as the way
+       home. `#mobtitle` is the mirror the drawer script keeps in step. */
+    .navbar .brand #titletext { display: none; }
+    .navbar .brand { flex: none; }
+    #mobtitle { font-size: var(--t-lead); font-weight: 600; line-height: 1.25; margin: 0 0 var(--s4) var(--measure-gutter); text-wrap: balance; }
+  }
+  #mobtitle { display: none; }
+  @media (max-width: 900px) {
+    #mobtitle { display: block; }
     .navbar .stats { gap: 10px; flex: none; }
     .navbar .pulse, .navbar .facestack, .navbar .wallet { display: none; }
     /* the quorum reading goes too, for now: with two doors, the clock and

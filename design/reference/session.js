@@ -1103,7 +1103,7 @@
       // the right-hand door wears the count (the drawer is the page's, so
       // the page may not have one)
       const badge = document.getElementById('drawercount');
-      if (badge) badge.textContent = n ? String(n) : '';
+      if (badge) badge.textContent = String(n);
       return;
     }
     const railRect = queueEl.getBoundingClientRect();
