@@ -16,6 +16,7 @@ import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
+import { SURFACE_MAX_BYTES, installSurface, readTarGz } from './surface.js';
 import { CATALOGUE, ConstitutionSession, isShapeName, mayApply, sha256Hex, view } from '../../constitution/src/index.js';
 import type { ApplicantRecord, ApplicationsValue, LogEntry, Price, PriceValue } from '../../constitution/src/index.js';
 import { DEFAULT_TUNING, authorshipBase } from '../../constitution/src/adapter.js';
@@ -171,6 +172,12 @@ export async function createDraftServer(cfg: ServerConfig,
     return p === null ? null : { at: p.at, expectedMs: p.expectedMs, elapsedMs: nowMs - p.at };
   };
   const PAUSED_MESSAGE = 'this document is paused for a moment of maintenance';
+  // **The surface reload** (Q1347): where the page files are served from,
+  // and which commit answers in `x-build`, are both mutable — a surface
+  // upload moves them together, and nothing else on the host changes.
+  let designDir = cfg.designDir;
+  let buildSha = cfg.buildSha;
+  let surfaceSha: string | null = null;
   const persistence = injected ?? await openPersistence(cfg);
   const store = new DocStore(persistence);
   await store.loadAll();
@@ -878,7 +885,7 @@ export async function createDraftServer(cfg: ServerConfig,
     res.setHeader('x-content-type-options', 'nosniff');
     // which bytes are answering (see cfg.buildSha): CI polls this after a
     // deploy so that "verified" is a statement about the new build
-    if (cfg.buildSha !== null) res.setHeader('x-build', cfg.buildSha);
+    if (buildSha !== null) res.setHeader('x-build', buildSha);
     // tokens, views and interstitials must never sit in a cache
     // (review #1, finding 10)
     if (seg[0] === 'api' || seg[0] === 'auth') {
@@ -976,7 +983,9 @@ export async function createDraftServer(cfg: ServerConfig,
       // bundle, so this discloses nothing the page does not.
       json(res, 200, {
         ok: true,
-        build: cfg.buildSha,
+        build: buildSha,
+        // the commit whose page files a surface upload put in place (Q1347), or null
+        surface: surfaceSha,
         catalogue: CATALOGUE.map((e) => e.id).sort(),
         store: cfg.store,
         documents: [...store.all()].length,
@@ -1062,6 +1071,42 @@ export async function createDraftServer(cfg: ServerConfig,
         console.log('pause lifted (Q1345)');
       }
       json(res, 200, { ok: true, paused: pausedPayload(nowMs) });
+      return;
+    }
+
+    // **The surface reload** (Q1347): the served page files of one commit,
+    // as a gzipped ustar tar of `design/<file>` entries in the body and the
+    // commit in `?sha=`, under the same key as the pause. Unpacked into a
+    // fresh directory beside the data and served from there from this
+    // moment; `x-build` states the new commit, so every open page reloads
+    // itself and CI's verification sees the commit it pushed. No restart,
+    // no document leaves memory, no pause.
+    if (req.method === 'POST' && path === '/api/admin/surface') {
+      if (!cfg.botKey) { json(res, 404, { error: 'not found' }); return; }
+      if (!bearerOk(req.headers.authorization, cfg.botKey)) {
+        if (tooMany('bots')) return;
+        json(res, 401, { error: 'unauthorized' });
+        return;
+      }
+      const sha = (url.searchParams.get('sha') ?? '').trim();
+      if (!/^[0-9a-f]{7,40}$/.test(sha)) { json(res, 400, { error: 'sha must be a commit hash' }); return; }
+      const chunks: Buffer[] = [];
+      let size = 0;
+      for await (const chunk of req) {
+        size += (chunk as Buffer).length;
+        if (size > SURFACE_MAX_BYTES) { json(res, 413, { error: 'surface too large' }); return; }
+        chunks.push(chunk as Buffer);
+      }
+      let files;
+      try { files = readTarGz(Buffer.concat(chunks)); }
+      catch (e) { json(res, 400, { error: e instanceof Error ? e.message : String(e) }); return; }
+      const dir = join(cfg.dataDir, `surface-${sha}`);
+      const names = installSurface(files, dir);
+      designDir = dir;
+      buildSha = sha;
+      surfaceSha = sha;
+      console.log(`surface reloaded (Q1347): ${names.length} files of ${sha} served from ${dir}`);
+      json(res, 200, { ok: true, sha, files: names });
       return;
     }
 
@@ -1928,12 +1973,12 @@ export async function createDraftServer(cfg: ServerConfig,
     const last = seg.length > 0 ? seg[seg.length - 1]! : '';
     if (req.method === 'GET' && /\.(js|css|svg|png|woff2?)$/.test(last) &&
         (seg.length === 1 || (seg[0] === 'd' && seg.length === 2))) {
-      serveFile(res, join(cfg.designDir, last));
+      serveFile(res, join(designDir, last));
       return;
     }
     if (req.method === 'GET' && seg[0] === 'd' && seg.length === 2) {
       if (docOr404(store.bySlug(seg[1]!)) === null) return;
-      serveFile(res, join(cfg.designDir, 'session-view.html'));
+      serveFile(res, join(designDir, 'session-view.html'));
       return;
     }
     if (req.method === 'GET' && seg[0] === 'design') {
@@ -1950,12 +1995,12 @@ export async function createDraftServer(cfg: ServerConfig,
         json(res, 404, { error: 'not found' });
         return;
       }
-      serveFile(res, join(cfg.designDir, rel));
+      serveFile(res, join(designDir, rel));
       return;
     }
     if (req.method === 'GET' && path === '/') {
       // arriving at docs.vote presents a brand-new unsaved document (§9.7a)
-      serveFile(res, join(cfg.designDir, 'session-view.html'));
+      serveFile(res, join(designDir, 'session-view.html'));
       return;
     }
     // The explainer for the approval threshold (entry 163): what one
@@ -1966,7 +2011,7 @@ export async function createDraftServer(cfg: ServerConfig,
     // slash and no /pairwise.html alias, the root asset regex above
     // deliberately not matching .html.
     if (req.method === 'GET' && path === '/pairwise') {
-      serveFile(res, join(cfg.designDir, 'pairwise.html'));
+      serveFile(res, join(designDir, 'pairwise.html'));
       return;
     }
 

@@ -99,7 +99,22 @@ freely; pushing is the decision.
    secrets; configured, it must serve `/`, serve `/setup.js`, answer
    `/healthz` with `"store":"file"`, send `x-content-type-options: nosniff`,
    and **404 on `/api/dev/outbox`**.
-4. On `main` only, CI first **pauses the live host** (Q1345) — `POST
+4. On `main` only, CI first asks **what the push touched** (Q1347), through
+   the compare API between the previous head and this one, and takes one
+   of three lanes. **Documents only** (`*.md`, `docs/`): nothing is
+   deployed. **The surface only** (`design/` and documents): the served
+   page files at the top of `design/` are packed as one ustar tar.gz and
+   `POST`ed to `$DRAFT_BASE_URL/api/admin/surface?sha=<commit>` bearing
+   `DRAFT_BOT_KEY`; the running host unpacks them into
+   `<dataDir>/surface-<commit>/`, serves from there from that moment, and
+   states the commit in `x-build` — so every open page reloads itself, CI's
+   check sees the commit it pushed, and no process restarts, no document
+   leaves memory, no room pauses. `/healthz` shows `surface`. A host that
+   will not take the upload gets the full deploy instead. **Anything else**
+   (`packages/`, `scripts/`, the workflow): the full deploy below. A page
+   and a server change in one push always take the full lane; a change to
+   both in two pushes is one push out of step, which is the lane's cost.
+   For the full lane CI first **pauses the live host** (Q1345) — `POST
    $DRAFT_BASE_URL/api/admin/pause` bearing the `DRAFT_BOT_KEY` repository
    secret, the same key the host holds — and then POSTs the
    `RENDER_DEPLOY_HOOK` repository secret. With no hook secret the step is

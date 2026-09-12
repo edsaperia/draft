@@ -91,9 +91,51 @@ jobs:
           HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
           BASE: ${{ vars.DRAFT_BASE_URL }}
           BOT_KEY: ${{ secrets.DRAFT_BOT_KEY }}
+          BEFORE: ${{ github.event.before }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           if [ -z "$HOOK" ]; then
             echo "no RENDER_DEPLOY_HOOK secret — skipping deploy"; exit 0
+          fi
+          # **What did this push touch?** (Q1347, Ed 2026-09-12: *only
+          # deploys to the engine should break a document, not changes to
+          # the surface*). The compare API lists the files between the
+          # previous head and this one (the checkout is one commit deep).
+          # Three lanes: files outside design/ and the documents → the
+          # full deploy below, paused; only design/ (and documents) → the
+          # served page files are packed and uploaded to the running host,
+          # which serves them at once and states this commit in x-build —
+          # no restart, no pause, no document leaves memory; only
+          # documents → nothing to deploy at all.
+          lane=full
+          if [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ]; then
+            changed=$(gh api "repos/$GITHUB_REPOSITORY/compare/$BEFORE...$GITHUB_SHA" --paginate --jq '.files[].filename' 2>/dev/null || echo "?")
+            if [ "$changed" != "?" ] && [ -n "$changed" ]; then
+              host=$(printf '%s\n' "$changed" | grep -vE '^(design/|docs/|[^/]+\.md$|QUESTIONS\.md$)' || true)
+              surface=$(printf '%s\n' "$changed" | grep -E '^design/' || true)
+              if [ -z "$host" ] && [ -n "$surface" ]; then lane=surface; fi
+              if [ -z "$host" ] && [ -z "$surface" ]; then lane=docs; fi
+            fi
+          fi
+          echo "lane: $lane"
+          if [ "$lane" = docs ]; then
+            echo "documents only — the host is untouched"; exit 0
+          fi
+          if [ "$lane" = surface ] && [ -n "$BASE" ] && [ -n "$BOT_KEY" ]; then
+            # the served set: the page files at the top of design/, as
+            # server.ts's asset routes and surface.ts's SURFACE_NAME allow
+            tar --format=ustar -czf surface.tgz $(ls design/*.html design/*.js design/*.css design/*.svg design/*.png design/*.woff design/*.woff2 design/*.txt 2>/dev/null)
+            if curl -fsS -X POST "$BASE/api/admin/surface?sha=$GITHUB_SHA" \
+                 -H "authorization: Bearer $BOT_KEY" -H 'content-type: application/gzip' \
+                 --data-binary @surface.tgz -o surface.json; then
+              echo "surface reloaded: $(node -e 'console.log(JSON.parse(require("fs").readFileSync("surface.json","utf8")).files.length)') files"
+              live=$(curl -s -D - -o /dev/null "$BASE/" | tr -d '\r' | awk 'tolower($1)=="x-build:"{print $2}')
+              if [ "$live" != "$GITHUB_SHA" ]; then echo "x-build reads ${live:-none}, not $GITHUB_SHA"; exit 1; fi
+              node scripts/verify-deploy.mjs "$BASE"
+              exit $?
+            else
+              echo "the host did not take the surface — falling back to a full deploy"
+            fi
           fi
           # **Pause the live host before the deploy is asked for** (Q1345):
           # the new instance runs beside the old for minutes and a browser

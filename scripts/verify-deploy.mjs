@@ -131,8 +131,8 @@ await check('the phase ladder is not in the artifact (Q674)', async () => {
 // request without the key is refused. Either way, never 200 to a stranger.
 // the pause and resume ride the same key (Q1345): a stranger's POST is an
 // unknown path without the key on the host, 401 with it — never a pause
-await check('the pause is closed to a stranger (Q1345)', async () => {
-  const rs = await Promise.all(['/api/admin/pause', '/api/admin/resume'].map((p) =>
+await check('the pause and the surface reload are closed to a stranger (Q1345, Q1347)', async () => {
+  const rs = await Promise.all(['/api/admin/pause', '/api/admin/resume', '/api/admin/surface?sha=abcdef0'].map((p) =>
     fetch(base + p, { method: 'POST', headers: { 'content-type': 'application/json',
       authorization: 'Bearer not-the-key' }, body: '{}' })));
   for (const r of rs) {
