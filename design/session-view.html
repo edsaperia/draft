@@ -264,6 +264,33 @@
     // instead, where it can be written in full*): a mirror of the topbar's
     // title text as the document column's first line, drawn on narrow only
     // (CSS), kept in step by watching the one element the page writes.
+    // **`?debug=1` prints uncaught errors on the page** (2026-09-12, for a
+    // phone with no console): every uncaught error and rejection lands as a
+    // line in a fixed strip under the topbar, with its source line. Nothing
+    // is sent anywhere; the strip exists only when the address asks for it.
+    if (/[?&]debug=1/.test(location.search)) {
+      const strip = document.createElement('pre');
+      strip.id = 'errstrip';
+      strip.style.cssText = 'position:fixed;left:0;right:0;top:58px;z-index:99;margin:0;padding:6px 8px;max-height:45vh;overflow:auto;' +
+        'background:#fff3cd;color:#5c4400;font:12px/1.4 monospace;white-space:pre-wrap;border-bottom:1px solid #e0c060;';
+      strip.textContent = 'debug: errors will print here';
+      document.addEventListener('DOMContentLoaded', () => document.body.appendChild(strip));
+      const line = (s) => { strip.textContent += '\n' + s; };
+      addEventListener('error', (ev) => line((ev.message || String(ev.error)) + ' @ ' + (ev.filename || '').split('/').pop() + ':' + ev.lineno));
+      addEventListener('unhandledrejection', (ev) => line('rejection: ' + (ev.reason && (ev.reason.stack || ev.reason.message) || String(ev.reason))));
+      document.addEventListener('click', (ev) => {
+        const t = ev.target.closest('.achip, .qitem button');
+        if (!t) return;
+        const who = t.dataset.anchor || t.dataset.q || t.dataset.setupcard || t.className;
+        line('tap ' + who + ' · pointer ' + (ev.pointerType || '?') + ' · openId before ' + (window.SESSION ? window.SESSION.openId : '?'));
+        setTimeout(() => {
+          const id = window.SESSION ? window.SESSION.openId : null;
+          const card = document.querySelector('.doc .sugg, .setupcard');
+          const r = card && card.getBoundingClientRect();
+          line('  after 1.2s · openId ' + id + ' · card ' + (card ? card.className.slice(0, 30) + ' top ' + Math.round(r.top) + ' h ' + Math.round(r.height) : 'none') + ' · scrollY ' + Math.round(scrollY) + ' · innerH ' + innerHeight);
+        }, 1200);
+      }, true);
+    }
     // (this script runs under the header, before the document column is
     // parsed, so the mirror waits for the DOM)
     document.addEventListener('DOMContentLoaded', () => {
