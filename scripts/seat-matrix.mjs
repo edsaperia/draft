@@ -272,7 +272,7 @@ const E8 = (key) => ({ id: 'E8', key, at: 'seat-early' });
 // per-document test, because a gate is not a setting and cannot be delegated.
 // `selfSet` is the one escape hatch this table gives an audience row, beside
 // E24's `orSigned`, and it says so at the finding line rather than silently.
-const E4 = (key) => ({ id: 'E4', key, at: 'begin', oracle: 'gates',
+const E4 = (key) => ({ id: 'E4', key, at: 'begin', oracle: 'gates', staged: true,
   selfSet: (seat) => seat.role === 'founder' });
 const E5 = (key, at) => ({ id: 'E5', key, at, oracle: 'owed' });
 const STEPS = [
@@ -1220,11 +1220,21 @@ function assertStep(D, step, evs, snap) {
       // the clerk hat, where the founder is outside *every member* and holds
       // no gate to be exempt about (2026-09-07, first run with `selfSet`).
       const self = inAud && !!(ev.selfSet && ev.selfSet(seat, step, D, ev));
-      const carries = has || okd || signed || self;
+      // **A gate stages behind the constitutional OKs** (SURFACE E4's
+      // persistence column, W4; Q453c): a seat still owed a decision's OK is
+      // shown no gate until it has given it, so the gate is *carried* in the
+      // staged sense — the module says it is owed (`owedOks`), the page is
+      // holding it back on purpose. Read off the module's own list, never the
+      // rail: 2026-09-12's E4 cluster (Q1205) was eight cells of exactly this,
+      // the `early` and `lapsed` seats owed 💤's OK at 🍾 on both hats.
+      const stagedBehind = inAud && !!ev.staged && !has && !okd
+        ? ((mv.owedOks || []).length ? mv.owedOks.slice() : null) : null;
+      const carries = has || okd || signed || self || !!stagedBehind;
       const how = rail.some(match) ? 'carries it'
         : has ? 'carries it as a tab (' + ((snap[name].band || []).find((e) => match(e.key)) || {}).kind + ')'
         : okd ? 'acknowledged it' : signed ? 'signed it'
-        : self ? 'holds it by the seat-that-set-it exemption' : 'does not carry it';
+        : self ? 'holds it by the seat-that-set-it exemption'
+        : stagedBehind ? 'holds it staged behind ' + stagedBehind.join(', ') : 'does not carry it';
       if (carries === inAud) continue;
       let module = '';
       if (ev.oracle) {

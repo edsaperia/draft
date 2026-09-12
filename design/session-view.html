@@ -2168,7 +2168,12 @@
   const ackPersists = (k) => ACK_KEYS.includes(k) || /^adm:/.test(k);
   // grants stage behind the constitutional OKs (Q453c): a gate or grant
   // asks nothing of you while a decision you are owed still waits
-  const owedNews = () => CARDS.some((c) => !c.isGate && visible(c) && news(c));
+  // **…a decision** (SURFACE E4, W4: *staged behind the constitutional
+  // OKs*): a mail that gave up (E34) and a joiner let in at ✒️ (Q912 (a))
+  // are news, not decisions, and staged nothing until 2026-09-12 — the seat
+  // matrix's E4 cluster (Q1205) was two members owed a 📭 before 🍾 whose
+  // 💡 and ⚖️ waited behind it, and so could never be acknowledged.
+  const owedNews = () => CARDS.some((c) => !c.isGate && !c.mailgiveup && !c.admit && visible(c) && news(c));
   const staged = (c) => !c.isGate || !owedNews();
   const viewerIsMember = () => S.viewer !== 'applicant' && !isStranger() && viewerRow().role !== 'clerk';
   // **Whether *you* are the clerk is not whether the founder is** (Q754's
@@ -10947,13 +10952,19 @@
   function liveBoot() {
     const dev = document.querySelector('.devswitch');
     if (dev) dev.style.display = 'none';
-    devInboxButton();
-    ladderBar();
     fetch('/api/d/' + LIVESLUG + '/view').then((r) => {
       if (r.status === 401) { console.warn('[live] no seat and no door'); return null; }
       return r.json();
     }).then((data) => {
       if (!data) return;
+      // **The stagehand's controls are asked for only where the host says
+      // it has them** (Q1349, Ed 2026-09-12): `devMail` rides every view
+      // answer, the stranger's included, and the ladder exists exactly where
+      // the dev outbox does — so docs.vote no longer fires two 404s per load
+      // (two red console lines, two of the stranger's budget). The birth
+      // page has no view to read and still probes; its flag is Q1349's
+      // owed half, on `/healthz`.
+      if (data.devMail) { devInboxButton(); ladderBar(); }
       // **There is no login screen** (Q456): a stranger arrives at the three
       // columns like everybody else — the rules, the text's shape, one
       // sentence, and a rail holding the 📧 task
