@@ -182,14 +182,23 @@ that neither sends mail nor writes a log — with a *spoofed*
 `x-forwarded-for` on every request, and expects a 429. It is off by default
 because it leaves a 429 in the platform's logs.
 
+**The login door has two buckets** (Q1341, Ed 2026-09-12): 200 requests per
+IP in ten minutes, since a convention room arrives on one venue wifi and so
+on one address, and 5 per email address in the same window, which is what
+stops a script working one address. Both numbers are guesses to revisit
+after a real convention.
+
 **Reading a failure.** A `/healthz` 404 usually means the live build predates
 the health route rather than that anything is wrong; check `x-build` against
 `git log` before treating it as an incident.
 
 `/healthz` is also the service's own health check path, and answers
-`{ ok, build, catalogue, store, documents, uptimeSeconds, mail, outbox,
-errors, cooldownMs }`. It is the one route excluded from the access log, so
-a health check every few seconds does not drown it.
+`{ ok, build, catalogue, store, documents, uptimeSeconds, mail, devMail,
+outbox, errors, cooldownMs }`. It is the one route excluded from the access
+log, so a health check every few seconds does not drown it. `devMail` is
+whether the host runs without a Resend key — the birth page reads it to
+decide whether to ask for the stagehand's controls (Q1349), and it is `false`
+on docs.vote.
 
 **`errors` is the one to watch during a supervised session** (entry 77). No
 error reporting exists in this service — Sentry is stage 16 — so this is the

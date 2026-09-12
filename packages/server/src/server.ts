@@ -1005,6 +1005,9 @@ export async function createDraftServer(cfg: ServerConfig,
         paused: pausedPayload(nowMs),
         uptimeSeconds: Math.floor((nowMs - bootedAtMs) / 1000),
         mail: cfg.mailOff ? 'off' : 'on',
+        // dev-mail mode, so the birth page — which has no view to read it
+        // from — asks for the stagehand's controls only where they exist (Q1349)
+        devMail: mailer.dev,
         outbox: mail,
         // the throws nobody handled since boot (entry 77) — see `errors`
         // above. `total` is the one number to watch between sessions.
@@ -1432,9 +1435,21 @@ export async function createDraftServer(cfg: ServerConfig,
         seg[3] === 'login' && seg.length === 4) {
       const doc = docOr404(store.bySlug(seg[2]!));
       if (!doc) return;
-      if (tooMany('login')) return;
+      // Two buckets on this door (Q1341, Ed 2026-09-12). Per IP, 200 in ten
+      // minutes: a convention room shares one venue wifi and so one address,
+      // and twenty logins were what a room of twenty spends arriving. Per
+      // email, 5 in ten minutes: a scripted attack on one address is the
+      // thing the old cap actually stopped, and it is keyed on the address,
+      // not the socket. Both numbers are guesses; revisit them after a real
+      // convention. The per-email check runs before the roster lookup so a
+      // known and an unknown address are refused identically.
+      if (tooMany('login', 200)) return;
       const body = await readJson(req);
       const email = emailOk(expectString(body, 'email'));
+      if (rateLimited(`login-email:${email}`, nowMs, 5)) {
+        json(res, 429, { error: 'too many requests — try again shortly' });
+        return;
+      }
       const memberId = memberIdByEmail(doc.cs, email);
       if (memberId === null) {
         // an unknown address is told nothing (the roster is not readable
