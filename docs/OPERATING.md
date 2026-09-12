@@ -99,8 +99,26 @@ freely; pushing is the decision.
    secrets; configured, it must serve `/`, serve `/setup.js`, answer
    `/healthz` with `"store":"file"`, send `x-content-type-options: nosniff`,
    and **404 on `/api/dev/outbox`**.
-4. On `main` only, CI POSTs the `RENDER_DEPLOY_HOOK` repository secret. With
-   no such secret the step is inert — no hook, no deploy, no failure.
+4. On `main` only, CI first **pauses the live host** (Q1345) — `POST
+   $DRAFT_BASE_URL/api/admin/pause` bearing the `DRAFT_BOT_KEY` repository
+   secret, the same key the host holds — and then POSTs the
+   `RENDER_DEPLOY_HOOK` repository secret. With no hook secret the step is
+   inert — no hook, no deploy, no failure; with no key secret the deploy
+   runs **unpaused** and the log says so. **Why the pause** (the
+   notanotherpizza demo, 2026-09-12): Render boots the new instance beside
+   the old and moves traffic over across some minutes, and a browser pinned
+   to the old instance by keep-alive goes on writing to a document log the
+   new instance has already loaded — the primary key on (document, seq)
+   rejects one writer's rows with a 23505, that instance's cursor is behind
+   the database for good, and every later write on it fails until it dies.
+   Paused, the old instance persists nothing, refuses every command with
+   503 and the pause in the answer, ticks nothing, and says `paused` on
+   every view answer, so every open page draws the maintenance modal with
+   the bar; the new instance boots unpaused and the page reloads itself when
+   a new `x-build` answers. A pause lifts itself after fifteen minutes, so a
+   deploy that never lands cannot hold a room; `POST /api/admin/resume`
+   lifts it by hand. **Do not deploy while a room is live if you can help
+   it** — the pause makes it safe, not free: the room waits.
 5. CI polls `$DRAFT_BASE_URL/` every 15 seconds, up to 100 times, reading the
    **`x-build`** response header, and waits for it to equal the pushed SHA.
    This is the step that makes the verification mean something: the old
@@ -521,6 +539,17 @@ A line, newest last:
 - `reason` is the sentence the wire got, with the module's own `(§…)`
   pointer where it had one; for a 500 it is the full message, which the
   wire never gets.
+
+**A stalled document** (Q1346). A save the store rejects for a reason no
+retry will clear — a 23505, another writer holding the document's log
+(§3's split) — marks the document `stalled`: it still serves, every write
+on it fails, `/healthz` counts it under `documentsStalled`, every view
+answer carries `stalled: true`, and the page flies a red flag where the
+alpha flag stands: *This document cannot save changes at the moment.
+Nothing you do here will be kept.* A save that lands clears it. A stalled
+document on docs.vote is recovered by a restart, which reloads it from the
+database at the other writer's last row; what the stalled instance took in
+memory after the split is gone.
 
 **Reading it.** On a dev server, `GET /api/dev/errors` serves the last
 fifty, newest first, the outbox's own shape — the route is under the `DEV`

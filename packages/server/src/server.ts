@@ -143,6 +143,34 @@ export async function createDraftServer(cfg: ServerConfig,
       kind: typeof code === 'string' ? code
         : e instanceof Error ? e.constructor.name : typeof e };
   };
+  // **A pause is announced, never guessed** (Q1345, Ed 2026-09-12: *explicitly
+  // pause documents while a deploy is happening*). A deploy runs the new
+  // instance beside this one for some minutes, and a browser pinned to this
+  // one by keep-alive would go on writing to a log the new instance has
+  // already loaded — the split that killed the notanotherpizza demo. So CI
+  // calls `POST /api/admin/pause` before it fires the deploy hook: from then
+  // on this instance persists nothing, refuses every command with 503 and a
+  // sentence, ticks nothing, and says `paused` on every view answer, the
+  // short one included, so every page draws the modal. The new instance
+  // boots unpaused; the pinned browser reaches it when this one's listener
+  // closes. `expectedMs` is the bar's guess — the time from the hook to the
+  // old instance's death, measured at about six minutes on 2026-09-12 — and
+  // a pause nobody resumes lifts itself after `PAUSE_MAX_MS`, so a deploy
+  // that never lands cannot hold a document for ever. Nothing applied in
+  // memory during a pause is lost on the surviving instance: `persist` slices
+  // from its cursor, so the next commit after a resume writes it all.
+  const PAUSE_EXPECTED_MS = 6 * 60_000;
+  const PAUSE_MAX_MS = 15 * 60_000;
+  let paused: { at: number; expectedMs: number } | null = null;
+  const pausedNow = (nowMs: number): { at: number; expectedMs: number } | null => {
+    if (paused !== null && nowMs - paused.at > PAUSE_MAX_MS) paused = null;
+    return paused;
+  };
+  const pausedPayload = (nowMs: number): { at: number; expectedMs: number; elapsedMs: number } | null => {
+    const p = pausedNow(nowMs);
+    return p === null ? null : { at: p.at, expectedMs: p.expectedMs, elapsedMs: nowMs - p.at };
+  };
+  const PAUSED_MESSAGE = 'this document is paused for a moment of maintenance';
   const persistence = injected ?? await openPersistence(cfg);
   const store = new DocStore(persistence);
   await store.loadAll();
@@ -311,13 +339,28 @@ export async function createDraftServer(cfg: ServerConfig,
       // the engine rides every commit (Q391): born at constitute, synced
       // with roster truth and ground shifts, closed when the ending passes
       driveBridge(doc, tOf(doc, nowMs), cfg.engineTuning);
+      // paused (Q1345): nothing reaches the store from this instance until
+      // the pause lifts — what was applied in memory waits behind the
+      // cursor and lands on the next commit after a resume
+      if (pausedNow(nowMs) !== null) return doc.cs.logEntries().length;
       // the document log first — it is the source of truth, and the
       // bridge's persisted cursor points into it (review #2, finding 2):
       // a crash after this and before the engine persist leaves a cursor
       // *behind* the log, which resume's sync simply catches up; the other
       // order leaves it ahead, and the entries in between are never fed
-      const fresh = await store.persist(doc);
-      await persistEngine(persistence, doc);
+      let fresh: LogEntry[];
+      try {
+        fresh = await store.persist(doc);
+        await persistEngine(persistence, doc);
+      } catch (e) {
+        // **a save the store rejected for good marks the document** (Q1346):
+        // a 23505 is another writer holding this document's log — the
+        // split of Q1345 — and no retry from this instance will ever land,
+        // so the document says so on every view until a save succeeds
+        if ((e as { code?: unknown }).code === '23505') doc.stalled = nowMs;
+        throw e;
+      }
+      doc.stalled = null;
       if (fresh.length > 0) await relay(doc, fresh, nowMs);
       return doc.cs.logEntries().length;
     });
@@ -739,6 +782,7 @@ export async function createDraftServer(cfg: ServerConfig,
 
   const tick = async (nowMs: number = Date.now()): Promise<void> => {
     for (const [key, b] of BUCKET) if (b.resetMs < nowMs) BUCKET.delete(key);
+    if (pausedNow(nowMs) !== null) return; // paused (Q1345): the clock waits with the store
     for (const doc of store.all()) {
       if (closing !== null) return; // shutting down: no new commits join the drain
       if (doc.cs.constitutedAtT === null) continue;
@@ -945,6 +989,11 @@ export async function createDraftServer(cfg: ServerConfig,
         // until its log is repaired, and the count here is the only place
         // an operator sees it without the boot log
         documentsQuarantined: store.quarantined().length,
+        // a document whose last save the store rejected for good (Q1346):
+        // it serves, it refuses every write, and it flies a red flag
+        documentsStalled: [...store.all()].filter((d) => d.stalled).length,
+        // the announced pause (Q1345), or null
+        paused: pausedPayload(nowMs),
         uptimeSeconds: Math.floor((nowMs - bootedAtMs) / 1000),
         mail: cfg.mailOff ? 'off' : 'on',
         outbox: mail,
@@ -990,6 +1039,32 @@ export async function createDraftServer(cfg: ServerConfig,
        more. Without a key configured the route is an unknown path: 404,
        the same body as any other. The limiter counts wrong keys only, so a
        poller every few seconds is never throttled and a guesser is. */
+    // **The announced pause** (Q1345): two POSTs for the bearer of
+    // DRAFT_BOT_KEY — the operator's key already on the host — gated exactly
+    // as the bot outbox is: an unknown path without the key, 401 with a
+    // wrong one. `pause` takes an optional `expectedMs` for the bar; both
+    // answer with the pause as every view will carry it.
+    if (req.method === 'POST' && (path === '/api/admin/pause' || path === '/api/admin/resume')) {
+      if (!cfg.botKey) { json(res, 404, { error: 'not found' }); return; }
+      if (!bearerOk(req.headers.authorization, cfg.botKey)) {
+        if (tooMany('bots')) return;
+        json(res, 401, { error: 'unauthorized' });
+        return;
+      }
+      if (path === '/api/admin/pause') {
+        const body = await readJson(req).catch(() => ({} as Record<string, unknown>));
+        const asked = Number(body.expectedMs);
+        const expectedMs = Number.isFinite(asked) && asked > 0 ? Math.min(asked, PAUSE_MAX_MS) : PAUSE_EXPECTED_MS;
+        paused = { at: nowMs, expectedMs };
+        console.log(`paused for maintenance (Q1345): expected ${Math.round(expectedMs / 1000)}s, lifts by itself after ${PAUSE_MAX_MS / 1000}s`);
+      } else {
+        paused = null;
+        console.log('pause lifted (Q1345)');
+      }
+      json(res, 200, { ok: true, paused: pausedPayload(nowMs) });
+      return;
+    }
+
     if (req.method === 'GET' && path === '/api/bots/outbox') {
       if (!cfg.botKey) { json(res, 404, { error: 'not found' }); return; }
       if (!bearerOk(req.headers.authorization, cfg.botKey)) {
@@ -1524,6 +1599,8 @@ export async function createDraftServer(cfg: ServerConfig,
       constitutedAtT: cs.constitutedAtT,
       closed: cs.closed ? { at: cs.closedAt } : null,
       serverNowMs: nowMs,
+      paused: pausedPayload(nowMs),
+      stalled: !!doc.stalled,
       textConfirmed: cs.textConfirmed,
       holding,
       founder: { name: founderName, picture: founderPicture },
@@ -1645,7 +1722,10 @@ export async function createDraftServer(cfg: ServerConfig,
         // moved in either log, answer with the seqs alone and build no view
         const since = url.searchParams.get('since');
         if (since === seq + '.' + eseq) {
-          json(res, 200, { seq, eseq, short: true });
+          // the two host flags ride the short answer too (Q1345, Q1346): a
+          // page that has seen everything is exactly the page that must
+          // still hear a pause or a stall
+          json(res, 200, { seq, eseq, short: true, paused: pausedPayload(nowMs), stalled: !!doc.stalled });
           return;
         }
         // **The slim view** (the moon room, 2026-09-11): in a busy room
@@ -1709,6 +1789,8 @@ export async function createDraftServer(cfg: ServerConfig,
           // the session-clock counts against the server's clock, not the
           // browser's (Q466); the page offsets by the time it received this
           serverNowMs: nowMs,
+          paused: pausedPayload(nowMs),
+          stalled: !!doc.stalled,
           textConfirmed: doc.cs.textConfirmed,
           quorumForm: doc.cs.quorumForm,
           electorateSize: doc.cs.motionElectorate().length,
@@ -1759,6 +1841,13 @@ export async function createDraftServer(cfg: ServerConfig,
         const cmd = expectString(body, 'cmd');
         const args = (body.args ?? {}) as Record<string, unknown>;
         const t = tOf(doc);
+        // paused (Q1345): refused before anything is applied, with the
+        // pause itself in the answer so the page draws the modal and not a
+        // refusal; a 503, since the document is whole and merely waiting
+        if (pausedNow(nowMs) !== null) {
+          json(res, 503, { error: PAUSED_MESSAGE, paused: pausedPayload(nowMs) });
+          return;
+        }
         // **every refusal lands in the error log** (Q1330): the document,
         // the seat as its id — never the address — the command, its
         // arguments and the reason, so a refusal a member met on the page

@@ -102,6 +102,30 @@
     border: 1px solid var(--border); border-radius: var(--r-sm);
     padding: 3px 8px; pointer-events: none; }
   .alphaflag b { font-weight: 600; color: var(--fg); }
+  /* **The red flag** (Q1346, Ed: *just a red flag on the page*): a document
+     whose saves the store rejects says so where the alpha flag stands, in
+     the one red the surface otherwise reserves (`--slash`). Fixed on wide,
+     a strip on narrow like the alpha flag; never eats a click. */
+  .stalledflag { position: fixed; bottom: 40px; left: 10px; z-index: 56;
+    font-size: var(--t-small); color: #fff; background: #c1121f;
+    border: 1px solid #a00e19; border-radius: var(--r-sm);
+    padding: 4px 10px; pointer-events: none; max-width: 320px; }
+  .stalledflag b { font-weight: 600; }
+  @media (max-width: 900px) { .stalledflag { position: static; display: block; width: fit-content; max-width: none; margin: 8px auto 0; } }
+  /* **The pause modal** (Q1345, Ed: *a modal pop up … with a progress bar
+     that guesses how long the downtime will be*): the ground darkens, one
+     box says the document is paused and roughly for how long, and the bar
+     fills over the host's guess, holding short of full until the host
+     answers again. On the design system — it is product, not stagehand. */
+  .pausemodal { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center;
+    background: rgba(33, 37, 41, 0.45); padding: var(--s4); }
+  .pausemodal .box { background: var(--bg); border-radius: var(--r-lg); box-shadow: var(--shadow-xl);
+    padding: var(--s5); max-width: 420px; width: 100%; }
+  .pausemodal .lead { font-size: var(--t-lead); font-weight: 600; margin: 0 0 var(--s2); text-wrap: balance; }
+  .pausemodal .when { font-size: var(--t-body); color: var(--muted); margin: 0 0 var(--s4); }
+  .pausemodal .track { height: 8px; border-radius: 4px; background: var(--light); overflow: hidden; }
+  .pausemodal .track i { display: block; height: 100%; width: 0; background: var(--primary); border-radius: 4px;
+    transition: width 900ms linear; }
   /* the stagehand stands above the flag rather than on it */
   .devswitch { position: fixed; bottom: 47px; left: 10px; z-index: 60;
     font: 11px/1.4 ui-monospace, Consolas, monospace; color: var(--muted);
@@ -1103,6 +1127,66 @@
   const LIVEMODE = location.pathname.startsWith('/d/');
   const BIRTH = location.pathname === '/';
   const LIVESLUG = LIVEMODE ? decodeURIComponent(location.pathname.split('/')[2] || '') : null;
+  // **The host's two flags** (Q1345, Q1346; Ed, 2026-09-12). `paused` is the
+  // announced pause a deploy runs under: the whole page goes behind a modal
+  // that names the wait and fills a bar over the host's guess, and every
+  // command is held back rather than sent to a host that will not keep it.
+  // `stalled` is a document whose saves the store rejects: a red flag where
+  // the alpha flag stands, and nothing else changes — reading is fine. Both
+  // are read off every poll answer, the short one included, so a page that
+  // has seen everything still hears them. And a deploy ends with a new
+  // build answering: when `x-build` changes under a page that was paused,
+  // the page reloads itself, since its own bytes are the old ones.
+  const HOST = { paused: null, stalled: false, build: null, timer: null };
+  function noteBuild(build) {
+    if (!build) return;
+    if (HOST.build === null) { HOST.build = build; return; }
+    if (build !== HOST.build && HOST.paused === null) location.reload();
+    if (build !== HOST.build) HOST.newBuild = build;
+  }
+  function noteHost(data) {
+    const was = HOST.paused;
+    HOST.paused = data.paused || null;
+    HOST.stalled = !!data.stalled;
+    if (was && !HOST.paused && HOST.newBuild) { location.reload(); return; }
+    renderHost();
+  }
+  function renderHost() {
+    let flag = document.getElementById('stalledflag');
+    if (HOST.stalled && !flag) {
+      flag = document.createElement('div');
+      flag.id = 'stalledflag'; flag.className = 'stalledflag';
+      flag.innerHTML = '<b>Warning:</b> ' + esc(PAGE_COPY.host.stalled);
+      const alpha = document.querySelector('.alphaflag');
+      (alpha && alpha.parentElement || document.body).insertBefore(flag, alpha ? alpha.nextSibling : null);
+    } else if (!HOST.stalled && flag) flag.remove();
+    let modal = document.getElementById('pausemodal');
+    if (HOST.paused && !modal) {
+      modal = document.createElement('div');
+      modal.id = 'pausemodal'; modal.className = 'pausemodal'; modal.setAttribute('role', 'dialog');
+      modal.innerHTML = '<div class="box"><p class="lead">' + esc(PAGE_COPY.host.paused) + '</p>' +
+        '<p class="when"></p><div class="track"><i></i></div></div>';
+      document.body.appendChild(modal);
+      HOST.timer = setInterval(renderHost, 1000);
+    } else if (!HOST.paused && modal) {
+      modal.remove();
+      clearInterval(HOST.timer); HOST.timer = null;
+    }
+    if (HOST.paused && modal) {
+      // the bar fills over the host's guess and holds short of full: the
+      // guess is a guess, and a bar that reads done while nothing happens
+      // is worse than one that waits (elapsed is the host's, plus the time
+      // since the answer that carried it)
+      const elapsed = HOST.paused.elapsedMs + (Date.now() - (HOST.paused.heardAtMs || Date.now()));
+      if (!HOST.paused.heardAtMs) HOST.paused.heardAtMs = Date.now();
+      const frac = Math.min(0.96, elapsed / Math.max(1, HOST.paused.expectedMs));
+      const left = Math.max(0, HOST.paused.expectedMs - elapsed);
+      modal.querySelector('.track i').style.width = Math.round(frac * 100) + '%';
+      modal.querySelector('.when').textContent = left > 0
+        ? PAGE_COPY.host.pausedWait(Math.max(1, Math.round(left / 60000)))
+        : PAGE_COPY.host.pausedOver;
+    }
+  }
   const api = {
     chain: Promise.resolve(),
     birth: null, // {pendingId, devLink, slug} once the creation mail is sent
@@ -1131,6 +1215,8 @@
           .then((r) => r.json().then((j) => ({ status: r.status, j }), () => ({ status: r.status, j: null }))))
         .then(({ status, j }) => {
           answer = j && (j.error || j.ok) ? j : { error: PAGE_COPY.noAnswer(status), status };
+          // a paused host (Q1345) is not a refusal: the modal says it all
+          if (status === 503 && j && j.paused) { noteHost(j); return; }
           if (answer.error) {
             console.warn('[live]', name, answer.error);
             refusalNoted({ name, args, card, status, error: answer.error, at: sentAt });
@@ -1155,9 +1241,12 @@
           (typeof cs.v.textVersion === 'number' ? '&tv=' + cs.v.textVersion : '') +
           (typeof cs.v.recordsKey === 'number' ? '&rk=' + cs.v.recordsKey : '') : '';
       return fetch('/api/d/' + LIVESLUG + '/view' + since)
-        .then((r) => (r.status === 401 ? null : r.json()))
+        .then((r) => { noteBuild(r.headers.get('x-build')); return r.status === 401 ? null : r.json(); })
         .then((data) => {
           if (!data || !cs || !cs.isRemote) return;
+          // the host's two flags ride every answer, the short one included
+          // (Q1345, Q1346): heard before anything else is read
+          noteHost(data);
           if (data.short) return; // unchanged — the short answer carries the seqs alone
           // **A view older than the one we hold is not news, it is a
           // rollback** (Q846's last window). `api.cmd` resolves after its own

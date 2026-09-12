@@ -58,6 +58,11 @@ export interface LoadedDoc {
   persisted: number;
   /** The founder's unconfirmed starting text (§9.7a v0.55), or null. */
   provisional: string | null;
+  /** When the last save was rejected by the store for a reason a retry
+   *  will not clear — another writer holds this document's log (Q1345):
+   *  a 23505 under Postgres — or null while saves land. The page reads it
+   *  as `stalled` and flies a red flag (Q1346). */
+  stalled?: number | null;
 }
 
 /** The one loud line a skipped document earns at boot (decision 1253). */

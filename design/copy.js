@@ -402,6 +402,16 @@ window.COPY = (function () {
     refuseSet: (reason) => 'That could not be set: ' + reason + '.',
     // every other refusal, under the card that sent it (Q1330, SURFACE Y25)
     refused: (reason) => 'That was refused: ' + reason + '.',
+    // the host's two flags (Q1345, Q1346; Ed, 2026-09-12): the announced
+    // pause, drawn as a modal over the whole page while a deploy runs, and
+    // the red flag on a document whose saves the store rejects
+    host: {
+      paused: 'This document is paused while we do some quick database maintenance.',
+      pausedWait: (minutes) => (minutes <= 1 ? 'It should be back in about a minute.'
+        : 'It should be back in about ' + minutes + ' minutes.'),
+      pausedOver: 'Nearly there — hold on a moment longer.',
+      stalled: 'This document cannot save changes at the moment. Nothing you do here will be kept.',
+    },
     // the wire did not answer, or answered with a status and no sentence
     noAnswer: (status) => (status ? 'the server answered ' + status : 'the server could not be reached'),
     binPutBack: 'Put it back as it stands',

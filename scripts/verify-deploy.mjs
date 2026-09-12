@@ -129,6 +129,18 @@ await check('the phase ladder is not in the artifact (Q674)', async () => {
 // serves only mail to bots.docs.vote and only to the bearer of
 // DRAFT_BOT_KEY. Without the key set it is an unknown path; with it, a
 // request without the key is refused. Either way, never 200 to a stranger.
+// the pause and resume ride the same key (Q1345): a stranger's POST is an
+// unknown path without the key on the host, 401 with it — never a pause
+await check('the pause is closed to a stranger (Q1345)', async () => {
+  const rs = await Promise.all(['/api/admin/pause', '/api/admin/resume'].map((p) =>
+    fetch(base + p, { method: 'POST', headers: { 'content-type': 'application/json',
+      authorization: 'Bearer not-the-key' }, body: '{}' })));
+  for (const r of rs) {
+    expect(r.status === 401 || r.status === 404, `${r.url} answered ${r.status} — a stranger can pause the host`);
+  }
+  return rs[0].status === 404 ? '404 — no DRAFT_BOT_KEY on this host' : '401 on pause · 401 on resume';
+});
+
 await check('the bot outbox is closed to a stranger (Q1310)', async () => {
   const bare = await get('/api/bots/outbox');
   const wrong = await get('/api/bots/outbox', { headers: { authorization: 'Bearer not-the-key' } });
