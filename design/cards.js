@@ -586,6 +586,21 @@ window.CARDS = (function () {
         : '<div class="said none">' + G.speaker.noReason + '</div>') +
       '</div>';
   };
+  // **A rail entry's body is its speaker** (Ed, 2026-09-12: *[user avatar]
+  // Rationale text; if no rationale, no body text*): the teaser under a
+  // proposal's title and under a motion's is the rationale behind the same
+  // disc the card draws — the sealed head-and-shoulders, or the author's own
+  // face where the name is attached (K30), and nothing at all where nobody
+  // gave a reason. One helper for the charter's entries and the band's, so
+  // the two rails cannot drift. `.qwhy` is the rail's teaser class; `.spoke`
+  // is this form of it, the clamp moving to the text beside the face.
+  const railSpeakerHtml = (why, who) => {
+    if (!why) return '';
+    const p = personOf(who);
+    return '<span class="qwhy spoke"><span class="qface" aria-hidden="true">' +
+      (p ? avHtml(p) : '<span class="disc"></span>') +
+      '</span><span class="qsaid">' + esc(why) + '</span></span>';
+  };
 
   // The fold triangle — one control on every surface (2026-08-19, lifted
   // from session-view when setup grew its own copy). Fold state lives with
@@ -1213,7 +1228,7 @@ window.CARDS = (function () {
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks,
     headFlags, originText, MD_RX, mdToHtml, htmlToMd, mdStrip, mdBlock, linkify, linkifyHtml, mdLine,
     MD_ONE, mdLead, mdInner, mdParts, richToSource, sourceToRich, readLane,
-    laneSeed, laneProposeHtml, laneCtlHtml, speakerHtml, secToggleHtml, fieldHtml, fieldOf, groundNote,
+    laneSeed, laneProposeHtml, laneCtlHtml, speakerHtml, railSpeakerHtml, secToggleHtml, fieldHtml, fieldOf, groundNote,
     initials, PERSON, avHtml,
     headOnlyHeight, cardBody, COLLAPSE_MS, EXPAND_MS,
     make,

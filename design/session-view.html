@@ -4759,14 +4759,24 @@
   // — a motion, whose subtitle is the thing being proposed and is exactly the
   // information you need to decide whether to open it, and a decision arriving
   // as news, where what happened is the whole point.
+  // **The summary is markup** (2026-09-12): `railEntry` prints it as it is.
+  // **A motion's body is its rationale behind its speaker, or nothing**
+  // (Ed, 2026-09-12: *[user avatar] Rationale text; if no rationale, no body
+  // text*) — it was *Under motion — [the value]*, which the card says at
+  // once on opening; the disc is the card's own sealed speaker, since a
+  // motion names no mover (SURFACE C13). The deck's count (Q1348) rides
+  // beneath, on its own line, whether or not a reason was given.
   const summary = (c) => {
     const m = motionOn(c);
     if (m) {
       // the deck's count (Q1348): how many others on this rule still wait for you
       const me = viewerId();
       const others = deckMotions(c).filter((r) => r.id !== m.id && !(me && r.answers.has(me))).length;
-      return PAGE_COPY.underMotion + esc(m.to) + (others ? esc(PAGE_COPY.deck.more(others)) : '');
+      return window.CARDS.railSpeakerHtml(m.why, null) +
+        (others ? '<span class="qv">' + esc(PAGE_COPY.deck.moreAlone(others)) + '</span>' : '');
     }
+    // news hands text: `railEntry` wraps it, and the paragraph sentence for
+    // a personal card reads it as words
     if (stateOf(c, ctx) === 'news') return value(c);
     return '';
   };

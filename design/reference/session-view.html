@@ -102,6 +102,30 @@
     border: 1px solid var(--border); border-radius: var(--r-sm);
     padding: 3px 8px; pointer-events: none; }
   .alphaflag b { font-weight: 600; color: var(--fg); }
+  /* **The red flag** (Q1346, Ed: *just a red flag on the page*): a document
+     whose saves the store rejects says so where the alpha flag stands, in
+     the one red the surface otherwise reserves (`--slash`). Fixed on wide,
+     a strip on narrow like the alpha flag; never eats a click. */
+  .stalledflag { position: fixed; bottom: 40px; left: 10px; z-index: 56;
+    font-size: var(--t-small); color: #fff; background: #c1121f;
+    border: 1px solid #a00e19; border-radius: var(--r-sm);
+    padding: 4px 10px; pointer-events: none; max-width: 320px; }
+  .stalledflag b { font-weight: 600; }
+  @media (max-width: 900px) { .stalledflag { position: static; display: block; width: fit-content; max-width: none; margin: 8px auto 0; } }
+  /* **The pause modal** (Q1345, Ed: *a modal pop up … with a progress bar
+     that guesses how long the downtime will be*): the ground darkens, one
+     box says the document is paused and roughly for how long, and the bar
+     fills over the host's guess, holding short of full until the host
+     answers again. On the design system — it is product, not stagehand. */
+  .pausemodal { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center;
+    background: rgba(33, 37, 41, 0.45); padding: var(--s4); }
+  .pausemodal .box { background: var(--bg); border-radius: var(--r-lg); box-shadow: var(--shadow-xl);
+    padding: var(--s5); max-width: 420px; width: 100%; }
+  .pausemodal .lead { font-size: var(--t-lead); font-weight: 600; margin: 0 0 var(--s2); text-wrap: balance; }
+  .pausemodal .when { font-size: var(--t-body); color: var(--muted); margin: 0 0 var(--s4); }
+  .pausemodal .track { height: 8px; border-radius: 4px; background: var(--light); overflow: hidden; }
+  .pausemodal .track i { display: block; height: 100%; width: 0; background: var(--primary); border-radius: 4px;
+    transition: width 900ms linear; }
   /* the stagehand stands above the flag rather than on it */
   .devswitch { position: fixed; bottom: 47px; left: 10px; z-index: 60;
     font: 11px/1.4 ui-monospace, Consolas, monospace; color: var(--muted);
@@ -259,25 +283,46 @@
     });
     document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && open()) set(null); });
     matchMedia('(max-width: 900px)').addEventListener('change', (ev) => { if (!ev.matches) set(null); });
-    // **The title heads the document on a phone** (Ed, 2026-09-12: *remove
-    // the title from the top bar and put it at the top of the document area
-    // instead, where it can be written in full*): a mirror of the topbar's
-    // title text as the document column's first line, drawn on narrow only
-    // (CSS), kept in step by watching the one element the page writes.
-    // (this script runs under the header, before the document column is
-    // parsed, so the mirror waits for the DOM)
-    document.addEventListener('DOMContentLoaded', () => {
-      const src = document.getElementById('titletext');
-      const doc = document.getElementById('doc');
-      if (!src || !doc) return;
-      const h = document.createElement('h1');
-      h.className = 'mobtitle';
-      h.id = 'mobtitle';
-      const sync = () => { h.textContent = src.textContent; };
-      sync();
-      new MutationObserver(sync).observe(src, { childList: true, characterData: true, subtree: true });
-      doc.insertBefore(h, doc.firstChild);
-    });
+    // **The bar's height is measured on narrow** (Q1351): two rows wrap by
+    // content, so `--nav-h` — what the drawers, the ground and the reading
+    // line hang from — is written from the bar itself, and the stylesheet's
+    // literal is the first paint's guess. Wide keeps the stylesheet's.
+    const nav = document.querySelector('.navbar');
+    const mq = matchMedia('(max-width: 900px)');
+    const fit = () => {
+      if (mq.matches && nav) root.style.setProperty('--nav-h', nav.offsetHeight + 'px');
+      else root.style.removeProperty('--nav-h');
+    };
+    fit(); addEventListener('resize', fit); addEventListener('load', fit); mq.addEventListener('change', fit);
+    // (the title's mirror at the head of the document, 2026-09-12 am, went
+    // the same afternoon: the two-row topbar holds the title again — Q1351)
+    // **`?debug=1` prints uncaught errors on the page** (2026-09-12, for a
+    // phone with no console): every uncaught error and rejection lands as a
+    // line in a fixed strip under the topbar, with its source line. Nothing
+    // is sent anywhere; the strip exists only when the address asks for it.
+    if (/[?&]debug=1/.test(location.search)) {
+      const strip = document.createElement('pre');
+      strip.id = 'errstrip';
+      strip.style.cssText = 'position:fixed;left:0;right:0;top:58px;z-index:99;margin:0;padding:6px 8px;max-height:45vh;overflow:auto;' +
+        'background:#fff3cd;color:#5c4400;font:12px/1.4 monospace;white-space:pre-wrap;border-bottom:1px solid #e0c060;';
+      strip.textContent = 'debug: errors will print here';
+      document.addEventListener('DOMContentLoaded', () => document.body.appendChild(strip));
+      const line = (s) => { strip.textContent += '\n' + s; };
+      addEventListener('error', (ev) => line((ev.message || String(ev.error)) + ' @ ' + (ev.filename || '').split('/').pop() + ':' + ev.lineno));
+      addEventListener('unhandledrejection', (ev) => line('rejection: ' + (ev.reason && (ev.reason.stack || ev.reason.message) || String(ev.reason))));
+      document.addEventListener('click', (ev) => {
+        const t = ev.target.closest('.achip, .qitem button');
+        if (!t) return;
+        const who = t.dataset.anchor || t.dataset.q || t.dataset.setupcard || t.className;
+        line('tap ' + who + ' · pointer ' + (ev.pointerType || '?') + ' · openId before ' + (window.SESSION ? window.SESSION.openId : '?'));
+        setTimeout(() => {
+          const id = window.SESSION ? window.SESSION.openId : null;
+          const card = document.querySelector('.doc .sugg, .setupcard');
+          const r = card && card.getBoundingClientRect();
+          line('  after 1.2s · openId ' + id + ' · card ' + (card ? card.className.slice(0, 30) + ' top ' + Math.round(r.top) + ' h ' + Math.round(r.height) : 'none') + ' · scrollY ' + Math.round(scrollY) + ' · innerH ' + innerHeight);
+        }, 1200);
+      }, true);
+    }
   })();
 </script>
 <div class="devswitch" title="Dev only — not part of the product"><label for="devwho">dev · viewing as</label> <select id="devwho"></select> <button id="devff" title="Dev only — complete the founding: invite two members, answer everything, open the gates">⏩ settle the founding</button></div>
@@ -1076,6 +1121,66 @@
   const LIVEMODE = location.pathname.startsWith('/d/');
   const BIRTH = location.pathname === '/';
   const LIVESLUG = LIVEMODE ? decodeURIComponent(location.pathname.split('/')[2] || '') : null;
+  // **The host's two flags** (Q1345, Q1346; Ed, 2026-09-12). `paused` is the
+  // announced pause a deploy runs under: the whole page goes behind a modal
+  // that names the wait and fills a bar over the host's guess, and every
+  // command is held back rather than sent to a host that will not keep it.
+  // `stalled` is a document whose saves the store rejects: a red flag where
+  // the alpha flag stands, and nothing else changes — reading is fine. Both
+  // are read off every poll answer, the short one included, so a page that
+  // has seen everything still hears them. And a deploy ends with a new
+  // build answering: when `x-build` changes under a page that was paused,
+  // the page reloads itself, since its own bytes are the old ones.
+  const HOST = { paused: null, stalled: false, build: null, timer: null };
+  function noteBuild(build) {
+    if (!build) return;
+    if (HOST.build === null) { HOST.build = build; return; }
+    if (build !== HOST.build && HOST.paused === null) location.reload();
+    if (build !== HOST.build) HOST.newBuild = build;
+  }
+  function noteHost(data) {
+    const was = HOST.paused;
+    HOST.paused = data.paused || null;
+    HOST.stalled = !!data.stalled;
+    if (was && !HOST.paused && HOST.newBuild) { location.reload(); return; }
+    renderHost();
+  }
+  function renderHost() {
+    let flag = document.getElementById('stalledflag');
+    if (HOST.stalled && !flag) {
+      flag = document.createElement('div');
+      flag.id = 'stalledflag'; flag.className = 'stalledflag';
+      flag.innerHTML = '<b>Warning:</b> ' + esc(PAGE_COPY.host.stalled);
+      const alpha = document.querySelector('.alphaflag');
+      (alpha && alpha.parentElement || document.body).insertBefore(flag, alpha ? alpha.nextSibling : null);
+    } else if (!HOST.stalled && flag) flag.remove();
+    let modal = document.getElementById('pausemodal');
+    if (HOST.paused && !modal) {
+      modal = document.createElement('div');
+      modal.id = 'pausemodal'; modal.className = 'pausemodal'; modal.setAttribute('role', 'dialog');
+      modal.innerHTML = '<div class="box"><p class="lead">' + esc(PAGE_COPY.host.paused) + '</p>' +
+        '<p class="when"></p><div class="track"><i></i></div></div>';
+      document.body.appendChild(modal);
+      HOST.timer = setInterval(renderHost, 1000);
+    } else if (!HOST.paused && modal) {
+      modal.remove();
+      clearInterval(HOST.timer); HOST.timer = null;
+    }
+    if (HOST.paused && modal) {
+      // the bar fills over the host's guess and holds short of full: the
+      // guess is a guess, and a bar that reads done while nothing happens
+      // is worse than one that waits (elapsed is the host's, plus the time
+      // since the answer that carried it)
+      const elapsed = HOST.paused.elapsedMs + (Date.now() - (HOST.paused.heardAtMs || Date.now()));
+      if (!HOST.paused.heardAtMs) HOST.paused.heardAtMs = Date.now();
+      const frac = Math.min(0.96, elapsed / Math.max(1, HOST.paused.expectedMs));
+      const left = Math.max(0, HOST.paused.expectedMs - elapsed);
+      modal.querySelector('.track i').style.width = Math.round(frac * 100) + '%';
+      modal.querySelector('.when').textContent = left > 0
+        ? PAGE_COPY.host.pausedWait(Math.max(1, Math.round(left / 60000)))
+        : PAGE_COPY.host.pausedOver;
+    }
+  }
   const api = {
     chain: Promise.resolve(),
     birth: null, // {pendingId, devLink, slug} once the creation mail is sent
@@ -1104,6 +1209,8 @@
           .then((r) => r.json().then((j) => ({ status: r.status, j }), () => ({ status: r.status, j: null }))))
         .then(({ status, j }) => {
           answer = j && (j.error || j.ok) ? j : { error: PAGE_COPY.noAnswer(status), status };
+          // a paused host (Q1345) is not a refusal: the modal says it all
+          if (status === 503 && j && j.paused) { noteHost(j); return; }
           if (answer.error) {
             console.warn('[live]', name, answer.error);
             refusalNoted({ name, args, card, status, error: answer.error, at: sentAt });
@@ -1128,10 +1235,37 @@
           (typeof cs.v.textVersion === 'number' ? '&tv=' + cs.v.textVersion : '') +
           (typeof cs.v.recordsKey === 'number' ? '&rk=' + cs.v.recordsKey : '') : '';
       return fetch('/api/d/' + LIVESLUG + '/view' + since)
-        .then((r) => (r.status === 401 ? null : r.json()))
+        .then((r) => {
+          noteBuild(r.headers.get('x-build'));
+          // **An answer that is not a view is not news** (Ed's phone,
+          // 2026-09-12, the ?debug=1 strip: *undefined is not an object
+          // (evaluating 'v.view.settings')*). A 429 from the door's budget,
+          // a 500, a 503 with the pause — each is JSON, and each used to be
+          // taken as the view: `cs.v` became `{error}` and every render from
+          // then on threw at the first `v.view` read, until a reload. Only a
+          // 2xx body is read; a 503 still carries the pause, so it is heard.
+          if (r.status === 401) return null;
+          if (r.status === 503) return r.json().then((j) => (j && j.paused ? { hostOnly: true, paused: j.paused } : null), () => null);
+          if (!r.ok) { console.warn('[live] view answered', r.status); return null; }
+          return r.json().catch(() => null);
+        })
         .then((data) => {
           if (!data || !cs || !cs.isRemote) return;
-          if (data.short) return; // unchanged — the short answer carries the seqs alone
+          // the host's two flags ride every answer, the short one included
+          // (Q1345, Q1346): heard before anything else is read
+          noteHost(data);
+          if (data.short || data.hostOnly) return; // unchanged — the short answer carries the seqs alone
+          // a body with no view in it (an error sentence with a 200 would be
+          // a server bug, but the page must not die of it) — **unless the
+          // server left the view out on purpose** (the slim answer below
+          // names it): this guard, added the morning of 2026-09-12, stood
+          // above the slim merge and threw away every poll on which only the
+          // engine had moved, so a proposal just made never reached the page
+          // until a full view happened along — journey's L5 went red on the
+          // deployed commit, and the founder's own proposal vanished from the
+          // rail for a poll or more
+          const slimView = Array.isArray(data.slim) && data.slim.includes('view');
+          if (!data.view && !slimView && !data.stranger && !data.applicant) { console.warn('[live] view without a view', data); return; }
           // **A view older than the one we hold is not news, it is a
           // rollback** (Q846's last window). `api.cmd` resolves after its own
           // refresh, but a 4s poll already in flight when the command was sent
@@ -1269,8 +1403,16 @@
   // printed under the control that tried, the way a refused text proposal
   // comes back on its own draft card.
   const doorErrOn = (k) => (S.doorErr && S.doorErr.k === k ? S.doorErr.m : '');
-  const doorErrHtml = (k) => (doorErrOn(k)
-    ? '<p class="why refusal"><b>' + esc(doorErrOn(k)) + '</b></p>' : '');
+  // **A pasted list is the one exception to Y25's single sentence** (Q1342,
+  // Ed 2026-09-12: *one sentence per refused address, all standing*): ✉️
+  // stores its refusals as a list, one line per address, and every line
+  // stands until the card closes or the next send.
+  const doorErrHtml = (k) => {
+    const m = doorErrOn(k);
+    if (!m) return '';
+    return (Array.isArray(m) ? m : [m])
+      .map((line) => '<p class="why refusal"><b>' + esc(line) + '</b></p>').join('');
+  };
   // the module's sentences carry their own § pointer, which is this
   // repository's vocabulary and not a member's (STYLE.md §8): the pointer
   // goes and the sentence stays
@@ -1776,6 +1918,8 @@
     titleBy: 'founder', slugBy: 'founder', policyBy: '',
     mailOpen: false,
     sentAddr: '', inviteOne: '', inviteMany: '',
+    mPick: {}, // a deck per setting (Q1348): the motion the founder chose to look at, by setting
+    mAnsFor: {}, // …and which motion `mAns` was pressed for, so the deck's next motion starts unpressed
     // the last refusal, against the card it belongs to: {k, m} (Q811)
     doorErr: null,
     viewer: 0,
@@ -2028,7 +2172,12 @@
   const ackPersists = (k) => ACK_KEYS.includes(k) || /^adm:/.test(k);
   // grants stage behind the constitutional OKs (Q453c): a gate or grant
   // asks nothing of you while a decision you are owed still waits
-  const owedNews = () => CARDS.some((c) => !c.isGate && visible(c) && news(c));
+  // **…a decision** (SURFACE E4, W4: *staged behind the constitutional
+  // OKs*): a mail that gave up (E34) and a joiner let in at ✒️ (Q912 (a))
+  // are news, not decisions, and staged nothing until 2026-09-12 — the seat
+  // matrix's E4 cluster (Q1205) was two members owed a 📭 before 🍾 whose
+  // 💡 and ⚖️ waited behind it, and so could never be acknowledged.
+  const owedNews = () => CARDS.some((c) => !c.isGate && !c.mailgiveup && !c.admit && visible(c) && news(c));
   const staged = (c) => !c.isGate || !owedNews();
   const viewerIsMember = () => S.viewer !== 'applicant' && !isStranger() && viewerRow().role !== 'clerk';
   // **Whether *you* are the clerk is not whether the founder is** (Q754's
@@ -4610,9 +4759,24 @@
   // — a motion, whose subtitle is the thing being proposed and is exactly the
   // information you need to decide whether to open it, and a decision arriving
   // as news, where what happened is the whole point.
+  // **The summary is markup** (2026-09-12): `railEntry` prints it as it is.
+  // **A motion's body is its rationale behind its speaker, or nothing**
+  // (Ed, 2026-09-12: *[user avatar] Rationale text; if no rationale, no body
+  // text*) — it was *Under motion — [the value]*, which the card says at
+  // once on opening; the disc is the card's own sealed speaker, since a
+  // motion names no mover (SURFACE C13). The deck's count (Q1348) rides
+  // beneath, on its own line, whether or not a reason was given.
   const summary = (c) => {
     const m = motionOn(c);
-    if (m) return PAGE_COPY.underMotion + esc(m.to);
+    if (m) {
+      // the deck's count (Q1348): how many others on this rule still wait for you
+      const me = viewerId();
+      const others = deckMotions(c).filter((r) => r.id !== m.id && !(me && r.answers.has(me))).length;
+      return window.CARDS.railSpeakerHtml(m.why, null) +
+        (others ? '<span class="qv">' + esc(PAGE_COPY.deck.moreAlone(others)) + '</span>' : '');
+    }
+    // news hands text: `railEntry` wraps it, and the paragraph sentence for
+    // a personal card reads it as words
     if (stateOf(c, ctx) === 'news') return value(c);
     return '';
   };
@@ -4832,13 +4996,54 @@
   const motionWaitsOnMe = (rec) => rec.status === 'running' && viewerIsMember() &&
     !(rec.by !== null && rec.by !== undefined && rec.by === viewerId()) &&
     !(rec.route === 'constitutional' ? mayVoice() : mayJudge());
-  const liveMotionRec = (c) => {
-    if (!cs || !c || c.isGate || c.ansFor || !motionsLive()) return null;
+  // **A setting's entry holds a deck** (Q1348, Ed 2026-09-12: *a deck per
+  // setting, like the pair-deck*; SURFACE E10, M18): every motion running on
+  // the setting, in the order they were put. The card shows the one you
+  // chose from the ledger, else the first you have not answered, else the
+  // first — so the entry asks while anything is unanswered and files ⏳
+  // only once you have answered them all. Before this the first running
+  // motion was the whole of it, and a member who had answered it stood at
+  // ⏳ over every rival they could never reach (moon2, twenty-six on 💤).
+  const deckMotions = (c) => {
+    if (!cs || !c || c.isGate || c.ansFor || !motionsLive()) return [];
+    const out = [];
     for (const rec of cs.motionRecords().values()) {
       if (rec.status !== 'running' && rec.status !== 'awaiting-crown') continue;
-      if (motionTargets(rec) === c.k) return motionWaitsOnMe(rec) ? null : rec;
+      if (motionTargets(rec) !== c.k) continue;
+      if (motionWaitsOnMe(rec)) return [];
+      out.push(rec);
     }
-    return null;
+    return out;
+  };
+  const liveMotionRec = (c) => {
+    const deck = deckMotions(c);
+    if (!deck.length) return null;
+    const picked = S.mPick && S.mPick[c.k] ? deck.find((r) => r.id === S.mPick[c.k]) : null;
+    if (picked) return picked;
+    const me = viewerId();
+    return deck.find((r) => !(me && r.answers.has(me))) || deck[0];
+  };
+  // the ledger under the card: every motion on the setting, each with your
+  // answer, the one shown marked; pressing another shows it instead, its
+  // lane pre-pressed with the answer you gave, revisable until it settles
+  const deckAnswerWord = { accept: 'yes', keep: 'no', abstain: 'abstain' };
+  const deckLedgerHtml = (c) => {
+    const deck = deckMotions(c);
+    if (deck.length < 2) return '';
+    const me = viewerId();
+    const shown = liveMotionRec(c);
+    return '<div class="mdeck"><p class="eyebrow fieldlab">' + esc(PAGE_COPY.deck.heading(deck.length)) + '</p>' +
+      deck.map((rec) => {
+        const ans = me ? rec.answers.get(me) : undefined;
+        const v = rec.payload && rec.payload.kind === 'set' ? rec.payload.value : null;
+        const what = (v !== null && sentenceFor(c.k, v)) || motionDisplay(rec);
+        const you = ans ? PAGE_COPY.deck.yours[ans] : PAGE_COPY.deck.unanswered;
+        return '<button type="button" class="mdeck-item' + (shown && shown.id === rec.id ? ' on' : '') + '"' +
+          ' data-mpick="' + esc(rec.id) + '" data-answer="' + esc(ans || '') + '"' +
+          (shown && shown.id === rec.id ? ' aria-current="true"' : '') + '>' +
+          '<span class="mdeck-what">' + esc(what) + '</span>' +
+          '<span class="mdeck-you">' + esc(shown && shown.id === rec.id ? PAGE_COPY.deck.showing : you) + '</span></button>';
+      }).join('') + '</div>';
   };
   const motionOn = (c) => { const rec = liveMotionRec(c); return rec ? pageMotion(rec) : null; };
   // **A record is a settled motion on a setting** (Q942). Withdrawn and
@@ -4930,7 +5135,19 @@
   // Constitutional commits are answerMotion; ordinary judging is a page-side
   // marker feeding the dev adjudication seam (the engine's job post-368).
   const myMAnsOk = () => (viewerRow().mAnsOk || (viewerRow().mAnsOk = new Set()));
-  const motionPicked = (c) => S.mAns[c.k] !== undefined;
+  // **The pressed lane belongs to one motion** (Q1348): `mAns` is what you
+  // pressed and `mAnsFor` which motion it was pressed for. Where the deck
+  // now shows another motion, the lane reads the answer you gave *that*
+  // one from the record — nothing, where you have not answered it — so a
+  // press meant for the first motion never rides into the second.
+  const effMAns = (c) => {
+    const rec = liveMotionRec(c);
+    if (!rec || !S.mAnsFor[c.k] || S.mAnsFor[c.k] === rec.id) return S.mAns[c.k];
+    const me = viewerId();
+    const a = me ? rec.answers.get(me) : undefined;
+    return a ? deckAnswerWord[a] : undefined;
+  };
+  const motionPicked = (c) => effMAns(c) !== undefined;
   const answeredMotion = (c) => {
     const rec = liveMotionRec(c);
     if (!rec) return false;
@@ -5707,9 +5924,12 @@
   // the *A proposed change…* explainer (where the Founder holds 🛡️ the wait
   // on them is the entry's ⏳ after the vote, E36), the *As proposed* eyebrow
   // and a count that always read zero, judgments being blind.
+  // the pressed lane is the motion shown's (`effMAns`, Q1348): a card the
+  // page can name reads its own, everything else reads the key's press
+  const pressedOn = (key) => { const c = card(key); return c ? effMAns(c) : S.mAns[key]; };
   const consentPicks = (key, opts) => '<div class="choice" role="radiogroup">' +
     opts.map(([v, html, kind]) => {
-      const on = S.mAns[key] === v;
+      const on = pressedOn(key) === v;
       const off = kind === 'keep' ? PAGE_COPY.consent.keepThis
         : kind === 'prefer' ? window.COPY.grammar.lane.prefer
         : kind === 'either' ? window.COPY.grammar.commit.indifferent : PAGE_COPY.consent.abstain;
@@ -5750,7 +5970,8 @@
     : m.removee !== undefined ? removeBody(m, route)
     : (() => { const rec = liveMotionRec(c);
       const v = rec && rec.payload && rec.payload.kind === 'set' ? rec.payload.value : null;
-      return motionBlocks(c.k, decisionLine(c), (v !== null && sentenceFor(c.k, v)) || m.to, m.why, route); })());
+      return motionBlocks(c.k, decisionLine(c), (v !== null && sentenceFor(c.k, v)) || m.to, m.why, route) +
+        deckLedgerHtml(c); })());
   const consentBody = (c, m) => motionPairBody(c, m, 'constitutional');
   const ordinaryBody = (c, m) => motionPairBody(c, m, 'ordinary');
 
@@ -8975,7 +9196,22 @@
       return;
     }
     const mo2 = ev.target.closest('[data-motion]');
-    if (mo2) { S.mAns[S.open] = mo2.dataset.motion; return render(); }
+    if (mo2) {
+      S.mAns[S.open] = mo2.dataset.motion;
+      const shown = liveMotionRec(card(S.open));
+      if (shown) S.mAnsFor[S.open] = shown.id;
+      return render();
+    }
+    // the deck's ledger (Q1348): show that motion, its lane pre-pressed with
+    // the answer you gave it, so a change of mind is one press away
+    const mpick = ev.target.closest('[data-mpick]');
+    if (mpick && S.open) {
+      S.mPick[S.open] = mpick.dataset.mpick;
+      S.mAnsFor[S.open] = mpick.dataset.mpick;
+      const word = deckAnswerWord[mpick.dataset.answer];
+      if (word) S.mAns[S.open] = word; else delete S.mAns[S.open];
+      return render();
+    }
     const mval = ev.target.closest('[data-mval]');
     if (mval) {
       if (S.draft && S.draft.k === S.open && S.draft.to === mval.dataset.mval) {
@@ -9139,8 +9375,13 @@
         toggleFold('ph:' + hProse.dataset.h);
         renderToc(); return; }
     }
-    const t = ev.target.closest('[data-tab], [data-card]');
-    if (t) { const k = t.dataset.tab || t.dataset.card;
+    // **Your face in the topbar opens ✋** (Ed, 2026-09-12: *clicking on my
+    // avatar in the topbar should open and navigate to ✋, the "my profile"
+    // stack*), on every width; a stranger has no row, and the applicant's
+    // stack is their own surface's, so the press is a member's.
+    const t = ev.target.closest('[data-tab], [data-card], #mebtn');
+    if (t && t.id === 'mebtn' && (isStranger() || S.viewer === 'applicant')) return;
+    if (t) { const k = t.dataset.tab || t.dataset.card || 'myname';
       // **📝 is the door between read and edit mode** (backlog 204), not a
       // card that opens; its power tabs beneath open as any tab does
       if (k === 'text') { toggleEditMode(); return; }
@@ -9154,7 +9395,10 @@
       // new card's while head and body crossfade, so the strip and the
       // document below never jump. From anywhere else the old card first
       // closes into its own paragraph, then the new one opens out of its.
-      const fromRail = !!t.closest('#rail');
+      // **A press from outside the document travels to its card**: the
+      // rail, and since Q1351 the topbar too (your face → ✋, the clock →
+      // ⏰) — neither is where you are looking, where a tab in the band is.
+      const fromRail = !!t.closest('#rail, .navbar');
       const cur = document.querySelector('.setupcard');
       if (cur && t.closest('.setupcard') === cur) return morphTo(k, cur);
       // **Anchor the tab you pressed across the switch**, and only from the
@@ -9221,9 +9465,13 @@
           if (cw && motionOn(cw) && motionPicked(cw)) {
             const rec = liveMotionRec(cw);
             if (rec && rec.route === 'constitutional') {
+              const pressed = effMAns(cw);
               cs.answerMotion(now(), viewerId(), rec.id,
-                S.mAns[cw.k] === 'yes' ? 'accept'
-                  : S.mAns[cw.k] === 'abstain' ? 'abstain' : 'keep');
+                pressed === 'yes' ? 'accept' : pressed === 'abstain' ? 'abstain' : 'keep');
+              // the deck moves on (Q1348): the next press shows the next
+              // motion you have not answered, and the lane you pressed
+              // stays this motion's, so nothing rides into the next
+              S.mAns[cw.k] = pressed; S.mAnsFor[cw.k] = rec.id; delete S.mPick[cw.k];
               syncFromCs();
             } else if (rec && cs.isRemote) {
               liveJudge(cw); myMAnsOk().add(cw.k);
@@ -9478,9 +9726,18 @@
       // an empty press is owed the refusal sentence (Y25) — the one box is
       // the only field now (Q1166), so the sentence lands under it
       if (!ads.length) { setDoorErr(cardKeyAt(scope2) || 'invite', 'Type an address to send the invitation to.'); return render(); }
-      ads.forEach((x) => invite(x, cardKeyAt(scope2)));
-      S.inviteMany = '';
-      return render();
+      // **one line per refused address, all standing** (Q1342, Ed
+      // 2026-09-12): every address answers for itself, the refusals are
+      // written under the card together, and the box keeps exactly the
+      // addresses that did not go, so a corrected paste is one edit away
+      const key = cardKeyAt(scope2) || 'admission';
+      Promise.all(ads.map((x) => invite(x, key, true))).then((lines) => {
+        const refused = ads.filter((x, i) => lines[i]);
+        S.inviteMany = refused.join('\n');
+        S.doorErr = refused.length ? { k: key, m: lines.filter(Boolean) } : null;
+        render();
+      });
+      return;
     }
   });
   // **Sending closes the card** (Ed, 2026-08-21: *the "Your Email" card
@@ -9567,34 +9824,41 @@
   // `k` is the card the press came from — 🪪 before the start, ✉️ after it —
   // so a refusal is printed under the field that tried (Q811). Called from
   // the *Several at once* box too, one address at a time.
-  function invite(em, k) {
+  // **Every address answers for itself** (Q1342): `invite` resolves to its
+  // own refusal line, or null where the invitation went, and writes the
+  // line under the card itself only when called alone (`quiet` unset) — a
+  // pasted list collects the lines and writes them together, because each
+  // address's `setDoorErr` overwrote the last and the founder saw only the
+  // final refusal of several (Ed's room, 2026-09-11).
+  function invite(em, k, quiet) {
     const key = k || 'admission';
     const at = String(em == null ? '' : em).trim();
+    const refuse = (m) => { if (!quiet) setDoorErr(key, m); return Promise.resolve(m); };
     // **The two silences on this field** (Q815). An empty press returned
     // without a word, and the dedupe compared raw addresses while the store
     // lowercases every one it takes (`emailOk`) — so `Bo@…` walked past the
     // page's check into a server refusal nobody could see.
-    if (!at) return setDoorErr(key, 'Type an address to send the invitation to.');
+    if (!at) return refuse('Type an address to send the invitation to.');
     const low = at.toLowerCase();
     if (S.roster.some((p) => String(p.e || '').toLowerCase() === low)) {
-      return setDoorErr(key, at + ' is already on the membership — one address, one member.');
+      return refuse(at + ' is already on the membership — one address, one member.');
     }
     if (cs && cs.isRemote) {
       // the command's own answer, not the console's: what the server refuses
       // is what the founder is told, and what it accepts clears the field
-      api.cmd('invite', { email: at }).then((res) => {
+      return api.cmd('invite', { email: at }).then((res) => {
         if (res && res.error) {
-          setDoorErr(key, 'That invitation was not sent: ' + plainRefusal(res.error) + '.');
-        } else { S.inviteOne = ''; setDoorErr(key, ''); }
+          return refuse(at + ' was not sent: ' + plainRefusal(res.error) + '.');
+        }
+        S.inviteOne = ''; if (!quiet) setDoorErr(key, '');
+        return null;
       });
-      return;
     }
     let mid = null;
     if (cs) {
       try { mid = cs.invite(now(), at); }
       catch (e) {
-        return setDoorErr(key, 'That invitation was not sent: ' +
-          plainRefusal(e && e.message) + '.');
+        return refuse(at + ' was not sent: ' + plainRefusal(e && e.message) + '.');
       }
     }
     S.inviteOne = '';
@@ -9614,6 +9878,7 @@
           cs.setIdentity(now(), p.mid, { name: p.n }); } catch (e) {} }
         render(); } },
       1200 + Math.random() * 2600);
+    return Promise.resolve(null);
   }
   // ---- assembly-press (Ed, 2026-08-18) -----------------------------------
   // A constitutional change goes in by a **full hold**, and the progress
@@ -10489,7 +10754,7 @@
     const mid = midOf(cw.k);
     const rc = raceCardOf(mid);
     if (!rc) { console.warn('[live] no race card served for', mid); return; }
-    judgeRaceCard(rc, S.mAns[cw.k]); // 'stands' | 'proposed' | 'either'
+    judgeRaceCard(rc, effMAns(cw)); // 'stands' | 'proposed' | 'either'
   }
 
   // the document column, filled from the server's text (confirmed, or the
@@ -10807,13 +11072,19 @@
   function liveBoot() {
     const dev = document.querySelector('.devswitch');
     if (dev) dev.style.display = 'none';
-    devInboxButton();
-    ladderBar();
     fetch('/api/d/' + LIVESLUG + '/view').then((r) => {
       if (r.status === 401) { console.warn('[live] no seat and no door'); return null; }
       return r.json();
     }).then((data) => {
       if (!data) return;
+      // **The stagehand's controls are asked for only where the host says
+      // it has them** (Q1349, Ed 2026-09-12): `devMail` rides every view
+      // answer, the stranger's included, and the ladder exists exactly where
+      // the dev outbox does — so docs.vote no longer fires two 404s per load
+      // (two red console lines, two of the stranger's budget). The birth
+      // page has no view to read and still probes; its flag is Q1349's
+      // owed half, on `/healthz`.
+      if (data.devMail) { devInboxButton(); ladderBar(); }
       // **There is no login screen** (Q456): a stranger arrives at the three
       // columns like everybody else — the rules, the text's shape, one
       // sentence, and a rail holding the 📧 task
@@ -10923,8 +11194,12 @@
   function birthBoot() {
     const dev = document.querySelector('.devswitch');
     if (dev) dev.style.display = 'none';
-    devInboxButton();
-    ladderBar();
+    // the stagehand's controls only where the host says it has them (Q1349,
+    // Ed 2026-09-12): the birth has no view to read `devMail` from, so it
+    // asks /healthz, and a host that does not answer draws nothing
+    fetch('/healthz').then((r) => (r.ok ? r.json() : null)).then((h) => {
+      if (h && h.devMail === true) { devInboxButton(); ladderBar(); }
+    }).catch(() => {});
     // pasted text syncs against the pending creation (§9.7a v0.55)
     let deb = null;
     prose.addEventListener('input', () => {
@@ -11667,8 +11942,14 @@
     const q = document.getElementById('quill');
     const spent = cs ? 3 : (S.seen.has('title') ? 1 : 0) + (S.seen.has('slug') ? 1 : 0) + (S.emailSent ? 1 : 0);
     const left = 4 - Math.min(3, spent);
-    const qh = Array.from({ length: left }, (_, i) =>
-      '<i' + (quillGhost && i === left - 1 ? ' class="gone"' : '') + '>🪶</i>').join('');
+    // on a phone the quill is one feather and its number, as the ✏️ wallet
+    // is one pencil and its number (Q1351): the flight finds `#quill i`
+    // either way, and the one feather that remains after the founding is
+    // the logo on both widths
+    const qh = SESSION.narrow()
+      ? '<i' + (quillGhost ? ' class="gone"' : '') + '>🪶</i>' + (left > 1 ? '<span class="pmore">' + left + '</span>' : '')
+      : Array.from({ length: left }, (_, i) =>
+        '<i' + (quillGhost && i === left - 1 ? ' class="gone"' : '') + '>🪶</i>').join('');
     if (q.innerHTML !== qh) q.innerHTML = qh;
     const notApp = S.viewer !== 'applicant' && !isStranger() &&
       // after the farewell the wallets are gone (a reader arriving after the

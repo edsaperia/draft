@@ -611,7 +611,12 @@ window.SETUP = (function () {
       ' style="--washcol: ' + w.col + '; --washbg: ' + w.bg + '; --fill: ' + fill + '">' +
       '<span class="ql"><span class="subj" aria-hidden="true">' + markOf(c, ctx) + '</span>' +
       '<span class="qt">' + esc(labelOf(c, ctx)) + '</span></span>' +
-      (ctx.summary(c) ? '<span class="qwhy">' + ctx.summary(c) + '</span>' : '') + '</button></li>';
+      // the summary is the entry's body: markup where the context hands
+      // markup (the member surface's — a spoken rationale, a news line, the
+      // deck's count), else a plain teaser wrapped here (the applicant's and
+      // the stranger's contexts still hand text)
+      (ctx.summary(c) ? (/^</.test(ctx.summary(c)) ? ctx.summary(c) : '<span class="qwhy">' + ctx.summary(c) + '</span>') : '') +
+      '</button></li>';
   }
 
   /* ---- the card shell -----------------------------------------------------

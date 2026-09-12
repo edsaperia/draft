@@ -670,16 +670,24 @@
     // wrong thing entirely once the question is *can you write a better one*.
     // Quoting two of eight arguments there is picking a side by accident and
     // saying nothing about the state the entry is actually in.
-    if (stuck(g)) return [T.rail.deadlocked(g.judges ?? 0, g.comparisons ?? 0)];
-    if (g.kind === 'race') return [g.race && g.race.a && g.race.a.rationale, g.race && g.race.b && g.race.b.rationale].filter(Boolean);
+    // A teaser is `{ why, by }` since 2026-09-12 (Ed: *[user avatar]
+    // Rationale text*) — the rationale behind its speaker, the disc or the
+    // face where the name is attached (`railSpeakerHtml`). The deadlock
+    // sentence is nobody's and rides as a plain line (`by: false`).
+    if (stuck(g)) return [{ why: T.rail.deadlocked(g.judges ?? 0, g.comparisons ?? 0), plain: true }];
+    if (g.kind === 'race') return [g.race && g.race.a, g.race && g.race.b]
+      .filter((c) => c && c.rationale).map((c) => ({ why: c.rationale, by: c.by }));
     // A diagonal quotes nothing (Ed, 2026-08-17). A teaser is a *rationale* —
     // somebody's argument for their wording — and a diagonal has none, because
     // nobody proposed anything: it is the surface asking which of two questions
     // deserves the room's time. Its title now says exactly that, and the
     // description it used to quote was the system explaining itself twice.
     if (g.kind === 'diagonal') return [];
-    return g.rationale ? [g.rationale] : [];
+    return g.rationale ? [{ why: g.rationale, by: g.by }] : [];
   }
+  const teaserHtml = (t) => (t.plain
+    ? '<span class="qwhy">' + esc(t.why) + '</span>'
+    : window.CARDS.railSpeakerHtml(t.why, t.by));
 
   function queueEntries() {
     const out = [];
@@ -986,7 +994,7 @@
             // which is what keeps it from oscillating — showing a teaser makes
             // the entry taller, and a rule that read the entry's own position
             // could hide what it had just shown.
-            teasersFor(g, e).map((t) => '<span class="qwhy">' + esc(t) + '</span>').join('')) +
+            teasersFor(g, e).map(teaserHtml).join('')) +
         '</button></li>';
     }
     extraMeta = new Map();

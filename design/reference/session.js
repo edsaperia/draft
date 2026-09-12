@@ -670,16 +670,24 @@
     // wrong thing entirely once the question is *can you write a better one*.
     // Quoting two of eight arguments there is picking a side by accident and
     // saying nothing about the state the entry is actually in.
-    if (stuck(g)) return [T.rail.deadlocked(g.judges ?? 0, g.comparisons ?? 0)];
-    if (g.kind === 'race') return [g.race && g.race.a && g.race.a.rationale, g.race && g.race.b && g.race.b.rationale].filter(Boolean);
+    // A teaser is `{ why, by }` since 2026-09-12 (Ed: *[user avatar]
+    // Rationale text*) — the rationale behind its speaker, the disc or the
+    // face where the name is attached (`railSpeakerHtml`). The deadlock
+    // sentence is nobody's and rides as a plain line (`by: false`).
+    if (stuck(g)) return [{ why: T.rail.deadlocked(g.judges ?? 0, g.comparisons ?? 0), plain: true }];
+    if (g.kind === 'race') return [g.race && g.race.a, g.race && g.race.b]
+      .filter((c) => c && c.rationale).map((c) => ({ why: c.rationale, by: c.by }));
     // A diagonal quotes nothing (Ed, 2026-08-17). A teaser is a *rationale* —
     // somebody's argument for their wording — and a diagonal has none, because
     // nobody proposed anything: it is the surface asking which of two questions
     // deserves the room's time. Its title now says exactly that, and the
     // description it used to quote was the system explaining itself twice.
     if (g.kind === 'diagonal') return [];
-    return g.rationale ? [g.rationale] : [];
+    return g.rationale ? [{ why: g.rationale, by: g.by }] : [];
   }
+  const teaserHtml = (t) => (t.plain
+    ? '<span class="qwhy">' + esc(t.why) + '</span>'
+    : window.CARDS.railSpeakerHtml(t.why, t.by));
 
   function queueEntries() {
     const out = [];
@@ -986,7 +994,7 @@
             // which is what keeps it from oscillating — showing a teaser makes
             // the entry taller, and a rule that read the entry's own position
             // could hide what it had just shown.
-            teasersFor(g, e).map((t) => '<span class="qwhy">' + esc(t) + '</span>').join('')) +
+            teasersFor(g, e).map(teaserHtml).join('')) +
         '</button></li>';
     }
     extraMeta = new Map();
@@ -1081,29 +1089,48 @@
 
   function layoutQueue() {
     // **Narrow is a mode, not a stylesheet** (design/MOBILE.md §1.0, §1.3;
-    // the first cut, 2026-09-12): below `NARROW_Q` the rail is a dock fixed
-    // at the foot of the window, and *beside its clause* has no meaning — so
-    // every entry with a clause is listed in document order and nothing is
-    // positioned. The wide layout's absolute tops would put each entry at a
-    // large negative offset here, `aside.queue` sitting below `main`.
+    // the first cut, 2026-09-12): below `NARROW_Q` the rail is a drawer, and
+    // *beside its clause* has no meaning there — so nothing is positioned.
+    // The wide layout's absolute tops would put each entry at a large
+    // negative offset here, `aside.queue` sitting below `main`.
+    //
+    // **The drawer holds only what asks something of you** (Q1351, Ed
+    // 2026-09-12): the same four pinning kinds as the wide rail's — 🔥, an
+    // unread ✔✖ owed to you, ✏️ yours, 🌶️ served — plus whatever is open,
+    // most urgent first. The first cut listed every entry with a clause, and
+    // on a real document that was forty grey filed rows between the six hot
+    // ones: a list cannot say *where*, so the filed population, whose whole
+    // claim is a position, belongs to the gutter tabs alone on a phone. The
+    // door's number is the drawer's length, and means the same thing.
     if (NARROW()) {
-      let n = 0;
+      const navH = (document.querySelector('.navbar') || {}).offsetHeight || BAND_TOP;
+      const rows = [];
       for (const el of queueEl.children) {
         const a = anchorForEntry(el.dataset.q, el.dataset.site);
-        el.style.display = a ? '' : 'none';
         el.style.top = '';
+        el.style.order = '';
         el.classList.remove('pinned');
-        if (a) {
-          n += 1;
-          const ay = a.getBoundingClientRect().top;
-          el.classList.toggle('offclause', ay < BAND_TOP || ay > innerHeight - BAND_BOT);
-        }
+        if (!a) { el.style.display = 'none'; continue; }
+        const g = SUGGS.find((x) => x.id === el.dataset.q);
+        const x = !g && extraMeta.has(el.dataset.q) ? extraMeta.get(el.dataset.q) : null;
+        const kind = g ? markKindOf(g) : null;
+        const live = holdsFocus(el) || (x ? !!x.pinned
+          : g ? (kind === 'urgent' || kind === 'propose' || kind === 'weigh' || isUnread(g)) : false);
+        if (!live) { el.style.display = 'none'; continue; }
+        el.style.display = '';
+        const ay = a.getBoundingClientRect().top;
+        el.classList.toggle('offclause', ay < navH + 12 || ay > innerHeight - BAND_BOT);
+        rows.push({ el, want: ay + scrollY, u: x ? (x.u ?? 0) : leverage(g), open: holdsFocus(el) });
       }
+      rows.sort((p, q) => (q.open - p.open) || (q.u - p.u) || (p.want - q.want));
+      rows.forEach((r, i) => { r.el.style.order = String(i); });
       queueEl.style.height = '';
       // the right-hand door wears the count (the drawer is the page's, so
-      // the page may not have one)
+      // the page may not have one), red while it is more than nothing
       const badge = document.getElementById('drawercount');
-      if (badge) badge.textContent = String(n);
+      if (badge) badge.textContent = String(rows.length);
+      const door = document.getElementById('drawerright');
+      if (door) door.classList.toggle('asks', rows.length > 0);
       return;
     }
     const railRect = queueEl.getBoundingClientRect();
@@ -5271,6 +5298,17 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       : 'Your ✏️s — proposing one costs ' + EDIT_RULES.stake +
         '. You hold ' + held + ' of a possible ' + EDIT_RULES.cap +
         (full ? ', which is the cap.' : '; the tray shows how far the drip has got toward the next.'));
+    // **On a phone the wallet is one pencil and its number** (Q1351, Ed
+    // 2026-09-12: *the icons without the sockets*): the four slots and the
+    // drip tray are desktop width, and the top row has the title to keep.
+    // The flights still find their token at `#wallet i`.
+    if (NARROW()) {
+      const nh = '<span class="pencils"><i' + (walletGhost ? ' class="gone"' : '') + '>✏️</i>' +
+        '<span class="pmore">' + held + '</span></span>';
+      if (walletEl.innerHTML !== nh) walletEl.innerHTML = nh;
+      applyLean();
+      return;
+    }
     // The wallet draws at most four slots wide, and counts when it cannot fit
     // (Ed, 2026-08-17). Four held is four pencils, because "+1" costs exactly
     // the space it saves and reads as an abbreviation of nothing. Five is three
@@ -5665,6 +5703,10 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     })();
 
     addEventListener('resize', () => { layoutQueue(); onViewportChange(); });
+    // the wallet has a phone form (`renderWallet`), so a width crossing the
+    // line redraws it once — never per resize event, which a flight in the
+    // air would not survive
+    matchMedia(NARROW_Q).addEventListener('change', () => renderWallet());
   }
 
   // **You do not see a card you have no right to act on** (Ed, 2026-08-21,
@@ -5856,7 +5898,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // the column's one strip (Q1294 (b)), shared with the founder's pre-🍾
     // column since Q1313: its sync, and the `[]` preference both columns read
     syncEditCtl, laneRaw, setLaneRaw: (raw) => { laneMode = raw ? 'md' : 'rich'; },
-    arcFrames, flyGlyph, pencilStorm, renderWallet, beat, act,
+    arcFrames, flyGlyph, pencilStorm, renderWallet, beat, act, narrow: NARROW,
     // the hold vocabulary, shared with the founder's own wallets in the page:
     // `nudgeHome` brings a released flight back (never travelling less than a
     // quarter), `startLean`/`stopLean` are the spend-preview, and `applyLean`

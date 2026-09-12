@@ -402,6 +402,16 @@ window.COPY = (function () {
     refuseSet: (reason) => 'That could not be set: ' + reason + '.',
     // every other refusal, under the card that sent it (Q1330, SURFACE Y25)
     refused: (reason) => 'That was refused: ' + reason + '.',
+    // the host's two flags (Q1345, Q1346; Ed, 2026-09-12): the announced
+    // pause, drawn as a modal over the whole page while a deploy runs, and
+    // the red flag on a document whose saves the store rejects
+    host: {
+      paused: 'This document is paused while we do some quick database maintenance.',
+      pausedWait: (minutes) => (minutes <= 1 ? 'It should be back in about a minute.'
+        : 'It should be back in about ' + minutes + ' minutes.'),
+      pausedOver: 'Nearly there — hold on a moment longer.',
+      stalled: 'This document cannot save changes at the moment. Nothing you do here will be kept.',
+    },
     // the wire did not answer, or answered with a status and no sentence
     noAnswer: (status) => (status ? 'the server answered ' + status : 'the server could not be reached'),
     binPutBack: 'Put it back as it stands',
@@ -659,7 +669,6 @@ window.COPY = (function () {
       easiest: 'The easiest you will accept',
       mostGenerous: 'The most generous you will accept',
     },
-    underMotion: 'Under motion — ',
     penWait: 'Founder Actions ✒️ are waiting in your tasks — accept them and this turns.',
     doorEmpty: {
       invite: 'Nobody has been invited yet.',
@@ -681,6 +690,19 @@ window.COPY = (function () {
     // 2026-09-05, Q1182; STYLE T48): what stands with *Keep this*, what is
     // proposed with *Prefer this*, and *Abstain* on its own. The explanations
     // of the consent rule, the counts and the blind note all went with it.
+    // a deck per setting (Q1348, Ed 2026-09-12): several 🏛️ motions running
+    // on one rule are one entry, the card showing the first you have not
+    // answered and listing every one beneath with your answer
+    deck: {
+      heading: (n) => n + ' proposals on this rule',
+      more: (n) => ' · ' + n + ' more waiting for you',
+      // the same count on its own line, under a motion's rail entry (the
+      // entry's body is the rationale since 2026-09-12, and may be empty)
+      moreAlone: (n) => n + ' more waiting for you',
+      yours: { accept: 'you accepted', keep: 'you kept what stands', abstain: 'you abstained' },
+      unanswered: 'not yet answered',
+      showing: 'shown above',
+    },
     consent: {
       keepThis: 'Keep this',
       kept: 'Kept',

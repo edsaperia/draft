@@ -1627,6 +1627,12 @@ var CONSTITUTION = (() => {
           rec.settledAtT = event.t;
           break;
         }
+        case "motion-ground-shifted": {
+          const rec = this.motions.get(event.motion);
+          rec.answers.clear();
+          if (rec.by !== null) rec.answers.set(rec.by, "accept");
+          break;
+        }
         case "motion-carried": {
           const rec = this.motions.get(event.motion);
           rec.status = "carried";
@@ -2045,6 +2051,7 @@ var CONSTITUTION = (() => {
       const postStart = this.constitutedT !== null;
       const reason = typeof why === "string" && why.trim() !== "" ? why.trim() : void 0;
       const changed = st.value !== null;
+      const moved = st.value === null || !eqValue(st.value, value);
       this.emit({
         type: "setting-set",
         t,
@@ -2053,6 +2060,7 @@ var CONSTITUTION = (() => {
         by: postStart ? "crown" : "convenor",
         ...reason === void 0 ? {} : { why: reason }
       });
+      if (postStart && moved) this.shiftRivals(t, setting, "pen");
       if (CONSTITUTIONAL.has(setting) || changed) this.oweOks(t, setting);
       if (setting === "lapse") this.rereadLapse(t);
     }
@@ -2793,6 +2801,10 @@ var CONSTITUTION = (() => {
       } else {
         route = this.priceOf("admission") === "assembly" ? "constitutional" : "ordinary";
       }
+      const twin = this.runningTwin(payload);
+      if (twin !== null) {
+        throw new Error(`already put — '${twin}' proposes the same; answer it instead (§9.6)`);
+      }
       if (route === "constitutional" && this.heldOutBy(by)) {
         throw new Error("one 🏛️ out per member at a time (§9.6)");
       }
@@ -2901,6 +2913,35 @@ var CONSTITUTION = (() => {
       return false;
     }
     /**
+     * **A carry on a setting is a ground shift on every rival still running on
+     * it** (Ed, 2026-09-12, Q1348; SPEC §9.6, R-105): once the value moved
+     * from no longer stands, every answer on a rival was given against the
+     * wrong baseline, so the module wipes them but the mover's and the motion
+     * is served to everyone as a fresh ask. "The ground moved" is the same
+     * fact whoever moved it, so the Founder's ✒️ and an ordinary carry shift
+     * the rivals exactly as a unanimity carry does — `cause` says which.
+     * Called after the value has landed, never from a fold; `except` is the
+     * motion that moved it, which is settled and is not its own rival.
+     * Running motions only: one at `awaiting-crown` has already carried by
+     * unanimity and waits on nothing but the crown's assent.
+     */
+    shiftRivals(t, setting, cause, except) {
+      for (const rec of this.motions.values()) {
+        if (rec.id === except) continue;
+        if (rec.status !== "running" || rec.route !== "constitutional") continue;
+        if (rec.payload.kind !== "set" || rec.payload.setting !== setting) continue;
+        this.emit({ type: "motion-ground-shifted", t, motion: rec.id, cause });
+      }
+    }
+    /** The live motion already putting exactly this payload, if any (Q1348). */
+    runningTwin(payload) {
+      for (const [id, rec] of this.motions) {
+        if (rec.status !== "running" && rec.status !== "awaiting-crown") continue;
+        if (samePayload(rec.payload, payload)) return id;
+      }
+      return null;
+    }
+    /**
      * The settle check (v0.48): a constitutional motion carries at the moment
      * every currently active member — E, evaluated live (R-088) — stands
      * at accept or abstain with no keep standing. Re-run on every answer and
@@ -2961,6 +3002,9 @@ var CONSTITUTION = (() => {
           this.emit({ type: "ok-owed", t, member: m.id, settings: [rec.payload.setting] });
         }
         if (rec.payload.setting === "lapse") this.rereadLapse(t);
+      }
+      if (rec.payload.kind === "set") {
+        this.shiftRivals(t, rec.payload.setting, rec.id, rec.id);
       }
       if (rec.payload.kind === "admit") {
         const id = `m-${this.nextMemberN}`;
@@ -3624,6 +3668,23 @@ var CONSTITUTION = (() => {
       }).map((entry) => ({ seq: entry.seq, hash: entry.hash }));
     }
   };
+  function samePayload(a, b) {
+    if (a.kind !== b.kind) return false;
+    switch (a.kind) {
+      case "set":
+        return b.kind === "set" && a.setting === b.setting && eqValue(a.value, b.value);
+      case "invite":
+        return b.kind === "invite" && a.person === b.person;
+      case "remove":
+        return b.kind === "remove" && a.member === b.member;
+      case "admit":
+        return b.kind === "admit" && a.applicant === b.applicant;
+      case "reserve":
+        return b.kind === "reserve" && a.setting === b.setting && (a.power ?? "both") === (b.power ?? "both");
+      default:
+        return false;
+    }
+  }
 
   // src/meaning.ts
   var BAR_RUNGS = [

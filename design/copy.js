@@ -669,7 +669,6 @@ window.COPY = (function () {
       easiest: 'The easiest you will accept',
       mostGenerous: 'The most generous you will accept',
     },
-    underMotion: 'Under motion — ',
     penWait: 'Founder Actions ✒️ are waiting in your tasks — accept them and this turns.',
     doorEmpty: {
       invite: 'Nobody has been invited yet.',
@@ -697,6 +696,9 @@ window.COPY = (function () {
     deck: {
       heading: (n) => n + ' proposals on this rule',
       more: (n) => ' · ' + n + ' more waiting for you',
+      // the same count on its own line, under a motion's rail entry (the
+      // entry's body is the rationale since 2026-09-12, and may be empty)
+      moreAlone: (n) => n + ' more waiting for you',
       yours: { accept: 'you accepted', keep: 'you kept what stands', abstain: 'you abstained' },
       unanswered: 'not yet answered',
       showing: 'shown above',

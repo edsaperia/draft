@@ -705,6 +705,27 @@
   /* a race quotes both proposals, stacked with a hairline between: 290px will
      not carry two readable columns of prose */
   .qwhy + .qwhy { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border); }
+  /* **The teaser is spoken** (Ed, 2026-09-12: *[user avatar] Rationale
+     text*): the rationale beside the same disc the card's `sealed-speaker`
+     draws, or the author's face where the name is attached — at 18px, the
+     rail's size, where the card's is 22. The clamp moves from the box to the
+     text so the face is never cut. `railSpeakerHtml` in cards.js. */
+  .qwhy.spoke { display: flex; gap: 6px; align-items: flex-start; }
+  .qwhy.spoke .qsaid {
+    min-width: 0; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden;
+    -webkit-line-clamp: 4; line-clamp: 4;
+  }
+  .queue button.mosturgent .qwhy.spoke .qsaid { -webkit-line-clamp: 5; line-clamp: 5; }
+  .qface { display: flex; align-items: flex-start; justify-content: center; width: 18px; flex: none; margin-top: 1px; }
+  .qface .av { width: 18px; height: 18px; font-size: 8px; }
+  .qface .emojiface { font-size: 18px; line-height: 18px; }
+  .qface .disc {
+    position: relative; overflow: hidden; width: 18px; height: 18px; border-radius: 50%;
+    background: var(--border);
+  }
+  .qface .disc::before, .qface .disc::after { content: ''; position: absolute; left: 50%; background: var(--light); }
+  .qface .disc::before { width: 6px; height: 6px; border-radius: 50%; top: 3.5px; transform: translateX(-50%); }
+  .qface .disc::after { width: 11.5px; height: 8px; border-radius: 6px 6px 0 0; bottom: -1px; transform: translateX(-50%); }
 
   /* An acknowledged decision is a tiny card, not a bare glyph (Ed, 164): still
      an entry in the rail, just the smallest one. Grey card, full-colour glyph
