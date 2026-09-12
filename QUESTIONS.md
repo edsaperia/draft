@@ -455,6 +455,7 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 
 | # | Title | Raised | State | Pointers |
 |---|---|---|---|---|
+| 1350 | Edit mode on a phone is hidden, not gated: a paired keyboard still enters it | 2026-09-12 | backlog by Ed 2026-09-12 (*leave it for now — see if we can make it work nicely in the future*): the doors are `display: none` below 900px and the prose takes no caret, but a physical key still calls `setEditMode` / `typeAt`; the mobile composer stage (MOBILE.md §1.7's lane door) is where it gets a real answer | `edit-mode`; `design/system.css` (the narrow block hiding `#ridetab`); MOBILE.md §1.7 |
 | 1343 | `REPORT-deferred-evidence.md` is pinned to spec v0.12 and its numbers moved under Q1337 | 2026-09-11 | backlog by Ed 2026-09-11 22:38 (*leave it, file as backlog*): `npm run evidence -w @draft/sim-harness` re-runs it deterministically; the report wants a rewrite against v0.116 when it is next read for a decision | `sim-harness`; `packages/sim-harness/REPORT-deferred-evidence.md`; Q1337 |
 | 1287 | The erase route on the running server: row and memory in one act | 2026-09-08 | answered (a), owed **at go-live** — the operator route, not before; (b) closed, `[redacted]` (STYLE T49) | `people`; `draft-tools erase`; `docs/OPERATING.md` §5; PRODUCTION.md stage 12 |
 | 996 | A per-decision reveal rung for 👁️ | 2026-08-28 | answered, owed — the catalogue still reads `never · after` | SPEC §3.5a, §9.7.1 |
@@ -504,7 +505,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1350** — claim by writing the block here, then commit it alone.
+**The next free number is 1352** — claim by writing the block here, then commit it alone.
+
+**1350–1351 are the mobile pass of 2026-09-12** (claimed 2026-09-12 17:40, Ed: *let's do a quick mobile pass*): 1350 the keystroke door into edit mode on a phone, left open and backlogged; 1351 Ed's four rulings — the tab meets the card, the drawer holds only what asks you, the topbar takes two rows, 🪶 stands with the powers.
 
 **1349 is the page's two 404s on every load** (claimed 2026-09-12 14:58, Ed: *have the page load errors as a question*).
 
