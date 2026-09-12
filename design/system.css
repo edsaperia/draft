@@ -2245,8 +2245,12 @@
     .navbar .brand .sess { display: none; }
     .navbar .stats { gap: 10px; flex: none; }
     .navbar .pulse, .navbar .facestack, .navbar .wallet { display: none; }
-    #ridetab, #editdoor, #prosectl { display: none; }
+    #ridetab, #editdoor, #prosectl, .lanepropose { display: none; }
     /* the 95vh runway keeps the last clause reachable above the dock */
+    /* While a card is open the dock keeps only that card's entry — the open
+       card needs the screen more than the list does, and the entry is the
+       way back (a second tap closes). Everything returns at the close. */
+    .layout > .queue:has(.qitem button[aria-current="true"]) .qitem:not(:has(button[aria-current="true"])) { display: none; }
   }
   /* Touch (MOBILE.md §1.5): no double-tap zoom or 300ms delay on a control,
      no grey flash competing with depth, and a hold survives the finger — a
