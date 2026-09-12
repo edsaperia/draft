@@ -1262,8 +1262,16 @@
           noteHost(data);
           if (data.short || data.hostOnly) return; // unchanged — the short answer carries the seqs alone
           // a body with no view in it (an error sentence with a 200 would be
-          // a server bug, but the page must not die of it)
-          if (!data.view && !data.stranger && !data.applicant) { console.warn('[live] view without a view', data); return; }
+          // a server bug, but the page must not die of it) — **unless the
+          // server left the view out on purpose** (the slim answer below
+          // names it): this guard, added the morning of 2026-09-12, stood
+          // above the slim merge and threw away every poll on which only the
+          // engine had moved, so a proposal just made never reached the page
+          // until a full view happened along — journey's L5 went red on the
+          // deployed commit, and the founder's own proposal vanished from the
+          // rail for a poll or more
+          const slimView = Array.isArray(data.slim) && data.slim.includes('view');
+          if (!data.view && !slimView && !data.stranger && !data.applicant) { console.warn('[live] view without a view', data); return; }
           // **A view older than the one we hold is not news, it is a
           // rollback** (Q846's last window). `api.cmd` resolves after its own
           // refresh, but a 4s poll already in flight when the command was sent
