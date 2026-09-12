@@ -1080,6 +1080,26 @@
     : (g.urgency ?? 0));
 
   function layoutQueue() {
+    // **Narrow is a mode, not a stylesheet** (design/MOBILE.md §1.0, §1.3;
+    // the first cut, 2026-09-12): below `NARROW_Q` the rail is a dock fixed
+    // at the foot of the window, and *beside its clause* has no meaning — so
+    // every entry with a clause is listed in document order and nothing is
+    // positioned. The wide layout's absolute tops would put each entry at a
+    // large negative offset here, `aside.queue` sitting below `main`.
+    if (NARROW()) {
+      for (const el of queueEl.children) {
+        const a = anchorForEntry(el.dataset.q, el.dataset.site);
+        el.style.display = a ? '' : 'none';
+        el.style.top = '';
+        el.classList.remove('pinned');
+        if (a) {
+          const ay = a.getBoundingClientRect().top;
+          el.classList.toggle('offclause', ay < BAND_TOP || ay > innerHeight - BAND_BOT);
+        }
+      }
+      queueEl.style.height = '';
+      return;
+    }
     const railRect = queueEl.getBoundingClientRect();
     const railTop = railRect.top + scrollY;
     const pinned = [], flow = [];
@@ -1431,6 +1451,9 @@
   function drawWires() {
     if (!wiresEl) return;
     while (wiresEl.firstChild) wiresEl.removeChild(wiresEl.firstChild);
+    // A wire from a dock at the foot of the window to a clause anywhere on
+    // the page says nothing (MOBILE.md §1.3): narrow draws none.
+    if (NARROW()) return;
     const id = openId ?? pendingId ?? (extra && extra.openId ? extra.openId() : null);
     if (!id) return;
     const s = SUGGS.find((x) => x.id === id) || (extraMeta.has(id) ? null : undefined);
@@ -4394,6 +4417,12 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   // scroll, so doing both in one frame makes the page lurch. Collapse the old
   // card, *then* move, *then* expand the new one — three steps, never overlapping.
   const REDUCED = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // **How wide is the screen** — one literal, the same one `system.css`'s
+  // narrow rules key on (MOBILE.md §1.1), read per call and never captured:
+  // `layoutQueue` and `drawWires` ask it on every pass, so a window crossing
+  // the line re-lays on its next render without a reload.
+  const NARROW_Q = '(max-width: 900px)';
+  const NARROW = () => matchMedia(NARROW_Q).matches;
   // **The commit gesture is a switch** (backlog 184, Ed, 2026-08-28: *I'd like
   // to try this*). Every consequential commit on this product has been a hold:
   // the token flies for the length of the press and the act lands when it

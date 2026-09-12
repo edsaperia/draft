@@ -1,4 +1,5 @@
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>docs.vote</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪶</text></svg>">
 <link rel="stylesheet" href="system.css">
@@ -93,6 +94,9 @@
   .redacted .bar { display: block; height: .72em; border-radius: 3px; background: var(--border); margin: .42em 0; }
   .redacted .h1 .bar { height: 1.1em; } .redacted .h2 .bar { height: .95em; } .redacted .h3 .bar { height: .85em; }
   .redacted.black .bar { background: var(--fg); }
+  /* narrow: the dock owns the foot of the window and nothing may sit over the
+     text, so the flag is a strip in the flow under the topbar */
+  @media (max-width: 900px) { .alphaflag { position: static !important; display: block; width: fit-content; margin: 8px auto 0; } }
   .alphaflag { position: fixed; bottom: 10px; left: 10px; z-index: 55;
     font-size: var(--t-small); color: var(--muted); background: var(--bg);
     border: 1px solid var(--border); border-radius: var(--r-sm);
