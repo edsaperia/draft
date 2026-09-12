@@ -32,6 +32,14 @@ Every surface is the `session-view`: three columns — contents rail · document
 - **localStorage**: `draft:seen:<slug>:<me>`, `draft:grants:<slug>:<me>` — seat-and-slug scoped, live only.
 - **`npm run journey` is not in CI** (as surveyed; since 2026-08-27 it is — CI's `walks` job, Q917); the `probe` job serves `design/` statically. Both probes run at 1600×1000 (`scripts/probe.mjs:55`) in a non-touch context, with `matchMedia` stubbed only for reduced motion.
 
+## Status — the first cut, 2026-09-12
+
+Built in an hour for a demo (Ed, 2026-09-12: *let's try and make a simple mobile version so people can try it out*), commits b95e44b and 435b8fe, and live at docs.vote. What §1 asks for is the target; this is what is there.
+
+- **Built:** the viewport meta (§1.8); `NARROW_Q` in session.js and the same literal in system.css, **not yet asserted by spec-check**; one column below 900, the contents rail not drawn (no drawer — decision 8 is unbuilt); the needs-you rail as a dock fixed at the foot of the window, every entry with a clause listed in document order, scrolling inside itself past 40% of the height, and **only the open entry while a card is open**; `layoutQueue`'s narrow branch positions nothing, `drawWires` draws nothing (§1.3); the gutter a 56px column with the two flattening rules deleted (§1.9); the topbar without sockets, faces or pulse (§1.2); `#ridetab`, `#editdoor`, `#prosectl` and the lane's *propose edit* not drawn, so there is no way into the composer; the alpha flag a strip under the topbar; `touch-action` and the tap-highlight and callout rules on controls (§1.5).
+- **Not built:** the drawer (§1.2), the pinned/flow split in the dock (§1.2 — every entry is listed), the two-tap confirm (§1.6 — a hold works on touch by `touch-action: none` alone), tap targets (§1.4), the `:hover` wraps and the `say` long-press (§1.5), the keyboard and `dvh` rules beyond the dock (§1.8), `--border-strong` (§1.2), `mobile-walk` and the narrow probe (§2); the SURFACE.md rows these rules should become.
+- **Measured** (iPhone 13 and Pixel 7 contexts, session and founding fixtures): scale 1, no horizontal overflow at load or with a card open, a tab tap opens its card, a dock tap opens and travels, a lane tap arms ✓, no page errors. Both probes IDENTICAL at 1600×1000.
+
 ## 1. Layout and touch (read + judge)
 
 ### 1.0 The architectural consequence
