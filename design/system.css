@@ -391,7 +391,7 @@
     .layout > .toc ul { overflow: visible; }
     /* `.layout > .queue` on both: the base `.qitem` rule is later in the sheet
        and would win a specificity tie */
-    .layout > .queue ul { position: static; height: auto !important; }
+    .layout > .queue ul { position: static; height: auto !important; display: flex; flex-direction: column; }
     .layout > .queue .qitem { position: static; width: 100%; transition: none; margin: 0 0 var(--s2); }
     .layout > .queue .qitem:last-child { margin-bottom: 0; }
     /* the two doors, in the topbar; a count on the right one says how many
@@ -1262,12 +1262,12 @@
     .achip:hover, .achip:active { transform: none; }
   }
   /* Narrow keeps the gutter a column (MOBILE.md §1.0: `fitStacks` and
-     `fitBand` measure a vertical gutter) and only pulls it in. */
-  @media (max-width: 900px) {
-    .chipcol { margin-right: 8px; }
-    .doc h2.docline .chipcol { margin-right: calc(8px + var(--s2)); }
-    .doc h2.docline.marked .sectoggle { margin-right: calc(8px + var(--s2) + 34px + var(--s1)); }
-  }
+     `fitBand` measure a vertical gutter) **at the desktop's own 14px**
+     (Q1351, Ed 2026-09-12: *tabs overlap open cards too much*). The first
+     cut pulled the margin in to 8px, and the open card's edge — placed for
+     14 — landed 6px under the tab on every card. The column is absolute, so
+     the margin costs the prose nothing; the 56px `.doc` gutter (below) is
+     what makes the room, and a grown tab at 14 still clears the bezel. */
 
   /* insert-anchor: a held-open gap where a proposed section would stand. No
      border and no caption (Ed, 201) — a labelled box made an absence look like
@@ -2266,35 +2266,67 @@
   }
   @media (max-width: 900px) { #wires { display: none; } }
 
-  /* ---- narrow: the topbar, the doors that are not there, and touch --------
-     design/MOBILE.md's first cut (2026-09-12), read + judge only. The
-     sockets, the faces and the pulse leave the topbar (Q656, Q423): no
-     proposing from a phone yet, so no wallet to spend and no flight to land.
+  /* ---- narrow: the topbar in two rows, the doors that are not there, touch --
+     design/MOBILE.md's first cut (2026-09-12), read + judge only, and the
+     same day's pass (Q1351). **The topbar takes two rows on a phone** (Ed,
+     2026-09-12: *we could have the topbar with two rows; then it can fit
+     everything*): the top row is the document — clock · title · the powers
+     as bare glyphs, 🪶 among them (*quill is a power, it goes with the other
+     powers*) — and the bottom row is the people — ☰ · quorum · faces · you ·
+     the task door as a number in a red circle. No pulse (Q423). Every one of
+     these is the desktop bar's own element placed by `order`: the wrapping
+     boxes (`.brand`, `.stats`, `.room`) become `contents` so their leaves
+     are the flex items, and the row break is the wrap's own `::after` at
+     full width between the two order ranges — so the markup is the
+     desktop's, byte for byte, and the probes at 1600 see nothing.
      The doors into edit mode (📝's riding tab, the floating door, the lane
-     strip) are not drawn, so the column stays prose you can read. The wrap
-     loses its side padding to the document's own 8px. */
+     strip) are not drawn, so the column stays prose you can read (Q1350).
+     The wrap loses its side padding to the document's own 8px. */
   @media (max-width: 900px) {
+    :root { --nav-h: 84px; }
     .wrap { padding: 0 var(--s2); }
-    .navbar .wrap { padding: 10px var(--s3); gap: var(--s3); align-items: center; }
-    .navbar .brand { min-width: 0; flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .navbar .wrap {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start;
+      gap: var(--s2) 10px; padding: 8px var(--s3);
+    }
+    .navbar .brand, .navbar .stats, .navbar .room { display: contents; }
+    .navbar .wrap::after { content: ''; flex-basis: 100%; height: 0; order: 50; }
+    /* row one: the document */
+    .navbar .clock { order: 1; }
+    .navbar .brand #titletext {
+      order: 2; flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      font-weight: 600; font-size: var(--t-body); color: var(--fg);
+    }
     .navbar .brand .sess { display: none; }
-    /* the title leaves the topbar for the head of the document (Ed,
-       2026-09-12), where it is written in full; the quill stays as the way
-       home. `#mobtitle` is the mirror the drawer script keeps in step. */
-    .navbar .brand #titletext { display: none; }
-    .navbar .brand { flex: none; }
-    #mobtitle { font-size: var(--t-lead); font-weight: 600; line-height: 1.25; margin: 0 0 var(--s4) var(--measure-gutter); text-wrap: balance; }
-  }
-  #mobtitle { display: none; }
-  @media (max-width: 900px) {
-    #mobtitle { display: block; }
-    .navbar .stats { gap: 10px; flex: none; }
-    .navbar .pulse, .navbar .facestack, .navbar .wallet { display: none; }
-    /* the quorum reading goes too, for now: with two doors, the clock and
-       `me` in 390px the title was down to two dots (a first-cut cost, not a
-       ruling — MOBILE.md §1.2 keeps it) */
-    .navbar .count { display: none; }
-    .navbar .room { gap: 8px; }
+    .navbar .quill { order: 3; margin-right: 0; }
+    .navbar #wallet { order: 4; }
+    .navbar #penwallet { order: 5; }
+    .navbar #shieldwallet { order: 6; }
+    .navbar #voicewallet { order: 7; }
+    /* the powers as glyphs, not sockets — the rule is beside the socket
+       rules below, which are later in the sheet and would win the tie; the
+       ∞ on ✒️ 🛡️ and the ✏️ drip tray are desktop width and go (the pencil
+       wallet's phone form is `renderWallet`'s: one pencil and its number) */
+    .navbar .powerwallet .pmore, .navbar .wallet .pwhen { display: none; }
+    /* row two: the people */
+    #drawerleft { order: 51; border: 0; background: none; padding: 0 2px; font-size: 1.125rem; }
+    #drawerleft[aria-expanded="true"] { background: none; color: var(--primary); }
+    .navbar .count { order: 52; }
+    .navbar .facestack { order: 53; }
+    .navbar .me { order: 54; margin-left: auto; }
+    #drawerright { order: 55; border: 0; background: none; padding: 0; min-width: 0; }
+    #drawerright[aria-expanded="true"] { background: none; }
+    /* the task door is the count in a circle: red while something asks you
+       (`--slash`, the surface's one red), grey when nothing does — grey being
+       this surface's word for *nothing is being asked of you* */
+    #drawerright .n {
+      display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;
+      min-width: 24px; height: 24px; padding: 0 7px; border-radius: 999px;
+      background: var(--muted); color: #fff; font-size: var(--t-small); font-weight: 600; line-height: 1;
+    }
+    #drawerright.asks .n { background: var(--slash); }
+    #drawerright[aria-expanded="true"] .n { background: var(--primary); }
+    .navbar .pulse { display: none; }
     #ridetab, #editdoor, #prosectl, .lanepropose { display: none; }
     /* **iOS zooms the page to any field smaller than 16px on focus**
        (MOBILE.md §1.8; Ed's screenshot `bugs/mobile screen width.png`,
@@ -2352,6 +2384,11 @@
     background: rgba(0, 0, 0, 0.028); box-shadow: var(--shadow-in);
   }
   .navbar .quill { padding: 0 8px; }
+  /* on a phone the powers are glyphs, not sockets (Q1351, Ed 2026-09-12:
+     *the icons without the sockets*): no pill, no ground, no shadow */
+  @media (max-width: 900px) {
+    .navbar .quill, .navbar .wallet { min-height: 0; padding: 0; background: none; box-shadow: none; border-radius: 0; }
+  }
   /* a socket is a thing you can ask about: clicking one says what the tool is
      (the titles were doing this job for a pointer that has a hover, which a
      touch screen has not) */

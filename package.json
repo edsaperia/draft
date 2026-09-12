@@ -21,6 +21,7 @@
     "probe-coverage": "node scripts/probe-coverage.mjs",
     "playwright:install": "playwright install chromium",
     "card-audit": "node design/tools/card-audit.mjs",
+    "card-audit:narrow": "node design/tools/card-audit.mjs --width=390 --height=844 --out=design/tools/card-audit-narrow.json",
     "clock-check": "node design/tools/clock-check.mjs",
     "toc-travel": "node design/tools/toc-travel.mjs",
     "journey": "node scripts/journey-walk.mjs",

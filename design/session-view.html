@@ -283,11 +283,19 @@
     });
     document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && open()) set(null); });
     matchMedia('(max-width: 900px)').addEventListener('change', (ev) => { if (!ev.matches) set(null); });
-    // **The title heads the document on a phone** (Ed, 2026-09-12: *remove
-    // the title from the top bar and put it at the top of the document area
-    // instead, where it can be written in full*): a mirror of the topbar's
-    // title text as the document column's first line, drawn on narrow only
-    // (CSS), kept in step by watching the one element the page writes.
+    // **The bar's height is measured on narrow** (Q1351): two rows wrap by
+    // content, so `--nav-h` — what the drawers, the ground and the reading
+    // line hang from — is written from the bar itself, and the stylesheet's
+    // literal is the first paint's guess. Wide keeps the stylesheet's.
+    const nav = document.querySelector('.navbar');
+    const mq = matchMedia('(max-width: 900px)');
+    const fit = () => {
+      if (mq.matches && nav) root.style.setProperty('--nav-h', nav.offsetHeight + 'px');
+      else root.style.removeProperty('--nav-h');
+    };
+    fit(); addEventListener('resize', fit); addEventListener('load', fit); mq.addEventListener('change', fit);
+    // (the title's mirror at the head of the document, 2026-09-12 am, went
+    // the same afternoon: the two-row topbar holds the title again — Q1351)
     // **`?debug=1` prints uncaught errors on the page** (2026-09-12, for a
     // phone with no console): every uncaught error and rejection lands as a
     // line in a fixed strip under the topbar, with its source line. Nothing
@@ -315,20 +323,6 @@
         }, 1200);
       }, true);
     }
-    // (this script runs under the header, before the document column is
-    // parsed, so the mirror waits for the DOM)
-    document.addEventListener('DOMContentLoaded', () => {
-      const src = document.getElementById('titletext');
-      const doc = document.getElementById('doc');
-      if (!src || !doc) return;
-      const h = document.createElement('h1');
-      h.className = 'mobtitle';
-      h.id = 'mobtitle';
-      const sync = () => { h.textContent = src.textContent; };
-      sync();
-      new MutationObserver(sync).observe(src, { childList: true, characterData: true, subtree: true });
-      doc.insertBefore(h, doc.firstChild);
-    });
   })();
 </script>
 <div class="devswitch" title="Dev only — not part of the product"><label for="devwho">dev · viewing as</label> <select id="devwho"></select> <button id="devff" title="Dev only — complete the founding: invite two members, answer everything, open the gates">⏩ settle the founding</button></div>
@@ -9371,8 +9365,13 @@
         toggleFold('ph:' + hProse.dataset.h);
         renderToc(); return; }
     }
-    const t = ev.target.closest('[data-tab], [data-card]');
-    if (t) { const k = t.dataset.tab || t.dataset.card;
+    // **Your face in the topbar opens ✋** (Ed, 2026-09-12: *clicking on my
+    // avatar in the topbar should open and navigate to ✋, the "my profile"
+    // stack*), on every width; a stranger has no row, and the applicant's
+    // stack is their own surface's, so the press is a member's.
+    const t = ev.target.closest('[data-tab], [data-card], #mebtn');
+    if (t && t.id === 'mebtn' && (isStranger() || S.viewer === 'applicant')) return;
+    if (t) { const k = t.dataset.tab || t.dataset.card || 'myname';
       // **📝 is the door between read and edit mode** (backlog 204), not a
       // card that opens; its power tabs beneath open as any tab does
       if (k === 'text') { toggleEditMode(); return; }
@@ -9386,7 +9385,10 @@
       // new card's while head and body crossfade, so the strip and the
       // document below never jump. From anywhere else the old card first
       // closes into its own paragraph, then the new one opens out of its.
-      const fromRail = !!t.closest('#rail');
+      // **A press from outside the document travels to its card**: the
+      // rail, and since Q1351 the topbar too (your face → ✋, the clock →
+      // ⏰) — neither is where you are looking, where a tab in the band is.
+      const fromRail = !!t.closest('#rail, .navbar');
       const cur = document.querySelector('.setupcard');
       if (cur && t.closest('.setupcard') === cur) return morphTo(k, cur);
       // **Anchor the tab you pressed across the switch**, and only from the
@@ -11930,8 +11932,14 @@
     const q = document.getElementById('quill');
     const spent = cs ? 3 : (S.seen.has('title') ? 1 : 0) + (S.seen.has('slug') ? 1 : 0) + (S.emailSent ? 1 : 0);
     const left = 4 - Math.min(3, spent);
-    const qh = Array.from({ length: left }, (_, i) =>
-      '<i' + (quillGhost && i === left - 1 ? ' class="gone"' : '') + '>🪶</i>').join('');
+    // on a phone the quill is one feather and its number, as the ✏️ wallet
+    // is one pencil and its number (Q1351): the flight finds `#quill i`
+    // either way, and the one feather that remains after the founding is
+    // the logo on both widths
+    const qh = SESSION.narrow()
+      ? '<i' + (quillGhost ? ' class="gone"' : '') + '>🪶</i>' + (left > 1 ? '<span class="pmore">' + left + '</span>' : '')
+      : Array.from({ length: left }, (_, i) =>
+        '<i' + (quillGhost && i === left - 1 ? ' class="gone"' : '') + '>🪶</i>').join('');
     if (q.innerHTML !== qh) q.innerHTML = qh;
     const notApp = S.viewer !== 'applicant' && !isStranger() &&
       // after the farewell the wallets are gone (a reader arriving after the

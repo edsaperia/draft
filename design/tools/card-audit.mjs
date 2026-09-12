@@ -1509,6 +1509,11 @@ async function walkSettled(page, base, cards, errors, seat, switches, piles) {
  * cross-card findings; the per-card lenses never see the row.
  */
 async function walkDoor(page, doors, errors, walk) {
+  // **No door on a phone** (MOBILE.md, Q1350): below 900px the composer is
+  // not drawn, so there is no D1 to measure — the narrow run (`npm run
+  // card-audit:narrow`, Q1351) is about the cards, and clicking a hidden
+  // door would only time out and take the rest of the walk with it.
+  if (VIEWPORT.width <= 900) return;
   const DOOR = '#editdoor [data-act="edit-door"]';
   const ROW = '#charter [data-proposalrow] [data-act="row-commit"]';
   const box = (sel) => page.evaluate((s) => {
