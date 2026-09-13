@@ -48,6 +48,8 @@
  * wrote in advance would give you a coin flip on everything.
  */
 
+import { sleep, post as postTo, followLink } from './lib/walk.mjs';
+
 /* -- arguments --------------------------------------------------------- */
 
 const argv = process.argv.slice(2);
@@ -103,7 +105,6 @@ const REPORT_EVERY = duration(flag('report', '5m'));
 
 const clock = () => new Date().toTimeString().slice(0, 8);
 const say = (who, what) => console.log(`[${clock()}] ${who.padEnd(18)} ${what}`);
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /** A seeded RNG (mulberry32) over a string seed, so a run is reproducible. */
 const hash32 = (s) => {
@@ -133,12 +134,8 @@ const weighted = (r, pairs) => {
 
 /* -- the wire, the same shapes the page sends --------------------------- */
 
-const post = (path, body, cookie) => fetch(BASE + path, {
-  method: 'POST',
-  headers: { 'content-type': 'application/json', origin: BASE,
-    ...(cookie ? { cookie } : {}) },
-  body: JSON.stringify(body),
-});
+// `post` is the walks' shared JSON POST (scripts/lib/walk.mjs), aimed at BASE
+const post = (path, body, cookie) => postTo(BASE, path, body, cookie);
 
 class Refused extends Error {
   constructor(status, message) { super(message); this.status = status; }
@@ -163,17 +160,9 @@ const view = async (seat) => {
  * which names the document the link was for.
  */
 const follow = async (link) => {
-  const u = new URL(link);
-  await fetch(u.origin + u.pathname + u.search);
-  const r = await fetch(u.origin + u.pathname, {
-    method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded', origin: u.origin },
-    body: new URLSearchParams({ token: u.searchParams.get('token') ?? '' }).toString(),
-    redirect: 'manual',
-  });
+  const r = await followLink(link);
   if (r.status !== 302) throw new Refused(r.status, `magic link answered ${r.status}`);
-  return { cookie: (r.headers.get('set-cookie') ?? '').split(';')[0],
-    location: r.headers.get('location') ?? '' };
+  return { cookie: r.cookie, location: r.location };
 };
 
 /* -- who a bot is ------------------------------------------------------- */

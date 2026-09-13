@@ -45,6 +45,7 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { chromium } from 'playwright';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
+import { say, sleep as T, linkIn, outbox as devOutbox, onPage } from './lib/walk.mjs';
 
 // The card's words come from `design/copy.js`, read here the way copy-check
 // reads it — evaluated in a bare context, so the assertion is the file's own
@@ -67,9 +68,7 @@ if (!['proposal', 'assembly', 'pen'].includes(PRICE)) {
   console.log('FAIL: --price must be proposal, assembly or pen');
   process.exit(1);
 }
-const say = (...a) => console.log(...a);
 const stuck = [];
-const T = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Q911: a walk on a default port will drive whatever process is listening,
 // and a stale one serves today's page over a week-old engine — so the first
@@ -97,7 +96,10 @@ const open = async (k) => {
 // it is set. Holding under `click` would still land the act — the browser
 // synthesises a click on mouseup — but a whole flight *later*, so the walk
 // would read the surface before the commit arrived.
-const pageGesture = () => page.evaluate(() => (window.SESSION && window.SESSION.gesture) || 'hold');
+// `pageGesture` and `clickIn` are the walks' shared ones (scripts/lib/walk.mjs);
+// `press`, `open` and `typeIn` below are this walk's own — the door's commit
+// is found by its class, and its fields are typed with real keystrokes
+const { pageGesture, clickIn } = onPage(page);
 const press = async (ms) => {
   const b = await page.$('.setupcard .commitrow .btn-approve, .setupcard .commitrow [data-confirm]');
   if (!b) return false;
@@ -122,19 +124,6 @@ const typeIn = async (sel, text) => {
   await el.click();
   await page.keyboard.type(text, { delay: 8 });
   return true;
-};
-// journey's, lifted: a rung is chosen with a click, and a selector that names
-// no rung must be a *reported* failure rather than a silent no-op
-const clickIn = async (sel) => {
-  const ok = await page.evaluate((s) => {
-    const el = document.querySelector(s);
-    if (!el || el.disabled) return false;
-    el.scrollIntoView({ block: 'center' });
-    el.click();
-    return true;
-  }, sel);
-  await T(420);
-  return ok;
 };
 // which card the surface has open, for the birth's own failure line: a birth
 // that did not go through has stopped *somewhere*, and naming where is the
@@ -174,8 +163,7 @@ await press(1250);
 say('birth      · 📧 sent');
 await T(1600);
 
-const outbox = async () => (await (await fetch(BASE + '/api/dev/outbox')).json());
-const ob = await outbox();
+const ob = await devOutbox(BASE);
 const held = (ob.mails || ob);
 const mails = held.filter((m) => JSON.stringify(m).includes(TITLE));
 if (!mails.length) {
@@ -189,7 +177,7 @@ if (!mails.length) {
   await browser.close();
   process.exit(1);
 }
-const link = (JSON.stringify(mails[mails.length - 1]).match(/http:[A-Za-z0-9_?=/:.-]+/) || [])[0];
+const link = linkIn(mails[mails.length - 1]);
 await page.goto(link);
 for (let i = 0; i < 40 && !page.url().includes('/d/'); i++) await T(500);
 await T(1800);

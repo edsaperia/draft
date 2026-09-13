@@ -43,6 +43,7 @@ import { readFile } from 'node:fs/promises';
 import { join, extname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { onPage } from './lib/walk.mjs';
 
 const DESIGN = join(resolve(fileURLToPath(new URL('..', import.meta.url))), 'design');
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json' };
@@ -75,34 +76,11 @@ const check = (what, ok, detail = '') => {
 const rail = () => page.evaluate(() => [...document.querySelectorAll('#rail li')]
   .map((li) => li.dataset.q || (li.querySelector('[data-card]') || { dataset: {} }).dataset.card)
   .filter(Boolean));
-const openCard = async (k) => {
-  const ok = await page.evaluate((kk) => {
-    const sel = '[data-card="' + kk + '"], [data-tab="' + kk + '"]';
-    const el = document.querySelector('#rail ' + sel) || document.querySelector('#band ' + sel);
-    if (!el) return false;
-    el.click(); return true;
-  }, k);
-  await page.waitForTimeout(320);
-  return ok;
-};
-const clickIn = async (sel) => {
-  const ok = await page.evaluate((s) => {
-    const el = document.querySelector(s);
-    if (!el || el.disabled) return false;
-    el.click(); return true;
-  }, sel);
-  await page.waitForTimeout(280);
-  return ok;
-};
-const typeIn = async (sel, v) => {
-  await page.evaluate((a) => {
-    const el = document.querySelector(a[0]);
-    if (!el) return;
-    if (el.isContentEditable) { el.textContent = a[1]; el.dispatchEvent(new InputEvent('input', { bubbles: true })); }
-    else { el.value = a[1]; el.dispatchEvent(new Event('input', { bubbles: true })); }
-  }, [sel, v]);
-  await page.waitForTimeout(260);
-};
+// the walks' shared hands (scripts/lib/walk.mjs), bound with founding-walk's
+// drive, which this walk borrowed: no scroll on a click, 280ms to settle,
+// 260ms after typing
+const { openCard, clickIn, typeIn } = onPage(page,
+  { click: { settleMs: 280, scroll: false }, type: { settleMs: 260 } });
 
 /* ---- one founding per slider ------------------------------------------- */
 // **One delegation per walk, and it is not fastidiousness.** Handing over both

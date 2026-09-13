@@ -42,17 +42,12 @@
  */
 import { chromium } from 'playwright';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
+import { say, arg, onPage } from './lib/walk.mjs';
 
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
-const arg = (name) => {
-  const hit = process.argv.find((a) => a.startsWith(`--${name}=`));
-  return hit === undefined ? null : hit.slice(name.length + 3);
-};
 const STOP = arg('to');
 const SEED = arg('seed') ?? String(Math.floor(Math.random() * 1e6));
 const RUNGS = ['constitution', 'ready', 'session', 'closing', 'closed'];
-
-const say = (...a) => console.log(...a);
 
 // A stop that matches no rung would otherwise walk the whole ladder and print
 // no `stopped at` line at all — a silent pass wearing the shape of a run that
@@ -87,7 +82,7 @@ page.on('response', (r) => {
   }
 });
 
-const T = (ms) => page.waitForTimeout(ms);
+const { T } = onPage(page);
 /** What the ladder's own bar says it is looking at. */
 const barPhase = () => page.evaluate(() => {
   const bar = document.getElementById('ladderbar');
