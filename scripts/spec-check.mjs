@@ -24,7 +24,7 @@
  *
  * Exit code 1 on any disagreement. `--quiet` prints findings only.
  */
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -1031,6 +1031,74 @@ function checkApplicantJudged() {
 }
 
 /**
+ * The command whitelist against what it calls and what is sent (refactor
+ * item 25, 2026-09-13). `HANDLERS` in commands.ts maps every command name by
+ * hand onto a `ConstitutionSession` method or an `EngineBridge` one, and the
+ * page names the commands it sends by hand too: two lists nothing held
+ * together. Three readings, one file each:
+ *  - every `cs.x(` a handler makes is a method of the bundle's own
+ *    `ConstitutionSession` (its prototype, in the vm), and every `bridge.x(`
+ *    a `x(` declaration of engine-bridge.ts — a rename in the module is
+ *    red here before it is a 500 on the wire;
+ *  - every command the page sends (`cmd('name'` in session-view.html and
+ *    session.js) is a key of `HANDLERS`, or the whitelist refuses it as
+ *    unknown and the press is dead — a finding unless it is filed below;
+ *  - a handler nothing sends — not the page, not a walk, not the harness —
+ *    is noted, never red: the server's own tests send commands too.
+ */
+const COMMANDS_FILED = {
+  // entry 94 (bcab5b0) took the handler with the admit-at-submit rule and
+  // left the page's `[data-appropose]` press behind; nothing renders that
+  // attribute, so the press is unreachable — dead code, not a dead click.
+  // A finding for Ed: delete the branch (session-view.html, `api.cmd('propose-applicant'`)
+  // and this row with it.
+  'propose-applicant': 'dead press left by entry 94; nothing renders [data-appropose]',
+};
+
+function checkCommands(M) {
+  note('The command whitelist — HANDLERS against the module and the page');
+  const src = js('packages/server/src/commands.ts');
+  const at = src.indexOf('const HANDLERS: Record<string, Handler> = {');
+  if (at < 0) { find('commands', 'HANDLERS not found in commands.ts'); return; }
+  const end = src.indexOf('\n};', at);
+  const table = src.slice(at, end);
+  const handlers = [...table.matchAll(/^\s{2}'([a-z-]+)':/gm)].map((x) => x[1]);
+  if (!handlers.length) { find('commands', 'HANDLERS holds no command the checker can read'); return; }
+
+  const session = new Set(Object.getOwnPropertyNames(M.ConstitutionSession.prototype));
+  const bridgeSrc = js('packages/constitution/src/engine-bridge.ts');
+  const bridge = new Set([...bridgeSrc.matchAll(/^\s{2}(?:async )?([a-zA-Z]+)\(/gm)].map((x) => x[1]));
+  for (const [, m] of table.matchAll(/\bcs\.([a-zA-Z]+)\(/g)) {
+    if (!session.has(m)) find('commands', `a handler calls cs.${m}(), which ConstitutionSession does not have`);
+  }
+  for (const [, m] of table.matchAll(/\bbridge\.([a-zA-Z]+)\(/g)) {
+    if (!bridge.has(m)) find('commands', `a handler calls bridge.${m}(), which engine-bridge.ts does not declare`);
+  }
+
+  const page = js('design/session-view.html') + js('design/session.js');
+  const sentByPage = new Set([...page.matchAll(/\bcmd\('([a-z-]+)'/g)].map((x) => x[1]));
+  for (const c of sentByPage) {
+    if (handlers.includes(c)) continue;
+    if (c in COMMANDS_FILED) note(`  ${c}: sent by the page, no handler — filed: ${COMMANDS_FILED[c]}`);
+    else find('commands', `the page sends '${c}' and HANDLERS has no such command — the wire would refuse it as unknown`);
+  }
+  for (const c of Object.keys(COMMANDS_FILED)) {
+    if (!sentByPage.has(c)) find('commands', `COMMANDS_FILED names '${c}', which the page no longer sends — drop the row`);
+  }
+
+  // who else speaks the wire: the walks and the harness, by either spelling
+  const senders = [...readdirSync(join(ROOT, 'scripts')).filter((f) => f.endsWith('.mjs')).map((f) => `scripts/${f}`),
+    ...readdirSync(join(ROOT, 'packages/sim-harness/src')).filter((f) => f.endsWith('.ts')).map((f) => `packages/sim-harness/src/${f}`)];
+  const sentByWalks = new Set();
+  for (const f of senders) {
+    for (const [, c] of js(f).matchAll(/\bcmd(?:\('|: ')([a-z-]+)'/g)) sentByWalks.add(c);
+  }
+  const unsent = handlers.filter((h) => !sentByPage.has(h) && !sentByWalks.has(h));
+  note(`  ${handlers.length} commands, ${sentByPage.size} sent by the page, ${unsent.length} sent by nothing but the tests` +
+    (unsent.length ? `: ${unsent.join(', ')}` : ''));
+}
+
+/**
  * 🍾's power table covers every power-holder exactly once, in document order
  * (entry 158; per setting since Q1195 (c), R-098).
  *
@@ -1634,6 +1702,7 @@ checkGateSeat();
 checkAuthorNeverAsked();
 checkPenRebase();
 checkApplicantJudged();
+checkCommands(M);
 checkBeginRows(M, pm);
 checkComposer(M, pm);
 checkPicture();
