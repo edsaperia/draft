@@ -11450,7 +11450,7 @@
   // a proposal keeps the id the card opened under until the view knows it
   const localIdOf = new Map();      // candidate id → the id the draft was proposed as
   const proposedAs = new Map();     // the draft's local id → candidate id, once known
-  const DRAFT_ID = 'draft-yours';
+  const DRAFT_ID = SESSION.DRAFT_ID;
 
   function itemsFromView(v) {
     const lines = String(v.text || '').split(/\n/);
@@ -12302,10 +12302,10 @@
   // it — and an assertion that can only say *the rail was empty* names a
   // symptom. This is the readout it prints instead: every key in ORDER with
   // the four predicates that decide whether it is served, the answer tasks
-  // with the three that pace them, and the module's own readiness. Same shape
-  // as session.js's `__q291`, and for the same reason: the state a walk needs
-  // lives inside a closure, and reconstructing it from the DOM is a second
-  // implementation of the thing under test.
+  // with the three that pace them, and the module's own readiness. A window
+  // seam rather than a DOM read, because the state a walk needs lives inside
+  // a closure, and reconstructing it from the DOM is a second implementation
+  // of the thing under test.
   // a walk's way to send one command through the page's own wire, so a
   // deliberate refusal prints the way a member's would (Q1330, `npm run journey`)
   window.__cmd = (name, args) => api.cmd(name, args);

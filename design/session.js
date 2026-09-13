@@ -97,7 +97,7 @@
   // make() time). The lift is proven by design/tools/session-probe.js against
   // design/reference/: card HTML byte-identical, geometry 0.0px.
   const {
-    esc, resultOnly, stripTags, pct, plainLabel,
+    esc, resultOnly, stripTags, pct, plainLabel, URG_LO, URG_HI,
     TICK, CROSS, MARK, DRAWN, mkHtml, markHtml,
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks,
     headFlags, originText, mdToHtml, htmlToMd, mdStrip, mdLine,
@@ -528,10 +528,6 @@
   // this fixture *is* a question.
   const liveQuestions = () =>
     SUGGS.filter((g) => stateOf(g) !== 'sealed' && !g.unproposed && !isDiagonal(g)).length;
-  const diagonalsAvailable = () =>
-    SUGGS.some((g) => isDiagonal(g) && stateOf(g) === 'needs');
-  window.__q291 = () => ({ live: liveQuestions(), more: diagonalsAvailable(),
-    nothing: nothingToJudge(), needs: SUGGS.filter(judgeable).map((g) => g.id) });
   // **What pins itself, and why** (Ed, 2026-08-17, in two passes). An adopted
   // decision always pins: the text under your eye moved, which is news whether
   // or not you had anything to do with it. A retired one is not news — somebody
@@ -552,8 +548,8 @@
   // resolution (that stays the meter's job). It is carried by the strength of
   // the card's colour (Ed, 105) and, since 2026-08-16, by whether the card is
   // on the screen at all: it decides *which* questions the rail shows, not how
-  // much each of them is allowed to say.
-  const URG_LO = 0.05, URG_HI = 0.30;
+  // much each of them is allowed to say. The ramp's two ends, `URG_LO` and
+  // `URG_HI`, are cards.js's, shared with setup.js's band entries.
   // A deadlocked race is not a low-urgency one, it is a *differently* addressed
   // one (Ed, 166): no judgment of yours can move it, so the urgency ramp does
   // not apply, and it says so in its own words.
@@ -5922,6 +5918,10 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     get readSeals() { return readSeals; },
     get verdicts() { return verdicts; },
     get editsHeld() { return editsHeld; },
+    // the id the one unproposed draft is held under in SUGGS: the page carries
+    // such a draft across a data swap by this id, so it reads it here rather
+    // than keeping a copy of the literal
+    DRAFT_ID,
     // the probe replaces the scroll with an instant jump; smoothScrollBy is a
     // function declaration inside this closure, so the seam is a setter
     get smoothScrollBy() { return smoothScrollBy; },
