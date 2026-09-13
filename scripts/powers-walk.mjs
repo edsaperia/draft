@@ -52,14 +52,13 @@
  */
 import { chromium } from 'playwright';
 import { assertServerBuild } from './lib/assert-server.mjs';
+import { say, sleep as T, arg, pageGesture as gestureOf, outbox as devOutbox } from './lib/walk.mjs';
 
 // argv first, then the environment the server itself was started with, then
 // the historical default. Under plan-queue every slot carries its own
 // DRAFT_BASE_URL, and a literal here would drive whatever else was listening.
 const BASE = process.argv.find((a) => /^https?:/.test(a))
   || process.env.DRAFT_BASE_URL || 'http://127.0.0.1:8199';
-const arg = (k, d) => (process.argv.find((a) => a.startsWith('--' + k + '=')) || ('--' + k + '=' + d))
-  .split('=').slice(1).join('=');
 const HAT = arg('hat', 'both');
 // which commit gesture to drive (backlog 184); empty follows the page's own
 const GESTURE = arg('gesture', '');
@@ -67,8 +66,6 @@ if (!['member', 'clerk', 'both'].includes(HAT)) {
   console.log('FAIL: --hat must be member, clerk or both');
   process.exit(1);
 }
-const say = (...a) => console.log(...a);
-const T = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* The audit set: every setting whose value the founder's own card sets, by the
  * page's key and the module's id (they differ on 📍 alone). ⏰ is deliberately
@@ -142,8 +139,8 @@ const runDocument = async (hat) => {
   // **What a press is depends on the gesture** (backlog 184): under `hold` a
   // real pointer held down, not a `.click()`; under `click` the click starts
   // the flight and `ms` is the flight's own length, with nothing to let go of.
-  // Asked of the page, so `--gesture=` and the page's own constant agree.
-  const pageGesture = () => page.evaluate(() => (window.SESSION && window.SESSION.gesture) || 'hold');
+  // Asked of the page (the walks' shared `pageGesture`), so `--gesture=` and
+  // the page's own constant agree.
   // `sel` names one control instead of *the first live thing on the row*,
   // which stopped being unambiguous when the Founder's card grew a second
   // commit (entry 161): on ⏰ the row is 🗑️ · ✒️ · the route's own, and a
@@ -162,7 +159,7 @@ const runDocument = async (hat) => {
     }, sel || null);
     if (!box) return null;
     await page.mouse.move(box.x, box.y);
-    if (await pageGesture() === 'click') {
+    if (await gestureOf(page) === 'click') {
       await page.mouse.click(box.x, box.y);
       await T(ms);
     } else {
@@ -197,7 +194,6 @@ const runDocument = async (hat) => {
    * and the page sets the founder's role from exactly that field on boot.
    * `POST /api/docs` takes `isMember`, and is the same save the surface makes. */
   const TITLE = 'Powers ' + hat + ' ' + Date.now();
-  const outbox = async () => { const ob = await (await fetch(BASE + '/api/dev/outbox')).json(); return ob.mails || ob; };
   const linkIn = (m) => (m && m.link) || (JSON.stringify(m).match(/http:[A-Za-z0-9_?=/:.-]+/) || [])[0];
   let born = null;
   if (hat === 'member') {
@@ -224,7 +220,7 @@ const runDocument = async (hat) => {
     await typeIn('.setupcard input[type="email"]', 'ada@example.org');
     await press(1250);
     await T(1600);
-    const mails = (await outbox()).filter((m) => JSON.stringify(m).includes(TITLE));
+    const mails = (await devOutbox(BASE)).filter((m) => JSON.stringify(m).includes(TITLE));
     if (!mails.length) {
       fail('no creation mail for ' + TITLE + ' — is this server using a dev outbox?');
       await page.close();
@@ -250,7 +246,7 @@ const runDocument = async (hat) => {
   // the magic link picks the origin, and a cookie belongs to one
   const DOCBASE = new URL(page.url()).origin;
   say('birth      · ' + DOCBASE + '/d/' + SLUG);
-  say('gesture    · ' + (await pageGesture()) + (GESTURE ? ' (--gesture=' + GESTURE + ')' : ' (the page\'s own)'));
+  say('gesture    · ' + (await gestureOf(page)) + (GESTURE ? ' (--gesture=' + GESTURE + ')' : ' (the page\'s own)'));
 
   const cmd = (op, args) => page.evaluate(async ([slug, op2, args2]) => {
     const r = await fetch(`/api/d/${slug}/cmd`, {
@@ -293,7 +289,7 @@ const runDocument = async (hat) => {
   // the invitation link carries a token, not the slug, so the mail is found
   // by its recipient and this run's own title — and **following it is the
   // arrival**, which is what puts somebody on the roster (§9.6a)
-  const inv = (await outbox()).filter((m) => m.to === 'bo@example.org' &&
+  const inv = (await devOutbox(BASE)).filter((m) => m.to === 'bo@example.org' &&
     JSON.stringify(m).includes(TITLE));
   if (!inv.length) fail('no invitation mail for bo — the clerk has no room to found');
   else {

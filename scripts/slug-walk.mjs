@@ -42,6 +42,7 @@
  */
 import { chromium } from 'playwright';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
+import { say, onPage } from './lib/walk.mjs';
 
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
 // the slug is a search too, not `argv[3]`: once the base can come from the
@@ -49,7 +50,6 @@ const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
 // old seat as the slug the moment somebody omits the URL
 const TAKEN = process.argv.slice(2)
   .find((a) => !/^https?:\/\//.test(a) && !a.startsWith('-')) || 'test-charter';
-const say = (...a) => console.log(...a);
 // Q911: a walk on a default port will drive whatever process is listening,
 // and a stale one serves today's page over a week-old engine — so the first
 // thing this does is refuse a server that is not this tree.
@@ -62,59 +62,11 @@ page.on('pageerror', (e) => errors.push(String(e)));
 const refused = [];
 page.on('response', (r) => { if (r.url().includes('/api/') && r.status() >= 400)
   refused.push(r.status() + ' ' + r.request().method() + ' ' + new URL(r.url()).pathname); });
-const T = (ms) => page.waitForTimeout(ms);
+// journey's hands, now the walks' shared ones (scripts/lib/walk.mjs), bound to
+// this page with journey's drive: a click scrolls into view and settles 420ms
+const { T, open, typeIn, clickIn, press } = onPage(page);
 const fails = [];
 const check = (ok, msg) => { say((ok ? '  ok   · ' : '  FAIL · ') + msg); if (!ok) fails.push(msg); };
-
-const open = async (k) => {
-  await page.evaluate((kk) => {
-    const el = document.querySelector('#rail [data-card="' + kk + '"], #band [data-tab="' + kk + '"]');
-    if (el) el.click();
-  }, k);
-  await T(420);
-};
-const typeIn = (sel, v) => page.evaluate((a) => {
-  const el = document.querySelector(a[0]);
-  if (!el) return false;
-  if (el.isContentEditable) { el.textContent = a[1]; el.dispatchEvent(new InputEvent('input', { bubbles: true })); }
-  else { el.value = a[1]; el.dispatchEvent(new Event('input', { bubbles: true })); }
-  return true;
-}, [sel, v]);
-// journey's, lifted: a rung is chosen with a click, and a selector that names
-// no rung is reported rather than passed over in silence
-const clickIn = async (sel) => {
-  const ok = await page.evaluate((s) => {
-    const el = document.querySelector(s);
-    if (!el || el.disabled) return false;
-    el.scrollIntoView({ block: 'center' });
-    el.click();
-    return true;
-  }, sel);
-  await T(420);
-  return ok;
-};
-// **What a press is depends on the gesture** (backlog 184): under `hold` it is
-// down · wait · up, as it always was; under `click` the click starts the
-// flight and `holdMs` is the flight's own length, with nothing to let go of.
-// Asked of the page, so this walk follows `COMMIT_GESTURE` wherever it is set.
-const pageGesture = () => page.evaluate(() => (window.SESSION && window.SESSION.gesture) || 'hold');
-const press = async (holdMs) => {
-  const box = await page.evaluate(() => {
-    const b = [...document.querySelectorAll('.setupcard .commitrow button')]
-      .find((x) => !x.disabled && !/🗑/.test(x.textContent));
-    if (!b) return null;
-    b.scrollIntoView({ block: 'center' });
-    const r = b.getBoundingClientRect();
-    return { x: r.x + r.width / 2, y: r.y + r.height / 2, label: b.textContent.trim() };
-  });
-  if (!box) return null;
-  await T(160);
-  await page.mouse.move(box.x, box.y);
-  if (await pageGesture() === 'click') { await page.mouse.click(box.x, box.y); await T(holdMs); }
-  else { await page.mouse.down(); await T(holdMs); await page.mouse.up(); }
-  await T(460);
-  return box.label;
-};
 /* the state of the 📍 card: what is in the field, whether the commit is
    pressable, what it says for itself, and what the note under it reads */
 const slugState = () => page.evaluate(() => {

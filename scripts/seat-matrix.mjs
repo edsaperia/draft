@@ -119,13 +119,10 @@ import { writeFile, readFile } from 'node:fs/promises';
 import { chromium } from 'playwright';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
 import { tableAfter } from './lib/surface-tables.mjs';
+import { say, sleep, arg, linkIn, outbox as devOutbox, typeIn, press } from './lib/walk.mjs';
 
 /* ---- arguments -------------------------------------------------------- */
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
-const arg = (name, dflt) => {
-  const hit = process.argv.find((a) => a.startsWith(`--${name}=`));
-  return hit === undefined ? dflt : hit.slice(name.length + 3);
-};
 const EPOCHS = ['before', 'live', 'closed'];
 const HAT = arg('hat', 'both');
 const TO = arg('to', null);
@@ -137,8 +134,6 @@ if (!['member', 'clerk', 'both'].includes(HAT)) {
 if (TO !== null && !EPOCHS.includes(TO)) {
   console.log('FAIL: --to must be one of ' + EPOCHS.join(', ')); process.exit(1);
 }
-const say = (...a) => console.log(...a);
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const SETTLE_MS = 5000;        // one 4s poll and air — journey's figure
 const LAPSE_WAIT_MS = 240_000; // the bound on waiting for the clock to lapse a seat
 
@@ -664,8 +659,6 @@ const cmdAs = (D, name, op, args) => D.seats[name].page.evaluate(async ([slug, o
   });
   return { status: r.status, body: await r.json().catch(() => null) };
 }, [D.slug, op, args]);
-const outbox = async () => { const ob = await (await fetch(BASE + '/api/dev/outbox')).json(); return ob.mails || ob; };
-const linkIn = (mail) => (JSON.stringify(mail).match(/http:[A-Za-z0-9_?=/:.-]+/) || [])[0];
 const landOn = async (page, url) => {
   await page.goto(url);
   for (let i = 0; i < 40 && !page.url().includes('/d/'); i++) await page.waitForTimeout(500);
@@ -691,40 +684,8 @@ const openCard = async (page, k) => {
   await page.waitForTimeout(450);
   return ok;
 };
-/** A commit is a press: the control under a real pointer, held for `ms` (journey's) —
- *  or, under backlog 184's click gesture, clicked, with `ms` the flight's own length. */
-const press = async (page, ms) => {
-  const box = await page.evaluate(() => {
-    const b = [...document.querySelectorAll('.setupcard .commitrow button')]
-      .find((x) => !x.disabled && !/🗑/.test(x.textContent));
-    if (!b) return null;
-    b.scrollIntoView({ block: 'center' });
-    const r = b.getBoundingClientRect();
-    return { x: r.x + r.width / 2, y: r.y + r.height / 2,
-      label: b.textContent.trim() || b.getAttribute('title') || 'commit' };
-  });
-  if (!box) return null;
-  await page.waitForTimeout(160);
-  await page.mouse.move(box.x, box.y);
-  const g = await page.evaluate(() => (window.SESSION && window.SESSION.gesture) || 'hold');
-  if (g === 'click') {
-    await page.mouse.click(box.x, box.y);
-    await page.waitForTimeout(ms);
-  } else {
-    await page.mouse.down();
-    await page.waitForTimeout(ms);
-    await page.mouse.up();
-  }
-  await page.waitForTimeout(460);
-  return box.label;
-};
-const typeIn = (page, sel, v) => page.evaluate((a) => {
-  const el = document.querySelector(a[0]);
-  if (!el) return false;
-  if (el.isContentEditable) { el.textContent = a[1]; el.dispatchEvent(new InputEvent('input', { bubbles: true })); }
-  else { el.value = a[1]; el.dispatchEvent(new Event('input', { bubbles: true })); }
-  return true;
-}, [sel, v]);
+// `press(page, ms)` and `typeIn(page, sel, v)` are the walks' shared ones
+// (scripts/lib/walk.mjs), page-first because this harness drives several seats
 
 /* ---- the dispatcher: one case per step kind ----------------------------- */
 const SETTINGS = [
@@ -773,7 +734,7 @@ const RUN = {
     await typeIn(page, '.setupcard input[type="email"]', s.email);
     await press(page, 1250);
     await page.waitForTimeout(1600);
-    const held = await outbox();
+    const held = await devOutbox(BASE);
     const mails = held.filter((m) => JSON.stringify(m).includes(D.title));
     if (!mails.length) throw new Error('no creation mail for ' + D.title + ' — the outbox held ' +
       held.length + ' mail(s), none for this title; the open card was ' +
@@ -890,7 +851,7 @@ const RUN = {
       await s.page.goto(D.docbase + '/d/' + D.slug);
       await s.page.waitForTimeout(2600);
     } else {
-      const mail = (await outbox()).find((m) => JSON.stringify(m).includes(s.email));
+      const mail = (await devOutbox(BASE)).find((m) => JSON.stringify(m).includes(s.email));
       const link = mail ? linkIn(mail) : null;
       if (!link) throw new Error(`seat ${step.seat} could not be stood: no invitation link in the outbox for ${s.email}`);
       await landOn(s.page, link);

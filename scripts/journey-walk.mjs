@@ -32,6 +32,7 @@
  */
 import { chromium } from 'playwright';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
+import { say, linkIn, onPage } from './lib/walk.mjs';
 
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
 // --empty-text: found the document on a confirmed-empty text (Q649 (a)) and
@@ -86,7 +87,6 @@ const SHAPED_RUN = SHAPE !== 'custom';
 // pins it, which is how both positions are walked from one build.
 const GESTURE = (process.argv.find((a) => a.startsWith('--gesture=')) || '').split('=')[1] || '';
 const PROPOSALS = ['begin', 'canpropose', 'canjudge', 'grant-voice'];
-const say = (...a) => console.log(...a);
 /**
  * **SURFACE §2's card lifecycle, L1–L9, each row mapped to the step of this
  * walk that performs it** (Q1239, Ed 2026-09-07; built 2026-09-08).
@@ -154,7 +154,10 @@ page.on('response', (r) => { if (r.url().includes('/api/') && r.status() >= 400)
     ' ' + String(r.request().postData() || '').slice(0, 120)) - 1;
   r.text().then((b) => { refused[at] += ' → ' + b.slice(0, 160); }).catch(() => {});
 } });
-const T = (ms) => page.waitForTimeout(ms);
+// the page hands — waiting, opening, clicking, typing, the press — are the
+// walks' shared ones (scripts/lib/walk.mjs), bound to this page with its own
+// timings: a click scrolls the control into view and settles 420ms
+const { T, open, clickIn, typeIn, pageGesture, press } = onPage(page);
 
 const rail = () => page.evaluate(() => [...document.querySelectorAll('#rail li')]
   .map((li) => li.dataset.q || ((li.querySelector('[data-card]') || { dataset: {} }).dataset.card) || '?'));
@@ -163,79 +166,6 @@ const rail = () => page.evaluate(() => [...document.querySelectorAll('#rail li')
 // The rail is read from the DOM above because that is what a founder sees;
 // *why* it holds what it holds cannot be read from the DOM at all.
 const founding = () => page.evaluate(() => (window.__founding ? window.__founding() : null));
-const open = async (k) => {
-  const ok = await page.evaluate((kk) => {
-    const el = document.querySelector('#rail [data-card="' + kk + '"], #band [data-tab="' + kk + '"]');
-    if (!el) return false;
-    el.click();
-    return true;
-  }, k);
-  await T(420);
-  return ok;
-};
-const clickIn = async (sel) => {
-  const ok = await page.evaluate((s) => {
-    const el = document.querySelector(s);
-    if (!el || el.disabled) return false;
-    el.scrollIntoView({ block: 'center' });
-    el.click();
-    return true;
-  }, sel);
-  await T(420);
-  return ok;
-};
-const typeIn = (sel, v) => page.evaluate((a) => {
-  const el = document.querySelector(a[0]);
-  if (!el) return false;
-  if (el.isContentEditable) {
-    el.textContent = a[1];
-    el.dispatchEvent(new InputEvent('input', { bubbles: true }));
-  } else {
-    el.value = a[1];
-    el.dispatchEvent(new Event('input', { bubbles: true }));
-  }
-  return true;
-}, [sel, v]);
-// **A commit is a press, and what a press *is* depends on the gesture**
-// (backlog 184). Under `hold` it is down · wait · up, as it always was; under
-// `click` the click starts the flight and the wait is the flight's own length,
-// with nothing to let go of. Asked of the page rather than assumed, so this
-// walk follows `COMMIT_GESTURE` wherever it is set — including the
-// `--gesture=` override, which rides `window.COMMIT_GESTURE_OVERRIDE` because
-// an init script survives every `goto` where a query does not.
-const pageGesture = () => page.evaluate(() => (window.SESSION && window.SESSION.gesture) || 'hold');
-// a commit is a press, and a press needs the control under the pointer
-const press = async (holdMs) => {
-  const box = await page.evaluate(() => {
-    const b = [...document.querySelectorAll('.setupcard .commitrow button')]
-      .find((x) => !x.disabled && !/🗑/.test(x.textContent));
-    if (!b) return null;
-    b.scrollIntoView({ block: 'center' });
-    const r = b.getBoundingClientRect();
-    // **A drawn commit has no text** (2026-08-22). ✋ and 🖼️ commit with the
-    // drawn ✓ — two SVG paths, not the character — so `textContent` is empty
-    // and the walk read a perfectly good commit as a failure to find a
-    // button. It reported both as STUCK while the rail behind it was empty,
-    // which is the one shape a check must not have: a false alarm on a page
-    // that is working. The title is what the button says when the glyph is a
-    // drawing.
-    const label = b.textContent.trim() || b.getAttribute('title') || 'commit';
-    return { x: r.x + r.width / 2, y: r.y + r.height / 2, label };
-  });
-  if (!box) return null;
-  await T(160);
-  await page.mouse.move(box.x, box.y);
-  if (await pageGesture() === 'click') {
-    await page.mouse.click(box.x, box.y);
-    await T(holdMs);
-  } else {
-    await page.mouse.down();
-    await T(holdMs);
-    await page.mouse.up();
-  }
-  await T(460);
-  return box.label;
-};
 
 /* ---- the birth: title, link, address, then the magic link saves it ---- */
 const stuck = [];
@@ -314,7 +244,7 @@ if (!mails.length) {
   await browser.close();
   process.exit(1);
 }
-const link = (JSON.stringify(mails[mails.length - 1]).match(/http:[A-Za-z0-9_?=/:.-]+/) || [])[0];
+const link = linkIn(mails[mails.length - 1]);
 await page.goto(link);
 for (let i = 0; i < 40 && !page.url().includes('/d/'); i++) await T(500);
 await T(2200);
@@ -961,7 +891,7 @@ const guestState = () => guestPage.evaluate(() => ({
 const invitationLink = async (addr) => {
   const ob = await (await fetch(BASE + '/api/dev/outbox')).json();
   const mail = (ob.mails || ob).find((m) => JSON.stringify(m).includes(addr));
-  return mail ? (JSON.stringify(mail).match(/http:[A-Za-z0-9_?=/:.-]+/) || [])[0] : null;
+  return mail ? linkIn(mail) : null;
 };
 const guestLand = async (url) => {
   await guestPage.goto(url);

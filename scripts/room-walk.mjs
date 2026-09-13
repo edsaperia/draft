@@ -47,10 +47,10 @@
  * phase B: parked), and asserts the resolution instead.
  */
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
+import { say, post as postTo, followLink } from './lib/walk.mjs';
 
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
 const SEED = Number((process.argv.find((a) => a.startsWith('--seed=')) || '').split('=')[1] || 11);
-const say = (...a) => console.log(...a);
 let failures = 0;
 const fail = (msg) => { failures++; console.error(`  ✗ ${msg}`); };
 const must = (cond, msg) => { if (cond) say(`  ✓ ${msg}`); else fail(msg); };
@@ -66,12 +66,8 @@ if (health.cooldownMs !== 0) {
 
 // -- the wire, the same shapes the page sends --------------------------------
 const jars = new Map(); // who → cookie
-const post = (path, body, cookie) => fetch(BASE + path, {
-  method: 'POST',
-  headers: { 'content-type': 'application/json', origin: BASE,
-    ...(cookie ? { cookie } : {}) },
-  body: JSON.stringify(body),
-});
+// `post` is the walks' shared JSON POST (scripts/lib/walk.mjs), aimed at BASE
+const post = (path, body, cookie) => postTo(BASE, path, body, cookie);
 /** A refused command is a walk failure that names itself (journey's rule). */
 const cmd = async (who, name, args = {}) => {
   const r = await post(`/api/d/${SLUG}/cmd`, { cmd: name, args }, jars.get(who));
@@ -88,16 +84,9 @@ const view = async (who) => {
  * own token POSTed back, the 302's cookie being the arrival (server.test.ts's
  * `consume`). */
 const follow = async (link, who) => {
-  const u = new URL(link);
-  await fetch(u.origin + u.pathname + u.search); // the interstitial
-  const r = await fetch(u.origin + u.pathname, {
-    method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded', origin: u.origin },
-    body: new URLSearchParams({ token: u.searchParams.get('token') ?? '' }).toString(),
-    redirect: 'manual',
-  });
+  const r = await followLink(link);
   if (r.status !== 302) die(`${who}'s magic link answered ${r.status}, not 302`);
-  jars.set(who, r.headers.get('set-cookie').split(';')[0]);
+  jars.set(who, r.cookie);
 };
 const outboxLinkTo = async (addr) => {
   const r = await fetch(`${BASE}/api/dev/outbox`);
