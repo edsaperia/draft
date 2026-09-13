@@ -22,7 +22,7 @@
  */
 import { ConstitutionSession, InMemoryPeople } from '../../constitution/src/index.js';
 import type { LogEntry } from '../../constitution/src/index.js';
-import type { Persistence, PersonRow } from './persistence.js';
+import type { MaintainablePersistence, Persistence, PersonRow } from './persistence.js';
 
 interface Chained { seq: number; hash: string; prevHash: string; event: unknown; schemaVersion?: number }
 
@@ -126,7 +126,7 @@ const asPeople = (rows: readonly PersonRow[]): InMemoryPeople =>
   new InMemoryPeople(rows.map((r) => [r.personId,
     { email: r.email, name: r.name, picture: r.picture }] as const));
 
-export async function copyStore(from: Persistence, to: Persistence,
+export async function copyStore(from: MaintainablePersistence, to: MaintainablePersistence,
   opts: CopyOptions = {}): Promise<CopyReport> {
   const log = opts.log ?? (() => undefined);
   const report: CopyReport = {
@@ -177,7 +177,7 @@ export async function copyStore(from: Persistence, to: Persistence,
 
 /** The same walk, writing nothing: every document at the source must be
  *  at the destination with identical chains. Returns the document count. */
-export async function verifyStores(from: Persistence, to: Persistence,
+export async function verifyStores(from: MaintainablePersistence, to: MaintainablePersistence,
   opts: Pick<CopyOptions, 'log'> = {}): Promise<number> {
   const log = opts.log ?? (() => undefined);
   const ids = await from.listDocIds();
@@ -194,28 +194,17 @@ export async function verifyStores(from: Persistence, to: Persistence,
 
 /**
  * Tokens and stashes have no enumeration on the Persistence contract —
- * the server never needs one — so copying them goes through a narrower
- * optional seam both backends implement. A backend without it copies
- * none, loudly.
+ * the server never needs one — so copying them goes through the
+ * maintainer's contract (`MaintainablePersistence`), which both backends
+ * implement and the server is never handed.
  */
-export interface SidecarDump {
-  dumpTokens(): Promise<Array<readonly [string, import('./persistence.js').TokenRecord]>>;
-  dumpStashes(): Promise<Array<readonly [string, import('./persistence.js').StashRecord]>>;
-  dumpOutbox(): Promise<import('./persistence.js').OutboxRow[]>;
-}
-
-const dumps = (p: Persistence): SidecarDump | null =>
-  typeof (p as Partial<SidecarDump>).dumpTokens === 'function' ? p as unknown as SidecarDump : null;
-
-async function copySidecars(from: Persistence, to: Persistence):
+async function copySidecars(from: MaintainablePersistence, to: MaintainablePersistence):
   Promise<{ tokens: number; stashes: number; outbox: number }> {
-  const d = dumps(from);
-  if (d === null) throw new Error('the source backend cannot enumerate tokens and stashes');
-  const tokens = await d.dumpTokens();
+  const tokens = await from.dumpTokens();
   if (tokens.length > 0) await to.putTokens(tokens);
-  const stashes = await d.dumpStashes();
+  const stashes = await from.dumpStashes();
   for (const [key, rec] of stashes) await to.putStash(key, rec);
-  const outbox = await d.dumpOutbox();
+  const outbox = await from.dumpOutbox();
   await to.putOutbox(outbox);
   await assertOutboxCarried(from, to);
   return { tokens: tokens.length, stashes: stashes.length, outbox: outbox.length };
@@ -230,14 +219,11 @@ async function copySidecars(from: Persistence, to: Persistence):
  * row that failed to land is, and a backup that quietly dropped the queue
  * would un-send whatever had not gone out.
  */
-export async function assertOutboxCarried(from: Persistence, to: Persistence): Promise<number> {
-  const src = dumps(from);
-  const dst = dumps(to);
-  if (src === null) throw new Error('the source backend cannot enumerate the outbox');
-  const want = await src.dumpOutbox();
+export async function assertOutboxCarried(from: MaintainablePersistence,
+  to: MaintainablePersistence): Promise<number> {
+  const want = await from.dumpOutbox();
   if (want.length === 0) return 0;
-  if (dst === null) throw new Error('the destination backend cannot enumerate the outbox');
-  const have = new Map((await dst.dumpOutbox()).map((r) => [r.id, r]));
+  const have = new Map((await to.dumpOutbox()).map((r) => [r.id, r]));
   for (const row of want) {
     const there = have.get(row.id);
     if (there === undefined) throw new Error(`outbox row ${row.id} is missing at the destination`);
