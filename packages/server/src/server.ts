@@ -876,6 +876,9 @@ export async function createDraftServer(cfg: ServerConfig,
   async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const nowMs = Date.now();
     const url = new URL(req.url ?? '/', cfg.baseUrl);
+    // the one origin every Origin header on this request is checked against;
+    // read per request, since cfg.baseUrl is settled after listen (port 0)
+    const baseOrigin = new URL(cfg.baseUrl).origin;
     const path = url.pathname;
     const seg = path.split('/').filter((s) => s.length > 0);
 
@@ -896,7 +899,7 @@ export async function createDraftServer(cfg: ServerConfig,
     // browser that sends Origin at all must agree with us
     if (req.method === 'POST' && seg[0] === 'auth') {
       const origin = req.headers.origin;
-      if (origin !== undefined && origin !== new URL(cfg.baseUrl).origin) {
+      if (origin !== undefined && origin !== baseOrigin) {
         json(res, 403, { error: 'cross-site request refused' });
         return;
       }
@@ -936,6 +939,21 @@ export async function createDraftServer(cfg: ServerConfig,
     const tooMany = (route: string, max = 20): boolean => {
       if (!rateLimited(`${route}:${ipOf(req, cfg)}`, nowMs, max)) return false;
       json(res, 429, { error: 'too many requests — try again shortly' });
+      return true;
+    };
+    // the operator's key, as every admin route and the bot outbox gate on it:
+    // an unknown path without a key configured, 401 (and the limiter) with a
+    // wrong one; true means the answer has been written
+    const bearerRefused = (): boolean => {
+      if (!cfg.botKey) { json(res, 404, { error: 'not found' }); return true; }
+      if (bearerOk(req.headers.authorization, cfg.botKey)) return false;
+      if (!tooMany('bots')) json(res, 401, { error: 'unauthorized' });
+      return true;
+    };
+    // a route that exists on a dev host only: an unknown path anywhere else
+    const devOff = (): boolean => {
+      if (mailer.dev) return false;
+      json(res, 404, { error: 'not found' });
       return true;
     };
 
@@ -1026,7 +1044,7 @@ export async function createDraftServer(cfg: ServerConfig,
     // the build ('npm run build' passes --drop-labels=DEV), so no
     // misconfiguration can serve magic links — the code is not there.
     DEV: if (req.method === 'GET' && path === '/api/dev/outbox') {
-      if (!mailer.dev) { json(res, 404, { error: 'not found' }); return; }
+      if (devOff()) return;
       json(res, 200, { mails: outboxTail(join(cfg.dataDir, 'outbox.jsonl')) });
       return;
     }
@@ -1036,7 +1054,7 @@ export async function createDraftServer(cfg: ServerConfig,
        with the rest of this label — on docs.vote the file is read on the
        host (`draft-tools errors <dataDir>`, docs/OPERATING.md §11). */
     DEV: if (req.method === 'GET' && path === '/api/dev/errors') {
-      if (!mailer.dev) { json(res, 404, { error: 'not found' }); return; }
+      if (devOff()) return;
       res.setHeader('cache-control', 'no-store');
       json(res, 200, { errors: errorTail(cfg.dataDir) });
       return;
@@ -1057,12 +1075,7 @@ export async function createDraftServer(cfg: ServerConfig,
     // wrong one. `pause` takes an optional `expectedMs` for the bar; both
     // answer with the pause as every view will carry it.
     if (req.method === 'POST' && (path === '/api/admin/pause' || path === '/api/admin/resume')) {
-      if (!cfg.botKey) { json(res, 404, { error: 'not found' }); return; }
-      if (!bearerOk(req.headers.authorization, cfg.botKey)) {
-        if (tooMany('bots')) return;
-        json(res, 401, { error: 'unauthorized' });
-        return;
-      }
+      if (bearerRefused()) return;
       if (path === '/api/admin/pause') {
         const body = await readJson(req).catch(() => ({} as Record<string, unknown>));
         const asked = Number(body.expectedMs);
@@ -1085,12 +1098,7 @@ export async function createDraftServer(cfg: ServerConfig,
     // itself and CI's verification sees the commit it pushed. No restart,
     // no document leaves memory, no pause.
     if (req.method === 'POST' && path === '/api/admin/surface') {
-      if (!cfg.botKey) { json(res, 404, { error: 'not found' }); return; }
-      if (!bearerOk(req.headers.authorization, cfg.botKey)) {
-        if (tooMany('bots')) return;
-        json(res, 401, { error: 'unauthorized' });
-        return;
-      }
+      if (bearerRefused()) return;
       const sha = (url.searchParams.get('sha') ?? '').trim();
       if (!/^[0-9a-f]{7,40}$/.test(sha)) { json(res, 400, { error: 'sha must be a commit hash' }); return; }
       const chunks: Buffer[] = [];
@@ -1114,12 +1122,7 @@ export async function createDraftServer(cfg: ServerConfig,
     }
 
     if (req.method === 'GET' && path === '/api/bots/outbox') {
-      if (!cfg.botKey) { json(res, 404, { error: 'not found' }); return; }
-      if (!bearerOk(req.headers.authorization, cfg.botKey)) {
-        if (tooMany('bots')) return;
-        json(res, 401, { error: 'unauthorized' });
-        return;
-      }
+      if (bearerRefused()) return;
       json(res, 200, { mails: outboxTail(botOutboxPath(cfg.dataDir)) });
       return;
     }
@@ -1132,8 +1135,8 @@ export async function createDraftServer(cfg: ServerConfig,
        rather than mocking any of it, and wears all three of this block's
        guards. */
     DEV: if (req.method === 'POST' && path === '/api/dev/outbox/give-up') {
-      if (!mailer.dev) { json(res, 404, { error: 'not found' }); return; }
-      if (devCrossSite(req, res, new URL(cfg.baseUrl).origin)) return;
+      if (devOff()) return;
+      if (devCrossSite(req, res, baseOrigin)) return;
       const body = await readJson(req) as { slug?: unknown; to?: unknown };
       const doc = docOr404(typeof body.slug === 'string' ? store.bySlug(body.slug) : null);
       if (!doc) return;
@@ -1158,7 +1161,7 @@ export async function createDraftServer(cfg: ServerConfig,
        climb: the bar asks on every page load, and a probe that advanced a
        rung would make merely opening the page press the button. */
     DEV: if (req.method === 'GET' && path === '/api/dev/ladder') {
-      if (!mailer.dev) { json(res, 404, { error: 'not found' }); return; }
+      if (devOff()) return;
       const { phaseOf, RUNGS, seedOfSlug, seatsOf, manifestOf } =
         await import('./dev-ladder.js');
       const slug = url.searchParams.get('slug');
@@ -1196,8 +1199,8 @@ export async function createDraftServer(cfg: ServerConfig,
     }
 
     DEV: if (req.method === 'POST' && path === '/api/dev/ladder') {
-      if (!mailer.dev) { json(res, 404, { error: 'not found' }); return; }
-      if (devCrossSite(req, res, new URL(cfg.baseUrl).origin)) return;
+      if (devOff()) return;
+      if (devCrossSite(req, res, baseOrigin)) return;
       const body = await readJson(req) as { to?: unknown; seed?: unknown; slug?: unknown };
       const { runLadder } = await import('./dev-ladder.js');
       const doc = typeof body.slug === 'string' ? store.bySlug(body.slug) : null;
@@ -1220,8 +1223,8 @@ export async function createDraftServer(cfg: ServerConfig,
        path included, and a roster there would be an oracle to anybody
        holding the slug. */
     DEV: if (req.method === 'POST' && path === '/api/dev/seat') {
-      if (!mailer.dev) { json(res, 404, { error: 'not found' }); return; }
-      if (devCrossSite(req, res, new URL(cfg.baseUrl).origin)) return;
+      if (devOff()) return;
+      if (devCrossSite(req, res, baseOrigin)) return;
       const body = await readJson(req) as { slug?: unknown; member?: unknown };
       const doc = docOr404(typeof body.slug === 'string' ? store.bySlug(body.slug) : null);
       if (!doc) return;
@@ -2088,16 +2091,22 @@ function interstitial(action: string, token: string): string {
     '<script>document.forms[0].submit()</script>';
 }
 
-/** The token from an interstitial form (urlencoded) or a JSON body. */
-async function readTokenBody(req: IncomingMessage): Promise<string> {
+/** The whole body as text, refused past `maxBytes` — the one reader behind
+ *  the token form and the JSON commands, each with its own cap. */
+async function readBody(req: IncomingMessage, maxBytes: number): Promise<string> {
   const chunks: Buffer[] = [];
   let size = 0;
   for await (const chunk of req) {
     size += (chunk as Buffer).length;
-    if (size > 10_000) throw new Error('request too large');
+    if (size > maxBytes) throw new Error('request too large');
     chunks.push(chunk as Buffer);
   }
-  const text = Buffer.concat(chunks).toString('utf8');
+  return Buffer.concat(chunks).toString('utf8');
+}
+
+/** The token from an interstitial form (urlencoded) or a JSON body. */
+async function readTokenBody(req: IncomingMessage): Promise<string> {
+  const text = await readBody(req, 10_000);
   const ct = req.headers['content-type'] ?? '';
   if (ct.includes('application/json')) {
     return String((JSON.parse(text) as { token?: unknown }).token ?? '');
@@ -2131,14 +2140,7 @@ async function readJson(req: IncomingMessage): Promise<Record<string, unknown>> 
   if (!ct.includes('application/json')) {
     throw new Error('content-type must be application/json');
   }
-  const chunks: Buffer[] = [];
-  let size = 0;
-  for await (const chunk of req) {
-    size += (chunk as Buffer).length;
-    if (size > 1_000_000) throw new Error('request too large');
-    chunks.push(chunk as Buffer);
-  }
-  const text = Buffer.concat(chunks).toString('utf8');
+  const text = await readBody(req, 1_000_000);
   if (text.length === 0) return {};
   const parsed: unknown = JSON.parse(text);
   if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
