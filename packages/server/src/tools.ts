@@ -62,6 +62,7 @@ import { pathToFileURL } from 'node:url';
 import { ConstitutionSession } from '../../constitution/src/index.js';
 import type { LogEntry } from '../../constitution/src/index.js';
 import { FilePersistence } from './persistence.js';
+import type { MaintainablePersistence } from './persistence.js';
 import { PgPersistence } from './pg-persistence.js';
 import { copyStore, verifyStores } from './copy-store.js';
 import type { CopyReport } from './copy-store.js';
@@ -96,7 +97,7 @@ const isPgUrl = (s: string): boolean => /^postgres(ql)?:\/\//.test(s);
 /** A store by its address: a directory, or a Postgres URL. `name` is what
  *  the wipe must be told; `shown` is the address with any credential removed. */
 async function openStore(where: string): Promise<{
-  p: FilePersistence | PgPersistence; name: string; shown: string; close: () => Promise<void>;
+  p: MaintainablePersistence; name: string; shown: string; close: () => Promise<void>;
 }> {
   if (isPgUrl(where)) {
     const u = new URL(where);

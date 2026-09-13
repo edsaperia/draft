@@ -31,7 +31,7 @@
 import pg from 'pg';
 import type { LogEntry, PersonId } from '../../constitution/src/index.js';
 import { OUTBOX_MAX_ATTEMPTS, outboxBackoffMs } from './persistence.js';
-import type { OutboxRow, Persistence, PersonRow, StashRecord, TokenRecord } from './persistence.js';
+import type { MaintainablePersistence, OutboxRow, PersonRow, StashRecord, TokenRecord } from './persistence.js';
 
 /** Each migration runs once, in order, inside one transaction. */
 const MIGRATIONS: ReadonlyArray<{ version: number; sql: string }> = [
@@ -212,7 +212,7 @@ export interface PgOptions {
   max?: number;
 }
 
-export class PgPersistence implements Persistence {
+export class PgPersistence implements MaintainablePersistence {
   private constructor(
     private readonly pool: pg.Pool,
     readonly schema: string | null,

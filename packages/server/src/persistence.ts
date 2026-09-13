@@ -217,7 +217,29 @@ export interface Persistence {
   close?(): Promise<void>;
 }
 
-export class FilePersistence implements Persistence {
+/**
+ * The maintainer's half of a store: enumeration for the copier
+ * (copy-store.ts) and the two deletions behind `draft-tools`' refusals.
+ * Deliberately a second contract rather than five more methods on
+ * `Persistence`: the server is typed against `Persistence` alone, so nothing
+ * it holds can reach a wipe (decision 1253); the tools open a store
+ * themselves and take this type. Both backends implement it.
+ */
+export interface MaintainablePersistence extends Persistence {
+  /* -- enumeration for the copier, never for the server ------------------ */
+  dumpTokens(): Promise<Array<readonly [string, TokenRecord]>>;
+  dumpStashes(): Promise<Array<readonly [string, StashRecord]>>;
+  /** Every outbox row, sent ones included, in id order. */
+  dumpOutbox(): Promise<OutboxRow[]>;
+
+  /* -- the deletions (decision 1253, Q1322) — the tool's, never the server's */
+  /** Every document, every sidecar, gone. Returns how many documents went. */
+  wipe(): Promise<number>;
+  /** One document and its sidecars, gone. Returns whether there was one. */
+  deleteDoc(id: string): Promise<boolean>;
+}
+
+export class FilePersistence implements MaintainablePersistence {
   private readonly docsDir: string;
   private readonly tokensPath: string;
   private readonly stashPath: string;
