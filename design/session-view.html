@@ -9188,13 +9188,6 @@
     if (adp) { S['adm:' + adp.getAttribute('data-admitpick')] = adp.getAttribute('data-v'); return render(); }
     const adg = ev.target.closest('[data-admitgo]');
     if (adg && !adg.disabled) { liveJudgeAdmit(adg.getAttribute('data-admitgo')); return; }
-    const apr = ev.target.closest('[data-appropose]');
-    if (apr) {
-      const box = document.querySelector('[data-apwhy="' + apr.getAttribute('data-appropose') + '"]');
-      const why = box ? box.value.trim() : '';
-      api.cmd('propose-applicant', { applicant: apr.getAttribute('data-appropose'), why });
-      return;
-    }
     const mo2 = ev.target.closest('[data-motion]');
     if (mo2) {
       S.mAns[S.open] = mo2.dataset.motion;
@@ -12833,8 +12826,7 @@
     // button over the hold and the motion goes in when it lands). The
     // ghost is session.js's own wallet state (`setWalletGhost`), so the drip
     // cannot put the traveller straight back, and `mayPropose()` is asked
-    // rather than the DOM (W13). The applicant row's *✏️ Propose them* is a
-    // different command (`propose-applicant`) and is left as a click.
+    // rather than the DOM (W13).
     if (b.matches('[data-putmotion]')) return cs && mayPropose() && document.querySelector('#wallet i')
       ? { g: '✏️', sel: '#wallet i', floorAt: 288, ghost: 'wallet',
         live: '.setupcard [data-putmotion]', r0: -24, r1: 0, easing: 'cubic-bezier(.45, .05, .3, 1)' }

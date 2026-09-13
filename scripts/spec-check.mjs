@@ -1047,12 +1047,10 @@ function checkApplicantJudged() {
  *    is noted, never red: the server's own tests send commands too.
  */
 const COMMANDS_FILED = {
-  // entry 94 (bcab5b0) took the handler with the admit-at-submit rule and
-  // left the page's `[data-appropose]` press behind; nothing renders that
-  // attribute, so the press is unreachable — dead code, not a dead click.
-  // A finding for Ed: delete the branch (session-view.html, `api.cmd('propose-applicant'`)
-  // and this row with it.
-  'propose-applicant': 'dead press left by entry 94; nothing renders [data-appropose]',
+  // command name → why the page may send it with no handler. Empty since the
+  // check's first run: the one row it opened with (`propose-applicant`, a
+  // press left behind when entry 94 took the handler) was deleted the same
+  // night, refactor item 25.
 };
 
 function checkCommands(M) {
