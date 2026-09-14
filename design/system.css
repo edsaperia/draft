@@ -514,14 +514,18 @@
     flex: none; display: flex; align-items: center; gap: 1px;
     font-size: var(--t-micro); line-height: 1; padding-right: 2px; letter-spacing: -1px;
   }
-  /* **The four decided marks, drawn** (Ed, 2026-08-17). They are the only ones
-     that are not silhouettes — a plate with a shape knocked out of it — so they
-     read as a different kind of object beside 💡🔥✏️⏳⚔️ rather than as a
-     different state. As text glyphs they take a colour, which means the palette
-     chooses it instead of the reader's emoji font, and it is the same in all
-     four columns. The colours are the palette's own rule — green for decided,
-     grey for filed, grey for ↻ — never the ones the emoji happened to have
-     (Q612, 2026-08-22: ↻ had kept the accent from its emoji days). */
+  /* **The decided marks, drawn** (Ed, 2026-08-17). They were the only ones that
+     were not silhouettes — a plate with a shape knocked out of it — so they read
+     as a different kind of object beside the emoji rather than as a different
+     state. As drawn glyphs they take a colour, which means the palette chooses
+     it instead of the reader's emoji font, and it is the same in all three
+     columns. The colours are the palette's own rule — green for decided, grey
+     for filed, grey for ↻ — never the ones the emoji happened to have (Q612,
+     2026-08-22: ↻ had kept the accent from its emoji days).
+
+     **And since Q288 (Ed, 2026-09-14) so is the rest of the alphabet**: every
+     lifecycle mark is drawn, a subject glyph is an emoji, and the six rules
+     below are the single place the alphabet's colour is decided. */
   .mk { font-family: inherit; font-weight: 700; line-height: 1; }
   /* An action glyph, drawn on the same stroke as the lifecycle marks so a
      control and a mark never look like they came from different sets. */
@@ -534,6 +538,11 @@
     fill: none; stroke: currentColor; stroke-width: 1.9;
     stroke-linecap: round; stroke-linejoin: round;
   }
+  /* The six Q288 drew are filled shapes rather than strokes: a bulb or a chilli
+     outlined at 1.9 closes up into a blot at 12px, and the emoji they replace
+     were solid anyway. One flat colour either way, which is what makes the
+     alphabet one alphabet. */
+  .mkg.fill { fill: currentColor; stroke: none; }
   /* Green for **decided**, grey for **filed** — the same two glyphs in the two
      colours (Ed, 2026-08-17). Which way it went is the glyph; whether it still
      wants anything from you is the colour, which is the rule the whole palette
@@ -544,12 +553,31 @@
      it wears the filed grey: grey means nothing is asked of you (Ed, Q612,
      2026-08-22). Blue is for your own work, and a ground shift is not that. */
   .mk-shifted { color: var(--muted); }
+  /* **The lifecycle hues as ink** (Q288). A `--lc-*` channel set is tuned for a
+     wash — a fill at 0.06–0.44 alpha across a whole card — and two of the five
+     carry straight over to a glyph while two do not:
+
+     - 💡 ⚔️ 🔥 take `--stuck-ink`, which is what this palette already calls
+       --lc-open made legible: the raw yellow is a highlighter that does not
+       carry as a mark, least of all sitting on its own yellow wash. All three
+       take the **same** amber, because 🔥's extra loudness is `FLAME_A` and
+       `FLAME_A` lives in the wash — it always did, the emoji never having had a
+       colour of its own either.
+     - 🌶️ and ✏️ take their hue raw: --lc-weigh and --lc-yours were chosen as
+       ink in the first place (the accent is literally --primary).
+     - ⏳ takes the filed grey rather than --lc-deciding raw, which is the same
+       grey the whole drawn family has always inked with (↻ beside it). The pale
+       channel is the *wash's* strength; at 12px it left the one mark that says
+       "the room is still going" fainter than a decision already filed. */
+  .mk-needs, .mk-urgent, .mk-stuck { color: var(--stuck-ink); }
+  .mk-weigh { color: rgb(var(--lc-weigh)); }
+  .mk-propose { color: rgb(var(--lc-yours)); }
+  .mk-deciding { color: var(--muted); }
   /* ...and the same ↻ in blue where what the ground moved under was a proposal
      of your own (Ed, 2026-09-14, Q170). It is asking — re-make it here, or
      withdraw it — and everything of yours that still has an act on it is blue,
      so the glyph says what happened and the hue says whose it is. */
-  .mk-stranded { color: rgb(var(--lc-yours)); }
-  /* a drawn glyph has no plate to give it width, so at the two small sizes it
+  .mk-stranded { color: rgb(var(--lc-yours)); }  /* a drawn glyph has no plate to give it width, so at the two small sizes it
      needs a little of its own or the marks sit on top of each other */
   .tocmarks .mk { font-size: 1.15em; letter-spacing: 0.06em; }
   .qmark .mk { font-size: 0.95em; }

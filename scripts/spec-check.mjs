@@ -524,9 +524,15 @@ function checkSetupAlphabet() {
     if (!/glyph of the power it grants/.test(cell('news', col))) find('setup-alphabet', `news: markOf hands a grant its power's glyph, the ${col} cell says "${cell('news', col)}"`);
     if (!/drawn.*✔/.test(cell('news', col))) find('setup-alphabet', `news: markOf hands every other news card TICK, the ${col} cell says "${cell('news', col)}"`);
   }
-  // branch 3: the fall-through — ask the glyph, wait ⏳, yours ✏️, else TICK
-  if (!/return st === 'ask' \? c\.g : st === 'wait' \? '⏳' : st === 'yours' \? '✏️' : TICK;/.test(mo))
-    find('setup-alphabet', "markOf: the fall-through is no longer `ask → glyph · wait → ⏳ · yours → ✏️ · else TICK`");
+  // branch 3: the fall-through — ask the glyph, wait ⏳, yours ✏️, else TICK.
+  // Since Q288 (Ed, 2026-09-14) ⏳ and ✏️ are the charter's own drawn marks
+  // rather than emoji literals, so the branch names them and the two constants
+  // are checked against `mkHtml` — one alphabet, asserted at the seam.
+  if (!/return st === 'ask' \? c\.g : st === 'wait' \? WAITING : st === 'yours' \? YOURS : TICK;/.test(mo))
+    find('setup-alphabet', 'markOf: the fall-through is no longer `ask → glyph · wait → WAITING (⏳) · yours → YOURS (✏️) · else TICK`');
+  for (const [name, kind] of [['WAITING', 'deciding'], ['YOURS', 'propose']])
+    if (!new RegExp(`const ${name} = window\\.CARDS\\.mkHtml\\('${kind}'\\);`).test(setup))
+      find('setup-alphabet', `setup.js: ${name} is no longer cards.js's drawn '${kind}' mark — the setup alphabet and the charter's would draw two different glyphs (Q288)`);
   for (const col of ['rail mark', 'tab mark']) {
     if (!glyph(cell('ask', col))) find('setup-alphabet', `ask: markOf hands ask the subject glyph, the ${col} cell says "${cell('ask', col)}"`);
     if (!/^✏️/.test(cell('yours', col))) find('setup-alphabet', `yours: markOf hands yours ✏️, the ${col} cell says "${cell('yours', col)}"`);

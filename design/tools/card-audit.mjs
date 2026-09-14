@@ -1445,7 +1445,12 @@ async function walkSettled(page, base, cards, errors, seat, switches, piles) {
       const mark = front.firstElementChild;
       out.push({ para: para.dataset.para, open: para.classList.contains('open'), opened,
         front: front.dataset.chip, state: (front.className.match(/st-([a-z]+)/) || [])[1] || null,
-        tick: !!(mark && mark.querySelector('svg.mkg')),
+        // **The drawn ✔, not merely a drawn mark** (Q288, Ed 2026-09-14): since
+        // every lifecycle mark is drawn, `svg.mkg` alone reported ⏳ on a vote
+        // of yours as the ✔ this rule forbids. The six Q288 drew are filled
+        // silhouettes (`.mkg.fill`); the tick, the cross and the pause are the
+        // stroke family, and setup's ✔ is the only one of those the band uses.
+        tick: !!(mark && mark.querySelector('svg.mkg:not(.fill)')),
         order: chips.map((c) => c.dataset.chip) });
     }
     return out;
