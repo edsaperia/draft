@@ -10,69 +10,60 @@
  * Since PRODUCTION.md stage 2 storage sits behind the Persistence seam
  * and every commit runs on a per-document WriteChain: a 200 means the
  * entries are durable, and two commits to one document cannot interleave.
+ *
+ * What is left here after refactor Q1352 (m) and (n): the boot, the error
+ * counters, the request wrapper and its catch, the headers every answer
+ * carries, and `route()` — which is now the ordered walk of one route
+ * table and nothing else. The rows themselves are `routes-dev`,
+ * `routes-admin`, `routes-auth`, `routes-member` and `routes-surface`,
+ * over the `RouteContext` made below.
  */
 import { createServer } from 'node:http';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
-import { randomBytes, timingSafeEqual } from 'node:crypto';
-import { createReadStream, existsSync, statSync } from 'node:fs';
-import { extname, join, normalize } from 'node:path';
-import { SURFACE_MAX_BYTES, installSurface, readTarGz } from './surface.js';
-import { CATALOGUE, ConstitutionSession, isShapeName, mayApply, sha256Hex, view } from '../../constitution/src/index.js';
-import type { ApplicantRecord, ApplicationsValue } from '../../constitution/src/index.js';
-import { DEFAULT_TUNING } from '../../constitution/src/adapter.js';
 import { Auth } from './auth.js';
 import type { ServerConfig } from './config.js';
-import { DocStore, slugify, uniqueSlug } from './store.js';
-import type { LoadedDoc } from './store.js';
+import { DocStore } from './store.js';
 import { FilePersistence, WriteChain } from './persistence.js';
 import type { Persistence } from './persistence.js';
 import { PgPersistence } from './pg-persistence.js';
 import { Stash } from './stash.js';
-import { MAILS, botOutboxPath, makeMailer, outboxTail } from './mailer.js';
-import { errorTail, logError } from './error-log.js';
+import { makeMailer } from './mailer.js';
+import { logError } from './error-log.js';
 import { MailOutbox } from './outbox.js';
 import { asEngineDoc, resumeBridge } from './engine-host.js';
-import { ParticipantApi } from '../../engine-core/src/participant-api.js';
 import type { Mailer } from './mailer.js';
-import { LIMITS, cap, emailOk, runCommand, str } from './commands.js';
-import { admissionPrice, raceView, strangerView } from './views.js';
 import { PauseState, WritePath } from './write-path.js';
+import { json, makeReq, pathOf, routeMatches, sweepBuckets } from './routes.js';
+import type { Route, RouteContext } from './routes.js';
+import { devLadderTable, devMailTable } from './routes-dev.js';
+import { healthTable, operatorTable } from './routes-admin.js';
+import { authTable } from './routes-auth.js';
+import { memberTable } from './routes-member.js';
+import { surfaceTable } from './routes-surface.js';
 
 /**
- * One cookie per document (review #1, finding 13): a single name meant
- * logging into one document logged you out of every other. The document
- * id is a hex string, cookie-name-safe by construction; the legacy name
- * is still read, for its own document only, until those cookies expire.
+ * **The route table, in the chain's own order** (Q1352 (m), (n)). The order
+ * is load-bearing and this array is the whole of it: health answered before
+ * the dev mail pair, the operator's key-gated routes between the two dev
+ * halves, and the static rows last, because a document's page is what
+ * `/d/:slug` means only once nothing else has claimed it. Two families are
+ * split in two for exactly this reason — the paths they hold are disjoint,
+ * so nothing would break if they were joined, but preserving the order
+ * costs one extra export apiece and settles the question.
+ *
+ * The two dev arrays are **empty in the production artifact**: their rows
+ * are pushed inside a `DEV:`-labelled statement, which the build drops
+ * bodily, so the row, its path and its handler go together.
  */
-/** The address grammar the page shares (Q460): lower case, digits,
- *  hyphens, starting with a letter or digit. One character is enough
- *  (Q1288, Ed 2026-09-08: *we should allow one character addresses*) —
- *  the floor of three that stood from Q460 was never ruled. */
-const SLUG_OK = /^[a-z0-9][a-z0-9-]*$/;
-const LEGACY_COOKIE = 'draft_session';
-const cookieName = (docId: string): string =>
-  `draft_session_${docId.replace(/[^A-Za-z0-9_-]/g, '')}`;
-
-/** Q346 territory, minimally: the mail-minting doors are rate-limited
- *  per address+route — in memory, generous, a brake not a wall. */
-const BUCKET = new Map<string, { n: number; resetMs: number }>();
-function rateLimited(key: string, nowMs: number, max = 20, windowMs = 600_000): boolean {
-  const b = BUCKET.get(key);
-  if (!b || b.resetMs < nowMs) { BUCKET.set(key, { n: 1, resetMs: nowMs + windowMs }); return false; }
-  b.n += 1;
-  return b.n > max;
-}
-
-/** `Authorization: Bearer <key>` against the configured key, in constant
- *  time (the cookie check's own discipline, auth.ts): a comparison must not
- *  leak how far it matched. */
-function bearerOk(header: string | undefined, key: string): boolean {
-  const m = /^Bearer\s+(\S+)$/i.exec(header ?? '');
-  if (m === null) return false;
-  const given = Buffer.from(m[1]!, 'utf8');
-  const want = Buffer.from(key, 'utf8');
-  return given.length === want.length && timingSafeEqual(given, want);
-}
+const ROUTES: Route[] = [
+  ...healthTable,
+  ...devMailTable,
+  ...operatorTable,
+  ...devLadderTable,
+  ...authTable,
+  ...memberTable,
+  ...surfaceTable,
+];
 
 export interface DraftServer {
   server: Server;
@@ -144,15 +135,9 @@ export async function createDraftServer(cfg: ServerConfig,
   // **A pause is announced, never guessed** (Q1345): the state, its two
   // constants and its sentence are `write-path.ts`'s `PauseState`, since
   // what a pause does is stop writing — this instance persists nothing,
-  // refuses every command with 503 and ticks nothing. The routes below make
-  // it, lift it, and carry its payload on every view answer.
+  // refuses every command with 503 and ticks nothing. The admin family
+  // makes it, lifts it, and carries its payload on every view answer.
   const pause = new PauseState();
-  // **The surface reload** (Q1347): where the page files are served from,
-  // and which commit answers in `x-build`, are both mutable — a surface
-  // upload moves them together, and nothing else on the host changes.
-  let designDir = cfg.designDir;
-  let buildSha = cfg.buildSha;
-  let surfaceSha: string | null = null;
   const persistence = injected ?? await openPersistence(cfg);
   const store = new DocStore(persistence);
   await store.loadAll();
@@ -198,10 +183,26 @@ export async function createDraftServer(cfg: ServerConfig,
     now: () => Date.now(),
   });
 
+  const httpsOn = cfg.baseUrl.startsWith('https://');
+
+  /**
+   * What every route family reads (Q1352 (m)). Made once; the three surface
+   * fields are mutable because a surface upload (Q1347) moves where the page
+   * files come from and which commit answers in `x-build`, and both the
+   * static family and `/healthz` must see the move.
+   */
+  const ctx: RouteContext = {
+    cfg, store, auth, mailer, outbox, stash, commits, writes, pause,
+    errors, bootedAtMs, httpsOn,
+    designDir: cfg.designDir,
+    buildSha: cfg.buildSha,
+    surfaceSha: null,
+  };
+
   /** The minute's other housekeeping rides the same metronome: the rate
    *  limiter's stale buckets, swept before the documents are driven. */
   const tick = async (nowMs: number = Date.now()): Promise<void> => {
-    for (const [key, b] of BUCKET) if (b.resetMs < nowMs) BUCKET.delete(key);
+    sweepBuckets(nowMs);
     await writes.tick(nowMs);
   };
 
@@ -246,16 +247,20 @@ export async function createDraftServer(cfg: ServerConfig,
     });
   });
 
-  const httpsOn = cfg.baseUrl.startsWith('https://');
-
+  /**
+   * The head of the old chain, and the dispatch that replaced its body: the
+   * headers every answer carries, the two refusals that must be made before
+   * any row sees the request, then the table in order until one row says it
+   * has answered. The 404 at the end is the chain's own.
+   */
   async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const nowMs = Date.now();
     const url = new URL(req.url ?? '/', cfg.baseUrl);
     // the one origin every Origin header on this request is checked against;
     // read per request, since cfg.baseUrl is settled after listen (port 0)
     const baseOrigin = new URL(cfg.baseUrl).origin;
-    const path = url.pathname;
-    const seg = path.split('/').filter((s) => s.length > 0);
+    const r = makeReq(ctx, req, res, nowMs, url, baseOrigin);
+    const { seg } = r;
 
     // security headers on everything (stage 3, defects 2/9); the page
     // ships large inline scripts, so a script CSP waits for the asset
@@ -263,7 +268,7 @@ export async function createDraftServer(cfg: ServerConfig,
     res.setHeader('x-content-type-options', 'nosniff');
     // which bytes are answering (see cfg.buildSha): CI polls this after a
     // deploy so that "verified" is a statement about the new build
-    if (buildSha !== null) res.setHeader('x-build', buildSha);
+    if (ctx.buildSha !== null) res.setHeader('x-build', ctx.buildSha);
     // tokens, views and interstitials must never sit in a cache
     // (review #1, finding 10)
     if (seg[0] === 'api' || seg[0] === 'auth') {
@@ -292,1007 +297,14 @@ export async function createDraftServer(cfg: ServerConfig,
       }
     }
 
-    /** 404 for a document that isn't there; hand back whatever is. */
-    /** Free if no document holds it and no live pending creation has
-     *  reserved it (Q462b). */
-    const slugFree = async (slug: string): Promise<boolean> =>
-      !store.slugTaken(slug) && (await stash.reservedBy(slug, nowMs)) === null;
-    /** uniqueSlug over both kinds of taken-ness. */
-    const uniqueSlugAsync = async (base: string): Promise<string> => {
-      if (await slugFree(base)) return base;
-      for (let n = 2; ; n++) {
-        const candidate = `${base}-${n}`;
-        if (await slugFree(candidate)) return candidate;
-      }
-    };
-
-    const docOr404 = (doc: LoadedDoc | null): LoadedDoc | null => {
-      if (doc === null) json(res, 404, { error: 'no such document' });
-      return doc;
-    };
-    /** 429 a mail-minting door when its per-IP bucket overflows. */
-    const tooMany = (route: string, max = 20): boolean => {
-      if (!rateLimited(`${route}:${ipOf(req, cfg)}`, nowMs, max)) return false;
-      json(res, 429, { error: 'too many requests — try again shortly' });
-      return true;
-    };
-    // the operator's key, as every admin route and the bot outbox gate on it:
-    // an unknown path without a key configured, 401 (and the limiter) with a
-    // wrong one; true means the answer has been written
-    const bearerRefused = (): boolean => {
-      if (!cfg.botKey) { json(res, 404, { error: 'not found' }); return true; }
-      if (bearerOk(req.headers.authorization, cfg.botKey)) return false;
-      if (!tooMany('bots')) json(res, 401, { error: 'unauthorized' });
-      return true;
-    };
-    // a route that exists on a dev host only: an unknown path anywhere else
-    const devOff = (): boolean => {
-      if (mailer.dev) return false;
-      json(res, 404, { error: 'not found' });
-      return true;
-    };
-
-    /* -- health (stage 7): which bytes, which store, how much is loaded -- */
-    // Public by the same argument as x-build: the repository is public and
-    // none of this is about a person. The document count is what lets an
-    // operator read "the restore brought everything back" from one curl.
-    // the platform probes HEAD / (seen in the logs, 2026-08-20); answer it
-    // as a GET would, without the body, rather than a misleading 404
-    if (req.method === 'HEAD' && (path === '/' || path === '/healthz')) {
-      res.writeHead(200, { 'content-type': path === '/' ? 'text/html; charset=utf-8'
-        : 'application/json; charset=utf-8' });
-      res.end();
-      return;
-    }
-    if (req.method === 'GET' && path === '/healthz') {
-      res.setHeader('cache-control', 'no-store');
-      // the outbox's two numbers (finding 15): `pending` is mail on its way
-      // and normally 0; `failed` is mail that gave up and is the number an
-      // operator is meant to notice. `mail: off` says the kill-switch is on.
-      //
-      // **The health check must not fail because the store did.** These two
-      // numbers come out of Postgres, and a pg error carries a `code`, so an
-      // uncaught one is answered 500 — which takes a perfectly healthy
-      // process out of service and restarts it over a database blip the
-      // restart cannot fix. A store that will not answer reports itself as
-      // `null` instead, which is the honest thing and still says something.
-      const mail = await outbox.counts().catch((e: unknown) => {
-        console.error('outbox counts failed:', e);
-        return null;
-      });
-      // **The catalogue this process was booted with** (Q911, Ed 2026-08-26).
-      // A running server holds two copies of the work at different ages: the
-      // page is served from disk and is therefore always current, while the
-      // mechanism — this module, the engine, the catalogue — is loaded at
-      // boot and can be days old. So a stale server serves today's page over
-      // a week-old engine, and its failures read as confident product bugs;
-      // that is exactly what cost an hour on 2026-08-26, against a process
-      // old enough to still know the `signing` setting v0.70 retired.
-      //
-      // Nothing served off disk can reveal this — only the running process
-      // can say what the running process knows. The ids rather than a hash,
-      // so a walk can name what differs instead of reporting inequality.
-      // Public by Ed's call: the catalogue already ships in the browser
-      // bundle, so this discloses nothing the page does not.
-      json(res, 200, {
-        ok: true,
-        build: buildSha,
-        // the commit whose page files a surface upload put in place (Q1347), or null
-        surface: surfaceSha,
-        catalogue: CATALOGUE.map((e) => e.id).sort(),
-        store: cfg.store,
-        documents: [...store.all()].length,
-        // documents the boot skipped as the pre-people shape (decision 1253):
-        // a count, never an id, on the same public-endpoint argument as the
-        // errors below; production holds none after the wipe, so a non-zero
-        // here is a data dir that has not had its own
-        documentsSkipped: store.skippedPreShape().length,
-        // a document whose replay threw at boot (Q1322): it answers 404
-        // until its log is repaired, and the count here is the only place
-        // an operator sees it without the boot log
-        documentsQuarantined: store.quarantined().length,
-        // a document whose last save the store rejected for good (Q1346):
-        // it serves, it refuses every write, and it flies a red flag
-        documentsStalled: [...store.all()].filter((d) => d.stalled).length,
-        // the announced pause (Q1345), or null
-        paused: pause.payload(nowMs),
-        uptimeSeconds: Math.floor((nowMs - bootedAtMs) / 1000),
-        mail: cfg.mailOff ? 'off' : 'on',
-        // dev-mail mode, so the birth page — which has no view to read it
-        // from — asks for the stagehand's controls only where they exist (Q1349)
-        devMail: mailer.dev,
-        outbox: mail,
-        // the throws nobody handled since boot (entry 77) — see `errors`
-        // above. `total` is the one number to watch between sessions.
-        errors,
-        // the adoption metronome this process is pacing at (§4.2, entry
-        // 77): stated because it is an operator knob a restart changes and
-        // nothing else on the surface reports it.
-        cooldownMs: cfg.engineTuning?.cooldownMs ?? DEFAULT_TUNING.cooldownMs,
-      });
-      return;
-    }
-
-    /* -- creation (§9.7a: the mail is the save) -------------------------- */
-    // Deleted from the production artifact, not flag-gated (stage 3,
-    // defects 1/9 and decision 437): the DEV label is dropped bodily by
-    // the build ('npm run build' passes --drop-labels=DEV), so no
-    // misconfiguration can serve magic links — the code is not there.
-    DEV: if (req.method === 'GET' && path === '/api/dev/outbox') {
-      if (devOff()) return;
-      json(res, 200, { mails: outboxTail(join(cfg.dataDir, 'outbox.jsonl')) });
-      return;
-    }
-
-    /* **The error log's tail** (Q1330), the way the outbox's is served:
-       newest first, dev only, dropped bodily from the production artifact
-       with the rest of this label — on docs.vote the file is read on the
-       host (`draft-tools errors <dataDir>`, docs/OPERATING.md §11). */
-    DEV: if (req.method === 'GET' && path === '/api/dev/errors') {
-      if (devOff()) return;
-      res.setHeader('cache-control', 'no-store');
-      json(res, 200, { errors: errorTail(cfg.dataDir) });
-      return;
-    }
-
-    /* -- the bot outbox (Q1310) ------------------------------------------
-       Ships in the production artifact, and is deliberately **not** under
-       the DEV label: bot rooms run on docs.vote (Ed, 2026-09-10, *we can
-       have bot users in prod — we're still in alpha*). What it serves is
-       mail to `bots.docs.vote` only — the mailer files nothing else there —
-       so a key in the wrong hands acts as the bots in bot rooms and nothing
-       more. Without a key configured the route is an unknown path: 404,
-       the same body as any other. The limiter counts wrong keys only, so a
-       poller every few seconds is never throttled and a guesser is. */
-    // **The announced pause** (Q1345): two POSTs for the bearer of
-    // DRAFT_BOT_KEY — the operator's key already on the host — gated exactly
-    // as the bot outbox is: an unknown path without the key, 401 with a
-    // wrong one. `pause` takes an optional `expectedMs` for the bar; both
-    // answer with the pause as every view will carry it.
-    if (req.method === 'POST' && (path === '/api/admin/pause' || path === '/api/admin/resume')) {
-      if (bearerRefused()) return;
-      if (path === '/api/admin/pause') {
-        const body = await readJson(req).catch(() => ({} as Record<string, unknown>));
-        const asked = Number(body.expectedMs);
-        const expectedMs = Number.isFinite(asked) && asked > 0 ? Math.min(asked, PauseState.MAX_MS) : PauseState.EXPECTED_MS;
-        pause.begin(nowMs, expectedMs);
-        console.log(`paused for maintenance (Q1345): expected ${Math.round(expectedMs / 1000)}s, lifts by itself after ${PauseState.MAX_MS / 1000}s`);
-      } else {
-        pause.lift();
-        console.log('pause lifted (Q1345)');
-      }
-      json(res, 200, { ok: true, paused: pause.payload(nowMs) });
-      return;
-    }
-
-    // **The surface reload** (Q1347): the served page files of one commit,
-    // as a gzipped ustar tar of `design/<file>` entries in the body and the
-    // commit in `?sha=`, under the same key as the pause. Unpacked into a
-    // fresh directory beside the data and served from there from this
-    // moment; `x-build` states the new commit, so every open page reloads
-    // itself and CI's verification sees the commit it pushed. No restart,
-    // no document leaves memory, no pause.
-    if (req.method === 'POST' && path === '/api/admin/surface') {
-      if (bearerRefused()) return;
-      const sha = (url.searchParams.get('sha') ?? '').trim();
-      if (!/^[0-9a-f]{7,40}$/.test(sha)) { json(res, 400, { error: 'sha must be a commit hash' }); return; }
-      const chunks: Buffer[] = [];
-      let size = 0;
-      for await (const chunk of req) {
-        size += (chunk as Buffer).length;
-        if (size > SURFACE_MAX_BYTES) { json(res, 413, { error: 'surface too large' }); return; }
-        chunks.push(chunk as Buffer);
-      }
-      let files;
-      try { files = readTarGz(Buffer.concat(chunks)); }
-      catch (e) { json(res, 400, { error: e instanceof Error ? e.message : String(e) }); return; }
-      const dir = join(cfg.dataDir, `surface-${sha}`);
-      const names = installSurface(files, dir);
-      designDir = dir;
-      buildSha = sha;
-      surfaceSha = sha;
-      console.log(`surface reloaded (Q1347): ${names.length} files of ${sha} served from ${dir}`);
-      json(res, 200, { ok: true, sha, files: names });
-      return;
-    }
-
-    if (req.method === 'GET' && path === '/api/bots/outbox') {
-      if (bearerRefused()) return;
-      json(res, 200, { mails: outboxTail(botOutboxPath(cfg.dataDir)) });
-      return;
-    }
-
-    /* **The forced give-up** (SURFACE E34). A real give-up is six attempts
-       over roughly three hours, and the reserved-address seam is deliberately
-       a *retire* rather than a give-up (`outbox.ts` argues it at length), so
-       without this nothing can reach E34 in a walk. It drives the outbox's
-       own `give` — the failed mark, the revoked token, the give-up door —
-       rather than mocking any of it, and wears all three of this block's
-       guards. */
-    DEV: if (req.method === 'POST' && path === '/api/dev/outbox/give-up') {
-      if (devOff()) return;
-      if (devCrossSite(req, res, baseOrigin)) return;
-      const body = await readJson(req) as { slug?: unknown; to?: unknown };
-      const doc = docOr404(typeof body.slug === 'string' ? store.bySlug(body.slug) : null);
-      if (!doc) return;
-      const to = typeof body.to === 'string' ? body.to : '';
-      if (to === '') { json(res, 400, { error: 'an address to give up on' }); return; }
-      const gone = await outbox.giveUpNow(doc.id, to);
-      if (gone === 0) { json(res, 404, { error: 'no mail to that address on this document' }); return; }
-      json(res, 200, { ok: true, gaveUp: gone });
-      return;
-    }
-
-    /* -- the phase ladder (Q674–Q678) ------------------------------------
-       One press, one rung: birth → constitution → ready → session →
-       closing → closed, on a real document with a real log and a real
-       engine. Dropped from the production artifact the same way the
-       outbox is — and the import is **dynamic and inside the label**,
-       which is what keeps the ladder, its cast and its charter from being
-       resolved into the bundle at all. A static import would survive the
-       drop, because esbuild cannot prove a module's top-level
-       initialisers pure and keeps them even with no live reference. */
-    /* The bar's readout, and how it knows to exist at all. A GET must not
-       climb: the bar asks on every page load, and a probe that advanced a
-       rung would make merely opening the page press the button. */
-    DEV: if (req.method === 'GET' && path === '/api/dev/ladder') {
-      if (devOff()) return;
-      const { phaseOf, RUNGS, seedOfSlug, seatsOf, manifestOf } =
-        await import('./dev-ladder.js');
-      const slug = url.searchParams.get('slug');
-      const doc = slug === null ? null : store.bySlug(slug);
-      const phase = phaseOf(doc, nowMs);
-      const manifestSafely = (d: typeof doc, t: number): { what: string; seat?: string }[] => {
-        try {
-          return manifestOf(d, t).lines;
-        } catch (e) {
-          return [{ what: `the manifest could not be read: ${(e as Error).message}` }];
-        }
-      };
-      json(res, 200, {
-        phase,
-        next: RUNGS[Math.min(RUNGS.indexOf(phase) + 1, RUNGS.length - 1)],
-        rungs: RUNGS,
-        seed: doc === null ? null : seedOfSlug(doc.cs.slug),
-        seats: doc === null ? [] : seatsOf(doc.cs),
-        me: doc === null ? null : (cookieSession(req, doc.id)?.memberId ?? null),
-        /* What is *in* the document, for `npm run ladder --to=` to print
-           beside its own assertions (Q1140). It rides this GET because the
-           walk drives the **bar** and so never sees `runLadder`'s own
-           return — and because reading it back here is what makes it the
-           document's account of itself rather than the rung's (Q1141).
-
-           **It must never take the bar down.** The bar asks this on every
-           page load and draws nothing at all if the answer is an error, so
-           a manifest that throws would remove the ⏭ from the page and
-           report itself as *the server is not in dev mail mode* — which is
-           exactly what a first cut of `manifestOf` did. It is an extra;
-           a failure to describe the document is not a failure to serve it. */
-        manifest: manifestSafely(doc, nowMs),
-      });
-      return;
-    }
-
-    DEV: if (req.method === 'POST' && path === '/api/dev/ladder') {
-      if (devOff()) return;
-      if (devCrossSite(req, res, baseOrigin)) return;
-      const body = await readJson(req) as { to?: unknown; seed?: unknown; slug?: unknown };
-      const { runLadder } = await import('./dev-ladder.js');
-      const doc = typeof body.slug === 'string' ? store.bySlug(body.slug) : null;
-      const result = await runLadder(
-        { store, commit: (d, t) => writes.commit(d, t) }, doc, {
-        ...(typeof body.to === 'string' ? { to: body.to as never } : {}),
-        ...(typeof body.seed === 'number' ? { seed: body.seed } : {}),
-      });
-      // the press seats you as the founder, since the founder is who the
-      // ladder's own rungs are written from
-      setCookie(res, result.docId, auth.cookieFor(result.docId, 'founder', nowMs), httpsOn);
-      json(res, 200, result);
-      return;
-    }
-
-    /* Sit in any seat. `cookieFor` checks nothing at all, so this mirrors
-       /auth/login's own arrival and revival — a cookie for somebody who
-       has not arrived renders a seat whose every command then throws. The
-       seat list is served from here rather than from the view payload:
-       `devMail` already rides the view unconditionally, the stranger's
-       path included, and a roster there would be an oracle to anybody
-       holding the slug. */
-    DEV: if (req.method === 'POST' && path === '/api/dev/seat') {
-      if (devOff()) return;
-      if (devCrossSite(req, res, baseOrigin)) return;
-      const body = await readJson(req) as { slug?: unknown; member?: unknown };
-      const doc = docOr404(typeof body.slug === 'string' ? store.bySlug(body.slug) : null);
-      if (!doc) return;
-      const member = typeof body.member === 'string' ? body.member : '';
-      const rec = doc.cs.memberRecords().get(member);
-      const isFounder = member === doc.cs.convenorRecord().id;
-      if (!rec && !isFounder) { json(res, 404, { error: 'no such seat' }); return; }
-      const t = writes.tOf(doc);
-      if (rec && rec.arrivedAtT === null) doc.cs.arrive(t, member);
-      else if (rec && rec.lapsed) doc.cs.memberReturn(t, member);
-      await writes.commit(doc, nowMs);
-      setCookie(res, doc.id, auth.cookieFor(doc.id, member, nowMs), httpsOn);
-      json(res, 200, { ok: true, member });
-      return;
-    }
-
-    /* the address, asked before the email (Q460): is it free? A document
-       holds it, or a pending creation has reserved it (Q462b) — the one
-       small oracle on pending documents, the price of promising an
-       address. No personal data: a slug is a public name by design. */
-    if (req.method === 'GET' && seg[0] === 'api' && seg[1] === 'slug' && seg.length === 3) {
-      if (tooMany('slug', 120)) return;
-      const slug = decodeURIComponent(seg[2]!);
-      if (!SLUG_OK.test(slug) || slug.length > LIMITS.slug) {
-        json(res, 200, { available: false, legal: false });
-        return;
-      }
-      res.setHeader('cache-control', 'no-store');
-      /* A refusal offers the nearest free address, exactly as the send's own
-         409 has since Q462b. 📍 blocks its commit on this answer now, and a
-         block that names no way forward leaves the founder to invent an
-         address at the one step that mints the document. Computed only when
-         it is needed: a free address costs no extra lookups. */
-      const free = await slugFree(slug);
-      json(res, 200, { available: free, legal: true,
-        ...(free ? {} : { suggestion: await uniqueSlugAsync(slug) }) });
-      return;
-    }
-
-    if (req.method === 'POST' && path === '/api/docs') {
-      if (tooMany('docs')) return;
-      const body = await readJson(req);
-      const title = cap(expectString(body, 'title'), LIMITS.title, 'the title');
-      const email = emailOk(expectString(body, 'email'));
-      const isMember = body.isMember !== false;
-      // the 🧭 shape (entry 166): a row's name is kept; `'custom'`, absent or
-      // anything else is **no shape** — refusing an unknown word would let an
-      // old client's send fail on a field it never knew, and dropping it is
-      // the same answer as custom. It rides the token's `pending` exactly as
-      // the title does, so a resend restates it from the page.
-      const shape = isShapeName(body.shape) ? body.shape : undefined;
-      /* 📨 is a resend, not a rival (Ed's QA, 2026-08-21: *when I click 📨
-         I'm taken back to link*). The first send reserves the address for
-         the pending creation (Q462b) — so a second send of the same
-         creation asked for an address its own reservation held, was told
-         truthfully that it was taken, and the page did the right thing with
-         the wrong news and walked the founder back to 📍. The pendingId the
-         first send returned is the capability that says *this reservation is
-         mine*: with it, the address is free to this caller and no second
-         creation is opened. Without it (a first send, an older client)
-         nothing changes. */
-      const givenId = typeof body.pendingId === 'string' && body.pendingId !== ''
-        ? body.pendingId : null;
-      const mine = givenId === null ? null : sha256Hex(givenId);
-      // the founder chooses the address before the email (Q460); absent
-      // (older clients, the tests' shorthand) it is suggested from the title
-      let slug: string;
-      if (typeof body.slug === 'string') {
-        slug = body.slug.trim().toLowerCase();
-        if (!SLUG_OK.test(slug) || slug.length > LIMITS.slug) {
-          json(res, 400, { error: 'the address must be lower case, digits and hyphens, three characters or more' });
-          return;
-        }
-        const heldByMe = mine !== null && (await stash.reservedBy(slug, nowMs)) === mine;
-        if (!heldByMe && !(await slugFree(slug))) {
-          // 462b: told "taken", and offered the nearest free one
-          json(res, 409, { error: 'that address is taken',
-            suggestion: await uniqueSlugAsync(slug) });
-          return;
-        }
-      } else {
-        slug = await uniqueSlugAsync(slugify(title));
-      }
-      // the pre-save text stash (§9.7a v0.55): pasted text syncs against
-      // this id while the founder is off following the mail — and since
-      // Q462b it is also the reservation on the address: the slug is held
-      // exactly as long as the stash lives, and take() releases it
-      const expMs = nowMs + 7 * 24 * 3600_000;
-      // a resend keeps its own stash — with whatever has been pasted into it
-      // — and moves its reservation onto the address now asked for; only a
-      // first send opens one. renew() is the truth of it, so a stash swept
-      // between the check and here still falls back to a fresh creation.
-      const renewed = givenId !== null && mine !== null &&
-        await stash.renew(mine, expMs, slug, nowMs);
-      const pendingId = renewed && givenId !== null
-        ? givenId : randomBytes(18).toString('base64url');
-      const stashKey = sha256Hex(pendingId);
-      if (!renewed) await stash.open(stashKey, expMs, slug);
-      const token = await auth.mintToken(
-        { kind: 'create', email, pending: { title, slug, email, isMember, stashKey,
-          ...(shape === undefined ? {} : { shape }) } }, nowMs);
-      const link = `${cfg.baseUrl}/auth/create?token=${token}`;
-      await writes.sendNow({ to: email, ...MAILS.create(title, slug, link) }, null, token);
-      json(res, 200, { ok: true, slug, pendingId,
-        ...(mailer.dev ? { devLink: link } : {}) });
-      return;
-    }
-
-    /* text pasted before the save survives it (§9.7a v0.55) */
-    if (req.method === 'POST' && path === '/api/docs/pending') {
-      if (tooMany('pending', 120)) return;
-      const body = await readJson(req);
-      const pendingId = expectString(body, 'pendingId');
-      const text = cap(expectString(body, 'text'), LIMITS.text, 'the text');
-      if (!(await stash.update(sha256Hex(pendingId), text, nowMs))) {
-        json(res, 404, { error: 'that draft has expired' });
-        return;
-      }
-      json(res, 200, { ok: true });
-      return;
-    }
-
-    /* magic links are GETs, and a GET must not consume a single-use
-       token — mail scanners prefetch links and would burn them (stage 3,
-       defect 6). The GET serves a page that POSTs the token on arrival
-       (or on a click, without JavaScript); the POST is what consumes. */
-    if (req.method === 'GET' &&
-        (path === '/auth/create' || path === '/auth/login' || path === '/auth/apply')) {
-      const token = url.searchParams.get('token') ?? '';
-      if (token === '') { json(res, 400, { error: 'missing token' }); return; }
-      // same-origin, overriding the global no-referrer (found on staging,
-      // 2026-08-20): the fetch spec serializes a POST's Origin as *null*
-      // when the submitting page's referrer policy is no-referrer, so the
-      // interstitial's own form tripped the cross-site check — the two
-      // stage-3 hardenings fighting each other. Same-origin keeps the
-      // token-bearing Referer inside this origin and gives the POST a
-      // real Origin to verify.
-      res.setHeader('referrer-policy', 'same-origin');
-      html(res, interstitial(path, token));
-      return;
-    }
-
-    if (req.method === 'POST' && path === '/auth/create') {
-      if (tooMany('auth', 60)) return;
-      const rec = await auth.useToken(await readTokenBody(req), nowMs);
-      if (!rec || rec.kind !== 'create' || !rec.pending) {
-        json(res, 400, { error: 'that link has been used or has expired' });
-        return;
-      }
-      const p = rec.pending;
-      /* **One creation, however many links** (Q519, Ed 2026-08-21: *they all
-         stay live, first one creates and the rest forward to what was
-         created*). A re-send mints a second link against the same pending
-         creation, so the first one followed creates the document and records
-         itself in the stash — and every later one reads that and forwards to
-         the document, logging the founder in. This holds however the address
-         moved in between, because the claim is on the creation rather than
-         on a name. */
-      const madeId = p.stashKey === undefined ? null : await stash.claimedBy(p.stashKey, nowMs);
-      const made = madeId === null ? null : store.byId(madeId);
-      if (made) {
-        setCookie(res, made.id, auth.cookieFor(made.id, made.cs.convenorRecord().id, nowMs), httpsOn);
-        redirect(res, `/d/${made.cs.slug}`);
-        return;
-      }
-      /* …and the same for a link minted before the stash carried its claim:
-         the address it promised already holds a document this very founder
-         made, so it forwards there rather than founding a twin beside it. */
-      const twin = store.bySlug(p.slug);
-      if (twin && twin.cs.convenorRecord().email?.toLowerCase() === p.email.toLowerCase()) {
-        setCookie(res, twin.id, auth.cookieFor(twin.id, twin.cs.convenorRecord().id, nowMs), httpsOn);
-        redirect(res, `/d/${p.slug}`);
-        return;
-      }
-      const slug = store.slugTaken(p.slug)
-        ? uniqueSlug(p.title, (s) => store.slugTaken(s)) : p.slug;
-      const id = `d-${randomBytes(5).toString('hex')}`;
-      // on the chain (review #1, finding 9): the birth's persist must not
-      // interleave with a first command's commit
-      const doc = await commits.run(id, () => store.create(id, {
-        title: p.title,
-        slug,
-        convenor: { id: 'founder', email: p.email, isMember: p.isMember },
-        // the shape is folded at the save as the founder's own sets (entry 166)
-        ...(p.shape === undefined ? {} : { shape: p.shape }),
-      }, nowMs));
-      // the pasted text is waiting in the saved document (§9.7a v0.55) —
-      // waiting, not decided: confirming the starting text stays its own act
-      if (p.stashKey !== undefined) {
-        const text = await stash.take(p.stashKey, nowMs, id);
-        if (text.length > 0) await store.setProvisional(doc, text);
-      }
-      await writes.commit(doc, nowMs);
-      // the operator hears about every birth (Ed, 2026-08-20) — fired and
-      // forgotten: the save must never fail, or wait, on this mail. Through
-      // `sendNow` rather than the mailer, because the kill-switch means
-      // *nothing goes out*, and a mail that leaves while mail is off is a
-      // switch that does not switch.
-      if (cfg.notifyEmail !== null) {
-        void writes.sendNow({ to: cfg.notifyEmail,
-          ...MAILS.newDocument(p.title, `${cfg.baseUrl}/d/${slug}`, p.email) }, null)
-          .catch((e: unknown) => console.error('new-document notification failed:', e));
-      }
-      setCookie(res, id, auth.cookieFor(id, 'founder', nowMs), httpsOn);
-      redirect(res, `/d/${slug}`);
-      return;
-    }
-
-    /* -- login ----------------------------------------------------------- */
-    if (req.method === 'POST' && seg[0] === 'api' && seg[1] === 'd' &&
-        seg[3] === 'login' && seg.length === 4) {
-      const doc = docOr404(store.bySlug(seg[2]!));
-      if (!doc) return;
-      // Two buckets on this door (Q1341, Ed 2026-09-12). Per IP, 200 in ten
-      // minutes: a convention room shares one venue wifi and so one address,
-      // and twenty logins were what a room of twenty spends arriving. Per
-      // email, 5 in ten minutes: a scripted attack on one address is the
-      // thing the old cap actually stopped, and it is keyed on the address,
-      // not the socket. Both numbers are guesses; revisit them after a real
-      // convention. The per-email check runs before the roster lookup so a
-      // known and an unknown address are refused identically.
-      if (tooMany('login', 200)) return;
-      const body = await readJson(req);
-      const email = emailOk(expectString(body, 'email'));
-      if (rateLimited(`login-email:${email}`, nowMs, 5)) {
-        json(res, 429, { error: 'too many requests — try again shortly' });
-        return;
-      }
-      const memberId = memberIdByEmail(doc.cs, email);
-      if (memberId === null) {
-        // an unknown address is told nothing (the roster is not readable
-        // from outside); the response is the same either way
-        json(res, 200, { ok: true });
-        return;
-      }
-      const token = await auth.mintToken(
-        { kind: 'login', email, docId: doc.id, memberId }, nowMs);
-      const link = `${cfg.baseUrl}/auth/login?token=${token}`;
-      await writes.sendNow({ to: email, ...MAILS.login(doc.cs.titleOf, link) }, doc.id, token);
-      json(res, 200, { ok: true, ...(mailer.dev ? { devLink: link } : {}) });
-      return;
-    }
-
-    /* -- applicants (§9.7½): the email is the identity ------------------ */
-    if (req.method === 'POST' && seg[0] === 'api' && seg[1] === 'd' &&
-        seg[3] === 'apply' && seg.length === 4) {
-      const doc = docOr404(store.bySlug(seg[2]!));
-      if (!doc) return;
-      if (tooMany('apply')) return;
-      const body = await readJson(req);
-      const email = emailOk(expectString(body, 'email'));
-      // the same refusals the module makes at startApplication, made
-      // read-only (stage 3, defect 8): an unauthenticated POST writes
-      // nothing to the log — the write moved to POST /auth/apply, where
-      // the address has proved it works
-      if (!mayApply(doc.cs.settingState('applications').value as ApplicationsValue | null)) {
-        json(res, 400, { error: 'this document is invitation-only (§9.7½)' });
-        return;
-      }
-      // the door must not be a membership oracle (review #1, finding 8):
-      // the login route deliberately tells an unknown address nothing, so
-      // this route must not tell a stranger who is a member. A member's
-      // address gets a login mail and the same 200 as anybody; an
-      // application already underway gets the same 200 and no new mail.
-      const already = memberIdByEmail(doc.cs, email);
-      if (already !== null) {
-        const token = await auth.mintToken(
-          { kind: 'login', email, docId: doc.id, memberId: already }, nowMs);
-        const link = `${cfg.baseUrl}/auth/login?token=${token}`;
-        await writes.sendNow({ to: email, ...MAILS.login(doc.cs.titleOf, link) }, doc.id, token);
-        json(res, 200, { ok: true, ...(mailer.dev ? { devLink: link } : {}) });
-        return;
-      }
-      // An application already underway re-sends the verification mail
-      // (Q439(a), Ed 2026-08-20) carrying the seat that already exists.
-      // Without it an applicant who lost their cookie was simply locked
-      // out: the door says nothing (deliberately — it must not be an
-      // oracle) and login says nothing either, since they are not a
-      // member, so there was no door left to knock on. The mail is the
-      // re-entry, and the response is the same plain 200 as every other
-      // branch here, so nothing is disclosed by trying.
-      const underway = [...doc.cs.applicantRecords().values()]
-        .find((a) => a.email === email && a.status !== 'refused');
-      if (underway !== undefined) {
-        const token = await auth.mintToken(
-          { kind: 'apply', email, docId: doc.id, applicantId: underway.id }, nowMs);
-        const link = `${cfg.baseUrl}/auth/apply?token=${token}`;
-        await writes.sendNow({ to: email, ...MAILS.applyVerify(doc.cs.titleOf, link) }, doc.id, token);
-        json(res, 200, { ok: true, ...(mailer.dev ? { devLink: link } : {}) });
-        return;
-      }
-      const token = await auth.mintToken({ kind: 'apply', email, docId: doc.id }, nowMs);
-      const link = `${cfg.baseUrl}/auth/apply?token=${token}`;
-      await writes.sendNow({ to: email,
-        ...MAILS.applyVerify(doc.cs.titleOf, link) }, doc.id, token);
-      json(res, 200, { ok: true, ...(mailer.dev ? { devLink: link } : {}) });
-      return;
-    }
-
-    if (req.method === 'POST' && path === '/auth/apply') {
-      if (tooMany('auth', 60)) return;
-      const rec = await auth.useToken(await readTokenBody(req), nowMs);
-      if (!rec || rec.kind !== 'apply' || rec.docId === undefined) {
-        json(res, 400, { error: 'that link has been used or has expired' });
-        return;
-      }
-      const doc = docOr404(store.byId(rec.docId));
-      if (!doc) return;
-      const t = writes.tOf(doc);
-      // the log's first applicant entry lands here, after the address has
-      // proved it works (stage 3, defect 8); the module re-checks policy
-      // and membership, so a world that changed since the mail refuses
-      const applicantId = rec.applicantId ?? doc.cs.startApplication(t, rec.email);
-      // a re-entry link (Q439(a)) lands on a seat that is already verified,
-      // or has an application sitting with the room: there is nothing to
-      // verify and nothing to write — the link's whole job is the cookie
-      if (doc.cs.applicantRecords().get(applicantId)?.status === 'started') {
-        doc.cs.verifyApplication(t, applicantId);
-      }
-      // **Under `open` the link is the joining** (backlog 73, Q894). The rung
-      // says so in as many words — *anyone with the link becomes a member the
-      // moment they open it* — and the module agrees, `submitApplication`
-      // auto-admitting with no motion in the way. But this handler only ever
-      // verified, so the visitor was left at `verified` for ever: no UI
-      // submits for them (the page renders an `open` applicant no rail at all,
-      // believing landing already admitted them), so `open` membership was
-      // unreachable by any road. An empty application is a real application
-      // (§9.7½), which is what makes the admit here honest. Open is 🤝 yes
-      // with 🪪 at ✒️ (entry 94); the other prices land verify-only and
-      // keep their later submit and their motion.
-      if (admissionPrice(doc.cs) === 'pen' && !doc.cs.closed &&
-          doc.cs.applicantRecords().get(applicantId)?.status === 'verified') {
-        doc.cs.submitApplication(t, applicantId);
-      }
-      await writes.commit(doc, nowMs);
-      // an admitted visitor holds a member's seat, not an applicant's — the
-      // applicant cookie stays the fallback for every road that lands short
-      // of membership, and for an admit this handler could not make
-      const mid = memberIdByEmail(doc.cs, rec.email);
-      setCookie(res, doc.id,
-        auth.cookieFor(doc.id, mid ?? `app:${applicantId}`, nowMs), httpsOn);
-      redirect(res, `/d/${doc.cs.slug}`);
-      return;
-    }
-
-    if (req.method === 'POST' && path === '/auth/login') {
-      if (tooMany('auth', 60)) return;
-      const rec = await auth.useToken(await readTokenBody(req), nowMs);
-      if (!rec || rec.kind !== 'login' || rec.docId === undefined ||
-          rec.memberId === undefined) {
-        json(res, 400, { error: 'that link has been used or has expired' });
-        return;
-      }
-      const doc = docOr404(store.byId(rec.docId));
-      if (!doc) return;
-      const t = writes.tOf(doc);
-      const m = doc.cs.memberRecords().get(rec.memberId);
-      // membership begins at first arrival (§9.6a); revival is logging in
-      if (m && m.arrivedAtT === null) doc.cs.arrive(t, rec.memberId);
-      else if (m && m.lapsed) doc.cs.memberReturn(t, rec.memberId);
-      await writes.commit(doc, nowMs);
-      setCookie(res, doc.id, auth.cookieFor(doc.id, rec.memberId, nowMs), httpsOn);
-      redirect(res, `/d/${doc.cs.slug}`);
-      return;
-    }
-
-    /* -- the member surface (view is the only read, §3.5/NOTES) ---------- */
-    if (seg[0] === 'api' && seg[1] === 'd' && seg.length === 4 &&
-        (seg[3] === 'view' || seg[3] === 'cmd')) {
-      const doc = docOr404(store.bySlug(seg[2]!));
-      if (!doc) return;
-      const session = cookieSession(req, doc.id);
-      // no seat, or a seat that has since died (review #1, finding 1 — a
-      // removed member's cookie is ninety days of nothing): a GET is the
-      // stranger's door, open to anybody with the slug (Q456); a command
-      // still needs a seat
-      if (session === null || !seatAlive(doc.cs, session.memberId, session.applicantId)) {
-        if (req.method === 'GET' && seg[3] === 'view') {
-          // the door's budget is per IP, and a room's phones share one
-          // (venue Wi-Fi): a stranger's page polls every 4s, 150 in the
-          // ten-minute window, so 240 fell to two phones in eight minutes
-          // and the page died of the 429 it took for a view (Ed's phone,
-          // 2026-09-12). Ten phones' worth — still a brake on a scraper.
-          if (tooMany('stranger', 1500)) return;
-          const seq = doc.cs.logEntries().length;
-          const engineDoc0 = asEngineDoc(doc);
-          const eseq = engineDoc0.bridge === null ? 0 : engineDoc0.bridge.engine.log.length;
-          if (url.searchParams.get('since') === seq + '.' + eseq) {
-            json(res, 200, { seq, eseq });
-            return;
-          }
-          json(res, 200, { seq, eseq, devMail: mailer.dev, ...strangerView(doc, nowMs, pause.payload(nowMs), session) });
-          return;
-        }
-        json(res, 401, { error: 'log in first' });
-        return;
-      }
-      const { memberId, applicantId } = session;
-      // a cookie is not a seat (review #1, finding 1): sessions are
-      // stateless, so removal has to be checked here — otherwise a
-      // removed or uninvited member's cookie is ninety days of full
-      // member read under a constitution that says members only
-      const isFounder = memberId === doc.cs.convenorRecord().id;
-      if (req.method === 'GET' && seg[3] === 'view') {
-        // presence is presence (Q459a): a read refreshes the member's
-        // activity clock, at most hourly — the module says whether it
-        // recorded anything, and only then is there something to commit
-        //
-        // **A ladder document's clock belongs to the ladder** (Q681). This
-        // one write is what made the stagehand's whole premise unworkable:
-        // presence stamps `now`, so merely *looking* at a document pinned
-        // its log to the present, and the next rung — which builds its
-        // three hours of session by writing them into the past — had no
-        // past left to write into. Since the bar reloads the page after
-        // every press, that happened between every pair of presses. The
-        // skip is dev-only and lives inside the label, so production keeps
-        // presence exactly as it was.
-        let ladderClock = false;
-        DEV: { ladderClock = mailer.dev && doc.cs.slug.startsWith('ladder-'); }
-        if (applicantId === null && !ladderClock &&
-            doc.cs.seen(writes.tOf(doc), memberId)) {
-          await writes.commit(doc, nowMs);
-        }
-        const seq = doc.cs.logEntries().length;
-        // race cards ride the engine's own log, which judge-race moves
-        // without touching the document log — freshness is both lengths
-        const engineDoc = asEngineDoc(doc);
-        const eseq = engineDoc.bridge === null ? 0 : engineDoc.bridge.engine.log.length;
-        // the page polls (4s): when it says what it has seen and nothing
-        // moved in either log, answer with the seqs alone and build no view
-        const since = url.searchParams.get('since');
-        if (since === seq + '.' + eseq) {
-          // the two host flags ride the short answer too (Q1345, Q1346): a
-          // page that has seen everything is exactly the page that must
-          // still hear a pause or a stall
-          json(res, 200, { seq, eseq, short: true, paused: pause.payload(nowMs), stalled: !!doc.stalled });
-          return;
-        }
-        // **The slim view** (the moon room, 2026-09-11): in a busy room
-        // something has always moved inside a poll, so the short answer never
-        // fires and every poll is a full view — 260 KB by a hundred races, of
-        // which the sealed records were two fifths, the constitution's own
-        // projection a quarter and the text a tenth, and none of the three
-        // moves with a judgment. A poll that says what it holds — the document
-        // seq it has seen (`since`'s first half: the projection is a function
-        // of the document log), the text version (`tv`) and the records' key
-        // (`rk`) — is answered without whichever of the three it already has,
-        // and `slim` names them so the page keeps its own. A client that says
-        // nothing gets everything, as before.
-        const pageSeq = since === null ? null : Number(since.split('.')[0]);
-        const pageTv = url.searchParams.get('tv');
-        const pageRk = url.searchParams.get('rk');
-        // **An applicant is a stranger who has knocked** (Q1281, 2026-09-07):
-        // they are served the door's own payload — the rules, the text where
-        // 🌍 lets a link-holder read it, the register on the same rung — plus
-        // their own application, and never the members' emails, the
-        // questions, or anybody's answers (stage 3, defect 7). The old thin
-        // payload carried no `view` at all, and the live page, which has a
-        // door branch and a member branch, fell through to the member one
-        // and threw on its first `view.*` read; every applicant at docs.vote
-        // got a blank surface. The text gate is `strangerView`'s `canRead`
-        // (link | public), which agrees with the old applicant gate
-        // (`rung !== 'closed'`) on every rung the catalogue has.
-        if (applicantId !== null) {
-          const app = doc.cs.applicantRecords().get(applicantId) ?? null;
-          json(res, 200, {
-            seq,
-            eseq,
-            devMail: mailer.dev,
-            ...strangerView(doc, nowMs, pause.payload(nowMs), session),
-            // the door's payload says `stranger: true`; this seat is not the
-            // door, and the page's door branch must not fire for it
-            stranger: false,
-            me: memberId,
-            isFounder: false,
-            applicant: app === null ? null : { id: app.id, email: app.email,
-              status: app.status, name: app.name, picture: app.picture, erased: app.erased,
-              words: app.words, motion: app.motion,
-              // how many have judged the admit motion: a count, never who —
-              // the applicant's own card promises *n of E have voted on it*
-              judged: admitJudged(doc, app) },
-            // the page's poll fingerprints these two on every seat
-            raceCards: [],
-            wallet: null,
-          });
-          return;
-        }
-        json(res, 200, {
-          me: memberId,
-          isFounder,
-          devMail: mailer.dev,
-          title: doc.cs.titleOf,
-          slug: doc.cs.slug,
-          constitutedAtT: doc.cs.constitutedAtT,
-          seq,
-          eseq,
-          // the session-clock counts against the server's clock, not the
-          // browser's (Q466); the page offsets by the time it received this
-          serverNowMs: nowMs,
-          paused: pause.payload(nowMs),
-          stalled: !!doc.stalled,
-          textConfirmed: doc.cs.textConfirmed,
-          quorumForm: doc.cs.quorumForm,
-          electorateSize: doc.cs.motionElectorate().length,
-          membershipReserved: doc.cs.membershipReserved(),
-          crowned: doc.cs.crowned(),
-          // the 🍾 card's readiness readout (Q443): founder-only, part of
-          // the task rather than of the document — participation by name,
-          // never preference
-          readiness: isFounder ? doc.cs.readiness() : null,
-          convenor: { id: doc.cs.convenorRecord().id,
-            isMember: doc.cs.convenorRecord().isMember,
-            email: doc.cs.convenorRecord().email,
-            name: doc.cs.convenorRecord().name,
-            picture: doc.cs.convenorRecord().picture,
-            erased: doc.cs.convenorRecord().erased,
-            // whether 🎩 was ever put, which its value cannot say (Q682)
-            membershipSet: doc.cs.convenorRecord().membershipSet },
-          // the unconfirmed starting text (§9.7a v0.55): readable by any
-          // member — the charter is what the founding questions are about
-          provisionalText: doc.cs.textConfirmed ? null : doc.provisional,
-          ...((): Record<string, unknown> => {
-            const ed = asEngineDoc(doc);
-            const rkNow = ed.bridge === null ? 0
-              : new ParticipantApi(ed.bridge.engine, memberId).outcomes().length;
-            const slim: string[] = [];
-            // before 🍾 there is no engine: the text version reads 0 while
-            // the founder's text still changes (confirm-starting-text), so
-            // neither the text nor the records are ever left out then —
-            // journey's *paste ✒️* step held a stale column otherwise
-            const versioned = ed.bridge !== null;
-            const keepRecords = versioned && pageRk !== null && Number(pageRk) === rkNow;
-            const rv = raceView(doc, memberId, nowMs, { records: !keepRecords });
-            const out: Record<string, unknown> = { ...rv };
-            if (keepRecords) { delete out.records; slim.push('records'); }
-            if (versioned && pageTv !== null && Number(pageTv) === rv.textVersion) {
-              delete out.text; slim.push('text');
-            }
-            if (pageSeq !== null && pageSeq === seq) slim.push('view');
-            else out.view = view(doc.cs, memberId);
-            out.slim = slim;
-            return out;
-          })(),
-        });
-        return;
-      }
-      if (req.method === 'POST' && seg[3] === 'cmd') {
-        const body = await readJson(req);
-        const cmd = expectString(body, 'cmd');
-        const args = (body.args ?? {}) as Record<string, unknown>;
-        const t = writes.tOf(doc);
-        // paused (Q1345): refused before anything is applied, with the
-        // pause itself in the answer so the page draws the modal and not a
-        // refusal; a 503, since the document is whole and merely waiting
-        if (pause.now(nowMs) !== null) {
-          json(res, 503, { error: PauseState.MESSAGE, paused: pause.payload(nowMs) });
-          return;
-        }
-        // **every refusal lands in the error log** (Q1330): the document,
-        // the seat as its id — never the address — the command, its
-        // arguments and the reason, so a refusal a member met on the page
-        // can be looked up on the host afterwards
-        const refused = (status: number, reason: string): void => logError(cfg.dataDir, {
-          kind: 'refused', status, method: 'POST', path: pathOf(req),
-          doc: doc.id, slug: doc.cs.slug, seat: applicantId ?? memberId, cmd, args, reason });
-        // an applicant's one act: submit — nothing else speaks for them
-        if (applicantId !== null && cmd !== 'submit-application') {
-          refused(403, 'applicants may only submit their application');
-          json(res, 403, { error: 'applicants may only submit their application' });
-          return;
-        }
-        const me = doc.cs.memberRecords().get(memberId);
-        if (me?.lapsed) doc.cs.memberReturn(t, memberId); // any act revives
-        let result: unknown;
-        try {
-          result = runCommand(doc.cs, { memberId, isFounder, applicantId },
-            t, cmd, args, asEngineDoc(doc).bridge);
-        } catch (e) {
-          // whatever the module emitted before the refusal — a revival, a
-          // motion whose engine race then refused — is real, and must not
-          // sit in memory waiting to ride an unrelated commit (review #1,
-          // finding 6): memory and disk never diverge, even on a 400
-          await writes.commit(doc, nowMs);
-          // logged here, where the command and the seat are known; the
-          // catch below sees it once more and skips it (`logged`). A throw
-          // carrying a system code is the route failing, not a refusal,
-          // and stays the catch's to log as `failed`.
-          if (typeof (e as { code?: unknown }).code !== 'string') {
-            refused(400, e instanceof Error ? e.message : String(e));
-            (e as { logged?: boolean }).logged = true;
-          }
-          throw e;
-        }
-        // confirming the starting text supersedes the provisional draft
-        if (doc.cs.textConfirmed && doc.provisional !== null) {
-          await store.setProvisional(doc, null);
-        }
-        const seq = await writes.commit(doc, nowMs);
-        json(res, 200, { ok: true, seq, ...(result !== undefined ? { result } : {}) });
-        return;
-      }
-    }
-
-    /* the founder's draft text after the save, before the confirm (§9.7a) */
-    if (req.method === 'POST' && seg[0] === 'api' && seg[1] === 'd' &&
-        seg[3] === 'stash' && seg.length === 4) {
-      const doc = docOr404(store.bySlug(seg[2]!));
-      if (!doc) return;
-      const session = cookieSession(req, doc.id);
-      if (session === null) { json(res, 401, { error: 'log in first' }); return; }
-      if (session.memberId !== doc.cs.convenorRecord().id) {
-        json(res, 403, { error: 'only the founder holds the starting text' });
-        return;
-      }
-      if (doc.cs.textConfirmed) {
-        json(res, 400, { error: 'the starting text is decided — changes are proposed in the document' });
-        return;
-      }
-      const body = await readJson(req);
-      await store.setProvisional(doc,
-        cap(expectString(body, 'text'), LIMITS.text, 'the text'));
-      json(res, 200, { ok: true });
-      return;
-    }
-
-    /* -- the surface ------------------------------------------------------ */
-    // the page references its assets relatively (fixture mode serves them
-    // from one directory), so they resolve to /x.js at the root and to
-    // /d/x.js under a document — serve both from the design dir. Basename
-    // only: no separators survive seg splitting, so no traversal.
-    const last = seg.length > 0 ? seg[seg.length - 1]! : '';
-    if (req.method === 'GET' && /\.(js|css|svg|png|woff2?)$/.test(last) &&
-        (seg.length === 1 || (seg[0] === 'd' && seg.length === 2))) {
-      serveFile(res, join(designDir, last));
-      return;
-    }
-    if (req.method === 'GET' && seg[0] === 'd' && seg.length === 2) {
-      if (docOr404(store.bySlug(seg[1]!)) === null) return;
-      serveFile(res, join(designDir, 'session-view.html'));
-      return;
-    }
-    if (req.method === 'GET' && seg[0] === 'design') {
-      const rel = normalize(seg.slice(1).join('/'));
-      // Assets only, and only the ones at the top of the tree: design/
-      // also holds notes, the byte-frozen reference copies and the probe
-      // tooling, none of which is this server's to serve. The filter was
-      // by extension alone until staging showed the comment was untrue —
-      // design/tools/session-probe.js and the whole of design/reference
-      // answered 200 (Q478, fixed 2026-08-20). No separator survives, so
-      // this is also a second lock on traversal.
-      if (rel.includes('/') || rel.includes('\\') || rel.startsWith('..') ||
-          rel.includes('..') || !/\.(js|css|svg|png|woff2?)$/.test(rel)) {
-        json(res, 404, { error: 'not found' });
-        return;
-      }
-      serveFile(res, join(designDir, rel));
-      return;
-    }
-    if (req.method === 'GET' && path === '/') {
-      // arriving at docs.vote presents a brand-new unsaved document (§9.7a)
-      serveFile(res, join(designDir, 'session-view.html'));
-      return;
-    }
-    // The explainer for the approval threshold (entry 163): what one
-    // confidence means in votes, why it is a confidence and not a share.
-    // The first page this host serves that is not a document — 🌡️'s
-    // `methodNote` links here, and the page's own numbers come from
-    // `votesNeeded` in the bundle it loads. Exact path only: no trailing
-    // slash and no /pairwise.html alias, the root asset regex above
-    // deliberately not matching .html.
-    if (req.method === 'GET' && path === '/pairwise') {
-      serveFile(res, join(designDir, 'pairwise.html'));
-      return;
+    // the table, first match wins — and a row may still decline, in which
+    // case the walk goes on exactly as the old chain's fallthrough did
+    for (const entry of ROUTES) {
+      if (!routeMatches(entry, r)) continue;
+      if (await entry.handler(ctx, r)) return;
     }
 
     json(res, 404, { error: 'not found' });
-  }
-
-  /** The actor's kind is parsed here, once: an `app:` seat is an applicant. */
-  function cookieSession(req: IncomingMessage, docId: string):
-    { memberId: string; applicantId: string | null } | null {
-    const header = req.headers.cookie ?? '';
-    const pairs = header.split(';').map((s) => s.trim());
-    const own = cookieName(docId);
-    const pair = pairs.find((s) => s.startsWith(`${own}=`)) ??
-      pairs.find((s) => s.startsWith(`${LEGACY_COOKIE}=`));
-    if (!pair) return null;
-    const parsed = auth.verifyCookie(pair.slice(pair.indexOf('=') + 1), Date.now());
-    if (parsed === null || parsed.docId !== docId) return null;
-    const { memberId } = parsed;
-    return { memberId,
-      applicantId: memberId.startsWith('app:') ? memberId.slice(4) : null };
   }
 
   const close = (): Promise<void> => {
@@ -1317,222 +329,4 @@ export async function createDraftServer(cfg: ServerConfig,
   };
 
   return { server, store, auth, mailer, outbox, tick, close };
-}
-
-/* -------------------------------------------------------------------------- */
-
-/** The magic-link interstitial (stage 3, defect 6) — deliberately off the
- *  design system, like the mail it came from: it exists for milliseconds. */
-function interstitial(action: string, token: string): string {
-  const e = (v: string) => v.replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  return '<!doctype html><meta charset="utf-8"><title>docs.vote</title>' +
-    '<body style="font-family: system-ui, sans-serif; padding: 2rem">' +
-    '<form method="post" action="' + e(action) + '">' +
-    '<input type="hidden" name="token" value="' + e(token) + '">' +
-    '<noscript><button type="submit">Continue</button></noscript></form>' +
-    '<script>document.forms[0].submit()</script>';
-}
-
-/** The whole body as text, refused past `maxBytes` — the one reader behind
- *  the token form and the JSON commands, each with its own cap. */
-async function readBody(req: IncomingMessage, maxBytes: number): Promise<string> {
-  const chunks: Buffer[] = [];
-  let size = 0;
-  for await (const chunk of req) {
-    size += (chunk as Buffer).length;
-    if (size > maxBytes) throw new Error('request too large');
-    chunks.push(chunk as Buffer);
-  }
-  return Buffer.concat(chunks).toString('utf8');
-}
-
-/** The token from an interstitial form (urlencoded) or a JSON body. */
-async function readTokenBody(req: IncomingMessage): Promise<string> {
-  const text = await readBody(req, 10_000);
-  const ct = req.headers['content-type'] ?? '';
-  if (ct.includes('application/json')) {
-    return String((JSON.parse(text) as { token?: unknown }).token ?? '');
-  }
-  return new URLSearchParams(text).get('token') ?? '';
-}
-
-function html(res: ServerResponse, body: string): void {
-  res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-  res.end(body);
-}
-
-function memberIdByEmail(cs: ConstitutionSession, email: string): string | null {
-  // case-blind (review #1, finding 18): older logs hold addresses as they
-  // were typed, and an invitee who capitalizes differently at login must
-  // not get the silent-nothing response forever
-  // an erased person has no address to match (decision 1253), so their seat
-  // cannot be reached by login — which is the point of erasure
-  const want = email.toLowerCase();
-  for (const m of cs.memberRecords().values()) {
-    if (!m.removed && m.email !== null && m.email.toLowerCase() === want) return m.id;
-  }
-  return cs.convenorRecord().email?.toLowerCase() === want
-    ? cs.convenorRecord().id : null;
-}
-
-async function readJson(req: IncomingMessage): Promise<Record<string, unknown>> {
-  // a cross-origin form cannot send application/json without a preflight,
-  // so this plus SameSite=Lax is the CSRF story until tokens are needed
-  const ct = req.headers['content-type'] ?? '';
-  if (!ct.includes('application/json')) {
-    throw new Error('content-type must be application/json');
-  }
-  const text = await readBody(req, 1_000_000);
-  if (text.length === 0) return {};
-  const parsed: unknown = JSON.parse(text);
-  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-    throw new Error('body must be a JSON object');
-  }
-  return parsed as Record<string, unknown>;
-}
-
-/** commands.ts's `str`, with the wire's stricter no-empty rule. */
-function expectString(body: Record<string, unknown>, key: string): string {
-  return str(body, key, false);
-}
-
-function ipOf(req: IncomingMessage, cfg: ServerConfig): string {
-  // Behind Render every socket shares the proxy's address, which would
-  // make the limiter one global bucket — a one-person denial of service
-  // (stage 3, defect 3).
-  //
-  // Stage 3 answered that with "the client is the rightmost
-  // x-forwarded-for entry: the one hop we know appended it", and staging
-  // proved it wrong on 2026-08-20 — the first defect the deploy caught
-  // that no source review could. Render fronts every service with
-  // Cloudflare, so *two* hops append, and the rightmost entry is a
-  // Cloudflare edge address that rotates request to request. Every
-  // request therefore got its own bucket: 135 in a row, none limited,
-  // spoofed or not. A limiter that never limits is worse than none,
-  // because the defect list says it is fixed.
-  //
-  // The client's true address is the one Cloudflare states, and it
-  // overwrites any copy the client sends, so it cannot be spoofed by
-  // anybody arriving the way everybody arrives. Falling back to a hop
-  // count keeps this honest on a host without Cloudflare: counting from
-  // the right is the only spoof-resistant way to read the header, since
-  // a client may prepend entries but never append them.
-  if (cfg.trustProxy) {
-    const cf = req.headers['cf-connecting-ip'];
-    const stated = Array.isArray(cf) ? cf[0] : cf;
-    if (stated !== undefined && stated.trim() !== '') return stated.trim();
-    const xff = req.headers['x-forwarded-for'];
-    const list = (Array.isArray(xff) ? xff.join(',') : xff ?? '')
-      .split(',').map((s) => s.trim()).filter((s) => s.length > 0);
-    if (list.length > 0) {
-      return list[Math.max(0, list.length - (cfg.proxyHops ?? 1))]!;
-    }
-  }
-  return req.socket.remoteAddress ?? 'unknown';
-}
-
-/**
- * The dev routes' own Origin check. The blanket one above covers /auth
- * only, and these two mint cookies and write to a document, so they want
- * the same guard — a cross-site form must not be able to reseat somebody
- * or run a ladder in their session.
- */
-function devCrossSite(req: IncomingMessage, res: ServerResponse, expected: string): boolean {
-  const origin = req.headers.origin;
-  if (origin !== undefined && origin !== expected) {
-    json(res, 403, { error: 'cross-site request refused' });
-    return true;
-  }
-  return false;
-}
-
-/**
- * How many of the membership have judged an applicant's admit motion — a
- * **count only**, never who or which way (SPEC §3.5; the applicant's own card
- * says *n of E have voted on it*, Q1281). Nothing submitted, nothing counted.
- * A carried motion reads as the whole electorate, as the page's own readout
- * does. On the constitutional route the answers are the module's; on the
- * ordinary route the application is a one-candidate race in the engine
- * (`admit:<id>`, §9.7½) and the judges are the distinct members with a
- * standing judgment on it — never the applicant, whose own voice the bridge
- * lends the race as its author (`RaceView.distinctMovers` would count it).
- */
-function admitJudged(doc: LoadedDoc, app: ApplicantRecord): number {
-  if (app.motion === null) return 0;
-  const rec = doc.cs.motionRecords().get(app.motion);
-  if (rec === undefined) return 0;
-  if (rec.status === 'carried') return doc.cs.E();
-  if (rec.route === 'constitutional') return rec.answers.size;
-  const ed = asEngineDoc(doc);
-  if (ed.bridge === null) return 0;
-  // keyed on the candidate, not the race: a race that has adopted leaves
-  // `races()` while the motion still awaits the crown's assent, and the
-  // judgments that carried it are still the answer to *how many have voted*
-  const ids = new Set(ed.bridge.engine.allCandidates()
-    .filter((c) => c.setting?.settingId === `admit:${app.id}`).map((c) => c.id));
-  if (ids.size === 0) return 0;
-  const judges = new Set<string>();
-  for (const j of ed.bridge.engine.judgments()) {
-    if (j.superseded || j.participantId === app.id) continue;
-    if (ids.has(j.aId) || ids.has(j.bId)) judges.add(j.participantId);
-  }
-  return judges.size;
-}
-
-function json(res: ServerResponse, code: number, payload: unknown): void {
-  res.writeHead(code, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(payload));
-}
-
-/** The request's path with the query dropped — magic-link tokens travel there. */
-const pathOf = (req: IncomingMessage): string => (req.url ?? '/').split('?')[0]!;
-
-function redirect(res: ServerResponse, to: string): void {
-  res.writeHead(302, { location: to });
-  res.end();
-}
-
-function setCookie(res: ServerResponse, docId: string, value: string, secure: boolean): void {
-  res.setHeader('set-cookie',
-    `${cookieName(docId)}=${value}; Path=/; HttpOnly; SameSite=Lax` +
-    `${secure ? '; Secure' : ''}; Max-Age=${90 * 24 * 3600}`);
-}
-
-const MIME: Record<string, string> = {
-  '.html': 'text/html; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.md': 'text/markdown; charset=utf-8',
-  '.svg': 'image/svg+xml',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.ico': 'image/x-icon',
-  '.json': 'application/json; charset=utf-8',
-};
-
-function serveFile(res: ServerResponse, filePath: string): void {
-  if (!existsSync(filePath) || !statSync(filePath).isFile()) {
-    json(res, 404, { error: 'not found' });
-    return;
-  }
-  const stream = createReadStream(filePath);
-  // a file deleted between stat and read, or fd pressure, is a dropped
-  // response — never a dead process (review #1, finding 14)
-  stream.on('error', (e) => { console.error('serveFile:', e); res.destroy(); });
-  res.writeHead(200, {
-    'content-type': MIME[extname(filePath).toLowerCase()] ?? 'application/octet-stream',
-  });
-  stream.pipe(res);
-}
-
-/** A cookie names a seat; this says whether the seat still exists
- *  (review #1, finding 1). The convenor always does; a member must be
- *  unremoved; an applicant must still be on the applicant list. */
-function seatAlive(cs: ConstitutionSession, memberId: string,
-  applicantId: string | null): boolean {
-  if (applicantId !== null) return cs.applicantRecords().has(applicantId);
-  if (memberId === cs.convenorRecord().id) return true;
-  const m = cs.memberRecords().get(memberId);
-  return m !== undefined && !m.removed;
 }
