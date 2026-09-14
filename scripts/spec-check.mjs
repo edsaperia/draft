@@ -78,8 +78,24 @@ function motionRoutes() {
   return [...m[1].matchAll(/'([a-z]+)'/g)].map((x) => x[1]);
 }
 
+// **The page is the page and the files its inline script was split into**
+// (Q1352, 2026-09-14): a card literal, a banned word, a list-joiner or a
+// pinned predicate is the page's wherever it now sits, so every read that
+// used to open session-view.html alone reads this set — and `pageMaps`
+// asserts the page actually loads each of the others, so the list cannot
+// name a file the page does not run.
+const PAGE_FILES = ['design/session-view.html', 'design/door.js', 'design/begin.js', 'design/edit-mode.js'];
+// (the split files are CRLF like the rest of design/*.js and the page is LF;
+// the reads below match on `\n`, so the set is read as one LF text)
+const pageSrc = () => PAGE_FILES.map((f) => readFileSync(join(ROOT, f)).toString('utf8').replace(/\r\n/g, '\n')).join('\n');
+
 function pageMaps() {
-  const s = readFileSync(join(ROOT, 'design/session-view.html')).toString('utf8');
+  const page = readFileSync(join(ROOT, PAGE_FILES[0])).toString('utf8');
+  for (const f of PAGE_FILES.slice(1)) {
+    const name = f.split('/').pop();
+    if (!page.includes(`<script src="${name}"></script>`)) throw new Error(`${name} is in PAGE_FILES but session-view.html does not load it`);
+  }
+  const s = pageSrc();
   const arr = (name) => {
     const m = s.match(new RegExp(`const ${name} = (?:GRANT_KEYS\\.concat\\()?\\[([\\s\\S]*?)\\]`));
     if (!m) throw new Error(`${name} not found in session-view.html`);
@@ -107,8 +123,8 @@ function pageMaps() {
   // stripped before the keys are read — a quoted word in a comment must not
   // become a row — and an empty read goes red with a sentence rather than an
   // empty list quietly passing.
-  const rowSrc = s.match(/const BEGIN_ROWS = \[([\s\S]*?)\n  \];/);
-  if (!rowSrc) throw new Error('BEGIN_ROWS not found in session-view.html');
+  const rowSrc = s.match(/const BEGIN_ROWS = \[([\s\S]*?)\n\s*\];/);
+  if (!rowSrc) throw new Error('BEGIN_ROWS not found in the page set (begin.js since Q1352 (b))');
   const BEGIN_ROWS = [...rowSrc[1].replace(/\/\/[^\n]*/g, '').matchAll(/'([a-z-]+)'/g)].map((x) => x[1]);
   if (!BEGIN_ROWS.length) throw new Error('BEGIN_ROWS holds no row the checker can read');
   return { ORDER: arr('ORDER'), ACK_KEYS: grant.concat(arr('ACK_KEYS')), CHOSEN: objKeys('CHOSEN'),
@@ -705,7 +721,9 @@ function checkWallets(pm) {
 
 function checkOrder(pm) {
   note('The founding order — SURFACE.md §8 against ORDER and SEC');
-  const page = js('design/session-view.html');
+  // the page set: 🍾's predicates (`beginOffered`, `nothingElseServed`,
+  // `oneVoiceRemedy`, `inviteTask`) are begin.js's since Q1352 (b)
+  const page = pageSrc();
   const rows = tableAfter('SURFACE.md', 'order');
   const keys = rows.map((r) => r.key);
   if (JSON.stringify(keys) !== JSON.stringify(pm.ORDER)) find('order', `the table's keys differ from ORDER: table ${keys.join(' ')} / ORDER ${pm.ORDER.join(' ')}`);
@@ -1334,7 +1352,7 @@ function checkPicture() {
 
 function checkBannedWords() {
   note('Banned words — STYLE.md §1–2 over every file a member reads from');
-  const files = ['design/copy.js', 'design/cards.js', 'design/session.js', 'design/setup.js', 'design/session-view.html'];
+  const files = ['design/copy.js', 'design/cards.js', 'design/session.js', 'design/setup.js', ...PAGE_FILES];
   const banned = BANNED;
   for (const f of files) {
     // comments are exempt (CLAUDE.md: code comments may cite the spec); class names in markup are not copy
@@ -1376,7 +1394,7 @@ function checkBannedWords() {
  */
 function checkListJoiner() {
   note('The list-joiner — STYLE.md §1 over every file a member reads from (Q630)');
-  const files = ['design/copy.js', 'design/cards.js', 'design/session.js', 'design/setup.js', 'design/session-view.html'];
+  const files = ['design/copy.js', 'design/cards.js', 'design/session.js', 'design/setup.js', ...PAGE_FILES];
   let sites = 0; let hand = 0;
   for (const f of files) {
     // comments exempt, and **line numbers preserved**, which is why the block

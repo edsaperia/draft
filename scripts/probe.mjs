@@ -73,6 +73,11 @@ const UPDATE = process.argv.includes('--update');
  */
 const FROZEN = [
   'session-view.html',
+  // the page's inline script, split (Q1352): each file the page loads is
+  // frozen beside it, or the next freeze leaves the reference page half old
+  'door.js',
+  'begin.js',
+  'edit-mode.js',
   'session.js',
   'fixture-session.js',
   'setup.js',
