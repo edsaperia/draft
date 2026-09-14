@@ -18,25 +18,25 @@ import { createReadStream, existsSync, statSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
 import { SURFACE_MAX_BYTES, installSurface, readTarGz } from './surface.js';
 import { CATALOGUE, ConstitutionSession, isShapeName, mayApply, sha256Hex, view } from '../../constitution/src/index.js';
-import type { ApplicantRecord, ApplicationsValue, LogEntry } from '../../constitution/src/index.js';
+import type { ApplicantRecord, ApplicationsValue } from '../../constitution/src/index.js';
 import { DEFAULT_TUNING } from '../../constitution/src/adapter.js';
 import { Auth } from './auth.js';
 import type { ServerConfig } from './config.js';
 import { DocStore, slugify, uniqueSlug } from './store.js';
 import type { LoadedDoc } from './store.js';
 import { FilePersistence, WriteChain } from './persistence.js';
-import type { OutboxRow, Persistence } from './persistence.js';
+import type { Persistence } from './persistence.js';
 import { PgPersistence } from './pg-persistence.js';
 import { Stash } from './stash.js';
 import { MAILS, botOutboxPath, makeMailer, outboxTail } from './mailer.js';
 import { errorTail, logError } from './error-log.js';
 import { MailOutbox } from './outbox.js';
-import type { QueuedMail } from './outbox.js';
-import { asEngineDoc, driveBridge, foldTime, persistEngine, resumeBridge } from './engine-host.js';
+import { asEngineDoc, resumeBridge } from './engine-host.js';
 import { ParticipantApi } from '../../engine-core/src/participant-api.js';
-import type { Mail, Mailer } from './mailer.js';
+import type { Mailer } from './mailer.js';
 import { LIMITS, cap, emailOk, runCommand, str } from './commands.js';
 import { admissionPrice, raceView, strangerView } from './views.js';
+import { PauseState, WritePath } from './write-path.js';
 
 /**
  * One cookie per document (review #1, finding 13): a single name meant
@@ -141,34 +141,12 @@ export async function createDraftServer(cfg: ServerConfig,
       kind: typeof code === 'string' ? code
         : e instanceof Error ? e.constructor.name : typeof e };
   };
-  // **A pause is announced, never guessed** (Q1345, Ed 2026-09-12: *explicitly
-  // pause documents while a deploy is happening*). A deploy runs the new
-  // instance beside this one for some minutes, and a browser pinned to this
-  // one by keep-alive would go on writing to a log the new instance has
-  // already loaded — the split that killed the notanotherpizza demo. So CI
-  // calls `POST /api/admin/pause` before it fires the deploy hook: from then
-  // on this instance persists nothing, refuses every command with 503 and a
-  // sentence, ticks nothing, and says `paused` on every view answer, the
-  // short one included, so every page draws the modal. The new instance
-  // boots unpaused; the pinned browser reaches it when this one's listener
-  // closes. `expectedMs` is the bar's guess — the time from the hook to the
-  // old instance's death, measured at about six minutes on 2026-09-12 — and
-  // a pause nobody resumes lifts itself after `PAUSE_MAX_MS`, so a deploy
-  // that never lands cannot hold a document for ever. Nothing applied in
-  // memory during a pause is lost on the surviving instance: `persist` slices
-  // from its cursor, so the next commit after a resume writes it all.
-  const PAUSE_EXPECTED_MS = 6 * 60_000;
-  const PAUSE_MAX_MS = 15 * 60_000;
-  let paused: { at: number; expectedMs: number } | null = null;
-  const pausedNow = (nowMs: number): { at: number; expectedMs: number } | null => {
-    if (paused !== null && nowMs - paused.at > PAUSE_MAX_MS) paused = null;
-    return paused;
-  };
-  const pausedPayload = (nowMs: number): { at: number; expectedMs: number; elapsedMs: number } | null => {
-    const p = pausedNow(nowMs);
-    return p === null ? null : { at: p.at, expectedMs: p.expectedMs, elapsedMs: nowMs - p.at };
-  };
-  const PAUSED_MESSAGE = 'this document is paused for a moment of maintenance';
+  // **A pause is announced, never guessed** (Q1345): the state, its two
+  // constants and its sentence are `write-path.ts`'s `PauseState`, since
+  // what a pause does is stop writing — this instance persists nothing,
+  // refuses every command with 503 and ticks nothing. The routes below make
+  // it, lift it, and carry its payload on every view answer.
+  const pause = new PauseState();
   // **The surface reload** (Q1347): where the page files are served from,
   // and which commit answers in `x-build`, are both mutable — a surface
   // upload moves them together, and nothing else on the host changes.
@@ -191,259 +169,40 @@ export async function createDraftServer(cfg: ServerConfig,
   }
   const auth = new Auth(cfg.secret, persistence);
   const mailer = makeMailer(cfg);
-  const outbox = new MailOutbox({
+  const outbox: MailOutbox = new MailOutbox({
     persistence, mailer,
     mailOff: () => cfg.mailOff,
     revoke: (hash) => auth.revoke(hash),
     // **the give-up door** (SURFACE E34): one pass's dead mail, grouped by the
     // document it was about and handed to that document's own log, so an
     // invitation that never arrived stops looking like one nobody has opened.
-    // Defined below `commit`, which it needs, and installed here.
-    gaveUp: (rows) => tellGaveUp(rows),
+    // The write path is made below, needing this outbox; the arrow reaches it
+    // when a pass gives up, which is long after.
+    gaveUp: (rows): Promise<void> => writes.tellGaveUp(rows),
   });
   const stash = new Stash(persistence);
   const commits = new WriteChain();
 
   /**
-   * The one door every mail goes through (finding 15). The relayed ones —
-   * invitations, the close, the lapse pair — are queued by `relay` and
-   * sent by the loop; these are the three the *requester* is waiting on
-   * (creation, login, the applicant's verification), where a failure is
-   * feedback the person in front of the screen can act on, so they stay
-   * synchronous. What they share with the queue is the kill-switch: with
-   * mail off they are enqueued instead, so nothing is lost.
-   *
-   * A held mail carries the hash of the token in its link, exactly as a
-   * relayed one does: a queued magic link that later gives up must be
-   * revoked, or the switch being on turns a link nobody received into a
-   * live credential for the rest of its week.
+   * The write path (refactor Q1352 (l)): the mail door, the fold clock,
+   * `commit` and the mail it relays, the outbox's give-up door and §4.6's
+   * metronome — `write-path.ts`, made here with exactly what those read.
+   * The error counters stay in this file, since the request path counts
+   * into them and `/healthz` serialises them; `noteError` is the whole of
+   * the write path's reach into them, so nothing there points back here.
    */
-  const sendNow = async (mail: Mail, documentId: string | null,
-    token?: string): Promise<void> => {
-    if (cfg.mailOff) {
-      await outbox.enqueue([{ ...mail, documentId,
-        ...(token === undefined ? {} : { tokenHash: sha256Hex(token) }) }], Date.now());
-      return;
-    }
-    await mailer.send(mail);
-  };
+  const writes: WritePath = new WritePath({
+    cfg, persistence, store, auth, mailer, outbox, commits, pause,
+    noteError,
+    closing: () => closing !== null,
+    now: () => Date.now(),
+  });
 
-  /** Non-decreasing time per document, taken at the fold (Q1332): the
-   *  clock now, or the last event of either of the document's logs if that
-   *  is later. `nowMs` from the request's receipt is not used here on
-   *  purpose — under load the two are seconds apart. */
-  const tOf = (doc: LoadedDoc, nowMs: number = Date.now()): number => foldTime(doc, nowMs);
-
-  /**
-   * Mail follows the fold: relay what freshly-persisted events imply.
-   *
-   * **Nothing is sent from here** since the outbox landed (finding 15).
-   * The pass mints its tokens, writes the mails as durable rows, and kicks
-   * the sender — so a provider refusal is a row still standing next minute
-   * rather than an invitation the log records as sent. The order is the
-   * commit's own: the document log is written first (it is the source of
-   * truth), then the mails it implies.
-   */
-  const relay = async (doc: LoadedDoc, fresh: readonly LogEntry[], nowMs: number): Promise<void> => {
-    const cs = doc.cs;
-    const title = cs.titleOf;
-    /** A login link and the hash of the token in it, so a mail that gives
-     *  up can revoke a link nobody ever received. */
-    const loginLink = (memberId: string, email: string): { link: string; tokenHash: string } => {
-      // deferred: one relay pass persists the token batch once, not per mail
-      const token = auth.mintDeferred(
-        { kind: 'login', email, docId: doc.id, memberId }, nowMs);
-      return { link: `${cfg.baseUrl}/auth/login?token=${token}`, tokenHash: sha256Hex(token) };
-    };
-    const queue: QueuedMail[] = [];
-    const push = (to: string, mail: Omit<Mail, 'to'>, tokenHash?: string): void => {
-      queue.push({ to, ...mail, documentId: doc.id,
-        ...(tokenHash === undefined ? {} : { tokenHash }) });
-    };
-    /** An address a mail can go to: the row's, where the row still stands
-     *  (decision 1253) — an erased person is not written to. */
-    const mailable = (email: string | null | undefined): email is string =>
-      typeof email === 'string' && email.length > 0;
-    for (const { event } of fresh) {
-      if (event.type === 'member-invited') {
-        // the event names the person; the address is the row's
-        const m = cs.memberRecords().get(event.member);
-        if (m !== undefined && mailable(m.email)) {
-          const l = loginLink(event.member, m.email);
-          push(m.email, MAILS.invite(title, l.link), l.tokenHash);
-        }
-      } else if (event.type === 'mail-resent') {
-        // 📨 (SURFACE E34): the arm above, again. A fresh link, because the
-        // one the dead mail carried was revoked when the outbox gave up on
-        // it; an ordinary queued mail from here on, so a re-send that dies
-        // too raises its own give-up batch.
-        const m = cs.memberRecords().get(event.member);
-        if (m !== undefined && mailable(m.email)) {
-          const l = loginLink(event.member, m.email);
-          push(m.email, MAILS.invite(title, l.link), l.tokenHash);
-        }
-      } else if (event.type === 'member-admitted') {
-        // without this, an admitted applicant is stranded: their applicant
-        // cookie can only submit, and nothing tells them they are in
-        // (review #1, finding 7)
-        const m = cs.memberRecords().get(event.member);
-        if (m !== undefined && mailable(m.email)) {
-          const l = loginLink(event.member, m.email);
-          push(m.email, MAILS.admitted(title, l.link), l.tokenHash);
-        }
-      } else if (event.type === 'closed') {
-        // the close (SPEC §4.6): every member and invitee is told, once — the
-        // close is one event in the log, and only fresh entries relay
-        const link = `${cfg.baseUrl}/d/${cs.slug}`;
-        const seen = new Set<string>();
-        const tell = (email: string | null | undefined): void => {
-          if (!email || seen.has(email)) return;
-          seen.add(email);
-          push(email, MAILS.closed(title, link));
-        };
-        tell(cs.convenorRecord().email);
-        for (const m of cs.memberRecords().values()) if (!m.removed) tell(m.email);
-      } else if (event.type === 'member-removed' && event.by === 'convenor') {
-        // exile at will (SURFACE E31, Q901): the removed member is outside
-        // the document by now, so mail is the channel — with the document's
-        // address and **no token**, the `closed` arm's shape, since a login
-        // link would be minted for a seat that no longer exists. A carried
-        // removal (`viaMotion`, E10/E11's outcome) and a resignation (the
-        // member's own act) relay nothing.
-        const m = cs.memberRecords().get(event.member);
-        if (m !== undefined && mailable(m.email)) {
-          push(m.email, MAILS.removed(title, `${cfg.baseUrl}/d/${cs.slug}`));
-        }
-      } else if (event.type === 'lapse-warned' || event.type === 'member-lapsed') {
-        const m = cs.memberRecords().get(event.member);
-        const email = m?.email ?? (event.member === cs.convenorRecord().id
-          ? cs.convenorRecord().email : null);
-        if (mailable(email)) {
-          const l = loginLink(event.member, email);
-          if (event.type === 'lapse-warned') {
-            // each of the three warnings names its own lead (R-097): a
-            // week, a day, an hour — the event carries it
-            push(email, MAILS.lapseWarning(title, l.link, event.lead), l.tokenHash);
-          } else {
-            push(email, MAILS.lapsed(title, l.link), l.tokenHash);
-          }
-        }
-      }
-    }
-    if (queue.length === 0) return;
-    await auth.flush(nowMs); // every queued mail minted a token
-    await outbox.enqueue(queue, nowMs);
-    outbox.kick(nowMs);
-  };
-
-  /** Persist a document's fresh entries, durably, in order. A 200 means
-   *  this resolved; the WriteChain is what makes "in order" true. */
-  const commit = (doc: LoadedDoc, nowMs: number): Promise<number> =>
-    commits.run(doc.id, async () => {
-      // the engine rides every commit (Q391): born at constitute, synced
-      // with roster truth and ground shifts, closed when the ending passes
-      driveBridge(doc, tOf(doc, nowMs), cfg.engineTuning);
-      // paused (Q1345): nothing reaches the store from this instance until
-      // the pause lifts — what was applied in memory waits behind the
-      // cursor and lands on the next commit after a resume
-      if (pausedNow(nowMs) !== null) return doc.cs.logEntries().length;
-      // the document log first — it is the source of truth, and the
-      // bridge's persisted cursor points into it (review #2, finding 2):
-      // a crash after this and before the engine persist leaves a cursor
-      // *behind* the log, which resume's sync simply catches up; the other
-      // order leaves it ahead, and the entries in between are never fed
-      let fresh: LogEntry[];
-      try {
-        fresh = await store.persist(doc);
-        await persistEngine(persistence, doc);
-      } catch (e) {
-        // **a save the store rejected for good marks the document** (Q1346):
-        // a 23505 is another writer holding this document's log — the
-        // split of Q1345 — and no retry from this instance will ever land,
-        // so the document says so on every view until a save succeeds
-        if ((e as { code?: unknown }).code === '23505') doc.stalled = nowMs;
-        throw e;
-      }
-      doc.stalled = null;
-      if (fresh.length > 0) await relay(doc, fresh, nowMs);
-      return doc.cs.logEntries().length;
-    });
-
-  /**
-   * **A mail that gave up is told** (SURFACE E34): one sender pass's dead
-   * rows, grouped by the document they were about, written into that
-   * document's own log. The same direct-call shape as the `memberReturn`
-   * beside `runCommand` — the module is the truth about what a member is told,
-   * and a fact hung beside `view:` instead would never reach a page that is
-   * merely polling, since a give-up that is not an event moves neither seq.
-   *
-   * **The null `documentId` is dropped**: the operator notification and the
-   * creation mail belong to no document, and there is nowhere for their news
-   * to go.
-   *
-   * **This commits from inside a sender pass**, which is safe and not by
-   * accident: `commits` and the outbox's `passes` are different chains, and
-   * the only thing `relay` does back to the outbox is `enqueue` (which takes
-   * no chain) and `kick` (fire-and-forget). Await the kick and this would
-   * deadlock.
-   */
-  const tellGaveUp = async (rows: readonly OutboxRow[]): Promise<void> => {
-    const byDoc = new Map<string, string[]>();
-    for (const row of rows) {
-      if (row.documentId === null) continue;
-      const at = byDoc.get(row.documentId);
-      if (at) at.push(row.to); else byDoc.set(row.documentId, [row.to]);
-    }
-    const nowMs = Date.now();
-    for (const [docId, addresses] of byDoc) {
-      const doc = store.byId(docId);
-      if (!doc) continue;
-      doc.cs.mailGaveUp(tOf(doc, nowMs), addresses);
-      await commit(doc, nowMs);
-    }
-  };
-
+  /** The minute's other housekeeping rides the same metronome: the rate
+   *  limiter's stale buckets, swept before the documents are driven. */
   const tick = async (nowMs: number = Date.now()): Promise<void> => {
     for (const [key, b] of BUCKET) if (b.resetMs < nowMs) BUCKET.delete(key);
-    if (pausedNow(nowMs) !== null) return; // paused (Q1345): the clock waits with the store
-    for (const doc of store.all()) {
-      if (closing !== null) return; // shutting down: no new commits join the drain
-      if (doc.cs.constitutedAtT === null) continue;
-      // **One document must never stop the clock for the others** (Q679).
-      // Without this the loop is a single point of failure for every
-      // document at once: the tick is the adoption metronome, the lapse
-      // clock and the close, and `main.ts`'s interval only logs the throw
-      // — so one document that cannot tick silently freezes every document
-      // after it in insertion order, once a minute, for ever. The throw is
-      // real and reachable: both closes stamp themselves at the *ending*
-      // rather than at t, so a document whose log runs past its own close
-      // raises "timestamps must be non-decreasing" on every tick from then
-      // on. Logged rather than quarantined, because the failure may be
-      // transient and the once-a-minute repeat is itself the alarm.
-      try {
-        // engine first (SPEC §4.6): the final adoption batch must run before
-        // the constitution closes, or a carried motion has nowhere to land —
-        // driveBridge closes the engine at the ending and finishes the
-        // constitution's close itself; cs.tick then finds it closed
-        // the tick's own clock: a test-driven tick states the time it is
-        driveBridge(doc, tOf(doc, nowMs), cfg.engineTuning);
-        doc.cs.tick(tOf(doc, nowMs));
-        await commit(doc, nowMs);
-      } catch (e) {
-        noteError('tick', e);
-        console.error(`tick failed for document '${doc.id}':`, e);
-      }
-    }
-    // the sender's own metronome (finding 15): the kick after each commit
-    // is the fast path, and this is what re-offers a row whose backoff has
-    // elapsed. Awaited, so a tick that overlaps a shutdown drains with it.
-    if (closing === null) {
-      await outbox.run(nowMs).catch((e: unknown) => {
-        noteError('outbox', e);
-        console.error('outbox pass failed:', e);
-        return { sent: 0, failed: 0, held: false };
-      });
-    }
+    await writes.tick(nowMs);
   };
 
   const server = createServer((req, res) => {
@@ -636,7 +395,7 @@ export async function createDraftServer(cfg: ServerConfig,
         // it serves, it refuses every write, and it flies a red flag
         documentsStalled: [...store.all()].filter((d) => d.stalled).length,
         // the announced pause (Q1345), or null
-        paused: pausedPayload(nowMs),
+        paused: pause.payload(nowMs),
         uptimeSeconds: Math.floor((nowMs - bootedAtMs) / 1000),
         mail: cfg.mailOff ? 'off' : 'on',
         // dev-mail mode, so the birth page — which has no view to read it
@@ -695,14 +454,14 @@ export async function createDraftServer(cfg: ServerConfig,
       if (path === '/api/admin/pause') {
         const body = await readJson(req).catch(() => ({} as Record<string, unknown>));
         const asked = Number(body.expectedMs);
-        const expectedMs = Number.isFinite(asked) && asked > 0 ? Math.min(asked, PAUSE_MAX_MS) : PAUSE_EXPECTED_MS;
-        paused = { at: nowMs, expectedMs };
-        console.log(`paused for maintenance (Q1345): expected ${Math.round(expectedMs / 1000)}s, lifts by itself after ${PAUSE_MAX_MS / 1000}s`);
+        const expectedMs = Number.isFinite(asked) && asked > 0 ? Math.min(asked, PauseState.MAX_MS) : PauseState.EXPECTED_MS;
+        pause.begin(nowMs, expectedMs);
+        console.log(`paused for maintenance (Q1345): expected ${Math.round(expectedMs / 1000)}s, lifts by itself after ${PauseState.MAX_MS / 1000}s`);
       } else {
-        paused = null;
+        pause.lift();
         console.log('pause lifted (Q1345)');
       }
-      json(res, 200, { ok: true, paused: pausedPayload(nowMs) });
+      json(res, 200, { ok: true, paused: pause.payload(nowMs) });
       return;
     }
 
@@ -820,7 +579,8 @@ export async function createDraftServer(cfg: ServerConfig,
       const body = await readJson(req) as { to?: unknown; seed?: unknown; slug?: unknown };
       const { runLadder } = await import('./dev-ladder.js');
       const doc = typeof body.slug === 'string' ? store.bySlug(body.slug) : null;
-      const result = await runLadder({ store, commit }, doc, {
+      const result = await runLadder(
+        { store, commit: (d, t) => writes.commit(d, t) }, doc, {
         ...(typeof body.to === 'string' ? { to: body.to as never } : {}),
         ...(typeof body.seed === 'number' ? { seed: body.seed } : {}),
       });
@@ -848,10 +608,10 @@ export async function createDraftServer(cfg: ServerConfig,
       const rec = doc.cs.memberRecords().get(member);
       const isFounder = member === doc.cs.convenorRecord().id;
       if (!rec && !isFounder) { json(res, 404, { error: 'no such seat' }); return; }
-      const t = tOf(doc);
+      const t = writes.tOf(doc);
       if (rec && rec.arrivedAtT === null) doc.cs.arrive(t, member);
       else if (rec && rec.lapsed) doc.cs.memberReturn(t, member);
-      await commit(doc, nowMs);
+      await writes.commit(doc, nowMs);
       setCookie(res, doc.id, auth.cookieFor(doc.id, member, nowMs), httpsOn);
       json(res, 200, { ok: true, member });
       return;
@@ -943,7 +703,7 @@ export async function createDraftServer(cfg: ServerConfig,
         { kind: 'create', email, pending: { title, slug, email, isMember, stashKey,
           ...(shape === undefined ? {} : { shape }) } }, nowMs);
       const link = `${cfg.baseUrl}/auth/create?token=${token}`;
-      await sendNow({ to: email, ...MAILS.create(title, slug, link) }, null, token);
+      await writes.sendNow({ to: email, ...MAILS.create(title, slug, link) }, null, token);
       json(res, 200, { ok: true, slug, pendingId,
         ...(mailer.dev ? { devLink: link } : {}) });
       return;
@@ -1033,14 +793,14 @@ export async function createDraftServer(cfg: ServerConfig,
         const text = await stash.take(p.stashKey, nowMs, id);
         if (text.length > 0) await store.setProvisional(doc, text);
       }
-      await commit(doc, nowMs);
+      await writes.commit(doc, nowMs);
       // the operator hears about every birth (Ed, 2026-08-20) — fired and
       // forgotten: the save must never fail, or wait, on this mail. Through
       // `sendNow` rather than the mailer, because the kill-switch means
       // *nothing goes out*, and a mail that leaves while mail is off is a
       // switch that does not switch.
       if (cfg.notifyEmail !== null) {
-        void sendNow({ to: cfg.notifyEmail,
+        void writes.sendNow({ to: cfg.notifyEmail,
           ...MAILS.newDocument(p.title, `${cfg.baseUrl}/d/${slug}`, p.email) }, null)
           .catch((e: unknown) => console.error('new-document notification failed:', e));
       }
@@ -1079,7 +839,7 @@ export async function createDraftServer(cfg: ServerConfig,
       const token = await auth.mintToken(
         { kind: 'login', email, docId: doc.id, memberId }, nowMs);
       const link = `${cfg.baseUrl}/auth/login?token=${token}`;
-      await sendNow({ to: email, ...MAILS.login(doc.cs.titleOf, link) }, doc.id, token);
+      await writes.sendNow({ to: email, ...MAILS.login(doc.cs.titleOf, link) }, doc.id, token);
       json(res, 200, { ok: true, ...(mailer.dev ? { devLink: link } : {}) });
       return;
     }
@@ -1110,7 +870,7 @@ export async function createDraftServer(cfg: ServerConfig,
         const token = await auth.mintToken(
           { kind: 'login', email, docId: doc.id, memberId: already }, nowMs);
         const link = `${cfg.baseUrl}/auth/login?token=${token}`;
-        await sendNow({ to: email, ...MAILS.login(doc.cs.titleOf, link) }, doc.id, token);
+        await writes.sendNow({ to: email, ...MAILS.login(doc.cs.titleOf, link) }, doc.id, token);
         json(res, 200, { ok: true, ...(mailer.dev ? { devLink: link } : {}) });
         return;
       }
@@ -1128,13 +888,13 @@ export async function createDraftServer(cfg: ServerConfig,
         const token = await auth.mintToken(
           { kind: 'apply', email, docId: doc.id, applicantId: underway.id }, nowMs);
         const link = `${cfg.baseUrl}/auth/apply?token=${token}`;
-        await sendNow({ to: email, ...MAILS.applyVerify(doc.cs.titleOf, link) }, doc.id, token);
+        await writes.sendNow({ to: email, ...MAILS.applyVerify(doc.cs.titleOf, link) }, doc.id, token);
         json(res, 200, { ok: true, ...(mailer.dev ? { devLink: link } : {}) });
         return;
       }
       const token = await auth.mintToken({ kind: 'apply', email, docId: doc.id }, nowMs);
       const link = `${cfg.baseUrl}/auth/apply?token=${token}`;
-      await sendNow({ to: email,
+      await writes.sendNow({ to: email,
         ...MAILS.applyVerify(doc.cs.titleOf, link) }, doc.id, token);
       json(res, 200, { ok: true, ...(mailer.dev ? { devLink: link } : {}) });
       return;
@@ -1149,7 +909,7 @@ export async function createDraftServer(cfg: ServerConfig,
       }
       const doc = docOr404(store.byId(rec.docId));
       if (!doc) return;
-      const t = tOf(doc);
+      const t = writes.tOf(doc);
       // the log's first applicant entry lands here, after the address has
       // proved it works (stage 3, defect 8); the module re-checks policy
       // and membership, so a world that changed since the mail refuses
@@ -1175,7 +935,7 @@ export async function createDraftServer(cfg: ServerConfig,
           doc.cs.applicantRecords().get(applicantId)?.status === 'verified') {
         doc.cs.submitApplication(t, applicantId);
       }
-      await commit(doc, nowMs);
+      await writes.commit(doc, nowMs);
       // an admitted visitor holds a member's seat, not an applicant's — the
       // applicant cookie stays the fallback for every road that lands short
       // of membership, and for an admit this handler could not make
@@ -1196,12 +956,12 @@ export async function createDraftServer(cfg: ServerConfig,
       }
       const doc = docOr404(store.byId(rec.docId));
       if (!doc) return;
-      const t = tOf(doc);
+      const t = writes.tOf(doc);
       const m = doc.cs.memberRecords().get(rec.memberId);
       // membership begins at first arrival (§9.6a); revival is logging in
       if (m && m.arrivedAtT === null) doc.cs.arrive(t, rec.memberId);
       else if (m && m.lapsed) doc.cs.memberReturn(t, rec.memberId);
-      await commit(doc, nowMs);
+      await writes.commit(doc, nowMs);
       setCookie(res, doc.id, auth.cookieFor(doc.id, rec.memberId, nowMs), httpsOn);
       redirect(res, `/d/${doc.cs.slug}`);
       return;
@@ -1232,7 +992,7 @@ export async function createDraftServer(cfg: ServerConfig,
             json(res, 200, { seq, eseq });
             return;
           }
-          json(res, 200, { seq, eseq, devMail: mailer.dev, ...strangerView(doc, nowMs, pausedPayload(nowMs), session) });
+          json(res, 200, { seq, eseq, devMail: mailer.dev, ...strangerView(doc, nowMs, pause.payload(nowMs), session) });
           return;
         }
         json(res, 401, { error: 'log in first' });
@@ -1261,8 +1021,8 @@ export async function createDraftServer(cfg: ServerConfig,
         let ladderClock = false;
         DEV: { ladderClock = mailer.dev && doc.cs.slug.startsWith('ladder-'); }
         if (applicantId === null && !ladderClock &&
-            doc.cs.seen(tOf(doc), memberId)) {
-          await commit(doc, nowMs);
+            doc.cs.seen(writes.tOf(doc), memberId)) {
+          await writes.commit(doc, nowMs);
         }
         const seq = doc.cs.logEntries().length;
         // race cards ride the engine's own log, which judge-race moves
@@ -1276,7 +1036,7 @@ export async function createDraftServer(cfg: ServerConfig,
           // the two host flags ride the short answer too (Q1345, Q1346): a
           // page that has seen everything is exactly the page that must
           // still hear a pause or a stall
-          json(res, 200, { seq, eseq, short: true, paused: pausedPayload(nowMs), stalled: !!doc.stalled });
+          json(res, 200, { seq, eseq, short: true, paused: pause.payload(nowMs), stalled: !!doc.stalled });
           return;
         }
         // **The slim view** (the moon room, 2026-09-11): in a busy room
@@ -1310,7 +1070,7 @@ export async function createDraftServer(cfg: ServerConfig,
             seq,
             eseq,
             devMail: mailer.dev,
-            ...strangerView(doc, nowMs, pausedPayload(nowMs), session),
+            ...strangerView(doc, nowMs, pause.payload(nowMs), session),
             // the door's payload says `stranger: true`; this seat is not the
             // door, and the page's door branch must not fire for it
             stranger: false,
@@ -1340,7 +1100,7 @@ export async function createDraftServer(cfg: ServerConfig,
           // the session-clock counts against the server's clock, not the
           // browser's (Q466); the page offsets by the time it received this
           serverNowMs: nowMs,
-          paused: pausedPayload(nowMs),
+          paused: pause.payload(nowMs),
           stalled: !!doc.stalled,
           textConfirmed: doc.cs.textConfirmed,
           quorumForm: doc.cs.quorumForm,
@@ -1391,12 +1151,12 @@ export async function createDraftServer(cfg: ServerConfig,
         const body = await readJson(req);
         const cmd = expectString(body, 'cmd');
         const args = (body.args ?? {}) as Record<string, unknown>;
-        const t = tOf(doc);
+        const t = writes.tOf(doc);
         // paused (Q1345): refused before anything is applied, with the
         // pause itself in the answer so the page draws the modal and not a
         // refusal; a 503, since the document is whole and merely waiting
-        if (pausedNow(nowMs) !== null) {
-          json(res, 503, { error: PAUSED_MESSAGE, paused: pausedPayload(nowMs) });
+        if (pause.now(nowMs) !== null) {
+          json(res, 503, { error: PauseState.MESSAGE, paused: pause.payload(nowMs) });
           return;
         }
         // **every refusal lands in the error log** (Q1330): the document,
@@ -1423,7 +1183,7 @@ export async function createDraftServer(cfg: ServerConfig,
           // motion whose engine race then refused — is real, and must not
           // sit in memory waiting to ride an unrelated commit (review #1,
           // finding 6): memory and disk never diverge, even on a 400
-          await commit(doc, nowMs);
+          await writes.commit(doc, nowMs);
           // logged here, where the command and the seat are known; the
           // catch below sees it once more and skips it (`logged`). A throw
           // carrying a system code is the route failing, not a refusal,
@@ -1438,7 +1198,7 @@ export async function createDraftServer(cfg: ServerConfig,
         if (doc.cs.textConfirmed && doc.provisional !== null) {
           await store.setProvisional(doc, null);
         }
-        const seq = await commit(doc, nowMs);
+        const seq = await writes.commit(doc, nowMs);
         json(res, 200, { ok: true, seq, ...(result !== undefined ? { result } : {}) });
         return;
       }
