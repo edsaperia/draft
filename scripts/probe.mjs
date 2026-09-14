@@ -77,6 +77,7 @@ const FROZEN = [
   // frozen beside it, or the next freeze leaves the reference page half old
   'door.js',
   'begin.js',
+  'edit-mode.js',
   'session.js',
   'fixture-session.js',
   'setup.js',

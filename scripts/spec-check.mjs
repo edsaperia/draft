@@ -84,7 +84,7 @@ function motionRoutes() {
 // used to open session-view.html alone reads this set — and `pageMaps`
 // asserts the page actually loads each of the others, so the list cannot
 // name a file the page does not run.
-const PAGE_FILES = ['design/session-view.html', 'design/door.js', 'design/begin.js'];
+const PAGE_FILES = ['design/session-view.html', 'design/door.js', 'design/begin.js', 'design/edit-mode.js'];
 // (the split files are CRLF like the rest of design/*.js and the page is LF;
 // the reads below match on `\n`, so the set is read as one LF text)
 const pageSrc = () => PAGE_FILES.map((f) => readFileSync(join(ROOT, f)).toString('utf8').replace(/\r\n/g, '\n')).join('\n');
