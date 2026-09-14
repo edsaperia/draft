@@ -34,6 +34,11 @@
  *               blocks (Q1182, T48) — the membership as it stands, the
  *               applicant joining, Abstain — committing on the assembly hold
  *               (entry 78).
+ *   proposal
+ *   assembly  — and, once submitted, their card stands whatever the door says
+ *               (Q1357, Ed 2026-09-14): 🤝 is shut with the founder's pen and
+ *               opened again, and the applicant's rail carries the same Apply
+ *               card, the same count and the same state at every reading.
  *   pen       — no task and no applicant row; **news**, with an OK, they having
  *               joined the moment they opened the link (Q894–Q896), which is
  *               also why the card names them by their address: they have given
@@ -362,6 +367,69 @@ if (knock.status !== 200 || !knock.body || !knock.body.devLink) {
     } else {
       say('applicant  · ' + NAME + ' verified and submitted on the surface · ' +
         JSON.stringify((cardSays.match(/Submitted\.[^—]*/) || [''])[0].trim()));
+    }
+
+    /* **A submitted application's card stands whatever the door says**
+     * (SURFACE Y28, Q1357, Ed 2026-09-14). 🤝 shut under a *verified*
+     * applicant is E33's news — one sentence and an OK; shut under a
+     * *submitted* one is nothing at all, the members going on voting on the
+     * race their application already raised (`admit:<id>`, §9.7½). The rail
+     * emptied anyway, taking the *n of E have voted on it* card with it, and
+     * an open card is no answer: it is reachable only while it happens to be
+     * open, which is the same defect Q901 fixed on the other side.
+     *
+     * The door is shut with the founder's own pen — `set-setting` on a
+     * setting they hold, which is exactly what their 🤝 card commits — and
+     * then opened again, because a card that comes back is not a card that
+     * stood. The applicant's page is read three times and must say the same
+     * thing each time; the reads wait out the 4s poll.
+     *
+     * Skipped where the submission itself did not land: what a card does
+     * under a shut door is not a question about an application that was
+     * never made, and the failure above is the one to read. */
+    const submitted = !!(after && after.applicant && after.applicant.submitted);
+    const railWhenOpen = ((after && after.rail) || []).join(',');
+    const readRail = async (what) => {
+      await T(5200);   // >4s: a poll lands carrying the founder's amendment
+      const g = await guestFounding();
+      const rail = (g && g.rail) || [];
+      const says = await guest.evaluate(() => {
+        const c = document.querySelector('.setupcard');
+        return c ? (c.textContent || '').replace(/\s+/g, ' ').trim() : '';
+      });
+      if (!rail.includes('apply')) {
+        say('FAIL: ' + what + ', the submitted applicant\'s rail lost their Apply card — ' +
+          JSON.stringify(rail) + ' (Q1357: the door prices new applications, not a race already running)');
+        stuck.push('the card stands ' + what);
+      } else if (rail.join(',') !== railWhenOpen) {
+        say('FAIL: ' + what + ', the submitted applicant\'s rail is not the rail they had — ' +
+          JSON.stringify(rail) + ' was ' + JSON.stringify(railWhenOpen.split(',')));
+        stuck.push('the rail stands ' + what);
+      } else if (!/Submitted\./.test(says)) {
+        say('FAIL: ' + what + ', the Apply card no longer reads as submitted: ' +
+          JSON.stringify(says.slice(0, 160)));
+        stuck.push('the count stands ' + what);
+      } else {
+        say('Q1357      · ' + what + ', the card stands · rail ' + JSON.stringify(rail) + ' · ' +
+          JSON.stringify((says.match(/Submitted\.[^—]*/) || [''])[0].trim()));
+      }
+    };
+    const closeDoor = submitted
+      ? await cmd('set-setting', { setting: 'applications', value: { apply: false } })
+      : { status: 0 };
+    if (!submitted) say('Q1357      · skipped — nothing was submitted to stand');
+    else if (closeDoor.status !== 200) {
+      say('FAIL: the founder\'s pen could not shut 🤝 → ' + closeDoor.status +
+        ' ' + JSON.stringify(closeDoor.body));
+      stuck.push('shutting 🤝');
+    } else {
+      await readRail('🤝 shut');
+      const openDoor = await cmd('set-setting', { setting: 'applications', value: { apply: true } });
+      if (openDoor.status !== 200) {
+        say('FAIL: the founder\'s pen could not reopen 🤝 → ' + openDoor.status +
+          ' ' + JSON.stringify(openDoor.body));
+        stuck.push('reopening 🤝');
+      } else await readRail('🤝 open again');
     }
   }
   await guestCtx.close();

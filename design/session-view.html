@@ -6744,14 +6744,25 @@
       // is arrival (entry 94), open at a price is applying
       const applying = policyNow() === 'apply' && admissionPrice() !== 'pen';
       const now2 = applying && canJudge();
+      // **A submitted application's card stands whatever 🤝 says** (SURFACE
+      // Y28, Q1357, Ed 2026-09-14). The door's state is about *new*
+      // applications: 🤝 whether strangers may knock and 🪪 what a knock
+      // costs. An application already submitted is a race running in the
+      // engine (`admit:<id>`, §9.7½), and it runs on regardless — so the
+      // rail keeps it, the count, the state and the settle when it comes,
+      // exactly as it does while the door stands open. Before this the
+      // applicant lost their own card the moment 🤝 shut, while the members
+      // went on voting on them.
+      const standing = S.app.submitted && canJudge();
       // **A door that shut under you leaves one entry standing** (SURFACE
       // E33, Q901, Ed 2026-09-14). The rail empties the moment 🤝 shuts,
       // which is right for the four tasks an application is made of — there
       // is nothing left to fill in — and wrong for 🪪 itself, which is now
       // news owed an OK: without this the sentence was reachable only on a
       // card that happened to be open already, and the OK could not be
-      // pressed at all. It goes when the OK does.
-      railEntries = now2 ? APPCARDS().map((c) => entryOf(c, appCtx))
+      // pressed at all. It goes when the OK does. That news is for somebody
+      // who had *not* submitted, which is why `applyShutOnMe` excludes them.
+      railEntries = (now2 || standing) ? APPCARDS().map((c) => entryOf(c, appCtx))
         : applyShutNews()
           ? APPCARDS().filter((c) => c.k === 'apply').map((c) => entryOf(c, appCtx))
           : [];
