@@ -111,6 +111,12 @@
     --lc-changed: 25, 135, 84;    /* ✔ green — the charter moved here  */
     --lc-yours: 13, 110, 253;     /* ✏️ blue — yours, and still yours  */
     --stuck-ink: #8A6D00;         /* the one caption that instructs    */
+    /* **New wording is highlighter yellow, not green** (Ed, 2026-09-14, Q264):
+       green means *decided* and only that (--ok); an added word inside a
+       proposal is not a state, it is a mark on the text, so it takes a
+       marker-pen ground with the text's own ink — and not --lc-open's
+       yellow either, which is a lifecycle wash saying *this wants you*. */
+    --ins-bg: #FFF1A8;            /* the highlighter — added words     */
 
     /* --- type scale. Four sizes and a caption; anything outside this
            list is a mistake rather than a decision ------------------ */
@@ -2308,8 +2314,9 @@
   .record b { color: var(--fg); font-variant-numeric: tabular-nums; }
 
   /* new wording inside a lane. Nothing is struck through anywhere (Ed, 91):
-     the lanes show the text as it would stand, so red has no job here. */
-  ins { background: var(--ok-subtle); color: var(--ok); text-decoration: none; padding: 0 1px; }
+     the lanes show the text as it would stand, so red has no job here. The
+     ground is the highlighter, never green — green means decided (Q264). */
+  ins { background: var(--ins-bg); color: inherit; text-decoration: none; padding: 0 1px; }
 
   /* queue-wire: the run from the open entry, down the gutter between document
      and rail, and into every place in the charter it refers to (Ed, 71/78).

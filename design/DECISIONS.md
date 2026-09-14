@@ -6199,3 +6199,14 @@ The walk's eighteenth question, 2026-09-14. **Ruled: no line on the card** — t
 
 212. **Closeness is now only on the queue card** (raised 2026-08-16, from Q210). Removing the `evidence-meter` from decision cards leaves closeness-to-resolution — and a race's "you've judged 2 of the pairs you'll be asked for" — visible *only* in the rail. A member who opens a card by clicking the paragraph in the document, rather than its queue entry, sees neither. Three readings: it does not matter, because the rail entry is a few inches away and lit; it matters for the coverage line specifically, which is personal and has no other home; or the card should carry a single quiet line of both. The coverage half has been in this state since 95 without complaint, which is weak evidence for the first reading.
 
+
+## Q264: new wording is highlighter yellow; green means decided alone (Ed, 2026-09-14)
+
+The walk's nineteenth question, 2026-09-14. **Ruled by Ed: new wording should be yellow.** The margin half had closed in the palette pass of 2026-08-17 (yours went blue, green left the margin but as the changed wash); the card half stands as one token: `--ins-bg`, a marker-pen ground with the text's own ink, on every `ins` — not `--lc-open`'s yellow, which is a lifecycle wash saying *this wants you*. `--ok` now means *decided* and nothing else on the card too. SURFACE K19 amended.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 264 | Green now means three things | 2026-08-16 | open — for the palette pass | `lifecycle palette` |
+
+264. **Green now means three things** (raised 2026-08-16; widened the same day by the fix to 263). In a rail or a gutter it means *yours, and you can still act on it*; inside a card it means *decided* — the winning text in a sealed record, the tick that commits — and inside a **lane** it means *new wording*, which it has meant since 91 and now appears in the composer as well as on every decision card. They never meet, because 164 washes every decided state grey in the margin, so `--ok` is confined to card interiors. The margin pair are kept apart by 164, which washes every decided state grey in a rail, so the *decided* green never leaves a card interior — a genuine dependency between two decisions rather than a coincidence, and one that breaks the moment a decided state gains a colour in the rail. The two **inside** a card are kept apart only by scale and place: a whole block or a whole button for *decided*, a few words inline for *new wording*. One collision has already been headed off — the editing lane’s focus ring was green and is now blue, because a green box around green words was two meanings an inch apart. Worth a proper look at the palette pass; the likely answer is that *new wording* wants a hue of its own, since it is the only one of the three that is not about a state.
+
