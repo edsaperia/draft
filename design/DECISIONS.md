@@ -6232,3 +6232,14 @@ The walk's twenty-third question, 2026-09-14. **Ruled: leave it** — withdraw i
 
 293. **Revising your own proposal** (Ed, 2026-08-17): *people will often draft something, submit it, then immediately want to edit it again because they saw a mistake — we should think about how to make this action convenient.* Today the path is withdraw, then write again: two acts, and the candidate leaves the race in between. The obvious affordance is a **✏️ on your own proposal card** that reopens the composer seeded from your own wording and, on Propose, replaces the live candidate rather than adding one. It composes out of moves the spec already has (withdraw refunds in full §3.3a, propose costs one) so it is **net zero edits**, which is right — a typo fix should not be priced like a second opinion.
 
+
+## Q305: no per-candidate labels; members read the wordings (Ed, 2026-09-14)
+
+The walk's twenty-fourth question, 2026-09-14. **Ruled: leave it** — the labeller names disputes and nothing else; a per-wording label costs a model call each and can be wrong in a way the reader cannot check without reading the wording anyway. Rejected: building it on the dispute labeller's discipline; building it on the deadlock card alone.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 305 | Per-candidate advisory labels | 2026-08-17 | waiting on Ed | `race-labeler`; Q301 (DECISIONS) |
+
+305. **Per-candidate advisory labels** (raised 2026-08-17). A six-word label per wording saying what *this* one does differently — *removal only after a broken sanction* · *neutral proposer* · *removal is not a sanction* · *both, plus a night's sleep* · *twice in a year* · *sanctions expire* · *two-thirds for removal* · *ask the visitor first*. It makes a field of eight scannable in one pass, and you read the full wording only for the ones you care about. Same family as `race-labeler` and the same discipline — advisory, outside the state machine, never in the event log, never gating anything — but it is a **new** model output: the labeler names *races*, and this names *candidates*. It is also the cheapest possible version of what a camp map does, since two candidates with near-identical labels are visibly the same camp without anything having to say so. Recommended first, because it is useful on any card with more than two wordings, not only a deadlocked one.
+
