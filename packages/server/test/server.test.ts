@@ -2541,8 +2541,8 @@ describe('🥾 exile, resignation and the shut door say so (Q901, E31–E33)', (
       { stranger: boolean; departed: { by: string } | null };
     expect(deeDoor.stranger).toBe(true);
     expect(deeDoor.departed).toMatchObject({ by: 'members' });
-    // every remaining member, the actor among them (Q901: the exclusions are
-    // the departed and the later joiner, and no other)
+    // every remaining member — a carried motion has no single actor, so the
+    // Founder is owed it too (Q901; the actor skip of Q1358 is ❌'s alone)
     expect(await owed(bo)).toEqual([deeId]);
     expect(await owed(cy)).toEqual([deeId]);
     expect(await owed(ada)).toEqual([deeId]);
@@ -2555,8 +2555,9 @@ describe('🥾 exile, resignation and the shut door say so (Q901, E31–E33)', (
     await cmd(ada, 'remove', { member: boId });
     expect(await owed(cy)).toEqual([deeId, boId]);   // oldest first
     await cmd(cy, 'resign', {});
-    expect(await owed(ada)).toEqual([deeId, boId, cyId]);
-    for (const id of [deeId, boId, cyId]) await cmd(ada, 'ack-departure', { member: id });
+    // ada pressed ❌ on bo, and the actor is not told of their own act (Q1358)
+    expect(await owed(ada)).toEqual([deeId, cyId]);
+    for (const id of [deeId, cyId]) await cmd(ada, 'ack-departure', { member: id });
     expect(await owed(ada)).toEqual([]);
     // and a departure nobody owes you is ignored rather than refused
     await cmd(ada, 'ack-departure', { member: deeId });
