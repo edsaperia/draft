@@ -6542,3 +6542,14 @@ Found by the Q901 build and put to Ed the same evening, 2026-09-14. **Ruled: the
 
 1357. **A submitted applicant's card is hidden while 🤝 is shut** (found 2026-09-14 by the Q901 build). `renderRail` emptied the applicant's whole rail the moment 🤝 shut; the Q901 build fixed that for the refused applicant's 🪪 card (E33), but an applicant who had already *submitted* still loses their *n of E have voted* card under a shut door — their application is a running race whichever way the door now stands. Readings: **(a)** the submitted card stands whatever 🤝 says, the door's state being about new applications only (recommended); **(b)** a shut door tells a submitted applicant their application is withdrawn (a mechanism change); **(c)** leave it.
 
+
+## Q1359: the seat matrix drives E38, E39 and E40 (Ed, 2026-09-14)
+
+Found by the Q1354 build and put to Ed the same evening, 2026-09-14. **Ruled: add steps for all three** — over leaving them to their own walks and over two of the three. **Built (2b2022d, merged):** `strand-propose` + `strand-pen` (a seat's proposal on line 0, the Founder's pen replacing the line; the key is the author's own `rebase-pending` candidate read back off the module), `return-motion` (a `reserve` on `pw:u:rate` after `lay-down`, behind 🏛️), `carry-removal` (the put motion carried; the removed seat becomes the door, told by `strangerView`'s `departed` — the `orDeparted` escape hatch; `left` drops a departed seat from *every member*); ✒️ kept on the Text at 🍾 so the pen can strand (every adoption on the harness's document parks under 🛡️); E37's key fixed to name the parked candidate. Both hats: findings 0, exit 0, +28 s; each predicate proven to bite by breaking the product. The re-make of a stranded proposal was left out on purpose: it would put a live race on line 0 ahead of the park E36/E37 stand on.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 1359 | The seat matrix raises no step for E38, E39 or E40 | 2026-09-14 | ruled by Ed 2026-09-14: **add steps for all three** — a text change under a seat's proposal, a returned power, a carried removal; a builder is on it (branch `q1359-matrix-steps`) | `seat-matrix.mjs`; SURFACE E38–E40 |
+
+1359. **The seat matrix raises no step for E38, E39 or E40** (found 2026-09-14 by the Q1354 build). SURFACE §2 gained three rows today and the harness's row-count literal was bumped to 40 as a shape tripwire; none of the three has a step: stranding a proposal needs a ground shift the table does not drive and its audience is one seat; E39 needs a laid-down power and three seats, which `journey` walks; E40's cell is E31's word for word and `remove-motion` leaves its motion running. Readings: **(a)** leave the three to their own walks (journey, the server tests) and say so in the harness header (recommended); **(b)** add steps for E39 and E40 (a carried removal, a returned power) and leave E38 to the engine tests; **(c)** all three.
+
