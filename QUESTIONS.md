@@ -13,7 +13,6 @@ The index, in the section's own order (nothing is pinned — Ed, 2026-09-07, Q12
 | 109 | Scale: the margin assumes a short rail | 2026-08-16 | waiting on Ed's own read (the walk, 2026-09-14: *look at a moon-shaped room and rule from what you saw* — `docs.vote/d/moon2`, ~156 members, is idle; the alternatives on the table were naming a ceiling of ~30 live questions, or committing to a screen-only margin) | `needs-you-queue` |
 | 113 | Where read state lives, and when a decision goes quiet | 2026-08-16 | partly answered — (c) by Q114; (a) is per-device today | `ACK_KEYS`; Q526 |
 | 170 | Your candidate needs rebasing | 2026-08-16 | waiting on Ed — a mark | Q53 |
-| 266 | One draft at a time | 2026-08-16 | waiting on Ed — should the surface say so? | `draft-site`; SURFACE K14–K16 |
 | 282 | A rendered document and a source offset do not agree | 2026-08-17 | deferred past the alpha (Ed, 2026-08-27) | `richToSource` (cards.js) |
 | 288 | A flatter glyph set for the lifecycle marks | 2026-08-17 | partly answered — the lifecycle family is drawn; the subject glyphs are emoji | `DRAWN`; SURFACE §6 |
 | 293 | Revising your own proposal | 2026-08-17 | waiting on Ed — recommend (b) | SPEC §3.3a, §4.4 |
@@ -133,8 +132,6 @@ Ed replaced ranked ordering with a **margin index** (2026-08-16): entries stand 
 
 The deadlocked case showed that these marks say *what you are being asked to do*, not where in a lifecycle something sits. Settled 2026-08-16 (166–167, 173): a deadlocked race is ❌ *stuck*, in the open yellow rather than grey, and 💡 marks the propose actions it leads to — the rail states, the buttons act. Still open:
 170. **Your candidate needs rebasing** — engine-core carries `rebase-pending` and `displaced` (Q53). Distinct from 🔄, which is your *judgment* stranded; this is your *draft* stranded, and only you can move it.
-
-266. **One draft at a time** (raised 2026-08-16; Ed asked what the question was, 2026-08-17). **The question: should starting a second draft somewhere else be possible, and if not, should the surface say so?** There is one caret, so there is one composer: with a draft open, typing elsewhere extends or reuses it rather than starting another. That is almost certainly right — a second unfinished draft is a second thing to lose — and it is what keeps the state model to two flags on an ordinary suggestion. But nobody chose it; it fell out of the implementation. And the surface never says it: pressing ✏️ on a lane while a draft is open quietly extends the open draft instead of warning that you are about to.
 
 282. **A rendered document and a source offset do not agree** (raised 2026-08-17, from 279's build; Ed asked for a recommendation the same day). The charter fixture is plain text, so the composer can take a caret offset straight from the DOM and use it against the clause's source. The moment the *document* renders markdown that stops being true: a DOM selection measures the rendered text, and `**bold**` is four characters there and eight in the source, so every offset the composer computes is wrong by two for each mark above the caret.
 

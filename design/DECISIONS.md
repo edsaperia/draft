@@ -6210,3 +6210,14 @@ The walk's nineteenth question, 2026-09-14. **Ruled by Ed: new wording should be
 
 264. **Green now means three things** (raised 2026-08-16; widened the same day by the fix to 263). In a rail or a gutter it means *yours, and you can still act on it*; inside a card it means *decided* — the winning text in a sealed record, the tick that commits — and inside a **lane** it means *new wording*, which it has meant since 91 and now appears in the composer as well as on every decision card. They never meet, because 164 washes every decided state grey in the margin, so `--ok` is confined to card interiors. The margin pair are kept apart by 164, which washes every decided state grey in a rail, so the *decided* green never leaves a card interior — a genuine dependency between two decisions rather than a coincidence, and one that breaks the moment a decided state gains a colour in the rail. The two **inside** a card are kept apart only by scale and place: a whole block or a whole button for *decided*, a few words inline for *new wording*. One collision has already been headed off — the editing lane’s focus ring was green and is now blue, because a green box around green words was two meanings an inch apart. Worth a proper look at the palette pass; the likely answer is that *new wording* wants a hue of its own, since it is the only one of the three that is not about a state.
 
+
+## Q266: one draft at a time, and the surface says nothing more (Ed, 2026-09-14)
+
+The walk's twenty-first question, 2026-09-14. **Ruled: nothing — close it.** K16 states the rule; a propose-edit replacing what is in the box is Ed's own ruling of 2026-08-17 and is visible as it happens; a warning on a free, reversible act is noise. Rejected: a dirty-box tooltip; a confirm step (a press on every legitimate use).
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 266 | One draft at a time | 2026-08-16 | waiting on Ed — should the surface say so? | `draft-site`; SURFACE K14–K16 |
+
+266. **One draft at a time** (raised 2026-08-16; Ed asked what the question was, 2026-08-17). **The question: should starting a second draft somewhere else be possible, and if not, should the surface say so?** There is one caret, so there is one composer: with a draft open, typing elsewhere extends or reuses it rather than starting another. That is almost certainly right — a second unfinished draft is a second thing to lose — and it is what keeps the state model to two flags on an ordinary suggestion. But nobody chose it; it fell out of the implementation. And the surface never says it: pressing ✏️ on a lane while a draft is open quietly extends the open draft instead of warning that you are about to.
+
