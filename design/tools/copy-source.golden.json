@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 484
+  "entries": 486
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -212,6 +212,8 @@
   "page.motionRec.keptAsStood": " as it stood",
   "page.motionRec.keptAsStoodWas": " as it stood: ",
   "page.motionRec.keptLead": "The membership kept ",
+  "page.motionRec.mootMembers": "Another proposal had already set this rule, so nothing changed.",
+  "page.motionRec.mootPen": "The Founder ✒️ had already set this rule, so nothing changed.",
   "page.motionRec.passed": "Passed",
   "page.motionRec.provMembers": "Chosen by the membership",
   "page.motionRec.provPen": "Chosen by the Founder ✒️",

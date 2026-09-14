@@ -296,6 +296,7 @@ export function apply(s: FoldState, event: ConstitutionEvent, _seq: number): voi
           status: 'carried',
           answers: new Map(),
           settledAtT: event.t,
+          moot: null,
         });
         s.penFrom.set(id, wasValue);
       }
@@ -365,6 +366,7 @@ export function apply(s: FoldState, event: ConstitutionEvent, _seq: number): voi
         status: 'carried',
         answers: new Map(),
         settledAtT: event.t,
+        moot: null,
       });
       // **The owing is not done here** (Q1034, and see `oweAmendment`).
       // `replay` calls `apply` directly while `emit` pushes to the log, so
@@ -613,6 +615,21 @@ export function apply(s: FoldState, event: ConstitutionEvent, _seq: number): voi
   }
 }
 
+/**
+ * The 👑 question a motion parks, withdrawn (Q1348 (a) and (b), R-105,
+ * R-106). Called from the two folds that take a motion off the crown's desk
+ * without an answer — the ground shift and the moot carry — and a no-op
+ * where there is no pending question, so neither fold asks first. The record
+ * stays in the map: it is what the log wrote, and `withdrawn` is neither
+ * `pending` (every reader filters on that, so nothing is owed and nothing is
+ * served) nor an answer the crown gave.
+ */
+function withdrawCrownQuestionOf(s: FoldState, motion: MotionId): void {
+  for (const q of s.crownQuestions.values()) {
+    if (q.motion === motion && q.status === 'pending') q.status = 'withdrawn';
+  }
+}
+
 /** Motions and the crown (§9.6–§9.7, v0.48). */
 function applyLifecycle(s: FoldState, event: ConstitutionEvent): void {
   switch (event.type) {
@@ -628,6 +645,7 @@ function applyLifecycle(s: FoldState, event: ConstitutionEvent): void {
         status: 'running',
         answers: new Map(),
         settledAtT: null,
+        moot: null,
       });
       s.nextMotionN += 1;
       if (event.payload.kind === 'admit') {
@@ -675,6 +693,33 @@ function applyLifecycle(s: FoldState, event: ConstitutionEvent): void {
       const rec = s.motions.get(event.motion)!;
       rec.answers.clear();
       if (rec.by !== null) rec.answers.set(rec.by, 'accept');
+      // **A motion at the crown's door is shifted too** (Ed, 2026-09-14,
+      // Q1348 (a), reversing R-105's last sentence): the unanimity that
+      // parked it was consent to move from a value that no longer stands,
+      // so it goes back to the room rather than standing on the crown's
+      // assent alone. Its 👑 question is withdrawn — the record stays in
+      // the map, neither pending nor answered — and if the room consents
+      // afresh the settle check opens a new one, which is why nothing here
+      // remembers that there ever was one.
+      if (rec.status === 'awaiting-crown') {
+        rec.status = 'running';
+        rec.settledAtT = null;
+        withdrawCrownQuestionOf(s, rec.id);
+      }
+      break;
+    }
+    case 'motion-carried-moot': {
+      // **What it proposed is what stands** (Ed, 2026-09-14, Q1348 (b),
+      // R-106): the motion settles as carried and applies nothing — the
+      // value is already there, and a second `applyPayloadSet` would write
+      // a second change record over the provenance of the act that
+      // actually moved it. `moot` names that act, which is the whole of
+      // what the record card has to say.
+      const rec = s.motions.get(event.motion)!;
+      rec.status = 'carried';
+      rec.settledAtT = event.t;
+      rec.moot = event.cause;
+      withdrawCrownQuestionOf(s, rec.id);
       break;
     }
     case 'motion-carried': {

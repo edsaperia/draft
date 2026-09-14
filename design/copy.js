@@ -609,6 +609,11 @@ window.COPY = (function () {
       // one wording for a founding choice and a later amendment alike
       provPen: 'Chosen by the Founder ✒️',
       provMembers: 'Chosen by the membership',
+      // a proposal that passed without changing anything (Q1348 (b), Ed
+      // 2026-09-14): what it asked for was already the rule by the time it
+      // settled, and the record says which hand had got there first
+      mootPen: 'The Founder ✒️ had already set this rule, so nothing changed.',
+      mootMembers: 'Another proposal had already set this rule, so nothing changed.',
     },
     // the Proposals preamble (Y21): the gates' fragments, composed
     preamble: {

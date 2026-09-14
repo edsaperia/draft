@@ -349,7 +349,11 @@ window.LIVE = (function () {
         motionRecords: () => index().motions || (index().motions = new Map(
           self.v.view.motions.map((rec) => [rec.id, { id: rec.id,
             route: rec.route, payload: rec.payload, why: rec.why,
-            status: rec.status, by: rec.mine ? self.v.me : '(sealed)',
+            // `moot` rides the view (Q1348 (b)): a proposal that passed
+            // without changing anything, and the hand that had already set
+            // what it asked for — the record card's whole extra sentence
+            status: rec.status, moot: rec.moot || null,
+            by: rec.mine ? self.v.me : '(sealed)',
             at: rec.at, from: rec.from,
             answers: { has: (id) => id === self.v.me && rec.myAnswer !== null,
               get: (id) => (id === self.v.me ? rec.myAnswer : undefined),

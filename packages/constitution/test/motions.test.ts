@@ -359,6 +359,131 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
     expect(shifts(s)).toEqual([[never, later]]);
   });
 
+  /**
+   * **A rival at the crown's door is shifted too** (Ed, 2026-09-14, Q1348
+   * (a)), reversing the one skip R-105 recorded. `quorum` is reserved in the
+   * fixture — reclaimed and set before the start — so a carried motion on it
+   * parks on the founder's 🛡️, and the founder's own ✒️ is what moves the
+   * ground under it.
+   */
+  it('a parked rival is cleared too: back to running, its 👑 question withdrawn (Q1348 (a))', () => {
+    const { s, bo, cy } = constituted();
+    const m = s.openMotion(3, bo, { kind: 'set', setting: 'quorum',
+      value: { form: 'share', n: 80 } });
+    s.answerMotion(4, 'ada', m, 'accept');
+    s.answerMotion(5, cy, m, 'accept'); // bo stood at accept from the open
+    expect(s.motionRecords().get(m)!.status).toBe('awaiting-crown');
+    const q = [...s.crownQuestionRecords().values()].find((x) => x.motion === m)!;
+    expect(q.status).toBe('pending');
+    expect(view(s, 'ada').crownTasks.map((c) => c.id)).toEqual([q.id]);
+    // the ✒️ sets a different value: the unanimity behind the parked motion
+    // was consent to move from 60, and 60 is not what stands any more
+    s.setSetting(6, 'quorum', { form: 'share', n: 70 });
+    const rival = s.motionRecords().get(m)!;
+    expect(rival.status).toBe('running');
+    expect(rival.settledAtT).toBeNull();
+    expect([...rival.answers]).toEqual([[bo, 'accept']]);
+    expect(shifts(s)).toEqual([[m, 'pen']]);
+    // the question is neither pending nor answered, and nothing is owed on it
+    expect(s.crownQuestionRecords().get(q.id)!.status).toBe('withdrawn');
+    expect(view(s, 'ada').crownTasks).toEqual([]);
+    expect(() => s.answerCrownQuestion(7, q.id, 'accept')).toThrow(/no such pending/);
+    // the room consents afresh and it carries again — a new 👑 question opens
+    s.answerMotion(8, 'ada', m, 'accept');
+    s.answerMotion(9, cy, m, 'accept');
+    expect(s.motionRecords().get(m)!.status).toBe('awaiting-crown');
+    const q2 = [...s.crownQuestionRecords().values()]
+      .find((x) => x.motion === m && x.status === 'pending')!;
+    expect(q2.id).not.toBe(q.id);
+    s.answerCrownQuestion(10, q2.id, 'accept');
+    expect(s.settingState('quorum').value).toEqual({ form: 'share', n: 80 });
+    const r = ConstitutionSession.replay([...s.logEntries()]);
+    expect(r.rollingHash()).toBe(s.rollingHash());
+    expect(r.crownQuestionRecords().get(q.id)!.status).toBe('withdrawn');
+  });
+
+  /**
+   * **A rival proposing exactly what now stands settles as carried, moot**
+   * (Ed, 2026-09-14, Q1348 (b), R-106). Reachable through the ✒️ alone
+   * today: a **motion** cause would have to carry the very payload a live
+   * rival puts, which R-103 refuses at the open — and ⏰'s route split,
+   * the one place an ordinary carry meets a constitutional rival, puts
+   * *never* on one side and dates on the other, so the two can never be
+   * equal either.
+   */
+  it('a rival proposing what now stands carries, moot, applying nothing (Q1348 (b))', () => {
+    const { s, bo } = constituted();
+    const m = s.openMotion(3, bo, { kind: 'set', setting: 'quorum',
+      value: { form: 'share', n: 80 } });
+    expect(s.motionRecords().get(m)!.status).toBe('running');
+    s.setSetting(4, 'quorum', { form: 'share', n: 80 }, 'the floor was too low');
+    const rec = s.motionRecords().get(m)!;
+    expect(rec.status).toBe('carried');
+    expect(rec.moot).toBe('pen');
+    expect(rec.settledAtT).toBe(4);
+    expect(shifts(s)).toEqual([]); // a moot rival is never wiped
+    expect([...rec.answers]).toEqual([[bo, 'accept']]);
+    // no second change record, and the provenance is the ✒️'s own
+    expect(s.settingState('quorum').value).toEqual({ form: 'share', n: 80 });
+    expect(s.settingState('quorum').previousValue).toEqual({ form: 'share', n: 60 });
+    expect(s.settingState('quorum').settledBy).toBe('crown'); // the post-start ✒️
+    expect(s.settingState('quorum').setWhy).toBe('the floor was too low');
+    expect(s.logEntries().filter((e) => e.event.type === 'setting-set' &&
+      (e.event as { setting: string }).setting === 'quorum' && e.event.t === 4)).toHaveLength(1);
+    // the mover's 🏛️ came back with the settlement
+    expect(view(s, bo).myHeldMotion).toBeNull();
+    expect(() => s.openMotion(5, bo, { kind: 'set', setting: 'chamber',
+      value: { rung: 'closed' } })).not.toThrow();
+    const r = ConstitutionSession.replay([...s.logEntries()]);
+    expect(r.rollingHash()).toBe(s.rollingHash());
+    expect(r.motionRecords().get(m)!.moot).toBe('pen');
+  });
+
+  it('the moot carry owes the mover, and only the mover (Q1348 (b))', () => {
+    const { s, bo, cy } = constituted();
+    // ada moves it herself: the ✒️'s own news skips the convenor, so hers is
+    // the one OK the moot carry has to raise
+    const m = s.openMotion(3, 'ada', { kind: 'set', setting: 'quorum',
+      value: { form: 'share', n: 80 } });
+    s.setSetting(4, 'quorum', { form: 'share', n: 80 });
+    expect(s.motionRecords().get(m)!.moot).toBe('pen');
+    // the whole of t=4: the ✒️'s set, the moot carry, and one OK — the
+    // mover's. bo and cy stand owed 👥 from the founding set already, which
+    // is the ✒️'s own news deduplicating exactly as `oweOks` always has.
+    expect(s.logEntries().map((e) => e.event).filter((e) => e.t === 4)
+      .map((e) => [e.type, (e as { member?: string }).member ?? null]))
+      .toEqual([
+        ['setting-set', null],
+        ['motion-carried-moot', null],
+        ['ok-owed', 'ada'],
+      ]);
+    // and nobody is owed it twice
+    for (const who of ['ada', bo, cy]) {
+      expect([...s.memberRecords().get(who)!.okOwed].filter((k) => k === 'quorum'))
+        .toEqual(['quorum']);
+    }
+  });
+
+  it('a parked rival proposing what now stands carries moot too (Q1348 (b))', () => {
+    const { s, bo, cy } = constituted();
+    const m = s.openMotion(3, bo, { kind: 'set', setting: 'quorum',
+      value: { form: 'share', n: 80 } });
+    s.answerMotion(4, 'ada', m, 'accept');
+    s.answerMotion(5, cy, m, 'accept');
+    expect(s.motionRecords().get(m)!.status).toBe('awaiting-crown');
+    const q = [...s.crownQuestionRecords().values()].find((x) => x.motion === m)!;
+    s.setSetting(6, 'quorum', { form: 'share', n: 80 });
+    const rec = s.motionRecords().get(m)!;
+    expect(rec.status).toBe('carried');
+    expect(rec.moot).toBe('pen');
+    expect(rec.settledAtT).toBe(6);
+    expect(shifts(s)).toEqual([]);
+    expect(s.crownQuestionRecords().get(q.id)!.status).toBe('withdrawn');
+    expect(view(s, 'ada').crownTasks).toEqual([]);
+    expect(s.settingState('quorum').settledBy).toBe('crown');
+    expect(s.settingState('quorum').previousValue).toEqual({ form: 'share', n: 60 });
+  });
+
   it('an amendment that predates a member is what the document says, not news', () => {
     const { s, bo, cy } = constituted();
     // dee invited by motion, arrives after a later amendment carries

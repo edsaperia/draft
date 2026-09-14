@@ -2965,14 +2965,24 @@
       // The narrated *kept … as it stood* sentence retires with it, and the
       // head went too: the eyebrow dates the record and the blocks say what
       // it did.
-      const was = sentenceFor(k, stoodBefore(rec));
+      // **A moot record has one block and a sentence** (Q1348 (b), Ed
+      // 2026-09-14): it passed, but the rule it asked for was already the
+      // rule, so there is no *was* to set against the *now* — the two blocks
+      // would print the same sentence twice — and the provenance follows the
+      // hand that actually set it rather than the route this motion took.
+      const moot = carried && rec.moot ? rec.moot : null;
+      const was = moot ? null : sentenceFor(k, stoodBefore(rec));
       const now2 = sentenceFor(k, rec.payload.value);
-      const prov = rec.route === 'pen' ? PAGE_COPY.motionRec.provPen
-        : PAGE_COPY.motionRec.provMembers;
+      const prov = (moot ? moot === 'pen' : rec.route === 'pen')
+        ? PAGE_COPY.motionRec.provPen : PAGE_COPY.motionRec.provMembers;
+      const mootNote = moot
+        ? '<p class="setnote">' + (moot === 'pen'
+          ? PAGE_COPY.motionRec.mootPen : PAGE_COPY.motionRec.mootMembers) + '</p>'
+        : '';
       if (carried) {
         said = (was ? '<div class="pick"><span class="opttext">' + esc(was) + '</span></div>' : '') +
           '<div class="pick on"><span class="opttext">' + esc(now2 || '') + '</span>' +
-          speaker + chosenRadio(prov) + '</div>';
+          speaker + chosenRadio(prov) + '</div>' + mootNote;
       } else {
         said = (was ? '<div class="pick on"><span class="opttext">' + esc(was) + '</span>' +
             chosenRadio(provOf(k)) + '</div>' : '') +
