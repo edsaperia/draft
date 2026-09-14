@@ -94,6 +94,10 @@ const FROZEN = [
   'system.css',
   'constitution.js',
   'emoji-data.js',
+  // the founder bodies, the applicant's seat and the band (Q1352 (f)): the
+  // setup-probe's whole subject, so a freeze that left it behind would
+  // compare today's cards against yesterday's band
+  'band.js',
 ];
 
 /** Byte-copy design/<name> over design/reference/<name>, reporting each. */

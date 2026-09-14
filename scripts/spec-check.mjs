@@ -85,7 +85,7 @@ function motionRoutes() {
 // asserts the page actually loads each of the others, so the list cannot
 // name a file the page does not run.
 const PAGE_FILES = ['design/session-view.html', 'design/door.js', 'design/begin.js', 'design/edit-mode.js',
-  'design/wallets.js', 'design/live.js'];
+  'design/wallets.js', 'design/live.js', 'design/band.js'];
 // session.js's own split (Q1352 (h)): the flights and the ✏️ wallet. Not a
 // page file — the page never sees it, session.js makes it — but the reads
 // below that used to open session.js for a wallet or a flight now open this.
@@ -1086,11 +1086,15 @@ function checkPenRebase() {
  */
 function checkApplicantJudged() {
   note('The applicant’s judged readout — entry 138 against the page');
-  const page = js('design/session-view.html');
+  // the applicant's seat left the page for band.js at the Q1352 (f) split
+  const page = js('design/band.js');
   const at = page.indexOf('const APPLICANT = {');
   // the whole getter, comment included; too short a window loses the
-  // `judgedOn` call and goes red, never silently green
-  const body = at < 0 ? '' : page.slice(at, at + 900);
+  // `judgedOn` call and goes red, never silently green — 900 reached it with
+  // 7 characters to spare once the getter took the module's own indent, so
+  // the window is 1,200 now: it is a *floor* under how much is read, and a
+  // generous one costs nothing
+  const body = at < 0 ? '' : page.slice(at, at + 1200);
   if (/mAnsOk\.has\('admission'\)/.test(body))
     find('events', "the applicant's readout counts `mAnsOk.has('admission')` again — entry 96 keys an applicant's motion `adm:<applicant>`, so the setting key can never fill the readout (entry 138)");
   else if (!/judgedOn\(rec, motionTargets\(rec\)\)/.test(body))
