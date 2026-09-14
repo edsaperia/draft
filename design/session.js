@@ -3593,7 +3593,32 @@ document.addEventListener('pointerdown', (ev) => {
 document.addEventListener('pointerup', () => { if (GESTURE === 'hold') flyStop(false); });
 document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flyStop(false); });
 
+  // ---- the document, in its passes (refactor Q1352 (g), 2026-09-14) -------
+  // `renderDoc` was one 665-line function doing four unrelated jobs in a row,
+  // and it is the sequence of them now. Each pass below is the job it always
+  // was, in the order it always ran and with its body unchanged: the column's
+  // markup is built, swapped in and measured, and then the three families of
+  // control standing on it are wired — the column's own, the gutter's, and
+  // the cards'.
+  //
+  // The passes share nothing but `doc` and the markup the first hands the
+  // second, which is why this could be a split rather than a rewrite: every
+  // local the clause pass declares (`cardDone`, `headIdx`, `writing`,
+  // `holders` and the four helpers over them) dies with it, and no listener
+  // below ever read one. The wiring divides where it does because that is
+  // where it already divided — the three groups are contiguous runs of the
+  // old body, so no listener is registered in a different order than before.
   function renderDoc() {
+    placementPass(clausePass());
+    columnPass();
+    gutterPass();
+    cardPass();
+  }
+
+  // **The clause pass**: the column's whole markup as one string — every
+  // block with its mark, the cards that swallow their own clause, the
+  // anchors every gap site stands on, and the proposal-row at the foot.
+  function clausePass() {
     // **The lane controls, one strip for the column** (Q1294 (b), Ed
     // 2026-09-10: *top right of the edit box*): drawn exactly where the
     // proposal-row is — edit mode, a reader who may propose, the document
@@ -3906,10 +3931,22 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         proposeTitle: !rs.changed ? idle : T.row.reviewPropose,
       });
     }
+    return html;
+  }
+
+  // **The placement pass**: the column swapped in, then measured. The two
+  // fits run after the swap and in this order — a stack is fitted to the
+  // gutter it has (`fitStacks`), and a card to the stack beside it.
+  function placementPass(html) {
     doc.innerHTML = html;
     fitStacks();
     fitCards();
+  }
 
+  // **The column pass**: the prose column's own controls — the fold
+  // triangles in its headings, the proposal-row's two ends, and the lane
+  // strip's three buttons with the sync that says which of them are live.
+  function columnPass() {
     doc.querySelectorAll('[data-sec-toggle]').forEach((b) =>
       b.addEventListener('click', (ev) => { ev.stopPropagation(); toggleSection(+b.dataset.secToggle); })
     );
@@ -4006,6 +4043,13 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         flyStart(cb);
       })
     );
+  }
+
+  // **The gutter pass**: the `chip-gutter`'s own controls — every mark, every
+  // gap anchor and the filed pile. This is the whole of the way into a
+  // decision card from the document side (M12): the text is a thing you write
+  // in, the glyph beside it is the thing you press.
+  function gutterPass() {
     // Opening a decision card from the document is now the **mark's** job and
     // only the mark's (Ed, 224). Clicking the text puts a caret in it, because
     // the text is a thing you write in; the glyph in the gutter is the thing
@@ -4047,6 +4091,12 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         ev.preventDefault(); flip(ev);
       });
     });
+  }
+
+  // **The card pass**: what an open card carries — the routes into the
+  // composer and its lanes, the desk on a deadlocked race, the choosing, the
+  // ledger, the commit row and the OK that marks a record read.
+  function cardPass() {
     // ✏️ on a lane: start writing from that wording (Ed, 228).
     doc.querySelectorAll('[data-propose-from]').forEach((b) =>
       b.addEventListener('click', (ev) => {
