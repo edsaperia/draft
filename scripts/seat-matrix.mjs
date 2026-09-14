@@ -153,6 +153,28 @@
  * The run's JSON is **gitignored by design** (`design/tools/seat-matrix*.json`,
  * *a run is snapshots, not an artifact*): a later session re-runs the harness
  * for its baseline rather than looking for a file that is never committed.
+ *
+ * **The three rows of 2026-09-14 got their steps** (Q1359, Ed 2026-09-14:
+ * *add steps for all three*). E38, E39 and E40 arrived that day and reached no
+ * seat; the row-count line below said so and left the decision to Ed. Four
+ * steps and three cells later they are asserted like everything else, and each
+ * of them needed one thing the table did not already have:
+ *   · **E38** needs a text change that a live patch cannot be carried across.
+ *     Every adoption on this document parks (🛡️ is kept on the Text from
+ *     `begin`) and a park rebases nothing, so the strand is the Founder's
+ *     **pen** — which meant keeping ✒️ on the Text at 🍾 too, and standing the
+ *     pair of rows ahead of the park, since a decree is refused while one
+ *     stands. Its audience is one seat, so the row is as much about the four
+ *     that must carry nothing.
+ *   · **E39** needs a laid-down power, which `lay-down` has just made, and
+ *     puts §9.7 rule 4's `reserve` on ⏱️'s ✒️ tab — the page's own payload,
+ *     asserted on the tab's key rather than the setting's.
+ *   · **E40** takes a seat **out** of the document, so it stands last in the
+ *     live epoch and brings two new ideas with it: `left`, which stops every
+ *     *every member* cell counting a seat the document no longer seats, and
+ *     `orDeparted`, the third escape hatch beside `selfSet` and `orSigned` —
+ *     the removed member is told by the door's sentence, on a channel no rail
+ *     key could ever match.
  */
 import { writeFile, readFile } from 'node:fs/promises';
 import { chromium } from 'playwright';
@@ -226,7 +248,15 @@ const SEATS = [
  * (seat, step, ctx). `ctx.stoodAt[name]` is the index of the step that stood
  * the seat; `ev.at` the index of the step at which the event happened
  * (defaults to the step it is listed on).                                  */
-const isMember = (s) => s.role === 'member' || (s.role === 'founder' && s.hat === 'member');
+// **A seat the document has stopped seating is not a member** (E40, Q1359).
+// `left` is set by the `carry-removal` runner at the step that removes them,
+// and every cell that says *every member* has to stop counting them from that
+// step on — E24's signature at the close first of all, which a removed seat
+// can never carry because its page is the door. It rides on the per-document
+// seat object the assertion spreads, never on the shared `SEATS` row, which
+// the second hat's document would otherwise inherit.
+const isMember = (s) => !s.left &&
+  (s.role === 'member' || (s.role === 'founder' && s.hat === 'member'));
 /**
  * **E10's set**: every member with a page, less the seat that moved it. E11's
  * cell reads almost the same and is **not** this — an ordinary motion never
@@ -327,6 +357,40 @@ const AUDIENCE = {
   'every active member except the Founder': (s) => isMember(s) && s.role !== 'founder',
   // E37, the author's line: the seat that proposed the parked text
   'the author': (s, step, ctx, ev) => s.name === ctx.actorOf(ev),
+  // E38, a proposal stranded by a text change (Q170; read here by Q1359).
+  // One seat wide, and the narrowest cell in the table: a `rebase-pending`
+  // candidate is out of every race, so nobody else is judging it, nobody else
+  // is told of it, and the ↻ entry is the author's alone. The author is the
+  // seat of the step that **proposed** it (`ev.author`), never the step that
+  // stranded it — the strand is the Founder's pen and the entry is not theirs.
+  'the author, and nobody else: it is out of every race, so no other seat has anything to be told or asked':
+    (s, step, ctx, ev) => s.name === (STEPS[stepIndex(ev.author)] || {}).seat,
+  // E39, a proposal to hand a laid-down power back (Q386; read here by
+  // Q1359). The cell says *as E10* and means it: the same set, the mover
+  // standing at accept from the put and so carrying a ledger rather than an
+  // ask. The two clauses that follow it are not second tests —
+  //  · **the Founder's own tab is unchanged** is about the *offer*: they lay
+  //    a power down on that tab and are never offered the road back to
+  //    themselves. They still answer the motion there, which is the whole
+  //    point of Q386's ruling and what `journey`'s `powerReturnOnATab`
+  //    asserts, so the founder seat is inside this audience like any member;
+  //  · **a clerk and a stranger meet nothing new** is `isMember` already.
+  "every member answers it, as E10; the mover stands at accept from the put (K8). **The Founder's own tab is unchanged** — they lay a power down there and do not propose returning it to themselves — and a clerk and a stranger meet nothing new":
+    activeButTheMover,
+  // E40, a member removed by a carried motion (Q901; read here by Q1359),
+  // and **E31's cell word for word** — the same tells, the room's act rather
+  // than the Founder's. Two halves on two channels, which is why the row
+  // carries `orDeparted` as well as its `dep:` key:
+  //  · *every member* is the 🥾 news card, `dep:<member>`, owed to everybody
+  //    still seated — the actor included, since only ❌ skips its actor
+  //    (Q1358) and a carried motion is the room's own act;
+  //  · *the removed member* is the door's departure sentence, not a rail
+  //    entry at all, so it is read off their view's `departed` (the server's
+  //    `strangerView`: a seat that dies mid-session becomes the door).
+  // `isMember` no longer counts the removed seat — `left` — so the first
+  // clause is what puts them back inside the audience.
+  'the removed member; every member':
+    (s, step, ctx, ev) => s.name === ev.removed || isMember(s),
 };
 
 /* ---- table 2: the steps ------------------------------------------------ *
@@ -420,7 +484,14 @@ const STEPS = [
   // `brSet`), so the `park` step below has a shield to park under — the one
   // precondition of E36/E37, and the state every text adoption on this
   // document is in from here: `propose-text`'s race parks rather than adopts.
-  { id: 'begin', epoch: 'live', kind: 'hold', seat: 'founder', key: 'begin', keep: [['text', 'a']],
+  // **and ✒️ kept on the Text too** (E38, Q1359): the pen is the cheapest
+  // reliable way to strand a proposal in a room this size — one command that
+  // replaces a clause outright, where an adoption on this document parks
+  // instead (the shield above) and never reaches `rebaseOthers` at all. The
+  // Text is the one row of 🍾's table whose cells default to *down*
+  // (`beginPos`), so both of its powers have to be asked for by name.
+  { id: 'begin', epoch: 'live', kind: 'hold', seat: 'founder', key: 'begin',
+    keep: [['text', 'a'], ['text', 'u']],
     events: [E4('canpropose'), E4('canjudge'), { id: 'E25', key: 'strapply', at: 'begin' }] },
   // `ok-propose` and `ok-judge` are **retired** (2026-09-07). They opened 💡
   // and ⚖️ on the founder's page and pressed their OK; since Ed's ruling of
@@ -515,7 +586,9 @@ const STEPS = [
   // (2026-09-14) reported those two as findings for want of this line.
   // What the row is here for beyond that is the snapshot: every member seat's
   // rail and `view()` with a live removal running, which is what fills the
-  // ❌ door's *Proposed for removal* subsection (`removalPendingIds`).
+  // ❌ door's *Proposed for removal* subsection (`removalPendingIds`). The
+  // motion stays running for the rest of the epoch and `carry-removal`, the
+  // last row of it, carries it — E40 (Q1359).
   // `ifHat: 'member'` is **not** about the hat: it is about the clerk document
   // never reaching the live epoch at HEAD (Q920 — 🍾 waits on a voice a clerk
   // does not hold), so a motion put on it is refused *before the start
@@ -529,6 +602,10 @@ const STEPS = [
       const row = (((v || {}).view || {}).members || [])
         .find((m) => m.email === D.seats.late.email);
       if (!row) throw new Error("no `late` row in the early seat's view — nothing to name as the removal's subject");
+      // the subject's module id, kept for `carry-removal` at the tail of the
+      // epoch (E40, Q1359): the race it opened is `remove:<id>` and the
+      // departure is keyed `dep:<id>`, so both read it off this one lookup
+      D.removeTarget = row.id;
       return { payload: { kind: 'remove', member: row.id },
         why: 'the clubhouse keys were never returned' };
     },
@@ -574,6 +651,59 @@ const STEPS = [
       return { motion: m.id, answer: 'keep' };
     },
     events: [] },
+  // **A proposal stranded by a text change** (SURFACE E38; Q170, Ed
+  // 2026-09-14; stepped by Q1359). Two rows: a member writes a clause, and
+  // the Founder's pen rewrites the same clause under them. `rebaseOthers` is
+  // the one door every text change goes through, and a patch whose span the
+  // new text replaced cannot be carried across — the candidate goes to
+  // `rebase-pending`, out of every race, held for its author alone.
+  //
+  // **The pen, and not an adoption**, because 🛡️ is kept on the Text from
+  // `begin`: every race on this document parks instead of adopting, and a
+  // park rebases nothing. The pen is one command and reaches the same loop.
+  //
+  // **Before the park, not after**: `decreeText` refuses outright while any
+  // candidate stands `awaiting-assent` (R-058, narrowed by R-100), so these
+  // two rows have to stand ahead of `propose-text`, whose race the `park`
+  // step below then parks. They also stand clear of it: a stranded candidate
+  // is in no race, so `park`'s judging still meets exactly one text race.
+  //
+  // **`lapsed` writes it, not `early`**: its wallet is untouched (`early`
+  // pays a stake at each of the two motions above), and a seat revived by
+  // the read (R-096) carrying its own work is worth the snapshot. A member's
+  // own entry is never withheld behind ⚖️ — `withheld` exempts `g.mine` —
+  // so the row needs no `waitsOn`, unlike every other member-side row here.
+  { id: 'strand-propose', epoch: 'live', kind: 'cmd', seat: 'lapsed', cmd: 'propose-text', ifHat: 'member',
+    args: async (D) => {
+      const v = await viewAs(D, 'lapsed');
+      return { baseVersion: v.textVersion,
+        hunks: [{ start: 0, end: 1, lines: ['The clubhouse shall be kept open at all hours.'] }],
+        why: 'the hours are the whole of what people ask me about' };
+    },
+    events: [] },
+  // the strand itself. The pen replaces **the same line**, one line for one,
+  // so the conflict is exact (`spansConflict`) and every other candidate's
+  // offsets are untouched — the Founder's own proposal two rows down is
+  // written against line 1 and must rebase cleanly, not strand beside it.
+  { id: 'strand-pen', epoch: 'live', kind: 'cmd', seat: 'founder', cmd: 'pen-text', ifHat: 'member',
+    args: async (D) => {
+      const v = await viewAs(D, 'founder');
+      return { baseVersion: v.textVersion,
+        hunks: [{ start: 0, end: 1, lines: ['The clubhouse shall be kept open on weekdays.'] }],
+        why: 'the hours were never the club’s to promise' };
+    },
+    // the key is the entry the author's own page files for it — `mine:<id>`
+    // (`itemsFromView`), the candidate id being the one it has carried since
+    // it was proposed. Read back off the module, so a key at all is the
+    // proof that the rebase really failed: nothing in `rebase-pending`, no
+    // key, and the row reports itself as *no rule* rather than passing.
+    events: [{ id: 'E38', at: 'strand-pen', author: 'strand-propose',
+      key: async (D) => {
+        const v = await viewAs(D, 'lapsed');
+        const m = ((v || {}).mine || []).find((x) => x.state === 'rebase-pending');
+        D.strandedId = m ? m.id : null;
+        return m ? 'mine:' + m.id : null;
+      } }] },
   // a text race for E13 to be about: the admit and removal races the live
   // epoch already carries are *setting* races, and E13 is a **text** race.
   // **E13 is asserted here, not at `judge-text`** (Q1356, Ed 2026-09-14).
@@ -646,8 +776,21 @@ const STEPS = [
   // their own `mine:` line (E37) — the matrix reads keys, not copy, so the
   // line's wording is `copy-check`'s to hold. `ifHat` for `remove-motion`'s
   // reason: the clerk document never reaches the live epoch at HEAD (Q920).
+  // **E37's key is the parked candidate's, not the `mine:` prefix** (Q1359).
+  // It was a prefix for as long as one seat at a time had a proposal at all;
+  // `strand-propose` puts a second one on `lapsed`, and a prefix key then
+  // reads every seat's own work as this row's entry — the first run with the
+  // strand rows reported `lapsed` carrying `mine:c3` against an audience of
+  // one. The park's own candidate is on the founder's 👑 task, so the key is
+  // read from there and names exactly the proposal the row is about.
   { id: 'park', epoch: 'live', kind: 'park', seat: 'founder', ifHat: 'member',
-    events: [{ id: 'E36', key: 'park:', at: 'park' }, { id: 'E37', key: 'mine:', at: 'park' }] },
+    events: [{ id: 'E36', key: 'park:', at: 'park' },
+      { id: 'E37', at: 'park',
+        key: async (D) => {
+          const v = await viewAs(D, 'founder');
+          const q = (((v || {}).view || {}).crownTasks || []).find((x) => x.text);
+          return q ? 'mine:' + q.text.candidateId : null;
+        } }] },
   // ✒️ laid down on ⏱️ `rate`, not ⏰ (B14, 2026-08-27): the ladder drives
   // `ending` with the founder's pen and would stall on a relinquished one.
   // **E9's news entry, asserted since 2026-09-01** (Q918). The page files one
@@ -659,6 +802,46 @@ const STEPS = [
   { id: 'lay-down', epoch: 'live', kind: 'cmd', seat: 'founder', cmd: 'relinquish',
     args: () => ({ setting: 'rate', power: 'unilateral' }),
     events: [{ id: 'E9', key: 'rel:', at: 'lay-down' }] },
+  // **The road back to a laid-down power** (SURFACE E39; Q386, Ed
+  // 2026-09-14; stepped by Q1359). It stands immediately behind `lay-down`
+  // because that row is what makes it possible: ⏱️'s ✒️ has just left the
+  // Founder's hand, and §9.7 rule 4's `reserve` is the one way it returns.
+  // The payload names **one power**, since one tab is one power, and the
+  // page puts exactly this over the wire from ⏱️'s ✒️ tab (`motionTargets`
+  // → `pw:u:rate`, which is also the key asserted here).
+  //
+  // The row exercises both sides of its cell in one snapshot: the mover is
+  // outside the audience — the put stands them at accept, so their entry is a
+  // ⏳ ledger and the `wants` filter does not count it as an ask — while the
+  // founder, who acknowledged 🏛️ at `ok-voice`, is inside it and is asked
+  // **on the tab itself**, never on ⏱️'s own card (Q386's whole point, and
+  // what `journey`'s `powerReturnOnATab` asserts card-side).
+  // `waitsOn` is E10's: the entry stages behind the 🏛️ OK (C9, Q1344), which
+  // only the founder has pressed on this document (`ok-voice`).
+  //
+  // **`lapsed` moves it, not `early`**: §9.6 allows one 🏛️ out per member at
+  // a time and `early`'s is still running from `judgments-motion` — the first
+  // run of this row was refused *one 🏛️ out per member at a time*. The seat
+  // the clock lapsed and the read revived (R-096) is an ordinary member again
+  // and holds none, which is the arithmetic E10's own note sets out.
+  { id: 'return-motion', epoch: 'live', kind: 'cmd', seat: 'lapsed', cmd: 'open-motion', ifHat: 'member',
+    args: () => ({ payload: { kind: 'reserve', setting: 'rate', power: 'unilateral' },
+      why: 'one hand is quicker than three when the drip needs changing' }),
+    events: [{ id: 'E39', key: 'pw:u:rate', at: 'return-motion', waitsOn: 'grant-voice' }] },
+  // **A member removed by a carried motion** (SURFACE E40; Q901, Ed
+  // 2026-09-14; stepped by Q1359) — the last row of the live epoch, because
+  // it takes a seat out of the document and every cell above it says *every
+  // member*. `remove-motion` put the motion twelve rows up and left it
+  // running, which is what E11 asserts there; this row carries it.
+  //
+  // E40's cell is E31's word for word, and the two halves are read on their
+  // own channels: the 🥾 news card `dep:<member>` on every seat still in the
+  // room, and the door's departure sentence on the seat that left
+  // (`orDeparted`). The actor is inside the audience like anybody else —
+  // only ❌ skips its own actor (Q1358) — so `early`, who moved it, carries
+  // the card too.
+  { id: 'carry-removal', epoch: 'live', kind: 'carry-removal', seat: 'founder', who: 'late', ifHat: 'member',
+    events: [{ id: 'E40', key: 'dep:', at: 'carry-removal', removed: 'late', orDeparted: true }] },
   // ---- closed -------------------------------------------------------------
   // `toClosing` moves ⏰ with the founder's pen: a constitutional setting set
   // post-start, so E5 on `ending` for every member who was here
@@ -1109,6 +1292,80 @@ const RUN = {
     if (!tasks.length) throw new Error('no text 👑 question stands after ' + (voted.join(', ') || 'nobody') + ' judged for the challenger — nothing parked, so E36/E37 have nothing to assert');
     return `parked: ${tasks.length} text 👑 question(s) on the founder's view after ${voted.length ? voted.join(', ') + ' judged for the challenger' : 'no further judgment'}`;
   },
+  /**
+   * **Carrying the removal `remove-motion` put** (SURFACE E40; Q901; stepped
+   * by Q1359). 🥾 stands at `proposal` on this document, so the motion is
+   * **ordinary** and carries by being judged rather than answered: the bridge
+   * gave it a race of its own on the synthetic `remove:<member>` setting
+   * (`enterMembershipRace`), and a served card on it is found by that id —
+   * `OptionView.setting`, the one place the engine says which setting a
+   * side stands for. Every seat the race can still ask judges for the
+   * challenger, the membership without them, until the engine adopts.
+   *
+   * **The mover is not among them**: an author is never served their own
+   * candidate against the incumbent (§3.3), so `early`'s card never appears
+   * and the loop simply finds nothing for that seat.
+   *
+   * ❌'s 🛡️ is still the Founder's — 🍾 keeps every power it is not told to
+   * lay down — so `adjudicateOrdinaryMotion` parks the carry as a 👑
+   * question rather than applying it, and the Founder answers it here in the
+   * same breath. Either road, the departure is the room's act (`by:
+   * 'members'`), which is exactly E40's distinction from E31.
+   */
+  'carry-removal': async (step, D) => {
+    if (step.ifHat && step.ifHat !== D.hat) return `skipped: the founder is a ${D.hat}`;
+    const target = D.removeTarget;
+    if (!target) throw new Error('no removal was put, so there is nothing to carry');
+    const settingId = 'remove:' + target;
+    const gone = async () => {
+      const v = await viewAs(D, 'founder');
+      return (((v || {}).view || {}).departures || []).some((d) => d.id === target);
+    };
+    const judged = [];
+    for (const name of ['founder', 'lapsed', 'late', 'early']) {
+      if (await gone()) break;
+      const s = D.seats[name];
+      if (!s || !s.stood || !s.page) continue;
+      const v = await viewAs(D, name);
+      const rc = ((v || {}).raceCards || []).find((c) =>
+        (c.a.setting && c.a.setting.settingId === settingId) ||
+        (c.b.setting && c.b.setting.settingId === settingId));
+      if (!rc) continue;                    // nothing on this race left to ask this seat
+      const outcome = rc.a.incumbent ? 'b' : 'a';   // the challenger, whichever side it is
+      const r = await cmdAs(D, name, 'judge-race', { a: rc.a.id, b: rc.b.id, outcome });
+      if (r.status !== 200) throw new Error(`judge-race as ${name} → ${r.status} ${JSON.stringify(r.body)}`);
+      judged.push(name);
+    }
+    let crowned = null;
+    if (!(await gone())) {
+      const v = await viewAs(D, 'founder');
+      // the park from the `park` step is still pending and is a **text**
+      // question; a motion's is the one with a motion on it
+      const q = (((v || {}).view || {}).crownTasks || []).find((x) => !x.text && x.motion);
+      if (q) {
+        const r = await cmdAs(D, 'founder', 'answer-crown-question', { question: q.id, outcome: 'accept' });
+        if (r.status !== 200) throw new Error(`answer-crown-question → ${r.status} ${JSON.stringify(r.body)}`);
+        crowned = q.id;
+      }
+    }
+    if (!(await gone())) {
+      throw new Error('the removal did not carry after ' + (judged.join(', ') || 'nobody') +
+        ' judged' + (crowned ? ` and the Founder accepted ${crowned}` : ' and no 👑 question stood') +
+        ' — E40 has nothing to assert');
+    }
+    const s = D.seats[step.who];
+    // **A removed seat is out of the document, not broken.** It keeps no
+    // membership, so a keep-alive command from it is a 401 the net listener
+    // would report as a refused command, and no cell that says *every
+    // member* may count it from here on (`left`, read by `isMember`).
+    s.left = true; s.quiet = true;
+    // *…and, on their next visit, the door's departure sentence* — E40's own
+    // channel for the person it happened to; a reload is that next visit.
+    await s.page.reload({ waitUntil: 'domcontentloaded' });
+    await s.page.waitForTimeout(2600);
+    return `${step.who} removed by the room after ${judged.join(', ') || 'nobody'} judged` +
+      (crowned ? `, the Founder accepting ${crowned}` : '') + '; their page is the door';
+  },
   /** The lapsed seat goes quiet: page shut, no act, until the clock lapses it. */
   wait: async (step, D) => {
     const s = D.seats[step.seat];
@@ -1352,7 +1609,7 @@ function assertMail(D, step, ev, row) {
   const audience = [];
   for (const [name, s] of Object.entries(D.seats)) {
     if (!s.stood) continue;
-    const inAud = !!pred({ ...s.def, name }, step, D, ev, null);
+    const inAud = !!pred({ ...s.def, name, left: !!s.left }, step, D, ev, null);
     if (inAud) audience.push(name);
     const got = (D.mails || []).filter((m) => m.to === s.email && (warned(m) || packed(m)));
     const want = inAud ? owed : 0;
@@ -1422,7 +1679,10 @@ function assertStep(D, step, evs, snap) {
     let inAudience = 0;
     for (const [name, s] of Object.entries(D.seats)) {
       if (!s.stood || !snap[name] || snap[name].unstood) continue;
-      const seat = { ...s.def, name };
+      // `left` rides beside the def rather than on it: a seat the document
+      // stopped seating (E40) is outside every *every member* cell from that
+      // step on, and the `SEATS` row is shared with the other hat's document
+      const seat = { ...s.def, name, left: !!s.left };
       // the seat's own snapshot rides fifth, for a cell whose rule reads the
       // seat's view (E13's *could still judge it*, Q1340)
       const inAud = !!pred(seat, step, D, ev, snap[name]);
@@ -1452,6 +1712,12 @@ function assertStep(D, step, evs, snap) {
       const okd = !!(snap[name].readout && (snap[name].readout.okd || []).some(match));
       const mv = (snap[name].view || {}).view || {};
       const signed = !!(ev.orSigned && mv.closed && mv.closed.mySignature);
+      // **The removed member's own channel** (E40, Q1359): they are told by
+      // the door and not by a rail entry — `strangerView` puts `departed` on
+      // the view their page now gets, one sentence saying by whose act and
+      // when. Read off the view rather than the DOM, because the rail they
+      // have is the door's own and no key of theirs could ever match.
+      const departed = !!(ev.orDeparted && (snap[name].view || {}).departed);
       // `inAud &&`: an exemption is a way of **satisfying** an audience, never
       // evidence of carrying. Read the other way it manufactures a finding on
       // the clerk hat, where the founder is outside *every member* and holds
@@ -1484,10 +1750,11 @@ function assertStep(D, step, evs, snap) {
       // turn behind three owed news OKs.
       const heldBack = inAud && ev.waitsOn && !has && !okd &&
         !((snap[name].readout || {}).okd || []).includes(ev.waitsOn) ? ev.waitsOn : null;
-      const carries = has || okd || signed || self || !!stagedBehind || !!heldBack;
+      const carries = has || okd || signed || departed || self || !!stagedBehind || !!heldBack;
       const how = asks.some(match) ? 'carries it'
         : has ? 'carries it as a tab (' + ((snap[name].band || []).find((e) => match(e.key)) || {}).kind + ')'
         : okd ? 'acknowledged it' : signed ? 'signed it'
+        : departed ? "was told by the door's departure sentence"
         : self ? 'holds it by the seat-that-set-it exemption'
         : stagedBehind ? 'holds it staged behind ' + stagedBehind.join(', ')
         : heldBack ? 'waits behind the ' + heldBack + ' it has not taken up (C9)' : 'does not carry it';
@@ -1560,14 +1827,11 @@ say(`tables     · SURFACE §2 events ${EVENTS.length} rows · seats ${SEATS.len
 // because until Q1354 CI translated the 3 this line raises into a 0. The
 // count is a **shape** tripwire, not a coverage guarantee: it says a row
 // moved under the table, and somebody then decides whether the table should
-// grow a step for it. None of the three has a step: stranding a
-// proposal needs a ground shift this table does not drive, and its audience
-// (*the author, and nobody else*) is one seat; E39 needs a laid-down power and
-// three seats, which `journey` drives instead; E40's cell is E31's word for
-// word and `remove-motion` leaves its motion running — so **whether the matrix
-// should raise any of them is a question for Ed**, not a step invented here. The
-// count is bumped so the rows Q1355 and Q1356 read can report themselves; it
-// is not a claim that E38–E40 are covered.
+// grow a step for it. **Ed decided, the same day** (Q1359): all three, and
+// they have steps — `strand-propose` + `strand-pen`, `return-motion` and
+// `carry-removal`. What each of them had to buy first is at its own row: the
+// pen kept on the Text at 🍾, a `reserve` behind `lay-down`, and a carry that
+// takes a seat out of the document and so has to stand last in its epoch.
 if (EVENTS.length !== 40) {
   shape.push(`SURFACE §2 has ${EVENTS.length} event rows, not the 40 this table was written against`);
 }
