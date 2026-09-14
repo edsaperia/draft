@@ -137,7 +137,16 @@ describe('sim regression: dedup off is byte-identical to before the gate existed
   // event after the first such race legitimately differs. Both variants
   // still agree with each other, which is the invariant this test defends
   // (was 0f18a6b0eb3e0a74fb6e95ab84eec53c2e5f5f7365561617fd4252f26812e46d).
-  const PINNED = 'af13ed609b74c053782ecdffe5b080b8218a4c217c34d0aa5e9d62438579c36c';
+  // Re-pinned 2026-09-14 (Q1353, SPEC §2.6/§4.6 v0.126, R-113): the close
+  // files a proposal stranded by a text change as *undecided*, like a race
+  // caught running. This run strands exactly one candidate (c4, on a
+  // mid-session `rebase-failed`), so the chain gains one `candidate-undecided`
+  // at T=0 ahead of `closed` and nothing else moves — the tail is the whole
+  // diff. Both variants still agree with each other, two fresh runs produced
+  // this hash and `Session.replay` reproduces it, which is the invariant this
+  // test defends
+  // (was af13ed609b74c053782ecdffe5b080b8218a4c217c34d0aa5e9d62438579c36c).
+  const PINNED = 'acccf5c0e4f15604c46000c691e2cbc60e00e22a84352008c31aec9904bbb46b';
 
   const run = (withGate: boolean) =>
     runSession({
