@@ -584,6 +584,8 @@ export class Session {
         c.state = 'live';
         c.patch = event.patch;
         c.footprint = footprint(event.patch.hunks);
+        // revised, not merely confirmed (SPEC §2.4, Q170)
+        if (event.rationale !== undefined) c.rationale = event.rationale;
         // Evidence resets: pre-confirmation comparisons no longer speak
         // for this candidate (SPEC §2.4).
         this.evidenceSince.set(event.id, seq);
@@ -1282,7 +1284,7 @@ export class Session {
    * After a failed rebase the author confirms (or revises) against the
    * new text; evidence resets (SPEC §2.4).
    */
-  confirmRebase(t: number, candidateId: string, patch: PatchSet): void {
+  confirmRebase(t: number, candidateId: string, patch: PatchSet, rationale?: string): void {
     this.assertOpen();
     const c = this.candidate(candidateId);
     if (c.state !== 'rebase-pending') {
@@ -1293,7 +1295,11 @@ export class Session {
     }
     if (patch.hunks.length === 0) throw new Error('empty patch');
     validateHunks(this.currentLines().length, patch.hunks);
-    this.emit({ type: 'candidate-confirmed', t, id: candidateId, patch });
+    // **Revising is one of §2.4's three roads**, so the reason may be rewritten
+    // with the wording (Q170). Optional and omitted where it is unchanged, so a
+    // log written before this existed replays byte for byte.
+    this.emit({ type: 'candidate-confirmed', t, id: candidateId, patch,
+      ...(rationale === undefined ? {} : { rationale }) });
   }
 
   /**

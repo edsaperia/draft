@@ -200,8 +200,22 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
   const mine = api.myCandidates().flatMap((m) => {
     const c = engine.getCandidate(m.id);
     if (c.patch === undefined) return []; // motions have their own records
+    // **A stranded proposal stands where its clause stands now** (Q170, Ed
+    // 2026-09-14; SURFACE E38). A `rebase-pending` patch is still expressed
+    // against the version it was written for — the rebase failed, so nothing
+    // moved it — while the page keys every entry, tab and card by the line
+    // index of the *current* text. `spanNow` walks each hunk's span through
+    // the version steps since, exactly as a sealed record's `at` does (Q1333),
+    // so the ↻ lands on the wording that displaced it rather than on whatever
+    // now happens to sit at the old line number. One span per hunk, in the
+    // patch's own order, so a multi-site proposal keeps its places.
+    const at = m.state === 'rebase-pending'
+      ? c.patch.hunks.map((h) => spanNow({ start: h.start, end: h.end }, c.patch!.baseVersion,
+          engine.derived('host:versionSteps', () => versionSteps(engine))))
+      : undefined;
     return [{ id: m.id, state: m.state, rationale: m.rationale,
-      patch: c.patch, footprint: c.footprint, signed: !!c.signed }];
+      patch: c.patch, footprint: c.footprint, signed: !!c.signed,
+      ...(at ? { at } : {}) }];
   });
   // 🛡️ on the Text (R-056): what the room passed and nobody has applied.
   // **The founder's alone** — it is the only seat with a question to

@@ -1,6 +1,6 @@
 {
  "meta": {
-  "cards": 312,
+  "cards": 314,
   "walks": [
    "answers",
    "charter",
@@ -1024,6 +1024,34 @@
     ],
     "helpers": []
    },
+   "mine-lostkey-stranded": {
+    "eyebrow": "The clause as it stands",
+    "head": "A member who loses a key tells the Steward the same day, and the house decides at the next meeting whether the locks are worth changing.",
+    "lock": "",
+    "body": "What you proposedA member who loses a key tells the Steward the same day, whether or not they expect to find it again.The same day is the whole of it. A key that turns up in a coat pocket on Weekday was still a key in the street on Weekday, and the house should hear about it on Weekday.",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Withdraw — the edit comes back in full"
+     },
+     {
+      "label": "✏️",
+      "title": "Re-make it here — write it against the clause as it now stands, and propose it again"
+     }
+    ],
+    "hints": [
+     "Front-door Keys — loss — open it",
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record.",
+     "Withdraw — the edit comes back in full",
+     "Re-make it here — write it against the clause as it now stands, and propose it again"
+    ],
+    "helpers": [
+     "The document changed here, and your proposal could not be carried across to the new wording."
+    ]
+   },
    "mine-spending": {
     "eyebrow": "The clause as it stands",
     "head": "Ordinary spending on the running of the house needs nobody’s permission. Anything above a quarter’s subscriptions needs the meeting’s.",
@@ -1763,6 +1791,7 @@
     ],
     "hints": [
      "Close this one",
+     "Lost Keys — open it",
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
@@ -2196,6 +2225,34 @@
      "Proposed — one edit spent. It is in the race now."
     ],
     "helpers": []
+   },
+   "mine-lostkey-stranded": {
+    "eyebrow": "The clause as it stands",
+    "head": "A member who loses a key tells the Steward the same day, and the house decides at the next meeting whether the locks are worth changing.",
+    "lock": "",
+    "body": "What you proposedA member who loses a key tells the Steward the same day, whether or not they expect to find it again.The same day is the whole of it. A key that turns up in a coat pocket on Weekday was still a key in the street on Weekday, and the house should hear about it on Weekday.",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Withdraw — the edit comes back in full"
+     },
+     {
+      "label": "✏️",
+      "title": "Re-make it here — write it against the clause as it now stands, and propose it again"
+     }
+    ],
+    "hints": [
+     "Front-door Keys — loss — open it",
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record.",
+     "Withdraw — the edit comes back in full",
+     "Re-make it here — write it against the clause as it now stands, and propose it again"
+    ],
+    "helpers": [
+     "The document changed here, and your proposal could not be carried across to the new wording."
+    ]
    },
    "mine-spending": {
     "eyebrow": "The clause as it stands",
@@ -2871,6 +2928,7 @@
     ],
     "hints": [
      "Close this one",
+     "Lost Keys — open it",
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",

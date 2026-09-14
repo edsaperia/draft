@@ -516,6 +516,12 @@ export type Event =
       t: number;
       id: string;
       patch: PatchSet;
+      /**
+       * A rewritten rationale, where the author **revised** rather than
+       * confirmed (SPEC §2.4's middle road; Q170). Absent where it is
+       * unchanged, so a log written before it existed replays identically.
+       */
+      rationale?: string;
     }
   | {
       /**

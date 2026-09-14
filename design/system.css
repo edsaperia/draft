@@ -538,6 +538,11 @@
      it wears the filed grey: grey means nothing is asked of you (Ed, Q612,
      2026-08-22). Blue is for your own work, and a ground shift is not that. */
   .mk-shifted { color: var(--muted); }
+  /* ...and the same ↻ in blue where what the ground moved under was a proposal
+     of your own (Ed, 2026-09-14, Q170). It is asking — re-make it here, or
+     withdraw it — and everything of yours that still has an act on it is blue,
+     so the glyph says what happened and the hue says whose it is. */
+  .mk-stranded { color: rgb(var(--lc-yours)); }
   /* a drawn glyph has no plate to give it width, so at the two small sizes it
      needs a little of its own or the marks sit on top of each other */
   .tocmarks .mk { font-size: 1.15em; letter-spacing: 0.06em; }

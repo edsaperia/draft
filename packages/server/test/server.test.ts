@@ -60,7 +60,9 @@ type MemberViewPayload = {
     candidates: Array<{ id: string; mine: boolean; rationale: string; hunks: Hunk[];
       author?: { id: string; name: string | null; picture: string | null } }> }>;
   mine: Array<{ id: string; state: string; rationale: string; patch: unknown; footprint: unknown;
-    signed: boolean }>;
+    signed: boolean;
+    /** a stranded proposal's hunks in the *current* text's coordinates (Q170) */
+    at?: Array<{ start: number; end: number }> }>;
   records: RaceRecord[];
   raceCards: Array<{ kind: string; raceId?: string; urgency: number; a: CardOption; b: CardOption }>;
   record: null | { closedAt: number; text: string; rungNow: string; adopted: RaceRecord[];
@@ -507,6 +509,48 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     expect(rec.judges).toBe(2);
     // one record per race: the adopted rival and the retired one do not file twice
     expect(done.records.filter((r) => r.raceId === r1.raceId)).toHaveLength(1);
+
+    // -- a stranded proposal, and the two doors out of it (Ed, 2026-09-14,
+    // Q170; SURFACE E38). r2 is exactly the case: it rewrote the line r1
+    // carried on, could not be rebased, and went back to cy. It rides `mine`
+    // with its state and — what the page could not work out for itself — the
+    // span its hunk now occupies in the text that replaced it -------------
+    const strandedView = await (await fetch(`${base}/api/d/${created.slug}/view`,
+      { headers: { cookie: cy } })).json() as MemberViewPayload;
+    const stranded = strandedView.mine.find((m) => m.id === r2.id)!;
+    expect(stranded.state).toBe('rebase-pending');
+    // one span per hunk, in the current text's coordinates: the line r1 put
+    // there, not the line number r2 was written against
+    expect(stranded.at).toEqual([{ start: 0, end: 1 }]);
+    expect(strandedView.text.split('\n')[0]).toBe('The clubhouse shall be kept open every day.');
+    // and it is cy's alone: nobody else is told anything about it
+    const adaOnStranded = await (await fetch(`${base}/api/d/${created.slug}/view`,
+      { headers: { cookie: ada } })).json() as MemberViewPayload;
+    expect(adaOnStranded.mine.some((m) => m.id === r2.id)).toBe(false);
+    expect(adaOnStranded.clauses.some((c) =>
+      c.candidates.some((x) => x.id === r2.id))).toBe(false);
+
+    // re-made against the wording that displaced it: the same candidate, live
+    // again, with the reason revised (SPEC §2.4's middle road)
+    const cyWalletBefore = (await rich(cy)).wallet;
+    const remade = await cmd(cy, 'rebase-text', { candidate: r2.id,
+      baseVersion: strandedView.textVersion,
+      hunks: [{ start: 0, end: 1, lines: ['The clubhouse shall be kept open every day, and never closed without a week’s notice.'] }],
+      why: 'the daily rule carried; this is the part of mine it left out' }) as { id: string };
+    expect(remade.id).toBe(r2.id);                       // the id is kept, not re-issued
+    const afterRemake = await rich(cy);
+    expect(afterRemake.mine.find((m) => m.id === r2.id)!.state).toBe('live');
+    // nothing was staked: re-making is not a second proposal
+    expect(afterRemake.wallet).toBe(cyWalletBefore);
+    // the revised reason is what the field now carries
+    expect(afterRemake.clauses.find((c) => c.candidates.some((x) => x.id === r2.id))!
+      .candidates.find((x) => x.id === r2.id)!.rationale)
+      .toBe('the daily rule carried; this is the part of mine it left out');
+    // and it is nobody else's to re-make: bo may not confirm cy's proposal
+    const notCysToRemake = await post(base, `/api/d/${created.slug}/cmd`, { cmd: 'rebase-text',
+      args: { candidate: r2.id, baseVersion: afterRemake.textVersion,
+        hunks: [{ start: 0, end: 1, lines: ['Mine now.'] }] } }, bo);
+    expect((await notCysToRemake.json() as { error?: string }).error).toMatch(/only the proposer/);
 
     // -- an applicant at the door (§9.7½): start → verify → submit --------
     const preApply = booted[booted.length - 1]!.draft.store

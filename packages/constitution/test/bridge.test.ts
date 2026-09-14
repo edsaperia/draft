@@ -297,6 +297,56 @@ describe('a text proposal races in the engine (stage 8, Q418)', () => {
     expect(bridge.engine.balance(bo, 12)).toBe(4);
   });
 
+  /**
+   * **The two doors out of `rebase-pending`** (Ed, 2026-09-14, Q170; SPEC
+   * §2.4, §2.6; SURFACE E38), over the bridge the server's `rebase-text` and
+   * `withdraw-text` call. A rival left behind by an adoption on its own lines
+   * is stranded: re-making it keeps its id and the edit it already paid,
+   * withdrawing it hands the edit back, and neither is anybody else's to do.
+   */
+  it('a stranded proposal is re-made through the bridge, or withdrawn for a full refund (Q170)', () => {
+    const { s, bo, cy } = buildConstituted();
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'text-stranded' });
+    const v0 = bridge.engine.currentVersion();
+    const a = bridge.proposeText(10, bo, patch(v0, ['Open always.']), '');
+    const b = bridge.proposeText(11, cy, patch(v0, ['Open on Sundays.']), 'Sundays');
+    const race = bridge.engine.races().find((r) => r.id === a.raceId)!;
+    bridge.judge(20, 'ada', a.id, race.incumbentId, 'a');
+    expect(bridge.engine.getCandidate(b.id).state).toBe('rebase-pending');
+    const staked = bridge.engine.balance(cy, 20);
+
+    // nobody else's to re-make, and a stale base is refused as it is on propose
+    expect(() => bridge.rebaseText(21, bo, b.id,
+      patch(bridge.engine.currentVersion(), ['Mine now.']))).toThrow('only the proposer');
+    expect(() => bridge.rebaseText(21, cy, b.id,
+      patch(v0, ['Open on Sundays.']))).toThrow(/current version/);
+
+    bridge.rebaseText(22, cy, b.id,
+      patch(bridge.engine.currentVersion(), ['Open always, and twice on Sundays.']),
+      'the always rule carried; this is the Sundays part of mine');
+    const back = bridge.engine.getCandidate(b.id);
+    expect(back.state).toBe('live');
+    expect(back.rationale).toBe('the always rule carried; this is the Sundays part of mine');
+    expect(bridge.engine.balance(cy, 22)).toBe(staked);   // nothing staked a second time
+
+  });
+
+  it('...or withdrawn from where it stands, the edit coming back whole (Q170, SPEC §2.6)', () => {
+    const { s, bo, cy } = buildConstituted();
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'text-stranded-drop' });
+    const v0 = bridge.engine.currentVersion();
+    const before = bridge.engine.balance(cy, 10);
+    const a = bridge.proposeText(10, bo, patch(v0, ['Open always.']), '');
+    const b = bridge.proposeText(11, cy, patch(v0, ['Open on Sundays.']), 'Sundays');
+    bridge.judge(20, 'ada', a.id, bridge.engine.races().find((r) => r.id === a.raceId)!.incumbentId, 'a');
+    expect(bridge.engine.getCandidate(b.id).state).toBe('rebase-pending');
+    expect(bridge.engine.balance(cy, 20)).toBe(before - 1);   // the edit is still spent
+    expect(() => bridge.withdrawText(21, bo, b.id)).toThrow('only the proposer');
+    bridge.withdrawText(22, cy, b.id);
+    expect(bridge.engine.getCandidate(b.id).state).toBe('withdrawn');
+    expect(bridge.engine.balance(cy, 22)).toBe(before);
+  });
+
   it('a stale base version is refused before anything is staked', () => {
     const { s, bo } = buildConstituted();
     const bridge = new EngineBridge(s, { t: 3, rngSeed: 'text-stale' });

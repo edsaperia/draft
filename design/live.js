@@ -855,6 +855,11 @@ window.LIVE = (function () {
     // a proposal keeps the id the card opened under until the view knows it
     const localIdOf = new Map();      // candidate id → the id the draft was proposed as
     const proposedAs = new Map();     // the draft's local id → candidate id, once known
+    // the stranded candidates whose re-make is on the wire (Q170): the view
+    // goes on calling them `rebase-pending` until the confirmation lands, and
+    // a poll in that window would rebuild the ↻ entry over the draft that
+    // replaced it. Emptied by the answer, refusal included
+    const remakeSent = new Set();
     const DRAFT_ID = SESSION.DRAFT_ID;
 
     function itemsFromView(v) {
@@ -868,6 +873,7 @@ window.LIVE = (function () {
       const sideOf = (rc, ids) => (ids.has(rc.a.id) ? 'a' : ids.has(rc.b.id) ? 'b' : null);
       const RAIL = window.COPY.session.rail;
       const PARK = window.COPY.session.park;
+      const STRANDED = window.COPY.session.stranded;
       // **and the ground shift says what happened** (SURFACE E16). The
       // server's `shifted` is a flag — *a judgment of mine locked by a
       // ground shift* — and the rail entry's tooltip is the sentence, as
@@ -1031,26 +1037,48 @@ window.LIVE = (function () {
       for (const k of [...SESSION.readSeals]) {
         if (typeof k === 'string' && k.startsWith('park:') && !parkKeys.has(k)) SESSION.readSeals.delete(k);
       }
+      // **The stranded proposal being re-made is the draft, not a second
+      // entry** (Q170). The press turns the ↻ item into the composer's own
+      // draft in place, carrying the candidate's id as `rebaseOf`; the view
+      // still reports the candidate as `rebase-pending` until the commit
+      // lands, so without this the very next poll would rebuild the entry
+      // beside the draft that replaced it. Read before the swap, off the array
+      // the draft is still in.
+      const remaking = (SESSION.SUGGS.find((x) => x.id === DRAFT_ID) || {}).rebaseOf || null;
+      const beingRemade = (id) => id === remaking || remakeSent.has(id);
       for (const m of v.mine || []) {
         // **your own passed proposal** (SURFACE E37): once it has cleared the
         // bar under the Founder's 🛡️ it is out of every race and waits on the
         // Founder; your entry stays ✏️ and its line says so, nothing asked
         const awaiting = m.state === 'awaiting-assent';
-        if (m.state !== 'live' && !awaiting) continue;
-        const sp = spanOf(m.patch.hunks);
+        // **and your own stranded one** (SURFACE E38, Q170): the text under it
+        // was replaced and its patch could not be carried across, so it is out
+        // of every race and held for you. It keeps its entry — ↻ in your own
+        // blue — and its card offers the two acts that are left.
+        const stranded = m.state === 'rebase-pending';
+        if (stranded && beingRemade(m.id)) continue;
+        if (m.state !== 'live' && !awaiting && !stranded) continue;
+        // a stranded patch is still written against the version it was made
+        // for, so the server carries each hunk's span forward for it (`at`);
+        // everything else is already in the current text's own coordinates
+        const hunks = m.patch.hunks;
+        const spans = stranded && (m.at || []).length === hunks.length ? m.at : hunks;
+        const sp = spanOf(spans);
         const keys = keysOfSpan(sp, lines);
-        const sites = m.patch.hunks.map((h) => {
-          const ks = keysOfSpan(h, lines);
-          return { keys: ks, label: labelFor(ks[0]), text: h.lines.map(unhead).join('\n'),
-            origin: ks.map((k) => { const l = SESSION.DOC.find((x) => x.key === k) || {};
+        const sites = spans.map((x, i) => {
+          const ks = keysOfSpan(x, lines);
+          return { keys: ks, label: labelFor(ks[0]), text: hunks[i].lines.map(unhead).join('\n'),
+            origin: ks.map((k) => { const l = SESSION.DOC.find((x2) => x2.key === k) || {};
               return { key: k, text: l.x || '', note: null, t: l.t, level: l.level }; }) };
         });
         // once proposed the sign choice is part of its record (Q770): the line
         // says *signed* and offers no switch
         items.push({ id: localIdOf.get(m.id) || ('mine:' + m.id), kind: 'draft', mine: true, keys,
-          state: 'needs', qLabel: sites[0].label, urgency: 0, pct: awaiting ? 100 : 0,
-          cap: (awaiting ? PARK.yours : 'yours · in the race') + (m.signed ? ' · signed' : ''),
-          signed: !!m.signed, awaiting,
+          state: 'needs', qLabel: sites[0].label, urgency: 0,
+          pct: awaiting ? 100 : 0,
+          cap: (stranded ? STRANDED.cap : awaiting ? PARK.yours : 'yours · in the race') +
+            (m.signed ? ' · signed' : ''),
+          signed: !!m.signed, awaiting, stranded,
           rationale: m.rationale, sites, candidate: m.id });
       }
       // one record per race (Q503c): the whole field, the text it displaced
@@ -1290,10 +1318,26 @@ window.LIVE = (function () {
       env.LIVE_HOOKS.propose = (d) => {
         const hunks = hunksOf(d);
         const local = d.id;
+        // **Re-making a stranded proposal confirms it; it does not open a
+        // second one** (Q170, SURFACE E38). The draft was seeded from a
+        // candidate the failed rebase handed back, so `rebaseOf` carries its
+        // id and what goes over the wire is `rebase-text`: the same patch
+        // shape, no stake, **no `signed`** — the sign choice was fixed at the
+        // first Propose (K28) and the candidate keeps it — and the rationale
+        // as revised, §2.4's middle road. The answer carries the candidate's
+        // own id, so everything below it reads exactly as a proposal's does.
+        const remake = d.rebaseOf || null;
+        if (remake) remakeSent.add(remake);
+        // Two spelled-out calls rather than one with the name in a ternary:
+        // `spec-check`'s whitelist scan reads `cmd('…')` literally, and a
+        // command it cannot see is a command nothing holds against HANDLERS.
         // `signed` is the draft's own choice (Q770); the server is the gate that
         // refuses it under a rung that offers no choice
-        api.cmd('propose-text', { baseVersion: env.cs.v.textVersion, hunks, why: d.rationale || '', signed: !!d.signed })
+        (remake
+          ? api.cmd('rebase-text', { candidate: remake, baseVersion: env.cs.v.textVersion, hunks, why: d.rationale || '' })
+          : api.cmd('propose-text', { baseVersion: env.cs.v.textVersion, hunks, why: d.rationale || '', signed: !!d.signed }))
           .then((res) => {
+            if (remake) remakeSent.delete(remake);
             if (res && res.ok && res.result && res.result.id) {
               localIdOf.set(res.result.id, local); proposedAs.set(local, res.result.id);
               SESSION.setData({ SUGGS: itemsFromView(env.cs.v) });
