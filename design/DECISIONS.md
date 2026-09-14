@@ -6166,3 +6166,14 @@ The walk's fourteenth question, 2026-09-14. **Ruled: leave the duplication** —
 
 125. **The open card duplicates its own teaser.** While a suggestion is open, its rationale appears twice on screen — clamped in the rail entry and in full on the card a few inches away. Harmless but slightly silly. The entry could drop its teaser while open, or the card could drop the rationale on the assumption you have just read it (clearly wrong — the card is the place it belongs). Probably (a), but it interacts with 124(c).
 
+
+## Q185: the place count stays (Ed, 2026-09-14)
+
+The walk's sixteenth question, 2026-09-14. **Ruled: keep it** — *2 of 3 places* is a position, not a category, and since M19 it appears only on your own multi-place draft, where it is the one thing telling the draft's entries apart at rest. Rejected: removing it (the cable alone, only while one is open); drawing the cable at rest instead. Nothing changes.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 185 | Does "2 of 3 places" go too? | 2026-08-16 | waiting on Ed | `placesOf` (copy.js) |
+
+185. **Does "2 of 3 places" go too?** (raised 2026-08-16, from Q184.) Ed named three subtitles to remove — *copy edit*, *n proposals racing*, *one suggestion* — all of them category labels, and the kind chip with them. I kept the patch place count, on the reading that it is not a category but a *position*: it says which of a patch's clauses you are beside, which nothing else on the card does, and with the chip gone it is the only thing distinguishing three sibling entries from three unrelated ones. If the instruction was "clear the whole subtitle line", it is a one-line removal — but then a patch's siblings are told apart only by the wire spine when one is open, and by nothing at all when none is.
+

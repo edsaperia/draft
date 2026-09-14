@@ -13,7 +13,6 @@ The index, in the section's own order (nothing is pinned — Ed, 2026-09-07, Q12
 | 109 | Scale: the margin assumes a short rail | 2026-08-16 | open | `needs-you-queue` |
 | 113 | Where read state lives, and when a decision goes quiet | 2026-08-16 | partly answered — (c) by Q114; (a) is per-device today | `ACK_KEYS`; Q526 |
 | 170 | Your candidate needs rebasing | 2026-08-16 | waiting on Ed — a mark | Q53 |
-| 185 | Does "2 of 3 places" go too? | 2026-08-16 | waiting on Ed | `placesOf` (copy.js) |
 | 187 | Should a live card show the floor as a headcount too? | 2026-08-16 | waiting on Ed | SPEC §8.2 |
 | 212 | Closeness is now only on the queue card | 2026-08-16 | waiting on Ed | `evidence-meter` |
 | 264 | Green now means three things | 2026-08-16 | open — for the palette pass | `lifecycle palette` |
@@ -137,8 +136,6 @@ Ed replaced ranked ordering with a **margin index** (2026-08-16): entries stand 
 
 The deadlocked case showed that these marks say *what you are being asked to do*, not where in a lifecycle something sits. Settled 2026-08-16 (166–167, 173): a deadlocked race is ❌ *stuck*, in the open yellow rather than grey, and 💡 marks the propose actions it leads to — the rail states, the buttons act. Still open:
 170. **Your candidate needs rebasing** — engine-core carries `rebase-pending` and `displaced` (Q53). Distinct from 🔄, which is your *judgment* stranded; this is your *draft* stranded, and only you can move it.
-
-185. **Does "2 of 3 places" go too?** (raised 2026-08-16, from Q184.) Ed named three subtitles to remove — *copy edit*, *n proposals racing*, *one suggestion* — all of them category labels, and the kind chip with them. I kept the patch place count, on the reading that it is not a category but a *position*: it says which of a patch's clauses you are beside, which nothing else on the card does, and with the chip gone it is the only thing distinguishing three sibling entries from three unrelated ones. If the instruction was "clear the whole subtitle line", it is a one-line removal — but then a patch's siblings are told apart only by the wire spine when one is open, and by nothing at all when none is.
 
 187. **Should a live card show the floor as a headcount too?** (raised 2026-08-16, from Q186.) The navbar now says *voices needed 5 of 14* and the sealed record says *5 of 14 weighed in · floor was 5*. A **live** card shows only the evidence-meter and its caption, and § Front-door Keys is the one entry whose caption mentions the floor at all ("three of the fourteen have weighed in — the floor is 5"). Making that consistent — every live card stating "n of 14 so far, floor 5" — would be honest, magnitude-only, and probably the single most reassuring number on the surface. The reason to hesitate is that a running judge-count is *nearly* directional: watching it climb tells you the race is being sampled, and combined with the meter it narrows what the posterior can be. Probably safe (SPEC §8.2 puts per-race judge counts in the record and the mockup already exposes one), but it should be a decision rather than a drift.
 
