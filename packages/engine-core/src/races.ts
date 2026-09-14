@@ -12,10 +12,12 @@
  * session hands itself over as that host.
  *
  * The memo (`derived`, Q1324) stays the session's own — the state version it
- * keys on is bumped by `apply`, and `applying` suspends it for the length of
- * a fold, so a fold that reads `races()` twice with the state changing
- * between the reads still sees both states. Nothing here could hold that
- * invariant, because nothing here can see an event land.
+ * keys on is bumped at every mutation the fold makes (Q1326), so a fold that
+ * reads `races()` twice with the state changing between the reads still sees
+ * both states, and one that reads it twice with nothing changing between pays
+ * for one. Nothing here could hold that invariant, because nothing here can
+ * see an event land; `updatePeaks` is the one writer in this file, and the
+ * session touches for it.
  */
 
 import type { Candidate, Constitution, PairKind, RaceView } from './types.js';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Session, makeConstitution } from '../src/session.js';
+import { Session, makeConstitution, INC_PREFIX } from '../src/session.js';
 import { ParticipantApi } from '../src/participant-api.js';
 import { TEXT, roster } from './helpers.js';
 
@@ -108,6 +108,55 @@ describe('derived state is computed once per state version (Q1324)', () => {
     expect(api.outcomes()).toHaveLength(0);
     s.judgments().push({} as never);
     expect(s.judgments()).toHaveLength(0);
+  });
+
+  it('a fold reads twice across its own mutation, and the second read sees it (Q1326)', () => {
+    const s = open();
+    seed(s);
+    const api = new ParticipantApi(s, 'p4');
+    const card = api.nextCards(10, 2000)[0]!;
+    const cand = [card.a.id, card.b.id].find((id) => !id.startsWith(INC_PREFIX))!;
+    // The judgment fold is the fold that reads `races()` on both sides of its
+    // own push: the ground before it (the incumbent the judgment was cast
+    // against), the fit after it (`updatePeaks`). Before the push nobody but
+    // the author has spoken for this candidate, and an author is not the
+    // room — so the peak a refund is paid on is still nothing.
+    expect(s.getCandidate(cand).peakW).toBe(0);
+    s.judge(2000, 'p4', card.a.id, card.b.id, card.a.id === cand ? 'a' : 'b');
+    // and it moved, which only a read taken after the push could have done
+    expect(s.getCandidate(cand).peakW).toBeGreaterThan(0.5);
+    // the ground, meanwhile, is the one that stood before the push
+    const cast = s.judgments().find((j) => j.participantId === 'p4')!;
+    expect(cast.locked).toBe(false);
+  });
+
+  it('and one judgment rebuilds the picture twice, not three times (Q1326)', () => {
+    const s = open();
+    seed(s);
+    const api = new ParticipantApi(s, 'p4');
+    const card = api.nextCards(10, 2000)[0]!;
+    // count what actually gets computed rather than what gets asked for: the
+    // host's own `derived` closures resolve this property at call time, so an
+    // own property over the prototype's method sees every read in the engine
+    const inner = s.derived.bind(s);
+    let builds = 0;
+    (s as unknown as { derived: Session['derived'] }).derived = (key, compute) =>
+      inner(key, () => {
+        if (key === 'races') builds++;
+        return compute();
+      });
+    s.races(); // warm, as a command path always is: the last act left this here
+    builds = 0;
+    s.judge(2000, 'p4', card.a.id, card.b.id, 'a');
+    // One inside the fold — `raceOfPair` and `updatePeaks` share it across the
+    // push — and one for the adoption sweep, which runs on the state the fold
+    // finished in. Three before Q1326 on an incumbent pair like this one, five
+    // on a rival pair (the ground took a read per endpoint), and every one of
+    // them uncached all the way down, which is the other half of the cost:
+    // `usableComparisons` was computed twice per race per build. This is the
+    // assertion that stops the memo being suspended again — every other test
+    // in this file would stay green if it were.
+    expect(builds).toBe(2);
   });
 
   it('replays to the same state and the same derived picture', () => {

@@ -225,20 +225,43 @@ export class Session {
   /**
    * **Everything the session knows is a function of its log** (Q1324): the
    * state changes in `apply` and nowhere else, so a value derived from the
-   * state alone is exact until the next event. `stateVersion` is bumped by
-   * every `apply`, and `derived` keeps one map per version. **While an event
-   * is being folded nothing is memoised at all** (`applying`): the fold
-   * reads `races()` more than once with the state changing between the
-   * reads — `markJudged` takes the ground before the comparison is pushed,
-   * `updatePeaks` needs the fit after — and a memo taken between the two
-   * paid the wrong refund (two engine tests said so). Before this the view
+   * state alone is exact until the next event. `stateVersion` counts the
+   * changes and `derived` keeps one map per version. Before this the view
    * route rebuilt `races()` once per race per seat per poll (`askOn`),
    * which was 91% of a saturated host.
+   *
+   * **And the version moves inside a fold too** (Q1326, Ed 2026-09-14). Q1324
+   * suspended the memo for the whole of an `apply`, because a fold reads
+   * `races()` on both sides of its own mutation — the comparison's ground is
+   * taken before the push, `updatePeaks` needs the fit after — and one memo
+   * spanning the two paid the wrong refund. Suspending it meant every
+   * `races()` read in the write path was uncached, and the second moon room
+   * measured the consequence: views held under a quarter of a second at 140
+   * bots while a judgment went past ten. So the version is bumped by `touch()`
+   * at **every** mutation the fold makes rather than once at its end, and the
+   * memo is live throughout: a read is a hit exactly while nothing has moved
+   * since it, inside a fold and outside one alike.
+   *
+   * The invariant that rests on it is *no `derived` read observes a mutation
+   * that has not been touched for*, and three things hold it: `apply` touches
+   * again in its `finally`, so a fold that forgets cannot leak past its own
+   * end; `memo.audit` recomputes every hit and throws on disagreement, which
+   * is what `derived.test.ts` and `memo-differential.test.ts` run under; and
+   * `memo.off` gives those tests a session that derives everything afresh to
+   * compare against. Both switches are off in every shipped path.
    */
   private stateVersion = 0;
-  private applying = false;
   private derivedVersion = -1;
   private derivedMap = new Map<string, unknown>();
+  /**
+   * The two dev switches over the memo (Q1326) — `off` derives everything
+   * afresh, `audit` recomputes every hit and throws where the cache and the
+   * live state disagree. Process-wide because the memo is not a product
+   * behaviour and nothing in a document should be able to name it. `audit`
+   * assumes what `derived`'s contract already says: a `compute` reads state
+   * and writes none, and a caller reads the result without mutating it.
+   */
+  static readonly memo = { off: false, audit: false };
   /**
    * The serving rules (SPEC §8), in `routing.ts` since Q1352 (o): they read
    * the session through `routingHost()` and write nothing. Built here so
@@ -264,15 +287,45 @@ export class Session {
    * engine's own notion of change, rather than guessing at it from `log.length`.
    */
   derived<T>(key: string, compute: () => T): T {
-    if (this.applying) return compute(); // a fold reads live state, uncached
+    if (Session.memo.off) return compute();
     if (this.derivedVersion !== this.stateVersion) {
       this.derivedMap.clear();
       this.derivedVersion = this.stateVersion;
     }
-    if (this.derivedMap.has(key)) return this.derivedMap.get(key) as T;
+    if (this.derivedMap.has(key)) {
+      const hit = this.derivedMap.get(key) as T;
+      if (Session.memo.audit) this.auditHit(key, hit, compute);
+      return hit;
+    }
     const value = compute();
     this.derivedMap.set(key, value);
     return value;
+  }
+
+  /**
+   * **The state just moved, so nothing derived before this line is valid**
+   * (Q1326). One integer, called at every mutation `apply` makes and at the
+   * log push that precedes it — the feed's own rng is seeded on the log's
+   * length, so the push is a state change like any other.
+   */
+  private touch(): void {
+    this.stateVersion += 1;
+  }
+
+  /**
+   * `memo.audit`'s half: a hit is recomputed and compared, so a mutation that
+   * escaped its `touch()` is caught **at the read that would have been wrong**
+   * rather than downstream in a refund or a ranking. Throws naming the key,
+   * because there is no honest way to carry on from it.
+   */
+  private auditHit<T>(key: string, hit: T, compute: () => T): void {
+    const held = stableStringify(hit);
+    if (held !== stableStringify(compute())) {
+      throw new Error(
+        `derived memo stale for '${key}' at state version ${this.stateVersion}: ` +
+          'a mutation escaped its touch() (Q1326)',
+      );
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -327,25 +380,26 @@ export class Session {
     const hash = chainHash(prevHash, event);
     // the version rides the envelope, never the hash (Q480(a))
     this.log.push({ seq, hash, prevHash, event, schemaVersion: SCHEMA_VERSION });
+    this.touch(); // the log is state: `feed`'s rng is seeded on its length
     this.apply(event, seq);
   }
 
   private apply(event: Event, seq: number): void {
     if (event.t < this.lastT) throw new Error('timestamps must be non-decreasing');
-    // the state is about to change: nothing derived before this survives,
-    // and nothing is derived *during* it (see `derived`)
-    const outer = this.applying; // a fold that folds (never today) stays uncached throughout
-    this.applying = true;
     try {
       this.applyEvent(event, seq);
     } finally {
-      this.applying = outer;
-      this.stateVersion += 1;
+      // the fold touches as it goes (Q1326); this is the net under it, so a
+      // mutation that forgot cannot outlive the event that made it
+      this.touch();
     }
   }
 
   private applyEvent(event: Event, seq: number): void {
+    // the clock is state: the bar rides it (§4.3), and `races()` reads the bar
+    const movedT = this.lastT !== event.t;
     this.lastT = event.t;
+    if (movedT) this.touch();
     switch (event.type) {
       case 'opened': {
         this.constitutionValue = event.constitution;
@@ -367,6 +421,7 @@ export class Session {
             lastActionT: null,
           });
         }
+        this.touch();
         break;
       }
       case 'participant-added': {
@@ -378,21 +433,25 @@ export class Session {
           latencies: [],
           lastActionT: null,
         });
+        this.touch();
         break;
       }
       case 'participant-removed': {
         const entry = this.roster.get(event.participantId);
         if (entry) entry.removed = true;
+        this.touch();
         break;
       }
       case 'participant-suspended': {
         const entry = this.roster.get(event.participantId);
         if (entry) entry.suspended = true;
+        this.touch();
         break;
       }
       case 'participant-resumed': {
         const entry = this.roster.get(event.participantId);
         if (entry) entry.suspended = false;
+        this.touch();
         break;
       }
       case 'candidate-submitted': {
@@ -419,15 +478,21 @@ export class Session {
           event.t,
           this.constitutionValue.stake,
         );
+        this.touch();
         this.touchParticipant(event.author, event.t);
         break;
       }
       case 'comparison': {
-        // The ground the judgment was cast against (SPEC §4.4, Q50) —
-        // derived here, in the fold, so replay reproduces it exactly.
-        // Computed before the push: race membership and incumbent ids
-        // do not depend on comparisons.
-        const groundId = event.kind === 'edge' ? this.groundOfPair(event.aId, event.bId) : null;
+        // The race the pair belongs to, and with it the ground the judgment
+        // was cast against (SPEC §4.4, Q50) — derived here, in the fold, so
+        // replay reproduces it exactly. Read before the push, which is what
+        // the ground means, and **read once** (Q1326): race membership and
+        // incumbent ids do not depend on comparisons, so the same view serves
+        // `updatePeaks` below on the far side of the push. That is the second
+        // whole rebuild of every race gone from every judgment; the fit
+        // `updatePeaks` needs is a different question and is taken fresh.
+        const race = event.kind === 'edge' ? this.raceOfPair(event.aId, event.bId) : null;
+        const groundId = race === null ? null : race.incumbentId;
         const stored: StoredComparison = {
           seq,
           t: event.t,
@@ -454,6 +519,9 @@ export class Session {
           contextKey(event.aId, event.bId, groundId),
         );
         if (event.kind === 'edge') this.edgeCount++;
+        // the judgment is in the state now, and everything derived from the
+        // judgments — this race's fit above all — has to be rebuilt (Q1326)
+        this.touch();
         this.touchParticipant(event.participantId, event.t);
         // peakW moves here, in the fold, not in the command layer: refunds
         // are computed from it at adoption, so replaying the log must
@@ -465,10 +533,15 @@ export class Session {
               ? event.bId
               : null;
           if (candidateId !== null) {
-            const race = this.races().find((r) => r.members.includes(candidateId));
-            if (race) this.raceRules.updatePeaks(race);
+            // `race` above holds this candidate wherever it is not null; the
+            // lookup stays for the one case it is — a pair the classifier
+            // would never have called an edge, reached by replaying a log
+            // written by something other than `judge`
+            const peaked = race ?? this.races().find((r) => r.members.includes(candidateId));
+            if (peaked) this.raceRules.updatePeaks(peaked);
           }
         }
+        this.touch(); // peakW moved
         break;
       }
       case 'composer-opened': {
@@ -500,10 +573,12 @@ export class Session {
           // stays absent, so a log written before it existed folds the same
           ...(event.cappedFit ? { cappedFit: event.cappedFit } : {}) };
         this.fitCache.clear();
+        this.touch();
         break;
       }
       case 'co-signed': {
         this.supporters.get(event.candidateId)?.add(event.byParticipant);
+        this.touch();
         if (event.withdrewCandidateId) {
           this.exitCandidate(
             event.withdrewCandidateId,
@@ -533,6 +608,7 @@ export class Session {
         if (author) credit(author.ledger, this.constitutionValue, event.t, refund);
         this.lastAdoptionT = event.t;
         this.fitCache.clear();
+        this.touch();
         break;
       }
       case 'text-decreed': {
@@ -563,6 +639,7 @@ export class Session {
         this.candidate(event.id).exit = { t: event.t, cause: 'decreed', refund: 0 };
         this.lastAdoptionT = event.t;
         this.fitCache.clear();
+        this.touch();
         // a clerk holds no seat, and `touchParticipant` is already a no-op
         // off the roster — the author rule needs no guard of its own here
         this.touchParticipant(event.author, event.t);
@@ -572,11 +649,13 @@ export class Session {
         const c = this.candidate(event.id);
         c.patch = event.patch;
         c.footprint = footprint(event.patch.hunks);
+        this.touch();
         break;
       }
       case 'rebase-failed': {
         const c = this.candidate(event.id);
         c.state = 'rebase-pending';
+        this.touch();
         break;
       }
       case 'candidate-confirmed': {
@@ -588,6 +667,7 @@ export class Session {
         // for this candidate (SPEC §2.4).
         this.evidenceSince.set(event.id, seq);
         this.fitCache.clear();
+        this.touch();
         break;
       }
       case 'constitution-amended': {
@@ -599,6 +679,7 @@ export class Session {
             materialize(entry.ledger, this.constitutionValue, event.t);
             rephaseDrip(entry.ledger, event.t, changes.tokenDripMinutes * 60_000);
           }
+          this.touch();
         }
         // The bar as it stands at this moment, before the merge —
         // re-anchoring keeps it (§4.3: a bar never jumps because timings
@@ -608,6 +689,7 @@ export class Session {
         if (changes.windowEndMs !== undefined || changes.adoptionThresholdEnd !== undefined) {
           this.thresholdAnchor = { t: event.t, value: barBefore };
         }
+        this.touch();
         break;
       }
       case 'standing-set': {
@@ -616,6 +698,7 @@ export class Session {
         // against the old standing lock and pairs re-open fresh.
         this.settingsMap.set(event.settingId, event.value);
         this.fitCache.clear();
+        this.touch();
         break;
       }
       case 'candidate-undecided': {
@@ -625,6 +708,7 @@ export class Session {
       case 'closed': {
         this.closedFlag = true;
         this.closedT = event.t;
+        this.touch();
         break;
       }
     }
@@ -643,7 +727,11 @@ export class Session {
     const author = this.roster.get(c.author);
     if (author && refund > 0) credit(author.ledger, this.constitutionValue, t, refund);
     this.fitCache.clear();
+    this.touch();
   }
+
+  // The three helpers below are the only writers the fold shares, so each
+  // announces its own change (Q1326) rather than trusting every caller to.
 
   private touchParticipant(id: string, t: number): void {
     const entry = this.roster.get(id);
@@ -653,6 +741,7 @@ export class Session {
       if (gap > 0 && gap <= this.constitutionValue.boutGapMs) entry.latencies.push(gap);
     }
     entry.lastActionT = t;
+    this.touch(); // the latencies price every pair the feed deals (§8.1)
   }
 
   private markJudged(
@@ -666,25 +755,33 @@ export class Session {
       map.set(participantId, set);
     }
     set.add(key);
+    this.touch(); // `servedOut` prices every pair, and the feed excludes on it
   }
 
   /**
-   * The ground a pair is judged on: the incumbent id of the race that
-   * contains its candidate endpoint(s), or null for cross-race
-   * (diagonal) and unresolvable pairs.
+   * The race a pair is judged in — whose incumbent id is the ground it is
+   * judged on — or null for cross-race (diagonal) and unresolvable pairs.
+   *
+   * **One read of `races()`** (Q1326): it was three, one per endpoint through
+   * `raceIdOfEndpoint` and one for the race itself, and in the fold every one
+   * of them rebuilt the whole picture. Same answer: `raceIdOfEndpoint` is
+   * `races().find(…)?.id`, so comparing the two races by identity is
+   * comparing their ids.
    */
-  private groundOfPair(aId: string, bId: string): string | null {
+  private raceOfPair(aId: string, bId: string): RaceView | null {
     const aInc = aId.startsWith(INC_PREFIX);
     const bInc = bId.startsWith(INC_PREFIX);
     if (aInc && bInc) return null;
+    const races = this.races();
+    const holder = (id: string): RaceView | undefined =>
+      races.find((r) => r.members.includes(id));
     if (!aInc && !bInc) {
-      const ra = this.raceRules.raceIdOfEndpoint(aId);
-      const rb = this.raceRules.raceIdOfEndpoint(bId);
-      if (ra === null || rb === null || ra !== rb) return null; // diagonal or dead
+      const ra = holder(aId);
+      const rb = holder(bId);
+      if (!ra || !rb || ra.id !== rb.id) return null; // diagonal or dead
+      return ra;
     }
-    const candId = aInc ? bId : aId;
-    const race = this.races().find((r) => r.members.includes(candId));
-    return race ? race.incumbentId : null;
+    return holder(aInc ? bId : aId) ?? null;
   }
 
   /** Feed exclusion: already judged on this ground (revisable, SPEC §4.4). */
