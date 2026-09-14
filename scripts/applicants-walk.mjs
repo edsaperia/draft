@@ -289,11 +289,14 @@ if (knock.status !== 200 || !knock.body || !knock.body.devLink) {
     } else {
       say('applicant  · the page booted as the applicant; rail ' + JSON.stringify(gf.rail));
     }
+    // Playwright's own click, which re-queries and retries: the rail is
+    // rebuilt wholesale on every poll, so a handle taken before the scroll
+    // was detached by the time the click came (*Element is not attached to
+    // the DOM*, two runs in four). A missing entry is false, not a throw.
     const openOn = async (k) => {
-      const el = await guest.$(`#rail [data-card="${k}"], #rail [data-q="${k}"]`);
-      if (!el) return false;
-      await el.scrollIntoViewIfNeeded();
-      await el.click();
+      const sel = `#rail [data-card="${k}"], #rail [data-q="${k}"]`;
+      if (!(await guest.$(sel))) return false;
+      await guest.click(sel, { timeout: 5000 });
       await T(450);
       return true;
     };
