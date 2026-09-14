@@ -5,23 +5,30 @@
  * layer; follow-on emission (the maybeAdopt pattern) happens only in
  * commands; caller-supplied non-decreasing t; hash-chained log with
  * static replay() re-verifying and re-folding bit-identically.
+ *
+ * What is left in this file is that command layer and the plain reads. The
+ * fold itself is `fold.ts` (Q1352 (s)), the motions `motions.ts` (r), the
+ * acknowledgements `owed.ts` (q). `emit` and `replay` stay here, being the
+ * only two doors into the fold and the only writers of the log — and the
+ * fold's state is one field, `this.fold`, read through getters of the names
+ * it used to be declared under.
  */
 
 import { chainHash } from './hash.js';
 import type {
-  ApplicantRecord, ApplicantState, ConstitutionEvent, ConvenorInput, ConvenorRef,
+  ApplicantRecord, ConstitutionEvent, ConvenorInput, ConvenorRef,
   CrownQuestionId, CrownQuestionRecord,
-  LogEntry, MemberId, MemberRecord, MemberState, MotionAnswer, MotionId,
-  MotionRecord, Power, Powers, SettingState, Arrival, PowerSource, DoorId, PowerKey,
+  LogEntry, MemberId, MemberRecord, MotionAnswer, MotionId,
+  MotionRecord, Power, Powers, SettingState, DoorId, PowerKey,
   DepartureBy, ReleaseBatchRecord, MailGiveUpBatchRecord,
 } from './types.js';
-import { DOORS, holderOf, isDoor, PEOPLE_SCHEMA_VERSION, SCHEMA_VERSION, versionOf } from './types.js';
+import { isDoor, PEOPLE_SCHEMA_VERSION, SCHEMA_VERSION, versionOf } from './types.js';
 import type { People, PersonId, ResolvedPerson } from './people.js';
 import { InMemoryPeople, resolvePerson } from './people.js';
 import type { SettingId } from './catalogue.js';
 import { CATALOGUE, entryOf, mayApply, validateFor } from './catalogue.js';
 import type { ApplicationsValue, EndingValue, LapseValue, PaceValue,
-  PercentValue, Price, PriceValue, QuorumValue, SettingValue, SlugValue, TextValue } from './values.js';
+  Price, PriceValue, QuorumValue, SettingValue, SlugValue, TextValue } from './values.js';
 import { eqValue } from './values.js';
 import { resolveConsent } from './consent.js';
 import * as owed from './owed.js';
@@ -32,10 +39,14 @@ import { CONSTITUTIONAL } from './motions.js';
 // it from here, so the module's own exports do not move with the file.
 import type { MotionInput } from './motions.js';
 export type { MotionInput };
+// The fold is `fold.ts` (Q1352 (s)); `MANAGED` and `HELD` are the catalogue
+// derivations the birth folds over, so they moved with it and come back here
+// for the commands and the readiness readouts that walk them.
+import * as fold from './fold.js';
+import { FoldState, HELD, MANAGED } from './fold.js';
 import { eOf, inE, motionElectorateOf, quorumCount,
   adoptionFloorTerm } from './populations.js';
-import type { ThresholdAnchors } from './threshold.js';
-import { barAt, reAnchor, seedAnchors } from './threshold.js';
+import { barAt } from './threshold.js';
 import { lapseDue, warningDue } from './clocks.js';
 import type { ShapeName } from './shapes.js';
 import { shapeOf } from './shapes.js';
@@ -74,16 +85,6 @@ export interface WaitingHold {
   on?: SettingId[];
 }
 
-/** The settings the map manages: everything except the text and the personal pair.
- *  🪪 is among them since entry 94 — a price, not the register. */
-const MANAGED: readonly SettingId[] = CATALOGUE
-  .filter((e) => e.kind !== 'personal' && e.id !== 'startingText')
-  .map((e) => e.id);
-
-/** Everything that carries a crown pair: the managed map, the Text (Q440, 2026-08-21)
- *  and the two doors (entry 94, 2026-08-26). */
-const HELD: readonly PowerKey[] = [...MANAGED, 'startingText', ...DOORS];
-
 /**
  * **No legacy fold** (Q1329, Ed 2026-09-11: *we are still in alpha — please
  * get rid of old formats, there are no old documents*). The module once read
@@ -102,7 +103,6 @@ const SEEN_EVERY_MS = 60 * 60_000;
 
 export class ConstitutionSession {
   private log: LogEntry[] = [];
-  private lastT = -Infinity;
 
   /**
    * **The rows beside the log** (decision 1253): every person's email, name
@@ -117,68 +117,52 @@ export class ConstitutionSession {
 
   constructor(people: People = new InMemoryPeople()) {
     this.people = people;
+    this.fold = new FoldState(people);
   }
 
-  // ---- fold state ----------------------------------------------------------
-  private convenor!: { id: MemberId; person: PersonId; isMember: boolean;
-    // the clerk's half of Q645's *was it ever answered* — a clerk is never a
-    // MemberRecord, and their name and picture are optional (§9.6a), so the
-    // question is asked of them exactly as it is of anybody
-    nameSet: boolean; pictureSet: boolean;
-    /**
-     * **Whether 🎩 has been answered** (Q682), and the same lesson as
-     * `nameSet` one line above. `isMember` is a value with a default, so it
-     * cannot say whether the question was ever put — and pre-🍾 the surface
-     * had nowhere else to look: it kept 🎩's settledness in page state alone,
-     * which no reload can rebuild. Since 🎩 blocks the founding order, a
-     * founder who answered it and then reloaded was asked again *and* had
-     * everything below it withheld again. Folded from the
-     * `convenor-membership-set` events the log already carries: no new event,
-     * no envelope change, hash chain untouched.
-     */
-    membershipSet: boolean;
-    lastActivityT: number; lapseWarned: boolean; lapseWarnedLead: number | null };
-  private crownLapsedFlag = false;
-  private members = new Map<MemberId, MemberRecord>();
-  /** The departures, folded (Q901): see `departures()`. */
-  private departed: Array<{ member: MemberId; t: number; by: DepartureBy }> = [];
-  private settings = new Map<PowerKey, SettingState>();
-  private quorumFormValue: 'count' | 'share' = 'share';
-  private startingText: string | null = null;
-  private textConfirmedFlag = false;
-  private slugHistory: string[] = [];
-  /** The birth's own `t` and its 🧭 shape (entry 166), read off `created` so `replay` rebuilds both. */
-  private createdT: number | null = null;
-  private shapeName: ShapeName | null = null;
-  private constitutedT: number | null = null;
-  private closedFlag = false;
-  private closedT: number | null = null;
-  private anchors: ThresholdAnchors | null = null;
-  private motions = new Map<MotionId, MotionRecord>();
-  private crownQuestions = new Map<string, CrownQuestionRecord>();
-  private applicants = new Map<string, ApplicantRecord>();
-  /**
-   * The release batches, by id (entry 162, Q1013), and the two fields that
-   * decide whether a further release **joins** one or opens a new one. All
-   * three are recomputed **in the fold** and never only in the command: a
-   * batch id minted in the command would replay differently from the session
-   * that wrote it.
-   */
-  private releaseBatches = new Map<string, ReleaseBatchRecord>();
-  private lastReleaseT: number | null = null;
-  private lastReleaseBatch: string | null = null;
-  private nextReleaseN = 1;
-  /** The mail-give-up batches, by id (SURFACE E34). One pass, one batch, so
-   *  there is no open-batch pair here — the counter alone, moved in the fold
-   *  for `nextReleaseN`'s reason. */
-  private mailGiveUpBatches = new Map<string, MailGiveUpBatchRecord>();
-  private nextMailGiveUpN = 1;
-  private nextMemberN = 1;
-  private nextMotionN = 1;
-  private nextCrownN = 1;
-  private nextApplicantN = 1;
-  /** Person ids are minted like member ids and rebuilt from the log (`notePerson`). */
-  private nextPersonN = 1;
+  // ---- the fold, and the session's own reads of it -------------------------
+  //
+  // **`fold.ts` writes; everything above and below it reads** (Q1352 (s)).
+  // Every field that used to be declared here is `FoldState`'s, one object the
+  // session owns, and the getters below keep the names the commands and the
+  // projections have always used — `this.settings`, `this.members`,
+  // `this.convenor` — so not one command body moved with the fold. None of
+  // them is assignable, and that is the property worth having: after the
+  // split the only code in the package that can assign a fold field is the
+  // fold, which is what `replay` rebuilding bit-identically rests on.
+  private readonly fold: FoldState;
+
+  private get lastT() { return this.fold.lastT; }
+  private get convenor() { return this.fold.convenor; }
+  private get crownLapsedFlag() { return this.fold.crownLapsedFlag; }
+  private get members() { return this.fold.members; }
+  private get departed() { return this.fold.departed; }
+  private get settings() { return this.fold.settings; }
+  private get quorumFormValue() { return this.fold.quorumFormValue; }
+  private get startingText() { return this.fold.startingText; }
+  private get textConfirmedFlag() { return this.fold.textConfirmedFlag; }
+  private get slugHistory() { return this.fold.slugHistory; }
+  private get createdT() { return this.fold.createdT; }
+  private get shapeName() { return this.fold.shapeName; }
+  private get constitutedT() { return this.fold.constitutedT; }
+  private get closedFlag() { return this.fold.closedFlag; }
+  private get closedT() { return this.fold.closedT; }
+  private get anchors() { return this.fold.anchors; }
+  private get motions() { return this.fold.motions; }
+  private get crownQuestions() { return this.fold.crownQuestions; }
+  private get applicants() { return this.fold.applicants; }
+  private get releaseBatches() { return this.fold.releaseBatches; }
+  private get lastReleaseT() { return this.fold.lastReleaseT; }
+  private get lastReleaseBatch() { return this.fold.lastReleaseBatch; }
+  private get nextReleaseN() { return this.fold.nextReleaseN; }
+  private get mailGiveUpBatches() { return this.fold.mailGiveUpBatches; }
+  private get nextMailGiveUpN() { return this.fold.nextMailGiveUpN; }
+  private get nextMemberN() { return this.fold.nextMemberN; }
+  private get nextMotionN() { return this.fold.nextMotionN; }
+  private get nextCrownN() { return this.fold.nextCrownN; }
+  private get nextApplicantN() { return this.fold.nextApplicantN; }
+  private get nextPersonN() { return this.fold.nextPersonN; }
+  private get penFrom() { return this.fold.penFrom; }
 
   // -------------------------------------------------------------------------
   // Opening and replay
@@ -281,908 +265,15 @@ export class ConstitutionSession {
     this.apply(event, seq);
   }
 
-  private apply(event: ConstitutionEvent, _seq: number): void {
-    if (event.t < this.lastT) throw new Error('timestamps must be non-decreasing');
-    this.lastT = event.t;
-    switch (event.type) {
-      case 'created': {
-        const c = event.convenor;
-        this.createdT = event.t;
-        this.shapeName = event.shape ?? null;
-        this.notePerson(c.person);
-        this.convenor = { id: c.id, person: c.person, isMember: c.isMember,
-          // a founder who arrives already carrying one has answered it (Q645)
-          nameSet: c.nameSet === true, pictureSet: c.pictureSet === true,
-          // 🎩 is asked, never assumed: `isMember` arrives with the creation
-          // and answers nothing about whether the founder was put the question
-          membershipSet: false,
-          lastActivityT: event.t, lapseWarned: false, lapseWarnedLead: null };
-        // **Nothing arrives delegated** (Ed, 2026-08-21, amending SPEC §9.0a,
-        // closing Q511). Every held setting is born with the founder holding
-        // it, both powers intact and its question shut, because a default
-        // holder states an answer the founder has not given — the clause
-        // reads *The Founder is deciding X* until they decide it, and
-        // delegating is the ✒️/🛡️ act like any other, which is what emits
-        // `setting-delegated` and opens the blind question.
-        //
-        // §9.0a used to say the roster was the default holder of the
-        // constitutional ones, on the argument that a default you must argue
-        // out of is stronger than a ticked radio. The cost was that ten
-        // questions opened for answering at the instant of creation, before
-        // the founder had seen one of them — so the room could be answering
-        // while the founder was still naming the document, and the surface
-        // could not tell a default apart from a decision.
-        // Birth is uniform; the catalogue carried a `holderDefault` column as
-        // doctrine until 2026-08-22 (spec pass 1, finding 554), read by nothing.
-        for (const id of HELD) {
-          this.settings.set(id, {
-            id,
-            holder: 'convenor',
-            powers: { unilateral: true, assent: true },
-            // both powers are the convenor's by construction at the birth
-            powerFrom: { unilateral: 'founding', assent: 'founding' },
-            pendingRelease: { unilateral: false, assent: false },
-            value: null,
-            previousValue: null,
-            setWhy: null,
-            settledBy: null,
-            settledAtT: null,
-            returned: [],
-            collecting: false,
-            answers: new Map(),
-            distribution: null,
-          });
-        }
-        this.foldSet('title', { text: event.title }, 'convenor', event.t);
-        this.foldSet('link', { slug: event.slug }, 'convenor', event.t);
-        this.slugHistory.push(event.slug);
-        if (c.isMember) {
-          const rec = this.freshMember(c.id, c.person, event.t, event.t,
-            { via: 'founding', by: null });
-          // readers prefer the MemberRecord over the convenor struct, so a
-          // founder created already carrying a name has to arrive with the
-          // answered flags here too, or the two disagree from the first event
-          // (Q645); the values themselves are the row's, shared by construction
-          rec.nameSet = this.convenor.nameSet;
-          rec.pictureSet = this.convenor.pictureSet;
-          this.members.set(c.id, rec);
-        }
-        break;
-      }
-      case 'convenor-membership-set': {
-        // **🎩 decides where the founder sits, not who they are** (Q646). This
-        // rebuilt the record from `freshMember` on every tick, so a founder who
-        // named themselves and then revisited 🎩 — the radios stay live until
-        // the start (SURFACE C9) — lost their name, their picture, the OKs they
-        // were owed and the ones they had given. Identity binds nobody (§9.0c,
-        // exception X15: *the convenor with no powers and no membership keeps
-        // their name and picture*), so nothing about it belongs to the seat.
-        // It carries **both** ways: while they are a member their identity
-        // lives on the MemberRecord and the convenor struct goes stale, so
-        // unticking without carrying it back served a name from before they
-        // joined.
-        // the seat only moves when the answer differs from where they sit;
-        // an answer that repeats itself records the act and nothing else
-        if (event.isMember === this.members.has(this.convenor.id)) {
-          this.convenor.membershipSet = true;
-          break;
-        }
-        if (event.isMember) {
-          const rec = this.freshMember(this.convenor.id, this.convenor.person,
-            event.t, event.t, { via: 'founding', by: null });
-          const prev = this.members.get(this.convenor.id);
-          // the name and picture need no carrying since decision 1253: seat
-          // and struct name the same person row, so both read the same values
-          rec.nameSet = prev ? prev.nameSet : this.convenor.nameSet;
-          rec.pictureSet = prev ? prev.pictureSet : this.convenor.pictureSet;
-          if (prev) {
-            rec.okOwed = prev.okOwed;
-            rec.okGiven = prev.okGiven;
-            // the release batches travel with the OKs, for the same reason:
-            // what is owed belongs to the person, not to the seat (entry 162)
-            rec.releasesOwed = prev.releasesOwed;
-            rec.releasesGiven = prev.releasesGiven;
-            // and the amendment news with them, for the same reason
-            // (SURFACE E35)
-            rec.amendmentsOwed = prev.amendmentsOwed;
-            rec.amendmentsGiven = prev.amendmentsGiven;
-            // and the mail news with them, for the same reason (SURFACE E34)
-            rec.mailGaveUpOwed = prev.mailGaveUpOwed;
-            rec.mailGaveUpGiven = prev.mailGaveUpGiven;
-            rec.mailGaveUp = prev.mailGaveUp;
-            rec.lastActivityT = prev.lastActivityT;
-          } else {
-            rec.lastActivityT = Math.max(rec.lastActivityT, this.convenor.lastActivityT);
-          }
-          this.members.set(this.convenor.id, rec);
-        } else {
-          const prev = this.members.get(this.convenor.id);
-          if (prev) {
-            this.convenor.nameSet = prev.nameSet;
-            this.convenor.pictureSet = prev.pictureSet;
-            this.convenor.lastActivityT = prev.lastActivityT;
-          }
-          this.members.delete(this.convenor.id);
-        }
-        // the act, not the value (Q682): whichever way it went, 🎩 was asked
-        this.convenor.membershipSet = true;
-        // and the struct's own field follows the seat (Q920): the roster is
-        // the fact, and `convenorRecord()` reads it, but nothing that reads
-        // the struct directly should meet a value from before the act
-        this.convenor.isMember = event.isMember;
-        break;
-      }
-      case 'setting-set': {
-        this.touch(this.convenor.id, event.t); // a convenor act moves their clock
-        // read before foldSet overwrites it: this is the whole of what tells
-        // a first decision from a change (Q530)
-        const prevOf = this.settings.get(event.setting);
-        const wasValue = prevOf ? prevOf.value : null;
-        this.foldSet(event.setting, event.value, event.by, event.t);
-        const nowSt = this.settings.get(event.setting);
-        if (nowSt) {
-          nowSt.previousValue = wasValue;
-          nowSt.setWhy = event.why ?? null;
-        }
-        // **A pen change is an amendment, and is recorded as one** (Ed,
-        // 2026-08-22: *a unilateral rule change by the founder is still just
-        // a kind of amendment and so should be treated in the same way in
-        // terms of how it's communicated and reported*). So it does not get
-        // a list of its own — it joins the motions, where every other
-        // amendment already lives, and the record renders it beside them
-        // without knowing it is different. It is **folded, not emitted**:
-        // synthesised here from the `setting-set` event the log already
-        // carried, so no event shape changed and the hash chain is untouched,
-        // the same technique as `arrival` in Q524.
-        //
-        // A **first decision is not in it**, by the same test the
-        // acknowledgement uses: nothing was amended, so there is no
-        // amendment. §9.6a in the spec's own words.
-        if (wasValue !== null) {
-          const id = ('pen:' + event.setting + ':' + event.t) as MotionId;
-          this.motions.set(id, {
-            id,
-            by: this.convenor.id,
-            payload: { kind: 'set', setting: event.setting, value: event.value },
-            route: 'pen',
-            stake: 0,
-            openedAtT: event.t,
-            why: event.why ?? null,
-            // it opens and settles in one act — nobody had to agree
-            status: 'carried',
-            answers: new Map(),
-            settledAtT: event.t,
-          });
-          this.penFrom.set(id, wasValue);
-        }
-        if (event.setting === 'quorum') {
-          this.quorumFormValue = (event.value as QuorumValue).form;
-        }
-        if (event.setting === 'link') {
-          const slug = (event.value as SlugValue).slug;
-          if (!this.slugHistory.includes(slug)) this.slugHistory.push(slug);
-        }
-        if (CONSTITUTIONAL.has(event.setting)) {
-          for (const m of this.members.values()) m.okGiven.delete(event.setting);
-        }
-        this.reseedAnchorsIfLive(event.t, event.setting);
-        break;
-      }
-      case 'setting-delegated': {
-        const st = this.settings.get(event.setting)!;
-        this.setPowers(st, { unilateral: false, assent: false });
-        st.collecting = true;
-        st.value = null;
-        st.settledBy = null;
-        st.settledAtT = null;
-        st.distribution = null;
-        break;
-      }
-      case 'setting-reclaimed': {
-        const st = this.settings.get(event.setting)!;
-        // reclaiming a delegation withdraws the question; reclaiming a
-        // relinquished power on a still-held setting (§9.6a: pre-start the
-        // founder's powers are as revisable as their values) must not touch
-        // the value the founder has already set
-        const wasDelegated = st.holder === 'members';
-        this.setPowers(st, { unilateral: true, assent: true });
-        if (wasDelegated) {
-          st.collecting = false;
-          st.answers.clear();
-          st.value = null;
-          st.settledBy = null;
-          st.settledAtT = null;
-          st.distribution = null;
-        }
-        break;
-      }
-      case 'starting-text-confirmed': {
-        this.startingText = event.text.replace(/\r\n?/g, '\n');
-        this.textConfirmedFlag = true;
-        break;
-      }
-      case 'text-amended': {
-        this.touch(this.convenor.id, event.t); // a convenor act moves their clock
-        // **The same record shape the pen fold above builds** (R-004, R-058):
-        // a unilateral change by the Founder is still just a kind of
-        // amendment, so it joins the motions rather than getting a list of
-        // its own, and every existing reader already says *The Founder* for
-        // `route === 'pen'` without knowing this kind exists. It opens and
-        // settles in one act — nobody had to agree.
-        const id = ('pen:text:' + event.candidateId) as MotionId;
-        this.motions.set(id, {
-          id,
-          by: this.convenor.id,
-          payload: { kind: 'text', candidateId: event.candidateId, summary: event.summary },
-          route: 'pen',
-          stake: 0,
-          openedAtT: event.t,
-          why: event.why ?? null,
-          status: 'carried',
-          answers: new Map(),
-          settledAtT: event.t,
-        });
-        // **The owing is not done here** (Q1034, and see `oweAmendment`).
-        // `replay` calls `apply` directly while `emit` pushes to the log, so
-        // an owing performed in a fold appends events to every session that
-        // replays that log. It rides `recordTextAmendment`, on the command
-        // path, where every other owing in this file rides.
-        break;
-      }
-      case 'quorum-form-set': {
-        this.quorumFormValue = event.form;
-        break;
-      }
-      case 'identity-set': {
-        // **The act is what is recorded, not the value** (Q645). A key present
-        // on the event means the member answered that question; the answer may
-        // perfectly well be null — a blank name is Anonymous (§9.0c) and a
-        // picture is removed by choosing initials — so `!== undefined` is the
-        // test, never truthiness.
-        // The values went to the person row when the command ran (decision
-        // 1253); the fold records only that the question was answered.
-        if (event.member === this.convenor.id && !this.members.has(event.member)) {
-          if (event.nameSet) this.convenor.nameSet = true;
-          if (event.pictureSet) this.convenor.pictureSet = true;
-          break;
-        }
-        const m = this.members.get(event.member)!;
-        if (event.nameSet) m.nameSet = true;
-        if (event.pictureSet) m.pictureSet = true;
-        this.touch(event.member, event.t);
-        break;
-      }
-      case 'member-invited': {
-        // a motion carried it, one member's word did (🪪 at ✒️), or the
-        // convenor's own drafting power did
-        const arrival: Arrival = event.viaMotion !== undefined
-          ? { via: 'invitation', by: 'members' }
-          : event.by !== undefined
-            ? { via: 'invitation', by: 'member', inviter: event.by }
-            : { via: 'invitation', by: 'convenor' };
-        this.notePerson(event.person);
-        this.members.set(event.member,
-          this.freshMember(event.member, event.person, event.t, null, arrival));
-        this.nextMemberN += 1;
-        break;
-      }
-      case 'member-uninvited': {
-        const m = this.members.get(event.member)!;
-        m.removed = true;
-        break;
-      }
-      case 'member-arrived': {
-        const m = this.members.get(event.member)!;
-        m.arrivedAtT = event.t;
-        m.lastActivityT = event.t;
-        break;
-      }
-      case 'member-removed': {
-        const m = this.members.get(event.member)!;
-        m.removed = true;
-        m.removedBy = event.by ?? 'members';
-        // Q901 / E31–E32: a departure is a fact about the membership and the
-        // record keeps no time for it, so it is folded here — once per event,
-        // at replay or at the act — rather than read off the log by every
-        // `view()`. **Whether or not the person ever arrived** (Q1012, Ed
-        // 2026-08-28: *keep the mail and also record the departure*): a
-        // removed invitee is mailed that they are no longer a member of the
-        // document, so the register says the same thing about the same act.
-        // Withdrawing an invitation is still not a departure — that is
-        // `member-uninvited`, its own event, and nobody left (entry 96).
-        this.departed.push({ member: event.member, t: event.t, by: m.removedBy });
-        break;
-      }
-      case 'answer-given': {
-        const st = this.readValue(event.setting, event.value);
-        st.answers.set(event.member, event.value);
-        this.touch(event.member, event.t);
-        break;
-      }
-      case 'question-resolved': {
-        const st = this.readValue(event.setting, event.value);
-        st.collecting = false;
-        st.value = event.value;
-        st.settledBy = 'ceremony';
-        st.settledAtT = event.t;
-        st.distribution = event.distribution;
-        if (event.setting === 'quorum') {
-          this.quorumFormValue = (event.value as QuorumValue).form;
-        }
-        this.reseedAnchorsIfLive(event.t, event.setting);
-        break;
-      }
-      case 'ceremony-ground-shifted':
-        break; // answers stand — the event is the notification (§9.6a)
-      case 'constituted': {
-        this.constitutedT = event.t;
-        this.anchors = this.computeAnchors(event.t);
-        // **A recorded act beats the card's reading of it, so it is spent
-        // first** (entry 158). 🍾 spends every **pending** release (R-048): a
-        // power laid down while the founding ran was recorded then and takes
-        // effect now. Where that and `laidDown` disagree, the recorded
-        // `power-relinquished` wins — and since `setPowers` clears
-        // `pendingRelease`, winning is a matter of running first. Derived at
-        // the fold, so no event shape changed and the frozen log replays byte
-        // for byte.
-        for (const st of this.settings.values()) {
-          if (!st.pendingRelease.unilateral && !st.pendingRelease.assent) continue;
-          this.setPowers(st, {
-            unilateral: st.powers.unilateral && !st.pendingRelease.unilateral,
-            assent: st.powers.assent && !st.pendingRelease.assent,
-          });
-        }
-        if (event.laidDown === undefined) {
-          // **The start lays the founder's hand off the Text** — the fold as
-          // it stood before entry 158, and what every log written before it
-          // replays into. A shield kept on the Text would have made every
-          // adoption wait on founder assent, which is no drafting engine's
-          // default; the road to a held Text was a post-start reserve motion.
-          this.setPowers(this.settings.get('startingText')!, { unilateral: false, assent: false });
-        } else {
-          // **…and where 🍾 was asked, the start lays down whatever it was
-          // not told to keep** (Ed, 2026-08-27; SPEC §9.7 rule 8 as amended,
-          // R-057). The list is authoritative and complete over `HELD` — the
-          // Text included, which is why keeping ✒️ or 🛡️ on it is expressible
-          // at all for the first time. **Lowering only**: a power the list
-          // names goes, a power it does not is left exactly as it stands, so
-          // nothing here can ever re-grant. One `setPowers` per key rather
-          // than per pair, since the pair is one hand.
-          const down = new Map<PowerKey, { unilateral: boolean; assent: boolean }>();
-          for (const r of event.laidDown) {
-            const cur = down.get(r.setting) ?? { unilateral: false, assent: false };
-            cur[r.power] = true;
-            down.set(r.setting, cur);
-          }
-          for (const [k, d] of down) {
-            const st = this.settings.get(k);
-            if (!st) continue;  // a key the catalogue no longer has
-            this.setPowers(st, {
-              unilateral: st.powers.unilateral && !d.unilateral,
-              assent: st.powers.assent && !d.assent,
-            });
-          }
-        }
-        break;
-      }
-      case 'ok-owed': {
-        const m = this.members.get(event.member)!;
-        for (const id of event.settings) m.okOwed.add(id);
-        break;
-      }
-      case 'ok-given': {
-        const m = this.members.get(event.member)!;
-        m.okOwed.delete(event.setting);
-        m.okGiven.add(event.setting);
-        this.touch(event.member, event.t);
-        break;
-      }
-      case 'release-owed': {
-        const m = this.members.get(event.member)!;
-        m.releasesOwed.add(event.batch);
-        // **The batch grows by union, and the id counter moves here** (entry
-        // 162). A second `relinquish` at the same `t` re-emits under the id
-        // that is already open, so the batch gains releases without a byte of
-        // the log being rewritten; a first sighting of an id is what mints it,
-        // which is why `nextReleaseN` is advanced in the fold and nowhere else.
-        const rec = this.releaseBatches.get(event.batch);
-        if (rec) {
-          for (const r of event.releases) {
-            if (!rec.releases.some((x) => x.setting === r.setting && x.power === r.power)) {
-              rec.releases.push({ ...r });
-            }
-          }
-        } else {
-          this.releaseBatches.set(event.batch,
-            { id: event.batch, t: event.t, releases: event.releases.map((r) => ({ ...r })) });
-          this.nextReleaseN += 1;
-        }
-        this.lastReleaseT = event.t;
-        this.lastReleaseBatch = event.batch;
-        break;
-      }
-      case 'release-ok': {
-        const m = this.members.get(event.member)!;
-        m.releasesOwed.delete(event.batch);
-        m.releasesGiven.add(event.batch);
-        this.touch(event.member, event.t);
-        break;
-      }
-      case 'amendment-owed': {
-        // **Nothing is minted here** — the release fold above mints a batch id
-        // and grows the batch by union, because one act can lay down
-        // thirty-four powers. An amendment carries the candidate id it is
-        // about, so there is nothing to mint and nothing to join: the whole of
-        // what is remembered is which candidate, and where it changed the text
-        // is a question for the engine (SURFACE E35, Q1034).
-        this.members.get(event.member)!.amendmentsOwed.add(event.candidate);
-        break;
-      }
-      case 'amendment-ok': {
-        const m = this.members.get(event.member)!;
-        m.amendmentsOwed.delete(event.candidate);
-        m.amendmentsGiven.add(event.candidate);
-        this.touch(event.member, event.t);
-        break;
-      }
-      case 'mail-gave-up': {
-        // the batch is minted by its first sighting, exactly as a release
-        // batch is, so a replay rebuilds the counter without it being written
-        if (!this.mailGiveUpBatches.has(event.batch)) {
-          this.mailGiveUpBatches.set(event.batch,
-            { id: event.batch, t: event.t, people: [...event.people] });
-          this.nextMailGiveUpN += 1;
-        }
-        // **The subject is marked whoever is told** (SURFACE E34): the row's
-        // fact belongs to the person, not to the audience, so it is set from
-        // every copy of the event and from the told-nobody one too. By person
-        // id (decision 1253): the command resolved the dead address to its row.
-        for (const rec of this.members.values()) {
-          if (event.people.includes(rec.person)) rec.mailGaveUp = true;
-        }
-        if (event.member !== null) {
-          this.members.get(event.member)!.mailGaveUpOwed.add(event.batch);
-        }
-        break;
-      }
-      case 'mail-gave-up-ok': {
-        const m = this.members.get(event.member)!;
-        m.mailGaveUpOwed.delete(event.batch);
-        m.mailGaveUpGiven.add(event.batch);
-        this.touch(event.member, event.t);
-        break;
-      }
-      case 'mail-resent': {
-        // the row's line clears; nobody's owed batch does. The card is the
-        // record of something that happened, and a re-send does not un-happen
-        // it (SURFACE E34's Persistence column; Q1030).
-        this.members.get(event.member)!.mailGaveUp = false;
-        this.touch(event.by, event.t);
-        break;
-      }
-      case 'floor-recomputed':
-        break; // an announcement (§9.3/Q10); the numbers ride in the event
-      case 'tick':
-        break;
-      default:
-        this.applyLifecycle(event);
-    }
-  }
-
-  /** Motions and the crown (§9.6–§9.7, v0.48). */
-  private applyLifecycle(event: ConstitutionEvent): void {
-    switch (event.type) {
-      case 'motion-opened': {
-        this.motions.set(event.motion, {
-          id: event.motion,
-          by: event.by,
-          payload: event.payload,
-          route: event.route,
-          stake: event.stake,
-          openedAtT: event.t,
-          why: event.why ?? null,
-          status: 'running',
-          answers: new Map(),
-          settledAtT: null,
-        });
-        this.nextMotionN += 1;
-        if (event.payload.kind === 'admit') {
-          this.applicants.get(event.payload.applicant)!.motion = event.motion;
-        }
-        if (event.by) this.touch(event.by, event.t);
-        break;
-      }
-      case 'motion-answer': {
-        const rec = this.motions.get(event.motion)!;
-        rec.answers.set(event.member, event.answer);
-        this.touch(event.member, event.t);
-        break;
-      }
-      case 'power-relinquished': {
-        const st = this.settings.get(event.setting)!;
-        // **A pre-start release takes effect at Begin** (Ed, 2026-08-25;
-        // R-048). The act is recorded here and now — this event is the
-        // record of it — but the power stays the convenor's until 🍾, so
-        // everything that reads `powers` before the start reads the hand
-        // that is actually on the setting. `constituted` spends it.
-        if (this.constitutedT === null) {
-          st.pendingRelease = { ...st.pendingRelease, [event.power]: true };
-        } else {
-          const powers: Powers = { ...st.powers, [event.power]: false };
-          this.setPowers(st, powers);
-        }
-        this.touch(this.convenor.id, event.t);
-        break;
-      }
-      case 'motion-withdrawn': {
-        const rec = this.motions.get(event.motion)!;
-        rec.status = 'withdrawn';
-        rec.settledAtT = event.t;
-        break;
-      }
-      case 'motion-ground-shifted': {
-        // The count restarts (Q1348, R-105): every answer was given against
-        // a value that no longer stands, so none of them is consent to move
-        // from the one that does. The mover's is restored to accept rather
-        // than kept as it was — the motion is theirs and it is being re-put,
-        // exactly as at the open (§9.6) — and a mover who had stood down to
-        // abstain may stand down again. Nothing else moves: status, id,
-        // stake and rationale are the motion's own. No `touch`: nobody acted.
-        const rec = this.motions.get(event.motion)!;
-        rec.answers.clear();
-        if (rec.by !== null) rec.answers.set(rec.by, 'accept');
-        break;
-      }
-      case 'motion-carried': {
-        const rec = this.motions.get(event.motion)!;
-        rec.status = 'carried';
-        rec.settledAtT = event.t;
-        if (rec.payload.kind === 'set') {
-          this.applyPayloadSet(rec.payload.setting, rec.payload.value, 'motion', event.t);
-        }
-        if (rec.payload.kind === 'reserve') {
-          // The room crowned the convenor — willing or lapsed (§9.7 v0.52,
-          // Ed: a lapsed one is a constitutional monarchy, powers held and
-          // auto-abstained). An unwilling crown's release is delegation,
-          // which stays the convenor's own free act. v0.54: the motion may
-          // restore one power or both (Q394); omitted means both.
-          const st = this.settings.get(rec.payload.setting)!;
-          const p = rec.payload.power ?? 'both';
-          // 'motion' (Q524): this is the only door a power comes back
-          // through from outside, so it is the only source that is not the
-          // birth — and the one thing the crown's own card can truthfully
-          // say about where it got its pen.
-          this.setPowers(st, {
-            unilateral: st.powers.unilateral || p !== 'assent',
-            assent: st.powers.assent || p !== 'unilateral',
-          }, 'motion');
-        }
-        // membership payloads apply through their follow-on events
-        break;
-      }
-      case 'motion-adjudicated': {
-        const rec = this.motions.get(event.motion)!;
-        rec.settledAtT = event.t;
-        if (event.outcome === 'held') {
-          rec.status = 'held';
-        } else if (this.reservedTarget(rec)) {
-          // Reserved is assent, not silence (§9.7): the carried change goes
-          // to the convenor as a 👑 question rather than applying.
-          rec.status = 'awaiting-crown';
-          rec.settledAtT = null;
-        } else {
-          rec.status = 'carried';
-          if (rec.payload.kind === 'set') {
-            this.applyPayloadSet(rec.payload.setting, rec.payload.value, 'motion', event.t);
-          }
-        }
-        break;
-      }
-      case 'crown-question-opened': {
-        this.crownQuestions.set(event.question, {
-          id: event.question,
-          motion: event.motion,
-          ...(event.text ? { text: event.text } : {}),
-          openedAtT: event.t,
-          status: 'pending',
-          autoPassedBy: null,
-        });
-        // Either route parks here (§9.7 v0.49): the change is the members'
-        // and the assent is still owed. A text question (Q440) parks no
-        // motion -- the engine already adopted; the host holds the text.
-        if (event.motion !== null) {
-          const parked = this.motions.get(event.motion)!;
-          parked.status = 'awaiting-crown';
-          parked.settledAtT = null;
-        }
-        this.nextCrownN += 1;
-        break;
-      }
-      case 'crown-question-answered':
-      case 'crown-question-auto-passed': {
-        const q = this.crownQuestions.get(event.question)!;
-        const accepted = event.type === 'crown-question-auto-passed' ||
-          event.outcome === 'accept';
-        q.status = event.type === 'crown-question-auto-passed'
-          ? 'auto-passed'
-          : accepted ? 'accepted' : 'rejected';
-        // a log written before Q1033 carries no cause: it was the lapse
-        q.autoPassedBy = event.type === 'crown-question-auto-passed'
-          ? (event.cause ?? 'lapse') : null;
-        if (q.motion !== null) {
-          const rec = this.motions.get(q.motion)!;
-          rec.status = accepted ? 'carried' : 'held';
-          rec.settledAtT = event.t;
-          if (accepted && rec.payload.kind === 'set') {
-            this.applyPayloadSet(rec.payload.setting, rec.payload.value, 'crown', event.t);
-          }
-        }
-        if (event.type === 'crown-question-answered') {
-          this.touch(this.convenor.id, event.t);
-        }
-        break;
-      }
-      case 'setting-handed-over': {
-        const st = this.settings.get(event.setting)!;
-        this.setPowers(st, { unilateral: false, assent: false });
-        this.touch(this.convenor.id, event.t);
-        break;
-      }
-      case 'crown-lapsed': {
-        // Lapse is automatic abstention (§9.7 v0.49): nothing changes hands —
-        // every reserved setting stays reserved, and while the flag stands
-        // assent is granted by itself (reservedTarget reads it).
-        this.crownLapsedFlag = true;
-        break;
-      }
-      case 'crown-returned': {
-        // Revival is logging in (§9.5a): the assent requirement resumes.
-        this.crownLapsedFlag = false;
-        this.touch(this.convenor.id, event.t); // clears the warnings too
-        break;
-      }
-      default:
-        this.applyPresence(event);
-    }
-  }
-
-  /** Presence, lapsing and applications (§9.5, §9.5a, §9.7½). */
-  private applyPresence(event: ConstitutionEvent): void {
-    switch (event.type) {
-      case 'member-returned': {
-        const m = this.members.get(event.member)!;
-        // **A 💤 change names the members it returned** (Y26, Q902): a return
-        // the rule made, of somebody who was lapsed rather than merely
-        // warned, is part of what the set changed — the set's fold has just
-        // emptied the list, so it holds exactly this set's returns.
-        if (event.cause === 'rule' && m.lapsed) {
-          this.settings.get('lapse')!.returned.push(event.member);
-        }
-        m.lapsed = false;
-        this.touch(event.member, event.t); // clears the warnings too
-        break;
-      }
-      case 'member-seen':
-        this.touch(event.member, event.t);
-        break;
-      case 'lapse-warned': {
-        // three warnings per quiet spell (R-097), each shorter than the
-        // last; the shortest sent is what the next is judged against. A
-        // log written before the leads carried no `lead`: read as the old
-        // single warning, which blocks the rest as a week would.
-        const lead = typeof event.lead === 'number' ? event.lead : Number.POSITIVE_INFINITY;
-        const who = event.member === this.convenor.id && !this.members.has(event.member)
-          ? this.convenor : this.members.get(event.member)!;
-        who.lapseWarned = true;
-        who.lapseWarnedLead = who.lapseWarnedLead === null ? lead : Math.min(who.lapseWarnedLead, lead);
-        break;
-      }
-      case 'member-lapsed': {
-        this.members.get(event.member)!.lapsed = true;
-        break;
-      }
-      case 'closed': {
-        this.closedFlag = true;
-        this.closedT = event.t;
-        break;
-      }
-      case 'motion-kept-at-close': {
-        const rec = this.motions.get(event.motion)!;
-        rec.status = 'kept-at-close';
-        rec.settledAtT = event.t;
-        break;
-      }
-      case 'crown-failed-closed': {
-        const q = this.crownQuestions.get(event.question)!;
-        q.status = 'failed-closed';
-        if (q.motion !== null) {
-          const rec = this.motions.get(q.motion)!;
-          rec.status = 'held';
-          rec.settledAtT = event.t;
-        }
-        break;
-      }
-      case 'invitation-expired': {
-        this.members.get(event.member)!.invitationExpired = true;
-        break;
-      }
-      case 'close-acknowledged': {
-        const m = this.members.get(event.member);
-        if (m) m.closingAck = { t: event.t, comment: event.comment };
-        break;
-      }
-      case 'application-started': {
-        this.notePerson(event.person);
-        const state: ApplicantState = {
-          id: event.applicant,
-          person: event.person,
-          status: 'started',
-          words: null,
-          motion: null,
-        };
-        this.applicants.set(event.applicant, this.withPerson(state));
-        this.nextApplicantN += 1;
-        break;
-      }
-      case 'application-verified': {
-        this.applicants.get(event.applicant)!.status = 'verified';
-        break;
-      }
-      case 'application-submitted': {
-        const a = this.applicants.get(event.applicant)!;
-        a.status = 'submitted';
-        // the name and picture went to the row when the command ran
-        a.words = event.words ?? null;
-        break;
-      }
-      case 'application-proposed': {
-        this.applicants.get(event.applicant)!.status = 'proposed';
-        this.touch(event.by, event.t);
-        break;
-      }
-      case 'member-admitted': {
-        const a = this.applicants.get(event.applicant)!;
-        a.status = 'admitted';
-        // an application is admitted by an ordinary motion, always the room's
-        // act; the member is the same person the application was, so the row
-        // — and with it the name and picture they gave — comes with them
-        const rec = this.freshMember(event.member, a.person, event.t, event.t,
-          { via: 'application', by: 'members' });
-        this.members.set(event.member, rec);
-        this.nextMemberN += 1;
-        break;
-      }
-      case 'application-refused': {
-        this.applicants.get(event.applicant)!.status = 'refused';
-        break;
-      }
-      default:
-        throw new Error(`unhandled event '${event.type}'`);
-    }
-  }
-
-  /** A carried change lands on the setting, keeping who holds it. */
-  private applyPayloadSet(id: SettingId, value: SettingValue,
-    by: 'motion' | 'crown', t: number): void {
-    const st = this.readValue(id, value);
-    st.value = value;
-    st.settledBy = by;
-    st.settledAtT = t;
-    st.returned = []; // this set's own returns follow it (Y26)
-    st.collecting = false;
-    if (id === 'quorum') this.quorumFormValue = (value as QuorumValue).form;
-    if (id === 'link') {
-      const slug = (value as SlugValue).slug;
-      if (!this.slugHistory.includes(slug)) this.slugHistory.push(slug);
-    }
-    this.reseedAnchorsIfLive(t, id);
-  }
-
-  /** Does this motion's target sit behind the crown's assent (§9.7)?
-   *  v0.54: the assent power specifically — a setting held unilateral-only
-   *  applies a carried change with nobody's accept asked. */
-  private reservedTarget(rec: MotionRecord): boolean {
-    if (this.crownLapsedFlag) return false;
-    if (rec.payload.kind === 'set') {
-      return this.settings.get(rec.payload.setting)!.powers.assent;
-    }
-    // a reserve motion's target is the members' by construction — it lands
-    // without assent, the crown's release being delegation (§9.7 v0.52)
-    // a text amendment (R-058) waits on nothing either: it is the pen's own
-    // act and it has already landed — nobody assents to their own decree
-    if (rec.payload.kind === 'reserve' || rec.payload.kind === 'text') return false;
-    // an act at a door waits on that door's 🛡️ (entry 94): admissions of
-    // every kind on ✉️'s, removals on ❌'s
-    return this.doorPowers(rec.payload.kind === 'remove' ? 'door:remove' : 'door:invite').assent;
-  }
-
-  /** §9.7 v0.54: holder derives from powers — the convenor's iff any is held. */
   /**
-   * `from` (Q524) says where a power *newly held* came from; a power that was
-   * already held keeps the source it arrived with, and one being given up
-   * loses its source with it. Defaulting to 'founding' is right for every
-   * caller but the carried reserve motion, which is the only way a power
-   * reaches the convenor from outside.
+   * **The fold is `fold.ts`** (Q1352 (s)): every event this module knows,
+   * turned into state. It is called from two places and only two — `emit`,
+   * one method up, after the entry is in the log, and `replay`, which calls
+   * it directly with no log push because the entry is already there. That
+   * relationship is why nothing in the fold may emit (Q1034).
    */
-  private setPowers(st: SettingState, powers: Powers,
-    from: PowerSource = 'founding'): void {
-    const was = st.powers;
-    st.powerFrom = {
-      unilateral: !powers.unilateral ? null
-        : was.unilateral ? st.powerFrom.unilateral : from,
-      assent: !powers.assent ? null
-        : was.assent ? st.powerFrom.assent : from,
-    };
-    st.powers = powers;
-    st.holder = holderOf(powers);
-    // whatever moves a power decides it: a pre-start release that has been
-    // spent at 🍾, reclaimed, or overtaken by a delegation is no longer
-    // pending anything (R-048)
-    st.pendingRelease = { unilateral: false, assent: false };
-  }
-
-  private freshMember(id: MemberId, person: PersonId, invitedAtT: number,
-    arrivedAtT: number | null, arrival: Arrival): MemberRecord {
-    const state: MemberState = {
-      id, person, invitedAtT, arrivedAtT, arrival,
-      removed: false, removedBy: null, lapsed: false, lapseWarned: false, lapseWarnedLead: null,
-      nameSet: false, pictureSet: false,
-      lastActivityT: arrivedAtT ?? invitedAtT,
-      okOwed: new Set(), okGiven: new Set(),
-      releasesOwed: new Set(), releasesGiven: new Set(),
-      amendmentsOwed: new Set(), amendmentsGiven: new Set(),
-      mailGaveUpOwed: new Set(), mailGaveUpGiven: new Set(), mailGaveUp: false,
-      invitationExpired: false, closingAck: null,
-    };
-    return this.withPerson(state);
-  }
-
-  /**
-   * **The row, read live** (decision 1253): `email`, `name`, `picture` and
-   * `erased` are enumerable getters on the fold's own record, resolving
-   * through `people` on every read — so a reader holding a record sees an
-   * erasure the moment the row goes, the record stays the one object the
-   * fold mutates (a reference taken before a tick is still good after it),
-   * and a spread, `JSON.stringify` or a deep-equal sees four plain fields.
-   */
-  private withPerson<T extends { person: PersonId }>(state: T): T & ResolvedPerson {
-    const people = this.people;
-    const field = (key: keyof ResolvedPerson): PropertyDescriptor => ({
-      enumerable: true,
-      get(this: T) { return resolvePerson(people, this.person)[key]; },
-    });
-    return Object.defineProperties(state, {
-      email: field('email'), name: field('name'), picture: field('picture'), erased: field('erased'),
-    }) as T & ResolvedPerson;
-  }
-
-  private foldSet(id: SettingId, value: SettingValue, by: 'convenor' | 'crown',
-    t: number): void {
-    const st = this.readValue(id, value);
-    // holder untouched: setting a value never changes who holds the setting
-    // (§9.7 v0.54 — a {unilateral, no-assent} crown must stay exactly that)
-    st.collecting = false;
-    st.value = value;
-    st.settledBy = by === 'crown' ? 'crown' : 'convenor';
-    st.settledAtT = t;
-    st.returned = []; // this set's own returns follow it (Y26)
-  }
-
-  /**
-   * **The fold's one gate on a value** (Q1329): the setting it names must be
-   * in the catalogue and the value must be the shape its entry validates —
-   * on replay as on a command, since a command validated it once and replay
-   * is the only road a value written by an older build can take. Where
-   * `foldLegacy` once read the pre-entry-94 shapes onto today's, an unknown
-   * id or a stray key now throws with its name, and the host quarantines
-   * the document (`DocStore.loadAll`). Returns the setting's state.
-   */
-  private readValue(id: SettingId, value: SettingValue): SettingState {
-    const st = this.settings.get(id);
-    if (st === undefined) throw new Error(`unknown setting '${id}' (Q1329: no legacy id is read)`);
-    const err = validateFor(entryOf(id), value);
-    if (err !== null) throw new Error(`${err} (Q1329: no legacy value is read)`);
-    return st;
+  private apply(event: ConstitutionEvent, seq: number): void {
+    fold.apply(this.fold, event, seq);
   }
 
   /** What an act on the membership costs, as the document stands — unset
@@ -1193,40 +284,12 @@ export class ConstitutionSession {
     return v?.price ?? (id === 'admission' ? 'assembly' : 'consent');
   }
 
-  private touch(member: MemberId, t: number): void {
-    const m = this.members.get(member);
-    if (m) { m.lastActivityT = t; m.lapseWarned = false; m.lapseWarnedLead = null; }
-    if (member === this.convenor.id) {
-      this.convenor.lastActivityT = t;
-      this.convenor.lapseWarned = false;
-      this.convenor.lapseWarnedLead = null;
-    }
-  }
+  private touch(member: MemberId, t: number): void { fold.touch(this.fold, member, t); }
 
-  // -------------------------------------------------------------------------
-  // Threshold anchors (§4.3): seeded at constituted, reseeded when the room's
-  // pacing settings settle late (prospective application, NOTES.md).
-
-  private computeAnchors(t: number): ThresholdAnchors {
-    const bar = this.settings.get('bar')!.value as PercentValue | null;
-    const pace = this.settings.get('pace')!.value as PaceValue | null;
-    const ending = this.settings.get('ending')!.value as EndingValue | null;
-    const endPct = bar ? bar.pct : 95;
-    const endT = ending ? ending.endsAtMs : null;
-    const shape: 'fixed' | 'ramp' =
-      endT !== null && pace?.shape === 'ramp' ? 'ramp' : 'fixed';
-    return seedAnchors(shape, shape === 'ramp' ? (pace as { shape: 'ramp'; startPct: number }).startPct : null,
-      endPct, t, endT);
-  }
-
-  private reseedAnchorsIfLive(t: number, setting: SettingId): void {
-    if (this.constitutedT === null || this.anchors === null) return;
-    if (setting === 'ending') {
-      const ending = this.settings.get('ending')!.value as EndingValue | null;
-      this.anchors = reAnchor(this.anchors, t, ending ? ending.endsAtMs : null);
-    } else if (setting === 'bar' || setting === 'pace') {
-      this.anchors = this.computeAnchors(t);
-    }
+  /** Does this motion's target sit behind the crown's assent (§9.7)? The fold's
+   *  own read, kept as a name here because the motions ask it too. */
+  private reservedTarget(rec: MotionRecord): boolean {
+    return fold.reservedTarget(this.fold, rec);
   }
 
   // -------------------------------------------------------------------------
@@ -1968,11 +1031,6 @@ export class ConstitutionSession {
     return true;
   }
 
-  /** What each pen amendment changed *from* — a motion proposes a value and
-   *  never needs the old one, so this rides alongside rather than bending the
-   *  payload every other amendment shares. */
-  private readonly penFrom = new Map<MotionId, SettingValue>();
-
   // -------------------------------------------------------------------------
   // The acknowledgements — what a member is owed and the OK that answers it
   // — are `owed.ts` (Q1352 (q)): the audience rules, the batching and every
@@ -2405,9 +1463,7 @@ export class ConstitutionSession {
 
   /** A door's crown pair (entry 94), lapse ignored — a sleeping crown still
    *  holds; callers check the lapse where it bites. */
-  doorPowers(door: DoorId): Powers {
-    return { ...this.settings.get(door)!.powers };
-  }
+  doorPowers(door: DoorId): Powers { return fold.doorPowers(this.fold, door); }
 
   /**
    * The door's pen as a gate, and **exactly the act's own test** (Q812): the
@@ -2555,12 +1611,6 @@ export class ConstitutionSession {
   /** The row holding this address, or the next id to hold it (minted, not yet written). */
   private personFor(email: string): PersonId {
     return this.people.byEmail(email) ?? `p-${this.nextPersonN}`;
-  }
-
-  /** The fold's half of minting: the counter is rebuilt from every id the log names. */
-  private notePerson(id: PersonId): void {
-    const m = /^p-(\d+)$/.exec(id);
-    if (m !== null) this.nextPersonN = Math.max(this.nextPersonN, Number(m[1]) + 1);
   }
 
   /** One person's fields as they stand now — null throughout once erased. */
