@@ -5993,3 +5993,97 @@ Closed in the walk's findings batch of 2026-09-14 (Ed: *close all sixteen*; the 
 
 159. **The re-served race after a ground shift isn't modelled** (raised 2026-08-16, from Q156). When a race's ground shifts, the old judgment locks *and* fresh pairs are served — so the clause should carry two rail entries, the stranded 🔄 stub and a new needs-you card. The mockup shows only the stranded half (§ The Garden). Needs a decision: do they stack at the clause, does the stub collapse into the new card's history, or does it go straight to a filed dot?
 
+
+## Q325: closed — renamed blind-founding by Q1243 (Ed, 2026-09-07) (Ed, 2026-09-14)
+
+Closed in the walk's second findings batch of 2026-09-14 (Ed: *close all nine*), on the spec pass's rule that a finding — drift against a ruling already made, or a thing already built — is fixed unless vetoed. The concept is `blind-founding` and the Retired table maps both meanings of the old name.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 325 | Should `founding-ceremony` keep its name? | 2026-08-18 | waiting on Ed — recommend (a) | CLAUDE.md glossary |
+
+
+## Q349: closed — a read is presence (R-096, Ed 2026-09-08) (Ed, 2026-09-14)
+
+Closed in the walk's second findings batch of 2026-09-14 (Ed: *close all nine*), on the spec pass's rule that a finding — drift against a ruling already made, or a thing already built — is fixed unless vetoed. SPEC §9.5a: returning is being here again, a read, a login or an act; the convenor's clock runs the same way (§9.7 rule 6), so an administering founder's crown is in no danger. The mid-founding removal half the question resolved itself as nothing new.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 349 | Crown residuals | 2026-08-18 | partly answered — (a) whose clock is open | SPEC §9.7 |
+
+349. **Crown residuals** (raised 2026-08-18, around §9.7’s 👑). Ed settled the shape — assent ends either route on any reserved setting, lapse is automatic assent, the 👑 follows any reservation, and (v0.52) the founder may delegate anything once proposing opens, which closed the old (b). Two edges remain. (a) **Whose clock?** A crowned convenor may be a clerk, who casts no judgments — does administering (inviting, changing ordinary settings) count as the activity that keeps a crown alive, or only member-acts? Recommendation: any authenticated act on the document resets the clock; the crown lapses on absence, not on abstinence from drafting. (c) **Does the crown cover removal during the ceremony’s blind collection?** A crowned convenor removing an answered member mid-ceremony is §9.6a’s ground-shift case already; nothing new needed — note and close.
+
+
+## Q384: closed — the catalogue marks title and link non-delegable (SPEC §9.7.1) (Ed, 2026-09-14)
+
+Closed in the walk's second findings batch of 2026-09-14 (Ed: *close all nine*), on the spec pass's rule that a finding — drift against a ruling already made, or a thing already built — is fixed unless vetoed. The creation-time radio cannot exist without changing which settings may open a founding question, and no case has been made for that; both hand over later, from *text confirmed*.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 384 | A creation-time holder choice for the title and link? | 2026-08-19 | waiting on Ed | SPEC §9.7 |
+
+384. **A creation-time holder choice for the title and link?** (raised 2026-08-19, unanswered in chat.) v0.52 has them *begin* reserved, with delegation available from the moment proposing opens — read off Ed's "the option to unreserve either or both as soon as proposals open". A radio at creation would let a founder start them delegated; probably noise (there is nobody to hold them for until the room exists), but cheap if wanted.
+
+
+## Q296: closed as built — the patch flow's four gaps each have a ruling and a build (Ed, 2026-09-14)
+
+Closed in the walk's second findings batch of 2026-09-14 (Ed: *close all nine*), on the spec pass's rule that a finding — drift against a ruling already made, or a thing already built — is fixed unless vetoed. The joining cable, *place i of n* with step arrows (`pnav`), a per-place 🗑️ (Q1306, K17–K18) and *All N places go in as one change*.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 296 | The experience of writing a patch | 2026-08-17 | open — unstarted | `draft-site`; Q182 |
+
+296. **The experience of writing a patch** (Ed, 2026-08-17). The cable half is done — a patch is now joined at its cards by a cable in the `chip-gutter`, leaving each `clause-tab` by its left side (see the glossary). What remains: `draft-site` says a second edit somewhere else turns your draft into a patch in the making, and the mockup renders that, but nobody has designed the *experience* — how you know you are now writing one judgment in several places, how you move between the sites while drafting, whether a site can be dropped, and what the single Propose is committing you to. Both are unstarted.
+
+
+## Q312: closed as built — one entry holds the deck and the ledger (M18) (Ed, 2026-09-14)
+
+Closed in the walk's second findings batch of 2026-09-14 (Ed: *close all nine*), on the spec pass's rule that a finding — drift against a ruling already made, or a thing already built — is fixed unless vetoed. The live pair on the card, every judged pair beneath it, the voided ones locked with the shifted sentence; ↻ only when nothing is left to ask.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 312 | A ↻ never has its re-served question beside it | 2026-08-17 | open — a fixture first | SPEC §4.4, §6.2; Q159 |
+
+312. **A ↻ never has its re-served question beside it** (raised 2026-08-17, answering Ed's question about the ↻ lifecycle). SPEC §4.4 says a ground shift locks your old judgment *and* serves the pairs on the new ground fresh, and §6.2 gives a re-opened race a 1.5× routing boost so it comes back **sooner** than an ordinary question. So in the mechanism a ↻ is a receipt standing next to a live question — the locked fact about text that no longer exists, and the same race asking again. In the mockup it is a **terminus**: § The Garden carries exactly one entry, the ↻ itself, and there is no fresh 💡 anywhere near it. `shifted` is a fixture flag that nothing sets or clears at runtime, so the surface renders the state and never the transition into or out of it. Two consequences worth a ruling. **The pairing has never been looked at** — a member meeting a ground shift for the first time meets it as *your judgment is void* with nothing offered in exchange, when the actual experience should be *that one is void, here is the question again*, and whether those are two rail entries at one clause or one entry that carries both is a real design question nobody has asked. **And the mark may be wrong on its own terms**: ↻ was chosen to mean *comes back around, rebuilt* (glossary), which is a promise the surface currently never keeps. Cheap to fix in the fixture — a second entry at § The Garden, judged-fresh, would show the pair — and that is probably the first step, because it is hard to design the pairing without seeing it.
+
+
+## Q350: closed as built — (b) (c) (e) ratified as they stand in SURFACE §6 (Ed, 2026-09-14)
+
+Closed in the walk's second findings batch of 2026-09-14 (Ed: *close all nine*), on the spec pass's rule that a finding — drift against a ruling already made, or a thing already built — is fixed unless vetoed. No setup 🔥 (every founding question is mandatory, C14); news is drawn ✔ and pinned until OK; the applicant's done tasks stay because its four tasks are the whole surface. (a) superseded, (d) closed the same day.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 350 | Setup-grammar residuals | 2026-08-18 | partly answered — (d) closed; (a) superseded by Q517 | SURFACE §6 |
+
+350. **Setup-grammar residuals**
+
+    **Where it stands (docs pass, 2026-09-07):** (a) is superseded — a delegated card waiting on the room leaves the rail whatever its kind (Q517; SURFACE §6 `wait`); (d) was closed by Ed the same day; (b) (c) (e) stand as built, unruled.
+
+    (raised 2026-08-18, the pass that put setup tasks on the session-view lifecycle — Ed set the frame: *yellow when open, ⏳ while waiting for other input, grey when decided, they lose their custom emoji and just become ✔s*; these are the calls made inside it, each cheap to flip). (a) **⏳ entries stay in the rail**, their fill the watching UI — pile-only was tried on paper and fails concretely: mid-verification the rail would be empty with the mail modal closed and no handle left to reopen it. Gates still wait as pile tabs only, per their own rule. (b) **No 🔥 on setup**: the dependency chain already serves the founding one question at a time, and every setup question is mandatory — a flame chooses among optional judgments, which is a category this surface does not have. (c) **Owed decisions are news-green**: a member's un-acknowledged constitutional settings, a resolved blind question (for everyone who answered it, convenor included), and an opening gate all wear the changed wash with a drawn ✔ and pin until OK — superseding gate-cards' earlier *yellow with an OK*, because on the live surface an unacknowledged decision is green news, not a hot ask. (d) ~~All-✔ piles~~ closed by Ed same day: **a retired tab keeps its subject glyph** — the piles are a menu — so only the rail entry retires to ✔; the constitution block's lines stay buttons besides. (e) **The applicant wizard keeps its done tasks visible** as a checklist — an admitted departure from done-leaves-the-rail, defended by the four tasks being that surface's whole content.
+
+
+## Q526: closed as built — Ed's (b) of 2026-08-21 is syncGrantAcks; the drop's end-to-end test is a guard to write (Ed, 2026-09-14)
+
+Closed in the walk's second findings batch of 2026-09-14 (Ed: *close all nine*), on the spec pass's rule that a finding — drift against a ruling already made, or a thing already built — is fixed unless vetoed. The powers walk keeps ⏱️ and ⏰ on the pen so the founder never reaches zero; extending it is engineering, not a decision. The per-browser memory of the acknowledgement is a known gap worth its own number if it bites.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 526 | A grant is acknowledged once, so a power restored later is never announced | 2026-08-21 | built (b); the drop is unverified end to end | `syncGrantAcks` |
+
+526. **A grant is acknowledged once, so a power restored later is never announced.**
+
+    **Where it stands (docs pass, 2026-09-07):** built as (b) (`syncGrantAcks`); what is open is the test — the drop itself is not verified end to end (CLAUDE.md gotcha) — and the module still holds no grant-OK state.
+
+    (From Q524's build.) `grant-pen` opens on `holdsPenAnywhere()` and its OK persists per document and seat, so a founder who relinquishes every pen and is later re-crowned by a carried `reserve` motion gets the pen back **silently** — no task, no acknowledgment, and the card's own *The membership returned the pen to you* sentence (now true, and read off `powerFrom`) never renders. Same shape for 🏛️ if a membership is ever restored. This is the acknowledgment rule's own logic pointing at a hole: *no power arrives without acknowledgment* should not quietly mean *no power arrives twice*. **(a)** A grant re-asks whenever the power arrives from a source it has not been acknowledged for — key the OK by `{grant, source}` rather than by grant alone, so the birth's pen and a motion's pen are two acknowledgments. **(b)** Re-ask whenever the power goes from not-held to held, however it got there. **(c)** Leave it: being re-crowned is a thing you voted on and watched happen, so it needs no receipt. I recommend (a) — it is the smallest change that keeps the rule true, and it is what makes the sentence Q524 built worth having. **Ed, 2026-08-21: (b)** — re-ask whenever the power goes from not-held to held, however it got there. Built as `syncGrantAcks`: an acknowledgment covers *this* holding, so losing the power drops its OK and regaining it asks again. **It watches a transition and never reads an absolute** — before the module hydrates every gate reports shut, so a rule of the form *gate closed, therefore drop the OK* would wipe acknowledgments on every page load and silently hand back powers already accepted; a drop needs the page to have seen the power held and then not held, in that order. Keyed by seat as well as by grant, since the dev dropdown changes who is sitting there and a seat change is not a transition. Verified: the OK survives a reload and a fresh navigation, and a founder→member→founder seat round-trip keeps the pen. **Not verified end to end: the drop itself** — driving a founder to zero pens needs every setting's pen laid down one at a time, and the harness managed 4 of 14 before it became more scaffolding than the check was worth. The rule is six lines and both adjacent hazards are proven; worth a real test when the reserve-motion path is next touched. Known gap, inherited: the module holds no grant-OK state, so a power relinquished in another browser is not seen here — this is a per-device approximation of a per-member fact.
+
+
+## Q1016: closed as built — the parks build of 2026-09-09 gave the harness its shielded-Text step (Ed, 2026-09-14)
+
+Closed in the walk's second findings batch of 2026-09-14 (Ed: *close all nine*), on the spec pass's rule that a finding — drift against a ruling already made, or a thing already built — is fixed unless vetoed. `seat-matrix.mjs` keeps 🛡️ on the Text at `begin` and its `park` step asserts E36/E37; the remaining rider is Q930's.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 1016 | The seat-matrix row for a shielded Text | 2026-08-29 | a rider on the next harness change | `scripts/seat-matrix.mjs` |
+
+1016. **The seat-matrix row for a shielded Text is deferred to entry 158.** *(raised by the R-056 build, 2026-08-29.)* `npm run seat-matrix` needs a running server and a whole membership unanimously carrying a `reserve` motion on the Text to reach the parked state at all — a walk of its own. Entry 158's Begin-card power switches make the state reachable in one press, so the row belongs with that build. Until then the founder-facing text 👑 card has no end-to-end walk; its guard is `packages/constitution/test/text-powers.test.ts`'s *🛡️ on the Text parks the adoption (R-056)* block for the mechanism, and a DOM measurement of the card for the surface. — **Answered 2026-08-29 (Ed): fold it into whatever next touches the harness, rather than as its own job.** So the row is not a build of its own and no plan is owed for it; it is a **rider** on the next piece of work that opens `scripts/seat-matrix.mjs`, which is why this stays in the register rather than being spent — it is a standing instruction with nothing yet to attach to. Two other riders are now waiting on the same file and should ride with it: **Q930**'s missing `AUDIENCE` predicate for *every active member* (E10 and E11 both), and **Q919**'s fifteen findings, which are one bug.
+
