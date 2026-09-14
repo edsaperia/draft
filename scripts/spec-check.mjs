@@ -84,7 +84,12 @@ function motionRoutes() {
 // used to open session-view.html alone reads this set — and `pageMaps`
 // asserts the page actually loads each of the others, so the list cannot
 // name a file the page does not run.
-const PAGE_FILES = ['design/session-view.html', 'design/door.js', 'design/begin.js', 'design/edit-mode.js'];
+const PAGE_FILES = ['design/session-view.html', 'design/door.js', 'design/begin.js', 'design/edit-mode.js',
+  'design/wallets.js'];
+// session.js's own split (Q1352 (h)): the flights and the ✏️ wallet. Not a
+// page file — the page never sees it, session.js makes it — but the reads
+// below that used to open session.js for a wallet or a flight now open this.
+const FLIGHTS_FILE = 'design/flights.js';
 // (the split files are CRLF like the rest of design/*.js and the page is LF;
 // the reads below match on `\n`, so the set is read as one LF text)
 const pageSrc = () => PAGE_FILES.map((f) => readFileSync(join(ROOT, f)).toString('utf8').replace(/\r\n/g, '\n')).join('\n');
@@ -555,7 +560,7 @@ function checkSetupAlphabet() {
 
 function checkSockets() {
   note('Sockets — SURFACE.md §7.1 against system.css and the wallet renderers');
-  const css = js('design/system.css'); const sess = js('design/session.js'); const page = js('design/session-view.html');
+  const css = js('design/system.css'); const sess = js(FLIGHTS_FILE); const page = js('design/wallets.js');
   const rows = tableAfter('SURFACE.md', 'sockets');
   const classes = rows.map((r) => r.class.replace(/`/g, ''));
   // every class cell names a selector system.css has a rule for
@@ -571,13 +576,13 @@ function checkSockets() {
   const set = new Map();
   const put = (c, where) => { if (!set.has(c)) set.set(c, where); };
   sockets.forEach((body, i) => {
-    const where = i === 0 ? 'renderWallet (session.js)' : 'renderPowerWallets (session-view.html)';
+    const where = i === 0 ? 'renderWallet (flights.js)' : 'renderPowerWallets (wallets.js)';
     for (const m of body.matchAll(/className = '([^']+)'/g)) m[1].split(/\s+/).forEach((c) => put(c, where));
     for (const m of body.matchAll(/\? ' ([a-z]+)' : ''/g)) put(m[1], where);
     for (const m of body.matchAll(/classList\.(?:add|toggle)\('([^']+)'/g)) put(m[1], where);
     for (const m of body.matchAll(/class="([a-z][a-z-]*)/g)) put(m[1], where);
   });
-  for (const m of bubble.matchAll(/className = '([^']+)'/g)) m[1].split(/\s+/).forEach((c) => put(c, 'showSay (session-view.html)'));
+  for (const m of bubble.matchAll(/className = '([^']+)'/g)) m[1].split(/\s+/).forEach((c) => put(c, 'showSay (wallets.js)'));
   // the sockets' own names are §7's socket column, not states
   const socketNames = new Set(tableAfter('SURFACE.md', 'wallets').map((r) => r.socket).filter((s) => s !== '—'));
   for (const [c, where] of set) {
@@ -598,11 +603,15 @@ function checkSockets() {
   // absent and the retired `gonewallet` class must not come back as a
   // selector or a class the renderers set (comments may name it as history)
   if (/\.gonewallet\b/.test(css)) find('sockets', 'system.css styles `.gonewallet` — the socket-absent state is retired (Q1286 (b)): every socket shows, struck where not held');
-  for (const [file, src] of [['session.js', sess], ['session-view.html', page]]) {
-    if (/'gonewallet'|"gonewallet"/.test(src)) find('sockets', `${file} sets \`gonewallet\` — the socket-absent state is retired (Q1286 (b))`);
+  // the ban is on the whole surface, not only on the two renderers: since the
+  // split these files are four, so it reads every one a wallet could be drawn
+  // from rather than the pair the renderers happen to sit in today
+  for (const file of ['design/session.js', FLIGHTS_FILE, ...PAGE_FILES]) {
+    if (/'gonewallet'|"gonewallet"/.test(js(file))) find('sockets', `${file} sets \`gonewallet\` — the socket-absent state is retired (Q1286 (b))`);
   }
   if (rows.some((r) => /absent/.test(r.look))) find('sockets', 'the table has a socket-absent state — every socket shows at all times (Q1286 (b))');
-  if (!/if \(!walletHeld \|\| closedMode\) \{/.test(sockets[0]))
+  // `closedMode` is session.js's and flights.js reads it through env (Q1352 (h))
+  if (!/if \(!walletHeld \|\| (?:env\.)?closedMode\) \{/.test(sockets[0]))
     find('sockets', 'renderWallet: the closed page no longer renders the ✏️ socket as `notheld` (Q1286 (b))');
   if (!/closed page/.test((rows.find((r) => r.state === 'not held') || { when: '' }).when))
     find('sockets', 'not held: the `when` cell does not name the closed page, where every socket is struck (Q1286 (b))');
@@ -663,6 +672,12 @@ function checkLifecycle() {
 function checkWallets(pm) {
   note('Wallets and holds — SURFACE.md §7 against the page');
   const page = js('design/session-view.html'); const sess = js('design/session.js');
+  // the hold ladder and the ✏️ socket's flights left those two at the Q1352
+  // split, so every read below opens the file its own subject now lives in:
+  // the topbar markup and `SESSION.holdMs` are still the page's, `HOLD_MS`
+  // and the propose hold still session.js's, `holdWallet` and its floors
+  // wallets.js's, and `REFUND_MS` flights.js's
+  const wal = js('design/wallets.js'); const fly = js(FLIGHTS_FILE);
   const rows = tableAfter('SURFACE.md', 'wallets');
   const grants = rows.map((r) => r['grant key']).filter((k) => k !== '—');
   for (const g of pm.ACK_KEYS) if (!grants.includes(g)) find('wallets', `ACK_KEYS has '${g}', the wallets table does not`);
@@ -691,15 +706,15 @@ function checkWallets(pm) {
   const want = (ctl) => +((holds.find((h) => h.control.startsWith(ctl)) || {})['hold ms'] || NaN);
   for (const ctl of ['🪶', '✒️', '🍾', '✏️ Propose (a draft', '✏️ Propose (a motion', '🏛️'])
     if (!Number.isFinite(want(ctl))) find('holds', `the ladder has no hold ms for ${ctl}`);
-  if (holds.some((h) => h.control.startsWith('✏️ Propose (a motion')) && !/data-putmotion/.test(page.slice(page.indexOf('const holdWallet')))) find('holds', 'the motion ✏️ Propose is not a hold in holdWallet (Q614)');
+  if (holds.some((h) => h.control.startsWith('✏️ Propose (a motion')) && !/data-putmotion/.test(wal.slice(wal.indexOf('const holdWallet')))) find('holds', 'the motion ✏️ Propose is not a hold in holdWallet (Q614)');
   // **and the page keeps no copy of the length.** The ban is on a *duration*,
   // never on a floor: `floorAt: 288` and `floorAt || 250` are quarter-way
   // points of two easings and stay literals, asserted just below. What may
   // not come back is a hold timer's own number — a `HOLD_MS`-shaped constant
   // holding a numeral, or a `holdWallet` branch carrying `ms:`.
   if (!/const HOLD_MS = SESSION\.holdMs;/.test(page)) find('holds', 'the page does not read SESSION.holdMs — "one constant" is only true while it does');
-  if (/const \w*HOLD_MS\w* = \d/.test(page)) find('holds', 'the page declares a numeric hold duration of its own — it must read SESSION.holdMs');
-  const hw = page.slice(page.indexOf('const holdWallet'), page.indexOf('let penHold ='));
+  if (/const \w*HOLD_MS\w* = \d/.test(pageSrc())) find('holds', 'the page declares a numeric hold duration of its own — it must read SESSION.holdMs');
+  const hw = wal.slice(wal.indexOf('const holdWallet'), wal.indexOf('let penHold ='));
   if (/\bms: *\d/.test(hw)) find('holds', 'a holdWallet branch carries its own length — since backlog 206 only the floor differs per branch');
   if (!/get holdMs\(\) \{ return HOLD_MS; \}/.test(sess)) find('holds', 'session.js does not export holdMs beside gesture');
   // the two floors: each is the point at which its own easing has covered a
@@ -708,10 +723,10 @@ function checkWallets(pm) {
   // `cubic-bezier(.45, .05, .3, 1)`, whose 0.288 is a property of the curve
   // and not of the length (which is why it was 864 of 3000)
   const floor = (frac) => Math.round(hold * frac);
-  if (!new RegExp(`floorAt(?::| \\|\\|) ${floor(0.25)}\\b`).test(page)) find('holds', `the pen release floor (${floor(0.25)}, a quarter of ${hold} on \`linear\`) not found in the page`);
+  if (!new RegExp(`floorAt(?::| \\|\\|) ${floor(0.25)}\\b`).test(wal)) find('holds', `the pen release floor (${floor(0.25)}, a quarter of ${hold} on \`linear\`) not found in wallets.js`);
   if (!new RegExp(`floorAt: ${floor(0.288)}\\b`).test(sess)) find('holds', `the pencil release floor (${floor(0.288)}, the 0.288 solve for that bezier at ${hold}) not found in session.js`);
-  if (!new RegExp(`floorAt: ${floor(0.288)}\\b`).test(page)) find('holds', `the motion ✏️ flies the pencil's easing, so its floor is ${floor(0.288)} too`);
-  if (numLit(sess, 'REFUND_MS') !== 640) find('holds', 'REFUND_MS is not 640');
+  if (!new RegExp(`floorAt: ${floor(0.288)}\\b`).test(wal)) find('holds', `the motion ✏️ flies the pencil's easing, so its floor is ${floor(0.288)} too`);
+  if (numLit(fly, 'REFUND_MS') !== 640) find('holds', 'REFUND_MS is not 640');
   // **A hold is released by letting go, never by the surface moving** (2026-08-22).
   // Both holds on this product release on pointerup and pointercancel and on
   // nothing else. `pointerleave` was fatal on the charter’s: a render during a
@@ -1380,7 +1395,7 @@ function checkPicture() {
 
 function checkBannedWords() {
   note('Banned words — STYLE.md §1–2 over every file a member reads from');
-  const files = ['design/copy.js', 'design/cards.js', 'design/session.js', 'design/setup.js', ...PAGE_FILES];
+  const files = ['design/copy.js', 'design/cards.js', 'design/session.js', FLIGHTS_FILE, 'design/setup.js', ...PAGE_FILES];
   const banned = BANNED;
   for (const f of files) {
     // comments are exempt (CLAUDE.md: code comments may cite the spec); class names in markup are not copy
@@ -1422,7 +1437,7 @@ function checkBannedWords() {
  */
 function checkListJoiner() {
   note('The list-joiner — STYLE.md §1 over every file a member reads from (Q630)');
-  const files = ['design/copy.js', 'design/cards.js', 'design/session.js', 'design/setup.js', ...PAGE_FILES];
+  const files = ['design/copy.js', 'design/cards.js', 'design/session.js', FLIGHTS_FILE, 'design/setup.js', ...PAGE_FILES];
   let sites = 0; let hand = 0;
   for (const f of files) {
     // comments exempt, and **line numbers preserved**, which is why the block
