@@ -6144,3 +6144,25 @@ The walk's eleventh question, 2026-09-14. **Ruled: at the seal, as built; add th
 
 122. **When do rankings become visible — at seal, or at close?** (raised 2026-08-16, from Q121.) A sealed race now shows its full field ranked, with each candidate's win probability against the current text. The warrant is good: Bradley–Terry already carries a strength per candidate, SPEC §8.3's no-standings rule governs *live* feeds (where knowing who is ahead makes judging strategic), and the `record-builder` publishes rankings at close regardless. But this is still rankings appearing **during** a session rather than after it, which is a small extension nobody has ruled on. Two things to weigh. (a) Sealed races are independent of live ones, so there is no direct leak — but seeing standings on settled questions normalises the idea that standings exist, and a member may start reading the sealed ones for camp structure. (b) It gives an author immediate, precise feedback on how their proposal did, which is arguably the humane thing and arguably a reason to redraft on scoreboard rather than on argument. If Ed wants rankings held until close, the card can show the outcome and the field without the numbers, and the numbers arrive with the record. Needs a SPEC §8.3 sentence either way.
 
+
+## Q98: urgency is the next pair's value; a race outside the hand carries its real value against the hand's top (R-111) (Ed, 2026-09-14)
+
+The walk's twelfth question, 2026-09-14, asked three times — Ed first asked *where do we still use the concept of hand?* and then *what is the ten-card hand?*; the answers (the hand is the router's feed of ten, gating nothing since Q1202 and deciding only which pair you meet first, the urgency number and so the flame and the fit cap, and the priorities card) are in the session record. **Ruled: keep the built reading, and an outside-the-hand race scores its real value against the same top.** Rejected: zero as today (consistent, but unordered ties); a flat 0.3 floor (lifts an outside race above a low in-hand one, against the router's ordering); pricing a race by the best pair it could offer. **Built 2026-09-14 (7fb4f00, merged 38de3f5):** `askOn(raceId, n, now)` prices its pair over `handTop` of the memoised feed, one `HAND = 10` in views.ts for both reads, SPEC v0.124 §8.3 → R-111, engine and server tests; the page's 0.3 is now reached only where a race has nothing left to ask. The builder's finding worth keeping: *below everything in the hand* was never a guarantee — the hot set orders races, not pairs, so an unmeasured outside race can hold a pair worth more than a dealt one; it clamps to 1 and ties with the flame.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 98 | What is a race's urgency? | 2026-08-16 | open | SPEC §8.1 |
+
+98. **What is a race's urgency?** SPEC §8.1 scores each *pair* by pivotality v. A race with six candidates has many pairs of differing v; the rail shows the race once. Is that number the v of the single pair it would serve you next (honest — it's what clicking gets you), the max over its servable pairs (its potential), or a sum (its total remaining work, which would leave big races permanently at the top of the rail)? The mockup hand-authors one `urgency` number per entry and dodges the question. Now that urgency decides what you can see rather than how loudly it is drawn, a wrong answer here costs a member sight of a question rather than a shade of colour.
+
+
+## Q125: the open card keeps its teaser in the margin (Ed, 2026-09-14)
+
+The walk's fourteenth question, 2026-09-14. **Ruled: leave the duplication** — the entry keeping its height means nothing shifts in the margin when a card opens or closes, and the quote is harmless. SURFACE M9 already states the rule (a teaser is always drawn, hidden in exactly one case); nothing changes.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 125 | The open card duplicates its own teaser | 2026-08-16 | waiting on Ed | Q124 |
+
+125. **The open card duplicates its own teaser.** While a suggestion is open, its rationale appears twice on screen — clamped in the rail entry and in full on the card a few inches away. Harmless but slightly silly. The entry could drop its teaser while open, or the card could drop the rationale on the assumption you have just read it (clearly wrong — the card is the place it belongs). Probably (a), but it interacts with 124(c).
+
