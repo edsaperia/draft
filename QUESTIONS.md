@@ -14,7 +14,7 @@ The index, in the section's own order (nothing is pinned — Ed, 2026-09-07, Q12
 | 170 | Your candidate needs rebasing | 2026-08-16 | waiting on Ed — a mark | Q53 |
 | 282 | A rendered document and a source offset do not agree | 2026-08-17 | deferred past the alpha (Ed, 2026-08-27) | `richToSource` (cards.js) |
 | 288 | A flatter glyph set for the lifecycle marks | 2026-08-17 | partly answered — the lifecycle family is drawn; the subject glyphs are emoji | `DRAWN`; SURFACE §6 |
-| 311 | Is a locked judgment card without a ground shift reachable? | 2026-08-17 | open | `reviseNote` |
+| 311 | Is a locked judgment card without a ground shift reachable? | 2026-08-17 | ruled by Ed 2026-09-14 (the walk): **delete the branch, the flag and the sentence** — `reviseNote`'s `s.locked` arm, `lockedTail`, the card-level `locked` flag (`lockedOf` in session.js:160 and cards.js:766, session.js:887 and :3508) and the fixture's `quick-garden` `locked: true`; the closed-document and judge-gate locks stay; owed, to land once the Q170 and Q288 branches merge since both edit the same files | `reviseNote` |
 | 313 | Nothing acknowledges the work | 2026-08-17 | waiting on Ed | `room-pulse` |
 | 314 | Seeing which card other members have open | 2026-08-17 | parked — shelved by Ed until real humans | SPEC §3.5 |
 | 346 | Sybil resistance at the front door | 2026-08-18 | parked | SPEC §9.6a, §9.7½ |
