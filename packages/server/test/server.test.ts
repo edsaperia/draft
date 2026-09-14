@@ -1433,6 +1433,99 @@ describe('a laid-down pen is laid down (entry 62)', () => {
       payload: { kind: 'set', setting: 'rate', value: { grant: 9, cap: 9, dripMinutes: 9 } }, why: '',
     })).body.error).toContain('the document has closed');
   });
+
+  /* **…and the road back** (Q386, Ed 2026-09-14). The test above pins that a
+     laid-down pen stays down; SPEC §9.7 rule 4 says the one way it comes back
+     is a constitutional `reserve` motion naming one power or both, landing
+     without the convenor's assent. Nothing on the surface could put one until
+     Q386 put the offer on the power tab, so this drives the whole road through
+     the real commands: the pen goes down, a **member** opens the motion, the
+     rest of the membership answers to unanimity, the power is the founder's
+     again and the record says what it was. The founder's own assent is never
+     asked for and never waited on — which is X10, and is why the carry lands
+     the moment the last member answers. */
+  it('returns a laid-down power to the founder on a member’s carried reserve motion (Q386)', async () => {
+    const { base, dataDir } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'The Road Back', email: 'ada@example.org',
+    })).json() as { ok: boolean; slug: string; devLink: string };
+    const slug = created.slug;
+    const ada = cookieOf(await consume(created.devLink));
+    const send = async (cookie: string, name: string, args: unknown) => {
+      const res = await post(base, `/api/d/${slug}/cmd`, { cmd: name, args }, cookie);
+      return { status: res.status, body: await res.json() as { ok?: boolean; error?: string; result?: string } };
+    };
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const r = await send(cookie, name, args);
+      expect(r.body.error, `${name}: ${r.body.error}`).toBeUndefined();
+      return r;
+    };
+    const viewOf = async (cookie: string) => (await (await fetch(
+      `${base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as MemberViewPayload;
+    type PowerRow = { setting: string; powers: { unilateral: boolean; assent: boolean } };
+    type MotionRow = { id: string; status: string; route: string;
+      payload: { kind: string; setting?: string; power?: string } };
+    const powersOf = async (cookie: string, setting: string) => {
+      const rows = ((await viewOf(cookie)).view as unknown as { settings: PowerRow[] }).settings;
+      return rows.find((r) => r.setting === setting)!.powers;
+    };
+    const motionsOf = async (cookie: string) =>
+      ((await viewOf(cookie)).view as unknown as { motions: MotionRow[] }).motions;
+
+    await cmd(ada, 'confirm-starting-text', { text: 'The watch is kept from dusk.' });
+    await cmd(ada, 'invite', { email: 'bo@example.org' });
+    await cmd(ada, 'invite', { email: 'cy@example.org' });
+    const follow = async (email: string): Promise<string> =>
+      cookieOf(await consume((await lastMailTo(dataDir, email)).link!));
+    const bo = await follow('bo@example.org');
+    const cy = await follow('cy@example.org');
+
+    const ends = Date.now() + 3600_000;
+    for (const [setting, value] of VALUES) {
+      await cmd(ada, 'set-setting', { setting, value: setting === 'ending' ? { endsAtMs: ends } : value });
+    }
+    // ⏱️'s pen goes down on its own tab, which pre-start is a promise (R-048)
+    await cmd(ada, 'relinquish', { setting: 'rate', power: 'unilateral' });
+    await cmd(ada, 'begin', {});
+    expect((await powersOf(ada, 'rate')).unilateral).toBe(false);
+    expect((await powersOf(ada, 'rate')).assent).toBe(true);
+
+    // the member's road back: one power named, never the both-powers form,
+    // because the tab the offer stands on names exactly one
+    const put = await cmd(bo, 'open-motion', {
+      payload: { kind: 'reserve', setting: 'rate', power: 'unilateral' },
+      why: 'we would rather ask one person than all of us',
+    });
+    const mo = put.body.result!;
+    expect((await motionsOf(bo)).find((m) => m.id === mo)!.route).toBe('constitutional');
+    // running, and the pen is still down until everybody has answered
+    expect((await powersOf(ada, 'rate')).unilateral).toBe(false);
+    // the twin refusal reaches it like any other motion (Q1348)
+    expect((await send(cy, 'open-motion', {
+      payload: { kind: 'reserve', setting: 'rate', power: 'unilateral' }, why: '',
+    })).body.error).toMatch(/already put/);
+
+    await cmd(cy, 'answer-motion', { motion: mo, answer: 'accept' });
+    expect((await powersOf(ada, 'rate')).unilateral).toBe(false); // ada has not answered
+    await cmd(ada, 'answer-motion', { motion: mo, answer: 'accept' });
+
+    // …and it is the founder's again, the veto they never lost untouched
+    expect((await powersOf(ada, 'rate')).unilateral).toBe(true);
+    expect((await powersOf(ada, 'rate')).assent).toBe(true);
+    const rec = (await motionsOf(bo)).find((m) => m.id === mo)!;
+    expect(rec.status).toBe('carried');
+    expect(rec.payload).toEqual(expect.objectContaining({
+      kind: 'reserve', setting: 'rate', power: 'unilateral' }));
+    // the pen is a pen again: the founder sets ⏱️ directly, which the test
+    // above proves they could not while it was down
+    await cmd(ada, 'set-setting', { setting: 'rate', value: { grant: 6, cap: 9, dripMinutes: 30 } });
+
+    // 🪪 has no reserve of its own — the register's crown is 🤝's (§9.7½) —
+    // which is why the surface offers the road back on no 🪪 tab
+    expect((await send(bo, 'open-motion', {
+      payload: { kind: 'reserve', setting: 'admission', power: 'unilateral' }, why: '',
+    })).body.error).toMatch(/applications setting/);
+  });
 });
 
 type StrangerPayload = {

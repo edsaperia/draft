@@ -3707,6 +3707,121 @@ if (caret) {
   }
 }
 await motionDeckOnAmended();
+
+/* ---- the road back to a laid-down power (Q386, Ed 2026-09-14) -----------
+ * *At the moment founder powers are handed over on power-tabs … these tabs
+ * are where it should be possible to propose to return powers to the
+ * founder.* SPEC §9.7 rule 4 has always said the road back is a
+ * constitutional `reserve` motion, and the module has always taken one —
+ * nothing on the surface put one, so the road was unreachable and no walk
+ * could have noticed.
+ *
+ * ⏱️'s ✒️ is the pen this walk already lays down, on its own tab, before 🍾
+ * (`beginRowsBeforeStart`) — so the state is standing here by itself. Bo
+ * opens the tab, meets the two blocks instead of the read-only sentence,
+ * chooses the one that hands the power back and holds 🏛️; the founder meets
+ * it as an **ask on that tab** — not on ⏱️'s own card, which is the whole
+ * point of the ruling — answers it there, and once cy has answered too the
+ * tab reads the power back with the founder and a record stands behind ⏱️.
+ *
+ * It fails on the pre-Q386 page at *bo's tab offers no way to propose*. */
+const powerReturnOnATab = async () => {
+  if (!guestPage) return; // its own failure, already reported
+  const G = onPage(guestPage, { open: { settleMs: 520 } });
+  const wire = (pg, cmd, args) => pg.evaluate(([c, a]) => fetch(location.pathname.replace('/d/', '/api/d/') + '/cmd', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ cmd: c, args: a }),
+  }).then((r) => r.json()).catch((e) => ({ error: String(e && e.message) })), [cmd, args]);
+  const PW = 'pw:u:rate';
+  // bo's own tab: the pile first, then its ✒️ — a stacked tab carries no
+  // `data-tab` until its pile is the open card's strip (Q752)
+  if (!(await G.open('rate')) || !(await G.open(PW))) {
+    say('return tab · FAIL: bo cannot reach ⏱️’s ✒️ tab'); stuck.push('the member’s power tab'); return;
+  }
+  const offer = await guestPage.evaluate(() => {
+    const c = document.querySelector('.setupcard');
+    if (!c) return null;
+    return { blocks: [...c.querySelectorAll('.pick .opttext')].map((e) => e.textContent.trim().slice(0, 70)),
+      radios: [...c.querySelectorAll('.pick .lanepick .off')].map((e) => e.textContent.trim()),
+      lane: !!c.querySelector('[data-mval]'), keep: !!c.querySelector('[data-pwkeep]'),
+      commit: (() => { const b = c.querySelector('[data-holdmotion]');
+        return b ? (b.disabled ? 'dark' : 'live') : 'none'; })() };
+  });
+  const offerOk = !!offer && offer.blocks.length === 2 && offer.lane && offer.keep &&
+    offer.commit === 'dark' && /Keep this/.test(offer.radios[0] || '') && /Propose this/.test(offer.radios[1] || '');
+  say('return ask · ' + (offerOk ? 'bo’s ⏱️ ✒️ tab offers two blocks — ' + JSON.stringify(offer.blocks) +
+      ' — Keep this · Propose this, 🏛️ dark until one is chosen'
+    : 'FAIL: ' + JSON.stringify(offer)));
+  if (!offerOk) { stuck.push('the return offer on a laid-down power tab'); return; }
+  await G.clickIn('.setupcard [data-mval]');
+  await G.typeIn('.setupcard [data-motionlane="why"]', 'one hand is quicker than three');
+  await guestPage.waitForTimeout(420);
+  const armed = await guestPage.evaluate(() => {
+    const b = document.querySelector('.setupcard [data-holdmotion]');
+    return b ? !b.disabled : null;
+  });
+  const put = armed ? await G.press(1250) : null;
+  say('return put · ' + (put ? 'bo held 🏛️ on ⏱️’s ✒️ tab (' + put + ')'
+    : 'FAIL: armed ' + armed));
+  if (!put) { stuck.push('the 🏛️ hold on a power tab'); return; }
+  await T(5000);
+  // the founder meets it on the tab, never on ⏱️'s own card
+  const ask = await page.evaluate((k) => {
+    const li = document.querySelector('#rail li[data-q="' + k + '"]');
+    const b = li && li.querySelector('button');
+    return b ? { title: b.getAttribute('title'),
+      state: [...b.classList].find((c) => c.startsWith('st-')) || null } : null;
+  }, PW);
+  const askOk = !!ask && ask.state === 'st-ask' && /1 of 3 have answered/.test(ask.title || '');
+  say('return ask2· ' + (askOk ? 'the founder’s rail asks on the tab itself: ' + ask.title
+    : 'FAIL: ' + JSON.stringify(ask)));
+  if (!askOk) stuck.push('the founder’s ask on the power tab');
+  if (!(await open(PW))) { say('return card· FAIL: the founder cannot open ' + PW); stuck.push('the founder’s power-tab card'); return; }
+  const lanes = await page.evaluate(() => [...document.querySelectorAll('.setupcard [data-motion]')].map((b) => b.dataset.motion));
+  await clickIn('.setupcard [data-motion="yes"]');
+  const said = await press(1250);
+  const answered = lanes.join() === 'no,yes,abstain' && !!said;
+  say('return yes · ' + (answered ? 'the founder answers on the same tab, three lanes (' + said + ')'
+    : 'FAIL: lanes ' + JSON.stringify(lanes) + ' · press ' + said));
+  if (!answered) stuck.push('answering a return on its own tab');
+  // cy's seat over the wire: two seats have driven the surface, and what is
+  // left to prove is the carry
+  const slugNow = new URL(page.url()).pathname.split('/')[2];
+  const lj = await fetch(BASE + '/api/d/' + slugNow + '/login', { method: 'POST',
+    headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: GUEST2 }) })
+    .then((r) => r.json()).catch(() => null);
+  if (!lj || !lj.devLink) { say('return cy  · FAIL: no way in for ' + GUEST2); stuck.push('the third seat’s answer'); return; }
+  const ctx4 = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+  const cy2 = await ctx4.newPage();
+  await cy2.goto(lj.devLink);
+  for (let i = 0; i < 40 && !cy2.url().includes('/d/'); i++) await cy2.waitForTimeout(500);
+  await cy2.waitForTimeout(2600);
+  // read off the seat's own view rather than off `window.cs`, which is the
+  // page's object and not a contract any walk should lean on
+  const mine = await cy2.evaluate(() => fetch(location.pathname.replace('/d/', '/api/d/') + '/view')
+    .then((r) => r.json())
+    .then((j) => ((j.view && j.view.motions) || [])
+      .filter((m) => m.payload.kind === 'reserve' && m.status === 'running').map((m) => m.id))
+    .catch(() => []));
+  if (!mine.length) { say('return cy  · FAIL: cy sees no running return'); stuck.push('cy’s sight of the return'); }
+  else await wire(cy2, 'answer-motion', { motion: mine[0], answer: 'accept' });
+  await T(5000);
+  await closeCard();
+  await open('rate');
+  const back = await page.evaluate(() =>
+    [...document.querySelectorAll('#band .achip')].map((a) => a.dataset.chip || '')
+      .filter((x) => /^rec:rate:/.test(x)));
+  await open(PW);
+  const head = await page.evaluate(() =>
+    ((document.querySelector('.setupcard') || {}).textContent || '').replace(/\s+/g, ' ').trim());
+  const backOk = /may amend this at will/.test(head) && !/may not amend/.test(head) && back.length >= 1;
+  say('return got · ' + (backOk ? '⏱️’s ✒️ is the founder’s again and a record stands in its pile (' + back.join(' ') + ')'
+    : 'FAIL: ' + JSON.stringify({ head: head.slice(0, 140), back })));
+  if (!backOk) stuck.push('the power coming back, and its record');
+  await closeCard();
+  await ctx4.close();
+};
+await powerReturnOnATab();
 say('errors     · ' + (errors.length ? errors.slice(0, 4).join(' / ') : 'none'));
 say('refused    · ' + (refused.length ? refused.join(' / ') : 'none'));
 await browser.close();
