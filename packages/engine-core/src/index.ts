@@ -6,7 +6,8 @@
 export * from './types.js';
 export * from './text/types.js';
 export * from './ranking/types.js';
-export { Session, makeConstitution, DEFAULT_CONSTITUTION, pairValue, DocumentClosedError } from './session.js';
+export { Session, makeConstitution, DEFAULT_CONSTITUTION, DocumentClosedError } from './session.js';
+export { pairValue } from './routing.js';
 export type { JudgmentView } from './session.js';
 export { ParticipantApi, authorVisible } from './participant-api.js';
 export type { CardView, OptionView, GazetteEntry } from './participant-api.js';
