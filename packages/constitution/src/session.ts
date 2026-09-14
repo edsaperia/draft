@@ -24,6 +24,8 @@ import type { ApplicationsValue, EndingValue, LapseValue, PaceValue,
   PercentValue, Price, PriceValue, QuorumValue, SettingValue, SlugValue, TextValue } from './values.js';
 import { eqValue } from './values.js';
 import { resolveConsent } from './consent.js';
+import * as owed from './owed.js';
+import type { OwedState } from './owed.js';
 import { eOf, inE, motionElectorateOf, quorumCount,
   adoptionFloorTerm } from './populations.js';
 import type { ThresholdAnchors } from './threshold.js';
@@ -1974,207 +1976,66 @@ export class ConstitutionSession {
     return true;
   }
 
-  /**
-   * **A lapsed member is owed it too** (Q530, Ed 2026-08-22). E excludes the
-   * lapsed, and for every other purpose that is right: they are out of the
-   * quorum base and out of the electorate, because those are about who is
-   * deciding. An acknowledgement is not a decision — it is a thing owed to
-   * somebody about a document they are **still a member of**. Lapse is a
-   * stall with an alarm rather than a departure (§9.5a): revival is just
-   * logging in, and their cast judgments keep counting. So the person who
-   * was living under the old rule and went quiet is exactly the one a change
-   * ought to find, and owing it now is how they meet it on the way back in.
-   *
-   * The two exclusions that stay are the two that mean something. A
-   * **removed** member is gone. Somebody who has **not arrived** never knew
-   * the old rule, so the change is not news to them — it is simply what the
-   * document says, which they will read like anybody arriving.
-   */
   /** What each pen amendment changed *from* — a motion proposes a value and
    *  never needs the old one, so this rides alongside rather than bending the
    *  payload every other amendment shares. */
   private readonly penFrom = new Map<MotionId, SettingValue>();
 
+  // -------------------------------------------------------------------------
+  // The acknowledgements — what a member is owed and the OK that answers it
+  // — are `owed.ts` (Q1352 (q)): the audience rules, the batching and every
+  // ruling behind them (Q530, entry 162, D47, E34) are written there. The
+  // session hands that family exactly the fields it reads, live, and keeps
+  // these names so that the commands (`give-ok`'s siblings) and the callers
+  // in this file do not move.
+
+  private owedState(): OwedState {
+    // a snapshot at the call, not a live view: every function in owed.ts
+    // reads its counters before it emits, exactly as the methods did here
+    return {
+      members: this.members,
+      convenorId: this.convenor.id,
+      people: this.people,
+      closed: this.closedFlag,
+      lastReleaseT: this.lastReleaseT,
+      lastReleaseBatch: this.lastReleaseBatch,
+      nextReleaseN: this.nextReleaseN,
+      nextMailGiveUpN: this.nextMailGiveUpN,
+      emit: (e) => this.emit(e),
+      requireOpen: (what) => this.requireOpen(what),
+    };
+  }
+
   private oweOks(t: number, setting: SettingId): void {
-    for (const m of this.members.values()) {
-      if (m.arrivedAtT === null || m.removed) continue;
-      if (m.id === this.convenor.id) continue; // the convenor had their say
-      if (m.okOwed.has(setting)) continue;
-      this.emit({ type: 'ok-owed', t, member: m.id, settings: [setting] });
-    }
+    owed.oweOks(this.owedState(), t, setting);
   }
 
-  /**
-   * **Everything one act lays down is one news entry and one OK** (Ed,
-   * 2026-08-27, entry 162; Q1013, extending R-044). SPEC §9.7 rule 3 has said
-   * since R-044 that laying a power down is news; what entry 162 adds is the
-   * batching, because 158 gives 🍾 a table of zone switches and one press can
-   * lay down about thirty-four powers — thirty-four separate acknowledgements
-   * landing in every rail at the moment the document opens is the flood that
-   * makes members stop reading acknowledgements at all.
-   *
-   * **The audience rule is `oweOks`'s**, one method up: every member, skipping
-   * the un-arrived, the removed and the convenor. The convenor is skipped for
-   * `oweOks`'s stated reason and for a stronger one here — the founder is the
-   * *actor*, and E9's other half, *the actor*, is already served by the power
-   * card's own confirmation. That is Q918's reading (b) on the cell and (c) on
-   * the audience; **this does not settle Q918**, and it is one predicate to
-   * reverse if Ed rules otherwise. The one skip of `oweOks` with no analogue
-   * here is `okOwed.has(setting)`: every batch carries a fresh id, so there is
-   * nothing to be already owed — the omission is deliberate, not an oversight.
-   *
-   * **A release joins an open batch rather than always opening one**: Ed's
-   * rule is that releases sharing one event, or one `t` and one actor, are one
-   * group, and `relinquish` admits only the convenor as actor, so the actor
-   * half needs no field. On a **solo document** the loop emits nothing — the
-   * founder is the only member and is the actor — and then nothing is
-   * recomputed either, `lastReleaseT` included, since all three fields move in
-   * the fold. A later release therefore opens a fresh batch, which is right: a
-   * call that told nobody anything has no group for anything to join
-   * (the shape of Q835 — the page assumed a room bigger than one).
-   */
   private oweReleases(t: number, releases: Array<{ setting: PowerKey; power: Power }>): void {
-    if (releases.length === 0) return;
-    const batch = this.lastReleaseT === t && this.lastReleaseBatch !== null
-      ? this.lastReleaseBatch : `rel-${this.nextReleaseN}`;
-    for (const m of this.members.values()) {
-      if (m.arrivedAtT === null || m.removed) continue;
-      if (m.id === this.convenor.id) continue; // the founder is the actor
-      this.emit({ type: 'release-owed', t, batch, member: m.id, releases });
-    }
+    owed.oweReleases(this.owedState(), t, releases);
   }
 
-  /**
-   * The OK on a release batch (entry 162) — `giveOk`'s posture exactly: it
-   * refuses nothing it can simply ignore, so a batch that is not owed to this
-   * member returns silently rather than throwing at a page that was a poll
-   * behind.
-   */
   ackRelease(t: number, member: MemberId, batch: string): void {
-    this.requireOpen('acknowledging');
-    const m = this.members.get(member);
-    if (!m) throw new Error(`unknown member '${member}'`);
-    if (!m.releasesOwed.has(batch)) return;
-    this.emit({ type: 'release-ok', t, batch, member });
+    owed.ackRelease(this.owedState(), t, member, batch);
   }
 
-  /**
-   * **A text amendment is news beside the clause it changed** (Ed, 2026-08-29,
-   * decision D47, answering Q1021; SURFACE E35, R-058). `oweReleases`' other
-   * sibling, and **the audience rule is `oweOks`'s** exactly: every member,
-   * skipping the un-arrived, the removed and the convenor, who is the actor.
-   *
-   * **Two differences from `oweReleases`, and both are the ruling.** There is
-   * **no batching and no join of an open group**: entry 162 groups because one
-   * press of 🍾 lays down thirty-four powers that belong to no clause, where
-   * here the card *is* the clause — so two amendments at two places are two
-   * cards, and collapsing them is precisely what the ruling reverses. And
-   * there is **no skip for something already owed**: every amendment carries
-   * its own candidate id, so there is nothing to be already owed — the same
-   * deliberate omission `oweReleases` records for its batch ids.
-   *
-   * **Why it is called from `recordTextAmendment` and not from the fold.**
-   * `replay` calls `apply` directly and `emit` pushes to `this.log`, so an
-   * owing performed in a fold appends events to every session that replays
-   * that log — the log growing every time it is read. That is entry 162's rule
-   * and this is it kept; the reading it replaces (📄's own key through
-   * `oweOks`) had the call in the `text-amended` fold and so had the bug.
-   */
   private oweAmendment(t: number, candidate: string): void {
-    for (const m of this.members.values()) {
-      if (m.arrivedAtT === null || m.removed) continue;
-      if (m.id === this.convenor.id) continue; // the Founder is the actor
-      this.emit({ type: 'amendment-owed', t, candidate, member: m.id });
-    }
+    owed.oweAmendment(this.owedState(), t, candidate);
   }
 
-  /**
-   * The OK on one text amendment (SURFACE E35) — `ackRelease`'s posture
-   * exactly: an amendment this member is not owed returns silently rather than
-   * throwing at a page that was a poll behind.
-   */
   ackAmendment(t: number, member: MemberId, candidate: string): void {
-    this.requireOpen('acknowledging');
-    const m = this.members.get(member);
-    if (!m) throw new Error(`unknown member '${member}'`);
-    if (!m.amendmentsOwed.has(candidate)) return;
-    this.emit({ type: 'amendment-ok', t, candidate, member });
+    owed.ackAmendment(this.owedState(), t, member, candidate);
   }
 
-  /**
-   * **A mail that gave up is told** (SURFACE E34, Q947 (c), backlog 173).
-   * `oweReleases`' sibling: the outbox hands over the whole of one sender
-   * pass's give-ups at once, and one pass is the act — entry 162's rule is
-   * that the boundary of the group is the act, so a pass that killed three
-   * mails is one batch, one card and one OK.
-   *
-   * **Two differences from `oweReleases`, both deliberate.** The convenor is
-   * *not* skipped: there they are the actor, and here nobody in the room is —
-   * E34's audience is *the founder; every member*. And where the audience is
-   * empty the event is still emitted once with `member: null`, because the
-   * addresses are a fact about the register that the founder's ✉️ row reads
-   * whether or not there was anybody to tell.
-   *
-   * The unarrived skip stays exactly as it is, and it is the whole of E34's
-   * **never the invitee**: an invitee has `arrivedAtT === null` by definition,
-   * and they are precisely the person the mail could not reach.
-   *
-   * **A give-up after the close owes nobody.** The closing notices are mailed
-   * from the close itself, so this is the one owing in the file that can be
-   * raised on a shut document — and every acknowledgement in the file
-   * (`giveOk`, `ackRelease`, `ackMailGaveUp`) refuses one, so a card owed here
-   * would sit in the rail for ever behind an OK that throws. The batch is
-   * still recorded: it falls through to the told-nobody arm, which is exactly
-   * the shape for *the addresses are a fact, and there is nobody to tell*.
-   *
-   * The addresses are de-duplicated: one pass may kill two mails to the same
-   * person (two invitations, or an invitation and a lapse warning), and the
-   * card lists what it is given.
-   */
   mailGaveUp(t: number, addresses: readonly string[]): void {
-    if (addresses.length === 0) return;
-    // each dead address to the person holding it (decision 1253); one whose
-    // row nobody holds — erased since the mail was queued, or never a person
-    // of this document — is nobody's news and is dropped here
-    const list: PersonId[] = [];
-    for (const a of addresses) {
-      const person = this.people.byEmail(a);
-      if (person !== null && !list.includes(person)) list.push(person);
-    }
-    if (list.length === 0) return;
-    const batch = `mgu-${this.nextMailGiveUpN}`;
-    let told = false;
-    for (const m of this.closedFlag ? [] : [...this.members.values()]) {
-      if (m.arrivedAtT === null || m.removed) continue;
-      told = true;
-      this.emit({ type: 'mail-gave-up', t, batch, member: m.id, people: list });
-    }
-    if (!told) this.emit({ type: 'mail-gave-up', t, batch, member: null, people: list });
+    owed.mailGaveUp(this.owedState(), t, addresses);
   }
 
-  /** The OK on one pass's dead mail — `ackRelease`'s posture exactly: a batch
-   *  this member is not owed returns silently rather than throwing at a page
-   *  that was a poll behind. */
   ackMailGaveUp(t: number, member: MemberId, batch: string): void {
-    this.requireOpen('acknowledging');
-    const m = this.members.get(member);
-    if (!m) throw new Error(`unknown member '${member}'`);
-    if (!m.mailGaveUpOwed.has(batch)) return;
-    this.emit({ type: 'mail-gave-up-ok', t, batch, member });
+    owed.ackMailGaveUp(this.owedState(), t, member, batch);
   }
 
-  /**
-   * 📨 — put the invitation back in the queue (SURFACE E34). Only an invitee
-   * can be re-sent to: somebody who has arrived has the document, and somebody
-   * who is gone is not being invited to anything. The re-send is an ordinary
-   * queued mail from there on, and if it gives up too a fresh batch is raised.
-   */
   resendInvite(t: number, member: MemberId, by: MemberId): void {
-    this.requireOpen('re-sending an invitation');
-    const m = this.members.get(member);
-    if (!m || m.removed) throw new Error(`unknown member '${member}'`);
-    if (m.arrivedAtT !== null) throw new Error('they are already here — there is nothing to re-send');
-    this.emit({ type: 'mail-resent', t, member, by });
+    owed.resendInvite(this.owedState(), t, member, by);
   }
 
   private afterRosterChange(t: number, cause: 'arrival' | 'departure',
