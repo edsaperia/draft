@@ -76,6 +76,7 @@ const FROZEN = [
   // the page's inline script, split (Q1352): each file the page loads is
   // frozen beside it, or the next freeze leaves the reference page half old
   'door.js',
+  'begin.js',
   'session.js',
   'fixture-session.js',
   'setup.js',
