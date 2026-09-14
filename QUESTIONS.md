@@ -8,6 +8,9 @@ The index, in the section's own order (nothing is pinned — Ed, 2026-09-07, Q12
 
 | # | Title | Raised | State | Pointers |
 |---|---|---|---|---|
+| 1354 | The seat matrix passes CI on exit 3, so a fourth unread cell would not redden it | 2026-09-14 | open — raised by the Q1205 build | `seat-matrix.mjs`; `.github/workflows/ci.yml` |
+| 1355 | E11's audience cell is readable since Q930 and has no predicate | 2026-09-14 | open — raised by the Q1205 build; a rule for Ed to read, not a predicate to invent | `seat-matrix.mjs`; SURFACE E11; Q930 |
+| 1356 | E13's row in the seat matrix passes vacuously: the text race has parked by the snapshot | 2026-09-14 | open — raised by the Q1205 build | `seat-matrix.mjs`; SURFACE E13; Q1340 |
 | 1353 | A stranded proposal never becomes *undecided* at the close | 2026-09-14 | ruled by Ed 2026-09-14 (the walk): **file it as undecided, like a race caught running** — into the backlog, stake waived, ⏸ at its clause; a builder is on it (branch `q1353-stranded-close`) | `the close`; SPEC §2.6, §4.6; `runClose` (engine-core session.ts) |
 | 925 | Three more things git knows about overlapping patches | 2026-08-27 | parked | SPEC §2.2, §2.4; Q924 |
 | 109 | Scale: the margin assumes a short rail | 2026-08-16 | waiting on Ed's own read (the walk, 2026-09-14: *look at a moon-shaped room and rule from what you saw* — `docs.vote/d/moon2`, ~156 members, is idle; the alternatives on the table were naming a ceiling of ~30 live questions, or committing to a screen-only margin) | `needs-you-queue` |
@@ -131,6 +134,13 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 
 1353. **A stranded proposal never becomes *undecided* at the close** (found 2026-09-14 by the Q170 build). `runClose` sweeps the live members of every race and the parked candidates; a `rebase-pending` candidate is in neither set, so it stays stranded for ever — out of the record, out of the backlog, and outside the stake-waived re-entry SPEC §2.6 gives everything else the clock caught. §2.6's own word for *undecided* (*unresolved at the close*) reads as covering it. Not fixed: a mechanism change with record and backlog consequences, and a spec/code disagreement is recorded rather than fixed (CLAUDE.md). Readings: **(a)** the close files a stranded proposal as *undecided* like a race caught running — into the backlog with its stake waived, the surface's ⏸ beside its clause (recommended); **(b)** the close withdraws it with the stake refunded, the author told; **(c)** leave it stranded, the card's two acts dead on a closed document (what stands today). Pointers: `the close`; SPEC §2.6, §4.6; SURFACE E38.
 
+1354. **The seat matrix passes CI on exit 3** (raised 2026-09-14 by the Q1205 build). The harness exits 3 when every finding is green and some §2 cells have no `AUDIENCE` rule (today three: E22 on both hats, E11 on the member hat); the CI step accepts 3 and fails on 1 and 2, which is the harness's own contract — but the gate cannot tell three unread cells from four, so a new cell with no rule passes silently. Readings: **(a)** pin the count — the step passes only on exactly the three named cells, so a new no-rule cell reddens (recommended); **(b)** leave exit 3 as pass; **(c)** make a no-rule cell a failure and file the three now.
+
+1355. **E11's cell has no predicate** (raised 2026-09-14 by the Q1205 build). Q930 (Ed, 2026-08-29) rewrote E11's audience from *whoever the router serves* to *every active member — not anyone whose membership has gone quiet*, nearly E10's cell; the matrix still lists it as no-rule because writing the predicate would be inventing a rule. Readings: **(a)** Ed reads the cell as it stands and the E10 predicate is reused for it (recommended); **(b)** leave it no-rule.
+
+1356. **E13's row passes vacuously** (raised 2026-09-14 by the Q1205 build). At the `judge-text` step the text race has already parked on `early`'s single judgment (quorum stands at one), so `view.clauses` is empty for every seat and *every member who could still judge it* is nobody; the row is green and asserts nothing, and was so before this build. Readings: **(a)** a bigger room or a later assertion step, so the audience is non-empty when read (recommended, a step-table change); **(b)** leave it, noted.
+
+
 ## Backlog (provisioned, build later)
 
 | # | Title | Raised | State | Pointers |
@@ -209,7 +219,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1354** — claim by writing the block here, then commit it alone.
+**The next free number is 1357** — claim by writing the block here, then commit it alone.
+
+**1354–1356 are the seat-matrix build's three questions** (claimed 2026-09-14 20:13, raised by the Q1205 build that made the harness green and put it in CI): 1354 the exit-3 contract, 1355 E11's predicate, 1356 E13's vacuous pass.
 
 **1353 is the stranded proposal at the close** (claimed 2026-09-14 19:53, found by the Q170 build): `runClose` sweeps neither a `rebase-pending` candidate's race nor the parks, so it never files as undecided.
 
