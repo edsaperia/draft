@@ -85,7 +85,7 @@ function motionRoutes() {
 // asserts the page actually loads each of the others, so the list cannot
 // name a file the page does not run.
 const PAGE_FILES = ['design/session-view.html', 'design/door.js', 'design/begin.js', 'design/edit-mode.js',
-  'design/wallets.js'];
+  'design/wallets.js', 'design/live.js'];
 // session.js's own split (Q1352 (h)): the flights and the ✏️ wallet. Not a
 // page file — the page never sees it, session.js makes it — but the reads
 // below that used to open session.js for a wallet or a flight now open this.
@@ -1015,7 +1015,8 @@ function checkAuthorNeverAsked() {
   if (!/this\.host\.authorOf\(m\) === participantId/.test(body))
     find('events', '`explorationCard` serves against the incumbent too, and no longer skips the participant’s own candidates (SPEC §3.3, backlog 253)');
   else note('  exploration skips the participant’s own candidates');
-  const page = js('design/session-view.html');
+  // `itemsFromView` is live.js's since Q1352 (e) lifted the live layer out
+  const page = js('design/live.js');
   const pat = page.indexOf('function itemsFromView(');
   // the window reaches past the deck and ledger building above the skip (Q1200)
   const items = pat < 0 ? '' : page.slice(pat, pat + 8000);
@@ -1103,7 +1104,8 @@ function checkApplicantJudged() {
  *    `ConstitutionSession` (its prototype, in the vm), and every `bridge.x(`
  *    a `x(` declaration of engine-bridge.ts — a rename in the module is
  *    red here before it is a 500 on the wire;
- *  - every command the page sends (`cmd('name'` in session-view.html and
+ *  - every command the page sends (`cmd('name'` across the page set — live.js
+ *    above all, `api.cmd` and its callers being its since Q1352 (e) — and
  *    session.js) is a key of `HANDLERS`, or the whitelist refuses it as
  *    unknown and the press is dead — a finding unless it is filed below;
  *  - a handler nothing sends — not the page, not a walk, not the harness —
@@ -1136,7 +1138,9 @@ function checkCommands(M) {
     if (!bridge.has(m)) find('commands', `a handler calls bridge.${m}(), which engine-bridge.ts does not declare`);
   }
 
-  const page = js('design/session-view.html') + js('design/session.js');
+  // every command the page sends: `api.cmd` and its callers are live.js's
+  // since Q1352 (e), so the scan reads the whole page set beside session.js
+  const page = pageSrc() + js('design/session.js');
   const sentByPage = new Set([...page.matchAll(/\bcmd\('([a-z-]+)'/g)].map((x) => x[1]));
   for (const c of sentByPage) {
     if (handlers.includes(c)) continue;

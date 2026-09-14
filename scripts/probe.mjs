@@ -79,6 +79,7 @@ const FROZEN = [
   'begin.js',
   'edit-mode.js',
   'wallets.js',
+  'live.js',
   'session.js',
   // session.js's own split (Q1352 (h)): the page loads it for session.js,
   // which makes it as it is evaluated
