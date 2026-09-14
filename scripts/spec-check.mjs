@@ -616,6 +616,34 @@ function checkSockets() {
   note(`  ${rows.length} socket states; the renderers set ${set.size} classes`);
 }
 
+// **The narrow breakpoint is one literal in two files** (design/MOBILE.md
+// §"narrow"): `NARROW_Q` in session.js, and the same query written out in
+// system.css wherever a rule is narrow-only, each such query tagged
+// `/* NARROW_Q */` on the line above it (Q1352 (j)). MOBILE.md said this was
+// asserted here before it was; since 2026-09-14 it is.
+function checkNarrow() {
+  note('Narrow — NARROW_Q in session.js against every max-width query in system.css');
+  const sess = js('design/session.js'); const css = js('design/system.css');
+  const m = sess.match(/const NARROW_Q = '([^']+)';/);
+  if (!m) { find('narrow', 'session.js has no `const NARROW_Q = \'…\';`'); return; }
+  const q = m[1];
+  const queries = [...css.matchAll(/^([ \t]*)@media \((max-width: \d+px)\)/gm)];
+  if (queries.length === 0) find('narrow', 'system.css has no `@media (max-width: …px)` rule at all');
+  const lines = css.split(/\r?\n/);
+  // MOBILE.md's ladder has two steps and one lives in the stylesheet alone:
+  // ≤900 one column · 901–1240 document and rail · >1240 three columns. The
+  // 1240 line drops the contents rail and nothing in JS reads it, so it is the
+  // one width allowed beside NARROW_Q; any other is a breakpoint drifting.
+  const TWO_COLUMN = '(max-width: 1240px)';
+  for (const hit of queries) {
+    if (`(${hit[2]})` === TWO_COLUMN) continue;
+    if (`(${hit[2]})` !== q) find('narrow', `system.css narrows at \`(${hit[2]})\`, session.js's NARROW_Q is \`${q}\``);
+    const at = css.slice(0, hit.index).split(/\r?\n/).length; // 1-based line of the query
+    if (!/NARROW_Q/.test(lines[at - 2] ?? '')) find('narrow', `system.css:${at} narrows without a \`/* NARROW_Q */\` tag on the line above`);
+  }
+  note(`  ${queries.length - 1} narrow queries, all \`${q}\`, beside the one ${TWO_COLUMN} line`);
+}
+
 function checkLifecycle() {
   note('Lifecycle — SURFACE.md §2 L rows against journey-walk.mjs');
   const rows = tableAfter('SURFACE.md', 'lifecycle');
@@ -1712,6 +1740,7 @@ function checkMergeable() {
 checkMarks();
 checkSetupAlphabet();
 checkSockets();
+checkNarrow();
 checkLifecycle();
 checkWallets(pm);
 checkOrder(pm);
