@@ -8,7 +8,7 @@ The index, in the section's own order (nothing is pinned — Ed, 2026-09-07, Q12
 
 | # | Title | Raised | State | Pointers |
 |---|---|---|---|---|
-| 1357 | A submitted applicant's card is hidden while 🤝 is shut | 2026-09-14 | open — found by the Q901 build | `applicants`; `applicantAsView`; SURFACE E33, Y28 |
+| 1357 | A submitted applicant's card is hidden while 🤝 is shut | 2026-09-14 | ruled by Ed 2026-09-14: **their card stands whatever the door says** — the door is about new applications only; a builder is on it (branch `q1357-submitted-card`) | `applicants`; `applicantAsView`; SURFACE E33, Y28 |
 | 1358 | The Founder who presses ❌ is owed the departure's OK too | 2026-09-14 | open — found by the Q901 build; E9 skips the actor, E40 does not | `departure-news`; `oweDeparture` (owed.ts); SURFACE E31, E40, E9 |
 | 1359 | The seat matrix raises no step for E38, E39 or E40 | 2026-09-14 | open — found by the Q1354 build; the row count is a shape tripwire, not coverage | `seat-matrix.mjs`; SURFACE E38–E40 |
 | 925 | Three more things git knows about overlapping patches | 2026-08-27 | parked | SPEC §2.2, §2.4; Q924 |
