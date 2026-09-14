@@ -6531,3 +6531,14 @@ Found by the Q901 build and put to Ed the same evening, 2026-09-14. **Ruled: ski
 
 1358. **The Founder who presses ❌ is owed the departure's OK too** (found 2026-09-14 by the Q901 build). `oweReleases` and `oweAmendment` skip the convenor as the actor (E9, Q918); `oweDeparture` does not, because Ed's ruling named only the departed and later joiners as exclusions and two of the three routes have no single actor — so the Founder who exiled a member at will is served a card asking them to acknowledge their own act. One predicate in `owed.ts`. Readings: **(a)** skip the actor, as E9 does — the Founder on ❌, the resigner on *Leave* (already outside, being departed) (recommended); **(b)** everyone, as built.
 
+
+## Q1357: a submitted application's card stands whatever 🤝 says (Ed, 2026-09-14)
+
+Found by the Q901 build and put to Ed the same evening, 2026-09-14. **Ruled: their card stands whatever the door says** — the door prices new applications, and a race already running is not one. Rejected: a shut door withdrawing submitted applications; leaving it. **Built (b79225d, merged):** `renderRail`'s applicant gate admits a submitted applicant (`standing`) whatever 🤝 reads, so their rail is the five they had with the door open; Y28 amended; `applicants-walk` shuts and reopens 🤝 around a submitted application at both non-✒️ prices and asserts the rail identical, red on the pre-fix page; no server change (the applicant's payload never withheld the row). Left alone: the topbar's stage words still follow the door (*reading only · membership is by invitation*), a copy question if it ever grates.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 1357 | A submitted applicant's card is hidden while 🤝 is shut | 2026-09-14 | ruled by Ed 2026-09-14: **their card stands whatever the door says** — the door is about new applications only; a builder is on it (branch `q1357-submitted-card`) | `applicants`; `applicantAsView`; SURFACE E33, Y28 |
+
+1357. **A submitted applicant's card is hidden while 🤝 is shut** (found 2026-09-14 by the Q901 build). `renderRail` emptied the applicant's whole rail the moment 🤝 shut; the Q901 build fixed that for the refused applicant's 🪪 card (E33), but an applicant who had already *submitted* still loses their *n of E have voted* card under a shut door — their application is a running race whichever way the door now stands. Readings: **(a)** the submitted card stands whatever 🤝 says, the door's state being about new applications only (recommended); **(b)** a shut door tells a submitted applicant their application is withdrawn (a mechanism change); **(c)** leave it.
+
