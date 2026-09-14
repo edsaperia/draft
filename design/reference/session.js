@@ -97,7 +97,7 @@
   // make() time). The lift is proven by design/tools/session-probe.js against
   // design/reference/: card HTML byte-identical, geometry 0.0px.
   const {
-    esc, resultOnly, stripTags, pct, plainLabel,
+    esc, resultOnly, stripTags, pct, plainLabel, URG_LO, URG_HI,
     TICK, CROSS, MARK, DRAWN, mkHtml, markHtml,
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks,
     headFlags, originText, mdToHtml, htmlToMd, mdStrip, mdLine,
@@ -528,10 +528,6 @@
   // this fixture *is* a question.
   const liveQuestions = () =>
     SUGGS.filter((g) => stateOf(g) !== 'sealed' && !g.unproposed && !isDiagonal(g)).length;
-  const diagonalsAvailable = () =>
-    SUGGS.some((g) => isDiagonal(g) && stateOf(g) === 'needs');
-  window.__q291 = () => ({ live: liveQuestions(), more: diagonalsAvailable(),
-    nothing: nothingToJudge(), needs: SUGGS.filter(judgeable).map((g) => g.id) });
   // **What pins itself, and why** (Ed, 2026-08-17, in two passes). An adopted
   // decision always pins: the text under your eye moved, which is news whether
   // or not you had anything to do with it. A retired one is not news — somebody
@@ -552,8 +548,8 @@
   // resolution (that stays the meter's job). It is carried by the strength of
   // the card's colour (Ed, 105) and, since 2026-08-16, by whether the card is
   // on the screen at all: it decides *which* questions the rail shows, not how
-  // much each of them is allowed to say.
-  const URG_LO = 0.05, URG_HI = 0.30;
+  // much each of them is allowed to say. The ramp's two ends, `URG_LO` and
+  // `URG_HI`, are cards.js's, shared with setup.js's band entries.
   // A deadlocked race is not a low-urgency one, it is a *differently* addressed
   // one (Ed, 166): no judgment of yours can move it, so the urgency ramp does
   // not apply, and it says so in its own words.
@@ -1068,6 +1064,19 @@
   // A flow entry that would end up underneath a pinned card is hidden rather
   // than nudged: nudging makes the whole rail crawl as you scroll.
   const QGAP = 8, BAND_TOP = 70, BAND_BOT = 24;
+  // **At most three unacknowledged decisions pin at once, oldest first** (Q113,
+  // Ed 2026-09-14). A pinned entry is exempt from the fit cap and hides any flow
+  // entry that would fall underneath it, so the one population that nothing
+  // expires — a decision owed you an OK — was the one that could crowd the
+  // margin out on its own: come back after a long absence and the rail is a wall
+  // of green ticks with the document's live work hidden behind it. The cap is on
+  // *pinning*, not on the entries: the fourth owed decision and every one after
+  // it stands at its own clause as an ordinary green entry, shown when it fits,
+  // scrolling with the text, opening and taking its OK exactly as a pinned one
+  // does. Each OK pins the next oldest. Nothing announces the count — an
+  // "and n more" line would be the tally 2026-08-17 retired, an apology for a
+  // limit nobody experiences as one.
+  const NEWS_PIN_CAP = 3;
   // A deadlocked race ranks above every ordinary question (Ed, 223). It can
   // out-rank the flame in the *order*, which costs nothing: the flame is kept
   // regardless of room, so its primacy rests on the exemption rather than on
@@ -1102,6 +1111,14 @@
     // ones: a list cannot say *where*, so the filed population, whose whole
     // claim is a position, belongs to the gutter tabs alone on a phone. The
     // door's number is the drawer's length, and means the same thing.
+    //
+    // **`NEWS_PIN_CAP` does not reach the drawer** (Q113, Ed 2026-09-14). The
+    // cap is a rule about *pinning*, and pinning is a wide-margin fact: it buys
+    // exemption from the fit cap and hides the flow underneath. A drawer has
+    // neither — it is an ordered list that scrolls — so capping here would not
+    // demote a fourth owed decision to a flow position, there being none; it
+    // would delete it from the one place a phone lists what asks something of
+    // you, and an OK you are owed asks something of you.
     if (NARROW()) {
       const navH = (document.querySelector('.navbar') || {}).offsetHeight || BAND_TOP;
       const rows = [];
@@ -1136,7 +1153,19 @@
     const railRect = queueEl.getBoundingClientRect();
     const railTop = railRect.top + scrollY;
     const pinned = [], flow = [];
+    // The owed queue's own order (Q113). Neither population carries a settle
+    // time the page can sort on — a record's `when` is already a sentence by the
+    // time it reaches here, and a setting's owed OK is a bare id in a set — but
+    // both arrive in the order they were owed: the view lists its records in log
+    // order, and `extra` lists the band's settings in the founding order they
+    // were settled in. So the queue is that arrival order, `i`, with the band's
+    // ahead of the charter's, `fam`: every setting a member is owed was decided
+    // by the founding or by a motion on the constitution, and the heaviest pile
+    // of all — one OK for every delegated question, all landing at the settle —
+    // is the band's, standing before the document has a record to its name.
+    let idx = -1;
     for (const el of queueEl.children) {
+      idx++;
       const a = anchorForEntry(el.dataset.q, el.dataset.site);
       if (!a) { el.style.display = 'none'; continue; }
       el.style.display = '';
@@ -1146,7 +1175,7 @@
         const ay0 = a.getBoundingClientRect().top;
         el.classList.toggle('offclause', ay0 < BAND_TOP || ay0 > innerHeight - BAND_BOT);
         const row = { el, want: (a.getBoundingClientRect().top + scrollY) - railTop, h: el.offsetHeight,
-          mine: !!x.mine, u: x.u ?? 0, rank: x.rank ?? 0 };
+          mine: !!x.mine, u: x.u ?? 0, rank: x.rank ?? 0, news: !!x.news, fam: 0, i: idx };
         ((x.pinned || holdsFocus(el)) ? pinned : flow).push(row);
         continue;
       }
@@ -1235,9 +1264,22 @@
       // enough to notice. It is also why the rail needs no pile of its own: it
       // already knew how to choose, it just did not know how to choose *here*.
       row.rank = stackRank(kind);
+      row.news = isUnread(g); row.fam = 1; row.i = idx;
       const live = kind === 'urgent' || kind === 'propose' || kind === 'weigh' ||
         isUnread(g) || holdsFocus(el);
       (live ? pinned : flow).push(row);
+    }
+    // The cap, applied across both populations as one queue (Q113, Ed
+    // 2026-09-14): the oldest `NEWS_PIN_CAP` owed decisions pin, the rest are
+    // demoted to the flow, where they stand at their own clauses. Whatever is
+    // open pins for being open whatever its state (C6), so an owed decision you
+    // have opened from further down the queue keeps its place while it is open —
+    // the cap counts it, it simply does not evict it.
+    const owed = pinned.filter((r) => r.news).sort((x, y) => x.fam - y.fam || x.i - y.i);
+    for (const r of owed.slice(NEWS_PIN_CAP)) {
+      if (holdsFocus(r.el)) continue;
+      pinned.splice(pinned.indexOf(r), 1);
+      flow.push(r);
     }
     // Position, then the tab stack's lifecycle order, then urgency. The third
     // key matters more than it looks: two 💡 at one clause tie on the second,
@@ -2103,790 +2145,45 @@
     );
   }
 
-  /* ===================================================================
-     The composer (Ed, 2026-08-16; decisions 224–241).
-
-     There is no composing *surface*. You compose by editing the charter: every
-     clause carries a caret, and the first character you type opens the clause
-     into two lanes — what it says on the left, what you are making it say on
-     the right — with your rationale above and 🗑️ and the ✏️ hold below. The
-     briefing, the drafting desk and the arrival bar from design/composer.html
-     are all superseded by this; what survives of that mockup is the briefing,
-     and only as an escalation state (SPEC §3.5).
-
-     Three things follow from "it is just the document":
-       · there is **one** draft at a time, because there is one caret;
-       · a draft is a suggestion like any other, held in SUGGS with `mine` and
-         `unproposed` set, so the rail, the wires, the folding and the margin
-         geometry all work on it without knowing what it is;
-       · nothing is spent until you press Propose. Opening the composer, typing
-         in it, and cancelling are all free (SPEC §3.3 charges the stake at
-         submission), which is what lets the surface put a caret in every
-         paragraph without that being a threat.
-     =================================================================== */
-  const DRAFT_ID = 'draft-yours';
+  // ---- the composer -------------------------------------------------------
+  // design/composer.js since refactor Q1352 (i): made here, where the code
+  // stood, so its `laneRemark` map and its `laneMode` are the same objects at
+  // the same moment they always were. The bag is in three parts, and which
+  // part a name is in is a fact about this file, not a style: a value is a
+  // name defined by now and never reassigned; a call is one `init` replaces;
+  // an accessor is one the page swaps under the surface after load.
+  const COMPOSER = window.COMPOSER.make({
+    blockBeforeGap, blockHtml, chipsFor, currentTextFor, drawWires,
+    gapAfter, gapBefore, gapFields, gapLabel, headingForKey, isGapKey,
+    layoutQueue, lineOf, renderAll, stuck, toggle,
+    // this surface's own instance of the card grammar's factory half — the
+    // pure half composer.js takes off `window.CARDS` itself
+    clauseHeadHtml, draftFaceHtml, keepStill, laneBoxHtml,
+    // `init` replaces all five, so none can be captured; `caretPulse` is a
+    // `const` below this line and is still in its dead zone as this runs
+    MAY_PEN: () => MAY_PEN(), SIGNING: () => SIGNING(), SIGNER: () => SIGNER(),
+    AUTHOR_RUNG: () => AUTHOR_RUNG(), SIGNER_PERSON: () => SIGNER_PERSON(),
+    caretPulse: () => caretPulse(),
+    // the data at every bind, the DOM handle at init, the open card at every
+    // press, the wallet at every spend and every drip
+    get DOC() { return DOC; },
+    get SUGGS() { return SUGGS; },
+    get EDIT_RULES() { return EDIT_RULES; },
+    get editsHeld() { return editsHeld; },
+    get doc() { return doc; },
+    get openId() { return openId; },
+  });
+  const { DRAFT_ID, draftOf, docIndexOfKey, siteFor, syncDraftKeys,
+    dropDraft, dropDraftSite,
+    caretRangeIn, selectedBlocks, laneCaret, placeCaret,
+    startDraft, startDraftFromTyping, startDraftFromRun,
+    laneRaw, laneRemark, syncEditCtl,
+    commitBtnHtml, proposalRowHtml, draftRowState, setDraftSigned,
+    editCardHtml, mineCardHtml } = COMPOSER;
+  // and `laneMode` itself is `COMPOSER.laneMode`, because two things here
+  // write it: the column strip's `[]` handler, and the page through
+  // `SESSION.setLaneRaw`.
   let mineSeq = 0;                      // proposing frees the composer for the next draft
-  const draftOf = () => SUGGS.find((x) => x.id === DRAFT_ID);
-  // a gap that is not in DOC (it is rendered only in edit mode) stands half a
-  // place after the block before it — `docIndexOf`'s own +0.5 for an insert
-  const docIndexOfKey = (key) => {
-    const i = DOC.findIndex((l) => l.key === key);
-    if (i >= 0 || !isGapKey(key)) return i;
-    return blockBeforeGap(key) + 0.5;
-  };
-  const siteFor = (d, key) => (d.sites || []).find((s) => s.keys.includes(key));
-
-  function ensureDraft() {
-    let d = draftOf();
-    if (!d) {
-      d = {
-        id: DRAFT_ID, kind: 'draft', mine: true, unproposed: true, state: 'needs',
-        keys: [], sites: [], rationale: '', qLabel: T.compose.draftLabel,
-        urgency: 0, pct: 0, cap: '',
-        // the sign choice (Q770): the base is the default, signing the opt-in
-        signed: false,
-      };
-      SUGGS.push(d);
-    }
-    return d;
-  }
-
-  // Editing across a paragraph break joins the two rather than making a second
-  // place (Ed, 225): a site is a **run** of adjacent clauses replaced by one
-  // piece of text. Editing somewhere else entirely is the other case — a new
-  // site, cabled to the first, which is a patch in the making (Ed, 232).
-  // Returns the site and where in its text the new clause begins, so the caret
-  // can be put back at the character you just typed rather than at the start of
-  // whatever run it landed in.
-  function addDraftSite(d, key, text, seed) {
-    const at = docIndexOfKey(key);
-    const orig = originOf(key, seed);
-    // a gap never merges with a neighbour: an insertion at a boundary is its
-    // own hunk (`start === end`), and joining it to the clause beside it would
-    // turn a pure insert into that clause's rewrite
-    // The gap is taken out of the candidate list rather than the list being
-    // emptied: a draft that already holds one still merges two adjacent
-    // *clauses* into one run, which is what a run is for.
-    for (const s of isGapKey(key) ? [] : d.sites.filter((x) => !x.keys.some(isGapKey))) {
-      const first = docIndexOfKey(s.keys[0]);
-      const last = docIndexOfKey(s.keys[s.keys.length - 1]);
-      // adjacency is literal: a heading in between means DOC[last+1] is the
-      // heading, so the two clauses are not neighbours and never merge
-      if (at === last + 1) {
-        s.keys.push(key); s.origin.push(orig);
-        const off = s.text.length + 1;
-        s.text += '\n' + text;
-        return { site: s, offset: off };
-      }
-      if (at === first - 1) {
-        s.keys.unshift(key); s.origin.unshift(orig);
-        s.text = text + '\n' + s.text;
-        return { site: s, offset: 0 };
-      }
-    }
-    const s = { keys: [key], origin: [orig], text, label: headingForKey(key) };
-    // a gap site is born with its own anchor's bookkeeping (Q1311): the
-    // held-open `.insert-anchor` after the block before it is where its card
-    // stands (the read side's shape for a proposed section, Q261's smaller half)
-    if (isGapKey(key)) Object.assign(s, gapFields(key));
-    d.sites.push(s);
-    d.sites.sort((a, b) => docIndexOfKey(a.keys[0]) - docIndexOfKey(b.keys[0]));
-    return { site: s, offset: 0 };
-  }
-  // What a site records about each block it replaces. The block *type* travels
-  // with it (Ed, 2026-08-17) so a heading still reads as a heading in the lane
-  // and in the proposal — otherwise editing a section title alongside its
-  // paragraph would silently flatten it into body text.
-  function originOf(key, seed) {
-    const l = lineOf(key) || {};
-    // a gap has nothing standing in it: an empty paragraph origin, marked so
-    // the card's head can say which gap and the host can send an insertion
-    if (isGapKey(key)) return { key, text: '', note: seed ? seed.note : null, t: 'p', gap: true };
-    return { key, text: seed ? seed.text : currentTextFor(key), note: seed ? seed.note : null,
-             t: l.t, level: l.level, bullet: !!l.bullet };
-  }
-
-  // A **run** of blocks taken as one site. Ed's ruling (2026-08-17): four
-  // contiguous paragraphs deleted together are one candidate, and not even a
-  // patch — a patch is one judgment shown at several *separate* places, and a
-  // run is one place that happens to be several blocks long. So this makes a
-  // single site whatever the run's length, which is what `draft-site` has meant
-  // since 225; all that is new is being able to select one rather than having
-  // to type your way across it.
-  function addDraftRun(d, keys, text) {
-    const s = { keys: keys.slice(), origin: keys.map((k) => originOf(k, null)),
-                text, label: headingForKey(keys[0]) };
-    d.sites.push(s);
-    d.sites.sort((a, b) => docIndexOfKey(a.keys[0]) - docIndexOfKey(b.keys[0]));
-    return s;
-  }
-
-  const syncDraftKeys = (d) => { d.keys = d.sites.flatMap((s) => s.keys); };
-
-  // A site's left lane is the clauses it replaces, which the fixture must not
-  // restate: hand-copied charter text is the "parallel literals kept in sync by
-  // hand" failure the mockup's own conventions warn against. So a seeded
-  // proposal gives keys and its new wording, and the original is read out of
-  // the document. Only a lane-seeded draft (Ed, 228) carries its own, because
-  // there the thing being edited is somebody else's proposal rather than the
-  // charter.
-
-  // Something already proposed at this clause — so the card can say whether you
-  // are opening a race or joining one (Ed, 229).
-  const liveRivalFor = (d, site) => SUGGS.find((x) =>
-    x !== d && x.state !== 'sealed' && !x.mine && (x.keys ?? []).some((k) => site.keys.includes(k)));
-
-  function dropDraft() {
-    const i = SUGGS.findIndex((x) => x.id === DRAFT_ID);
-    if (i >= 0) SUGGS.splice(i, 1);
-  }
-  // **A card's 🗑️ discards its own site** (Q1306 (a), Ed 2026-09-10: *the 🗑️
-  // for the edit in one place should only discard that edit, not the whole
-  // patch*). The site's blocks become the paragraph again and the rest of the
-  // draft stands; with one site left the patch is a plain candidate, which the
-  // row already says by counting; with none left the draft goes. A gap site
-  // takes its anchor with it, the bookkeeping being its own (Q1311) — nothing
-  // is re-derived. Returns the draft, or null once it is gone.
-  function dropDraftSite(site) {
-    const d = draftOf();
-    if (!d || !site) return d || null;
-    d.sites = d.sites.filter((s) => s !== site);
-    if (!d.sites.length) { dropDraft(); return null; }
-    syncDraftKeys(d);
-    if (d.focusKey && site.keys.includes(d.focusKey)) d.focusKey = d.sites[0].keys[0];
-    return d;
-  }
-
-  // ---- the caret ------------------------------------------------------
-  // Typing has to survive the clause turning into a card: the character you
-  // pressed is already in the right-hand lane when it appears, and the caret
-  // lands just after it. Held as a character offset rather than as a node,
-  // because the node measured before the render does not exist after it — the
-  // same rule the scroll anchoring works by.
-  // Everything a block carries that is not its text: the gutter marks on a
-  // clause, the fold triangle on a heading. All of it sits *before* the words,
-  // so its length is a constant to subtract rather than a position to track.
-  const leadLen = (block) => [...block.querySelectorAll('.chipcol, .nocaret')]
-    .reduce((n, el) => n + el.textContent.length, 0);
-
-  // Where a point in the document falls inside one block, in characters.
-  function offsetIn(block, node, off) {
-    if (!block.contains(node)) return null;
-    const r = document.createRange();
-    r.selectNodeContents(block);
-    try { r.setEnd(node, off); } catch (e) { return null; }
-    return Math.max(0, r.toString().length - leadLen(block));
-  }
-
-  function caretRangeIn(p) {
-    const sel = getSelection();
-    if (!sel || !sel.rangeCount) return null;
-    const r0 = sel.getRangeAt(0);
-    if (!p.contains(r0.startContainer) || !p.contains(r0.endContainer)) return null;
-    return { start: offsetIn(p, r0.startContainer, r0.startOffset),
-             end: offsetIn(p, r0.endContainer, r0.endOffset) };
-  }
-
-  // The run of blocks a selection touches. One block is the ordinary case; more
-  // than one is Ed's — select across paragraphs, or across a heading and its
-  // paragraph, and act on the lot as a single candidate (2026-08-17).
-  function selectedBlocks() {
-    const sel = getSelection();
-    if (!sel || !sel.rangeCount) return null;
-    const r = sel.getRangeAt(0);
-    const blockOf = (n) => {
-      const el = n.nodeType === 1 ? n : n.parentElement;
-      const b = el && el.closest ? el.closest('.editable[data-key]') : null;
-      return b && !b.closest('.sugg') ? b : null;
-    };
-    const a = blockOf(r.startContainer), b = blockOf(r.endContainer);
-    if (!a || !b) return null;
-    const all = [...doc.querySelectorAll('.editable[data-key]')].filter((el) => !el.closest('.sugg'));
-    const i = all.indexOf(a), j = all.indexOf(b);
-    if (i < 0 || j < 0) return null;
-    return { blocks: all.slice(Math.min(i, j), Math.max(i, j) + 1), range: r, a, b };
-  }
-
-  function setCaretIn(block, n) {
-    const sel = getSelection();
-    const r = document.createRange();
-    const walk = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
-    let node = walk.nextNode(), acc = 0;
-    while (node) {
-      if (acc + node.length >= n) { r.setStart(node, n - acc); r.collapse(true); sel.removeAllRanges(); sel.addRange(r); return; }
-      acc += node.length;
-      node = walk.nextNode();
-    }
-    r.selectNodeContents(block); r.collapse(false);       // an empty block has no text node
-    sel.removeAllRanges(); sel.addRange(r);
-  }
-
-  // Where the caret is in a lane, counted in characters across its blocks with
-  // one for each newline between them — the same coordinate `placeCaret` takes,
-  // so the pair survives the lane being rewritten underneath them.
-  function laneCaret(lane) {
-    const sel = getSelection();
-    if (!sel || !sel.rangeCount) return null;
-    const r0 = sel.getRangeAt(0);
-    if (!lane.contains(r0.endContainer) && r0.endContainer !== lane) return null;
-    let off = 0;
-    for (const b of lane.children) {
-      if (b === r0.endContainer || b.contains(r0.endContainer)) {
-        const r = document.createRange();
-        r.selectNodeContents(b);
-        r.setEnd(r0.endContainer, r0.endOffset);
-        return off + r.toString().length;
-      }
-      off += b.textContent.length + 1;
-    }
-    return null;
-  }
-
-  function placeCaret(lane, off) {
-    const blocks = [...lane.children];
-    if (!blocks.length) return lane.focus({ preventScroll: true });
-    let n = off == null ? Infinity : off;
-    for (const b of blocks) {
-      const len = b.textContent.length;
-      if (n <= len) return setCaretIn(b, n);
-      n -= len + 1;                                       // the newline between blocks
-    }
-    setCaretIn(blocks[blocks.length - 1], blocks[blocks.length - 1].textContent.length);
-  }
-
-  // ---- opening the composer -------------------------------------------
-  // `initial` carries the keystroke that started it: the clause with that one
-  // character already applied, and where the caret should sit afterwards.
-  function startDraft(key, seed, initial) {
-    if (!key) return;
-    const d = ensureDraft();
-    let site = siteFor(d, key), offset = 0;
-    if (site) {
-      if (initial) site.text = initial.text;
-      // **A seed replaces what is in the box** (Ed, 2026-08-17: *clicking a
-      // "propose edit" puts that text in it instead*). It used to seed only on
-      // the way in, so pressing ✏️ on a second wording — or on any wording once
-      // the desk already held a draft — did nothing at all, which is exactly
-      // the case the `deadlock-card` is built around: reading eight and trying
-      // two of them. The origin travels with it, so the green marking is
-      // measured against the wording you took rather than against the clause.
-      else if (seed) {
-        const at = site.keys.indexOf(key);
-        site.text = seed.text;
-        site.keys = [key];
-        site.origin = [originOf(key, seed)];
-        if (at < 0) site.label = headingForKey(key);
-      }
-    }
-    else {
-      const added = addDraftSite(d, key, (initial ? initial.text : (seed ? seed.text : currentTextFor(key))), seed);
-      site = added.site; offset = added.offset;
-    }
-    syncDraftKeys(d);
-    // a draft on a gap renders in the gap, on the site's own anchor
-    // (`addDraftSite`, Q1311) — the draft itself holds no gap
-    d.focusKey = key;                    // what holdSel keeps still, and where the caret goes
-    const caret = initial ? offset + initial.caret : null;
-    const land = () => {
-      const lane = doc.querySelector('[data-lane="' + site.keys[0] + '"]');
-      if (!lane) return;
-      lane.focus({ preventScroll: true });      // the card may still be unrolling
-      placeCaret(lane, caret);
-      caretPulse();          // the one caret move the reader did not make
-    };
-    // A `deadlock-card` holds its own composer at its foot, so a draft started
-    // there must not carry the surface off to the draft's own card: the field
-    // you are writing against is the whole reason you are there (Ed,
-    // 2026-08-17). It stays open and re-renders with the desk now backed by a
-    // real site.
-    const host = SUGGS.find((x) => x.id === openId);
-    if (host && stuck(host) && (host.keys ?? []).includes(key)) {
-      keepStill(() => renderAll(), '[data-card="' + host.id + '"]');
-      land();
-      layoutQueue(); drawWires();
-      return;
-    }
-    if (openId === d.id) {
-      keepStill(() => renderAll(), '[data-key="' + key + '"]');
-      land();
-      layoutQueue(); drawWires();
-      return;
-    }
-    toggle(d.id, true, land);
-  }
-
-  // The first keystroke in a clause. Every input is intercepted: the charter
-  // itself is never modified in place — what the character does is open the
-  // composer with that character already in it, which is what makes typing in
-  // the document safe to offer everywhere (Ed, 224).
-  function startDraftFromTyping(p, ev) {
-    const key = p.dataset.key;
-    if (!key) return;
-    const orig = currentTextFor(key);
-    const sel = caretRangeIn(p) || { start: orig.length, end: orig.length };
-    let a = Math.min(sel.start, orig.length), b = Math.min(sel.end, orig.length);
-    // **Enter at a clause edge inserts rather than rewrites** (backlog 204,
-    // Q261): a collapsed caret at the very end of an unmodified clause opens a
-    // draft on the gap after it, at the very start on the gap before it — a
-    // new clause, and the neighbour untouched. Mid-clause keeps the split
-    // below. The gap block itself takes Enter as any other keystroke.
-    const enter = ev.inputType === 'insertParagraph' || ev.inputType === 'insertLineBreak';
-    const d0 = draftOf();
-    if (enter && a === b && !isGapKey(key) && !(d0 && siteFor(d0, key))) {
-      if (a === orig.length) return startDraft(gapAfter(key), null, { text: '', caret: 0 });
-      if (a === 0 && orig.length) return startDraft(gapBefore(key), null, { text: '', caret: 0 });
-    }
-    let ins = '';
-    switch (ev.inputType) {
-      case 'insertText': ins = ev.data == null ? '' : ev.data; break;
-      // Enter at the end of a clause makes a new one and leaves the old alone
-      // (Ed, 231) — which falls out of this for free: the lane holds a run of
-      // paragraphs, so a newline at the end is simply an empty second block.
-      case 'insertParagraph': case 'insertLineBreak': ins = '\n'; break;
-      case 'insertFromPaste':
-        ins = (ev.dataTransfer && ev.dataTransfer.getData('text/plain')) || ''; break;
-      case 'deleteContentBackward':
-        if (a === b) { if (a === 0) return joinWithNeighbour(key, -1, d0); a -= 1; }
-        break;
-      case 'deleteContentForward':
-        if (a === b) { if (b >= orig.length) return joinWithNeighbour(key, 1, d0); b += 1; }
-        break;
-      default: return;                       // formatting commands have nothing to do here
-    }
-    startDraft(key, null, { text: orig.slice(0, a) + ins + orig.slice(b), caret: a + ins.length });
-  }
-
-  // **Backspace at the start of a clause joins it to the one above** (Q1302,
-  // Ed's bot room 2026-09-10: *I should be able to backspace at the start of a
-  // clause to join it to the previous clause*), and Delete at its end joins
-  // the one below: a run of the two blocks with their texts run together and
-  // the caret at the seam — K15's two-block run, one site, one candidate,
-  // made by the keystroke a text editor makes it with. It used to be swallowed
-  // and do nothing. Nothing to join at a gap, above the first clause or
-  // below the last; a neighbour already in a draft keeps its own lane. The
-  // joined line takes the upper block's rank (`hunksOf` prefixes the one
-  // line from `origin[0]`), so a paragraph pulled up into a heading becomes
-  // part of the heading, as it would anywhere.
-  function joinWithNeighbour(key, dir, d0) {
-    if (isGapKey(key)) return;
-    const at = docIndexOfKey(key);
-    const nb = at >= 0 ? DOC[at + dir] : null;
-    if (!nb || !nb.key || isGapKey(nb.key)) return;
-    if (d0 && (siteFor(d0, key) || siteFor(d0, nb.key))) return;
-    const [k1, k2] = dir < 0 ? [nb.key, key] : [key, nb.key];
-    const t1 = currentTextFor(k1);
-    const d = ensureDraft();
-    const site = addDraftRun(d, [k1, k2], t1 + currentTextFor(k2));
-    syncDraftKeys(d);
-    d.focusKey = k1;
-    const caret = t1.length;
-    const land = () => {
-      const lane = doc.querySelector('[data-lane="' + site.keys[0] + '"]');
-      if (!lane) return;
-      lane.focus({ preventScroll: true });
-      placeCaret(lane, caret);
-      caretPulse();
-    };
-    if (openId === d.id) {
-      keepStill(() => renderAll(), '[data-key="' + k1 + '"]');
-      land(); layoutQueue(); drawWires(); return;
-    }
-    toggle(d.id, true, land);
-  }
-
-  // What the same keystroke means when the selection spans more than one block
-  // (Ed, 2026-08-17). The run is flattened to one string with a newline between
-  // blocks — which is exactly what a `draft-site` already is — the selection is
-  // located in *that* string rather than in any one block, and the edit is
-  // applied to it. Deleting four paragraphs is therefore not four deletions
-  // coordinated afterwards: it is one edit to one piece of text, which is why
-  // it comes out as one candidate and not as a patch.
-  function startDraftFromRun(picked, ev) {
-    const keys = picked.blocks.map((b) => b.dataset.key);
-    const texts = keys.map(currentTextFor);
-    const run = texts.join('\n');
-    const flat = (block, node, off) => {
-      const i = picked.blocks.indexOf(block);
-      const within = offsetIn(block, node, off);
-      if (i < 0 || within == null) return null;
-      return texts.slice(0, i).reduce((n, t) => n + t.length + 1, 0) + Math.min(within, texts[i].length);
-    };
-    const r = picked.range;
-    let a = flat(picked.a, r.startContainer, r.startOffset);
-    let b = flat(picked.b, r.endContainer, r.endOffset);
-    if (a == null || b == null) return;
-    if (a > b) { const t = a; a = b; b = t; }
-    let ins = '';
-    switch (ev.inputType) {
-      case 'insertText': ins = ev.data == null ? '' : ev.data; break;
-      case 'insertParagraph': case 'insertLineBreak': ins = '\n'; break;
-      case 'insertFromPaste':
-        ins = (ev.dataTransfer && ev.dataTransfer.getData('text/plain')) || ''; break;
-      case 'deleteContentBackward': case 'deleteContentForward':
-      case 'deleteByCut': case 'deleteWordBackward': case 'deleteWordForward':
-        break;                                 // the selection itself is what goes
-      default: return;
-    }
-    const d = ensureDraft();
-    const site = addDraftRun(d, keys, run.slice(0, a) + ins + run.slice(b));
-    syncDraftKeys(d);
-    d.focusKey = keys[0];
-    const caret = a + ins.length;
-    const land = () => {
-      const lane = doc.querySelector('[data-lane="' + site.keys[0] + '"]');
-      if (!lane) return;
-      lane.focus({ preventScroll: true });
-      placeCaret(lane, caret);
-      caretPulse();          // the one caret move the reader did not make
-    };
-    if (openId === d.id) {
-      keepStill(() => renderAll(), '[data-key="' + keys[0] + '"]');
-      land(); layoutQueue(); drawWires(); return;
-    }
-    toggle(d.id, true, land);
-  }
-
-  // The right-hand lane marks what is new, exactly as every other pair does
-  // (Ed, 263, applying 91: the *result*, never a redline — only the new wording
-  // is lit, and nothing is ever struck through). It earns its place twice over
-  // here. It is the ordinary grammar of the surface, so a proposal of yours
-  // reads the way somebody else's will read to you. And it answers the thing
-  // that raised the question: a draft that changes nothing shows **no green at
-  // all**, so a stray keystroke is visibly not a draft of anything, without the
-  // surface having to quietly throw somebody's typing away on their behalf.
-  //
-  // Word-level, with whitespace as its own token, so a changed word lights the
-  // word rather than the sentence. Insertions only: what was removed is one
-  // column to the left, in full, which is the whole argument of 91.
-  // Punctuation is its own token as well as whitespace. Glued to the word, a
-  // clause that only gains a comma renders as the word being deleted and an
-  // identical word inserted — "used on ~~bone~~ bone," — which is nonsense the
-  // reader has to see through. Split off, the comma is the only thing that
-  // lights, which is the truth.
-  // Rich by default; markdown is the checking view (Ed, 2026-08-17). One
-  // preference rather than one per card \u2014 it is how *you* like to work, and it
-  // would be strange for it to reset every time a different clause opened.
-  // **And since Q1294 it is the column's, not the lane's** (Ed, 2026-09-10):
-  // the `[]` toggle sits with B and I in the one strip at the top right of
-  // the lifted column (`laneCtlHtml`, Q1294 (b): *top right of the edit box*)
-  // and flips every clause and every open lane at once (`srcMode`,
-  // `laneBlocks`); outside edit mode there is no strip and the column is
-  // always rendered.
-  let laneMode = 'rich';
-  const laneRaw = () => laneMode === 'md';
-  // ---- the strip's state (Q1294 (b)) ----------------------------------------
-  // Each editing lane's re-mark (the rewrite of its own markup after a change,
-  // bound in `renderDoc`), keyed by the lane, so the column's B and I can reach
-  // the lane the caret is in.
-  const laneRemark = new WeakMap();
-  // Two things the strip reads off the page rather than off a render: whether
-  // an editing lane holds the caret — B and I are acts on a selection, so they
-  // are disabled while none does — and whether the strip has left its rest at
-  // the card's top edge and is riding over the prose, when it takes a ground
-  // and a shadow as the riding tab does (`detached`). Read at every focus
-  // change, every scroll frame and every render.
-  // **One sync for either column's strip** (Q1313, Ed 2026-09-11: *same
-  // strip as after 🍾*): the page hands in its own strip and its own answer
-  // to *does the founder's pre-🍾 column hold the caret*, since that column
-  // is `#prose` and not a `[data-lane]`; called bare, it is the charter's.
-  function syncEditCtl(strip, inLane) {
-    strip = strip || doc.querySelector('.editctl');
-    if (!strip) return;
-    if (inLane == null) {
-      const ae = document.activeElement;
-      inLane = !!(ae && ae.closest && ae.closest('[data-lane]') && doc.contains(ae));
-    }
-    strip.querySelectorAll('.lfmt').forEach((b) => { b.disabled = !inLane; });
-    const rest = parseFloat(getComputedStyle(strip).top) || 0;
-    strip.classList.toggle('detached', strip.getBoundingClientRect().top <= rest + 0.5);
-  }
-
-  // **The sign control** (Q770, Ed 2026-08-25: *a new control that's part of
-  // the rationale composer area that switches between signed and anonymous,
-  // that shows when anonymity is allowed*). Drawn only under an elective 👤
-  // rung — `SIGNING()` returns that rung's base, or null for every fixed rung,
-  // the fixture and a page with no module — because a fixed rung offers no
-  // choice. The base comes first as the default; signing is the opt-in, per
-  // proposal, and fixed at Propose: once submitted the choice is part of the
-  // record (`mine` says *signed* and offers no switch). The radio is the
-  // session-view's own (`.lanepick`), in the `.choice`/`.pick` shape every
-  // settings choice takes, so `card-audit`'s rules read it.
-  // A nameless member signs *as Anonymous* (§9.0c: it is a name, not a gap) —
-  // the label says what the signature will read, and they may go and set one.
-  /**
-   * The commit at the right of the composer's row, and **✒️ beside ✏️ where
-   * the Founder holds the pen on the Text** (R-058, entry 160; the pair is
-   * entry 161, applied to the text at Ed's QA of 2026-08-30 — a founder who
-   * is a member has both routes and is offered both). The pen first, the
-   * room's route after it, as every band card orders them: the Founder's own
-   * act where the eye already goes, putting it to the membership the
-   * deliberate second reach. Under the pen nothing is staked (an empty ✏️
-   * wallet cannot stop it) and the glyph, the price and the duration differ;
-   * the gesture is the same hold.
-   *
-   * `data-pen` is how the hold below knows which act it is landing, and it is
-   * on the button rather than in a closure because the hold survives a render
-   * and re-finds its control by selector.
-   */
-  function commitBtnHtml(o) {
-    const pen = MAY_PEN();
-    const propose = '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose"' +
-      (o.disabled ? ' disabled' : '') + ' title="' + esc(o.title) + '">✏️</button>';
-    if (!pen) return propose;
-    return '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose" data-pen="1"' +
-      (o.penDisabled ? ' disabled' : '') + ' title="' + esc(o.penTitle) + '">✒️</button>' + propose;
-  }
-  /**
-   * **The proposal-row** (backlog 204, SURFACE §9.1, K31): the commit row of
-   * the text as a card, drawn at the foot of the column in edit mode and
-   * stuck to the bottom of the window while the foot is out of view. 🗑️ at
-   * the very left, always live, discards the whole draft; the commit at the
-   * very right, greyed until a site differs from its origin; the middle says
-   * how many places have changed. One helper for both hosts: session.js draws
-   * it under the charter post-🍾, and the page draws it under `#prose` before
-   * the start with the founder's ✒️ (which is `confirm-starting-text`, not
-   * the pen — the era gate is the page's, R-058).
-   *
-   * **The pair** (`o.pair`, entry 161 at Ed's QA of 2026-08-30): post-🍾 a
-   * Founder who holds the pen and is a member is offered ✒️ *and* ✏️, the pen
-   * first; either press opens the editing card, where the two holds live.
-   * Pre-🍾 there is no membership to propose to, so the page never asks for
-   * the pair and the confirm stays one ✒️.
-   *
-   * The `[]` markdown toggle stood beside 🗑️ for one morning (Q1294 (a)) and
-   * is the column's strip since Q1294 (b) (Ed, 2026-09-10: *top right of the
-   * edit box*) — `laneCtlHtml`, drawn by `renderDoc` before the column. The
-   * row is 🗑️, the count and the commit, and nothing else.
-   */
-  function proposalRowHtml(o) {
-    o = o || {};
-    const n = o.count || 0;
-    const mid = n === 0 ? '' : T.row.placesChanged(n);
-    const btn = (pen, title) => '<button class="btn btn-propose glyphbtn emojibtn" data-act="row-commit"' +
-      (pen ? ' data-pen="1"' : '') + (o.disabled ? ' disabled' : '') +
-      ' title="' + esc(title || '') + '">' + (pen ? '✒️' : '✏️') + '</button>';
-    return '<div class="race-mid commitrow proposalrow" data-proposalrow="1">' +
-      '<button class="btn btn-withdraw glyphbtn" data-act="row-discard"' + (o.discardDisabled ? ' disabled' : '') +
-      ' title="' + esc(o.discardTitle || T.row.discardAll) + '">🗑️</button>' +
-      '<span class="rowmid">' + esc(mid) + '</span>' +
-      (o.pen ? btn(true, o.title) + (o.pair ? btn(false, o.proposeTitle) : '') : btn(false, o.title)) +
-      '</div>';
-  }
-  // what the row says about the draft as it stands
-  const draftRowState = () => {
-    const d = draftOf();
-    const sites = d && d.unproposed ? d.sites : [];
-    // **The middle counts places that have *changed*** (SURFACE K31, Q1089),
-    // which is not the same as places the draft has touched: type a character
-    // into a clause and take it out again and the site survives with its
-    // origin's own wording, so `sites.length` would say *1 place changed*
-    // beside a greyed commit.
-    const dirty = sites.filter((s) => s.text !== s.origin.map((x) => x.text).join('\n'));
-    return { count: sites.length, changedCount: dirty.length, changed: dirty.length > 0 };
-  };
-  function signControlHtml(d) {
-    const base = SIGNING();
-    if (!base) return '';
-    const name = (SIGNER() || '').trim() || T.sign.anonymousName;
-    const pick = (on, val, ttl, exp) =>
-      '<div class="pick' + (on ? ' on' : '') + '">' +
-      '<button class="lanepick" type="button" aria-pressed="' + on + '" data-act="draft-sign" data-signed="' + val + '">' +
-      '<span class="dot"></span><span>' + ttl + '</span></button>' +
-      '<span class="exp">' + exp + '</span></div>';
-    return '<div class="choice signctl" role="radiogroup" data-signbase="' + base + '">' +
-      pick(!d.signed, '0', T.sign.anonLabel, T.sign.anonExpLead +
-        (base === 'anonymous' ? T.sign.expEver : T.sign.expUntil)) +
-      pick(!!d.signed, '1', T.sign.signedAs(esc(name)),
-        T.sign.signedExp) +
-      '</div>';
-  }
-  // **What the room will see on a proposal of yours that is already out** (K30):
-  // your own person where the name went with it — you signed it, or the rung is
-  // `public` — and nothing where it did not, which draws the blank disc. It is
-  // the same test `draftFaceHtml` makes one step earlier, with the choice now
-  // fixed in the record rather than sitting under a radio.
-  const mineSpeaker = (d) => {
-    const named = AUTHOR_RUNG() === 'public' || !!(d && d.signed);
-    return (named && SIGNER_PERSON()) || undefined;
-  };
-  // the press flips the draft's choice and patches the card in place — never
-  // a render under a lane being typed in (the caret rule, `setData`'s guard)
-  function setDraftSigned(on) {
-    const d = draftOf();
-    if (!d || !SIGNING()) return;
-    d.signed = !!on;
-    doc.querySelectorAll('.sugg[data-card="' + DRAFT_ID + '"]').forEach((card) => {
-      card.querySelectorAll('.signctl .pick').forEach((p) => {
-        const b = p.querySelector('[data-signed]');
-        const here = b && b.dataset.signed === (d.signed ? '1' : '0');
-        p.classList.toggle('on', !!here);
-        if (b) b.setAttribute('aria-pressed', String(!!here));
-      });
-      // the ✏️, never the ✒️ beside it — a decree leaves with no signature to name
-      const pb = card.querySelector('[data-act="draft-propose"]:not([data-pen])');
-      if (pb) pb.title = pb.title.replace(/( — signed)?( — one edit)/, (d.signed ? ' — signed' : '') + '$2');
-      // **The face follows the choice** (K30): signing is the moment the room
-      // stops being told nothing about you, so the disc gives way to your own
-      // picture as the radio moves. One element is swapped — never the `.said`
-      // beside it, which is the lane holding the caret.
-      const sp = card.querySelector('.lanebox .speaker');
-      const face = sp && sp.firstElementChild;
-      if (face) {
-        const tmp = document.createElement('div');
-        tmp.innerHTML = draftFaceHtml(d);
-        if (tmp.firstElementChild) sp.replaceChild(tmp.firstElementChild, face);
-      }
-    });
-  }
-
-  function editCardHtml(d, site) {
-    const n = d.sites.length;
-    const i = d.sites.indexOf(site);
-    const broke = editsHeld < EDIT_RULES.stake;
-    const rival = liveRivalFor(d, site);
-    const seeded = site.origin.find((o) => o.note);
-    const step = (to, label, glyph) => (to === null
-      ? '<span class="pstep off">' + glyph + '</span>'
-      : '<button class="pstep" data-step="' + d.id + ':' + d.sites[to].keys[0] + '" title="' + esc(label) + '">' + glyph + '</button>');
-    return (
-      '<div class="sugg editcard" data-card="' + d.id + '" data-anchor="' + d.id + '" data-site="' + site.keys[0] + '">' +
-      (n > 1
-        ? '<div class="pnav"><span class="pwhere">' + esc(site.label) + T.nav.placeOf(i + 1, n) + '</span>' +
-          '<span class="psteps">' + step(i > 0 ? i - 1 : null, T.nav.prev, '↑') +
-          step(i < n - 1 ? i + 1 : null, T.nav.next, '↓') + '</span></div>'
-        : '') +
-      // The clause at the head, like every other card (Ed, 2026-08-16, closing
-      // Q275). It had stayed paired on the argument that while you are writing
-      // you want the original beside you rather than above you — which does not
-      // survive contact: the original is one line up, your own additions are
-      // marked green as you type (263), and a full-width lane is a far better
-      // place to write a paragraph of prose than a 300px column.
-      clauseHeadHtml(d, {
-        // a gap's head names the gap, there being no clause to show
-        label: seeded ? seeded.note : site.origin[0] && site.origin[0].gap ? gapLabel(site.keys[0]) : undefined,
-        html: site.origin.map((o) => '<div class="lp' + (o.t === 'h' ? ' hblock lvl' + (o.level || 1) : o.bullet ? ' bullet' : '') +
-          '" data-key="' + o.key + '">' + blockHtml({ x: o.text, t: o.t, level: o.level, bullet: o.bullet }) + '</div>').join(''),
-      }) +
-      // and your draft as the one reply, in the reply's own order: the wording,
-      // then the argument for it behind the same blank disc everybody else's
-      // sits behind — which is what the rest of the roster will see (§3.4).
-      '<div class="field"><div class="fieldlab">' + T.compose.fieldLab + '</div>' +
-      '<div class="propblock">' + laneBoxHtml(d, site) + '</div>' +
-      // …and, under an elective 👤 rung, whether your name goes on it (Q770):
-      // part of the rationale composer area, above the row that commits it
-      signControlHtml(d) + '</div>' +
-      // **The proposal's lifecycle is one row** (Ed, 2026-08-17). Discard on the
-      // very left, commit on the very right, and the row does not move when the
-      // draft becomes a proposal — only the right-hand control changes from the
-      // act to the fact of it, exactly as the judgment row's ✓ goes from
-      // available to pressed. Cancel was a word on the right, which put *leave
-      // this* where every other card puts *finish this*.
-      '<div class="race-mid commitrow">' +
-      // …and 🗑️ here is *this* site's (Q1306): on a patch each place's card
-      // puts its own place back, and the row at the foot is the bin for all
-      '<button class="btn btn-withdraw glyphbtn" data-act="draft-cancel"' +
-      ' title="' + T.row.discardThis + '">🗑️</button>' +
-      // **✏️, and a second press to mean it** (Ed, 2026-08-17). Proposing is
-      // the one irreversible-feeling act on this surface — it spends an edit and
-      // puts your wording in front of the room — and it was a single click on a
-      // button sitting under the text you were typing in.
-      //
-      // The confirmation is not a dialog and not a hold. The button starts as a
-      // bare ✏️ and the first press **arms** it, at which point it says what it
-      // will cost. That keeps the rule the price has always had — *the edit is
-      // spent at Propose, which is where the price is said in words* — and
-      // makes the price itself the confirmation step, rather than bolting a
-      // "sure?" onto it. Pressing anything else disarms it.
-      commitBtnHtml({
-        disabled: broke,
-        title: broke ? T.row.broke
-          : T.row.holdPropose + (n > 1 ? T.row.inAllPlaces(n) : '') +
-            // the hold's tooltip says what leaves: a signed one leaves with your name
-            (d.signed ? T.row.signedSuffix : '') +
-            T.row.editCost,
-        penTitle: T.row.amend + (n > 1 ? T.row.inAllPlaces(n) : '') +
-          T.row.penCost,
-      }) +
-      '</div>' +
-      // Only the two facts that change what pressing ✏️ *does* (Ed, 2026-08-17).
-      // What it costs is now shown rather than said — the pencil crosses the
-      // screen — and the rest was the design explaining itself.
-      (rival || n > 1
-        ? '<div class="foot">' +
-          (rival ? T.compose.rivalNote : '') +
-          (rival && n > 1 ? ' · ' : '') +
-          (n > 1 ? T.compose.allPlacesNote(n) : '') + '.</div>'
-        : '') +
-      // a live refusal (the text moved under the draft) is said on the card,
-      // where the draft still is — never lost to a console
-      (d.refusal ? '<div class="foot refusal">' + esc(d.refusal) + '</div>' : '') +
-      '</div>'
-    );
-  }
-
-  // Once it is in, the same geometry read-only, and your proposal on the right
-  // (Ed, 229) — the side it will always be on wherever it is shown to you.
-  function mineCardHtml(d, site) {
-    const n = d.sites.length;
-    const i = Math.max(0, d.sites.indexOf(site));
-    const s = site || d.sites[0];
-    // (`liveRivalFor` went with the `yoursnote`: the note was its only reader.)
-    const step = (to, label, glyph) => (to === null
-      ? '<span class="pstep off">' + glyph + '</span>'
-      : '<button class="pstep" data-step="' + d.id + ':' + d.sites[to].keys[0] + '" title="' + esc(label) + '">' + glyph + '</button>');
-    return (
-      '<div class="sugg minecard" data-card="' + d.id + '" data-site="' + s.keys[0] + '">' +
-      (n > 1
-        ? '<div class="pnav"><span class="pwhere">' + esc(s.label) + T.nav.placeOf(i + 1, n) + '</span>' +
-          '<span class="psteps">' + step(i > 0 ? i - 1 : null, T.nav.prev, '↑') +
-          step(i < n - 1 ? i + 1 : null, T.nav.next, '↓') + '</span></div>'
-        : '') +
-      // The `yoursnote` is gone (Ed, 2026-08-17). It opened every card of your
-      // own with three sentences of mechanism — that nothing is asked of you,
-      // that standing behind a proposal counts as preferring it, that you will
-      // still be served the rest of the race against it — and every one of them
-      // is a fact about *all* your proposals, so it appeared on every one. A
-      // footnote that appears on every card is a design note, not information.
-      // The card already says the two things that matter here: there is no
-      // radio, and the one control is a withdrawal.
-      // Your own proposal is a proposal like any other, so it is drawn like
-      // any other: the clause it rewrites at the head, your wording under it
-      // stating its own change, your argument behind the same disc everybody
-      // else's sits behind. What differs is only what you can do — nothing is
-      // asked of you, and the one act is withdrawal.
-      // **And the disc is what the room sees, not what you know** (K30): your
-      // own face where the name is attached — you signed it, or the rung is
-      // `public` — and the blank disc where it is sealed, which is the point.
-      // The line is your only reading of your own proposal, so it has to be
-      // the room's reading of it.
-      clauseHeadHtml(d, { text: s.origin.map((o) => o.text).join(' '), key: s.keys[0],
-                          chips: chipsFor(s.keys[0], d.id) }) +
-      fieldHtml('<div class="propblock"><div class="rtext">' +
-        laneBlocks(s.text, originText(s), headFlags(s)) + '</div>' +
-        speakerHtml(d.rationale, undefined, mineSpeaker(d)) + '</div>',
-        1, T.compose.proposedLab) +
-      // **The same row the editing card had, one step further on** (Ed,
-      // 2026-08-17). 🗑️ stays exactly where it was — discarding a draft and
-      // withdrawing a proposal are the same gesture at two moments, and the
-      // only difference is that one of them hands an edit back. And the right
-      // slot keeps the ✏️ that was *Propose*, now reading **Submitted**: the
-      // act has become the fact of it, which is what the judgment row's ✓ does
-      // when it is pressed. Nothing moves between the two cards, which is the
-      // point — it is one lifecycle, not two screens.
-      // **A passed proposal is not its author's to withdraw** (SPEC §9.7 rule
-      // 8, SURFACE E37): once the membership has passed it and it waits on the
-      // Founder, 🗑️ is dead — the room has decided, and the line on the rail
-      // says so. The row otherwise stands exactly as it did.
-      '<div class="race-mid commitrow">' +
-      '<button class="btn btn-withdraw glyphbtn" data-act="draft-withdraw"' + (d.awaiting ? ' disabled' : '') +
-      ' title="' + (d.awaiting ? esc(d.cap || '') : T.row.withdraw +
-      (n > 1 ? T.row.allPlaces(n) : '') + T.row.withdrawCost) + '">🗑️</button>' +
-      '<button class="btn btn-propose" aria-pressed="true" disabled' +
-      ' title="' + T.row.submittedTitle + '">' + T.row.submitted + '</button>' +
-      '</div>' +
-      '</div>'
-    );
-  }
 
   // The gutter marks belonging to a clause, minus the one whose card we are
   // building. A stacked card replaces its paragraph, so any *other* live
@@ -3457,8 +2754,8 @@
     // Fired: the edit is spent, and act() renders the wallet one lighter — so
     // the reserved gap is released without a render of its own, or the wallet
     // would show the old count for a frame before the spend lands.
-    if (fired) { walletGhost = false; if (pencil) pencil.remove(); return; }
-    if (!pencil) { walletGhost = false; renderWallet(); return; }
+    if (fired) { FLIGHT.walletGhost = false; if (pencil) pencil.remove(); return; }
+    if (!pencil) { FLIGHT.walletGhost = false; renderWallet(); return; }
     // Let go early and it comes home **along its own arc** — the flight run
     // backwards rather than a second, straighter journey, because the way it
     // came is the way it goes back. Faster than it left: rewinding at the
@@ -3480,7 +2777,7 @@
     // is a push phase in front of the rewind.
     nudgeHome({ anim, el: pencil }, { floorAt: 288,
       onDone: () => {
-        walletGhost = false;
+        FLIGHT.walletGhost = false;
         // the pencil is home, so the preview may resume — but only if the
         // pointer never left the button that was asking for it
         resumeLean(el);
@@ -3517,7 +2814,7 @@
     // from. It is render state, not a poke at the DOM — the drip re-renders
     // the wallet every second and used to put the flying pencil straight back
     // (Ed, 2026-08-17).
-    walletGhost = true;
+    FLIGHT.walletGhost = true;
     renderWallet();
     const src = walletEl.querySelector('.gone');
     let pencil = null, anim = null;
@@ -3597,7 +2894,32 @@ document.addEventListener('pointerdown', (ev) => {
 document.addEventListener('pointerup', () => { if (GESTURE === 'hold') flyStop(false); });
 document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flyStop(false); });
 
+  // ---- the document, in its passes (refactor Q1352 (g), 2026-09-14) -------
+  // `renderDoc` was one 665-line function doing four unrelated jobs in a row,
+  // and it is the sequence of them now. Each pass below is the job it always
+  // was, in the order it always ran and with its body unchanged: the column's
+  // markup is built, swapped in and measured, and then the three families of
+  // control standing on it are wired — the column's own, the gutter's, and
+  // the cards'.
+  //
+  // The passes share nothing but `doc` and the markup the first hands the
+  // second, which is why this could be a split rather than a rewrite: every
+  // local the clause pass declares (`cardDone`, `headIdx`, `writing`,
+  // `holders` and the four helpers over them) dies with it, and no listener
+  // below ever read one. The wiring divides where it does because that is
+  // where it already divided — the three groups are contiguous runs of the
+  // old body, so no listener is registered in a different order than before.
   function renderDoc() {
+    placementPass(clausePass());
+    columnPass();
+    gutterPass();
+    cardPass();
+  }
+
+  // **The clause pass**: the column's whole markup as one string — every
+  // block with its mark, the cards that swallow their own clause, the
+  // anchors every gap site stands on, and the proposal-row at the foot.
+  function clausePass() {
     // **The lane controls, one strip for the column** (Q1294 (b), Ed
     // 2026-09-10: *top right of the edit box*): drawn exactly where the
     // proposal-row is — edit mode, a reader who may propose, the document
@@ -3910,10 +3232,22 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         proposeTitle: !rs.changed ? idle : T.row.reviewPropose,
       });
     }
+    return html;
+  }
+
+  // **The placement pass**: the column swapped in, then measured. The two
+  // fits run after the swap and in this order — a stack is fitted to the
+  // gutter it has (`fitStacks`), and a card to the stack beside it.
+  function placementPass(html) {
     doc.innerHTML = html;
     fitStacks();
     fitCards();
+  }
 
+  // **The column pass**: the prose column's own controls — the fold
+  // triangles in its headings, the proposal-row's two ends, and the lane
+  // strip's three buttons with the sync that says which of them are live.
+  function columnPass() {
     doc.querySelectorAll('[data-sec-toggle]').forEach((b) =>
       b.addEventListener('click', (ev) => { ev.stopPropagation(); toggleSection(+b.dataset.secToggle); })
     );
@@ -3947,7 +3281,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
           if (off != null && site) off = laneRaw() ? sourceToRich(site.text, off) : richToSource(site.text, off);
           land = { key: focused.dataset.lane, off };
         }
-        laneMode = laneRaw() ? 'rich' : 'md';
+        COMPOSER.laneMode = laneRaw() ? 'rich' : 'md';
         renderAll();
         if (land) {
           const lane = doc.querySelector('[data-lane="' + land.key + '"]');
@@ -4010,6 +3344,13 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         flyStart(cb);
       })
     );
+  }
+
+  // **The gutter pass**: the `chip-gutter`'s own controls — every mark, every
+  // gap anchor and the filed pile. This is the whole of the way into a
+  // decision card from the document side (M12): the text is a thing you write
+  // in, the glyph beside it is the thing you press.
+  function gutterPass() {
     // Opening a decision card from the document is now the **mark's** job and
     // only the mark's (Ed, 224). Clicking the text puts a caret in it, because
     // the text is a thing you write in; the glyph in the gutter is the thing
@@ -4051,6 +3392,12 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         ev.preventDefault(); flip(ev);
       });
     });
+  }
+
+  // **The card pass**: what an open card carries — the routes into the
+  // composer and its lanes, the desk on a deadlocked race, the choosing, the
+  // ledger, the commit row and the OK that marks a record read.
+  function cardPass() {
     // ✏️ on a lane: start writing from that wording (Ed, 228).
     doc.querySelectorAll('[data-propose-from]').forEach((b) =>
       b.addEventListener('click', (ev) => {
@@ -5030,437 +4377,24 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   // which settles which card is most urgent. Then the contents rail, whose
   // marks depend on both — it now carries lifecycle state (177), so it can no
   // longer be rendered only when the fold tree changes.
-  // The wallet: one glyph per edit you hold, and a tray under the next one
-  // whose fill is how far the drip has got toward it. Spending removes a
-  // pencil; the tray keeps whatever it had accrued, which is what makes the
-  // two magnitudes legible as separate things.
-
-  // **The arc.** A pencil crossing the room does not travel in a straight line,
-  // and it does not travel the same line twice (Ed, 2026-08-17), so the flight
-  // is a quadratic bowed off the straight run by a signed amount drawn fresh
-  // each time — which side it swings and how far are the whole of the variation
-  // and everything else about the journey is fixed. It has to be sampled into
-  // keyframes because a shape that changes every flight cannot be a CSS rule.
-  // The rotation runs alongside the curve rather than following it: an emoji has
-  // its own axis, so a pencil steered by the path points its tip somewhere
-  // different in every font.
-  function arcFrames(a, b, r0, r1) {
-    const ax = a.left + a.width / 2, ay = a.top + a.height / 2;
-    const dx = b.left + b.width / 2 - ax, dy = b.top + b.height / 2 - ay;
-    const len = Math.hypot(dx, dy) || 1;
-    const side = Math.random() < 0.5 ? -1 : 1;
-    const bow = len * (0.09 + Math.random() * 0.15) * side;
-    const cx = dx / 2 - (dy / len) * bow, cy = dy / 2 + (dx / len) * bow;
-    // **Sometimes it tumbles** (Ed, 2026-08-17): one turn in five flights, two in
-    // twenty, three in a hundred. A rarity you cannot make happen is worth more
-    // than one you can — the point is the flight you were not expecting, and a
-    // pencil that spun every time would just be a pencil that spins. It turns
-    // the way it was thrown, because the curve and the tumble come off the same
-    // flick of the wrist, and the whole-turn count means it always lands in the
-    // pose it would have landed in anyway.
-    const r = Math.random();
-    const spin = (r < 0.01 ? 3 : r < 0.06 ? 2 : r < 0.26 ? 1 : 0) * 360 * side;
-    return Array.from({ length: 21 }, (_, i) => {
-      const t = i / 20, u = 1 - t;
-      return { transform: 'translate(-50%, -50%) translate(' +
-        (2 * u * t * cx + t * t * dx).toFixed(1) + 'px, ' +
-        (2 * u * t * cy + t * t * dy).toFixed(1) + 'px) rotate(' +
-        (r0 + (r1 - r0 + spin) * t).toFixed(1) + 'deg)' };
-    });
-  }
-
-  // **The refund, flying home.** Withdrawing hands the edit back in full (SPEC
-  // §3.3a), and what comes back is the same object that paid — so it makes the
-  // return journey, and the wallet holds at its old count until the pencil is
-  // actually in it (Ed, 2026-08-17). It leaves in the pose it arrived in and
-  // lands flat, which is the outbound tilt run backwards.
-  //
-  // Where it lands is measured by rendering the after-state, reading whichever
-  // slot changed, and rendering the before-state back — two synchronous renders
-  // with no paint between them, so the wallet never flickers forward. Which
-  // slot changed is not always a new pencil: past four the wallet counts, and
-  // there the landing is the counter itself ticking up.
-  const REFUND_MS = 640;
-  function refundFlight(from, before) {
-    renderWallet();
-    const grew = (editsHeld <= 4 ? editsHeld : 3) > (before <= 4 ? before : 3);
-    const slot = grew ? [...walletEl.querySelectorAll('.pencils i')].pop()
-                      : walletEl.querySelector('.pmore');
-    const to = (slot || walletEl).getBoundingClientRect();
-    walletShow = before;
-    renderWallet();
-    const land = () => { walletShow = null; renderWallet(); };
-    const pencil = document.createElement('div');
-    pencil.className = 'flypencil';
-    pencil.textContent = '✏️';
-    pencil.style.left = (from.left + from.width / 2) + 'px';
-    pencil.style.top = (from.top + from.height / 2) + 'px';
-    document.body.appendChild(pencil);
-    const anim = REDUCED()
-      ? pencil.animate([{ opacity: 1 }, { opacity: 0 }], { duration: REFUND_MS, fill: 'both' })
-      : pencil.animate(arcFrames(from, to, -24, 0),
-          { duration: REFUND_MS, easing: 'cubic-bezier(.3, 0, .2, 1)', fill: 'both' });
-    const done = () => { pencil.remove(); land(); };
-    anim.onfinish = done;
-    setTimeout(() => { if (pencil.isConnected) done(); }, REFUND_MS + 60);
-  }
-  // **One gesture, four currencies** (Q444, 2026-08-21): every power is an
-  // object you hold, spent by flying it — so a feather, a pen and the
-  // consensus voice travel the same bowed arc the pencil does. `flyGlyph`
-  // is that arc for any glyph, between any two rects; `pencilStorm` is the
-  // grant's flurry (Q442 b.ii): a decorative scatter of pencils from the
-  // card you pressed OK on, resolving into the real count in the wallet.
-  // Reduced motion: fade at the destination, no travel, same duration.
-  function flyGlyph(glyph, from, to, ms, opts) {
-    const o = opts || {};
-    const el = document.createElement('div');
-    el.className = 'flypencil' + (o.cls ? ' ' + o.cls : '');
-    el.textContent = glyph;
-    const start = REDUCED() ? to : from;
-    el.style.left = (start.left + start.width / 2) + 'px';
-    el.style.top = (start.top + start.height / 2) + 'px';
-    document.body.appendChild(el);
-    const anim = REDUCED()
-      ? el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: ms, fill: 'both' })
-      : el.animate(arcFrames(from, to, o.r0 ?? -24, o.r1 ?? 0),
-          { duration: ms, easing: o.easing || 'cubic-bezier(.3, 0, .2, 1)', fill: 'both', delay: o.delay || 0 });
-    let finished = false;
-    const done = () => { if (finished) return; finished = true; el.remove(); if (o.onLand) o.onLand(); };
-    anim.onfinish = done;
-    const fb = setTimeout(() => { if (el.isConnected) done(); }, ms + (o.delay || 0) + 80);
-    // **A flight can be handed back** (Q531): a caller that means to bring the
-    // glyph home rather than let it land has to take ownership first, because
-    // both the `onfinish` above and the belt-and-braces timeout beside it will
-    // otherwise remove the traveller at the landing moment — and a release at
-    // 990ms of a 1000ms flight rewinds for another 250ms, well past it. So the
-    // glyph would vanish in mid-air on exactly the presses this exists for.
-    // `disarm` transfers that responsibility; `cancel` is unchanged and still
-    // the right thing where the flight simply stops meaning anything.
-    const disarm = () => { clearTimeout(fb); anim.onfinish = null; finished = true; };
-    return { anim, el, disarm, cancel: () => { try { anim.cancel(); } catch (e) {} el.remove(); } };
-  }
-  // **A press always carries the token a quarter of the way** (Q531, Ed
-  // 2026-08-22: *when someone just clicks and doesn't hold, the token jumps 1/4
-  // the way towards the button, so that it's hard to miss that you're making
-  // something happen*). Nobody realised these buttons had to be held, and the
-  // reason is that a tap showed almost nothing: 80ms of a 1000ms flight is 8%
-  // of the arc, and on the pen path the glyph was not even flown home — it was
-  // deleted where it stood. So a release short of the floor is rounded **up**
-  // to it.
-  //
-  // Three things this is careful about.
-  //
-  // **The floor is distance, not time.** "A quarter of the way" is ambiguous by
-  // 60%: the pen flies `linear`, so a quarter of its duration is a quarter of
-  // its arc, but the pencil flies `cubic-bezier(.45, .05, .3, 1)`, whose slow
-  // start means a quarter of *its* duration is only 18% of the arc. Distance is
-  // what the eye reads — there is no track on the surface, so nobody can
-  // perceive a fraction of a duration at all — so each caller passes the
-  // *time at which its own easing reaches a quarter of the way*: 250ms of 1000
-  // for the pen, 288ms of 1000 for the pencil (the solve for that bezier —
-  // 0.288 of the duration, whatever the duration is, which is why the floor
-  // moved with the hold when every hold became one second, backlog 206).
-  //
-  // **It is a floor, not a jump.** `t >= floorAt` rewinds from where it got to,
-  // so letting go at nine-tenths never snaps backwards to a quarter — which
-  // would be a worse lie than the one below.
-  //
-  // **The push runs at a speed the hold cannot produce.** A fixed ~160ms flick
-  // means the token is *thrown* rather than slid: from a standing start on the
-  // pencil, whose floor is 288 of 1000, that is `minRate` exactly — 1.8x the
-  // hold's own pace, the slowest a throw is allowed to be. (It was 5.4x while
-  // the pencil ran for three seconds; the floor came down with the hold and
-  // the rate floor is what holds the gesture up now.) This is the whole reason
-  // the exaggeration is honest. Position on an arc is only a progress reading if
-  // there is a scale to read it against, and there deliberately is none — so
-  // what a viewer can perceive is departure, distance and return, not "this is
-  // 25%". A floor on time in the air instead would be unimpeachable and
-  // useless: 100ms of the pencil's easing is 3% of the arc, under 20px, which
-  // is nothing at all at the corner of your eye.
-  //
-  // It takes an animation rather than a distance, which is what makes reduced
-  // motion free: there the flight is an opacity fade, so a quarter of the way
-  // is a quarter of a fade, and nothing here needs to know the difference.
-  const nudgeHome = (flight, opts) => {
-    const o = opts || {};
-    const anim = flight && flight.anim, el = flight && flight.el;
-    if (!anim || !el) { if (o.onDone) o.onDone(); return { cancel: () => {} }; }
-    if (flight.disarm) flight.disarm();
-    // `push` is the *longest* the throw may take and `minRate` the slowest it
-    // may go, and the second is what makes it read as a throw. Measured on the
-    // pen: a quarter of its arc is 250ms of a 1000ms flight, so covering the
-    // last 150ms of that over a fixed 160ms push came out at **0.94x** — the
-    // token drifting forward *slower* than the hold moves it, which is the
-    // exact opposite of the point. A floor on the rate means the flick is
-    // always a speed the hold itself cannot produce, on a pen press and a
-    // pencil one alike, and the duration falls out of it.
-    const rewind = o.rewind || 4, push = o.push || 160, hang = o.hang || 90, minRate = o.minRate || 1.8;
-    const dur = Number((anim.effect && anim.effect.getTiming().duration) || 0) || 0;
-    const floorAt = dur ? Math.min(o.floorAt || 0, dur) : (o.floorAt || 0);
-    const t = Math.max(0, Number(anim.currentTime) || 0);
-    let done = false, timers = [];
-    const finish = () => {
-      if (done) return;
-      done = true;
-      timers.forEach(clearTimeout);
-      try { anim.cancel(); } catch (e) { /* already gone */ }
-      el.remove();
-      if (o.onDone) o.onDone();
-    };
-    // the reversal is the existing idiom — the flight run backwards along its
-    // own arc rather than a second, straighter journey — and `onfinish` is
-    // attached only once the rate is negative, or a forward push that happens
-    // to reach the end would fire it early
-    const reverse = (from) => { anim.playbackRate = -rewind; anim.play(); anim.onfinish = finish; return from / rewind; };
-    let total;
-    if (t >= floorAt) { total = reverse(t); }
-    else {
-      const rate = Math.max(minRate, (floorAt - t) / push);
-      const pushMs = (floorAt - t) / rate;
-      anim.playbackRate = rate;
-      anim.play();
-      // land exactly on the floor rather than wherever the rate has carried it,
-      // then hold still, so the turn reads as a decision and not a bounce
-      timers.push(setTimeout(() => { try { anim.currentTime = floorAt; anim.pause(); } catch (e) { /* gone */ } }, pushMs));
-      timers.push(setTimeout(() => reverse(floorAt), pushMs + hang));
-      total = pushMs + hang + floorAt / rewind;
-    }
-    // belt and braces on both paths, derived from the journey rather than a
-    // literal: a document timeline is paused while the tab is hidden, so
-    // `onfinish` can be arbitrarily late, and what must not happen is a wallet
-    // left holding a gap for a token that is no longer in the air
-    timers.push(setTimeout(finish, total + 80));
-    return { cancel: finish };
-  };
-  const STORM_MS = 900;
-  function pencilStorm(from, to, count, onLand) {
-    const n = Math.max(1, Math.min(12, count));
-    let landed = 0;
-    for (let i = 0; i < n; i++) {
-      // each pencil takes its own arc and its own moment, so the flurry reads
-      // as a scatter rather than a queue
-      flyGlyph('✏️', from, to, STORM_MS - 200 + Math.round(Math.random() * 300),
-        { delay: Math.round(i * 70 + Math.random() * 40), r0: -40 + Math.random() * 80, r1: 0,
-          onLand: () => { landed++; if (landed === n && onLand) onLand(); } });
-    }
-  }
-  // **An edit in flight is drawn once.** Both flights hold the wallet at the
-  // count that has not happened yet — outbound, the edit is not spent until it
-  // lands (let go and it comes home), so the wallet keeps its five and leaves
-  // the traveller's slot empty; inbound, it is not yours again until it lands,
-  // so the wallet keeps its old count until the pencil arrives. Two pieces of
-  // *render* state rather than a poke at the DOM, because the drip re-renders
-  // the wallet every second and was putting the flying pencil back (Ed,
-  // 2026-08-17).
-  //   `walletShow` — draw this count instead of what is held (the refund's hold)
-  //   `walletGhost` — draw the count, but leave the last slot empty (the spend's)
-  //   `walletHeld` — whether this reader holds the power at all (Q532). Not the
-  //     same question as how many they have: a member with an empty wallet still
-  //     holds it and the drip is running, which is `.empty` and a countdown. This
-  //     one is *your role does not include proposing* — a stranger, an applicant,
-  //     a clerk, a member before the document begins or before they have accepted
-  //     the grant — and it draws the tool struck through in its socket instead of
-  //     hiding the socket, which is what the toolbar is for.
-  //   `walletTitle` — the host's own sentence for this socket, if it has one.
-  //     Since Q532 the page keeps one copy per tool feeding both the tooltip and
-  //     the bubble a press opens, and this wallet is the one the page does not
-  //     render itself — without a seam the drip would overwrite the page's
-  //     sentence every second with this file's, and the two channels would
-  //     disagree about the same tool.
-  let walletShow = null, walletGhost = false, walletHeld = true, walletTitle = null;
-  const setWalletHeld = (v) => { if (walletHeld !== !!v) { walletHeld = !!v; renderWallet(); } };
-  // The ghost, for a hold this file does not run (Q614, 2026-08-22): the page's
-  // `holdWallet` flies a ✏️ out of `#wallet` for a motion's Propose, and the
-  // drip would put the traveller straight back unless the wallet is told its
-  // last slot is in the air. Same rule as `flyStart` above — render state, set
-  // for the hold and cleared when the token lands or flies home.
-  const setWalletGhost = (v) => { if (walletGhost !== !!v) { walletGhost = !!v; renderWallet(); } };
-  const setWalletTitle = (s) => { if (walletTitle !== s) { walletTitle = s; if (walletEl) walletEl.title = s || ''; } };
-  function renderWallet(showAs) {
-    // **Every socket shows at all times; a tool you do not hold is struck**
-    // (Ed, 2026-09-08, Q1286 (b): *we show the sockets to educate the user on
-    // what the different powers are*) — the closed page included: after the
-    // farewell the ✏️ socket stands struck like every other, where it used to
-    // empty into a bare pill (the `gonewallet` state, retired with this).
-    if (!walletHeld || closedMode) {
-      walletEl.className = 'wallet notheld';
-      const nh = '<span class="pencils"><i>✏️</i></span>';
-      if (walletEl.innerHTML !== nh) walletEl.innerHTML = nh;
-      walletEl.title = closedMode ? '' : (walletTitle || '');
-      applyLean();
-      return;
-    }
-    const held = showAs != null ? showAs : (walletShow != null ? walletShow : editsHeld);
-    const full = held >= EDIT_RULES.cap;
-    walletEl.className = 'wallet' + (full ? ' full' : '') + (held === 0 ? ' empty' : '');
-    walletEl.title = walletTitle || (held === 0
-      ? 'No ✏️ left. Another arrives as the drip accrues; proposing costs one.'
-      : 'Your ✏️s — proposing one costs ' + EDIT_RULES.stake +
-        '. You hold ' + held + ' of a possible ' + EDIT_RULES.cap +
-        (full ? ', which is the cap.' : '; the tray shows how far the drip has got toward the next.'));
-    // **On a phone the wallet is one pencil and its number** (Q1351, Ed
-    // 2026-09-12: *the icons without the sockets*): the four slots and the
-    // drip tray are desktop width, and the top row has the title to keep.
-    // The flights still find their token at `#wallet i`.
-    if (NARROW()) {
-      const nh = '<span class="pencils"><i' + (walletGhost ? ' class="gone"' : '') + '>✏️</i>' +
-        '<span class="pmore">' + held + '</span></span>';
-      if (walletEl.innerHTML !== nh) walletEl.innerHTML = nh;
-      applyLean();
-      return;
-    }
-    // The wallet draws at most four slots wide, and counts when it cannot fit
-    // (Ed, 2026-08-17). Four held is four pencils, because "+1" costs exactly
-    // the space it saves and reads as an abbreviation of nothing. Five is three
-    // pencils and a +2 — the count takes a glyph's width, so the row stays the
-    // same length whatever you hold, and a spend is always visible as a change
-    // in the number even when it is not visible as a missing pencil.
-    const drawn = held <= 4 ? held : 3;
-    const rest = held - drawn;
-    // The empty slot a flight leaves behind: hidden, not removed, so the row
-    // does not close up around the gap and reopen when the pencil comes back.
-    const gh = (i) => (walletGhost && i === drawn - 1 ? ' class="gone"' : '');
-    // No label (Ed, 2026-08-17). A row of pencils next to a clock is not
-    // ambiguous enough to need naming, and the words were the widest thing in
-    // it; the title still says what it is for anybody who hovers.
-    walletEl.innerHTML =
-      '<span class="pencils">' +
-      Array.from({ length: drawn }, (_, i) => '<i' + gh(i) + '>✏️</i>').join('') +
-      (rest > 0 ? '<span class="pmore' + (walletGhost && !drawn ? ' gone' : '') +
-        '">+' + rest + '</span>' : '') +
-      // The countdown carries the drip's own wash: the fill *is* how far the
-      // tenth has run, so the thing that says **when** and the thing that shows
-      // **how far** are one object rather than two saying it twice. That
-      // retires the ghost pencil, whose only job was the fraction. Drawn at the
-      // cap too: the stylesheet hides it there (`.wallet.full .pwhen`), so
-      // `full` is a class with a look and the socket table is true of the CSS
-      // (Ed, 2026-09-08, Q1286 (d)).
-      '<span class="pwhen" style="--fill: ' +
-        (Math.max(0, Math.min(1, editsToNext)) * 100).toFixed(1) + '%">' + dripIn() + '</span>' +
-      '</span>';
-    applyLean();
-  }
-
-  // ---- spend-preview (Q531, Ed 2026-08-22) ---------------------------------
-  // **Hover a button that spends, and the token that will pay leans toward it.**
-  // Nobody was realising these buttons had to be held, and the surface's whole
-  // explanation of the gesture lived *inside* it — a glyph crossing the air
-  // between the wallet and the button, while the eye is on the button. So the
-  // wallet says, before anything is pressed, *this one, and it is going over
-  // there*: the token strains a few pixels along the run it would fly, and back,
-  // over and over, like a thing on a leash.
-  //
-  // A lean rather than a glow or a ring because the wallet is 400–700px from the
-  // pointer: peripheral vision is poor at colour and detail and good at motion,
-  // and of the motions available only this one also says **where**.
-  //
-  // **Phase-locked, because the wallet is rebuilt under it.** Every wallet on
-  // this surface rebuilds its own innerHTML wholesale — the ✏️ row every second
-  // on the drip, the power wallets on every render — so the token wearing the
-  // lean is a different element moments later and a CSS animation would restart
-  // from frame one, visibly, every second. So the preview is *render state* like
-  // `walletGhost` beside it: a flag naming the button, re-applied at the tail of
-  // each render, and the new animation is given the old one's `startTime` on the
-  // shared document timeline. Same phase, no seam, one number of state.
-  //
-  // **And it re-validates rather than trusting `pointerout`.** A button can be
-  // removed from under the cursor — the card commits and closes, or a poll
-  // replaces the row mid-hover — and a `pointerout` that never arrives would
-  // leave a preview running for ever. Checking `:hover` on every render means a
-  // missed exit self-corrects within one tick, structurally, which matters
-  // because the ✏️ path re-binds its handlers on every render.
-  const LEAN_MS = 900, LEAN_PX = 6;
-  let leanBtn = null, leanPick = null, leanT0 = 0, leanAnim = null;
-  // where the lean points: the straight run from the token to the button, not
-  // the arc's own opening tangent — the flight's bow is drawn fresh each time
-  // and swings either way (`arcFrames`), so there is no one arc it will fly,
-  // and the chord is the honest average of all of them.
-  function leanFrames(token, btn) {
-    if (REDUCED()) return [{ opacity: 1 }, { opacity: 0.4 }, { opacity: 1 }];
-    const a = token.getBoundingClientRect(), b = btn.getBoundingClientRect();
-    const dx = b.left + b.width / 2 - (a.left + a.width / 2);
-    const dy = b.top + b.height / 2 - (a.top + a.height / 2);
-    const len = Math.hypot(dx, dy) || 1;
-    const x = (dx / len * LEAN_PX).toFixed(1), y = (dy / len * LEAN_PX).toFixed(1);
-    return [{ transform: 'translate(0, 0)' },
-            { transform: 'translate(' + x + 'px, ' + y + 'px)' },
-            { transform: 'translate(0, 0)' }];
-  }
-  // the token that would pay: the last one drawn, which is what every other
-  // part of this already means by it — the slot the ghost empties and the rect
-  // the flight measures from
-  const payingToken = () => { try { return (leanPick && leanPick()) || null; } catch (e) { return null; } };
-  function dropLean() {
-    if (leanAnim) { try { leanAnim.cancel(); } catch (e) { /* gone */ } leanAnim = null; }
-  }
-  function applyLean() {
-    if (!leanBtn) { dropLean(); return; }
-    // the self-heal, and the one that matters: a card commits and closes, or a
-    // poll replaces the row, and the button is gone from under the cursor with
-    // no exit event to be had. Checked on every render, which for the ✏️ row is
-    // every second, so a lost button cannot leave a preview running for ever.
-    //
-    // **Deliberately not `matches(':hover')`.** That was the first version and
-    // it was wrong twice over: it is false in headless Chromium even with the
-    // pointer parked on the button, so every harness would have been blind to
-    // this feature — and more importantly, hover is a *paint* state to ask CSS
-    // about, not a fact to hang correctness on. The pointer is over exactly one
-    // element chain at a time, so a `pointerover` on anything that does not
-    // spend is itself the proof it has left, and that is what ends a preview.
-    if (!leanBtn.isConnected) { stopLean(); return; }
-    const token = payingToken();
-    if (!token) { dropLean(); return; }
-    if (leanAnim && leanAnim.effect && leanAnim.effect.target === token) return;
-    dropLean();
-    leanAnim = token.animate(leanFrames(token, leanBtn),
-      { duration: LEAN_MS, iterations: Infinity, easing: 'ease-in-out' });
-    try { leanAnim.startTime = leanT0; } catch (e) { /* a timeline that will not take it */ }
-  }
-  function startLean(btn, pick) {
-    if (leanBtn === btn) return;
-    stopLean();
-    leanBtn = btn; leanPick = pick;
-    // the phase origin, kept across every rebuild for as long as this preview
-    // lasts, so the lean carries on rather than starting again
-    leanT0 = document.timeline.currentTime || 0;
-    applyLean();
-  }
-  function stopLean() { leanBtn = null; leanPick = null; dropLean(); }
-  // **One listener, and each surface says what spends.** Both halves of this
-  // page have hold-commits with different rules — the charter's ✏️ Propose here,
-  // the constitution's 🪶 and ✒️ commits in the page's own script — and a
-  // listener each would fight: whichever ran second would see a control it did
-  // not recognise and stop the preview the first had just started. So they
-  // register a *probe* (a target → `{btn, pick}` or null) and one listener asks
-  // each in turn. It is also delegated rather than bound per button because
-  // `renderDoc` re-binds its handlers on every render, and a per-button
-  // listener would be re-attached on each pass and carry state across a swap it
-  // cannot see.
-  const spendProbes = [];
-  const addSpendProbe = (fn) => spendProbes.push(fn);
-  // the button the pointer is actually on, kept whether or not a preview is
-  // running — a press stops the preview without the pointer having moved, and
-  // this is how the token knows to start straining again when it gets home
-  let hoverSpend = null;
-  document.addEventListener('pointerover', (ev) => {
-    let hit = null;
-    for (const fn of spendProbes) {
-      try { hit = fn(ev.target); } catch (e) { hit = null; }
-      if (hit) break;
-    }
-    hoverSpend = hit;
-    if (hit) startLean(hit.btn, hit.pick); else stopLean();
+  // ---- the flights and the ✏️ wallet -----------------------------------
+  // design/flights.js since refactor Q1352 (h): made here, where the code
+  // stood. The five names it reads out of this file are every one of them
+  // reassigned after load, so each goes in as an accessor rather than a
+  // value — and `walletGhost` comes back as a property, because the propose
+  // hold below still sets it raw, without a render.
+  const FLIGHT = window.FLIGHTS.make({
+    REDUCED, NARROW,
+    dripIn: (...a) => dripIn(...a),
+    get walletEl() { return walletEl; },
+    get editsHeld() { return editsHeld; },
+    get editsToNext() { return editsToNext; },
+    get EDIT_RULES() { return EDIT_RULES; },
+    get closedMode() { return closedMode; },
   });
-  // leaving the window fires no `pointerover` anywhere, so this is the one exit
-  // the rule above cannot see
-  document.addEventListener('pointerout', (ev) => { if (!ev.relatedTarget) { hoverSpend = null; stopLean(); } });
-  const resumeLean = (btn) => { if (hoverSpend && hoverSpend.btn === btn) startLean(btn, hoverSpend.pick); };
-  addSpendProbe((t) => {
-    const b = t && t.closest && t.closest('[data-act="draft-propose"]');
-    // ✒️ spends nothing, so no pencil leans toward it (R-058)
-    if (!b || b.disabled || b.dataset.pen === '1' || !walletEl) return null;
-    return { btn: b, pick: () => [...walletEl.querySelectorAll('.pencils i')].pop() };
-  });
+  const { arcFrames, refundFlight, flyGlyph, nudgeHome, pencilStorm,
+    setWalletHeld, setWalletGhost, setWalletTitle, renderWallet,
+    applyLean, startLean, stopLean, addSpendProbe, resumeLean } = FLIGHT;
 
   // How long until the next edit arrives. The drip is one per tenth of the
   // window (SPEC §7), so what is left of the current tenth is the wait. Stated
@@ -5897,7 +4831,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     proposalRowHtml, typeAt, draftRowState, dropDraft,
     // the column's one strip (Q1294 (b)), shared with the founder's pre-🍾
     // column since Q1313: its sync, and the `[]` preference both columns read
-    syncEditCtl, laneRaw, setLaneRaw: (raw) => { laneMode = raw ? 'md' : 'rich'; },
+    syncEditCtl, laneRaw, setLaneRaw: (raw) => { COMPOSER.laneMode = raw ? 'md' : 'rich'; },
     arcFrames, flyGlyph, pencilStorm, renderWallet, beat, act, narrow: NARROW,
     // the hold vocabulary, shared with the founder's own wallets in the page:
     // `nudgeHome` brings a released flight back (never travelling less than a
@@ -5922,6 +4856,10 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     get readSeals() { return readSeals; },
     get verdicts() { return verdicts; },
     get editsHeld() { return editsHeld; },
+    // the id the one unproposed draft is held under in SUGGS: the page carries
+    // such a draft across a data swap by this id, so it reads it here rather
+    // than keeping a copy of the literal
+    DRAFT_ID,
     // the probe replaces the scroll with an instant jump; smoothScrollBy is a
     // function declaration inside this closure, so the seam is a setter
     get smoothScrollBy() { return smoothScrollBy; },

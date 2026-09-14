@@ -24,12 +24,10 @@ window.SETUP = (function () {
     pickOf: (m) => (m ? m.pick : null),
     speakerTitle: 'A member wrote this. Who, is sealed until the closing record.',
   });
-  // Full five-character escaping (PRODUCTION.md stage 3, defect 4): esc'd
-  // strings land in attribute values (titles, tooltips, data-*) as well as
-  // text, and an unescaped quote in an attribute is an injection. For text
-  // nodes the extra entities parse back to the identical DOM.
-  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  // Full five-character escaping (PRODUCTION.md stage 3, defect 4) is
+  // cards.js's one `esc`, coercing, so a title or a data-* attribute here is
+  // escaped exactly as a lane's value is.
+  const esc = window.CARDS.esc;
   const TICK = '<svg class="mkg" viewBox="0 0 12 12"><path d="M2 6.4 L4.7 9.2 L10 2.9"/></svg>';
   // **The answer ladders speak the clause** (Q1112 (b)): a rung says the
   // sentence that answer would put into the document, off `cards.js`'s one
@@ -189,10 +187,9 @@ window.SETUP = (function () {
   // no urgency to URG_HI at the most — where a setup entry took a fixed 0.22,
   // so the two families of entry in one rail wore two strengths. A surface
   // that knows an entry's urgency hands it over as `ctx.urgencyOf`; grey
-  // entries keep 0.16, the charter's own closed alpha. The two constants
-  // restate session.js:360 (`URG_LO`, `URG_HI`), which the SESSION export
-  // does not carry.
-  const URG_LO = 0.05, URG_HI = 0.30;
+  // entries keep 0.16, the charter's own closed alpha. The two ends of the
+  // ramp are cards.js's, read by both files.
+  const { URG_LO, URG_HI } = window.CARDS;
   const washOf = (c, ctx) => {
     const h = hueOf(c, ctx);
     const u = ctx.urgencyOf ? ctx.urgencyOf(c) : null;
