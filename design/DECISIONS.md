@@ -6394,3 +6394,14 @@ The 17:40 lift took the 49 rows' index cells and left their body paragraphs stan
 
 1312. **Rival wordings a member never sees** (raised 2026-09-10 by Ed's bot room — *I didn't see any races at all*, confirmed as *only one-candidate cards*; closed by Ed 2026-09-10 16:05, *keep the deal, say nothing*). Reproduced on a twelve-bot room at default heat: the engine forms rival races within a minute (51 of 64 proposals on contested clauses, the biggest race holding 7 wordings, 5 rival races open at once), and the founder's rail deals one wording against the clause at each press, because SPEC §8.3's rival gate (R-062) serves incumbent pairs first and a rival pair only once a member's incumbent pairs on the race are spent or a challenger has opened the gate. Not a defect: a challenger-against-clause judgment is the displacement evidence adoption needs. Offered and declined: a line on the quick card naming how many wordings race on its clause; dealing rival pairs sooner; listing the field on the card. Pointers: `pair-deck`; `quick card`; SPEC §8.3; SPEC-REASONING R-062.
 
+
+## Q170: a stranded proposal of yours wears ↻ in your blue, and its card offers re-make or withdraw (E38) (Ed, 2026-09-14)
+
+The walk's fifteenth question, 2026-09-14, in two parts. **Ruled: give it its own symbol in your colour** — over keeping it on the ✏️ entry with a line, fixing the disappearance alone, or leaving it — **and the symbol is ↻ in your blue**: ↻ means the text moved under something of yours, the colour says whether it was a vote (grey) or a proposal. **Built 2026-09-14 (2427149, merged 6cbf09d):** the `stranded` mark kind (cards.js, session.js's four maps, `.mk-stranded`), SURFACE E38 and the marks row; the stranded card (`strandedCardHtml`) with 🗑️ withdraw and ✏️ re-make, which turns the entry into the draft in place (`rebaseOf`); the `rebase-text` command through `rebaseText` on the bridge to `confirmRebase`, no stake, the sign choice kept, the rationale revisable (§2.4's middle road; `candidate-confirmed` gains an optional `rationale`, old logs replay identically); the view carries a rebase-pending candidate's spans forward (`at`, Q1333's machinery); four copy strings; engine, bridge and server tests; journey green. The builder's finding, Q1353: a stranded proposal is swept by neither branch of `runClose`, so it never becomes *undecided* at the close.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 170 | Your candidate needs rebasing | 2026-08-16 | waiting on Ed — a mark | Q53 |
+
+170. **Your candidate needs rebasing** — engine-core carries `rebase-pending` and `displaced` (Q53). Distinct from 🔄, which is your *judgment* stranded; this is your *draft* stranded, and only you can move it.
+
