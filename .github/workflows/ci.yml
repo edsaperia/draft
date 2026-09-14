@@ -392,6 +392,12 @@ jobs:
         if: always()
       - run: npm run journey -- "$WALK_BASE" --shape=ongoing
         if: always()
+      # the founder answering their own delegated question, alone in the
+      # room, and 🍾 refusing to begin on one voice (R-015, R-045) — the one
+      # mood no other walk drives. Self-starting: it serves design/ itself
+      # and takes no base URL (Q1177, Ed 2026-09-14: in CI, beside journey)
+      - run: npm run founder-answers
+        if: always()
       - run: npm run applicants-walk -- "$WALK_BASE"
         if: always()
       # 🪪's other two prices: the walk's three assertions are one per price
