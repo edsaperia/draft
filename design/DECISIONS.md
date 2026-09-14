@@ -6243,3 +6243,14 @@ The walk's twenty-fourth question, 2026-09-14. **Ruled: leave it** — the label
 
 305. **Per-candidate advisory labels** (raised 2026-08-17). A six-word label per wording saying what *this* one does differently — *removal only after a broken sanction* · *neutral proposer* · *removal is not a sanction* · *both, plus a night's sleep* · *twice in a year* · *sanctions expire* · *two-thirds for removal* · *ask the visitor first*. It makes a field of eight scannable in one pass, and you read the full wording only for the ones you care about. Same family as `race-labeler` and the same discipline — advisory, outside the state machine, never in the event log, never gating anything — but it is a **new** model output: the labeler names *races*, and this names *candidates*. It is also the cheapest possible version of what a camp map does, since two candidates with near-identical labels are visibly the same camp without anything having to say so. Recommended first, because it is useful on any card with more than two wordings, not only a deadlocked one.
 
+
+## Q306: no camp map; the deadlock card stays a list and a desk (Ed, 2026-09-14)
+
+The walk's twenty-fifth question, 2026-09-14. **Ruled: leave it** — camp detection stays a §13 ledger row; the deadlock card shows every wording and a desk and asks for a draft. Rejected: building it for deadlocks only (already permitted by §3.5); amending the disclosure rule for structure-without-direction everywhere.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 306 | The `camp-map`, finally built | 2026-08-17 | waiting on Ed — a spec amendment | SPEC §3.5, §8.3 |
+
+306. **The `camp-map`, finally built** (raised 2026-08-17). Group the field by camp, each under a heading saying what that camp will not give up — *removal must not be reachable in one step* / *the ladder is fine, the proposer must be neutral*. For the job the deadlock card exists for this is the most useful thing that could be on it: a bridge has to satisfy both, and until you can name them you are guessing. Two costs. It is **judgment-derived** — which wordings cluster is computed from how people judged — so unlike 305 it is not free of SPEC §3.5, which lumps camps in with standings as briefing-only. The defensible refinement is that **structure without direction is a magnitude**, which §8.3 already permits: saying *the room divides in two, and here is what each half wants* names no leader and no sizes. That is a real spec amendment and wants Ed rather than me. Second cost: it is the one thing here that could be wrong in a way the reader cannot check.
+
