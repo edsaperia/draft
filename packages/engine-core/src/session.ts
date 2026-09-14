@@ -27,6 +27,7 @@ import { rebaseHunks } from './text/rebase.js';
 import { fitDavidson } from './ranking/davidson.js';
 import { chainHash, sha256Hex, stableStringify } from './hash.js';
 import { Routing, contextKey, pairKey, type RoutingHost } from './routing.js';
+import { Races, candidateNum, type RacesHost } from './races.js';
 import { smoothstep } from './adoption-threshold.js';
 import {
   balanceAt,
@@ -92,15 +93,6 @@ export function makeConstitution(
 ): Constitution {
   return { ...DEFAULT_CONSTITUTION, ...overrides };
 }
-
-/**
- * The shortest scale `RaceView.closeness` will measure against (Q836): the
- * span of a 51% bar, which is the lowest bar the surface can express above a
- * coin flip — the threshold input is whole percent from 50. A bar of exactly
- * ½ leaves no distance between the coin flip and the bar at all, so without
- * this the meter divides by zero and reads empty for ever.
- */
-const MIN_CLOSENESS_SPAN = 2 * 0.51 - 1;
 
 export interface StoredComparison {
   seq: number;
@@ -182,10 +174,6 @@ export class DocumentClosedError extends Error {
   }
 }
 
-function candidateNum(id: string): number {
-  return Number(id.slice(1));
-}
-
 export class Session {
   readonly log: LogEntry[] = [];
   private constitutionValue!: Constitution;
@@ -257,6 +245,13 @@ export class Session {
    * every read is a live closure over this instance.
    */
   private readonly routing = new Routing(this.routingHost());
+  /**
+   * Races and their ranking (SPEC §2.3, §4.1), in `races.ts` since Q1352 (p):
+   * read through `racesHost()` the same way. The memo stays here, with the
+   * state version it keys on, so what the races derive is still exact until
+   * the next event and suspended for the length of a fold.
+   */
+  private readonly raceRules = new Races(this.racesHost());
 
   private constructor() {}
 
@@ -471,7 +466,7 @@ export class Session {
               : null;
           if (candidateId !== null) {
             const race = this.races().find((r) => r.members.includes(candidateId));
-            if (race) this.updatePeaks(race);
+            if (race) this.raceRules.updatePeaks(race);
           }
         }
         break;
@@ -683,8 +678,8 @@ export class Session {
     const bInc = bId.startsWith(INC_PREFIX);
     if (aInc && bInc) return null;
     if (!aInc && !bInc) {
-      const ra = this.raceIdOfEndpoint(aId);
-      const rb = this.raceIdOfEndpoint(bId);
+      const ra = this.raceRules.raceIdOfEndpoint(aId);
+      const rb = this.raceRules.raceIdOfEndpoint(bId);
       if (ra === null || rb === null || ra !== rb) return null; // diagonal or dead
     }
     const candId = aInc ? bId : aId;
@@ -1172,7 +1167,7 @@ export class Session {
     this.activeParticipant(participantId);
     if (aId === bId) throw new Error('cannot judge an id against itself');
     const before = this.log.length;
-    const kind = this.classifyPair(aId, bId);
+    const kind = this.raceRules.classifyPair(aId, bId);
     this.emit({ type: 'comparison', t, participantId, aId, bId, kind, outcome });
     this.fitCache.clear();
     if (kind === 'edge') {
@@ -1339,7 +1334,8 @@ export class Session {
   }
 
   // -------------------------------------------------------------------------
-  // Races (derived state, SPEC §2.3)
+  // Races and ranking (SPEC §2.3, §4.1) — the rules are `races.ts`'s; these
+  // are the doors
 
   /**
    * The live races, built once per state version (Q1324) and shared: the
@@ -1349,440 +1345,17 @@ export class Session {
    * however many seats poll between it and the next.
    */
   races(): RaceView[] {
-    return this.derived('races', () => this.buildRaces()).slice();
+    return this.raceRules.races();
   }
 
-  private buildRaces(): RaceView[] {
-    const liveAll = [...this.candidates.values()].filter((c) => c.state === 'live');
-    const live = liveAll.filter((c) => !c.setting);
-    // Union-find over footprint conflicts (text candidates).
-    const parent = new Map<string, string>(live.map((c) => [c.id, c.id]));
-    const find = (x: string): string => {
-      let root = x;
-      while (parent.get(root) !== root) root = parent.get(root)!;
-      parent.set(x, root);
-      return root;
-    };
-    for (let i = 0; i < live.length; i++) {
-      for (let j = i + 1; j < live.length; j++) {
-        if (footprintsConflict(live[i]!.footprint, live[j]!.footprint)) {
-          parent.set(find(live[i]!.id), find(live[j]!.id));
-        }
-      }
-    }
-    const groups = new Map<string, string[]>();
-    for (const c of live) {
-      const root = find(c.id);
-      const g = groups.get(root);
-      if (g) g.push(c.id);
-      else groups.set(root, [c.id]);
-    }
-    const views: RaceView[] = [];
-    // **Waiting behind a park** (R-100): a text race whose leader would carry
-    // this batch but whose footprint overlaps a standing park is passed over
-    // by the sweep, and the view says so. The same two tests the sweep runs —
-    // `clearsBarAndFloor` and `overlapsPark` — so the flag and the batch
-    // cannot disagree about which race is waiting.
-    const parks = this.parkedFootprints();
-    const threshold = this.adoptionThreshold();
-    const floor = this.adoptionFloor();
-    for (const members of groups.values()) {
-      members.sort((a, b) => candidateNum(a) - candidateNum(b));
-      const view = this.buildRaceView(members);
-      if (parks.length && this.clearsBarAndFloor(view, threshold, floor)) {
-        view.blockedByPark = this.overlapsPark(this.candidate(view.leaderId!).footprint, parks);
-      }
-      views.push(view);
-    }
-    // Setting races (SPEC §9.6, Q390): all live values on one setting are
-    // one race — rivalry needs no footprint test, the setting is the site.
-    const bySetting = new Map<string, string[]>();
-    for (const c of liveAll) {
-      if (!c.setting) continue;
-      const g = bySetting.get(c.setting.settingId);
-      if (g) g.push(c.id);
-      else bySetting.set(c.setting.settingId, [c.id]);
-    }
-    for (const members of bySetting.values()) {
-      members.sort((a, b) => candidateNum(a) - candidateNum(b));
-      views.push(this.buildRaceView(members));
-    }
-    views.sort((a, b) => candidateNum(a.id.slice(2)) - candidateNum(b.id.slice(2)));
-    return views;
-  }
-
-  private buildRaceView(members: string[]): RaceView {
-    const setting = this.candidate(members[0]!).setting;
-    const contested = setting
-      ? []
-      : mergeSpans(members.flatMap((id) => this.candidate(id).footprint));
-    const incumbentId = setting
-      ? this.incumbentIdForSetting(setting.settingId)
-      : this.incumbentIdFor(contested);
-    const id = `r:${members[0]!}`;
-    const fit = this.fitRaceMembers(members, incumbentId);
-    const usable = this.usableComparisons(members, incumbentId);
-    const movers = new Set(usable.map((c) => c.participantId));
-    let leaderId: string | null = null;
-    let leaderP: number | null = null;
-    for (const m of members) {
-      const p = fit.probBeats(m, incumbentId);
-      if (leaderP === null || p > leaderP) {
-        leaderP = p;
-        leaderId = m;
-      }
-    }
-    const certification = leaderId === null ? null : 1 - (leaderP ?? 0.5);
-    // **The floor counts judges of the winner** (Q1337, Ed 2026-09-11,
-    // R-102). The moon room carried changes on 3 to 16 judgments in a room of
-    // 168 under a quorum of 60%, and a room of fifteen adopted at p 0.88 with
-    // one comparison touching the winner: `movers` above is every voice on
-    // the race, and a race holding many rivals reaches F while its leader has
-    // been judged by almost nobody. So the floor is read on the leader alone:
-    // a usable comparison with the leader on either side — against the
-    // incumbent or a rival, both are a judgment of it — one voice each. The
-    // author's derived preference (§3.3) is a voice for its own candidate
-    // and never touches another, so the leader's author counts once and a
-    // rival's author not at all. `leaderMeasured` is R-063's line drawn at
-    // the winner: how many of those judgments the room actually made.
-    const onLeader = leaderId === null ? []
-      : usable.filter((c) => c.aId === leaderId || c.bId === leaderId);
-    const leaderJudges = new Set(onLeader.map((c) => c.participantId)).size;
-    const leaderMeasured = onLeader.filter((c) => !c.derived).length;
-    const rivalGateOpen = this.rivalGateOpen(fit, members, incumbentId, usable);
-    // Deadlock considers only servable pairs: while the rival gate is
-    // closed, unmeasured rival pairs must not hold a race open — there
-    // is little decision value in finely ranking challengers that are
-    // all losing to the status quo (SPEC §8.3).
-    // Measured evidence only: a derived author preference is a preference, not
-    // a measurement, so it cannot help a race look sufficiently sampled.
-    const measured = usable.filter((c) => !c.derived);
-    const bestValue = this.routing.maxPairValue(fit, members, incumbentId, null, rivalGateOpen);
-    const deadlocked =
-      measured.length >= this.constitutionValue.deadlockMinComparisons &&
-      bestValue < this.constitutionValue.deadlockEpsilon;
-    // closeness (stage 8): see RaceView — a magnitude with no sign. Built
-    // from leaderP alone: the fit's variance is not mirror-symmetric (the
-    // incumbent and the tie parameter sit differently in the Laplace
-    // covariance), so a statistic that leaned on it would carry a trace
-    // of direction. |2p − 1| is exactly invariant under p ↔ 1 − p.
-    //
-    // The denominator is floored (Q836). At a bar of exactly ½ the carry
-    // boundary sits *on* the coin flip, `2θ − 1` is 0, and the old guard
-    // returned 0 — so every race in a document at the minimum bar showed an
-    // empty meter for ever, whatever the room had measured, while the same
-    // posterior under a bar of 0.51 already clamped to full. 50 is the
-    // threshold input's own minimum and the natural answer to *the lowest bar
-    // you will accept*, so it is a value real documents hold. Of the two ways
-    // out — floor the span, or special-case θ = ½ onto the full [0, 1] scale —
-    // this is the floor, because it is continuous in θ and its blast radius is
-    // exactly nil: `max` picks `2θ − 1` for every bar the surface can express
-    // above the minimum, so only the singular point moves, and it moves to the
-    // reading its neighbour already gave.
-    const span = Math.max(2 * this.adoptionThreshold() - 1, MIN_CLOSENESS_SPAN);
-    const barCloseness = leaderP === null ? 0
-      : Math.max(0, Math.min(1, Math.abs(2 * leaderP - 1) / span));
-    // **The lesser of two distances** (Q1305, Ed 2026-09-10, R-101). A race
-    // resolves when its leader clears the bar *and* the floor is met (§4.2),
-    // so its closeness is the shorter of the two: the bar's, above, and the
-    // floor's — judges of the leader over F (Q1337: the floor the batch
-    // tests, so the meter cannot read full while the leader has one judge).
-    // The bar's alone was full at birth: the author's derived preference
-    // (§3.3) fits p ≈ 0.8 before anybody has judged, which is past the span
-    // of a bar of 60 and 99% of a bar of 80, so the meter had nowhere left to
-    // fill and only ever dipped. The author is one judge of their own text,
-    // so a newborn race reads 1/F and each new judge of the leader is a step.
-    // Nothing says which of the two is the shorter — a magnitude, as before.
-    const floorCloseness = Math.min(1, leaderJudges / Math.max(1, this.adoptionFloor()));
-    const closeness = Math.min(barCloseness, floorCloseness);
-    return {
-      id,
-      members,
-      contested,
-      incumbentId,
-      // Measured comparisons: what the room actually judged, which is the
-      // number the record reports and the number a reader means by "how much
-      // evidence is there". Derived author preferences are voices, not
-      // measurements, so they show up in `distinctMovers` and not here.
-      comparisons: measured.length,
-      distinctMovers: movers.size,
-      leaderJudges,
-      leaderMeasured,
-      leaderP,
-      leaderId,
-      certification,
-      deadlocked,
-      rivalGateOpen,
-      closeness,
-      // set by `races()` for a text race, which alone can wait behind a park
-      blockedByPark: false,
-      ...(setting ? { settingId: setting.settingId } : {}),
-    };
-  }
-
-  /** The footprints of every candidate parked `awaiting-assent` (R-100). */
-  private parkedFootprints(): Span[][] {
-    return [...this.candidates.values()]
-      .filter((c) => c.state === 'awaiting-assent')
-      .map((c) => c.footprint);
-  }
-
-  /** Does this footprint touch any of these parks? The classifier's own test. */
-  private overlapsPark(fp: Span[], parks: Span[][]): boolean {
-    return parks.some((p) => footprintsConflict(fp, p));
-  }
-
-  /**
-   * **Ready to carry** (SPEC §4.2): the leader clears the bar, F distinct
-   * participants have judged *it* (Q1337, R-102 — never the race at large),
-   * and the room has judged it at least once — or, at E = 1, the author is
-   * the room (`soleMemberIsLeadersAuthor`). One function, read by the sweep's
-   * snapshot, by `finalRender` and by `races()`'s `blockedByPark`, so none
-   * can drift.
-   */
-  private clearsBarAndFloor(r: RaceView, threshold: number, floor: number): boolean {
-    return r.leaderJudges >= floor &&
-      r.leaderId !== null &&
-      r.leaderP !== null &&
-      r.leaderP > threshold &&
-      (r.leaderMeasured > 0 || this.soleMemberIsLeadersAuthor(r));
-  }
-
-  /**
-   * The rival-pair gate (SPEC §8.3, Q48): open once at least one
-   * challenger plausibly displaces the incumbent — posterior
-   * P(challenger beats incumbent) above rivalGateProb on at least
-   * rivalGateMinComparisons incumbent-involving comparisons (current
-   * ground). probBeats is the same posterior quantity the
-   * adoption-threshold gates, so the criterion needs no new machinery;
-   * the minimum-evidence clause exists because the no-data prior sits
-   * exactly at 0.5.
-   */
-  private rivalGateOpen(
-    fit: Fit,
-    members: string[],
-    incumbentId: string,
-    usable: StoredComparison[],
-  ): boolean {
-    for (const m of members) {
-      // Displacement *evidence*, so the author's own derived preference does
-      // not count toward the minimum — it would open the gate on every
-      // candidate the moment it was submitted.
-      const n = usable.filter(
-        (c) =>
-          !c.derived &&
-          (c.aId === m || c.bId === m) &&
-          (c.aId === incumbentId || c.bId === incumbentId),
-      ).length;
-      if (
-        n >= this.constitutionValue.rivalGateMinComparisons &&
-        fit.probBeats(m, incumbentId) > this.constitutionValue.rivalGateProb
-      ) {
-        return true;
-      }
-    }
-    return false;
-  }
-
+  /** The live race holding a candidate; throws if it is not in one. */
   raceOf(candidateId: string): RaceView {
-    const race = this.races().find((r) => r.members.includes(candidateId));
-    if (!race) throw new Error(`candidate ${candidateId} is not in a live race`);
-    return race;
+    return this.raceRules.raceOf(candidateId);
   }
 
-  private raceIdOfEndpoint(id: string): string | null {
-    if (id.startsWith(INC_PREFIX)) return null;
-    const race = this.races().find((r) => r.members.includes(id));
-    return race ? race.id : null;
-  }
-
-  /**
-   * The incumbent is positional (SPEC §4.4): its identity is the hash of
-   * the contested spans' current text, so evidence goes stale exactly
-   * when the text it judged stops being the status quo.
-   */
-  private incumbentIdFor(contested: Span[]): string {
-    const lines = this.currentLines();
-    const parts = contested.map((s) => lines.slice(s.start, s.end).join('\n'));
-    return INC_PREFIX + sha256Hex(parts.join('\u0000')).slice(0, 16);
-  }
-
-  /**
-   * A setting race's incumbent is the standing value (SPEC §9.6, Q390):
-   * its identity hashes the value, so evidence goes stale exactly when
-   * the standing it was judged against stops being what stands — a
-   * standing-set is a ground shift by construction (§4.4).
-   */
-  private incumbentIdForSetting(settingId: string): string {
-    const standing = stableStringify(this.settingsMap.get(settingId));
-    return INC_PREFIX + sha256Hex(`setting:${settingId}\u0000${standing}`).slice(0, 16);
-  }
-
-  private classifyPair(aId: string, bId: string): PairKind {
-    const aInc = aId.startsWith(INC_PREFIX);
-    const bInc = bId.startsWith(INC_PREFIX);
-    if (aInc && bInc) throw new Error('cannot judge incumbent against incumbent');
-    if (aInc || bInc) {
-      const candId = aInc ? bId : aId;
-      const incId = aInc ? aId : bId;
-      const race = this.raceOf(candId);
-      if (race.incumbentId !== incId) {
-        throw new Error('stale card: incumbent text has changed');
-      }
-      return 'edge';
-    }
-    const ra = this.raceIdOfEndpoint(aId);
-    const rb = this.raceIdOfEndpoint(bId);
-    if (ra === null || rb === null) throw new Error('candidate is not live');
-    return ra === rb ? 'edge' : 'diagonal';
-  }
-
-  // -------------------------------------------------------------------------
-  // Ranking (SPEC §4.1) — per-race Davidson fit over usable comparisons
-
-  /**
-   * Per race and per state version (Q1324): the race view, its fit, the
-   * rival gate, the deadlock test and the feed each asked for this, and each
-   * walked every comparison the session holds — once per race per seat per
-   * poll. Shared and read-only, like `races()`.
-   */
-  private usableComparisons(members: string[], incumbentId: string): StoredComparison[] {
-    return this.derived(`usable|${members.join(',')}|${incumbentId}`,
-      () => this.buildUsableComparisons(members, incumbentId));
-  }
-
-  private buildUsableComparisons(members: string[], incumbentId: string): StoredComparison[] {
-    const memberSet = new Set(members);
-    // only judgments cast on this race's ground can be usable (the ground
-    // lock below), and the ground bucket holds exactly those, in seq order
-    const filtered = (this.edgesByGround.get(incumbentId) ?? []).filter((c) => {
-      if (c.kind !== 'edge') return false;
-      // Ground lock (SPEC §4.4, Q50): a judgment cast on a different
-      // ground — including rival-vs-rival pairs — no longer feeds the
-      // live posterior. The race's ranking restarts from nothing.
-      if (c.groundId !== incumbentId) return false;
-      for (const id of [c.aId, c.bId]) {
-        if (id.startsWith(INC_PREFIX)) {
-          if (id !== incumbentId) return false;
-        } else {
-          if (!memberSet.has(id)) return false;
-          const since = this.evidenceSince.get(id);
-          if (since !== undefined && c.seq < since) return false;
-        }
-      }
-      return true;
-    });
-    // Supersession (SPEC §4.4, Q50): the ranking uses only each
-    // participant's latest judgment per pair (per ground); the log and
-    // record keep them all.
-    const latest = new Map<string, StoredComparison>();
-    for (const c of filtered) {
-      latest.set(`${c.participantId}|${pairKey(c.aId, c.bId)}`, c);
-    }
-
-    // The author's own preference (SPEC §3.3), **derived rather than
-    // recorded** (Ed, Q245(b)).
-    //
-    // It was first built as a comparison emitted at submission, and that does
-    // not work: a comparison is stamped with the ground it was cast on, and
-    // the ground is a fingerprint of the race's whole contested area. The
-    // moment another candidate joins, the area widens, the fingerprint
-    // changes, and every judgment on the old ground locks — including the
-    // author's. A human recovers, because the pair is re-served and they
-    // answer again; nobody re-asks an automatic vote, so it just evaporated.
-    // Measured: in a four-candidate chain the first author's vote was
-    // stranded and the three who submitted after them kept theirs, which made
-    // the floor a function of submission order.
-    //
-    // The error was modelling a standing fact as a dated one. *While your
-    // candidate is live, you prefer it to the current text* — that is what a
-    // live candidate means, and if you stopped preferring it you would
-    // withdraw it (§3.3a). So it is computed against the current incumbent,
-    // every time, and cannot go stale. Your submission is already an event in
-    // the log, so nothing is lost from the record: "you proposed this" carries
-    // "you preferred it" by construction.
-    //
-    // An explicit judgment always wins: an author who judges their own
-    // candidate against the incumbent and says otherwise has said something,
-    // and it is not the engine's business to overrule them.
-    for (const m of members) {
-      const cand = this.candidates.get(m);
-      if (!cand) continue;
-      // A suspended author is out of E (§8.2), and a voice out of E cannot be
-      // a mover toward a floor: the applicant authoring their own admit race
-      // (§9.7.3 X11, Q583) is the case this was written for, and a lapsed
-      // author falls under the same definition. Their judgments *cast* keep
-      // counting (§9.5a); a derived preference was never cast.
-      if (this.roster.get(cand.author)?.suspended) continue;
-      const key = `${cand.author}|${pairKey(m, incumbentId)}`;
-      if (latest.has(key)) continue;
-      latest.set(key, {
-        seq: -1,
-        t: 0,
-        participantId: cand.author,
-        aId: m,
-        bId: incumbentId,
-        kind: 'edge',
-        outcome: 'a',
-        groundId: incumbentId,
-        derived: true,
-      });
-    }
-    return [...latest.values()].sort((a, b) => a.seq - b.seq);
-  }
-
-  private fitRaceMembers(members: string[], incumbentId: string): Fit {
-    const usable = this.usableComparisons(members, incumbentId);
-    const raceId = `r:${members[0] ?? 'none'}`;
-    const key = `${members.join(',')}|${incumbentId}|${usable.length}|${
-      usable.length > 0 ? usable[usable.length - 1]!.seq : -1
-    }`;
-    const cached = this.fitCache.get(raceId);
-    if (cached && cached.key === key) return cached.fit;
-    const ids = [...members, incumbentId];
-    const comps: Comparison[] = usable.map((c) => ({
-      a: c.aId,
-      b: c.bId,
-      outcome: c.outcome,
-    }));
-    const fit = fitDavidson(ids, comps);
-    this.fitCache.set(raceId, { key, fit });
-    return fit;
-  }
-
+  /** A race's Davidson fit over its usable comparisons (SPEC §4.1). */
   raceFit(raceId: string): Fit {
-    const race = this.races().find((r) => r.id === raceId);
-    if (!race) throw new Error(`unknown race ${raceId}`);
-    return this.fitRaceMembers(race.members, race.incumbentId);
-  }
-
-  private updatePeaks(race: RaceView): void {
-    // Performance is how the **room** received a candidate, and an author is
-    // not the room — so the refund (§7) pays on a fit without any derived
-    // preference in it, and a candidate has no performance at all until
-    // somebody else has judged it. Without the second half, submitting would
-    // open an account out of nothing, and since the refund is
-    // stake × min(w/0.5, 1.5) — where one favourable comparison already
-    // reaches the cap — submit-then-retire would pay 1.5× the stake with
-    // nobody else involved.
-    const room = this.usableComparisons(race.members, race.incumbentId)
-      .filter((c) => !c.derived);
-    const fit = fitDavidson(
-      [...race.members, race.incumbentId],
-      room.map((c) => ({ a: c.aId, b: c.bId, outcome: c.outcome })),
-    );
-    const compared = new Set<string>();
-    for (const c of room) {
-      if (!c.aId.startsWith(INC_PREFIX)) compared.add(c.aId);
-      if (!c.bId.startsWith(INC_PREFIX)) compared.add(c.bId);
-    }
-    for (const m of race.members) {
-      // peakW only moves on evidence; the prior's 0.5 is not a performance.
-      if (!compared.has(m)) continue;
-      const cand = this.candidate(m);
-      const w = fit.probBeats(m, race.incumbentId);
-      if (w > cand.peakW) cand.peakW = w;
-    }
+    return this.raceRules.raceFit(raceId);
   }
 
   // -------------------------------------------------------------------------
@@ -1833,7 +1406,7 @@ export class Session {
     const ready = this.races()
       // `clearsBarAndFloor` is the test, shared with `races()`'s
       // `blockedByPark` (R-100). What it asks, and why:
-      .filter((r) => this.clearsBarAndFloor(r, threshold, floor))
+      .filter((r) => this.raceRules.clearsBarAndFloor(r, threshold, floor))
           // Bar and floor, and then the helper's last clause, whose reason is
           // long enough to keep here beside the batch it governs.
           // The room must have spoken here at least once: two rival authors
@@ -1877,7 +1450,7 @@ export class Session {
       // the record's word is *cap* and not *gradient*.
       .map((r): { leaderId: string; p: number;
         cappedFit?: { iterations: number; gradMax: number } } => {
-        const fit = this.fitRaceMembers(r.members, r.incumbentId);
+        const fit = this.raceRules.fitRaceMembers(r.members, r.incumbentId);
         return {
           leaderId: r.leaderId as string,
           p: r.leaderP as number,
@@ -1922,7 +1495,7 @@ export class Session {
       // read fresh each time: a park made earlier in this batch is in the
       // set by its fold, and an adoption earlier in this batch has moved
       // every standing park's offsets through `rebaseOthers`
-      if (this.overlapsPark(c.footprint, this.parkedFootprints())) continue;
+      if (this.raceRules.overlapsPark(c.footprint, this.raceRules.parkedFootprints())) continue;
       if (this.constitutionValue.textAssent) {
         this.emit({ type: 'candidate-awaiting-assent', t, id: leaderId,
           raceId: this.raceIdOf(leaderId), p, threshold,
@@ -2110,9 +1683,9 @@ export class Session {
   dominated(raceId: string, t: number = this.lastT): string[] {
     const race = this.races().find((r) => r.id === raceId);
     if (!race) throw new Error(`unknown race ${raceId}`);
-    const fit = this.fitRaceMembers(race.members, race.incumbentId);
+    const fit = this.raceRules.fitRaceMembers(race.members, race.incumbentId);
     const threshold = this.adoptionThreshold(t);
-    const usable = this.usableComparisons(race.members, race.incumbentId);
+    const usable = this.raceRules.usableComparisons(race.members, race.incumbentId);
     const counts = new Map<string, number>();
     for (const c of usable) {
       for (const id of [c.aId, c.bId]) {
@@ -2204,7 +1777,7 @@ export class Session {
     for (const r of races) {
       // the batch's own test (Q1337): bar, F judges of the leader, and the
       // room having judged it — the close renders nothing the sweep would not
-      if (!this.clearsBarAndFloor(r, threshold, floor)) continue;
+      if (!this.raceRules.clearsBarAndFloor(r, threshold, floor)) continue;
       if (r.settingId !== undefined) {
         appliedSettings.push({ settingId: r.settingId, candidateId: r.leaderId! });
         continue;
@@ -2296,8 +1869,10 @@ export class Session {
         .map((r) => r.latencies),
       servedOut: (participantId, key) => this.servedOut(participantId, key),
       authorOf: (id) => this.candidates.get(id)?.author,
-      usableComparisons: (members, incumbentId) => this.usableComparisons(members, incumbentId),
-      fitRaceMembers: (members, incumbentId) => this.fitRaceMembers(members, incumbentId),
+      usableComparisons: (members, incumbentId) =>
+        this.raceRules.usableComparisons(members, incumbentId),
+      fitRaceMembers: (members, incumbentId) =>
+        this.raceRules.fitRaceMembers(members, incumbentId),
       races: () => this.races(),
       eCount: () => this.eCount(),
       salienceFitOver: (races) => this.salienceFitOver(races),
@@ -2308,23 +1883,25 @@ export class Session {
       logLength: () => this.log.length,
     };
   }
-}
 
-// ---------------------------------------------------------------------------
-// Helpers
-
-function mergeSpans(spans: Span[]): Span[] {
-  const sorted = [...spans].sort((x, y) => x.start - y.start || x.end - y.end);
-  const out: Span[] = [];
-  for (const s of sorted) {
-    const last = out[out.length - 1];
-    if (last && s.start <= last.end && !(s.start === s.end) && !(last.start === last.end)) {
-      last.end = Math.max(last.end, s.end);
-    } else if (last && last.start === s.start && last.end === s.end) {
-      continue; // identical span (e.g. duplicate insertion point)
-    } else {
-      out.push({ start: s.start, end: s.end });
-    }
+  /** What the races may read of this session: live closures, no copies. */
+  private racesHost(): RacesHost {
+    return {
+      derived: (key, compute) => this.derived(key, compute),
+      candidates: () => this.candidates,
+      candidate: (id) => this.candidate(id),
+      edgesByGround: (incumbentId) => this.edgesByGround.get(incumbentId) ?? [],
+      evidenceSince: (id) => this.evidenceSince.get(id),
+      suspended: (id) => this.roster.get(id)?.suspended === true,
+      settingStanding: (settingId) => this.settingsMap.get(settingId),
+      currentLines: () => this.currentLines(),
+      constitution: () => this.constitutionValue,
+      adoptionThreshold: () => this.adoptionThreshold(),
+      adoptionFloor: () => this.adoptionFloor(),
+      fitCache: () => this.fitCache,
+      maxPairValue: (fit, members, incumbentId, excludeJudgedBy, rivalGateOpen) =>
+        this.routing.maxPairValue(fit, members, incumbentId, excludeJudgedBy, rivalGateOpen),
+      soleMemberIsLeadersAuthor: (r) => this.soleMemberIsLeadersAuthor(r),
+    };
   }
-  return out;
 }
