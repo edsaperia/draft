@@ -6221,3 +6221,14 @@ The walk's twenty-first question, 2026-09-14. **Ruled: nothing — close it.** K
 
 266. **One draft at a time** (raised 2026-08-16; Ed asked what the question was, 2026-08-17). **The question: should starting a second draft somewhere else be possible, and if not, should the surface say so?** There is one caret, so there is one composer: with a draft open, typing elsewhere extends or reuses it rather than starting another. That is almost certainly right — a second unfinished draft is a second thing to lose — and it is what keeps the state model to two flags on an ordinary suggestion. But nobody chose it; it fell out of the implementation. And the surface never says it: pressing ✏️ on a lane while a draft is open quietly extends the open draft instead of warning that you are about to.
 
+
+## Q293: revising your own proposal stays withdraw-and-repropose (Ed, 2026-09-14)
+
+The walk's twenty-third question, 2026-09-14. **Ruled: leave it** — withdraw is the only act on a proposal of your own (SURFACE E19); a revision is a new text, and no new object is added for it. Rejected: a grace window free until the first vote; revise-always with votes reset (one typo fix discarding several people's judgments).
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 293 | Revising your own proposal | 2026-08-17 | waiting on Ed — recommend (b) | SPEC §3.3a, §4.4 |
+
+293. **Revising your own proposal** (Ed, 2026-08-17): *people will often draft something, submit it, then immediately want to edit it again because they saw a mistake — we should think about how to make this action convenient.* Today the path is withdraw, then write again: two acts, and the candidate leaves the race in between. The obvious affordance is a **✏️ on your own proposal card** that reopens the composer seeded from your own wording and, on Propose, replaces the live candidate rather than adding one. It composes out of moves the spec already has (withdraw refunds in full §3.3a, propose costs one) so it is **net zero edits**, which is right — a typo fix should not be priced like a second opinion.
+
