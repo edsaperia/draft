@@ -2333,6 +2333,98 @@ describe('🥾 exile, resignation and the shut door say so (Q901, E31–E33)', (
     expect(JSON.stringify(open)).not.toContain('@example.org');
   }, 60_000);
 
+  /**
+   * **And every one of them owes the room an OK** (Ed, 2026-09-14, Q901;
+   * SURFACE E31, E32, E38). One rule over the three routes out, over the wire:
+   * a carried 🥾 motion, the Founder's ❌ and a resignation each put one
+   * departure into every remaining member's `owedDepartures`, and
+   * `ack-departure` clears it on that seat and no other.
+   */
+  it('every departure owes each remaining member an OK, and ack-departure clears it', async () => {
+    const { base, dataDir } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Leaving Charter', email: 'ada@example.org',
+    })).json() as { ok: boolean; slug: string; devLink: string };
+    const ada = cookieOf(await consume(created.devLink));
+    const slug = created.slug;
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const res = await post(base, `/api/d/${slug}/cmd`, { cmd: name, args }, cookie);
+      const body = await res.json() as { ok?: boolean; error?: string; result?: unknown };
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+      return body.result;
+    };
+    const viewOf = async (cookie: string) => (await (await fetch(
+      `${base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as MemberViewPayload;
+    const owed = async (cookie: string) => ((await viewOf(cookie)).view as unknown as
+      { owedDepartures: string[] }).owedDepartures;
+    const seat = async (email: string) => {
+      await cmd(ada, 'invite', { email });
+      return cookieOf(await consume((await lastMailTo(dataDir, email)).link!));
+    };
+    await cmd(ada, 'confirm-starting-text', { text: 'Anybody may leave at any time.' });
+    const bo = await seat('bo@example.org');
+    const cy = await seat('cy@example.org');
+    const dee = await seat('dee@example.org');
+    await cmd(ada, 'set-setting',
+      { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
+    const values: Record<string, unknown> = {
+      ending: { endsAtMs: null }, pace: { shape: 'fixed' }, bar: { pct: 66 },
+      quorum: { form: 'count', n: 1 }, chamber: { rung: 'closed' },
+      authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
+      applications: { apply: false }, admission: { price: 'assembly' },
+      removal: { price: 'assembly' },
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await cmd(ada, 'reclaim', { setting });
+      await cmd(ada, 'set-setting', { setting, value });
+    }
+    // ❌'s 🛡️ laid down before the start, so a carried removal lands without
+    // a 👑 question in the way; ❌'s ✒️ stays, which is the exile below
+    await cmd(ada, 'relinquish', { setting: 'door:remove', power: 'assent' });
+    await cmd(ada, 'begin', {});
+    const idOf = async (email: string) =>
+      (await viewOf(ada)).view.members.find((m) => m.email === email)!.id;
+    const boId = await idOf('bo@example.org');
+    const cyId = await idOf('cy@example.org');
+    const deeId = await idOf('dee@example.org');
+    expect(await owed(bo)).toEqual([]);
+
+    // -- a carried 🥾 motion (E38) ------------------------------------------
+    const m = await cmd(ada, 'open-motion',
+      { payload: { kind: 'remove', member: deeId } }) as string;
+    // the subject is outside a removal's electorate above `consent` (STYLE
+    // T42), so ada's own accept as mover plus these two carries it
+    for (const c of [bo, cy]) await cmd(c, 'answer-motion', { motion: m, answer: 'accept' });
+    expect((await viewOf(ada)).view.motions.find((x) => x.id === m)!.status).toBe('carried');
+    // E38's other tells are E31's: the dead seat is the door, and the door
+    // says the membership did it
+    const deeDoor = await (await fetch(`${base}/api/d/${slug}/view`,
+      { headers: { cookie: dee } })).json() as
+      { stranger: boolean; departed: { by: string } | null };
+    expect(deeDoor.stranger).toBe(true);
+    expect(deeDoor.departed).toMatchObject({ by: 'members' });
+    // every remaining member, the actor among them (Q901: the exclusions are
+    // the departed and the later joiner, and no other)
+    expect(await owed(bo)).toEqual([deeId]);
+    expect(await owed(cy)).toEqual([deeId]);
+    expect(await owed(ada)).toEqual([deeId]);
+    // one seat at a time: bo's OK is bo's
+    await cmd(bo, 'ack-departure', { member: deeId });
+    expect(await owed(bo)).toEqual([]);
+    expect(await owed(cy)).toEqual([deeId]);
+
+    // -- the Founder's ❌ (E31) and a resignation (E32) ---------------------
+    await cmd(ada, 'remove', { member: boId });
+    expect(await owed(cy)).toEqual([deeId, boId]);   // oldest first
+    await cmd(cy, 'resign', {});
+    expect(await owed(ada)).toEqual([deeId, boId, cyId]);
+    for (const id of [deeId, boId, cyId]) await cmd(ada, 'ack-departure', { member: id });
+    expect(await owed(ada)).toEqual([]);
+    // and a departure nobody owes you is ignored rather than refused
+    await cmd(ada, 'ack-departure', { member: deeId });
+  }, 60_000);
+
   it('an applicant’s view says whether the door is still open, and flips when 🤝 shuts', async () => {
     const { base, dataDir } = await boot();
     const created = await (await post(base, '/api/docs', {
@@ -2369,7 +2461,8 @@ describe('🥾 exile, resignation and the shut door say so (Q901, E31–E33)', (
     void dataDir;
     const dee = cookieOf(await consume(knock.devLink));
     const appView = async () => (await (await fetch(`${base}/api/d/${slug}/view`,
-      { headers: { cookie: dee } })).json()) as { applicant: { status: string }; applyOpen: boolean };
+      { headers: { cookie: dee } })).json()) as
+      { applicant: { status: string; shutAcked: boolean }; applyOpen: boolean };
     expect((await appView()).applicant.status).toBe('verified');
     expect((await appView()).applyOpen).toBe(true);
     // 🤝 shuts after they verified and before they submitted (entry 97)
@@ -2379,6 +2472,15 @@ describe('🥾 exile, resignation and the shut door say so (Q901, E31–E33)', (
     const refused = await cmd(dee, 'submit-application', { name: 'Dee' });
     expect(refused.error).toMatch(/door has shut since you began/);
     expect((await appView()).applicant.status).toBe('verified');
+    // **and the news takes an OK, on their own seat** (Q901, SURFACE E33):
+    // their second act and their last, remembered by the module so the card
+    // does not come back on every poll
+    expect((await appView()).applicant.shutAcked).toBe(false);
+    await ok(dee, 'ack-apply-shut', {});
+    expect((await appView()).applicant.shutAcked).toBe(true);
+    // nothing else speaks for an applicant, the two acts aside
+    const nope = await cmd(dee, 'give-ok', { setting: 'applications' });
+    expect(nope.error).toMatch(/applicants may only submit/);
   }, 60_000);
 });
 

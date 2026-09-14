@@ -492,6 +492,13 @@ window.COPY = (function () {
       appname: 'Your Name',
       apppic: 'Your Picture',
       apptext: 'Your Application',
+      // **the door shut under you** (SURFACE E33, Q901): the sentence the 🪪
+      // card wears once 🤝 has shut and before Submit, moved here from the page
+      // with the OK that now closes it. `shutTitle` replaces *Apply for
+      // Membership* while it stands — the card is news at that point and a
+      // title asking for an application would offer one that cannot be made
+      shut: 'The rule has changed since you began: this document is now invitation-only, so your application cannot be submitted.',
+      shutTitle: 'Applications Have Closed',
     },
     // the power tabs' titles (T6–T9) and the synthetic cards' titles
     pwTitle: {
@@ -509,6 +516,14 @@ window.COPY = (function () {
       admitTail: '?',
       released: 'What the Founder Has Laid Down',
       mailGaveUp: 'An Invitation Did Not Send',
+      // the departure news cards (SURFACE E31, E32, E38; Q901). Two titles,
+      // because *removed* and *left* are two different things to be told and
+      // the title is the whole of what the rail entry says; neither names the
+      // person, whom the card's own sentence names — a title carrying a name
+      // would put a fresh string in the copy golden for every departure, which
+      // is `releaseCard`'s own rule
+      departedRemoved: 'A Member Has Been Removed',
+      departedLeft: 'A Member Has Left',
       passedLead: 'Passed: ',
       rejectedLead: 'Rejected: ',
       anonymous: 'Anonymous',

@@ -202,6 +202,76 @@ describe('departures — what the view says about who left (Q901)', () => {
 });
 
 /**
+ * **And every departure owes an OK** (Ed, 2026-09-14, Q901; SURFACE E31, E32,
+ * E38). The grey sentence asked nothing, so a member who was not reading the
+ * list the day somebody left never met it. One rule over all three routes out:
+ * the Founder's ❌, a carried 🥾 motion, and a resignation.
+ */
+describe('departures — the OK every remaining member is owed (Q901)', () => {
+  it('❌ at will owes every other present member, and the OK clears it', () => {
+    const { s, bo, cy } = buildConstituted({
+      doors: { remove: { unilateral: true, assent: false } } });
+    expect(view(s, bo).owedDepartures).toEqual([]);
+    s.remove(7, cy);
+    expect(view(s, bo).owedDepartures).toEqual([cy]);
+    // **the actor is inside the audience** — the one owing in the family that
+    // does not skip them (Ed's ruling names only the departed and the later
+    // joiner as exclusions); this and `oweDeparture` are the whole of it
+    expect(view(s, 'ada').owedDepartures).toEqual([cy]);
+    // and never the person it happened to: their record is already removed
+    expect(s.memberRecords().get(cy)!.departuresOwed.size).toBe(0);
+    s.ackDeparture(8, bo, cy);
+    expect(view(s, bo).owedDepartures).toEqual([]);
+    expect(view(s, 'ada').owedDepartures).toEqual([cy]);   // one seat at a time
+    // the OK is idempotent and refuses nothing it can ignore (ackRelease's
+    // posture): a second press, and a press for a departure nobody owes you
+    expect(() => s.ackDeparture(9, bo, cy)).not.toThrow();
+    expect(() => s.ackDeparture(9, bo, 'nobody')).not.toThrow();
+  });
+
+  it('a resignation owes it too, and a later joiner is owed nothing', () => {
+    const { s, bo, cy } = buildConstituted({ admission: { price: 'pen' },
+      doors: { remove: { unilateral: true, assent: false } } });
+    s.resign(3, cy);
+    expect(view(s, bo).owedDepartures).toEqual([cy]);
+    // **never a later joiner** (C8: were you here when it happened): dee is
+    // invited and arrives after the act, and the register is simply what the
+    // document says to them
+    const dee = s.invite(4, 'dee@example.org', bo);
+    s.arrive(5, dee);
+    expect(view(s, dee).owedDepartures).toEqual([]);
+    // and an invitee who has not arrived is owed nothing either, on the same
+    // rule — they meet the membership as it stands when they get here
+    const eve = s.invite(6, 'eve@example.org', bo);
+    s.remove(7, dee);
+    expect(s.memberRecords().get(eve)!.departuresOwed.size).toBe(0);
+    expect(view(s, bo).owedDepartures).toEqual([cy, dee]);   // oldest first
+  });
+
+  it('a carried 🥾 motion owes it, by the same rule and the same arm', () => {
+    const { s, bo, cy } = buildConstituted({ removal: { price: 'proposal' } });
+    const m = s.openMotion(3, bo, { kind: 'remove', member: cy });
+    s.adjudicateOrdinaryMotion(4, m, 'carried');
+    expect(s.motionRecords().get(m)!.status).toBe('carried');
+    expect(s.departures().map((d) => [d.member, d.by])).toEqual([[cy, 'members']]);
+    expect(view(s, bo).owedDepartures).toEqual([cy]);
+    expect(view(s, 'ada').owedDepartures).toEqual([cy]);
+  });
+
+  it('replay reproduces what is owed, and the OK with it', () => {
+    const { s, bo, cy } = buildConstituted({
+      doors: { remove: { unilateral: true, assent: false } } });
+    s.remove(7, cy);
+    s.ackDeparture(8, bo, cy);
+    const again = ConstitutionSession.replay([...s.logEntries()]);
+    expect(again.rollingHash()).toBe(s.rollingHash());
+    expect([...again.memberRecords().get(bo)!.departuresGiven]).toEqual([cy]);
+    expect(again.memberRecords().get(bo)!.departuresOwed.size).toBe(0);
+    expect([...again.memberRecords().get('ada')!.departuresOwed]).toEqual([cy]);
+  });
+});
+
+/**
  * Q1033 (Ed, 2026-08-29, (a)): a motion-backed 👑 question standing when the
  * convenor's seat is vacated auto-passes *exactly as the lapse case does* —
  * the carried effects apply — and the record says the seat was vacant, not

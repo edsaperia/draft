@@ -48,19 +48,20 @@ window.BAND = (function () {
       appPicPickNow, applicantById, applicantName, atTheDoor, beginBody, binBtn, card, cardHtml,
       changedFrom, checkSlug, chosenRadio, clauseCtx, closingBody, commitFor, commitReady,
       composerOn, consentBody, constituted, csState, cs_titleNow, decidingOf, decisionLine,
-      directInvite, directRemove, docAddr, docOpen, doorDirect, doorErrHtml, doorErrOn,
+      departureLine, directInvite, directRemove, docAddr, docOpen, doorDirect, doorErrHtml, doorErrOn,
       dripParts, endChipsHtml, endsAtMsOf, fieldsOf, focusOpened, founderCommit, founderDirect,
       founderHandOff, founderInfo, founderMark, founderPairNote, founderPairOn, founderSpeaker,
       founderSpeakerLane, grantProv, groups, iDraft, isChange, isNum, isRoom, isStranger,
       judgedOn, launchFarewell, launchGrant, liveMotionRec, mailGiveUpBatch, mailGiveUpBody,
       mayPen, mayPenOn, me, membersHold, midOf, motionBlocks, motionOn, motionPicked,
-      motionTargets, nameOfMember, namePickNow, oneVoiceAsk, ordinaryBody, pairWords, penOkFor,
+      motionTargets, nameOfMember, namePickNow, oneVoiceAsk, ordinaryBody, owedDeparture,
+      pairWords, penOkFor,
       perpetual, picPickNow, policyNow, powerBody, proseCounts, pwPair, readinessOf, ready,
       recordBody, releaseBatch, releaseBody, removalPrice, removeSubjectPicker, renderDev,
       renderPowerWallets, renderRail, renderTitle, resolveCounts, routeOfM, sentenceFor,
       serverNow, settled, shapeClauses, signedClose, slugNoteHtml, slugRefused, standsTyped,
       strangerCardHtml, strangerReadCard, syncCharter, syncFromCs, syncGrantAcks,
-      syncOwedMailGiveUps, syncOwedOks, syncOwedReleases, takeSnap, takenOf, takenValOf,
+      syncOwedDepartures, syncOwedMailGiveUps, syncOwedOks, syncOwedReleases, takeSnap, takenOf, takenValOf,
       takingBack, textDivs, titlePending, titleStands, viewerId, viewerIsClerk, viewerIsMember,
       wantsDelegate, whyLane, wordsFor } = env;
     // the shared module, the same names the page destructures from it
@@ -805,8 +806,14 @@ window.BAND = (function () {
       const a = S.app;
       // one label each (not settings, so no `n`); the words are copy.js's
       const T = PAGE_COPY.appcards;
-      const base = [{ k: 'apply', g: '🪪', t: T.apply, own: 'you',
-        kind: 'personal', done: () => a.submitted }];
+      // **🪪 is news once the door has shut under you** (SURFACE E33, Q901):
+      // the title says what happened instead of asking for an application that
+      // cannot be made, and the card is done once the OK has been given. It is
+      // the card's own `t` rather than an `n`, because `n` would also stand on
+      // a *submitted* application, which is a different done.
+      const shut = applyShutOnMe();
+      const base = [{ k: 'apply', g: '🪪', t: shut ? T.shutTitle : T.apply, own: 'you',
+        kind: 'personal', done: () => a.submitted || (shut && a.shutAcked) }];
       if (!a.started) return base;
       return base.concat([
         { k: 'appmail', g: '📧', t: T.appmail, own: 'you', kind: 'personal', done: () => a.emailVerified },
@@ -821,7 +828,11 @@ window.BAND = (function () {
     // stranger's door computes it — so the card says so *before* the press
     // (Y25's shape: one sentence under the control that tried) and Submit is
     // dark. The fixture reads the same expression `renderRail` uses.
-    const APPLY_SHUT = 'The rule has changed since you began: this document is now invitation-only, so your application cannot be submitted.';
+    // **And since Q901 the sentence is a news card that takes an OK** (Ed,
+    // 2026-09-14): it asked nothing, so nothing recorded that the applicant had
+    // ever met it. The refusal stays derived — the rule as it stands is the
+    // whole of it — and only the OK is persisted, on their own row.
+    const APPLY_SHUT = PAGE_COPY.appcards.shut;
     const applyShutOnMe = () => {
       const a = S.app;
       if (!a.emailVerified || a.submitted) return false;
@@ -832,11 +843,16 @@ window.BAND = (function () {
       get open() { return S.open; }, get E() { return E(); },
       mustAct: (c) => !c.done() && !(c.optional && S.app.submitted),
       yours: (c) => c.k === 'apply' && S.app.submitted,
+      // the shut door is news, not an ask (SURFACE E33, Q901) — the only news
+      // an applicant is ever served, and grey the moment they OK it
+      news: (c) => c.k === 'apply' && applyShutOnMe() && !S.app.shutAcked,
       waiting: (c) => c.k === 'appmail' && S.app.emailSent && !S.app.emailVerified,
       fillOf: (c) => (c.k === 'apply' && S.app.submitted
         ? Math.round(APPLICANT.judged / E() * 100) + '%' : '100%'),
       summary: (c) => (c.k === 'apply'
-        ? (S.app.submitted ? 'Before the members — a proposal like any other' : applyShutOnMe() ? 'Applications closed' : S.app.started ? (['appname', 'apppic'].every((k2) => APPCARDS().find((x) => x.k === k2).done()) ? 'Ready to submit' : 'Three small tasks') : 'Membership is by application')
+        // a shut door says so in the title since Q901, so the teaser that
+        // used to carry it would now be the same sentence twice (C13)
+        ? (S.app.submitted ? 'Before the members — a proposal like any other' : applyShutOnMe() ? '' : S.app.started ? (['appname', 'apppic'].every((k2) => APPCARDS().find((x) => x.k === k2).done()) ? 'Ready to submit' : 'Three small tasks') : 'Membership is by application')
         : c.k === 'appmail' ? (S.app.emailVerified ? S.app.email + ' · verified'
           : S.app.emailSent ? 'Check your inbox' : 'Your identity here')
         : c.k === 'appname' ? (S.app.name || 'What members will call you')
@@ -896,17 +912,27 @@ window.BAND = (function () {
         // refusal from the wire lands in the same place through `doorErrHtml`;
         // both retire the way Y25 says — the door opening again, or a keystroke
         if (!shut && S.doorErr && S.doorErr.k === 'apply') S.doorErr = null;
+        // **and a shut door's card is the sentence and nothing else** (Q901):
+        // what an application is and what it will cost is copy for somebody who
+        // can still make one, so it goes while the door stands shut
+        if (shut) body = '';
         foot = a.submitted ? binBtn()
+          // **a shut door commits with OK** (SURFACE E33, Q901): the card is
+          // news, and a Submit standing dark beside it would be a commit on a
+          // card that asks nothing (§9.1, CP9). Once acknowledged the OK goes
+          // too and the bin is the way out, exactly as an acked gate's is
+          : shut ? (a.shutAcked ? binBtn()
+            : binBtn() + '<button class="btn btn-approve okbtn" data-appshutok="1">OK</button>')
           : !a.started ? '<button class="btn btn-approve" data-appstart="1">Begin</button>'
           // a word, not 🏛️: an application becomes an ordinary motion, and
           // the 🏛️ glyph belongs to the assembly-press hold — a plain click
           // wearing it claimed the constitutional route it does not take
           : binBtn() +
-            '<button class="btn btn-approve"' + (a.name.trim() && a.pic && !shut ? '' : ' disabled') +
+            '<button class="btn btn-approve"' + (a.name.trim() && a.pic ? '' : ' disabled') +
             ' data-appsubmit="1" title="Your application goes before the members">Submit</button>';
         if (a.started && !a.submitted) {
           body += shut && !doorErrOn('apply')
-            ? '<p class="why refusal"><b>' + esc(APPLY_SHUT) + '</b></p>'
+            ? '<p class="why">' + esc(APPLY_SHUT) + '</p>'
             : doorErrHtml('apply');
         }
       } else {
@@ -1072,6 +1098,20 @@ window.BAND = (function () {
           if (!b) return cardHtml(c, ctx, '<p class="why">This is no longer outstanding.</p>',
             binBtn(), g.cards);
           return cardHtml(c, ctx, mailGiveUpBody(b),
+            binBtn() + '<button class="btn btn-approve okbtn" data-ok="' + esc(c.k) + '">OK</button>',
+            g.cards);
+        }
+        // **A departure, in one card** (SURFACE E31, E32, E38; Q901): the
+        // register's own sentence about who left and by whose act, stated
+        // once, taking one OK. The commit row is the release card's — 🗑️ and
+        // an OK — a departure having happened rather than been decided, and
+        // the body is `departureLine`'s so the card and the grey line under
+        // *Members* can never say two different things about one act.
+        if (c.departure) {
+          const d = owedDeparture(c.departure);
+          if (!d) return cardHtml(c, ctx, '<p class="why">This is no longer outstanding.</p>',
+            binBtn(), g.cards);
+          return cardHtml(c, ctx, '<p class="why">' + departureLine(d) + '</p>',
             binBtn() + '<button class="btn btn-approve okbtn" data-ok="' + esc(c.k) + '">OK</button>',
             g.cards);
         }
@@ -1782,6 +1822,7 @@ window.BAND = (function () {
       syncOwedOks();
       syncOwedReleases();
       syncOwedMailGiveUps();
+      syncOwedDepartures();
       // the address is checked because it is the address (see `checkSlug`): a
       // pre-filled 📍 nobody edited would otherwise reach the send unasked.
       // Idempotent — a repeat ask about an address already answered is a
@@ -1834,6 +1875,11 @@ window.BAND = (function () {
       render, refreshCommit, roomNow, meanLine, syncMeaning, standingBlock, unchangedCard,
       foundedAt, foundedClause, closedAtWords, resendTitle, APPLICANT, MEMBER_EMAILS, APPCARDS,
       appCtx,
+      // the rail asks this (SURFACE E33, Q901): a door that shut under a
+      // verified applicant is news owed an OK, and the news has to be
+      // reachable — `renderRail` empties the applicant's rail the moment 🤝
+      // shuts, which is right for four of the five cards and wrong for 🪪
+      applyShutNews: () => applyShutOnMe() && !S.app.shutAcked,
       // the band's own render state, set by three of the page's handlers
       get birthsMuted() { return birthsMuted; },
       set birthsMuted(v) { birthsMuted = v; },

@@ -91,7 +91,8 @@ window.DOOR = (function () {
       const a = d.applicant;
       return { ...v, me: d.me, stranger: false,
         view: { ...v.view, applicants: a ? [{ id: a.id, email: a.email || '', name: a.name,
-          picture: a.picture, words: a.words, status: a.status, motion: a.motion }] : [] } };
+          picture: a.picture, words: a.words, status: a.status, motion: a.motion,
+          shutAcked: !!a.shutAcked }] : [] } };
     };
     // the applicant's provisional layer, from the server's record: what they
     // have typed stays theirs (the server holds nothing until Submit), so a
@@ -107,6 +108,11 @@ window.DOOR = (function () {
       // the link verified them before the page existed (§9.7½)
       S.app.started = true; S.app.emailSent = true; S.app.emailVerified = true; S.app.mailOpen = false;
       S.app.submitted = a.status !== 'started' && a.status !== 'verified';
+      // the OK on a shut door is the module's (SURFACE E33, Q901), and it
+      // **only ever sets** — `owedSettings`' rule from the other side: the flag
+      // is monotone in the module, so a poll already in flight when the press
+      // landed cannot take the card back for one round trip
+      if (a.shutAcked) S.app.shutAcked = true;
     };
     const founderInfo = () => (isStranger() && strPayload()
       ? { n: strPayload().founder.name || '', pic: strPayload().founder.picture || '' }

@@ -801,6 +801,20 @@ var CONSTITUTION = (() => {
     if (!m.mailGaveUpOwed.has(batch)) return;
     s.emit({ type: "mail-gave-up-ok", t, batch, member });
   }
+  function oweDeparture(s, t, departed) {
+    for (const m of s.members.values()) {
+      if (m.arrivedAtT === null || m.removed) continue;
+      if (m.departuresOwed.has(departed)) continue;
+      s.emit({ type: "departure-owed", t, member: m.id, departed });
+    }
+  }
+  function ackDeparture(s, t, member, departed) {
+    s.requireOpen("acknowledging");
+    const m = s.members.get(member);
+    if (!m) throw new Error(`unknown member '${member}'`);
+    if (!m.departuresOwed.has(departed)) return;
+    s.emit({ type: "departure-ok", t, member, departed });
+  }
   function resendInvite(s, t, member, by) {
     s.requireOpen("re-sending an invitation");
     const m = s.members.get(member);
@@ -1062,6 +1076,7 @@ var CONSTITUTION = (() => {
       const target = rec.payload.member;
       const wasInE = inE(s.members.get(target));
       s.emit({ type: "member-removed", t, member: target, viaMotion: rec.id });
+      oweDeparture(s, t, target);
       if (wasInE) s.afterRosterChange(t, "departure", target);
       crownSeatVacated(s, t);
     } else if (rec.payload.kind === "set" && CONSTITUTIONAL.has(rec.payload.setting)) {
@@ -1418,6 +1433,8 @@ var CONSTITUTION = (() => {
             rec.mailGaveUpOwed = prev.mailGaveUpOwed;
             rec.mailGaveUpGiven = prev.mailGaveUpGiven;
             rec.mailGaveUp = prev.mailGaveUp;
+            rec.departuresOwed = prev.departuresOwed;
+            rec.departuresGiven = prev.departuresGiven;
             rec.lastActivityT = prev.lastActivityT;
           } else {
             rec.lastActivityT = Math.max(rec.lastActivityT, s.convenor.lastActivityT);
@@ -1668,6 +1685,17 @@ var CONSTITUTION = (() => {
         const m = s.members.get(event.member);
         m.amendmentsOwed.delete(event.candidate);
         m.amendmentsGiven.add(event.candidate);
+        touch(s, event.member, event.t);
+        break;
+      }
+      case "departure-owed": {
+        s.members.get(event.member).departuresOwed.add(event.departed);
+        break;
+      }
+      case "departure-ok": {
+        const m = s.members.get(event.member);
+        m.departuresOwed.delete(event.departed);
+        m.departuresGiven.add(event.departed);
         touch(s, event.member, event.t);
         break;
       }
@@ -1928,7 +1956,8 @@ var CONSTITUTION = (() => {
           person: event.person,
           status: "started",
           words: null,
-          motion: null
+          motion: null,
+          shutAcked: false
         };
         s.applicants.set(event.applicant, withPerson(s, state));
         s.nextApplicantN += 1;
@@ -1966,6 +1995,10 @@ var CONSTITUTION = (() => {
       }
       case "application-refused": {
         s.applicants.get(event.applicant).status = "refused";
+        break;
+      }
+      case "apply-shut-ok": {
+        s.applicants.get(event.applicant).shutAcked = true;
         break;
       }
       default:
@@ -2028,6 +2061,8 @@ var CONSTITUTION = (() => {
       mailGaveUpOwed: /* @__PURE__ */ new Set(),
       mailGaveUpGiven: /* @__PURE__ */ new Set(),
       mailGaveUp: false,
+      departuresOwed: /* @__PURE__ */ new Set(),
+      departuresGiven: /* @__PURE__ */ new Set(),
       invitationExpired: false,
       closingAck: null
     };
@@ -2720,6 +2755,7 @@ var CONSTITUTION = (() => {
       }
       const wasInE = inE(m);
       this.emit({ type: "member-removed", t, member, by: "convenor" });
+      this.oweDeparture(t, member);
       if (wasInE) this.afterRosterChange(t, "departure", member);
     }
     /**
@@ -2746,6 +2782,7 @@ var CONSTITUTION = (() => {
       }
       const wasInE = inE(m);
       this.emit({ type: "member-removed", t, member, by: "self" });
+      this.oweDeparture(t, member);
       if (wasInE) this.afterRosterChange(t, "departure", member);
       this.crownSeatVacated(t);
     }
@@ -3068,6 +3105,14 @@ var CONSTITUTION = (() => {
     ackMailGaveUp(t, member, batch) {
       ackMailGaveUp(this.owedState(), t, member, batch);
     }
+    /** Every departure is news owed an OK (Q901): the three routes call this,
+     *  the carried motion's through `MotionHost`. */
+    oweDeparture(t, departed) {
+      oweDeparture(this.owedState(), t, departed);
+    }
+    ackDeparture(t, member, departed) {
+      ackDeparture(this.owedState(), t, member, departed);
+    }
     resendInvite(t, member, by) {
       resendInvite(this.owedState(), t, member, by);
     }
@@ -3365,6 +3410,23 @@ var CONSTITUTION = (() => {
       const a = this.applicants.get(applicant);
       if (!a || a.status !== "started") throw new Error("nothing to verify");
       this.emit({ type: "application-verified", t, applicant });
+    }
+    /**
+     * **The OK on a door that shut under you** (Ed, 2026-09-14, Q901; SURFACE
+     * E33). The refusal itself is derived from the rule as it stands, so this
+     * records only that the applicant read it — and it deliberately **does not**
+     * `requireOpen`. Every other acknowledgement in the module refuses a shut
+     * document, on the ground that nothing is owed after the close; here the
+     * close is one of the things that shuts the door, so an OK that refused one
+     * would leave the card standing on the applicant's surface for ever behind a
+     * button that throws (`mailGaveUp`'s own reasoning, from the other side).
+     * Idempotent: a second press is silently nothing, `ackRelease`'s posture.
+     */
+    ackApplyShut(t, applicant) {
+      const a = this.applicants.get(applicant);
+      if (!a) throw new Error(`unknown applicant '${applicant}'`);
+      if (a.shutAcked) return;
+      this.emit({ type: "apply-shut-ok", t, applicant });
     }
     /** Nothing is sent before Submit; an empty application is a real application. */
     submitApplication(t, applicant, fields = {}) {
@@ -4087,6 +4149,11 @@ var CONSTITUTION = (() => {
       doors,
       applicants,
       owedOks: me ? [...me.okOwed] : [],
+      // the departures still owed your OK (SURFACE E31, E32, E38; Q901), oldest
+      // first: the ids alone, because `departures` above already carries the
+      // name, the moment and whose act it was for every one of them — a second
+      // copy is a second truth, and the card reads the register's own row
+      owedDepartures: me ? departures.filter((d) => me.departuresOwed.has(d.id)).map((d) => d.id) : [],
       // newest last, so the rail meets the acts in the order they happened; a
       // seat with no member record gets [], exactly as `owedOks` does
       owedReleases: me ? [...s.releaseBatchRecords().values()].filter((b) => me.releasesOwed.has(b.id)).sort((a, b) => a.t - b.t).map((b) => ({ id: b.id, at: b.t, releases: b.releases.map((r) => ({ ...r })) })) : [],

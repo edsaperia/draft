@@ -602,6 +602,10 @@ export class ConstitutionSession {
     }
     const wasInE = inE(m);
     this.emit({ type: 'member-removed', t, member, by: 'convenor' });
+    // **the room is told, and owes an OK for it** (Q901): before the roster's
+    // own follow-ons, so the news of the act sits beside the act in the log
+    // rather than behind whatever a re-settle carried
+    this.oweDeparture(t, member);
     if (wasInE) this.afterRosterChange(t, 'departure', member);
   }
 
@@ -629,6 +633,7 @@ export class ConstitutionSession {
     }
     const wasInE = inE(m);
     this.emit({ type: 'member-removed', t, member, by: 'self' });
+    this.oweDeparture(t, member);   // Q901, `remove`'s rule and its placing
     if (wasInE) this.afterRosterChange(t, 'departure', member);
     // after the roster's own follow-ons, never inside them: the seat this
     // may have just vacated is R-060's vacancy however it arose, and the
@@ -1084,6 +1089,16 @@ export class ConstitutionSession {
     owed.ackMailGaveUp(this.owedState(), t, member, batch);
   }
 
+  /** Every departure is news owed an OK (Q901): the three routes call this,
+   *  the carried motion's through `MotionHost`. */
+  private oweDeparture(t: number, departed: MemberId): void {
+    owed.oweDeparture(this.owedState(), t, departed);
+  }
+
+  ackDeparture(t: number, member: MemberId, departed: MemberId): void {
+    owed.ackDeparture(this.owedState(), t, member, departed);
+  }
+
   resendInvite(t: number, member: MemberId, by: MemberId): void {
     owed.resendInvite(this.owedState(), t, member, by);
   }
@@ -1411,6 +1426,24 @@ export class ConstitutionSession {
     const a = this.applicants.get(applicant);
     if (!a || a.status !== 'started') throw new Error('nothing to verify');
     this.emit({ type: 'application-verified', t, applicant });
+  }
+
+  /**
+   * **The OK on a door that shut under you** (Ed, 2026-09-14, Q901; SURFACE
+   * E33). The refusal itself is derived from the rule as it stands, so this
+   * records only that the applicant read it — and it deliberately **does not**
+   * `requireOpen`. Every other acknowledgement in the module refuses a shut
+   * document, on the ground that nothing is owed after the close; here the
+   * close is one of the things that shuts the door, so an OK that refused one
+   * would leave the card standing on the applicant's surface for ever behind a
+   * button that throws (`mailGaveUp`'s own reasoning, from the other side).
+   * Idempotent: a second press is silently nothing, `ackRelease`'s posture.
+   */
+  ackApplyShut(t: number, applicant: string): void {
+    const a = this.applicants.get(applicant);
+    if (!a) throw new Error(`unknown applicant '${applicant}'`);
+    if (a.shutAcked) return;
+    this.emit({ type: 'apply-shut-ok', t, applicant });
   }
 
   /** Nothing is sent before Submit; an empty application is a real application. */

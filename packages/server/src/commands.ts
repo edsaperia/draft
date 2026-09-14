@@ -315,6 +315,11 @@ const HANDLERS: Record<string, Handler> = {
   'ack-mail-gave-up': (cs, a, t, args) => {
     cs.ackMailGaveUp(t, a.memberId, str(args, 'batch'));
   },
+  // the OK on one departure (SURFACE E31, E32, E38; Q901), the same shape: the
+  // whitelist injects the actor, so the body names who left and nothing else
+  'ack-departure': (cs, a, t, args) => {
+    cs.ackDeparture(t, a.memberId, str(args, 'member'));
+  },
   // 📨 — E34 says the gave-up row is *the founder's ✉️ row*, so the re-send is
   // theirs. Entry 94 lets any member invite while 🪪 stands at ✒️, and
   // widening this to match is a surface ruling nobody has made (Q1031).
@@ -394,7 +399,11 @@ const HANDLERS: Record<string, Handler> = {
       ? cap(args.comment, LIMITS.why, 'the closing comment') : '';
     cs.acknowledgeClose(t, a.memberId, comment);
   },
-  /* -- an applicant's one act (§9.7½): submit — nothing else speaks for them */
+  /* -- an applicant's two acts (§9.7½): submit, and the OK on a door that
+     shut under them (SURFACE E33, Q901) — nothing else speaks for them */
+  'ack-apply-shut': (cs, a, t) => {
+    cs.ackApplyShut(t, applicantOnly(a));
+  },
   'submit-application': (cs, a, t, args) => {
     const applicant = applicantOnly(a);
     const fields: { name?: string; picture?: string; words?: string } = {};
