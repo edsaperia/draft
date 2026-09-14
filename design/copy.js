@@ -147,7 +147,6 @@ window.COPY = (function () {
       you: 'You ',
       voted: 'voted',
       shiftedTail: ' You cannot change it, because it was not a vote about this text.',
-      lockedTail: 'This one is settled, so your vote is on the record as it stands.',
     },
     // draftFaceHtml: the face on a rationale being written
     draftFace: {

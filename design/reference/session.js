@@ -161,7 +161,7 @@
     // `canJudge()` being `constitutedAtT !== null` and never having
     // asked about the close — the same omission that had every settled card
     // on a closed page drawing a live motion composer.
-    lockedOf: (s) => !!s.locked || !MAY_JUDGE() || docClosed,
+    lockedOf: () => !MAY_JUDGE() || docClosed,
     pickOf: (s) => pickOf(s),
     stateOf: (s) => stateOf(s),
     isCast: (s) => isCast(s),
@@ -888,7 +888,7 @@
       // the receipt is the front pair's: true for the pair you just judged,
       // and false the moment the next pair is the entry's card (Q1200)
       const justJudged = resolved.has(frontKeyOf(g)) && g.state === 'needs';
-      const locked = g.locked || st === 'sealed';
+      const locked = st === 'sealed';
       const verdict = verdicts.get(pairKeyOf(g)) || g.verdict;
       const u = g.urgency ?? 0.5;
       const stateCls = (st === 'deciding' && !stuck(g)) ? 'deciding' : classFor(g);
@@ -3515,7 +3515,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     const choose = (el) => {
       const card = el.closest('.sugg');
       const s = SUGGS.find((x) => x.id === card.dataset.card);
-      if (!s || s.locked) return;
+      if (!s) return;
       const now = pickOf(s) === el.dataset.v ? null : el.dataset.v;
       picked.set(pairKeyOf(s), now);
       // One judgment, however many cards it is showing on (181): every card

@@ -807,7 +807,7 @@ window.CARDS = (function () {
       //     *question put to you*, so it stays visible and inert; that is
       //     the state the commit row already draws.
       mayPropose: () => true,
-      lockedOf: (s) => !!s.locked,
+      lockedOf: () => false,
       // **The editing card shows the face the room will see** (K30). Two
       // reads, both permissive-by-absence so a surface that sets neither draws
       // exactly the sealed disc and the sealed title it draws today:
@@ -974,10 +974,6 @@ window.CARDS = (function () {
         return '<div class="srationale locked">' + said + esc(s.shifted) +
           G.revise.shiftedTail + '</div>';
       }
-      if (s.locked) {
-        return '<div class="srationale locked">' + said +
-          G.revise.lockedTail + '</div>';
-      }
       // **The unlocked case says nothing at all** (Ed, 2026-08-17). It had been
       // trimmed once already, to what you said plus the fact it can change, and
       // both halves turn out to be drawn elsewhere on the same card: the radio on
@@ -986,7 +982,7 @@ window.CARDS = (function () {
       // prose restating two controls the reader is looking at is the design
       // explaining itself.
       //
-      // The two locked cases above keep theirs, and the contrast is the whole
+      // The shifted case above keeps its sentence, and the contrast is the whole
       // reason: there the controls are dead, so the card cannot say it by being
       // itself and a sentence is the only thing that can.
       return '';

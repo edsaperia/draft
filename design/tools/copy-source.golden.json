@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 490
+  "entries": 489
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -55,7 +55,6 @@
   "grammar.lane.proposed": "Proposed",
   "grammar.proposeEdit.label": "✏️ propose edit",
   "grammar.proposeEdit.title": "Write your own version of this proposal. Free to open — proposing costs one edit.",
-  "grammar.revise.lockedTail": "This one is settled, so your vote is on the record as it stands.",
   "grammar.revise.shiftedTail": " You cannot change it, because it was not a vote about this text.",
   "grammar.revise.voted": "voted",
   "grammar.revise.you": "You ",

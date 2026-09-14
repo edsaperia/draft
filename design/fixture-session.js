@@ -745,9 +745,10 @@ window.FIXTURE_SESSION = (function () {
       // The story it now tells: you judged this clause when it was one line
       // about the rota. Somebody else's patch adding the Garden Steward carried,
       // which changed the text under you — so your comparison was against a
-      // wording that no longer exists, and it is locked (§4.4). A live candidate
+      // wording that no longer exists — void, in the ledger (§4.4), the card-level
+      // lock having gone with Q311 (Ed, 2026-09-14). A live candidate
       // is now arguing about the heroic weekends, against the new ground.
-      id: 'quick-garden', kind: 'quick', keys: ['garden'], state: 'deciding', locked: true,
+      id: 'quick-garden', kind: 'quick', keys: ['garden'], state: 'deciding',
       verdict: 'preferred the posted rota', pick: 'keep',
       qLabel: '§ The Garden',
       urgency: 0.5,
