@@ -6122,3 +6122,14 @@ Asked together with Q49 as the walk's ninth question, 2026-09-14. **Ruled: kind-
 
 102. **Urgency is kind-blind.** Nothing distinguishes a copy-edit from a constitutional fight, so a typo near its floor can burn as bright as a structural race. Ed's north star ("most of a session should feel like approving typo fixes") argues for letting cheap items shine; the risk is a margin lit up by typos while a structural race sits pale. The `race-labeler` already stores copy-edit/substantive/structural but nothing consumes it (Q49) — the same decision arriving from the other end.
 
+
+## Q100: the judgment cost stays in the engine (R-109) (Ed, 2026-09-14)
+
+The walk's tenth question, 2026-09-14. **Ruled: no — c_p prices the exploration slot and nothing a member sees; the margin fits what fits.** SPEC v0.122 §8.1, → why: R-109, with the rejected readings. Nothing to build.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 100 | Where c_p goes now | 2026-08-16 | open | SPEC §8.1 |
+
+100. **Where c_p goes now.** A participant's judgment cost is one scalar dividing every v, so it never reorders their own list — and with the rail showing everything at once it can't truncate one either. It has to act on the *drawing*: since 2026-08-16 the rail already shows only as many questions as fit, most urgent first, so c_p's natural home is that cut — an expensive judge is shown fewer of them, and the rest stay in the count at the foot of the rail rather than being hidden. Undecided, but the mechanism it would act on now exists.
+
