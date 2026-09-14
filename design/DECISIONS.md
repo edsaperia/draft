@@ -6098,3 +6098,27 @@ The walk's eighth question, 2026-09-14. **Ruled: strike skip from the spec.** SP
 
 208. **Skip now exists only on the 🔥 card** (raised 2026-08-16, from Q202 — Ed's call, with the reasoning that skip belongs where the surface *insists* and nowhere it merely offers). Two loose ends. (a) SPEC §3.1 and §8.3 describe skipping as available on any card, so either the spec gains a sentence saying it is a property of *insistent* serving rather than of cards, or the product is knowingly narrower than the mechanism. (b) The personal recirculation-with-decay that skip triggers now applies to at most one suggestion at a time, which may make the decay function (Q175) nearly irrelevant — worth checking in the sim before anyone spends effort calibrating it.
 
+
+## Q49: the type stays unwired; urgency is kind-blind by design (R-108) (Ed, 2026-09-14)
+
+The walk's ninth question, 2026-09-14, asked together with Q102. **Ruled: no — urgency is kind-blind on purpose, say so in the spec.** SPEC v0.121 §8.1 carries the sentence, → why: R-108, which records the rejected readings. The labeller stays advisory and uncalled; nothing to build.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 49 | Naming and typing disputes | 2026-08-14 | partly answered — interim `race-labeler` landed; the type is unwired from routing | SPEC §8; Q102 |
+
+49. **Naming and typing disputes** (Ed's question, 2026-08-14): the engine knows a dispute's *location* (span/footprint), not its *nature*. Labels in UI currently fall back to nearest markdown heading + excerpt, which fails on heading-less documents. P3 should generate both a name ("treasurer oversight") and a type (copy-edit vs substantive vs structural) per race — the type also informs routing (copy-edits shouldn't burn diagonal attention slots) and the record. *Interim landed 2026-08-14 (5e61969): advisory `describeRace` oracle capability + `race-labeler` with deterministic nearest-heading fallback; type stored but deliberately unwired from routing. Still open: wire type into routing (needs a SPEC §8 sentence), full P3 treatment.*
+
+    Consequences to settle before the composer is built. (a) **SPEC §2.6** currently says a candidate carries "one pinned rationale (≤300 chars)" and §3.4 that "to argue is to draft" — neither is wrong, but neither anticipates a drafting aid, and the spec should say whether the draft is a *suggestion* the author may discard wholesale (it should be). Needs Ed's sign-off and a version bump. (b) **Conditional on the LLM API**, per Ed: with no oracle the field is simply empty and the author writes from scratch, so the composer must not depend on it. *Built that way 2026-08-16: the rationale is an empty editable with a placeholder, and nothing in the composer calls an oracle. A drafted first line would drop into it without any other change.* (c) The **event log** should probably record that a rationale started from a draft, since "authored by a human" is a claim the record makes; unresolved whether that is a per-candidate flag or nothing at all. (d) A drafted rationale must never be *submitted* unedited by default — an empty-handed author pressing through would put machine prose on a card, which is the failure mode the edit step exists to prevent.
+
+
+## Q102: urgency is kind-blind by design (R-108) (Ed, 2026-09-14)
+
+Asked together with Q49 as the walk's ninth question, 2026-09-14. **Ruled: kind-blind on purpose** — v prices movement, never importance; SPEC v0.121 §8.1, R-108.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 102 | Urgency is kind-blind | 2026-08-16 | open | Q49 |
+
+102. **Urgency is kind-blind.** Nothing distinguishes a copy-edit from a constitutional fight, so a typo near its floor can burn as bright as a structural race. Ed's north star ("most of a session should feel like approving typo fixes") argues for letting cheap items shine; the risk is a margin lit up by typos while a structural race sits pale. The `race-labeler` already stores copy-edit/substantive/structural but nothing consumes it (Q49) — the same decision arriving from the other end.
+

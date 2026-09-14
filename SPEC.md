@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.120
+# Group Drafting Engine — Specification v0.121
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -182,7 +182,7 @@ Co-signs and withdrawals refund fully; merges pool pro-rata. → why: R-094 **Th
 
 ## 8. Routing
 
-**8.1 Judgment-budget routing.** Each participant carries a measured judgment cost c_p: bout-relative seconds (raw within active bouts; gaps over the bout-gap threshold discarded), which prices pace and availability with one number. Each servable pair carries a pivotality value v: expected movement of an adoption-relevant posterior, weighted by salience — races near the adoption threshold, certification-gap audits, and bridge probes score high; new-candidate measurement scores as exploration. Every feed is ordered by **v / c_p**, and the division of labor follows from that alone, with no further rules and at any population scale. → why: R-068
+**8.1 Judgment-budget routing.** Each participant carries a measured judgment cost c_p: bout-relative seconds (raw within active bouts; gaps over the bout-gap threshold discarded), which prices pace and availability with one number. Each servable pair carries a pivotality value v: expected movement of an adoption-relevant posterior, weighted by salience — races near the adoption threshold, certification-gap audits, and bridge probes score high; new-candidate measurement scores as exploration. Every feed is ordered by **v / c_p**, and the division of labor follows from that alone, with no further rules and at any population scale. → why: R-068 **Urgency is kind-blind by design**: v prices movement, never importance, so a race's type (copy-edit · substantive · structural, the `race-labeler`'s advisory label) enters no feed and no ordering. → why: R-108
 
 **8.2 Floors.** F (§4.2) distinct judges of the leading candidate before it adopts — the room’s quorum riding on a statistical-sufficiency minimum, the record carrying the winner's judge count per race. → why: R-102 Near adoption, the router prefers participants who haven't judged the race: the unheard are asked at the moment their silence would be foreclosed. Judgments count once each; there are no weights. An author's own derived preference for their draft (§3.3) counts as a judge of that draft like any other, and of nothing else — unless its author is out of E: an applicant authoring their own admit race (§9.7.3, X11), or an author who has lapsed; their cast judgments still count (§9.5a).
 
