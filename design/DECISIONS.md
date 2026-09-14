@@ -5828,3 +5828,168 @@ The walk's second and third questions, 2026-09-14. **(a) ruled: a parked rival i
 
 1348. **Several motions running on one setting: the page offers only the first, and an answered first hides the rest** (raised 2026-09-12 13:45 by the Q1323 re-try on `docs.vote/d/moon2`). The page finds the motion a setting's card puts to you by walking the motion records in order and taking the first running one that targets the setting (`liveMotionRec`, session-view.html:4967), whatever you have already answered on it. On moon2 the bots put **26** 🏛️ motions on 💤 — each proposing the same fortnight, the module refusing only a motion that proposes *what stands* — so Ada Lovelace, who answered the first, has 23 standing unanswered behind it while her 💤 entry reads ⏳ and nothing on her page can reach them; and since each motion counts its own answers against the whole room (155), none of the 23 can carry until enough members reach them, which no page lets anybody do. A real room meets the small case: two members moving the same setting in the same minute. Readings: **(a)** a deck per setting, as the `pair-deck` is for a race (M18, Q1202) — one entry, the next press opening the next unanswered motion, ⏳ only when none can still be asked of you, the ⏳ card the ledger of what you answered; **(b)** one entry per motion, the rail saying how many run; **(c)** the module refuses a motion identical to one already running on the setting (the mover is told it is already put, and may answer it instead), which alone would have made moon2's 26 into one; **(d)** the module refuses any second motion on a setting while one runs. Recommendation: **(c) now** — it is a two-line refusal beside *proposes what already stands*, and a duplicate motion is never what anybody meant — **and (a) for the rest**, because two *different* values on one setting are two real questions and the surface already has the shape for a queue of questions on one clause. (d) is rejected on its own: it lets the first mover block every rival wording for the life of their motion. **Q1323 itself did not reproduce** on the healthy host: Rosalind Lovelace's 🏛️ answer landed (47 → 48 of 155, `myAnswer: accept` on the wire) and the entry filed as ⏳ within three seconds and stayed through three polls. Pointers: `motion`; `liveMotionRec`; `pair-deck`; `answeredMotion`; SURFACE E10, M18; SPEC §9.6a; Q1202, Q1319, Q1323. **Ruled by Ed 2026-09-12 14:10.** Put to him as (c) dedup now and (a) a deck per setting — with the alternative of one card, per-candidate consent, the first to carry ground-shifting the rest. *(c): there should be dedup* — **built the same hour**: `openMotion` refuses a payload already running on either route and names the twin (`runningTwin`, `samePayload`), SPEC §9.6 v0.117 → R-103, `motions.test.ts`. On the rest: *I don't like that the order in which people answer constitutional questions affects how they get adopted; if there are two that are both live and pass, the engine should find out which one is preferred* — so consent gates a value in and a pairwise race between the consented values decides which stands: SPEC §9.6 → R-104, on §13's ledger until built. **Ruled 2026-09-12 14:30:** *adopt the first, race the second* — and then, unprompted, *I suppose the second is indeed against "the status quo" which is the one that just passed, so in fact it's moot.* So there is no race: a motion is a proposal against what stands, the first value to carry stands, and the rival runs on as a proposal to move from it, carrying by the same unanimity — which is what `maybeSettleMotions` already does, so SPEC §9.6's sentence and R-104 were rewritten to say it and the §13 ledger row went. **Residual, for Ed:** a member who answered the survivor before the first carried answered it against the *old* value, and nothing re-asks them — the founding question's own ground-shift rule is *answers stand*; recommended: the same, with the survivor's card saying what now stands, so a member who wants to change their mind can (every answer is revisable until it settles). **Residual ruled 2026-09-12 15:02 — clear every answer but the mover's and ask again:** the carry is a ground shift on every rival still running on the setting; the module wipes its answers except the mover's standing accept, the count restarts and the motion is served to everyone as a fresh ask, so every answer that carries it was given against the value that actually stands. Rejected: answers standing with the card restating the baseline (the recommendation, a member who never looks again carrying a vote against a different baseline); clearing accepts alone; withdrawing the rival. **Built 2026-09-12 (branch `q1348-wipe`, d8860c4):** `motion-ground-shifted { motion, cause: MotionId | 'pen' }`, folded as the wipe with the mover restored to accept; `shiftRivals` called from `settleCarriedEffects` for every `set` carry (unanimity, the ordinary seam, the crown's accept) and from `setSetting` after the start where the value actually moves; SPEC v0.118 → R-105; four tests, replay identical. **Two residuals for Ed, from the build:** (a) a rival at *awaiting-crown* is not shifted — it has carried by unanimity and waits on the Founder alone, so a park the crown later accepts lands a value consented against the old ground; (b) a rival that now proposes exactly the value the pen just set is left running (its carry would set what stands). Recommended: (a) shift it too, the crown's question then re-put after the fresh vote; (b) resolve it *carried-moot*, or simply withdraw it with a line to its mover. **Surface half ruled 2026-09-12 15:05 — a deck per setting, like the `pair-deck`:** one entry per setting; opening it shows the first motion you have not answered, answering closes the card and the next press opens the next; the entry reads ⏳ only when you have answered every motion on the setting, and that ⏳ card lists each with your answer, revisable; the bar and *n of E have answered* read the motion currently shown; the rail count says how many wait. Rejected: one entry per motion (three tabs on one paragraph), all motions on one card (three radio groups, one commit sending three commands), leaving it. **Owed:** `liveMotionRec` → a deck reader, the ⏳ card's ledger body, SURFACE E10 and M18 amended, journey asserting two motions on one setting.
 
+
+## Q72: closed — the wire lands on the open card (Ed 264), no hover wires (Ed 78) (Ed, 2026-09-14)
+
+Closed in the walk's findings batch of 2026-09-14 (Ed: *close all sixteen*; the batch was put as findings — drift against a ruling already made, a part that no longer exists, or a thing already built — on the spec pass's rule that a finding is fixed unless vetoed). Both halves were ruled and built: opening a card replaces the paragraph, so the cable lands on the card by construction (session.js's `stacked` rule, Ed 264), and hover wires were rejected for the gutter's flicker (Ed 78).
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 72 | Queue-wire reach | 2026-08-15 | waiting on Ed | `queue-wire` |
+
+72. **Queue-wire reach** (found 2026-08-15, from Q71; trigger settled by Q78 — the wire belongs to the open card only). Two calls I made that Ed hasn't ruled on. (a) The wire lands on the anchored **paragraph(s)**; Ed's phrasing was "left into the decision cards", which could instead mean the open inline card. (b) There is no wire in the other direction — hovering a paragraph in the document doesn't light its queue entry — though the relationship is symmetrical and the return trip is arguably the more useful one when you are reading rather than working the queue.
+
+
+## Q77: closed — the runway is inside the column, ruled 2026-08-30 and rebuilt twice (Ed, 2026-09-14)
+
+Closed in the walk's findings batch of 2026-09-14 (Ed: *close all sixteen*; the batch was put as findings — drift against a ruling already made, a part that no longer exists, or a thing already built — on the spec pass's rule that a finding is fixed unless vetoed). *The runway is content, not padding* (Ed's QA 2026-08-30, `.doc::after` at 95vh), `#runway` after 🍾 (Q1335), and the last segment's alone in edit mode (Q1336).
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 77 | Where the scroll runway lives | 2026-08-15 | waiting on Ed | `design/system.css` (the 95vh) |
+
+77. **Where the scroll runway lives** (raised 2026-08-15, unanswered): removing the design notes (76) took most of the page's scroll with them, so the document now carries ~95vh of bottom padding — without it an anchor near the end of the charter can never be scrolled up to the queue rail and the wire-levelling (74) silently stops working down there. I put that padding *inside* `.doc`, so the middle column literally runs to the bottom as Ed asked; the cost is that scrolling to the end shows about a screenful of blank paper below the last line. The alternative is padding on `main` instead: the card stops just after "Adopted at the house, by the fourteen, over pasta" and the runway is page background. One line either way.
+
+
+## Q89: closed — ❄️ replaced skip (Ed, 2026-08-17) (Ed, 2026-09-14)
+
+Closed in the walk's findings batch of 2026-09-14 (Ed: *close all sixteen*; the batch was put as findings — drift against a ruling already made, a part that no longer exists, or a thing already built — on the spec pass's rule that a finding is fixed unless vetoed). ❄️ is a toggle on the flame, on the card's commit row: nothing is skipped, recirculated or decayed (session.js, SURFACE M8, §9.1). The spec's two skip sentences are Q208's business.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 89 | Where Skip lives, and how its decay is shown | 2026-08-16 | partly answered — not on the card (Ed); (a) (b) open | SPEC §8.3; Q174 |
+
+89. **Where Skip lives, and how its decay is shown** (raised 2026-08-16; Ed: skip should not be on the decision card at all — it will probably live in the `needs-you-queue` once that surface is worked on; left in place for now). Two parts remain. (a) The move itself, which waits on the queue work. (b) The mockup does not model SPEC §8.3's "skipped cards recirculate personally with decay" — skipping closes the card and leaves the queue entry exactly where it was (superseded in part: Q174 proposes it should drop the entry to the cool tier instead), so nothing conveys that it will come back less often. Whether that needs any acknowledgement at all, or whether silence is right, is undecided. Worth settling with (a), since a skip that visibly *moves* something in the queue would answer it for free.
+
+
+## Q124: closed — Ed accepted the trade and lengthened the quote (2026-08-16) (Ed, 2026-09-14)
+
+Closed in the walk's findings batch of 2026-09-14 (Ed: *close all sixteen*; the batch was put as findings — drift against a ruling already made, a part that no longer exists, or a thing already built — on the spec pass's rule that a finding is fixed unless vetoed). Four lines on every entry and five on 🔥, *an argument cut to a line was a teaser for an argument* (system.css); the tally at the foot went the next day (Ed, 2026-08-17).
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 124 | Teasers made the rail say more about fewer things | 2026-08-16 | waiting on Ed | `teasersFor` (session.js) |
+
+124. **Teasers made the rail say more about fewer things** (raised 2026-08-16, from Q123). Quoting rationales grew a hot card from ~76px to ~117px and a two-teaser race to ~164px, so 110's fit cap now drops four or five of twelve entries on an 800px window instead of none. The overflow count reports them honestly, and this is the first time that rule has fired outside a contrived test — but it is a genuine trade and nobody has chosen a side. Options: (a) accept it — a margin that says something about eight clauses beats a list that names twelve; (b) clamp harder — one line on hot as well as warm, which roughly halves the growth; (c) show the teaser only on the entry nearest your reading position, so at most one or two are expanded at a time and the rest stay compact. (c) is the most interesting and the most fiddly.
+
+
+## Q171: closed — the rail carries authorship since the build of 2026-08-16 (Ed, 2026-09-14)
+
+Closed in the walk's findings batch of 2026-09-14 (Ed: *close all sixteen*; the batch was put as findings — drift against a ruling already made, a part that no longer exists, or a thing already built — on the spec pass's rule that a finding is fixed unless vetoed). Your own proposal stands beside its clause in your colour from the first keystroke to the seal (SURFACE ✏️ row, M3); the leftovers were Q169 and Q170.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 171 | Does the rail carry authorship at all? | 2026-08-16 | partly answered — the place is settled (`yours`); the marks are not | SURFACE M3 |
+
+171. **Does the rail carry authorship at all?** Every state built so far is you-as-judge. 169 and 170 are you-as-author, and so are the composer, the graveyard and the token ledger. Whether that belongs in this rail or on a separate surface is a bigger question than any symbol, and 169–170 wait on it. *Partly answered 2026-08-16 by building the composer: the rail does carry authorship, as the green `yours` state, and it works — a proposal of your own stands beside its clause like everything else and is force-kept on screen because withdrawing is always available (Ed, 240). So the placement question is settled, and 169–170 become questions about **marks** rather than about **place**: a dominated candidate and a rebase-pending one are both things that happen to a green entry, at a clause that already has your entry beside it. What is still open is whether they are their own glyphs inside green, or a line on the card.*
+
+
+## Q174: closed — ❄️ is the built answer, and it is reversible (Ed, 2026-09-14)
+
+Closed in the walk's findings batch of 2026-09-14 (Ed: *close all sixteen*; the batch was put as findings — drift against a ruling already made, a part that no longer exists, or a thing already built — on the spec pass's rule that a finding is fixed unless vetoed). ❄️ takes the entry out of the running for the flame and leaves it standing as an ordinary open question; the cool-tier proposal was not reversible.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 174 | Skip in a margin index: what does it actually do to the entry? | 2026-08-16 | waiting on Ed | SPEC §3.1, §8.3; Q89 |
+
+174. **Skip in a margin index: what does it actually do to the entry?** (raised 2026-08-16, Ed's question, from Q89.) Ed asked whether deselecting a card should mean skip; answered no — closing is browsing, and binding a signal to the navigation gesture makes the signal dishonest (SPEC §3.1: "Skipping is not a move; the card returns later", and §8.3's only effect is personal recirculation with decay). So skip stays an explicit control, and should move into the rail per Q89. But the rail is a **margin index**, not a conveyor, and that changes what skip can mean: the entry cannot vanish, because the clause still has an open question and the margin is supposed to tell the truth about the document. Proposal to settle: skipping drops the entry to the **cool** tier — one line, palest wash — at its own clause, so it stops asking without stopping being there, and the decay is legible as "this went quiet". A second skip on an already-cool entry could compress it further. Related: SPEC does not specify the decay function at all (Q175), so "comes back less often" has no numbers behind it yet.
+
+
+## Q52: closed — the composer it describes is gone; the briefing is retired (Q1000) (Ed, 2026-09-14)
+
+Closed in the walk's findings batch of 2026-09-14 (Ed: *close all sixteen*; the batch was put as findings — drift against a ruling already made, a part that no longer exists, or a thing already built — on the spec pass's rule that a finding is fixed unless vetoed). The separate writing desk, the standings panel and the purple interruption banner no longer exist; you write by editing the charter in place; the dedup-gate's presentation becomes a question when somebody builds it.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 52 | Composer design decisions | 2026-08-14 | partly answered — narrowed to the briefing and the dedup-gate | SPEC §3.5 |
+
+52. **Composer design decisions** (raised 2026-08-14, unanswered; **narrowed 2026-08-16**). The composer was rebuilt into session-view as in-place editing (224–241), and design/composer.html’s drafting desk and arrival bar went with it — so (a) and (c) below now describe a surface that no longer exists, and survive only as questions about the **briefing**, which is still to be rebuilt as an escalation state (SPEC §3.5). (b) is untouched, since the dedup-gate has not been built anywhere yet. Three calls made in design/composer.html that Ed has not ruled on. (a) The standings-panel draws the incumbent's bar as its *certification* — P(current text beats best challenger) — so the display shows why only a bridge has a path; the spec doesn't dictate how the composer renders standings. (b) The dedup-gate borders purple, extending the series' "changed since you looked" grammar to "the engine interrupting your submission" — defensible stretch or grammar dilution. (c) The desk deliberately never predicts how your own draft would poll (a self-poll would be a standings feed by the back door) — spec-faithful, but a participant might expect it.
+
+
+## Q168: closed — nothing detects camps (Ed, 2026-09-14)
+
+Closed in the walk's findings batch of 2026-09-14 (Ed: *close all sixteen*; the batch was put as findings — drift against a ruling already made, a part that no longer exists, or a thing already built — on the spec pass's rule that a finding is fixed unless vetoed). SPEC §13's ledger records camps, the camp digest and the bridge measurement as promises the tree does not hold (rows 6.1, 6.3); the deadlock card's desk is a plain writing box. A bridge mark is a question when bridges exist.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 168 | Bridge wanted | 2026-08-16 | waiting on Ed — a mark | SPEC §6.3 |
+
+168. **Bridge wanted** — a deadlocked race where camps have been detected (SPEC §6.3) asks for something sharper than any new draft: one that spans two positions, which the composer briefs for. Own mark, or 💡 with a different briefing?
+
+
+## Q169: closed — the dominated account is ledgered unbuilt, and telling an author they are behind is a disclosure decision first (Ed, 2026-09-14)
+
+Closed in the walk's findings batch of 2026-09-14 (Ed: *close all sixteen*; the batch was put as findings — drift against a ruling already made, a part that no longer exists, or a thing already built — on the spec pass's rule that a finding is fixed unless vetoed). `dominated()` names the candidates and nothing calls it (SPEC §13 row 6.2); C12 keeps a live race blind.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 169 | Your candidate was dominated | 2026-08-16 | waiting on Ed — a mark | SPEC §8.4; Q171 |
+
+169. **Your candidate was dominated** (SPEC §8.4 already names it as a digest item). The ask is revise-or-withdraw, addressed to you as author.
+
+
+## Q175: closed — there is no skip to calibrate (Ed, 2026-09-14)
+
+Closed in the walk's findings batch of 2026-09-14 (Ed: *close all sixteen*; the batch was put as findings — drift against a ruling already made, a part that no longer exists, or a thing already built — on the spec pass's rule that a finding is fixed unless vetoed). No skip command or state exists in engine-core, the server or the page; the spec's sentence is Q208's.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 175 | The skip decay function is unspecified | 2026-08-16 | open — wants sim evidence | SPEC §8.3 |
+
+175. **The skip decay function is unspecified.** SPEC §8.3 says skipped cards "recirculate personally with decay" and stops there — no half-life, no floor, no interaction with the re-opened-race boost or the unheard boost. Needs a number before the sim can test it, and the answer probably wants sim evidence rather than a guess.
+
+
+## Q182: closed — judging a multi-place change is one card over the whole run (M19) (Ed, 2026-09-14)
+
+Closed in the walk's findings batch of 2026-09-14 (Ed: *close all sixteen*; the batch was put as findings — drift against a ruling already made, a part that no longer exists, or a thing already built — on the spec pass's rule that a finding is fixed unless vetoed). live.js keys somebody else's proposal to the union of its hunks; the one-card-per-site shape survives only in the fixture and in your own draft, where each site carries its own bin (Q1306).
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 182 | A wide patch is now a walk, not a view | 2026-08-16 | open — wants a wider fixture first | `foldBetweenSites` |
+
+182. **A wide patch is now a walk, not a view** (raised 2026-08-16, from Q181). Splitting the patch card into one card per site pushes its places much further apart than the old stacked lanes did — three cards of ~450px between them — so `foldBetweenSites` (Q80) no longer brings the whole footprint onto one screen, which was its whole purpose. The stepper answers it for three sites. At six or ten it is less clear: the member never sees the shape of what they are approving, only a sequence of local views, and the only thing asserting "these are one change" is the wire spine and the footer text. Options if it bites: a "show all places" summary panel inside the first card (reintroducing the old view as an option rather than the default); a compact map of the footprint in each card's header; or a cap above which a patch reverts to the stacked form. Wants a fixture with a wider patch before deciding — the current one has three sites, which is comfortably inside the range where this works.
+
+
+## Q207: closed — the clause sits at the head under *The clause as it stands* (Ed, 2026-09-14)
+
+Closed in the walk's findings batch of 2026-09-14 (Ed: *close all sixteen*; the batch was put as findings — drift against a ruling already made, a part that no longer exists, or a thing already built — on the spec pass's rule that a finding is fixed unless vetoed). `clause-head` (copy.js `head.label`), the keep control on it exactly when the judgment can keep the clause (SURFACE §9's quick and race rows).
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 207 | Nothing now says which lane is the current text | 2026-08-16 | open — wants a real reader | SURFACE K19–K21 |
+
+207. **Nothing now says which lane is the current text** (raised 2026-08-16, from Q206). With "Option A/B" gone (197) and the lane descriptions gone too, a decision card is two boxes of prose. Which one is the incumbent is carried by **position** — left, always — by the fact that the left lane matches the paragraph directly above the card, and by a footer clause saying that choosing the current text records a judgment for it. That is probably enough for a member who has judged a few, and it is the strongest symmetry the card has ever had. The risk is the first card someone ever sees, where the convention has not been learned yet. Cheapest mitigations if it bites: a one-line prompt above the lanes on a member's first few cards only; or a very quiet marker on the incumbent lane that is not a title. Wants a real reader before deciding.
+
+
+## Q92: closed as built — race lanes are marked against the clause with the half-survives floor (Ed, 2026-09-14)
+
+Closed in the walk's findings batch of 2026-09-14 (Ed: *close all sixteen*; the batch was put as findings — drift against a ruling already made, a part that no longer exists, or a thing already built — on the spec pass's rule that a finding is fixed unless vetoed). `MARK_FLOOR` in cards.js, SURFACE K19: below half the new text surviving the proposal states itself plain, which is what keeps a rewrite from lighting end to end.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 92 | Should a race lane be marked against the incumbent? | 2026-08-16 | waiting on Ed | `result-only` |
+
+92. **Should a race lane be marked against the incumbent?** (opened 2026-08-16 from Q91 as a question about the change card, which no longer exists — Q203 removed it, so only this half survives.) Quick and patch lanes light their new wording green; a race lane shows no highlighting at all, because both sides are whole alternatives with no baseline to mark against. Marking each candidate against the *current* text is possible and would make all three cards identical in treatment, but on a wholesale rewrite it lights up nearly every word, which is noise rather than information. Left unmarked on that reasoning, but it is the one place the three card kinds still differ.
+
+
+## Q111: closed as built — Ed's 222 is SURFACE M4 (Ed, 2026-09-14)
+
+Closed in the walk's findings batch of 2026-09-14 (Ed: *close all sixteen*; the batch was put as findings — drift against a ruling already made, a part that no longer exists, or a thing already built — on the spec pass's rule that a finding is fixed unless vetoed). The open entry's claim on its clause's line is absolute; entries that cannot fit around it are dropped, never displace it.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 111 | An open patch cannot keep its sites level and stay on screen | 2026-08-16 | waiting on Ed — recommend (a) | SURFACE §6 |
+
+111. **An open patch cannot keep its sites level and stay on screen** (found 2026-08-16, building 110). The decision card opens inline at the patch's first site and is tall, so the second and third sites move hundreds of pixels down the document — further than the visible band. Ed's 110 says needs-you entries stay on screen, so the sibling entries hold at the band edge and their wires run at an angle; only the topmost is level. Three ways out: (a) leave it — the spine still cables them and each wire still points at its own site, so the relationship is legible even when the geometry isn't; (b) let a patch's siblings leave the band while it is open, treating an open judgment as an exception to 110; (c) open the decision card somewhere that doesn't displace the other sites — a fixed panel rather than an inline insert, which is a much bigger change and cuts against the whole in-place design. I would take (a), but it is the first place where 108 and 110 genuinely pull against each other.
+
+
+## Q159: closed as built — one entry, the void vote inside the card's ledger (Ed, 2026-09-14)
+
+Closed in the walk's findings batch of 2026-09-14 (Ed: *close all sixteen*; the batch was put as findings — drift against a ruling already made, a part that no longer exists, or a thing already built — on the spec pass's rule that a finding is fixed unless vetoed). `markKindOf` keeps the entry at *needs* while the race can still ask you; the void judgment rides the ledger with the shifted sentence (live.js `SHIFTED_NOTE`); ↻ only when nothing is left to ask (SURFACE E16).
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 159 | The re-served race after a ground shift isn't modelled | 2026-08-16 | open | SPEC §4.4; Q312 |
+
+159. **The re-served race after a ground shift isn't modelled** (raised 2026-08-16, from Q156). When a race's ground shifts, the old judgment locks *and* fresh pairs are served — so the clause should carry two rail entries, the stranded 🔄 stub and a new needs-you card. The mockup shows only the stranded half (§ The Garden). Needs a decision: do they stack at the clause, does the stub collapse into the new card's history, or does it go straight to a filed dot?
+
