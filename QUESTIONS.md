@@ -14,7 +14,6 @@ The index, in the section's own order (nothing is pinned — Ed, 2026-09-07, Q12
 | 26 | Evidence-clock adoption threshold | 2026-08-13 | open — a sim A/B once everything else works | SPEC §4; Q22 |
 | 49 | Naming and typing disputes | 2026-08-14 | partly answered — interim `race-labeler` landed; the type is unwired from routing | SPEC §8; Q102 |
 | 52 | Composer design decisions | 2026-08-14 | partly answered — narrowed to the briefing and the dedup-gate | SPEC §3.5 |
-| 53 | Candidate states missing from the spec | 2026-08-14 | open — SPEC §2.6 still lacks `rebase-pending` (log Q20) | SPEC §2.6 |
 | 72 | Queue-wire reach | 2026-08-15 | waiting on Ed | `queue-wire` |
 | 77 | Where the scroll runway lives | 2026-08-15 | waiting on Ed | `design/system.css` (the 95vh) |
 | 89 | Where Skip lives, and how its decay is shown | 2026-08-16 | partly answered — not on the card (Ed); (a) (b) open | SPEC §8.3; Q174 |
@@ -167,12 +166,6 @@ The index, in the section's own order (nothing is pinned — Ed, 2026-09-07, Q12
 49. **Naming and typing disputes** (Ed's question, 2026-08-14): the engine knows a dispute's *location* (span/footprint), not its *nature*. Labels in UI currently fall back to nearest markdown heading + excerpt, which fails on heading-less documents. P3 should generate both a name ("treasurer oversight") and a type (copy-edit vs substantive vs structural) per race — the type also informs routing (copy-edits shouldn't burn diagonal attention slots) and the record. *Interim landed 2026-08-14 (5e61969): advisory `describeRace` oracle capability + `race-labeler` with deterministic nearest-heading fallback; type stored but deliberately unwired from routing. Still open: wire type into routing (needs a SPEC §8 sentence), full P3 treatment.*
 
 52. **Composer design decisions** (raised 2026-08-14, unanswered; **narrowed 2026-08-16**). The composer was rebuilt into session-view as in-place editing (224–241), and design/composer.html’s drafting desk and arrival bar went with it — so (a) and (c) below now describe a surface that no longer exists, and survive only as questions about the **briefing**, which is still to be rebuilt as an escalation state (SPEC §3.5). (b) is untouched, since the dedup-gate has not been built anywhere yet. Three calls made in design/composer.html that Ed has not ruled on. (a) The standings-panel draws the incumbent's bar as its *certification* — P(current text beats best challenger) — so the display shows why only a bridge has a path; the spec doesn't dictate how the composer renders standings. (b) The dedup-gate borders purple, extending the series' "changed since you looked" grammar to "the engine interrupting your submission" — defensible stretch or grammar dilution. (c) The desk deliberately never predicts how your own draft would poll (a self-poll would be a standings feed by the back door) — spec-faithful, but a participant might expect it.
-
-53. **Candidate states missing from the spec**
-
-    **Where it stands (docs pass, 2026-09-07):** still open — SPEC §2.6 lists neither state today (`rebase-pending` is declared in `packages/engine-core/src/types.ts:144` and appears nowhere in SPEC.md), so the fold is a spec amendment wanting Ed's sign-off.
-
-    (found 2026-08-14): SPEC §2.6 lists state {live, adopted, retired, merged, carried, withdrawn}, but engine-core's types.ts carries `displaced` and `rebase-pending`, which the mechanism needs. Fold them into §2.6, or rule them implementation detail and note why.
 
 72. **Queue-wire reach** (found 2026-08-15, from Q71; trigger settled by Q78 — the wire belongs to the open card only). Two calls I made that Ed hasn't ruled on. (a) The wire lands on the anchored **paragraph(s)**; Ed's phrasing was "left into the decision cards", which could instead mean the open inline card. (b) There is no wire in the other direction — hovering a paragraph in the document doesn't light its queue entry — though the relationship is symmetrical and the return trip is arguably the more useful one when you are reading rather than working the queue.
 
