@@ -6468,3 +6468,55 @@ The walk's thirtieth question, 2026-09-14. **Ruled by Ed, in his words:** *at th
 
 386. **No surface yet raises a reserve motion** (raised 2026-08-19, unanswered in chat; generalized by v0.52). The module carries the `reserve` payload on any held-able setting and the page renders such motions defensively, but no composer offers "return this to the founder's reserve" — it wants a home, probably a second option on a delegated setting's own composer, in the same sentence grammar the delegation itself now uses.
 
+
+## Q901: every departure owes every member an OK, a refused applicant an OK (E31–E33, E40) (Ed, 2026-09-14)
+
+The walk's thirty-seventh question, 2026-09-14, in two parts. **Ruled by Ed: all of the cases listed should cause serving an OK acknowledgement card** — clarified: **every member, for every departure; the applicant, for a refusal.** **Built 2026-09-14 (9ff8e59, merged 75f565a):** `departure-owed` / `departure-ok` in the module (`oweDeparture` / `ackDeparture`, `ack-departure` on the wire), called from ❌, *Leave* and the carried 🥾 arm alike; the page's synthetic 🥾 card keyed `dep:<member>` beside 🎩 on *Members*, its body `departureLine`'s own sentence, two titles naming nobody; a refused applicant's 🪪 card becomes the news (*Applications Have Closed*, one sentence, 🗑️ + OK; `apply-shut-ok`, `ack-apply-shut`) rather than a sixth card; SURFACE E31–E33 rewritten and E40 added (renumbered at the merge, Q170 and Q386 having taken E38 and E39); `departure-news` in CLAUDE.md; four module tests, the server test; probes identical. Bug found and fixed: `renderRail` emptied the applicant's rail the moment 🤝 shut. Three things left for Ed: the actor is inside the audience (the Founder who presses ❌ gets the card too — Q1358); a submitted applicant's *n of E have voted* card is hidden under a shut door (Q1357); the matrix raises no step for E38–E40 (Q1359).
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 901 | Three acts have no communication designed | 2026-08-26 | built; two unnumbered residuals | SURFACE E31–E33 |
+
+901. **Three acts have no communication designed.**
+
+    **Where it stands (docs pass, 2026-09-07):** built 2026-08-27 (SURFACE E31–E33); open inside it, unnumbered: whether the room is owed an OK for a departure, and what a member removed by a *carried* motion is told.
+
+    (Same sweep.) Entry 94 added exile at will and resignation, and entry 97 added the refusal of an application verified before 🤝 shut — three acts with real audiences and no row in SURFACE's event matrix, which is meant to be complete. **Ed, 2026-08-26: add them, and put designing them on the backlog.** Added as **E31–E33**, each marked *undesigned and unbuilt* so `spec-check` counts them beside E28–E30; the design itself is plan-queue backlog **98**. What each audience is told — and above all whether an exiled member is told anything at all, and by what channel — is the design work this holds open. **Built 2026-08-27 (plan-queue 69):** E31–E33 designed and built — see SURFACE §2 and `design/DECISIONS.md` *Three acts nobody was told about*. Exile mails the member (the document's address, no login link) and their dead seat's door says why; resignation gets the door sentence and no mail; both leave a grey departure line under *Members*; the refused application gets Y25's sentence before and after the press, Submit dark. Two things stay open, unnumbered here: whether the room is owed an OK for a departure (the plan builds the sentence and not the OK), and what a member removed by a *carried* motion is told.
+
+    **Where it stands (docs pass, 2026-09-07):** answered, owed — `packages/engine-core/src/text/compose.ts` has no sentence-level merge.
+
+    (raised 2026-08-27, from Ed's question *does git teach us anything about overlapping proposals?*; **Ed: good idea**). `blocksOf` makes one engine line one paragraph, so every footprint is a whole paragraph and two members editing different sentences of the same one fail the three-way merge (`compose.ts`) and escalate to a race the room must judge — the opposite of *most of a session should feel like approving typo fixes*. Git's lesson is that the granularity of conflict detection sets the collision rate, and that most conflicts are adjacent edits that a finer diff composes. Proposed: **Gate 1 composes at word or sentence level inside a paragraph** while the footprint stays paragraph-keyed for anchoring, so the page's *one block, one hunk* simplicity survives and only the merge gets finer. **Before deciding, the sim measures it**: rivalry rate at paragraph vs sentence granularity over the existing sweeps, since the whole case is that most paragraph collisions are accidental. SPEC §2.2 rule 1 is the sentence that changes. — **Answered 2026-08-29 (Ed): make the change now — merge at sentence level inside a paragraph.** So the measurement is not a precondition of the decision; it may still be worth running as evidence of how much the change bought, but nothing waits on it. Gate 1 composes at **sentence** granularity (not word — Ed named the sentence) inside a paragraph, while the footprint stays paragraph-keyed for anchoring, so `blocksOf`'s *one block, one hunk* survives and only `compose.ts` gets finer. **SPEC §2.2 rule 1 changes with the build, not ahead of it** — a spec sentence describing a granularity the engine does not have is the drift the spec pass exists to stop, and this is one commit's worth of both. **Answered, owed, not built.**
+
+
+## Q1354: a no-rule cell fails CI (built with Q1355, Q1356) (Ed, 2026-09-14)
+
+Ed asked *should we make rules for the cells?* — yes: with E11 and E22 ruled, exit 3 never occurs on today's table and CI treats it as red. **Built 2026-09-14 (a711002, merged 611bcae):** the CI step no longer translates 3 into 0; the harness header and CLAUDE.md's convention say so. Rejected: pinning the count at three; pinning at one with E22 left unread.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 1354 | The seat matrix passes CI on exit 3, so a fourth unread cell would not redden it | 2026-09-14 | ruled by Ed 2026-09-14 (the walk, with Q1355): **write the two missing rules, then a no-rule cell fails CI**; a builder is on it (branch `q1354-matrix-rules`) | `seat-matrix.mjs`; `.github/workflows/ci.yml` |
+
+1354. **The seat matrix passes CI on exit 3** (raised 2026-09-14 by the Q1205 build). The harness exits 3 when every finding is green and some §2 cells have no `AUDIENCE` rule (today three: E22 on both hats, E11 on the member hat); the CI step accepts 3 and fails on 1 and 2, which is the harness's own contract — but the gate cannot tell three unread cells from four, so a new cell with no rule passes silently. Readings: **(a)** pin the count — the step passes only on exactly the three named cells, so a new no-rule cell reddens (recommended); **(b)** leave exit 3 as pass; **(c)** make a no-rule cell a failure and file the three now.
+
+
+## Q1355: E11's and E22's rules written (Ed, 2026-09-14)
+
+**Ruled with Q1354.** Built: E11's cell takes its own predicate — *every member with a page, the mover included*, since an ordinary motion is judged as a race and nothing stands its mover (the reading written into the row, *E10's predicate reused*, did not survive the run: E10's mover is a ledger line, E11's a live ask) — behind ⚖️ (`waitsOn: 'canjudge'`); E22 is a mail rule: the lapse package (and whichever warnings fit the one-minute spell, read off `WARN_LEADS`) to the lapsed seat's address, nothing in its rail. After: `findings=0 noRule=0 shape=0 exit=0`, about ten minutes.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 1355 | E11's audience cell is readable since Q930 and has no predicate | 2026-09-14 | ruled by Ed 2026-09-14 (the walk, with Q1354): E11 takes E10's predicate behind ⚖️, and E22 a mail rule (the package to the lapsed seat, nothing in its rail); building | `seat-matrix.mjs`; SURFACE E11; Q930 |
+
+1355. **E11's cell has no predicate** (raised 2026-09-14 by the Q1205 build). Q930 (Ed, 2026-08-29) rewrote E11's audience from *whoever the router serves* to *every active member — not anyone whose membership has gone quiet*, nearly E10's cell; the matrix still lists it as no-rule because writing the predicate would be inventing a rule. Readings: **(a)** Ed reads the cell as it stands and the E10 predicate is reused for it (recommended); **(b)** leave it no-rule.
+
+
+## Q1356: E13 is read at propose-text, and a vacuous pass is a finding (Ed, 2026-09-14)
+
+**Ruled: read the row later, after a second proposal keeps the race open** — built as the cheaper equivalent: E13's event moved from `judge-text` to `propose-text`, keyed off the founder's view for the race just made, behind ⚖️; an audience with no seat inside it is now a `shape` finding (verified by moving the event back: *no seat was inside the audience*). Rejected: a bigger room; leaving it.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 1356 | E13's row in the seat matrix passes vacuously: the text race has parked by the snapshot | 2026-09-14 | ruled by Ed 2026-09-14 (the walk): **read the row later, after a second proposal keeps the race open**, a vacuous pass becoming a finding; building with Q1354 | `seat-matrix.mjs`; SURFACE E13; Q1340 |
+
+1356. **E13's row passes vacuously** (raised 2026-09-14 by the Q1205 build). At the `judge-text` step the text race has already parked on `early`'s single judgment (quorum stands at one), so `view.clauses` is empty for every seat and *every member who could still judge it* is nobody; the row is green and asserts nothing, and was so before this build. Readings: **(a)** a bigger room or a later assertion step, so the audience is non-empty when read (recommended, a step-table change); **(b)** leave it, noted.
+
