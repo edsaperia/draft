@@ -559,6 +559,9 @@ export type Event =
  */
 export const SCHEMA_VERSION = 1;
 
+/** The incumbent pseudo-id's prefix: a race's status quo, keyed by content hash. */
+export const INC_PREFIX = 'inc:';
+
 export interface LogEntry {
   seq: number;
   hash: string;

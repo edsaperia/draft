@@ -931,7 +931,9 @@ function checkGateSeat() {
  * — inside the scan `bestPairFor` shares between its two passes, so the rival
  * pass sees it too, and inside `explorationCard`, which serves against the
  * incumbent by a second door and would otherwise re-open the one the first
- * closed. The behaviour is `packages/engine-core/test/session.test.ts`.
+ * closed. The behaviour is `packages/engine-core/test/session.test.ts`; the
+ * source is `routing.ts` since Q1352 (o) lifted the serving rules out of the
+ * session, and the exclusion reads the author through the routing host.
  *
  * The page half is the other end of the same rule. Q838 pinned the `E() > 1`
  * condition here, because at E = 1 the sole member was served their own text
@@ -941,7 +943,7 @@ function checkGateSeat() {
  */
 function checkAuthorNeverAsked() {
   note('An author is never asked about their own text — SPEC §3.3 against engine and page');
-  const src = readFileSync(join(ROOT, 'packages/engine-core/src/session.ts'), 'utf8');
+  const src = readFileSync(join(ROOT, 'packages/engine-core/src/routing.ts'), 'utf8');
   const at = src.indexOf('private bestPairFor(');
   const scan = at < 0 ? '' : src.slice(at, at + 1600);
   if (!/this\.ownIncumbentPair\(a, b, incumbentId, participantId\)/.test(scan))
@@ -949,7 +951,7 @@ function checkAuthorNeverAsked() {
   else note('  the pair scan excludes the judge’s own incumbent pair');
   const ex = src.indexOf('private explorationCard(');
   const body = ex < 0 ? '' : src.slice(ex, ex + 900);
-  if (!/this\.candidates\.get\(m\)\?\.author === participantId/.test(body))
+  if (!/this\.host\.authorOf\(m\) === participantId/.test(body))
     find('events', '`explorationCard` serves against the incumbent too, and no longer skips the participant’s own candidates (SPEC §3.3, backlog 253)');
   else note('  exploration skips the participant’s own candidates');
   const page = js('design/session-view.html');
