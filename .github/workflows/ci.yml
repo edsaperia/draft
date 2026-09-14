@@ -414,6 +414,38 @@ jobs:
       # then the 🛡️ park-and-crown path on a ladder document (Q1178)
       - run: npm run room-walk -- "$ROOM_BASE"
         if: always()
+      # **The seat matrix joins the walks** (Q1205, Ed 2026-09-14: *fix 1282,
+      # then the harness joins CI*). Seven seats × three epochs, asserting
+      # SURFACE §2's Audience column per seat per step — the only guard over
+      # that column anywhere, and the instrument that found Q1280–Q1282. Both
+      # hats, because green means both: the clerk document stops at 🍾 (Q920)
+      # and its rows are asserted up to there. It is the long one — about ten
+      # minutes, of which the `lapsed` seat's real one-minute lapse is a
+      # couple — so it stands last of the walks.
+      #
+      # **Exit 3 is this harness's green** (its own header): a §2 cell it
+      # cannot read is *no rule*, red on purpose and deliberately distinct
+      # from a failure so a gate can tell the two apart — and a cell with no
+      # predicate is a question for Ed, never a predicate invented in the
+      # script. Three rows stand unread today (E22 on both hats, E11 on the
+      # member hat), so this step accepts 3 and fails on 1 and 2: a finding, a
+      # page error, a refused command, a seat that could not be stood, or a
+      # server that is not this tree. `|| c=$?` because the job's shell is
+      # `-e`, which would abort the step on the 3 before it could be read.
+      # The payload goes to the artifact below rather than into the tree,
+      # where it is gitignored by design (*a run is snapshots, not an
+      # artifact*), so a red run can be read seat by seat afterwards.
+      - name: the seat matrix, both hats
+        if: always()
+        run: |
+          c=0
+          npm run seat-matrix -- "$WALK_BASE" --hat=both \
+            --out="$RUNNER_TEMP/seat-matrix.json" || c=$?
+          if [ "$c" = 3 ]; then
+            echo "exit 3: unread §2 cells only, no findings — green for this harness"
+            c=0
+          fi
+          exit $c
 
       # The server's side of the story, beside the walk's: a red walk with
       # only the walk's stdout is the one-hour hunt Q911 describes.
@@ -430,4 +462,5 @@ jobs:
           path: |
             ${{ runner.temp }}/walk-server.log
             ${{ runner.temp }}/room-server.log
+            ${{ runner.temp }}/seat-matrix.json
           if-no-files-found: warn

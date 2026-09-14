@@ -98,10 +98,22 @@
  * every clerk-hat one is **Q920** (`view.convenor.isMember` stays `true` for
  * a clerk, so 🏛️ is served and 🍾 waits on it); with those two built the
  * expected line is `findings=0 noRule=3 filed=0 … unstood=0 exit=3` — `filed=1`
- * while Q918's row was the exception, and 0 since it was asserted; the three
- * no-rule rows are E22 on both hats and E13 on the member hat, each `key: null`
- * and unfiled, so **exit 3 is the green line here** and 0 is not reachable
- * until somebody files or keys those two.
+ * while Q918's row was the exception, and 0 since it was asserted, so **exit 3
+ * is the green line here** and 0 is not reachable until somebody files or keys
+ * the unread rows. Which three they are has moved once: E13's cell was keyed
+ * by Q1340 (2026-09-11) and E11's was rewritten by Q930, so the run of
+ * 2026-09-14 reports E22 on both hats (mail, no rail entry either side) and
+ * E11 on the member hat, whose cell — *every active member — not anyone whose
+ * membership has gone quiet* — is readable now and has no predicate: a
+ * question for Ed, never a predicate invented here.
+ *
+ * **Green, 2026-09-14** (Q1205, Ed 2026-09-14; the run that put it in CI):
+ * `seat-matrix: findings=0 noRule=3 filed=0 shape=0 errors=0 refused=0
+ * unstood=0 exit=3`, about ten minutes for both hats against a fresh server.
+ * The three E10 cells 2026-09-12 left were all the harness reading the page
+ * wrongly, and both are fixed at the assertion: a ⏳ entry counted as an ask
+ * (the mover's own ledger line), and C9's staging behind an unclaimed 🏛️
+ * counted as nothing served (`waitsOn`). Neither SURFACE cell moved.
  * Four harness faults were fixed to get here, each noted at its row: the
  * founder's page reloads after the wire founding (`reload` on `text`), every
  * seat introduces itself with a name and a face (`face`), 💤 is answered on
@@ -401,10 +413,13 @@ const STEPS = [
   // 🥾 stands at `proposal` in `SETTINGS`, so a removal put by one member
   // against another is E11 — *an ordinary motion is put, a removal too* —
   // and the ❌ card is where the page carries it (`motionTargets` returns the
-  // door key `remove` for a `remove` payload). §2's audience for E11 is
-  // *whoever the router serves*, which has no `AUDIENCE` predicate and cannot
-  // have one until `view()` states the router's choice — so the row is
-  // reported as *no rule* on the audience side, deliberately (entry 80).
+  // door key `remove` for a `remove` payload). §2's audience for E11 read
+  // *whoever the router serves* when this row was written — a router's choice
+  // no seat-side key could state (entry 80) — and Q930 (Ed, 2026-08-29)
+  // rewrote it as *every active member — not anyone whose membership has gone
+  // quiet*, which is readable. It still has no `AUDIENCE` predicate, and
+  // putting one here would be inventing a rule: the cell is a question for Ed
+  // and the row stays *no rule* until he reads it (2026-09-14).
   // What the row is here for beyond that is the snapshot: every member seat's
   // rail and `view()` with a live removal running, which is what fills the
   // ❌ door's *Proposed for removal* subsection (`removalPendingIds`).
@@ -449,7 +464,10 @@ const STEPS = [
     // one more key; when Q919 is built this row should go green with them.
     args: () => ({ payload: { kind: 'set', setting: 'judgments', value: { rung: 'never' } },
       why: 'how I judged should stay mine, and the record should not name it' }),
-    events: [{ id: 'E10', key: 'judgments', at: 'judgments-motion' }] },
+    // `waitsOn`: E10's Channel column gates the whole entry on the 🏛️ OK
+    // (C9, Q1344), and no seat here but the founder has pressed one — the
+    // assertion's own note says what that buys and what it still holds
+    events: [{ id: 'E10', key: 'judgments', at: 'judgments-motion', waitsOn: 'grant-voice' }] },
   // one keep, and the motion stands running for the rest of the run: a keep
   // does not settle a 🏛️ motion, it blocks it (§9.6, `maybeSettleMotions`),
   // which is exactly the state worth snapshotting — two answers on the wire,
@@ -1167,9 +1185,23 @@ function assertStep(D, step, evs, snap) {
       const inAud = !!pred(seat, step, D, ev, snap[name]);
       const rail = snap[name].rail.map((e) => e.key);
       const match = (k) => k === ev.key || (ev.key.endsWith(':') && k.startsWith(ev.key));
-      // a settled tab (`done`) asks nothing; every other state is a task standing
-      const tabs = (snap[name].band || []).filter((e) => e.kind !== 'done').map((e) => e.key);
-      const has = rail.some(match) || tabs.some(match);
+      // **An entry that wants nothing is not evidence of an ask** — SURFACE
+      // §6's setup alphabet, read off its own *wants* column: `ask` wants an
+      // answer, `news` an OK, `yours` a withdrawal; `wait` wants *nothing —
+      // fill = how far the room has got*, and `done` wants nothing either.
+      // The band half read it that way from the first run; the rail half
+      // counted every state, and since the deck (E10's Channel column,
+      // Q1348) an answered motion's entry does not leave — it files ⏳ and
+      // becomes the ledger of your own answers. The mover answered at the put
+      // (§9.6, R-021), so their entry is that ledger from the first moment,
+      // and the seat the audience deliberately leaves out was reported for
+      // carrying an ask nobody makes of it (2026-09-14, Q1282's first E10
+      // cell). The **full** rail still rides the finding line, so the report
+      // loses nothing.
+      const wants = (e) => e.kind !== 'wait' && e.kind !== 'done';
+      const asks = snap[name].rail.filter(wants).map((e) => e.key);
+      const tabs = (snap[name].band || []).filter(wants).map((e) => e.key);
+      const has = asks.some(match) || tabs.some(match);
       // `match`, not `includes`: a prefix key (`rel:`, `mail:`) is acknowledged
       // under its own batch id, so an exact test never sees the OK and a seat
       // that has answered reads as one that was never served.
@@ -1190,12 +1222,31 @@ function assertStep(D, step, evs, snap) {
       // the `early` and `lapsed` seats owed 💤's OK at 🍾 on both hats.
       const stagedBehind = inAud && !!ev.staged && !has && !okd
         ? ((mv.owedOks || []).length ? mv.owedOks.slice() : null) : null;
-      const carries = has || okd || signed || self || !!stagedBehind;
-      const how = rail.some(match) ? 'carries it'
+      // **And a task waits behind the power its main action needs** (C9,
+      // Q1328; Q1344, Ed 2026-09-11). E10's own Channel column says it in as
+      // many words — *none of it, for a member, until they have acknowledged
+      // 🏛️* — and E11 and E13 say the same of ⚖️: an offer you cannot take is
+      // not shown, so a member inside the audience who has not yet taken the
+      // power up is served nothing, on purpose. The same shape as the staging
+      // above and read the same way, off a list rather than assumed — here the
+      // seat's **own** acknowledgements (`readout.okd`, what `acked` asks), so
+      // a seat that HAS taken the power up and still carries nothing is a
+      // finding. That is what keeps the row asserting E10's audience rather
+      // than C9's staging: the founder's seat acknowledged 🏛️ at `ok-voice`
+      // and is held to the cell. Q1282's other two E10 cells were this
+      // (2026-09-14): `late` with 🏛️ standing unanswered in its own rail, and
+      // `lapsed` — revived by the read as R-096 says, so *active* and rightly
+      // inside the audience — with 🏛️ not yet served at all, staged in its
+      // turn behind three owed news OKs.
+      const heldBack = inAud && ev.waitsOn && !has && !okd &&
+        !((snap[name].readout || {}).okd || []).includes(ev.waitsOn) ? ev.waitsOn : null;
+      const carries = has || okd || signed || self || !!stagedBehind || !!heldBack;
+      const how = asks.some(match) ? 'carries it'
         : has ? 'carries it as a tab (' + ((snap[name].band || []).find((e) => match(e.key)) || {}).kind + ')'
         : okd ? 'acknowledged it' : signed ? 'signed it'
         : self ? 'holds it by the seat-that-set-it exemption'
-        : stagedBehind ? 'holds it staged behind ' + stagedBehind.join(', ') : 'does not carry it';
+        : stagedBehind ? 'holds it staged behind ' + stagedBehind.join(', ')
+        : heldBack ? 'waits behind the ' + heldBack + ' it has not taken up (C9)' : 'does not carry it';
       if (carries === inAud) continue;
       let module = '';
       if (ev.oracle) {
