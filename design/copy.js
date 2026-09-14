@@ -620,7 +620,11 @@ window.COPY = (function () {
       gone: 'This record is no longer on the document.',
       passed: 'Passed',
       rejected: 'Rejected',
-      reserveReturned: (what) => 'The membership returned ' + what + ' to the founder’s reserve.',
+      // *the Founder*, never *the reserve* — the engine's word (Q386's follow-up,
+      // Ed 2026-09-14); the one-power path says the same
+      reserveReturned: (what) => 'The membership returned ' + what + ' to the Founder.',
+      // the both-powers motion's own title, the record's line before it settles
+      returnsTitle: (what) => 'Returns ' + what + ' to the Founder',
       reserveKept: (what) => 'The membership kept ' + what + ' with the membership.',
       titleNoun: 'the document’s title',
       ruleNoun: 'this rule',

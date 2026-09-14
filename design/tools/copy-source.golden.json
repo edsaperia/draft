@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 490
+  "entries": 491
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -218,7 +218,8 @@
   "page.motionRec.provPen": "Chosen by the Founder ✒️",
   "page.motionRec.rejected": "Rejected",
   "page.motionRec.reserveKept": "ƒ (what) => 'The membership kept ' + what + ' with the membership.'",
-  "page.motionRec.reserveReturned": "ƒ (what) => 'The membership returned ' + what + ' to the founder’s reserve.'",
+  "page.motionRec.reserveReturned": "ƒ (what) => 'The membership returned ' + what + ' to the Founder.'",
+  "page.motionRec.returnsTitle": "ƒ (what) => 'Returns ' + what + ' to the Founder'",
   "page.motionRec.ruleNoun": "this rule",
   "page.motionRec.titleNoun": "the document’s title",
   "page.noAnswer": "ƒ (status) => (status ? 'the server answered ' + status : 'the server could not be reached')",

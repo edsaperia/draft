@@ -4504,7 +4504,7 @@
       const rk = pkeyOf(p.setting);
       if (p.power === 'unilateral' || p.power === 'assent') return pwSaid(rk, p.power);
       const rc = card(rk);
-      return 'Returns ' + (rc ? '“' + nounOf(rc) + '”' : p.setting) + ' to the founder’s reserve';
+      return PAGE_COPY.motionRec.returnsTitle(rc ? '“' + nounOf(rc) + '”' : p.setting);
     }
     if (p.kind === 'invite') return inviteeHandle(p) + ' joins the membership';
     if (p.kind === 'remove') return nameOfMember(p.member) + ' leaves the membership';
