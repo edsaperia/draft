@@ -140,6 +140,13 @@ window.CARDS = (function () {
     // the race will ask you again — nothing is rewritten, and no new candidate
     // appears: what comes back is a pair to judge, on wordings that already exist
     shifted: '↻',
+    // **The same ↻, in your own blue** (Ed, 2026-09-14, Q170). The text moved
+    // under something of yours, and the colour says which: grey where it was a
+    // vote (above), `--lc-yours` where it was a proposal — one whose rebase
+    // onto the new wording failed, so it is out of every race and held for you
+    // until you re-make it against the clause as it now reads or withdraw it
+    // (SPEC §2.4, §2.6; SURFACE E38). One shape, one meaning, two owners.
+    stranded: '↻',
     // A decision says which way it went, not just that it happened (Ed, 160):
     // a matched pair — same green square, check or cross — so the outcome is
     // legible before you open anything.
@@ -163,7 +170,7 @@ window.CARDS = (function () {
   };
   // Which of the four drawn marks this is, so CSS can colour it. Only they
   // need it: every other mark is an emoji and brings its own colour with it.
-  const DRAWN = ['adopted', 'retired', 'filedYes', 'filedNo', 'filedUndecided', 'shifted'];
+  const DRAWN = ['adopted', 'retired', 'filedYes', 'filedNo', 'filedUndecided', 'shifted', 'stranded'];
   // The glyph, wrapped so it can be coloured wherever it is drawn — the queue,
   // the contents rail, the gutter tab and a card's head all show the same mark
   // and must show it the same way.

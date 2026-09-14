@@ -131,6 +131,10 @@
   // **Defaults true**, so a surface that never sets it is today's always-on
   // column.
   let EDITING = () => true;
+  // …and the door into it (Q170): *re-make it here* on a stranded proposal is
+  // a way to a caret, so it opens edit mode the way 📝 does (SURFACE K13). A
+  // no-op in the fixture, which has no mode to be in.
+  let ENTER_EDITING = () => {};
   // the sign control (Q770): null means no elective 👤 rung — no control
   let SIGNING = () => null;
   let SIGNER = () => '';
@@ -1265,8 +1269,8 @@
       // already knew how to choose, it just did not know how to choose *here*.
       row.rank = stackRank(kind);
       row.news = isUnread(g); row.fam = 1; row.i = idx;
-      const live = kind === 'urgent' || kind === 'propose' || kind === 'weigh' ||
-        isUnread(g) || holdsFocus(el);
+      const live = kind === 'urgent' || kind === 'propose' || kind === 'stranded' ||
+        kind === 'weigh' || isUnread(g) || holdsFocus(el);
       (live ? pinned : flow).push(row);
     }
     // The cap, applied across both populations as one queue (Q113, Ed
@@ -2179,7 +2183,7 @@
     startDraft, startDraftFromTyping, startDraftFromRun,
     laneRaw, laneRemark, syncEditCtl,
     commitBtnHtml, proposalRowHtml, draftRowState, setDraftSigned,
-    editCardHtml, mineCardHtml } = COMPOSER;
+    editCardHtml, mineCardHtml, strandedCardHtml } = COMPOSER;
   // and `laneMode` itself is `COMPOSER.laneMode`, because two things here
   // write it: the column strip's `[]` handler, and the page through
   // `SESSION.setLaneRaw`.
@@ -2521,6 +2525,12 @@
     if (stuck(s)) return deadlockCardHtml(s);
     if (s.kind === 'draft') {
       const site = (siteKey && siteFor(s, siteKey)) || s.sites[0];
+      // three readings of one object: not proposed yet, in, and **stranded** —
+      // proposed, then left behind by a text change the engine could not carry
+      // it across (Q170, SURFACE E38). The third is the second plus a sentence
+      // and a different pair of acts; the order matters, since a stranded
+      // proposal is never `unproposed`.
+      if (s.stranded) return strandedCardHtml(s, site, closedMode);
       return s.unproposed ? editCardHtml(s, site) : mineCardHtml(s, site);
     }
     if (s.kind === 'diagonal') {
@@ -4005,8 +4015,14 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
 
     if (what === 'draft-propose') {
       const d = draftOf();
-      if (!d || editsHeld < EDIT_RULES.stake) return;
-      editsHeld -= EDIT_RULES.stake;
+      if (!d) return;
+      // **A re-made proposal is not a second one** (Q170): the draft was seeded
+      // from a stranded proposal of yours and this press confirms *that*
+      // candidate against the text as it now stands, so it keeps its id and the
+      // edit it already cost. Nothing is staked here and nothing may be.
+      const remake = !!d.rebaseOf;
+      if (!remake && editsHeld < EDIT_RULES.stake) return;
+      if (!remake) editsHeld -= EDIT_RULES.stake;
       const key = d.sites[0].keys[0];
       const wasOpen = openId === d.id;
       d.id = 'mine-' + key + '-' + (++mineSeq);
@@ -4016,6 +4032,43 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       d.cap = 'yours · just in, evidence starting' + (d.signed ? ' · signed' : '');
       if (hooks.propose) { const r = hooks.propose(d); if (typeof r === 'string') d.id = r; }
       if (wasOpen) openId = d.id;
+      keepStill(() => renderAll(), '[data-key="' + key + '"]');
+      layoutQueue(); drawWires();
+      return;
+    }
+
+    // **Re-make it here** (Ed, 2026-09-14, Q170; SURFACE E38). The text moved
+    // under this proposal and the engine could not carry it across (SPEC §2.4),
+    // so the act that saves it is writing it again against the clause as it now
+    // reads — which is the composer, seeded from your own wording, the way ✏️
+    // on a lane seeds it from somebody else's (K24).
+    //
+    // The stranded entry **becomes** the draft rather than standing beside one:
+    // there is one caret and one draft (Q266), and two entries of your own at
+    // one clause would be two readings of the same object. Its sites already
+    // hold exactly what the seed would be — the wording you proposed as the
+    // text, the clause as it now stands as the origin, which is what the lane
+    // marks the change against — so nothing is re-derived and the rationale and
+    // the sign choice travel with it. `rebaseOf` is the whole of what is new:
+    // the id the commit confirms, instead of opening a second proposal.
+    if (what === 'draft-remake') {
+      if (!s || !(s.sites || []).length) return;
+      const other = draftOf();
+      if (other && other !== s) dropDraft();
+      const key = s.sites[0].keys[0];
+      const wasOpen = openId === id;
+      s.rebaseOf = s.candidate || null;
+      s.id = DRAFT_ID;
+      s.unproposed = true;
+      s.stranded = false;
+      s.focusKey = key;
+      s.qLabel = s.sites[0].label || s.qLabel;
+      s.cap = '';
+      s.pct = 0;
+      syncDraftKeys(s);
+      if (wasOpen) openId = DRAFT_ID;
+      // 📝 is the door to a caret (SURFACE K13), and this press is a door too
+      if (!EDITING()) ENTER_EDITING();
       keepStill(() => renderAll(), '[data-key="' + key + '"]');
       layoutQueue(); drawWires();
       return;
@@ -4226,7 +4279,13 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       // wanting your judgment. The pencil means *you wrote this*, which is the
       // rule 241's own note was already reaching for: subject and act agree,
       // because in both cases it is you, writing.
-      : st === 'yours' ? 'propose'
+      // **A stranded proposal is still yours, and says what happened to it**
+      // (Ed, 2026-09-14, Q170; SURFACE E38): the text was replaced under it and
+      // the engine could not carry it across, so it is out of every race and
+      // held until you re-make it here or withdraw it. ↻ — the ground moved —
+      // in `yours` blue rather than the judge's grey, because unlike E16 it is
+      // asking you for something.
+      : st === 'yours' ? (g.stranded ? 'stranded' : 'propose')
       // before ⏳, and for the same reason `anchHue` tests it first: ⚔️ is what
       // a race becomes *instead of* going quiet on you
       : stuck(g) ? 'stuck'
@@ -4244,7 +4303,10 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   // is kept ahead of the states that only tell you where things stand, and
   // behind ✏️ for the reason the next comment gives. The third filed mark,
   // undecided, files with the other two — they are one family, dropped first.
-  const KEEP_ORDER = ['urgent', 'stuck', 'propose', 'weigh', 'needs', 'adopted', 'retired', 'deciding', 'shifted', 'filedYes', 'filedNo', 'filedUndecided'];
+  // ↻ blue sits immediately ahead of ✏️ (Q170): it is a proposal of your own
+  // like any other, and the act on it is larger — a proposal nobody can carry
+  // across but you, against text that has already moved once.
+  const KEEP_ORDER = ['urgent', 'stuck', 'stranded', 'propose', 'weigh', 'needs', 'adopted', 'retired', 'deciding', 'shifted', 'filedYes', 'filedNo', 'filedUndecided'];
   // the three filed marks — ✔ ✖ and undecided — as one set, so a rule about
   // *filed* cannot quietly apply to two of them (Q607)
   const FILED_KINDS = new Set(['filedYes', 'filedNo', 'filedUndecided']);
@@ -4273,8 +4335,12 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   // and this is the first place on the surface where they disagree: § Bringing a
   // Guest holds a ✏️ of yours and two 💡, and under the rail's order clicking
   // that pile opened your own draft.
+  // ↻ blue leads ✏️ here for the same reason it does in the rail, and for once
+  // the two orders agree about a mark of your own: unlike a proposal in the
+  // race, a stranded one *is* waiting on an act of yours, so opening its pile
+  // should reach it before it reaches work that is merely yours (Q170).
   const STACK_ORDER = ['urgent', 'stuck', 'needs', 'weigh', 'adopted', 'retired',
-    'propose', 'deciding', 'shifted', 'filedYes', 'filedNo', 'filedUndecided'];
+    'stranded', 'propose', 'deciding', 'shifted', 'filedYes', 'filedNo', 'filedUndecided'];
   const stackRank = (kind) => {
     const i = STACK_ORDER.indexOf(kind);
     return i < 0 ? STACK_ORDER.length : i;
@@ -4575,6 +4641,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     if (env.mayJudge) MAY_JUDGE = env.mayJudge;
     if (env.mayPen) MAY_PEN = env.mayPen;
     if (env.editing) EDITING = env.editing;
+    if (env.enterEditing) ENTER_EDITING = env.enterEditing;
     // the sign control's two reads (Q770): the elective base, if any, and
     // what a signature would read as — both at call time, like the two above
     if (env.signing) SIGNING = env.signing;
