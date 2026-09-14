@@ -6133,3 +6133,14 @@ The walk's tenth question, 2026-09-14. **Ruled: no — c_p prices the exploratio
 
 100. **Where c_p goes now.** A participant's judgment cost is one scalar dividing every v, so it never reorders their own list — and with the rail showing everything at once it can't truncate one either. It has to act on the *drawing*: since 2026-08-16 the rail already shows only as many questions as fit, most urgent first, so c_p's natural home is that cut — an expensive judge is shown fewer of them, and the rest stay in the count at the foot of the rail rather than being hidden. Undecided, but the mechanism it would act on now exists.
 
+
+## Q122: rankings are public at the seal (R-110) (Ed, 2026-09-14)
+
+The walk's eleventh question, 2026-09-14. **Ruled: at the seal, as built; add the spec sentence.** SPEC v0.123 §8.3, → why: R-110. Nothing to build.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 122 | When do rankings become visible — at seal, or at close? | 2026-08-16 | waiting on Ed — needs a SPEC §8.3 sentence either way | `sealed record` |
+
+122. **When do rankings become visible — at seal, or at close?** (raised 2026-08-16, from Q121.) A sealed race now shows its full field ranked, with each candidate's win probability against the current text. The warrant is good: Bradley–Terry already carries a strength per candidate, SPEC §8.3's no-standings rule governs *live* feeds (where knowing who is ahead makes judging strategic), and the `record-builder` publishes rankings at close regardless. But this is still rankings appearing **during** a session rather than after it, which is a small extension nobody has ruled on. Two things to weigh. (a) Sealed races are independent of live ones, so there is no direct leak — but seeing standings on settled questions normalises the idea that standings exist, and a member may start reading the sealed ones for camp structure. (b) It gives an author immediate, precise feedback on how their proposal did, which is arguably the humane thing and arguably a reason to redraft on scoreboard rather than on argument. If Ed wants rankings held until close, the card can show the outcome and the field without the numbers, and the numbers arrive with the record. Needs a SPEC §8.3 sentence either way.
+
