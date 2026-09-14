@@ -423,29 +423,24 @@ jobs:
       # minutes, of which the `lapsed` seat's real one-minute lapse is a
       # couple — so it stands last of the walks.
       #
-      # **Exit 3 is this harness's green** (its own header): a §2 cell it
-      # cannot read is *no rule*, red on purpose and deliberately distinct
-      # from a failure so a gate can tell the two apart — and a cell with no
-      # predicate is a question for Ed, never a predicate invented in the
-      # script. Three rows stand unread today (E22 on both hats, E11 on the
-      # member hat), so this step accepts 3 and fails on 1 and 2: a finding, a
-      # page error, a refused command, a seat that could not be stood, or a
-      # server that is not this tree. `|| c=$?` because the job's shell is
-      # `-e`, which would abort the step on the 3 before it could be read.
-      # The payload goes to the artifact below rather than into the tree,
-      # where it is gitignored by design (*a run is snapshots, not an
-      # artifact*), so a red run can be read seat by seat afterwards.
+      # **Exit 3 reddens the job** (Q1354, Ed 2026-09-14: *a cell nobody has
+      # written a rule for reddens the job until it is read*). A §2 cell the
+      # harness cannot read is *no rule*, and since Q1356 so is a row that
+      # passed over an empty audience — red on purpose and still distinct
+      # from a failure in the code, so a reader can tell the two apart, but no
+      # longer forgiven here. Until this date the step translated 3 into 0,
+      # because three rows stood unread (E22 on both hats, E11 on the member
+      # hat) and no run could reach 0; Ed read all three the same day (Q1355,
+      # Q1356), the harness's green line is 0 from then on, and a 3 means
+      # somebody must read a cell — never invent a predicate in the script.
+      # So the step fails on anything but 0: a finding, a page error, a
+      # refused command, a seat that could not be stood, a server that is not
+      # this tree, or an unread cell. The payload goes to the artifact below
+      # rather than into the tree, where it is gitignored by design (*a run is
+      # snapshots, not an artifact*), so a red run can be read seat by seat.
       - name: the seat matrix, both hats
         if: always()
-        run: |
-          c=0
-          npm run seat-matrix -- "$WALK_BASE" --hat=both \
-            --out="$RUNNER_TEMP/seat-matrix.json" || c=$?
-          if [ "$c" = 3 ]; then
-            echo "exit 3: unread §2 cells only, no findings — green for this harness"
-            c=0
-          fi
-          exit $c
+        run: npm run seat-matrix -- "$WALK_BASE" --hat=both --out="$RUNNER_TEMP/seat-matrix.json"
 
       # The server's side of the story, beside the walk's: a red walk with
       # only the walk's stdout is the one-hour hunt Q911 describes.

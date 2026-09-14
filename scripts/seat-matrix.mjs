@@ -32,10 +32,18 @@
  *
  * Exit codes: 0 green · 1 any finding, page error, refused command or a seat
  * that could not be stood · 3 **no-rule rows nobody has filed** (a cell the
- * harness cannot read: red on purpose, so somebody files the Q; distinguishable
- * from a failure so a gate can tell the two apart — and once filed, `filed:
- * 'Qn'` on the event's row reports it under `filed` and the run is green
- * again) · 2 is `assert-server`'s.
+ * harness cannot read, or a row that passed over an empty audience: red on
+ * purpose, so somebody files the Q; distinguishable from a failure so a gate
+ * can tell the two apart — and once filed, `filed: 'Qn'` on the event's row
+ * reports it under `filed` and the run is green again) · 2 is
+ * `assert-server`'s.
+ * **Exit 3 fails the job** (Q1354, Ed 2026-09-14: *a cell nobody has written
+ * a rule for reddens the job until it is read*). Until that date CI accepted
+ * it as this harness's own green, because three cells stood unread and no run
+ * could reach 0; with E11 and E22 read (Q1355) and E13's vacuous pass caught
+ * (Q1356) the green line is 0, and 3 goes back to meaning what it says. The
+ * code stays 3 rather than 1 so a reader can still tell an unread cell from a
+ * product finding — it is the CI step that no longer forgives it.
  * The last line is machine-readable: `seat-matrix: findings=… noRule=… filed=… …`
  * — `filed` is in it because a run carried green over a growing pile of filed
  * rows is exactly what a gate needs to be able to see.
@@ -99,13 +107,32 @@
  * a clerk, so 🏛️ is served and 🍾 waits on it); with those two built the
  * expected line is `findings=0 noRule=3 filed=0 … unstood=0 exit=3` — `filed=1`
  * while Q918's row was the exception, and 0 since it was asserted, so **exit 3
- * is the green line here** and 0 is not reachable until somebody files or keys
- * the unread rows. Which three they are has moved once: E13's cell was keyed
- * by Q1340 (2026-09-11) and E11's was rewritten by Q930, so the run of
- * 2026-09-14 reports E22 on both hats (mail, no rail entry either side) and
- * E11 on the member hat, whose cell — *every active member — not anyone whose
- * membership has gone quiet* — is readable now and has no predicate: a
- * question for Ed, never a predicate invented here.
+ * was the green line for a while** and 0 was not reachable until somebody
+ * filed or keyed the unread rows. Which three they were moved twice: E13's
+ * cell was keyed by Q1340 (2026-09-11) and E11's rewritten by Q930, leaving
+ * E22 on both hats (mail, no rail entry either side) and E11 on the member
+ * hat. Ed read both on 2026-09-14 — the three-cell paragraph below is what
+ * replaced this one, and exit 3 is a failure again.
+ *
+ * **The three unread cells were read, 2026-09-14** (Q1354–Q1356, Ed
+ * 2026-09-14), and the harness's green is 0 from here on: `seat-matrix:
+ * findings=0 noRule=0 filed=0 shape=0 errors=0 refused=0 unstood=0 exit=0`,
+ * ten minutes for both hats against a fresh server.
+ *   · **E11** (the member hat) is every member with a page — the mover
+ *     included, which is where it parts from E10 — waiting behind ⚖️ rather
+ *     than 🏛️ (`waitsOn: 'canjudge'` on the row).
+ *   · **E22** (both hats) is mail, so it is asserted against the **dev
+ *     outbox** rather than the rail (`mail` on the event, `assertMail`): the
+ *     warnings that fit inside the spell, then the package, priced off the
+ *     module's own `WARN_LEADS` against this table's one-minute spell — at
+ *     which none of the three fits, so what is owed is the package alone. Its
+ *     page half is SURFACE's Keys cell for the row staying empty.
+ *   · **E13** was keyed by Q1340 and passing over nothing ever since: 👥 at a
+ *     count of one parks the race on `early`'s single judgment, so at
+ *     `judge-text` no seat could still judge it and the audience was empty on
+ *     every seat. The assertion moved up to `propose-text`, and a row whose
+ *     audience comes out empty is a `shape` line from now on — **a vacuous
+ *     pass is not a pass**, and nothing said so before.
  *
  * **Green, 2026-09-14** (Q1205, Ed 2026-09-14; the run that put it in CI):
  * `seat-matrix: findings=0 noRule=3 filed=0 shape=0 errors=0 refused=0
@@ -130,7 +157,7 @@
 import { writeFile, readFile } from 'node:fs/promises';
 import { chromium } from 'playwright';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
-import { tableAfter } from './lib/surface-tables.mjs';
+import { tableAfter, keysOf } from './lib/surface-tables.mjs';
 import { say, sleep, arg, linkIn, outbox as devOutbox, typeIn, press } from './lib/walk.mjs';
 
 /* ---- arguments -------------------------------------------------------- */
@@ -148,10 +175,25 @@ if (TO !== null && !EPOCHS.includes(TO)) {
 }
 const SETTLE_MS = 5000;        // one 4s poll and air — journey's figure
 const LAPSE_WAIT_MS = 240_000; // the bound on waiting for the clock to lapse a seat
+// 💤's spell on this document, in one place: the `lapse-minute` step sets it
+// and E22's mail assertion prices the warnings against it (R-097 sends every
+// `WARN_LEADS` lead that fits *inside* the spell, and at a minute none does).
+const LAPSE_AFTER_MS = 60_000;
+// the bound on waiting for the outbox's sender pass to file a row's mail: it
+// runs on a kick after the commit, so a few hundred ms behind the fold
+const MAIL_WAIT_MS = 20_000;
 
 /* ---- the spec's tables ------------------------------------------------- */
 const EVENTS = tableAfter('SURFACE.md', 'events');
 const EVENT = Object.fromEntries(EVENTS.map((r) => [r['#'], r]));
+/**
+ * **What the harness cannot honestly assert**, and so reports rather than
+ * swallows: §2's own shape moving under the table, and — since Q1356 (Ed,
+ * 2026-09-14) — a row whose audience came out **empty on every seat**, which
+ * is a pass over nothing dressed as a pass. Both land on exit 3 with the
+ * no-rule rows, and since Q1354 exit 3 is red in CI.
+ */
+const shape = [];
 // 🍾's hold, read off the page's own ladder rather than guessed (§7.2)
 const HOLDS = tableAfter('SURFACE.md', 'holds');
 const beginRow = HOLDS.find((r) => (r.control || '').startsWith('🍾'));
@@ -185,6 +227,13 @@ const SEATS = [
  * the seat; `ev.at` the index of the step at which the event happened
  * (defaults to the step it is listed on).                                  */
 const isMember = (s) => s.role === 'member' || (s.role === 'founder' && s.hat === 'member');
+/**
+ * **E10's set**: every member with a page, less the seat that moved it. E11's
+ * cell reads almost the same and is **not** this — an ordinary motion never
+ * stands its mover anywhere, so the mover is asked like anybody else; the note
+ * at E11's own entry has the reasoning and the run that settled it.
+ */
+const activeButTheMover = (s, step, ctx, ev) => isMember(s) && s.name !== ctx.actorOf(ev);
 const AUDIENCE = {
   'the holder': (s) => s.role === 'founder',
   'every member': (s) => isMember(s),
@@ -241,8 +290,36 @@ const AUDIENCE = {
   // lapsed member, so the seat this harness lapses is active again from the
   // moment `wait-lapsed` reopens its page, and every seat with a page is
   // active by construction. A lapsed member is served nothing but mail (E22).
-  'every active member': (s, step, ctx, ev) => isMember(s) &&
-    s.name !== ctx.actorOf(ev),
+  'every active member': activeButTheMover,
+  // E11, an **ordinary** motion put — read here by Q1355 (Ed, 2026-09-14).
+  // Q930 rewrote the cell from *whoever the router serves*, which no seat-side
+  // key could state, into a set this table can name, and the name is the
+  // plain one: every member with a page. Two readings were weighed against
+  // the run and dropped:
+  //  · *not anyone whose membership has gone quiet* is not a second clause
+  //    to test. Since R-096 a read revives, so the seat this harness lapses
+  //    is active again from the moment `wait-lapsed` reopens its page, and
+  //    every seat with a page here is active by construction — the same
+  //    arithmetic E10's note sets out at length.
+  //  · **the mover IS asked**, which is where E11 parts from E10. A
+  //    constitutional motion stands its mover at accept from the put (§9.6,
+  //    R-021), so their entry is a ledger from the first moment; an ordinary
+  //    one is judged as a race and never answered (`motions.ts`: *an
+  //    ordinary motion is judged as a race, not answered*), so nothing
+  //    stands the mover anywhere and the page serves them the card like
+  //    anybody else — `motionWaitsOnMe` exempts the mover from C9's wait
+  //    rather than from the ask. The run says so: at `remove-motion` the
+  //    `early` seat, which put the motion, carries `remove` as an **ask**.
+  // What the row waits behind is ⚖️ and not 🏛️ (C9, Q1344; the page's own
+  // `mayJudge` is `acked('canjudge')`), which is the row's `waitsOn`.
+  'every active member — not anyone whose membership has gone quiet (Q930, Ed 2026-08-29)':
+    (s) => isMember(s),
+  // E22, a membership lapses (Q1355, Ed 2026-09-14). *The member* is the one
+  // whose membership went quiet — the seat of the `wait` step that lapses it
+  // — and E22's channel is **mail**, so the row is asserted against the
+  // outbox rather than the rail (`mail` on the event, `assertMail` below).
+  // Every other seat is outside it and must have been sent nothing.
+  'the member': (s, step, ctx, ev) => s.name === ctx.actorOf(ev),
   // E36, the room's side of a park (Q1015, Ed 2026-09-09): every active
   // member but the Founder, whose own channel is the 👑 card (E12) — and the
   // author, told on their own line (E37), is the actor of the `park` step
@@ -331,7 +408,7 @@ const STEPS = [
   { id: 'lapse-card', epoch: 'before', kind: 'card', seat: 'founder', key: 'lapse', setting: 'lapse',
     pick: { set: 'lapse', val: 'days' }, fields: { lapseDays: '7' }, events: [] },
   { id: 'lapse-minute', epoch: 'before', kind: 'cmd', seat: 'founder', cmd: 'set-setting',
-    args: () => ({ setting: 'lapse', value: { afterMs: 60_000 } }), events: [] },
+    args: () => ({ setting: 'lapse', value: { afterMs: LAPSE_AFTER_MS } }), events: [] },
   // 🏛️ is served to a member founder as news once the constitution is settled,
   // and `beginOffered` holds 🍾 until it is acknowledged (first run, 2026-08-27:
   // `no begin card to hold … rail ["grant-voice"]`). journey OKs every served
@@ -393,21 +470,31 @@ const STEPS = [
   // E20 does not apply post-start; what is asserted on the arrival is *no
   // `chamber` for late*, which the E5 predicate says by `stoodAt`
   { id: 'seat-late', epoch: 'live', kind: 'seat', seat: 'late', events: [E5('chamber', 'amend')] },
-  // E22's channel is **mail** and nothing else (SURFACE §2: *mail: warning,
-  // then the package*; Ask `nothing; revival is logging in`), so the page
-  // files no rail entry for either half and the row has no key: it is
-  // reported as *no rule* on the page's side, which is the honest report and
-  // not a defect. What the row buys is the record that the step was **stood**
-  // — the lapsed seat really did lapse on the clock, with no page open — so a
-  // later run can tell *E22 was exercised and the page said nothing* from
-  // *E22 was never reached* (promise-coverage entry 81, batch L). The E5
-  // assertions already riding this row are the lock on the other half of
-  // 💤's promise: *lapsed included* in the audience of a change made while
-  // they were away.
+  // E22's channel is **mail** and nothing else (SURFACE §2: *mail: three
+  // warnings … then the package*; Ask `nothing; revival is being here
+  // again`), so the page files no rail entry for either half and the row
+  // carries no key. Until Q1355 (Ed, 2026-09-14) that was the whole of it and
+  // the row was the harness's other no-rule exit: what it bought was the
+  // record that the step had been **stood** — the lapsed seat really did
+  // lapse on the clock, with no page open — so a later run could tell *E22
+  // was exercised and the page said nothing* from *E22 was never reached*
+  // (promise-coverage entry 81, batch L). It is asserted now, on its own
+  // channel: `mail` sends the row to `assertMail`, which reads the dev
+  // outbox instead of the rail. Its page side is asserted too, in the only
+  // way a keyless row can be — SURFACE's own Keys cell for E22 must stay
+  // empty, so the day the page grows an entry for a lapse the row goes red
+  // and somebody reads it again rather than the harness quietly asserting
+  // half of it. The E5 assertions already riding this row are the lock on the
+  // other half of 💤's promise: *lapsed included* in the audience of a change
+  // made while they were away.
   { id: 'wait-lapsed', epoch: 'live', kind: 'wait', seat: 'lapsed',
     events: [E5('chamber', 'amend'),
       { id: 'E22', key: null, at: 'wait-lapsed',
-        noKey: 'E22 is mail: the page files no entry for a warning or a lapse, and the lapsed seat is the audience' }] },
+        noKey: 'E22 is mail: the page files no entry for a warning or a lapse, and the lapsed seat is the audience',
+        // the package is `MAILS.lapsed`, each warning `MAILS.lapseWarning`;
+        // matched on the subject line, which carries the document's title,
+        // and the two phrases are disjoint by construction
+        mail: { package: /has lapsed/, warning: /is about to lapse/ } }] },
   { id: 'knock', epoch: 'live', kind: 'knock', seat: 'applicant',
     events: [{ id: 'E21', key: 'adm:', at: 'knock' }] },
   // 🥾 stands at `proposal` in `SETTINGS`, so a removal put by one member
@@ -417,9 +504,15 @@ const STEPS = [
   // *whoever the router serves* when this row was written — a router's choice
   // no seat-side key could state (entry 80) — and Q930 (Ed, 2026-08-29)
   // rewrote it as *every active member — not anyone whose membership has gone
-  // quiet*, which is readable. It still has no `AUDIENCE` predicate, and
-  // putting one here would be inventing a rule: the cell is a question for Ed
-  // and the row stays *no rule* until he reads it (2026-09-14).
+  // quiet*, which is readable — and Ed read it on 2026-09-14 (Q1355), so the
+  // row is asserted from then on: every member with a page, the mover
+  // included, the cell's own entry in `AUDIENCE` carrying why.
+  // `waitsOn`: E11's Channel column stages the race card behind the ⚖️ OK
+  // (C9, Q1344) exactly as E10's stages the motion behind 🏛️'s, and no member
+  // seat in this table presses one — so `late` and `lapsed` carry nothing and
+  // are right to, while the mover and the founder, whom the page serves
+  // regardless, are held to the cell. The first run with the predicate
+  // (2026-09-14) reported those two as findings for want of this line.
   // What the row is here for beyond that is the snapshot: every member seat's
   // rail and `view()` with a live removal running, which is what fills the
   // ❌ door's *Proposed for removal* subsection (`removalPendingIds`).
@@ -439,7 +532,7 @@ const STEPS = [
       return { payload: { kind: 'remove', member: row.id },
         why: 'the clubhouse keys were never returned' };
     },
-    events: [{ id: 'E11', key: 'remove', at: 'remove-motion' }] },
+    events: [{ id: 'E11', key: 'remove', at: 'remove-motion', waitsOn: 'canjudge' }] },
   // **👁️ judgments** (promise-coverage entry 84, batch L). Four rows that put
   // real judgments on the wire, so every seat's `view()` snapshot from here on
   // has something to leak and a later run can diff against these: a running
@@ -482,7 +575,22 @@ const STEPS = [
     },
     events: [] },
   // a text race for E13 to be about: the admit and removal races the live
-  // epoch already carries are *setting* races, and E13 is a **text** race
+  // epoch already carries are *setting* races, and E13 is a **text** race.
+  // **E13 is asserted here, not at `judge-text`** (Q1356, Ed 2026-09-14).
+  // 👥 stands at a count of one on this document, so `early`'s single
+  // judgment at `judge-text` already clears bar and floor and the race parks
+  // — which is what the `park` step below is built on — and from that moment
+  // no seat's view carries the clause as askable at all. The row was
+  // therefore asserted over an audience that was empty for every seat, and a
+  // predicate nobody satisfies agrees with a page that carries nothing: it
+  // passed by being about nothing, for as long as it had a key. Read one
+  // step earlier the race is fresh and every member but the author can still
+  // judge it, which is exactly the cell. The two alternatives were weighed
+  // and dropped: a rival wording to keep the race open past one judgment
+  // changes what the `park` step is standing on, and a larger 👥 enlarges the
+  // room this table seats. `waitsOn`: E13's own Channel column stages the
+  // whole entry behind the ⚖️ OK (C9, Q1328), and no member seat here has
+  // pressed one — the same arm E10 rides.
   { id: 'propose-text', epoch: 'live', kind: 'cmd', seat: 'founder', cmd: 'propose-text', ifHat: 'member',
     args: async (D) => {
       const v = await viewAs(D, 'founder');
@@ -490,16 +598,26 @@ const STEPS = [
         hunks: [{ start: 1, end: 2, lines: ['Every member may bring two guests.'] }],
         why: 'one guest is thin for a clubhouse this size' };
     },
-    events: [] },
+    // the key is learned by asking the document what race the proposal made:
+    // `clauses` is the text races alone (`settingId === undefined` in
+    // `raceView`), so the one with a challenger on it is this one
+    events: [{ id: 'E13', at: 'propose-text', author: 'propose-text', waitsOn: 'canjudge',
+      key: async (D) => {
+        const v = await viewAs(D, 'founder');
+        const r = ((v || {}).clauses || []).find((c) => (c.candidates || []).length);
+        D.textRace = r ? r.id : null;
+        return D.textRace;
+      } }] },
   // E13's audience read *whoever the router serves* until Q1340 (Ed,
   // 2026-09-11): a router's choice no seat-side key could state, so the row
   // stood as the member hat's no-rule exit. Since Q1202 the entry shows
   // while anything on the race can still be asked of the member, dealt or by
-  // `ask`, and that is a fact about the seat — so the row is keyed now: the
-  // race the early seat judges is the event's key, resolved at the assertion
-  // (`key` as a function of `D`), and `author` names the step whose seat
-  // proposed it. The row's other worth stands: a judgment is really cast, so
-  // every snapshot after this one carries a document with a live judgment.
+  // `ask`, and that is a fact about the seat — so the row was keyed then, on
+  // this step, and Q1356 moved the **assertion** up to `propose-text`, where
+  // the race is still askable of somebody (the note there says why). What
+  // this step is for is unchanged and is not the assertion: a judgment is
+  // really cast, so every snapshot after this one carries a document with a
+  // live judgment, and the race parks for `park` to be about.
   { id: 'judge-text', epoch: 'live', kind: 'cmd', seat: 'early', cmd: 'judge-race', ifHat: 'member',
     args: async (D) => {
       const v = await viewAs(D, 'early');
@@ -514,7 +632,7 @@ const STEPS = [
       D.textRace = row.id;
       return { a: card.a.id, b: card.b.id, outcome: 'a' };
     },
-    events: [{ id: 'E13', key: (D) => D.textRace || null, at: 'judge-text', author: 'propose-text' }] },
+    events: [] },
   // **The park** (SURFACE E36, E37; Q1015, Q1179; Ed 2026-09-09). 🛡️ was
   // kept on the Text at `begin`, so the text race `propose-text` opened parks
   // the moment its leader clears bar and floor: every member seat that has
@@ -569,6 +687,10 @@ for (const s of STEPS) for (const e of s.events) {
   // on a row with no key: a filed row that later gains one should be read
   // again, not silently asserted under the mark.
   if (e.filed && e.key !== null) throw new Error(`step '${s.id}' ${e.id} is filed as ${e.filed} but has a key (${e.key}) — drop the mark and let the row be asserted`);
+  // a mail row is asserted off the outbox and never off the rail (Q1355), so
+  // a key on one would be read by neither half: the mail path takes the row
+  // before the keyless branch and the rail path never sees it
+  if (e.mail && e.key !== null) throw new Error(`step '${s.id}' ${e.id} carries a mail assertion and a key (${e.key}) — a mail row is read off the outbox, so the key would never be asserted`);
 }
 
 /* ======================================================================== */
@@ -623,10 +745,24 @@ async function runDocument(hat) {
     if (step.kind === 'ladder' && step.to === 'closed') D.closed = true;
     // a key the step only learns by running (E13's race id, Q1340) resolves
     // here, once, so the label, the payload and the assertion agree on it; a
-    // function that has nothing to say is a `null` key and reads as no rule
-    evs = evs.map((e) => (typeof e.key === 'function'
-      ? { ...e, key: e.key(D) ?? null, noKey: e.noKey || `${e.id}'s key was not learned by ${step.id}` } : e));
+    // function that has nothing to say is a `null` key and reads as no rule.
+    // **Awaited** since Q1356: a key can be learned by asking the document
+    // what the step just made, which is a read, and a step that did not run
+    // is not asked at all
+    const resolved = [];
+    for (const e of evs) {
+      if (typeof e.key !== 'function') { resolved.push(e); continue; }
+      let k = null;
+      if (!D.skipped.has(i)) { try { k = (await e.key(D)) ?? null; } catch { k = null; } }
+      resolved.push({ ...e, key: k,
+        noKey: e.noKey || `${e.id}'s key was not learned by ${step.id}` });
+    }
+    evs = resolved;
     const snap = await snapshot(D);
+    // the outbox, for the rows whose channel is mail (E22, Q1355) — read
+    // once per step that needs it, and polled, since the sender pass runs on
+    // a kick after the commit rather than inside it
+    D.mails = evs.some((e) => e.mail) && !D.skipped.has(i) ? await mailsFor(D, evs) : [];
     D.steps.push({ id: step.id, epoch: step.epoch, seats: snap,
       // `filed` rides along so the payload says why a row was not asserted
       events: evs.map((e) => ({ id: e.id, key: e.key, ...(e.filed ? { filed: e.filed } : {}) })) });
@@ -1147,6 +1283,100 @@ function mask(D, v) {
   return walk(JSON.parse(s));
 }
 
+/* ---- the outbox, for the rows whose channel is mail -------------------------- */
+/**
+ * This document's mails, polled until every mail row's own has landed or
+ * `MAIL_WAIT_MS` is up: the outbox's sender runs on a **kick after** the
+ * commit rather than inside it, so a row is filed a few hundred ms behind the
+ * fold it came from and a read taken at the fold would report an empty outbox
+ * as a defect. Filtered by the document's own title, which every subject
+ * carries, so the second hat's document and the other walks sharing a server
+ * cannot leak in. `WARN_LEADS` rides back with them, read once off the page's
+ * own constitution bundle rather than repeated here — R-097's three leads are
+ * the module's, and a literal in this file would go stale in silence.
+ */
+async function mailsFor(D, evs, ms = MAIL_WAIT_MS) {
+  if (D.warnLeads === undefined) {
+    D.warnLeads = await D.seats.founder.page.evaluate(() =>
+      (window.CONSTITUTION && window.CONSTITUTION.WARN_LEADS)
+        ? [...window.CONSTITUTION.WARN_LEADS] : null).catch(() => null);
+  }
+  const t0 = Date.now();
+  for (;;) {
+    const mails = (await devOutbox(BASE).catch(() => []))
+      .filter((m) => String(m.subject || '').includes(D.title));
+    const landed = evs.filter((e) => e.mail).every((e) =>
+      mails.some((m) => e.mail.package.test(String(m.subject || ''))));
+    if (landed || Date.now() - t0 > ms) return mails;
+    await sleep(1500);
+  }
+}
+/**
+ * **A mail row is asserted against the outbox** (E22, Q1355, Ed 2026-09-14).
+ * Its channel is mail and nothing else, so a rail-shaped assertion could only
+ * ever report *no rule* — what the document owes is in `data/outbox.jsonl`,
+ * which the dev outbox serves. Two halves, and the row is red on either.
+ *  · **The mail.** Inside the audience a seat is owed every warning that fits
+ *    inside the spell, then the package (SPEC §9.5a, R-097). The leads are
+ *    the module's own and the spell is this table's `LAPSE_AFTER_MS`, so the
+ *    count is derived rather than written down: at one minute none of the
+ *    three (a week, a day, an hour) fits, and E22 here is the package alone.
+ *    Outside the audience a seat must have been sent neither.
+ *  · **The page.** A keyless row cannot assert an absent entry by looking for
+ *    it, so what is asserted instead is that SURFACE still says there is
+ *    nothing to look for: E22's Keys cell must stay empty. The day the page
+ *    grows an entry for a lapse this goes red and somebody reads the row
+ *    again, rather than half of it being asserted in silence.
+ */
+function assertMail(D, step, ev, row) {
+  const cell = row.Audience;
+  const pred = AUDIENCE[cell];
+  if (!pred) {
+    D.noRule.push({ hat: D.hat, step: step.id, event: ev.id, cell, why: 'no AUDIENCE entry for this cell' });
+    say(`   ? ${ev.id} "${cell}" — no rule`); return;
+  }
+  const keys = keysOf(row.Keys);
+  if (keys.length) {
+    shape.push(`${ev.id} is asserted as mail-only and SURFACE's Keys cell now names ${keys.join(' ')} — read the row again`);
+    say(`   ? ${ev.id} — SURFACE now gives it page keys (${keys.join(' ')}); the mail-only reading needs re-reading`);
+  }
+  if (D.warnLeads === null) {
+    shape.push(`${ev.id}: the page answered with no WARN_LEADS, so the warnings owed could not be priced`);
+    say(`   ? ${ev.id} — no WARN_LEADS off the page; what is owed cannot be priced`);
+    return;
+  }
+  const leads = D.warnLeads.filter((l) => l < LAPSE_AFTER_MS);
+  const warned = (m) => ev.mail.warning.test(String(m.subject || ''));
+  const packed = (m) => ev.mail.package.test(String(m.subject || ''));
+  const owed = leads.length + 1; // the warnings that fit, then the package
+  const audience = [];
+  for (const [name, s] of Object.entries(D.seats)) {
+    if (!s.stood) continue;
+    const inAud = !!pred({ ...s.def, name }, step, D, ev, null);
+    if (inAud) audience.push(name);
+    const got = (D.mails || []).filter((m) => m.to === s.email && (warned(m) || packed(m)));
+    const want = inAud ? owed : 0;
+    if (got.length === want && (!inAud || got.filter(packed).length === 1)) continue;
+    const how = got.length ? got.map((m) => (packed(m) ? 'the package' : 'a warning')).join(' + ') : 'nothing';
+    const line = `${ev.id} mail · ${D.hat}/${name} was sent ${how}, ${inAud ? 'inside' : 'outside'} the ` +
+      `audience (${cell}) — ${want} owed (${leads.length} of ${D.warnLeads.length} warning lead(s) ` +
+      `fit a ${LAPSE_AFTER_MS / 1000}s spell${inAud ? ', then the package' : ''})`;
+    D.findings.push({ hat: D.hat, step: step.id, event: ev.id, key: null, seat: name,
+      expected: inAud, carried: got.length > 0, rail: [], line });
+    say('   ✗ ' + line);
+  }
+  // **A mail row can go vacuous too** (Q1356): an audience nobody is in makes
+  // an outbox nobody is owed anything from, and every seat then agrees.
+  if (!audience.length) {
+    shape.push(`${ev.id} "${cell}" at ${step.id} (${D.hat}): no seat was inside the audience, so the row passed over nothing`);
+    say(`   ? ${ev.id} — no seat inside the audience: a vacuous pass, not a pass`);
+    return;
+  }
+  say(`   · ${ev.id} "${cell}" — mail asserted: ${leads.length} warning(s) fit the ` +
+    `${LAPSE_AFTER_MS / 1000}s spell, then the package, to ${audience.join(', ')}` +
+    `; the page files no entry, and SURFACE's Keys cell for it is still empty`);
+}
+
 /* ---- the assertion ----------------------------------------------------------- */
 function assertStep(D, step, evs, snap) {
   for (const ev of evs) {
@@ -1160,6 +1390,10 @@ function assertStep(D, step, evs, snap) {
     const row = EVENT[ev.id];
     const cell = row ? row.Audience : null;
     if (!row) { D.noRule.push({ hat: D.hat, step: step.id, event: ev.id, cell: '(no such row)', why: 'SURFACE §2 has no ' + ev.id }); continue; }
+    // **A row whose channel is mail is read off the outbox** (E22, Q1355):
+    // it has no key by construction, so it must be taken before the keyless
+    // branch below, which would report it as *no rule* for ever
+    if (ev.mail) { assertMail(D, step, ev, row); continue; }
     if (ev.key === null) {
       const entry = { hat: D.hat, step: step.id, event: ev.id, cell, why: 'page side — ' + ev.noKey };
       if (ev.filed) {
@@ -1177,12 +1411,22 @@ function assertStep(D, step, evs, snap) {
       say(`   ? ${ev.id} "${cell}" — no rule`);
       continue;
     }
+    // **A vacuous pass is not a pass** (Q1356, Ed 2026-09-14). A predicate no
+    // seat satisfies agrees with a page that carries nothing, on every seat,
+    // for ever — so the row reports itself green while asserting nothing at
+    // all. E13 stood like that from the day it was keyed: the race it names
+    // had already parked on one judgment, so no seat's view carried it as
+    // askable and the audience was empty on both halves of the test. Counted
+    // here rather than assumed, because whether a row is vacuous is a fact
+    // about the run and not about the table.
+    let inAudience = 0;
     for (const [name, s] of Object.entries(D.seats)) {
       if (!s.stood || !snap[name] || snap[name].unstood) continue;
       const seat = { ...s.def, name };
       // the seat's own snapshot rides fifth, for a cell whose rule reads the
       // seat's view (E13's *could still judge it*, Q1340)
       const inAud = !!pred(seat, step, D, ev, snap[name]);
+      if (inAud) inAudience++;
       const rail = snap[name].rail.map((e) => e.key);
       const match = (k) => k === ev.key || (ev.key.endsWith(':') && k.startsWith(ev.key));
       // **An entry that wants nothing is not evidence of an ask** — SURFACE
@@ -1259,6 +1503,11 @@ function assertStep(D, step, evs, snap) {
       D.findings.push({ hat: D.hat, step: step.id, event: ev.id, key: ev.key, seat: name, expected: inAud, carried: carries, rail, line });
       say('   ✗ ' + line);
     }
+    if (!inAudience) {
+      shape.push(`${ev.id} "${cell}" at ${step.id} (${D.hat}): no seat was inside the audience, ` +
+        `so the row passed over nothing`);
+      say(`   ? ${ev.id} ${ev.key} — no seat inside the audience: a vacuous pass, not a pass`);
+    }
   }
 }
 
@@ -1303,13 +1552,25 @@ say(`tables     · SURFACE §2 events ${EVENTS.length} rows · seats ${SEATS.len
 // a row means there are events this table does not cover, which is the same
 // condition as an unread audience cell — so it goes to the same exit code
 // rather than printing a ✗ into a run that then reports itself green.
-// 38 since Q901 (Ed, 2026-09-14): E40, a member removed by a carried 🥾
-// motion. No step carries one — `remove-motion` puts the motion and leaves it
-// running — so the row reaches no seat here and needs no `AUDIENCE` entry; its
-// cell is E31's word for word, so the day a step does carry one, one predicate
-// serves both.
-const shape = EVENTS.length === 38 ? []
-  : [`SURFACE §2 has ${EVENTS.length} event rows, not the 38 this table was written against`];
+// **40 since 2026-09-14**: three rows arrived in one day — E38 (Q170), *a proposal of yours was stranded
+// by a text change*; E39 (Q386), *a member proposes returning a laid-down power*;
+// E40 (Q901), *a member is removed by a carried motion* — the same day exit 3
+// stopped being forgiven, and
+// the run that caught it was the first in which the row count could be seen,
+// because until Q1354 CI translated the 3 this line raises into a 0. The
+// count is a **shape** tripwire, not a coverage guarantee: it says a row
+// moved under the table, and somebody then decides whether the table should
+// grow a step for it. None of the three has a step: stranding a
+// proposal needs a ground shift this table does not drive, and its audience
+// (*the author, and nobody else*) is one seat; E39 needs a laid-down power and
+// three seats, which `journey` drives instead; E40's cell is E31's word for
+// word and `remove-motion` leaves its motion running — so **whether the matrix
+// should raise any of them is a question for Ed**, not a step invented here. The
+// count is bumped so the rows Q1355 and Q1356 read can report themselves; it
+// is not a claim that E38–E40 are covered.
+if (EVENTS.length !== 40) {
+  shape.push(`SURFACE §2 has ${EVENTS.length} event rows, not the 40 this table was written against`);
+}
 for (const s of shape) say('  ? ' + s);
 
 const browser = await chromium.launch();
