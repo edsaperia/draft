@@ -78,8 +78,22 @@ function motionRoutes() {
   return [...m[1].matchAll(/'([a-z]+)'/g)].map((x) => x[1]);
 }
 
+// **The page is the page and the files its inline script was split into**
+// (Q1352, 2026-09-14): a card literal, a banned word, a list-joiner or a
+// pinned predicate is the page's wherever it now sits, so every read that
+// used to open session-view.html alone reads this set — and `pageMaps`
+// asserts the page actually loads each of the others, so the list cannot
+// name a file the page does not run.
+const PAGE_FILES = ['design/session-view.html', 'design/door.js'];
+const pageSrc = () => PAGE_FILES.map((f) => readFileSync(join(ROOT, f)).toString('utf8')).join('\n');
+
 function pageMaps() {
-  const s = readFileSync(join(ROOT, 'design/session-view.html')).toString('utf8');
+  const page = readFileSync(join(ROOT, PAGE_FILES[0])).toString('utf8');
+  for (const f of PAGE_FILES.slice(1)) {
+    const name = f.split('/').pop();
+    if (!page.includes(`<script src="${name}"></script>`)) throw new Error(`${name} is in PAGE_FILES but session-view.html does not load it`);
+  }
+  const s = pageSrc();
   const arr = (name) => {
     const m = s.match(new RegExp(`const ${name} = (?:GRANT_KEYS\\.concat\\()?\\[([\\s\\S]*?)\\]`));
     if (!m) throw new Error(`${name} not found in session-view.html`);
@@ -1332,7 +1346,7 @@ function checkPicture() {
 
 function checkBannedWords() {
   note('Banned words — STYLE.md §1–2 over every file a member reads from');
-  const files = ['design/copy.js', 'design/cards.js', 'design/session.js', 'design/setup.js', 'design/session-view.html'];
+  const files = ['design/copy.js', 'design/cards.js', 'design/session.js', 'design/setup.js', ...PAGE_FILES];
   const banned = BANNED;
   for (const f of files) {
     // comments are exempt (CLAUDE.md: code comments may cite the spec); class names in markup are not copy
@@ -1374,7 +1388,7 @@ function checkBannedWords() {
  */
 function checkListJoiner() {
   note('The list-joiner — STYLE.md §1 over every file a member reads from (Q630)');
-  const files = ['design/copy.js', 'design/cards.js', 'design/session.js', 'design/setup.js', 'design/session-view.html'];
+  const files = ['design/copy.js', 'design/cards.js', 'design/session.js', 'design/setup.js', ...PAGE_FILES];
   let sites = 0; let hand = 0;
   for (const f of files) {
     // comments exempt, and **line numbers preserved**, which is why the block
