@@ -2761,7 +2761,11 @@ describe('askable races and the pair that rides the view (Q1202)', () => {
       expect(o.ask).not.toBeNull();
       expect(o.ask!.kind).toBe('edge');
       expect(o.ask!.raceId).toBe(o.id);
-      expect(o.ask!.urgency).toBe(0);
+      // **its own value against the hand's own top** (Q98, Ed 2026-09-14):
+      // a real number the margin can order by, never the 0 it carried from
+      // Q1202 to here, and never past the flame's own 1
+      expect(o.ask!.urgency).toBeGreaterThan(0);
+      expect(o.ask!.urgency).toBeLessThanOrEqual(1);
       const cand = (v1.clauses.find((r) => r.id === o.id) as unknown as
         { candidates: Array<{ id: string }>; incumbentId: string });
       expect(new Set([o.ask!.a.id, o.ask!.b.id]))

@@ -929,9 +929,13 @@ window.LIVE = (function () {
         const base = {
           id: r.id, ...site, state: canAsk ? 'needs' : r.judged ? 'deciding' : 'needs',
           qLabel: labelFor(site.insertAfterKey || keys[0]),
-          // urgency is the router's own (SPEC §8.1): the served card's value
-          // over the best in this feed; the fill is the race's closeness to
-          // resolution — a magnitude the engine cannot be made to sign (Q501)
+          // urgency is the router's own (SPEC §8.1): the card's value over
+          // the best in the hand, a pair from outside the hand priced against
+          // that same top since Q98 — so every entry with a card carries a
+          // real number and the 0.3 is reached only where there is no card at
+          // all, a race with nothing left to ask you. The fill is the race's
+          // closeness to resolution — a magnitude the engine cannot be made
+          // to sign (Q501).
           urgency: rc && rc.urgency != null ? rc.urgency : 0.3,
           pct: Math.round((r.closeness || 0) * 100),
           judges: r.judges || 0, floor: r.floor,
