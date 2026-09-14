@@ -157,21 +157,23 @@ Lifted from SPEC.md; kept as a section by Ed's ruling (Q1004).
 
 One glyph per entry, the same alphabet in all three columns (contents rail · gutter · queue). A mark says what the document wants **from you**, never what state the machine is in. Kind names are the code's (`markKindOf` in session.js, `MARK` in cards.js); the checker asserts the kind set, which are drawn, which pin, which are exempt from the cap, and that every kind has a place in both orders.
 
+**Every lifecycle mark is drawn; a subject glyph is an emoji** (Ed, 2026-09-14, Q288) — so the *drawn?* column reads yes on every row, and the colour of every mark is the palette's (`.mk-*` in system.css), the same on every machine and in all three columns. The characters in the *mark* column name the mark; they are not what is rendered.
+
 <!-- spec-check: marks -->
 | mark | kind | wants | hue | pins? | teaser? | columns | opens | drawn? | exempt? |
 |---|---|---|---|---|---|---|---|---|---|
-| 💡 | needs | your judgment | open, alpha by urgency | no | the rationale(s) | rail · gutter · queue | the decision card | no | no |
-| 🔥 | urgent | your judgment, most | open at `FLAME_A` 0.44 | yes | hidden while its clause is off screen (Y12) | all three | the decision card, ❄️ on its row | no | yes |
-| ⚔️ | stuck | a draft, not a judgment; seen only once you have judged | open, fixed 0.55 | no | the deadlock sentence | all three | the deadlock card | no | no |
-| 🌶️ | weigh | which of two questions is hotter | weigh | yes | none; the title over four lines | queue (one entry, at the earlier clause) · gutter · rail | the salience diagonal | no | no |
-| ⏳ | deciding | nothing — the race is waiting for other people to vote, and nothing on it can be asked of you (Q1202); your judgments revisable. **Or the other wait** (E36, Q1015): the membership has finished and the Founder has not — a parked change, whose card is one sentence and an OK, or a race waiting behind that park on the same clause | deciding (grey) | no | one line | all three | the card, revisable; a park's says who is waited on | no | no |
+| 💡 | needs | your judgment | open, alpha by urgency | no | the rationale(s) | rail · gutter · queue | the decision card | yes (Q288) | no |
+| 🔥 | urgent | your judgment, most | open at `FLAME_A` 0.44 | yes | hidden while its clause is off screen (Y12) | all three | the decision card, ❄️ on its row | yes (Q288) | yes |
+| ⚔️ | stuck | a draft, not a judgment; seen only once you have judged | open, fixed 0.55 | no | the deadlock sentence | all three | the deadlock card | yes (Q288) | no |
+| 🌶️ | weigh | which of two questions is hotter | weigh | yes | none; the title over four lines | queue (one entry, at the earlier clause) · gutter · rail | the salience diagonal | yes (Q288) | no |
+| ⏳ | deciding | nothing — the race is waiting for other people to vote, and nothing on it can be asked of you (Q1202); your judgments revisable. **Or the other wait** (E36, Q1015): the membership has finished and the Founder has not — a parked change, whose card is one sentence and an OK, or a race waiting behind that park on the same clause | deciding (grey) | no | one line | all three | the card, revisable; a park's says who is waited on | yes (Q288) | no |
 | ↻ | shifted | nothing — that judgment is void; the pair is re-served | closed (grey; Q612) | no | one line | all three | the card, with the wording you judged against | yes (Y22) | no |
 | ✔ green | adopted | an OK — the charter changed here | changed | yes | one line + when | all three | the sealed record, OK | yes | no |
 | ✖ green | retired | an OK — the incumbent held; pins only if you judged (Y13) | closed wash, green glyph | if unread | one line | all three | the sealed record, OK | yes | no |
 | ✔ grey | filedYes | nothing; filed, the charter changed | none | no | no | gutter (the filed pile) · queue | the sealed record | yes | no |
 | ✖ grey | filedNo | nothing; filed, the incumbent held | none | no | no | gutter · queue | the sealed record | yes | no |
 | ⏸ | filedUndecided | nothing; undecided at the close | none | no | no | gutter · queue | the record card | yes | no |
-| ✏️ | propose | nothing — withdraw is the remaining act | yours | yes | draft: the rationale as you type; proposed: one line | all three | your proposal | no | yes |
+| ✏️ | propose | nothing — withdraw is the remaining act | yours | yes | draft: the rationale as you type; proposed: one line | all three | your proposal | yes (Q288) | yes |
 
 **The setup alphabet** (`stateOf` / `markOf`, setup.js) — five states, tested in the order yours · news · wait · ask · done. A setup entry's wash takes the same urgency ramp as a charter entry's, from its own `RAIL_U` (Q623). A setup entry's **name** follows the card's state, not the rail's: the ask in ask · wait · yours, the noun in done · news — §9's two-label rule, stated once there. Parsed by `spec-check`'s `checkSetupAlphabet`: the state set and test order against `stateOf`, the hue column against `HUE`, the two mark columns against `markOf`'s branches, *in the rail?* against `servedCards` and *pins?* against the rail's `entryOf` (Q1239).
 

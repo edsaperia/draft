@@ -3012,7 +3012,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         ' title="' + esc(plainLabel(h.g.qLabel)) + T.chip.gapSection + '"' +
         anchWash(h.g, openId === h.g.id) + '>' +
         '<span class="chipcol"><span class="achip"' + chipStyle(h.g) + ' data-anchor="' + h.g.id + '">' +
-        markOf(h.g) + '</span></span></div>';
+        mkHtml(markKindOf(h.g)) + '</span></span></div>';
       if (openId === h.g.id && (h.site || !cardDone)) {
         cardDone = true; out += '</div>' + suggCardHtml(h.g, h.key) + PROSE();
       }
@@ -4174,12 +4174,15 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       // ✏️ all the way to the seal (Ed, 260). It had been ✏️ while unproposed
       // and then the ordinary 💡, on the reading that a proposal of yours is a
       // proposal like any other and green says whose. That works wherever the
-      // green goes with it — but the contents rail draws marks with **no
-      // colour**, so up there your work and somebody else's were the same bulb,
+      // green goes with it — but the contents rail then drew marks with **no
+      // colour** (it draws them in their own hue since Q288, the marks being
+      // drawn), so up there your work and somebody else's were the same bulb,
       // and a section holding only your own proposals looked like a section
       // wanting your judgment. The pencil means *you wrote this*, which is the
       // rule 241's own note was already reaching for: subject and act agree,
-      // because in both cases it is you, writing.
+      // because in both cases it is you, writing — and it still earns its own
+      // glyph now that the colour has arrived, since the rail is read at a
+      // glance and a shape reads before a hue does.
       : st === 'yours' ? 'propose'
       // before ⏳, and for the same reason `anchHue` tests it first: ⚔️ is what
       // a race becomes *instead of* going quiet on you
@@ -4189,7 +4192,10 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       : g.id === topUrgentId ? 'urgent'
       : 'needs';
   };
-  const markOf = (g) => MARK[markKindOf(g)];
+  // `markOf` — the bare glyph, unwrapped — is gone (Q288). Every mark is drawn
+  // now, so a site that printed the glyph without `mkHtml`'s `.mk-<kind>` span
+  // printed one the palette could not reach; the gap anchor's tab was the last
+  // such site and it is the same `mkHtml(markKindOf(g))` as every other tab.
 
   // When more marks than fit, the space goes to whatever still wants something
   // from you (Ed, 178). Filed decisions go first, then the states with nothing

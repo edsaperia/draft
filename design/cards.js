@@ -89,8 +89,39 @@ window.CARDS = (function () {
   const PAUSE = "<svg class=\"mkg\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><path d=\"M4.3 2.9 L4.3 9.1 M7.7 2.9 L7.7 9.1\"/></svg>";
   // **The ramp is an emoji again** (Ed, 2026-08-22): the drawn wedge is
   // retired and the pace card wears 🪜, which rejoins it to every other
-  // subject glyph. The `.mkg.fill` branch went with it — it had one user.
+  // subject glyph.
   const VS16 = "︎";
+  // **The other six, drawn** (Ed, 2026-09-14, Q288: *draw the remaining six by
+  // hand, matching the five already drawn*). 💡 🔥 ⚔️ 🌶️ ⏳ ✏️ were the last
+  // marks left as OS emoji, and an emoji is the one thing in this alphabet the
+  // palette cannot reach: it is a different picture on every machine and it
+  // brings its own colour, so the contents rail — which draws its marks with no
+  // wash behind them — could only ever say *a question* and never say whose or
+  // how hot. Drawn, every mark in all three columns takes `--lc-*` like the
+  // tick and the cross, and the alphabet is one set rather than five shapes and
+  // six pictures. Same 12-unit box and the same `.mkg` sizing, so nothing moves.
+  //
+  // These six are **filled silhouettes** (`.mkg.fill`, the branch the retired
+  // ramp had been the only user of) where ✔ ✖ ⏸ are strokes: a bulb, a chilli
+  // or an hourglass outlined at the tick's 1.9 stroke closes up into a blot at
+  // 12px, and the emoji they replace were solid shapes anyway. What makes the
+  // alphabet one alphabet is the box, the single flat colour and the palette
+  // choosing it — not whether a shape is drawn with a pen or a brush.
+  const mkSvg = (d) => '<svg class="mkg fill" viewBox="0 0 12 12" aria-hidden="true">' + d + '</svg>';
+  // an idea on the table: glass, neck, and the screw base in two bars
+  const BULB = mkSvg('<path d="M6 0.7C3.9 0.7 2.2 2.4 2.2 4.5c0 1.4 0.7 2.6 1.8 3.3v0.8h4V7.8c1.1-0.7 1.8-1.9 1.8-3.3C9.8 2.4 8.1 0.7 6 0.7Z"/><path d="M4.1 9.4h3.8v1.1H4.1Z"/><path d="M4.7 11.2h2.6v0.9H4.7Z"/>');
+  // the one that wants you most: a teardrop with the flame's own notch
+  const FLAME = mkSvg('<path d="M6.9 0.4c0.3 1.9-0.5 3-1.4 3.9C4.9 3.8 4.7 3.3 4.7 2.8 3.4 4 2.4 5.6 2.4 7.3c0 2.4 1.9 4.3 3.7 4.3s3.5-1.9 3.5-4.3c0-1.6-0.8-2.6-1.6-3.5C7.7 4.6 7.3 5 6.9 5.3 7.6 3.7 7.6 1.8 6.9 0.4Z"/>');
+  // two things still fighting: one sword drawn once and rotated both ways, so
+  // the pair cannot drift apart the way two hand-placed blades would
+  const BLADE = '<path d="M6 0.5 6.9 2.4V8.1H5.1V2.4Z"/><path d="M3.6 8.3h4.8v1.1H3.6Z"/><path d="M5.4 9.4h1.2v1.2H5.4Z"/><circle cx="6" cy="11.1" r="0.95"/>';
+  const SWORDS = mkSvg('<g transform="rotate(45 6 6)">' + BLADE + '</g><g transform="rotate(-45 6 6)">' + BLADE + '</g>');
+  // which question is hotter: the pod leaning, pointed, with its stalk hooked
+  const CHILLI = mkSvg('<g transform="rotate(18 6 6)"><path d="M6 2.9c1.7 0 2.7 1.4 2.7 3.3 0 2.6-1.5 5.3-2.7 5.3s-2.7-2.7-2.7-5.3C3.3 4.3 4.3 2.9 6 2.9Z"/><path d="M5.4 0.6h1.2v2.6H5.4Z"/><path d="M6.1 1.1c1.1-0.5 2.3-0.2 2.9 0.7l-1 0.7c-0.4-0.5-1-0.6-1.6-0.3Z"/></g>');
+  // the race runs on without you: two bars and two funnels meeting at the waist
+  const GLASS = mkSvg('<path d="M2.3 0.9h7.4v1.3H2.3Z"/><path d="M3.1 2.4h5.8L6 6Z"/><path d="M6 6.2 8.9 9.8H3.1Z"/><path d="M2.3 9.9h7.4v1.3H2.3Z"/>');
+  // yours: the barrel and the sharpened point, on the emoji's own diagonal
+  const PENCIL = mkSvg('<g transform="rotate(45 6 6)"><path d="M4.35 1.5h3.3v6.7H4.35Z"/><path d="M4.35 8.6h3.3L6 11.3Z"/></g>');
   const MARK = {
     // A rail entry is somebody's proposal, not a question the system invented,
     // so it wears a lightbulb rather than a question mark (Ed, 241). The move
@@ -99,8 +130,8 @@ window.CARDS = (function () {
     // an idea, a pencil is about writing — so each glyph ends up nearer its own
     // job. It also settles a small clash: ❓ renders red in most emoji fonts
     // while its card washes yellow, and 💡 is yellow.
-    needs: '💡',      // an idea is on the table, and it wants your judgment
-    urgent: '🔥',     // the one that wants you most
+    needs: BULB,      // an idea is on the table, and it wants your judgment
+    urgent: FLAME,    // the one that wants you most
     // The rail says what is true; the buttons say what you can do. So a
     // deadlocked race is marked "stuck" — same yellow as 💡, because it is
     // still open — and ✏️ lives on the drafting it leads to (Ed, 173, 241).
@@ -111,13 +142,13 @@ window.CARDS = (function () {
     // swords say two things are still fighting, which is the true statement and
     // the one that makes the ask legible. It also stops ❌ being read as a close
     // button, which at 13px beside a card it plainly was.
-    stuck: '⚔️',      // judging cannot move this; only a new draft can
+    stuck: SWORDS,    // judging cannot move this; only a new draft can
     // ✏️ is the writing action *and* the state of a draft of your own that is
     // not yet proposed (Ed, 241). The overload is harmless because subject and
     // act agree — in both cases it is you, writing. Once you propose it, the
     // thing on the table is an ordinary proposal and wears the ordinary 💡;
     // what says it is *yours* is the green.
-    propose: '✏️',    // ...and this is where you write one
+    propose: PENCIL,  // ...and this is where you write one
     // A salience diagonal: which of two questions is the more **urgent**.
     // 🌶️ rather than ⚖️ (Ed, 2026-08-17). The scales were the wrong idea twice
     // over: weighing is what *every* card on this surface asks for, so a pair
@@ -126,16 +157,17 @@ window.CARDS = (function () {
     // than a balance. It also reads: ⚖️ is a fine-detailed glyph that turns to
     // mush at 13px, where a chilli is one silhouette, and it is the hue the
     // card is already wearing.
-    weigh: '🌶️',
-    deciding: '⏳',   // yours is in; the race runs on
+    weigh: CHILLI,
+    deciding: GLASS,  // yours is in; the race runs on
     // **The four decided marks are drawn glyphs, not emoji** (Ed, 2026-08-17:
     // *they carry their own background unlike all the other symbols*). ✅❎☑️🔄
-    // are the only marks in the alphabet that come as a coloured plate with a
-    // white shape knocked out of it, so beside 💡🔥✏️⏳⚔️ — all silhouettes —
-    // they read as a different *kind* of object rather than as a different
-    // state. Text-presentation glyphs (U+FE0E) take `color` like any other
-    // character, so the colour is now chosen here rather than by whichever
-    // emoji font the reader happens to have, and it is the same in every column.
+    // were the only marks in the alphabet that came as a coloured plate with a
+    // white shape knocked out of it, so beside the emoji silhouettes they read
+    // as a different *kind* of object rather than as a different state. Text-
+    // presentation glyphs (U+FE0E) take `color` like any other character, so
+    // the colour is chosen here rather than by whichever emoji font the reader
+    // happens to have, and it is the same in every column — which is the whole
+    // argument Q288 then applied to the remaining six.
     // the ground moved under a judgment of yours, so that judgment is void and
     // the race will ask you again — nothing is rewritten, and no new candidate
     // appears: what comes back is a pair to judge, on wordings that already exist
@@ -161,9 +193,13 @@ window.CARDS = (function () {
     filedNo: CROSS,  // filed, and the incumbent held
     filedUndecided: PAUSE, // filed at the close, nothing decided: the incumbent stands, undecided
   };
-  // Which of the four drawn marks this is, so CSS can colour it. Only they
-  // need it: every other mark is an emoji and brings its own colour with it.
-  const DRAWN = ['adopted', 'retired', 'filedYes', 'filedNo', 'filedUndecided', 'shifted'];
+  // Which mark this is, so CSS can colour it — **every lifecycle mark is drawn;
+  // a subject glyph is an emoji** (Ed, 2026-09-14, Q288). The list held six of
+  // twelve while the other six brought their own colour with them; it holds all
+  // twelve now, which is what makes the `.mk-*` rules the single place the
+  // alphabet's colour is decided.
+  const DRAWN = ['needs', 'urgent', 'stuck', 'weigh', 'deciding', 'propose',
+    'adopted', 'retired', 'filedYes', 'filedNo', 'filedUndecided', 'shifted'];
   // The glyph, wrapped so it can be coloured wherever it is drawn — the queue,
   // the contents rail, the gutter tab and a card's head all show the same mark
   // and must show it the same way.
