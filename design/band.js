@@ -55,7 +55,8 @@ window.BAND = (function () {
       judgedOn, launchFarewell, launchGrant, liveMotionRec, mailGiveUpBatch, mailGiveUpBody,
       mayPen, mayPenOn, me, membersHold, midOf, motionBlocks, motionOn, motionPicked,
       motionTargets, nameOfMember, namePickNow, oneVoiceAsk, ordinaryBody, pairWords, penOkFor,
-      perpetual, picPickNow, policyNow, powerBody, proseCounts, pwPair, readinessOf, ready,
+      perpetual, picPickNow, policyNow, powerBody, powerReturnBody, powerReturnOn,
+      proseCounts, pwPair, readinessOf, ready,
       recordBody, releaseBatch, releaseBody, removalPrice, removeSubjectPicker, renderDev,
       renderPowerWallets, renderRail, renderTitle, resolveCounts, routeOfM, sentenceFor,
       serverNow, settled, shapeClauses, signedClose, slugNoteHtml, slugRefused, standsTyped,
@@ -1137,6 +1138,29 @@ window.BAND = (function () {
         // 403/405 (Ed, 2026-08-19): a power tab, opened — the ✒️ or 🛡️
         // half of a setting's governance, its head the rule as it stands
         if (c.power) {
+          /* **The road back to a laid-down power, on its own tab** (Q386, Ed
+             2026-09-14). Two states arrive before the founder's own card: a
+             return already in flight, answered here exactly as a constitutional
+             motion is answered anywhere — the same two blocks, the same 🏛️,
+             the mover's 🗑️ withdrawing — and, where none is, the member's offer
+             to put one. The founder falls straight through to their own card
+             below, unchanged: they lay a power down here; they do not propose
+             returning it to themselves. */
+          const pm = motionOn(c);
+          if (pm) {
+            return cardHtml(c, ctx, consentBody(c, pm),
+              (pm.by === viewerId()
+                ? '<button class="btn glyphbtn" data-withdrawmotion="' + c.k + '" title="Withdraw it — your 🏛️ comes back whole">🗑️</button>'
+                : binBtn()) +
+              '<button class="btn btn-approve glyphbtn emojibtn"' + (motionPicked(c) ? '' : ' disabled') +
+              ' data-confirm="1" title="Give your answer">🏛️</button>', g.cards);
+          }
+          if (powerReturnOn(c)) {
+            const pd = (S.draft && S.draft.k === c.k) ? S.draft : { k: c.k, to: '', why: '' };
+            return cardHtml(c, ctx, powerReturnBody(c) + whyLane(pd),
+              '<button class="btn glyphbtn" data-dropmotion="1"' +
+              ' title="Discard this motion">🗑️</button>' + commitFor(c), g.cards);
+          }
           const pHeld = c.power === 'u' ? pwPair(c.base).u : pwPair(c.base).a;
           // …and never on a closed document (entry 62): `relinquish` and
           // `reclaim` both `requireOpen`, so this ✒️ posted a command the server

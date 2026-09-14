@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 486
+  "entries": 487
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -244,6 +244,7 @@
   "page.proseRow.discard": "Put the column back to the text as it stands",
   "page.proseRow.save": "Save the text — the document begins from whatever stands here",
   "page.proseRow.saved": "Saved — the document begins from whatever stands here",
+  "page.pw.amendAtWill": "ƒ (noun) => 'The Founder may amend ' + noun + ' at will.'",
   "page.pw.chooseOrPropose": "ƒ (routeGlyph) => 'Choose ✒️ or Propose ' + routeGlyph + ' this'",
   "page.pw.chooseThis": "Choose this",
   "page.pw.chosen": "Chosen",

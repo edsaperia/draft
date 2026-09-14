@@ -581,6 +581,13 @@ window.COPY = (function () {
       // second glyph being the route's own commit — ✏️ or 🏛️
       chooseOrPropose: (routeGlyph) => 'Choose ✒️ or Propose ' + routeGlyph + ' this',
       chosenOrProposed: (routeGlyph) => 'Chosen ✒️ or Proposed ' + routeGlyph,
+      // **What a proposal to hand a power back says, away from its own tab**
+      // (Q386, Ed 2026-09-14). On the card the two blocks are the tab's own
+      // (`PW_OPTS`), which say *this* and *it* because the head above them
+      // names the setting — but a rail subtitle, a deck line and a record
+      // title are read with no head over them, so this one names it. The 🛡️
+      // half is `vetoLabel`'s own sentence, which already does.
+      amendAtWill: (noun) => 'The Founder may amend ' + noun + ' at will.',
       // the four read-only notes (*The Founder holds this…*, *Given up…*)
       // went with Ed's card review round 3 (2026-09-05, 52/53): a tab with
       // nothing to set is its head sentence and a close-only OK
