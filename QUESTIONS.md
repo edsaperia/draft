@@ -8,6 +8,9 @@ The index, in the section's own order (nothing is pinned — Ed, 2026-09-07, Q12
 
 | # | Title | Raised | State | Pointers |
 |---|---|---|---|---|
+| 1357 | A submitted applicant's card is hidden while 🤝 is shut | 2026-09-14 | open — found by the Q901 build | `applicants`; `applicantAsView`; SURFACE E33, Y28 |
+| 1358 | The Founder who presses ❌ is owed the departure's OK too | 2026-09-14 | open — found by the Q901 build; E9 skips the actor, E40 does not | `departure-news`; `oweDeparture` (owed.ts); SURFACE E31, E40, E9 |
+| 1359 | The seat matrix raises no step for E38, E39 or E40 | 2026-09-14 | open — found by the Q1354 build; the row count is a shape tripwire, not coverage | `seat-matrix.mjs`; SURFACE E38–E40 |
 | 925 | Three more things git knows about overlapping patches | 2026-08-27 | parked | SPEC §2.2, §2.4; Q924 |
 | 109 | Scale: the margin assumes a short rail | 2026-08-16 | waiting on Ed's own read (the walk, 2026-09-14: *look at a moon-shaped room and rule from what you saw* — `docs.vote/d/moon2`, ~156 members, is idle; the alternatives on the table were naming a ceiling of ~30 live questions, or committing to a screen-only margin) | `needs-you-queue` |
 | 282 | A rendered document and a source offset do not agree | 2026-08-17 | deferred past the alpha (Ed, 2026-08-27) | `richToSource` (cards.js) |
@@ -114,6 +117,13 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 
     The new Proposals preamble is Ed's own wording (2026-08-22), and I have built it verbatim — but every other member-visible string on the surface says **document**, including the sentence this one replaces (*The document has not begun.* / *The document began at…*), the 🍾 card's own body (*Only the Founder can begin the document*), the hold line (*The document cannot begin while…*) and the stranger's door. A scan of `session-view.html`, `session.js` and `cards.js` finds "session" in comments and file names only, never in copy. So the preamble now says *session* two paragraphs above a card that says *document* about the same act. **(a)** Keep *session* and leave the inconsistency — a convention **is** a session, and this is the one sentence about the room's life rather than about the text. **(b)** Keep *session* and sweep the rest of the surface to match, making it the vocabulary. **(c)** Say *When the document begins, members may propose changes to rules…*, which costs nothing and matches every neighbouring sentence. I recommend **(c)** unless *session* is deliberate; it is a one-word change either way, and STYLE.md's job is one vocabulary. Raised 2026-08-22.
 
+1357. **A submitted applicant's card is hidden while 🤝 is shut** (found 2026-09-14 by the Q901 build). `renderRail` emptied the applicant's whole rail the moment 🤝 shut; the Q901 build fixed that for the refused applicant's 🪪 card (E33), but an applicant who had already *submitted* still loses their *n of E have voted* card under a shut door — their application is a running race whichever way the door now stands. Readings: **(a)** the submitted card stands whatever 🤝 says, the door's state being about new applications only (recommended); **(b)** a shut door tells a submitted applicant their application is withdrawn (a mechanism change); **(c)** leave it.
+
+1358. **The Founder who presses ❌ is owed the departure's OK too** (found 2026-09-14 by the Q901 build). `oweReleases` and `oweAmendment` skip the convenor as the actor (E9, Q918); `oweDeparture` does not, because Ed's ruling named only the departed and later joiners as exclusions and two of the three routes have no single actor — so the Founder who exiled a member at will is served a card asking them to acknowledge their own act. One predicate in `owed.ts`. Readings: **(a)** skip the actor, as E9 does — the Founder on ❌, the resigner on *Leave* (already outside, being departed) (recommended); **(b)** everyone, as built.
+
+1359. **The seat matrix raises no step for E38, E39 or E40** (found 2026-09-14 by the Q1354 build). SURFACE §2 gained three rows today and the harness's row-count literal was bumped to 40 as a shape tripwire; none of the three has a step: stranding a proposal needs a ground shift the table does not drive and its audience is one seat; E39 needs a laid-down power and three seats, which `journey` walks; E40's cell is E31's word for word and `remove-motion` leaves its motion running. Readings: **(a)** leave the three to their own walks (journey, the server tests) and say so in the harness header (recommended); **(b)** add steps for E39 and E40 (a carried removal, a returned power) and leave E38 to the engine tests; **(c)** all three.
+
+
 ## Backlog (provisioned, build later)
 
 | # | Title | Raised | State | Pointers |
@@ -192,7 +202,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1357** — claim by writing the block here, then commit it alone.
+**The next free number is 1360** — claim by writing the block here, then commit it alone.
+
+**1357–1359 are the last builds' findings** (claimed 2026-09-14 21:21, from the Q901 and Q1354 builds): 1357 a submitted applicant's card under a shut door, 1358 the Founder inside the audience of their own ❌, 1359 the matrix's three uncovered rows.
 
 **1354–1356 are the seat-matrix build's three questions** (claimed 2026-09-14 20:13, raised by the Q1205 build that made the harness green and put it in CI): 1354 the exit-3 contract, 1355 E11's predicate, 1356 E13's vacuous pass.
 
