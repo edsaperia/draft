@@ -1251,6 +1251,67 @@ describe('the close (SPEC §4.6)', () => {
     expect(replayed.document()).toBe(s.document());
     expect(replayed.closedAt).toBe(s.closedAt);
   });
+
+  /**
+   * **A stranded proposal files as undecided** (Ed, 2026-09-14, Q1353;
+   * SPEC §2.6, §4.6 → why: R-113). A patch whose rebase failed is in
+   * neither set the close used to sweep — it is out of every race and it is
+   * not parked — so it stayed stranded for ever: out of the record, out of
+   * the backlog, and outside the stake waiver. It is a question the clock
+   * caught like any other, so it files like one, under its own name and off
+   * the version its patch was written against.
+   */
+  it('files a proposal stranded by a text change as undecided (Q1353)', () => {
+    const s = openHeld(); // the bar is out of reach: only the decree moves the text
+    const v0 = s.currentVersion();
+    const before = s.balance('p2', 1000);
+    const { id: stranded } = s.submitCandidate(1000, { author: 'p2',
+      patch: rewrite(v0, 1, 'Membership is closed.'), rationale: 'closed' });
+    const staked = before - s.balance('p2', 1000);
+    expect(staked).toBeGreaterThan(0);
+    // a live rival elsewhere in the document, which the close files the old way
+    const { id: live } = s.submitCandidate(1500, { author: 'p3',
+      patch: rewrite(v0, 3, 'Meetings happen fortnightly.'), rationale: 'a rhythm' });
+    // the same line rewritten under it: the rebase conflicts (SPEC §2.4)
+    s.decreeText(2000, { author: 'p1',
+      patch: rewrite(v0, 1, 'Membership is by invitation.'), rationale: 'mine' });
+    expect(s.getCandidate(stranded).state).toBe('rebase-pending');
+    expect(s.getCandidate(live).state).toBe('live');
+    expect(s.balance('p2', 2000)).toBe(before - staked); // nothing came back
+
+    s.close(5000);
+    const undecided = s.log.map((e) => e.event)
+      .filter((e): e is Extract<Event, { type: 'candidate-undecided' }> =>
+        e.type === 'candidate-undecided');
+    // both of them, and nothing synthesised for the decree's own candidate
+    expect(undecided.map((e) => e.id).sort()).toEqual([live, stranded].sort());
+    const filed = undecided.find((e) => e.id === stranded)!;
+    // the same stake waiver as the rest (§7: tokens are worthless at the close)
+    expect(filed.refund).toBe(0);
+    expect(s.balance('p2', 5000)).toBe(before - staked);
+    // its race is gone, so it files under its own name
+    expect(filed.raceId).toBe(`r:${stranded}`);
+    expect(s.getCandidate(stranded).state).toBe('undecided');
+    expect(s.backlog().some((b) => b.candidateId === stranded)).toBe(true);
+    // and the record reads it off the version its patch was written against,
+    // which is what carries the span forward to the clause that displaced it
+    const o = new ParticipantApi(s, 'p2').outcomes().find((x) => x.candidateId === stranded)!;
+    expect(o.outcome).toBe('undecided');
+    expect(o.version).toBe(v0);
+    expect(s.verifyChain()).toBe(true);
+    expect(Session.replay(s.log).rollingHash()).toBe(s.rollingHash());
+  });
+
+  /** …and a close with nothing stranded emits exactly what it always did. */
+  it('synthesises nothing where no patch is stranded (Q1353)', () => {
+    const s = openHeld();
+    const { id } = s.submitCandidate(1000, { author: 'p1', patch: rewrite(0, 0, 'X.'),
+      rationale: 'r' });
+    s.close(5000);
+    expect(s.log.map((e) => e.event)
+      .filter((e) => e.type === 'candidate-undecided')
+      .map((e) => (e as { id: string }).id)).toEqual([id]);
+  });
 });
 
 describe('a refused event never reaches the log (Q679)', () => {

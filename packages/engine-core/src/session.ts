@@ -735,8 +735,10 @@ export class Session {
    * T=0 (SPEC §4.6): a final adoption batch regardless of cooldown phase,
    * the ready set snapshotted here; then every race still live records
    * the third outcome, *undecided* — setting races included, whose motions
-   * the host then holds — with the refund 0, since tokens are worthless at
-   * the close (§7); then `closed`.
+   * the host then holds, and beside them whatever is unresolved outside
+   * every race: a candidate parked awaiting assent, and a proposal stranded
+   * by a text change (R-113) — with the refund 0, since tokens are worthless
+   * at the close (§7); then `closed`.
    */
   private runClose(t: number): void {
     this.sweepAdoptions(t, /* final */ true);
@@ -759,6 +761,22 @@ export class Session {
       if (c.state !== 'awaiting-assent') continue;
       this.emit({ type: 'candidate-undecided', t, id: c.id,
         raceId: c.awaiting?.raceId ?? `r:${c.id}`, refund: 0 });
+    }
+    // **A stranded proposal files as undecided too** (Ed, 2026-09-14, Q1353;
+    // SPEC §2.6, §4.6 → why: R-113). A patch whose rebase failed (§2.4) is
+    // held for its author to re-make or withdraw, and is in neither of the
+    // two sets above — out of every race, never parked — so the close used
+    // to leave it stranded for ever: out of the record, out of the backlog,
+    // and outside the stake waiver every other unresolved proposal gets. It
+    // is a question the clock caught like any other, so it files like one.
+    // Its race is gone, so it files under its own name — which is exactly
+    // what `raceIdOf` would return for a candidate in no race — and the
+    // record places it by its own `baseVersion`, carrying the span forward
+    // to the clause its patch now descends to (Q1333). This covers one
+    // stranded long ago **and** one the final batch above just stranded.
+    for (const c of [...this.candidates.values()]) {
+      if (c.state !== 'rebase-pending') continue;
+      this.emit({ type: 'candidate-undecided', t, id: c.id, raceId: `r:${c.id}`, refund: 0 });
     }
     this.emit({ type: 'closed', t });
   }
