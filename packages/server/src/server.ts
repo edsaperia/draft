@@ -11,12 +11,12 @@
  * and every commit runs on a per-document WriteChain: a 200 means the
  * entries are durable, and two commits to one document cannot interleave.
  *
- * What is left here after refactor Q1352 (m): the boot, the error
+ * What is left here after refactor Q1352 (m) and (n): the boot, the error
  * counters, the request wrapper and its catch, the headers every answer
- * carries, and `route()` — which is now the ordered dispatch over the five
- * route families and nothing else. The branches themselves are
- * `routes-dev`, `routes-admin`, `routes-auth`, `routes-member` and
- * `routes-surface`, over the `RouteContext` made below.
+ * carries, and `route()` — which is now the ordered walk of one route
+ * table and nothing else. The rows themselves are `routes-dev`,
+ * `routes-admin`, `routes-auth`, `routes-member` and `routes-surface`,
+ * over the `RouteContext` made below.
  */
 import { createServer } from 'node:http';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
@@ -33,32 +33,36 @@ import { MailOutbox } from './outbox.js';
 import { asEngineDoc, resumeBridge } from './engine-host.js';
 import type { Mailer } from './mailer.js';
 import { PauseState, WritePath } from './write-path.js';
-import { json, makeReq, pathOf, sweepBuckets } from './routes.js';
-import type { RouteContext, RouteFamily } from './routes.js';
-import { devLadderRoutes, devMailRoutes } from './routes-dev.js';
-import { healthRoutes, operatorRoutes } from './routes-admin.js';
-import { authRoutes } from './routes-auth.js';
-import { memberRoutes } from './routes-member.js';
-import { surfaceRoutes } from './routes-surface.js';
+import { json, makeReq, pathOf, routeMatches, sweepBuckets } from './routes.js';
+import type { Route, RouteContext } from './routes.js';
+import { devLadderTable, devMailTable } from './routes-dev.js';
+import { healthTable, operatorTable } from './routes-admin.js';
+import { authTable } from './routes-auth.js';
+import { memberTable } from './routes-member.js';
+import { surfaceTable } from './routes-surface.js';
 
 /**
- * **The chain, in the chain's own order** (Q1352 (m)). The order is
- * load-bearing and this array is the whole of it: health answered before
+ * **The route table, in the chain's own order** (Q1352 (m), (n)). The order
+ * is load-bearing and this array is the whole of it: health answered before
  * the dev mail pair, the operator's key-gated routes between the two dev
- * halves, and the static family last, because a document's page is what
+ * halves, and the static rows last, because a document's page is what
  * `/d/:slug` means only once nothing else has claimed it. Two families are
  * split in two for exactly this reason — the paths they hold are disjoint,
  * so nothing would break if they were joined, but preserving the order
  * costs one extra export apiece and settles the question.
+ *
+ * The two dev arrays are **empty in the production artifact**: their rows
+ * are pushed inside a `DEV:`-labelled statement, which the build drops
+ * bodily, so the row, its path and its handler go together.
  */
-const FAMILIES: RouteFamily[] = [
-  healthRoutes,
-  devMailRoutes,
-  operatorRoutes,
-  devLadderRoutes,
-  authRoutes,
-  memberRoutes,
-  surfaceRoutes,
+const ROUTES: Route[] = [
+  ...healthTable,
+  ...devMailTable,
+  ...operatorTable,
+  ...devLadderTable,
+  ...authTable,
+  ...memberTable,
+  ...surfaceTable,
 ];
 
 export interface DraftServer {
@@ -246,7 +250,7 @@ export async function createDraftServer(cfg: ServerConfig,
   /**
    * The head of the old chain, and the dispatch that replaced its body: the
    * headers every answer carries, the two refusals that must be made before
-   * any branch sees the request, then each family in turn until one says it
+   * any row sees the request, then the table in order until one row says it
    * has answered. The 404 at the end is the chain's own.
    */
   async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -293,8 +297,11 @@ export async function createDraftServer(cfg: ServerConfig,
       }
     }
 
-    for (const family of FAMILIES) {
-      if (await family(ctx, r)) return;
+    // the table, first match wins — and a row may still decline, in which
+    // case the walk goes on exactly as the old chain's fallthrough did
+    for (const entry of ROUTES) {
+      if (!routeMatches(entry, r)) continue;
+      if (await entry.handler(ctx, r)) return;
     }
 
     json(res, 404, { error: 'not found' });

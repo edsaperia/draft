@@ -41,12 +41,12 @@ Checked against the source rather than remembered:
   Cloudflare in front of Render (PRODUCTION.md stages 4 and 9).
 - **Cookie**: exactly one, `draft_session`, 90 days, `HttpOnly`,
   `SameSite=Lax`, `Secure` over HTTPS, stateless HMAC over
-  (docId, memberId, expiry) — `auth.ts`, `server.ts:785`.
+  (docId, memberId, expiry) — `auth.ts`, `routes.ts` (`setCookie`).
 - **Magic links**: 24 random bytes, 7-day TTL, single-use (deleted on verify),
   stored as a SHA-256 hash — `auth.ts`.
 - **IP addresses**: rate-limiting only, in-memory `Map`, 20 requests per route
   per 10 minutes, read from `cf-connecting-ip` or a hop count. Never written
-  to disk by the app — `server.ts:38`, `ipOf`.
+  to disk by the app — `routes.ts`, `ipOf`.
 - **Operator notification mail** on every document creation, carrying the
   title, the founder's address and the URL — `mailer.ts` `MAILS.newDocument`,
   `config.ts` `notifyEmail`.

@@ -1,16 +1,19 @@
 /**
- * The route families' shared ground (refactor Q1352 (m), 2026-09-14).
+ * The route families' shared ground (refactor Q1352 (m), (n), 2026-09-14).
  *
  * `route()` was one if-chain of some 1,100 lines over `(method, path)`,
  * every branch reaching into `createDraftServer`'s closure for the store,
  * the auth, the write path and a handful of per-request guards. The chain
  * is five family modules now — `routes-dev`, `routes-admin`, `routes-auth`,
- * `routes-member`, `routes-surface` — and this file is what they all read:
+ * `routes-member`, `routes-surface` — each a `Route[]` in the chain's own
+ * order, and this file is what they all read:
  *
  *  - `RouteContext`, the server's own state, made once at boot. Three of its
  *    fields are **mutable on purpose**: a surface upload (Q1347) moves
  *    `designDir`, `buildSha` and `surfaceSha` together, and the static
- *    family and `/healthz` must see the move.
+ *    rows and `/healthz` must see the move.
+ *  - `Route`, one row of the table, and `routeMatches`, the whole of the
+ *    dispatch.
  *  - `Req`, the request as the chain had already parsed it — url, path,
  *    segments, the clock — plus the four guards every family used
  *    (`docOr404`, `tooMany`, `bearerRefused`, `devOff`), each of which
@@ -87,8 +90,37 @@ export interface Req {
   devOff(): boolean;
 }
 
-/** One family of the old chain: true means this request has been answered. */
-export type RouteFamily = (ctx: RouteContext, r: Req) => Promise<boolean>;
+/**
+ * One row of the route table (refactor Q1352 (n)).
+ *
+ * **Ordered, because the chain's order is load-bearing.** Each family module
+ * exports its rows as an array in exactly the order its branches stood in,
+ * and `server.ts` concatenates the seven arrays into one; dispatch is the
+ * first row whose method and match both agree.
+ *
+ *  - `method` is the method the branch tested, or `'*'` where it tested none
+ *    — the member view/cmd branch is the only `'*'` in the table.
+ *  - `match` is an exact path where the branch compared one, and a predicate
+ *    over the parsed request where it read segments, an extension or a pair
+ *    of paths. A predicate must stay **pure**: it is asked of every request
+ *    that reaches its row.
+ *  - `handler` answers, and says so. **A row may decline**: returning false
+ *    leaves the request unanswered and the walk goes on to the next row,
+ *    which is how the one branch that fell through the old chain still does.
+ *  - `name` is for a reader, and for anything that wants to print the table.
+ */
+export interface Route {
+  readonly name: string;
+  readonly method: 'GET' | 'POST' | 'HEAD' | '*';
+  readonly match: string | ((r: Req) => boolean);
+  readonly handler: (ctx: RouteContext, r: Req) => Promise<boolean> | boolean;
+}
+
+/** Does this row answer this request? Method and match, in that order. */
+export function routeMatches(entry: Route, r: Req): boolean {
+  if (entry.method !== '*' && entry.method !== r.req.method) return false;
+  return typeof entry.match === 'string' ? r.path === entry.match : entry.match(r);
+}
 
 /**
  * One cookie per document (review #1, finding 13): a single name meant
