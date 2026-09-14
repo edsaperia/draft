@@ -523,6 +523,38 @@ stamped *now* on the log, so its time is in the past by the time it lands
 view spares the polling page, not the founder's monitor, and a first load
 at that size is the next payload to look at.
 
+**The lever is built — measured 2026-09-14 (Q1326, Ed: *build the
+remaining lever now*).** The version the memo keys on is bumped at every
+mutation the fold makes rather than once at its end, so the memo is live
+inside a fold too: a read is a hit exactly while nothing has moved since
+it. With it, the judgment fold reads the race picture **once** instead of
+twice — the ground before the push and `updatePeaks` after it share one
+read, membership and incumbent ids not depending on comparisons — and the
+read is cached all the way down, where before each in-fold build computed
+`usableComparisons` twice per race. Counted rather than reasoned:
+`derived.test.ts` holds one judgment at two rebuilds, against three on an
+incumbent pair and five on a rival pair before.
+
+Locally, fifty seats and eighty races, 2,920 judgments driven through
+`Session.judge` with the sweep running on every one of them: the command
+path went from **24.5–26.3 s to 12.5–13.8 s** (8.38–9.02 ms a judgment to
+4.28–4.72 ms), and replaying the 3,001-entry log the run produced — the
+same folds with no command layer around them, which is what a cold boot
+does — from **2.81–4.36 ms an entry to 1.10–1.76 ms**. The rolling hash is
+the same in both, which is the whole point.
+
+The guard is differential, because a mistake here shows up as a document
+that replays differently or a race that ranks differently and neither
+announces itself: `memo-differential.test.ts` drives one long seeded script
+twice, once with every read recomputed (`Session.memo.off`) and once with
+the memo live, and compares everything the engine publishes after every
+step; `Session.memo.audit` recomputes each cache hit and throws where the
+cache and the live state disagree, so a mutation that escaped its `touch()`
+is caught at the read that would have been wrong. Both halves were shown to
+fail on a session whose memo spans the fold again. Still not built: more
+than one process, and the 300 KB first load above. The next instrument is
+this room again on docs.vote, to move the knee's number a second time.
+
 
 ## History
 
