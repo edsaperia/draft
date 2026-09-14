@@ -6188,3 +6188,14 @@ The walk's seventeenth question, 2026-09-14. **Ruled: no headcount on a live car
 
 187. **Should a live card show the floor as a headcount too?** (raised 2026-08-16, from Q186.) The navbar now says *voices needed 5 of 14* and the sealed record says *5 of 14 weighed in · floor was 5*. A **live** card shows only the evidence-meter and its caption, and § Front-door Keys is the one entry whose caption mentions the floor at all ("three of the fourteen have weighed in — the floor is 5"). Making that consistent — every live card stating "n of 14 so far, floor 5" — would be honest, magnitude-only, and probably the single most reassuring number on the surface. The reason to hesitate is that a running judge-count is *nearly* directional: watching it climb tells you the race is being sampled, and combined with the meter it narrows what the posterior can be. Probably safe (SPEC §8.2 puts per-race judge counts in the record and the mockup already exposes one), but it should be a decision rather than a drift.
 
+
+## Q212: closeness stays in the margin only (Ed, 2026-09-14)
+
+The walk's eighteenth question, 2026-09-14. **Ruled: no line on the card** — the evidence-meter is the margin entry's (CLAUDE.md, `evidence-meter`), the coverage half is the card's ledger since Q1201, and the caption removed on 2026-08-17 was the same information twice. Rejected: one quiet line on live cards; leaving it open. Nothing changes.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 212 | Closeness is now only on the queue card | 2026-08-16 | waiting on Ed | `evidence-meter` |
+
+212. **Closeness is now only on the queue card** (raised 2026-08-16, from Q210). Removing the `evidence-meter` from decision cards leaves closeness-to-resolution — and a race's "you've judged 2 of the pairs you'll be asked for" — visible *only* in the rail. A member who opens a card by clicking the paragraph in the document, rather than its queue entry, sees neither. Three readings: it does not matter, because the rail entry is a few inches away and lit; it matters for the coverage line specifically, which is personal and has no other home; or the card should carry a single quiet line of both. The coverage half has been in this state since 95 without complaint, which is weak evidence for the first reading.
+
