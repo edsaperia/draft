@@ -6405,3 +6405,18 @@ The walk's fifteenth question, 2026-09-14, in two parts. **Ruled: give it its ow
 
 170. **Your candidate needs rebasing** — engine-core carries `rebase-pending` and `displaced` (Q53). Distinct from 🔄, which is your *judgment* stranded; this is your *draft* stranded, and only you can move it.
 
+
+## Q288: every lifecycle mark is drawn (Q288 built) (Ed, 2026-09-14)
+
+The walk's twenty-second question, 2026-09-14. **Ruled: draw the remaining six by hand** — over leaving the mixed set and over `font-variant-emoji: text`. **Built 2026-09-14 (35f2be8, merged):** `BULB` `FLAME` `SWORDS` `CHILLI` `GLASS` `PENCIL` as filled silhouettes in the drawn marks' own 12-unit box (`mkSvg`, `.mkg.fill`), `DRAWN` holding the whole alphabet, the `.mk-*` rules the one place the alphabet's colour is decided: 💡 ⚔️ 🔥 in `--stuck-ink` (the open yellow made legible; 🔥's loudness was always the wash), 🌶️ and ✏️ raw, ⏳ in `--muted`; setup.js's `WAITING`/`YOURS` through `mkHtml`; the gap anchor's tab re-routed through `mkHtml` (a latent colourless mark); card-audit's P8 narrowed to `svg.mkg:not(.fill)`; SURFACE §6's six *drawn?* cells and CLAUDE.md's rule *every lifecycle mark is drawn; a subject glyph is an emoji*. Geometry 0.00px on every tab, entry and anchor at 1600 and 390; the contents rail's marks 1.3–2.3px wider, no line re-wrapped. Finding worth keeping: a long heading set in the contents rail has that much less room before it ellipsises.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 288 | A flatter glyph set for the lifecycle marks | 2026-08-17 | partly answered — the lifecycle family is drawn; the subject glyphs are emoji | `DRAWN`; SURFACE §6 |
+
+288. **A flatter glyph set for the lifecycle marks**
+
+    **Where it stands (docs pass, 2026-09-07):** partly overtaken — the lifecycle family is drawn rather than emoji (`DRAWN` in `design/session.js`; SURFACE §6), which is option (a) for those marks; the subject glyphs are still emoji, so the pack question survives only for them.
+
+    (Ed, 2026-08-17, alongside making the gutter marks read as buttons: "I think changing to a flatter emoji pack and making them a bit larger would help"). The larger half is built, along with a resting ground and a press. The pack is a real question, because the design series is **single self-contained files with no network**, so there is no CDN to point at. Three ways: (a) inline the glyphs as hand-authored flat SVGs — total control, they would take the lifecycle hue as a fill, and it is the only option that actually looks designed rather than borrowed; it costs drawing nine symbols and they then have to work at 16px. (b) `font-variant-emoji: text`, which asks the OS for the *text* presentation of the same characters — one line of CSS, genuinely flatter, and it hands the glyph over to `color`; but the shapes are then whatever the platform has, and it would take colour away from the emoji that currently carry their own, which the contents rail depends on (260). (c) Embed an existing flat pack (Twemoji is CC-BY) as data URIs — flat and consistent, but it is somebody else's drawing style and a licence line in a mockup. Recommendation: (a), and only once the alphabet has stopped moving, since it makes every future change to a mark a drawing job.
+
