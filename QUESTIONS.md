@@ -8,9 +8,9 @@ The index, in the section's own order (nothing is pinned — Ed, 2026-09-07, Q12
 
 | # | Title | Raised | State | Pointers |
 |---|---|---|---|---|
-| 1354 | The seat matrix passes CI on exit 3, so a fourth unread cell would not redden it | 2026-09-14 | open — raised by the Q1205 build | `seat-matrix.mjs`; `.github/workflows/ci.yml` |
-| 1355 | E11's audience cell is readable since Q930 and has no predicate | 2026-09-14 | open — raised by the Q1205 build; a rule for Ed to read, not a predicate to invent | `seat-matrix.mjs`; SURFACE E11; Q930 |
-| 1356 | E13's row in the seat matrix passes vacuously: the text race has parked by the snapshot | 2026-09-14 | open — raised by the Q1205 build | `seat-matrix.mjs`; SURFACE E13; Q1340 |
+| 1354 | The seat matrix passes CI on exit 3, so a fourth unread cell would not redden it | 2026-09-14 | ruled by Ed 2026-09-14 (the walk, with Q1355): **write the two missing rules, then a no-rule cell fails CI**; a builder is on it (branch `q1354-matrix-rules`) | `seat-matrix.mjs`; `.github/workflows/ci.yml` |
+| 1355 | E11's audience cell is readable since Q930 and has no predicate | 2026-09-14 | ruled by Ed 2026-09-14 (the walk, with Q1354): E11 takes E10's predicate behind ⚖️, and E22 a mail rule (the package to the lapsed seat, nothing in its rail); building | `seat-matrix.mjs`; SURFACE E11; Q930 |
+| 1356 | E13's row in the seat matrix passes vacuously: the text race has parked by the snapshot | 2026-09-14 | ruled by Ed 2026-09-14 (the walk): **read the row later, after a second proposal keeps the race open**, a vacuous pass becoming a finding; building with Q1354 | `seat-matrix.mjs`; SURFACE E13; Q1340 |
 | 925 | Three more things git knows about overlapping patches | 2026-08-27 | parked | SPEC §2.2, §2.4; Q924 |
 | 109 | Scale: the margin assumes a short rail | 2026-08-16 | waiting on Ed's own read (the walk, 2026-09-14: *look at a moon-shaped room and rule from what you saw* — `docs.vote/d/moon2`, ~156 members, is idle; the alternatives on the table were naming a ceiling of ~30 live questions, or committing to a screen-only margin) | `needs-you-queue` |
 | 282 | A rendered document and a source offset do not agree | 2026-08-17 | deferred past the alpha (Ed, 2026-08-27) | `richToSource` (cards.js) |
