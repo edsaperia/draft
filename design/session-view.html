@@ -6400,8 +6400,15 @@
       .replace(/ data-washkey="[^"]*"/, '')
       .replace(/ style="--washcol: ([^;]+); --washbg: [^;]+; --fill: ([^"]+)"/,
         (m, col, fill) => SESSION.washAttrs('set:' + c.k, col, fill));
+    // `news` is what the rail's `NEWS_PIN_CAP` counts (Q113, Ed 2026-09-14): a
+    // setting owing you an OK is the same thing as an unread sealed record, so
+    // the band's news entries and the charter's are one queue, oldest first, and
+    // only the oldest three of the two together pin. It rides beside `pinned`
+    // rather than narrowing it, because *this* entry is still a pinning kind —
+    // whether it gets to pin is a question about the whole queue, and only
+    // `layoutQueue`, which can see both populations at once, can answer it.
     return { id: c.k, html, pinned: st !== 'wait' && st !== 'done', rank: RAIL_RANK[st],
-      u: RAIL_U[st], mine: st === 'yours', anchor: () => anchorOf(c.k) };
+      u: RAIL_U[st], mine: st === 'yours', news: st === 'news', anchor: () => anchorOf(c.k) };
   }
   // **The birth-pass sees the whole rail** (Q1338, Ed 2026-09-11). It used to
   // be scoped to the setup tasks, on the ground that a charter entry arrives

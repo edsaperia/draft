@@ -10,6 +10,26 @@
    file. A second copy would have been that failure by construction.
 
    Worn by: session-view.html · document-creation.html
+
+   TWO CONVENTIONS OVER THIS FILE
+
+   **The narrow breakpoint is `NARROW_Q`** — `'(max-width: 900px)'` in
+   session.js, which is the page's own half of the same decision
+   (design/MOBILE.md; the two must agree). A media query takes no custom
+   property, so the literal is written out here, five times. Each of the five
+   carries NARROW_Q in a comment on the line above it — so moving the
+   breakpoint is `grep -rn NARROW_Q design/`, and the six sites it names are
+   the whole of it: these five and session.js's own. Two comments elsewhere in
+   this file mention 900 in prose; grep the tag, not the number.
+
+   **Reduced motion is one block per section, at that section's end**, rather
+   than one beside each component it quiets (Q1352 (j)). The declarations in
+   each are the per-component blocks' own, in their original relative order, so
+   the cascade between them is what it always was. Two blocks are deliberately
+   not in a section fold: the drawers' inside the NARROW_Q block below, which
+   needs both conditions at once, and a section whose reduced-motion rules were
+   a single block already keeps it where it stands — there is nothing to fold,
+   and beside its component is the better place for it.
    ========================================================================== */
   /* ===================================================================
      Tokens. Deliberately single-theme (light) — Ed, 2026-08-14.
@@ -238,9 +258,6 @@
     from { box-shadow: 0 0 0 0 rgba(var(--lc-closed), 0.55); }
     to   { box-shadow: 0 0 0 9px rgba(var(--lc-closed), 0); }
   }
-  @media (prefers-reduced-motion: reduce) {
-    .pulse, .pulse.beat { transition: none; animation: none; }
-  }
   .navbar .stats b { color: var(--fg); font-variant-numeric: tabular-nums; }
   /* `session-clock`: the room, in the topbar middle. One plain line at
      --t-small, muted — cold at every distance, because the last hours'
@@ -370,6 +387,7 @@
      (`layoutQueue`'s narrow branch positions nothing); it scrolls inside
      itself past 40% of the window. The contents rail has no drawer yet
      (decision 8) — it is simply not there below 900. */
+  /* NARROW_Q */
   @media (max-width: 900px) {
     .layout { grid-template-columns: 1fr; gap: 0; margin-top: var(--s2); }
     /* **Both rails are drawers** (Ed, 2026-09-12: *sidebars that slide out on
@@ -477,9 +495,6 @@
   .toc li:hover .sectoggle[aria-expanded="true"],
   .doc h2.docline:hover .sectoggle[aria-expanded="true"],
   .sectoggle[aria-expanded="true"]:focus-visible { opacity: 1; }
-  @media (prefers-reduced-motion: reduce) {
-    .sectoggle .tri, .sectoggle { transition: none; }
-  }
   .toc a {
     display: block; padding: 3px 10px; font-size: var(--t-small); line-height: 1.35;
     color: var(--muted); text-decoration: none;
@@ -529,6 +544,16 @@
   .qmark .mk { font-size: 0.95em; }
   .tocmarks .more { font-size: var(--t-micro); color: var(--muted); letter-spacing: 0; margin-left: 2px; }
 
+  /* **Reduced motion: the tokens, the topbar and the two rails.** The pulse
+     stops beating and the fold triangle stops turning; both were their own
+     block beside their component until Q1352 (j). The drawers' own rule is not
+     here — it is inside the NARROW_Q block above, since it is true only at
+     narrow and a query cannot be in two places. */
+  @media (prefers-reduced-motion: reduce) {
+    .pulse, .pulse.beat { transition: none; animation: none; }
+    .sectoggle .tri, .sectoggle { transition: none; }
+  }
+
   /* ===================================================================
      The needs-you-queue: a margin index (Ed, 104–110). Every entry stands
      beside the clause it argues about, so the rail asserts no ranking of its
@@ -544,7 +569,6 @@
   /* a pinned entry tracks the viewport, so it must not lag behind the scroll */
   .qitem.pinned { transition: none; z-index: 2; }
   .qitem.mosturgent { z-index: 3; }
-  @media (prefers-reduced-motion: reduce) { .qitem { transition: none; } }
 
 
 
@@ -565,7 +589,6 @@
   /* the open entry lifts rather than gaining a ring (Ed, 2026-08-17) — the same
      rule as its card, and the rail and the card now say "open" the same way */
   .queue button[aria-current="true"] { box-shadow: var(--shadow-xl); }
-  @media (prefers-reduced-motion: reduce) { .queue button { transition: none; } }
 
   /* The wash is the progress bar (Ed, 105/116): how far the fill reaches is
      closeness to resolution, how strong the colour is is urgency, and the hue
@@ -592,9 +615,6 @@
     box-shadow: inset -1px 0 0 var(--washcol, transparent);
     transition: background-color var(--wash-ms) ease, box-shadow var(--wash-ms) ease,
                 width var(--wash-ms) ease;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .queue button:not(.sealdot)::before { transition: none; }
   }
 
   /* Anything already judged is one line. Everything still open is a full card:
@@ -744,9 +764,6 @@
   @keyframes slideIn { from { opacity: 0; transform: translateY(-14px); } }
   .queue button.leaving { animation: slideOut 0.24s ease-in forwards; pointer-events: none; }
   .queue button.arriving { animation: slideIn 0.24s ease-out; }
-  @media (prefers-reduced-motion: reduce) {
-    .queue button.leaving, .queue button.arriving { animation: none; }
-  }
 
   /* `task-beat` — the motion of the `dead-click-nudge` (Q650–Q653, Ed
      2026-08-23). A click that lands on nothing during the birth beats the task
@@ -780,11 +797,20 @@
   }
   .qitem.nudge > button { --beat-lift: -3px; --beat-shadow: var(--shadow-xl); animation: taskBeat 640ms ease-in-out; }
   .achip.nudge { --beat-lift: -2px; --beat-shadow: var(--shadow-lg); animation: taskBeat 640ms ease-in-out; }
-  /* Reduced motion moves nothing (F14) — but the teaching survives rather than
-     being dropped: the lift is held for the beat's own duration and then let
-     go, a state change instead of a motion. The class comes off on the same
-     clock either way, so the JS need not know which of the two it got. */
+  /* **Reduced motion: the needs-you-queue.** Five blocks until Q1352 (j) — the
+     entry's travel, the card's lift, the progress bar's fill, the slide in and
+     out, and the beat — in the order they were written, which is the order the
+     cascade had them in: the beat's own rules come last, so they still win over
+     `taskBeat` above for a card that is both nudged and arriving. */
   @media (prefers-reduced-motion: reduce) {
+    .qitem { transition: none; }
+    .queue button { transition: none; }
+    .queue button:not(.sealdot)::before { transition: none; }
+    .queue button.leaving, .queue button.arriving { animation: none; }
+    /* The beat moves nothing (F14) — but the teaching survives rather than
+       being dropped: the lift is held for the beat's own duration and then let
+       go, a state change instead of a motion. The class comes off on the same
+       clock either way, so the JS need not know which of the two it got. */
     .qitem.nudge > button { animation: none; box-shadow: var(--shadow-xl); }
     .achip.nudge { animation: none; box-shadow: var(--shadow-lg); }
   }
@@ -956,6 +982,7 @@
   /* Narrow: the gutter survives as a column at 56px (MOBILE.md §1.2) — the
      two fitting passes measure a vertical gutter and keep working unchanged —
      and the document *is* the page, so its box goes. */
+  /* NARROW_Q */
   @media (max-width: 900px) { .doc { padding: var(--s4) 12px 0 56px; border: 0; border-radius: 0; } }
   /* **The runway is content, not padding** (Ed's QA, 2026-08-30): a sticky
      element travels only inside its containing block's content box, so with
@@ -1127,9 +1154,6 @@
     background-color: var(--washcol, transparent);
     transition: background-color var(--wash-ms) ease;
   }
-  @media (prefers-reduced-motion: reduce) {
-    .insert-anchor { transition: none; }
-  }
 
   /* Always-on typing (Ed, 224). Every clause in the charter carries a caret:
      click and you are in the text, type and the editing-card opens around what
@@ -1169,7 +1193,6 @@
     0%   { opacity: 0.85; transform: scaleX(4) scaleY(1.25); }
     100% { opacity: 0;    transform: scaleX(1) scaleY(1); }
   }
-  @media (prefers-reduced-motion: reduce) { .caretpulse { display: none; } }
   .doc .prose:focus, .doc .editable:focus { outline: none; }
   .doc .prose { caret-color: var(--primary); }
   .doc .editable .chipcol, .doc .editable .nocaret { user-select: none; }
@@ -1293,10 +1316,6 @@
   }
   .achip:active { transform: translateY(1px); box-shadow: none; }
   .achip:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
-  @media (prefers-reduced-motion: reduce) {
-    .achip { transition: none; }
-    .achip:hover, .achip:active { transform: none; }
-  }
   /* Narrow keeps the gutter a column (MOBILE.md §1.0: `fitStacks` and
      `fitBand` measure a vertical gutter) **at the desktop's own 14px**
      (Q1351, Ed 2026-09-12: *tabs overlap open cards too much*). The first
@@ -1327,6 +1346,20 @@
   }
   .insert-anchor .chipcol { top: 0; }
   .insert-anchor:hover { box-shadow: inset 0 0 0 1px var(--border); }
+
+  /* **Reduced motion: the document.** The gap's wash stops fading, the caret
+     stops announcing where it landed, and the gutter tab stops lifting under
+     the pointer — three blocks beside their components until Q1352 (j). Later
+     than all three stood, and safely: nothing between their old places and
+     this one sets `transition`, `display` or `transform` on these selectors,
+     and the two rules that outrank `.achip:hover` here — the filed pile's own
+     hover and the open card's strip — did so on specificity, not on order. */
+  @media (prefers-reduced-motion: reduce) {
+    .insert-anchor { transition: none; }
+    .caretpulse { display: none; }
+    .achip { transition: none; }
+    .achip:hover, .achip:active { transform: none; }
+  }
 
   /* ===================================================================
      The decision card. Opens in place beneath its clause; one geometry for
@@ -1860,7 +1893,6 @@
     transition: box-shadow 140ms ease;
   }
   .lanebox:focus-within { box-shadow: var(--shadow-xl); }
-  @media (prefers-reduced-motion: reduce) { .lanebox { transition: none; } }
   .lanebox .editlane {
     border: 0; padding: var(--s3) 14px;
   }
@@ -1906,7 +1938,6 @@
     transition: box-shadow 140ms ease;
   }
   .editctl.detached .lanectl { box-shadow: var(--shadow-md); }
-  @media (prefers-reduced-motion: reduce) { .editctl .lanectl { transition: none; } }
   /* markdown mode: the characters, exactly, and nothing rendered */
   .lanebox .editlane.md {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -2051,7 +2082,6 @@
     font-size: var(--t-ui); line-height: 1; will-change: transform;
     transform: translate(-50%, -50%);
   }
-  @media (prefers-reduced-motion: reduce) { .btn.btn-propose.glyphbtn.emojibtn.holding { transform: none; } }
   /* No disabled rule of its own: setup.css already carries **one flat** for
      the whole commit row (`.commitrow .btn[disabled]`, Ed 2026-08-21). What
      stood here restored the solid accent on hover and beat that rule on
@@ -2209,6 +2239,18 @@
   .pstep:hover { border-color: var(--primary); color: var(--primary); }
   .pstep.off { display: inline-flex; align-items: center; justify-content: center; color: var(--border); cursor: default; }
 
+  /* **Reduced motion: the editing-card.** The drafting box stops rising as the
+     caret enters it, the lane strip stops taking its shadow on detaching, and
+     the held ✏️ stops sinking under the finger — three blocks beside their
+     components until Q1352 (j). The pen hold's own `translateY` further down
+     the sheet is untouched by the move: at five classes to three this rule
+     outranks it either way. */
+  @media (prefers-reduced-motion: reduce) {
+    .lanebox { transition: none; }
+    .editctl .lanectl { transition: none; }
+    .btn.btn-propose.glyphbtn.emojibtn.holding { transform: none; }
+  }
+
   /* ---- the record of a sealed judgment (Ed, 112/120/121) ---------------
      Not symmetrical, unlike a live card: a record has a favourite and should
      look like it. The text that stands takes the full width; the whole field
@@ -2300,6 +2342,7 @@
   @media (prefers-reduced-motion: reduce) {
     #wires .ink, #wires .ink path, #wires .ink .cap { transition: none; }
   }
+  /* NARROW_Q */
   @media (max-width: 900px) { #wires { display: none; } }
 
   /* ---- narrow: the topbar in two rows, the doors that are not there, touch --
@@ -2318,6 +2361,7 @@
      The doors into edit mode (📝's riding tab, the floating door, the lane
      strip) are not drawn, so the column stays prose you can read (Q1350).
      The wrap loses its side padding to the document's own 8px. */
+  /* NARROW_Q */
   @media (max-width: 900px) {
     :root { --nav-h: 84px; }
     .wrap { padding: 0 var(--s2); }
@@ -2422,6 +2466,7 @@
   .navbar .quill { padding: 0 8px; }
   /* on a phone the powers are glyphs, not sockets (Q1351, Ed 2026-09-12:
      *the icons without the sockets*): no pill, no ground, no shadow */
+  /* NARROW_Q */
   @media (max-width: 900px) {
     .navbar .quill, .navbar .wallet { min-height: 0; padding: 0; background: none; box-shadow: none; border-radius: 0; }
   }

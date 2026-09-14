@@ -1064,6 +1064,19 @@
   // A flow entry that would end up underneath a pinned card is hidden rather
   // than nudged: nudging makes the whole rail crawl as you scroll.
   const QGAP = 8, BAND_TOP = 70, BAND_BOT = 24;
+  // **At most three unacknowledged decisions pin at once, oldest first** (Q113,
+  // Ed 2026-09-14). A pinned entry is exempt from the fit cap and hides any flow
+  // entry that would fall underneath it, so the one population that nothing
+  // expires — a decision owed you an OK — was the one that could crowd the
+  // margin out on its own: come back after a long absence and the rail is a wall
+  // of green ticks with the document's live work hidden behind it. The cap is on
+  // *pinning*, not on the entries: the fourth owed decision and every one after
+  // it stands at its own clause as an ordinary green entry, shown when it fits,
+  // scrolling with the text, opening and taking its OK exactly as a pinned one
+  // does. Each OK pins the next oldest. Nothing announces the count — an
+  // "and n more" line would be the tally 2026-08-17 retired, an apology for a
+  // limit nobody experiences as one.
+  const NEWS_PIN_CAP = 3;
   // A deadlocked race ranks above every ordinary question (Ed, 223). It can
   // out-rank the flame in the *order*, which costs nothing: the flame is kept
   // regardless of room, so its primacy rests on the exemption rather than on
@@ -1098,6 +1111,14 @@
     // ones: a list cannot say *where*, so the filed population, whose whole
     // claim is a position, belongs to the gutter tabs alone on a phone. The
     // door's number is the drawer's length, and means the same thing.
+    //
+    // **`NEWS_PIN_CAP` does not reach the drawer** (Q113, Ed 2026-09-14). The
+    // cap is a rule about *pinning*, and pinning is a wide-margin fact: it buys
+    // exemption from the fit cap and hides the flow underneath. A drawer has
+    // neither — it is an ordered list that scrolls — so capping here would not
+    // demote a fourth owed decision to a flow position, there being none; it
+    // would delete it from the one place a phone lists what asks something of
+    // you, and an OK you are owed asks something of you.
     if (NARROW()) {
       const navH = (document.querySelector('.navbar') || {}).offsetHeight || BAND_TOP;
       const rows = [];
@@ -1132,7 +1153,19 @@
     const railRect = queueEl.getBoundingClientRect();
     const railTop = railRect.top + scrollY;
     const pinned = [], flow = [];
+    // The owed queue's own order (Q113). Neither population carries a settle
+    // time the page can sort on — a record's `when` is already a sentence by the
+    // time it reaches here, and a setting's owed OK is a bare id in a set — but
+    // both arrive in the order they were owed: the view lists its records in log
+    // order, and `extra` lists the band's settings in the founding order they
+    // were settled in. So the queue is that arrival order, `i`, with the band's
+    // ahead of the charter's, `fam`: every setting a member is owed was decided
+    // by the founding or by a motion on the constitution, and the heaviest pile
+    // of all — one OK for every delegated question, all landing at the settle —
+    // is the band's, standing before the document has a record to its name.
+    let idx = -1;
     for (const el of queueEl.children) {
+      idx++;
       const a = anchorForEntry(el.dataset.q, el.dataset.site);
       if (!a) { el.style.display = 'none'; continue; }
       el.style.display = '';
@@ -1142,7 +1175,7 @@
         const ay0 = a.getBoundingClientRect().top;
         el.classList.toggle('offclause', ay0 < BAND_TOP || ay0 > innerHeight - BAND_BOT);
         const row = { el, want: (a.getBoundingClientRect().top + scrollY) - railTop, h: el.offsetHeight,
-          mine: !!x.mine, u: x.u ?? 0, rank: x.rank ?? 0 };
+          mine: !!x.mine, u: x.u ?? 0, rank: x.rank ?? 0, news: !!x.news, fam: 0, i: idx };
         ((x.pinned || holdsFocus(el)) ? pinned : flow).push(row);
         continue;
       }
@@ -1231,9 +1264,22 @@
       // enough to notice. It is also why the rail needs no pile of its own: it
       // already knew how to choose, it just did not know how to choose *here*.
       row.rank = stackRank(kind);
+      row.news = isUnread(g); row.fam = 1; row.i = idx;
       const live = kind === 'urgent' || kind === 'propose' || kind === 'weigh' ||
         isUnread(g) || holdsFocus(el);
       (live ? pinned : flow).push(row);
+    }
+    // The cap, applied across both populations as one queue (Q113, Ed
+    // 2026-09-14): the oldest `NEWS_PIN_CAP` owed decisions pin, the rest are
+    // demoted to the flow, where they stand at their own clauses. Whatever is
+    // open pins for being open whatever its state (C6), so an owed decision you
+    // have opened from further down the queue keeps its place while it is open —
+    // the cap counts it, it simply does not evict it.
+    const owed = pinned.filter((r) => r.news).sort((x, y) => x.fam - y.fam || x.i - y.i);
+    for (const r of owed.slice(NEWS_PIN_CAP)) {
+      if (holdsFocus(r.el)) continue;
+      pinned.splice(pinned.indexOf(r), 1);
+      flow.push(r);
     }
     // Position, then the tab stack's lifecycle order, then urgency. The third
     // key matters more than it looks: two 💡 at one clause tie on the second,

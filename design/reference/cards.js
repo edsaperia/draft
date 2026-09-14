@@ -31,11 +31,19 @@ window.CARDS = (function () {
   // strings land in attribute values as well as text (a lane's valAttr
   // carries member-proposed setting values on the live page), and an
   // unescaped quote there is an injection, not a rendering quirk. For text
-  // nodes the extra entities parse back to the identical DOM.
+  // nodes the extra entities parse back to the identical DOM. Coerces first:
+  // this is the one `esc` on the surface (setup.js took its own copy until
+  // refactor item 8), and a number or a missing value escapes as its text
+  // rather than throwing inside a render.
   function esc(s) {
-    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
+  // The urgency ramp's two ends: how much a rail entry's wash saturates at no
+  // urgency and at the most. session.js's `washCol` and setup.js's `washOf`
+  // both read them here, so the charter's entries and the band's take one
+  // ramp (Q623 (a)) — they were two literals kept equal by hand.
+  const URG_LO = 0.05, URG_HI = 0.30;
 
   // Decision cards show the text as it would *stand*, not a redline: the struck
   // words come out and only what is new stays lit. The fixture keeps the full
@@ -1222,7 +1230,7 @@ window.CARDS = (function () {
   }
 
   return {
-    esc, resultOnly, stripTags, pct, plainLabel,
+    esc, resultOnly, stripTags, pct, plainLabel, URG_LO, URG_HI,
     RULES, clauseOf, clauseRungs,
     TICK, CROSS, PAUSE, VS16, MARK, DRAWN, mkHtml, markHtml,
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks,

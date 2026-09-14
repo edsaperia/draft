@@ -738,6 +738,77 @@ var CONSTITUTION = (() => {
     }
   };
 
+  // src/owed.ts
+  function oweOks(s, t, setting) {
+    for (const m of s.members.values()) {
+      if (m.arrivedAtT === null || m.removed) continue;
+      if (m.id === s.convenorId) continue;
+      if (m.okOwed.has(setting)) continue;
+      s.emit({ type: "ok-owed", t, member: m.id, settings: [setting] });
+    }
+  }
+  function oweReleases(s, t, releases) {
+    if (releases.length === 0) return;
+    const batch = s.lastReleaseT === t && s.lastReleaseBatch !== null ? s.lastReleaseBatch : `rel-${s.nextReleaseN}`;
+    for (const m of s.members.values()) {
+      if (m.arrivedAtT === null || m.removed) continue;
+      if (m.id === s.convenorId) continue;
+      s.emit({ type: "release-owed", t, batch, member: m.id, releases });
+    }
+  }
+  function ackRelease(s, t, member, batch) {
+    s.requireOpen("acknowledging");
+    const m = s.members.get(member);
+    if (!m) throw new Error(`unknown member '${member}'`);
+    if (!m.releasesOwed.has(batch)) return;
+    s.emit({ type: "release-ok", t, batch, member });
+  }
+  function oweAmendment(s, t, candidate) {
+    for (const m of s.members.values()) {
+      if (m.arrivedAtT === null || m.removed) continue;
+      if (m.id === s.convenorId) continue;
+      s.emit({ type: "amendment-owed", t, candidate, member: m.id });
+    }
+  }
+  function ackAmendment(s, t, member, candidate) {
+    s.requireOpen("acknowledging");
+    const m = s.members.get(member);
+    if (!m) throw new Error(`unknown member '${member}'`);
+    if (!m.amendmentsOwed.has(candidate)) return;
+    s.emit({ type: "amendment-ok", t, candidate, member });
+  }
+  function mailGaveUp(s, t, addresses) {
+    if (addresses.length === 0) return;
+    const list = [];
+    for (const a of addresses) {
+      const person = s.people.byEmail(a);
+      if (person !== null && !list.includes(person)) list.push(person);
+    }
+    if (list.length === 0) return;
+    const batch = `mgu-${s.nextMailGiveUpN}`;
+    let told = false;
+    for (const m of s.closed ? [] : [...s.members.values()]) {
+      if (m.arrivedAtT === null || m.removed) continue;
+      told = true;
+      s.emit({ type: "mail-gave-up", t, batch, member: m.id, people: list });
+    }
+    if (!told) s.emit({ type: "mail-gave-up", t, batch, member: null, people: list });
+  }
+  function ackMailGaveUp(s, t, member, batch) {
+    s.requireOpen("acknowledging");
+    const m = s.members.get(member);
+    if (!m) throw new Error(`unknown member '${member}'`);
+    if (!m.mailGaveUpOwed.has(batch)) return;
+    s.emit({ type: "mail-gave-up-ok", t, batch, member });
+  }
+  function resendInvite(s, t, member, by) {
+    s.requireOpen("re-sending an invitation");
+    const m = s.members.get(member);
+    if (!m || m.removed) throw new Error(`unknown member '${member}'`);
+    if (m.arrivedAtT !== null) throw new Error("they are already here — there is nothing to re-send");
+    s.emit({ type: "mail-resent", t, member, by });
+  }
+
   // src/populations.ts
   function inE(m) {
     return m.arrivedAtT !== null && !m.removed && !m.lapsed;
@@ -756,6 +827,299 @@ var CONSTITUTION = (() => {
   }
   function adoptionFloor(quorumN, E, fMax) {
     return Math.max(quorumN, Math.min(adoptionFloorTerm(E), fMax));
+  }
+
+  // src/motions.ts
+  var CONSTITUTIONAL = new Set(
+    CATALOGUE.filter((e) => e.kind === "constitutional").map((e) => e.id)
+  );
+  function openMotion(s, t, by, input, why) {
+    s.requireOpen("a motion");
+    if (s.constitutedT === null) {
+      throw new Error("before the start nothing is amended — only set (§9.6a)");
+    }
+    const mover = s.members.get(by);
+    if (!mover || !inE(mover)) throw new Error(`'${by}' is not an arrived member`);
+    let route;
+    let payload;
+    if (input.kind === "invite") {
+      s.requireEmailFree(input.email);
+      const person = s.personFor(input.email);
+      s.people.set(person, { email: input.email });
+      payload = { kind: "invite", person };
+    } else payload = input;
+    if (payload.kind === "set") {
+      const entry = entryOf(payload.setting);
+      if (entry.kind === "personal") throw new Error(`${payload.setting} is yours alone (§9.0c)`);
+      if (payload.setting === "startingText" || !s.settings.has(payload.setting)) {
+        throw new Error(`'${payload.setting}' is not moved this way`);
+      }
+      const st = s.settings.get(payload.setting);
+      if (st.value === null) throw new Error(`'${payload.setting}' has no settled value to move against`);
+      const err = validateFor(entry, payload.value);
+      if (err) throw new Error(err);
+      if (eqValue(payload.value, st.value)) {
+        throw new Error("the motion proposes what already stands");
+      }
+      route = motionRouteOf(entry, payload.value, st.value);
+    } else if (payload.kind === "reserve") {
+      const re = entryOf(payload.setting);
+      if (re.kind === "personal") {
+        throw new Error(`'${payload.setting}' is never held, so it cannot be reserved (§9.7)`);
+      }
+      if (payload.setting === "admission") {
+        throw new Error("the register's crown is the applications setting's -- reserve that (§9.7½)");
+      }
+      const rst = s.settings.get(payload.setting);
+      const want = payload.power ?? "both";
+      const already = want === "both" ? rst.powers.unilateral && rst.powers.assent : rst.powers[want];
+      if (already) {
+        throw new Error(`'${payload.setting}' — ${want === "both" ? "both powers are" : `the ${want} power is`} already the convenor's`);
+      }
+      route = "constitutional";
+    } else if (payload.kind === "invite") {
+      const price = s.priceOf("admission");
+      if (price === "pen") throw new Error("admission is at ✒️ — invite directly, nothing to propose (§9.7½)");
+      route = price === "assembly" ? "constitutional" : "ordinary";
+    } else if (payload.kind === "remove") {
+      const target = s.members.get(payload.member);
+      if (!target || !inE(target)) throw new Error(`'${payload.member}' is not a member`);
+      route = s.priceOf("removal") === "proposal" ? "ordinary" : "constitutional";
+    } else {
+      route = s.priceOf("admission") === "assembly" ? "constitutional" : "ordinary";
+    }
+    const twin = runningTwin(s, payload);
+    if (twin !== null) {
+      throw new Error(`already put — '${twin}' proposes the same; answer it instead (§9.6)`);
+    }
+    if (route === "constitutional" && heldOutBy(s, by)) {
+      throw new Error("one 🏛️ out per member at a time (§9.6)");
+    }
+    const id = `mo-${s.nextMotionN}`;
+    const e = {
+      type: "motion-opened",
+      t,
+      motion: id,
+      by,
+      payload,
+      route,
+      stake: route === "ordinary" ? 1 : 0
+    };
+    if (why !== void 0 && why !== "") e.why = why;
+    s.emit(e);
+    if (route === "constitutional") {
+      s.emit({ type: "motion-answer", t, motion: id, member: by, answer: "accept" });
+      maybeSettleMotions(s, t);
+    }
+    return id;
+  }
+  function answerMotion(s, t, member, motion, answer) {
+    s.requireOpen("answering a motion");
+    const rec = s.motions.get(motion);
+    if (!rec || rec.status !== "running") throw new Error("the motion is not running");
+    if (rec.route !== "constitutional") {
+      throw new Error("an ordinary motion is judged as a race, not answered (§9.6)");
+    }
+    const m = s.members.get(member);
+    if (!m || !motionElectorateOf([m]).length) {
+      throw new Error(`'${member}' is not in the motion's electorate`);
+    }
+    if (motionExcludes(s, rec) === member) {
+      throw new Error("the subject of a removal is not asked on this route (🥾 Q401a) — they see it, and it settles without them");
+    }
+    s.emit({ type: "motion-answer", t, motion, member, answer });
+    maybeSettleMotions(s, t);
+  }
+  function withdrawMotion(s, t, member, motion) {
+    s.requireOpen("withdrawing");
+    const rec = s.motions.get(motion);
+    if (!rec || rec.status !== "running") throw new Error("the motion is not running");
+    if (rec.by !== member) throw new Error("only the mover withdraws a motion");
+    s.emit({ type: "motion-withdrawn", t, motion });
+  }
+  function adjudicateOrdinaryMotion(s, t, motion, outcome) {
+    s.requireOpen("a motion");
+    const rec = s.motions.get(motion);
+    if (!rec || rec.status !== "running") throw new Error("the motion is not running");
+    if (rec.route !== "ordinary") {
+      throw new Error("a constitutional motion settles by unanimity, not adjudication");
+    }
+    s.emit({ type: "motion-adjudicated", t, motion, outcome });
+    const after = s.motions.get(motion).status;
+    if (after === "awaiting-crown") {
+      s.emit({
+        type: "crown-question-opened",
+        t,
+        question: `cq-${s.nextCrownN}`,
+        motion: rec.id
+      });
+    } else if (after === "carried") {
+      settleCarriedEffects(
+        s,
+        t,
+        rec,
+        /* everyoneHadSay */
+        false
+      );
+    } else if (after === "held") {
+      settleHeldEffects(s, t, rec);
+    }
+  }
+  function answerCrownQuestion(s, t, question, outcome) {
+    s.requireOpen("the 👑 question");
+    const q = s.crownQuestions.get(question);
+    if (!q || q.status !== "pending") throw new Error("no such pending 👑 question");
+    if (s.crownLapsed) throw new Error("the crown has lapsed — the question passes by itself");
+    s.emit({ type: "crown-question-answered", t, question, outcome });
+    if (q.motion === null) return;
+    const rec = s.motions.get(q.motion);
+    if (outcome === "accept") {
+      settleCarriedEffects(s, t, rec, rec.route === "constitutional");
+    } else {
+      settleHeldEffects(s, t, rec);
+    }
+  }
+  function motionExcludes(s, rec) {
+    return rec.payload.kind === "remove" && s.priceOf("removal") === "assembly" ? rec.payload.member : null;
+  }
+  function heldOutBy(s, member) {
+    for (const rec of s.motions.values()) {
+      if (rec.by === member && rec.route === "constitutional" && (rec.status === "running" || rec.status === "awaiting-crown")) {
+        return true;
+      }
+    }
+    return false;
+  }
+  function shiftRivals(s, t, setting, cause, except) {
+    const stands = s.settings.get(setting)?.value ?? null;
+    for (const rec of s.motions.values()) {
+      if (rec.id === except) continue;
+      if (rec.status !== "running" && rec.status !== "awaiting-crown") continue;
+      if (rec.route !== "constitutional") continue;
+      if (rec.payload.kind !== "set" || rec.payload.setting !== setting) continue;
+      if (stands !== null && eqValue(rec.payload.value, stands)) {
+        s.emit({ type: "motion-carried-moot", t, motion: rec.id, cause });
+        settleMootEffects(s, t, rec);
+        continue;
+      }
+      s.emit({ type: "motion-ground-shifted", t, motion: rec.id, cause });
+    }
+  }
+  function settleMootEffects(s, t, rec) {
+    if (rec.by === null || rec.payload.kind !== "set") return;
+    const mover = s.members.get(rec.by);
+    if (!mover || mover.removed || mover.arrivedAtT === null) return;
+    if (mover.okOwed.has(rec.payload.setting)) return;
+    s.emit({ type: "ok-owed", t, member: mover.id, settings: [rec.payload.setting] });
+  }
+  function runningTwin(s, payload) {
+    for (const [id, rec] of s.motions) {
+      if (rec.status !== "running" && rec.status !== "awaiting-crown") continue;
+      if (samePayload(rec.payload, payload)) return id;
+    }
+    return null;
+  }
+  function maybeSettleMotions(s, t) {
+    let settled = true;
+    while (settled) {
+      settled = false;
+      for (const rec of s.motions.values()) {
+        if (rec.status !== "running" || rec.route !== "constitutional") continue;
+        const excl = motionExcludes(s, rec);
+        const electorate = motionElectorateOf(s.members.values()).filter((m2) => m2.id !== excl);
+        if (electorate.length === 0) continue;
+        const answers = electorate.map((m) => rec.answers.get(m.id));
+        if (answers.some((a) => a === void 0 || a === "keep")) continue;
+        if (!answers.some((a) => a === "accept")) continue;
+        if (s.reservedTarget(rec)) {
+          s.emit({
+            type: "crown-question-opened",
+            t,
+            question: `cq-${s.nextCrownN}`,
+            motion: rec.id
+          });
+          settled = true;
+          break;
+        }
+        s.emit({ type: "motion-carried", t, motion: rec.id });
+        settleCarriedEffects(s, t, rec, true);
+        settled = true;
+        break;
+      }
+    }
+  }
+  function settleCarriedEffects(s, t, rec, everyoneHadSay) {
+    if (rec.payload.kind === "invite") {
+      const id = `m-${s.nextMemberN}`;
+      s.emit({
+        type: "member-invited",
+        t,
+        member: id,
+        person: rec.payload.person,
+        viaMotion: rec.id
+      });
+    } else if (rec.payload.kind === "remove") {
+      const target = rec.payload.member;
+      const wasInE = inE(s.members.get(target));
+      s.emit({ type: "member-removed", t, member: target, viaMotion: rec.id });
+      if (wasInE) s.afterRosterChange(t, "departure", target);
+      crownSeatVacated(s, t);
+    } else if (rec.payload.kind === "set" && CONSTITUTIONAL.has(rec.payload.setting)) {
+      for (const m of s.members.values()) {
+        if (m.removed) continue;
+        if (m.arrivedAtT === null) continue;
+        if (everyoneHadSay && rec.answers.has(m.id)) continue;
+        if (m.okOwed.has(rec.payload.setting)) continue;
+        s.emit({ type: "ok-owed", t, member: m.id, settings: [rec.payload.setting] });
+      }
+      if (rec.payload.setting === "lapse") s.rereadLapse(t);
+    }
+    if (rec.payload.kind === "set") {
+      shiftRivals(s, t, rec.payload.setting, rec.id, rec.id);
+    }
+    if (rec.payload.kind === "admit") {
+      const id = `m-${s.nextMemberN}`;
+      s.emit({
+        type: "member-admitted",
+        t,
+        applicant: rec.payload.applicant,
+        member: id
+      });
+      s.afterRosterChange(t, "arrival", id);
+    }
+  }
+  function crownSeatVacated(s, t) {
+    if (!s.convenorSeatVacant()) return;
+    for (const q of [...s.crownQuestions.values()]) {
+      if (q.status !== "pending") continue;
+      s.emit({ type: "crown-question-auto-passed", t, question: q.id, cause: "vacancy" });
+      if (q.motion !== null) {
+        const mrec = s.motions.get(q.motion);
+        settleCarriedEffects(s, t, mrec, mrec.route === "constitutional");
+      }
+    }
+  }
+  function settleHeldEffects(s, t, rec) {
+    if (rec.payload.kind === "admit") {
+      s.emit({ type: "application-refused", t, applicant: rec.payload.applicant });
+    }
+  }
+  function samePayload(a, b) {
+    if (a.kind !== b.kind) return false;
+    switch (a.kind) {
+      case "set":
+        return b.kind === "set" && a.setting === b.setting && eqValue(a.value, b.value);
+      case "invite":
+        return b.kind === "invite" && a.person === b.person;
+      case "remove":
+        return b.kind === "remove" && a.member === b.member;
+      case "admit":
+        return b.kind === "admit" && a.applicant === b.applicant;
+      case "reserve":
+        return b.kind === "reserve" && a.setting === b.setting && (a.power ?? "both") === (b.power ?? "both");
+      default:
+        return false;
+    }
   }
 
   // src/threshold.ts
@@ -910,6 +1274,840 @@ var CONSTITUTION = (() => {
     };
   }
 
+  // src/fold.ts
+  var MANAGED = CATALOGUE.filter((e) => e.kind !== "personal" && e.id !== "startingText").map((e) => e.id);
+  var HELD = [...MANAGED, "startingText", ...DOORS];
+  var FoldState = class {
+    constructor(people) {
+      __publicField(this, "people", people);
+      /** The clock rule's memory (§9.7a): timestamps are non-decreasing, and
+       *  `emit` refuses a backwards one before the log sees it (Q679). */
+      __publicField(this, "lastT", -Infinity);
+      __publicField(this, "convenor");
+      __publicField(this, "crownLapsedFlag", false);
+      __publicField(this, "members", /* @__PURE__ */ new Map());
+      /** The departures, folded (Q901): see `departures()`. */
+      __publicField(this, "departed", []);
+      __publicField(this, "settings", /* @__PURE__ */ new Map());
+      __publicField(this, "quorumFormValue", "share");
+      __publicField(this, "startingText", null);
+      __publicField(this, "textConfirmedFlag", false);
+      __publicField(this, "slugHistory", []);
+      /** The birth's own `t` and its 🧭 shape (entry 166), read off `created` so `replay` rebuilds both. */
+      __publicField(this, "createdT", null);
+      __publicField(this, "shapeName", null);
+      __publicField(this, "constitutedT", null);
+      __publicField(this, "closedFlag", false);
+      __publicField(this, "closedT", null);
+      __publicField(this, "anchors", null);
+      __publicField(this, "motions", /* @__PURE__ */ new Map());
+      __publicField(this, "crownQuestions", /* @__PURE__ */ new Map());
+      __publicField(this, "applicants", /* @__PURE__ */ new Map());
+      /**
+       * The release batches, by id (entry 162, Q1013), and the two fields that
+       * decide whether a further release **joins** one or opens a new one. All
+       * three are recomputed **in the fold** and never only in the command: a
+       * batch id minted in the command would replay differently from the session
+       * that wrote it.
+       */
+      __publicField(this, "releaseBatches", /* @__PURE__ */ new Map());
+      __publicField(this, "lastReleaseT", null);
+      __publicField(this, "lastReleaseBatch", null);
+      __publicField(this, "nextReleaseN", 1);
+      /** The mail-give-up batches, by id (SURFACE E34). One pass, one batch, so
+       *  there is no open-batch pair here — the counter alone, moved in the fold
+       *  for `nextReleaseN`'s reason. */
+      __publicField(this, "mailGiveUpBatches", /* @__PURE__ */ new Map());
+      __publicField(this, "nextMailGiveUpN", 1);
+      __publicField(this, "nextMemberN", 1);
+      __publicField(this, "nextMotionN", 1);
+      __publicField(this, "nextCrownN", 1);
+      __publicField(this, "nextApplicantN", 1);
+      /** Person ids are minted like member ids and rebuilt from the log (`notePerson`). */
+      __publicField(this, "nextPersonN", 1);
+      /** What each pen amendment changed *from* — a motion proposes a value and
+       *  never needs the old one, so this rides alongside rather than bending the
+       *  payload every other amendment shares. */
+      __publicField(this, "penFrom", /* @__PURE__ */ new Map());
+    }
+  };
+  function apply(s, event, _seq) {
+    if (event.t < s.lastT) throw new Error("timestamps must be non-decreasing");
+    s.lastT = event.t;
+    switch (event.type) {
+      case "created": {
+        const c = event.convenor;
+        s.createdT = event.t;
+        s.shapeName = event.shape ?? null;
+        notePerson(s, c.person);
+        s.convenor = {
+          id: c.id,
+          person: c.person,
+          isMember: c.isMember,
+          // a founder who arrives already carrying one has answered it (Q645)
+          nameSet: c.nameSet === true,
+          pictureSet: c.pictureSet === true,
+          // 🎩 is asked, never assumed: `isMember` arrives with the creation
+          // and answers nothing about whether the founder was put the question
+          membershipSet: false,
+          lastActivityT: event.t,
+          lapseWarned: false,
+          lapseWarnedLead: null
+        };
+        for (const id of HELD) {
+          s.settings.set(id, {
+            id,
+            holder: "convenor",
+            powers: { unilateral: true, assent: true },
+            // both powers are the convenor's by construction at the birth
+            powerFrom: { unilateral: "founding", assent: "founding" },
+            pendingRelease: { unilateral: false, assent: false },
+            value: null,
+            previousValue: null,
+            setWhy: null,
+            settledBy: null,
+            settledAtT: null,
+            returned: [],
+            collecting: false,
+            answers: /* @__PURE__ */ new Map(),
+            distribution: null
+          });
+        }
+        foldSet(s, "title", { text: event.title }, "convenor", event.t);
+        foldSet(s, "link", { slug: event.slug }, "convenor", event.t);
+        s.slugHistory.push(event.slug);
+        if (c.isMember) {
+          const rec = freshMember(
+            s,
+            c.id,
+            c.person,
+            event.t,
+            event.t,
+            { via: "founding", by: null }
+          );
+          rec.nameSet = s.convenor.nameSet;
+          rec.pictureSet = s.convenor.pictureSet;
+          s.members.set(c.id, rec);
+        }
+        break;
+      }
+      case "convenor-membership-set": {
+        if (event.isMember === s.members.has(s.convenor.id)) {
+          s.convenor.membershipSet = true;
+          break;
+        }
+        if (event.isMember) {
+          const rec = freshMember(
+            s,
+            s.convenor.id,
+            s.convenor.person,
+            event.t,
+            event.t,
+            { via: "founding", by: null }
+          );
+          const prev = s.members.get(s.convenor.id);
+          rec.nameSet = prev ? prev.nameSet : s.convenor.nameSet;
+          rec.pictureSet = prev ? prev.pictureSet : s.convenor.pictureSet;
+          if (prev) {
+            rec.okOwed = prev.okOwed;
+            rec.okGiven = prev.okGiven;
+            rec.releasesOwed = prev.releasesOwed;
+            rec.releasesGiven = prev.releasesGiven;
+            rec.amendmentsOwed = prev.amendmentsOwed;
+            rec.amendmentsGiven = prev.amendmentsGiven;
+            rec.mailGaveUpOwed = prev.mailGaveUpOwed;
+            rec.mailGaveUpGiven = prev.mailGaveUpGiven;
+            rec.mailGaveUp = prev.mailGaveUp;
+            rec.lastActivityT = prev.lastActivityT;
+          } else {
+            rec.lastActivityT = Math.max(rec.lastActivityT, s.convenor.lastActivityT);
+          }
+          s.members.set(s.convenor.id, rec);
+        } else {
+          const prev = s.members.get(s.convenor.id);
+          if (prev) {
+            s.convenor.nameSet = prev.nameSet;
+            s.convenor.pictureSet = prev.pictureSet;
+            s.convenor.lastActivityT = prev.lastActivityT;
+          }
+          s.members.delete(s.convenor.id);
+        }
+        s.convenor.membershipSet = true;
+        s.convenor.isMember = event.isMember;
+        break;
+      }
+      case "setting-set": {
+        touch(s, s.convenor.id, event.t);
+        const prevOf = s.settings.get(event.setting);
+        const wasValue = prevOf ? prevOf.value : null;
+        foldSet(s, event.setting, event.value, event.by, event.t);
+        const nowSt = s.settings.get(event.setting);
+        if (nowSt) {
+          nowSt.previousValue = wasValue;
+          nowSt.setWhy = event.why ?? null;
+        }
+        if (wasValue !== null) {
+          const id = "pen:" + event.setting + ":" + event.t;
+          s.motions.set(id, {
+            id,
+            by: s.convenor.id,
+            payload: { kind: "set", setting: event.setting, value: event.value },
+            route: "pen",
+            stake: 0,
+            openedAtT: event.t,
+            why: event.why ?? null,
+            // it opens and settles in one act — nobody had to agree
+            status: "carried",
+            answers: /* @__PURE__ */ new Map(),
+            settledAtT: event.t,
+            moot: null
+          });
+          s.penFrom.set(id, wasValue);
+        }
+        if (event.setting === "quorum") {
+          s.quorumFormValue = event.value.form;
+        }
+        if (event.setting === "link") {
+          const slug = event.value.slug;
+          if (!s.slugHistory.includes(slug)) s.slugHistory.push(slug);
+        }
+        if (CONSTITUTIONAL.has(event.setting)) {
+          for (const m of s.members.values()) m.okGiven.delete(event.setting);
+        }
+        reseedAnchorsIfLive(s, event.t, event.setting);
+        break;
+      }
+      case "setting-delegated": {
+        const st = s.settings.get(event.setting);
+        setPowers(st, { unilateral: false, assent: false });
+        st.collecting = true;
+        st.value = null;
+        st.settledBy = null;
+        st.settledAtT = null;
+        st.distribution = null;
+        break;
+      }
+      case "setting-reclaimed": {
+        const st = s.settings.get(event.setting);
+        const wasDelegated = st.holder === "members";
+        setPowers(st, { unilateral: true, assent: true });
+        if (wasDelegated) {
+          st.collecting = false;
+          st.answers.clear();
+          st.value = null;
+          st.settledBy = null;
+          st.settledAtT = null;
+          st.distribution = null;
+        }
+        break;
+      }
+      case "starting-text-confirmed": {
+        s.startingText = event.text.replace(/\r\n?/g, "\n");
+        s.textConfirmedFlag = true;
+        break;
+      }
+      case "text-amended": {
+        touch(s, s.convenor.id, event.t);
+        const id = "pen:text:" + event.candidateId;
+        s.motions.set(id, {
+          id,
+          by: s.convenor.id,
+          payload: { kind: "text", candidateId: event.candidateId, summary: event.summary },
+          route: "pen",
+          stake: 0,
+          openedAtT: event.t,
+          why: event.why ?? null,
+          status: "carried",
+          answers: /* @__PURE__ */ new Map(),
+          settledAtT: event.t,
+          moot: null
+        });
+        break;
+      }
+      case "quorum-form-set": {
+        s.quorumFormValue = event.form;
+        break;
+      }
+      case "identity-set": {
+        if (event.member === s.convenor.id && !s.members.has(event.member)) {
+          if (event.nameSet) s.convenor.nameSet = true;
+          if (event.pictureSet) s.convenor.pictureSet = true;
+          break;
+        }
+        const m = s.members.get(event.member);
+        if (event.nameSet) m.nameSet = true;
+        if (event.pictureSet) m.pictureSet = true;
+        touch(s, event.member, event.t);
+        break;
+      }
+      case "member-invited": {
+        const arrival = event.viaMotion !== void 0 ? { via: "invitation", by: "members" } : event.by !== void 0 ? { via: "invitation", by: "member", inviter: event.by } : { via: "invitation", by: "convenor" };
+        notePerson(s, event.person);
+        s.members.set(
+          event.member,
+          freshMember(s, event.member, event.person, event.t, null, arrival)
+        );
+        s.nextMemberN += 1;
+        break;
+      }
+      case "member-uninvited": {
+        const m = s.members.get(event.member);
+        m.removed = true;
+        break;
+      }
+      case "member-arrived": {
+        const m = s.members.get(event.member);
+        m.arrivedAtT = event.t;
+        m.lastActivityT = event.t;
+        break;
+      }
+      case "member-removed": {
+        const m = s.members.get(event.member);
+        m.removed = true;
+        m.removedBy = event.by ?? "members";
+        s.departed.push({ member: event.member, t: event.t, by: m.removedBy });
+        break;
+      }
+      case "answer-given": {
+        const st = readValue(s, event.setting, event.value);
+        st.answers.set(event.member, event.value);
+        touch(s, event.member, event.t);
+        break;
+      }
+      case "question-resolved": {
+        const st = readValue(s, event.setting, event.value);
+        st.collecting = false;
+        st.value = event.value;
+        st.settledBy = "ceremony";
+        st.settledAtT = event.t;
+        st.distribution = event.distribution;
+        if (event.setting === "quorum") {
+          s.quorumFormValue = event.value.form;
+        }
+        reseedAnchorsIfLive(s, event.t, event.setting);
+        break;
+      }
+      case "ceremony-ground-shifted":
+        break;
+      // answers stand — the event is the notification (§9.6a)
+      case "constituted": {
+        s.constitutedT = event.t;
+        s.anchors = computeAnchors(s, event.t);
+        for (const st of s.settings.values()) {
+          if (!st.pendingRelease.unilateral && !st.pendingRelease.assent) continue;
+          setPowers(st, {
+            unilateral: st.powers.unilateral && !st.pendingRelease.unilateral,
+            assent: st.powers.assent && !st.pendingRelease.assent
+          });
+        }
+        if (event.laidDown === void 0) {
+          setPowers(s.settings.get("startingText"), { unilateral: false, assent: false });
+        } else {
+          const down = /* @__PURE__ */ new Map();
+          for (const r of event.laidDown) {
+            const cur = down.get(r.setting) ?? { unilateral: false, assent: false };
+            cur[r.power] = true;
+            down.set(r.setting, cur);
+          }
+          for (const [k, d] of down) {
+            const st = s.settings.get(k);
+            if (!st) continue;
+            setPowers(st, {
+              unilateral: st.powers.unilateral && !d.unilateral,
+              assent: st.powers.assent && !d.assent
+            });
+          }
+        }
+        break;
+      }
+      case "ok-owed": {
+        const m = s.members.get(event.member);
+        for (const id of event.settings) m.okOwed.add(id);
+        break;
+      }
+      case "ok-given": {
+        const m = s.members.get(event.member);
+        m.okOwed.delete(event.setting);
+        m.okGiven.add(event.setting);
+        touch(s, event.member, event.t);
+        break;
+      }
+      case "release-owed": {
+        const m = s.members.get(event.member);
+        m.releasesOwed.add(event.batch);
+        const rec = s.releaseBatches.get(event.batch);
+        if (rec) {
+          for (const r of event.releases) {
+            if (!rec.releases.some((x) => x.setting === r.setting && x.power === r.power)) {
+              rec.releases.push({ ...r });
+            }
+          }
+        } else {
+          s.releaseBatches.set(
+            event.batch,
+            { id: event.batch, t: event.t, releases: event.releases.map((r) => ({ ...r })) }
+          );
+          s.nextReleaseN += 1;
+        }
+        s.lastReleaseT = event.t;
+        s.lastReleaseBatch = event.batch;
+        break;
+      }
+      case "release-ok": {
+        const m = s.members.get(event.member);
+        m.releasesOwed.delete(event.batch);
+        m.releasesGiven.add(event.batch);
+        touch(s, event.member, event.t);
+        break;
+      }
+      case "amendment-owed": {
+        s.members.get(event.member).amendmentsOwed.add(event.candidate);
+        break;
+      }
+      case "amendment-ok": {
+        const m = s.members.get(event.member);
+        m.amendmentsOwed.delete(event.candidate);
+        m.amendmentsGiven.add(event.candidate);
+        touch(s, event.member, event.t);
+        break;
+      }
+      case "mail-gave-up": {
+        if (!s.mailGiveUpBatches.has(event.batch)) {
+          s.mailGiveUpBatches.set(
+            event.batch,
+            { id: event.batch, t: event.t, people: [...event.people] }
+          );
+          s.nextMailGiveUpN += 1;
+        }
+        for (const rec of s.members.values()) {
+          if (event.people.includes(rec.person)) rec.mailGaveUp = true;
+        }
+        if (event.member !== null) {
+          s.members.get(event.member).mailGaveUpOwed.add(event.batch);
+        }
+        break;
+      }
+      case "mail-gave-up-ok": {
+        const m = s.members.get(event.member);
+        m.mailGaveUpOwed.delete(event.batch);
+        m.mailGaveUpGiven.add(event.batch);
+        touch(s, event.member, event.t);
+        break;
+      }
+      case "mail-resent": {
+        s.members.get(event.member).mailGaveUp = false;
+        touch(s, event.by, event.t);
+        break;
+      }
+      case "floor-recomputed":
+        break;
+      // an announcement (§9.3/Q10); the numbers ride in the event
+      case "tick":
+        break;
+      default:
+        applyLifecycle(s, event);
+    }
+  }
+  function withdrawCrownQuestionOf(s, motion) {
+    for (const q of s.crownQuestions.values()) {
+      if (q.motion === motion && q.status === "pending") q.status = "withdrawn";
+    }
+  }
+  function applyLifecycle(s, event) {
+    switch (event.type) {
+      case "motion-opened": {
+        s.motions.set(event.motion, {
+          id: event.motion,
+          by: event.by,
+          payload: event.payload,
+          route: event.route,
+          stake: event.stake,
+          openedAtT: event.t,
+          why: event.why ?? null,
+          status: "running",
+          answers: /* @__PURE__ */ new Map(),
+          settledAtT: null,
+          moot: null
+        });
+        s.nextMotionN += 1;
+        if (event.payload.kind === "admit") {
+          s.applicants.get(event.payload.applicant).motion = event.motion;
+        }
+        if (event.by) touch(s, event.by, event.t);
+        break;
+      }
+      case "motion-answer": {
+        const rec = s.motions.get(event.motion);
+        rec.answers.set(event.member, event.answer);
+        touch(s, event.member, event.t);
+        break;
+      }
+      case "power-relinquished": {
+        const st = s.settings.get(event.setting);
+        if (s.constitutedT === null) {
+          st.pendingRelease = { ...st.pendingRelease, [event.power]: true };
+        } else {
+          const powers = { ...st.powers, [event.power]: false };
+          setPowers(st, powers);
+        }
+        touch(s, s.convenor.id, event.t);
+        break;
+      }
+      case "motion-withdrawn": {
+        const rec = s.motions.get(event.motion);
+        rec.status = "withdrawn";
+        rec.settledAtT = event.t;
+        break;
+      }
+      case "motion-ground-shifted": {
+        const rec = s.motions.get(event.motion);
+        rec.answers.clear();
+        if (rec.by !== null) rec.answers.set(rec.by, "accept");
+        if (rec.status === "awaiting-crown") {
+          rec.status = "running";
+          rec.settledAtT = null;
+          withdrawCrownQuestionOf(s, rec.id);
+        }
+        break;
+      }
+      case "motion-carried-moot": {
+        const rec = s.motions.get(event.motion);
+        rec.status = "carried";
+        rec.settledAtT = event.t;
+        rec.moot = event.cause;
+        withdrawCrownQuestionOf(s, rec.id);
+        break;
+      }
+      case "motion-carried": {
+        const rec = s.motions.get(event.motion);
+        rec.status = "carried";
+        rec.settledAtT = event.t;
+        if (rec.payload.kind === "set") {
+          applyPayloadSet(s, rec.payload.setting, rec.payload.value, "motion", event.t);
+        }
+        if (rec.payload.kind === "reserve") {
+          const st = s.settings.get(rec.payload.setting);
+          const p = rec.payload.power ?? "both";
+          setPowers(st, {
+            unilateral: st.powers.unilateral || p !== "assent",
+            assent: st.powers.assent || p !== "unilateral"
+          }, "motion");
+        }
+        break;
+      }
+      case "motion-adjudicated": {
+        const rec = s.motions.get(event.motion);
+        rec.settledAtT = event.t;
+        if (event.outcome === "held") {
+          rec.status = "held";
+        } else if (reservedTarget(s, rec)) {
+          rec.status = "awaiting-crown";
+          rec.settledAtT = null;
+        } else {
+          rec.status = "carried";
+          if (rec.payload.kind === "set") {
+            applyPayloadSet(s, rec.payload.setting, rec.payload.value, "motion", event.t);
+          }
+        }
+        break;
+      }
+      case "crown-question-opened": {
+        s.crownQuestions.set(event.question, {
+          id: event.question,
+          motion: event.motion,
+          ...event.text ? { text: event.text } : {},
+          openedAtT: event.t,
+          status: "pending",
+          autoPassedBy: null
+        });
+        if (event.motion !== null) {
+          const parked = s.motions.get(event.motion);
+          parked.status = "awaiting-crown";
+          parked.settledAtT = null;
+        }
+        s.nextCrownN += 1;
+        break;
+      }
+      case "crown-question-answered":
+      case "crown-question-auto-passed": {
+        const q = s.crownQuestions.get(event.question);
+        const accepted = event.type === "crown-question-auto-passed" || event.outcome === "accept";
+        q.status = event.type === "crown-question-auto-passed" ? "auto-passed" : accepted ? "accepted" : "rejected";
+        q.autoPassedBy = event.type === "crown-question-auto-passed" ? event.cause ?? "lapse" : null;
+        if (q.motion !== null) {
+          const rec = s.motions.get(q.motion);
+          rec.status = accepted ? "carried" : "held";
+          rec.settledAtT = event.t;
+          if (accepted && rec.payload.kind === "set") {
+            applyPayloadSet(s, rec.payload.setting, rec.payload.value, "crown", event.t);
+          }
+        }
+        if (event.type === "crown-question-answered") {
+          touch(s, s.convenor.id, event.t);
+        }
+        break;
+      }
+      case "setting-handed-over": {
+        const st = s.settings.get(event.setting);
+        setPowers(st, { unilateral: false, assent: false });
+        touch(s, s.convenor.id, event.t);
+        break;
+      }
+      case "crown-lapsed": {
+        s.crownLapsedFlag = true;
+        break;
+      }
+      case "crown-returned": {
+        s.crownLapsedFlag = false;
+        touch(s, s.convenor.id, event.t);
+        break;
+      }
+      default:
+        applyPresence(s, event);
+    }
+  }
+  function applyPresence(s, event) {
+    switch (event.type) {
+      case "member-returned": {
+        const m = s.members.get(event.member);
+        if (event.cause === "rule" && m.lapsed) {
+          s.settings.get("lapse").returned.push(event.member);
+        }
+        m.lapsed = false;
+        touch(s, event.member, event.t);
+        break;
+      }
+      case "member-seen":
+        touch(s, event.member, event.t);
+        break;
+      case "lapse-warned": {
+        const lead = typeof event.lead === "number" ? event.lead : Number.POSITIVE_INFINITY;
+        const who = event.member === s.convenor.id && !s.members.has(event.member) ? s.convenor : s.members.get(event.member);
+        who.lapseWarned = true;
+        who.lapseWarnedLead = who.lapseWarnedLead === null ? lead : Math.min(who.lapseWarnedLead, lead);
+        break;
+      }
+      case "member-lapsed": {
+        s.members.get(event.member).lapsed = true;
+        break;
+      }
+      case "closed": {
+        s.closedFlag = true;
+        s.closedT = event.t;
+        break;
+      }
+      case "motion-kept-at-close": {
+        const rec = s.motions.get(event.motion);
+        rec.status = "kept-at-close";
+        rec.settledAtT = event.t;
+        break;
+      }
+      case "crown-failed-closed": {
+        const q = s.crownQuestions.get(event.question);
+        q.status = "failed-closed";
+        if (q.motion !== null) {
+          const rec = s.motions.get(q.motion);
+          rec.status = "held";
+          rec.settledAtT = event.t;
+        }
+        break;
+      }
+      case "invitation-expired": {
+        s.members.get(event.member).invitationExpired = true;
+        break;
+      }
+      case "close-acknowledged": {
+        const m = s.members.get(event.member);
+        if (m) m.closingAck = { t: event.t, comment: event.comment };
+        break;
+      }
+      case "application-started": {
+        notePerson(s, event.person);
+        const state = {
+          id: event.applicant,
+          person: event.person,
+          status: "started",
+          words: null,
+          motion: null
+        };
+        s.applicants.set(event.applicant, withPerson(s, state));
+        s.nextApplicantN += 1;
+        break;
+      }
+      case "application-verified": {
+        s.applicants.get(event.applicant).status = "verified";
+        break;
+      }
+      case "application-submitted": {
+        const a = s.applicants.get(event.applicant);
+        a.status = "submitted";
+        a.words = event.words ?? null;
+        break;
+      }
+      case "application-proposed": {
+        s.applicants.get(event.applicant).status = "proposed";
+        touch(s, event.by, event.t);
+        break;
+      }
+      case "member-admitted": {
+        const a = s.applicants.get(event.applicant);
+        a.status = "admitted";
+        const rec = freshMember(
+          s,
+          event.member,
+          a.person,
+          event.t,
+          event.t,
+          { via: "application", by: "members" }
+        );
+        s.members.set(event.member, rec);
+        s.nextMemberN += 1;
+        break;
+      }
+      case "application-refused": {
+        s.applicants.get(event.applicant).status = "refused";
+        break;
+      }
+      default:
+        throw new Error(`unhandled event '${event.type}'`);
+    }
+  }
+  function applyPayloadSet(s, id, value, by, t) {
+    const st = readValue(s, id, value);
+    st.value = value;
+    st.settledBy = by;
+    st.settledAtT = t;
+    st.returned = [];
+    st.collecting = false;
+    if (id === "quorum") s.quorumFormValue = value.form;
+    if (id === "link") {
+      const slug = value.slug;
+      if (!s.slugHistory.includes(slug)) s.slugHistory.push(slug);
+    }
+    reseedAnchorsIfLive(s, t, id);
+  }
+  function reservedTarget(s, rec) {
+    if (s.crownLapsedFlag) return false;
+    if (rec.payload.kind === "set") {
+      return s.settings.get(rec.payload.setting).powers.assent;
+    }
+    if (rec.payload.kind === "reserve" || rec.payload.kind === "text") return false;
+    return doorPowers(s, rec.payload.kind === "remove" ? "door:remove" : "door:invite").assent;
+  }
+  function setPowers(st, powers, from = "founding") {
+    const was = st.powers;
+    st.powerFrom = {
+      unilateral: !powers.unilateral ? null : was.unilateral ? st.powerFrom.unilateral : from,
+      assent: !powers.assent ? null : was.assent ? st.powerFrom.assent : from
+    };
+    st.powers = powers;
+    st.holder = holderOf(powers);
+    st.pendingRelease = { unilateral: false, assent: false };
+  }
+  function freshMember(s, id, person, invitedAtT, arrivedAtT, arrival) {
+    const state = {
+      id,
+      person,
+      invitedAtT,
+      arrivedAtT,
+      arrival,
+      removed: false,
+      removedBy: null,
+      lapsed: false,
+      lapseWarned: false,
+      lapseWarnedLead: null,
+      nameSet: false,
+      pictureSet: false,
+      lastActivityT: arrivedAtT ?? invitedAtT,
+      okOwed: /* @__PURE__ */ new Set(),
+      okGiven: /* @__PURE__ */ new Set(),
+      releasesOwed: /* @__PURE__ */ new Set(),
+      releasesGiven: /* @__PURE__ */ new Set(),
+      amendmentsOwed: /* @__PURE__ */ new Set(),
+      amendmentsGiven: /* @__PURE__ */ new Set(),
+      mailGaveUpOwed: /* @__PURE__ */ new Set(),
+      mailGaveUpGiven: /* @__PURE__ */ new Set(),
+      mailGaveUp: false,
+      invitationExpired: false,
+      closingAck: null
+    };
+    return withPerson(s, state);
+  }
+  function withPerson(s, state) {
+    const people = s.people;
+    const field = (key) => ({
+      enumerable: true,
+      get() {
+        return resolvePerson(people, this.person)[key];
+      }
+    });
+    return Object.defineProperties(state, {
+      email: field("email"),
+      name: field("name"),
+      picture: field("picture"),
+      erased: field("erased")
+    });
+  }
+  function foldSet(s, id, value, by, t) {
+    const st = readValue(s, id, value);
+    st.collecting = false;
+    st.value = value;
+    st.settledBy = by === "crown" ? "crown" : "convenor";
+    st.settledAtT = t;
+    st.returned = [];
+  }
+  function readValue(s, id, value) {
+    const st = s.settings.get(id);
+    if (st === void 0) throw new Error(`unknown setting '${id}' (Q1329: no legacy id is read)`);
+    const err = validateFor(entryOf(id), value);
+    if (err !== null) throw new Error(`${err} (Q1329: no legacy value is read)`);
+    return st;
+  }
+  function touch(s, member, t) {
+    const m = s.members.get(member);
+    if (m) {
+      m.lastActivityT = t;
+      m.lapseWarned = false;
+      m.lapseWarnedLead = null;
+    }
+    if (member === s.convenor.id) {
+      s.convenor.lastActivityT = t;
+      s.convenor.lapseWarned = false;
+      s.convenor.lapseWarnedLead = null;
+    }
+  }
+  function computeAnchors(s, t) {
+    const bar = s.settings.get("bar").value;
+    const pace = s.settings.get("pace").value;
+    const ending = s.settings.get("ending").value;
+    const endPct = bar ? bar.pct : 95;
+    const endT = ending ? ending.endsAtMs : null;
+    const shape = endT !== null && pace?.shape === "ramp" ? "ramp" : "fixed";
+    return seedAnchors(
+      shape,
+      shape === "ramp" ? pace.startPct : null,
+      endPct,
+      t,
+      endT
+    );
+  }
+  function reseedAnchorsIfLive(s, t, setting) {
+    if (s.constitutedT === null || s.anchors === null) return;
+    if (setting === "ending") {
+      const ending = s.settings.get("ending").value;
+      s.anchors = reAnchor(s.anchors, t, ending ? ending.endsAtMs : null);
+    } else if (setting === "bar" || setting === "pace") {
+      s.anchors = computeAnchors(s, t);
+    }
+  }
+  function doorPowers(s, door) {
+    return { ...s.settings.get(door).powers };
+  }
+  function notePerson(s, id) {
+    const m = /^p-(\d+)$/.exec(id);
+    if (m !== null) s.nextPersonN = Math.max(s.nextPersonN, Number(m[1]) + 1);
+  }
+
   // src/clocks.ts
   var HOUR_MS = 36e5;
   var DAY_MS = 24 * HOUR_MS;
@@ -1048,16 +2246,10 @@ var CONSTITUTION = (() => {
   }
 
   // src/session.ts
-  var MANAGED = CATALOGUE.filter((e) => e.kind !== "personal" && e.id !== "startingText").map((e) => e.id);
-  var HELD = [...MANAGED, "startingText", ...DOORS];
-  var CONSTITUTIONAL = new Set(
-    CATALOGUE.filter((e) => e.kind === "constitutional").map((e) => e.id)
-  );
   var SEEN_EVERY_MS = 60 * 6e4;
   var ConstitutionSession = class _ConstitutionSession {
     constructor(people = new InMemoryPeople()) {
       __publicField(this, "log", []);
-      __publicField(this, "lastT", -Infinity);
       /**
        * **The rows beside the log** (decision 1253): every person's email, name
        * and picture, keyed by the `PersonId` the events carry. An argument, never
@@ -1068,70 +2260,112 @@ var CONSTITUTION = (() => {
        * resolve through it at read time, so an erased row reads as erased at once.
        */
       __publicField(this, "people");
-      // ---- fold state ----------------------------------------------------------
-      __publicField(this, "convenor");
-      __publicField(this, "crownLapsedFlag", false);
-      __publicField(this, "members", /* @__PURE__ */ new Map());
-      /** The departures, folded (Q901): see `departures()`. */
-      __publicField(this, "departed", []);
-      __publicField(this, "settings", /* @__PURE__ */ new Map());
-      __publicField(this, "quorumFormValue", "share");
-      __publicField(this, "startingText", null);
-      __publicField(this, "textConfirmedFlag", false);
-      __publicField(this, "slugHistory", []);
-      /** The birth's own `t` and its 🧭 shape (entry 166), read off `created` so `replay` rebuilds both. */
-      __publicField(this, "createdT", null);
-      __publicField(this, "shapeName", null);
-      __publicField(this, "constitutedT", null);
-      __publicField(this, "closedFlag", false);
-      __publicField(this, "closedT", null);
-      __publicField(this, "anchors", null);
-      __publicField(this, "motions", /* @__PURE__ */ new Map());
-      __publicField(this, "crownQuestions", /* @__PURE__ */ new Map());
-      __publicField(this, "applicants", /* @__PURE__ */ new Map());
-      /**
-       * The release batches, by id (entry 162, Q1013), and the two fields that
-       * decide whether a further release **joins** one or opens a new one. All
-       * three are recomputed **in the fold** and never only in the command: a
-       * batch id minted in the command would replay differently from the session
-       * that wrote it.
-       */
-      __publicField(this, "releaseBatches", /* @__PURE__ */ new Map());
-      __publicField(this, "lastReleaseT", null);
-      __publicField(this, "lastReleaseBatch", null);
-      __publicField(this, "nextReleaseN", 1);
-      /** The mail-give-up batches, by id (SURFACE E34). One pass, one batch, so
-       *  there is no open-batch pair here — the counter alone, moved in the fold
-       *  for `nextReleaseN`'s reason. */
-      __publicField(this, "mailGiveUpBatches", /* @__PURE__ */ new Map());
-      __publicField(this, "nextMailGiveUpN", 1);
-      __publicField(this, "nextMemberN", 1);
-      __publicField(this, "nextMotionN", 1);
-      __publicField(this, "nextCrownN", 1);
-      __publicField(this, "nextApplicantN", 1);
-      /** Person ids are minted like member ids and rebuilt from the log (`notePerson`). */
-      __publicField(this, "nextPersonN", 1);
-      /**
-       * **A lapsed member is owed it too** (Q530, Ed 2026-08-22). E excludes the
-       * lapsed, and for every other purpose that is right: they are out of the
-       * quorum base and out of the electorate, because those are about who is
-       * deciding. An acknowledgement is not a decision — it is a thing owed to
-       * somebody about a document they are **still a member of**. Lapse is a
-       * stall with an alarm rather than a departure (§9.5a): revival is just
-       * logging in, and their cast judgments keep counting. So the person who
-       * was living under the old rule and went quiet is exactly the one a change
-       * ought to find, and owing it now is how they meet it on the way back in.
-       *
-       * The two exclusions that stay are the two that mean something. A
-       * **removed** member is gone. Somebody who has **not arrived** never knew
-       * the old rule, so the change is not news to them — it is simply what the
-       * document says, which they will read like anybody arriving.
-       */
-      /** What each pen amendment changed *from* — a motion proposes a value and
-       *  never needs the old one, so this rides alongside rather than bending the
-       *  payload every other amendment shares. */
-      __publicField(this, "penFrom", /* @__PURE__ */ new Map());
+      // ---- the fold, and the session's own reads of it -------------------------
+      //
+      // **`fold.ts` writes; everything above and below it reads** (Q1352 (s)).
+      // Every field that used to be declared here is `FoldState`'s, one object the
+      // session owns, and the getters below keep the names the commands and the
+      // projections have always used — `this.settings`, `this.members`,
+      // `this.convenor` — so not one command body moved with the fold. None of
+      // them is assignable, and that is the property worth having: after the
+      // split the only code in the package that can assign a fold field is the
+      // fold, which is what `replay` rebuilding bit-identically rests on.
+      __publicField(this, "fold");
       this.people = people;
+      this.fold = new FoldState(people);
+    }
+    get lastT() {
+      return this.fold.lastT;
+    }
+    get convenor() {
+      return this.fold.convenor;
+    }
+    get crownLapsedFlag() {
+      return this.fold.crownLapsedFlag;
+    }
+    get members() {
+      return this.fold.members;
+    }
+    get departed() {
+      return this.fold.departed;
+    }
+    get settings() {
+      return this.fold.settings;
+    }
+    get quorumFormValue() {
+      return this.fold.quorumFormValue;
+    }
+    get startingText() {
+      return this.fold.startingText;
+    }
+    get textConfirmedFlag() {
+      return this.fold.textConfirmedFlag;
+    }
+    get slugHistory() {
+      return this.fold.slugHistory;
+    }
+    get createdT() {
+      return this.fold.createdT;
+    }
+    get shapeName() {
+      return this.fold.shapeName;
+    }
+    get constitutedT() {
+      return this.fold.constitutedT;
+    }
+    get closedFlag() {
+      return this.fold.closedFlag;
+    }
+    get closedT() {
+      return this.fold.closedT;
+    }
+    get anchors() {
+      return this.fold.anchors;
+    }
+    get motions() {
+      return this.fold.motions;
+    }
+    get crownQuestions() {
+      return this.fold.crownQuestions;
+    }
+    get applicants() {
+      return this.fold.applicants;
+    }
+    get releaseBatches() {
+      return this.fold.releaseBatches;
+    }
+    get lastReleaseT() {
+      return this.fold.lastReleaseT;
+    }
+    get lastReleaseBatch() {
+      return this.fold.lastReleaseBatch;
+    }
+    get nextReleaseN() {
+      return this.fold.nextReleaseN;
+    }
+    get mailGiveUpBatches() {
+      return this.fold.mailGiveUpBatches;
+    }
+    get nextMailGiveUpN() {
+      return this.fold.nextMailGiveUpN;
+    }
+    get nextMemberN() {
+      return this.fold.nextMemberN;
+    }
+    get nextMotionN() {
+      return this.fold.nextMotionN;
+    }
+    get nextCrownN() {
+      return this.fold.nextCrownN;
+    }
+    get nextApplicantN() {
+      return this.fold.nextApplicantN;
+    }
+    get nextPersonN() {
+      return this.fold.nextPersonN;
+    }
+    get penFrom() {
+      return this.fold.penFrom;
     }
     // -------------------------------------------------------------------------
     // Opening and replay
@@ -1208,744 +2442,15 @@ var CONSTITUTION = (() => {
       this.log.push({ seq, hash, prevHash, event, schemaVersion: SCHEMA_VERSION });
       this.apply(event, seq);
     }
-    apply(event, _seq) {
-      if (event.t < this.lastT) throw new Error("timestamps must be non-decreasing");
-      this.lastT = event.t;
-      switch (event.type) {
-        case "created": {
-          const c = event.convenor;
-          this.createdT = event.t;
-          this.shapeName = event.shape ?? null;
-          this.notePerson(c.person);
-          this.convenor = {
-            id: c.id,
-            person: c.person,
-            isMember: c.isMember,
-            // a founder who arrives already carrying one has answered it (Q645)
-            nameSet: c.nameSet === true,
-            pictureSet: c.pictureSet === true,
-            // 🎩 is asked, never assumed: `isMember` arrives with the creation
-            // and answers nothing about whether the founder was put the question
-            membershipSet: false,
-            lastActivityT: event.t,
-            lapseWarned: false,
-            lapseWarnedLead: null
-          };
-          for (const id of HELD) {
-            this.settings.set(id, {
-              id,
-              holder: "convenor",
-              powers: { unilateral: true, assent: true },
-              // both powers are the convenor's by construction at the birth
-              powerFrom: { unilateral: "founding", assent: "founding" },
-              pendingRelease: { unilateral: false, assent: false },
-              value: null,
-              previousValue: null,
-              setWhy: null,
-              settledBy: null,
-              settledAtT: null,
-              returned: [],
-              collecting: false,
-              answers: /* @__PURE__ */ new Map(),
-              distribution: null
-            });
-          }
-          this.foldSet("title", { text: event.title }, "convenor", event.t);
-          this.foldSet("link", { slug: event.slug }, "convenor", event.t);
-          this.slugHistory.push(event.slug);
-          if (c.isMember) {
-            const rec = this.freshMember(
-              c.id,
-              c.person,
-              event.t,
-              event.t,
-              { via: "founding", by: null }
-            );
-            rec.nameSet = this.convenor.nameSet;
-            rec.pictureSet = this.convenor.pictureSet;
-            this.members.set(c.id, rec);
-          }
-          break;
-        }
-        case "convenor-membership-set": {
-          if (event.isMember === this.members.has(this.convenor.id)) {
-            this.convenor.membershipSet = true;
-            break;
-          }
-          if (event.isMember) {
-            const rec = this.freshMember(
-              this.convenor.id,
-              this.convenor.person,
-              event.t,
-              event.t,
-              { via: "founding", by: null }
-            );
-            const prev = this.members.get(this.convenor.id);
-            rec.nameSet = prev ? prev.nameSet : this.convenor.nameSet;
-            rec.pictureSet = prev ? prev.pictureSet : this.convenor.pictureSet;
-            if (prev) {
-              rec.okOwed = prev.okOwed;
-              rec.okGiven = prev.okGiven;
-              rec.releasesOwed = prev.releasesOwed;
-              rec.releasesGiven = prev.releasesGiven;
-              rec.amendmentsOwed = prev.amendmentsOwed;
-              rec.amendmentsGiven = prev.amendmentsGiven;
-              rec.mailGaveUpOwed = prev.mailGaveUpOwed;
-              rec.mailGaveUpGiven = prev.mailGaveUpGiven;
-              rec.mailGaveUp = prev.mailGaveUp;
-              rec.lastActivityT = prev.lastActivityT;
-            } else {
-              rec.lastActivityT = Math.max(rec.lastActivityT, this.convenor.lastActivityT);
-            }
-            this.members.set(this.convenor.id, rec);
-          } else {
-            const prev = this.members.get(this.convenor.id);
-            if (prev) {
-              this.convenor.nameSet = prev.nameSet;
-              this.convenor.pictureSet = prev.pictureSet;
-              this.convenor.lastActivityT = prev.lastActivityT;
-            }
-            this.members.delete(this.convenor.id);
-          }
-          this.convenor.membershipSet = true;
-          this.convenor.isMember = event.isMember;
-          break;
-        }
-        case "setting-set": {
-          this.touch(this.convenor.id, event.t);
-          const prevOf = this.settings.get(event.setting);
-          const wasValue = prevOf ? prevOf.value : null;
-          this.foldSet(event.setting, event.value, event.by, event.t);
-          const nowSt = this.settings.get(event.setting);
-          if (nowSt) {
-            nowSt.previousValue = wasValue;
-            nowSt.setWhy = event.why ?? null;
-          }
-          if (wasValue !== null) {
-            const id = "pen:" + event.setting + ":" + event.t;
-            this.motions.set(id, {
-              id,
-              by: this.convenor.id,
-              payload: { kind: "set", setting: event.setting, value: event.value },
-              route: "pen",
-              stake: 0,
-              openedAtT: event.t,
-              why: event.why ?? null,
-              // it opens and settles in one act — nobody had to agree
-              status: "carried",
-              answers: /* @__PURE__ */ new Map(),
-              settledAtT: event.t
-            });
-            this.penFrom.set(id, wasValue);
-          }
-          if (event.setting === "quorum") {
-            this.quorumFormValue = event.value.form;
-          }
-          if (event.setting === "link") {
-            const slug = event.value.slug;
-            if (!this.slugHistory.includes(slug)) this.slugHistory.push(slug);
-          }
-          if (CONSTITUTIONAL.has(event.setting)) {
-            for (const m of this.members.values()) m.okGiven.delete(event.setting);
-          }
-          this.reseedAnchorsIfLive(event.t, event.setting);
-          break;
-        }
-        case "setting-delegated": {
-          const st = this.settings.get(event.setting);
-          this.setPowers(st, { unilateral: false, assent: false });
-          st.collecting = true;
-          st.value = null;
-          st.settledBy = null;
-          st.settledAtT = null;
-          st.distribution = null;
-          break;
-        }
-        case "setting-reclaimed": {
-          const st = this.settings.get(event.setting);
-          const wasDelegated = st.holder === "members";
-          this.setPowers(st, { unilateral: true, assent: true });
-          if (wasDelegated) {
-            st.collecting = false;
-            st.answers.clear();
-            st.value = null;
-            st.settledBy = null;
-            st.settledAtT = null;
-            st.distribution = null;
-          }
-          break;
-        }
-        case "starting-text-confirmed": {
-          this.startingText = event.text.replace(/\r\n?/g, "\n");
-          this.textConfirmedFlag = true;
-          break;
-        }
-        case "text-amended": {
-          this.touch(this.convenor.id, event.t);
-          const id = "pen:text:" + event.candidateId;
-          this.motions.set(id, {
-            id,
-            by: this.convenor.id,
-            payload: { kind: "text", candidateId: event.candidateId, summary: event.summary },
-            route: "pen",
-            stake: 0,
-            openedAtT: event.t,
-            why: event.why ?? null,
-            status: "carried",
-            answers: /* @__PURE__ */ new Map(),
-            settledAtT: event.t
-          });
-          break;
-        }
-        case "quorum-form-set": {
-          this.quorumFormValue = event.form;
-          break;
-        }
-        case "identity-set": {
-          if (event.member === this.convenor.id && !this.members.has(event.member)) {
-            if (event.nameSet) this.convenor.nameSet = true;
-            if (event.pictureSet) this.convenor.pictureSet = true;
-            break;
-          }
-          const m = this.members.get(event.member);
-          if (event.nameSet) m.nameSet = true;
-          if (event.pictureSet) m.pictureSet = true;
-          this.touch(event.member, event.t);
-          break;
-        }
-        case "member-invited": {
-          const arrival = event.viaMotion !== void 0 ? { via: "invitation", by: "members" } : event.by !== void 0 ? { via: "invitation", by: "member", inviter: event.by } : { via: "invitation", by: "convenor" };
-          this.notePerson(event.person);
-          this.members.set(
-            event.member,
-            this.freshMember(event.member, event.person, event.t, null, arrival)
-          );
-          this.nextMemberN += 1;
-          break;
-        }
-        case "member-uninvited": {
-          const m = this.members.get(event.member);
-          m.removed = true;
-          break;
-        }
-        case "member-arrived": {
-          const m = this.members.get(event.member);
-          m.arrivedAtT = event.t;
-          m.lastActivityT = event.t;
-          break;
-        }
-        case "member-removed": {
-          const m = this.members.get(event.member);
-          m.removed = true;
-          m.removedBy = event.by ?? "members";
-          this.departed.push({ member: event.member, t: event.t, by: m.removedBy });
-          break;
-        }
-        case "answer-given": {
-          const st = this.readValue(event.setting, event.value);
-          st.answers.set(event.member, event.value);
-          this.touch(event.member, event.t);
-          break;
-        }
-        case "question-resolved": {
-          const st = this.readValue(event.setting, event.value);
-          st.collecting = false;
-          st.value = event.value;
-          st.settledBy = "ceremony";
-          st.settledAtT = event.t;
-          st.distribution = event.distribution;
-          if (event.setting === "quorum") {
-            this.quorumFormValue = event.value.form;
-          }
-          this.reseedAnchorsIfLive(event.t, event.setting);
-          break;
-        }
-        case "ceremony-ground-shifted":
-          break;
-        // answers stand — the event is the notification (§9.6a)
-        case "constituted": {
-          this.constitutedT = event.t;
-          this.anchors = this.computeAnchors(event.t);
-          for (const st of this.settings.values()) {
-            if (!st.pendingRelease.unilateral && !st.pendingRelease.assent) continue;
-            this.setPowers(st, {
-              unilateral: st.powers.unilateral && !st.pendingRelease.unilateral,
-              assent: st.powers.assent && !st.pendingRelease.assent
-            });
-          }
-          if (event.laidDown === void 0) {
-            this.setPowers(this.settings.get("startingText"), { unilateral: false, assent: false });
-          } else {
-            const down = /* @__PURE__ */ new Map();
-            for (const r of event.laidDown) {
-              const cur = down.get(r.setting) ?? { unilateral: false, assent: false };
-              cur[r.power] = true;
-              down.set(r.setting, cur);
-            }
-            for (const [k, d] of down) {
-              const st = this.settings.get(k);
-              if (!st) continue;
-              this.setPowers(st, {
-                unilateral: st.powers.unilateral && !d.unilateral,
-                assent: st.powers.assent && !d.assent
-              });
-            }
-          }
-          break;
-        }
-        case "ok-owed": {
-          const m = this.members.get(event.member);
-          for (const id of event.settings) m.okOwed.add(id);
-          break;
-        }
-        case "ok-given": {
-          const m = this.members.get(event.member);
-          m.okOwed.delete(event.setting);
-          m.okGiven.add(event.setting);
-          this.touch(event.member, event.t);
-          break;
-        }
-        case "release-owed": {
-          const m = this.members.get(event.member);
-          m.releasesOwed.add(event.batch);
-          const rec = this.releaseBatches.get(event.batch);
-          if (rec) {
-            for (const r of event.releases) {
-              if (!rec.releases.some((x) => x.setting === r.setting && x.power === r.power)) {
-                rec.releases.push({ ...r });
-              }
-            }
-          } else {
-            this.releaseBatches.set(
-              event.batch,
-              { id: event.batch, t: event.t, releases: event.releases.map((r) => ({ ...r })) }
-            );
-            this.nextReleaseN += 1;
-          }
-          this.lastReleaseT = event.t;
-          this.lastReleaseBatch = event.batch;
-          break;
-        }
-        case "release-ok": {
-          const m = this.members.get(event.member);
-          m.releasesOwed.delete(event.batch);
-          m.releasesGiven.add(event.batch);
-          this.touch(event.member, event.t);
-          break;
-        }
-        case "amendment-owed": {
-          this.members.get(event.member).amendmentsOwed.add(event.candidate);
-          break;
-        }
-        case "amendment-ok": {
-          const m = this.members.get(event.member);
-          m.amendmentsOwed.delete(event.candidate);
-          m.amendmentsGiven.add(event.candidate);
-          this.touch(event.member, event.t);
-          break;
-        }
-        case "mail-gave-up": {
-          if (!this.mailGiveUpBatches.has(event.batch)) {
-            this.mailGiveUpBatches.set(
-              event.batch,
-              { id: event.batch, t: event.t, people: [...event.people] }
-            );
-            this.nextMailGiveUpN += 1;
-          }
-          for (const rec of this.members.values()) {
-            if (event.people.includes(rec.person)) rec.mailGaveUp = true;
-          }
-          if (event.member !== null) {
-            this.members.get(event.member).mailGaveUpOwed.add(event.batch);
-          }
-          break;
-        }
-        case "mail-gave-up-ok": {
-          const m = this.members.get(event.member);
-          m.mailGaveUpOwed.delete(event.batch);
-          m.mailGaveUpGiven.add(event.batch);
-          this.touch(event.member, event.t);
-          break;
-        }
-        case "mail-resent": {
-          this.members.get(event.member).mailGaveUp = false;
-          this.touch(event.by, event.t);
-          break;
-        }
-        case "floor-recomputed":
-          break;
-        // an announcement (§9.3/Q10); the numbers ride in the event
-        case "tick":
-          break;
-        default:
-          this.applyLifecycle(event);
-      }
-    }
-    /** Motions and the crown (§9.6–§9.7, v0.48). */
-    applyLifecycle(event) {
-      switch (event.type) {
-        case "motion-opened": {
-          this.motions.set(event.motion, {
-            id: event.motion,
-            by: event.by,
-            payload: event.payload,
-            route: event.route,
-            stake: event.stake,
-            openedAtT: event.t,
-            why: event.why ?? null,
-            status: "running",
-            answers: /* @__PURE__ */ new Map(),
-            settledAtT: null
-          });
-          this.nextMotionN += 1;
-          if (event.payload.kind === "admit") {
-            this.applicants.get(event.payload.applicant).motion = event.motion;
-          }
-          if (event.by) this.touch(event.by, event.t);
-          break;
-        }
-        case "motion-answer": {
-          const rec = this.motions.get(event.motion);
-          rec.answers.set(event.member, event.answer);
-          this.touch(event.member, event.t);
-          break;
-        }
-        case "power-relinquished": {
-          const st = this.settings.get(event.setting);
-          if (this.constitutedT === null) {
-            st.pendingRelease = { ...st.pendingRelease, [event.power]: true };
-          } else {
-            const powers = { ...st.powers, [event.power]: false };
-            this.setPowers(st, powers);
-          }
-          this.touch(this.convenor.id, event.t);
-          break;
-        }
-        case "motion-withdrawn": {
-          const rec = this.motions.get(event.motion);
-          rec.status = "withdrawn";
-          rec.settledAtT = event.t;
-          break;
-        }
-        case "motion-ground-shifted": {
-          const rec = this.motions.get(event.motion);
-          rec.answers.clear();
-          if (rec.by !== null) rec.answers.set(rec.by, "accept");
-          break;
-        }
-        case "motion-carried": {
-          const rec = this.motions.get(event.motion);
-          rec.status = "carried";
-          rec.settledAtT = event.t;
-          if (rec.payload.kind === "set") {
-            this.applyPayloadSet(rec.payload.setting, rec.payload.value, "motion", event.t);
-          }
-          if (rec.payload.kind === "reserve") {
-            const st = this.settings.get(rec.payload.setting);
-            const p = rec.payload.power ?? "both";
-            this.setPowers(st, {
-              unilateral: st.powers.unilateral || p !== "assent",
-              assent: st.powers.assent || p !== "unilateral"
-            }, "motion");
-          }
-          break;
-        }
-        case "motion-adjudicated": {
-          const rec = this.motions.get(event.motion);
-          rec.settledAtT = event.t;
-          if (event.outcome === "held") {
-            rec.status = "held";
-          } else if (this.reservedTarget(rec)) {
-            rec.status = "awaiting-crown";
-            rec.settledAtT = null;
-          } else {
-            rec.status = "carried";
-            if (rec.payload.kind === "set") {
-              this.applyPayloadSet(rec.payload.setting, rec.payload.value, "motion", event.t);
-            }
-          }
-          break;
-        }
-        case "crown-question-opened": {
-          this.crownQuestions.set(event.question, {
-            id: event.question,
-            motion: event.motion,
-            ...event.text ? { text: event.text } : {},
-            openedAtT: event.t,
-            status: "pending",
-            autoPassedBy: null
-          });
-          if (event.motion !== null) {
-            const parked = this.motions.get(event.motion);
-            parked.status = "awaiting-crown";
-            parked.settledAtT = null;
-          }
-          this.nextCrownN += 1;
-          break;
-        }
-        case "crown-question-answered":
-        case "crown-question-auto-passed": {
-          const q = this.crownQuestions.get(event.question);
-          const accepted = event.type === "crown-question-auto-passed" || event.outcome === "accept";
-          q.status = event.type === "crown-question-auto-passed" ? "auto-passed" : accepted ? "accepted" : "rejected";
-          q.autoPassedBy = event.type === "crown-question-auto-passed" ? event.cause ?? "lapse" : null;
-          if (q.motion !== null) {
-            const rec = this.motions.get(q.motion);
-            rec.status = accepted ? "carried" : "held";
-            rec.settledAtT = event.t;
-            if (accepted && rec.payload.kind === "set") {
-              this.applyPayloadSet(rec.payload.setting, rec.payload.value, "crown", event.t);
-            }
-          }
-          if (event.type === "crown-question-answered") {
-            this.touch(this.convenor.id, event.t);
-          }
-          break;
-        }
-        case "setting-handed-over": {
-          const st = this.settings.get(event.setting);
-          this.setPowers(st, { unilateral: false, assent: false });
-          this.touch(this.convenor.id, event.t);
-          break;
-        }
-        case "crown-lapsed": {
-          this.crownLapsedFlag = true;
-          break;
-        }
-        case "crown-returned": {
-          this.crownLapsedFlag = false;
-          this.touch(this.convenor.id, event.t);
-          break;
-        }
-        default:
-          this.applyPresence(event);
-      }
-    }
-    /** Presence, lapsing and applications (§9.5, §9.5a, §9.7½). */
-    applyPresence(event) {
-      switch (event.type) {
-        case "member-returned": {
-          const m = this.members.get(event.member);
-          if (event.cause === "rule" && m.lapsed) {
-            this.settings.get("lapse").returned.push(event.member);
-          }
-          m.lapsed = false;
-          this.touch(event.member, event.t);
-          break;
-        }
-        case "member-seen":
-          this.touch(event.member, event.t);
-          break;
-        case "lapse-warned": {
-          const lead = typeof event.lead === "number" ? event.lead : Number.POSITIVE_INFINITY;
-          const who = event.member === this.convenor.id && !this.members.has(event.member) ? this.convenor : this.members.get(event.member);
-          who.lapseWarned = true;
-          who.lapseWarnedLead = who.lapseWarnedLead === null ? lead : Math.min(who.lapseWarnedLead, lead);
-          break;
-        }
-        case "member-lapsed": {
-          this.members.get(event.member).lapsed = true;
-          break;
-        }
-        case "closed": {
-          this.closedFlag = true;
-          this.closedT = event.t;
-          break;
-        }
-        case "motion-kept-at-close": {
-          const rec = this.motions.get(event.motion);
-          rec.status = "kept-at-close";
-          rec.settledAtT = event.t;
-          break;
-        }
-        case "crown-failed-closed": {
-          const q = this.crownQuestions.get(event.question);
-          q.status = "failed-closed";
-          if (q.motion !== null) {
-            const rec = this.motions.get(q.motion);
-            rec.status = "held";
-            rec.settledAtT = event.t;
-          }
-          break;
-        }
-        case "invitation-expired": {
-          this.members.get(event.member).invitationExpired = true;
-          break;
-        }
-        case "close-acknowledged": {
-          const m = this.members.get(event.member);
-          if (m) m.closingAck = { t: event.t, comment: event.comment };
-          break;
-        }
-        case "application-started": {
-          this.notePerson(event.person);
-          const state = {
-            id: event.applicant,
-            person: event.person,
-            status: "started",
-            words: null,
-            motion: null
-          };
-          this.applicants.set(event.applicant, this.withPerson(state));
-          this.nextApplicantN += 1;
-          break;
-        }
-        case "application-verified": {
-          this.applicants.get(event.applicant).status = "verified";
-          break;
-        }
-        case "application-submitted": {
-          const a = this.applicants.get(event.applicant);
-          a.status = "submitted";
-          a.words = event.words ?? null;
-          break;
-        }
-        case "application-proposed": {
-          this.applicants.get(event.applicant).status = "proposed";
-          this.touch(event.by, event.t);
-          break;
-        }
-        case "member-admitted": {
-          const a = this.applicants.get(event.applicant);
-          a.status = "admitted";
-          const rec = this.freshMember(
-            event.member,
-            a.person,
-            event.t,
-            event.t,
-            { via: "application", by: "members" }
-          );
-          this.members.set(event.member, rec);
-          this.nextMemberN += 1;
-          break;
-        }
-        case "application-refused": {
-          this.applicants.get(event.applicant).status = "refused";
-          break;
-        }
-        default:
-          throw new Error(`unhandled event '${event.type}'`);
-      }
-    }
-    /** A carried change lands on the setting, keeping who holds it. */
-    applyPayloadSet(id, value, by, t) {
-      const st = this.readValue(id, value);
-      st.value = value;
-      st.settledBy = by;
-      st.settledAtT = t;
-      st.returned = [];
-      st.collecting = false;
-      if (id === "quorum") this.quorumFormValue = value.form;
-      if (id === "link") {
-        const slug = value.slug;
-        if (!this.slugHistory.includes(slug)) this.slugHistory.push(slug);
-      }
-      this.reseedAnchorsIfLive(t, id);
-    }
-    /** Does this motion's target sit behind the crown's assent (§9.7)?
-     *  v0.54: the assent power specifically — a setting held unilateral-only
-     *  applies a carried change with nobody's accept asked. */
-    reservedTarget(rec) {
-      if (this.crownLapsedFlag) return false;
-      if (rec.payload.kind === "set") {
-        return this.settings.get(rec.payload.setting).powers.assent;
-      }
-      if (rec.payload.kind === "reserve" || rec.payload.kind === "text") return false;
-      return this.doorPowers(rec.payload.kind === "remove" ? "door:remove" : "door:invite").assent;
-    }
-    /** §9.7 v0.54: holder derives from powers — the convenor's iff any is held. */
     /**
-     * `from` (Q524) says where a power *newly held* came from; a power that was
-     * already held keeps the source it arrived with, and one being given up
-     * loses its source with it. Defaulting to 'founding' is right for every
-     * caller but the carried reserve motion, which is the only way a power
-     * reaches the convenor from outside.
+     * **The fold is `fold.ts`** (Q1352 (s)): every event this module knows,
+     * turned into state. It is called from two places and only two — `emit`,
+     * one method up, after the entry is in the log, and `replay`, which calls
+     * it directly with no log push because the entry is already there. That
+     * relationship is why nothing in the fold may emit (Q1034).
      */
-    setPowers(st, powers, from = "founding") {
-      const was = st.powers;
-      st.powerFrom = {
-        unilateral: !powers.unilateral ? null : was.unilateral ? st.powerFrom.unilateral : from,
-        assent: !powers.assent ? null : was.assent ? st.powerFrom.assent : from
-      };
-      st.powers = powers;
-      st.holder = holderOf(powers);
-      st.pendingRelease = { unilateral: false, assent: false };
-    }
-    freshMember(id, person, invitedAtT, arrivedAtT, arrival) {
-      const state = {
-        id,
-        person,
-        invitedAtT,
-        arrivedAtT,
-        arrival,
-        removed: false,
-        removedBy: null,
-        lapsed: false,
-        lapseWarned: false,
-        lapseWarnedLead: null,
-        nameSet: false,
-        pictureSet: false,
-        lastActivityT: arrivedAtT ?? invitedAtT,
-        okOwed: /* @__PURE__ */ new Set(),
-        okGiven: /* @__PURE__ */ new Set(),
-        releasesOwed: /* @__PURE__ */ new Set(),
-        releasesGiven: /* @__PURE__ */ new Set(),
-        amendmentsOwed: /* @__PURE__ */ new Set(),
-        amendmentsGiven: /* @__PURE__ */ new Set(),
-        mailGaveUpOwed: /* @__PURE__ */ new Set(),
-        mailGaveUpGiven: /* @__PURE__ */ new Set(),
-        mailGaveUp: false,
-        invitationExpired: false,
-        closingAck: null
-      };
-      return this.withPerson(state);
-    }
-    /**
-     * **The row, read live** (decision 1253): `email`, `name`, `picture` and
-     * `erased` are enumerable getters on the fold's own record, resolving
-     * through `people` on every read — so a reader holding a record sees an
-     * erasure the moment the row goes, the record stays the one object the
-     * fold mutates (a reference taken before a tick is still good after it),
-     * and a spread, `JSON.stringify` or a deep-equal sees four plain fields.
-     */
-    withPerson(state) {
-      const people = this.people;
-      const field = (key) => ({
-        enumerable: true,
-        get() {
-          return resolvePerson(people, this.person)[key];
-        }
-      });
-      return Object.defineProperties(state, {
-        email: field("email"),
-        name: field("name"),
-        picture: field("picture"),
-        erased: field("erased")
-      });
-    }
-    foldSet(id, value, by, t) {
-      const st = this.readValue(id, value);
-      st.collecting = false;
-      st.value = value;
-      st.settledBy = by === "crown" ? "crown" : "convenor";
-      st.settledAtT = t;
-      st.returned = [];
-    }
-    /**
-     * **The fold's one gate on a value** (Q1329): the setting it names must be
-     * in the catalogue and the value must be the shape its entry validates —
-     * on replay as on a command, since a command validated it once and replay
-     * is the only road a value written by an older build can take. Where
-     * `foldLegacy` once read the pre-entry-94 shapes onto today's, an unknown
-     * id or a stray key now throws with its name, and the host quarantines
-     * the document (`DocStore.loadAll`). Returns the setting's state.
-     */
-    readValue(id, value) {
-      const st = this.settings.get(id);
-      if (st === void 0) throw new Error(`unknown setting '${id}' (Q1329: no legacy id is read)`);
-      const err = validateFor(entryOf(id), value);
-      if (err !== null) throw new Error(`${err} (Q1329: no legacy value is read)`);
-      return st;
+    apply(event, seq) {
+      apply(this.fold, event, seq);
     }
     /** What an act on the membership costs, as the document stands — unset
      *  reads as the most protective rung. */
@@ -1955,44 +2460,12 @@ var CONSTITUTION = (() => {
       return v?.price ?? (id === "admission" ? "assembly" : "consent");
     }
     touch(member, t) {
-      const m = this.members.get(member);
-      if (m) {
-        m.lastActivityT = t;
-        m.lapseWarned = false;
-        m.lapseWarnedLead = null;
-      }
-      if (member === this.convenor.id) {
-        this.convenor.lastActivityT = t;
-        this.convenor.lapseWarned = false;
-        this.convenor.lapseWarnedLead = null;
-      }
+      touch(this.fold, member, t);
     }
-    // -------------------------------------------------------------------------
-    // Threshold anchors (§4.3): seeded at constituted, reseeded when the room's
-    // pacing settings settle late (prospective application, NOTES.md).
-    computeAnchors(t) {
-      const bar = this.settings.get("bar").value;
-      const pace = this.settings.get("pace").value;
-      const ending = this.settings.get("ending").value;
-      const endPct = bar ? bar.pct : 95;
-      const endT = ending ? ending.endsAtMs : null;
-      const shape = endT !== null && pace?.shape === "ramp" ? "ramp" : "fixed";
-      return seedAnchors(
-        shape,
-        shape === "ramp" ? pace.startPct : null,
-        endPct,
-        t,
-        endT
-      );
-    }
-    reseedAnchorsIfLive(t, setting) {
-      if (this.constitutedT === null || this.anchors === null) return;
-      if (setting === "ending") {
-        const ending = this.settings.get("ending").value;
-        this.anchors = reAnchor(this.anchors, t, ending ? ending.endsAtMs : null);
-      } else if (setting === "bar" || setting === "pace") {
-        this.anchors = this.computeAnchors(t);
-      }
+    /** Does this motion's target sit behind the crown's assent (§9.7)? The fold's
+     *  own read, kept as a name here because the motions ask it too. */
+    reservedTarget(rec) {
+      return reservedTarget(this.fold, rec);
     }
     // -------------------------------------------------------------------------
     // Commands — the pre-start free hand (§9.6a)
@@ -2553,175 +3026,50 @@ var CONSTITUTION = (() => {
       this.emit({ type: "member-seen", t, member });
       return true;
     }
+    // -------------------------------------------------------------------------
+    // The acknowledgements — what a member is owed and the OK that answers it
+    // — are `owed.ts` (Q1352 (q)): the audience rules, the batching and every
+    // ruling behind them (Q530, entry 162, D47, E34) are written there. The
+    // session hands that family exactly the fields it reads, live, and keeps
+    // these names so that the commands (`give-ok`'s siblings) and the callers
+    // in this file do not move.
+    owedState() {
+      return {
+        members: this.members,
+        convenorId: this.convenor.id,
+        people: this.people,
+        closed: this.closedFlag,
+        lastReleaseT: this.lastReleaseT,
+        lastReleaseBatch: this.lastReleaseBatch,
+        nextReleaseN: this.nextReleaseN,
+        nextMailGiveUpN: this.nextMailGiveUpN,
+        emit: (e) => this.emit(e),
+        requireOpen: (what) => this.requireOpen(what)
+      };
+    }
     oweOks(t, setting) {
-      for (const m of this.members.values()) {
-        if (m.arrivedAtT === null || m.removed) continue;
-        if (m.id === this.convenor.id) continue;
-        if (m.okOwed.has(setting)) continue;
-        this.emit({ type: "ok-owed", t, member: m.id, settings: [setting] });
-      }
+      oweOks(this.owedState(), t, setting);
     }
-    /**
-     * **Everything one act lays down is one news entry and one OK** (Ed,
-     * 2026-08-27, entry 162; Q1013, extending R-044). SPEC §9.7 rule 3 has said
-     * since R-044 that laying a power down is news; what entry 162 adds is the
-     * batching, because 158 gives 🍾 a table of zone switches and one press can
-     * lay down about thirty-four powers — thirty-four separate acknowledgements
-     * landing in every rail at the moment the document opens is the flood that
-     * makes members stop reading acknowledgements at all.
-     *
-     * **The audience rule is `oweOks`'s**, one method up: every member, skipping
-     * the un-arrived, the removed and the convenor. The convenor is skipped for
-     * `oweOks`'s stated reason and for a stronger one here — the founder is the
-     * *actor*, and E9's other half, *the actor*, is already served by the power
-     * card's own confirmation. That is Q918's reading (b) on the cell and (c) on
-     * the audience; **this does not settle Q918**, and it is one predicate to
-     * reverse if Ed rules otherwise. The one skip of `oweOks` with no analogue
-     * here is `okOwed.has(setting)`: every batch carries a fresh id, so there is
-     * nothing to be already owed — the omission is deliberate, not an oversight.
-     *
-     * **A release joins an open batch rather than always opening one**: Ed's
-     * rule is that releases sharing one event, or one `t` and one actor, are one
-     * group, and `relinquish` admits only the convenor as actor, so the actor
-     * half needs no field. On a **solo document** the loop emits nothing — the
-     * founder is the only member and is the actor — and then nothing is
-     * recomputed either, `lastReleaseT` included, since all three fields move in
-     * the fold. A later release therefore opens a fresh batch, which is right: a
-     * call that told nobody anything has no group for anything to join
-     * (the shape of Q835 — the page assumed a room bigger than one).
-     */
     oweReleases(t, releases) {
-      if (releases.length === 0) return;
-      const batch = this.lastReleaseT === t && this.lastReleaseBatch !== null ? this.lastReleaseBatch : `rel-${this.nextReleaseN}`;
-      for (const m of this.members.values()) {
-        if (m.arrivedAtT === null || m.removed) continue;
-        if (m.id === this.convenor.id) continue;
-        this.emit({ type: "release-owed", t, batch, member: m.id, releases });
-      }
+      oweReleases(this.owedState(), t, releases);
     }
-    /**
-     * The OK on a release batch (entry 162) — `giveOk`'s posture exactly: it
-     * refuses nothing it can simply ignore, so a batch that is not owed to this
-     * member returns silently rather than throwing at a page that was a poll
-     * behind.
-     */
     ackRelease(t, member, batch) {
-      this.requireOpen("acknowledging");
-      const m = this.members.get(member);
-      if (!m) throw new Error(`unknown member '${member}'`);
-      if (!m.releasesOwed.has(batch)) return;
-      this.emit({ type: "release-ok", t, batch, member });
+      ackRelease(this.owedState(), t, member, batch);
     }
-    /**
-     * **A text amendment is news beside the clause it changed** (Ed, 2026-08-29,
-     * decision D47, answering Q1021; SURFACE E35, R-058). `oweReleases`' other
-     * sibling, and **the audience rule is `oweOks`'s** exactly: every member,
-     * skipping the un-arrived, the removed and the convenor, who is the actor.
-     *
-     * **Two differences from `oweReleases`, and both are the ruling.** There is
-     * **no batching and no join of an open group**: entry 162 groups because one
-     * press of 🍾 lays down thirty-four powers that belong to no clause, where
-     * here the card *is* the clause — so two amendments at two places are two
-     * cards, and collapsing them is precisely what the ruling reverses. And
-     * there is **no skip for something already owed**: every amendment carries
-     * its own candidate id, so there is nothing to be already owed — the same
-     * deliberate omission `oweReleases` records for its batch ids.
-     *
-     * **Why it is called from `recordTextAmendment` and not from the fold.**
-     * `replay` calls `apply` directly and `emit` pushes to `this.log`, so an
-     * owing performed in a fold appends events to every session that replays
-     * that log — the log growing every time it is read. That is entry 162's rule
-     * and this is it kept; the reading it replaces (📄's own key through
-     * `oweOks`) had the call in the `text-amended` fold and so had the bug.
-     */
     oweAmendment(t, candidate) {
-      for (const m of this.members.values()) {
-        if (m.arrivedAtT === null || m.removed) continue;
-        if (m.id === this.convenor.id) continue;
-        this.emit({ type: "amendment-owed", t, candidate, member: m.id });
-      }
+      oweAmendment(this.owedState(), t, candidate);
     }
-    /**
-     * The OK on one text amendment (SURFACE E35) — `ackRelease`'s posture
-     * exactly: an amendment this member is not owed returns silently rather than
-     * throwing at a page that was a poll behind.
-     */
     ackAmendment(t, member, candidate) {
-      this.requireOpen("acknowledging");
-      const m = this.members.get(member);
-      if (!m) throw new Error(`unknown member '${member}'`);
-      if (!m.amendmentsOwed.has(candidate)) return;
-      this.emit({ type: "amendment-ok", t, candidate, member });
+      ackAmendment(this.owedState(), t, member, candidate);
     }
-    /**
-     * **A mail that gave up is told** (SURFACE E34, Q947 (c), backlog 173).
-     * `oweReleases`' sibling: the outbox hands over the whole of one sender
-     * pass's give-ups at once, and one pass is the act — entry 162's rule is
-     * that the boundary of the group is the act, so a pass that killed three
-     * mails is one batch, one card and one OK.
-     *
-     * **Two differences from `oweReleases`, both deliberate.** The convenor is
-     * *not* skipped: there they are the actor, and here nobody in the room is —
-     * E34's audience is *the founder; every member*. And where the audience is
-     * empty the event is still emitted once with `member: null`, because the
-     * addresses are a fact about the register that the founder's ✉️ row reads
-     * whether or not there was anybody to tell.
-     *
-     * The unarrived skip stays exactly as it is, and it is the whole of E34's
-     * **never the invitee**: an invitee has `arrivedAtT === null` by definition,
-     * and they are precisely the person the mail could not reach.
-     *
-     * **A give-up after the close owes nobody.** The closing notices are mailed
-     * from the close itself, so this is the one owing in the file that can be
-     * raised on a shut document — and every acknowledgement in the file
-     * (`giveOk`, `ackRelease`, `ackMailGaveUp`) refuses one, so a card owed here
-     * would sit in the rail for ever behind an OK that throws. The batch is
-     * still recorded: it falls through to the told-nobody arm, which is exactly
-     * the shape for *the addresses are a fact, and there is nobody to tell*.
-     *
-     * The addresses are de-duplicated: one pass may kill two mails to the same
-     * person (two invitations, or an invitation and a lapse warning), and the
-     * card lists what it is given.
-     */
     mailGaveUp(t, addresses) {
-      if (addresses.length === 0) return;
-      const list = [];
-      for (const a of addresses) {
-        const person = this.people.byEmail(a);
-        if (person !== null && !list.includes(person)) list.push(person);
-      }
-      if (list.length === 0) return;
-      const batch = `mgu-${this.nextMailGiveUpN}`;
-      let told = false;
-      for (const m of this.closedFlag ? [] : [...this.members.values()]) {
-        if (m.arrivedAtT === null || m.removed) continue;
-        told = true;
-        this.emit({ type: "mail-gave-up", t, batch, member: m.id, people: list });
-      }
-      if (!told) this.emit({ type: "mail-gave-up", t, batch, member: null, people: list });
+      mailGaveUp(this.owedState(), t, addresses);
     }
-    /** The OK on one pass's dead mail — `ackRelease`'s posture exactly: a batch
-     *  this member is not owed returns silently rather than throwing at a page
-     *  that was a poll behind. */
     ackMailGaveUp(t, member, batch) {
-      this.requireOpen("acknowledging");
-      const m = this.members.get(member);
-      if (!m) throw new Error(`unknown member '${member}'`);
-      if (!m.mailGaveUpOwed.has(batch)) return;
-      this.emit({ type: "mail-gave-up-ok", t, batch, member });
+      ackMailGaveUp(this.owedState(), t, member, batch);
     }
-    /**
-     * 📨 — put the invitation back in the queue (SURFACE E34). Only an invitee
-     * can be re-sent to: somebody who has arrived has the document, and somebody
-     * who is gone is not being invited to anything. The re-send is an ordinary
-     * queued mail from there on, and if it gives up too a fresh batch is raised.
-     */
     resendInvite(t, member, by) {
-      this.requireOpen("re-sending an invitation");
-      const m = this.members.get(member);
-      if (!m || m.removed) throw new Error(`unknown member '${member}'`);
-      if (m.arrivedAtT !== null) throw new Error("they are already here — there is nothing to re-send");
-      this.emit({ type: "mail-resent", t, member, by });
+      resendInvite(this.owedState(), t, member, by);
     }
     afterRosterChange(t, cause, member) {
       const shifted = MANAGED.filter((id) => {
@@ -2745,343 +3093,93 @@ var CONSTITUTION = (() => {
     }
     // -------------------------------------------------------------------------
     // Motions (§9.6, v0.48): the one act by which a settled document changes
-    // its own rules. The route is a fact about the setting.
-    openMotion(t, by, input, why) {
-      this.requireOpen("a motion");
-      if (this.constitutedT === null) {
-        throw new Error("before the start nothing is amended — only set (§9.6a)");
-      }
-      const mover = this.members.get(by);
-      if (!mover || !inE(mover)) throw new Error(`'${by}' is not an arrived member`);
-      let route;
-      let payload;
-      if (input.kind === "invite") {
-        this.requireEmailFree(input.email);
-        const person = this.personFor(input.email);
-        this.people.set(person, { email: input.email });
-        payload = { kind: "invite", person };
-      } else payload = input;
-      if (payload.kind === "set") {
-        const entry = entryOf(payload.setting);
-        if (entry.kind === "personal") throw new Error(`${payload.setting} is yours alone (§9.0c)`);
-        if (payload.setting === "startingText" || !this.settings.has(payload.setting)) {
-          throw new Error(`'${payload.setting}' is not moved this way`);
-        }
-        const st = this.settings.get(payload.setting);
-        if (st.value === null) throw new Error(`'${payload.setting}' has no settled value to move against`);
-        const err = validateFor(entry, payload.value);
-        if (err) throw new Error(err);
-        if (eqValue(payload.value, st.value)) {
-          throw new Error("the motion proposes what already stands");
-        }
-        route = motionRouteOf(entry, payload.value, st.value);
-      } else if (payload.kind === "reserve") {
-        const re = entryOf(payload.setting);
-        if (re.kind === "personal") {
-          throw new Error(`'${payload.setting}' is never held, so it cannot be reserved (§9.7)`);
-        }
-        if (payload.setting === "admission") {
-          throw new Error("the register's crown is the applications setting's -- reserve that (§9.7½)");
-        }
-        const rst = this.settings.get(payload.setting);
-        const want = payload.power ?? "both";
-        const already = want === "both" ? rst.powers.unilateral && rst.powers.assent : rst.powers[want];
-        if (already) {
-          throw new Error(`'${payload.setting}' — ${want === "both" ? "both powers are" : `the ${want} power is`} already the convenor's`);
-        }
-        route = "constitutional";
-      } else if (payload.kind === "invite") {
-        const price = this.priceOf("admission");
-        if (price === "pen") throw new Error("admission is at ✒️ — invite directly, nothing to propose (§9.7½)");
-        route = price === "assembly" ? "constitutional" : "ordinary";
-      } else if (payload.kind === "remove") {
-        const target = this.members.get(payload.member);
-        if (!target || !inE(target)) throw new Error(`'${payload.member}' is not a member`);
-        route = this.priceOf("removal") === "proposal" ? "ordinary" : "constitutional";
-      } else {
-        route = this.priceOf("admission") === "assembly" ? "constitutional" : "ordinary";
-      }
-      const twin = this.runningTwin(payload);
-      if (twin !== null) {
-        throw new Error(`already put — '${twin}' proposes the same; answer it instead (§9.6)`);
-      }
-      if (route === "constitutional" && this.heldOutBy(by)) {
-        throw new Error("one 🏛️ out per member at a time (§9.6)");
-      }
-      const id = `mo-${this.nextMotionN}`;
-      const e = {
-        type: "motion-opened",
-        t,
-        motion: id,
-        by,
-        payload,
-        route,
-        stake: route === "ordinary" ? 1 : 0
+    // its own rules. The route is a fact about the setting. The family itself
+    // lives in motions.ts since Q1352 (r); what stays here is the host it reads
+    // the session through, and one delegate per name the callers know.
+    /**
+     * The motions' view of the session — **getters, not a snapshot**, unlike
+     * `owedState()`: the settle loop reads `nextCrownN` and `nextMemberN` again
+     * after emitting, and a stale counter would mint an id twice.
+     */
+    motionHost() {
+      const constitutedT = () => this.constitutedT;
+      const members = () => this.members;
+      const motionRecords = () => this.motions;
+      const crownQuestions = () => this.crownQuestions;
+      const settings = () => this.settings;
+      const people = () => this.people;
+      const crownLapsed = () => this.crownLapsedFlag;
+      const nextMotionN = () => this.nextMotionN;
+      const nextCrownN = () => this.nextCrownN;
+      const nextMemberN = () => this.nextMemberN;
+      return {
+        get constitutedT() {
+          return constitutedT();
+        },
+        get members() {
+          return members();
+        },
+        get motions() {
+          return motionRecords();
+        },
+        get crownQuestions() {
+          return crownQuestions();
+        },
+        get settings() {
+          return settings();
+        },
+        get people() {
+          return people();
+        },
+        get crownLapsed() {
+          return crownLapsed();
+        },
+        get nextMotionN() {
+          return nextMotionN();
+        },
+        get nextCrownN() {
+          return nextCrownN();
+        },
+        get nextMemberN() {
+          return nextMemberN();
+        },
+        emit: (e) => this.emit(e),
+        requireOpen: (what) => this.requireOpen(what),
+        priceOf: (id) => this.priceOf(id),
+        reservedTarget: (rec) => this.reservedTarget(rec),
+        requireEmailFree: (email) => this.requireEmailFree(email),
+        personFor: (email) => this.personFor(email),
+        convenorSeatVacant: () => this.convenorSeatVacant(),
+        afterRosterChange: (t, cause, member) => this.afterRosterChange(t, cause, member),
+        rereadLapse: (t) => this.rereadLapse(t)
       };
-      if (why !== void 0 && why !== "") e.why = why;
-      this.emit(e);
-      if (route === "constitutional") {
-        this.emit({ type: "motion-answer", t, motion: id, member: by, answer: "accept" });
-        this.maybeSettleMotions(t);
-      }
-      return id;
+    }
+    openMotion(t, by, input, why) {
+      return openMotion(this.motionHost(), t, by, input, why);
     }
     answerMotion(t, member, motion, answer) {
-      this.requireOpen("answering a motion");
-      const rec = this.motions.get(motion);
-      if (!rec || rec.status !== "running") throw new Error("the motion is not running");
-      if (rec.route !== "constitutional") {
-        throw new Error("an ordinary motion is judged as a race, not answered (§9.6)");
-      }
-      const m = this.members.get(member);
-      if (!m || !motionElectorateOf([m]).length) {
-        throw new Error(`'${member}' is not in the motion's electorate`);
-      }
-      if (this.motionExcludes(rec) === member) {
-        throw new Error("the subject of a removal is not asked on this route (🥾 Q401a) — they see it, and it settles without them");
-      }
-      this.emit({ type: "motion-answer", t, motion, member, answer });
-      this.maybeSettleMotions(t);
+      answerMotion(this.motionHost(), t, member, motion, answer);
     }
     withdrawMotion(t, member, motion) {
-      this.requireOpen("withdrawing");
-      const rec = this.motions.get(motion);
-      if (!rec || rec.status !== "running") throw new Error("the motion is not running");
-      if (rec.by !== member) throw new Error("only the mover withdraws a motion");
-      this.emit({ type: "motion-withdrawn", t, motion });
+      withdrawMotion(this.motionHost(), t, member, motion);
     }
-    /**
-     * The ordinary-route seam: this package never runs races. The host — the
-     * engine, the sim, a mock — judges the motion at the bar and reports the
-     * outcome here; post-368 the caller is an engine-core race over the value.
-     */
     adjudicateOrdinaryMotion(t, motion, outcome) {
-      this.requireOpen("a motion");
-      const rec = this.motions.get(motion);
-      if (!rec || rec.status !== "running") throw new Error("the motion is not running");
-      if (rec.route !== "ordinary") {
-        throw new Error("a constitutional motion settles by unanimity, not adjudication");
-      }
-      this.emit({ type: "motion-adjudicated", t, motion, outcome });
-      const after = this.motions.get(motion).status;
-      if (after === "awaiting-crown") {
-        this.emit({
-          type: "crown-question-opened",
-          t,
-          question: `cq-${this.nextCrownN}`,
-          motion: rec.id
-        });
-      } else if (after === "carried") {
-        this.settleCarriedEffects(
-          t,
-          rec,
-          /* everyoneHadSay */
-          false
-        );
-      } else if (after === "held") {
-        this.settleHeldEffects(t, rec);
-      }
+      adjudicateOrdinaryMotion(this.motionHost(), t, motion, outcome);
     }
     answerCrownQuestion(t, question, outcome) {
-      this.requireOpen("the 👑 question");
-      const q = this.crownQuestions.get(question);
-      if (!q || q.status !== "pending") throw new Error("no such pending 👑 question");
-      if (this.crownLapsedFlag) throw new Error("the crown has lapsed — the question passes by itself");
-      this.emit({ type: "crown-question-answered", t, question, outcome });
-      if (q.motion === null) return;
-      const rec = this.motions.get(q.motion);
-      if (outcome === "accept") {
-        this.settleCarriedEffects(t, rec, rec.route === "constitutional");
-      } else {
-        this.settleHeldEffects(t, rec);
-      }
+      answerCrownQuestion(this.motionHost(), t, question, outcome);
     }
-    /** Under `assembly`, the subject of a removal stands outside its electorate
-     *  (Q401a) — they see the motion, and it settles without them; under
-     *  `consent` their own answer counts, which is what makes it leave-only.
-     *  Read live, like the electorate itself: a price change mid-motion is a
-     *  ground shift. */
-    motionExcludes(rec) {
-      return rec.payload.kind === "remove" && this.priceOf("removal") === "assembly" ? rec.payload.member : null;
-    }
-    heldOutBy(member) {
-      for (const rec of this.motions.values()) {
-        if (rec.by === member && rec.route === "constitutional" && (rec.status === "running" || rec.status === "awaiting-crown")) {
-          return true;
-        }
-      }
-      return false;
-    }
-    /**
-     * **A carry on a setting is a ground shift on every rival still running on
-     * it** (Ed, 2026-09-12, Q1348; SPEC §9.6, R-105): once the value moved
-     * from no longer stands, every answer on a rival was given against the
-     * wrong baseline, so the module wipes them but the mover's and the motion
-     * is served to everyone as a fresh ask. "The ground moved" is the same
-     * fact whoever moved it, so the Founder's ✒️ and an ordinary carry shift
-     * the rivals exactly as a unanimity carry does — `cause` says which.
-     * Called after the value has landed, never from a fold; `except` is the
-     * motion that moved it, which is settled and is not its own rival.
-     * Running motions only: one at `awaiting-crown` has already carried by
-     * unanimity and waits on nothing but the crown's assent.
-     */
-    shiftRivals(t, setting, cause, except) {
-      for (const rec of this.motions.values()) {
-        if (rec.id === except) continue;
-        if (rec.status !== "running" || rec.route !== "constitutional") continue;
-        if (rec.payload.kind !== "set" || rec.payload.setting !== setting) continue;
-        this.emit({ type: "motion-ground-shifted", t, motion: rec.id, cause });
-      }
-    }
-    /** The live motion already putting exactly this payload, if any (Q1348). */
-    runningTwin(payload) {
-      for (const [id, rec] of this.motions) {
-        if (rec.status !== "running" && rec.status !== "awaiting-crown") continue;
-        if (samePayload(rec.payload, payload)) return id;
-      }
-      return null;
-    }
-    /**
-     * The settle check (v0.48): a constitutional motion carries at the moment
-     * every currently active member — E, evaluated live (R-088) — stands
-     * at accept or abstain with no keep standing. Re-run on every answer and
-     * every roster event; a standing keep blocks but does not kill.
-     */
     maybeSettleMotions(t) {
-      let settled = true;
-      while (settled) {
-        settled = false;
-        for (const rec of this.motions.values()) {
-          if (rec.status !== "running" || rec.route !== "constitutional") continue;
-          const excl = this.motionExcludes(rec);
-          const electorate = motionElectorateOf(this.members.values()).filter((m2) => m2.id !== excl);
-          if (electorate.length === 0) continue;
-          const answers = electorate.map((m) => rec.answers.get(m.id));
-          if (answers.some((a) => a === void 0 || a === "keep")) continue;
-          if (!answers.some((a) => a === "accept")) continue;
-          if (this.reservedTarget(rec)) {
-            this.emit({
-              type: "crown-question-opened",
-              t,
-              question: `cq-${this.nextCrownN}`,
-              motion: rec.id
-            });
-            settled = true;
-            break;
-          }
-          this.emit({ type: "motion-carried", t, motion: rec.id });
-          this.settleCarriedEffects(t, rec, true);
-          settled = true;
-          break;
-        }
-      }
+      maybeSettleMotions(this.motionHost(), t);
     }
-    /** Follow-ons of a carried motion: membership events and owed OKs. */
+    shiftRivals(t, setting, cause, except) {
+      shiftRivals(this.motionHost(), t, setting, cause, except);
+    }
     settleCarriedEffects(t, rec, everyoneHadSay) {
-      if (rec.payload.kind === "invite") {
-        const id = `m-${this.nextMemberN}`;
-        this.emit({
-          type: "member-invited",
-          t,
-          member: id,
-          person: rec.payload.person,
-          viaMotion: rec.id
-        });
-      } else if (rec.payload.kind === "remove") {
-        const target = rec.payload.member;
-        const wasInE = inE(this.members.get(target));
-        this.emit({ type: "member-removed", t, member: target, viaMotion: rec.id });
-        if (wasInE) this.afterRosterChange(t, "departure", target);
-        this.crownSeatVacated(t);
-      } else if (rec.payload.kind === "set" && CONSTITUTIONAL.has(rec.payload.setting)) {
-        for (const m of this.members.values()) {
-          if (m.removed) continue;
-          if (m.arrivedAtT === null) continue;
-          if (everyoneHadSay && rec.answers.has(m.id)) continue;
-          if (m.okOwed.has(rec.payload.setting)) continue;
-          this.emit({ type: "ok-owed", t, member: m.id, settings: [rec.payload.setting] });
-        }
-        if (rec.payload.setting === "lapse") this.rereadLapse(t);
-      }
-      if (rec.payload.kind === "set") {
-        this.shiftRivals(t, rec.payload.setting, rec.id, rec.id);
-      }
-      if (rec.payload.kind === "admit") {
-        const id = `m-${this.nextMemberN}`;
-        this.emit({
-          type: "member-admitted",
-          t,
-          applicant: rec.payload.applicant,
-          member: id
-        });
-        this.afterRosterChange(t, "arrival", id);
-      }
+      settleCarriedEffects(this.motionHost(), t, rec, everyoneHadSay);
     }
-    /**
-     * A joiner used to be owed an OK on every settled constitutional setting
-     * they had no say in — R-016's inheritance clause. **Reversed** (Ed,
-     * 2026-08-25): *a setting that predates you is simply what the document
-     * says; a power handed to you is news addressed to you.* Nothing is owed
-     * on arrival; `oweOks` covers everything set or changed after it, and it
-     * already skips whoever has not arrived.
-     */
-    /**
-     * **A park with no convenor auto-passes, the way a lapse does** (Ed,
-     * 2026-08-29, R-060). A text adoption parked under 🛡️ on the Text blocks
-     * every text adoption in the document until it is answered, and the 👑
-     * question is served only to the convenor — so a seat vacated while a park
-     * stands would serve the question to somebody who has gone, with no clock
-     * left to auto-pass it, and the room's drafting would stop for the life of
-     * the document.
-     *
-     * Three things it does deliberately, each of which a later reader might
-     * try to "fix":
-     *
-     * - **It reuses `crown-question-auto-passed` rather than inventing a
-     *   kind.** The ruling is *the way a lapse does*, and that is the event a
-     *   lapse emits: the fold already sets `auto-passed` and treats it as
-     *   accepted, and the bridge's cursor walk already turns it into
-     *   `engine.assent(t, parked, 'accept')`. A new kind would move the log's
-     *   rolling hash and need a bridge arm to do what an arm already does.
-     *   What it adds is the event's `cause: 'vacancy'` (Q1033), so the record
-     *   says the seat was vacant rather than that the convenor agreed — a
-     *   lapse carries no cause and reads as it always did.
-     * - **It does not emit `crown-lapsed`.** A vacancy is not a lapse:
-     *   `crownLapsedFlag` is about a crown that may wake up again
-     *   (`member-returned` revives it) and a removed member does not return to
-     *   the seat. The shield goes down through `convenorSeatVacant()` instead.
-     * - **Every pending question, motion-backed ones included** (Q1033, Ed
-     *   2026-08-29: *auto-pass them too, exactly as the lapse case does*).
-     *   Until that ruling this was a *narrowing* of `tick`'s lapse loop to
-     *   text questions, on the ground that a carried invitation or removal
-     *   applying without assent because the convenor left was a governance
-     *   consequence nobody had ruled on. Ed's ground for the reversal is the
-     *   one to keep: a seat nobody occupies cannot refuse anything, and a
-     *   motion the room carried should land. So it is the lapse loop now —
-     *   `settleCarriedEffects` runs for each, a carried removal's own arm
-     *   calling back in here for the questions it did not reach.
-     *
-     * Two call sites, both the last word of an act that may have emptied the
-     * seat: the carried `remove` arm of `settleCarriedEffects` and `resign`
-     * (entry 248). It guards itself on `convenorSeatVacant()`, so a caller
-     * never asks whether the member who just left was the convenor.
-     */
     crownSeatVacated(t) {
-      if (!this.convenorSeatVacant()) return;
-      for (const q of [...this.crownQuestions.values()]) {
-        if (q.status !== "pending") continue;
-        this.emit({ type: "crown-question-auto-passed", t, question: q.id, cause: "vacancy" });
-        if (q.motion !== null) {
-          const mrec = this.motions.get(q.motion);
-          this.settleCarriedEffects(t, mrec, mrec.route === "constitutional");
-        }
-      }
-    }
-    /** Follow-ons of a held motion: a refused application is told so (§9.7½). */
-    settleHeldEffects(t, rec) {
-      if (rec.payload.kind === "admit") {
-        this.emit({ type: "application-refused", t, applicant: rec.payload.applicant });
-      }
+      crownSeatVacated(this.motionHost(), t);
     }
     // -------------------------------------------------------------------------
     // Presence and the lapse clocks (§9.5, §9.5a). There is no sign-out and no
@@ -3306,7 +3404,7 @@ var CONSTITUTION = (() => {
     /** A door's crown pair (entry 94), lapse ignored — a sleeping crown still
      *  holds; callers check the lapse where it bites. */
     doorPowers(door) {
-      return { ...this.settings.get(door).powers };
+      return doorPowers(this.fold, door);
     }
     /**
      * The door's pen as a gate, and **exactly the act's own test** (Q812): the
@@ -3450,11 +3548,6 @@ var CONSTITUTION = (() => {
     /** The row holding this address, or the next id to hold it (minted, not yet written). */
     personFor(email) {
       return this.people.byEmail(email) ?? `p-${this.nextPersonN}`;
-    }
-    /** The fold's half of minting: the counter is rebuilt from every id the log names. */
-    notePerson(id) {
-      const m = /^p-(\d+)$/.exec(id);
-      if (m !== null) this.nextPersonN = Math.max(this.nextPersonN, Number(m[1]) + 1);
     }
     /** One person's fields as they stand now — null throughout once erased. */
     personOf(id) {
@@ -3668,23 +3761,6 @@ var CONSTITUTION = (() => {
       }).map((entry) => ({ seq: entry.seq, hash: entry.hash }));
     }
   };
-  function samePayload(a, b) {
-    if (a.kind !== b.kind) return false;
-    switch (a.kind) {
-      case "set":
-        return b.kind === "set" && a.setting === b.setting && eqValue(a.value, b.value);
-      case "invite":
-        return b.kind === "invite" && a.person === b.person;
-      case "remove":
-        return b.kind === "remove" && a.member === b.member;
-      case "admit":
-        return b.kind === "admit" && a.applicant === b.applicant;
-      case "reserve":
-        return b.kind === "reserve" && a.setting === b.setting && (a.power ?? "both") === (b.power ?? "both");
-      default:
-        return false;
-    }
-  }
 
   // src/meaning.ts
   var BAR_RUNGS = [
@@ -3923,6 +3999,7 @@ var CONSTITUTION = (() => {
         } : rec.payload,
         why: rec.why,
         status: rec.status,
+        moot: rec.moot,
         mine: rec.by === member,
         at: rec.settledAtT,
         from: s.amendedFrom(rec.id),
