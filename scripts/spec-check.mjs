@@ -418,11 +418,26 @@ function checkMarks() {
   else {
     const pinKinds = [...live[1].matchAll(/kind === '([a-z]+)'/g)].map((x) => x[1]);
     for (const r of rows) {
-      if (r['pins?'] === 'if unread') continue;
+      if (/^if unread/.test(r['pins?'])) continue;
       const pins = /^yes/.test(r['pins?']);
       const inLive = pinKinds.includes(r.kind) || r.kind === 'adopted';
       if (pins !== inLive) find('marks', `${r.kind}: table says pins=${r['pins?']}, the live literal says ${inLive}`);
     }
+    // the two news kinds are skipped above because their cells carry the cap;
+    // `isUnread(g)` in the same literal is what makes them a pinning kind at all
+    if (!/isUnread\(g\)/.test(live[1])) find('marks', 'the live literal no longer pins an unread decision (isUnread) — the ✔/✖ green rows say it does');
+  }
+  // **The news cap** (Q113, Ed 2026-09-14): three, oldest first, one queue over
+  // the band's news entries and the charter's. The table states it in words in
+  // three cells; session.js holds it as one named constant and one demotion.
+  const cap = sess.match(/const NEWS_PIN_CAP = (\d+);/);
+  if (!cap) find('marks', 'NEWS_PIN_CAP not found in session.js — the ✔/✖ green rows say at most three owed decisions pin (Q113)');
+  else if (cap[1] !== '3') find('marks', `NEWS_PIN_CAP is ${cap[1]}, the table says the oldest three (Q113)`);
+  if (!/const owed = pinned\.filter\(\(r\) => r\.news\)[\s\S]{0,200}?owed\.slice\(NEWS_PIN_CAP\)/.test(sess))
+    find('marks', 'layoutQueue: the owed queue is no longer sorted and cut at NEWS_PIN_CAP (Q113)');
+  for (const r of rows) {
+    if (r.kind !== 'adopted' && r.kind !== 'retired') continue;
+    if (!/oldest three/.test(r['pins?'])) find('marks', `${r.kind}: the pins cell does not name the cap — session.js caps owed decisions at NEWS_PIN_CAP (Q113)`);
   }
   if (!/classList\.contains\('mosturgent'\) && !holdsFocus\(r\.el\) && !r\.mine\) continue;/.test(sess)) find('marks', 'the fit-cap exemption literal (🔥 · open · mine) not found');
   for (const r of rows) {
@@ -559,6 +574,11 @@ function checkSetupAlphabet() {
   }
   if (!/mine: st === 'yours'/.test(eo)) find('setup-alphabet', 'entryOf: `mine: st === \'yours\'` not found — the table says yours is force-kept');
   if (!/force-kept/.test(cell('yours', 'pins?'))) find('setup-alphabet', `yours: entryOf force-keeps it (mine), the pins cell says "${cell('yours', 'pins?')}"`);
+  // **One queue over both populations** (Q113, Ed 2026-09-14): a band news entry
+  // is counted against `NEWS_PIN_CAP` beside the charter's unread records, so it
+  // has to say it is one — `pinned` alone cannot tell the rail which kind it is.
+  if (!/news: st === 'news'/.test(eo)) find('setup-alphabet', 'entryOf: `news: st === \'news\'` not found — the rail cannot count a band news entry against NEWS_PIN_CAP (Q113)');
+  if (!/oldest three/.test(cell('news', 'pins?'))) find('setup-alphabet', `news: the pins cell does not name the cap — layoutQueue pins the oldest three owed decisions over both populations (Q113); the cell says "${cell('news', 'pins?')}"`);
   note(`  ${rows.length} states; stateOf tests ${tested.join(' · ')}`);
 }
 
