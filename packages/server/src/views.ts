@@ -119,11 +119,16 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
   // does not, carries the pair the race can still ask — so every lit entry
   // on the page opens a card without a second read. Null where the seat
   // has no hand at all: a closed document, a clerk, a seat out of E.
+  // **One hand, one top** (Q98, Ed 2026-09-14): the size is a const because
+  // `askOn` below prices its pair against the hand of exactly this `n` at
+  // exactly this `t` — a second literal here would be a second denominator,
+  // and the margin would order the two reads against different scales.
+  const HAND = 10;
   const served = ((): { t: number; wallet: ReturnType<typeof api.wallet>; cards: CardView[] } | null => {
     if (engine.closed) return null;
     try {
       const t = foldTime(doc);
-      return { t, wallet: api.wallet(t), cards: api.nextCards(10, t) };
+      return { t, wallet: api.wallet(t), cards: api.nextCards(HAND, t) };
     } catch { return null; }
   })();
   const clauses = engine.races().filter((r) => r.settingId === undefined).map((r) => {
@@ -137,8 +142,11 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
     // would deal — the same blind `CardView` the hand carries, no value,
     // no standing, an author only where `namedAuthor`'s rule already
     // allows — or null once nothing on the race is left to ask this seat.
+    // Its `urgency` is its own value over the hand's top (Q98), so the
+    // margin orders it below the dealt cards and among its fellows; the
+    // hand is memoised per state version, so this costs no second deal.
     const dealt = served !== null && served.cards.some((c) => c.kind === 'edge' && c.raceId === r.id);
-    const ask = served === null || dealt ? null : api.askOn(r.id);
+    const ask = served === null || dealt ? null : api.askOn(r.id, HAND, served.t);
     return {
       id: r.id,
       contested: r.contested,

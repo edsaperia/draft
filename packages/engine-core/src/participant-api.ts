@@ -74,10 +74,13 @@ export interface CardView {
   /** The race of the pair (side A's race on a diagonal) — an id, not a standing. */
   raceId: string;
   /**
-   * How much this judgment is worth to the room relative to the others
-   * served in the same call (stage 8, SPEC §8.1): the pair's routing
-   * value v over the largest v in this feed, so the most pivotal card is
-   * 1.0. A ratio of magnitudes; it says nothing about which way.
+   * How much this judgment is worth to the room against the hand it was
+   * priced beside (stage 8, SPEC §8.1): the pair's routing value v over
+   * the largest v in that hand, so the hand's most pivotal card is 1.0.
+   * A pair from **outside** the hand (`askOn`) carries its own v over the
+   * same top (Q98, Ed 2026-09-14), so it sorts honestly below the hand
+   * and in order among its fellows. A ratio of magnitudes; it says
+   * nothing about which way.
    */
   urgency: number;
   /**
@@ -132,6 +135,24 @@ export interface OutcomeEntry {
   cappedFit?: { iterations: number; gradMax: number };
 }
 
+/** The largest routing value in a hand — what every `urgency` is a fraction of. */
+function handTop(hand: readonly Card[]): number {
+  return hand.reduce((m, c) => Math.max(m, c.value), 0);
+}
+
+/**
+ * One pair's value as a fraction of the hand's best (SPEC §8.1), clamped
+ * to [0, 1] — a pair from outside the hand can in principle out-value
+ * everything dealt, and the scale tops out at the flame either way.
+ * **Where the hand prices nothing, everything reads 1**: with no magnitude
+ * to be relative to there is no order to report, and a hand of zero-valued
+ * cards has read 1 since stage 8 — an outside pair reads 1 for the same
+ * reason, and never below cards worth nothing (Q98, Ed 2026-09-14).
+ */
+function relativeUrgency(value: number, top: number): number {
+  return top > 0 ? Math.max(0, Math.min(1, value / top)) : 1;
+}
+
 export class ParticipantApi {
   constructor(
     private readonly session: Session,
@@ -141,8 +162,8 @@ export class ParticipantApi {
   /** The participant's feed, rendered blind (SPEC §3.1, §8.3). */
   nextCards(n: number, now: number): CardView[] {
     const feed = this.session.feed(this.participantId, n, now);
-    const top = feed.reduce((m, c) => Math.max(m, c.value), 0);
-    return feed.map((card) => this.renderCard(card, top > 0 ? Math.max(0, Math.min(1, card.value / top)) : 1));
+    const top = handTop(feed);
+    return feed.map((card) => this.renderCard(card, relativeUrgency(card.value, top)));
   }
 
   /**
@@ -153,15 +174,31 @@ export class ParticipantApi {
    * to ask needs the per-race answer, and a mark that says *you can act*
    * needs the pair to act on. This is both: the card `feed` would deal on
    * the race, rendered blind exactly as `nextCards` renders it, or null
-   * when the race has nothing left to ask — its `urgency` is 0, since a
-   * pair outside the hand is by construction below everything in it and
-   * has no feed to be relative to. `judge` takes it like any dealt card.
-   * No clock: unlike the feed, which prices races against the threshold
-   * now, whether a pair is left to ask does not depend on the time.
+   * when the race has nothing left to ask. `judge` takes it like any dealt
+   * card.
+   *
+   * **And it carries its own value against the hand's own top** (Q98, Ed
+   * 2026-09-14): the same pivotality `feed` prices pairs by, over the
+   * largest value in the hand of `n` this participant would be dealt at
+   * `now` — so an outside race sorts below the hand it is beside and in
+   * order among the other outside races, rather than tying with them at 0
+   * as it did from Q1202 to here. The reading of `urgency` is unchanged:
+   * the value of the next comparison you would actually be handed. The
+   * hand is the memoised one (`feed`, Q1324), so pricing every race in a
+   * view costs one deal, not one per race; `n` and `now` must be the
+   * caller's own `nextCards` arguments or the two are priced against
+   * different tops.
+   *
+   * No clock in the *pair*: unlike the feed, which prices races against
+   * the threshold now, whether a pair is left to ask does not depend on
+   * the time — and neither does the top, the threshold being a common
+   * divisor that moves no race past another (see `feed`'s memo).
    */
-  askOn(raceId: string): CardView | null {
+  askOn(raceId: string, n: number, now: number): CardView | null {
     const card = this.session.askOn(this.participantId, raceId);
-    return card === null ? null : this.renderCard(card, 0);
+    if (card === null) return null;
+    const top = handTop(this.session.feed(this.participantId, n, now));
+    return this.renderCard(card, relativeUrgency(card.value, top));
   }
 
   /**
