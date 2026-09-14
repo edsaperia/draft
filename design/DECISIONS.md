@@ -6298,3 +6298,18 @@ The walk's thirty-first question, 2026-09-14. **Ruled: yes — let them vote, an
 
 401. **(b only — (a) closed by Ed 2026-08-19, *perfect*, and built: SPEC v0.60; the founder-direct removal path closed 2026-08-26, built as ❌'s ✒️, exile at will and immediate — entry 94, v0.74.)** Under the 🥾 removal setting's **proposal** rung (*ordinary* until v0.74), may the subject judge their own removal race? Today nothing stops them: the module puts no per-race judge restriction, the mock counts every member's judgment, and the engine race (`remove:<id>`) serves them pairs like anybody. Arguments each way: their §3.3-style stake in the outcome is exactly the author's-own-preference case the spec already counts; against, a removal race with the subject judging is the one race whose electorate the constitutional rungs deliberately shape, and the ordinary rung silently un-shapes it.
 
+
+## Q406: the contents list stays at two levels (Ed, 2026-09-14)
+
+The walk's thirty-second question, 2026-09-14. **Ruled: no** — the lvl3 subsections fold in the document (entry 96) and stay out of the contents list, which would roughly double for headings a reader reaches by scrolling a screen. Rejected: listing them with fold triangles; listing them only while their section is open.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 406 | Subsection headings don't fold | 2026-08-19 | partly built — they fold (entry 96); not in the TOC | `sectoggle` |
+
+406. **Subsection headings don't fold**
+
+    **Where it stands (docs pass, 2026-09-07):** partly built — every heading folds, lvl3 subsections included since entry 96 (CLAUDE.md `sectoggle`); the lvl3s are still not in the TOC.
+
+    (raised 2026-08-19, from the heading-click build). Clicking a heading's text folds it — prose headings, the constitution's sections, and the Constitution heading itself — but the lvl3 subsection headings ("Members" in Membership) carry no fold state: the membership body is hand-composed and the fold machinery is keyed per section. Worth folding too, or is one level of folding inside the constitution enough?
+

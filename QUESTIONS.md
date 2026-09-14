@@ -20,7 +20,6 @@ The index, in the section's own order (nothing is pinned — Ed, 2026-09-07, Q12
 | 386 | No surface yet raises a reserve motion | 2026-08-19 | open — unbuilt; the page only displays one | `motionDisplay` |
 | 387 | Reserving the text | 2026-08-19 | parked | SPEC §9.7 |
 | 388 | Individual delegation, foundership transfer, inheritance | 2026-08-19 | parked — out of scope (Ed) | — |
-| 406 | Subsection headings don't fold | 2026-08-19 | partly built — they fold (entry 96); not in the TOC | `sectoggle` |
 | 398 | The multi-candidate ordinary race card | 2026-08-19 | waiting on Ed's design pass | Q390 |
 | 419 | Does the desktop focus order match the reading order? | 2026-08-20 | answered 2026-08-23, waiting on the mobile build | `design/MOBILE.md` §4 |
 | 420 | The narrow form of the margin index | 2026-08-20 | answered, waiting on the mobile build | `design/MOBILE.md` §4; Q657 |
@@ -156,12 +155,6 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 387. **Reserving the text** (Ed, 2026-08-19, kept out of scope *for now*): every change to the document needing the founder's assent to merge — against the spirit of the product, and also exactly how suggested amendments work in many text-editing products, which is why it is parked rather than dead. If it ever lands, it is a fourth thing the 👑 can hold, and the assent step already exists (§9.7).
 
 388. **Individual delegation, foundership transfer, inheritance** (Ed, 2026-08-19, out of scope — *maybe when we make the sequel!*): founders delegating powers to individual members rather than the room; transferring the foundership deliberately or on lapse. The 👑 is a benevolent dictator for life, not a literal monarch — nobody inherits it when the founder lapses (v0.49's auto-assent is the whole story of an absent crown).
-
-406. **Subsection headings don't fold**
-
-    **Where it stands (docs pass, 2026-09-07):** partly built — every heading folds, lvl3 subsections included since entry 96 (CLAUDE.md `sectoggle`); the lvl3s are still not in the TOC.
-
-    (raised 2026-08-19, from the heading-click build). Clicking a heading's text folds it — prose headings, the constitution's sections, and the Constitution heading itself — but the lvl3 subsection headings ("Members" in Membership) carry no fold state: the membership body is hand-composed and the fold machinery is keyed per section. Worth folding too, or is one level of folding inside the constitution enough?
 
 398. **The multi-candidate ordinary race card** (raised 2026-08-19, from the Q391 build; Q390 made rivals real). Rival values on one setting join one engine race, but the page still renders “the first running motion” as a two-way card (what stands vs the proposal). The engine serves rival pairs with the conditional prompt (“if this text changes, which change is better?”, Q48) and the served card is already in the view — what is missing is session-view card grammar for a setting race with three or more lanes, and the rule for which motion card a second rival renders into. Wants Ed's design pass, not a mechanical fix.
 
