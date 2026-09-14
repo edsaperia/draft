@@ -84,6 +84,8 @@ const FROZEN = [
   // session.js's own split (Q1352 (h)): the page loads it for session.js,
   // which makes it as it is evaluated
   'flights.js',
+  // and the composer, the same way (Q1352 (i))
+  'composer.js',
   'fixture-session.js',
   'setup.js',
   'setup.css',

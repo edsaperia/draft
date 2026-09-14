@@ -90,6 +90,10 @@ const PAGE_FILES = ['design/session-view.html', 'design/door.js', 'design/begin.
 // page file — the page never sees it, session.js makes it — but the reads
 // below that used to open session.js for a wallet or a flight now open this.
 const FLIGHTS_FILE = 'design/flights.js';
+// and the composer (Q1352 (i)), session.js's the same way: it carries the
+// draft's own strings — the proposal-row, the sign control, the two cards —
+// so every scan over what a member can read opens it beside session.js.
+const COMPOSER_FILE = 'design/composer.js';
 // (the split files are CRLF like the rest of design/*.js and the page is LF;
 // the reads below match on `\n`, so the set is read as one LF text)
 const pageSrc = () => PAGE_FILES.map((f) => readFileSync(join(ROOT, f)).toString('utf8').replace(/\r\n/g, '\n')).join('\n');
@@ -604,9 +608,9 @@ function checkSockets() {
   // selector or a class the renderers set (comments may name it as history)
   if (/\.gonewallet\b/.test(css)) find('sockets', 'system.css styles `.gonewallet` — the socket-absent state is retired (Q1286 (b)): every socket shows, struck where not held');
   // the ban is on the whole surface, not only on the two renderers: since the
-  // split these files are four, so it reads every one a wallet could be drawn
+  // split these files are five, so it reads every one a wallet could be drawn
   // from rather than the pair the renderers happen to sit in today
-  for (const file of ['design/session.js', FLIGHTS_FILE, ...PAGE_FILES]) {
+  for (const file of ['design/session.js', FLIGHTS_FILE, COMPOSER_FILE, ...PAGE_FILES]) {
     if (/'gonewallet'|"gonewallet"/.test(js(file))) find('sockets', `${file} sets \`gonewallet\` — the socket-absent state is retired (Q1286 (b))`);
   }
   if (rows.some((r) => /absent/.test(r.look))) find('sockets', 'the table has a socket-absent state — every socket shows at all times (Q1286 (b))');
@@ -1399,7 +1403,8 @@ function checkPicture() {
 
 function checkBannedWords() {
   note('Banned words — STYLE.md §1–2 over every file a member reads from');
-  const files = ['design/copy.js', 'design/cards.js', 'design/session.js', FLIGHTS_FILE, 'design/setup.js', ...PAGE_FILES];
+  const files = ['design/copy.js', 'design/cards.js', 'design/session.js', FLIGHTS_FILE, COMPOSER_FILE,
+    'design/setup.js', ...PAGE_FILES];
   const banned = BANNED;
   for (const f of files) {
     // comments are exempt (CLAUDE.md: code comments may cite the spec); class names in markup are not copy
@@ -1441,7 +1446,8 @@ function checkBannedWords() {
  */
 function checkListJoiner() {
   note('The list-joiner — STYLE.md §1 over every file a member reads from (Q630)');
-  const files = ['design/copy.js', 'design/cards.js', 'design/session.js', FLIGHTS_FILE, 'design/setup.js', ...PAGE_FILES];
+  const files = ['design/copy.js', 'design/cards.js', 'design/session.js', FLIGHTS_FILE, COMPOSER_FILE,
+    'design/setup.js', ...PAGE_FILES];
   let sites = 0; let hand = 0;
   for (const f of files) {
     // comments exempt, and **line numbers preserved**, which is why the block
