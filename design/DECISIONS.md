@@ -6177,3 +6177,14 @@ The walk's sixteenth question, 2026-09-14. **Ruled: keep it** — *2 of 3 places
 
 185. **Does "2 of 3 places" go too?** (raised 2026-08-16, from Q184.) Ed named three subtitles to remove — *copy edit*, *n proposals racing*, *one suggestion* — all of them category labels, and the kind chip with them. I kept the patch place count, on the reading that it is not a category but a *position*: it says which of a patch's clauses you are beside, which nothing else on the card does, and with the chip gone it is the only thing distinguishing three sibling entries from three unrelated ones. If the instruction was "clear the whole subtitle line", it is a one-line removal — but then a patch's siblings are told apart only by the wire spine when one is open, and by nothing at all when none is.
 
+
+## Q187: live cards stay numberless (Ed, 2026-09-14)
+
+The walk's seventeenth question, 2026-09-14. **Ruled: no headcount on a live card** — consistent with the progress caption's removal of 2026-08-17; the wash is the magnitude, the record carries the numbers (SPEC §8.2, SURFACE §9's record row). Rejected: the running count with the floor (with the fill it narrows what the result can be); the floor alone. Nothing changes.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 187 | Should a live card show the floor as a headcount too? | 2026-08-16 | waiting on Ed | SPEC §8.2 |
+
+187. **Should a live card show the floor as a headcount too?** (raised 2026-08-16, from Q186.) The navbar now says *voices needed 5 of 14* and the sealed record says *5 of 14 weighed in · floor was 5*. A **live** card shows only the evidence-meter and its caption, and § Front-door Keys is the one entry whose caption mentions the floor at all ("three of the fourteen have weighed in — the floor is 5"). Making that consistent — every live card stating "n of 14 so far, floor 5" — would be honest, magnitude-only, and probably the single most reassuring number on the surface. The reason to hesitate is that a running judge-count is *nearly* directional: watching it climb tells you the race is being sampled, and combined with the meter it narrows what the posterior can be. Probably safe (SPEC §8.2 puts per-race judge counts in the record and the mockup already exposes one), but it should be a decision rather than a drift.
+
