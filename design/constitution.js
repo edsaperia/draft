@@ -991,12 +991,26 @@ var CONSTITUTION = (() => {
     return false;
   }
   function shiftRivals(s, t, setting, cause, except) {
+    const stands = s.settings.get(setting)?.value ?? null;
     for (const rec of s.motions.values()) {
       if (rec.id === except) continue;
-      if (rec.status !== "running" || rec.route !== "constitutional") continue;
+      if (rec.status !== "running" && rec.status !== "awaiting-crown") continue;
+      if (rec.route !== "constitutional") continue;
       if (rec.payload.kind !== "set" || rec.payload.setting !== setting) continue;
+      if (stands !== null && eqValue(rec.payload.value, stands)) {
+        s.emit({ type: "motion-carried-moot", t, motion: rec.id, cause });
+        settleMootEffects(s, t, rec);
+        continue;
+      }
       s.emit({ type: "motion-ground-shifted", t, motion: rec.id, cause });
     }
+  }
+  function settleMootEffects(s, t, rec) {
+    if (rec.by === null || rec.payload.kind !== "set") return;
+    const mover = s.members.get(rec.by);
+    if (!mover || mover.removed || mover.arrivedAtT === null) return;
+    if (mover.okOwed.has(rec.payload.setting)) return;
+    s.emit({ type: "ok-owed", t, member: mover.id, settings: [rec.payload.setting] });
   }
   function runningTwin(s, payload) {
     for (const [id, rec] of s.motions) {
@@ -1445,7 +1459,8 @@ var CONSTITUTION = (() => {
             // it opens and settles in one act — nobody had to agree
             status: "carried",
             answers: /* @__PURE__ */ new Map(),
-            settledAtT: event.t
+            settledAtT: event.t,
+            moot: null
           });
           s.penFrom.set(id, wasValue);
         }
@@ -1504,7 +1519,8 @@ var CONSTITUTION = (() => {
           why: event.why ?? null,
           status: "carried",
           answers: /* @__PURE__ */ new Map(),
-          settledAtT: event.t
+          settledAtT: event.t,
+          moot: null
         });
         break;
       }
@@ -1692,6 +1708,11 @@ var CONSTITUTION = (() => {
         applyLifecycle(s, event);
     }
   }
+  function withdrawCrownQuestionOf(s, motion) {
+    for (const q of s.crownQuestions.values()) {
+      if (q.motion === motion && q.status === "pending") q.status = "withdrawn";
+    }
+  }
   function applyLifecycle(s, event) {
     switch (event.type) {
       case "motion-opened": {
@@ -1705,7 +1726,8 @@ var CONSTITUTION = (() => {
           why: event.why ?? null,
           status: "running",
           answers: /* @__PURE__ */ new Map(),
-          settledAtT: null
+          settledAtT: null,
+          moot: null
         });
         s.nextMotionN += 1;
         if (event.payload.kind === "admit") {
@@ -1741,6 +1763,19 @@ var CONSTITUTION = (() => {
         const rec = s.motions.get(event.motion);
         rec.answers.clear();
         if (rec.by !== null) rec.answers.set(rec.by, "accept");
+        if (rec.status === "awaiting-crown") {
+          rec.status = "running";
+          rec.settledAtT = null;
+          withdrawCrownQuestionOf(s, rec.id);
+        }
+        break;
+      }
+      case "motion-carried-moot": {
+        const rec = s.motions.get(event.motion);
+        rec.status = "carried";
+        rec.settledAtT = event.t;
+        rec.moot = event.cause;
+        withdrawCrownQuestionOf(s, rec.id);
         break;
       }
       case "motion-carried": {
@@ -3964,6 +3999,7 @@ var CONSTITUTION = (() => {
         } : rec.payload,
         why: rec.why,
         status: rec.status,
+        moot: rec.moot,
         mine: rec.by === member,
         at: rec.settledAtT,
         from: s.amendedFrom(rec.id),

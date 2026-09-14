@@ -201,7 +201,8 @@ describe('👁️ live · a constitutional motion is the count and my own answer
       s.answerMotion(11, cy, m, 'keep');
       const mine = view(s, bo).motions.find((x) => x.id === m)!;
       expect(Object.keys(mine).sort()).toEqual(
-        ['answeredCount', 'at', 'electorateSize', 'from', 'id', 'mine', 'myAnswer', 'payload', 'route', 'status', 'why']);
+        ['answeredCount', 'at', 'electorateSize', 'from', 'id', 'mine', 'moot', 'myAnswer',
+          'payload', 'route', 'status', 'why']);
       expect(mine.route).toBe('constitutional');
       expect(mine.answeredCount).toBe(2);
       expect(mine.electorateSize).toBe(3);

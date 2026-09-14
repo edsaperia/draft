@@ -255,13 +255,25 @@ export type ConstitutionEvent =
   /** Constitutional: the live-electorate settle check fired. Applies the payload in the fold. */
   | { type: 'motion-carried'; t: number; motion: MotionId }
   /**
-   * The ground moved under a running constitutional motion (Q1348, R-105):
+   * The ground moved under a live constitutional motion (Q1348, R-105):
    * the setting it moves took a new standing value — a rival carried
    * (`cause` names it) or the Founder's ✒️ set it (`'pen'`). The fold wipes
    * the motion's answers but the mover's, which stands at accept again, so
    * the motion is asked of everyone afresh against the value that stands.
+   * **A motion at the crown's door is shifted too** (Ed, 2026-09-14, Q1348
+   * (a)): it goes back to `running` and its pending 👑 question is
+   * withdrawn, the consent behind it having been given against a baseline
+   * that no longer stands.
    */
   | { type: 'motion-ground-shifted'; t: number; motion: MotionId;
+      cause: MotionId | 'pen' }
+  /**
+   * The ground moved to exactly what this motion proposes (Ed, 2026-09-14,
+   * Q1348 (b), R-106): the value it wanted is the value that stands, so it
+   * settles as carried, moot — no payload applied, no second change record,
+   * nobody asked anything — and a pending 👑 question on it is withdrawn.
+   */
+  | { type: 'motion-carried-moot'; t: number; motion: MotionId;
       cause: MotionId | 'pen' }
   /** Ordinary-route seam: the host/engine ran the race and reports the outcome. */
   | { type: 'motion-adjudicated'; t: number; motion: MotionId;
@@ -594,6 +606,13 @@ export interface MotionRecord {
   status: MotionStatus;
   answers: Map<MemberId, MotionAnswer>;
   settledAtT: number | null;
+  /**
+   * Why this motion carried without changing anything (Q1348 (b), R-106):
+   * the ground moved to exactly what it proposed, and this names what moved
+   * it — the carrying motion's id, or `'pen'`. Null on every other motion,
+   * carried ones included.
+   */
+  moot: MotionId | 'pen' | null;
 }
 
 export interface CrownQuestionRecord {
@@ -603,8 +622,15 @@ export interface CrownQuestionRecord {
   /** Set on a text question: which engine candidate adopted, and a summary for the card. */
   text?: { candidateId: string; summary: string };
   openedAtT: number;
-  /** `failed-closed`: pending at T=0 (SPEC §4.6) — carried-but-unassented, into the backlog. */
-  status: 'pending' | 'accepted' | 'rejected' | 'auto-passed' | 'failed-closed';
+  /**
+   * `failed-closed`: pending at T=0 (SPEC §4.6) — carried-but-unassented,
+   * into the backlog. `withdrawn`: the ground moved under the motion it
+   * parks (Q1348 (a), R-105), so there is nothing left to assent to; the
+   * record stays in the map for the replay and for the record, and is
+   * neither pending nor answered — nothing is owed on it.
+   */
+  status: 'pending' | 'accepted' | 'rejected' | 'auto-passed' | 'failed-closed'
+    | 'withdrawn';
   /**
    * How an `auto-passed` question passed (Q1033): the crown's lapse — its
    * holder's silence, abstaining grants — or a vacant seat, which cannot

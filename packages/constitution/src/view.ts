@@ -94,6 +94,13 @@ export interface MotionView {
   payload: MotionPayloadView;
   why: string | null;
   status: string;
+  /**
+   * Set on a motion that carried without changing anything (Q1348 (b),
+   * R-106) — the ground moved to exactly what it proposed — and naming what
+   * moved it: the carrying motion's id, or `'pen'`. The record card reads it
+   * to say so, and to name the hand the standing rule actually came from.
+   */
+  moot: string | null;
   mine: boolean;
   /** When it settled — what the record and the clause's history line date. */
   at: number | null;
@@ -327,6 +334,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
         : rec.payload,
       why: rec.why,
       status: rec.status,
+      moot: rec.moot,
       mine: rec.by === member,
       at: rec.settledAtT,
       from: s.amendedFrom(rec.id),

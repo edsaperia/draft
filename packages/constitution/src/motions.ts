@@ -259,7 +259,7 @@ function heldOutBy(s: MotionHost, member: MemberId): boolean {
 }
 
 /**
- * **A carry on a setting is a ground shift on every rival still running on
+ * **A carry on a setting is a ground shift on every rival still live on
  * it** (Ed, 2026-09-12, Q1348; SPEC §9.6, R-105): once the value moved
  * from no longer stands, every answer on a rival was given against the
  * wrong baseline, so the module wipes them but the mover's and the motion
@@ -268,17 +268,56 @@ function heldOutBy(s: MotionHost, member: MemberId): boolean {
  * the rivals exactly as a unanimity carry does — `cause` says which.
  * Called after the value has landed, never from a fold; `except` is the
  * motion that moved it, which is settled and is not its own rival.
- * Running motions only: one at `awaiting-crown` has already carried by
- * unanimity and waits on nothing but the crown's assent.
+ *
+ * **A rival at the crown's door is shifted too** (Ed, 2026-09-14, Q1348
+ * (a)), reversing the one skip R-105 recorded: a value must never stand on
+ * consent given against a different baseline, and the crown's assent is not
+ * a second consent that could stand in for the room's.
+ *
+ * **And a rival proposing exactly what now stands is not shifted but
+ * settled** (Q1348 (b), R-106): the value it wanted is the value it has, so
+ * asking the room to consent to it again is asking them to consent to
+ * nothing. It carries, moot, applying nothing — the check runs first, so a
+ * moot rival is never wiped.
+ *
+ * Constitutional rivals only, as the shift has always been: an ordinary
+ * motion is a race the engine runs, and settling one from here would leave
+ * its candidate racing with nothing to report back to.
  */
 export function shiftRivals(s: MotionHost, t: number, setting: SettingId,
   cause: MotionId | 'pen', except?: MotionId): void {
+  const stands = s.settings.get(setting)?.value ?? null;
   for (const rec of s.motions.values()) {
     if (rec.id === except) continue;
-    if (rec.status !== 'running' || rec.route !== 'constitutional') continue;
+    if (rec.status !== 'running' && rec.status !== 'awaiting-crown') continue;
+    if (rec.route !== 'constitutional') continue;
     if (rec.payload.kind !== 'set' || rec.payload.setting !== setting) continue;
+    if (stands !== null && eqValue(rec.payload.value, stands)) {
+      s.emit({ type: 'motion-carried-moot', t, motion: rec.id, cause });
+      settleMootEffects(s, t, rec);
+      continue;
+    }
     s.emit({ type: 'motion-ground-shifted', t, motion: rec.id, cause });
   }
+}
+
+/**
+ * What a moot carry owes (Q1348 (b), R-106): **the mover, and nobody else.**
+ * A carry owes an OK to every member who had no say, because the rule they
+ * live under changed; here it did not — the act that moved the ground is
+ * telling the room in its own right, and a second card about a change that
+ * did not happen is the flood entry 162 exists to prevent. The mover is the
+ * one person with something to be told: what they proposed is now the rule.
+ * The shape is `settleCarriedEffects`' own, the setting's OK, so the mover's
+ * card is the rule's, and the guards are its guards — an already-owed OK is
+ * not owed twice, and somebody gone or not yet arrived is owed nothing.
+ */
+function settleMootEffects(s: MotionHost, t: number, rec: MotionRecord): void {
+  if (rec.by === null || rec.payload.kind !== 'set') return;
+  const mover = s.members.get(rec.by);
+  if (!mover || mover.removed || mover.arrivedAtT === null) return;
+  if (mover.okOwed.has(rec.payload.setting)) return;
+  s.emit({ type: 'ok-owed', t, member: mover.id, settings: [rec.payload.setting] });
 }
 
 /** The live motion already putting exactly this payload, if any (Q1348). */
