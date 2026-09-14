@@ -605,7 +605,7 @@ export class ConstitutionSession {
     // **the room is told, and owes an OK for it** (Q901): before the roster's
     // own follow-ons, so the news of the act sits beside the act in the log
     // rather than behind whatever a re-settle carried
-    this.oweDeparture(t, member);
+    this.oweDeparture(t, member, this.convenor.id); // ❌ is the convenor's act (Q1358)
     if (wasInE) this.afterRosterChange(t, 'departure', member);
   }
 
@@ -1091,8 +1091,8 @@ export class ConstitutionSession {
 
   /** Every departure is news owed an OK (Q901): the three routes call this,
    *  the carried motion's through `MotionHost`. */
-  private oweDeparture(t: number, departed: MemberId): void {
-    owed.oweDeparture(this.owedState(), t, departed);
+  private oweDeparture(t: number, departed: MemberId, actor: MemberId | null = null): void {
+    owed.oweDeparture(this.owedState(), t, departed, actor);
   }
 
   ackDeparture(t: number, member: MemberId, departed: MemberId): void {

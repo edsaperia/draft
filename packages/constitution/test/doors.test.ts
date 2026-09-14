@@ -203,7 +203,7 @@ describe('departures — what the view says about who left (Q901)', () => {
 
 /**
  * **And every departure owes an OK** (Ed, 2026-09-14, Q901; SURFACE E31, E32,
- * E38). The grey sentence asked nothing, so a member who was not reading the
+ * E40). The grey sentence asked nothing, so a member who was not reading the
  * list the day somebody left never met it. One rule over all three routes out:
  * the Founder's ❌, a carried 🥾 motion, and a resignation.
  */
@@ -214,15 +214,15 @@ describe('departures — the OK every remaining member is owed (Q901)', () => {
     expect(view(s, bo).owedDepartures).toEqual([]);
     s.remove(7, cy);
     expect(view(s, bo).owedDepartures).toEqual([cy]);
-    // **the actor is inside the audience** — the one owing in the family that
-    // does not skip them (Ed's ruling names only the departed and the later
-    // joiner as exclusions); this and `oweDeparture` are the whole of it
-    expect(view(s, 'ada').owedDepartures).toEqual([cy]);
+    // **the actor is not inside the audience** (Ed, 2026-09-14, Q1358): ❌ is
+    // the Founder's own act, and as with a power laid down or an amendment the
+    // one who did it is not told of it
+    expect(view(s, 'ada').owedDepartures).toEqual([]);
     // and never the person it happened to: their record is already removed
     expect(s.memberRecords().get(cy)!.departuresOwed.size).toBe(0);
     s.ackDeparture(8, bo, cy);
     expect(view(s, bo).owedDepartures).toEqual([]);
-    expect(view(s, 'ada').owedDepartures).toEqual([cy]);   // one seat at a time
+    expect(view(s, 'ada').owedDepartures).toEqual([]);   // and the actor was never owed it (Q1358)
     // the OK is idempotent and refuses nothing it can ignore (ackRelease's
     // posture): a second press, and a press for a departure nobody owes you
     expect(() => s.ackDeparture(9, bo, cy)).not.toThrow();
@@ -267,7 +267,7 @@ describe('departures — the OK every remaining member is owed (Q901)', () => {
     expect(again.rollingHash()).toBe(s.rollingHash());
     expect([...again.memberRecords().get(bo)!.departuresGiven]).toEqual([cy]);
     expect(again.memberRecords().get(bo)!.departuresOwed.size).toBe(0);
-    expect([...again.memberRecords().get('ada')!.departuresOwed]).toEqual([cy]);
+    expect([...again.memberRecords().get('ada')!.departuresOwed]).toEqual([]); // the actor, Q1358
   });
 });
 

@@ -6520,3 +6520,14 @@ Ed asked *should we make rules for the cells?* — yes: with E11 and E22 ruled, 
 
 1356. **E13's row passes vacuously** (raised 2026-09-14 by the Q1205 build). At the `judge-text` step the text race has already parked on `early`'s single judgment (quorum stands at one), so `view.clauses` is empty for every seat and *every member who could still judge it* is nobody; the row is green and asserts nothing, and was so before this build. Readings: **(a)** a bigger room or a later assertion step, so the audience is non-empty when read (recommended, a step-table change); **(b)** leave it, noted.
 
+
+## Q1358: the departure card skips the actor (Ed, 2026-09-14)
+
+Found by the Q901 build and put to Ed the same evening, 2026-09-14. **Ruled: skip the actor, as the other cards do** — the Founder on ❌ is not told of their own act; a resigning member is already outside; a carried removal has no single actor, so everyone is owed. **Done by hand:** `oweDeparture` takes an `actor`, the ❌ route passing the convenor's id and the other two none; `doors.test.ts` adjusted; the bundle regenerated.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 1358 | The Founder who presses ❌ is owed the departure's OK too | 2026-09-14 | open — found by the Q901 build; E9 skips the actor, E40 does not | `departure-news`; `oweDeparture` (owed.ts); SURFACE E31, E40, E9 |
+
+1358. **The Founder who presses ❌ is owed the departure's OK too** (found 2026-09-14 by the Q901 build). `oweReleases` and `oweAmendment` skip the convenor as the actor (E9, Q918); `oweDeparture` does not, because Ed's ruling named only the departed and later joiners as exclusions and two of the three routes have no single actor — so the Founder who exiled a member at will is served a card asking them to acknowledge their own act. One predicate in `owed.ts`. Readings: **(a)** skip the actor, as E9 does — the Founder on ❌, the resigner on *Leave* (already outside, being departed) (recommended); **(b)** everyone, as built.
+

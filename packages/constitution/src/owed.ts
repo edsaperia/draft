@@ -250,24 +250,23 @@ export function ackMailGaveUp(s: OwedState, t: number, member: MemberId, batch: 
  * door's own sentence. The lapsed are inside it, as they are for every owing
  * in this file.
  *
- * **The actor is *not* skipped**, and that is the one place this differs from
- * `oweReleases` and `oweAmendment` (Ed's ruling: *every departure … owes every
- * remaining member an OK*, the exclusions named being the departed and the
- * later joiner, and no other). The two siblings skip the convenor because the
- * power card and the amendment card are the actor's own confirmation of a
- * thing they decided; here only one of the three routes has a single actor at
- * all — a carried motion is the room's act and a resignation is the departing
- * member's — so an actor exclusion would be a rule about ❌ wearing the
- * clothes of a rule about departures. It is one predicate to reverse if Ed
- * rules otherwise, and `seat-matrix`'s E40 cell is the other half of it.
+ * **The actor is skipped, as `oweReleases` and `oweAmendment` skip the
+ * convenor** (Ed, 2026-09-14, Q1358, reversing the first build's reading of
+ * his Q901 ruling): the card is the room being told of an act, and the one
+ * who did the act is not told of it. Only ❌ has a single actor — the
+ * convenor, passed as `actor`; a carried 🥾 motion is the room's act and a
+ * resignation the departing member's, so those callers pass none and the
+ * departed's own skip below is the whole exclusion.
  *
  * A departure is one act about one member and a member id departs once — a
  * returning person is invited afresh under a new id — so `departed` is a key
  * that cannot collide, and the already-owed skip is the same guard `oweOks`
  * carries rather than the deliberate omission the batch ids make of it.
  */
-export function oweDeparture(s: DepartureAudience, t: number, departed: MemberId): void {
+export function oweDeparture(s: DepartureAudience, t: number, departed: MemberId,
+  actor: MemberId | null = null): void {
   for (const m of s.members.values()) {
+    if (m.id === actor) continue; // the one who did it is not told of it (Q1358)
     // the departed member's own record is `removed` by the time this is
     // called — the fold runs under `emit` — so this skip is theirs too
     if (m.arrivedAtT === null || m.removed) continue;

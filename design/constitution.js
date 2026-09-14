@@ -801,8 +801,9 @@ var CONSTITUTION = (() => {
     if (!m.mailGaveUpOwed.has(batch)) return;
     s.emit({ type: "mail-gave-up-ok", t, batch, member });
   }
-  function oweDeparture(s, t, departed) {
+  function oweDeparture(s, t, departed, actor = null) {
     for (const m of s.members.values()) {
+      if (m.id === actor) continue;
       if (m.arrivedAtT === null || m.removed) continue;
       if (m.departuresOwed.has(departed)) continue;
       s.emit({ type: "departure-owed", t, member: m.id, departed });
@@ -2755,7 +2756,7 @@ var CONSTITUTION = (() => {
       }
       const wasInE = inE(m);
       this.emit({ type: "member-removed", t, member, by: "convenor" });
-      this.oweDeparture(t, member);
+      this.oweDeparture(t, member, this.convenor.id);
       if (wasInE) this.afterRosterChange(t, "departure", member);
     }
     /**
@@ -3107,8 +3108,8 @@ var CONSTITUTION = (() => {
     }
     /** Every departure is news owed an OK (Q901): the three routes call this,
      *  the carried motion's through `MotionHost`. */
-    oweDeparture(t, departed) {
-      oweDeparture(this.owedState(), t, departed);
+    oweDeparture(t, departed, actor = null) {
+      oweDeparture(this.owedState(), t, departed, actor);
     }
     ackDeparture(t, member, departed) {
       ackDeparture(this.owedState(), t, member, departed);
