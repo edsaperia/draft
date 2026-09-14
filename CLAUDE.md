@@ -85,7 +85,7 @@ Use these names in all discussion, commits, and code. Literal and stable beats e
 | `design/session-view.notes.md`, `design/setup.notes.md` | deleted 2026-08-23 | `SURFACE.md` holds what was live in them and git holds the rest |
 
 **Engine (mechanism, no UI):**
-- `engine-core` [symbol] — the session state machine: candidates, races, adoptions, the threshold ramp, tokens and refunds, adoption floors, certification. Pure TS, node-free and browser-loadable. Rules: SPEC §2–§8, §13. Adoption batching and the cooldown metronome: SPEC §4.2. Amendments binding races in flight: SPEC §4.3. The serving rules (§8) are `routing.ts`, over a host of live closures (Q1352 (o)).
+- `engine-core` [symbol] — the session state machine: candidates, races, adoptions, the threshold ramp, tokens and refunds, adoption floors, certification. Pure TS, node-free and browser-loadable. Rules: SPEC §2–§8, §13. Adoption batching and the cooldown metronome: SPEC §4.2. Amendments binding races in flight: SPEC §4.3. The serving rules (§8) are `routing.ts` (Q1352 (o)).
 - `adoption-threshold` [symbol] — the confidence bar a challenger’s win-probability must clear; ramps over the session window on wall clock. Postponing the close never lowers it. Formerly "θ"; always use this name. SPEC §4, §5, §4.3.
 - `patch-engine` [concept] — text machinery: diffs, footprints, three-way merge, rebase, surgery.
 - `overlap-gates` [concept] — the three-gate classifier for colliding patches: textual composition → semantic composition → rivalry. SPEC §4.
