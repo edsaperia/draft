@@ -6313,3 +6313,16 @@ The walk's thirty-second question, 2026-09-14. **Ruled: no** — the lvl3 subsec
 
     (raised 2026-08-19, from the heading-click build). Clicking a heading's text folds it — prose headings, the constitution's sections, and the Constitution heading itself — but the lvl3 subsection headings ("Members" in Membership) carry no fold state: the membership body is hand-composed and the fold machinery is keyed per section. Worth folding too, or is one level of folding inside the constitution enough?
 
+
+## Q1205: the diagnosis is done; Q1282's fix, then the harness joins CI (Ed, 2026-09-14)
+
+The walk's thirty-eighth question, 2026-09-14. **Ruled: close this row; fix Q1282, then add the harness to CI's walks job** as founder-answers joined it today (Q1177). The row's own ask — the diagnosis — is done: 56 → 21 → 11 → 3 findings, the three the one E10 defect of Q1282 (a lapsed member still offered a vote the system refuses). Rejected: keeping the row until green; adding it to CI amber with known failures.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 1205 | `seat-matrix` is red | 2026-09-06 | diagnosed 2026-09-07: 56 → 21 (walk) → 11 (Q919 (b), Q920 built); what stands is 1281, 1282 and a gate-news cluster still unread | `scripts/seat-matrix.mjs`; 1280–1282 |
+
+1205. **`seat-matrix` is red, and was before either of 2026-09-06's builds** — 56 findings and a `TypeError … reading 'closed'`, identical from a worktree at `b62fcbc`. CI's `walks` job does not run it, so nothing went red. Needs a look before it is trusted again; until then a claim that a seat change is safe cannot lean on it.
+
+    **Where it stands (2026-09-07, after the diagnosis and two builds).** The 56 were four things, none a stale selector: the founder's gate cards no longer exist (Ed, 2026-09-01) so two steps drove a control the surface stopped offering; Q919 (b) was unbuilt (the whole member-hat cluster); Q920 was unbuilt (the whole clerk-hat cascade); and the applicant's live page throws on load, which the walk had been dropping in silence. The walk fixes (`7a6dd61`) took it to 21; building Q919 (b) and Q920 the same morning took it to **11**, on a fresh server: the applicant page (**1281**, two seats and one error), a lapsed member offered a motion answer (**1282**, E10), and **an E4 cluster still unread** — the 💡/⚖️ gate news not carried by the `early` and `lapsed` seats on either hat, and carried *as a tab* by a clerk founder who is outside the audience. That cluster is the next look; the gate news is not a setting, so Q919 (b)'s poll fix does not reach it. Four `noRule` cells stand (E11, E13, E22, and E11's audience — Q930). **Re-run 2026-09-12 14:00 on a fresh server at 8a4df49: 11 findings, 3 no-rule, errors none, refused none, unstood none** — the same E4 cluster (💡 ⚖️ not carried by the `early` and `lapsed` seats on either hat, eight cells), E10 on three seats (1282), and the no-rule cells E22 ×2 and E11's audience; the applicant's page error (1281) is gone, and the stranger's `gates` error the 2026-09-11 handover mentioned did not occur here or on `docs.vote/d/moon2` as a stranger.
+
