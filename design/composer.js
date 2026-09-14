@@ -689,7 +689,12 @@ window.COMPOSER = (function () {
     function editCardHtml(d, site) {
       const n = d.sites.length;
       const i = d.sites.indexOf(site);
-      const broke = env.editsHeld < env.EDIT_RULES.stake;
+      // **Re-making a stranded proposal costs nothing** (Q170): the edit was
+      // spent when it was first proposed and the candidate never gave it back,
+      // so an empty wallet cannot stop the one act that gets it back into the
+      // race — and the tooltip says so instead of stating a price.
+      const remake = !!d.rebaseOf;
+      const broke = !remake && env.editsHeld < env.EDIT_RULES.stake;
       const rival = liveRivalFor(d, site);
       const seeded = site.origin.find((o) => o.note);
       const step = (to, label, glyph) => (to === null
@@ -750,7 +755,7 @@ window.COMPOSER = (function () {
             : T.row.holdPropose + (n > 1 ? T.row.inAllPlaces(n) : '') +
               // the hold's tooltip says what leaves: a signed one leaves with your name
               (d.signed ? T.row.signedSuffix : '') +
-              T.row.editCost,
+              (remake ? T.stranded.keepsCost : T.row.editCost),
           penTitle: T.row.amend + (n > 1 ? T.row.inAllPlaces(n) : '') +
             T.row.penCost,
         }) +
@@ -771,9 +776,12 @@ window.COMPOSER = (function () {
       );
     }
 
-    // Once it is in, the same geometry read-only, and your proposal on the right
-    // (Ed, 229) — the side it will always be on wherever it is shown to you.
-    function mineCardHtml(d, site) {
+    // **What a proposal of yours looks like once it is in** — the place
+    // stepper, the clause at the head and your wording under it — shared by
+    // the two cards that show one: `mineCardHtml` below, and the stranded
+    // card beside it (Q170), which is the same reading of the same object
+    // with a different pair of acts under it.
+    function proposedBodyHtml(d, site) {
       const n = d.sites.length;
       const i = Math.max(0, d.sites.indexOf(site));
       const s = site || d.sites[0];
@@ -782,7 +790,6 @@ window.COMPOSER = (function () {
         ? '<span class="pstep off">' + glyph + '</span>'
         : '<button class="pstep" data-step="' + d.id + ':' + d.sites[to].keys[0] + '" title="' + esc(label) + '">' + glyph + '</button>');
       return (
-        '<div class="sugg minecard" data-card="' + d.id + '" data-site="' + s.keys[0] + '">' +
         (n > 1
           ? '<div class="pnav"><span class="pwhere">' + esc(s.label) + T.nav.placeOf(i + 1, n) + '</span>' +
             '<span class="psteps">' + step(i > 0 ? i - 1 : null, T.nav.prev, '↑') +
@@ -811,7 +818,18 @@ window.COMPOSER = (function () {
         fieldHtml('<div class="propblock"><div class="rtext">' +
           laneBlocks(s.text, originText(s), headFlags(s)) + '</div>' +
           speakerHtml(d.rationale, undefined, mineSpeaker(d)) + '</div>',
-          1, T.compose.proposedLab) +
+          1, T.compose.proposedLab)
+      );
+    }
+
+    // Once it is in, the same geometry read-only, and your proposal on the right
+    // (Ed, 229) — the side it will always be on wherever it is shown to you.
+    function mineCardHtml(d, site) {
+      const n = d.sites.length;
+      const s = site || d.sites[0];
+      return (
+        '<div class="sugg minecard" data-card="' + d.id + '" data-site="' + s.keys[0] + '">' +
+        proposedBodyHtml(d, site) +
         // **The same row the editing card had, one step further on** (Ed,
         // 2026-08-17). 🗑️ stays exactly where it was — discarding a draft and
         // withdrawing a proposal are the same gesture at two moments, and the
@@ -835,13 +853,48 @@ window.COMPOSER = (function () {
       );
     }
 
+    // **The text moved under it** (Ed, 2026-09-14, Q170; SURFACE E38). The
+    // clause this proposal rewrote was replaced, and the engine could not
+    // carry the patch across to the new wording (SPEC §2.4): it is out of
+    // every race, nobody is being asked about it, and it waits on its author.
+    //
+    // So it is the same card as `mineCardHtml` — the clause **as it now
+    // reads** at the head, your wording under it, your reason behind the same
+    // disc — with one sentence saying what happened and a different pair of
+    // acts. The right slot is no longer *Submitted*, because it is not in any
+    // more; it is ✏️ again, and pressing it opens the column with this
+    // wording already in the lane, to be fixed against the text that now
+    // stands. That press re-makes **this** proposal rather than opening a
+    // second one, so it keeps its place and the edit it already cost; 🗑️
+    // withdraws it and hands the edit back, exactly as it always did.
+    // `dead` is the closed document: neither act exists there — the engine
+    // refuses a confirmation and a withdrawal alike once the clock has run —
+    // so the row states them and offers neither, as every closed card does.
+    function strandedCardHtml(d, site, dead) {
+      const n = d.sites.length;
+      const s = site || d.sites[0];
+      const off = dead ? ' disabled' : '';
+      return (
+        '<div class="sugg minecard strandedcard" data-card="' + d.id + '" data-site="' + s.keys[0] + '">' +
+        proposedBodyHtml(d, site) +
+        '<p class="setnote">' + esc(T.stranded.note) + '</p>' +
+        '<div class="race-mid commitrow">' +
+        '<button class="btn btn-withdraw glyphbtn" data-act="draft-withdraw"' + off +
+        ' title="' + (T.row.withdraw + (n > 1 ? T.row.allPlaces(n) : '') + T.row.withdrawCost) + '">🗑️</button>' +
+        '<button class="btn btn-propose glyphbtn" data-act="draft-remake"' + off +
+        ' title="' + esc(T.stranded.remake) + '">✏️</button>' +
+        '</div>' +
+        '</div>'
+      );
+    }
+
     return { DRAFT_ID, draftOf, docIndexOfKey, siteFor, syncDraftKeys,
       dropDraft, dropDraftSite,
       caretRangeIn, selectedBlocks, laneCaret, placeCaret,
       startDraft, startDraftFromTyping, startDraftFromRun,
       laneRaw, laneRemark, syncEditCtl,
       commitBtnHtml, proposalRowHtml, draftRowState, setDraftSigned,
-      editCardHtml, mineCardHtml,
+      editCardHtml, mineCardHtml, strandedCardHtml,
       // the column's `[]` preference, written from two places outside this
       // file — the strip's own handler in `columnPass`, and the page through
       // `SESSION.setLaneRaw` — so it goes back as the variable rather than as

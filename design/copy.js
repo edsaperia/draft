@@ -194,6 +194,22 @@ window.COPY = (function () {
       blocked: 'Waiting on the Founder’s answer about another change to this clause 🛡️',
       yours: 'Yours · passed — awaiting the Founder 🛡️',
     },
+    // a proposal of yours the text moved under (SURFACE E38; Ed, 2026-09-14,
+    // Q170): the clause it rewrote was replaced, and it could not be carried
+    // across to the new wording. It is out of every race and held for you
+    // until you re-make it here — which keeps the edit it already cost, and
+    // its place — or withdraw it, which gives the edit back. The card's
+    // sentence, its rail line, and the right-hand act; the 🗑️ beside it keeps
+    // the withdrawal's own words (`row`).
+    stranded: {
+      note: 'The document changed here, and your proposal could not be carried across to the new wording.',
+      cap: 'Yours · the text moved under it',
+      remake: 'Re-make it here — write it against the clause as it now stands, and propose it again',
+      // …and the tail the composer's own commit wears while that draft is the
+      // one being written: it re-makes the proposal you already have, so there
+      // is nothing left to pay and an empty wallet cannot stop it
+      keepsCost: ' — it keeps its place and the edit it already cost',
+    },
     // the ledger (Q1201): the pairs you judged on this race, on the ⏳ card
     // and beneath a live one, each a press to revise
     ledger: {

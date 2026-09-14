@@ -385,6 +385,39 @@ export class EngineBridge {
     return out;
   }
 
+  /**
+   * **Re-making a stranded proposal** (SPEC §2.4, §2.6; Ed, 2026-09-14, Q170).
+   * A patch whose rebase onto a newly adopted text failed is held for its
+   * author — out of every race, judged by nobody — until they confirm one
+   * against the version that now stands or withdraw it. This is the first
+   * door; `withdrawText` below is the second.
+   *
+   * Read against `proposeText` above: the diff is that **nothing is staked**.
+   * The candidate keeps the id it has carried since it was first proposed and
+   * the edit it paid for then, so there is no balance to check and no second
+   * price — which is also why an empty wallet cannot strand a member's own
+   * work permanently. The engine's own door refuses everything else: a
+   * candidate not in `rebase-pending`, a patch against a stale version, an
+   * empty patch, hunks outside the text.
+   *
+   * `rationale` is optional and replaces the one the proposal carried, because
+   * §2.4's three roads are confirm, **revise** and withdraw: a wording written
+   * against text that has since been replaced may well need a new reason, and
+   * the card that collects the wording collects it in the same box.
+   */
+  rebaseText(t: number, by: MemberId, candidateId: string, patch: PatchSet,
+    rationale?: string): { id: string } {
+    this.sync(t);
+    const c = this.engine.getCandidate(candidateId);
+    if (c.author !== by) throw new Error('only the proposer may re-make it');
+    if (c.patch === undefined) throw new Error('that is a motion, not a text proposal');
+    const mark = this.engine.log.length;
+    this.engine.confirmRebase(t, candidateId, patch, rationale);
+    this.reportAdoptions(t, this.engineEventsSince(mark));
+    this.sync(t);
+    return { id: candidateId };
+  }
+
   /** Withdrawing a text proposal: the author's alone, refunded whole (§3.3a). */
   withdrawText(t: number, by: MemberId, candidateId: string): void {
     const c = this.engine.getCandidate(candidateId);

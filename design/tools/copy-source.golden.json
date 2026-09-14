@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 486
+  "entries": 490
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -480,6 +480,10 @@
   "session.sign.expUntil": " until the document is finished.",
   "session.sign.signedAs": "ƒ (escName) => 'Signed — as ' + escName",
   "session.sign.signedExp": "Your name goes on it from the moment you propose it, and stays there.",
+  "session.stranded.cap": "Yours · the text moved under it",
+  "session.stranded.keepsCost": " — it keeps its place and the edit it already cost",
+  "session.stranded.note": "The document changed here, and your proposal could not be carried across to the new wording.",
+  "session.stranded.remake": "Re-make it here — write it against the clause as it now stands, and propose it again",
   "session.verdict.approve": "approved (recorded as: proposal beats current text)",
   "session.verdict.equal": "said they matter equally",
   "session.verdict.indifferent": "indifferent",

@@ -8682,6 +8682,11 @@
     mayPen: () => constituted() && mayPenOn('text'),
     // edit mode (backlog 204): the caret is edit mode's, read at call time
     editing: () => !!S.editMode,
+    // …and the way in, for the one charter act that is itself a door into
+    // writing: *re-make it here* on a stranded proposal (Q170, SURFACE E38).
+    // `setEditMode` and not `toggleEditMode`, which would close the card the
+    // press has just turned into the draft.
+    enterEditing: () => setEditMode(true),
     // the sign control (Q770): the elective 👤 rung's base, or null — read at
     // call time, so a 👤 motion carrying while a draft is open changes what the
     // next draft offers and nothing about the one being typed

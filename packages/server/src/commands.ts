@@ -383,6 +383,18 @@ const HANDLERS: Record<string, Handler> = {
     const why = typeof args.why === 'string' ? cap(args.why, LIMITS.why, 'the reason') : '';
     return bridge.penText(t, a.memberId, patchOf(args), why);
   },
+  /* -- re-making a stranded proposal (SPEC §2.4, Q170): the author's own
+     patch, rebuilt against the text that replaced the one it was written for.
+     Read against `propose-text` above — same patch, same author gate, **no
+     stake and no `signed`**: the candidate keeps the id, the edit and the
+     sign choice it took at its first Propose (SURFACE K28), and only the
+     wording and the reason may move. ------------------------------------- */
+  'rebase-text': (cs, a, t, args, bridge) => {
+    if (bridge === null) throw new Error('the document has not begun');
+    const why = typeof args.why === 'string'
+      ? cap(args.why, LIMITS.why, 'the rationale') : undefined;
+    return bridge.rebaseText(t, a.memberId, str(args, 'candidate'), patchOf(args), why);
+  },
   'withdraw-text': (cs, a, t, args, bridge) => {
     if (bridge === null) throw new Error('the document has not begun');
     bridge.withdrawText(t, a.memberId, str(args, 'candidate'));

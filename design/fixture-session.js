@@ -606,6 +606,27 @@ window.FIXTURE_SESSION = (function () {
         text: 'Ordinary spending on the running of the house needs nobody’s permission. Anything above a quarter’s subscriptions needs the meeting’s, and the Purse-holder writes anything above a month’s in the Members’ Book within the week.',
       }],
     },
+    // **A proposal of your own the text moved under** (SURFACE E38; Ed,
+    // 2026-09-14, Q170). It was written against § Lost Keys as that clause read
+    // before somebody else's rewrite of the same lines carried, and the engine
+    // could not rebase it onto the new wording (SPEC §2.4): it is out of every
+    // race, nobody is being asked about it, and it waits on its author. The
+    // one entry on the surface that wears ↻ in blue rather than grey, and the
+    // one card that offers *re-make it here* beside the withdrawal.
+    {
+      id: 'mine-lostkey-stranded', kind: 'draft', mine: true, stranded: true,
+      candidate: 'c:lostkey-stranded',
+      keys: ['lostkey'], state: 'needs',
+      qLabel: '§ Lost Keys',
+      urgency: 0,
+      pct: 0, cap: 'Yours · the text moved under it',
+      rationale: 'The same day is the whole of it. A key that turns up in a coat pocket on Thursday was still a key in the street on Tuesday, and the house should hear about it on Tuesday.',
+      sites: [{
+        keys: ['lostkey'],
+        label: 'Lost Keys',
+        text: 'A member who loses a key tells the Steward the same day, whether or not they expect to find it again.',
+      }],
+    },
     {
       // Already judged, so it wears ⚔️ on load — the state you reach by getting
       // through a race, without having to get through one first.

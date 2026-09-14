@@ -121,6 +121,61 @@ describe('✒️ on the Text: the direct adoption (R-058)', () => {
     expect(s.getCandidate(rival).state).toBe('live');
   });
 
+  /**
+   * **Re-making a stranded proposal** (Ed, 2026-09-14, Q170; SURFACE E38):
+   * §2.4's three roads as the surface offers them. *Confirm* and *revise* are
+   * one door — the candidate keeps its id and the stake it already paid, and
+   * the rationale may be rewritten with the wording, which is what the event's
+   * optional `rationale` is for. *Withdraw* is the other, and refunds whole.
+   */
+  it('a stranded proposal is re-made with its id, its stake and a revised reason', () => {
+    const s = openSession({ adoptionThresholdStart: 0.999, adoptionThresholdEnd: 0.999 });
+    const v0 = s.currentVersion();
+    const before = s.balance('p2', 50);
+    const { id: rival } = s.submitCandidate(50, {
+      author: 'p2', patch: rewrite(v0, 2, 'Decisions are made by a show of hands.'),
+      rationale: 'hands',
+    });
+    const staked = before - s.balance('p2', 50);
+    expect(staked).toBeGreaterThan(0);
+    s.decreeText(100, { author: 'p1',
+      patch: rewrite(v0, 2, 'Decisions are made by the Founder.'), rationale: 'mine' });
+    expect(s.getCandidate(rival).state).toBe('rebase-pending');
+    // nothing came back when it stranded: the stake is still with the candidate
+    expect(s.balance('p2', 100)).toBe(before - staked);
+
+    s.confirmRebase(110, rival, rewrite(s.currentVersion(), 2,
+      'Decisions are made by the Founder, unless the members ask for a show of hands.'),
+    'the line was rewritten under me; this keeps both');
+    const back = s.getCandidate(rival);
+    expect(back.state).toBe('live');
+    expect(back.rationale).toBe('the line was rewritten under me; this keeps both');
+    // the id never moved, and neither did the stake: re-making is not a second
+    // proposal, so nothing is charged and nothing is refunded
+    expect(back.id).toBe(rival);
+    expect(back.stakePaid).toBe(staked);
+    expect(s.balance('p2', 110)).toBe(before - staked);
+    expect(s.verifyChain()).toBe(true);
+    expect(Session.replay(s.log).rollingHash()).toBe(s.rollingHash());
+  });
+
+  it('...or withdrawn from where it stands, the stake refunded whole (SPEC §2.6)', () => {
+    const s = openSession({ adoptionThresholdStart: 0.999, adoptionThresholdEnd: 0.999 });
+    const v0 = s.currentVersion();
+    const before = s.balance('p2', 50);
+    const { id: rival } = s.submitCandidate(50, {
+      author: 'p2', patch: rewrite(v0, 2, 'Decisions are made by a show of hands.'),
+      rationale: 'hands',
+    });
+    expect(s.balance('p2', 50)).toBeLessThan(before);
+    s.decreeText(100, { author: 'p1',
+      patch: rewrite(v0, 2, 'Decisions are made by the Founder.'), rationale: 'mine' });
+    expect(s.getCandidate(rival).state).toBe('rebase-pending');
+    s.withdraw(110, rival);
+    expect(s.getCandidate(rival).state).toBe('withdrawn');
+    expect(s.balance('p2', 110)).toBe(before);
+  });
+
   it('replays bit for bit over a log holding the new event', () => {
     const s = openSession({ adoptionThresholdStart: 0.999, adoptionThresholdEnd: 0.999 });
     const v0 = s.currentVersion();
