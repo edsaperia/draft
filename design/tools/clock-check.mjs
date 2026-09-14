@@ -23,6 +23,11 @@ vm.createContext(ctx);
 // — and the grammar reads its words off window.COPY, so copy.js goes before it
 vm.runInContext(readFileSync(join(here, '..', 'copy.js'), 'utf8'), ctx, { filename: 'copy.js' });
 vm.runInContext(readFileSync(join(here, '..', 'cards.js'), 'utf8'), ctx, { filename: 'cards.js' });
+// and since Q1352 (h) and (i) session.js makes its flights and its composer
+// as it is evaluated, so the page loads both before it — the same order here
+for (const f of ['flights.js', 'composer.js']) {
+  vm.runInContext(readFileSync(join(here, '..', f), 'utf8'), ctx, { filename: f });
+}
 vm.runInContext(src, ctx, { filename: 'session.js' });
 const { clockText, dateWords } = win.SESSION;
 
