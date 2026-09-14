@@ -20,7 +20,6 @@ The index, in the section's own order (nothing is pinned — Ed, 2026-09-07, Q12
 | 386 | No surface yet raises a reserve motion | 2026-08-19 | open — unbuilt; the page only displays one | `motionDisplay` |
 | 387 | Reserving the text | 2026-08-19 | parked | SPEC §9.7 |
 | 388 | Individual delegation, foundership transfer, inheritance | 2026-08-19 | parked — out of scope (Ed) | — |
-| 401 | May the subject judge their own removal race? ((b) only) | 2026-08-19 | waiting on Ed | SPEC §9.7½; `remove:<id>` |
 | 406 | Subsection headings don't fold | 2026-08-19 | partly built — they fold (entry 96); not in the TOC | `sectoggle` |
 | 398 | The multi-candidate ordinary race card | 2026-08-19 | waiting on Ed's design pass | Q390 |
 | 419 | Does the desktop focus order match the reading order? | 2026-08-20 | answered 2026-08-23, waiting on the mobile build | `design/MOBILE.md` §4 |
@@ -157,8 +156,6 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 387. **Reserving the text** (Ed, 2026-08-19, kept out of scope *for now*): every change to the document needing the founder's assent to merge — against the spirit of the product, and also exactly how suggested amendments work in many text-editing products, which is why it is parked rather than dead. If it ever lands, it is a fourth thing the 👑 can hold, and the assent step already exists (§9.7).
 
 388. **Individual delegation, foundership transfer, inheritance** (Ed, 2026-08-19, out of scope — *maybe when we make the sequel!*): founders delegating powers to individual members rather than the room; transferring the foundership deliberately or on lapse. The 👑 is a benevolent dictator for life, not a literal monarch — nobody inherits it when the founder lapses (v0.49's auto-assent is the whole story of an absent crown).
-
-401. **(b only — (a) closed by Ed 2026-08-19, *perfect*, and built: SPEC v0.60; the founder-direct removal path closed 2026-08-26, built as ❌'s ✒️, exile at will and immediate — entry 94, v0.74.)** Under the 🥾 removal setting's **proposal** rung (*ordinary* until v0.74), may the subject judge their own removal race? Today nothing stops them: the module puts no per-race judge restriction, the mock counts every member's judgment, and the engine race (`remove:<id>`) serves them pairs like anybody. Arguments each way: their §3.3-style stake in the outcome is exactly the author's-own-preference case the spec already counts; against, a removal race with the subject judging is the one race whose electorate the constitutional rungs deliberately shape, and the ordinary rung silently un-shapes it.
 
 406. **Subsection headings don't fold**
 

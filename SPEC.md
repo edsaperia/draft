@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.124
+# Group Drafting Engine — Specification v0.125
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -362,7 +362,7 @@ Out of scope, by ruling: delegating powers to individual members, transferring o
 | X1 | The Text has no **motion** route; it changes by drafting in the document, or by the convenor's pen where ✒️ is held (rule 8) | rule 5 | a motion button there is a second door to the same room; the pen is not a motion and is never raised | Q440, Q1020 | R-003, R-058 |
 | X2 | ⏰'s route falls inside the setting — moving the date is ordinary, removing the ending constitutional | route by kind | *never* is one of the answers to *when* | Q329 | R-033 |
 | X4 | The register is a fact, not a setting — who is a member changes by acts on people (invite, arrive, admit, remove, resign), each priced by a setting (🪪, 🥾) and each passing a **door** (✉️, ❌) that holds its own ✒️/🛡️ pair over the act (rule 9) | rule 5 | invite / arrive / remove are acts on people, and the founder's powers over an act are not powers over a rule | §9.7½, Q506 | R-024, R-090 |
-| X5 | 🥾 *assembly* is a decision class of its own: unanimity minus the subject, who sees the motion running but is not asked; *consent* counts the subject too, so nobody is removed against their will; a price change mid-motion is a ground shift | routes | real constitutions expel by unanimity of the others | Q401(a) | R-023 |
+| X5 | 🥾 *assembly* is a decision class of its own: unanimity minus the subject, who sees the motion running but is not asked; *consent* counts the subject too, so nobody is removed against their will; a price change mid-motion is a ground shift; **under *proposal* the subject judges their own removal race like any member** — the race is entered with no judge restriction, everybody votes their own preference and nothing is imputed | routes | real constitutions expel by unanimity of the others; at the bar, one voice is one voice | Q401(a), Q401(b) | R-023, R-112 |
 | X7 | 🎩 is a decision but not a setting; locked at the start | the table | it decides whether answers are owed at all | §9.6a | R-002 |
 | X8 | 🪜 has no clause of its own; it is stated inside the threshold's and set by 🌡️'s commit | one clause per setting | a ramp is part of what the threshold says | Q512 | — |
 | X9 | The Text's powers are laid down automatically at the start | rule 3 (a free act) | a drafting engine's default is that adoptions stand by themselves | Q440 | R-003 |
