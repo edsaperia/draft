@@ -6087,3 +6087,14 @@ Closed in the walk's second findings batch of 2026-09-14 (Ed: *close all nine*),
 
 1016. **The seat-matrix row for a shielded Text is deferred to entry 158.** *(raised by the R-056 build, 2026-08-29.)* `npm run seat-matrix` needs a running server and a whole membership unanimously carrying a `reserve` motion on the Text to reach the parked state at all — a walk of its own. Entry 158's Begin-card power switches make the state reachable in one press, so the row belongs with that build. Until then the founder-facing text 👑 card has no end-to-end walk; its guard is `packages/constitution/test/text-powers.test.ts`'s *🛡️ on the Text parks the adoption (R-056)* block for the mechanism, and a DOM measurement of the card for the surface. — **Answered 2026-08-29 (Ed): fold it into whatever next touches the harness, rather than as its own job.** So the row is not a build of its own and no plan is owed for it; it is a **rider** on the next piece of work that opens `scripts/seat-matrix.mjs`, which is why this stays in the register rather than being spent — it is a standing instruction with nothing yet to attach to. Two other riders are now waiting on the same file and should ride with it: **Q930**'s missing `AUDIENCE` predicate for *every active member* (E10 and E11 both), and **Q919**'s fifteen findings, which are one bug.
 
+
+## Q208: skip struck from the spec; ❄️ is the whole of it (R-107) (Ed, 2026-09-14)
+
+The walk's eighth question, 2026-09-14. **Ruled: strike skip from the spec.** SPEC v0.120: §3.1's sentence and §8.3's clause replaced by *there is no skip* and the ❄️ sentence, → why: R-107, which records the rejected readings (ledger it; build it beside ❄️). Nothing to build.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 208 | Skip now exists only on the 🔥 card | 2026-08-16 | open — (a) a spec sentence, (b) a sim check | SPEC §3.1, §8.3 |
+
+208. **Skip now exists only on the 🔥 card** (raised 2026-08-16, from Q202 — Ed's call, with the reasoning that skip belongs where the surface *insists* and nowhere it merely offers). Two loose ends. (a) SPEC §3.1 and §8.3 describe skipping as available on any card, so either the spec gains a sentence saying it is a property of *insistent* serving rather than of cards, or the product is knowingly narrower than the mechanism. (b) The personal recirculation-with-decay that skip triggers now applies to at most one suggestion at a time, which may make the decay function (Q175) nearly irrelevant — worth checking in the sim before anyone spends effort calibrating it.
+
