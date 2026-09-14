@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildConstituted } from './helpers.js';
+import { ConstitutionSession } from '../src/session.js';
 import { view } from '../src/view.js';
 
 describe('applications (§9.7½, entry 94): one switch, 🪪’s price, one identity rule', () => {
@@ -28,6 +29,42 @@ describe('applications (§9.7½, entry 94): one switch, 🪪’s price, one iden
     expect(s.applicantRecords().get(lodged)!.status).toBe('admitted');
     expect(s.E()).toBe(4);
     void bo; void cy;
+  });
+
+  // **And the applicant is told, and says they read it** (Ed, 2026-09-14,
+  // Q901; SURFACE E33). The refusal itself stays derived from the rule as it
+  // stands — there is no motion and no event to refuse — so only the OK is
+  // recorded, on the applicant's own row, and the room hears nothing of it.
+  it('the shut door takes an OK on the applicant’s own row, and nowhere else', () => {
+    const { s, bo } = buildConstituted({
+      applications: { apply: true }, admission: { price: 'proposal' } });
+    const late = s.startApplication(3, 'eve@example.org');
+    s.verifyApplication(4, late);
+    expect(s.applicantRecords().get(late)!.shutAcked).toBe(false);
+    s.setSetting(5, 'applications', { apply: false });
+    const roomBefore = JSON.stringify(view(s, bo));
+    s.ackApplyShut(6, late);
+    // the room hears nothing of a stranger: their whole view is unmoved
+    expect(JSON.stringify(view(s, bo))).toBe(roomBefore);
+    expect(s.applicantRecords().get(late)!.shutAcked).toBe(true);
+    // idempotent, and it refuses an applicant nobody has
+    expect(() => s.ackApplyShut(7, late)).not.toThrow();
+    expect(() => s.ackApplyShut(7, 'ap-nobody')).toThrow(/unknown applicant/);
+    // and the applicant row the members read carries no flag of it either
+    expect(Object.keys(view(s, bo).applicants[0] ?? {})).not.toContain('shutAcked');
+    // replay reproduces it, and the OK survives the close — the close is one
+    // of the things that shuts the door, so it may never refuse one
+    const again = ConstitutionSession.replay([...s.logEntries()]);
+    expect(again.rollingHash()).toBe(s.rollingHash());
+    expect(again.applicantRecords().get(late)!.shutAcked).toBe(true);
+    const fresh = buildConstituted({
+      applications: { apply: true }, admission: { price: 'proposal' } });
+    const ap2 = fresh.s.startApplication(3, 'eve@example.org');
+    fresh.s.verifyApplication(4, ap2);
+    fresh.s.tick(1_000_001);
+    expect(fresh.s.closed).toBe(true);
+    expect(() => fresh.s.ackApplyShut(1_000_002, ap2)).not.toThrow();
+    expect(fresh.s.applicantRecords().get(ap2)!.shutAcked).toBe(true);
   });
 
   it('a member address is told to log in instead — one address, one member', () => {

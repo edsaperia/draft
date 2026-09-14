@@ -148,6 +148,10 @@ export const memberTable: Route[] = [
             applicant: app === null ? null : { id: app.id, email: app.email,
               status: app.status, name: app.name, picture: app.picture, erased: app.erased,
               words: app.words, motion: app.motion,
+              // whether they have acknowledged the door shutting under them
+              // (SURFACE E33, Q901): the refusal rides `applyOpen` above, and
+              // this is the half of it that is recorded
+              shutAcked: app.shutAcked,
               // how many have judged the admit motion: a count, never who —
               // the applicant's own card promises *n of E have voted on it*
               judged: admitJudged(doc, app) },
@@ -235,8 +239,9 @@ export const memberTable: Route[] = [
         const refused = (status: number, reason: string): void => logError(cfg.dataDir, {
           kind: 'refused', status, method: 'POST', path: pathOf(req),
           doc: doc.id, slug: doc.cs.slug, seat: applicantId ?? memberId, cmd, args, reason });
-        // an applicant's one act: submit — nothing else speaks for them
-        if (applicantId !== null && cmd !== 'submit-application') {
+        // an applicant's two acts: submit, and the OK on a door that shut
+        // under them (SURFACE E33, Q901) — nothing else speaks for them
+        if (applicantId !== null && cmd !== 'submit-application' && cmd !== 'ack-apply-shut') {
           refused(403, 'applicants may only submit their application');
           json(res, 403, { error: 'applicants may only submit their application' });
           return true;

@@ -234,6 +234,9 @@ export function apply(s: FoldState, event: ConstitutionEvent, _seq: number): voi
           rec.mailGaveUpOwed = prev.mailGaveUpOwed;
           rec.mailGaveUpGiven = prev.mailGaveUpGiven;
           rec.mailGaveUp = prev.mailGaveUp;
+          // and the departure news with them, for the same reason (Q901)
+          rec.departuresOwed = prev.departuresOwed;
+          rec.departuresGiven = prev.departuresGiven;
           rec.lastActivityT = prev.lastActivityT;
         } else {
           rec.lastActivityT = Math.max(rec.lastActivityT, s.convenor.lastActivityT);
@@ -568,6 +571,20 @@ export function apply(s: FoldState, event: ConstitutionEvent, _seq: number): voi
       const m = s.members.get(event.member)!;
       m.amendmentsOwed.delete(event.candidate);
       m.amendmentsGiven.add(event.candidate);
+      touch(s, event.member, event.t);
+      break;
+    }
+    case 'departure-owed': {
+      // nothing is minted here, for `amendment-owed`'s reason: a departure
+      // carries the id of the member it is about, and `departed` below holds
+      // the moment and whose act it was (SURFACE E31, E32, E38; Q901)
+      s.members.get(event.member)!.departuresOwed.add(event.departed);
+      break;
+    }
+    case 'departure-ok': {
+      const m = s.members.get(event.member)!;
+      m.departuresOwed.delete(event.departed);
+      m.departuresGiven.add(event.departed);
       touch(s, event.member, event.t);
       break;
     }
@@ -908,6 +925,7 @@ function applyPresence(s: FoldState, event: ConstitutionEvent): void {
         status: 'started',
         words: null,
         motion: null,
+        shutAcked: false,
       };
       s.applicants.set(event.applicant, withPerson(s, state));
       s.nextApplicantN += 1;
@@ -943,6 +961,12 @@ function applyPresence(s: FoldState, event: ConstitutionEvent): void {
     }
     case 'application-refused': {
       s.applicants.get(event.applicant)!.status = 'refused';
+      break;
+    }
+    case 'apply-shut-ok': {
+      // the door shutting under an applicant is derived from the rule as it
+      // stands, so the OK is the only half of E33 that is recorded (Q901)
+      s.applicants.get(event.applicant)!.shutAcked = true;
       break;
     }
     default:
@@ -1021,6 +1045,7 @@ function freshMember(s: FoldState, id: MemberId, person: PersonId, invitedAtT: n
     releasesOwed: new Set(), releasesGiven: new Set(),
     amendmentsOwed: new Set(), amendmentsGiven: new Set(),
     mailGaveUpOwed: new Set(), mailGaveUpGiven: new Set(), mailGaveUp: false,
+    departuresOwed: new Set(), departuresGiven: new Set(),
     invitationExpired: false, closingAck: null,
   };
   return withPerson(s, state);

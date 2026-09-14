@@ -1,11 +1,12 @@
 /**
  * What a member is owed, and the OK that answers it: the acknowledgement
  * family (SPEC §9.6a; SURFACE C8, E5, E9, E34, E35), out of session.ts since
- * Q1352 (q), 2026-09-14. Four kinds of news, one posture each way — an
+ * Q1352 (q), 2026-09-14. Five kinds of news, one posture each way — an
  * *owing* walks the room and emits one event per person it is addressed to,
  * an *OK* refuses nothing it can simply ignore — and the fold in session.ts
  * is what turns those events into `okOwed`, `releasesOwed`,
- * `amendmentsOwed` and `mailGaveUpOwed` on each member's record.
+ * `amendmentsOwed`, `mailGaveUpOwed` and `departuresOwed` on each member's
+ * record.
  *
  * Every function here reads the session through `OwedState`, a view of
  * exactly the fields this family needs and nothing else, and writes only by
@@ -32,6 +33,19 @@ export interface OwedState {
   readonly nextMailGiveUpN: number;
   emit(event: ConstitutionEvent): void;
   requireOpen(what: string): void;
+}
+
+/**
+ * The narrower view a departure's owing needs: the membership and `emit`, and
+ * nothing else. It is its own interface because the owing has **two callers on
+ * two hosts** — `remove` and `resign` on the session, and the carried 🥾
+ * motion's arm inside `motions.ts`, whose `MotionHost` is a live view rather
+ * than a snapshot — and a rule about who is told must be written once whatever
+ * it is called through. `OwedState` and `MotionHost` both satisfy it.
+ */
+export interface DepartureAudience {
+  readonly members: ReadonlyMap<MemberId, MemberRecord>;
+  emit(event: ConstitutionEvent): void;
 }
 
 /**
@@ -218,6 +232,62 @@ export function ackMailGaveUp(s: OwedState, t: number, member: MemberId, batch: 
   if (!m) throw new Error(`unknown member '${member}'`);
   if (!m.mailGaveUpOwed.has(batch)) return;
   s.emit({ type: 'mail-gave-up-ok', t, batch, member });
+}
+
+/**
+ * **Every departure is news owed an OK** (Ed, 2026-09-14, Q901; SURFACE E31,
+ * E32, E40). Exiled by ❌'s ✒️, removed by a carried 🥾 motion, or resigned:
+ * one rule over all three, because what a member is told is *that somebody
+ * left*, and by whose act — never which of the three routes the mechanism
+ * took. `oweAmendment`'s shape exactly: one event per member told, nothing
+ * batched and nothing minted.
+ *
+ * **The audience is `oweOks`'s minus one exclusion and plus one.** The
+ * un-arrived are skipped for `oweOks`'s stated reason — somebody who never met
+ * the membership is not being told it changed — and the removed with them,
+ * which is what keeps the departing member out of their own news; the
+ * departing person keeps what E31 and E32 already give them, the mail and the
+ * door's own sentence. The lapsed are inside it, as they are for every owing
+ * in this file.
+ *
+ * **The actor is *not* skipped**, and that is the one place this differs from
+ * `oweReleases` and `oweAmendment` (Ed's ruling: *every departure … owes every
+ * remaining member an OK*, the exclusions named being the departed and the
+ * later joiner, and no other). The two siblings skip the convenor because the
+ * power card and the amendment card are the actor's own confirmation of a
+ * thing they decided; here only one of the three routes has a single actor at
+ * all — a carried motion is the room's act and a resignation is the departing
+ * member's — so an actor exclusion would be a rule about ❌ wearing the
+ * clothes of a rule about departures. It is one predicate to reverse if Ed
+ * rules otherwise, and `seat-matrix`'s E40 cell is the other half of it.
+ *
+ * A departure is one act about one member and a member id departs once — a
+ * returning person is invited afresh under a new id — so `departed` is a key
+ * that cannot collide, and the already-owed skip is the same guard `oweOks`
+ * carries rather than the deliberate omission the batch ids make of it.
+ */
+export function oweDeparture(s: DepartureAudience, t: number, departed: MemberId): void {
+  for (const m of s.members.values()) {
+    // the departed member's own record is `removed` by the time this is
+    // called — the fold runs under `emit` — so this skip is theirs too
+    if (m.arrivedAtT === null || m.removed) continue;
+    if (m.departuresOwed.has(departed)) continue;
+    s.emit({ type: 'departure-owed', t, member: m.id, departed });
+  }
+}
+
+/**
+ * The OK on one departure (SURFACE E31, E32, E40) — `ackRelease`'s posture
+ * exactly: a departure this member is not owed returns silently rather than
+ * throwing at a page that was a poll behind.
+ */
+export function ackDeparture(s: OwedState, t: number, member: MemberId,
+  departed: MemberId): void {
+  s.requireOpen('acknowledging');
+  const m = s.members.get(member);
+  if (!m) throw new Error(`unknown member '${member}'`);
+  if (!m.departuresOwed.has(departed)) return;
+  s.emit({ type: 'departure-ok', t, member, departed });
 }
 
 /**

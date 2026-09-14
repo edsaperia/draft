@@ -1303,8 +1303,13 @@ say(`tables     · SURFACE §2 events ${EVENTS.length} rows · seats ${SEATS.len
 // a row means there are events this table does not cover, which is the same
 // condition as an unread audience cell — so it goes to the same exit code
 // rather than printing a ✗ into a run that then reports itself green.
-const shape = EVENTS.length === 37 ? []
-  : [`SURFACE §2 has ${EVENTS.length} event rows, not the 37 this table was written against`];
+// 38 since Q901 (Ed, 2026-09-14): E40, a member removed by a carried 🥾
+// motion. No step carries one — `remove-motion` puts the motion and leaves it
+// running — so the row reaches no seat here and needs no `AUDIENCE` entry; its
+// cell is E31's word for word, so the day a step does carry one, one predicate
+// serves both.
+const shape = EVENTS.length === 38 ? []
+  : [`SURFACE §2 has ${EVENTS.length} event rows, not the 38 this table was written against`];
 for (const s of shape) say('  ? ' + s);
 
 const browser = await chromium.launch();

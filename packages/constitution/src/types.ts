@@ -246,6 +246,25 @@ export type ConstitutionEvent =
   | { type: 'mail-gave-up-ok'; t: number; batch: string; member: MemberId }
   /** 📨: the founder puts the invitation back in the queue (SURFACE E34). */
   | { type: 'mail-resent'; t: number; member: MemberId; by: MemberId }
+  /* -- a departure (SURFACE E31, E32, E38; Q901, Ed 2026-09-14) ------------ */
+  /**
+   * **Every departure is news owed an OK** (Ed, 2026-09-14, Q901). Until this
+   * ruling a member leaving — exiled by ❌'s ✒️, removed by a carried 🥾
+   * motion, or resigned — reached the room as a grey sentence under *Members*
+   * that asked nothing, and a member who was not looking at that list the day
+   * it happened never learned of it at all. The membership is the one fact
+   * every other rule is about, so it takes the acknowledgement family's own
+   * shape: `amendment-owed`'s exactly — one event per member told, no batching
+   * and nothing to mint, because a departure is a single act about a single
+   * person and the card is that person.
+   *
+   * `departed` is the whole of what is remembered: `departures()` already
+   * holds the act's moment and whose it was, folded from `member-removed`, so
+   * the card reads both from there rather than carrying a second copy that
+   * could disagree with it.
+   */
+  | { type: 'departure-owed'; t: number; member: MemberId; departed: MemberId }
+  | { type: 'departure-ok'; t: number; member: MemberId; departed: MemberId }
   /* -- motions (§9.6, v0.48) ---------------------------------------------- */
   | { type: 'motion-opened'; t: number; motion: MotionId; by: MemberId | null;
       payload: MotionPayload; route: MotionRoute; stake: number; why?: string }
@@ -325,6 +344,17 @@ export type ConstitutionEvent =
   | { type: 'application-proposed'; t: number; applicant: ApplicantId; by: MemberId }
   | { type: 'member-admitted'; t: number; applicant: ApplicantId; member: MemberId }
   | { type: 'application-refused'; t: number; applicant: ApplicantId }
+  /**
+   * **The door shut on an application, and the applicant said they had read
+   * it** (Ed, 2026-09-14, Q901; SURFACE E33). 🤝 shutting after somebody
+   * verified their address and before they submitted is the one refusal the
+   * room never decides — there is no motion and no event to refuse, because
+   * the rule simply changed under them — so the *refusal* stays derived from
+   * the rule as it stands (`applyOpenFor`) and only the **acknowledgement** is
+   * recorded. One flag on their own row: the room hears nothing of a stranger,
+   * so this is the whole of what the act leaves behind.
+   */
+  | { type: 'apply-shut-ok'; t: number; applicant: ApplicantId }
   /** The close (SPEC §4.6): the clock reached the ending; nobody pressed anything. */
   | { type: 'closed'; t: number }
   /** A constitutional motion unresolved at T=0: what stands stands (SPEC §4.6). */
@@ -490,6 +520,17 @@ export interface MemberState {
    * and it is live state where the batches above are history.
    */
   mailGaveUp: boolean;
+  /**
+   * Departures this member is owed the news of, minus the ones they have
+   * acknowledged (SURFACE E31, E32, E38; Q901), by the departed member's id.
+   * **Separate from `okOwed` for `releasesOwed`'s own reason**: a departure is
+   * news about the membership, not about a setting's value, and landing it in
+   * `okOwed` would fire a setting's value-news card with the wrong copy.
+   * Nothing of the departure is copied here — `departures()` holds the moment
+   * and whose act it was.
+   */
+  departuresOwed: Set<MemberId>;
+  departuresGiven: Set<MemberId>;
   /** An invitation that expired unopened at the close (SPEC §4.6). */
   invitationExpired: boolean;
   /** The member's closing acknowledgment — signature and comment (SPEC §4.6). */
@@ -649,6 +690,13 @@ export interface ApplicantState {
   status: ApplicationStatus;
   words: string | null;
   motion: MotionId | null;
+  /**
+   * Whether this applicant has acknowledged the door shutting on them
+   * (SURFACE E33, Q901). The refusal itself is derived from the rule as it
+   * stands, so this is the whole of what the act records; it stays set if the
+   * door opens again, the OK being about the news rather than about the rule.
+   */
+  shutAcked: boolean;
 }
 
 /** An applicant as a reader meets them — the row resolved (decision 1253). */

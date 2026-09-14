@@ -196,6 +196,12 @@ export interface MemberView {
   applicants: ApplicantRowView[];
   owedOks: SettingId[];
   /**
+   * The departures still owed your OK (SURFACE E31, E32, E38; Q901), oldest
+   * first, as member ids into `departures` above — which carries the name, the
+   * moment and whose act it was, so nothing about a departure is stated twice.
+   */
+  owedDepartures: MemberId[];
+  /**
    * The acts that laid powers down and are still owed your OK (entry 162,
    * Q1013), oldest first: one entry per act, carrying the whole of what that
    * act moved. The batch's contents ride the view rather than the page keeping
@@ -414,6 +420,11 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
     doors,
     applicants,
     owedOks: me ? [...me.okOwed] : [],
+    // the departures still owed your OK (SURFACE E31, E32, E38; Q901), oldest
+    // first: the ids alone, because `departures` above already carries the
+    // name, the moment and whose act it was for every one of them — a second
+    // copy is a second truth, and the card reads the register's own row
+    owedDepartures: me ? departures.filter((d) => me.departuresOwed.has(d.id)).map((d) => d.id) : [],
     // newest last, so the rail meets the acts in the order they happened; a
     // seat with no member record gets [], exactly as `owedOks` does
     owedReleases: me

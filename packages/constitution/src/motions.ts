@@ -24,6 +24,10 @@ import { CATALOGUE, entryOf, motionRouteOf, validateFor } from './catalogue.js';
 import type { Price } from './values.js';
 import { eqValue } from './values.js';
 import { inE, motionElectorateOf } from './populations.js';
+// the departure owing (Q901): one rule over all three routes out, so the
+// carried 🥾 motion's arm calls the same function `remove` and `resign` do.
+// `MotionHost` satisfies `DepartureAudience` by its `members` and `emit`.
+import { oweDeparture } from './owed.js';
 
 /** The settings whose change is the ask-everyone route (SPEC §9.6's test).
  *  Read by the fold's owing as well as by the carry's, so it lives beside
@@ -378,6 +382,9 @@ export function settleCarriedEffects(s: MotionHost, t: number, rec: MotionRecord
     const target = rec.payload.member;
     const wasInE = inE(s.members.get(target)!);
     s.emit({ type: 'member-removed', t, member: target, viaMotion: rec.id });
+    // the room is told, and owes an OK for it (SURFACE E38, Q901) — before
+    // the roster's follow-ons, as at the other two doors out
+    oweDeparture(s, t, target);
     if (wasInE) s.afterRosterChange(t, 'departure', target);
     // after the roster's own follow-ons, never inside them: they can carry
     // further motions, and the auto-pass is the last word on a settled
