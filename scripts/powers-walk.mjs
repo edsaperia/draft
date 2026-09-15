@@ -69,14 +69,13 @@ if (!['member', 'clerk', 'both'].includes(HAT)) {
 
 /* The audit set: every setting whose value the founder's own card sets, by the
  * page's key and the module's id (they differ on 📍 alone). ⏰ is deliberately
- * absent — it keeps its pen and is the control. 🪜 is in the list because the
- * module holds it like any other; it has no tab of its own on the page (X8),
- * which the walk reports as `no tab` rather than as a failure. */
+ * absent — it keeps its pen and is the control. 🌡️ and 🪜 were here until
+ * 2026-09-15 (Q1362), the second of them as the walk's one no-tab case: both
+ * left the surface with the bar, and a setting with no card holds no pen a
+ * founder could lay down. */
 const AUDIT = [
   { k: 'title', id: 'title', g: '🪶', value: { text: 'A Second Name' } },
   { k: 'slug', id: 'link', g: '📍', value: { slug: 'a-second-address' } },
-  { k: 'bar', id: 'bar', g: '🌡️', value: { pct: 61 } },
-  { k: 'pace', id: 'pace', g: '🪜', value: { shape: 'fixed' } },
   { k: 'quorum', id: 'quorum', g: '👥', value: { form: 'count', n: 1 } },
   { k: 'authorship', id: 'authorship', g: '👤', value: { rung: 'public' } },
   { k: 'judgments', id: 'judgments', g: '👁️', value: { rung: 'never' } },
@@ -269,8 +268,7 @@ const runDocument = async (hat) => {
   /* ---- the rest of the constitution, over the wire --------------------- */
   const ENDS = Date.now() + 3600_000;
   const SETTINGS = [
-    ['ending', { endsAtMs: ENDS }],   // ⏰ leads: 🌡️ depends on it
-    ['pace', { shape: 'fixed' }], ['bar', { pct: 60 }],
+    ['ending', { endsAtMs: ENDS }],   // ⏰ leads, as the founding's own order has it
     ['quorum', { form: 'count', n: 1 }], ['authorship', { rung: 'sealed' }],
     ['judgments', { rung: 'after' }], ['chamber', { rung: 'link' }],
     ['lapse', { afterMs: null }], ['removal', { price: 'proposal' }],

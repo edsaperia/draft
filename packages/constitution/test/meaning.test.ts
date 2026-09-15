@@ -1,148 +1,38 @@
 /**
  * **What a rung says it would do** (entry 165).
  *
- * Two things are checked here, and the first is the load-bearing one:
+ * The sentences, **verbatim**. They are surface copy living in the module (T5:
+ * one label per rung everywhere), so nothing else reads them — the banned-word
+ * check's corpus is the page files — and a test that only matched a shape
+ * would let a re-wording through unseen.
  *
- * 1. `winsNeededPct` reads `VOTES_NEEDED` — a table copied out of engine-core's
- *    Davidson fit, because the page bundle carries no engine-core — and this
- *    file re-runs the real `winsNeeded` over every room and every bar the
- *    surface can express, so the copy cannot drift under the sentence. It is
- *    the same discipline `threshold.test.ts` applies to the table itself; what
- *    is new here is the *reading* of it, which differs from /pairwise's: a cell
- *    indexed by votes cast is being read as a room where everybody votes.
- * 2. The sentences, **verbatim**. They are surface copy living in the module
- *    (T5: one label per rung everywhere), so nothing else reads them — the
- *    banned-word check's corpus is the four page files — and a test that only
- *    matched a shape would let a re-wording through unseen.
+ * **It had a second half, and it went with 🌡️** (Q1362, 2026-09-15). The
+ * load-bearing check here used to be that `winsNeededPct` read `VOTES_NEEDED` —
+ * a table copied out of engine-core's Davidson fit, because the page bundle
+ * carries no engine-core — and this file re-ran the real `winsNeeded` over every
+ * room and every bar the surface could express, so the copy could not drift
+ * under the sentence. No card asks for a bar now, so nothing reads the table
+ * from this side; `threshold.test.ts` still applies the same discipline to the
+ * table itself, which is pinned and a release from deletion.
  */
 import { describe, expect, it } from 'vitest';
-import { winsNeeded } from '../../engine-core/src/ranking/ceiling.js';
 import type { Room } from '../src/meaning.js';
-import { BAR_RUNGS, MEANING_MAX, OWN_RUNG_LABEL, meaningOf, roomPhrase, spellWords, winsNeededPct } from '../src/meaning.js';
-import { VOTES_NEEDED_MAX_N, barCeilingPct } from '../src/threshold.js';
-import { CATALOGUE, CATALOGUE_BY_ID, validateFor } from '../src/catalogue.js';
+import { MEANING_MAX, meaningOf, spellWords } from '../src/meaning.js';
+import { CATALOGUE, validateFor } from '../src/catalogue.js';
 import { quorumCount } from '../src/populations.js';
-import type { LapseValue, PaceValue, QuorumValue, RateValue, SettingValue } from '../src/values.js';
+import type { LapseValue, QuorumValue, RateValue, SettingValue } from '../src/values.js';
 
 /** A fixed clock: this package reads none, and a test that did would drift. */
 const NOW = Date.UTC(2026, 7, 27, 9, 0, 0);
-const ROOM: Room = { e: 5, endsAtMs: null, nowMs: NOW, barPct: 80 };
-
-describe('winsNeededPct is engine-core’s own fit', () => {
-  it('agrees with winsNeeded for every room and every bar the surface offers', () => {
-    for (let e = 1; e <= 24; e++) {
-      for (let pct = 50; pct <= 99; pct++) {
-        expect(winsNeededPct(e, pct), `e=${e} pct=${pct}`).toBe(winsNeeded(e, pct));
-      }
-    }
-    // 1,200 cells, each a Bradley–Terry fit: ~1.7 s alone and past vitest's
-    // 5 s default once the whole suite's workers are competing for the core.
-    // Its own timeout, because the cost is the table's and not the lane's.
-  }, 30000);
-
-  it('and at the three rungs out to the table’s last room', () => {
-    for (const e of [1, 2, 3, 5, 8, 14, 30, 60, 99, 100]) {
-      for (const r of BAR_RUNGS) {
-        expect(winsNeededPct(e, r.pct), `e=${e} at ${r.pct}%`).toBe(winsNeeded(e, r.pct));
-      }
-    }
-  });
-
-  it('each rung carries its sentence — the option block’s text (Q1104 (b))', () => {
-    const seen = new Set<string>();
-    for (const r of BAR_RUNGS) {
-      expect(r.sentence.length, r.label).toBeGreaterThan(0);
-      expect(r.sentence.length, r.label).toBeLessThanOrEqual(MEANING_MAX);
-      expect(seen.has(r.sentence), r.label).toBe(false);
-      seen.add(r.sentence);
-    }
-  });
-
-  it('null is exactly the bars above the room’s ceiling', () => {
-    for (let e = 1; e <= 24; e++) {
-      for (let pct = 50; pct <= 99; pct++) {
-        expect(winsNeededPct(e, pct) === null, `e=${e} pct=${pct}`).toBe(pct > barCeilingPct(e));
-      }
-    }
-  });
-
-  it('says nothing rather than guessing, off the table’s edges', () => {
-    // **undefined, not a clamped number** (T13). `votesNeeded` clamps, because
-    // its one caller's axis is the table's own range; a sentence a member reads
-    // may not, so the card prints no line instead.
-    expect(winsNeededPct(VOTES_NEEDED_MAX_N + 1, 60)).toBe(undefined);
-    expect(winsNeededPct(5, 49)).toBe(undefined);
-    expect(winsNeededPct(5, 100)).toBe(undefined);
-    expect(winsNeededPct(Number.NaN, 60)).toBe(undefined);
-    // a room smaller than one reads as one — the founder is always in it
-    expect(winsNeededPct(0, 60)).toBe(winsNeededPct(1, 60));
-    expect(winsNeededPct(5.9, 60)).toBe(winsNeededPct(5, 60));
-  });
-});
+const ROOM: Room = { e: 5, endsAtMs: null, nowMs: NOW };
 
 describe('meaningOf', () => {
-  const bar = (pct: number, e: number) => meaningOf('bar', { pct }, { e });
-  const ramp = (startPct: number, closeAt: number) =>
-    meaningOf('pace', { shape: 'ramp', startPct }, { e: 5, barPct: closeAt });
-  const fixed = (closeAt: number) => meaningOf('pace', { shape: 'fixed' }, { e: 5, barPct: closeAt });
-
-  it('names its own dependence, so an arriving member is visibly what moved', () => {
-    expect(bar(80, 5)).toBe('In a membership of 5, 4 of 5 must vote for it by the end.');
-    expect(bar(80, 6)).toBe('In a membership of 6, 5 of 6 must vote for it by the end.');
-    expect(bar(60, 5)).toBe('In a membership of 5, 3 of 5 must vote for it by the end.');
-    expect(bar(90, 6)).toBe('In a membership of 6, 5 of 6 must vote for it by the end.');
-  });
-
-  it('all-of-them reads as itself', () => {
-    expect(bar(90, 3)).toBe('In a membership of 3, all 3 must vote for it by the end.');
-  });
-
-  it('an unreachable bar, and a membership of one, say nothing (Q1159, Ed 2026-09-02)', () => {
-    // the ceiling lines are retired — remove them and say nothing; /pairwise
-    // carries the account, and T39's nothing-true rule prints no line
-    expect(bar(90, 1)).toBeNull();
-    expect(bar(90, 2)).toBeNull();
-    expect(bar(80, 1)).toBeNull();
-    expect(bar(60, 1)).toBeNull();
-  });
-
-  it('🪜 names where the climb starts and where it ends', () => {
-    // **Entry 167 replaced 165's sentence rather than folding it.** 165's
-    // counted votes at the start — *in a room of 5, 3 of 5 is enough when
-    // voting opens* — which is 🌡️'s own sentence in the opening tense and
-    // left the number it climbs *to* on another card. 🪜's dependence is
-    // 🌡️'s number (rule 1), so the sentence names both ends.
-    expect(ramp(60, 80)).toBe('Starts at a bare majority (60%) when voting opens and climbs to broad agreement (80%) by the end — early changes pass more easily.');
-    expect(ramp(55, 78)).toBe('Starts at 55% when voting opens and climbs to 78% by the end — early changes pass more easily.');
-    expect(ramp(80, 90)).toBe('Starts at broad agreement (80%) when voting opens and climbs to nearly everyone (90%) by the end — early changes pass more easily.');
-  });
-
-  it('and a fixed pace says the number never moves', () => {
-    expect(fixed(80)).toBe('Stays at broad agreement (80%) from the moment voting opens to the end.');
-    expect(fixed(78)).toBe('Stays at 78% from the moment voting opens to the end.');
-  });
-
-  it('🪜 says nothing at all until 🌡️ has a number to climb towards', () => {
-    expect(meaningOf('pace', { shape: 'ramp', startPct: 60 }, { e: 5 })).toBe(null);
-    expect(meaningOf('pace', { shape: 'fixed' }, { e: 5, barPct: null })).toBe(null);
-  });
-
-  it('and never says “the bar”, which is card-audit’s T15', () => {
-    // CLAUDE.md: **approval threshold**, never "the bar" — and these sentences
-    // live outside `spec-check`'s four-file corpus, so this is the guard
-    for (let e = 1; e <= 12; e++) {
-      for (const pct of [55, 60, 72, 80, 90, 99]) {
-        for (const s of [bar(pct, e), ramp(pct, 90), fixed(pct)]) {
-          expect(s === null || !/(^|[^a-z])the bars?([^a-z]|$)/i.test(s), `${s}`).toBe(true);
-        }
-      }
-    }
-  });
-
-  it('says nothing where it cannot say anything true', () => {
-    expect(bar(60, VOTES_NEEDED_MAX_N + 1)).toBe(null);
-    expect(meaningOf('bar', null, { e: 5 })).toBe(null);
-  });
+  // 🌡️ and 🪜 had the whole of this block until 2026-09-15 (Q1362): the bar's
+  // *In a membership of 5, 4 of 5 must vote for it by the end*, the ramp's two
+  // ends, the unreachable-bar silence (Q1159) and the *never says the bar*
+  // guard. Both settings left the surface with the bar they named, and what is
+  // left of `meaningOf` — 👥 ⏱️ 💤 — is exercised by *the meaning family*
+  // below, over every value the surface can state.
 
   it('and nothing at all for a setting the family does not cover', () => {
     // the ladders whose rungs already say what they mean in words (👤 👁️ 🌍
@@ -153,18 +43,6 @@ describe('meaningOf', () => {
     }
   });
 
-  it('every sentence fits the card’s own budget', () => {
-    // card-audit's H4 caps a helper line at 200 characters, and these are read
-    // under a rung on four surfaces
-    for (let e = 1; e <= VOTES_NEEDED_MAX_N; e++) {
-      for (let pct = 50; pct <= 99; pct++) {
-        for (const s of [bar(pct, e), ramp(pct, 90), fixed(pct)]) {
-          if (s === null) continue;
-          expect(s.length, `${s}`).toBeLessThanOrEqual(MEANING_MAX);
-        }
-      }
-    }
-  });
 });
 
 /**
@@ -194,19 +72,12 @@ describe('the meaning family', () => {
     ...[7, 14, 30, 90].map((d): LapseValue => ({ afterMs: d * 86400000 })),
     { afterMs: null },
   ];
-  const PACES: PaceValue[] = [{ shape: 'fixed' },
-    ...BAR_RUNGS.map((r) => ({ shape: 'ramp' as const, startPct: r.pct })),
-    { shape: 'ramp', startPct: 55 }];
-
   const rows = (e: number, endsAtMs: number | null) => {
-    const room: Room = { e, endsAtMs, nowMs: NOW, barPct: 78 };
+    const room: Room = { e, endsAtMs, nowMs: NOW };
     return [
       ...QUORUMS(e).map((v) => ['quorum', v, room] as const),
       ...RATES.map((v) => ['rate', v, room] as const),
       ...LAPSES.map((v) => ['lapse', v, room] as const),
-      ...PACES.map((v) => ['pace', v, room] as const),
-      ...[...BAR_RUNGS.map((r) => ({ pct: r.pct })), { pct: 65 }, { pct: 95 }]
-        .map((v) => ['bar', v, room] as const),
     ];
   };
 
@@ -215,10 +86,10 @@ describe('the meaning family', () => {
       for (const [, endsAtMs] of WINDOWS) {
         for (const [id, v, room] of rows(e, endsAtMs)) {
           const s = meaningOf(id, v, room);
-          // 🌡️ and 🪜 are allowed their one silence — a bar this room cannot
-          // reach — and it is the only one in the table
-          if (s === null) { expect(id === 'bar' || id === 'pace', `${id} ${JSON.stringify(v)} e=${e}`).toBe(true); continue; }
-          expect(s.length, `${id} ${JSON.stringify(v)} e=${e}: ${s}`).toBeLessThanOrEqual(MEANING_MAX);
+          // **No silences left** (Q1362): 🌡️'s unreachable bar was the one
+          // value in this table that could print nothing, and it has gone
+          expect(s, `${id} ${JSON.stringify(v)} e=${e}`).not.toBeNull();
+          expect(s!.length, `${id} ${JSON.stringify(v)} e=${e}: ${s}`).toBeLessThanOrEqual(MEANING_MAX);
         }
       }
     }
@@ -226,13 +97,9 @@ describe('the meaning family', () => {
 
   it('names its own dependence — and only its own', () => {
     for (let e = 1; e <= 12; e++) {
-      const room: Room = { e, endsAtMs: NOW + DAYS3, nowMs: NOW, barPct: 80 };
+      const room: Room = { e, endsAtMs: NOW + DAYS3, nowMs: NOW };
       for (const v of QUORUMS(e)) {
         expect(meaningOf('quorum', v, room), `quorum ${JSON.stringify(v)} e=${e}`).toMatch(/membership of/);
-      }
-      for (const r of BAR_RUNGS) {
-        const s = meaningOf('bar', { pct: r.pct }, room);
-        if (s !== null) expect(s, `bar ${r.pct} e=${e}`).toMatch(/membership of/);
       }
       // ⏱️ names the window it is measured over…
       for (const v of RATES) {
@@ -248,7 +115,7 @@ describe('the meaning family', () => {
   });
 
   it('👥’s arithmetic is `quorumCount`’s, and every branch ends in the floor (Q1196)', () => {
-    const room: Room = { e: 9, endsAtMs: null, nowMs: NOW, barPct: 80 };
+    const room: Room = { e: 9, endsAtMs: null, nowMs: NOW };
     const share: QuorumValue = { form: 'share', n: 34 };
     expect(quorumCount(share, 9)).toBe(4);
     expect(meaningOf('quorum', share, room))
@@ -275,7 +142,7 @@ describe('the meaning family', () => {
     expect(meaningOf('lapse', { afterMs: 30 * 86400000 })).toMatch(/for a month /);
     expect(meaningOf('lapse', { afterMs: 90 * 86400000 })).toMatch(/for 90 days /);
     expect(meaningOf('lapse', { afterMs: null })).toBe('Nobody ever drops out of the count, however long they are away.');
-    const room: Room = { e: 5, endsAtMs: NOW + 3 * 3600000, nowMs: NOW, barPct: 80 };
+    const room: Room = { e: 5, endsAtMs: NOW + 3 * 3600000, nowMs: NOW };
     expect(meaningOf('rate', { grant: 4, cap: 6, dripMinutes: 30 }, room))
       .toBe('Over a session of 3 hours, about 10 proposals each — 4 to start with and one more every 30 minutes, never more than 6 in hand.');
     // a drip faster than five minutes is a rhythm, not a figure
@@ -356,32 +223,5 @@ describe('every ladder is most-protective-first', () => {
     }
     expect(checked).toBeGreaterThan(8);
   });
-
-  it('…and 🌡️’s rungs, which are a list of their own', () => {
-    expect(BAR_RUNGS.map((r) => r.pct)).toEqual([...BAR_RUNGS.map((r) => r.pct)].sort((a, b) => b - a));
-  });
 });
 
-describe('BAR_RUNGS', () => {
-  it('is most protective first, and every rung is a bar the setting accepts', () => {
-    expect(BAR_RUNGS.map((r) => r.pct)).toEqual([90, 80, 60]);
-    const entry = CATALOGUE_BY_ID.get('bar')!;
-    for (const r of BAR_RUNGS) {
-      expect(validateFor(entry, { pct: r.pct }), `${r.pct}%`).toBe(null);
-    }
-  });
-
-  it('and the fourth rung is the number itself', () => {
-    expect(OWN_RUNG_LABEL).toBe('A number of my own');
-    expect(BAR_RUNGS.some((r) => r.label === OWN_RUNG_LABEL)).toBe(false);
-  });
-
-  it('and *one* is a word, wherever the membership is named', () => {
-    // `ceilingNote` on the page builds the same phrase, and takes it from
-    // here rather than keeping a second copy (T5)
-    expect(roomPhrase(0)).toBe('one');
-    expect(roomPhrase(1)).toBe('one');
-    expect(roomPhrase(2)).toBe('2');
-    expect(roomPhrase(14.7)).toBe('14');
-  });
-});

@@ -25,7 +25,6 @@ var CONSTITUTION = (() => {
   var browser_exports = {};
   __export(browser_exports, {
     BAR_CEILING_PCT: () => BAR_CEILING_PCT,
-    BAR_RUNGS: () => BAR_RUNGS,
     CATALOGUE: () => CATALOGUE,
     CATALOGUE_BY_ID: () => CATALOGUE_BY_ID,
     ConstitutionSession: () => ConstitutionSession,
@@ -34,7 +33,6 @@ var CONSTITUTION = (() => {
     InMemoryPeople: () => InMemoryPeople,
     JUDGE_GATES: () => JUDGE_GATES,
     MEANING_MAX: () => MEANING_MAX,
-    OWN_RUNG_LABEL: () => OWN_RUNG_LABEL,
     PEOPLE_SCHEMA_VERSION: () => PEOPLE_SCHEMA_VERSION,
     SCHEMA_VERSION: () => SCHEMA_VERSION,
     SHAPED: () => SHAPED,
@@ -81,8 +79,7 @@ var CONSTITUTION = (() => {
     versionOf: () => versionOf,
     view: () => view,
     votesNeeded: () => votesNeeded,
-    warningDue: () => warningDue,
-    winsNeededPct: () => winsNeededPct
+    warningDue: () => warningDue
   });
 
   // src/sha256.ts
@@ -3850,58 +3847,12 @@ var CONSTITUTION = (() => {
   };
 
   // src/meaning.ts
-  var BAR_RUNGS = [
-    // `sentence` is the rung as an option block reads it (CP1/Q1104 (b), Ed
-    // 2026-08-31: the option's text is the rule as it would stand, the percent
-    // stated beside it); `label` survives as the rung's short name — the
-    // distribution strip's word, and 🪜's starting rungs, where a sentence
-    // about *passing* would misstate a bar that only opens the vote.
-    // the sentences are Ed's own (card review 2026-09-02, Q1156/Q1157: a share
-    // of voters is the deliberate simplification — the precise account lives at
-    // /pairwise, which `methodNote` links)
-    {
-      pct: 90,
-      label: "Nearly everyone",
-      sentence: "For a proposal ✏️ to pass, nearly all members that voted on it must prefer it to the alternatives"
-    },
-    {
-      pct: 80,
-      label: "Broad agreement",
-      sentence: "For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives"
-    },
-    {
-      pct: 60,
-      label: "A bare majority",
-      sentence: "For a proposal ✏️ to pass, a majority of the membership that voted must prefer it to the alternatives"
-    }
-  ];
-  var OWN_RUNG_LABEL = "A number of my own";
-  function winsNeededPct(e, pct) {
-    if (!Number.isFinite(e) || !Number.isFinite(pct)) return void 0;
-    if (pct < VOTES_NEEDED_LO_PCT || pct > VOTES_NEEDED_HI_PCT) return void 0;
-    const n = Math.max(1, Math.floor(e));
-    if (n > VOTES_NEEDED_MAX_N) return void 0;
-    const k = votesNeeded(n, Math.floor(pct));
-    return k === 0 ? null : k;
-  }
   function roomPhrase(e) {
     return e <= 1 ? "one" : String(Math.floor(e));
   }
   var roomOf = roomPhrase;
   var MEANING_MAX = 200;
   var fit = (s) => s.length <= MEANING_MAX ? s : null;
-  function winsClause(e, pct) {
-    const k = winsNeededPct(e, pct);
-    if (k === void 0 || k === null) return k;
-    return { k, n: Math.max(1, Math.floor(e)) };
-  }
-  function barMeaning(pct, room) {
-    const w = winsClause(room.e, pct);
-    if (w === void 0) return null;
-    if (w === null || w.n === 1) return null;
-    if (w.k === w.n) return fit("In a membership of " + w.n + ", all " + w.n + " must vote for it by the end.");
-    return fit("In a membership of " + w.n + ", " + w.k + " of " + w.n + " must vote for it by the end.");
-  }
   function spanPhrase(ms) {
     const mins = Math.round(ms / 6e4);
     if (mins < 120) return mins === 1 ? "1 minute" : mins + " minutes";
@@ -3965,28 +3916,9 @@ var CONSTITUTION = (() => {
     if (typeof v.afterMs !== "number" || !Number.isFinite(v.afterMs) || v.afterMs <= 0) return null;
     return fit("A member who says nothing for " + spellPhrase(v.afterMs) + " drops out of the count — the document can go on without them, and they are back the moment they log in.");
   }
-  var rungName = (pct) => {
-    const r = BAR_RUNGS.find((x) => x.pct === Math.floor(pct));
-    return r ? r.label.charAt(0).toLowerCase() + r.label.slice(1) + " (" + Math.floor(pct) + "%)" : Math.floor(pct) + "%";
-  };
-  function paceMeaning(v, room) {
-    const close = room.barPct;
-    if (typeof close !== "number" || !Number.isFinite(close)) return null;
-    if (v.shape === "fixed") {
-      return fit("Stays at " + rungName(close) + " from the moment voting opens to the end.");
-    }
-    if (typeof v.startPct !== "number" || !Number.isFinite(v.startPct)) return null;
-    return fit("Starts at " + rungName(v.startPct) + " when voting opens and climbs to " + rungName(close) + " by the end — early changes pass more easily.");
-  }
   function meaningOf(setting, value, room = { e: 1 }) {
     if (!value) return null;
     switch (setting) {
-      case "bar": {
-        const pct = value.pct;
-        return typeof pct === "number" ? barMeaning(pct, room) : null;
-      }
-      case "pace":
-        return paceMeaning(value, room);
       case "quorum":
         return quorumMeaning(value, room);
       case "rate":

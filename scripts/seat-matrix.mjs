@@ -514,29 +514,36 @@ const STEPS = [
   { id: 'amend', epoch: 'live', kind: 'cmd', seat: 'founder', cmd: 'set-setting',
     args: () => ({ setting: 'chamber', value: { rung: 'public' }, why: 'so the cohort can read along' }),
     events: [E5('chamber', 'amend')] },
-  // 🌡️ **the bar** (promise-coverage entry 86, batch L). `bar` stands at 60 in
-  // `SETTINGS` and is the founder's by pen, so this is a real §9.7-rule-5
-  // amendment — `setSetting` post-start emits `by: 'crown'` and owes every
-  // arrived member who had no say an OK, which is exactly E5's audience.
-  // Placed here, **before** `invite-late`/`seat-late`, so `late` is not yet
-  // stood and reads the new bar as the document rather than as news; that is
-  // the half of the cell `amend` already asserts on the seats that were here,
-  // and this row asserts it on a second setting whose news card is a different
-  // one. Order against `lay-down` does not matter either way: that row
-  // relinquishes the pen on ⏱️ `rate`, never on 🌡️.
+  // 👤 **naming** (promise-coverage entry 86, batch L). `authorship` stands at
+  // `sealed` in `SETTINGS` and is the founder's by pen, so this is a real
+  // §9.7-rule-5 amendment — `setSetting` post-start emits `by: 'crown'` and
+  // owes every arrived member who had no say an OK, which is exactly E5's
+  // audience. Placed here, **before** `invite-late`/`seat-late`, so `late` is
+  // not yet stood and reads the new rule as the document rather than as news;
+  // that is the half of the cell `amend` already asserts on the seats that
+  // were here, and this row asserts it on a second setting whose news card is
+  // a different one. Order against `lay-down` does not matter either way: that
+  // row relinquishes the pen on ⏱️ `rate`, never on 👤.
+  // **It was 🌡️ the bar until 2026-09-15** (Q1362), which left the surface;
+  // 👤 is the substitute because the row needs a **constitutional** setting
+  // the founder holds by pen and standing **below 💤** in `ORDER` — and
+  // because nothing else in this table turns on the naming rung, where 👥 and
+  // 🥾 and ⏰ each carry a step that would move under an amendment. The move
+  // is one rung, `sealed` → `sealedElective`, so the reveal at the close is
+  // unchanged and only an author's option is added.
   // **Expected red at HEAD, under Q919**, for the same reason the E4 and E10
   // rows on this document are — and this row is the sharpest evidence of it
   // anywhere in the table, because it puts both halves in one snapshot:
-  // `chamber` is `ORDER[5]` and 🌡️ is `ORDER[19]`, below 💤 at `ORDER[11]`,
-  // so after `amend` and this step together a member's rail reads exactly
+  // `chamber` is `ORDER[5]` and 👤 is below 💤 at `ORDER[11]`, so after
+  // `amend` and this step together a member's rail reads exactly
   // `["chamber"]` — the news above 💤 filed, the news below it withheld,
   // while `view.owedOks` carries **both**. The oracle is what says it is the
   // page's fault and not the module's. It should go green with the rest of
-  // Q919; if it ever goes green alone, 🌡️ has been special-cased.
-  { id: 'raise-bar', epoch: 'live', kind: 'cmd', seat: 'founder', cmd: 'set-setting',
-    args: () => ({ setting: 'bar', value: { pct: 75 },
-      why: 'a permanent change should be surer than that' }),
-    events: [E5('bar', 'raise-bar')] },
+  // Q919; if it ever goes green alone, 👤 has been special-cased.
+  { id: 'raise-naming', epoch: 'live', kind: 'cmd', seat: 'founder', cmd: 'set-setting',
+    args: () => ({ setting: 'authorship', value: { rung: 'sealedElective' },
+      why: 'an author who wants their name on it should be able to put it there' }),
+    events: [E5('authorship', 'raise-naming')] },
   { id: 'invite-late', epoch: 'live', kind: 'invite', seat: 'founder', who: ['late'], events: [E5('chamber', 'amend')] },
   // E20 does not apply post-start; what is asserted on the arrival is *no
   // `chamber` for late*, which the E5 predicate says by `stoodAt`
@@ -708,7 +715,7 @@ const STEPS = [
   // epoch already carries are *setting* races, and E13 is a **text** race.
   // **E13 is asserted here, not at `judge-text`** (Q1356, Ed 2026-09-14).
   // 👥 stands at a count of one on this document, so `early`'s single
-  // judgment at `judge-text` already clears bar and floor and the race parks
+  // judgment at `judge-text` already puts the challenger on top with the floor met and the race parks
   // — which is what the `park` step below is built on — and from that moment
   // no seat's view carries the clause as askable at all. The row was
   // therefore asserted over an audience that was empty for every seat, and a
@@ -765,7 +772,7 @@ const STEPS = [
     events: [] },
   // **The park** (SURFACE E36, E37; Q1015, Q1179; Ed 2026-09-09). 🛡️ was
   // kept on the Text at `begin`, so the text race `propose-text` opened parks
-  // the moment its leader clears bar and floor: every member seat that has
+  // the moment its leader is on top with the floor met: every member seat that has
   // not judged for the challenger does so, one at a time, until the founder's
   // view carries a text 👑 question for it. `seat: 'founder'` names the
   // **author** — the founder proposed the text — which is what E37's cell
@@ -1027,8 +1034,6 @@ const openCard = async (page, k) => {
 /* ---- the dispatcher: one case per step kind ----------------------------- */
 const SETTINGS = [
   ['ending', { endsAtMs: null }],
-  ['pace', { shape: 'fixed' }],
-  ['bar', { pct: 60 }],
   ['quorum', { form: 'count', n: 1 }],
   ['authorship', { rung: 'sealed' }],
   ['judgments', { rung: 'after' }],

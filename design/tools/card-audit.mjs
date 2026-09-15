@@ -582,7 +582,7 @@ const ID_KEYS = ['myname', 'mypic', 'myemail'];
 const ID_NEXT_HEAD = 'Invitees';
 
 /** the glyph alphabet STYLE §1 calls stable, plus the lifecycle family */
-const STABLE_GLYPHS = ['🪶', '📍', '🪪', '🤝', '💤', '🥾', '⏱️', '⏰', '👥', '🌡️', '🪜',
+const STABLE_GLYPHS = ['🪶', '📍', '🪪', '🤝', '💤', '🥾', '⏱️', '⏰', '👥',
   '👤', '✍️', '👁️', '🌍', '📝', '🎩', '💡', '⚖️', '👑', '📯', '✒️', '🛡️', '✏️', '🏛️', '🍾',
   '🥂', '📧', '✋', '🖼️', '👋', '✉️', '❌', '❄️', '🔥', '⚔️', '🌶️', '⏳', '↻', '⏸', '🗑️', '📨',
   '📬', '⏩', '⏭', '✔', '✖', '✓', '✕', '·', '▸', '∞'];
@@ -813,11 +813,12 @@ function rulesFor(card, tok) {
     }
   }
   // *judgment* and the maths behind it join the list (entry 164, Ed 2026-08-27:
-  // the surface says **vote**). **Not** `bradley`: 🌡️'s one linking sentence
-  // (entry 163) is designed to name the method, and a guard that goes red on
-  // the one sanctioned sentence teaches everyone to ignore the guard.
+  // the surface says **vote**). **And *threshold* itself since 2026-09-15**
+  // (Q1362): the bar left the mechanism a member meets, so entry 163's one
+  // sanctioned sentence — 🌡️'s link to the explainer — has gone with the card
+  // and the page, and the word has no site left to protect.
   for (const word of ['ordinary', 'roster', 'participant', 'ceremony', 'token', 'the bar', 'economy', 'queue-card', 'convenor', 'admin',
-    'judgment', 'judge', 'judged', 'judging', 'comparison', 'confidence']) {
+    'judgment', 'judge', 'judged', 'judging', 'comparison', 'confidence', 'threshold']) {
     // the plural is the same breach: *never "tokens"*, *never "participants"*
     const re = new RegExp('(^|[^a-z])' + word + 's?([^a-z]|$)', 'i');
     if (re.test(said)) at('T15', 'copy', 'no project-speak, no engine jargon', 'says "' + word + '"', excerpt(said, word));
@@ -1333,12 +1334,14 @@ async function walkSettled(page, base, cards, errors, seat, switches, piles) {
    * at all, so the record card — a chip filed behind its rule's tab — had no
    * instance on any walk and nothing to measure or read.
    *
-   * The pair is chosen by what the module will actually do. 🌡️ `bar` is
+   * The pair is chosen by what the module will actually do. 👥 `quorum` is
    * delegated by ⏩'s own `FILL`, so a carried constitutional motion on it
    * lands in the document rather than parking at the 👑; and a **constitutional
    * motion never settles as rejected** — a `keep` answer simply leaves it
    * running until the close — so the rejected half has to be an *ordinary*
-   * one, adjudicated `held` through the dev seam, which is ⏱️ `rate`.
+   * one, adjudicated `held` through the dev seam, which is ⏱️ `rate`. It was
+   * 🌡️ `bar` until 2026-09-15, when that card left the surface (Q1362): 👥 is
+   * the constitutional number the founding still collects.
    *
    * Seeded **before the seat switch**, so the `seat:` walks measure the record
    * from a member's chair too, where the mover is the sealed string.
@@ -1352,10 +1355,11 @@ async function walkSettled(page, base, cards, errors, seat, switches, piles) {
       const voters = cs.motionElectorate();
       if (voters.length < 2) return { error: 'an electorate of ' + voters.length + ' cannot carry a motion' };
       const mover = voters.find((id) => id !== 'founder') || voters[0];
-      const bar = cs.settingState('bar').value || { pct: 78 };
+      const q = cs.settingState('quorum').value || { form: 'share', n: 33 };
       const m1 = cs.openMotion(tick(), mover,
-        { kind: 'set', setting: 'bar', value: { pct: Math.min(95, bar.pct + 4) } },
-        'The charter should not change on a bare majority of the evidence.');
+        { kind: 'set', setting: 'quorum',
+          value: { form: q.form, n: q.n + (q.form === 'count' ? 1 : 5) } },
+        'The charter should not change until more of us have had our say.');
       for (const id of voters) if (id !== mover) cs.answerMotion(tick(), id, m1, 'accept');
       // the interval is the whole setting since Q1160 (grant and cap fixed
       // at 3), so the rejected ordinary motion proposes a faster drip

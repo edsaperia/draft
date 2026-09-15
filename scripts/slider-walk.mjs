@@ -1,13 +1,13 @@
 /**
- * **The two blind number questions, driven** (Q779–Q782). A founder who is
- * also a member delegates 🌡️ and 👥, is served their own answer cards, and
- * answers them with the control a member actually uses.
+ * **The blind number question, driven** (Q779–Q782). A founder who is also a
+ * member delegates 👥, is served their own answer card, and answers it with
+ * the control a member actually uses.
  *
- * **Since entry 165 only one of them is a slider.** 🌡️ is three rungs and a
- * number of your own, so its half of this walk drives rungs and a number box
- * (see *the rungs*, below) and everything about a pointer on a track belongs
- * to 👥 alone. The three assertions below still describe 🌡️'s half exactly;
- * only the control they are made against changed.
+ * **It was two questions and it is one.** 🌡️ was the other, and this walk
+ * drove its three rungs and its number box until the card left the surface on
+ * 2026-09-15 (Q1362) with the bar it set. The three assertions are unchanged
+ * and 👥 carries all of them; no control on the surface is a track any more,
+ * so *slider* is the name of the walk and nothing else.
  *
  *   node scripts/slider-walk.mjs        # npm run slider-walk
  *
@@ -115,7 +115,7 @@ const birth = async () => {
 // **The form is the member's own since Q1162**: delegating 👥 hands over the
 // whole question — no form is pre-picked, and clicking a form block now
 // would take the question back rather than frame it.
-const FORM = { bar: null, quorum: null };
+const FORM = { quorum: null };
 let seen = new Set();
 const walkTo = async (stop, delegate) => {
   for (let i = 0; i < 40; i++) {
@@ -135,7 +135,7 @@ const walkTo = async (stop, delegate) => {
     } else if (next === 'admission') {
       // **A room, so the questions come when they are delegated.** With the
       // founder alone `roomExists()` is false and an answer task waits until
-      // nothing else is outstanding, which for 🌡️ is never — so the walk
+      // nothing else is outstanding, which for 👥 is never — so the walk
       // invites somebody, which is the ordinary case anyway.
       //
       // **And 🪪 is a price, not the register** (entry 94): its ✓ reads
@@ -190,14 +190,13 @@ const walkTo = async (stop, delegate) => {
    surface is a track.) */
 
 /* ---- the two answer cards ---------------------------------------------- */
-// **The track the member is offered, read off the DOM** (promise-coverage 👥,
-// backlog entry 85). The two blind questions are the only place a member
-// states a number, so what the track can *express* is half of what the
-// setting promises: 👥's share cannot state 0 (a quorum nobody has to meet)
-// and cannot leave the 0–100 `validateValue` accepts; 🌡️'s cannot state a
-// bar below the coin flip. Both are deliberate narrowings of the fold's own
-// range, and neither is asserted anywhere else — `ANSWER` in setup.js is one
-// literal per bound and a typo in it is silent.
+// **The range the member is offered, read off the DOM** (promise-coverage 👥,
+// backlog entry 85). The blind question is the only place a member states a
+// number, so what its box can *express* is half of what the setting promises:
+// 👥's share cannot state 0 (a quorum nobody has to meet) and cannot leave
+// the 0–100 `validateValue` accepts. That is a deliberate narrowing of the
+// fold's own range, and it is asserted nowhere else — `ANSWER` in setup.js is
+// one literal per bound and a typo in it is silent.
 //
 // **The count form is not walked**, and cannot cheaply be: `slider(A,
 // 'quorum', 1, E, …)` is bounded at E, the walk's founding has one arrived
@@ -207,86 +206,6 @@ const walkTo = async (stop, delegate) => {
 const BOUNDS = {
   quorum: { min: 5, max: 100, step: 5 },
 };
-
-/* ---- 🌡️: the rungs ------------------------------------------------------
-   Since entry 165 🌡️'s blind answer is not a slider at all: three rungs and a
-   fourth holding the precise number. So its half of this walk drives rungs,
-   and what it asserts is the same three things transposed — **born untouched**
-   (no rung on, and the number box not in the DOM at all, because it lives
-   inside a rung nobody has chosen), **the control does what the pointer says**
-   (a rung lights, a number reaches the ✓), and **the range is the question's
-   own** (50–99 off the box, where the slider's ends used to be read off the
-   track). One thing is new and is the point of the entry: each rung carries a
-   sentence about *this room*, and it must be there rather than a percent
-   repeated back. */
-const readRungs = () => page.evaluate(() => {
-  const c = document.querySelector('.setupcard');
-  if (!c) return null;
-  const picks = [...c.querySelectorAll('.pick')].map((p) => {
-    const b = p.querySelector('[data-ans]');
-    return {
-      val: b ? b.dataset.ansval : null,
-      on: p.classList.contains('on'),
-      // the block's own sentence (CP1), not the fixed radio words
-      label: ((p.querySelector('.opttext') || {}).textContent || '').replace(/\s+/g, ' ').trim(),
-      exp: ((p.querySelector('.exp') || {}).textContent || '').trim(),
-    };
-  });
-  const box = c.querySelector('[data-ansnum]');
-  const commit = c.querySelector('[data-confirm]');
-  return {
-    picks,
-    box: box ? { value: box.value, min: +box.min, max: +box.max } : null,
-    commitOff: !commit || commit.disabled,
-  };
-});
-
-{
-  const want = 'ans-bar';
-  console.log('\n' + want);
-  seen = new Set();
-  await birth();
-  const at = await walkTo(want, 'bar');
-  if (at !== want) {
-    check('the founder is served ' + want, false, 'rail: ' + (await rail()).join(', '));
-  } else {
-    seen.add(want);
-    check('the founder is served ' + want, await openCard(want));
-
-    // **Exactly three rungs since Q1158** (Ed's card review, 2026-09-02):
-    // *A number of my own* and its box left 🌡️ — the pattern survives on
-    // 🪜, 👥 and ⏱️ — and in a membership of one the meaning lines say
-    // nothing at all (Q1159: the ceiling lines are removed and nothing
-    // replaces them; T39's nothing-true rule prints no line).
-    const born = await readRungs();
-    const rungs = born.picks.filter((p) => p.val);
-    check('it offers exactly three rungs and no number of your own',
-      rungs.length === 3 && !born.picks.some((p) => p.val === 'own'),
-      born.picks.map((p) => p.val).join(', '));
-    check('most protective first', rungs.map((p) => p.val).join(',') === '90,80,60',
-      rungs.map((p) => p.val).join(','));
-    check('in a membership of one the rungs say nothing (Q1159)',
-      rungs.every((p) => p.exp === ''), rungs.map((p) => p.exp).join(' | '));
-    check('the rungs are Ed’s share-of-voters sentences (Q1156/Q1157)',
-      rungs.every((p) => /^For a proposal ✏️ to pass, /.test(p.label)),
-      rungs.map((p) => p.label.slice(0, 44)).join(' | '));
-    check('born untouched', !born.picks.some((p) => p.val && p.on),
-      born.picks.filter((p) => p.on).map((p) => p.val).join(','));
-    check('and no number box anywhere', born.box === null);
-    check('the commit is dark until it is touched', born.commitOff);
-
-    await clickIn('.setupcard [data-ans="bar"][data-ansval="80"]');
-    const rung = await readRungs();
-    check('the rung is the one that is on',
-      rung.picks.filter((p) => p.on).map((p) => p.val).join(',') === '80',
-      rung.picks.filter((p) => p.on).map((p) => p.val).join(','));
-    check('the ✓ is live', !rung.commitOff);
-
-    await clickIn('.setupcard [data-confirm]');
-    await page.waitForTimeout(400);
-    check('the ✓ files the answer', !(await rail()).includes(want), 'rail: ' + (await rail()).join(', '));
-  }
-}
 
 /* ---- 👥: two blocks, the form part of the answer (Q1162) ----------------
    The consent slider retired with Ed's card review of 2026-09-02: the member
