@@ -80,10 +80,9 @@ Use these names in all discussion, commits, and code. Literal and stable beats e
 | `always-on-typing` | `edit-mode` | K13 amended, Ed 2026-09-01: **📝 is the door** — the interception survives, one press further in |
 | `watch-half`, `distribution-strip` | retired outright | Q1176, Ed's QA 2026-09-02 pm: provenance is the standing block's radio, the counts are 🍾's |
 | `sign-out`, `freeze` | retired outright | Q1196, Ed 2026-09-06: quorum is the floor and only that; the freeze and lapse pulled opposite ways |
-| `pairwise.html`, `methodNote`, `BAR_RUNGS`, `barLadder` | retired outright | Q1362, 2026-09-15: 🌡️ and 🪜 left the surface with the bar they named, and the explainer went with the thing it explained; `/pairwise` 404s |
 | `consent-slider` | retired outright | Q1162, 2026-09-02: 👥, its last user, answers in two form blocks with inline numbers; nothing on the surface is a track. The nothing-preselected rule survives on every control (F6) |
 | `section-toggle` | `sectoggle` | one fold triangle, two names |
-| `pairwise.html`, `/pairwise`, `methodNote`, `ceilingNote`, the 🌡️ and 🪜 cards | retired outright | Q1362 (Ed, 2026-09-15): the threshold left the surface; `votesNeeded` and the ceiling stay in the engine until pass 7 |
+| `pairwise.html`, `/pairwise`, `methodNote`, `ceilingNote`, `BAR_RUNGS`, `barLadder`, the 🌡️ and 🪜 cards | retired outright | Q1362 (Ed, 2026-09-15): the threshold left the surface; `votesNeeded` and the ceiling stay in the engine until pass 7 |
 | `design/session-view.notes.md`, `design/setup.notes.md` | deleted 2026-08-23 | `SURFACE.md` holds what was live in them and git holds the rest |
 
 **Engine (mechanism, no UI):**
