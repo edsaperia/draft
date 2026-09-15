@@ -24,6 +24,7 @@
     "card-audit:narrow": "node design/tools/card-audit.mjs --width=390 --height=844 --out=design/tools/card-audit-narrow.json",
     "clock-check": "node design/tools/clock-check.mjs",
     "toc-travel": "node design/tools/toc-travel.mjs",
+    "drawer-walk": "node design/tools/drawer-walk.mjs",
     "journey": "node scripts/journey-walk.mjs",
     "applicants-walk": "node scripts/applicants-walk.mjs",
     "after-begin-walk": "node scripts/after-begin-walk.mjs",

@@ -3497,7 +3497,11 @@ if (caret) {
             pressed: [...card.querySelectorAll('[data-v][aria-pressed="true"]')].map((b) => b.dataset.v),
             cast: (card.querySelector('[data-act="submit"]') || {}).getAttribute
               ? card.querySelector('[data-act="submit"]').getAttribute('aria-pressed') : null,
-            ledger: card.querySelectorAll('.ledger, .ledgerpair').length };
+            ledger: card.querySelectorAll('.ledger, .ledgerpair').length,
+            // a template printing a field nobody set (Q1385, Ed's screenshot
+            // of 2026-09-11: the word *undefined* under a proposed block on a
+            // live race card): the stretch of card text around the word, or null
+            bare: ((t) => { const m = /\b(undefined|NaN)\b/.exec(t); return m ? t.slice(Math.max(0, m.index - 40), m.index + 30) : null; })(card.textContent.replace(/\s+/g, ' ')) };
         }, id);
       };
       const VERDICTS = ['approve', 'keep', 'a', 'b', 'indifferent'];
@@ -3579,6 +3583,10 @@ if (caret) {
           say('pairs 6    · ' + (ok6 ? 'the rival pair’s entry opens a race card: two blocks, no keep lane, no ledger'
             : 'FAIL: ' + JSON.stringify(c3)));
           if (!ok6) stuck.push('the rival card');
+          // Q1385 — no card prints a bare *undefined*: the race card as it opens
+          say('bare word  · ' + (c3.card && !c3.bare ? 'the race card prints no bare undefined or NaN'
+            : 'FAIL: ' + JSON.stringify(c3.bare)));
+          if (c3.card && c3.bare) stuck.push('a bare word on the race card (Q1385)');
           const j3 = ok5 ? await judge(r3.id, 'a') : false;
           const e4 = await entries();
           const ok7 = j3 && e4.length === 3 && e4.every((e) => e.mark === 'deciding');
@@ -3604,6 +3612,10 @@ if (caret) {
           say('revise 1   · ' + (okL1 ? 'after a reload three ⏳ entries stand; the first pair’s tab opens it with Indifferent pre-selected and ✓ pressed'
             : 'FAIL: ' + JSON.stringify({ e5, l1 })));
           if (!okL1) stuck.push('a judged pair after a reload');
+          // Q1385 — the 11th's shape exactly: a judged pair's card on a fresh load
+          say('bare word  · ' + (l1.card && !l1.bare ? 'the judged pair’s card after a reload prints no bare undefined or NaN'
+            : 'FAIL: ' + JSON.stringify(l1.bare)));
+          if (l1.card && l1.bare) stuck.push('a bare word on the reloaded judged card (Q1385)');
           // 7 — choose the other lane, ✓: the revision goes on the same pair
           const jr = await judge(q1.id, 'keep');
           await T(1500);

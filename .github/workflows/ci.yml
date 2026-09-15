@@ -249,6 +249,12 @@ jobs:
       # edge, unclipped, at 1600 · 1280 · 1920 (the wide step)
       - run: npm run toc-travel
         if: always()
+      # the phone's task drawer at 390×844 (Q1387, Q1388): its entries 8px
+      # apart in visual order — the DOM's last child included, wherever the
+      # sort puts it — a tap on its empty space closes it by mouse and by
+      # touch, a drag does not, and an entry still opens its card
+      - run: npm run drawer-walk
+        if: always()
 
   # **Last green on `main`: never, as of 2026-08-29.** Red from its birth on
   # 2026-08-27 until the 🧭 shape card (entry 166) was answered by every walk

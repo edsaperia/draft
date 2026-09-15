@@ -6804,3 +6804,41 @@ After: 40×40, `border-radius: 50%`, 24px off the foot (`--row-foot: var(--s5)` 
 **Rejected.** Keeping the pacing and saying so (*the Founder is still answering this*): it names the wait without ending it, and the wait has no reason — nothing the member is asked depends on what the founder has not yet decided. Making the whole constitution visible to a member from arrival: an undecided rule would stand on their page as a paragraph saying it is undecided, which Q510 reserves for after 🍾.
 
 **Guards.** `npm run member-questions-walk`: the delegated paragraphs on the member's page and the first question served with 🎩 still unanswered, on the polled page and on a fresh load. Red on the pre-fix page: *the delegated settings are on the page with 🎩 unanswered · paras slug chamber founded admission applications* and *⏱️ is served once 🏛️ is acknowledged · rail ["myname","mypic"]*.
+
+## Q1386: an Admissions news card on arrival with contradictory provenance — closed by reading (2026-09-15)
+
+**The finding.** Ed's screenshot of 2026-09-11 16:58 in the moon room (*I saw this queue card when I first arrived on the doc*; archived as `design/bug-shots-2026-09-11/admissions-news-on-arrival.png`): a ✔ 🪪 news card on a member's first load, the standing block's radio *Chosen by the Founder ✒️* over the settled line *Decided by the members*, and the change sentence beneath with *No reason given*. Filed 2026-09-15 from the `bugs/` clear-out, never claimed at the time.
+
+**The reading.** Two things on the card, one right and one already gone. The card's arrival is C8 (Q842): a rule a member had no say in is one they are owed an OK for, whenever they arrive. The contradiction between its two provenance lines is Q1329's: the moon room was founded by a script writing 🤝's legacy `holder` key, and `foldLegacy` laid down both powers on 🤝 and the ✉️ door, leaving a members-held, founder-settled setting — the state the two lines describe, on 🪪 as on 🤝. Q1329 was ruled and built the same evening as a deletion rather than a per-setting patch: `foldLegacy` and every pre-entry-94 fold left the module, `validate` refuses the keys, and a log carrying them is quarantined at boot (`fold.ts`'s two throws name Q1329; `legacy-refused.test.ts`). A deletion covers 🪪 as it covers 🤝: no document founded since can hold the state, and none founded before survives the boot. **Closed, nothing to build.**
+
+## Q1387: the phone's task drawer is spaced by its gap (Ed's screenshot, 2026-09-15)
+
+**The finding.** Ed's screenshot of 2026-09-12 22:27 (*overlapping queue cards on mobile*; archived as `design/bug-shots-2026-09-12/drawer-entries-touching.jpeg`): the moon room's drawer on an iPhone, 🔥 ⏱️ ⏰ each with a gap beneath, then the 🏛️ grant hard against the ⏰ motion, the ✔ records spaced again below it. Later the same day as the afternoon's pass (Q1350–Q1351), so not covered by it; filed 2026-09-15 from the `bugs/` clear-out.
+
+**The cause, measured.** The first cut spaced the drawer with `margin: 0 0 var(--s2)` on every entry and `.qitem:last-child { margin-bottom: 0 }` for the foot of the list. But `layoutQueue`'s narrow branch sorts the drawer with flex `order`, most urgent first, so the DOM's last child — the entry born most recently — stands wherever the sort puts it, and the rule written for the foot of the list took the gap from under it. Ed's ⏰ motion was the newest entry, sorted third. The fixture at 390 read 8px everywhere because its newest entry was filed and hidden; staging the DOM's last child into the column reproduced the missing gap.
+
+**The build.** The list carries `gap: var(--s2)` and no entry a margin (`system.css`, the narrow block): a gap follows the visual order and never doubles at the end, so the `:last-child` rule has nothing left to do and is gone. Measured 8px between every neighbouring pair in drawer order, the DOM's last child sorted first included.
+
+**Guard.** `npm run drawer-walk` (`design/tools/drawer-walk.mjs`, CI's probe job beside `toc-travel`): every gap in visual order, the staged last-child case, and Q1388's taps and drag.
+
+## Q1388: a tap on the drawer's empty space closes it, and a drag does not (Ed, 2026-09-15)
+
+**The ruling.** Ed, 23:29, on the phone QA: *when the queue card drawer (on the right) is open, clicking somewhere there is no queue card should close the drawer (at the moment it only closes when you click on the left edge). Note that I should still be able to drag the queue up and down.*
+
+**What it was.** The first cut's door script closed a drawer on a tap on the dimmed ground beside it and on its own door; a tap inside the drawer that reached an entry let the entry act and closed the drawer a beat later; a tap inside the drawer on nothing was swallowed. iOS reaches the page as a `pointerup` for a tap on plain content and the desktop as a `click`, so the ground already had two listeners.
+
+**The build.** Both listeners take the same third case: a tap inside a drawer that reaches no entry (`li`) and no control closes it. A tap is told from the end of a drag by the pointer's travel since `pointerdown` — over 8px is a drag — on both paths, because a touch that scrolled fires no click but a mouse drag ending on the element it started on does, which the walk caught on the first run. Applied to the contents drawer too: one rule, both sides — a choice Ed can overrule.
+
+**Rejected.** Closing on `pointerup` alone (a scroll's end would close the drawer wherever `pointercancel` did not fire first). A listener on the panel rather than the document (the ground's two listeners already own the geometry, and a third owner is the *state class* mistake of entry 59). Excluding the contents drawer (nothing about its emptiness differs).
+
+**Guard.** `npm run drawer-walk`: a mouse click and a touch tap on the empty space each close it, a 120px drag leaves it open, an entry still opens its card and the drawer follows.
+
+## Q1385: a race card printed a bare *undefined* — not reproduced, guarded (2026-09-15)
+
+**The finding.** Ed's screenshot of 2026-09-11 14:26 on document 1 (*why undefined*; archived as `design/bug-shots-2026-09-11/race-card-undefined-note.png`): a text race card, one proposed wording with its author and rationale, its *Prefer this* row — and beneath the row, before the Indifferent block's hairline, the bare word *undefined* on a line of its own. Filed 2026-09-15 from the `bugs/` clear-out, never claimed at the time.
+
+**The reading.** The word is always a template printing a field nobody set. On the tree live that morning (d19803f's renderers) the quick card between the proposal field and the commit row printed `reviseNote` · `crownNote` · `parkNote` · `ledgerHtml`, and the commit row took an `extra`; every one of them returned an empty string on its empty path, then and now — the revise note's unlocked case ends in `return ''`, the two notes are ternaries over `''`, the ledger returns `''` on an empty list, the row reads `(extra || '')`. Nothing in the fixture, the copy goldens or the probe's reference prints the word. The card has since been rebuilt twice (Q1331's grammar, Q1367's one-pair card) and the live path moved into `live.js` (Q1352), so the slot that printed it, wherever it was, no longer exists to be read.
+
+**The reproduction.** `npm run journey` on a fresh server tonight: the race card as it opens and a judged pair's card reopened after a reload — the screenshot's shape exactly, a judged race on a fresh load (Q1376's) — both print no bare *undefined* or *NaN*. **Closed as not reproduced, with the guard in place** — Ed may reopen it if the word comes back; the guard then names the card text around it.
+
+**Guard.** `npm run journey`'s two *bare word* lines: `openEntry` reports the first stretch of card text holding `undefined` or `NaN`, asserted on the rival pair's race card and on the reloaded judged card.

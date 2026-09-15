@@ -50,6 +50,11 @@ Four rulings, asked one at a time, and what each became. Where this list and §1
 - **Your face opens ✋** (Ed, mid-pass: *clicking on my avatar in the topbar should open and navigate to ✋*): on every width, a press on `me` opens the ✋ card and travels to it as a rail press does; a second press closes it. A press from the topbar now travels like one from the rail — so the clock's ⏰ travels too. A stranger's and an applicant's press does nothing.
 - **Left, backlogged as Q1350:** edit mode on a phone is hidden, not gated — a paired keyboard still enters it (*leave it for now — see if we can make it work nicely in the future*).
 
+### The phone QA of 2026-09-15 (Q1387–Q1388, Ed)
+
+- **The drawer is spaced by its gap** (Q1387, Ed's screenshot of 2026-09-12 22:27: *overlapping queue cards on mobile* — the 🏛️ grant hard under the ⏰ motion): the drawer sorts its entries with flex `order`, and the first cut spaced them with a bottom margin that exempted the DOM's `:last-child` — the newest entry, which the sort can put anywhere. The list carries `gap: var(--s2)` now and no entry a margin. Measured 8px between every neighbouring pair in visual order, the DOM's last child sorted first included.
+- **A tap on the drawer's empty space closes it** (Q1388, Ed 2026-09-15 23:29: *clicking somewhere there is no queue card should close the drawer (at the moment it only closes when you click on the left edge). Note that I should still be able to drag the queue up and down*): a tap inside either drawer that reaches no entry and no control closes it, on the click path and on iOS's pointerup path alike; a drag is told from a tap by the pointer's travel since it went down (8px), on both paths, since a mouse drag that ends where it started still fires a click. Applied to the contents drawer too, one rule for both sides. **Guard: `npm run drawer-walk`** (`design/tools/drawer-walk.mjs`, CI's probe job): the spacing, the tap by mouse and by touch, the drag, and an entry still opening its card.
+
 ## 1. Layout and touch (read + judge)
 
 ### 1.0 The architectural consequence
