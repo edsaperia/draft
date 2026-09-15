@@ -93,7 +93,7 @@ const LIFECYCLE = {
   L1: 'L1 set',        // a setting of yours is set: on commit; the tab goes grey (every founder set in the loop)
   L2: 'L2 ✋ saved',    // an answer about yourself: on Save; your member row, and still there after a reload
   L3: 'L3 answered',   // a blind question answered (--delegate-all): on ✓; the entry leaves the rail, the card shows the count
-  L4: 'L4 judged',     // a judgment cast: ✓ closes; the entry keeps its mark while a pair is left, files as ⏳ once none is (deck 3, deck 7)
+  L4: 'L4 judged',     // a judgment cast: ✓ closes; the pair's own entry files as ⏳, the other pairs' stay lit (pairs 3, pairs 7)
   L5: 'L5 proposed',   // a motion committed: on Propose; the ✏️ entry pinned
   L6: 'L6 📧 sent',    // 📧 send: the card closes on send; the clause says to check your inbox
   L7: 'L7 owed OK',    // a decision you are owed: on OK, one press, persisted per member; the clause keeps the change line
@@ -1243,7 +1243,7 @@ const secondSeatOnAmendment = async () => {
  * attributes (`data-fill`, `title`), which is what the wash reads. */
 const motionFillOnAmended = async () => {
   if (!guestPage) return; // its own failure, already reported
-  const entryAt = (pg) => pg.evaluate((k) => {
+  const entryAt = (pg, key) => pg.evaluate((k) => {
     const li = document.querySelector('#rail li[data-q="' + k + '"]');
     const b = li && li.querySelector('button');
     if (!b) return null;
@@ -1252,7 +1252,7 @@ const motionFillOnAmended = async () => {
       mark: (b.querySelector('.subj .mk') ? ([...b.querySelector('.subj .mk').classList].find((c) => c.startsWith('mk-')) || '').slice(3)
         : ((b.querySelector('.subj') || {}).textContent || '').trim()),
       state: [...b.classList].find((c) => c.startsWith('st-')) || null };
-  }, AMENDED);
+  }, key);
   const wire = (pg, cmd, args) => pg.evaluate(([c, a]) => fetch(location.pathname.replace('/d/', '/api/d/') + '/cmd', {
     method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ cmd: c, args: a }),
@@ -1265,11 +1265,14 @@ const motionFillOnAmended = async () => {
     stuck.push('the 🏛️ motion on 🌍'); return;
   }
   await T(5000); // one poll in each seat
-  const e1 = await entryAt(page);
-  const g1 = await entryAt(guestPage);
-  const ok1 = !!e1 && e1.fill === '50%' && e1.title === '1 of 2 have answered';
-  say('motion fill· ' + (ok1 ? 'the founder’s 🌍 entry reads the motion: ' + e1.title + ' · fill ' + e1.fill + ' · ' + e1.state
-    : 'FAIL: the founder’s 🌍 entry does not read the motion’s answers · ' + JSON.stringify(e1)));
+  // the motion's own entry (Q1367), on both pages; 🌍's own entry stays settled
+  const mKey = 'mo:' + motion;
+  const e1 = await entryAt(page, mKey);
+  const g1 = await entryAt(guestPage, mKey);
+  const own1 = await entryAt(page, AMENDED);
+  const ok1 = !!e1 && e1.fill === '50%' && e1.title === '1 of 2 have answered' && !own1;
+  say('motion fill· ' + (ok1 ? 'the founder’s entry for the motion reads its answers: ' + e1.title + ' · fill ' + e1.fill + ' · ' + e1.state + ' · 🌍’s own entry absent'
+    : 'FAIL: the founder’s entry for the motion does not read its answers · ' + JSON.stringify({ e1, own1 })));
   if (!ok1) stuck.push('the 🏛️ motion’s fill on the founder’s entry');
   const okG = !!g1 && g1.fill === '50%' && g1.title === '1 of 2 have answered' && g1.mark === 'deciding';
   say('mover’s ⏳ · ' + (okG ? 'the mover’s own entry is a ⏳ wait with the same bar: ' + g1.title
@@ -1283,7 +1286,7 @@ const motionFillOnAmended = async () => {
     stuck.push('the founder’s answer on the 🏛️ motion');
   }
   await T(5000);
-  const e2 = await entryAt(page);
+  const e2 = await entryAt(page, mKey);
   const ok2 = !!e2 && e2.fill === '100%' && e2.title === '2 of 2 have answered' && e2.mark === 'deciding';
   say('motion moves· ' + (ok2 ? 'the founder’s answer moves it: ' + e2.title + ' · fill ' + e2.fill + ' · the entry files as ⏳'
     : 'FAIL: ' + JSON.stringify(e2)));
@@ -1295,18 +1298,19 @@ const motionFillOnAmended = async () => {
     stuck.push('withdrawing the 🏛️ motion');
   }
   await T(5000);
-  const e3 = await entryAt(page);
+  const e3 = await entryAt(page, mKey);
   const ok3 = !e3 || !/have answered/.test(e3.title || '');
   say('motion gone· ' + (ok3 ? 'withdrawn, and the entry no longer counts answers' + (e3 ? ' · ' + JSON.stringify(e3) : ' · the entry left the rail')
     : 'FAIL: the count survived the withdrawal · ' + JSON.stringify(e3)));
   if (!ok3) stuck.push('the count after the withdrawal');
 };
 
-/* ---- a deck per setting (Q1348) runs last: the third seat it arrives
- * changes the room every count below it was written against. */
+/* ---- one motion, one tab, one entry (Q1367; a deck per setting, Q1348,
+ * before it) runs last: the third seat it arrives changes the room every
+ * count below it was written against. */
 const motionDeckOnAmended = async () => {
   if (!guestPage) return;
-  const entryAt = (pg) => pg.evaluate((k) => {
+  const entryAt = (pg, key = AMENDED) => pg.evaluate((k) => {
     const li = document.querySelector('#rail li[data-q="' + k + '"]');
     const b = li && li.querySelector('button');
     if (!b) return null;
@@ -1315,20 +1319,23 @@ const motionDeckOnAmended = async () => {
       mark: (b.querySelector('.subj .mk') ? ([...b.querySelector('.subj .mk').classList].find((c) => c.startsWith('mk-')) || '').slice(3)
         : ((b.querySelector('.subj') || {}).textContent || '').trim()),
       state: [...b.classList].find((c) => c.startsWith('st-')) || null };
-  }, AMENDED);
+  }, key);
   const wire = (pg, cmd, args) => pg.evaluate(([c, a]) => fetch(location.pathname.replace('/d/', '/api/d/') + '/cmd', {
     method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ cmd: c, args: a }),
   }).then((r) => r.json()).catch((e) => ({ error: String(e && e.message) })), [cmd, args]);
-  /* ---- a deck per setting (Q1348, Ed 2026-09-12: *a deck per setting, like
-   * the pair-deck*). Two members put two different values on 🌍 at once —
-   * bo re-puts *closed*, cy (the third seat, arriving here by their own
-   * invitation) puts *link* — and the founder's one 🌍 entry walks them: an
-   * ask showing the first unanswered, still an ask after the first answer
-   * (the card now showing the second, the ledger listing the first with the
-   * founder's answer), and ⏳ only once both are answered, that card listing
-   * both. Both are withdrawn afterwards so the steps below meet the room they
-   * always met. */
+  /* ---- one motion, one tab, one entry (Q1367, Ed 2026-09-15: *other
+   * proposals should not be shown on the decision card but in tab stack and
+   * as more queue cards*; reversing Q1348's deck). Two members put two
+   * different values on 🌍 at once — bo re-puts *closed*, cy (the third seat,
+   * arriving here by their own invitation) puts *link* — and the founder
+   * meets two entries, `mo:<id>` each, both asking; the first's card is that
+   * motion alone (three lanes, no ledger of the other); answered, its entry
+   * files as ⏳ and the second still asks; answered too, both are ⏳, and the
+   * first's card reopens with the answer given pre-pressed. 🌍's own entry
+   * never appears: the rule is settled, and the motions are their own. Both
+   * are withdrawn afterwards so the steps below meet the room they always
+   * met. */
   // cy has usually arrived by now (the askable section seats them and spends
   // their invitation link), so the login door is the way in; a dev server
   // answers the link itself. The invitation link is the fallback.
@@ -1352,44 +1359,51 @@ const motionDeckOnAmended = async () => {
     stuck.push('two 🏛️ motions on one setting'); return;
   }
   await T(5000);
-  const d1 = await entryAt(page);
-  const deckOk1 = !!d1 && d1.state === 'st-ask' && d1.title === '1 of 3 have answered';
-  say('mdeck 1    · ' + (deckOk1 ? 'two motions on 🌍, the founder’s entry asks: ' + d1.title
-    : 'FAIL: ' + JSON.stringify(d1)));
-  if (!deckOk1) stuck.push('the deck’s first ask');
-  const ansA = await wire(page, 'answer-motion', { motion: mA, answer: 'keep' });
-  if (ansA && ansA.error) { say('mdeck ansA · FAIL: ' + JSON.stringify(ansA)); stuck.push('the founder’s answer on the first of the deck'); }
-  await T(5000);
-  const d2 = await entryAt(page);
-  await open(AMENDED);
-  const card2 = await page.evaluate((k) => {
+  const mKA = 'mo:' + mA, mKB = 'mo:' + mB;
+  const dA1 = await entryAt(page, mKA), dB1 = await entryAt(page, mKB), dS1 = await entryAt(page);
+  const deckOk1 = !!dA1 && dA1.state === 'st-ask' && dA1.title === '1 of 3 have answered' &&
+    !!dB1 && dB1.state === 'st-ask' && dB1.title === '1 of 3 have answered' && !dS1;
+  say('motions 1  · ' + (deckOk1 ? 'two motions on 🌍, two entries, each asking: ' + dA1.title + ' · ' + dB1.title + ' · 🌍’s own entry absent'
+    : 'FAIL: ' + JSON.stringify({ dA1, dB1, dS1 })));
+  if (!deckOk1) stuck.push('the two motions’ entries');
+  await open(mKA);
+  const cardA = await page.evaluate((k) => {
     const c = document.querySelector('[data-setupcard="' + k + '"]');
     if (!c) return null;
     return { lanes: [...c.querySelectorAll('[data-motion]')].map((b) => b.dataset.motion + ':' + b.getAttribute('aria-pressed')),
       opt: [...c.querySelectorAll('.opttext')].map((e) => e.textContent.trim().slice(0, 60)),
-      deck: [...c.querySelectorAll('.mdeck [data-mpick]')].map((e) => e.dataset.mpick + ':' + (e.dataset.answer || '')) };
-  }, AMENDED);
-  const deckOk2 = !!d2 && d2.state === 'st-ask' && d2.title === '1 of 3 have answered' && !!card2 &&
-    card2.lanes.length === 3 && card2.deck.length === 2 &&
-    card2.deck.some((x) => x === mA + ':keep') && card2.deck.some((x) => x === mB + ':');
-  say('mdeck 2    · ' + (deckOk2 ? 'the first answered, the entry still asks for the second: ' + d2.title + ' · the card lists both, the first with the founder’s keep'
-    : 'FAIL: ' + JSON.stringify({ d2, card2 })));
-  if (!deckOk2) stuck.push('the deck after the first answer');
+      deck: c.querySelectorAll('.mdeck, [data-mpick]').length,
+      tabs: [...c.querySelectorAll('.achip')].map((t) => t.dataset.chip) };
+  }, mKA);
+  const deckOk2 = !!cardA && cardA.lanes.length === 3 && cardA.lanes.every((l) => /:false$/.test(l)) && cardA.deck === 0 &&
+    cardA.tabs.includes(mKA) && cardA.tabs.includes(mKB) && cardA.tabs.includes(AMENDED);
+  say('motions 2  · ' + (deckOk2 ? 'the first motion’s card: three lanes, nothing pressed, no ledger of the other · the strip holds 🌍, both motions' + (cardA.tabs.length > 3 ? ' and ' + (cardA.tabs.length - 3) + ' more' : '')
+    : 'FAIL: ' + JSON.stringify(cardA)));
+  if (!deckOk2) stuck.push('the first motion’s card');
   await closeCard();
-  const ansB = await wire(page, 'answer-motion', { motion: mB, answer: 'keep' });
-  if (ansB && ansB.error) { say('mdeck ansB · FAIL: ' + JSON.stringify(ansB)); stuck.push('the founder’s answer on the second of the deck'); }
+  const ansA = await wire(page, 'answer-motion', { motion: mA, answer: 'keep' });
+  if (ansA && ansA.error) { say('motions ansA · FAIL: ' + JSON.stringify(ansA)); stuck.push('the founder’s answer on the first motion'); }
   await T(5000);
-  const d3 = await entryAt(page);
-  await open(AMENDED);
-  const card3 = await page.evaluate((k) => {
+  const dA2 = await entryAt(page, mKA), dB2 = await entryAt(page, mKB);
+  const deckOk3 = !!dA2 && dA2.mark === 'deciding' && dA2.title === '2 of 3 have answered' &&
+    !!dB2 && dB2.state === 'st-ask' && dB2.title === '1 of 3 have answered';
+  say('motions 3  · ' + (deckOk3 ? 'the first answered: its entry files as ⏳ ' + dA2.title + ' · the second still asks ' + dB2.title
+    : 'FAIL: ' + JSON.stringify({ dA2, dB2 })));
+  if (!deckOk3) stuck.push('the entries after the first answer');
+  const ansB = await wire(page, 'answer-motion', { motion: mB, answer: 'keep' });
+  if (ansB && ansB.error) { say('motions ansB · FAIL: ' + JSON.stringify(ansB)); stuck.push('the founder’s answer on the second motion'); }
+  await T(5000);
+  const dA3 = await entryAt(page, mKA), dB3 = await entryAt(page, mKB);
+  await open(mKA);
+  const cardA3 = await page.evaluate((k) => {
     const c = document.querySelector('[data-setupcard="' + k + '"]');
-    return c ? [...c.querySelectorAll('.mdeck [data-mpick]')].map((e) => e.dataset.mpick + ':' + (e.dataset.answer || '')) : null;
-  }, AMENDED);
-  const deckOk3 = !!d3 && d3.mark === 'deciding' && /^2 of 3 have answered$/.test(d3.title || '') && !!card3 &&
-    card3.length === 2 && card3.every((x) => /:keep$/.test(x));
-  say('mdeck 3    · ' + (deckOk3 ? 'both answered, the entry files as ⏳: ' + d3.title + ' · the ⏳ card lists both with the founder’s answers'
-    : 'FAIL: ' + JSON.stringify({ d3, card3 })));
-  if (!deckOk3) stuck.push('the deck once every motion is answered');
+    return c ? [...c.querySelectorAll('[data-motion][aria-pressed="true"]')].map((b) => b.dataset.motion) : null;
+  }, mKA);
+  const deckOk4 = !!dA3 && dA3.mark === 'deciding' && !!dB3 && dB3.mark === 'deciding' && /^2 of 3 have answered$/.test(dB3.title || '') &&
+    !!cardA3 && cardA3.join() === 'no';
+  say('motions 4  · ' + (deckOk4 ? 'both answered, both entries ⏳: ' + dB3.title + ' · the first’s card reopens with the answer given pre-pressed'
+    : 'FAIL: ' + JSON.stringify({ dA3, dB3, cardA3 })));
+  if (!deckOk4) stuck.push('the entries once every motion is answered');
   await closeCard();
   await wire(guestPage, 'withdraw-motion', { motion: mA });
   await wire(cyPage, 'withdraw-motion', { motion: mB });
@@ -3176,7 +3190,7 @@ if (caret) {
     const railOf = () => guestPage.evaluate(() => ({
       rail: [...document.querySelectorAll('#rail li')].map((li) => li.dataset.q ||
         ((li.querySelector('[data-card]') || { dataset: {} }).dataset.card) || '?'),
-      motion: !!document.querySelector('#rail [data-q="rate"], #rail [data-card="rate"]'),
+      motion: !!document.querySelector('#rail [data-q^="mo:"], #rail [data-card^="mo:"]'),
       suggs: (window.SESSION.SUGGS || []).map((g) => g.kind + ':' + g.state + (g.mine ? ':mine' : '')),
       tabs: document.querySelectorAll('#charter .achip').length,
       judgeServed: !!document.querySelector('#rail [data-card="canjudge"]'),
@@ -3261,26 +3275,29 @@ if (caret) {
     await guestPage.waitForTimeout(400);
   }
 
-  /* ---- the pair deck (Q1200) and the ledger (Q1201) ------------------------
+  /* ---- one pair, one tab, one entry (Q1367; the deck of Q1200 and the
+   * ledger of Q1201 before it) --------------------------------------------
    * The guest proposes a **second** wording on the same clause as their
-   * first, so the founder's deck on that race holds two incumbent pairs and,
-   * once those are judged, the rival pair — three presses on one entry, in
-   * the router's order, the entry's teaser always the next pair's case and
-   * the entry filing as ⏳ only when the hand on that race is empty. Before
-   * the deck the page kept the first served card and filed the race on any
-   * standing vote, so a member got one comparison per race for its life.
+   * first, so the founder's race holds two incumbent pairs and the rival
+   * pair — and each is its own rail entry and its own tab, its teaser its
+   * own pair's case, opening that pair alone: no ledger beneath, no next
+   * press. Judging one turns *that* entry ⏳ and leaves the others lit;
+   * once every pair is judged the race is three ⏳ entries. Before Q1200 the
+   * page kept the first served card and filed the race on any standing
+   * vote, so a member got one comparison per race for its life; under the
+   * deck one entry re-lit with the next pair and the judged pairs were a
+   * ledger beneath the card, which Ed's screenshots of 2026-09-15 retired.
    *
-   * Then the ledger: a **reload** empties the page's provisional maps, so
-   * what the ⏳ card lists is the view's own `myJudgments` — three blocks
-   * with the verdicts the walk gave — and a press on the first makes it the
-   * card's active pair with that verdict pre-selected; choosing the other
-   * lane and ✓ sends the revision on the same pair, and a second reload
-   * shows the new verdict on the block, off the wire alone.
+   * Then the revision: a **reload** empties the page's provisional maps, so
+   * what a judged pair's tab opens is the view's own `myJudgments` — that
+   * pair with the verdict given pre-selected and ✓ pressed; choosing the
+   * other lane and ✓ sends the revision on the same pair, and a second
+   * reload shows the new verdict pre-selected, off the wire alone.
    *
-   * Everything is read off the DOM — the entry's mark, its tooltip, its
+   * Everything is read off the DOM — the entries' marks, tooltips and
    * `.qwhy` teasers, the card's blocks and radios — never off `S`; the race
    * id comes from the wire, which is the one name the rail and the view
-   * share. */
+   * share, and a pair's entry is keyed `<race>#<a>:<b>`. */
   if (guestPage && ok) {
     const line = EMPTY_TEXT ? 0 : 1;
     const WHY1 = 'Sundays are the point', WHY2 = 'One is plenty';
@@ -3324,48 +3341,54 @@ if (caret) {
         return fetch(api + '/view').then((r) => r.json()).then((v) =>
           ((v.clauses || []).find((c) => (c.contested || []).some((sp) => sp.start === n)) || {}).id || null);
       }, line);
-      // the entry as the founder sees it: how many for this race, its mark,
-      // its tooltip and its teasers (the deck's race unless another is named)
-      const entry = (id = raceId) => page.evaluate((id) => {
+      // the race's entries as the founder sees them: one per pair (Q1367),
+      // each its id, mark, tooltip and teasers
+      const entries = (id = raceId) => page.evaluate((id) => {
         const q = String(id).replace(/["\\]/g, '\\$&');
-        const lis = [...document.querySelectorAll('#rail li[data-q="' + q + '"]')];
-        const li = lis[0];
-        if (!li) return { n: 0, mark: '', cap: '', teasers: [] };
-        const b = li.querySelector('button');
-        const mk = li.querySelector('.qmark .mk');
-        return { n: lis.length, mark: mk ? ([...mk.classList].find((c) => c.startsWith('mk-')) || '').slice(3) : '',
-          cap: b ? b.title : '', teasers: [...li.querySelectorAll('.qwhy')].map((e) => e.textContent.trim()) };
+        return [...document.querySelectorAll('#rail li[data-q="' + q + '"], #rail li[data-q^="' + q + '#"]')].map((li) => {
+          const b = li.querySelector('button');
+          const mk = li.querySelector('.qmark .mk');
+          return { id: li.dataset.q, mark: mk ? ([...mk.classList].find((c) => c.startsWith('mk-')) || '').slice(3) : '',
+            cap: b ? b.title : '', teasers: [...li.querySelectorAll('.qwhy')].map((e) => e.textContent.trim()) };
+        });
       }, id);
-      // open the entry from the rail — the page's own route in — and read the
-      // card: its kind, the reasons on its blocks, the radios
-      const openEntry = async (id = raceId) => {
+      // the race's one lit entry, as the older steps read it: by the race id,
+      // the pair's entry that still asks — else the last ⏳ — with `n` the
+      // count of the race's entries
+      const entry = async (id = raceId) => {
+        const es = await entries(id);
+        const e = es.find((x) => x.mark === 'needs' || x.mark === 'urgent') || es[es.length - 1] || null;
+        return e ? { ...e, n: es.length } : { n: 0, mark: '', cap: '', teasers: [] };
+      };
+      // open one entry from the rail — the page's own route in — and read
+      // the card: its kind, the reasons on its blocks, the radios. By a
+      // pair's own id, or by the race id — the pair's entry that still asks
+      const openEntry = async (id) => {
         await page.evaluate((id) => {
           const q = String(id).replace(/["\\]/g, '\\$&');
-          const b = document.querySelector('#rail li[data-q="' + q + '"] button');
+          const lis = [...document.querySelectorAll('#rail li[data-q="' + q + '"], #rail li[data-q^="' + q + '#"]')];
+          const lit = lis.find((li) => li.querySelector('.qmark .mk-needs, .qmark .mk-urgent')) || lis[0];
+          const b = lit && lit.querySelector('button');
           if (b) b.click();
         }, id);
         await T(1400);
         return page.evaluate((id) => {
           const q = String(id).replace(/["\\]/g, '\\$&');
-          const card = document.querySelector('.sugg[data-card="' + q + '"]');
+          const card = document.querySelector('.sugg[data-card="' + q + '"], .sugg[data-card^="' + q + '#"]');
           if (!card) return { card: false };
           return { card: true, cls: card.className,
-            whys: [...card.querySelectorAll('.field:not(.ledger) .propblock .speaker .said')].map((e) => e.textContent.trim()),
+            whys: [...card.querySelectorAll('.field .propblock .speaker .said')].map((e) => e.textContent.trim()),
             keepLane: !!card.querySelector('.clausehead [data-v="keep"]'),
-            lanes: [...card.querySelectorAll('[data-v]')].map((b) => b.dataset.v + ':' + b.getAttribute('aria-pressed')),
-            submitPressed: (card.querySelector('[data-act="submit"]') || {}).getAttribute
+            pressed: [...card.querySelectorAll('[data-v][aria-pressed="true"]')].map((b) => b.dataset.v),
+            cast: (card.querySelector('[data-act="submit"]') || {}).getAttribute
               ? card.querySelector('[data-act="submit"]').getAttribute('aria-pressed') : null,
-            ledger: [...card.querySelectorAll('.ledgerpair')].map((p) => ({
-              active: p.classList.contains('active'),
-              on: [...p.querySelectorAll('.lside')].map((s) => s.classList.contains('on')),
-              onIsCurrent: !!p.querySelector('.lside.on .rsub'),
-            })) };
+            ledger: card.querySelectorAll('.ledger, .ledgerpair').length };
         }, id);
       };
-      const judge = async (v, id = raceId) => {
+      const judge = async (id, v) => {
         const okJ = await page.evaluate(([id, val]) => {
           const q = String(id).replace(/["\\]/g, '\\$&');
-          const card = document.querySelector('.sugg[data-card="' + q + '"]');
+          const card = document.querySelector('.sugg[data-card="' + q + '"], .sugg[data-card^="' + q + '#"]');
           const lane = card && card.querySelector('[data-v="' + val + '"]');
           if (!lane) return false;
           lane.click();
@@ -3377,121 +3400,108 @@ if (caret) {
         await T(2400);                             // the receipt, the command, its refresh
         return okJ;
       };
-      const isNeeds = (e) => e.n === 1 && (e.mark === 'needs' || e.mark === 'urgent');
+      const lit = (e) => !!e && (e.mark === 'needs' || e.mark === 'urgent');
+      const isNeeds = lit;
+      const quickOf = (es, why) => es.find((e) => e.teasers.length === 1 && e.teasers[0] === why);
+      const rivalOf = (es) => es.find((e) => e.teasers.length === 2);
+      const byId = (es, id) => es.find((e) => e.id === id);
       if (!raceId) {
-        say('deck       · FAIL: no race on line ' + line + ' in the wire');
-        stuck.push('the deck’s race');
+        say('pairs      · FAIL: no race on line ' + line + ' in the wire');
+        stuck.push('the race');
       } else {
-        // 1 — one entry, lit, one teaser: the front pair's case
-        const e1 = await entry();
-        const ok1 = isNeeds(e1) && e1.teasers.length === 1 && [WHY1, WHY2].includes(e1.teasers[0]);
-        say('deck 1     · ' + (ok1 ? 'one entry ' + e1.mark + ' “' + e1.cap + '” · teaser “' + e1.teasers[0] + '”'
+        // 1 — a lit entry per dealt pair, each its own pair's case. The router
+        // deals one pair per race at a time (the hand is ten cards over the
+        // hot set), so the ordinary case is one lit entry here and the next
+        // pair's entry arriving as its own once this one is judged
+        const e1 = await entries();
+        const q1 = quickOf(e1, WHY1) || quickOf(e1, WHY2);
+        const ok1 = lit(q1) && e1.every((e) => e.id.startsWith(raceId + '#')) && e1.every(lit);
+        say('pairs 1    · ' + (ok1 ? e1.length + ' lit ' + (e1.length === 1 ? 'entry' : 'entries') + ', one per dealt pair, its own case: “' + q1.teasers[0] + '”' +
+          (quickOf(e1, WHY1) && quickOf(e1, WHY2) ? ' and “' + (q1.teasers[0] === WHY1 ? WHY2 : WHY1) + '”' : '') +
+          (rivalOf(e1) ? ' · and the rival pair, two teasers' : '')
           : 'FAIL: ' + JSON.stringify(e1)));
-        if (!ok1) stuck.push('the deck’s entry before any judgment');
-        const first = e1.teasers[0], other = first === WHY1 ? WHY2 : WHY1;
-        // 2 — open, judge: the entry stays lit and its teaser is the other case
-        const c1 = await openEntry();
-        const ok2 = c1.card && /quick-open/.test(c1.cls) && c1.keepLane && c1.whys.length === 1 && c1.whys[0] === first;
-        say('deck 2     · ' + (ok2 ? 'the card is the front pair, quick, its reason “' + first + '”' : 'FAIL: ' + JSON.stringify(c1)));
-        if (!ok2) stuck.push('the deck’s first card');
-        // **Indifferent, deliberately**: a room of two has a floor of one, so
-        // one approving vote adopts the challenger on the spot and the race
-        // seals into a record (the first run of this step did exactly that).
-        // A tie leaves every posterior at 0.5 and the race standing, which is
-        // what a deck needs; the rival pair below touches no incumbent.
-        const j1 = await judge('indifferent');
-        const e2 = await entry();
-        const ok3 = j1 && isNeeds(e2) && e2.teasers.length === 1 && e2.teasers[0] === other;
-        say('deck 3     · ' + (ok3 ? 'judged · the entry stays ' + e2.mark + ' “' + e2.cap + '” · teaser now “' + other + '”'
-          : 'FAIL: judged ' + j1 + ' · ' + JSON.stringify(e2)));
-        if (!ok3) stuck.push('the entry after the first judgment');
-        // 3 — press again: the other pair; judge it; the rival pair is next
-        const c2 = await openEntry();
-        const ok4 = c2.card && /quick-open/.test(c2.cls) && c2.whys.length === 1 && c2.whys[0] === other;
-        say('deck 4     · ' + (ok4 ? 'the next press opens the other pair, its reason “' + other + '”' : 'FAIL: ' + JSON.stringify(c2)));
-        if (!ok4) stuck.push('the deck’s second card');
-        const j2 = await judge('indifferent');
-        const e3 = await entry();
-        const ok5 = j2 && isNeeds(e3) && e3.teasers.length === 2;
-        say('deck 5     · ' + (ok5 ? 'judged · the entry stays ' + e3.mark + ' with two teasers: the rival pair is dealt'
-          : 'FAIL: judged ' + j2 + ' · ' + JSON.stringify(e3)));
-        if (!ok5) stuck.push('the entry after the second judgment');
-        const c3 = await openEntry();
-        const ok6 = c3.card && /race-open/.test(c3.cls) && !c3.keepLane && c3.whys.length === 2 &&
-          c3.whys.includes(WHY1) && c3.whys.includes(WHY2);
-        say('deck 6     · ' + (ok6 ? 'the third press opens the rival pair: a race card, two blocks, no keep lane'
-          : 'FAIL: ' + JSON.stringify(c3)));
-        if (!ok6) stuck.push('the rival card');
-        const j3 = await judge('a');
-        const e4 = await entry();
-        const ok7 = j3 && e4.n === 1 && e4.mark === 'deciding' && e4.teasers.length === 0;
-        say('deck 7     · ' + (ok7 ? 'judged · the entry files as ⏳ “' + e4.cap + '”, no teaser — the hand is empty'
-          : 'FAIL: judged ' + j3 + ' · ' + JSON.stringify(e4)));
-        if (!ok7) stuck.push('the entry once the deck is empty');
-        // L4 — the row's close and persistence are deck 3 and deck 7: ✓ closes
-        // the card and the entry keeps its mark while a pair is left; it files
-        // as ⏳ once nothing on the race can be asked of you
-        say(L('L4') + (ok3 && ok7 ? '✓ closes the card, the entry keeps its mark while a pair is left (deck 3), and files as ⏳ once the hand is empty (deck 7)'
-          : 'FAIL: deck 3 ' + ok3 + ' · deck 7 ' + ok7 + ' — see the lines above'));
+        if (!ok1) stuck.push('the entries before any judgment');
+        if (ok1) {
+          const first = q1.teasers[0], other = first === WHY1 ? WHY2 : WHY1;
+          // 2 — open the first pair's own entry: a quick card, that pair alone,
+          // nothing of any other pair on it
+          const c1 = await openEntry(q1.id);
+          const ok2 = c1.card && /quick-open/.test(c1.cls) && c1.keepLane && c1.whys.length === 1 && c1.whys[0] === first && c1.ledger === 0;
+          say('pairs 2    · ' + (ok2 ? 'its card is that pair, quick, its reason “' + first + '”, no ledger' : 'FAIL: ' + JSON.stringify(c1)));
+          if (!ok2) stuck.push('the first pair’s card');
+          // **Indifferent, deliberately**: a room of two has a floor of one, so
+          // one approving vote adopts the challenger on the spot and the race
+          // seals into a record (the first run of this step did exactly that).
+          // A tie leaves every posterior at 0.5 and the race standing.
+          // 3 — judged: that entry is ⏳ now, and the other pair's entry is lit
+          // beside it — its own, not the same one re-lit
+          const j1 = await judge(q1.id, 'indifferent');
+          const e2 = await entries();
+          const q2 = quickOf(e2, other);
+          const ok3 = j1 && byId(e2, q1.id) && byId(e2, q1.id).mark === 'deciding' && lit(q2) && q2.id !== q1.id;
+          say('pairs 3    · ' + (ok3 ? 'judged · its entry files as ⏳ “' + byId(e2, q1.id).cap + '” · the other pair’s own entry is ' + q2.mark + ' “' + other + '”'
+            : 'FAIL: judged ' + j1 + ' · ' + JSON.stringify(e2)));
+          if (!ok3) stuck.push('the entries after the first judgment');
+          // 4 — the other pair by its own entry, never by a second press on
+          // the first; judge it
+          const c2 = ok3 ? await openEntry(q2.id) : { card: false };
+          const ok4 = c2.card && /quick-open/.test(c2.cls) && c2.whys.length === 1 && c2.whys[0] === other && c2.ledger === 0;
+          say('pairs 4    · ' + (ok4 ? 'the other pair’s own entry opens it, its reason “' + other + '”' : 'FAIL: ' + JSON.stringify(c2)));
+          if (!ok4) stuck.push('the second pair’s card');
+          const j2 = ok3 ? await judge(q2.id, 'indifferent') : false;
+          const e3 = await entries();
+          const r3 = rivalOf(e3);
+          const ok5 = j2 && byId(e3, q2.id) && byId(e3, q2.id).mark === 'deciding' && byId(e3, q1.id).mark === 'deciding' && lit(r3);
+          say('pairs 5    · ' + (ok5 ? 'judged · ⏳ too · the rival pair’s own entry is lit with two teasers'
+            : 'FAIL: judged ' + j2 + ' · ' + JSON.stringify(e3)));
+          if (!ok5) stuck.push('the entries after the second judgment');
+          // 5 — the rival pair: a race card, two blocks, no keep lane; judge it
+          const c3 = ok5 ? await openEntry(r3.id) : { card: false };
+          const ok6 = c3.card && /race-open/.test(c3.cls) && !c3.keepLane && c3.whys.length === 2 &&
+            c3.whys.includes(WHY1) && c3.whys.includes(WHY2) && c3.ledger === 0;
+          say('pairs 6    · ' + (ok6 ? 'the rival pair’s entry opens a race card: two blocks, no keep lane, no ledger'
+            : 'FAIL: ' + JSON.stringify(c3)));
+          if (!ok6) stuck.push('the rival card');
+          const j3 = ok5 ? await judge(r3.id, 'a') : false;
+          const e4 = await entries();
+          const ok7 = j3 && e4.length === 3 && e4.every((e) => e.mark === 'deciding');
+          say('pairs 7    · ' + (ok7 ? 'judged · three ⏳ entries, one per pair — nothing on the race is left to ask'
+            : 'FAIL: judged ' + j3 + ' · ' + JSON.stringify(e4)));
+          if (!ok7) stuck.push('the entries once every pair is judged');
+          // L4 — the row's close and persistence are pairs 3 and 7: ✓ closes
+          // the card and the pair's own entry files as ⏳, the other pairs'
+          // entries untouched; every pair judged, every entry is ⏳
+          say(L('L4') + (ok3 && ok7 ? '✓ closes the card and files that pair’s entry as ⏳, the other pairs’ entries staying lit (pairs 3); every pair judged, every entry is ⏳ (pairs 7)'
+            : 'FAIL: pairs 3 ' + ok3 + ' · pairs 7 ' + ok7 + ' — see the lines above'));
 
-        // 4 — the ledger, after a reload: three blocks, the verdicts given
-        await page.reload();
-        await page.waitForFunction(() => !!(window.SESSION && window.SESSION.SUGGS && window.SESSION.SUGGS.length &&
-          document.querySelector('#rail li')), null, { timeout: 30_000 });
-        await T(1500);
-        const e5 = await entry();
-        const l1 = await openEntry();
-        // the two ties mark their Indifferent row (a third side, after the
-        // two wordings), the rival pair marks its first side; nothing is active
-        const okL1 = e5.mark === 'deciding' && l1.card && /ledger-open/.test(l1.cls) && l1.ledger.length === 3 &&
-          l1.ledger.every((p) => p.on.filter(Boolean).length === 1) &&
-          l1.ledger[0].on.join() === 'false,false,true' && l1.ledger[1].on.join() === 'false,false,true' &&
-          l1.ledger[2].on.join() === 'true,false' && l1.ledger.every((p) => !p.active);
-        say('ledger 1   · ' + (okL1 ? 'after a reload the ⏳ card lists 3 pairs, each with the verdict given, none active'
-          : 'FAIL: ' + JSON.stringify({ e5, l1 })));
-        if (!okL1) stuck.push('the ledger after a reload');
-        // 5 — press the first block: its pair is the card's, the verdict pre-selected and cast
-        await page.evaluate((id) => {
-          const q = String(id).replace(/["\\]/g, '\\$&');
-          const b = document.querySelector('.sugg[data-card="' + q + '"] .ledgerpair[data-ledger]');
-          if (b) b.click();
-        }, raceId);
-        await T(700);
-        const l2 = await page.evaluate((id) => {
-          const q = String(id).replace(/["\\]/g, '\\$&');
-          const card = document.querySelector('.sugg[data-card="' + q + '"]');
-          if (!card) return { card: false };
-          return { card: true, cls: card.className,
-            pressed: [...card.querySelectorAll('[data-v][aria-pressed="true"]')].map((b) => b.dataset.v),
-            keepLane: !!card.querySelector('.clausehead [data-v="keep"]'),
-            cast: (card.querySelector('[data-act="submit"]') || {}).getAttribute
-              ? card.querySelector('[data-act="submit"]').getAttribute('aria-pressed') : null,
-            active: [...card.querySelectorAll('.ledgerpair')].map((p) => p.classList.contains('active')) };
-        }, raceId);
-        const okL2 = l2.card && /quick-open/.test(l2.cls) && !/ledger-open/.test(l2.cls) && l2.keepLane &&
-          l2.pressed.join() === 'indifferent' && l2.cast === 'true' && l2.active.join() === 'true,false,false';
-        say('ledger 2   · ' + (okL2 ? 'the first block pressed: the card is that pair, quick, Indifferent pre-selected, ✓ pressed'
-          : 'FAIL: ' + JSON.stringify(l2)));
-        if (!okL2) stuck.push('the ledger block pressed');
-        // 6 — choose the other lane, ✓: the revision goes on the same pair
-        const jr = await judge('keep');
-        await T(1500);
-        await page.reload();
-        await page.waitForFunction(() => !!(window.SESSION && window.SESSION.SUGGS && window.SESSION.SUGGS.length &&
-          document.querySelector('#rail li')), null, { timeout: 30_000 });
-        await T(1500);
-        const l3 = await openEntry();
-        // a revision is a new judgment, so *oldest first* lists the revised
-        // pair last; the blocks are found by what they mark, not by position
-        const kinds = l3.ledger.map((p) => (p.onIsCurrent ? 'keep' : p.on.join()));
-        const okL3 = jr && l3.card && l3.ledger.length === 3 &&
-          kinds.filter((k) => k === 'keep').length === 1 &&
-          kinds.filter((k) => k === 'false,false,true').length === 1 &&
-          kinds.filter((k) => k === 'true,false').length === 1;
-        say('ledger 3   · ' + (okL3 ? 'revised to keep, and after a reload one block marks the current text, the tie and the rival verdict beside it — off the wire alone'
-          : 'FAIL: judged ' + jr + ' · ' + JSON.stringify(l3)));
-        if (!okL3) stuck.push('the ledger revision');
-        await closeCard();
+          // 6 — after a reload a judged pair's own tab opens it with the
+          // verdict given pre-selected and ✓ pressed — the view's own record
+          await page.reload();
+          await page.waitForFunction(() => !!(window.SESSION && window.SESSION.SUGGS && window.SESSION.SUGGS.length &&
+            document.querySelector('#rail li')), null, { timeout: 30_000 });
+          await T(1500);
+          const e5 = await entries();
+          const l1 = await openEntry(q1.id);
+          const okL1 = e5.length === 3 && e5.every((e) => e.mark === 'deciding') && l1.card && /quick-open/.test(l1.cls) &&
+            l1.keepLane && l1.pressed.join() === 'indifferent' && l1.cast === 'true' && l1.ledger === 0;
+          say('revise 1   · ' + (okL1 ? 'after a reload three ⏳ entries stand; the first pair’s tab opens it with Indifferent pre-selected and ✓ pressed'
+            : 'FAIL: ' + JSON.stringify({ e5, l1 })));
+          if (!okL1) stuck.push('a judged pair after a reload');
+          // 7 — choose the other lane, ✓: the revision goes on the same pair
+          const jr = await judge(q1.id, 'keep');
+          await T(1500);
+          await page.reload();
+          await page.waitForFunction(() => !!(window.SESSION && window.SESSION.SUGGS && window.SESSION.SUGGS.length &&
+            document.querySelector('#rail li')), null, { timeout: 30_000 });
+          await T(1500);
+          const e6 = await entries();
+          const l3 = await openEntry(q1.id);
+          const okL3 = jr && e6.length === 3 && l3.card && l3.pressed.join() === 'keep' && l3.cast === 'true';
+          say('revise 2   · ' + (okL3 ? 'revised to keep, and after a reload the same tab opens with keep pre-selected — off the wire alone; still three entries'
+            : 'FAIL: judged ' + jr + ' · ' + JSON.stringify({ e6, l3 })));
+          if (!okL3) stuck.push('the revision of a judged pair');
+          await closeCard();
+        }
 
         /* ---- askable but undealt (Q1202) ----------------------------------
          * Ed, 2026-09-07: *⏳ should mean "waiting for other people to vote".
@@ -3621,8 +3631,8 @@ if (caret) {
               const t5 = await tRow();
               const e5 = await entry(tId);
               const landed = j5 && t5.judged && t5.judgments === 3 && t5.askable === false && !t5.ask;
-              const ok6 = landed && e5.mark === 'deciding' && e5.teasers.length === 0;
-              say('askable 6  · ' + (ok6 ? 'judged · 3 pairs of the founder’s stand on T · nothing left to ask, and only now the entry files as ⏳ “' + e5.cap + '”'
+              const ok6 = landed && e5.mark === 'deciding' && e5.n === 3;
+              say('askable 6  · ' + (ok6 ? 'judged · 3 pairs of the founder’s stand on T · nothing left to ask, and only now every entry is ⏳ “' + e5.cap + '”'
                 : 'FAIL: judged ' + j5 + ' · view ' + JSON.stringify(t5) + ' · entry ' + JSON.stringify(e5)));
               if (!ok6) stuck.push('the askable case’s judgment' + (landed ? '’s ⏳ afterwards' : ''));
               await closeCard();
