@@ -38,13 +38,14 @@ import type { Span } from './record-spans.js';
 export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
   opts: { records?: boolean } = {}): {
   text: string; textVersion: number; clauses: unknown[]; mine: unknown[];
-  records: unknown[]; recordsKey: number; raceCards: unknown[]; wallet: number | null;
+  records: unknown[]; recordsKey: number; raceCards: unknown[]; settingRaces: unknown[];
+  wallet: number | null;
   walletInfo: unknown; floor: number; awaitingAssent?: unknown[];
   amendments?: unknown[]; parked?: unknown[];
 } => {
   const ed = asEngineDoc(doc);
-  const idle = { clauses: [], mine: [], records: [], recordsKey: 0, raceCards: [], wallet: null,
-    record: null, walletInfo: null, floor: 0, awaitingAssent: [], amendments: [], parked: [] };
+  const idle = { clauses: [], mine: [], records: [], recordsKey: 0, raceCards: [], settingRaces: [],
+    wallet: null, record: null, walletInfo: null, floor: 0, awaitingAssent: [], amendments: [], parked: [] };
   if (ed.bridge === null) return { text: doc.cs.text ?? '', textVersion: 0, ...idle };
   const engine = ed.bridge.engine;
   const api = new ParticipantApi(engine, memberId);
@@ -199,6 +200,24 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
           .map((j) => ({ a: j.aId, b: j.bId, outcome: j.outcome, locked: j.locked }));
       })(),
     };
+  });
+  // **A setting race is blind too** (Q1371). An admission at *proposal* — and
+  // any ordinary motion — runs as a one-candidate race in the engine, and the
+  // page's entry for it needs exactly what a text race's entry has: how far
+  // the room has got (`closeness`, the leader's judges over the floor, Q1362
+  // (c)) and whether this seat has judged it and can still be asked. Nothing
+  // else crosses — no standings, no author, no candidate — so §3.5 holds as
+  // it does for the clause rows above. Before this the page kept a marker of
+  // its own for an ordinary motion's judgment and never set it for an
+  // admission, so the admit entry could not tell voted from unvoted and its
+  // fill was the founder's 100%.
+  const settingRaces = engine.races().filter((r) => r.settingId !== undefined).map((r) => {
+    const ids = new Set([...r.members, r.incumbentId]);
+    const here = myJ.filter(onRace(ids));
+    const dealt = served !== null && served.cards.some((c) => c.kind === 'edge' && c.raceId === r.id);
+    const ask = served === null || dealt ? null : api.askOn(r.id, HAND, served.t);
+    return { id: r.id, settingId: r.settingId, closeness: r.closeness, judges: r.leaderJudges, floor,
+      judged: here.some((j) => !j.superseded && !j.locked), askable: dealt || ask !== null };
   });
   const mine = api.myCandidates().flatMap((m) => {
     const c = engine.getCandidate(m.id);
@@ -417,7 +436,8 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
     };
   })();
   const base = { text: engine.document(), textVersion: engine.currentVersion(),
-    clauses, mine, records, recordsKey, floor, record, awaitingAssent, amendments, parked };
+    clauses, mine, records, recordsKey, floor, record, awaitingAssent, amendments, parked,
+    settingRaces };
   // closed, a clerk, or a seat out of E: no hand and no wallet
   if (served === null) return { ...base, raceCards: [], wallet: null, walletInfo: null };
   const w = served.wallet;
