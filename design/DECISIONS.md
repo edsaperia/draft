@@ -6842,3 +6842,41 @@ After: 40×40, `border-radius: 50%`, 24px off the foot (`--row-foot: var(--s5)` 
 **The reproduction.** `npm run journey` on a fresh server tonight: the race card as it opens and a judged pair's card reopened after a reload — the screenshot's shape exactly, a judged race on a fresh load (Q1376's) — both print no bare *undefined* or *NaN*. **Closed as not reproduced, with the guard in place** — Ed may reopen it if the word comes back; the guard then names the card text around it.
 
 **Guard.** `npm run journey`'s two *bare word* lines: `openEntry` reports the first stretch of card text holding `undefined` or `NaN`, asserted on the rival pair's race card and on the reloaded judged card.
+
+## Q1389: the stranger's Apply card did not fit a phone (Ed's screenshot, the lantern-house room, 2026-09-16)
+
+**The finding.** Ed, 00:11, from his phone at the door of `docs.vote/d/lantern-house` (the picture: `design/bug-shots-2026-09-16/stranger-apply-card-on-a-phone.jpg`): *what I see after clicking apply for membership queue card on mobile — 1 does not fit on screen*. The open 🪪 card's right third was off the glass and the page scrolled sideways.
+
+**The measurement.** Headless at 390×844 on the live door: the card's box ran 64→432px and the layout viewport was 444px. Two causes, one under the other. The email box carried `style="width:20rem"` inline — 320px in a card that starts 88px in — and the same inline width sat on seven more fields (the founder's 📧 three ways and 📍 twice, the applicant's 📧 and ✋, the ✉️ join field, the title and slug composers). Underneath, the narrow layout's grid said `grid-template-columns: 1fr`, which is `minmax(auto, 1fr)`: the column's minimum is its content's, so any definite width inside it widened the page instead of overflowing the card. The wide grid's middle track had always been `minmax(0, 1fr)`; the 2026-09-12 first cut of MOBILE.md wrote the narrow one by hand and lost the zero.
+
+**The ruling and the build.** The narrow column is `minmax(0, 1fr)` (system.css, `NARROW_Q`'s block). The inline widths are gone; setup.css sizes an address or a name as `width: 100%; max-width: 20rem` — the cap is the rem and the width the percentage, not the other way round, because a definite `width: 20rem` is the box's minimum contribution to every flex row it stands in (the Members row holds the founder's 📧 card) and a percentage `max-width` cannot cap it there; the fields that stand inside a sentence (a title at 22rem, a slug at 16 or 12) keep a word's width with the same `max-width: 100%`. Measured: 0 cards over the edge at 390 across all seven walks (309 cards) and none at 1600; the probe references re-frozen for the two band cards that lost their inline widths.
+
+**Guard.** `card-audit` **V1**: a card's right edge against the viewport it was measured in, and the page's scroll width against the same, naming the widest element in the page — red on the pre-fix page at 390 on six cards (the stranger's 📧, the founder's 📧 twice, 🪶, ✉️, ❌). `card-audit:narrow` runs in CI's probe job.
+
+## Q1390: the stranger's Apply sends from the commit row's 📧 (Ed, 2026-09-16)
+
+**The finding.** The same screenshot's second note: *send the link should be a submit button*. 📧 Log In had sent from the row's right-hand 📧 since card review round 3 (2026-09-05, 66; reading 1194, T47's glyph commit), while 🪪 Apply kept *Send the link* as a plain button in the body under the field, and SURFACE Y20 recorded the difference as a rule.
+
+**The build.** Both send from the row (`strangerCardHtml`, door.js); Apply keeps its sentence and its *Your email* label, since what an application is has to be said somewhere. SURFACE §9's stranger row and Y20 say so. **Open for Ed:** the applicant's own 📧 card, on the applicant's five, still sends from the body by the same Y20 — the same reading would move it to the row; not done without his word.
+
+## Q1391: a submitted application's rail line (Ed, 2026-09-16)
+
+**The finding.** Ed, as an applicant: *"before the members — a proposal like any other" is a baffling thing for the body text of a queue card to say*. It was the 🪪 entry's summary once the application was in, written from the mechanism's side (an application at ✏️ is an ordinary motion) rather than the applicant's.
+
+**The build.** *Submitted — the members are deciding* (band.js, `appCtx.summary`), in the words the rest of the surface uses for a race in progress. Wording overrulable.
+
+## Q1392: an applicant's five stay in the rail (Ed, 2026-09-16)
+
+**The finding.** Ed, waiting as an applicant: *after I answer my application questions, they should appear as greyed out queue cards in the sidebar, so I can easily get back to them (as I have nothing else to see or do, and as far as I can tell there's no way to get back to the application rationale at all)*.
+
+**Why they went.** `entryOf` pins an entry in every state but *wait* and *done*; an unpinned entry is laid in the flow beside its clause on a wide screen and is dropped from the phone's drawer, which holds only what is pinned (Q1351). For a member a filed entry is a position in the gutter — the tab is the way back. An applicant has no gutter to find it in.
+
+**The build.** `pinAll` on the applicant's rail context (`appCtx`, band.js): the five stay listed whatever their state, done ones grey, the rationale reachable from its entry. Walked by `applicants-walk` at proposal price (the rail lists all five at every step it prints).
+
+## Q1393: an admission the hot set never deals could not be voted on (Ed, 2026-09-16)
+
+**The finding.** Ed, 00:31 and again at 00:45: *I'm still waiting for my application to be accepted!* Twenty bots, an admission at ✏️, the race `admit:ap-1` at 1 judge of a floor of 12 for forty minutes.
+
+**The cause.** A member votes on an ordinary motion through a served race card, and the hand is dealt from the hot set, which is **three** races by value (`hotSetSize`). The bots had made fifty-five text proposals; a text race with a leader at any probability above 0.625 outvalued the admission (leader 0.5, unheard boost 1.25), and the room made proposals faster than it resolved them, so the admission never reached the top three and no hand held it. The view said `askable: true` on its row — `api.askOn` had a pair to give — but a setting race's row carried no `ask` where a clause row has carried its pair since Q1202, so the page's admit card (`raceCardOf`, live.js) and the bots alike had nothing to vote with. Q1371 had built the entry and its fill; the vote behind it depended on a deal that a busy room never makes.
+
+**The build.** `settingRaces[].ask` (views.ts): the same blind `CardView` a clause row carries — no standing, no author. `raceCardOf` falls back to the row's pair where the hand holds none; room-bots' admission pick does the same, judges an admission ahead of the top card, and welcomes a stranger three times in four. **Deployed mid-room at Ed's word** (5f0a6f7, ~00:46): a full deploy, since the fix is on the server, chosen over waiting because the room's own proposal rate meant the wait was indefinite. No server test asserts the field yet; `applicants-walk` at proposal price is the guard.
