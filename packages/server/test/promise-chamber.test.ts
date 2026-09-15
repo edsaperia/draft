@@ -191,9 +191,8 @@ async function found(b: Booted, opts: {
   const settle = async () => {
     const values: Record<string, unknown> = {
       ending: { endsAtMs: opts.endsAtMs === undefined ? Date.now() + 400 * DAY : opts.endsAtMs },
-      bar: { pct: 66 },
       rate: { grant: 4, cap: 8, dripMinutes: 240 },
-      pace: { shape: 'fixed' }, quorum: { form: 'count', n: 1 },
+      quorum: { form: 'count', n: 1 },
       authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
       applications: { apply: opts.applications === true },
       admission: { price: 'assembly' }, removal: { price: 'consent' },

@@ -80,14 +80,17 @@ describe('the surface route', () => {
     const r = await upload(base, 'bbbbbbb', gzipSync(packTar([
       { name: 'design/session-view.html', data: Buffer.from(page) },
       { name: 'design/system.css', data: Buffer.from('body{color:red}') },
-      { name: 'design/pairwise.html', data: Buffer.from('<p>pairs</p>') },
+      // a third file, because the pack is what a surface push carries whole;
+      // it was design/pairwise.html until that page retired with the
+      // threshold (Q1362), and a script proves the same route
+      { name: 'design/cards.js', data: Buffer.from('/* cards */') },
     ])));
     const body = await r.text();
     expect(r.status, body).toBe(200);
     const j = JSON.parse(body) as { ok: boolean; sha: string; files: string[] };
-    expect(j.files).toEqual(['session-view.html', 'system.css', 'pairwise.html']);
+    expect(j.files).toEqual(['session-view.html', 'system.css', 'cards.js']);
 
-    for (const p of ['/', '/system.css', '/pairwise', '/design/system.css']) {
+    for (const p of ['/', '/system.css', '/cards.js', '/design/system.css']) {
       const got = await fetch(base + p);
       expect(got.status, p).toBe(200);
       expect(got.headers.get('x-build'), p).toBe('bbbbbbb');
