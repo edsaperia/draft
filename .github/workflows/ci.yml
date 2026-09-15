@@ -244,6 +244,11 @@ jobs:
       # the build here rather than surfacing weeks later as a bug.
       - run: npm run probe-coverage
         if: always()
+      # the contents rail: every click lands clear of the topbar (M17), and since
+      # Q1384 its marks queue rightwards out of the rail and cover the document's
+      # edge, unclipped, at 1600 · 1280 · 1920 (the wide step)
+      - run: npm run toc-travel
+        if: always()
 
   # **Last green on `main`: never, as of 2026-08-29.** Red from its birth on
   # 2026-08-27 until the 🧭 shape card (entry 166) was answered by every walk
