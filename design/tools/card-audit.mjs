@@ -539,7 +539,9 @@ const IN_PAGE = () => {
       // an open card replaces its paragraph or its held-open gap, so its one
       // tab is the strip's; a second, on an anchor the card did not replace,
       // is the doubled 🔥 Ed saw
-      const outside = [...document.querySelectorAll('.achip[data-anchor="' + CSS.escape(key) + '"], .achip[data-tab="' + CSS.escape(key) + '"]')]
+      // — the charter's tabs, keyed data-anchor; the band's piles are
+      // setup.js's, whose open card is measured by P7's switch pass
+      const outside = [...document.querySelectorAll('.achip[data-anchor="' + CSS.escape(key) + '"]')]
         // …a patch opens a card at every place it touches (Ed, 181; §9's patch
         // row), so a tab inside one of its other cards is not outside it
         .filter((t) => !t.closest('.sugg[data-card="' + CSS.escape(key) + '"]')).length;
