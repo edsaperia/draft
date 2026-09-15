@@ -158,11 +158,14 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
     expect(s.motionRecords().get(m)!.status).toBe('running');
   });
 
-  it('an identical motion is refused while one runs, and names its twin (Q1348, R-103)', () => {
+  it('an identical motion is refused while one runs, without naming its twin (Q1348, R-103; Q1370)', () => {
     const { s, bo, cy } = constituted();
     const m = s.openMotion(3, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } });
     expect(() => s.openMotion(4, cy, { kind: 'set', setting: 'bar', value: { pct: 80 } }))
-      .toThrow(`already put — '${m}' proposes the same; answer it instead`);
+      .toThrow('already put — the same has already been proposed; answer it instead');
+    // …and the sentence a member reads carries no motion id (STYLE T1, Q1370)
+    expect(() => s.openMotion(4, cy, { kind: 'set', setting: 'bar', value: { pct: 80 } }))
+      .not.toThrow(m);
     // a rival value is a different question, and runs beside it
     const m2 = s.openMotion(5, cy, { kind: 'set', setting: 'bar', value: { pct: 90 } });
     expect(s.motionRecords().get(m2)!.status).toBe('running');
