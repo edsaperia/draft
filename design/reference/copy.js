@@ -572,32 +572,10 @@ window.COPY = (function () {
       },
       veto: (has, noun) => 'The Founder ' + (has ? 'has' : '<b>does not</b> have') +
         ' a veto over proposals passed by the membership about ' + noun + '.',
-      opts: {
-        star: {
-          u: { held: ['The Founder changes it at will.', 'No proposal needed for the Founder’s own hand.'],
-               given: ['Only by proposal, like anybody.', 'The Founder proposes like a member.'] },
-          a: { held: ['', 'Each one comes as a 👑 question — assent or refuse.'],
-               given: ['', 'Nothing waits on the Founder.'] },
-        },
-        invite: {
-          u: { held: ['The Founder invites at will.', 'Nobody else has to agree when the Founder brings somebody in.'],
-               given: ['Only as Admissions says, like anybody.', 'The Founder proposes a member like anybody, at the price the document sets.'] },
-          a: { held: ['', 'Each invitation, and each application, comes as a 👑 question — assent or refuse.'],
-               given: ['', 'An invitation the membership passes needs nobody’s assent.'] },
-        },
-        remove: {
-          u: { held: ['The Founder removes at will.', 'A member the Founder removes is gone at once — nobody else has to agree.'],
-               given: ['Only as Removal says, like anybody.', 'The Founder proposes a removal like anybody, at the price the document sets.'] },
-          a: { held: ['', 'Each removal comes as a 👑 question — assent or refuse.'],
-               given: ['', 'A removal the membership passes needs nobody’s assent.'] },
-        },
-        text: {
-          u: { held: ['The Founder edits the text at will.', 'No proposal needed for the Founder’s own hand on the text.'],
-               given: ['Only by proposal, like anybody.', 'The Founder proposes a change to the text like a member.'] },
-          a: { held: ['', 'Each one comes as a 👑 question before it lands — assent or refuse.'],
-               given: ['', 'A change the membership passes lands in the text at once.'] },
-        },
-      },
+      // (the `opts` table — a paraphrase per power and a grey helper line under
+      // each — left with Q1378, Ed 2026-09-15: *option text is not document
+      // text* — an option block is the clause sentence `pwLine` writes for the
+      // head, held or given, and nothing beneath it)
       chooseThis: 'Choose this',
       chosen: 'Chosen',
       // the two-commit card (Ed, 2026-09-06): a founder holding the pen may
@@ -606,19 +584,21 @@ window.COPY = (function () {
       chooseOrPropose: (routeGlyph) => 'Choose ✒️ or Propose ' + routeGlyph + ' this',
       chosenOrProposed: (routeGlyph) => 'Chosen ✒️ or Proposed ' + routeGlyph,
       // **What a proposal to hand a power back says, away from its own tab**
-      // (Q386, Ed 2026-09-14). On the card the two blocks are the tab's own
-      // (`PW_OPTS`), which say *this* and *it* because the head above them
-      // names the setting — but a rail subtitle, a deck line and a record
-      // title are read with no head over them, so this one names it. The 🛡️
-      // half is `vetoLabel`'s own sentence, which already does.
+      // (Q386, Ed 2026-09-14). On the card the block is the clause sentence
+      // (`pwLine`), which says *this* because the head above it names the
+      // setting — but a rail subtitle, a deck line and a record title are
+      // read with no head over them, so this one names it. The 🛡️ half is
+      // `vetoLabel`'s own sentence, which already does.
       amendAtWill: (noun) => 'The Founder may amend ' + noun + ' at will.',
       // the four read-only notes (*The Founder holds this…*, *Given up…*)
       // went with Ed's card review round 3 (2026-09-05, 52/53): a tab with
       // nothing to set is its head sentence and a close-only OK
+      // …and the three tails stand alone under the founder's *given* block
+      // since Q1378 took the helper line they used to follow
       notes: {
-        oneWayTail: ' One way — the road back is the members’ to give.',
-        delegatesTail: ' Neither power would be left, so it hands the question to the membership straight away.',
-        atBeginTail: ' It takes effect when the document begins.',
+        oneWayTail: 'One way — the road back is the members’ to give.',
+        delegatesTail: 'Neither power would be left, so it hands the question to the membership straight away.',
+        atBeginTail: 'It takes effect when the document begins.',
         vetoNeedsPen: 'A veto can only be held where the Founder still amends it at will — take back the ✒️ first.',
         opensWithValue: 'Opens once this setting has a value.',
         revisable: 'Revisable until the document begins. Giving both up hands the question to the members — delegation is exactly the state of holding neither.',
@@ -685,9 +665,8 @@ window.COPY = (function () {
       // the spell arrives worded — *7 days*, *36 hours*, *90 minutes* — by
       // the module's `spellWords`, never as a bare day count (Q1321)
       lapseAfter: (spell) => 'After ' + spell + ' without logging in',
-      open: 'Open',
-      waitingStart: 'Waiting on the start',
-      waitingConstitution: 'Waiting on the constitution',
+      // (the gates' *Open* / *Waiting on …* lines left with Q1374: a rail
+      // entry carries a subtitle only on a motion)
       begun: 'Begun',
       notBegun: 'Not yet begun',
       closed: 'Closed',
@@ -739,14 +718,17 @@ window.COPY = (function () {
       // the same count on its own line, under a motion's rail entry (the
       // entry's body is the rationale since 2026-09-12, and may be empty)
       moreAlone: (n) => n + ' more waiting for you',
-      yours: { accept: 'you accepted', keep: 'you kept what stands', abstain: 'you abstained' },
+      // the ledger's words follow the radios' (Q1377): *Prefer this* on both
+      // rules, *Indifferent* on the textless block
+      yours: { accept: 'you preferred the change', keep: 'you preferred what stands', abstain: 'you were indifferent' },
       unanswered: 'not yet answered',
       showing: 'shown above',
     },
     consent: {
-      keepThis: 'Keep this',
-      kept: 'Kept',
-      abstain: 'Abstain',
+      // (*Keep this / Kept* and *Abstain* left with Q1377, Ed 2026-09-15:
+      // *Keep should be Prefer* — the standing text is a peer since Q1362,
+      // so its radio reads like its rival's, and the textless block's
+      // names the act as the race card's does, *Indifferent*)
       // an invitation or a removal has no rule sentence, so its blocks say
       // what the membership would be either way
       staysAsIs: 'The membership stays as it is.',

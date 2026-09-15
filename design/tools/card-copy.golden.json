@@ -332,7 +332,7 @@
    },
    "grant-pen": {
     "eyebrow": "",
-    "head": "Founder Actions",
+    "head": "",
     "lock": "",
     "body": "As the founder of this document, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers later if you choose to.",
     "options": [],
@@ -357,7 +357,7 @@
    },
    "grant-shield": {
     "eyebrow": "",
-    "head": "Founder Veto",
+    "head": "",
     "lock": "",
     "body": "As the founder of this document, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to.",
     "options": [],
@@ -3982,7 +3982,7 @@
    },
    "grant-pen": {
     "eyebrow": "",
-    "head": "Founder Actions",
+    "head": "",
     "lock": "",
     "body": "As the founder of this document, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers later if you choose to.",
     "options": [],
@@ -4007,7 +4007,7 @@
    },
    "grant-shield": {
     "eyebrow": "",
-    "head": "Founder Veto",
+    "head": "",
     "lock": "",
     "body": "As the founder of this document, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to.",
     "options": [],
@@ -4607,7 +4607,7 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "All proposals are made anonymously.Keep thisAll proposals are made anonymously, and all names are revealed at the end.Names put pressure on people; the writing should stand alone.Prefer thisAbstain",
+    "body": "All proposals are made anonymously.Prefer thisAll proposals are made anonymously, and all names are revealed at the end.Names put pressure on people; the writing should stand alone.Prefer thisIndifferent",
     "options": [
      {
       "set": null,
@@ -4622,7 +4622,7 @@
      {
       "set": null,
       "val": "abstain",
-      "label": "Abstain"
+      "label": "Indifferent"
      }
     ],
     "inputs": [],
@@ -5103,12 +5103,12 @@
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
     "lock": "",
-    "body": "The Founder does not have a veto over proposals passed by the membership about applications.Nothing waits on the Founder.Keep thisThe Founder has a veto over proposals passed by the membership about applications.Each one comes as a 👑 question — assent or refuse.Propose this",
+    "body": "The Founder may refuse proposals that the membership pass.Propose this",
     "options": [
      {
       "set": null,
       "val": "The Founder has a veto over proposals passed by the membership about applications.",
-      "label": "The Founder has a veto over proposals passed by the membership about applications."
+      "label": "The Founder may refuse proposals that the membership pass."
      }
     ],
     "inputs": [],
@@ -5127,15 +5127,12 @@
      "Applications — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
-     "Keep this",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
-     "Nothing waits on the Founder.",
-     "Each one comes as a 👑 question — assent or refuse.",
      "We should change this because…"
     ]
    },
@@ -5143,12 +5140,12 @@
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
     "lock": "",
-    "body": "The Founder does not have a veto over proposals passed by the membership about anonymous proposals.Nothing waits on the Founder.Keep thisThe Founder has a veto over proposals passed by the membership about anonymous proposals.Each one comes as a 👑 question — assent or refuse.Propose this",
+    "body": "The Founder may refuse proposals that the membership pass.Propose this",
     "options": [
      {
       "set": null,
       "val": "The Founder has a veto over proposals passed by the membership about anonymous proposals.",
-      "label": "The Founder has a veto over proposals passed by the membership about anonymous proposals."
+      "label": "The Founder may refuse proposals that the membership pass."
      }
     ],
     "inputs": [],
@@ -5167,15 +5164,12 @@
      "Are Proposals Anonymous? — waiting on you",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
-     "Keep this",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
-     "Nothing waits on the Founder.",
-     "Each one comes as a 👑 question — assent or refuse.",
      "We should change this because…"
     ]
    },
@@ -5209,12 +5203,12 @@
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
     "lock": "",
-    "body": "The Founder does not have a veto over proposals passed by the membership about the ending.Nothing waits on the Founder.Keep thisThe Founder has a veto over proposals passed by the membership about the ending.Each one comes as a 👑 question — assent or refuse.Propose this",
+    "body": "The Founder may refuse proposals that the membership pass.Propose this",
     "options": [
      {
       "set": null,
       "val": "The Founder has a veto over proposals passed by the membership about the ending.",
-      "label": "The Founder has a veto over proposals passed by the membership about the ending."
+      "label": "The Founder may refuse proposals that the membership pass."
      }
     ],
     "inputs": [],
@@ -5233,15 +5227,12 @@
      "Ending — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
-     "Keep this",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
-     "Nothing waits on the Founder.",
-     "Each one comes as a 👑 question — assent or refuse.",
      "We should change this because…"
     ]
    },
@@ -5274,12 +5265,12 @@
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
     "lock": "",
-    "body": "The Founder does not have a veto over proposals passed by the membership about vote reveal.Nothing waits on the Founder.Keep thisThe Founder has a veto over proposals passed by the membership about vote reveal.Each one comes as a 👑 question — assent or refuse.Propose this",
+    "body": "The Founder may refuse proposals that the membership pass.Propose this",
     "options": [
      {
       "set": null,
       "val": "The Founder has a veto over proposals passed by the membership about vote reveal.",
-      "label": "The Founder has a veto over proposals passed by the membership about vote reveal."
+      "label": "The Founder may refuse proposals that the membership pass."
      }
     ],
     "inputs": [],
@@ -5298,15 +5289,12 @@
      "Vote Reveal — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
-     "Keep this",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
-     "Nothing waits on the Founder.",
-     "Each one comes as a 👑 question — assent or refuse.",
      "We should change this because…"
     ]
    },
@@ -5314,12 +5302,12 @@
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
     "lock": "",
-    "body": "The Founder does not have a veto over proposals passed by the membership about membership lapse.Nothing waits on the Founder.Keep thisThe Founder has a veto over proposals passed by the membership about membership lapse.Each one comes as a 👑 question — assent or refuse.Propose this",
+    "body": "The Founder may refuse proposals that the membership pass.Propose this",
     "options": [
      {
       "set": null,
       "val": "The Founder has a veto over proposals passed by the membership about membership lapse.",
-      "label": "The Founder has a veto over proposals passed by the membership about membership lapse."
+      "label": "The Founder may refuse proposals that the membership pass."
      }
     ],
     "inputs": [],
@@ -5338,15 +5326,12 @@
      "Lapsing — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
-     "Keep this",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
-     "Nothing waits on the Founder.",
-     "Each one comes as a 👑 question — assent or refuse.",
      "We should change this because…"
     ]
    },
@@ -5354,12 +5339,12 @@
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
     "lock": "",
-    "body": "The Founder does not have a veto over proposals passed by the membership about quorum.Nothing waits on the Founder.Keep thisThe Founder has a veto over proposals passed by the membership about quorum.Each one comes as a 👑 question — assent or refuse.Propose this",
+    "body": "The Founder may refuse proposals that the membership pass.Propose this",
     "options": [
      {
       "set": null,
       "val": "The Founder has a veto over proposals passed by the membership about quorum.",
-      "label": "The Founder has a veto over proposals passed by the membership about quorum."
+      "label": "The Founder may refuse proposals that the membership pass."
      }
     ],
     "inputs": [],
@@ -5379,15 +5364,12 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
      "Passed: 38% of the membership — settled",
-     "Keep this",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
-     "Nothing waits on the Founder.",
-     "Each one comes as a 👑 question — assent or refuse.",
      "We should change this because…"
     ]
    },
@@ -5421,12 +5403,12 @@
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
     "lock": "",
-    "body": "The Founder does not have a veto over proposals passed by the membership about member removal.Nothing waits on the Founder.Keep thisThe Founder has a veto over proposals passed by the membership about member removal.Each one comes as a 👑 question — assent or refuse.Propose this",
+    "body": "The Founder may refuse proposals that the membership pass.Propose this",
     "options": [
      {
       "set": null,
       "val": "The Founder has a veto over proposals passed by the membership about member removal.",
-      "label": "The Founder has a veto over proposals passed by the membership about member removal."
+      "label": "The Founder may refuse proposals that the membership pass."
      }
     ],
     "inputs": [],
@@ -5445,15 +5427,12 @@
      "Removals — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
-     "Keep this",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
-     "Nothing waits on the Founder.",
-     "Each one comes as a 👑 question — assent or refuse.",
      "We should change this because…"
     ]
    },
@@ -5561,12 +5540,12 @@
     "eyebrow": "",
     "head": "The Founder may not amend this at will.",
     "lock": "",
-    "body": "Only by proposal, like anybody.The Founder proposes like a member.Keep thisThe Founder changes it at will.No proposal needed for the Founder’s own hand.Propose this",
+    "body": "The Founder may amend this at will.Propose this",
     "options": [
      {
       "set": null,
       "val": "The Founder may amend applications at will.",
-      "label": "The Founder changes it at will."
+      "label": "The Founder may amend this at will."
      }
     ],
     "inputs": [],
@@ -5585,15 +5564,12 @@
      "Applications — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
-     "Keep this",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
-     "The Founder proposes like a member.",
-     "No proposal needed for the Founder’s own hand.",
      "We should change this because…"
     ]
    },
@@ -5601,12 +5577,12 @@
     "eyebrow": "",
     "head": "The Founder may not amend this at will.",
     "lock": "",
-    "body": "Only by proposal, like anybody.The Founder proposes like a member.Keep thisThe Founder changes it at will.No proposal needed for the Founder’s own hand.Propose this",
+    "body": "The Founder may amend this at will.Propose this",
     "options": [
      {
       "set": null,
       "val": "The Founder may amend anonymous proposals at will.",
-      "label": "The Founder changes it at will."
+      "label": "The Founder may amend this at will."
      }
     ],
     "inputs": [],
@@ -5625,15 +5601,12 @@
      "Are Proposals Anonymous? — waiting on you",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
-     "Keep this",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
-     "The Founder proposes like a member.",
-     "No proposal needed for the Founder’s own hand.",
      "We should change this because…"
     ]
    },
@@ -5667,12 +5640,12 @@
     "eyebrow": "",
     "head": "The Founder may not amend this at will.",
     "lock": "",
-    "body": "Only by proposal, like anybody.The Founder proposes like a member.Keep thisThe Founder changes it at will.No proposal needed for the Founder’s own hand.Propose this",
+    "body": "The Founder may amend this at will.Propose this",
     "options": [
      {
       "set": null,
       "val": "The Founder may amend the ending at will.",
-      "label": "The Founder changes it at will."
+      "label": "The Founder may amend this at will."
      }
     ],
     "inputs": [],
@@ -5691,15 +5664,12 @@
      "Ending — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
-     "Keep this",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
-     "The Founder proposes like a member.",
-     "No proposal needed for the Founder’s own hand.",
      "We should change this because…"
     ]
    },
@@ -5732,12 +5702,12 @@
     "eyebrow": "",
     "head": "The Founder may not amend this at will.",
     "lock": "",
-    "body": "Only by proposal, like anybody.The Founder proposes like a member.Keep thisThe Founder changes it at will.No proposal needed for the Founder’s own hand.Propose this",
+    "body": "The Founder may amend this at will.Propose this",
     "options": [
      {
       "set": null,
       "val": "The Founder may amend vote reveal at will.",
-      "label": "The Founder changes it at will."
+      "label": "The Founder may amend this at will."
      }
     ],
     "inputs": [],
@@ -5756,15 +5726,12 @@
      "Vote Reveal — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
-     "Keep this",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
-     "The Founder proposes like a member.",
-     "No proposal needed for the Founder’s own hand.",
      "We should change this because…"
     ]
    },
@@ -5772,12 +5739,12 @@
     "eyebrow": "",
     "head": "The Founder may not amend this at will.",
     "lock": "",
-    "body": "Only by proposal, like anybody.The Founder proposes like a member.Keep thisThe Founder changes it at will.No proposal needed for the Founder’s own hand.Propose this",
+    "body": "The Founder may amend this at will.Propose this",
     "options": [
      {
       "set": null,
       "val": "The Founder may amend membership lapse at will.",
-      "label": "The Founder changes it at will."
+      "label": "The Founder may amend this at will."
      }
     ],
     "inputs": [],
@@ -5796,15 +5763,12 @@
      "Lapsing — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
-     "Keep this",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
-     "The Founder proposes like a member.",
-     "No proposal needed for the Founder’s own hand.",
      "We should change this because…"
     ]
    },
@@ -5812,12 +5776,12 @@
     "eyebrow": "",
     "head": "The Founder may not amend this at will.",
     "lock": "",
-    "body": "Only by proposal, like anybody.The Founder proposes like a member.Keep thisThe Founder changes it at will.No proposal needed for the Founder’s own hand.Propose this",
+    "body": "The Founder may amend this at will.Propose this",
     "options": [
      {
       "set": null,
       "val": "The Founder may amend quorum at will.",
-      "label": "The Founder changes it at will."
+      "label": "The Founder may amend this at will."
      }
     ],
     "inputs": [],
@@ -5837,15 +5801,12 @@
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
      "Passed: 38% of the membership — settled",
-     "Keep this",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
-     "The Founder proposes like a member.",
-     "No proposal needed for the Founder’s own hand.",
      "We should change this because…"
     ]
    },
@@ -5879,12 +5840,12 @@
     "eyebrow": "",
     "head": "The Founder may not amend this at will.",
     "lock": "",
-    "body": "Only by proposal, like anybody.The Founder proposes like a member.Keep thisThe Founder changes it at will.No proposal needed for the Founder’s own hand.Propose this",
+    "body": "The Founder may amend this at will.Propose this",
     "options": [
      {
       "set": null,
       "val": "The Founder may amend member removal at will.",
-      "label": "The Founder changes it at will."
+      "label": "The Founder may amend this at will."
      }
     ],
     "inputs": [],
@@ -5903,15 +5864,12 @@
      "Removals — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
-     "Keep this",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
      "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
-     "The Founder proposes like a member.",
-     "No proposal needed for the Founder’s own hand.",
      "We should change this because…"
     ]
    },
@@ -6031,8 +5989,24 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "Members may make a new proposal ✏️ every 3 hours.Members may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer.Proposed",
-    "options": [],
+    "body": "Members may make a new proposal ✏️ every 3 hours.Prefer thisMembers may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer.Prefer thisIndifferent",
+    "options": [
+     {
+      "set": null,
+      "val": "stands",
+      "label": "Members may make a new proposal ✏️ every 3 hours."
+     },
+     {
+      "set": null,
+      "val": "proposed",
+      "label": "Members may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer."
+     },
+     {
+      "set": null,
+      "val": "either",
+      "label": "Indifferent"
+     }
+    ],
     "inputs": [],
     "foot": [
      {
@@ -7385,7 +7359,7 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "All proposals are made anonymously.Keep thisAll proposals are made anonymously, and all names are revealed at the end.Names put pressure on people; the writing should stand alone.Prefer thisAbstain",
+    "body": "All proposals are made anonymously.Prefer thisAll proposals are made anonymously, and all names are revealed at the end.Names put pressure on people; the writing should stand alone.Prefer thisIndifferent",
     "options": [
      {
       "set": null,
@@ -7400,7 +7374,7 @@
      {
       "set": null,
       "val": "abstain",
-      "label": "Abstain"
+      "label": "Indifferent"
      }
     ],
     "inputs": [],
@@ -7579,7 +7553,7 @@
    },
    "grant-pen": {
     "eyebrow": "",
-    "head": "Founder Actions",
+    "head": "",
     "lock": "",
     "body": "As the founder of this document, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers later if you choose to.",
     "options": [],
@@ -7605,7 +7579,7 @@
    },
    "grant-shield": {
     "eyebrow": "",
-    "head": "Founder Veto",
+    "head": "",
     "lock": "",
     "body": "As the founder of this document, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to.",
     "options": [],
@@ -7988,7 +7962,7 @@
     "eyebrow": "",
     "head": "The Founder may refuse proposals that the membership pass.",
     "lock": "",
-    "body": "The Founder has a veto over proposals passed by the membership about visibility.Each one comes as a 👑 question — assent or refuse.ChosenThe Founder does not have a veto over proposals passed by the membership about visibility.Nothing waits on the Founder. One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder may refuse proposals that the membership pass.ChosenThe Founder may not refuse proposals that the membership pass.One way — the road back is the members’ to give.Choose this",
     "options": [
      {
       "set": "pw:a:chamber",
@@ -8021,8 +7995,7 @@
      "Set it"
     ],
     "helpers": [
-     "Each one comes as a 👑 question — assent or refuse.",
-     "Nothing waits on the Founder. One way — the road back is the members’ to give."
+     "One way — the road back is the members’ to give."
     ]
    },
    "pw:a:ending": {
@@ -8054,7 +8027,7 @@
     "eyebrow": "",
     "head": "The Founder may refuse invitations and applications that the membership pass.",
     "lock": "",
-    "body": "The Founder has a veto over proposals passed by the membership about invitations.Each invitation, and each application, comes as a 👑 question — assent or refuse.ChosenThe Founder does not have a veto over proposals passed by the membership about invitations.An invitation the membership passes needs nobody’s assent. One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder may refuse invitations and applications that the membership pass.ChosenThe Founder may not refuse invitations and applications that the membership pass.One way — the road back is the members’ to give.Choose this",
     "options": [
      {
       "set": "pw:a:invite",
@@ -8086,8 +8059,7 @@
      "Set it"
     ],
     "helpers": [
-     "Each invitation, and each application, comes as a 👑 question — assent or refuse.",
-     "An invitation the membership passes needs nobody’s assent. One way — the road back is the members’ to give."
+     "One way — the road back is the members’ to give."
     ]
    },
    "pw:a:judgments": {
@@ -8170,7 +8142,7 @@
     "eyebrow": "",
     "head": "The Founder may refuse proposals that the membership pass.",
     "lock": "",
-    "body": "The Founder has a veto over proposals passed by the membership about the proposal rate.Each one comes as a 👑 question — assent or refuse.ChosenThe Founder does not have a veto over proposals passed by the membership about the proposal rate.Nothing waits on the Founder. One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder may refuse proposals that the membership pass.ChosenThe Founder may not refuse proposals that the membership pass.One way — the road back is the members’ to give.Choose this",
     "options": [
      {
       "set": "pw:a:rate",
@@ -8203,8 +8175,7 @@
      "Set it"
     ],
     "helpers": [
-     "Each one comes as a 👑 question — assent or refuse.",
-     "Nothing waits on the Founder. One way — the road back is the members’ to give."
+     "One way — the road back is the members’ to give."
     ]
    },
    "pw:a:removal": {
@@ -8236,7 +8207,7 @@
     "eyebrow": "",
     "head": "The Founder may refuse removals that the membership pass.",
     "lock": "",
-    "body": "The Founder has a veto over proposals passed by the membership about removals.Each removal comes as a 👑 question — assent or refuse.ChosenThe Founder does not have a veto over proposals passed by the membership about removals.A removal the membership passes needs nobody’s assent. One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder may refuse removals that the membership pass.ChosenThe Founder may not refuse removals that the membership pass.One way — the road back is the members’ to give.Choose this",
     "options": [
      {
       "set": "pw:a:remove",
@@ -8268,15 +8239,14 @@
      "Set it"
     ],
     "helpers": [
-     "Each removal comes as a 👑 question — assent or refuse.",
-     "A removal the membership passes needs nobody’s assent. One way — the road back is the members’ to give."
+     "One way — the road back is the members’ to give."
     ]
    },
    "pw:a:slug": {
     "eyebrow": "",
     "head": "The Founder may refuse proposals that the membership pass.",
     "lock": "",
-    "body": "The Founder has a veto over proposals passed by the membership about the link.Each one comes as a 👑 question — assent or refuse.ChosenThe Founder does not have a veto over proposals passed by the membership about the link.Nothing waits on the Founder. One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder may refuse proposals that the membership pass.ChosenThe Founder may not refuse proposals that the membership pass.One way — the road back is the members’ to give.Choose this",
     "options": [
      {
       "set": "pw:a:slug",
@@ -8308,15 +8278,14 @@
      "Set it"
     ],
     "helpers": [
-     "Each one comes as a 👑 question — assent or refuse.",
-     "Nothing waits on the Founder. One way — the road back is the members’ to give."
+     "One way — the road back is the members’ to give."
     ]
    },
    "pw:a:title": {
     "eyebrow": "",
     "head": "The Founder may refuse proposals that the membership pass.",
     "lock": "",
-    "body": "The Founder has a veto over proposals passed by the membership about the title.Each one comes as a 👑 question — assent or refuse.ChosenThe Founder does not have a veto over proposals passed by the membership about the title.Nothing waits on the Founder. One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder may refuse proposals that the membership pass.ChosenThe Founder may not refuse proposals that the membership pass.One way — the road back is the members’ to give.Choose this",
     "options": [
      {
       "set": "pw:a:title",
@@ -8348,8 +8317,7 @@
      "Set it"
     ],
     "helpers": [
-     "Each one comes as a 👑 question — assent or refuse.",
-     "Nothing waits on the Founder. One way — the road back is the members’ to give."
+     "One way — the road back is the members’ to give."
     ]
    },
    "pw:u:admission": {
@@ -8431,7 +8399,7 @@
     "eyebrow": "",
     "head": "The Founder may amend this at will.",
     "lock": "",
-    "body": "The Founder changes it at will.No proposal needed for the Founder’s own hand.ChosenOnly by proposal, like anybody.The Founder proposes like a member. One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder may amend this at will.ChosenThe Founder may not amend this at will.One way — the road back is the members’ to give.Choose this",
     "options": [
      {
       "set": "pw:u:chamber",
@@ -8464,8 +8432,7 @@
      "Set it"
     ],
     "helpers": [
-     "No proposal needed for the Founder’s own hand.",
-     "The Founder proposes like a member. One way — the road back is the members’ to give."
+     "One way — the road back is the members’ to give."
     ]
    },
    "pw:u:ending": {
@@ -8497,7 +8464,7 @@
     "eyebrow": "",
     "head": "The Founder may invite people at will.",
     "lock": "",
-    "body": "The Founder invites at will.Nobody else has to agree when the Founder brings somebody in.ChosenOnly as Admissions says, like anybody.The Founder proposes a member like anybody, at the price the document sets. One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder may invite people at will.ChosenThe Founder may not invite people at will.One way — the road back is the members’ to give.Choose this",
     "options": [
      {
       "set": "pw:u:invite",
@@ -8529,8 +8496,7 @@
      "Set it"
     ],
     "helpers": [
-     "Nobody else has to agree when the Founder brings somebody in.",
-     "The Founder proposes a member like anybody, at the price the document sets. One way — the road back is the members’ to give."
+     "One way — the road back is the members’ to give."
     ]
    },
    "pw:u:judgments": {
@@ -8613,7 +8579,7 @@
     "eyebrow": "",
     "head": "The Founder may amend this at will.",
     "lock": "",
-    "body": "The Founder changes it at will.No proposal needed for the Founder’s own hand.ChosenOnly by proposal, like anybody.The Founder proposes like a member. One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder may amend this at will.ChosenThe Founder may not amend this at will.One way — the road back is the members’ to give.Choose this",
     "options": [
      {
       "set": "pw:u:rate",
@@ -8646,8 +8612,7 @@
      "Set it"
     ],
     "helpers": [
-     "No proposal needed for the Founder’s own hand.",
-     "The Founder proposes like a member. One way — the road back is the members’ to give."
+     "One way — the road back is the members’ to give."
     ]
    },
    "pw:u:removal": {
@@ -8679,7 +8644,7 @@
     "eyebrow": "",
     "head": "The Founder may remove members at will.",
     "lock": "",
-    "body": "The Founder removes at will.A member the Founder removes is gone at once — nobody else has to agree.ChosenOnly as Removal says, like anybody.The Founder proposes a removal like anybody, at the price the document sets. One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder may remove members at will.ChosenThe Founder may not remove members at will.One way — the road back is the members’ to give.Choose this",
     "options": [
      {
       "set": "pw:u:remove",
@@ -8711,15 +8676,14 @@
      "Set it"
     ],
     "helpers": [
-     "A member the Founder removes is gone at once — nobody else has to agree.",
-     "The Founder proposes a removal like anybody, at the price the document sets. One way — the road back is the members’ to give."
+     "One way — the road back is the members’ to give."
     ]
    },
    "pw:u:slug": {
     "eyebrow": "",
     "head": "The Founder may amend this at will.",
     "lock": "",
-    "body": "The Founder changes it at will.No proposal needed for the Founder’s own hand.ChosenOnly by proposal, like anybody.The Founder proposes like a member. One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder may amend this at will.ChosenThe Founder may not amend this at will.One way — the road back is the members’ to give.Choose this",
     "options": [
      {
       "set": "pw:u:slug",
@@ -8751,15 +8715,14 @@
      "Set it"
     ],
     "helpers": [
-     "No proposal needed for the Founder’s own hand.",
-     "The Founder proposes like a member. One way — the road back is the members’ to give."
+     "One way — the road back is the members’ to give."
     ]
    },
    "pw:u:title": {
     "eyebrow": "",
     "head": "The Founder may amend this at will.",
     "lock": "",
-    "body": "The Founder changes it at will.No proposal needed for the Founder’s own hand.ChosenOnly by proposal, like anybody.The Founder proposes like a member. One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder may amend this at will.ChosenThe Founder may not amend this at will.One way — the road back is the members’ to give.Choose this",
     "options": [
      {
       "set": "pw:u:title",
@@ -8791,8 +8754,7 @@
      "Set it"
     ],
     "helpers": [
-     "No proposal needed for the Founder’s own hand.",
-     "The Founder proposes like a member. One way — the road back is the members’ to give."
+     "One way — the road back is the members’ to give."
     ]
    },
    "quorum": {
@@ -8836,7 +8798,7 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "Members may make a new proposal ✏️ every 3 hours.Keep thisMembers may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer.Prefer thisIndifferent",
+    "body": "Members may make a new proposal ✏️ every 3 hours.Prefer thisMembers may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer.Prefer thisIndifferent",
     "options": [
      {
       "set": null,
