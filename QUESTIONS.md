@@ -27,6 +27,7 @@ The index, in the section's own order (nothing is pinned — Ed, 2026-09-07, Q12
 | 1378 | The power-return tab: no status-quo block under a head that states it, no helper lines, option text is the document's sentence | 2026-09-15 | **answered, owed** (Ed's 19:37 screenshot) | `powerReturnBody`, `pwSaid`, `opts` (session-view.html, copy.js); SURFACE E39, K32; STYLE T5 |
 | 1379 | The gap race card draws its 🔥 tab twice, and the gap's head reads *(no text here)* | 2026-09-15 | **answered, owed** (Ed's 20:31 screenshot) | `gap-site`, `insert-anchor`, `gapHolders`; `gap.nothing*` (copy.js); SURFACE K31; Q1369 |
 | 1380 | The floating edit buttons 📝 ✏️ 🗑️: circles, higher off the screen's foot, and never above the 📝 riding tab | 2026-09-15 | **answered, owed** (Ed, 2026-09-15 20:40) | `edit-door`, `renderEditDoor`, `#editdoor`, `proposal-row`, `riding-tab` (session.js, edit-mode.js, system.css); SURFACE K13, K17, §9's 📝 row; card-audit D1 |
+| 1381 | In edit mode a proposal card opens in front of the edit area, never under it | 2026-09-15 | **answered, owed** (Ed, 2026-09-15 20:45) | `edit-mode`, `editing-card`, `decision card` (edit-mode.js, session.js, system.css); SURFACE K13, K31 |
 | 925 | Three more things git knows about overlapping patches | 2026-08-27 | parked | SPEC §2.2, §2.4; Q924 |
 | 109 | Scale: the margin assumes a short rail | 2026-08-16 | waiting on Ed's own read (the walk, 2026-09-14: *look at a moon-shaped room and rule from what you saw* — `docs.vote/d/moon2`, ~156 members, is idle; the alternatives on the table were naming a ceiling of ~30 live questions, or committing to a screen-only margin) | `needs-you-queue` |
 | 282 | A rendered document and a source offset do not agree | 2026-08-17 | deferred past the alpha (Ed, 2026-08-27) | `richToSource` (cards.js) |
@@ -190,6 +191,8 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 
 1380. **The floating edit buttons: circles, higher, and never above the 📝 riding tab.** (Ruled 2026-09-15 by Ed in chat: *Floating 📝 button shouldn't go above the 📝 tab. Floating edit buttons (📝✏️🗑️) should be in circles, not rectangles. They should sit a bit further from the bottom of the screen.*) Three rulings on the `edit-door` (the sticky 📝 after 🍾, Q1335) and the `proposal-row` it becomes in edit mode (🗑️ at the left, ✏️ at the right, K17): (a) the floating 📝 never rises above the 📝 pile in `#ridetab` — where the riding tab is on screen the door is not, or the door stops beneath it, the builder measuring which; (b) the three floating buttons are circles (`border-radius: 50%`, the glyph centred), where every commit-row button is a rounded rectangle — the floating ones are a different object, a control over the page rather than a row in a card, and wear a different shape; (c) they sit further from the screen's foot than today (the builder proposes the offset, on the spacing scale). SURFACE K13, K17, §9's 📝 row; guard card-audit D1 and a geometry assertion in `npm run journey` for (a).
 
+1381. **In edit mode a proposal card opens in front of the edit area, never under it.** (Ruled 2026-09-15 by Ed in chat: *Proposal cards that appear in edit-mode should appear "in front of" or "above" the edit area card.*) Edit mode lifts the whole column under one strip (K13, K31) — the edit area is itself a lifted card — and a proposal card opened while in it (a race card from a tab, your own draft's `editing-card`) is drawn at the column's depth or beneath it, so the card that asks something sits under the surface it is about. The rule: whatever opens in edit mode is one step deeper than the edit area (`--shadow-xl` over the column's lift; *open is said by depth*), and stacking (`z-index`, or DOM order) puts it in front. The builder measures which cards can open in edit mode at all and states the depth ladder in SURFACE K13/K31.
+
 ## Backlog (provisioned, build later)
 
 | # | Title | Raised | State | Pointers |
@@ -268,7 +271,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1381** — claim by writing the block here, then commit it alone.
+**The next free number is 1382** — claim by writing the block here, then commit it alone.
+
+**1381 is the proposal card in edit mode** (claimed 2026-09-15 20:47, Ed: *Proposal cards that appear in edit-mode should appear "in front of" or "above" the edit area card*).
 
 **1380 is the floating edit buttons** (claimed 2026-09-15 20:42, Ed: *Floating 📝 button shouldn't go above the 📝 tab. Floating edit buttons (📝✏️🗑️) should be in circles, not rectangles. They should sit a bit further from the bottom of the screen*).
 
