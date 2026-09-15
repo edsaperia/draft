@@ -121,13 +121,12 @@ window.COPY = (function () {
     // clauseHeadHtml: the clause lifted into the head
     head: {
       label: 'The clause as it stands',
-      // the gap's head (Q1308): what the charter runs straight from and to,
-      // in their own first words — a heading by its name
-      // (the neighbour brings its own stop, or an ellipsis where it was cut)
-      nothing: (prev, next) => 'Nothing stands here — the charter runs straight from ' + prev + ' to ' + next,
-      nothingBefore: (next) => 'Nothing stands here yet — the charter begins with ' + next,
-      nothingAfter: (prev) => 'Nothing stands here yet — the charter ends with ' + prev,
-      nothingAtAll: 'Nothing stands here yet.',
+      // the gap's head (Q1379, Ed 2026-09-15: *gap text should just say (no
+      // text here)*): one line under the eyebrow, whatever stands either side
+      // — a bracketed literal Ed asked for by name, the one beside T49's
+      // `[redacted]` (STYLE T49). It was Q1308's sentence naming the
+      // neighbours in their first words, in four variants.
+      noText: '(no text here)',
     },
     // commitRowHtml: the row every decision card ends in
     commit: {
@@ -208,14 +207,6 @@ window.COPY = (function () {
       // one being written: it re-makes the proposal you already have, so there
       // is nothing left to pay and an empty wallet cannot stop it
       keepsCost: ' — it keeps its place and the edit it already cost',
-    },
-    // the ledger (Q1201): the pairs you judged on this race, on the ⏳ card
-    // and beneath a live one, each a press to revise
-    ledger: {
-      label: (n) => (n === 1 ? 'Your vote on this clause' : 'Your votes on this clause'),
-      current: 'the current text',
-      revise: 'Change this vote',
-      pickFirst: 'Choose one of your votes above to change it',
     },
     // the gap a draft stands in, named for the rail and the editing head
     gap: {
@@ -730,19 +721,6 @@ window.COPY = (function () {
     // 2026-09-05, Q1182; STYLE T48): what stands with *Keep this*, what is
     // proposed with *Prefer this*, and *Abstain* on its own. The explanations
     // of the consent rule, the counts and the blind note all went with it.
-    // a deck per setting (Q1348, Ed 2026-09-12): several 🏛️ motions running
-    // on one rule are one entry, the card showing the first you have not
-    // answered and listing every one beneath with your answer
-    deck: {
-      heading: (n) => n + ' proposals on this rule',
-      more: (n) => ' · ' + n + ' more waiting for you',
-      // the same count on its own line, under a motion's rail entry (the
-      // entry's body is the rationale since 2026-09-12, and may be empty)
-      moreAlone: (n) => n + ' more waiting for you',
-      yours: { accept: 'you accepted', keep: 'you kept what stands', abstain: 'you abstained' },
-      unanswered: 'not yet answered',
-      showing: 'shown above',
-    },
     consent: {
       keepThis: 'Keep this',
       kept: 'Kept',

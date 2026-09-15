@@ -1,6 +1,6 @@
 {
  "meta": {
-  "cards": 307,
+  "cards": 309,
   "walks": [
    "answers",
    "charter",
@@ -878,7 +878,7 @@
   "charter": {
    "insert-quiet": {
     "eyebrow": "The gap as it stands",
-    "head": "Nothing stands here — the charter runs straight from Friends of the house are welcome… to A member is responsible for their…",
+    "head": "(no text here)",
     "lock": "",
     "body": "ProposedQuiet HoursThe house keeps quiet hours from eleven at night to eight in the morning: voices low in the Common Areas, the Workshop’s louder tools asleep, and any gathering still going moves to the Garden or winds down.We’ve never written down the one rule everyone already tiptoes around. Guests stay over, members work early — saying it out loud beats resenting each other politely.Prefer this",
     "options": [],
@@ -2061,6 +2061,34 @@
     ],
     "helpers": []
    },
+   "race-quiet-rivals": {
+    "eyebrow": "The gap as it stands",
+    "head": "(no text here)",
+    "lock": "",
+    "body": "Proposed · 2 rival proposalsThe house keeps quiet hours from eleven at night to eight in the morning.One sentence, one clock. Everything else is manners, and manners do not need a clause.Prefer this✏️ propose editAfter eleven at night the Common Areas are for reading, and the Workshop is closed until eight.Say what the rooms are for after dark rather than what people may not do — a house rule reads better as an invitation.Prefer this✏️ propose edit",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
+     },
+     {
+      "label": "Choose one of the three first",
+      "title": "Choose one of the three first"
+     }
+    ],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record.",
+     "Say you prefer this proposal — nothing leaves the card until you submit",
+     "Write your own version of this proposal. Free to open — proposing costs one edit.",
+     "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
+     "Choose one of the three first"
+    ],
+    "helpers": []
+   },
    "race-quorum": {
     "eyebrow": "The clause as it stands",
     "head": "A meeting needs half the membership present to decide anything, and two-thirds to decide anything reserved.",
@@ -2123,7 +2151,7 @@
   "closed": {
    "insert-quiet": {
     "eyebrow": "The gap as it stands",
-    "head": "Nothing stands here — the charter runs straight from Friends of the house are welcome… to A member is responsible for their…",
+    "head": "(no text here)",
     "lock": "",
     "body": "ProposedQuiet HoursThe house keeps quiet hours from eleven at night to eight in the morning: voices low in the Common Areas, the Workshop’s louder tools asleep, and any gathering still going moves to the Garden or winds down.We’ve never written down the one rule everyone already tiptoes around. Guests stay over, members work early — saying it out loud beats resenting each other politely.Prefer this",
     "options": [],
@@ -3152,6 +3180,29 @@
      "Close this one",
      "A member wrote this. Who, is sealed until the closing record.",
      "It leaves your margin and stays in the record"
+    ],
+    "helpers": []
+   },
+   "race-quiet-rivals": {
+    "eyebrow": "The gap as it stands",
+    "head": "(no text here)",
+    "lock": "",
+    "body": "Proposed · 2 rival proposalsThe house keeps quiet hours from eleven at night to eight in the morning.One sentence, one clock. Everything else is manners, and manners do not need a clause.Prefer this✏️ propose editAfter eleven at night the Common Areas are for reading, and the Workshop is closed until eight.Say what the rooms are for after dark rather than what people may not do — a house rule reads better as an invitation.Prefer this✏️ propose edit",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Close — your vote stays on the record"
+     }
+    ],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record.",
+     "Say you prefer this proposal — nothing leaves the card until you submit",
+     "Write your own version of this proposal. Free to open — proposing costs one edit.",
+     "I can’t split them",
+     "Close — your vote stays on the record"
     ],
     "helpers": []
    },

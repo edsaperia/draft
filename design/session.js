@@ -287,17 +287,11 @@
     if (keys.length < 2 || !keys.includes(key) || keys.some(isGapKey)) return currentTextFor(key);
     return keys.map(currentTextFor).filter(Boolean).join(' ');
   }
-  // the insert head's sentence: what the charter runs straight from and to
-  // (Q1308 — it was one fixture sentence naming the fixture's own headings)
-  function gapNothing(s) {
-    const at = s && s.insertAfterKey ? DOC.findIndex((l) => l.key === s.insertAfterKey) : -1;
-    // a neighbour in its own first words: a short one whole, with its own
-    // stop; a long one cut at a word, its dangling comma dropped, ending in …
-    const words = (l) => { const w = String((l && l.x) || '').trim(); return w.length > 40 ? w.slice(0, 40).replace(/\s+\S*$/, '').replace(/[\s,;:—–-]+$/, '') + '…' : w; };
-    const next = DOC.slice(at + 1).find((l) => !l.gap && l.key && String(l.x || '').trim());
-    const H = window.COPY.grammar.head;          // the head's copy is the card grammar's
-    if (at < 0) return next ? H.nothingBefore(words(next)) : H.nothingAtAll;
-    return next ? H.nothing(words(DOC[at]), words(next)) : H.nothingAfter(words(DOC[at]));
+  // the insert head's line: *(no text here)*, whatever stands either side —
+  // the eyebrow, *The gap as it stands*, says the rest (Q1379, Ed 2026-09-15;
+  // it was Q1308's sentence naming the neighbours in their first words)
+  function gapNothing() {
+    return window.COPY.grammar.head.noText;      // the head's copy is the card grammar's
   }
   // the head of a card keyed to a clause or to a gap: the run's text, or the
   // gap's own label and sentence
@@ -1013,9 +1007,12 @@
     // very start of the column, whose `insertAfterKey` is null (backlog 204)
     // — **each gap site on its own** (Q1311): a draft's anchors carry the
     // site's key, a live item's one anchor carries none
+    // — and an open gap card stands where its anchor stood (Q1379)
     if (g.sites) {
-      if (isGapKey(siteKey)) return doc.querySelector('.insert-anchor[data-anchor="' + id + '"][data-site="' + siteKey + '"]');
-    } else if (g.insertAfterKey || g.gapKey) return doc.querySelector('.insert-anchor[data-anchor="' + id + '"]');
+      if (isGapKey(siteKey)) return doc.querySelector('.insert-anchor[data-anchor="' + id + '"][data-site="' + siteKey + '"]') ||
+        doc.querySelector('.sugg[data-card="' + id + '"][data-site="' + siteKey + '"]');
+    } else if (g.insertAfterKey || g.gapKey) return doc.querySelector('.insert-anchor[data-anchor="' + id + '"]') ||
+      doc.querySelector('.sugg[data-card="' + id + '"]');
     const k = siteKey || (g.keys ?? [])[0] || (g.pair && g.pair[0].key);
     // The entry has to stand where its wire lands (Ed, 264): while the composer
     // is open the clause is a card, and a rail entry levelled against the
@@ -2982,15 +2979,27 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // anchors carry `data-site`, so a rail entry and a wire find their own; a
     // draft draws a card on each, a live item once.
     const holders = gapHolders();
+    // **The open card replaces its anchor** (Q1379, Ed 2026-09-15: *why am I
+    // seeing the 🔥 tab twice*): a clause's card replaces its paragraph, and
+    // a gap's card replaces its held-open anchor the same way — the anchor
+    // drew its own tab above the card while the card's strip drew the same
+    // race's tab at its left edge, one race wearing two tabs a hundred
+    // pixels apart. Open, the strip is the tab; closed, the anchor is. A
+    // draft's gap sites keep their anchors under the editing card as they
+    // were: the editing card is edit mode's own (K13, K31), each site's
+    // anchor is where its card hangs and the wire lands (Q1311), and the
+    // floating row's rules are Q1380's and Q1382's, not this one's.
     const anchorHtml = (h) => {
+      if (openId === h.g.id && !h.site && !cardDone) {
+        cardDone = true;
+        return '</div>' + suggCardHtml(h.g, h.key) + PROSE();
+      }
       let out = '<div class="insert-anchor" data-anchor="' + h.g.id + '"' + (h.site ? ' data-site="' + h.key + '"' : '') +
         ' title="' + esc(plainLabel(h.g.qLabel)) + T.chip.gapSection + '"' +
         anchWash(h.g, openId === h.g.id) + '>' +
         '<span class="chipcol"><span class="achip"' + chipStyle(h.g) + ' data-anchor="' + h.g.id + '">' +
         mkHtml(markKindOf(h.g)) + '</span></span></div>';
-      if (openId === h.g.id && (h.site || !cardDone)) {
-        cardDone = true; out += '</div>' + suggCardHtml(h.g, h.key) + PROSE();
-      }
+      if (openId === h.g.id && h.site) out += '</div>' + suggCardHtml(h.g, h.key) + PROSE();
       return out;
     };
     const gapsAfter = (key) => (key ? holders.filter((h) => h.after === key).map(anchorHtml).join('') : '');

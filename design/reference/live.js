@@ -889,25 +889,25 @@ window.LIVE = (function () {
       const items = [];
       for (const r of v.clauses || []) {
         const ids = new Set(r.candidates.map((c) => c.id).concat([r.incumbentId]));
-        // **The card is a deck** (Q1200, Ed 2026-09-06): every served edge card
-        // on this race, in the router's order — `nextCards` keeps the feed's
-        // order and the engine has already excluded every pair this member
-        // judged on the current ground — and the front one is the card. The
-        // card carries its `raceId`; matching by candidate id survives as the
-        // fallback for a card that does not.
-        // **And ⏳ means *waiting for other people to vote*** (Q1202, Ed
-        // 2026-09-07: *if there are things you can do, it should show the
-        // symbol of that action, even if it's not urgent*). The hand is ten
-        // cards from the hot set, so a race can still have a pair to ask you
-        // and be out of it; the view says per race whether anything is left
-        // to ask you (`askable`, the engine's own test) and, where the hand
-        // holds no card on the race, hands over that pair (`ask`) so the lit
-        // entry opens a card without a round trip. The race files as ⏳ only
-        // when nothing on it is left for you and a vote of yours stands.
+        // **One live question, one tab, one entry** (Q1367, Ed 2026-09-15,
+        // reversing the deck of Q1200 and the ledger of Q1201): every pair the
+        // router dealt you on this race is its own item — its own tab in the
+        // clause's stack and its own rail entry — and every pair you have a
+        // standing judgment on is an item too, in state `deciding`, opening
+        // that pair with your verdict pre-selected and revisable. The card
+        // shows the pair it is about and nothing else. The hand is ten cards
+        // from the hot set, so a race can still have a pair to ask you and be
+        // out of it; the view says per race whether anything is left to ask
+        // you (`askable`, the engine's own test) and, where the hand holds no
+        // card on the race, hands over that pair (`ask`) so the lit entry
+        // opens a card without a round trip. A card carries its `raceId`;
+        // matching by candidate id survives as the fallback for one that does
+        // not. **And ⏳ means *waiting for other people to vote*** (Q1202, Ed
+        // 2026-09-07): a judged pair's tab, one per pair, is the ⏳ — there is
+        // no ledger card.
         const dealt = cards.filter((rc) => rc.kind === 'edge' &&
           (rc.raceId ? rc.raceId === r.id : !!sideOf(rc, ids)));
-        const rc = dealt[0] || r.ask || null;
-        const canAsk = !!(r.askable || rc);
+        const asked = dealt.length ? dealt : (r.ask ? [r.ask] : []);
         // the contested footprint is a list of spans; the page anchors the race
         // at their union (one clause run)
         const csp = spanOf(r.contested && r.contested.length ? r.contested : r.candidates.flatMap((c) => c.hunks));
@@ -921,11 +921,10 @@ window.LIVE = (function () {
         // and since backlog 255 their face with it — the picture rides the same
         // `author` object and is blind at exactly the same gate (K30)
         const byOf = (c) => authorBy(c.author);
-        // **Your ledger** (Q1201): every pair you have a standing judgment on
-        // in this race, oldest first, each side resolved to what the card can
-        // draw — the incumbent as the current text, a candidate as its reading
-        // with its diff and its case. A side the view no longer names (the
-        // incumbent a shift replaced) keeps its id and draws no text.
+        // a side resolved to what the card can draw — the incumbent as the
+        // current text, a candidate as its reading with its diff and its case.
+        // A side the view no longer names (the incumbent a shift replaced)
+        // keeps its id and draws no text.
         const sideOfId = (id) => {
           if (id === r.incumbentId) return { id, inc: true, text: inc };
           const c = byId(id);
@@ -933,24 +932,18 @@ window.LIVE = (function () {
           const t = textOf(c);
           return { id, inc: false, text: t, marked: markedOf(inc, t), rationale: c.rationale, by: byOf(c) };
         };
-        const ledger = (r.myJudgments || []).map((j) => ({
-          a: sideOfId(j.a), b: sideOfId(j.b), outcome: j.outcome,
-          locked: !!j.locked, note: j.locked ? SHIFTED_NOTE : null }));
+        // the pair's own key rides the item id: one item per pair, and the
+        // provisional layer (session.js's `pairKey`) is keyed the same way
+        const pairId = (x, y) => r.id + '#' + [x, y].sort().join(':');
         const base = {
-          id: r.id, ...site, state: canAsk ? 'needs' : r.judged ? 'deciding' : 'needs',
+          raceId: r.id, ...site,
           qLabel: labelFor(site.insertAfterKey || keys[0]),
-          // urgency is the router's own (SPEC §8.1): the card's value over
-          // the best in the hand, a pair from outside the hand priced against
-          // that same top since Q98 — so every entry with a card carries a
-          // real number and the 0.3 is reached only where there is no card at
-          // all, a race with nothing left to ask you. The fill is the race's
-          // closeness to resolution — a magnitude the engine cannot be made
-          // to sign (Q501) — and since Q1362 (c) that magnitude is **the
-          // leader's judges over the floor**: voters so far over voters
-          // required, the one number the room controls. It is the same two
-          // numbers as `judges` and `floor` below; the engine sends the ratio
-          // so the page never divides.
-          urgency: rc && rc.urgency != null ? rc.urgency : 0.3,
+          // the fill is the race's closeness to resolution — a magnitude the
+          // engine cannot be made to sign (Q501) — and since Q1362 (c) that
+          // magnitude is **the leader's judges over the floor**: voters so far
+          // over voters required, the one number the room controls. It is the
+          // same two numbers as `judges` and `floor` below; the engine sends
+          // the ratio so the page never divides.
           pct: Math.round((r.closeness || 0) * 100),
           judges: r.judges || 0, floor: r.floor,
           // **waiting behind a park on the same clause** (SURFACE E36, R-100):
@@ -958,15 +951,9 @@ window.LIVE = (function () {
           // it overlaps; it stays live and judgeable, so it keeps its mark and
           // its card, and the sentence rides both — the ⏳ line's tooltip once
           // you have nothing left to say here, and a note on every card
-          cap: canAsk || !r.judged ? RAIL.wantsVote
-            : r.blockedByPark ? PARK.blocked : RAIL.votedStillRunning,
           blockedByPark: r.blockedByPark ? PARK.blocked : false,
-          shifted: r.shifted ? SHIFTED_NOTE : false,
           deadlocked: !!r.deadlocked,
           crownWaits: textAssent,
-          // the front of the deck, for the judgment that goes back
-          card: rc ? { a: rc.a.id, b: rc.b.id, inc: rc.a.incumbent ? 'a' : rc.b.incumbent ? 'b' : null } : null,
-          ledger,
         };
         // a race holding only my own proposal is mine to withdraw, not to judge
         // — the `mine` item carries it (the author's preference is derived, never
@@ -979,20 +966,66 @@ window.LIVE = (function () {
         // The withdrawal line (`v.mine`) is the whole of what an author sees of
         // an all-mine race.
         if (r.candidates.every((c) => c.mine)) continue;
-        const others = r.candidates.filter((c) => !c.mine);
         const slate = r.deadlocked
           ? { slate: r.candidates.map((x) => ({ text: textOf(x), rationale: x.rationale })) } : {};
-        if (r.candidates.length === 1 || (rc && (rc.a.incumbent || rc.b.incumbent))) {
-          // one challenger against what stands: the quick card
-          const c = (rc ? byId(rc.a.incumbent ? rc.b.id : rc.a.id) : null) || r.candidates[0];
-          items.push({ ...base, kind: 'quick', marked: markedOf(inc, textOf(c)),
-            rationale: c.rationale, by: byOf(c), candId: c.id, ...slate });
-        } else {
-          const a = (rc ? byId(rc.a.id) : null) || others[0] || r.candidates[0];
-          const b = (rc ? byId(rc.b.id) : null) || others[1] || r.candidates[1];
-          items.push({ ...base, kind: 'race',
-            race: { a: { id: a.id, text: textOf(a), rationale: a.rationale, by: byOf(a) },
-                    b: { id: b.id, text: textOf(b), rationale: b.rationale, by: byOf(b) } }, ...slate });
+        const waitCap = r.blockedByPark ? PARK.blocked : RAIL.votedStillRunning;
+        // the item for one pair: the quick card where the current text is a
+        // side, the race card where two challengers were dealt
+        const pairItem = (A, B, extra) => {
+          const incSide = A.inc ? 'a' : B.inc ? 'b' : null;
+          const card = { a: A.id, b: B.id, inc: incSide };
+          if (incSide) {
+            const c = A.inc ? B : A;
+            return { ...base, ...extra, id: pairId(A.id, B.id), kind: 'quick', card,
+              marked: c.marked || markedOf(inc, c.text || ''), rationale: c.rationale, by: c.by || null,
+              candId: c.id, ...slate };
+          }
+          return { ...base, ...extra, id: pairId(A.id, B.id), kind: 'race', card,
+            race: { a: { id: A.id, text: A.text, rationale: A.rationale, by: A.by || null },
+                    b: { id: B.id, text: B.text, rationale: B.rationale, by: B.by || null } }, ...slate };
+        };
+        // a judgment's verdict in the card's own vocabulary: the quick card's
+        // keep / approve where the incumbent is a side, the race card's a / b
+        // where it is not, and indifferent for a tie
+        const whatOf = (A, B, outcome) => (outcome === 'tie' ? 'indifferent'
+          : (A.inc || B.inc) ? ((outcome === 'a' ? A : B).inc ? 'keep' : 'approve')
+          : outcome);
+        const judgedKeys = new Set();
+        for (const j of r.myJudgments || []) {
+          const A = sideOfId(j.a), B = sideOfId(j.b);
+          judgedKeys.add(pairId(j.a, j.b));
+          // a pair a ground shift locked (↻) is told so and its verdict cannot
+          // be changed; every other judged pair is yours to revise (§4.4)
+          items.push(pairItem(A, B, { state: 'deciding', pick: whatOf(A, B, j.outcome),
+            cap: waitCap, shifted: j.locked ? SHIFTED_NOTE : false, locked: !!j.locked, urgency: 0.3 }));
+        }
+        for (const rc of asked) {
+          if (judgedKeys.has(pairId(rc.a.id, rc.b.id))) continue;
+          // urgency is the router's own (SPEC §8.1): the card's value over
+          // the best in the hand, a pair from outside the hand priced against
+          // that same top since Q98 — so every entry with a card carries a
+          // real number and the 0.3 is reached only where there is no card at
+          // all
+          items.push(pairItem(sideOfId(rc.a.id), sideOfId(rc.b.id), { state: 'needs',
+            cap: RAIL.wantsVote, urgency: rc.urgency != null ? rc.urgency : 0.3 }));
+        }
+        // a race with nothing dealt and nothing judged — passed over by the
+        // batch, or waiting on people other than you before anything was
+        // asked — still stands at its clause, as it always has: one entry,
+        // no pair to send, so its card asks nothing it can commit
+        if (!asked.length && !(r.myJudgments || []).length) {
+          const others = r.candidates.filter((c) => !c.mine);
+          const c0 = others[0] || r.candidates[0];
+          const rest = { ...base, id: r.id, state: r.judged ? 'deciding' : 'needs',
+            cap: r.judged ? waitCap : RAIL.wantsVote, urgency: 0.3, card: null, ...slate };
+          if (r.candidates.length === 1 || others.length < 2) {
+            items.push({ ...rest, kind: 'quick', marked: markedOf(inc, textOf(c0)),
+              rationale: c0.rationale, by: byOf(c0), candId: c0.id });
+          } else {
+            items.push({ ...rest, kind: 'race',
+              race: { a: { id: others[0].id, text: textOf(others[0]), rationale: others[0].rationale, by: byOf(others[0]) },
+                      b: { id: others[1].id, text: textOf(others[1]), rationale: others[1].rationale, by: byOf(others[1]) } } });
+          }
         }
       }
       // 🛡️ on the Text (R-056): what the room passed sits parked until the
@@ -1268,9 +1301,9 @@ window.LIVE = (function () {
         const s = liveItem(id);
         if (s && s.amendment) { try { env.cs.ackAmendment(now(), viewerId(), s.amendment); } catch (e) {} }
       };
-      // `pair` is the pair the card was about (Q1201): a ledger block you
-      // pressed to revise, else the front of the deck — session.js says which,
-      // since it holds the press; a judgment with neither has nothing to send
+      // `pair` is the pair the card is about (Q1367): the item's own, one
+      // item being one pair — session.js hands it over with the press; a
+      // judgment with none has nothing to send
       env.LIVE_HOOKS.judge = (id, what, pair) => {
         const s = liveItem(id);
         const c = pair || (s && s.card);

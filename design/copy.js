@@ -121,13 +121,12 @@ window.COPY = (function () {
     // clauseHeadHtml: the clause lifted into the head
     head: {
       label: 'The clause as it stands',
-      // the gap's head (Q1308): what the charter runs straight from and to,
-      // in their own first words — a heading by its name
-      // (the neighbour brings its own stop, or an ellipsis where it was cut)
-      nothing: (prev, next) => 'Nothing stands here — the charter runs straight from ' + prev + ' to ' + next,
-      nothingBefore: (next) => 'Nothing stands here yet — the charter begins with ' + next,
-      nothingAfter: (prev) => 'Nothing stands here yet — the charter ends with ' + prev,
-      nothingAtAll: 'Nothing stands here yet.',
+      // the gap's head (Q1379, Ed 2026-09-15: *gap text should just say (no
+      // text here)*): one line under the eyebrow, whatever stands either side
+      // — a bracketed literal Ed asked for by name, the one beside T49's
+      // `[redacted]` (STYLE T49). It was Q1308's sentence naming the
+      // neighbours in their first words, in four variants.
+      noText: '(no text here)',
     },
     // commitRowHtml: the row every decision card ends in
     commit: {

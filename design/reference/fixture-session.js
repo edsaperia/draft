@@ -364,6 +364,22 @@ window.FIXTURE_SESSION = (function () {
       marked: '<ins>The house keeps quiet hours from eleven at night to eight in the morning: voices low in the Common Areas, the Workshop’s louder tools asleep, and any gathering still going moves to the Garden or winds down.</ins>',
       rationale: 'We’ve never written down the one rule everyone already tiptoes around. Guests stay over, members work early — saying it out loud beats resenting each other politely.'
     },
+    {
+      // **A race on a gap** (Q1379, Ed 2026-09-15): two rival insertions at
+      // the same place, dealt as one pair — the card's head is the gap's one
+      // line, *(no text here)*, and the race wears one tab, the strip's; the
+      // held-open anchor above it gives way to the open card.
+      id: 'race-quiet-rivals', kind: 'race', insertAfterKey: 'guests', state: 'needs',
+      qLabel: 'After Bringing a Guest',
+      urgency: 0.26, isInsert: true,
+      pct: 40, cap: 'two of the fourteen have voted — quorum is 5',
+      race: {
+        a: { text: 'The house keeps quiet hours from eleven at night to eight in the morning.',
+             rationale: 'One sentence, one clock. Everything else is manners, and manners do not need a clause.' },
+        b: { text: 'After eleven at night the Common Areas are for reading, and the Workshop is closed until eight.',
+             rationale: 'Say what the rooms are for after dark rather than what people may not do — a house rule reads better as an invitation.' },
+      },
+    },
     // Ten more live suggestions spread down the urgency range (Ed, 194), so the
     // rail can be judged against a realistic spread rather than against one
     // example of each kind. Ordinary housekeeping, mostly: the kind of thing a
@@ -445,6 +461,22 @@ window.FIXTURE_SESSION = (function () {
       pct: 60, cap: 'you have voted — three of the fourteen so far, quorum is 5',
       marked: 'Friends of the house are welcome whenever a member is in<ins>, up to three at a time without telling anybody</ins>.',
       rationale: 'Nobody minds two friends. Nine is a party, and a party is a thing you mention.'
+    },
+    {
+      // **A judged pair is its own tab** (Q1367, Ed 2026-09-15): two
+      // challengers on the same race as the pair above, judged, standing as
+      // a second ⏳ in the Guests stack — one object per pair, in one place;
+      // the card reopens with the verdict given pre-selected, revisable.
+      id: 'race-guests-rivals', kind: 'race', keys: ['guests'], state: 'deciding',
+      verdict: 'preferred “Friends of the house are welcome…”', pick: 'a',
+      qLabel: '§ Guests — numbers', urgency: 0.2,
+      pct: 60, cap: 'you have voted — three of the fourteen so far, quorum is 5',
+      race: {
+        a: { text: 'Friends of the house are welcome whenever a member is in, up to three at a time without telling anybody.',
+             rationale: 'Nobody minds two friends. Nine is a party, and a party is a thing you mention.' },
+        b: { text: 'Friends of the house are welcome whenever a member is in, and until the quiet hours begin.',
+             rationale: 'Welcome and “welcome at three in the morning” are different offers, and only one of them is fair on whoever is asleep upstairs.' },
+      },
     },
     {
       // **A deadlock you find out about by judging** (Ed, 297/298). This one is
