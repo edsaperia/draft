@@ -11,7 +11,7 @@
  *
  * | # | The promise, in the room's words | Epoch | Verdict |
  * |---|---|---|---|
- * | 1 | *Nothing changes the document until at least Q of us have weighed in* — on the change itself, and never fewer than ⌈E/3⌉ | live, close | **holds** — `engine-core` `adoptionFloor()`, `r.leaderJudges >= floor` in `clearsBarAndFloor`, read by the batch and by the close alike (Q1337: judges of the winner, never movers on the race) |
+ * | 1 | *Nothing changes the document until at least Q of us have weighed in* — on the change itself, and never fewer than ⌈E/3⌉ | live, close | **holds** — `engine-core` `adoptionFloor()`, `r.leaderJudges >= floor` in `clearsFloor`, read by the batch and by the close alike (Q1337: judges of the winner, never movers on the race) |
  * | 2 | *The question was asked as a count (or a share), and that is how it is answered and how it stands* | pre-Begin | **holds** — `setQuorumForm`'s two refusals, `answer`'s third |
  * | 2 | …and live | live | **gap (fold)** — nothing after 🍾 checks the form: a `set` motion or the founder's own pen re-frames `quorumFormValue` silently, and the composer cannot express the re-frame it permits |
  * | 3 | *If the quorum is a share, it is a share of who is here now* | live | **holds** — `adoptionFloor()` re-derives from `eCount()` on every call; `floor-recomputed` on every roster change |
@@ -441,12 +441,14 @@ describe('promise 5 — the founding is not decided by quorum (§9.0a, R-015, R-
       convenor: { id: 'ada', email: 'ada@example.org', isMember: true },
     }, 0);
     s.setSetting(1, 'quorum', { form: 'count', n: 1 });
-    s.setSetting(1, 'ending', { endsAtMs: 1_000_000 }); // 🌡️'s own dep (§9.0a)
-    s.delegate(1, 'bar');
-    s.answer(1, 'ada', 'bar', { pct: 60 });
+    s.setSetting(1, 'ending', { endsAtMs: 1_000_000 });
+    // 🌍 is the delegated question; 🌡️ stood here until it left the surface
+    // with a `retiredAnswer` (Q1362 (b), R-117) and stopped holding anything up
+    s.delegate(1, 'chamber');
+    s.answer(1, 'ada', 'chamber', { rung: 'link' });
     // one voice is not a room: the answer stands and the question does not
-    expect(s.settingState('bar').settledBy).toBeNull();
-    const why = s.readiness().holds.find((h) => h.setting === 'bar');
+    expect(s.settingState('chamber').settledBy).toBeNull();
+    const why = s.readiness().holds.find((h) => h.setting === 'chamber');
     expect(why?.why).toBe('one-voice');
     // and it is not a quorum shortfall wearing another name — a quorum of 1
     // is satisfied by the one answer, and the question still holds
@@ -463,11 +465,11 @@ describe('promise 5 — the founding is not decided by quorum (§9.0a, R-015, R-
     s.invite(1, 'cy@example.org'); // invited, never arrived
     s.setSetting(1, 'quorum', { form: 'count', n: 1 });
     s.setSetting(1, 'ending', { endsAtMs: 1_000_000 });
-    s.delegate(1, 'bar');
-    s.answer(2, 'ada', 'bar', { pct: 60 });
-    s.answer(2, bo, 'bar', { pct: 70 });
-    expect(s.settingState('bar').settledBy).toBeNull();
-    expect(s.readiness().holds.find((h) => h.setting === 'bar')?.why).toBe('invitation-open');
+    s.delegate(1, 'chamber');
+    s.answer(2, 'ada', 'chamber', { rung: 'link' });
+    s.answer(2, bo, 'chamber', { rung: 'public' });
+    expect(s.settingState('chamber').settledBy).toBeNull();
+    expect(s.readiness().holds.find((h) => h.setting === 'chamber')?.why).toBe('invitation-open');
   });
 });
 

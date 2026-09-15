@@ -28,6 +28,15 @@
  * everywhere*) — 👥 ⏱️ 💤 🪜 🌡️, every setting whose answer is a number
  * rather than a rung with a name. The rules the sentences obey are Ed's:
  *
+ * **Two of the five are retired** (Q1362 (b), Ed 2026-09-15; R-117). 🌡️ and
+ * 🪜 left the surface with the bar itself, so `BAR_RUNGS`, `OWN_RUNG_LABEL`,
+ * `winsNeededPct`, `barMeaning`, `paceMeaning`, `rungName` and `Room.barPct`
+ * describe cards nobody will be served again. They stay here unchanged for
+ * exactly as long as the page still imports them — the surface stage of this
+ * same pass stops reading them and deletes them in one commit, and the
+ * threshold machinery they read goes a release later. **Nothing new may call
+ * them**; the three settings left, 👥 ⏱️ 💤, are what this file is about.
+ *
  * 1. **A meaning names its own dependence.** 👥's and 🌡️'s is the room, ⏱️'s
  *    the window, 🪜's 🌡️'s own number, and 💤's is the spell alone — so 💤's
  *    sentence names no room, because a false dependence is as wrong as a

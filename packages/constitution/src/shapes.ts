@@ -66,10 +66,13 @@ export const SHAPES: readonly Shape[] = [
     say: 'A few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.',
     unit: 'hours',
     sets: {
-      // Ed: ramp 60→80; 80 is 🌡️'s *Broad agreement* rung. Mind Q840: a room
-      // of one tops out at 79, and 🌡️'s ceiling note already says so.
-      bar: { pct: 80 },
-      pace: { shape: 'ramp', startPct: 60 },
+      // **Pinned since 2026-09-15** (Q1362 (b), R-117), as every shape's are:
+      // the bar left the adoption test, so a shape that named one would be
+      // stating a decision nobody has. They stay in `SHAPED` so a document
+      // that never delegated them still has a value to replay against — Ed's
+      // ramp 60→80 for a meeting is in DECISIONS, with the rest of the road.
+      bar: { pct: 50 },
+      pace: { shape: 'fixed' },
       // as a share (Ed); everyone is in the room at a meeting
       quorum: { form: 'share', n: 50 },
       // names at the end, or earlier by choice — the rung the sign control belongs to
@@ -95,8 +98,8 @@ export const SHAPES: readonly Shape[] = [
     say: 'A few days with people coming and going: a third of the membership is enough to move, one proposal an hour each.',
     unit: 'days',
     sets: {
-      bar: { pct: 80 },
-      pace: { shape: 'ramp', startPct: 60 },
+      bar: { pct: 50 },           // pinned, as every shape's is (R-117)
+      pace: { shape: 'fixed' },
       quorum: { form: 'share', n: 33 },
       authorship: { rung: 'sealedElective' },
       // placeholder — QA may prefer *after* for a conference
@@ -119,8 +122,9 @@ export const SHAPES: readonly Shape[] = [
       // Ed: *never* is what *ongoing* already said — folded first, because
       // the module refuses a ramp under a perpetual ending
       ending: { endsAtMs: null },
-      // fixed 80 for ongoing (perpetual forces fixed)
-      bar: { pct: 80 },
+      // pinned, as every shape's is (R-117); fixed was already forced here,
+      // a perpetual document admitting no ramp
+      bar: { pct: 50 },
       pace: { shape: 'fixed' },
       quorum: { form: 'share', n: 25 },
       authorship: { rung: 'sealedElective' },

@@ -36,6 +36,13 @@ function openSession(overrides: Record<string, unknown> = {}, size = 5): Session
   return Session.open({ text: DOC, roster: roster(size), constitution }, 0);
 }
 
+/**
+ * A session nothing can carry the ordinary way, so a version bump can only be
+ * the decree's. It held the bar at 0.999 until v0.128; the bar gates nothing
+ * now (Q1362, R-117), so the floor does the holding.
+ */
+const openHeld = (): Session => openSession({ quorum: { form: 'count', n: 99 } });
+
 /** Replace line `line` with `text` (single-hunk rewrite). */
 const rewrite = (base: number, line: number, text: string) =>
   ({ baseVersion: base, hunks: [{ start: line, end: line + 1, lines: [text] }] });
@@ -46,9 +53,9 @@ const wallets = (s: Session, t: number) =>
 
 describe('✒️ on the Text: the direct adoption (R-058)', () => {
   it('lands from an author with no seat, and no ledger anywhere moves', () => {
-    // the bar is out of reach, so nothing here can adopt the ordinary way and
-    // the version bump can only be the decree's
-    const s = openSession({ adoptionThresholdStart: 0.999, adoptionThresholdEnd: 0.999 });
+    // the floor is out of reach, so nothing here can carry the ordinary way
+    // and the version bump can only be the decree's
+    const s = openHeld();
     const v0 = s.currentVersion();
     const before = wallets(s, 100);
     // `ada-the-clerk` is on no roster: a clerk is a Founder who is not a
@@ -70,7 +77,7 @@ describe('✒️ on the Text: the direct adoption (R-058)', () => {
   });
 
   it('ground-shifts a live rival rather than killing it', () => {
-    const s = openSession({ adoptionThresholdStart: 0.999, adoptionThresholdEnd: 0.999 });
+    const s = openHeld();
     const v0 = s.currentVersion();
     // a member's proposal in flight on a *different* paragraph
     const { id: rival } = s.submitCandidate(50, {
@@ -99,7 +106,7 @@ describe('✒️ on the Text: the direct adoption (R-058)', () => {
   });
 
   it('a rival whose rebase genuinely conflicts goes to rebase-pending', () => {
-    const s = openSession({ adoptionThresholdStart: 0.999, adoptionThresholdEnd: 0.999 });
+    const s = openHeld();
     const v0 = s.currentVersion();
     const { id: rival } = s.submitCandidate(50, {
       author: 'p2',
@@ -129,7 +136,7 @@ describe('✒️ on the Text: the direct adoption (R-058)', () => {
    * optional `rationale` is for. *Withdraw* is the other, and refunds whole.
    */
   it('a stranded proposal is re-made with its id, its stake and a revised reason', () => {
-    const s = openSession({ adoptionThresholdStart: 0.999, adoptionThresholdEnd: 0.999 });
+    const s = openHeld();
     const v0 = s.currentVersion();
     const before = s.balance('p2', 50);
     const { id: rival } = s.submitCandidate(50, {
@@ -160,7 +167,7 @@ describe('✒️ on the Text: the direct adoption (R-058)', () => {
   });
 
   it('...or withdrawn from where it stands, the stake refunded whole (SPEC §2.6)', () => {
-    const s = openSession({ adoptionThresholdStart: 0.999, adoptionThresholdEnd: 0.999 });
+    const s = openHeld();
     const v0 = s.currentVersion();
     const before = s.balance('p2', 50);
     const { id: rival } = s.submitCandidate(50, {
@@ -177,7 +184,7 @@ describe('✒️ on the Text: the direct adoption (R-058)', () => {
   });
 
   it('replays bit for bit over a log holding the new event', () => {
-    const s = openSession({ adoptionThresholdStart: 0.999, adoptionThresholdEnd: 0.999 });
+    const s = openHeld();
     const v0 = s.currentVersion();
     const { id: rival } = s.submitCandidate(50, {
       author: 'p2', patch: rewrite(v0, 3, 'Meetings happen monthly.'), rationale: 'a rhythm',

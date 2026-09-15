@@ -1,6 +1,14 @@
 /**
  * The adoption threshold on the session clock (SPEC §4.3, v0.12) —
- * the confidence bar a challenger's win-probability must clear.
+ * the confidence bar a challenger's win-probability had to clear.
+ *
+ * **Pinned at 0.5 since v0.128** (Q1362 (b), Ed 2026-09-15, R-117). Adoption
+ * is the top of the ranking with the floor met (SPEC §4.2), so nothing gates
+ * on this value any more: it is recorded on every `adopted` event, it divides
+ * the routing weight as a constant, and it moves nothing. The ramp and its
+ * re-anchoring stay for one release — `DEFAULT_CONSTITUTION` pins start and
+ * end equal, so the curve below is flat — and the deletion pass removes this
+ * module, §4.3 and the two fields together. Nothing new may read it.
  *
  * It ramps smoothly from adoptionThresholdStart to adoptionThresholdEnd
  * over the session window (wall clock). The bar tracks irreversibility:

@@ -12,10 +12,11 @@
  *   applies it — or parks it behind a 👑 question (§9.7) — and the bridge
  *   relays whatever then actually stands back into the engine as a
  *   `standing-set`, which is the ground shift for any race in flight;
- * - carried **amendments** to engine-consumed settings (the bar, the
- *   ending, the rate, quorum, authorship) also `amend` the engine
+ * - carried **amendments** to engine-consumed settings (the ending, the rate,
+ *   quorum, authorship — and the bar, pinned since v0.128 and relayed only so
+ *   the engine's own copy matches the module's, R-117) also `amend` the engine
  *   constitution, so races in flight run under the constitution as it
- *   stands (§9.6/Q328) and the threshold never jumps (§4.3);
+ *   stands (§9.6/Q328);
  * - roster truth flows one way, cs → engine: arrivals add, removals
  *   remove, lapse suspends (out of E, §9.5a), revival resumes.
  *

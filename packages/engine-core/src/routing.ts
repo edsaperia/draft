@@ -328,7 +328,12 @@ export class Routing {
       const usable = this.host.usableComparisons(r.members, r.incumbentId);
       if (usable.some((c) => c.participantId === participantId)) judgedRaces.add(r.id);
     }
-    // Race value: closeness to adoption × salience; races short of the
+    // Race value: closeness to adoption × salience — `leaderP / threshold`,
+    // and since v0.128 (R-117) the threshold is a pinned constant divisor of
+    // ½, so the factor is simply twice P(leader beats the current text) and
+    // the *ordering* it produces is unchanged. Left as it is: the routing
+    // weight is not an adoption test, and the deletion pass takes the divisor
+    // with the rest. Races short of the
     // floor that this participant hasn't judged get the unheard boost
     // (SPEC §8.2) — short of it as the batch reads it, judges of the leader
     // (Q1337); ground-shifted races get the re-opened boost until

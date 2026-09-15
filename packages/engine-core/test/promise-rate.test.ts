@@ -68,8 +68,9 @@ function open(rate: { grant?: number; cap?: number; dripMinutes?: number } = {},
       windowEndMs: 10 * HOUR,
       rngSeed: 'promise-rate',
       cooldownMs: 0,
-      adoptionThresholdStart: 0.999,
-      adoptionThresholdEnd: 0.999,
+      // nothing here is about adoption: the floor holds every race open, as
+      // a bar of 0.999 did until v0.128 (Q1362, R-117)
+      quorum: { form: 'count', n: 99 },
       tokenGrant: rate.grant ?? 4,
       tokenCap: rate.cap ?? 8,
       tokenDripMinutes: rate.dripMinutes ?? 60,

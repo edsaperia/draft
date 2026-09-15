@@ -148,13 +148,23 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
         : 'ordinary',
     deps: [], judgeGate: false },
 
+  // **The card left the surface on 2026-09-15** (Q1362 (b), Ed's ruling; R-117
+  // and the `machines` precedent at R-080 below). The status quo is a peer —
+  // the document's text is the top of the ranking once the quorum is met — so
+  // there is no bar for a member to be asked about and the engine's own is
+  // pinned at 50 for one release. The setting stays in the catalogue so every
+  // live log replays and so a founder who delegated 🌡️ before the change is
+  // not left holding a question no member can be served: `retiredAnswer` is
+  // what 🍾 resolves it at. `judgeGate` goes with the card — judging can no
+  // longer wait on a question nobody will be asked. → why: R-080, R-117.
   { id: 'bar', glyph: '🌡️', kind: 'constitutional',
     delegable: true, valueType: 'percent',
+    retiredAnswer: { pct: 50 },
     consent: {
       ask: 'the lowest bar at the close you will accept',
       order: (a, b) => (a as PercentValue).pct - (b as PercentValue).pct,
     },
-    deps: ['ending'], judgeGate: true },
+    deps: ['ending'], judgeGate: false },
 
   // Ordinary by §9.6's test (pacing re-rates nothing) and **the founder's,
   // not delegable** (Ed, 2026-08-19, closing Q415 — reverting his own
@@ -165,8 +175,14 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
   // founding question for a {shape, startPct}. The members can still take it
   // over after the start, by the reserve route, where no blind question is
   // needed, so no consent order: nothing ever resolves one (Q560, 2026-08-22).
+  //
+  // **And it left the surface with 🌡️** (Q1362 (b), R-117): the ramp is the
+  // road to a bar that no longer gates anything, so there is nothing left to
+  // pace. Delegable was already false, so nothing can be collecting an answer
+  // for it; `retiredAnswer` is what the founder's own card is resolved at.
   { id: 'pace', glyph: '🪜', kind: 'ordinary',
     delegable: false, valueType: 'pace',
+    retiredAnswer: { shape: 'fixed' },
     deps: ['ending'], judgeGate: false },
 
   // **The question collects the form and the number together** (Ed,
@@ -361,7 +377,10 @@ export function entryOf(id: SettingId): CatalogueEntry {
   return e;
 }
 
-/** The six settings judging waits on (§9.0b; machines left with Q352, signing folded by Q767). */
+/**
+ * The five settings judging waits on (§9.0b; machines left with Q352, signing
+ * folded by Q767, the bar with Q1362 — R-117, there being no bar to wait on).
+ */
 export const JUDGE_GATES: readonly SettingId[] =
   CATALOGUE.filter((e) => e.judgeGate).map((e) => e.id);
 

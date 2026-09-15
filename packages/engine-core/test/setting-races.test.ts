@@ -70,8 +70,8 @@ describe('submission guards (Q390: equality is decidable, so dedup collapses to 
   });
 });
 
-describe('a motion carries at the bar, and the verdict is not the application', () => {
-  it('adopts at bar+floor, refunds the stake, and leaves text and standing untouched', () => {
+describe('a motion carries when it is on top, and the verdict is not the application', () => {
+  it('adopts on top of the field with the floor met, refunds the stake, and leaves text and standing untouched', () => {
     const s = openWithSettings();
     const { id, raceId } = s.submitCandidate(1000, {
       author: 'p1',
@@ -82,7 +82,8 @@ describe('a motion carries at the bar, and the verdict is not the application', 
     expect(race.settingId).toBe('ending');
     expect(race.contested).toEqual([]);
     // The author's derived preference is a mover (§3.3/§8.2), so one more
-    // voice meets F = ceil(5/3) = 2 and the early bar is low.
+    // voice meets F = ceil(5/3) = 2, and two voices for put the value on top
+    // of the field.
     const events = s.judge(2000, 'p2', id, race.incumbentId, 'a');
     expect(events.some((e) => e.type === 'adopted')).toBe(true);
     expect(s.getCandidate(id).state).toBe('adopted');
@@ -146,12 +147,20 @@ describe('rival values and the ground shift (Q390 + §4.4)', () => {
 
 describe('the close (Q390: reported for the host, never applied)', () => {
   it('finalRender lists clearing setting leaders in appliedSettings', () => {
-    // No mid-session adoption (the ramp starts above any early posterior);
-    // the close bar is low enough for the leader to clear.
-    const s = openWithSettings({
-      adoptionThresholdStart: 0.99,
-      adoptionThresholdEnd: 0.55,
+    // No mid-session adoption: **the cooldown is the brake** (Q1362, R-116),
+    // the ramp having held this back until v0.128 (high early, low at the
+    // close). One motion carries at t = 500 and starts the cooldown clock; the
+    // motion under test is ready and still waiting when the clock runs out,
+    // and the close's own batch runs regardless of the cooldown (§4.6).
+    const s = openWithSettings({ cooldownMs: 24 * HOUR });
+    const first = s.submitCandidate(400, {
+      author: 'p1',
+      setting: { settingId: 'ending', value: { endsAtMs: 20 * HOUR } },
+      rationale: 'later',
     });
+    s.judge(500, 'p2', first.id,
+      s.races().find((r) => r.id === first.raceId)!.incumbentId, 'a');
+    expect(s.allCandidates().find((c) => c.id === first.id)!.state).toBe('adopted');
     const { id, raceId } = s.submitCandidate(1000, {
       author: 'p1',
       setting: { settingId: 'rate', value: { grant: 6, cap: 8, dripMinutes: 240 } },

@@ -6,6 +6,24 @@
  * is locked below; what does not is filed as a backlog entry and named here
  * as an `it.todo`. **This file fixes nothing.**
  *
+ * ## 🌡️ is retired (Q1362 (b), Ed 2026-09-15; R-117)
+ *
+ * The status quo is a peer: the document's text is the top of the ranking once
+ * the quorum is met, so **no adoption anywhere turns on a bar**. The card left
+ * the surface, the setting stays in the catalogue for replay with a
+ * `retiredAnswer` of 50, and the engine's threshold is pinned for one release
+ * before it is deleted.
+ *
+ * The register is kept, as `promise-machines.test.ts` is for 🤖, and each
+ * promise below now reads against a retired setting. Three change outright:
+ * **P1** is vacuous — an adoption still records a threshold, and clears no
+ * bar to do it; **P6** is false and its opposite is locked below — judging
+ * waits on 🌡️ no longer, and 🍾 resolves a delegated bar at 50 rather than
+ * refusing; **P2**'s consent rule still resolves, and holds nothing up while
+ * it collects. P3, P4 and P5 stand as written: the value is still a
+ * constitutional setting, still moved by the same two routes, and the engine
+ * still re-anchors when it moves — on a number nothing reads.
+ *
  * ## The promises (SPEC §4.2, §4.3, §9.0a, §9.6, §9.7.1)
  *
  *  P1 *A proposal is adopted only when the room is this sure*, and every
@@ -147,11 +165,14 @@ function preStartAllButBar(opts: { endingSettled?: boolean } = {}) {
 // ---------------------------------------------------------------------------
 
 describe('🌡️ — what the catalogue promises (§9.7.1)', () => {
-  it('is constitutional, delegable, a judge-gate, waits on ⏰, and takes the highest', () => {
+  it('is constitutional, delegable, retired, no longer a judge-gate, and takes the highest', () => {
     const e = entryOf('bar');
     expect(e.kind).toBe('constitutional');
     expect(e.delegable).toBe(true);
-    expect(e.judgeGate).toBe(true);
+    // **Retired** (Q1362 (b), R-117): the card is gone, so judging cannot wait
+    // on it and 🍾 resolves a delegated question at the retired answer.
+    expect(e.judgeGate).toBe(false);
+    expect(e.retiredAnswer).toEqual({ pct: 50 });
     expect(e.deps).toEqual(['ending']);
     // *the lowest bar at the close you will accept* — ascending on `pct`, so
     // `resolveConsent` takes the maximum: never easier than any one member
@@ -213,9 +234,11 @@ describe('P2 — the delegated question collects the bar at the close', () => {
   });
 
   it('a room of one is not a delegation: 🌡️ does not resolve on a single voice', () => {
-    // `founding.test.ts` covers the rule in general; said here because 🌡️ is
-    // a judge-gate, so a bar resolved on the founder's own answer would let
-    // `begin` through on a question nobody was really asked.
+    // `founding.test.ts` covers the rule in general; said here because the
+    // consent rule is the half of 🌡️ that survives its retirement — the
+    // question still collects, still takes the highest stated minimum, and
+    // (Q1362 (b), R-117) holds nothing up while it does, which is the line
+    // the readiness assertions below no longer make.
     const s = ConstitutionSession.open({
       title: 'Hollow Oak Club Charter', slug: 'hollow-oak',
       convenor: { id: 'ada', email: 'ada@example.org', isMember: true },
@@ -226,12 +249,11 @@ describe('P2 — the delegated question collects the bar at the close', () => {
     s.answer(2, 'ada', 'bar', { pct: 66 });
     expect(s.settingState('bar').settledBy).toBeNull();
     expect(s.settingState('bar').collecting).toBe(true);
-    expect(s.readiness().holds.find((h) => h.setting === 'bar')!.why).toBe('one-voice');
+    // and it is in no readiness list at all, collecting or settled — the
+    // retired rule (R-080), which is why `begin` no longer waits
+    expect(s.readiness().holds.find((h) => h.setting === 'bar')).toBeUndefined();
 
-    // an invitation in flight is the other guard, and it is named first —
-    // it is already the remedy
     const bo = s.invite(3, 'bo@example.org');
-    expect(s.readiness().holds.find((h) => h.setting === 'bar')!.why).toBe('invitation-open');
     s.arrive(4, bo);
     s.answer(4, bo, 'bar', { pct: 80 });
     expect(s.settingState('bar').value).toEqual({ pct: 80 });
@@ -352,22 +374,33 @@ describe('P4 and P5 — the mover stands, and nobody’s consent carries nothing
   });
 });
 
-describe('P6 — before the document begins, judging waits on 🌡️', () => {
-  it('`begin` refuses while the bar collects, and names it', () => {
+describe('P6 retired — judging no longer waits on 🌡️ (Q1362 (b), R-117)', () => {
+  it('a delegated bar is resolved at 50 by 🍾, with a line in the log, and the document starts', () => {
+    // **The wedge this closes** (the `machines` precedent, entry 259/R-080): a
+    // founder who delegated 🌡️ before the card left the surface holds a
+    // question no member can be served and no card can take back. 🍾 resolves
+    // it at the retired answer, once, and says so in the log.
     const { s } = preStartAllButBar();
     s.delegate(2, 'bar');
     expect(s.settingState('bar').collecting).toBe(true);
-    expect(() => s.begin(3)).toThrow(/'bar'/);
-    expect(s.readiness().holds).toEqual([{ setting: 'bar', why: 'collecting' }]);
-    expect(s.readiness().ready).toBe(false);
+    expect(s.readiness().holds).toEqual([]);
+    expect(s.readiness().ready).toBe(true);
+    s.begin(3);
+    expect(s.constitutedAtT).toBe(3);
+    expect(s.settingState('bar').value).toEqual({ pct: 50 });
+    const resolved = s.logEntries().filter((e) => e.event.type === 'question-resolved'
+      && (e.event as { setting: string }).setting === 'bar');
+    expect(resolved).toHaveLength(1);
+    expect(resolved[0]!.event).toMatchObject({ value: { pct: 50 }, distribution: [], electorate: [] });
   });
 
-  it('and while it is simply unset — a judge-gate is a gate however it is held', () => {
+  it('and an unset bar holds nothing up either — there is no gate left to be', () => {
     const { s } = preStartAllButBar();
     expect(s.settingState('bar').value).toBeNull();
     expect(s.settingState('bar').holder).toBe('convenor');
-    expect(() => s.begin(3)).toThrow(/'bar'/);
-    expect(s.readiness().holds).toEqual([{ setting: 'bar', why: 'judge-gate' }]);
+    expect(s.readiness().holds).toEqual([]);
+    s.begin(3);
+    expect(s.constitutedAtT).toBe(3);
   });
 
   it('the question is not answerable until ⏰ settles (§9.0a deps)', () => {

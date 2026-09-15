@@ -136,8 +136,9 @@ export function openMotion(s: MotionHost, t: number, by: MemberId,
     const target = s.members.get(payload.member);
     if (!target || !inE(target)) throw new Error(`'${payload.member}' is not a member`);
     // The route is 🥾's price (Q401, Ed 2026-08-19; entry 94): `proposal`
-    // races at the bar; `assembly` and `consent` are consent — the
-    // difference lives in the settle check, not the route.
+    // races, and carries when the room prefers it with the quorum met;
+    // `assembly` and `consent` are consent — the difference lives in the
+    // settle check, not the route.
     route = s.priceOf('removal') === 'proposal' ? 'ordinary' : 'constitutional';
   } else {
     // admit rides submitApplication (§9.7½): an application is a stranger
@@ -201,8 +202,9 @@ export function withdrawMotion(s: MotionHost, t: number, member: MemberId,
 
 /**
  * The ordinary-route seam: this package never runs races. The host — the
- * engine, the sim, a mock — judges the motion at the bar and reports the
- * outcome here; post-368 the caller is an engine-core race over the value.
+ * engine, the sim, a mock — runs the race and reports the outcome here, a
+ * motion carrying when the room prefers it to what stands and the quorum is
+ * met; post-368 the caller is an engine-core race over the value.
  */
 export function adjudicateOrdinaryMotion(s: MotionHost, t: number,
   motion: MotionId, outcome: 'carried' | 'held'): void {

@@ -308,27 +308,31 @@ describe('promise 6 — when the founding cannot go on, 🍾 says why (Q826, F19
   });
 
   /**
-   * **Entry 69 landed, and the two are told apart** (`WaitingWhy` gained
-   * `deps-unsettled`). A delegated 🌡️ waits on ⏰ by `deps`, so it is not
-   * answerable at all — and `waitingWith` used to report it as `collecting`,
-   * the same word it gives the question that *is* being answered. It now
-   * reports the dependency by name, which is the whole point: the block is
-   * upstream, and no answer to 🌡️ — nor any invitation — will move it.
+   * **Entry 69 landed, and then its one case retired** (`WaitingWhy` gained
+   * `deps-unsettled`). A delegated 🌡️ waited on ⏰ by `deps`, so it was not
+   * answerable at all, and the readout named the dependency rather than
+   * calling it `collecting` like the question that *is* being answered.
+   *
+   * Since 2026-09-15 (Q1362 (b), R-117) 🌡️ and 🪜 are retired, and they are
+   * the only two entries in the catalogue that carry a `deps` list — so **no
+   * live document can reach the `deps-unsettled` rung**. What survives is
+   * asserted here: the dependency itself is still enforced at `answer`, and a
+   * retired question is in no readiness list at all, which is R-080's rule and
+   * the reason the rung is unreachable. Filed for Ed.
    */
-  it('a delegated 🌡️ whose ⏰ is still collecting reads `deps-unsettled`, and names ⏰ (entry 69)', () => {
+  it('the dependency still refuses the answer — and a retired 🌡️ holds nothing up (Q1362)', () => {
     const { s, bo } = openFounding();
     s.delegate(2, 'ending');
     s.delegate(2, 'bar');
     expect(s.settingState('ending').settledBy).toBeNull();
     expect(() => s.answer(2, bo, 'bar', { pct: 70 })).toThrow(/waits on 'ending'/);
-    const hold = (id: string) => s.readiness().holds.find((h) => h.setting === id)!;
-    expect(hold('ending').why).toBe('collecting');
-    expect(hold('bar').why).toBe('deps-unsettled');
-    expect(hold('bar').on).toEqual(['ending']);
+    const hold = (id: string) => s.readiness().holds.find((h) => h.setting === id);
+    expect(hold('ending')!.why).toBe('collecting');
     // the reason the room is being asked for is still the plain one
-    expect(hold('ending').on).toBeUndefined();
-    expect((['judge-gate', 'invitation-open', 'one-voice', 'collecting',
-      'deps-unsettled']).includes(hold('bar').why)).toBe(true);
+    expect(hold('ending')!.on).toBeUndefined();
+    // and the delegated bar is in neither list, collecting or settled
+    expect(hold('bar')).toBeUndefined();
+    expect(s.readiness().waiting).not.toContain('bar');
   });
 });
 
@@ -376,7 +380,9 @@ describe('promise 7 — exile and resignation are immediate, and standing answer
     const constitution = makeConstitution({
       windowStartMs: 0, windowEndMs: 10 * 3600_000, rngSeed: 'promise-register',
       tokenDripMinutes: 60, cooldownMs: 0,
-      adoptionThresholdStart: 0.999, adoptionThresholdEnd: 0.999,
+      // the floor out of reach, so the race is still standing to be read after
+      // the removal; a bar of 0.999 held it until v0.128 (Q1362, R-117)
+      quorum: { form: 'count', n: 99 },
     });
     const roster = ['p1', 'p2', 'p3', 'p4', 'p5']
       .map((id) => ({ id, handle: id.toUpperCase() }));

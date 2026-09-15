@@ -372,18 +372,28 @@ var CONSTITUTION = (() => {
       deps: [],
       judgeGate: false
     },
+    // **The card left the surface on 2026-09-15** (Q1362 (b), Ed's ruling; R-117
+    // and the `machines` precedent at R-080 below). The status quo is a peer —
+    // the document's text is the top of the ranking once the quorum is met — so
+    // there is no bar for a member to be asked about and the engine's own is
+    // pinned at 50 for one release. The setting stays in the catalogue so every
+    // live log replays and so a founder who delegated 🌡️ before the change is
+    // not left holding a question no member can be served: `retiredAnswer` is
+    // what 🍾 resolves it at. `judgeGate` goes with the card — judging can no
+    // longer wait on a question nobody will be asked. → why: R-080, R-117.
     {
       id: "bar",
       glyph: "🌡️",
       kind: "constitutional",
       delegable: true,
       valueType: "percent",
+      retiredAnswer: { pct: 50 },
       consent: {
         ask: "the lowest bar at the close you will accept",
         order: (a, b) => a.pct - b.pct
       },
       deps: ["ending"],
-      judgeGate: true
+      judgeGate: false
     },
     // Ordinary by §9.6's test (pacing re-rates nothing) and **the founder's,
     // not delegable** (Ed, 2026-08-19, closing Q415 — reverting his own
@@ -394,12 +404,18 @@ var CONSTITUTION = (() => {
     // founding question for a {shape, startPct}. The members can still take it
     // over after the start, by the reserve route, where no blind question is
     // needed, so no consent order: nothing ever resolves one (Q560, 2026-08-22).
+    //
+    // **And it left the surface with 🌡️** (Q1362 (b), R-117): the ramp is the
+    // road to a bar that no longer gates anything, so there is nothing left to
+    // pace. Delegable was already false, so nothing can be collecting an answer
+    // for it; `retiredAnswer` is what the founder's own card is resolved at.
     {
       id: "pace",
       glyph: "🪜",
       kind: "ordinary",
       delegable: false,
       valueType: "pace",
+      retiredAnswer: { shape: "fixed" },
       deps: ["ending"],
       judgeGate: false
     },
@@ -2116,7 +2132,7 @@ var CONSTITUTION = (() => {
     const bar = s.settings.get("bar").value;
     const pace = s.settings.get("pace").value;
     const ending = s.settings.get("ending").value;
-    const endPct = bar ? bar.pct : 95;
+    const endPct = bar ? bar.pct : 50;
     const endT = ending ? ending.endsAtMs : null;
     const shape = endT !== null && pace?.shape === "ramp" ? "ramp" : "fixed";
     return seedAnchors(
@@ -2200,10 +2216,13 @@ var CONSTITUTION = (() => {
       say: "A few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.",
       unit: "hours",
       sets: {
-        // Ed: ramp 60→80; 80 is 🌡️'s *Broad agreement* rung. Mind Q840: a room
-        // of one tops out at 79, and 🌡️'s ceiling note already says so.
-        bar: { pct: 80 },
-        pace: { shape: "ramp", startPct: 60 },
+        // **Pinned since 2026-09-15** (Q1362 (b), R-117), as every shape's are:
+        // the bar left the adoption test, so a shape that named one would be
+        // stating a decision nobody has. They stay in `SHAPED` so a document
+        // that never delegated them still has a value to replay against — Ed's
+        // ramp 60→80 for a meeting is in DECISIONS, with the rest of the road.
+        bar: { pct: 50 },
+        pace: { shape: "fixed" },
         // as a share (Ed); everyone is in the room at a meeting
         quorum: { form: "share", n: 50 },
         // names at the end, or earlier by choice — the rung the sign control belongs to
@@ -2229,8 +2248,9 @@ var CONSTITUTION = (() => {
       say: "A few days with people coming and going: a third of the membership is enough to move, one proposal an hour each.",
       unit: "days",
       sets: {
-        bar: { pct: 80 },
-        pace: { shape: "ramp", startPct: 60 },
+        bar: { pct: 50 },
+        // pinned, as every shape's is (R-117)
+        pace: { shape: "fixed" },
         quorum: { form: "share", n: 33 },
         authorship: { rung: "sealedElective" },
         // placeholder — QA may prefer *after* for a conference
@@ -2253,8 +2273,9 @@ var CONSTITUTION = (() => {
         // Ed: *never* is what *ongoing* already said — folded first, because
         // the module refuses a ramp under a perpetual ending
         ending: { endsAtMs: null },
-        // fixed 80 for ongoing (perpetual forces fixed)
-        bar: { pct: 80 },
+        // pinned, as every shape's is (R-117); fixed was already forced here,
+        // a perpetual document admitting no ramp
+        bar: { pct: 50 },
         pace: { shape: "fixed" },
         quorum: { form: "share", n: 25 },
         authorship: { rung: "sealedElective" },
@@ -2941,7 +2962,10 @@ var CONSTITUTION = (() => {
      * collecting or settled — the 🍾 card prints those rows and would print a
      * bare id, having no card to take a title from), `canPropose` (it gates
      * nothing, there being no card to answer it on) and `begin` (it writes the
-     * line). `machines` is the only entry that carries it.
+     * line). `machines` carried it alone until 2026-09-15, when 🌡️ and 🪜 left
+     * the surface the same way (Q1362 (b), R-117) and took the same road: a
+     * founder who delegated the bar before the change is resolved at 50 here,
+     * and the document starts.
      */
     retiredQuestion(id) {
       return entryOf(id).retiredAnswer !== void 0;

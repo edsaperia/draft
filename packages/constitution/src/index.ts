@@ -24,6 +24,14 @@ export { ConstitutionSession } from './session.js';
 export type { MotionInput, OpenInput, WaitingHold, WaitingWhy } from './session.js';
 export { eOf, inE, motionElectorateOf, quorumCount,
   adoptionFloorTerm, adoptionFloor } from './populations.js';
+// **Retired, and exported anyway for one stage** (Q1362 (b), R-117): the bar
+// left the adoption test and 🌡️ and 🪜 left the surface, so everything on
+// these two lines that speaks about a threshold — the whole of `threshold.js`,
+// and `BAR_RUNGS`, `OWN_RUNG_LABEL` and `winsNeededPct` beside it — describes
+// cards nobody will be served again. The page still imports them, and
+// `design/constitution.js` is this bundle, so pulling them now would break a
+// live surface mid-pass. The surface stage stops reading them and drops these
+// names; the threshold exports go a release later, with the module.
 export { BAR_CEILING_PCT, VOTES_NEEDED, VOTES_NEEDED_HI_PCT, VOTES_NEEDED_LO_PCT, VOTES_NEEDED_MAX_N,
   barAt, barCeilingPct, reAnchor, seedAnchors, smoothstep, votesNeeded } from './threshold.js';
 export type { ThresholdAnchors } from './threshold.js';
