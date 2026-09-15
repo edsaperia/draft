@@ -411,9 +411,17 @@ const tend = async (seat) => {
 /* -- the act: one thing a member might do when they come back ----------- */
 
 /** Prefer a challenger the bot likes over one it does not; the incumbent sits at its temperament's line. */
+/** a card about somebody's application — the race is keyed `admit:<id>` (SPEC §9.7½) */
+const isAdmission = (card) => /^admit:/.test(((card.a.setting || card.b.setting) || {}).settingId || '');
+
 const judge = async (seat, card) => {
   const r = seat.r;
-  const score = (o) => o.incumbent ? 0.5 : (seat.opinion(o.id) ? between(r, 0.6, 1) : between(r, 0, 0.4));
+  // a stranger at the door is welcomed three times in four (2026-09-16, the
+  // lantern-house room: Ed waited on twenty bots that met his application
+  // one hand in five and liked it by coin) — a room that mostly says yes is
+  // still a room that sometimes says no, which is what the test needs
+  const likes = (o) => seat.opinion(o.id) || (isAdmission(card) && r() < 0.5);
+  const score = (o) => o.incumbent ? 0.5 : (likes(o) ? between(r, 0.6, 1) : between(r, 0, 0.4));
   const a = score(card.a), b = score(card.b);
   const outcome = Math.abs(a - b) < 0.08 || r() < 0.08 ? 'tie' : (a > b ? 'a' : 'b');
   await cmd(seat, 'judge-race', { a: card.a.id, b: card.b.id, outcome });
@@ -520,6 +528,10 @@ const act = async (seat) => {
     && x.myAnswer === null && x.route === 'constitutional');
   const canPropose = m.gates?.proposing !== false && (p.wallet ?? 0) > 0;
   const options = [];
+  // somebody waiting at the door comes before the text: an admission dealt
+  // into the hand is judged ahead of the card on top of it (a member would)
+  const admission = cards.find(isAdmission);
+  if (admission && m.gates?.judging !== false) options.push(['admit', 0.8]);
   if (cards.length && m.gates?.judging !== false) options.push(['judge', 0.55]);
   if (openMotions.length) options.push(['answer-motion', 0.2]);
   if (canPropose) options.push(['propose', cards.length ? 0.3 : 0.7]);
@@ -528,7 +540,8 @@ const act = async (seat) => {
   if (!options.length) { say(seat.name, `· nothing to do (wallet ${p.wallet ?? '—'})`); return; }
   const choice = weighted(r, options);
   try {
-    if (choice === 'judge') await judge(seat, cards[0]);
+    if (choice === 'admit') await judge(seat, admission);
+    else if (choice === 'judge') await judge(seat, cards[0]);
     else if (choice === 'answer-motion') await answerMotion(seat, pick(r, openMotions));
     else if (choice === 'propose') { if (!(await propose(seat, p, m))) say(seat.name, '· found nothing to propose'); }
     else if (choice === 'motion') { if (!(await motion(seat, m))) say(seat.name, '· found no motion to raise'); }
