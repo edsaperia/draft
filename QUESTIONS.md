@@ -220,7 +220,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1392** — claim by writing the block here, then commit it alone.
+**The next free number is 1394** — claim by writing the block here, then commit it alone.
+
+**1392–1393 are the applicant's wait** (claimed 2026-09-16 00:48, Ed as an applicant in the `lantern-house` room): 1392 *after I answer my application questions, they should appear as greyed out queue cards in the sidebar, so I can easily get back to them (as I have nothing else to see or do, and as far as I can tell there's no way to get back to the application rationale at all)* · 1393 *I'm still waiting for my application to be accepted!* — an admission the hand does not hold cannot be voted on: the hot set is three races, a busy room's text races outvalue it, and a setting race's row carries no `ask` pair where a clause row does (Q1202), so twenty members each holding four text cards never met it.
 
 **1391 is the submitted application's rail line** (claimed 2026-09-16 00:31, Ed in the `lantern-house` room: *"before the members — a proposal like any other" is a baffling thing for the body text of a queue card to say*): the applicant's own entry under 🪪 once the application is in. Built as *Submitted — the members are deciding* (`band.js`, the apply card's `summary`); the wording is overrulable.
 
