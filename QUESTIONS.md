@@ -8,7 +8,7 @@ The index, in the section's own order (nothing is pinned — Ed, 2026-09-07, Q12
 
 | # | Title | Raised | State | Pointers |
 |---|---|---|---|---|
-| 1360 | The lifecycle marks take Fluent Emoji Flat, in colour | 2026-09-15 | **built 2217b1a and merged c0825e4** (2026-09-15 13:40); five findings from the build await Ed — the pause and arrows *plates*, ⏳ in full colour, decided purple against the green wash, reds in the margin, the stale references (fixed, 335b4f2) | `MARK`, `mkSvg`, `.mkp` (cards.js, system.css); SURFACE §6; Q288 |
+| 1360 | The lifecycle marks take Fluent Emoji Flat, in colour | 2026-09-15 | **built 2217b1a and merged c0825e4** (2026-09-15, before 13:28); five findings from the build await Ed — the pause and arrows *plates*, ⏳ in full colour, decided purple against the green wash, reds in the margin, the stale references (fixed, 335b4f2) | `MARK`, `mkSvg`, `.mkp` (cards.js, system.css); SURFACE §6; Q288 |
 | 1362 | The status quo is a peer: the text is the ranking's top once the quorum is met; the threshold leaves the surface | 2026-09-15 | answered, owed — five rulings 13:00 (Ed: *I think this is the right direction*); the plan is being written | SPEC §4.2, §4.3, §8.3, §9.7.1; `sweepAdoptions`, `adoptionFloor` (engine-core); `bar`/`pace` rows (catalogue.ts); SURFACE §6, §8, §9 |
 | 1361 | 🌡️ offers votes needed for this room as its options | 2026-09-15 | **overtaken by 1362** the same afternoon — 🌡️ leaves the surface, so there is no ladder to build | `BAR_RUNGS`, `barMeaning` (meaning.ts); `barLadder` (setup.js); `votesNeeded` (threshold.ts); SURFACE §8, §9 |
 | 925 | Three more things git knows about overlapping patches | 2026-08-27 | parked | SPEC §2.2, §2.4; Q924 |
