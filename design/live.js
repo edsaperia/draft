@@ -1172,7 +1172,10 @@ window.LIVE = (function () {
           qLabel: labelFor(site.insertAfterKey || keys[0]), urgency: 0, pct: 100,
           cap: adopted ? 'decided — adopted' : undecided ? 'undecided at the close — the text stood' : 'decided — the current text stood',
           decided: { outcome: adopted ? 'adopted' : undecided ? 'undecided' : 'retired — the current text stood',
-            when: whenOf(o.when), p: o.p == null && best ? best.p : o.p, bar: o.threshold, judges: o.judges,
+            // `o.threshold` is still on the record row — the engine's own,
+            // pinned (R-117) — and nothing reads it: the eyebrow stopped
+            // comparing the reading to a line with the line itself (Q1362)
+            when: whenOf(o.when), p: o.p == null && best ? best.p : o.p, judges: o.judges,
             // the cap mark (R-051), reduced to a boolean on the way in: the
             // card says one sentence and none of the arithmetic (STYLE §2 —
             // raw values are not copy), and the two numbers stay in the event

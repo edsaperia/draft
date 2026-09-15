@@ -318,7 +318,7 @@ window.COPY = (function () {
       foot: 'This ranks the questions, never the answers — neither text changes either way.',
     },
     race: {
-      foot: 'Neither of these has to win — the clause above stands unless the leader clears the approval threshold.',
+      foot: 'Neither of these has to win — the clause above stands unless the membership comes to prefer one of them.',
     },
     patch: {
       foot: (n) => 'One vote for all ' + n + ' places — choosing here chooses everywhere.',
@@ -470,13 +470,9 @@ window.COPY = (function () {
       mypic: { t: 'Choose Your Picture', n: 'Your Picture' },
       text: { t: 'Text' },
       ending: { t: 'When Does It End?', n: 'Ending',
-        routeNote: 'What this takes depends on what you write. A different date is a proposal ✏️ like any other. <b>Never</b> — no end date at all — needs every member to agree, because with no end date the approval threshold cannot rise, and every change made so far was made under one that did.',
+        routeNote: 'What this takes depends on what you write. A different date is a proposal ✏️ like any other. <b>Never</b> — no end date at all — needs every member to agree, because every change made so far was made under a promise that the document would seal on a date and be signed.',
         rule: 'Each member says when they want it to end, and the document takes the <b>latest</b> answer — <b>never</b> being later than any date — so nobody is cut off before they were ready.',
         takes: 'The document takes the latest' },
-      bar: { t: 'Set the Proposal Pass Threshold', n: 'Proposal Pass Threshold',
-        rule: 'Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.',
-        takes: 'The document takes the highest' },
-      pace: { t: 'Does the Threshold Rise Over Time?', n: 'Rising Threshold' },
       quorum: { t: 'Choose the Quorum', n: 'Quorum',
         rule: 'Each member says the lowest they will accept, and the document takes the highest.',
         takes: 'The document takes the highest' },
@@ -567,8 +563,7 @@ window.COPY = (function () {
       mayNot: (phrase) => 'The Founder may not ' + phrase + '.',
       noun: {
         title: 'the title', slug: 'the link', text: 'the text',
-        ending: 'the ending', bar: 'the approval threshold',
-        pace: 'how the approval threshold rises', quorum: 'quorum',
+        ending: 'the ending', quorum: 'quorum',
         authorship: 'anonymous proposals', judgments: 'vote reveal',
         chamber: 'visibility', rate: 'the proposal rate', lapse: 'membership lapse',
         removal: 'member removal',
@@ -667,7 +662,7 @@ window.COPY = (function () {
       asArrive: 'as soon as they arrive',
       andVote: ', and may vote on proposals.',
       voteTail: '. They may begin voting on proposals when the whole constitution has been decided.',
-      passOrdinary: 'A proposal ✏️ passes when it meets the approval threshold.',
+      passOrdinary: 'A proposal ✏️ passes when the members who voted prefer it and the quorum is met.',
       passConstitutional: 'A constitutional proposal 🏛️ passes only when all members agree.',
     },
     titledLead: 'The document is titled ',
@@ -728,7 +723,7 @@ window.COPY = (function () {
     // the composer's free sentences (the lane pairs stay with MVAL's cluster)
     composeNote: {
       redirect: 'Every link the document has ever had keeps working — a change leaves a redirect behind.',
-      neverNeedsAll: 'Taking the end date away needs all members to agree — with no end date the approval threshold cannot rise.',
+      neverNeedsAll: 'Taking the end date away needs all members to agree — every change made so far was made under a promise that the document would seal on a date and be signed.',
       removalSeen: 'Whoever it is will see the proposal — nobody is removed in secret.',
     },
     // a constitutional motion's consent card: the question and the answers

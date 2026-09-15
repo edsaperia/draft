@@ -2805,8 +2805,8 @@
   // proposals are about, so there is one grammar and no exceptions.
   //
   // The nouns are written here rather than taken from the cards' titles,
-  // because most of those titles are **questions** — *Proposal pass
-  // threshold?*, *Do Memberships Lapse?* — and a question cannot follow
+  // because most of those titles are **questions** — *Can Strangers Apply?*,
+  // *Do Memberships Lapse?* — and a question cannot follow
   // "about". The fallback is *this*, so a setting added to the catalogue
   // without a noun states something true rather than "undefined".
   const PW_NOUN = {
@@ -5783,11 +5783,9 @@
   const WHAT = {
     admission: 'how new members are admitted',
     ending: 'when the drafting process will end',
-    quorum: 'how many members must weigh in before a question can pass',
     // *the membership* twice in one sentence: `WHAT` is read inside *The
     // membership changed …*, so this one takes **members** (entry 215)
-    bar: 'how sure members must be at the close',
-    pace: 'how the approval threshold climbs to the close',
+    quorum: 'how many members must weigh in before a question can pass',
     authorship: 'whether anonymous proposers are revealed',
     judgments: 'whether votes are revealed with the record',
     chamber: 'who may read the document',
@@ -5929,7 +5927,7 @@
   // typed value passes its form and only the founder's own field defaults
   const QUORUM_RULE = (n, form) => (((form || S.quorumForm) === 'count')
     ? n + ' members'
-    : n + '% of the membership') + ' must vote on a proposal ✏️ before it can pass.';
+    : n + '% of the membership') + ' must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.';
   // **The threshold clause went with the threshold** (Q1362, 2026-09-15).
   // `BAR_RULE` printed 🌡️'s rung sentence with 🪜's ramp sentence hung off
   // it, because the ramp was part of what the threshold said (Q512); the
@@ -8585,13 +8583,13 @@
       field: [g.race.a, g.race.b].map((c, j) => ({ hunks: [{ lines: [c.text] }], rationale: c.rationale,
         p: c.p ?? (j === 0 ? 0.58 : 0.47), outcome: 'undecided', author: null })),
       displaced: [String((FIX.DOC.find((l) => l.key === g.keys[0]) || {}).x || '')],
-      threshold: 0.74, judges: 6, judgedByMe: i === 0,
+      judges: 6, judgedByMe: i === 0,
     }));
     FIX.CLOSED = { undecided: und, items: und.map((o, i) => {
       const best = o.field.slice().sort((x, y) => y.p - x.p)[0];
       return { id: 'rec:' + o.raceId, kind: 'quick', keys: ['U:' + o.raceId], state: 'sealed',
         qLabel: 'Backlog', urgency: 0, pct: 100, cap: 'undecided at the close — the text stood',
-        decided: { outcome: 'undecided', when: whenOf(o.when), p: best.p, bar: o.threshold, judges: o.judges },
+        decided: { outcome: 'undecided', when: whenOf(o.when), p: best.p, judges: o.judges },
         undecided: true, won: 'b', optionB: best.hunks[0].lines[0], replaced: o.displaced[0],
         rationale: best.rationale, verdict: o.judgedByMe ? 'voted on this' : undefined, unread: false,
         slate: o.field.map((f) => ({ text: f.hunks[0].lines[0], rationale: f.rationale, p: f.p, won: f === best })) };
