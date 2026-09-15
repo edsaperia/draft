@@ -2432,67 +2432,6 @@
   // page, so this draws it and never words it.
   const parkNote = (s) => (s.blockedByPark
     ? '<p class="setnote">' + esc(s.blockedByPark) + '</p>' : '');
-  // ---- the ledger (Q1201) -------------------------------------------------
-  // The pairs you judged on this race, oldest first: under the live card
-  // while the deck still holds a pair for you, and alone on the ⏳ card once
-  // it does not. Each block is the two wordings with the side you chose
-  // marked — the lane radio's own dot, inert — and a press makes that pair
-  // the card's active pair with your verdict pre-selected, so choosing
-  // differently and ✓ sends the revision SPEC §4.4 allows on the same pair.
-  // A pair a ground shift locked (↻) does not answer a press; its note says
-  // why. Nothing here is anybody else's (§3.5): every line is your own act,
-  // and the verdict a pair was given this visit shows until the poll brings
-  // it back from the view. Drawn from `proposalHtml`'s own pieces — a
-  // `propblock` per pair, `rtext` wordings, `wordingHtml` for a candidate's
-  // change against the clause — rather than through it, since a pair is two
-  // wordings under one press and a proposal block is one under a speaker.
-  function ledgerHtml(s) {
-    const L = s.ledger || [];
-    if (!L.length) return '';
-    const key = (s.keys ?? [])[0];
-    const cur = runTextFor(s, key);        // the run's text: what a candidate is diffed against (Q1308)
-    const active = ledgerEntryOf(s);
-    const G = window.COPY.grammar;
-    const mark = (on) => '<span class="lanepick lmark" aria-pressed="' + on + '"><i class="dot" aria-hidden="true"></i></span>';
-    return '<div class="field ledger"><div class="fieldlab">' + esc(T.ledger.label(L.length)) + '</div>' +
-      L.map((e) => {
-        const k = ledgerKeyOf(s, e);
-        const what = committed.has(k) ? committed.get(k) : whatOfEntry(e);
-        const chosen = (x, letter) => (what === 'indifferent' ? false
-          : (e.a.inc || e.b.inc) ? (x.inc ? what === 'keep' : what === 'approve') : what === letter);
-        const side = (x, letter) => '<div class="lside' + (chosen(x, letter) ? ' on' : '') + '">' + mark(chosen(x, letter)) +
-          // the current text reads as the clause does (Q1368): `mdLine`, never the source
-          '<div class="rtext">' + (x.text == null ? '' : x.inc
-            ? '<span class="rsub">' + esc(T.ledger.current) + '</span>' + mdLine(x.text)
-            : wordingHtml(cur, x.text)) + '</div></div>';
-        return '<div class="propblock ledgerpair' + (active === e ? ' active' : '') + (e.locked ? ' locked' : '') + '"' +
-          (e.locked ? '' : ' role="button" tabindex="0" data-ledger="' + esc(k) + '" title="' + esc(T.ledger.revise) + '"') + '>' +
-          side(e.a, 'a') + side(e.b, 'b') +
-          (what === 'indifferent'
-            ? '<div class="lside on">' + mark(true) + '<div class="rtext none">' + esc(G.commit.indifferent) + '</div></div>' : '') +
-          (e.locked ? '<div class="srationale locked">' + esc(e.note || '') + G.revise.shiftedTail + '</div>' : '') +
-          '</div>';
-      }).join('') + '</div>';
-  }
-  // **The ⏳ card is your ledger** (Q1201): the deck empty and no block
-  // pressed, the card is the clause and the pairs you judged, with one
-  // commit row (§9.1) whose ✓ waits for a block to be pressed — there is no
-  // pair to be indifferent about yet, so no Indifferent block either
-  function ledgerCardHtml(s) {
-    const key = (s.keys ?? [])[0];
-    const G = window.COPY.grammar;
-    return (
-      '<div class="sugg quick-open ledger-open" data-card="' + s.id + '" data-site="' + (key || '') + '">' +
-      clauseHeadHtml(s, Object.assign(headOpts(s, key), { chips: chipsFor(key, s.id) })) +
-      ledgerHtml(s) + crownNote(s) + parkNote(s) +
-      '<div class="race-mid commitrow">' +
-      '<button class="btn glyphbtn" data-act="clear-close" title="' + G.commit.binLocked + '">🗑️</button>' +
-      '<span class="rightpair"><button class="btn btn-approve glyphbtn" disabled data-act="submit"' +
-      ' title="' + esc(T.ledger.pickFirst) + '">' + TICK + '</button></span>' +
-      '</div>' +
-      '</div>'
-    );
-  }
   function suggCardHtml(s, siteKey) {
     if (stateOf(s) === 'sealed') return sealedCardHtml(s);
     if (stuck(s)) return deadlockCardHtml(s);
@@ -2888,6 +2827,13 @@ document.addEventListener('pointerdown', (ev) => {
   const b = ev.target.closest && ev.target.closest('[data-act="draft-propose"], #charter [data-proposalrow] [data-act="row-commit"]');
   if (!b || ev.button !== 0) return;
   ev.preventDefault(); ev.stopPropagation();
+  // …and on the row, with the draft's card closed, the press opens the card
+  // and starts no flight (Q1296): the review comes before the commit
+  if (b.dataset.act === 'row-commit') {
+    const d = draftOf();
+    if (!d) return;
+    if (openId !== d.id) { toggle(d.id, true); return; }
+  }
   flyStart(b);
 });
 document.addEventListener('pointerup', () => { if (GESTURE === 'hold') flyStop(false); });
@@ -3057,17 +3003,23 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // a gap's card replaces its held-open anchor the same way — the anchor
     // drew its own tab above the card while the card's strip drew the same
     // race's tab at its left edge, one race wearing two tabs a hundred
-    // pixels apart. Open, the strip is the tab; closed, the anchor is.
+    // pixels apart. Open, the strip is the tab; closed, the anchor is. A
+    // draft's gap sites keep their anchors under the editing card as they
+    // were: the editing card is edit mode's own (K13, K31), each site's
+    // anchor is where its card hangs and the wire lands (Q1311), and the
+    // floating row's rules are Q1380's and Q1382's, not this one's.
     const anchorHtml = (h) => {
-      if (openId === h.g.id && (h.site || !cardDone)) {
+      if (openId === h.g.id && !h.site && !cardDone) {
         cardDone = true;
         return '</div>' + suggCardHtml(h.g, h.key) + PROSE();
       }
-      return '<div class="insert-anchor" data-anchor="' + h.g.id + '"' + (h.site ? ' data-site="' + h.key + '"' : '') +
+      let out = '<div class="insert-anchor" data-anchor="' + h.g.id + '"' + (h.site ? ' data-site="' + h.key + '"' : '') +
         ' title="' + esc(plainLabel(h.g.qLabel)) + T.chip.gapSection + '"' +
-        anchWash(h.g, false) + '>' +
+        anchWash(h.g, openId === h.g.id) + '>' +
         '<span class="chipcol"><span class="achip"' + chipStyle(h.g) + ' data-anchor="' + h.g.id + '">' +
         mkHtml(markKindOf(h.g)) + '</span></span></div>';
+      if (openId === h.g.id && h.site) out += '</div>' + suggCardHtml(h.g, h.key) + PROSE();
+      return out;
     };
     const gapsAfter = (key) => (key ? holders.filter((h) => h.after === key).map(anchorHtml).join('') : '');
     for (const h of holders.filter((h) => h.after == null)) html += anchorHtml(h);
@@ -3347,6 +3299,11 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         ev.stopPropagation();
         const d = draftOf();
         if (!d) return;
+        // **With the draft's card closed, the press opens it** (Q1296): the
+        // review comes before the commit, and a draft kept through a click
+        // outside (Q1315) is reopened from here. With it open, the press —
+        // the hold, or the click where the click is the gesture — proposes.
+        if (openId !== d.id) { toggle(d.id, true); return; }
         if (GESTURE === 'hold' || holding) return;
         if (b.disabled || b.getAttribute('aria-disabled') === 'true') return;
         flyStart(b);

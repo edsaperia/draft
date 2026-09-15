@@ -614,7 +614,10 @@ window.COMPOSER = (function () {
       // the card carries no commit now — so the pencil flies from here, the
       // ✒️ decrees from here, and the tooltips are the hold's (`proposeCtlTitles`).
       const btn = (pen, title) => '<button class="btn btn-propose glyphbtn emojibtn" data-act="row-commit"' +
-        (pen ? ' data-pen="1"' : '') + ((pen ? o.penDisabled : o.disabled) ? ' disabled' : '') +
+        // the ✒️ takes its own `penDisabled` where the caller states one (the
+        // charter's row: a decree needs no edit in the wallet), else `disabled`
+        // like the ✏️ (the founder's pre-🍾 row states one flag for its one ✒️)
+        (pen ? ' data-pen="1"' : '') + ((pen && o.penDisabled !== undefined ? o.penDisabled : o.disabled) ? ' disabled' : '') +
         ' title="' + esc(title || '') + '">' + (pen ? '✒️' : '✏️') + '</button>';
       return '<div class="race-mid commitrow proposalrow" data-proposalrow="1">' +
         '<button class="btn btn-withdraw glyphbtn" data-act="row-discard"' + (o.discardDisabled ? ' disabled' : '') +

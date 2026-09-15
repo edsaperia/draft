@@ -716,21 +716,6 @@ window.COPY = (function () {
     // 2026-09-05, Q1182; STYLE T48): what stands with *Keep this*, what is
     // proposed with *Prefer this*, and *Abstain* on its own. The explanations
     // of the consent rule, the counts and the blind note all went with it.
-    // a deck per setting (Q1348, Ed 2026-09-12): several 🏛️ motions running
-    // on one rule are one entry, the card showing the first you have not
-    // answered and listing every one beneath with your answer
-    deck: {
-      heading: (n) => n + ' proposals on this rule',
-      more: (n) => ' · ' + n + ' more waiting for you',
-      // the same count on its own line, under a motion's rail entry (the
-      // entry's body is the rationale since 2026-09-12, and may be empty)
-      moreAlone: (n) => n + ' more waiting for you',
-      // the ledger's words follow the radios' (Q1377): *Prefer this* on both
-      // rules, *Indifferent* on the textless block
-      yours: { accept: 'you preferred the change', keep: 'you preferred what stands', abstain: 'you were indifferent' },
-      unanswered: 'not yet answered',
-      showing: 'shown above',
-    },
     consent: {
       // (*Keep this / Kept* and *Abstain* left with Q1377, Ed 2026-09-15:
       // *Keep should be Prefer* — the standing text is a peer since Q1362,
