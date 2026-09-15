@@ -75,53 +75,74 @@ window.CARDS = (function () {
   // citation mark, and nothing here is being cited (Ed, 188).
   const plainLabel = (t) => String(t ?? '').replace(/^§\s*/, '');
 
-  // **The drawn marks** (Ed, 2026-08-17): ✔ U+2714 has no glyph in system-ui,
-  // so it fell through to Segoe UI Symbol's tapered brush stroke — a different
-  // mismatch on every machine. Two SVG paths on one stroke width cannot drift,
-  // they scale, and they take `currentColor` so the lifecycle classes still
-  // colour them.
+  // **The drawn ✓ is a control, not a mark** (Q1360). It was the same constant
+  // as the adopted mark from 2026-08-17 until Q1360 gave the marks their own
+  // pictures, and the two part company here: a commit is *pressed*, it greys
+  // while nothing is chosen and it lights on `--primary` when armed, all of
+  // which want `currentColor` and none of which a colour picture can do. So
+  // `.mkg` — one stroke width, `fill: none`, `stroke: currentColor` — is this
+  // glyph's class alone now. `CROSS` and `PAUSE` went with the marks: nothing
+  // but `MARK` had ever used them.
   const TICK = "<svg class=\"mkg\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><path d=\"M2 6.4 L4.7 9.2 L10 2.9\"/></svg>";
-  const CROSS = "<svg class=\"mkg\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><path d=\"M2.9 2.9 L9.1 9.1 M9.1 2.9 L2.9 9.1\"/></svg>";
-  // **The third filed mark** (Ed, Q469, 2026-08-20: *⏸️ it is! — but draw
-  // your own to match ✔️*). A race unresolved at the close is *undecided*,
-  // distinct from kept (SPEC §4.6): two vertical bars at the tick and
-  // cross's own stroke width, spanning the cross's height, in currentColor.
-  const PAUSE = "<svg class=\"mkg\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><path d=\"M4.3 2.9 L4.3 9.1 M7.7 2.9 L7.7 9.1\"/></svg>";
   // **The ramp is an emoji again** (Ed, 2026-08-22): the drawn wedge is
   // retired and the pace card wears 🪜, which rejoins it to every other
   // subject glyph.
   const VS16 = "︎";
-  // **The other six, drawn** (Ed, 2026-09-14, Q288: *draw the remaining six by
-  // hand, matching the five already drawn*). 💡 🔥 ⚔️ 🌶️ ⏳ ✏️ were the last
-  // marks left as OS emoji, and an emoji is the one thing in this alphabet the
-  // palette cannot reach: it is a different picture on every machine and it
-  // brings its own colour, so the contents rail — which draws its marks with no
-  // wash behind them — could only ever say *a question* and never say whose or
-  // how hot. Drawn, every mark in all three columns takes `--lc-*` like the
-  // tick and the cross, and the alphabet is one set rather than five shapes and
-  // six pictures. Same 12-unit box and the same `.mkg` sizing, so nothing moves.
+  // **The whole alphabet is Fluent Emoji, Flat, in colour** (Ed, 2026-09-15,
+  // Q1360: *Fluent Flat is perfect!*). Q288 had drawn six silhouettes by hand
+  // and inked all thirteen from the palette; the drawings were path coordinates
+  // written blind, never rendered beside the emoji they replaced, and Ed's first
+  // look at them was *they look very different … I'd like them to look more
+  // exactly like they look here ✏️✒️*. A proof sheet put the OS emoji, those
+  // drawings and Microsoft's Fluent Flat and Color files side by side, and Flat
+  // won.
   //
-  // These six are **filled silhouettes** (`.mkg.fill`, the branch the retired
-  // ramp had been the only user of) where ✔ ✖ ⏸ are strokes: a bulb, a chilli
-  // or an hourglass outlined at the tick's 1.9 stroke closes up into a blot at
-  // 12px, and the emoji they replace were solid shapes anyway. What makes the
-  // alphabet one alphabet is the box, the single flat colour and the palette
-  // choosing it — not whether a shape is drawn with a pen or a brush.
-  const mkSvg = (d) => '<svg class="mkg fill" viewBox="0 0 12 12" aria-hidden="true">' + d + '</svg>';
-  // an idea on the table: glass, neck, and the screw base in two bars
-  const BULB = mkSvg('<path d="M6 0.7C3.9 0.7 2.2 2.4 2.2 4.5c0 1.4 0.7 2.6 1.8 3.3v0.8h4V7.8c1.1-0.7 1.8-1.9 1.8-3.3C9.8 2.4 8.1 0.7 6 0.7Z"/><path d="M4.1 9.4h3.8v1.1H4.1Z"/><path d="M4.7 11.2h2.6v0.9H4.7Z"/>');
-  // the one that wants you most: a teardrop with the flame's own notch
-  const FLAME = mkSvg('<path d="M6.9 0.4c0.3 1.9-0.5 3-1.4 3.9C4.9 3.8 4.7 3.3 4.7 2.8 3.4 4 2.4 5.6 2.4 7.3c0 2.4 1.9 4.3 3.7 4.3s3.5-1.9 3.5-4.3c0-1.6-0.8-2.6-1.6-3.5C7.7 4.6 7.3 5 6.9 5.3 7.6 3.7 7.6 1.8 6.9 0.4Z"/>');
-  // two things still fighting: one sword drawn once and rotated both ways, so
-  // the pair cannot drift apart the way two hand-placed blades would
-  const BLADE = '<path d="M6 0.5 6.9 2.4V8.1H5.1V2.4Z"/><path d="M3.6 8.3h4.8v1.1H3.6Z"/><path d="M5.4 9.4h1.2v1.2H5.4Z"/><circle cx="6" cy="11.1" r="0.95"/>';
-  const SWORDS = mkSvg('<g transform="rotate(45 6 6)">' + BLADE + '</g><g transform="rotate(-45 6 6)">' + BLADE + '</g>');
-  // which question is hotter: the pod leaning, pointed, with its stalk hooked
-  const CHILLI = mkSvg('<g transform="rotate(18 6 6)"><path d="M6 2.9c1.7 0 2.7 1.4 2.7 3.3 0 2.6-1.5 5.3-2.7 5.3s-2.7-2.7-2.7-5.3C3.3 4.3 4.3 2.9 6 2.9Z"/><path d="M5.4 0.6h1.2v2.6H5.4Z"/><path d="M6.1 1.1c1.1-0.5 2.3-0.2 2.9 0.7l-1 0.7c-0.4-0.5-1-0.6-1.6-0.3Z"/></g>');
-  // the race runs on without you: two bars and two funnels meeting at the waist
-  const GLASS = mkSvg('<path d="M2.3 0.9h7.4v1.3H2.3Z"/><path d="M3.1 2.4h5.8L6 6Z"/><path d="M6 6.2 8.9 9.8H3.1Z"/><path d="M2.3 9.9h7.4v1.3H2.3Z"/>');
-  // yours: the barrel and the sharpened point, on the emoji's own diagonal
-  const PENCIL = mkSvg('<g transform="rotate(45 6 6)"><path d="M4.35 1.5h3.3v6.7H4.35Z"/><path d="M4.35 8.6h3.3L6 11.3Z"/></g>');
+  // What survives of Q288 is the **rule**: every lifecycle mark is drawn, which
+  // now means *one set, the same picture on every machine* rather than whichever
+  // emoji font the reader happens to have. What does not survive is Q288's
+  // reasoning that the palette has to be able to reach the mark — these pictures
+  // bring their own colour and keep it. Grey is still how the surface says
+  // nothing is asked of you, and a **filed** mark gets it by desaturation
+  // (`.mk-filedYes/No/Undecided`, `.mk-shifted` in system.css) rather than by
+  // being repainted.
+  //
+  // Source: https://github.com/microsoft/fluentui-emoji — Copyright (c)
+  // Microsoft Corporation, **MIT licence** (its LICENSE file). Each picture is
+  // its file's paths verbatim, on the file's own `viewBox="0 0 32 32"`, with
+  // `width`/`height`/`xmlns` dropped so the CSS box decides the size. No
+  // gradients, no filters and no ids, so nothing can collide between two marks
+  // on one page.
+  //
+  // `.mkp` is the picture class and it carries **sizing only**. It is not
+  // `.mkg`: that rule sets `fill: none; stroke: currentColor`, and CSS beats a
+  // path's own `fill` presentation attribute, so every one of these would come
+  // out as an empty outline. `data-mk` names the picture for anything that has
+  // to recognise one without a `.mk-<kind>` wrapper around it — card-audit's P8
+  // asks for the check.
+  const mkSvg = (name, d) => '<svg class="mkp" viewBox="0 0 32 32" data-mk="'
+    + name + '" aria-hidden="true">' + d + '</svg>';
+  // an idea on the table — light bulb
+  const BULB = mkSvg('bulb', '<path d="M17.6512 22.27H13.7612C12.9712 22.27 12.3212 22.91 12.3312 23.7V27.59C12.3312 28.38 12.9712 29.02 13.7612 29.02H14.0093C14.3418 29.6109 14.9749 30.01 15.7012 30.01C16.4275 30.01 17.0605 29.6109 17.393 29.02H17.6512C18.4412 29.02 19.0812 28.38 19.0812 27.59V23.7C19.0812 22.91 18.4412 22.27 17.6512 22.27Z" fill="#9B9B9B"/><path d="M18.1611 23.13C18.4011 23.13 18.5911 22.95 18.6111 22.72C18.6811 21.86 19.0511 19.77 21.0711 17.53C22.9611 16.04 24.2111 13.78 24.3611 11.22C24.3811 10.98 24.3911 10.82 24.3911 10.72V10.71V10.7C24.3911 10.65 24.3911 10.62 24.3911 10.62C24.3311 5.84 20.4611 2 15.6911 2C10.9211 2 7.05111 5.84 7.00111 10.6C7.00111 10.6 6.99111 10.84 7.03111 11.24C7.19111 13.78 8.43111 16.03 10.3211 17.52C12.3411 19.77 12.7411 21.86 12.8111 22.72C12.8311 22.95 13.0211 23.13 13.2611 23.13H18.1611Z" fill="#FCD53F"/><path d="M15.7011 10.7C17.3211 10.7 18.6411 12.01 18.6611 13.63V13.71C18.6611 13.74 18.6611 13.78 18.6511 13.84C18.6011 14.68 18.1911 15.47 17.5311 15.99L17.4611 16.04L17.4011 16.1C16.3011 17.32 16.0711 20.42 16.0311 22.12H15.3811C15.3311 20.42 15.0911 17.32 13.9911 16.1L13.9311 16.04L13.8611 15.99C13.2011 15.47 12.7911 14.69 12.7411 13.82C12.7411 13.78 12.7311 13.75 12.7311 13.73V13.64C12.7611 12.02 14.0911 10.7 15.7011 10.7ZM15.7011 9.69995C13.5311 9.69995 11.7611 11.45 11.7411 13.62C11.7411 13.62 11.7411 13.73 11.7511 13.91C11.8211 15.07 12.3911 16.09 13.2511 16.77C14.4511 18.11 14.3911 23.13 14.3911 23.13H17.0311C17.0311 23.13 16.9511 18.11 18.1611 16.78C19.0211 16.1 19.5911 15.07 19.6611 13.9C19.6711 13.79 19.6711 13.72 19.6711 13.67C19.6711 13.65 19.6711 13.63 19.6711 13.63C19.6411 11.45 17.8811 9.69995 15.7011 9.69995Z" fill="#FFB02E"/><path d="M19.1674 25.0525C19.4394 25.0049 19.6213 24.7458 19.5737 24.4738C19.526 24.2018 19.2669 24.0199 18.9949 24.0675L12.2549 25.2475C11.9829 25.2951 11.801 25.5542 11.8486 25.8262C11.8963 26.0983 12.1554 26.2801 12.4274 26.2325L19.1674 25.0525ZM19.1178 27.2025C19.3897 27.1546 19.5714 26.8954 19.5236 26.6234C19.4757 26.3514 19.2165 26.1698 18.9445 26.2176L12.2945 27.3876C12.0225 27.4355 11.8408 27.6947 11.8887 27.9667C11.9365 28.2386 12.1958 28.4203 12.4678 28.3725L19.1178 27.2025Z" fill="#D3D3D3"/><path d="M13.7912 5.43997C12.6812 7.35997 13.2412 9.75997 15.0412 10.79C16.8412 11.82 19.1912 11.11 20.3012 9.18997C21.4112 7.26997 20.8512 4.86997 19.0512 3.83997C17.2512 2.80997 14.9012 3.51997 13.7912 5.43997Z" fill="#FFF478"/>');
+  // the one that wants you most — fire
+  const FLAME = mkSvg('fire', '<path d="M26 19.3399C26 25.4393 20.9491 30.3451 14.8501 29.981C8.58145 29.6067 4.2892 23.5781 5.09774 17.2765C5.58685 13.4429 7.38361 10.1555 9.34008 7.6065C9.67947 7.16144 10.0288 10.7422 10.3782 10.3477C10.7276 9.94307 13.9717 4.32923 15.0997 2.35679C15.3093 1.99265 15.7884 1.88139 16.1278 2.14438C18.3937 3.85382 26 10.2769 26 19.3399Z" fill="#FF6723"/><path d="M23 21.8512C23 25.893 19.4812 29.142 15.2011 28.9952C10.5815 28.8386 7.41254 24.6109 8.09159 20.256C9.06903 14.0124 15.4789 10 15.4789 10C15.4789 10 23 14.7072 23 21.8512Z" fill="#FFB02E"/>');
+  // two things still fighting — crossed swords
+  const SWORDS = mkSvg('swords', '<path d="M29.8501 2.15002C29.9401 2.24002 30.0001 2.36002 30.0001 2.50002V5.61002C30.0001 5.86002 29.9001 6.10002 29.7201 6.27002L19.8656 16.0198L19.4931 17.557L17.9324 17.9325L20.5 19.5L22.07 22.07L19.79 23.6L15.9966 19.8478L11.8301 23.97L9.93005 22.07L19 11L29.8501 2.15002Z" fill="#9B9B9B"/><path d="M2.15 2.15002L9 7.5L14.0659 14.0659L13.5 15.5L12.1303 16.0234L2.28 6.28002C2.1 6.10002 2 5.86002 2 5.61002V2.50002C2 2.36002 2.06 2.24002 2.15 2.15002Z" fill="#9B9B9B"/><path d="M29.855 2.14499C29.765 2.05499 29.64 2 29.5 2H26.39C26.14 2 25.9 2.1 25.72 2.28L16.0028 12.1071L6.27999 2.28C6.09999 2.1 5.85999 2 5.60999 2H2.49999C2.36 2 2.23502 2.05499 2.14502 2.14497L14.0659 14.0659L8.03003 20.17L9.93005 22.07L29.855 2.14499Z" fill="#D3D3D3"/><path d="M22.07 22.07L17.9325 17.9324L19.8698 16.0157L23.98 20.17L22.07 22.07Z" fill="#D3D3D3"/><path d="M3.66003 26.44L5.56003 28.34L10.88 23.02L8.98003 21.12L3.66003 26.44Z" fill="#321B41"/><path d="M28.34 26.44L26.44 28.34L21.12 23.02L23.02 21.12L28.34 26.44Z" fill="#321B41"/><path d="M2.39994 27.71L4.29994 29.61C4.81994 30.13 5.66994 30.13 6.19994 29.61C6.72994 29.09 6.72994 28.24 6.19994 27.71L4.29994 25.81C3.77994 25.28 2.92994 25.28 2.39994 25.81C1.86994 26.33 1.86994 27.18 2.39994 27.71Z" fill="#635994"/><path d="M29.6 27.71L27.7 29.61C27.18 30.13 26.33 30.13 25.8 29.61C25.27 29.09 25.27 28.24 25.8 27.71L27.7 25.81C28.22 25.28 29.07 25.28 29.6 25.81C30.13 26.33 30.13 27.18 29.6 27.71Z" fill="#635994"/><path d="M22.97 17.63C22.91 17.43 23.06 17.23 23.27 17.23H25.39C25.54 17.23 25.67 17.33 25.7 17.48C26.13 19.74 25.43 22.1 23.77 23.76C22.11 25.43 19.75 26.12 17.49 25.69C17.35 25.66 17.24 25.53 17.24 25.38V23.26C17.24 23.05 17.44 22.9 17.64 22.96C19.13 23.39 20.76 22.97 21.87 21.86C22.98 20.75 23.39 19.13 22.97 17.63Z" fill="#533566"/><path d="M9.03 17.64C8.6 19.13 9.02 20.76 10.13 21.87C11.23 22.96 12.81 23.38 14.28 22.99C14.48 22.94 14.68 23.08 14.68 23.29V25.4C14.68 25.55 14.57 25.68 14.42 25.71C12.19 26.11 9.87 25.41 8.23 23.77C6.56 22.11 5.87 19.75 6.3 17.49C6.33 17.35 6.46 17.24 6.61 17.24H8.73C8.94 17.24 9.09 17.44 9.03 17.64Z" fill="#533566"/>');
+  // which question is hotter — hot pepper
+  const CHILLI = mkSvg('chilli', '<path d="M9.81475 24.34C8.37475 25.42 6.78475 26.12 5.13475 26.47C3.70475 26.77 3.59475 28.77 4.98475 29.23C9.73475 30.79 15.1447 30.08 19.4447 26.85C23.8847 23.52 26.0847 18.31 25.7547 13.15C25.4747 8.70005 20.3647 6.33005 16.7947 9.01005C15.2747 10.15 14.4247 11.98 14.5647 13.87C14.8547 17.8 13.1947 21.8 9.81475 24.34Z" fill="#F8312F"/><path d="M20.9647 3C20.9647 2.44772 20.517 2 19.9647 2C19.4124 2 18.9647 2.44772 18.9647 3V5.03003H17.3547C14.5847 5.03003 12.3447 7.27003 12.3447 10.03C12.3447 11.1 12.8047 12.13 13.6047 12.85L13.6147 12.86C14.3347 13.51 15.4347 13.51 16.1547 12.86C16.8747 12.21 17.9747 12.21 18.6947 12.86C19.4147 13.51 20.5147 13.51 21.2347 12.86C21.9547 12.21 23.0547 12.21 23.7747 12.86C24.4947 13.51 25.5947 13.51 26.3147 12.86L26.3247 12.85C27.1247 12.13 27.5847 11.11 27.5847 10.03C27.5847 7.27003 25.3447 5.03003 22.5847 5.03003H20.9647V3Z" fill="#00D26A"/>');
+  // the race runs on without you — hourglass not done
+  const GLASS = mkSvg('glass', '<path d="M25 4L16 3L7 4V7.5C7.18983 9.98429 8.82278 14.0192 14 14.8483V17.1517C8.82278 17.9808 7.18983 22.0157 7 24.5V28L16 29L25 28V24.5C24.8102 22.0157 23.1772 17.9808 18 17.1517V14.8483C23.1772 14.0192 24.8102 9.98429 25 7.5V4Z" fill="#83CBFF"/><path d="M17 22.2V14.8C17 14.3 17.3 13.9 17.8 13.8C21 13.1 23.4 10.5 23.9 7.2C24 6.6 23.5 6 22.9 6H9.10002C8.50002 6 8.00002 6.6 8.10002 7.2C8.60002 10.5 11 13.1 14.2 13.8C14.7 13.9 15 14.3 15 14.8C15 16.5 15 20.5 15 22.2C15 22.7 14.7 23.1 14.2 23.2C12.3 23.6 10.7 24.7 9.60002 26.2C9.00002 27 9.60002 28 10.5 28H21.5C22.4 28 23 27 22.4 26.3C21.3 24.8 19.6 23.7 17.8 23.3C17.3 23.1 17 22.7 17 22.2Z" fill="#FFB02E"/><path d="M7 2C6.44772 2 6 2.44772 6 3C6 3.55228 6.44772 4 7 4H25C25.5523 4 26 3.55228 26 3C26 2.44772 25.5523 2 25 2H7Z" fill="#D3D3D3"/><path d="M7 28C6.44772 28 6 28.4477 6 29C6 29.5523 6.44772 30 7 30H25C25.5523 30 26 29.5523 26 29C26 28.4477 25.5523 28 25 28H7Z" fill="#D3D3D3"/><path d="M22.0069 6.11674C22.1473 7.31021 21.9858 8.26372 21.6068 8.97687C21.2367 9.67346 20.6167 10.223 19.6683 10.5565C19.1473 10.7396 18.8734 11.3105 19.0566 11.8315C19.2398 12.3525 19.8106 12.6264 20.3317 12.4433C21.7084 11.9593 22.7457 11.0959 23.373 9.91531C23.9915 8.75132 24.1674 7.36352 23.9931 5.88296C23.9286 5.33447 23.4316 4.94215 22.8831 5.00671C22.3346 5.07126 21.9423 5.56824 22.0069 6.11674Z" fill="white"/><path d="M18.8714 19.0714C18.3586 18.8663 17.7767 19.1157 17.5715 19.6285C17.3664 20.1413 17.6158 20.7233 18.1286 20.9284C19.28 21.3889 20.2457 22.0068 20.9193 22.8151C21.5781 23.6057 22 24.6276 22 25.9999C22 26.5522 22.4477 26.9999 23 26.9999C23.5523 26.9999 24 26.5522 24 25.9999C24 24.1722 23.4219 22.6941 22.4557 21.5347C21.5043 20.393 20.2201 19.6109 18.8714 19.0714Z" fill="white"/>');
+  // yours — pencil
+  const PENCIL = mkSvg('pencil', '<path d="M16.6352 7.58545L21.1451 10.1198L23.7063 14.6565L9.36953 28.9933L4.50768 26.4228L2.29846 21.9222L16.6352 7.58545Z" fill="#FF822D"/><path d="M1.3895 28.0652L1.97165 29.377L3.22663 29.9024L9.35704 28.9771L2.31475 21.9348L1.3895 28.0652Z" fill="#FFCE7C"/><path d="M1.06291 30.2289L1.38948 28.0652L3.22659 29.9023L1.06291 30.2289Z" fill="#402A32"/><path d="M22.2761 1.94443C23.0572 1.16338 24.3235 1.16338 25.1045 1.94443L29.3472 6.18707C30.1282 6.96812 30.1282 8.23445 29.3472 9.0155L25.8117 12.551L21.2845 10.2869L18.7406 5.47996L22.2761 1.94443Z" fill="#F92F60"/><path d="M18.7406 5.47998L25.8117 12.551L23.6903 14.6724L16.6193 7.6013L18.7406 5.47998Z" fill="#D3D3D3"/>');
+  // a proposal carried, and the incumbent held — check mark and multiply, the
+  // one pair in the set drawn to match each other (both #785DC8, both solid,
+  // both upright), which is what the 2026-08-17 ✔/✖ pairing was chosen for
+  const CHECK = mkSvg('check', '<path fill-rule="evenodd" clip-rule="evenodd" d="M28.9278 10.3004C30.1588 11.6067 30.0977 13.6636 28.7914 14.8946L13.9394 28.8901C12.6481 30.107 10.6193 30.0632 9.38167 28.7917L3.11793 22.3567C1.86596 21.0705 1.89371 19.0129 3.17992 17.7609C4.46612 16.509 6.52372 16.5367 7.77569 17.8229L11.809 21.9665L24.3336 10.164C25.6399 8.93304 27.6968 8.99411 28.9278 10.3004Z" fill="#785DC8"/>');
+  const MULTIPLY = mkSvg('multiply', '<path d="M7.2225 2.8925C6.0325 1.7025 4.0825 1.7025 2.8925 2.8925C1.7025 4.0925 1.7025 6.0325 2.8925 7.2325L11.6405 15.9765L2.9025 24.7225C1.7125 25.9125 1.7125 27.8625 2.9025 29.0525C4.0925 30.2425 6.0425 30.2425 7.2325 29.0525L15.9735 20.3075L24.7125 29.0425C25.9025 30.2325 27.8525 30.2325 29.0425 29.0425C30.2325 27.8525 30.2325 25.9025 29.0425 24.7125L20.3045 15.9745L29.0525 7.2225C30.2425 6.0325 30.2425 4.0825 29.0525 2.8925C27.8525 1.7025 25.9025 1.7025 24.7125 2.8925L15.9715 11.6415L7.2225 2.8925Z" fill="#785DC8"/>');
+  // undecided at the close — pause button
+  const PAUSEBTN = mkSvg('pause', '<path d="M2 6C2 3.79086 3.79086 2 6 2H26C28.2091 2 30 3.79086 30 6V26C30 28.2091 28.2091 30 26 30H6C3.79086 30 2 28.2091 2 26V6Z" fill="#00A6ED"/><path d="M12 9C11.4477 9 11 9.44772 11 10V22C11 22.5523 11.4477 23 12 23H14C14.5523 23 15 22.5523 15 22V10C15 9.44772 14.5523 9 14 9H12Z" fill="white"/><path d="M18 9C17.4477 9 17 9.44772 17 10V22C17 22.5523 17.4477 23 18 23H20C20.5523 23 21 22.5523 21 22V10C21 9.44772 20.5523 9 20 9H18Z" fill="white"/>');
+  // the ground moved — the counterclockwise arrows button, and it retires ↻ as
+  // a text character: one picture, two owners, told apart by the filed grey
+  const ARROWS = mkSvg('arrows', '<path d="M2 6C2 3.79086 3.79086 2 6 2H26C28.2091 2 30 3.79086 30 6V26C30 28.2091 28.2091 30 26 30H6C3.79086 30 2 28.2091 2 26V6Z" fill="#00A6ED"/><path d="M7.94621 14.3589C7.94818 14.7419 8.25815 15.0518 8.64112 15.0538L14.7803 15.0854C15.4043 15.0887 15.7191 14.3343 15.2778 13.893L13.4049 12.0201C13.294 11.9092 13.3113 11.7244 13.446 11.6442C14.1935 11.1992 15.0669 10.9436 16 10.9436C18.2766 10.9436 20.1978 12.4652 20.8023 14.5468C20.8686 14.7752 21.0709 14.9436 21.3087 14.9436H23.3719C23.6726 14.9436 23.9064 14.6793 23.8481 14.3844C23.1227 10.7125 19.8847 7.94363 16 7.94363C14.2092 7.94363 12.5558 8.53205 11.2226 9.5261C11.121 9.60188 10.9787 9.59388 10.889 9.50423L9.10701 7.7222C8.66574 7.28092 7.91134 7.59568 7.91456 8.21973L7.94621 14.3589Z" fill="white"/><path d="M22.692 24.2778L20.9291 22.5148C20.8413 22.4271 20.7027 22.4173 20.6012 22.4888C19.2998 23.4054 17.7127 23.9436 16 23.9436C12.1153 23.9436 8.87727 21.1748 8.15185 17.5029C8.09357 17.2079 8.3274 16.9436 8.62809 16.9436H10.6913C10.9291 16.9436 11.1314 17.1121 11.1977 17.3405C11.8021 19.4221 13.7234 20.9436 16 20.9436C16.847 20.9436 17.6448 20.733 18.3439 20.3613C18.4864 20.2856 18.5088 20.0945 18.3946 19.9803L16.5212 18.107C16.0799 17.6657 16.3947 16.9113 17.0188 16.9145L23.1579 16.9462C23.5409 16.9481 23.8509 17.2581 23.8528 17.6411L23.8845 23.7802C23.8877 24.4043 23.1333 24.719 22.692 24.2778Z" fill="white"/>');
   const MARK = {
     // A rail entry is somebody's proposal, not a question the system invented,
     // so it wears a lightbulb rather than a question mark (Ed, 241). The move
@@ -159,58 +180,53 @@ window.CARDS = (function () {
     // card is already wearing.
     weigh: CHILLI,
     deciding: GLASS,  // yours is in; the race runs on
-    // **The four decided marks are drawn glyphs, not emoji** (Ed, 2026-08-17:
-    // *they carry their own background unlike all the other symbols*). ✅❎☑️🔄
-    // were the only marks in the alphabet that came as a coloured plate with a
-    // white shape knocked out of it, so beside the emoji silhouettes they read
-    // as a different *kind* of object rather than as a different state. Text-
-    // presentation glyphs (U+FE0E) take `color` like any other character, so
-    // the colour is chosen here rather than by whichever emoji font the reader
-    // happens to have, and it is the same in every column — which is the whole
-    // argument Q288 then applied to the remaining six.
     // the ground moved under a judgment of yours, so that judgment is void and
     // the race will ask you again — nothing is rewritten, and no new candidate
     // appears: what comes back is a pair to judge, on wordings that already exist
-    shifted: '↻',
-    // **The same ↻, in your own blue** (Ed, 2026-09-14, Q170). The text moved
-    // under something of yours, and the colour says which: grey where it was a
-    // vote (above), `--lc-yours` where it was a proposal — one whose rebase
-    // onto the new wording failed, so it is out of every race and held for you
-    // until you re-make it against the clause as it now reads or withdraw it
-    // (SPEC §2.4, §2.6; SURFACE E38). One shape, one meaning, two owners.
-    stranded: '↻',
+    //
+    // **↻ stopped being a character at Q1360**: it was the last mark in the
+    // alphabet rendered from the font rather than drawn, kept that way because
+    // it had no partner whose weight it had to equal (SURFACE Y22). It has the
+    // counterclockwise arrows button now like everything else.
+    shifted: ARROWS,
+    // **The same picture, two owners** (Ed, 2026-09-14, Q170). The text moved
+    // under something of yours, and which one it was is what tells them apart:
+    // a vote of yours (above) is information and files grey, a *proposal* of
+    // yours is still asking — re-make it against the clause as it now reads or
+    // withdraw it — and stands in the arrows button's own full colour (SPEC
+    // §2.4, §2.6; SURFACE E38). Q170's rule survives Q1360 by luck: the button
+    // is blue, which is the hue `yours` was already wearing.
+    stranded: ARROWS,
     // A decision says which way it went, not just that it happened (Ed, 160):
-    // a matched pair — same green square, check or cross — so the outcome is
-    // legible before you open anything.
-    // **✔ U+2714 and ✖ U+2716**, and the second one is a considered choice
-    // (Ed, 2026-08-17: *is there an X that's the same shape as ✔?*). The pair
-    // Unicode *designed* is 2714/2718 ✔✘, and it is the wrong one: 2718 is
-    // calligraphic — tapered strokes with a lean — so beside a solid heavy tick
-    // it reads lighter and tilted. 2716 is the same solid uniform weight and
-    // sits upright, which is what a pair has to do at 13px in a margin.
-    adopted: TICK,   // a proposal carried: the charter changed here
-    retired: CROSS,  // the incumbent held: nothing changed
+    // a matched pair, so the outcome is legible before you open anything. The
+    // 2026-08-17 argument for ✖ U+2716 over Unicode's own ✘ U+2718 — a pair has
+    // to be one weight and one lean at 13px in a margin — is met here by the set
+    // rather than by the codepoint: Fluent's check and multiply are one purple,
+    // one solid weight and both upright.
+    adopted: CHECK,     // a proposal carried: the charter changed here
+    retired: MULTIPLY,  // the incumbent held: nothing changed
     // **Filed keeps which way it went** (Ed, 2026-08-17). ☑️ collapsed both
     // outcomes into one mark the moment you acknowledged them, which threw away
     // the only thing about a settled clause anybody ever wants from a margin:
-    // *did this change or not*. Same two glyphs, grey — because the difference
+    // *did this change or not*. Same pictures, desaturated — the difference
     // between decided and filed is whether it still wants something from you,
-    // and grey is exactly what this surface uses to say that.
-    filedYes: TICK,  // filed, and the charter changed
-    filedNo: CROSS,  // filed, and the incumbent held
-    filedUndecided: PAUSE, // filed at the close, nothing decided: the incumbent stands, undecided
+    // and grey is exactly what this surface uses to say that (system.css).
+    filedYes: CHECK,     // filed, and the charter changed
+    filedNo: MULTIPLY,   // filed, and the incumbent held
+    filedUndecided: PAUSEBTN, // filed at the close, nothing decided: the incumbent stands, undecided
   };
-  // Which mark this is, so CSS can colour it — **every lifecycle mark is drawn;
-  // a subject glyph is an emoji** (Ed, 2026-09-14, Q288). The list held six of
-  // twelve while the other six brought their own colour with them; it holds all
-  // thirteen now, ↻ blue included (Q170), which is what makes the `.mk-*` rules the single place the
-  // alphabet's colour is decided.
+  // Which mark this is, so the filed ones can be greyed and so a walk can read
+  // a mark's kind off it — **every lifecycle mark is drawn; a subject glyph is
+  // an emoji** (Ed, 2026-09-14, Q288). Since Q1360 *drawn* means *from the one
+  // set, the same picture on every machine*; what the `.mk-*` rules decide is no
+  // longer the alphabet's colour but which of it is filed.
   const DRAWN = ['needs', 'urgent', 'stuck', 'weigh', 'deciding', 'propose',
     'adopted', 'retired', 'filedYes', 'filedNo', 'filedUndecided', 'shifted', 'stranded'];
 
-  // The glyph, wrapped so it can be coloured wherever it is drawn — the queue,
-  // the contents rail, the gutter tab and a card's head all show the same mark
-  // and must show it the same way.
+  // The picture, wrapped in its kind — the queue, the contents rail, the gutter
+  // tab and a card's head all show the same mark and must show it the same way.
+  // The wrapper is what the filed treatment hangs on and what a walk reads a
+  // mark's kind from (journey-walk, after Q288: never the textContent).
   const mkHtml = (kind) => (DRAWN.includes(kind)
     ? '<span class="mk mk-' + kind + '">' + MARK[kind] + '</span>' : MARK[kind]);
   const markHtml = (kind) => '<span class="qmark" aria-hidden="true">' + mkHtml(kind) + '</span>';
@@ -1272,7 +1288,7 @@ window.CARDS = (function () {
   return {
     esc, resultOnly, stripTags, pct, plainLabel, URG_LO, URG_HI,
     RULES, clauseOf, clauseRungs,
-    TICK, CROSS, PAUSE, VS16, MARK, DRAWN, mkHtml, markHtml,
+    TICK, VS16, MARK, DRAWN, mkHtml, markHtml,
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks,
     headFlags, originText, MD_RX, mdToHtml, htmlToMd, mdStrip, mdBlock, linkify, linkifyHtml, mdLine,
     MD_ONE, mdLead, mdInner, mdParts, richToSource, sourceToRich, readLane,

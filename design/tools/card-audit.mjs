@@ -1446,11 +1446,13 @@ async function walkSettled(page, base, cards, errors, seat, switches, piles) {
       out.push({ para: para.dataset.para, open: para.classList.contains('open'), opened,
         front: front.dataset.chip, state: (front.className.match(/st-([a-z]+)/) || [])[1] || null,
         // **The drawn ✔, not merely a drawn mark** (Q288, Ed 2026-09-14): since
-        // every lifecycle mark is drawn, `svg.mkg` alone reported ⏳ on a vote
-        // of yours as the ✔ this rule forbids. The six Q288 drew are filled
-        // silhouettes (`.mkg.fill`); the tick, the cross and the pause are the
-        // stroke family, and setup's ✔ is the only one of those the band uses.
-        tick: !!(mark && mark.querySelector('svg.mkg:not(.fill)')),
+        // every lifecycle mark is drawn, a class the whole alphabet shares
+        // reports ⏳ on a vote of yours as the ✔ this rule forbids. Q288 told
+        // them apart by stroke against fill; since Q1360 every mark is one of
+        // the same set's pictures, so the question is put to the picture — and
+        // `data-mk` is what names it, the band's settled mark being the
+        // charter's own check.
+        tick: !!(mark && mark.querySelector('[data-mk="check"]')),
         order: chips.map((c) => c.dataset.chip) });
     }
     return out;

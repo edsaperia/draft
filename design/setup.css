@@ -106,6 +106,10 @@
   .queue .mkg, .achip .mkg, .cline .mkg, .constsec .mkg, .setupcard .mkg {
     width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.9;
     stroke-linecap: round; stroke-linejoin: round; }
+  /* the same scoping for a mark **picture** (Q1360), which takes the box and
+     nothing else — its colour is its own */
+  .queue .mkp, .achip .mkp, .cline .mkp, .constsec .mkp, .setupcard .mkp {
+    width: 12px; height: 12px; }
   /* but the drawn ✓ *as a commit* is the glyph's size, on a band card as on
      the charter's (Ed, 2026-09-06: one commit-row glyph size everywhere) */
   .setupcard .commitrow .btn .mkg { width: 1em; height: 1em; }
@@ -630,16 +634,25 @@
 /* ---------------------------------------------------------------------------
    Lifecycle marks (Ed, 2026-08-18: the session-view's own grammar). The
    subject glyph is the mark only while the question is asking; after that the
-   state speaks — ⏳ waiting, drawn ✔ decided (green while it is news, grey
-   once filed), ✏️ yours. One set of rules for tabs and rail entries, so the
-   two columns cannot disagree about what a state looks like.
+   state speaks — ⏳ waiting, the drawn ✔ decided (in its own colour while it is
+   news, drained once filed), ✏️ yours. One set of rules for tabs and rail
+   entries, so the two columns cannot disagree about what a state looks like.
+
+   **The colour rules here survive Q1360 but reach less than they did.** A
+   subject glyph is still an emoji and a state's `color` still reaches an
+   emoji's text, the tab's own ink and its title; what it no longer reaches is a
+   mark, which is now a picture with its own colour. So `done` — this alphabet's
+   filed state — says grey the way the charter's filed marks do, by draining it.
    ------------------------------------------------------------------------ */
 .achip .mkg { width: 15px; height: 15px; stroke-width: 2.2; }
+.achip .mkp { width: 15px; height: 15px; }
 .achip.st-done, .achip.st-wait { color: rgb(var(--lc-closed)); }
 .achip.st-news { color: var(--ok); }
 .queue .subj .mkg { width: 13px; height: 13px; stroke-width: 2.1; }
+.queue .subj .mkp { width: 13px; height: 13px; }
 .queue button.st-done .subj, .queue button.st-wait .subj { color: rgb(var(--lc-closed)); }
 .queue button.st-news .subj { color: var(--ok); }
+.achip.st-done .mkp, .queue button.st-done .subj .mkp { filter: grayscale(1) opacity(0.55); }
 /* the constitution block's lines are the way to a settled card now that its
    tab says only ✔ — a button, but drawn as the line it always was */
 button.cline { border: 0; background: none; padding: 0; text-align: left;

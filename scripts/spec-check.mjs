@@ -449,10 +449,23 @@ function checkMarks() {
     const ex = /^yes/.test(r['exempt?']);
     if (ex !== (r.kind === 'urgent' || MINE_KINDS.includes(r.kind))) find('marks', `${r.kind}: exempt column disagrees with the exemption literal`);
   }
-  if (!/\.mk-shifted\s*\{\s*color:\s*var\(--muted\)/.test(css)) find('marks', '↻ (.mk-shifted) is not grey (Q612)');
-  // …and its twin is the one mark drawn in `yours` blue (Q170): one glyph, two
-  // owners, and the hue is the whole of what tells them apart
-  if (!/\.mk-stranded\s*\{\s*color:\s*rgb\(var\(--lc-yours\)\)/.test(css)) find('marks', '↻ blue (.mk-stranded) is not the yours hue (Q170)');
+  // **Filed is the picture drained, and it is the only thing the palette still
+  // does to a mark** (Q1360). The rule that replaced the `.mk-*` colours has to
+  // name all four filed kinds — a filed mark that kept its colour would say the
+  // document still wants something from you — and it has to leave `stranded`
+  // out, because ↻ shares its picture with `shifted` and the colour is the whole
+  // of what tells the two apart (Q170).
+  const FILED = ['filedYes', 'filedNo', 'filedUndecided', 'shifted'];
+  // the rules, not the prose about them — this file's comments name the classes
+  const rules = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const desat = rules.match(/((?:\.mk-[A-Za-z]+,?\s*)+)\{\s*filter:\s*grayscale\(1\)[^}]*\}/);
+  if (!desat) find('marks', 'no `.mk-*  { filter: grayscale(1) … }` rule — the filed marks are no longer drained (Q1360)');
+  else {
+    const on = [...desat[1].matchAll(/\.mk-([A-Za-z]+)/g)].map((m) => m[1]);
+    for (const k of FILED) if (!on.includes(k)) find('marks', `${k} does not carry the filed desaturation (Q1360) — grey is how the surface says nothing is asked of you`);
+    for (const k of on) if (!FILED.includes(k)) find('marks', `${k} carries the filed desaturation and is not filed (Q1360)`);
+  }
+  if (/\.mk-[A-Za-z]+[^{}]*\{[^}]*\bcolor:/.test(rules)) find('marks', 'a `.mk-*` rule still sets `color` — since Q1360 a mark is a colour picture and nothing reads it');
   const lc = (n) => (css.match(new RegExp(`--lc-${n}:\\s*([0-9, ]+)`)) || [])[1];
   if (lc('deciding') !== lc('closed')) find('marks', '--lc-deciding and --lc-closed are not one grey');
   note(`  ${rows.length} marks; KEEP_ORDER ${keep.length}, STACK_ORDER ${stack.length}`);
@@ -524,13 +537,15 @@ function checkSetupAlphabet() {
     if (!/glyph of the power it grants/.test(cell('news', col))) find('setup-alphabet', `news: markOf hands a grant its power's glyph, the ${col} cell says "${cell('news', col)}"`);
     if (!/drawn.*✔/.test(cell('news', col))) find('setup-alphabet', `news: markOf hands every other news card TICK, the ${col} cell says "${cell('news', col)}"`);
   }
-  // branch 3: the fall-through — ask the glyph, wait ⏳, yours ✏️, else TICK.
+  // branch 3: the fall-through — ask the glyph, wait ⏳, yours ✏️, else the ✔.
   // Since Q288 (Ed, 2026-09-14) ⏳ and ✏️ are the charter's own drawn marks
-  // rather than emoji literals, so the branch names them and the two constants
-  // are checked against `mkHtml` — one alphabet, asserted at the seam.
-  if (!/return st === 'ask' \? c\.g : st === 'wait' \? WAITING : st === 'yours' \? YOURS : TICK;/.test(mo))
-    find('setup-alphabet', 'markOf: the fall-through is no longer `ask → glyph · wait → WAITING (⏳) · yours → YOURS (✏️) · else TICK`');
-  for (const [name, kind] of [['WAITING', 'deciding'], ['YOURS', 'propose']])
+  // rather than emoji literals, and since Q1360 so is the ✔ — cards.js kept the
+  // stroked tick as the *commit* glyph when the marks became pictures, so a copy
+  // of it here would have put two different ticks on one page. All three
+  // constants are checked against `mkHtml` — one alphabet, asserted at the seam.
+  if (!/return st === 'ask' \? c\.g : st === 'wait' \? WAITING : st === 'yours' \? YOURS : DONE;/.test(mo))
+    find('setup-alphabet', 'markOf: the fall-through is no longer `ask → glyph · wait → WAITING (⏳) · yours → YOURS (✏️) · else DONE (✔)`');
+  for (const [name, kind] of [['WAITING', 'deciding'], ['YOURS', 'propose'], ['DONE', 'adopted']])
     if (!new RegExp(`const ${name} = window\\.CARDS\\.mkHtml\\('${kind}'\\);`).test(setup))
       find('setup-alphabet', `setup.js: ${name} is no longer cards.js's drawn '${kind}' mark — the setup alphabet and the charter's would draw two different glyphs (Q288)`);
   for (const col of ['rail mark', 'tab mark']) {
