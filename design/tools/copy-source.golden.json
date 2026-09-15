@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 481
+  "entries": 482
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -176,6 +176,7 @@
   "page.door.nobodyToRemove": "There is nobody to remove.",
   "page.doorEmpty.invite": "Nobody has been invited yet.",
   "page.doorEmpty.remove": "Nobody is proposed for removal.",
+  "page.doorPending.invite": "proposed",
   "page.founderMark.crowned": "Part of the constitution is reserved: changing it needs the founder’s assent",
   "page.founderMark.none": "The Founder reserves nothing — no special part in the document",
   "page.gate.begin.title": "Begin",
@@ -331,9 +332,9 @@
   "page.synth.admitTail": "?",
   "page.synth.anApplicant": "an applicant",
   "page.synth.anonymous": "Anonymous",
-  "page.synth.departedLeft": "A Member Has Left",
-  "page.synth.departedRemoved": "A Member Has Been Removed",
-  "page.synth.hasJoined": " Has Joined",
+  "page.synth.departedLeft": "ƒ (who) => who + ' has left'",
+  "page.synth.departedRemoved": "ƒ (who) => who + ' has been removed'",
+  "page.synth.hasJoined": "ƒ (who) => who + ' has joined'",
   "page.synth.mailGaveUp": "An Invitation Did Not Send",
   "page.synth.passedLead": "Passed: ",
   "page.synth.redacted": "[redacted]",

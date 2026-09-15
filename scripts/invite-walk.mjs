@@ -141,7 +141,6 @@ const pressed = await mover.evaluate(async () => {
 if (!pressed) fail('the press', 'no commit to press');
 await T(4500);
 
-const motions = (await (await post(`/api/d/${SLUG}/view`, {}, jars.get('m1'))).json().catch(() => ({})));
 const view = await mover.evaluate(async () => (await (await fetch(location.origin + '/api/d/' + location.pathname.split('/')[2] + '/view')).json()).view.motions);
 const mo = (view || []).find((m) => m.payload && m.payload.kind === 'invite');
 if (!mo) fail('the motion', 'no invite motion opened: ' + JSON.stringify(view));
