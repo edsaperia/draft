@@ -1262,7 +1262,9 @@ const motionFillOnAmended = async () => {
     const b = li && li.querySelector('button');
     if (!b) return null;
     return { fill: b.dataset.fill || null, title: b.getAttribute('title'),
-      mark: ((b.querySelector('.subj') || {}).textContent || '').trim(),
+      // the mark is drawn (Q288): its kind is the `.mk-<kind>` class, never its text
+      mark: (b.querySelector('.subj .mk') ? ([...b.querySelector('.subj .mk').classList].find((c) => c.startsWith('mk-')) || '').slice(3)
+        : ((b.querySelector('.subj') || {}).textContent || '').trim()),
       state: [...b.classList].find((c) => c.startsWith('st-')) || null };
   }, AMENDED);
   const wire = (pg, cmd, args) => pg.evaluate(([c, a]) => fetch(location.pathname.replace('/d/', '/api/d/') + '/cmd', {
@@ -1283,7 +1285,7 @@ const motionFillOnAmended = async () => {
   say('motion fill· ' + (ok1 ? 'the founder’s 🌍 entry reads the motion: ' + e1.title + ' · fill ' + e1.fill + ' · ' + e1.state
     : 'FAIL: the founder’s 🌍 entry does not read the motion’s answers · ' + JSON.stringify(e1)));
   if (!ok1) stuck.push('the 🏛️ motion’s fill on the founder’s entry');
-  const okG = !!g1 && g1.fill === '50%' && g1.title === '1 of 2 have answered' && g1.mark === '⏳';
+  const okG = !!g1 && g1.fill === '50%' && g1.title === '1 of 2 have answered' && g1.mark === 'deciding';
   say('mover’s ⏳ · ' + (okG ? 'the mover’s own entry is a ⏳ wait with the same bar: ' + g1.title
     : 'FAIL: ' + JSON.stringify(g1)));
   if (!okG) stuck.push('the 🏛️ motion’s fill on the mover’s entry');
@@ -1296,7 +1298,7 @@ const motionFillOnAmended = async () => {
   }
   await T(5000);
   const e2 = await entryAt(page);
-  const ok2 = !!e2 && e2.fill === '100%' && e2.title === '2 of 2 have answered' && e2.mark === '⏳';
+  const ok2 = !!e2 && e2.fill === '100%' && e2.title === '2 of 2 have answered' && e2.mark === 'deciding';
   say('motion moves· ' + (ok2 ? 'the founder’s answer moves it: ' + e2.title + ' · fill ' + e2.fill + ' · the entry files as ⏳'
     : 'FAIL: ' + JSON.stringify(e2)));
   if (!ok2) stuck.push('the 🏛️ motion’s fill after the founder answered');
@@ -1323,7 +1325,9 @@ const motionDeckOnAmended = async () => {
     const b = li && li.querySelector('button');
     if (!b) return null;
     return { fill: b.dataset.fill || null, title: b.getAttribute('title'),
-      mark: ((b.querySelector('.subj') || {}).textContent || '').trim(),
+      // the mark is drawn (Q288): its kind is the `.mk-<kind>` class, never its text
+      mark: (b.querySelector('.subj .mk') ? ([...b.querySelector('.subj .mk').classList].find((c) => c.startsWith('mk-')) || '').slice(3)
+        : ((b.querySelector('.subj') || {}).textContent || '').trim()),
       state: [...b.classList].find((c) => c.startsWith('st-')) || null };
   }, AMENDED);
   const wire = (pg, cmd, args) => pg.evaluate(([c, a]) => fetch(location.pathname.replace('/d/', '/api/d/') + '/cmd', {
@@ -1395,7 +1399,7 @@ const motionDeckOnAmended = async () => {
     const c = document.querySelector('[data-setupcard="' + k + '"]');
     return c ? [...c.querySelectorAll('.mdeck [data-mpick]')].map((e) => e.dataset.mpick + ':' + (e.dataset.answer || '')) : null;
   }, AMENDED);
-  const deckOk3 = !!d3 && d3.mark === '⏳' && /^2 of 3 have answered$/.test(d3.title || '') && !!card3 &&
+  const deckOk3 = !!d3 && d3.mark === 'deciding' && /^2 of 3 have answered$/.test(d3.title || '') && !!card3 &&
     card3.length === 2 && card3.every((x) => /:keep$/.test(x));
   say('mdeck 3    · ' + (deckOk3 ? 'both answered, the entry files as ⏳: ' + d3.title + ' · the ⏳ card lists both with the founder’s answers'
     : 'FAIL: ' + JSON.stringify({ d3, card3 })));
@@ -3028,10 +3032,11 @@ if (caret) {
       if (!d) return { id: null };
       const q = String(d.id).replace(/["\\]/g, '\\$&');
       const li = document.querySelector('#rail li[data-q="' + q + '"]');
-      return { id: d.id, entry: !!li, mark: li ? ((li.querySelector('.qmark') || {}).textContent || '').trim() : null,
+      const mk = li && li.querySelector('.qmark .mk');
+      return { id: d.id, entry: !!li, mark: mk ? ([...mk.classList].find((c) => c.startsWith('mk-')) || '').slice(3) : null,
         pinned: !!(li && li.classList.contains('pinned')) };
     });
-    const l5Ok = l5.entry && l5.mark === '✏️' && l5.pinned;
+    const l5Ok = l5.entry && l5.mark === 'propose' && l5.pinned;
     say(L('L5') + (l5Ok ? 'the proposal’s ✏️ entry is in the rail and pinned' : 'FAIL: ' + JSON.stringify(l5)));
     if (!l5Ok) stuck.push('L5: the ✏️ entry pinned');
   }
@@ -3405,7 +3410,8 @@ if (caret) {
         const li = lis[0];
         if (!li) return { n: 0, mark: '', cap: '', teasers: [] };
         const b = li.querySelector('button');
-        return { n: lis.length, mark: ((li.querySelector('.qmark') || {}).textContent || '').trim(),
+        const mk = li.querySelector('.qmark .mk');
+        return { n: lis.length, mark: mk ? ([...mk.classList].find((c) => c.startsWith('mk-')) || '').slice(3) : '',
           cap: b ? b.title : '', teasers: [...li.querySelectorAll('.qwhy')].map((e) => e.textContent.trim()) };
       }, id);
       // open the entry from the rail — the page's own route in — and read the
@@ -3449,7 +3455,7 @@ if (caret) {
         await T(2400);                             // the receipt, the command, its refresh
         return okJ;
       };
-      const isNeeds = (e) => e.n === 1 && (e.mark === '💡' || e.mark === '🔥');
+      const isNeeds = (e) => e.n === 1 && (e.mark === 'needs' || e.mark === 'urgent');
       if (!raceId) {
         say('deck       · FAIL: no race on line ' + line + ' in the wire');
         stuck.push('the deck’s race');
@@ -3496,7 +3502,7 @@ if (caret) {
         if (!ok6) stuck.push('the rival card');
         const j3 = await judge('a');
         const e4 = await entry();
-        const ok7 = j3 && e4.n === 1 && e4.mark === '⏳' && e4.teasers.length === 0;
+        const ok7 = j3 && e4.n === 1 && e4.mark === 'deciding' && e4.teasers.length === 0;
         say('deck 7     · ' + (ok7 ? 'judged · the entry files as ⏳ “' + e4.cap + '”, no teaser — the hand is empty'
           : 'FAIL: judged ' + j3 + ' · ' + JSON.stringify(e4)));
         if (!ok7) stuck.push('the entry once the deck is empty');
@@ -3515,7 +3521,7 @@ if (caret) {
         const l1 = await openEntry();
         // the two ties mark their Indifferent row (a third side, after the
         // two wordings), the rival pair marks its first side; nothing is active
-        const okL1 = e5.mark === '⏳' && l1.card && /ledger-open/.test(l1.cls) && l1.ledger.length === 3 &&
+        const okL1 = e5.mark === 'deciding' && l1.card && /ledger-open/.test(l1.cls) && l1.ledger.length === 3 &&
           l1.ledger.every((p) => p.on.filter(Boolean).length === 1) &&
           l1.ledger[0].on.join() === 'false,false,true' && l1.ledger[1].on.join() === 'false,false,true' &&
           l1.ledger[2].on.join() === 'true,false' && l1.ledger.every((p) => !p.active);
@@ -3693,7 +3699,7 @@ if (caret) {
               const t5 = await tRow();
               const e5 = await entry(tId);
               const landed = j5 && t5.judged && t5.judgments === 3 && t5.askable === false && !t5.ask;
-              const ok6 = landed && e5.mark === '⏳' && e5.teasers.length === 0;
+              const ok6 = landed && e5.mark === 'deciding' && e5.teasers.length === 0;
               say('askable 6  · ' + (ok6 ? 'judged · 3 pairs of the founder’s stand on T · nothing left to ask, and only now the entry files as ⏳ “' + e5.cap + '”'
                 : 'FAIL: judged ' + j5 + ' · view ' + JSON.stringify(t5) + ' · entry ' + JSON.stringify(e5)));
               if (!ok6) stuck.push('the askable case’s judgment' + (landed ? '’s ⏳ afterwards' : ''));
