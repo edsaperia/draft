@@ -248,7 +248,7 @@ for (const key of ['quorum']) {
   check('two blocks, share first', born.picks.map((p) => p.val).join(',') === 'share,count',
     born.picks.map((p) => p.val).join(','));
   check('each block is the rule with its number inline',
-    born.picks.every((p) => p.box && /must vote on a proposal ✏️ before it can pass/.test(p.label)),
+    born.picks.every((p) => p.box && /must vote on a proposal ✏️ before anything changes/.test(p.label)),
     born.picks.map((p) => p.label.slice(0, 50)).join(' | '));
   check('born untouched', !born.picks.some((p) => p.on) &&
     born.picks.every((p) => p.box.value === ''),
