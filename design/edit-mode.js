@@ -78,6 +78,27 @@ window.EDIT_MODE = (function () {
           '<button class="btn btn-propose glyphbtn emojibtn" data-act="edit-door" title="' +
           esc(PAGE_COPY.ride.textDash + PAGE_COPY.ride.pressToWrite) + '">📝</button></div>'
         : '';
+      syncEditDoor();
+    }
+    // **The floating 📝 never rises above the 📝 tab** (Q1380, Ed 2026-09-15:
+    // *floating 📝 button shouldn't go above the 📝 tab*). The door is stuck to
+    // the window's foot; the riding tab rests beside the charter's first line
+    // until that line scrolls under the navbar, and on a page whose charter
+    // begins below the fold — the founder's, with the band open; any member's
+    // on a long constitution — the resting tab is *lower* on the screen than
+    // the door, so the second handle to the text stood above the first. The
+    // door is hidden while the tab's box is below the door's top and shown
+    // once the tab has risen past it; `visibility` rather than `display`, so
+    // its box — D1's promise that the row's ✏️ takes it — is unchanged, and
+    // the stuck row still says where the control will be. Measured, never
+    // computed from offsets: both are sticky, and the rects are the truth.
+    function syncEditDoor() {
+      const ed = document.getElementById('editdoor');
+      const door = ed && ed.querySelector('[data-act="edit-door"]');
+      if (!door) return;
+      const chip = document.querySelector('#ridetab .achip[data-tab="text"]');
+      const below = !!chip && chip.getBoundingClientRect().bottom > door.getBoundingClientRect().top;
+      ed.classList.toggle('belowtab', below);
     }
     document.addEventListener('click', (ev) => {
       const b = ev.target.closest('#editdoor [data-act="edit-door"]');
@@ -181,10 +202,13 @@ window.EDIT_MODE = (function () {
       const navH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 58;
       const detached = !!line && line.bottom < navH + 8;
       rt.classList.toggle('detached', detached);
+      // the door follows the tab it must stay beneath (Q1380)
+      syncEditDoor();
     }
     // …and the column's strip rides on the same scroll (Q1313): its ground and
     // shadow come once it has left the card's top edge
-    addEventListener('scroll', () => { syncRideTab(); syncProseCtl(); }, { passive: true });
+    addEventListener('scroll', () => { syncRideTab(); syncProseCtl(); syncEditDoor(); }, { passive: true });
+    addEventListener('resize', syncEditDoor, { passive: true });
     // **the row before the start**: the founder's ✒️ under `#prose`, drawn by
     // session.js's helper. Live until the column matches what the server holds;
     // a never-confirmed column is always sendable (an empty text is a real

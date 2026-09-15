@@ -964,8 +964,6 @@ window.CARDS = (function () {
       '</div>';
 
     function commitRowHtml(s, extra) {
-      const pick = env.pickOf(s);
-      const insists = env.isTopUrgent(s) && env.stateOf(s) === 'needs';
       // **Indifference is a full option block** (CP4, Q1099, 2026-08-31 —
       // revising Ed 2026-08-16's row placement): a textless block under the
       // same hairline as the lanes, its radio naming the act instead of
@@ -987,13 +985,29 @@ window.CARDS = (function () {
       // **🗑️ joins the row** (CP7, Q1102 — C4 wins over the old table rows):
       // far left, always live; it clears an uncommitted choice and closes,
       // and a cast vote stays, the bin putting back un-actioned input only.
+      return vinBlockHtml(s) + commitBarHtml(s, extra);
+    }
+    // **The two halves of the commit row** (Q1382, Ed 2026-09-15: *the vote
+    // for a patch is also floating, since there is no single card for it to
+    // sit on*): the Indifferent block is an answer and stays with the
+    // answers — on a patch, on every site card — while the bar of acts
+    // (🗑️ · ❄️? · ✓) is drawn once, on the card for every other kind and on
+    // the proposal-row at the foot of the window for a patch, which is why
+    // the bar takes a class of its own to wear there.
+    function vinBlockHtml(s) {
+      const pick = env.pickOf(s);
       return '<div class="pick vinblock">' +
         '<button class="lanepick vin" type="button" ' + env.valAttr + '="indifferent"' +
         ' aria-pressed="' + (pick === 'indifferent') + '"' + (env.lockedOf(s) ? ' disabled' : '') +
         ' title="' + (s.kind === 'diagonal' ? G.commit.vinDiagonal : G.commit.vinPair) + '">' +
         '<i class="dot" aria-hidden="true"></i>' +
-        '<span class="off">' + G.commit.indifferent + '</span><span class="on">' + G.commit.indifferent + '</span></button></div>' +
-        '<div class="race-mid commitrow">' +
+        '<span class="off">' + G.commit.indifferent + '</span><span class="on">' + G.commit.indifferent + '</span></button></div>';
+    }
+    function commitBarHtml(s, extra, cls) {
+      const pick = env.pickOf(s);
+      const insists = env.isTopUrgent(s) && env.stateOf(s) === 'needs';
+      return '<div class="race-mid commitrow' + (cls ? ' ' + cls : '') + '"' +
+        (cls ? ' data-patchrow="' + s.id + '"' : '') + '>' +
         '<button class="btn glyphbtn" data-act="clear-close" title="' +
         (env.lockedOf(s) ? G.commit.binLocked : G.commit.bin) + '">🗑️</button>' +
         (extra || '') +
@@ -1312,7 +1326,7 @@ window.CARDS = (function () {
     }
 
     return {
-      laneBarHtml, clauseHeadHtml, proposalHtml, commitRowHtml, reviseNote,
+      laneBarHtml, clauseHeadHtml, proposalHtml, commitRowHtml, vinBlockHtml, commitBarHtml, reviseNote,
       laneBoxHtml, draftFaceHtml, collapseCard, expandCard, openCardEls, runOnCards,
       collapseCards, expandCards, stillRef, restoreStill, keepStill,
     };

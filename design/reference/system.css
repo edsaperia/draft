@@ -945,6 +945,19 @@
      the first segment, 1,116px between its last clause and the card). Only
      the segment nothing follows carries the runway. */
   .doc.editing.begun #charter > .prose:has(~ .prose) { padding-bottom: 0; }
+  /* **A card opened in edit mode stands in front of the edit area** (Q1381,
+     Ed 2026-09-15: *proposal cards that appear in edit-mode should appear "in
+     front of" or "above" the edit area card*). The column's segments are
+     positioned (z:0, for the outline beneath their text), and the editing
+     card between them was not — so it painted in the flow layer *under* both
+     segments, its shadow clipped by the one that follows it, and read as a
+     panel let into the column rather than a card over it. Open is said by
+     depth: the column lifts to `--shadow-xl`, and whatever opens on it is one
+     step further out — the card's own `--shadow-xl`, painted over the column
+     by stacking order (z:1 above the segments' z:0), so its shadow falls on
+     the edit area as a card's falls on the page. The lane's caret and every
+     `.anch` measurement are untouched: position and z-index move no box. */
+  .doc.editing #charter > .sugg, .doc.editing #prose ~ .sugg, .doc.editing .sugg.editcard { position: relative; z-index: 1; }
   /* **The card is the decision card's width** (Ed's QA, 2026-08-30): the
      outline is a pseudo-element carrying the shadow and radius, so the
      column's own box and its text do not move; behind the text by z-index
@@ -976,12 +989,26 @@
      negative top margin of its own height, so the card (which carries the
      runway) ends where `.doc` ends and the row floats over it (Ed's QA,
      2026-08-30: *I can still see the bottom of the box*). 40px controls
-     (§9.1) inside `--s2` each side: 56px. */
+     (§9.1) inside `--s2` above and **`--row-foot` below** (Q1380, Ed
+     2026-09-15: *they should sit a bit further from the bottom of the
+     screen*) — the same `--s5` the card keeps at its sides, so a floating
+     control keeps the card's own gutter from the window's edge: 72px. */
   .race-mid.commitrow.proposalrow {
-    border-top: 0; padding-top: var(--s2); padding-bottom: var(--s2);
-    box-sizing: border-box; height: 56px; margin-top: -56px;
+    --row-foot: var(--s5);
+    border-top: 0; padding-top: var(--s2); padding-bottom: var(--row-foot);
+    box-sizing: border-box; height: calc(2.5rem + var(--s2) + var(--row-foot));
+    margin-top: calc(-1 * (2.5rem + var(--s2) + var(--row-foot)));
   }
   .proposalrow .btn { pointer-events: auto; }
+  /* **A floating control is a circle** (Q1380, Ed 2026-09-15: *floating edit
+     buttons (📝✏️🗑️) should be in circles, not rectangles*). The row's 🗑️ and
+     ✏️ (and ✒️ beside it), the door's 📝 and the patch row's ❄️ ✓ are
+     controls over the page, not a row inside a card, and wear a different
+     shape from every commit-row button: `2.5rem` across — the glyph button's
+     own height, so nothing else about it moves — and fully round. Scoped by
+     the floating context, never by re-styling `.btn.glyphbtn`: B6's one glyph
+     size is untouched. */
+  .proposalrow .btn.glyphbtn { width: 2.5rem; border-radius: 50%; }
   .proposalrow .rowmid { flex: 1; text-align: center; font-size: var(--t-small); color: var(--muted); }
   /* the gap block (Q1090): the empty document's `blank` treatment, its own
      sentence, and a little air above it so it reads as *after* the last clause */
@@ -1069,6 +1096,15 @@
      nothing reads its box, so it is `contents` too: the row's containing
      block is `.doc`, the door's, and `#charter > .prose` still matches. */
   #editdoor { display: contents; }
+  /* …hidden while the resting 📝 tab is still below it (Q1380; `syncEditDoor`
+     in edit-mode.js measures both), the box kept for D1 */
+  #editdoor.belowtab [data-editdoor] { visibility: hidden; }
+  /* **The patch row** (Q1382): a patch race's one bar of acts — 🗑️ · ❄️? · ✓ —
+     drawn by session.js's `renderPatchRow` in the door's own slot while a
+     patch card is open, since no single site card can carry it. Same non-box
+     mount, same row; the door steps aside for it. */
+  #patchrow { display: contents; }
+  .doc.patchrow #editdoor [data-editdoor] { display: none; }
   #charter { display: contents; }
   .doc .prose {
     max-width: calc(var(--measure) + 2 * var(--measure-gutter));
@@ -1129,6 +1165,17 @@
   .doc .docline.lvl2 { font-size: var(--t-small); color: var(--fg); margin: 30px 0 10px; }
   .doc .docline.lvl3 { font-size: var(--t-cap); color: var(--muted); margin: 22px 0 var(--s2); }
   .doc .prose > .docline.lvl1:first-child { margin-top: var(--s5); }
+  /* **The 📝 card draws no hairline at its top** (Q1383, Ed 2026-09-15). A
+     document whose first block is a `# ` heading opened with the heading's
+     own part-rule (`--head-rule`) as the first thing on the card, in read
+     mode and edit mode alike — a line above the document's first line, with
+     nothing above it to rule off. The first heading of the column keeps its
+     rank and drops its rule; a heading below a `.doctitle` is the first
+     heading too. In edit mode the column is split around an open card, and
+     only the first segment's first heading is the card's top. */
+  #prose > .docline.lvl1:first-child, #prose > .doctitle + .docline.lvl1,
+  #charter > .prose:first-of-type > .docline.lvl1:first-child,
+  #charter > .prose:first-of-type > .doctitle + .docline.lvl1 { border-top: 0; padding-top: 0; }
   /* the fold triangle sits in the chip-gutter, in line with the anchor marks */
   .doc h2.docline .sectoggle { position: absolute; right: 100%; margin-right: var(--s3); top: -2px; }
   .doc h2.docline .sechint {
