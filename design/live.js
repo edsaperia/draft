@@ -832,9 +832,12 @@ window.LIVE = (function () {
       end: Math.max(...hunks.map((h) => h.end)) });
     const plain = (lines, sp) => lines.slice(sp.start, sp.end).filter((l) => l.trim()).map(unhead).join('\n');
     // the mark the quick card shows: cards.js's own diff, del and ins both
-    // (resultOnly drops the dels where the card states the result)
-    const markedOf = (before, after) => window.CARDS.diffPieces(before, after, true)
-      .map(([t, mk]) => (mk ? window.CARDS.markHtml2(t, mk) : esc(t))).join('');
+    // (resultOnly drops the dels where the card states the result) —
+    // **rendered as the clause is** (Q1368, Ed 2026-09-15): the markdown-aware
+    // diff, so `**Recorder**` reads bold on the proposal block and in the
+    // ledger as it does in the clause above them, where this used to escape
+    // the source and print the asterisks
+    const markedOf = (before, after) => window.CARDS.mdDiffHtml(before, after, true);
     // the nearest heading above; on a document with none, the document's own
     // title — the outermost heading (Q1303, Ed 2026-09-10) — and only with no
     // title either, the clause's first words
