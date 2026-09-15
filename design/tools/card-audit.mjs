@@ -726,12 +726,12 @@ function rulesFor(card, tok) {
     // the founder's two-commit card names both acts, the route's glyph second (Ed, 2026-09-06)
     if (/^(Choose ✒️ or Propose|Chosen ✒️ or Proposed) (✏️|🏛️)( this)?$/u.test(r.label.trim())) continue;
     // …and Propose this / Proposed where the press creates a proposal (Ed, 2026-09-06)
-    // …and the motion cards' act-naming forms (CP2, T48; Q1182, Q1331): Keep
-    // this / Kept on the rule that stands, Abstain on the consent card's
-    // textless block — the ordinary card's is Indifferent
-    if (!['Prefer this', 'Preferred', 'Choose this', 'Chosen', 'Propose this', 'Proposed', 'Indifferent',
-      'Keep this', 'Kept', 'Abstain'].includes(r.label.trim())) {
-      at('CP2', 'pattern', 'radio vocabulary — Prefer this / Preferred · Choose this / Chosen · Propose this / Proposed · Keep this / Kept · Indifferent · Abstain (§9.3)',
+    // …and the textless block's act-naming form, Indifferent, on a judgment
+    // and a consent alike (CP2, T48; Q1182, Q1331, Q1377 — *Keep this / Kept*
+    // and *Abstain* left with Q1377, Ed 2026-09-15: *Keep should be Prefer*)
+    if (!['Prefer this', 'Preferred', 'Choose this', 'Chosen', 'Propose this', 'Proposed', 'Indifferent']
+      .includes(r.label.trim())) {
+      at('CP2', 'pattern', 'radio vocabulary — Prefer this / Preferred · Choose this / Chosen · Propose this / Proposed · Indifferent (§9.3)',
         '“' + r.label.trim().slice(0, 40) + '”');
     }
   }

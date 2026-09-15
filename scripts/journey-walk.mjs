@@ -1549,11 +1549,15 @@ const brSet = async (k, pw, val) => {
 // holds what, written by `powerHeadLine` off `pwPair`. The tabs are inert
 // peeks on a closed pile, so the base card is opened first, exactly as
 // `doorShuts` reaches them.
+// the head alone: since Q1378 the two blocks beneath it are the clause
+// sentence held and given, so the card's whole text always carries both
+// *may* and *may not*, and only the head says which stands
 const pwSays = async (base, pw) => {
   if (!(await open(base))) return null;
   if (!(await open('pw:' + pw + ':' + base))) return null;
   return page.evaluate(() =>
-    ((document.querySelector('.setupcard') || {}).textContent || '').replace(/\s+/g, ' ').trim());
+    ((document.querySelector('.setupcard .headrule') || document.querySelector('.setupcard') || {}).textContent || '')
+      .replace(/\s+/g, ' ').trim());
 };
 let rowsWalked = false;
 const beginRowsBeforeStart = async () => {
@@ -3704,14 +3708,23 @@ const powerReturnOnATab = async () => {
     if (!c) return null;
     return { blocks: [...c.querySelectorAll('.pick .opttext')].map((e) => e.textContent.trim().slice(0, 70)),
       radios: [...c.querySelectorAll('.pick .lanepick .off')].map((e) => e.textContent.trim()),
+      notes: c.querySelectorAll('.pick .setnote').length,
+      head: (c.querySelector('.headrule') || { textContent: '' }).textContent.trim(),
       lane: !!c.querySelector('[data-mval]'), keep: !!c.querySelector('[data-pwkeep]'),
       commit: (() => { const b = c.querySelector('[data-holdmotion]');
         return b ? (b.disabled ? 'dark' : 'live') : 'none'; })() };
   });
-  const offerOk = !!offer && offer.blocks.length === 2 && offer.lane && offer.keep &&
-    offer.commit === 'dark' && /Keep this/.test(offer.radios[0] || '') && /Propose this/.test(offer.radios[1] || '');
-  say('return ask · ' + (offerOk ? 'bo’s ⏱️ ✒️ tab offers two blocks — ' + JSON.stringify(offer.blocks) +
-      ' — Keep this · Propose this, 🏛️ dark until one is chosen'
+  // **One block, the change, in the document's own words** (Q1378, Ed
+  // 2026-09-15: *status quo is already there so does not need to be an
+  // option, cull helper text, option text is not document text*): the head
+  // states what stands (*may not amend*), the block the rule it would put
+  // back (*may amend … at will*) with no grey line beneath, *Propose this*
+  // alone, 🏛️ dark until it is chosen.
+  const offerOk = !!offer && offer.blocks.length === 1 && offer.lane && !offer.keep && offer.notes === 0 &&
+    /^The Founder may amend this at will\.$/.test(offer.blocks[0] || '') && /may not amend/.test(offer.head) &&
+    offer.commit === 'dark' && offer.radios.length === 1 && /Propose this/.test(offer.radios[0] || '');
+  say('return ask · ' + (offerOk ? 'bo’s ⏱️ ✒️ tab offers one block — ' + JSON.stringify(offer.blocks) +
+      ' — under the head “' + offer.head + '”, Propose this, 🏛️ dark until it is chosen'
     : 'FAIL: ' + JSON.stringify(offer)));
   if (!offerOk) { stuck.push('the return offer on a laid-down power tab'); return; }
   await G.clickIn('.setupcard [data-mval]');
@@ -3739,11 +3752,16 @@ const powerReturnOnATab = async () => {
   if (!askOk) stuck.push('the founder’s ask on the power tab');
   if (!(await open(PW))) { say('return card· FAIL: the founder cannot open ' + PW); stuck.push('the founder’s power-tab card'); return; }
   const lanes = await page.evaluate(() => [...document.querySelectorAll('.setupcard [data-motion]')].map((b) => b.dataset.motion));
+  // **the consent card's radios read Prefer this · Prefer this · Indifferent**
+  // (Q1377, Ed 2026-09-15: *Keep should be Prefer*): the standing rule is a
+  // peer since Q1362, so its radio reads like its rival's, and the textless
+  // block names the act as the race card's does
+  const words = await page.evaluate(() => [...document.querySelectorAll('.setupcard [data-motion] .off')].map((e) => e.textContent.trim()));
   await clickIn('.setupcard [data-motion="yes"]');
   const said = await press(1250);
-  const answered = lanes.join() === 'no,yes,abstain' && !!said;
-  say('return yes · ' + (answered ? 'the founder answers on the same tab, three lanes (' + said + ')'
-    : 'FAIL: lanes ' + JSON.stringify(lanes) + ' · press ' + said));
+  const answered = lanes.join() === 'no,yes,abstain' && words.join() === 'Prefer this,Prefer this,Indifferent' && !!said;
+  say('return yes · ' + (answered ? 'the founder answers on the same tab, three lanes reading ' + JSON.stringify(words) + ' (' + said + ')'
+    : 'FAIL: lanes ' + JSON.stringify(lanes) + ' · words ' + JSON.stringify(words) + ' · press ' + said));
   if (!answered) stuck.push('answering a return on its own tab');
   // cy's seat over the wire: two seats have driven the surface, and what is
   // left to prove is the carry
@@ -3773,8 +3791,10 @@ const powerReturnOnATab = async () => {
     [...document.querySelectorAll('#band .achip')].map((a) => a.dataset.chip || '')
       .filter((x) => /^rec:rate:/.test(x)));
   await open(PW);
+  // the head alone (Q1378: the founder's two blocks beneath it read both ways)
   const head = await page.evaluate(() =>
-    ((document.querySelector('.setupcard') || {}).textContent || '').replace(/\s+/g, ' ').trim());
+    ((document.querySelector('.setupcard .headrule') || document.querySelector('.setupcard') || {}).textContent || '')
+      .replace(/\s+/g, ' ').trim());
   const backOk = /may amend this at will/.test(head) && !/may not amend/.test(head) && back.length >= 1;
   say('return got · ' + (backOk ? '⏱️’s ✒️ is the founder’s again and a record stands in its pile (' + back.join(' ') + ')'
     : 'FAIL: ' + JSON.stringify({ head: head.slice(0, 140), back })));

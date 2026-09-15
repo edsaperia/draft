@@ -1343,13 +1343,11 @@ function checkComposer(M, pm) {
   // reference into copy.js — the keys are the page's either way
   const noun = [...objLit(page, 'PW_NOUN').matchAll(/\b([a-z]+): (?:'|PAGE_COPY\.)/g)].map((m) => m[1]);
   for (const k of propose.concat(['text'])) if (!['invite', 'remove'].includes(k) && !noun.includes(k)) find('composer', `PW_NOUN lacks '${k}'`);
-  const base = pw('PW_PHRASE').sort().join(' ');
   // PWWHY left this list with the table itself (T43, Ed 2026-09-01: a power
-  // card carries no why — the head and the two blocks state the rule)
-  for (const n of ['PW_OPTS']) {
-    const got = pw(n).sort().join(' ');
-    if (got !== base) find('composer', `${n} keys (${got}) differ from PW_PHRASE's (${base})`);
-  }
+  // card carries no why — the head and the two blocks state the rule), and
+  // PW_OPTS with Q1378 (an option block is `pwLine`'s own clause sentence,
+  // so PW_PHRASE is the one table and there is nothing left to mirror it)
+  pw('PW_PHRASE');
   // **A lane the composer draws must have a typed value behind it.** `mvalTyped`
   // looks a lane's label up in `MVAL`; a lane with no key there types nothing,
   // `draftPayload` throws *no typed value on the draft*, and the 🏛️ hold ends at

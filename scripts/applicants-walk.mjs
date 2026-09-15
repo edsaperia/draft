@@ -545,9 +545,9 @@ if (admEntry) {
    * each price makes is a different promise. At *assembly* nobody joins
    * without everyone's consent: the card is a 🏛️ question in the settled
    * two-block grammar (SURFACE §9's *constitutional motion (consent)* row,
-   * Q1182, STYLE T48) — the membership as it stands under *Keep this*, the
-   * applicant joining under *Prefer this*, *Abstain* as its own textless block
-   * — and it commits on the assembly hold. At *proposal* the membership
+   * Q1182, STYLE T48) — the membership as it stands and the applicant joining
+   * each under *Prefer this* (Q1377: the standing text is a peer), *Indifferent*
+   * as its own textless block — and it commits on the assembly hold. At *proposal* the membership
    * decides ✏️: the card is a judgment between the applicant
    * and the membership as it stands, and it commits with ✓. The seat matrix
    * cannot say this — it asserts *who carries the entry*, not what the card
@@ -558,8 +558,8 @@ if (admEntry) {
    * site's string and is not borrowed for it. */
   const FORM = {
     assembly: {
-      want: [COPY.page.consent.staysAsIs, COPY.page.consent.joins(NAME), COPY.page.consent.abstain],
-      radios: [COPY.page.consent.keepThis, COPY.grammar.lane.prefer, COPY.page.consent.abstain],
+      want: [COPY.page.consent.staysAsIs, COPY.page.consent.joins(NAME), COPY.grammar.commit.indifferent],
+      radios: [COPY.grammar.lane.prefer, COPY.grammar.lane.prefer, COPY.grammar.commit.indifferent],
       commit: 'confirm', called: 'a 🏛️ question' },
     proposal: {
       want: ['Admit them', 'Keep the membership as it is', 'Indifferent'],
