@@ -317,6 +317,8 @@ And the preset across the day's shapes:
 | 15 min | 68% | 60% | 76% |
 | 20 min | 76% | 72% | **84%** |
 
+**Overtaken 2026-09-15 (Q1362, SPEC v0.128):** the bar is no longer a room setting — the text is the ranking's top once the quorum is met, the engine's threshold pinned at 0.5 and deleted in the pass after — so every row above that varies the bar, and finding 1 below, describe a knob that no longer exists. The alpha preset's operating point is quorum and rate; the post-change measurement is pass 6's churn study (`packages/sim-harness/REPORT-churn.md`).
+
 **Three findings, and two of them are not what the plan expected.**
 
 1. **The bar is the only knob that moves anything at this scale.** 0.95 →
