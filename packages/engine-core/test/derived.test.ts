@@ -24,7 +24,12 @@ function open(over: Record<string, unknown> = {}): Session {
       constitution: makeConstitution({
         windowStartMs: 0,
         windowEndMs: 10 * HOUR,
-        // a ramping bar: the threshold differs at every `t` the feed is asked at
+        // A ramping bar, so the threshold differs at every `t` the feed is
+        // asked at — the test's own, the default being pinned flat since
+        // v0.128 (R-117). The divisor is all the feed reads it for, and
+        // `closeness` stopped reading it at all (R-118), so this is now the
+        // strongest form of the clock-independence proof rather than the only
+        // one available. It goes with the ramp in the deletion pass.
         adoptionThresholdStart: 0.55,
         adoptionThresholdEnd: 0.95,
         tokenDripMinutes: 60,

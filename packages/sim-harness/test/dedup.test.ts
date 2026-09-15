@@ -146,7 +146,17 @@ describe('sim regression: dedup off is byte-identical to before the gate existed
   // this hash and `Session.replay` reproduces it, which is the invariant this
   // test defends
   // (was af13ed609b74c053782ecdffe5b080b8218a4c217c34d0aa5e9d62438579c36c).
-  const PINNED = 'acccf5c0e4f15604c46000c691e2cbc60e00e22a84352008c31aec9904bbb46b';
+  // Re-pinned 2026-09-15 (Q1362, SPEC §4.2/§4.3 v0.128, R-114/R-117): the
+  // status quo is a peer — a race carries when the ranking puts a candidate
+  // above the current text and the floor is met, and there is no bar. Two
+  // things move the chain: `DEFAULT_CONSTITUTION` pins the threshold at 0.5,
+  // and the genesis event hashes the constitution; and adoption timing changes
+  // throughout, since a race that had to reach 0.60 rising to 0.95 now carries
+  // on a majority. Both variants below produced this hash identically, two
+  // fresh runs agreed, and `Session.replay` reproduces it — which is the
+  // invariant this test defends
+  // (was acccf5c0e4f15604c46000c691e2cbc60e00e22a84352008c31aec9904bbb46b).
+  const PINNED = 'f4af4c582015e0680e420d78bc409d35990add2279a865e50ae73f3455b445a6';
 
   const run = (withGate: boolean) =>
     runSession({
@@ -240,9 +250,10 @@ describe('dedup-gate in a full scripted run', () => {
       windowMs: 12 * HOURS,
       seed: 'dupes',
       makePersona: (profile, rng) => new ScriptedPersona(profile, dupeScenario, rng),
-      // Freeze the threshold above reach so candidates stay live and the
-      // second persona's twin draft meets a live original.
-      constitutionOverrides: { adoptionThresholdStart: 0.99, adoptionThresholdEnd: 0.99 },
+      // Hold the floor above reach so candidates stay live and the second
+      // persona's twin draft meets a live original. It froze the threshold at
+      // 0.99 until v0.128, when the bar left the adoption test (Q1362, R-117).
+      constitutionOverrides: { quorum: { form: 'count', n: 99 } },
       dedupGate: new DedupGate(),
       onProgress: (line) => lines.push(line),
     });

@@ -3,13 +3,28 @@ import { adoptionThreshold } from '../src/adoption-threshold.js';
 import { Session, makeConstitution } from '../src/session.js';
 
 const HOUR = 3600_000;
+// **The ramp is pinned flat by default since v0.128** (Q1362 (b), R-117), so
+// the shape tests below state a start and an end of their own: the curve still
+// has to be the curve until the deletion pass takes it, and the pinning is
+// asserted on its own below.
 const constitution = makeConstitution({
   windowStartMs: 0,
   windowEndMs: 10 * HOUR,
   rngSeed: 's',
+  adoptionThresholdStart: 0.6,
+  adoptionThresholdEnd: 0.95,
 });
 
 describe('adoption threshold on the session clock (SPEC §4.3)', () => {
+  it('is pinned at ½ by default, and the pin does not move over the window (R-117)', () => {
+    const pinned = makeConstitution({ windowStartMs: 0, windowEndMs: 10 * HOUR, rngSeed: 's' });
+    expect(pinned.adoptionThresholdStart).toBe(0.5);
+    expect(pinned.adoptionThresholdEnd).toBe(0.5);
+    for (let h = 0; h <= 12; h++) {
+      expect(adoptionThreshold(pinned, h * HOUR)).toBeCloseTo(0.5, 12);
+    }
+  });
+
   it('starts at the start value when the window opens', () => {
     expect(adoptionThreshold(constitution, 0)).toBeCloseTo(0.6, 12);
     expect(adoptionThreshold(constitution, -HOUR)).toBeCloseTo(0.6, 12);
@@ -38,7 +53,13 @@ describe('adoption threshold on the session clock (SPEC §4.3)', () => {
   });
 
   it('degenerate window pins the threshold at the end value', () => {
-    const degenerate = makeConstitution({ windowStartMs: 5, windowEndMs: 5, rngSeed: 's' });
+    const degenerate = makeConstitution({
+      windowStartMs: 5,
+      windowEndMs: 5,
+      rngSeed: 's',
+      adoptionThresholdStart: 0.6,
+      adoptionThresholdEnd: 0.95,
+    });
     expect(adoptionThreshold(degenerate, 0)).toBeCloseTo(0.95, 12);
   });
 });

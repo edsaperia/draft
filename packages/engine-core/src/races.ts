@@ -35,15 +35,6 @@ export function candidateNum(id: string): number {
   return Number(id.slice(1));
 }
 
-/**
- * The shortest scale `RaceView.closeness` will measure against (Q836): the
- * span of a 51% bar, which is the lowest bar the surface can express above a
- * coin flip — the threshold input is whole percent from 50. A bar of exactly
- * ½ leaves no distance between the coin flip and the bar at all, so without
- * this the meter divides by zero and reads empty for ever.
- */
-const MIN_CLOSENESS_SPAN = 2 * 0.51 - 1;
-
 /** What the races may read of the session: live closures, no copies. */
 export interface RacesHost {
   /** The session's per-state-version memo (Q1324). */
@@ -63,8 +54,6 @@ export interface RacesHost {
   /** The document as it stands, one entry per line. */
   currentLines(): readonly string[];
   constitution(): Constitution;
-  /** The bar as it stands, at the session's own last timestamp (SPEC §4.3). */
-  adoptionThreshold(): number;
   adoptionFloor(): number;
   /** The session's per-race fit cache, cleared by every fold that moves it. */
   fitCache(): Map<string, { key: string; fit: Fit }>;
@@ -126,15 +115,14 @@ export class Races {
     // **Waiting behind a park** (R-100): a text race whose leader would carry
     // this batch but whose footprint overlaps a standing park is passed over
     // by the sweep, and the view says so. The same two tests the sweep runs —
-    // `clearsBarAndFloor` and `overlapsPark` — so the flag and the batch
-    // cannot disagree about which race is waiting.
+    // `clearsFloor` and `overlapsPark` — so the flag and the batch cannot
+    // disagree about which race is waiting.
     const parks = this.parkedFootprints();
-    const threshold = this.host.adoptionThreshold();
     const floor = this.host.adoptionFloor();
     for (const members of groups.values()) {
       members.sort((a, b) => candidateNum(a) - candidateNum(b));
       const view = this.buildRaceView(members);
-      if (parks.length && this.clearsBarAndFloor(view, threshold, floor)) {
+      if (parks.length && this.clearsFloor(view, floor)) {
         view.blockedByPark = this.overlapsPark(this.host.candidate(view.leaderId!).footprint, parks);
       }
       views.push(view);
@@ -168,15 +156,33 @@ export class Races {
     const fit = this.fitRaceMembers(members, incumbentId);
     const usable = this.usableComparisons(members, incumbentId);
     const movers = new Set(usable.map((c) => c.participantId));
+    // **The top of the field, the current text among it** (Q1362, R-114): a
+    // race's field is its live candidates *and* the current text, a candidate
+    // authored by nobody and staked with nothing, and the document's text on
+    // a footprint is whichever of them the ranking puts on top. So the leader
+    // is the argmax of the *fitted strength* — the model's own ordering of the
+    // field — and not the argmax of P(beats the incumbent), which is the right
+    // statistic for a single challenger and the wrong one for a cyclic field:
+    // where rivals sit in a cycle the two orderings disagree, and only the
+    // strength ordering is the ranking's.
     let leaderId: string | null = null;
-    let leaderP: number | null = null;
+    let leaderStrength = -Infinity;
     for (const m of members) {
-      const p = fit.probBeats(m, incumbentId);
-      if (leaderP === null || p > leaderP) {
-        leaderP = p;
+      const s = fit.strengths.get(m) ?? 0;
+      if (s > leaderStrength) {
+        leaderStrength = s;
         leaderId = m;
       }
     }
+    // P(leader beats the current text): the record's number and the routing
+    // weight. It gates nothing since v0.128 (R-117 pins the bar).
+    const leaderP = leaderId === null ? null : fit.probBeats(leaderId, incumbentId);
+    // The other half of the adoption test (R-114): the leader's strength
+    // strictly greater than the current text's, which is to say the top of the
+    // whole field is not the current text. Equal strengths are a tie, and a
+    // tie leaves the current text standing — the one asymmetry that survives.
+    const leaderOnTop =
+      leaderId !== null && leaderStrength > (fit.strengths.get(incumbentId) ?? 0);
     const certification = leaderId === null ? null : 1 - (leaderP ?? 0.5);
     // **The floor counts judges of the winner** (Q1337, Ed 2026-09-11,
     // R-102). The moon room carried changes on 3 to 16 judgments in a room of
@@ -206,40 +212,15 @@ export class Races {
     const deadlocked =
       measured.length >= this.host.constitution().deadlockMinComparisons &&
       bestValue < this.host.constitution().deadlockEpsilon;
-    // closeness (stage 8): see RaceView — a magnitude with no sign. Built
-    // from leaderP alone: the fit's variance is not mirror-symmetric (the
-    // incumbent and the tie parameter sit differently in the Laplace
-    // covariance), so a statistic that leaned on it would carry a trace
-    // of direction. |2p − 1| is exactly invariant under p ↔ 1 − p.
-    //
-    // The denominator is floored (Q836). At a bar of exactly ½ the carry
-    // boundary sits *on* the coin flip, `2θ − 1` is 0, and the old guard
-    // returned 0 — so every race in a document at the minimum bar showed an
-    // empty meter for ever, whatever the room had measured, while the same
-    // posterior under a bar of 0.51 already clamped to full. 50 is the
-    // threshold input's own minimum and the natural answer to *the lowest bar
-    // you will accept*, so it is a value real documents hold. Of the two ways
-    // out — floor the span, or special-case θ = ½ onto the full [0, 1] scale —
-    // this is the floor, because it is continuous in θ and its blast radius is
-    // exactly nil: `max` picks `2θ − 1` for every bar the surface can express
-    // above the minimum, so only the singular point moves, and it moves to the
-    // reading its neighbour already gave.
-    const span = Math.max(2 * this.host.adoptionThreshold() - 1, MIN_CLOSENESS_SPAN);
-    const barCloseness = leaderP === null ? 0
-      : Math.max(0, Math.min(1, Math.abs(2 * leaderP - 1) / span));
-    // **The lesser of two distances** (Q1305, Ed 2026-09-10, R-101). A race
-    // resolves when its leader clears the bar *and* the floor is met (§4.2),
-    // so its closeness is the shorter of the two: the bar's, above, and the
-    // floor's — judges of the leader over F (Q1337: the floor the batch
-    // tests, so the meter cannot read full while the leader has one judge).
-    // The bar's alone was full at birth: the author's derived preference
-    // (§3.3) fits p ≈ 0.8 before anybody has judged, which is past the span
-    // of a bar of 60 and 99% of a bar of 80, so the meter had nowhere left to
-    // fill and only ever dipped. The author is one judge of their own text,
-    // so a newborn race reads 1/F and each new judge of the leader is a step.
-    // Nothing says which of the two is the shorter — a magnitude, as before.
-    const floorCloseness = Math.min(1, leaderJudges / Math.max(1, this.host.adoptionFloor()));
-    const closeness = Math.min(barCloseness, floorCloseness);
+    // **Progress toward the quorum** (Q1362 (c), Ed 2026-09-15, R-118): the
+    // leader's judges over the floor, clamped — voters so far over voters
+    // required, the one number the room controls. The lesser-of-two-distances
+    // reading (R-101) is superseded with the bar it measured against: there is
+    // no distance to a bar left to be the shorter of. Still a magnitude and
+    // never a direction (SPEC §8.3) — the count says how far the room has got,
+    // and nothing about which way it is going. A newborn race reads 1/F, its
+    // author being one judge of their own text, and each new judge is a step.
+    const closeness = Math.min(1, leaderJudges / Math.max(1, this.host.adoptionFloor()));
     return {
       id,
       members,
@@ -255,6 +236,7 @@ export class Races {
       leaderMeasured,
       leaderP,
       leaderId,
+      leaderOnTop,
       certification,
       deadlocked,
       rivalGateOpen,
@@ -278,18 +260,19 @@ export class Races {
   }
 
   /**
-   * **Ready to carry** (SPEC §4.2): the leader clears the bar, F distinct
-   * participants have judged *it* (Q1337, R-102 — never the race at large),
-   * and the room has judged it at least once — or, at E = 1, the author is
-   * the room (`soleMemberIsLeadersAuthor`). One function, read by the sweep's
-   * snapshot, by `finalRender` and by `races()`'s `blockedByPark`, so none
-   * can drift.
+   * **Ready to carry** (SPEC §4.2; Q1362 (a), R-114): the leader is on top of
+   * the field — the current text among it, and a tie leaving the current text
+   * standing — F distinct participants have judged *it* (Q1337, R-102 — never
+   * the race at large), and the room has judged it at least once, or, at
+   * E = 1, the author is the room (`soleMemberIsLeadersAuthor`). There is no
+   * bar: the threshold left the test at v0.128. One function, read by the
+   * sweep's snapshot, by `finalRender` and by `races()`'s `blockedByPark`, so
+   * none can drift.
    */
-  clearsBarAndFloor(r: RaceView, threshold: number, floor: number): boolean {
+  clearsFloor(r: RaceView, floor: number): boolean {
     return r.leaderJudges >= floor &&
       r.leaderId !== null &&
-      r.leaderP !== null &&
-      r.leaderP > threshold &&
+      r.leaderOnTop &&
       (r.leaderMeasured > 0 || this.host.soleMemberIsLeadersAuthor(r));
   }
 
@@ -298,10 +281,14 @@ export class Races {
    * challenger plausibly displaces the incumbent — posterior
    * P(challenger beats incumbent) above rivalGateProb on at least
    * rivalGateMinComparisons incumbent-involving comparisons (current
-   * ground). probBeats is the same posterior quantity the
-   * adoption-threshold gates, so the criterion needs no new machinery;
-   * the minimum-evidence clause exists because the no-data prior sits
-   * exactly at 0.5.
+   * ground). The minimum-evidence clause exists because the no-data prior
+   * sits exactly at 0.5.
+   *
+   * Since v0.128 (R-117) `rivalGateProb` of 0.5 makes this predicate the
+   * adoption predicate less the floor — *some challenger is preferred to the
+   * current text* — which is the intended reading of R-071 and not a
+   * coincidence: the gate asks whether displacement is plausible at all, and
+   * with the bar gone that question is the same question adoption asks.
    */
   private rivalGateOpen(
     fit: Fit,

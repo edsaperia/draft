@@ -53,8 +53,13 @@ export const DEFAULT_CONSTITUTION: Omit<
   Constitution,
   'windowStartMs' | 'windowEndMs' | 'rngSeed'
 > = {
-  adoptionThresholdStart: 0.6,
-  adoptionThresholdEnd: 0.95,
+  // **Pinned at ½** (Q1362 (b), Ed 2026-09-15, R-117): the adoption test is
+  // the top of the ranking with the floor met, so the ramp has nothing left to
+  // gate. Start and end equal means a flat bar whatever the clock does, which
+  // is what keeps the ramp machinery running harmlessly for the one release
+  // before the deletion pass takes it.
+  adoptionThresholdStart: 0.5,
+  adoptionThresholdEnd: 0.5,
   adoptionFloorMax: 12,
   quorum: null,
   deadlockMinComparisons: 20,
@@ -1522,14 +1527,17 @@ export class Session {
     ) {
       return;
     }
+    // The pinned bar (R-117): nothing gates on it, and `adopted` and
+    // `candidate-awaiting-assent` still record it, so no event shape moves.
     const threshold = this.adoptionThreshold(t);
     const floor = this.adoptionFloor();
     const ready = this.races()
-      // `clearsBarAndFloor` is the test, shared with `races()`'s
-      // `blockedByPark` (R-100). What it asks, and why:
-      .filter((r) => this.raceRules.clearsBarAndFloor(r, threshold, floor))
-          // Bar and floor, and then the helper's last clause, whose reason is
-          // long enough to keep here beside the batch it governs.
+      // `clearsFloor` is the test, shared with `races()`'s `blockedByPark`
+      // (R-100). What it asks, and why:
+      .filter((r) => this.raceRules.clearsFloor(r, floor))
+          // The top of the field and the floor, and then the helper's last
+          // clause, whose reason is long enough to keep here beside the batch
+          // it governs.
           // The room must have spoken here at least once: two rival authors
           // meet a floor of 2 on derived self-preferences alone, and the
           // old one-race trigger enforced this structurally (adoption fired
@@ -1543,9 +1551,9 @@ export class Session {
           // since the engine no longer serves them their own text against the
           // incumbent (R-062) the measurement it waits for can never arrive.
           // So the derived preference is both the floor and the room, and a
-          // sole member's proposal adopts on submission. The bar still
-          // applies: at θ = ½ the derived edge clears it, higher up it may
-          // not, and the ceiling `ceilingNote` names is unchanged.
+          // sole member's proposal adopts on submission — the one voice on
+          // the race puts it above the current text, which is the whole of
+          // the test since v0.128 (R-114).
           //
           // **And *the author is the room* is the whole of the exception**, so
           // it is asked of the leader and not of E alone. A candidate outlives
@@ -1797,9 +1805,11 @@ export class Session {
   // Dominated / bounty / backlog (SPEC §6.2, §8.3, §1)
 
   /**
-   * Candidates that look very unlikely to win (SPEC §6.2): the incumbent
-   * would clear the current adoption threshold against them, on real
-   * evidence.
+   * Candidates that look very unlikely to win (SPEC §6.2): ranked below the
+   * current text by the fit, on real evidence (five usable comparisons
+   * touching them), with no trajectory upward. At the pinned bar (R-117)
+   * `1 - threshold` is ½, so the test reads exactly that — the current text
+   * is the likelier of the pair — and the arithmetic is unchanged.
    */
   dominated(raceId: string, t: number = this.lastT): string[] {
     const race = this.races().find((r) => r.id === raceId);
@@ -1837,23 +1847,29 @@ export class Session {
    * the *undecided* set — the races that never resolved — read from the
    * verdicts the close recorded, since `races()` is then empty.
    */
-  backlog(t: number = this.lastT): Array<{ candidateId: string; raceId: string; score: number }> {
+  backlog(_t: number = this.lastT): Array<{ candidateId: string; raceId: string; score: number }> {
     const weights = this.salienceWeights();
-    const threshold = this.adoptionThreshold(t);
+    // **The peak itself is the closeness** (Q1362, R-117). It used to be
+    // `min(peakW / θ, 1)` — how far the candidate got toward the bar — and at
+    // a pinned ½ that divisor clamps every candidate the room ever preferred
+    // to the current text to exactly 1, flattening the ranking into salience
+    // alone. `peakW` is already on [0, 1] and already says how well a
+    // candidate was received at its best, which is what the backlog ranks by.
+    // The parameter survives because callers time the read; nothing in the
+    // score reads the clock now.
     const out: Array<{ candidateId: string; raceId: string; score: number }> = [];
     if (this.closedFlag) {
       for (const e of this.log) {
         if (e.event.type !== 'candidate-undecided') continue;
         const c = this.candidate(e.event.id);
-        const closeness = Math.min(c.peakW / threshold, 1);
         out.push({ candidateId: e.event.id, raceId: e.event.raceId,
-          score: closeness * (weights.get(e.event.raceId) ?? 1) });
+          score: c.peakW * (weights.get(e.event.raceId) ?? 1) });
       }
     } else {
       for (const r of this.races()) {
         for (const m of r.members) {
-          const closeness = Math.min(this.candidate(m).peakW / threshold, 1);
-          out.push({ candidateId: m, raceId: r.id, score: closeness * (weights.get(r.id) ?? 1) });
+          out.push({ candidateId: m, raceId: r.id,
+            score: this.candidate(m).peakW * (weights.get(r.id) ?? 1) });
         }
       }
     }
@@ -1866,14 +1882,13 @@ export class Session {
   // Close and render (SPEC §4.2, §9.2)
 
   /**
-   * Render each race to its posterior leader among threshold-clearing,
-   * floor-satisfying candidates; ties and ordering break by hash.
-   * Uses the last event's time (normally the close) for the threshold.
+   * Render each race to the top of its field, where the top is not the
+   * current text and the floor is met; ties and ordering break by hash.
    */
   finalRender(): {
     text: string;
     applied: string[];
-    /** Setting races whose leader cleared bar and floor at the close (Q390) — reported for the host to apply, never applied here. */
+    /** Setting races whose leader was ready to carry at the close (Q390) — reported for the host to apply, never applied here. */
     appliedSettings: Array<{ settingId: string; candidateId: string }>;
   } {
     // After the close (SPEC §4.6) the final batch already ran: the document
@@ -1891,14 +1906,14 @@ export class Session {
       return { text: this.document(), applied, appliedSettings };
     }
     const races = this.races();
-    const threshold = this.adoptionThreshold();
     const floor = this.adoptionFloor();
     const winners: Candidate[] = [];
     const appliedSettings: Array<{ settingId: string; candidateId: string }> = [];
     for (const r of races) {
-      // the batch's own test (Q1337): bar, F judges of the leader, and the
-      // room having judged it — the close renders nothing the sweep would not
-      if (!this.raceRules.clearsBarAndFloor(r, threshold, floor)) continue;
+      // the batch's own test (Q1337, R-114): the top of the field, F judges of
+      // the leader, and the room having judged it — the close renders nothing
+      // the sweep would not
+      if (!this.raceRules.clearsFloor(r, floor)) continue;
       if (r.settingId !== undefined) {
         appliedSettings.push({ settingId: r.settingId, candidateId: r.leaderId! });
         continue;
@@ -2017,7 +2032,6 @@ export class Session {
       settingStanding: (settingId) => this.settingsMap.get(settingId),
       currentLines: () => this.currentLines(),
       constitution: () => this.constitutionValue,
-      adoptionThreshold: () => this.adoptionThreshold(),
       adoptionFloor: () => this.adoptionFloor(),
       fitCache: () => this.fitCache,
       maxPairValue: (fit, members, incumbentId, excludeJudgedBy, rivalGateOpen) =>

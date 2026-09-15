@@ -38,15 +38,19 @@ function openWide(): Session {
 }
 
 /**
- * A session whose bar is out of reach, for tests whose subject is not
+ * A session whose **floor** is out of reach, for tests whose subject is not
  * adoption. Since SPEC v0.16 a submission carries its author's own recorded
  * preference (§3.3) and the author counts toward the floor (§8.2), so a small
- * race left to itself now reaches both and resolves out from under whatever
- * the test was actually exercising. Holding the bar at 0.999 says "not about
- * adoption" in one place instead of scattering timestamps.
+ * race left to itself reaches the floor and resolves out from under whatever
+ * the test was actually exercising.
+ *
+ * It held the *bar* at 0.999 until v0.128 (Q1362 (a), R-114): with the bar
+ * gone the floor is the only thing that holds a supported race open, so a
+ * quorum of 99 in a room of five says "not about adoption" in the one place
+ * the rule still reads.
  */
 function openHeld(): Session {
-  return openSession({ adoptionThresholdStart: 0.999, adoptionThresholdEnd: 0.999 });
+  return openSession({ quorum: { form: 'count', n: 99 } });
 }
 
 /** Replace line `line` with `text` (single-hunk rewrite). */
@@ -163,12 +167,13 @@ describe('session lifecycle', () => {
   });
 
   it('enforces the moves: no self-pairs, revision supersedes, the composer costs nothing', () => {
-    // Late in the window, so the ≈0.95 bar keeps the race open while the
-    // moves are exercised: since SPEC v0.16 each submission carries its
-    // author's own recorded preference, so an early-window race of this
-    // size would adopt out from under the test.
+    // The floor keeps the race open while the moves are exercised: since SPEC
+    // v0.16 each submission carries its author's own recorded preference, so a
+    // race of this size would otherwise adopt out from under the test. It was
+    // held late in the window for the ≈0.95 bar until v0.128 (R-114); the
+    // clock no longer holds anything, so `openHeld` does.
     const t0 = 10 * HOUR;
-    const s = openSession();
+    const s = openHeld();
     const { id: c1 } = s.submitCandidate(t0 + 1000, {
       author: 'p1',
       patch: rewrite(0, 1, 'A.'),
@@ -399,19 +404,24 @@ describe('session lifecycle', () => {
     expect(s.getCandidate(c2).state).not.toBe('adopted');
   });
 
-  it('raises the bar over the window: identical evidence adopts early, not late', () => {
+  it('the clock no longer moves the test: identical evidence adopts early and late alike', () => {
+    // **The ramp is retired** (Q1362 (b), Ed 2026-09-15, R-117). Until v0.128
+    // this read *raises the bar over the window*: the same two wins carried an
+    // early race and not a late one, which was the whole of what the ramp did.
+    // Adoption is now the top of the ranking with the floor met, and neither
+    // reads the clock, so the same evidence carries at either end of the
+    // window — and the pinned bar is the same number at both.
     const judgeTwice = (s: Session, c: string, t0: number): boolean => {
       const inc = s.raceOf(c).incumbentId;
-      // Stops at the first adoption: the author is already a mover, so an
-      // early race can meet floor and bar on the first judgment, and a second
-      // would be cast into a race that has closed.
+      // Stops at the first adoption: the author is already a mover, so a race
+      // can meet the floor on the first judgment, and a second would be cast
+      // into a race that has closed.
       for (const [i, judge] of ['p2', 'p3'].entries()) {
         const events = s.judge(t0 + i * 1000, judge, c, inc, 'a');
         if (events.some((e) => e.type === 'adopted')) return true;
       }
       return false;
     };
-    // Early: threshold ≈ 0.60 — two clean wins clear it.
     const early = openSession();
     const { id: cE } = early.submitCandidate(1000, {
       author: 'p1',
@@ -419,15 +429,15 @@ describe('session lifecycle', () => {
       rationale: 'r',
     });
     expect(judgeTwice(early, cE, 2000)).toBe(true);
-    // Late: same two wins against a ≈0.95 bar do not.
     const late = openSession();
     const { id: cL } = late.submitCandidate(1000, {
       author: 'p1',
       patch: rewrite(0, 1, 'A.'),
       rationale: 'r',
     });
-    expect(judgeTwice(late, cL, 10 * HOUR)).toBe(false);
-    expect(late.adoptionThreshold()).toBeCloseTo(0.95, 6);
+    expect(judgeTwice(late, cL, 10 * HOUR)).toBe(true);
+    expect(late.adoptionThreshold()).toBeCloseTo(0.5, 6);
+    expect(late.adoptionThreshold(0)).toBe(late.adoptionThreshold(10 * HOUR));
   });
 
   it('recomputes the floor when the roster changes, and blocks removed participants', () => {
@@ -590,19 +600,22 @@ describe('session lifecycle', () => {
    */
   it('deals races by value alone: closest to sealing first, never least-measured first', () => {
     const room = (hotSetSize: number) => {
-      const s = openSession({
-        // bar out of reach, so the evidenced races stay live and hot
-        adoptionThresholdStart: 0.999, adoptionThresholdEnd: 0.999,
-        hotSetSize, explorationEvery: 1_000_000,
-      }, 12); // floor 4
+      const s = openSession({ hotSetSize, explorationEvery: 1_000_000 }, 12); // floor 4
       const { id: cA } = s.submitCandidate(1000, {
         author: 'p1', patch: rewrite(0, 1, 'A.'), rationale: 'r' });
       const { id: cB } = s.submitCandidate(2000, {
         author: 'p2', patch: rewrite(0, 2, 'B.'), rationale: 'r' });
-      // four judges each: both races meet the floor and carry real evidence
+      // Four judges each, **and the room divided** (1 for, 3 against beside
+      // each author's own preference): both races are past the floor and carry
+      // real evidence, and a divided room is what leaves them live now that
+      // the bar is gone (Q1362, R-114) — until v0.128 the pair were unanimous
+      // and a bar of 0.999 held them. What the feed is being asked is
+      // unchanged: two heavily judged races against two the reader has never
+      // been asked about.
       for (const [i, p] of ['p3', 'p4', 'p5', 'p6'].entries()) {
-        s.judge(3000 + 2 * i, p, cA, s.raceOf(cA).incumbentId, 'a');
-        s.judge(3001 + 2 * i, p, cB, s.raceOf(cB).incumbentId, 'a');
+        const v = i === 0 ? 'a' : 'b';
+        s.judge(3000 + 2 * i, p, cA, s.raceOf(cA).incumbentId, v);
+        s.judge(3001 + 2 * i, p, cB, s.raceOf(cB).incumbentId, v);
       }
       // C: no measured comparisons, floor unmet; D: one judgment for it
       const { id: cC } = s.submitCandidate(5000, {
@@ -613,7 +626,11 @@ describe('session lifecycle', () => {
       const race = (id: string) => s.raceOf(id);
       expect(race(cD).comparisons).toBeGreaterThan(race(cC).comparisons);
       expect(race(cD).leaderP!).toBeGreaterThan(race(cC).leaderP!);
-      expect(race(cA).leaderP!).toBeGreaterThan(race(cD).leaderP!);
+      // A is the heavily judged race the room has turned against, so its
+      // leader prices below a fresh one — and it is past the floor, so it
+      // takes no unheard boost. That is the ordering under test.
+      expect(race(cA).leaderP!).toBeLessThan(race(cD).leaderP!);
+      expect(race(cA).leaderJudges).toBeGreaterThanOrEqual(s.adoptionFloor());
       return { s, raceA: race(cA).id, raceB: race(cB).id, raceC: race(cC).id, raceD: race(cD).id, cA };
     };
 
@@ -932,9 +949,11 @@ describe('ground shifts lock judgments and re-serve pairs (SPEC §4.4, Q50)', ()
 });
 
 describe('rival-pair gating (SPEC §8.3, Q48)', () => {
-  /** Freeze the threshold out of reach so no adoption interferes. */
-  const openGated = () =>
-    openSession({ adoptionThresholdStart: 0.99, adoptionThresholdEnd: 0.99 });
+  /**
+   * Hold the floor out of reach so no adoption interferes. It froze the
+   * threshold at 0.99 until v0.128, when the bar left the test (R-114).
+   */
+  const openGated = () => openSession({ quorum: { form: 'count', n: 99 } });
 
   const twoRivals = (s: Session) => {
     const { id: c1 } = s.submitCandidate(1000, {
@@ -1106,7 +1125,9 @@ describe('ParticipantApi.outcomes (stage 8): resolutions are public, nothing els
     const out = new ParticipantApi(s, 'p5').outcomes();
     expect(out.map((o) => [o.candidateId, o.outcome])).toEqual([[c3, 'retired'], [c1, 'adopted']]);
     expect(out[1]!.p).toBeGreaterThan(0.5);
-    expect(out[1]!.threshold).toBeGreaterThan(0);
+    // the bar the adoption was recorded under: pinned at ½ since v0.128
+    // (R-117) and still on every `adopted` event, so no log shape moves
+    expect(out[1]!.threshold).toBe(0.5);
     expect(JSON.stringify(out)).not.toContain('refund');
   });
 });
@@ -1199,16 +1220,22 @@ describe('stage 8 follow-up: closeness, urgency, the record and the wallet clock
 
 describe('the close (SPEC §4.6)', () => {
   it('the clock closes the document at the window end, running one last batch', () => {
-    // The ramp is high early and low at the end: two clean wins clear the
-    // bar only once the window has run, so the candidate is still live when
-    // the clock reaches the close — which is where the final batch adopts it.
-    const s = openSession({ adoptionThresholdStart: 0.999, adoptionThresholdEnd: 0.55 });
-    const { id } = s.submitCandidate(1000, { author: 'p1', patch: rewrite(0, 0, 'Open.'),
-      rationale: 'r' });
+    // **The cooldown is the brake** (Q1362, R-116). A ramp high early and low
+    // at the end held this candidate back until v0.128; with the bar gone the
+    // cooldown is what leaves a ready race still waiting when the clock runs
+    // out, and the close's batch runs regardless of it (§4.6) — which is the
+    // thing under test. One adoption starts the cooldown clock.
+    const s = openSession({ cooldownMs: 24 * HOUR });
+    const { id: first } = s.submitCandidate(400, { author: 'p1',
+      patch: rewrite(0, 1, 'Membership is open to all comers.'), rationale: 'r' });
+    s.judge(500, 'p2', first, s.raceOf(first).incumbentId, 'a');
+    expect(s.getCandidate(first).state).toBe('adopted');
+    const { id } = s.submitCandidate(1000, { author: 'p1',
+      patch: rewrite(s.currentVersion(), 0, 'Open.'), rationale: 'r' });
     const inc = s.raceOf(id).incumbentId;
     s.judge(2000, 'p2', id, inc, 'a');
     s.judge(3000, 'p3', id, inc, 'a');
-    expect(s.getCandidate(id).state).toBe('live'); // the early bar held it back
+    expect(s.getCandidate(id).state).toBe('live'); // the cooldown held it back
     expect(s.dueToClose(10 * 3600_000)).toBe(true);
     s.tick(10 * 3600_000); // the clock reaches the end
     expect(s.closed).toBe(true);
@@ -1220,7 +1247,7 @@ describe('the close (SPEC §4.6)', () => {
   });
 
   it('records the undecided third outcome, and refuses moves afterwards', async () => {
-    const s = openHeld(); // bar ≈ 0.999, nothing clears
+    const s = openHeld(); // the floor is out of reach, so nothing carries
     const { id } = s.submitCandidate(1000, { author: 'p1', patch: rewrite(0, 0, 'X.'),
       rationale: 'r' });
     const inc = s.raceOf(id).incumbentId;
@@ -1357,20 +1384,15 @@ describe('a refused event never reaches the log (Q679)', () => {
  * proposal adopts on submission — which is what this block now pins, in
  * both directions: the adoption, and the card that is never served.
  *
- * The two Q836 meter cases below are about the **bar**, not the room, and
- * take a second member so the race they measure still exists to be read.
+ * The meter case below is about the **floor**, not the room, and takes a
+ * second member so the race it measures still exists to be read. (Two Q836
+ * cases about the bar's span stood here until v0.128 and went with the span
+ * itself — R-117, R-118.)
  */
 describe('a document of one (Q837, backlog 253)', () => {
-  const atBar = (bar: number, size: number) =>
-    openSession(
-      {
-        adoptionThresholdStart: bar,
-        adoptionThresholdEnd: bar,
-        quorum: { form: 'count', n: 1 },
-      },
-      size,
-    );
-  const solo = () => atBar(0.5, 1);
+  const roomOf = (size: number) =>
+    openSession({ quorum: { form: 'count', n: 1 } }, size);
+  const solo = () => roomOf(1);
   const propose = (s: Session) =>
     s.submitCandidate(1000, {
       author: 'p1',
@@ -1402,7 +1424,7 @@ describe('a document of one (Q837, backlog 253)', () => {
    * into, so a `raceId` returned regardless would name a race `raceOf` throws
    * on — a promise the return value cannot honour. Both directions are pinned
    * here because a test of the null branch alone is half a test: E is the only
-   * thing that differs between the two, the bar being 0.5 in both.
+   * thing that differs between the two.
    */
   it('the handle names no race where the sweep has just dissolved it', () => {
     const s = solo();
@@ -1417,74 +1439,39 @@ describe('a document of one (Q837, backlog 253)', () => {
     expect(s.getCandidate(id).state).toBe('adopted');
   });
 
-  it('and names the race where it survives — at E > 1, on the same bar', () => {
+  it('and names the race where it survives — at E > 1, where the room has not spoken', () => {
     // two voices, so the room gate (`comparisons > 0`) is not bypassed and the
     // sweep adopts nothing: the race the submission made is still standing
-    const s = atBar(0.5, 2);
+    const s = roomOf(2);
     const { id, raceId } = propose(s);
     expect(s.getCandidate(id).state).toBe('live');
     expect(raceId).toBe(s.raceOf(id).id);
   });
 
-  it('above the ceiling it stays live, and the author is still never served it', () => {
-    // a room of one tops out at 0.798 (Q840), so a bar of 0.9 is one the
-    // sole member's own voice cannot carry — the candidate simply waits
-    const s = atBar(0.9, 1);
+  it('the ceiling holds nothing back any more: the sole member carries it whatever the fit reaches', () => {
+    // A room of one tops out at 0.798 (Q840), and until v0.128 a bar of 0.9
+    // was therefore one the sole member's own voice could never carry — the
+    // candidate simply waited, for ever. There is no bar (Q1362 (b), R-117):
+    // the leader is the top of the field, the floor of one is met, and it
+    // carries on submission like any other sole member's proposal.
+    const s = roomOf(1);
     const { id } = propose(s);
-    expect(s.getCandidate(id).state).toBe('live');
-    const inc = s.raceOf(id).incumbentId;
-    // no edge pair, no exploration card, nothing: the only pair in the
-    // document is the author's own text against the incumbent
+    expect(s.getCandidate(id).state).toBe('adopted');
+    // and nobody was asked anything on the way (R-062)
     for (const t of [2000, 3000, 4000]) expect(s.feed('p1', 3, t)).toHaveLength(0);
-    // an explicit judgment is still legal and still counts (R-062) — it just
-    // cannot clear a bar the room's own unanimous fit does not reach
-    const judged = s.judge(HOUR, 'p1', id, inc, 'a').map((e) => e.type);
-    expect(judged).toContain('comparison');
-    expect(judged).not.toContain('adopted');
   });
 
-  it('the meter reads a real fraction at a bar of exactly 50% (Q836)', () => {
-    const s = atBar(0.5, 2);
-    const { id } = propose(s);
-    // before the floor was put on the span this was identically 0, whatever
-    // the posterior — the whole document read as an empty bar for ever
-    expect(s.raceOf(id).closeness).toBeGreaterThan(0);
-    // and it reads as the lowest bar the surface can express above the coin
-    // flip does, rather than as its own singular point
-    const nudged = atBar(0.51, 2);
-    propose(nudged);
-    expect(s.raceOf(id).closeness).toBeCloseTo(nudged.races()[0]!.closeness, 10);
-  });
-
-  it('a bar above the coin flip is untouched by the floor', () => {
-    // `max` picks the real span for every threshold the surface can set above
-    // the minimum, so nothing else on the surface moves: at 0.9 the bar's
-    // reading is still |2p − 1| / (2θ − 1) exactly, unclamped — read here
-    // once the adoption floor is met, so the floor's own distance is 1
-    const s = openSession({ adoptionThresholdStart: 0.9, adoptionThresholdEnd: 0.9 }, 5);
-    const { id } = s.submitCandidate(1000, {
-      author: 'p1', patch: rewrite(0, 1, 'Membership needs a sponsor.'), rationale: 'r',
-    });
-    const inc = s.raceOf(id).incumbentId;
-    s.judge(2000, 'p2', id, inc, 'a'); // the author and one judge: F = 2 at E = 5
-    const race = s.raceOf(id);
-    expect(race.distinctMovers).toBeGreaterThanOrEqual(s.adoptionFloor());
-    const want = Math.abs(2 * (race.leaderP as number) - 1) / (2 * 0.9 - 1);
-    expect(want).toBeLessThan(1);
-    expect(race.closeness).toBeCloseTo(want, 10);
-  });
-
-  it('closeness is the lesser of the distance to the bar and to the floor (Q1305, R-101)', () => {
-    // a room of sixteen: F = 6. The author's derived preference alone fits
-    // p ≈ 0.8, past the span of a bar of 60 — so on the bar's distance alone
-    // a newborn race read full, and Ed's wash had nowhere to fill (Q1305).
-    const s = openSession({ adoptionThresholdStart: 0.6, adoptionThresholdEnd: 0.6 }, 16);
+  it('closeness is the leader’s judges over the floor (Q1362 (c), R-118)', () => {
+    // a room of sixteen: F = 6. It was the lesser of two distances until
+    // v0.128 (R-101) — the bar's and the floor's — and the bar's half went
+    // with the bar. What is left is the half Ed's wash always wanted: the
+    // author's derived preference alone is one judge of six.
+    const s = openSession({}, 16);
     const { id } = s.submitCandidate(1000, {
       author: 'p1', patch: rewrite(0, 1, 'Membership needs a sponsor.'), rationale: 'r',
     });
     const inc = s.raceOf(id).incumbentId;
     const born = s.raceOf(id);
-    expect(Math.abs(2 * (born.leaderP as number) - 1) / (2 * 0.6 - 1)).toBeGreaterThanOrEqual(1);
     expect(s.adoptionFloor()).toBe(6);
     expect(born.closeness).toBeCloseTo(1 / 6, 10);      // one mover of six
     // each new judge is one step of the floor's distance, whichever way they vote
@@ -1495,6 +1482,176 @@ describe('a document of one (Q837, backlog 253)', () => {
     // and a judge who has already moved is not a second mover
     s.judge(4000, 'p3', id, inc, 'a');
     expect(s.raceOf(id).closeness).toBeCloseTo(3 / 6, 10);
+  });
+});
+
+/**
+ * **The status quo is a peer** (Q1362 (a), Ed 2026-09-15; SPEC §4.2, R-114).
+ * A race's field is its live candidates *and* the current text, authored by
+ * nobody and staked with nothing; the document's text on a footprint is
+ * whichever of them the ranking puts on top, once the floor is met. There is
+ * no bar. A tie leaves the current text standing — the one asymmetry left.
+ *
+ * The six cases here are the rule itself: the tie, the two sides of a strict
+ * majority, the cycle the ruling accepted as a property, the statistic the
+ * leader is read off, and the two numbers that changed with it.
+ */
+describe('the text is the top of the ranking (Q1362, R-114)', () => {
+  /** Who each cast judgment on this pair went to, ids only. */
+  const winnersOn = (s: Session, a: string, b: string): string[] =>
+    s.judgments()
+      .filter((j) => [j.aId, j.bId].includes(a) && [j.aId, j.bId].includes(b))
+      .map((j) => (j.outcome === 'tie' ? 'tie' : j.outcome === 'a' ? j.aId : j.bId));
+
+  it('one for and one against is a tie, and a tie leaves the current text standing', () => {
+    // The author's own derived preference (§3.3) is the one for; p2 is the one
+    // against. Two voices, exactly opposed: the fit centres both strengths on
+    // zero, so neither is on top and nothing carries — though the floor of two
+    // is met and the room has measured the race.
+    const s = openSession();
+    const { id } = s.submitCandidate(1000, {
+      author: 'p1', patch: rewrite(0, 1, 'A.'), rationale: 'r',
+    });
+    const inc = s.raceOf(id).incumbentId;
+    s.judge(2000, 'p2', id, inc, 'b');
+    const race = s.raceOf(id);
+    expect(race.leaderJudges).toBeGreaterThanOrEqual(s.adoptionFloor());
+    expect(race.leaderMeasured).toBeGreaterThan(0);
+    const fit = s.raceFit(race.id);
+    expect(fit.strengths.get(id)).toBe(fit.strengths.get(inc)); // exactly equal
+    expect(race.leaderOnTop).toBe(false);
+    expect(s.getCandidate(id).state).toBe('live');
+  });
+
+  it('eight for and seven against carries; seven for and eight against does not', () => {
+    // A room of fifteen, the author's derived preference the first voice for.
+    // The floor is held out of reach while the room votes and dropped at the
+    // end, so the batch decides on the finished tally rather than on whatever
+    // was true after some particular vote — a race is otherwise carried by the
+    // first majority that passes through it, which is the cooldown's business
+    // and not this rule's.
+    const run = (forVotes: number) => {
+      const s = openSession({ quorum: { form: 'count', n: 99 } }, 15);
+      const { id } = s.submitCandidate(1000, {
+        author: 'p1', patch: rewrite(0, 1, 'A.'), rationale: 'r',
+      });
+      const inc = s.raceOf(id).incumbentId;
+      let t = 2000;
+      for (let i = 2; i <= 15; i++) {
+        s.judge((t += 100), `p${i}`, id, inc, i <= forVotes ? 'a' : 'b');
+      }
+      expect(s.raceOf(id).leaderOnTop).toBe(forVotes === 8);
+      s.amend((t += 100), { quorum: null });
+      s.tick(t + 100);
+      return s.getCandidate(id).state;
+    };
+    expect(run(8)).toBe('adopted');
+    expect(run(7)).toBe('live');
+  });
+
+  it('a cycle carries a candidate a direct majority preferred the current text to', () => {
+    // **The accepted property** (ruling (a), recorded, not a bug). Y beats X,
+    // X beats the current text easily, and the current text beats Y 8–7 head
+    // to head — and the model, weighing the evidence as a whole, still puts Y
+    // on top of the field. The floor is held out of reach while the room
+    // judges, then dropped, so the batch decides on the finished evidence
+    // rather than on whatever was true after some particular vote.
+    const s = openSession({ quorum: { form: 'count', n: 99 } }, 16);
+    const { id: x } = s.submitCandidate(1000, {
+      author: 'p1', patch: rewrite(0, 1, 'X.'), rationale: 'r' });
+    const { id: y } = s.submitCandidate(1100, {
+      author: 'p2', patch: rewrite(0, 1, 'Y.'), rationale: 'r' });
+    const inc = s.raceOf(x).incumbentId;
+    let t = 2000;
+    const seats = (n: number, from: number) =>
+      Array.from({ length: n }, (_, i) => `p${from + i}`);
+    for (const p of seats(7, 3)) s.judge((t += 10), p, y, x, 'a');    // Y over X, 7
+    for (const p of seats(7, 3)) s.judge((t += 10), p, x, inc, 'a');  // X over the text, 7
+    for (const p of seats(8, 3)) s.judge((t += 10), p, inc, y, 'a');  // the text over Y, 8
+    for (const p of seats(6, 11)) s.judge((t += 10), p, y, inc, 'a'); // Y over the text, 6
+    // the direct pair, as the room actually cast it: eight for the current
+    // text against six for Y, the author's derived preference the seventh
+    const direct = winnersOn(s, y, inc);
+    expect(direct.filter((w) => w === inc)).toHaveLength(8);
+    expect(direct.filter((w) => w === y)).toHaveLength(6);
+    const race = s.raceOf(y);
+    const fit = s.raceFit(race.id);
+    const str = (id: string) => fit.strengths.get(id) as number;
+    expect(str(y)).toBeGreaterThan(str(x));
+    expect(str(x)).toBeGreaterThan(str(inc));
+    expect(race.leaderId).toBe(y);
+    expect(race.leaderOnTop).toBe(true);
+    // and with the floor back within reach the batch carries Y
+    s.amend((t += 10), { quorum: null });
+    s.tick(t + 10);
+    expect(s.getCandidate(y).state).toBe('adopted');
+    expect(s.document()).toContain('Y.');
+  });
+
+  it('the leader is the top of the ranking, not the likeliest to beat the current text', () => {
+    // **The statistic matters** (§1's *implementation of "on top"*). X is
+    // judged three times and wins all three; Y is judged sixteen times and
+    // wins twelve. X's fitted strength is the higher — it is the top of the
+    // field — while P(beats the current text) is *higher for Y*, because Y's
+    // posterior is far tighter. Until v0.128 the leader was argmax of that
+    // probability, so this race would have carried Y; the ranking's own
+    // ordering carries X.
+    const s = openSession({ quorum: { form: 'count', n: 99 } }, 20);
+    const { id: x } = s.submitCandidate(1000, {
+      author: 'p1', patch: rewrite(0, 1, 'X.'), rationale: 'r' });
+    const { id: y } = s.submitCandidate(1100, {
+      author: 'p2', patch: rewrite(0, 1, 'Y.'), rationale: 'r' });
+    const inc = s.raceOf(x).incumbentId;
+    let t = 2000;
+    for (const p of ['p3', 'p4', 'p5']) s.judge((t += 10), p, x, inc, 'a');
+    for (let i = 0; i < 16; i++) {
+      s.judge((t += 10), `p${i + 3}`, y, inc, i < 12 ? 'a' : 'b');
+    }
+    const race = s.raceOf(x);
+    const fit = s.raceFit(race.id);
+    expect(fit.strengths.get(x) as number).toBeGreaterThan(fit.strengths.get(y) as number);
+    expect(fit.probBeats(y, inc)).toBeGreaterThan(fit.probBeats(x, inc));
+    expect(race.leaderId).toBe(x);
+    expect(race.leaderP).toBeCloseTo(fit.probBeats(x, inc), 12);
+  });
+
+  it('Indifferent counts toward the floor: the member was asked, and answered', () => {
+    // Ruling (d). A room of five, F = 2: the author's derived preference and
+    // one member who answered *Indifferent* meet it, and the proposal carries.
+    const s = openSession();
+    const { id } = s.submitCandidate(1000, {
+      author: 'p1', patch: rewrite(0, 1, 'A.'), rationale: 'r',
+    });
+    const inc = s.raceOf(id).incumbentId;
+    expect(s.adoptionFloor()).toBe(2);
+    expect(s.raceOf(id).leaderJudges).toBe(1); // the author alone
+    const events = s.judge(2000, 'p2', id, inc, 'tie').map((e) => e.type);
+    expect(events).toContain('adopted');
+    expect(s.getCandidate(id).state).toBe('adopted');
+  });
+
+  it('the backlog ranks by the peak a candidate reached, not by its distance to a bar', () => {
+    // `min(peakW / θ, 1)` divided by a bar that is now a pinned ½, so every
+    // candidate the room ever preferred to the current text clamped to 1 and
+    // the ranking flattened into salience alone (R-117). The peak is the
+    // score now. Both candidates sit in one race, so they share a salience
+    // weight and the ratio of their scores is the ratio of their peaks.
+    const s = openHeld();
+    const { id: x } = s.submitCandidate(1000, {
+      author: 'p1', patch: rewrite(0, 1, 'X.'), rationale: 'r' });
+    const { id: y } = s.submitCandidate(1100, {
+      author: 'p2', patch: rewrite(0, 1, 'Y.'), rationale: 'r' });
+    const inc = s.raceOf(x).incumbentId;
+    s.judge(2000, 'p3', y, inc, 'a');            // Y's high-water mark
+    s.judge(3000, 'p3', y, inc, 'b');            // and the room turning on it
+    s.judge(4000, 'p4', y, inc, 'b');
+    for (const p of ['p3', 'p4', 'p5']) s.judge(5000 + Number(p[1]), p, x, inc, 'a');
+    const peak = (id: string) => s.getCandidate(id).peakW;
+    expect(peak(x)).toBeGreaterThan(peak(y));
+    expect(peak(y)).toBeGreaterThan(0.5); // both clamped to 1 under the old arithmetic
+    const backlog = s.backlog();
+    expect(backlog.map((b) => b.candidateId)).toEqual([x, y]);
+    expect(backlog[0]!.score / backlog[1]!.score).toBeCloseTo(peak(x) / peak(y), 10);
   });
 });
 

@@ -376,7 +376,9 @@ describe('promise 7 — exile and resignation are immediate, and standing answer
     const constitution = makeConstitution({
       windowStartMs: 0, windowEndMs: 10 * 3600_000, rngSeed: 'promise-register',
       tokenDripMinutes: 60, cooldownMs: 0,
-      adoptionThresholdStart: 0.999, adoptionThresholdEnd: 0.999,
+      // the floor out of reach, so the race is still standing to be read after
+      // the removal; a bar of 0.999 held it until v0.128 (Q1362, R-117)
+      quorum: { form: 'count', n: 99 },
     });
     const roster = ['p1', 'p2', 'p3', 'p4', 'p5']
       .map((id) => ({ id, handle: id.toUpperCase() }));

@@ -15,9 +15,15 @@ import type { Outcome } from './ranking/types.js';
 
 export interface Constitution {
   /**
-   * The adoption threshold — the confidence bar a challenger must clear —
-   * ramps smoothly from start to end over [windowStartMs, windowEndMs],
-   * the session clock (SPEC §4.3).
+   * The adoption threshold — the confidence bar a challenger's win-probability
+   * had to clear — ramps smoothly from start to end over [windowStartMs,
+   * windowEndMs], the session clock (SPEC §4.3).
+   *
+   * **Pinned at 0.5 since v0.128** (Q1362 (b), R-117): adoption is the top of
+   * the ranking with the floor met, so nothing gates on the bar any more. The
+   * ramp, its re-anchoring and this pair of fields stay for one release —
+   * every live log carries them and `adopted` still records the value — and
+   * the deletion pass removes them.
    */
   adoptionThresholdStart: number;
   adoptionThresholdEnd: number;
@@ -251,28 +257,42 @@ export interface RaceView {
    * E = 1 (`soleMemberIsLeadersAuthor`).
    */
   leaderMeasured: number;
-  /** P(leader beats incumbent) for the best live challenger, if any. */
+  /**
+   * P(leader beats incumbent) for the leading live challenger, if any. The
+   * record's number and the routing weight; it gates nothing since v0.128
+   * (Q1362 (b), R-117).
+   */
   leaderP: number | null;
+  /**
+   * The leading challenger by *fitted strength* (SPEC §4.2; Q1362 (a),
+   * R-114) — the ranking's own ordering of the field, which is the statistic
+   * the peer status quo needs. Null while the race has no live member.
+   */
   leaderId: string | null;
+  /**
+   * **The leader is the top of the field** (SPEC §4.2; Q1362 (a), R-114): the
+   * leader's fitted strength is strictly greater than the current text's, the
+   * current text being a candidate in the field like any other. False on a
+   * tie, which leaves the current text standing, and false where there is no
+   * leader. With the floor and the measured clause this is the whole adoption
+   * test (`clearsFloor`).
+   */
+  leaderOnTop: boolean;
   /** P(incumbent beats best live challenger) — certification (SPEC §4.4). */
   certification: number | null;
   deadlocked: boolean;
   /**
    * Closeness to resolution as a magnitude, never a direction (SPEC §8.3:
-   * "closeness-to-resolution as a single number"): the lesser of the two
-   * distances a race must cover to resolve (R-101). The bar's — how far the
-   * room's evidence has moved the leader from a coin flip, scaled so the
-   * carry boundary is 1: |2p − 1| / (2θ − 1) with p = P(leader beats
-   * incumbent) and θ the adoption threshold now, clamped to [0, 1] — and the
-   * floor's, distinct movers over F (§4.2). A fresh race sits at 1/F (its
-   * author is one mover); a race about to carry and a race the incumbent is
-   * about to see off both read 1 once the floor is met, because |2p − 1| is
-   * exactly invariant under p ↔ 1 − p — the number cannot be inverted into
-   * "which way", and nothing says which of the two distances is the shorter.
-   *
-   * The denominator never falls below `MIN_CLOSENESS_SPAN` (Q836), so a bar
-   * of exactly ½ — where there is no distance from the coin flip to the bar
-   * to measure — reads as the lowest bar above it rather than as 0.
+   * "closeness-to-resolution as a single number"): **the leader's judges over
+   * the floor**, `min(1, leaderJudges / F)` (Q1362 (c), Ed 2026-09-15,
+   * R-118). Voters so far over voters required — the one number the room
+   * controls, and the only distance a race still has to cover, the bar having
+   * left the test (R-117; R-101's lesser-of-two-distances is superseded with
+   * it). A fresh race sits at 1/F, its author being one judge of their own
+   * text (§3.3), and each new judge of the leader is a step. A race about to
+   * carry and a race the current text is about to see off both read 1 once
+   * the floor is met: the number says how far the room has got, never which
+   * way it is going.
    */
   closeness: number;
   /**
@@ -282,9 +302,9 @@ export interface RaceView {
    */
   rivalGateOpen: boolean;
   /**
-   * **Waiting behind a park** (SPEC §4.2, R-100; Q1179): the leader clears
-   * bar and floor — the sweep's own readiness test, one function for both —
-   * and its footprint overlaps a candidate parked `awaiting-assent`, so the
+   * **Waiting behind a park** (SPEC §4.2, R-100; Q1179): the leader is ready
+   * to carry — the sweep's own readiness test, one function for both — and
+   * its footprint overlaps a candidate parked `awaiting-assent`, so the
    * batch passes it over until the convenor answers. The race stays live and
    * judgeable throughout; this flag is what lets the surface say why the
    * text has not moved (SURFACE E36). Always false on a setting race.

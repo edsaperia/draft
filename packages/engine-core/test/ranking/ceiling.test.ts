@@ -1,14 +1,17 @@
 /**
  * The ceiling a room can reach (Q840, Ed 2026-08-26 option (a)).
  *
- * `ranking/ceiling.ts` is a claim about the *engine*, made so the surface can
- * repeat it: that a room of E judging an ordinary race unanimously produces a
- * posterior of exactly this much and no more, and that `sweepAdoptions`'
- * strict `leaderP > threshold` therefore refuses every bar above the floored
- * percent. The last case in this file is the one that matters: it drives a
- * real `Session` at E = 1 to the bar the function names and then one point
- * above it, so the number is pinned to adoption behaviour rather than to
- * itself.
+ * `ranking/ceiling.ts` is a claim about the *engine*, made so the surface
+ * could repeat it: that a room of E judging an ordinary race unanimously
+ * produces a posterior of exactly this much and no more.
+ *
+ * **Since v0.128 it gates nothing** (Q1362 (b), R-117). Adoption is the top of
+ * the ranking with the floor met, so there is no bar left for a posterior to
+ * fall short of, and the ceiling is arithmetic about the fit and nothing else.
+ * The functions stay for the release the threshold machinery is pinned for,
+ * and the last case in this file is the one that matters: it drives a real
+ * `Session` at E = 1 one point *above* the bar the function names and shows
+ * the proposal carrying anyway.
  */
 import { describe, expect, it } from 'vitest';
 import { ceilingPct, unanimousCeiling, winsNeeded } from '../../src/ranking/ceiling.js';
@@ -146,28 +149,30 @@ describe('the ceiling a room can reach (Q840)', () => {
     expect(winsNeeded(5.9, 60)).toBe(winsNeeded(5, 60)); // floored, never rounded
   });
 
-  it('a room of one adopts at its ceiling and cannot adopt one point above it', () => {
+  it('a room of one adopts at its ceiling — and one point above it too, since the bar gates nothing', () => {
     // **The adoption moved from the judgment to the submit** (Ed, 2026-08-29,
     // backlog 253): at E = 1 the author is never served their own text
     // against the incumbent, so the derived preference is the room and the
-    // sweep runs at the submission. The number under test is untouched — it
-    // is still 0.798 carrying 79 and refusing 80.
+    // sweep runs at the submission. The number itself is untouched — still
+    // 0.798, still floored to 79.
     const at = soloAt(ceilingPct(1)); // 79
     const before = at.log.length;
     const { id } = propose(at);
     expect(at.log.slice(before).map((e) => e.event.type)).toContain('adopted');
     expect(at.getCandidate(id).state).toBe('adopted');
 
+    // **And the point above it carries as well** (Q1362 (b), R-117). Until
+    // v0.128 this was the case that pinned the ceiling to behaviour: 0.7978 >
+    // 0.80 is false, so a room of one could never carry anything at a bar of
+    // 80, however long the document ran. There is no bar in the test now — the
+    // leader is on top of the field and the floor of one is met — so the same
+    // room carries the same proposal at 80, and would at 99. What the ceiling
+    // still says is what the fit can reach, and nothing reads it.
     const above = soloAt(ceilingPct(1) + 1); // 80
     const { id: id2 } = propose(above);
-    const race2 = above.raceOf(id2);
-    const kinds2 = above.judge(HOUR, 'p1', id2, race2.incumbentId, 'a').map((e) => e.type);
-    expect(kinds2).toContain('comparison');
-    expect(kinds2).not.toContain('adopted');
-    expect(above.getCandidate(id2).state).toBe('live');
-    // and no amount of clock changes it: the evidence a room of one can hold
-    // is spent, and 0.7978 > 0.80 is false however long the document runs
-    for (let t = HOUR + 60_000; t <= 9 * HOUR; t += 60_000) expect(above.tick(t)).toHaveLength(0);
-    expect(above.getCandidate(id2).state).toBe('live');
+    expect(above.getCandidate(id2).state).toBe('adopted');
+    expect(unanimousCeiling(1)).toBeLessThan((ceilingPct(1) + 1) / 100);
+    // and the clock is no part of it either
+    expect(above.tick(HOUR)).toHaveLength(0);
   });
 });
