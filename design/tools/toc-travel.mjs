@@ -159,7 +159,15 @@ async function measureAt(browser, base, size, fails) {
   // **The marks queue rightwards, out of the rail** (Q1384). Measured from
   // scroll 0 with the list scrolled to its top, so the first screen of runs
   // is under the viewport and `elementFromPoint` can answer for them.
-  await page.evaluate(() => { window.scrollTo(0, 0); const ul = document.querySelector('#toc'); if (ul) ul.scrollTop = 0; });
+  // The stagehand's furniture is not the product: the live page hides the
+  // dev-dropdown in both of its boots (`liveBoot`, `birthBoot`), and its fixed
+  // box at the bottom-left sat over a rail run at 1280×900 on CI's runner (the
+  // 23:09 run of 2026-09-15, *div.devswitch is what is painted there*). Hidden
+  // here the way the live page hides it, so the run beneath is what is measured.
+  await page.evaluate(() => {
+    for (const el of document.querySelectorAll('.devswitch, .ladderbar, #devoutbox')) el.style.display = 'none';
+    window.scrollTo(0, 0); const ul = document.querySelector('#toc'); if (ul) ul.scrollTop = 0;
+  });
   const marks = await page.evaluate(() => {
     const ul = document.querySelector('#toc');
     const doc = document.querySelector('.doc');
