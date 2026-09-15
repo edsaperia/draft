@@ -47,34 +47,32 @@ interface Candidate {
 /**
  * The shipped defaults, and then one change at a time toward the preset, so
  * the table reads as an argument rather than as a verdict. Only values the
- * **founding surface can actually express** appear here: the bar is 🌡️'s
- * (50–99), a fixed bar is 🪜's own `fixed`, and the grant/cap/drip are ⏱️'s
- * three numbers. The cooldown is the one exception and it is the reason
- * `DRAFT_COOLDOWN_MS` exists — it is engine tuning, never a room decision
- * (§4.2), so the room cannot state it and the operator must.
+ * **founding surface can actually express** appear here: the grant/cap/drip
+ * are ⏱️'s three numbers. The cooldown is the one exception and it is the
+ * reason `DRAFT_COOLDOWN_MS` exists — it is engine tuning, never a room
+ * decision (§4.2), so the room cannot state it and the operator must.
+ *
+ * **The two bar rungs are gone** (2026-09-15, Q1362 (b), R-117). This ladder
+ * had three of its five rows arguing about the threshold — *fixed at 95*,
+ * *fixed at 85*, and 85 with the cooldown — and the argument they made is the
+ * argument that retired the bar: at fifteen minutes the room cannot produce
+ * the evidence a confidence bar prices adoption in, so the bar had to be
+ * tuned down until it stopped biting, which is a bar that decides nothing.
+ * The adoption test is now *top of the ranking, floor met*; 🌡️ and 🪜 have
+ * left the surface, so a rung naming one would state a decision nobody has.
+ * The numbers those rows produced are in this file's history and in
+ * `REPORT-churn.md`, which measures what the pinning cost.
  */
 const CANDIDATES: Candidate[] = [
   {
     name: 'shipped defaults',
-    note: 'what a founder gets by accepting everything: a 95% bar ramping from 60, a 5-minute cooldown, one ✏️ every four hours',
+    note: 'what a founder gets by accepting everything: a 5-minute cooldown and one ✏️ every four hours, over the pinned bar every room now runs at',
     overrides: {},
   },
   {
-    name: 'fixed bar at 95',
-    note: 'the ramp alone removed — at fifteen minutes it is already near its end by minute ten, so it changes little',
-    overrides: { adoptionThresholdStart: 0.95, adoptionThresholdEnd: 0.95 },
-  },
-  {
-    name: 'fixed bar at 85',
-    note: 'the bar the room can actually reach on the evidence eight people produce in a quarter of an hour',
-    overrides: { adoptionThresholdStart: 0.85, adoptionThresholdEnd: 0.85 },
-  },
-  {
-    name: 'fixed 85 + 1-minute cooldown',
-    note: "Ed's cooldown (2026-08-21), inside §4.2's ≤5 min: fifteen moments when the document can change instead of three",
-    overrides: {
-      adoptionThresholdStart: 0.85, adoptionThresholdEnd: 0.85, cooldownMs: 1 * MIN,
-    },
+    name: 'the 1-minute cooldown',
+    note: "Ed's cooldown (2026-08-21), inside §4.2's ≤5 min: fifteen moments when the document can change instead of three — and, since Q1362, the one brake left on the pace of change",
+    overrides: { cooldownMs: 1 * MIN },
   },
   {
     name: 'ALPHA PRESET',
@@ -101,6 +99,12 @@ const CANDIDATES: Candidate[] = [
  * cell's own, not the shape's, so folding `ending` would overwrite the very
  * axis being swept. Everything else a shape sets (🪜 aside, which rides the
  * ramp start below) is governance the engine has no field for.
+ *
+ * Since 2026-09-15 (Q1362 (b), R-117) every shape pins 🌡️ at 50 and 🪜 at
+ * `fixed`, so the arithmetic below folds 0.5 for every row and the shapes
+ * differ on quorum, rate and authorship alone. The code stays as it is —
+ * it reads the table rather than restating it, which is the point — and it
+ * goes when the threshold machinery does.
  */
 function shapeCandidates(): Candidate[] {
   return SHAPES.map((row) => {
@@ -207,9 +211,21 @@ async function main(): Promise<void> {
   check(target.alive > 0.5,
     `at the preset, a 15-minute room of 8 changes its document in a majority of seeds `
     + `(${(target.alive * 100).toFixed(0)}%)`);
-  check(target.alive > shipped.alive,
-    `and more often than at the shipped defaults `
+  // **It used to say *more often than* the shipped defaults, and that was an
+  // assertion about the bar** (Q1362, 2026-09-15). What the preset bought at
+  // this cell was a reachable threshold; with the bar pinned out of the
+  // adoption test the defaults reach the same document, and the whole ladder
+  // above now prints one row three times. The claim that survives is
+  // non-regression — the preset must never be the *worse* constitution — and
+  // the gap is reported rather than asserted, because a preset that no longer
+  // separates from the defaults is a fact about the rule, not a red run.
+  check(target.alive >= shipped.alive,
+    `and never less often than at the shipped defaults `
     + `(${(shipped.alive * 100).toFixed(0)}%)`);
+  say(`     · the preset's margin over the defaults: `
+    + `alive ${((target.alive - shipped.alive) * 100).toFixed(0)}pp · `
+    + `adoptions ${(target.adoptions - shipped.adoptions).toFixed(2)} — `
+    + `at zero the cooldown and the rate are not what moves this room`);
   // **Not a mean-adoptions target.** The plan's bar is *at least one
   // adoption in a healthy majority of seeds*, which is `alive` above; a
   // mean of 1.0 is a different and stricter claim, and at fifteen minutes

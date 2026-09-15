@@ -30,8 +30,15 @@ interface KnobSpec {
 
 /** Baseline first in each list — variants re-use the shared baseline runs. */
 const KNOBS: KnobSpec[] = [
-  { knob: 'adoptionThresholdStart', values: [0.6, 0.5, 0.7, 0.8] },
-  { knob: 'adoptionThresholdEnd', values: [0.95, 0.85, 0.9, 0.99] },
+  // **The two bar rows are history since 2026-09-15** (Q1362 (b), R-117): the
+  // adoption test is *top of the ranking, floor met*, so the threshold is no
+  // longer a knob anybody turns — it is pinned at 0.5 and the machinery is
+  // deleted a release later. The engine still honours a value handed to it,
+  // which is what pinning-rather-than-deleting buys and what `churn.ts`
+  // spends; the rows stay commented rather than deleted so the sweep's own
+  // history reads, and they go with the machinery in pass 7.
+  // { knob: 'adoptionThresholdStart', values: [0.6, 0.5, 0.7, 0.8] },
+  // { knob: 'adoptionThresholdEnd', values: [0.95, 0.85, 0.9, 0.99] },
   { knob: 'tokenGrant', values: [4, 2, 6, 8] },
   // Real minutes since 367b (Q353): default, effectively-none, fast.
   { knob: 'tokenDripMinutes', values: [240, 1_000_000_000, 48] },
