@@ -4765,7 +4765,6 @@
   }
   // a lane's display string → its typed value, one table (never parsed back)
   const MVAL = {
-    pace: { 'The same number throughout': { shape: 'fixed' } },
     ending: { 'Never — it runs until too few members are active': { endsAtMs: null } },
     lapse: { 'Never — however long you are away': { afterMs: null } },
     // **The keys are the composer's own lane labels**, which since T5's
@@ -5270,7 +5269,6 @@
     // one 🥾's lanes now offer.
     removal: (v) => REMOVAL_RULE[v],
     quorum: (v) => (S.quorumForm === 'count' ? v + ' of the membership' : v + '% of the membership'),
-    bar: (v) => v + '% sure at the end',
     ending: (v) => (v === 'never' ? 'Never — it runs until too few members are active'
       : new Date(v).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false })),
     rate: () => { const tv = takenValOf('rate');

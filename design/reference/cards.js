@@ -97,9 +97,6 @@ window.CARDS = (function () {
   // whose contents you cannot make out. Two bars on the tick's own stroke say
   // the same thing and stay in the alphabet. ↻ is the same ruling; see `MARK`.
   const PAUSE = "<svg class=\"mkg\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><path d=\"M4.3 2.9 L4.3 9.1 M7.7 2.9 L7.7 9.1\"/></svg>";
-  // **The ramp is an emoji again** (Ed, 2026-08-22): the drawn wedge is
-  // retired and the pace card wears 🪜, which rejoins it to every other
-  // subject glyph.
   const VS16 = "︎";
   // **The alphabet is Fluent Emoji, Flat, in colour — except ⏸ and ↻** (Ed,
   // 2026-09-15, Q1360: *Fluent Flat is perfect!*, and the same day: *keep the
