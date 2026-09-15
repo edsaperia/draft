@@ -4188,13 +4188,13 @@
     lapse: () => (S.lapse === 'never' ? 'Never — however long you are away'
       : PAGE_COPY.val.lapseAfter(spellOfDays(S.lapseDays))),
     removal: () => REMOVAL_RULE[removalPrice()],
-    canpropose: () => (canPropose() ? PAGE_COPY.val.open : PAGE_COPY.val.waitingStart),
     // the three grants carry no subtitle (Ed's card review, 2026-09-02:
     // *remove body text "You hold Founder Actions" from the queue card*;
     // STYLE §4 as amended — the title names the power, the card says the rest)
+    // …and neither do the two gates since Q1374 (Ed, 2026-09-15): their
+    // *Open* / *Waiting on …* lines were read by the rail's news branch alone
     begin: () => (constituted() ? PAGE_COPY.val.begun + foundedAt() : PAGE_COPY.val.notBegun),
     closing: () => (cs && cs.closed ? PAGE_COPY.val.closed + closedAtWords() : ''),
-    canjudge: () => (canJudge() ? PAGE_COPY.val.open : PAGE_COPY.val.waitingConstitution),
   };
   // **The readback quotes the document** (Q1112, Ed's survey item 8, answered
   // *yes*, 2026-09-01): *You said* is followed by the sentence the answer
@@ -4255,10 +4255,12 @@
   // extra information*; and on 📧, *the queue-card does not need "Not given
   // yet", that's why it's yellow*). The wash already says the state and the
   // title already says the question, so a line restating either was the rail
-  // telling you twice. What survives is the two entries that are **not** asks
-  // — a motion, whose subtitle is the thing being proposed and is exactly the
-  // information you need to decide whether to open it, and a decision arriving
-  // as news, where what happened is the whole point.
+  // telling you twice. What survives is the one entry that is **not** an ask
+  // — a motion, whose subtitle is the mover's reason and is exactly the
+  // information you need to decide whether to open it. **News carries none
+  // either** (Q1374, Ed 2026-09-15: *queue cards had body text* — the gates'
+  // *Open* and a settled rule's value beneath its name): the entry is its
+  // name and its ✔, and the card says what happened.
   // **The summary is markup** (2026-09-12): `railEntry` prints it as it is.
   // **A motion's body is its rationale behind its speaker, or nothing**
   // (Ed, 2026-09-12: *[user avatar] Rationale text; if no rationale, no body
@@ -4275,9 +4277,6 @@
       return window.CARDS.railSpeakerHtml(m.why, null) +
         (others ? '<span class="qv">' + esc(PAGE_COPY.deck.moreAlone(others)) + '</span>' : '');
     }
-    // news hands text: `railEntry` wraps it, and the paragraph sentence for
-    // a personal card reads it as words
-    if (stateOf(c, ctx) === 'news') return value(c);
     return '';
   };
 
@@ -6029,7 +6028,9 @@
       : S.emailVerified ? 'Your address is verified.'
       : S.emailSent ? 'Your address is awaiting verification.'
       : 'Your address is not yet given.';
-    if (c.kind === 'personal') return summary(c);
+    // a personal card's paragraph reads its value as words while it is news
+    // (it read the rail summary until Q1374 took the news branch out of it)
+    if (c.kind === 'personal') return stateOf(c, ctx) === 'news' ? value(c) : '';
     if (isRoom(c)) {
       const st = csState(c.k);
       const collecting = st ? st.collecting : !((c.in || 0) >= E() && E() > 0);
@@ -6175,10 +6176,17 @@
     // 📍 at the birth (02: its field is the whole card)
     // …nor a settings card under a motion on either route (Q1182, Q1331):
     // its blocks state both rules, so 📍's motion card is headless too
-    noTitleHead: (c) => !c.power && !c.isGate && !c.door &&
+    // …nor a heading-over-text card (Q1373, Ed 2026-09-15: *founder actions
+    // and founder veto decision cards still had titles*): the five
+    // `textcard`s — the grants ✒️ 🛡️ 🏛️ and the gates 💡 ⚖️ — open as the
+    // strip, the paragraph and OK; the name stays on the entry, the tooltip
+    // and the record. Only ✒️ 🛡️ ever drew a title here (the other three
+    // head with the Proposals clause through `headFor`), but the rule is the
+    // card kind's, not the pair's.
+    noTitleHead: (c) => c.textcard || (!c.power && !c.isGate && !c.door &&
       (c.record || (c.k === 'slug' && !cs) ||
         OPTHEADLESS.has(c.k) || (c.ansFor && OPTHEADLESS.has(c.ansFor)) ||
-        (c.k !== 'title' && !atTheDoor() && !!motionOn(c))),
+        (c.k !== 'title' && !atTheDoor() && !!motionOn(c)))),
     // 🪶 at the birth has a head — the title itself, or its placeholder —
     // over one lane, and the hairline between them went with Ed's round 3
     // (01): the head is the field's own value, not a rule over a control

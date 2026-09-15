@@ -6620,3 +6620,25 @@ The sixth spec pass, and the first that changed the mechanism rather than tabula
 **Rejected on the way.** Deleting `shapes.ts` and the `created.shape` field outright (breaks replay of existing logs and the two sweeps for no gain; a pass-7 candidate once the bot rooms are wiped). Keeping the page's provenance renderer for documents already born shaped (a sentence naming a choice the surface can no longer make; every live shaped document has begun, and 🍾 clears `shaped`). Keeping ⏰'s chips without a shape to give them a unit (they were the shape's unit, never the card's).
 
 **Guards.** The server test *a shape on the send is ignored (Q1363)*; `spec-check`'s `order` table against `ORDER` and `decisions` against the page; every walk births 🪶 → 📍 → 📧 and would stall on 🧭 if it came back.
+
+## Q1373: a heading-over-text card carries no title head (Ed, 2026-09-15)
+
+**The ruling.** Ed, in chat at ~20:30 after the lab room's desktop QA: *founder actions and founder veto decision cards still had titles*. Asked how far the removal goes — the two founder grants alone, or every card that is a heading over one paragraph and an OK — he chose *every heading-over-text card loses its title*: ✒️ 🛡️ 🏛️ 💡 ⚖️, the five `textcard`s.
+
+**What it was.** Q1151 (card review 2026-09-02, A1) took the title head off every option-block settings card, on the argument that its blocks state the rule completely and the head restated it in four words. The same review rewrote the grant cards' bodies and struck their Founded line (Q1170) but nobody ruled on their title, so ✒️ and 🛡️ still opened as *strip · Founder Actions · the paragraph · OK* — verified headless the same evening: the ✒️ card's head read the strip's label and then *Founder Actions* again. Ed's *still* is the tell: he had understood the 2026-09-02 rule as *no card carries a title*, which is what it now is for every card whose content says what it is.
+
+**What changed.** `noTitleHead` (session-view.html) answers `c.textcard` first, before the exclusions Q1151 wrote for a power tab, a door and a gate; `cardHtml` (setup.js) already drew the strip alone under `nohead`, and `.textcard` already drew no hairline (Q1173), so the shell classes compose. Of the five only ✒️ 🛡️ ever drew a title: 🏛️ 💡 ⚖️ head with the Proposals clause through `headFor` (Q750, Q749), which is their *rule* — T3's first sentence — and stays. The rule is written for the card kind, not the pair, so a sixth textcard would be headless by construction.
+
+**Rejected.** Stripping the Proposals clause off 🏛️ 💡 ⚖️ as if it were a title: 🏛️'s body is empty (Ed's QA 2026-09-02 pm — *the head's three lines are the whole body of the card*), so the card would be a strip and an OK. A rule is not a title; Ed's complaint was the word *Founder Actions* over a paragraph that begins *As the founder of this document, you have the power…*. Flagged for Ed all the same, since the option he chose was put to him as covering all five alike.
+
+**Guards.** `npm run journey`'s `textcard` line at each of the five, red on the pre-fix page at ✒️ (*title head ["Founder Actions"]*); the setup-probe's reference and the card-copy golden, re-frozen with the head gone.
+
+## Q1374: a rail entry carries a subtitle only on a motion (Ed, 2026-09-15)
+
+**The ruling.** Ed, the same evening: *queue cards had body text*. Asked which of the three kinds of entry that deliberately carried a line beneath the name he had seen — the gates 💡 ⚖️ after 🍾 (*Open* / *Waiting on the constitution*), news of a settled or changed rule (its value), a motion's rationale behind the speaker disc — he chose the first two and kept the third.
+
+**What it was.** T4 (Ed, 2026-08-19: *subtitles are there to help me make choices — if I have to do them, they don't need extra information*) let a subtitle survive on a motion and on news, and C13 said news's was *what happened*; the 2026-09-02 review then carved the grants out of news. So `summary`'s news branch handed `value(c)` to the rail: *Open* under 💡, the rule's sentence under a delegated setting once decided, the new value under a changed one.
+
+**What changed.** The news branch is gone from `summary`; the gates' two `VALUE` lines and their three copy strings (*Open*, *Waiting on the start*, *Waiting on the constitution*) with it, nothing else having read them. A personal card's paragraph sentence read the same summary to print its value as words while news — it reads `value(c)` under the same condition now, so nothing on the page moved but the rail. The applicant's and the stranger's rails hand their own teasers through their own contexts (band.js `appCtx`, door.js `strRailCtx`) and were not asked about: Q1366's builder owns the applicant's door, and the stranger's three sentences are a question for Ed, not a removal on spec.
+
+**Guards.** `npm run journey`'s `textcard` line asserts an empty subtitle on each gate and grant entry as it opens; the setup-probe's reference and the card-copy golden.

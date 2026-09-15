@@ -139,20 +139,22 @@ Glyph names are stable (tabulated 2026-09-07, Q1208; the founding order's own gl
   the composer's lane say the same words (Q620), which since Q1112 (b) they do
   by construction, the label being the clause sentence out of one table
   (`RULES` in `cards.js`).
-- **T4 · A task you have to do carries no subtitle.** Subtitles help you choose
-  which task to open, so they survive only on a motion (the value proposed)
-  and on news (what happened) — **except a grant's own entry, which carries
-  none** (Ed, 2026-09-02, card review: *remove body text "You hold Founder
-  Actions" from the queue card*): the title names the power and the card says
-  the rest.
+- **T4 · A rail entry carries a subtitle only on a motion** — the mover's
+  rationale behind the speaker's disc, or nothing (SURFACE C13). A task, a
+  gate, a grant and news alike are the name and the mark: the title names the
+  thing and the card says the rest (Ed, 2026-09-02, card review, for the
+  grants; Ed, 2026-09-15, Q1374, for the gates' *Open* and a settled rule's
+  value beneath its name).
 - **T3 · A settled card's head is the rule, not the task's name**; open
   questions, 🪪, 📝, personal cards and answers keep the title (`headFor`).
   **A settings card whose option blocks state the rule carries no head at all**
   (Ed, 2026-09-02, card review, Q1151): since CP1 every block says completely
   what the title restated, so the head goes from every option-block settings
   card — founding and settled alike, its rule reading as its first block
-  (Q1167). The card's name survives on the rail entry, the tab tooltip and the
-  record.
+  (Q1167). **Nor does a heading-over-text card carry a title head** (Ed,
+  2026-09-15, Q1373): the grants ✒️ 🛡️ open as the strip, the paragraph and
+  OK, and 🏛️ 💡 ⚖️ head with the Proposals clause, their rule. The card's name
+  survives on the rail entry, the tab tooltip and the record.
 
 ## 5. Bodies and notes
 
@@ -196,8 +198,8 @@ The rules the audit log (§7) audits against, lifted from CLAUDE.md's glossary a
 |---|---|---|
 | T1 | §4 · Task titles are Title Case | *Title*, *Link*, *Text*; *Is the Founder a Member?* |
 | T2 | §4 · A title says what kind of answer it wants | while outstanding, the ask: *Set the Proposal Pass Threshold* / *Choose the Quorum* / *How Does Somebody Join?*; once settled, the noun: *Proposal Pass Threshold* (Ed's own words, entry 215; Title Case and no question mark by his QA of 2026-08-30 — a noun title takes T1's case like any other) / *Quorum* / *Admissions* (Q1209, Q331 (b)); the power tabs: *Can the Founder Make Amendments at Will?* / *Does the Founder Have a Veto?* (Q615); on the doors, the act: *Can the Founder Invite at Will?* / *Does the Founder Have a Veto over Invitations?* / *Can the Founder Remove at Will?* / *Does the Founder Have a Veto over Removals?* (entry 94) |
-| T3 | §4 · A settled card's head is the rule, not the task's name | `headFor` |
-| T4 | §4 · A task you have to do carries no subtitle | `summary` |
+| T3 | §4 · A settled card's head is the rule, not the task's name; no option-block or heading-over-text card carries a title head | `headFor`, `noTitleHead` |
+| T4 | §4 · A rail entry carries a subtitle only on a motion | `summary` |
 | T5 | §4 · A rename reaches the option labels; one label per rung, everywhere | *Votes are revealed when the document is finished, and not before.*; *Removing a member needs every member to agree, including them 🏛️.*; `card-audit` T5 |
 | T6 | The two 🛡️ radios say veto and name the setting, the negation bold; the head and clause keep the joined verb phrases; the `why` follows the options into veto vocabulary | `vetoLabel`, `PWWHY`, `powerHeadLine` |
 | T7 | A power option is a proposal block, not a radio label: the rule at document size with a full stop, its consequence as a note, a lane bar reading *Choose this / Chosen* | `powerLane` |

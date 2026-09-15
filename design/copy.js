@@ -685,9 +685,8 @@ window.COPY = (function () {
       // the spell arrives worded — *7 days*, *36 hours*, *90 minutes* — by
       // the module's `spellWords`, never as a bare day count (Q1321)
       lapseAfter: (spell) => 'After ' + spell + ' without logging in',
-      open: 'Open',
-      waitingStart: 'Waiting on the start',
-      waitingConstitution: 'Waiting on the constitution',
+      // (the gates' *Open* / *Waiting on …* lines left with Q1374: a rail
+      // entry carries a subtitle only on a motion)
       begun: 'Begun',
       notBegun: 'Not yet begun',
       closed: 'Closed',

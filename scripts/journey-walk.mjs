@@ -1718,6 +1718,26 @@ for (let i = 0; i < 60; i++) {
     stuck.push('owedUnservable at ' + next + ': ' + owed.join(','));
   }
   if (!(await open(next))) { stuck.push(next + ' (would not open)'); continue; }
+  // **A heading-over-text card carries no title head, and its entry no
+  // subtitle** (Q1373, Q1374 — Ed, 2026-09-15: *founder actions and founder
+  // veto decision cards still had titles, and also queue cards had body
+  // text*). The five `textcard`s — ✒️ at the save, 💡 ⚖️ 🏛️ after 🍾 — open as
+  // the strip, the paragraph and OK; their rail entries are the name and the
+  // mark. Read off the DOM at the moment each is open, which is the only
+  // moment both the card and its entry stand together.
+  if (['grant-pen', 'grant-shield', 'grant-voice', 'canpropose', 'canjudge'].includes(next)) {
+    const tc = await page.evaluate((k) => {
+      const card = document.querySelector('.setupcard');
+      const li = document.querySelector('#rail [data-card="' + k + '"]');
+      return { card: card ? card.dataset.setupcard : null,
+        title: card ? [...card.querySelectorAll('.headtitle')].map((e) => e.textContent.trim()) : null,
+        sub: li ? [...li.querySelectorAll('.qwhy, .qv')].map((e) => e.textContent.trim()) : null };
+    }, next);
+    const tcOk = tc.card === next && tc.title && tc.title.length === 0 && tc.sub && tc.sub.length === 0;
+    say('  textcard · ' + (tcOk ? next + ' opens headless and its entry carries no subtitle'
+      : 'FAIL: ' + next + ' · title head ' + JSON.stringify(tc.title) + ' · entry subtitle ' + JSON.stringify(tc.sub)));
+    if (!tcOk) stuck.push(next + ': a title head or an entry subtitle (Q1373/Q1374)');
+  }
   // **The door is ✉️, and it stopped being 🪪 on 2026-08-26** (entry 94,
   // Q916). This opened `admission` and typed into an invitation box that used
   // to be drawn there; 🪪 is the *price of admission* now — a constitutional
@@ -3192,6 +3212,19 @@ if (caret) {
       : 'FAIL: a race is served before ⚖️ is acknowledged · rail ' + JSON.stringify(g0.rail) +
         ' · suggs ' + JSON.stringify(g0.suggs)));
     if (!none) stuck.push('a race served before the ⚖️ OK (Q1328)');
+    // **A gate's entry is its name and its mark** (Q1374, Ed 2026-09-15:
+    // *queue cards had body text*). The founder never meets 💡 ⚖️ as cards
+    // (a gate never withholds from the seat that set it), so the member's
+    // rail after 🍾 is the one place their entries stand: no *Open* beneath
+    // 💡, no *Waiting on the constitution* beneath ⚖️.
+    const gateSubs = await guestPage.evaluate(() => ['canpropose', 'canjudge'].map((k) => {
+      const li = document.querySelector('#rail [data-card="' + k + '"]');
+      return [k, li ? [...li.querySelectorAll('.qwhy, .qv')].map((e) => e.textContent.trim()) : null];
+    }));
+    const gateSubsOk = gateSubs.every(([, subs]) => subs && subs.length === 0);
+    say('gate entry · ' + (gateSubsOk ? '💡 and ⚖️ stand as their names alone, no subtitle'
+      : 'FAIL: a gate entry carries a subtitle · ' + JSON.stringify(gateSubs)));
+    if (!gateSubsOk) stuck.push('a gate entry carries a subtitle (Q1374)');
     if (!g0.judgeServed) {
       say('⚖️ OK      · FAIL: ⚖️ is not served to the member, so its OK cannot be walked · rail ' + JSON.stringify(g0.rail));
       stuck.push('⚖️ is not served to the member (Q1328)');

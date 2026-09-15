@@ -656,7 +656,9 @@ window.SETUP = (function () {
     // review, 2026-09-02, Q1151; SURFACE F15): since CP1 its blocks state the
     // rule completely, so the question the head restated is gone — the name
     // survives on the rail entry, the tab tooltip and the record. The head
-    // element itself stays: it is what carries the tab strip.
+    // element itself stays: it is what carries the tab strip. **And neither
+    // does a heading-over-text card** (Q1373, Ed 2026-09-15): the `textcard`s
+    // — the grants and the gates — are the strip, the paragraph and OK.
     const noTitle = !rule && ctx.noTitleHead && ctx.noTitleHead(c);
     // **A settled setting's rule reads as the first block** (Q1167 a): the
     // rule keeps the head's slot — the strip hangs there and the open/close
