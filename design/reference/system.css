@@ -409,7 +409,12 @@
      (decision 8) — it is simply not there below 900. */
   /* NARROW_Q */
   @media (max-width: 900px) {
-    .layout { grid-template-columns: 1fr; gap: 0; margin-top: var(--s2); }
+    /* `minmax(0, 1fr)`, as the wide grid's middle track is, never a bare
+       `1fr` — that is `minmax(auto, 1fr)`, and a phone's one column then
+       grew to whatever the widest thing in it asked for: a 20rem email box
+       pushed a 390px page out to 444 and the stranger's Apply card ran off
+       the glass (Q1389, Ed's phone, 2026-09-16). Guard: card-audit V1. */
+    .layout { grid-template-columns: minmax(0, 1fr); gap: 0; margin-top: var(--s2); }
     /* **Both rails are drawers** (Ed, 2026-09-12: *sidebars that slide out on
        each side, opening with icons in the top left and top right*): the
        contents rail from the left, the task rail from the right, each fixed
@@ -444,9 +449,15 @@
       content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
       background-color: var(--washbg, transparent); transition: background-color var(--wash-ms) ease;
     }
-    .layout > .queue ul { position: static; height: auto !important; display: flex; flex-direction: column; }
-    .layout > .queue .qitem { position: static; width: 100%; transition: none; margin: 0 0 var(--s2); }
-    .layout > .queue .qitem:last-child { margin-bottom: 0; }
+    /* **The drawer is spaced by the column's gap, never by an entry's margin**
+       (Q1387, Ed's phone 2026-09-12): the drawer sorts its entries with flex
+       `order`, so the DOM's last child — the newest entry — can stand anywhere
+       in the column, and a `:last-child { margin-bottom: 0 }` written for the
+       foot of the list took the gap from under whichever entry was born last.
+       `gap` follows the visual order and never doubles at the end. Guard:
+       `npm run drawer-walk`. */
+    .layout > .queue ul { position: static; height: auto !important; display: flex; flex-direction: column; gap: var(--s2); }
+    .layout > .queue .qitem { position: static; width: 100%; transition: none; margin: 0; }
     /* the two doors, in the topbar; a count on the right one says how many
        tasks the rail holds */
     .drawerbtn {

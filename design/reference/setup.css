@@ -337,6 +337,19 @@
   .fld > label { font-size: var(--t-cap); color: var(--muted); }
   .sugg input, .sugg textarea { font: inherit; font-size: var(--t-ui); color: var(--fg); background: var(--bg);
     border: 1px solid var(--border); border-radius: var(--r-md); padding: var(--s2) var(--s3); }
+  /* An address or a name is a 20rem box and never wider than its card
+     (Q1389, Ed's phone, 2026-09-16): the width lived inline on eight fields,
+     and a 320px box in a card 88px in widened a 390px phone's page to 444.
+     The cap is the rem and the width the percentage, not the other way
+     round: a definite `width: 20rem` is the box's minimum contribution to
+     every flex row it stands in (the Members row holds the founder's 📧
+     card), and a percentage `max-width` cannot cap it there. */
+  .sugg .fld input, .sugg input[type="email"], .sugg input[data-mjoin] { width: 100%; max-width: 20rem; }
+  /* the fields that stand inside a sentence keep a word's width — a title,
+     an address — and the same cap, so a phone's card never grows to hold them */
+  .sugg input[data-mtext] { width: 22rem; max-width: 100%; }
+  .sugg input[data-slug] { width: 16rem; max-width: 100%; }
+  .sugg input[data-mslug] { width: 12rem; max-width: 100%; }
   input:focus-visible, button:focus-visible, textarea:focus-visible,
   [role="radio"]:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
   .num { width: 5.5rem; }

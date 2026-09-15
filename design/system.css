@@ -409,7 +409,12 @@
      (decision 8) — it is simply not there below 900. */
   /* NARROW_Q */
   @media (max-width: 900px) {
-    .layout { grid-template-columns: 1fr; gap: 0; margin-top: var(--s2); }
+    /* `minmax(0, 1fr)`, as the wide grid's middle track is, never a bare
+       `1fr` — that is `minmax(auto, 1fr)`, and a phone's one column then
+       grew to whatever the widest thing in it asked for: a 20rem email box
+       pushed a 390px page out to 444 and the stranger's Apply card ran off
+       the glass (Q1389, Ed's phone, 2026-09-16). Guard: card-audit V1. */
+    .layout { grid-template-columns: minmax(0, 1fr); gap: 0; margin-top: var(--s2); }
     /* **Both rails are drawers** (Ed, 2026-09-12: *sidebars that slide out on
        each side, opening with icons in the top left and top right*): the
        contents rail from the left, the task rail from the right, each fixed

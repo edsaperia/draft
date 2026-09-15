@@ -257,6 +257,15 @@
       for (const k of Object.keys(doors)) doors[k].setAttribute('aria-expanded', String(side === k));
     };
     const open = () => root.getAttribute('data-drawer');
+    // what a tap inside a drawer can be *on*: an entry (a list item on either
+    // side) or a control; anything else in the drawer is its empty space
+    const ENTRY = 'li, a, button, input, textarea, select, label, [role="button"]';
+    // where the pointer went down, so a tap can be told from the end of a
+    // drag: a scroll ends where it did not start. A mouse drag that ends on
+    // the element it started on still fires a click, so both paths ask.
+    let down = null;
+    document.addEventListener('pointerdown', (ev) => { down = { x: ev.clientX, y: ev.clientY }; }, { passive: true });
+    const dragged = (ev) => !!down && Math.hypot(ev.clientX - down.x, ev.clientY - down.y) > 8;
     doors.left.addEventListener('click', () => set(open() === 'left' ? null : 'left'));
     doors.right.addEventListener('click', () => set(open() === 'right' ? null : 'right'));
     document.addEventListener('click', (ev) => {
@@ -266,6 +275,13 @@
       const drawer = document.querySelector(side === 'left' ? '.layout > .toc' : '.layout > .queue');
       if (drawer && drawer.contains(ev.target)) {
         if (ev.target.closest('a, button')) setTimeout(() => set(null), 60);
+        // **A tap on the drawer's own empty space closes it too** (Q1388, Ed,
+        // 2026-09-15: *clicking somewhere there is no queue card should close
+        // the drawer*): a tap that reaches no entry and no control is a tap on
+        // the ground, wherever it lands. A click never follows a touch that
+        // scrolled, and a mouse drag is told by its distance, so dragging the
+        // list stays a drag.
+        else if (!dragged(ev) && !ev.target.closest(ENTRY)) set(null);
         return;
       }
       set(null);
@@ -273,12 +289,16 @@
     // iOS dispatches no click for a tap on plain content unless something
     // under it is clickable, so the ground's tap arrives as a pointerup
     // instead (the CSS also gives the ground a pointer cursor while a drawer
-    // is open, the other half of the same WebKit rule)
+    // is open, the other half of the same WebKit rule). Inside the drawer the
+    // same tap closes it from here too (Q1388), unless it was a drag.
     document.addEventListener('pointerup', (ev) => {
       const side = open();
       if (!side || ev.target.closest('.drawerbtn')) return;
       const drawer = document.querySelector(side === 'left' ? '.layout > .toc' : '.layout > .queue');
-      if (drawer && drawer.contains(ev.target)) return;
+      if (drawer && drawer.contains(ev.target)) {
+        if (!dragged(ev) && !ev.target.closest(ENTRY)) set(null);
+        return;
+      }
       set(null);
     });
     document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && open()) set(null); });
@@ -3965,7 +3985,11 @@
                 : '<div class="memrow nobody">(no outstanding invitations)</div>',
                 // 📭 stands on the *Invitees* heading (E34): the give-up is
                 // about somebody listed here, and this is where a reader looks
-                ['invite', 'pw:u:invite', 'pw:a:invite'].concat(mailGiveUpKeys())) +
+                // …and a running invitation motion is its own tab in this pile
+                // (Q1367: one motion, one card — `motionCardsFor`, as `chipsFor`
+                // does for a setting; this pile is listed by hand, so it lists them too)
+                ['invite', 'pw:u:invite', 'pw:a:invite'].concat(mailGiveUpKeys())
+                  .concat(motionCardsFor(card('invite')).map((c) => c.k))) +
               (policyNow() === 'apply'
                 ? memSub('Applicants', memApplicantRows() ||
                   '<div class="memrow nobody">(no applicants at the moment)</div>', admitKeys()) : '') +
@@ -3973,7 +3997,7 @@
                 ? memSub('Lapsed', lapsedOut.map(memRow).join(''), []) : '') +
               memSub('Proposed for removal', proposedOut.length ? proposedOut.map(memRow).join('')
                 : '<div class="memrow nobody">(nobody proposed for removal)</div>',
-                ['remove', 'pw:u:remove', 'pw:a:remove']));
+                ['remove', 'pw:u:remove', 'pw:a:remove'].concat(motionCardsFor(card('remove')).map((c) => c.k))));
       } },
     // **Proposals reads second** (Q871, Q872, Ed 2026-08-26: *Proposals above
     // Decisions* — reversing *Proposals reads fourth*, Ed 2026-08-21). That
@@ -4471,11 +4495,12 @@
   // quo the act is about — so opening ❌ never hides the people it acts on.
   // ✉️ heads with the invitees, ❌ with the proposed-for-removal; the price
   // sentence stands beneath the list, in the same head.
+  // a motion card on a door (`mo:…`, Q1367) heads with its host door's people
   const doorPeople = (c) => {
-    const rows = c.k === 'invite'
+    const rows = hostKeyOf(c) === 'invite'
       ? S.roster.filter((p) => !p.in).concat(invitePendingRows())
       : (cs ? S.roster.filter((p) => removalPendingIds().has(p.mid || 'founder')) : []);
-    const empty = c.k === 'invite' ? PAGE_COPY.doorEmpty.invite : PAGE_COPY.doorEmpty.remove;
+    const empty = hostKeyOf(c) === 'invite' ? PAGE_COPY.doorEmpty.invite : PAGE_COPY.doorEmpty.remove;
     return '<div class="headpeople">' + (rows.length
       ? rows.map((p) => '<span class="hp">' + avHtml(p) + ' ' +
           esc(p.n || p.e || 'Anonymous') + pendingChip(p) + '</span>').join('')
@@ -5013,7 +5038,7 @@
   // is, it always is — without this the membership card never composed, and
   // invitations and removals had no door.
   // a door whose act the viewer's own word performs is a box, not a composer
-  const doorDirect = (c) => !!c.door && (c.k === 'invite' ? directInvite() : directRemove());
+  const doorDirect = (c) => !!c.door && (hostKeyOf(c) === 'invite' ? directInvite() : directRemove());
   // **On a closed document nobody composes** (entry 62, SURFACE K2). This is
   // its own term rather than something `motionsLive()` provides: `canJudge()`
   // is `constitutedAtT !== null` and has never asked about the
@@ -5377,13 +5402,13 @@
     // 2026-09-05, 29/30): a composer pre-filled with what stands offers a
     // change nobody has made
     title: (d) => inputBlock('The document is titled ' +
-      '<input data-mtext="1" value="' + esc(d.to || '') + '" placeholder="A new title" style="width:22rem">.',
+      '<input data-mtext="1" value="' + esc(d.to || '') + '" placeholder="A new title">.',
       '', d, 'title'),
     slug: (d) => inputBlock('The document lives at ' + docAddr('') +
       // the field holds the slug alone, so the stored form is stripped back
       // off it; the `d/` is optional in the strip so a draft composed before
       // the address gained its route still round-trips into the box
-      '<input data-mslug="1" value="' + esc((d.to || '').replace(/^docs\.vote\/(?:d\/)?/, '')) + '" style="width:12rem">.',
+      '<input data-mslug="1" value="' + esc((d.to || '').replace(/^docs\.vote\/(?:d\/)?/, '')) + '">.',
       '<p class="setnote">' + PAGE_COPY.composeNote.redirect + '</p>', d, 'slug'),
     rate: (d) => {
       // one number since Q1160: a motion proposes the interval, and the
@@ -5461,7 +5486,7 @@
       const one = admissionPrice() === 'assembly';
       const lines = (d.many || (d.to ? [d.to.replace(/ joins the membership$/, '')] : [])).join('\n');
       return '<div class="roster">' + (one
-        ? '<input placeholder="name@example.com" data-mjoin="1" value="' + esc(lines.split('\n')[0] || '') + '" style="width:20rem">'
+        ? '<input placeholder="name@example.com" data-mjoin="1" value="' + esc(lines.split('\n')[0] || '') + '">'
         : '<textarea placeholder="name@example.com&#10;one address per line" data-mjoin="1">' + esc(lines) + '</textarea>') +
         '</div>';
     },
@@ -6210,11 +6235,11 @@
         // 2026-09-02): where the viewer's word sends, the head is the people
         // alone — the composer branch keeps the price, which is what a
         // member composing needs
-        if (c.k === 'invite' && doorDirect(c)) return doorPeople(c);
+        if (hostKeyOf(c) === 'invite' && doorDirect(c)) return doorPeople(c);
         // ❌ heads with its people alone (Ed's QA, 2026-09-02 pm): the policy
         // is 🥾's clause to state — *this is the place to remove, not where
         // the removal policy is set*
-        if (c.k === 'remove') return doorPeople(c);
+        if (hostKeyOf(c) === 'remove') return doorPeople(c);
         const rule = settled(c) ? breakLines(linkify(esc(decisionLine(c))))
           : composerOn(c) ? esc(standsOf(c.k)) : '';
         return doorPeople(c) + (rule ? '<div class="doorrule">' + rule + '</div>' : '');

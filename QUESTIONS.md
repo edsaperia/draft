@@ -220,9 +220,11 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1391** — claim by writing the block here, then commit it alone.
+**The next free number is 1392** — claim by writing the block here, then commit it alone.
 
-**1389–1390 are the stranger's Apply card on a phone** (claimed 2026-09-16 00:20, Ed's screenshot in `bugs/`: *what I see after clicking apply for membership queue card on mobile — 1 does not fit on screen — 2 send the link should be a submit button*): 1389 the card overflows the screen (a fixed 20rem email box, shared with five other fields) · 1390 its send is a body button where 📧 Log In's is the commit row's 📧.
+**1391 is the submitted application's rail line** (claimed 2026-09-16 00:31, Ed in the `lantern-house` room: *"before the members — a proposal like any other" is a baffling thing for the body text of a queue card to say*): the applicant's own entry under 🪪 once the application is in. Built as *Submitted — the members are deciding* (`band.js`, the apply card's `summary`); the wording is overrulable.
+
+**1389–1390 are the stranger's Apply card on a phone** (claimed 2026-09-16 00:16, Ed's screenshot in `bugs/`: *what I see after clicking apply for membership queue card on mobile — 1 does not fit on screen — 2 send the link should be a submit button*): 1389 the card overflows the screen (a fixed 20rem email box, shared with five other fields) · 1390 its send is a body button where 📧 Log In's is the commit row's 📧.
 
 **1388 is the drawer's tap-to-close** (claimed 2026-09-15 23:30, Ed: *when the queue card drawer (on the right) is open, clicking somewhere there is no queue card should close the drawer … I should still be able to drag the queue up and down*).
 

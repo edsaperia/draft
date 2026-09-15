@@ -287,10 +287,12 @@ window.DOOR = (function () {
       // the *Your email* label all go; the send is the commit row's right-hand
       // button, a 📧 glyph under T47's rule (reading 1194), armed by a valid
       // address. 🪪 Apply keeps its sentence: what an application is has to be
-      // said somewhere, and its card is the only place.
+      // said somewhere, and its card is the only place — and since Q1390 (Ed,
+      // 2026-09-16: *send the link should be a submit button*) it sends from
+      // the same 📧 in the row; the field's width is the stylesheet's (Q1389).
       const login = c.k === 'strlogin';
       const field = '<span class="fld">' + (login ? '' : '<label>Your email</label>') +
-        '<input type="email" data-stremail="1" value="' + esc(STRS.email) + '" placeholder="you@example.com" style="width:20rem"></span>';
+        '<input type="email" data-stremail="1" value="' + esc(STRS.email) + '" placeholder="you@example.com"></span>';
       const body = STRS.sent === c.k
         ? '<p class="why">Sent to <b>' + esc(STRS.sentTo) + '</b>. ' +
           (c.k === 'strapply' ? 'Follow the link to begin your application — the address is your identity here.'
@@ -300,9 +302,8 @@ window.DOOR = (function () {
           field
         : (login ? '' : '<p class="why">' +
             'Membership is by application. Your email is your identity here — the link it sends is the login, and the answer arrives on it.</p>') +
-          field +
-          (login ? '' : '<div style="margin-top:var(--s3)"><button class="btn"' + (okAddr ? '' : ' disabled') + ' data-strsend="' + c.k + '">Send the link</button></div>');
-      const foot = binBtn() + (login && STRS.sent !== c.k
+          field;
+      const foot = binBtn() + (STRS.sent !== c.k
         ? '<button class="btn btn-approve glyphbtn emojibtn"' + (okAddr ? '' : ' disabled') +
           ' data-strsend="' + c.k + '" title="Send the link">📧</button>'
         : '');

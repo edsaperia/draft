@@ -376,14 +376,14 @@ window.BAND = (function () {
           return '<div data-slugnote>' + slugNoteHtml() + '</div>' +
             '<div class="choice"><div class="pick' + (typed ? ' on' : '') + '"><span class="opttext">' +
             'The document lives at ' + docAddr('') +
-            '<input data-slug="1" value="' + esc(typed) + '" spellcheck="false" style="width:16rem">.</span>' +
+            '<input data-slug="1" value="' + esc(typed) + '" spellcheck="false">.</span>' +
             '<button class="lanepick" type="button" aria-pressed="' + !!typed + '" data-pickinput="1">' +
             '<span class="dot"></span><span class="off">' + PAGE_COPY.pw.chooseThis + '</span>' +
             '<span class="on">' + PAGE_COPY.pw.chosen + '</span></button></div></div>'; })()
         : '<div data-slugnote>' + slugNoteHtml() + '</div>' +
         '<span class="fld"><span class="setrow2">' +
         '<span class="setnote" style="margin:0">' + docAddr('') + '</span>' +
-        '<input data-slug="1" value="' + esc(S.slug) + '" spellcheck="false" style="width:16rem">' +
+        '<input data-slug="1" value="' + esc(S.slug) + '" spellcheck="false">' +
         '</span></span>') +
         // the rules recital went with the rest (Ed, 2026-08-19) — a legal link
         // says the one thing worth saying, that it is free. The illegal case
@@ -411,7 +411,7 @@ window.BAND = (function () {
           chosenRadio('Chosen') + '</div>' +
           // the second option carries its own *Choose this* (Ed's card review
           // round 3, 2026-09-05, 42; A2): typing chooses it, the radio says so
-          '<div class="pick"><span class="opttext"><input type="email" data-txt="myemail" value="" placeholder="you@example.com" style="width:20rem"></span>' +
+          '<div class="pick"><span class="opttext"><input type="email" data-txt="myemail" value="" placeholder="you@example.com"></span>' +
           '<button class="lanepick" type="button" aria-pressed="false" data-pickinput="1">' +
           '<span class="dot"></span><span class="off">' + PAGE_COPY.pw.chooseThis + '</span>' +
           '<span class="on">' + PAGE_COPY.pw.chosen + '</span></button></div></div>'
@@ -425,7 +425,7 @@ window.BAND = (function () {
           // was a button whose whole job was to put the field back — so the
           // field stays, and typing in it is the correction. Resending moved to
           // the commit row, where every other act on this surface lives.
-          '<span class="fld"><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" placeholder="you@example.com" style="width:20rem"></span>' +
+          '<span class="fld"><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" placeholder="you@example.com"></span>' +
           (BIRTH ? '' : '<div style="margin-top:var(--s3)"><button class="btn" data-act="openmail">Open your inbox</button></div>') +
           (BIRTH ? ''
             : '<p class="setnote">In the mockup the inbox is a pretend one — the mail in it is the magic link, and clicking it proves the address works' + (env.cs ? '.' : ' and creates the document at ' + docAddr(esc(S.slug)) + '.') + '</p>')
@@ -438,7 +438,7 @@ window.BAND = (function () {
           (env.cs
             ? '<p class="why">Your address is the only way back in — there are no passwords — so a new one has to prove it works before it replaces the old.</p>'
             : '') +
-          '<span class="fld"><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" placeholder="you@example.com" style="width:20rem"></span>'),
+          '<span class="fld"><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" placeholder="you@example.com"></span>'),
       // the standing pair for the *keep* block, the draft for the composer
       // (Q1327); the applicant's `apppic` passes no draft and reads one value
       myname: () => nameBody(me(), { optional: viewerIsClerk(), pick: namePickNow(),
@@ -715,7 +715,10 @@ window.BAND = (function () {
       summary: (c) => (c.k === 'apply'
         // a shut door says so in the title since Q901, so the teaser that
         // used to carry it would now be the same sentence twice (C13)
-        ? (S.app.submitted ? 'Before the members — a proposal like any other' : applyShutOnMe() ? '' : S.app.started ? (['appname', 'apppic'].every((k2) => APPCARDS().find((x) => x.k === k2).done()) ? 'Ready to submit' : 'Three small tasks') : 'Membership is by application')
+        // submitted, the entry says what is happening to it, in the words the
+        // rest of the surface uses (Q1391, Ed 2026-09-16: *before the members
+        // — a proposal like any other* is a baffling thing for a queue card to say)
+        ? (S.app.submitted ? 'Submitted — the members are deciding' : applyShutOnMe() ? '' : S.app.started ? (['appname', 'apppic'].every((k2) => APPCARDS().find((x) => x.k === k2).done()) ? 'Ready to submit' : 'Three small tasks') : 'Membership is by application')
         : c.k === 'appmail' ? (S.app.emailVerified ? S.app.email + ' · verified'
           : S.app.emailSent ? 'Check your inbox' : 'Your identity here')
         : c.k === 'appname' ? (S.app.name || 'What members will call you')
@@ -760,14 +763,14 @@ window.BAND = (function () {
             // whose whole job was to put the field back, as on 📧 — so the field
             // stays under the sent note, and typing a different address is the
             // correction: it un-sends, and the send button returns
-            '<span class="fld"><label>Your email</label><input type="email" data-appmail="1" value="' + esc(a.email) + '" placeholder="you@example.com" style="width:20rem"></span>'
+            '<span class="fld"><label>Your email</label><input type="email" data-appmail="1" value="' + esc(a.email) + '" placeholder="you@example.com"></span>'
           : '<p class="why">Your email is your <b>identity</b> here — the magic link is the login, the answer to your application arrives on it, and no two members may share one. It has to prove it works before you can submit.</p>' +
-            '<span class="fld"><label>Your email</label><input type="email" data-appmail="1" value="' + esc(a.email) + '" placeholder="you@example.com" style="width:20rem"></span>' +
+            '<span class="fld"><label>Your email</label><input type="email" data-appmail="1" value="' + esc(a.email) + '" placeholder="you@example.com"></span>' +
             (taken ? '<p class="setnote"><b>Already a member’s address.</b> A member email is one identity — if it is yours, log in with it instead of applying.</p>' : '') +
             '<div style="margin-top:var(--s3)"><button class="btn"' + (okAddr ? '' : ' disabled') + ' data-appmailsend="1">Send the link</button></div>';
       },
       appname: () => '<p class="why">What the members will call you — in the application, and in the membership if it passes.</p>' +
-        '<span class="fld"><label>Your name</label><input data-appname="1" value="' + esc(S.app.name) + '" placeholder="Your name" style="width:20rem"></span>',
+        '<span class="fld"><label>Your name</label><input data-appname="1" value="' + esc(S.app.name) + '" placeholder="Your name"></span>',
       // **The founder's own card** (Q733) — one body, two seats, so they cannot
       // drift. It used to be a hand-rolled copy with no uploader in it at all.
       apppic: () => pictureBody({ n: S.app.name, pic: S.app.pic },

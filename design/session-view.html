@@ -5402,13 +5402,13 @@
     // 2026-09-05, 29/30): a composer pre-filled with what stands offers a
     // change nobody has made
     title: (d) => inputBlock('The document is titled ' +
-      '<input data-mtext="1" value="' + esc(d.to || '') + '" placeholder="A new title" style="width:22rem">.',
+      '<input data-mtext="1" value="' + esc(d.to || '') + '" placeholder="A new title">.',
       '', d, 'title'),
     slug: (d) => inputBlock('The document lives at ' + docAddr('') +
       // the field holds the slug alone, so the stored form is stripped back
       // off it; the `d/` is optional in the strip so a draft composed before
       // the address gained its route still round-trips into the box
-      '<input data-mslug="1" value="' + esc((d.to || '').replace(/^docs\.vote\/(?:d\/)?/, '')) + '" style="width:12rem">.',
+      '<input data-mslug="1" value="' + esc((d.to || '').replace(/^docs\.vote\/(?:d\/)?/, '')) + '">.',
       '<p class="setnote">' + PAGE_COPY.composeNote.redirect + '</p>', d, 'slug'),
     rate: (d) => {
       // one number since Q1160: a motion proposes the interval, and the
@@ -5486,7 +5486,7 @@
       const one = admissionPrice() === 'assembly';
       const lines = (d.many || (d.to ? [d.to.replace(/ joins the membership$/, '')] : [])).join('\n');
       return '<div class="roster">' + (one
-        ? '<input placeholder="name@example.com" data-mjoin="1" value="' + esc(lines.split('\n')[0] || '') + '" style="width:20rem">'
+        ? '<input placeholder="name@example.com" data-mjoin="1" value="' + esc(lines.split('\n')[0] || '') + '">'
         : '<textarea placeholder="name@example.com&#10;one address per line" data-mjoin="1">' + esc(lines) + '</textarea>') +
         '</div>';
     },

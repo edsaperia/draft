@@ -557,6 +557,28 @@ const IN_PAGE = () => {
         radios: radios(card),
         helpers: helpers(card),
         boxes: boxes(card),
+        // the screen the card was measured on: a box wider than the layout
+        // viewport, or a viewport the page has pushed wider than the window,
+        // is a card a phone cannot show whole (V1, Q1389)
+        screen: { w: window.innerWidth, scrollW: document.documentElement.scrollWidth,
+                  // the thing that pushed the page wide, named — a finding
+                  // that says 444px and not what measured 444px is a hunt
+                  widest: (() => {
+                    let best = null;
+                    // a fixed box and everything in it is off the page's
+                    // own axis — the drawers rest translated off the glass
+                    const fixed = [...document.querySelectorAll('body *')].filter((el) => getComputedStyle(el).position === 'fixed');
+                    for (const el of document.querySelectorAll('body *')) {
+                      const cs = getComputedStyle(el);
+                      if (cs.display === 'none' || fixed.some((f) => f.contains(el))) continue;
+                      const r = el.getBoundingClientRect();
+                      if (r.width && (!best || r.right > best.right)) {
+                        best = { right: R2(r.right), sel: el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') +
+                          (el.classList.length ? '.' + [...el.classList].slice(0, 3).join('.') : '') };
+                      }
+                    }
+                    return best;
+                  })() },
         card: { r: rect(card), shadow: s.boxShadow === 'none' ? 'none' : s.boxShadow,
                 border: px(s.borderTopWidth), radius: px(s.borderTopLeftRadius) },
         // the card's identity is the glyph on its own tab, not the first
@@ -678,6 +700,25 @@ function rulesFor(card, tok) {
     if (!near(grew, 10, 0.51) || (left !== null && !near(left, -8, 0.51))) {
       at('P3', 'positioning', 'the active tab grows 8px to the left, plus the 2px tuck under the card',
         'it grows ' + grew + 'px and its left edge moves ' + left + 'px');
+    }
+  }
+  // **V1 — a card fits the screen it is on** (Q1389, Ed's phone 2026-09-16:
+  // *does not fit on screen*). The stranger's Apply card carried a 20rem
+  // email box inline, and a 320px box in a card 88px in pushed a 390px
+  // phone's layout viewport out to 444 — the page scrolled sideways and the
+  // card's right third was off the glass. Two readings of one fact: the
+  // card's own right edge against the window, and the page's scroll width
+  // against it, since a widened layout viewport hides the first.
+  if (card.screen && card.card.r) {
+    const right = Math.round((card.card.r[0] + card.card.r[2]) * 100) / 100;
+    if (right > card.screen.w + 0.5) {
+      at('V1', 'positioning', 'a card fits the screen it is on — its right edge inside ' + card.screen.w + 'px (Q1389)',
+        'the card runs to ' + right + 'px');
+    }
+    if (card.screen.scrollW > card.screen.w + 0.5) {
+      at('V1', 'positioning', 'a card fits the screen it is on — the page no wider than ' + card.screen.w + 'px (Q1389)',
+        'with this card open the page is ' + card.screen.scrollW + 'px wide' +
+          (card.screen.widest ? ' — ' + card.screen.widest.sel + ' runs to ' + card.screen.widest.right + 'px' : ''));
     }
   }
   // **P10 — one tab per open card** (Q1379, Ed 2026-09-15: *why am I seeing
