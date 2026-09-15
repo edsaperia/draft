@@ -42,13 +42,32 @@ export interface IssueOutcome {
 export interface SiteChurn {
   /** `start:end`, joined by commas for a multi-hunk patch. */
   site: string;
-  /** What stood there in order: the opening text first, then each adoption. */
-  texts: string[];
-  adoptions: number;
+  /** What the document opened with on this site. */
+  opened: string;
+  /** Every adoption on it, in order. */
+  adopted: SiteAdoption[];
   /** Adoptions after the first — the document changing its mind on this site. */
   flips: number;
   /** Adoptions whose text had stood on this site before: it came back. */
   reversions: number;
+}
+
+/** One adoption on a site, with the evidence the engine decided it on. */
+export interface SiteAdoption {
+  /** Simulated ms. */
+  t: number;
+  /**
+   * The engine's posterior P(leader beats the current text) at the moment it
+   * adopted. It no longer gates anything (R-114) — the leader is the top of
+   * the ranking and there is no bar — but it is still recorded, and it is the
+   * only way to ask, off a log the new rule produced, *which of these would
+   * the retired bar have stopped*.
+   */
+  p: number;
+  /** The wording this adoption put on the site. */
+  text: string;
+  /** Set when that wording had stood on this site before: it came back. */
+  reversion: boolean;
 }
 
 export interface Metrics {
@@ -118,8 +137,7 @@ export function computeMetrics(
   // session opened with so the first adoption has an incumbent to be measured
   // against. Read off the log, never off the scenario.
   let openedLines: string[] = [];
-  const siteTexts = new Map<string, string[]>();
-  const siteReversions = new Map<string, number>();
+  const sites = new Map<string, SiteChurn>();
   for (const entry of session.log) {
     const e = entry.event;
     if (e.type === 'opened') {
@@ -150,19 +168,26 @@ export function computeMetrics(
       // A setting candidate has no patch and so no site (Q390) — settings
       // race, but they do not churn a footprint.
       if (patch) {
-        const site = patch.hunks.map((h) => `${h.start}:${h.end}`).join(',');
-        const adoptedText = patch.hunks.map((h) => h.lines.join('\n')).join('\n');
-        let stood = siteTexts.get(site);
-        if (!stood) {
-          stood = [patch.hunks
-            .map((h) => openedLines.slice(h.start, h.end).join('\n'))
-            .join('\n')];
-          siteTexts.set(site, stood);
+        const key = patch.hunks.map((h) => `${h.start}:${h.end}`).join(',');
+        const text = patch.hunks.map((h) => h.lines.join('\n')).join('\n');
+        let site = sites.get(key);
+        if (!site) {
+          site = {
+            site: key,
+            opened: patch.hunks
+              .map((h) => openedLines.slice(h.start, h.end).join('\n'))
+              .join('\n'),
+            adopted: [],
+            flips: 0,
+            reversions: 0,
+          };
+          sites.set(key, site);
         }
-        if (stood.includes(adoptedText)) {
-          siteReversions.set(site, (siteReversions.get(site) ?? 0) + 1);
-        }
-        stood.push(adoptedText);
+        const stood = [site.opened, ...site.adopted.map((a) => a.text)];
+        const reversion = stood.includes(text);
+        site.adopted.push({ t: e.t, p: e.p, text, reversion });
+        site.flips = site.adopted.length - 1;
+        if (reversion) site.reversions++;
       }
     }
   }
@@ -196,14 +221,7 @@ export function computeMetrics(
   const span = welfareOptimal - welfareIncumbent;
   const welfareRatio = span > 1e-9 ? (welfareAchieved - welfareIncumbent) / span : 1;
 
-  const churn: SiteChurn[] = [...siteTexts].map(([site, texts]) => ({
-    site,
-    texts,
-    // texts[0] is the opening incumbent, so an adoption is every entry after it
-    adoptions: texts.length - 1,
-    flips: Math.max(0, texts.length - 2),
-    reversions: siteReversions.get(site) ?? 0,
-  }));
+  const churn: SiteChurn[] = [...sites.values()];
 
   const participationOut: Metrics['participation'] = {};
   for (const [id, p] of participation) {
