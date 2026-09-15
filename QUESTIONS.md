@@ -21,6 +21,7 @@ The index, in the section's own order (nothing is pinned — Ed, 2026-09-07, Q12
 | 1372 | A bot-founded document, and what the founding order does to every reader | 2026-09-15 | **answered, owed** (Ed, 2026-09-15 20:15: *if the founder hasn't decided whether to delegate a setting yet, how could it be blocking decisions for members?* — a member sees every delegated question the moment it is delegated) | `set-convenor-membership`; `blocksOrder`, `orderReady`; Q1325 |
 | 1373 | A heading-over-text card carries no title head: ✒️ 🛡️ 🏛️ 💡 ⚖️ open as the strip, the paragraph and OK | 2026-09-15 | **answered, owed** (Ed, 2026-09-15 20:35) | `noTitleHead`, `textcard` (session-view.html, setup.js); SURFACE §9 gates and grants rows; STYLE T3 |
 | 1374 | A rail entry carries a subtitle only on a motion: the gates' *Open* and a settled rule's news value go | 2026-09-15 | **answered, owed** (Ed, 2026-09-15 20:38) | `summary`, `VALUE` (session-view.html); SURFACE C13, §9 gates row; STYLE T4 |
+| 1375 | A member-related rail entry names the person: *[face] Hossein has left*, the email where no name was chosen | 2026-09-15 | **answered, owed** (Ed, 2026-09-15 20:20) | `departureCard`, `admitCard`, `applicantName`, `inviteeHandle` (session-view.html); `synth` in copy.js; STYLE T1; the copy golden |
 | 925 | Three more things git knows about overlapping patches | 2026-08-27 | parked | SPEC §2.2, §2.4; Q924 |
 | 109 | Scale: the margin assumes a short rail | 2026-08-16 | waiting on Ed's own read (the walk, 2026-09-14: *look at a moon-shaped room and rule from what you saw* — `docs.vote/d/moon2`, ~156 members, is idle; the alternatives on the table were naming a ceiling of ~30 live questions, or committing to a screen-only margin) | `needs-you-queue` |
 | 282 | A rendered document and a source offset do not agree | 2026-08-17 | deferred past the alpha (Ed, 2026-08-27) | `richToSource` (cards.js) |
@@ -172,6 +173,8 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 
 1374. **A rail entry carries a subtitle only on a motion.** (Ruled 2026-09-15 by Ed, same QA: *queue cards had body text*; asked which, he chose the gates' *Open* and a settled rule's news value, and kept a motion's rationale.) T4 as it stood let a subtitle survive on a motion and on news; C13 said news's subtitle is *what happened*. Now: a motion's entry carries its rationale behind the speaker's disc, or nothing; every other entry — task, gate, grant, news of a settled or changed rule, departure, 📭 — is its name alone, the card saying the rest. `summary`'s news branch goes; the gates' `VALUE` lines survive only where a card body or a readout reads them. SURFACE C13, §9's gates row; STYLE T4.
 
+1375. **A member-related rail entry names the person, with their face.** (Ruled 2026-09-15 by Ed: *"A Member Has Left" can be "[avatar] [name] has left", and similar with other member-related queue cards. Use [email] if no name chosen.*) The departure titles deliberately named nobody — *A Member Has Left* / *A Member Has Been Removed* — because a title carrying a name put a fresh string in the copy golden per departure (`departureCard`'s own note). Now every entry about a person leads with their face and names them: *‹face› Hossein has left* · *‹face› Hossein has been removed* · *‹face› Admit Hossein?* · *‹face› Hossein has joined* — and the person's email address where they chose no name (as `applicantName` already does; `inviteeHandle`'s local-part is the odd one out and should follow). The sentence is a sentence, not Title Case: an exception to T1 stated there. The golden holds the shape with the name normalised, or the walks name one fixed person.
+
 ## Backlog (provisioned, build later)
 
 | # | Title | Raised | State | Pointers |
@@ -250,7 +253,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1375** — claim by writing the block here, then commit it alone.
+**The next free number is 1376** — claim by writing the block here, then commit it alone.
+
+**1375 is the member-named rail entry** (claimed 2026-09-15 20:22, Ed: *"A Member Has Left" can be "[avatar] [name] has left", and similar with other member-related queue cards. Use [email] if no name chosen*).
 
 **1373–1374 are the lab room's desktop QA rulings on the cards** (claimed 2026-09-15 20:40, Ed: *founder actions and founder veto decision cards still had titles, and also queue cards had body text*): 1373 a heading-over-text card (✒️ 🛡️ 🏛️ 💡 ⚖️) carries no title head; 1374 a rail entry carries a subtitle only on a motion — the gates' *Open* and a settled rule's news value go.
 
