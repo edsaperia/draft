@@ -580,12 +580,12 @@ window.BAND = (function () {
         theyDecide('quorum') +
         opt(V, 'quorumForm', 'share',
           numIn(V, 'quorumPct', 1, 100) +
-          '% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.', '',
+          '% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.', '',
           (V.quorumForm === 'share'
             ? meanLine('quorum', CHOSEN.quorum() ? TYPED.quorum() : null) : '')) +
         opt(V, 'quorumForm', 'count',
           numIn(V, 'quorumN', 1, 40) +
-          ' members must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.', '',
+          ' members must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.', '',
           (V.quorumForm === 'count'
             ? meanLine('quorum', CHOSEN.quorum() ? TYPED.quorum() : null) : '')) +
         '</div>'; })(),

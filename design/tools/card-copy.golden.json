@@ -680,17 +680,17 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Choose this members must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Choose thisThe membership will decide how many members must vote on a proposal ✏️ before anything changes.Choose this",
+    "body": "% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Choose this members must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Choose thisThe membership will decide how many members must vote on a proposal ✏️ before anything changes.Choose this",
     "options": [
      {
       "set": "quorumForm",
       "val": "share",
-      "label": "% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands."
+      "label": "% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer."
      },
      {
       "set": "quorumForm",
       "val": "count",
-      "label": "members must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands."
+      "label": "members must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer."
      },
      {
       "set": "quorumBy",
@@ -3563,17 +3563,17 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Choose this members must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Choose thisThe membership will decide how many members must vote on a proposal ✏️ before anything changes.Chosen",
+    "body": "% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Choose this members must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Choose thisThe membership will decide how many members must vote on a proposal ✏️ before anything changes.Chosen",
     "options": [
      {
       "set": "quorumForm",
       "val": "share",
-      "label": "% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands."
+      "label": "% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer."
      },
      {
       "set": "quorumForm",
       "val": "count",
-      "label": "members must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands."
+      "label": "members must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer."
      },
      {
       "set": "quorumBy",
@@ -4418,17 +4418,17 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Choose this members must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Choose thisThe membership will decide how many members must vote on a proposal ✏️ before anything changes.Choose this",
+    "body": "% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Choose this members must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Choose thisThe membership will decide how many members must vote on a proposal ✏️ before anything changes.Choose this",
     "options": [
      {
       "set": "quorumForm",
       "val": "share",
-      "label": "% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands."
+      "label": "% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer."
      },
      {
       "set": "quorumForm",
       "val": "count",
-      "label": "members must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands."
+      "label": "members must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer."
      },
      {
       "set": "quorumBy",
