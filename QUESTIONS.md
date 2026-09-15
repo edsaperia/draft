@@ -209,7 +209,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1363** — claim by writing the block here, then commit it alone.
+**The next free number is 1364** — claim by writing the block here, then commit it alone.
+
+**1363 is 🧭 leaving the birth** (claimed 2026-09-15 17:12, Ed in chat: *please remove the presets 🧭 from the birth*): the shape card — *a meeting · a conference · ongoing · custom* (entry 166, R-053) — is no longer asked, so the birth is 🪶 → 📍 → 📧 and every setting is the Founder's own hand or a delegation; the provenance line *As for a meeting.*, 🍾's diff line, ⏰'s chips and 💤's hide go with it, the save carries no shape, and `shapes.ts` and `created.shape` stay in the engine so a log born with one replays and the sim sweeps keep their input. Supersedes the *the shapes' presets stay* clause of Q1362 D3, ruled the same afternoon. Spent at the claim; the reasoning is DECISIONS' Q1363 section.
 
 **1362 is the status quo as a peer** (claimed 2026-09-15 13:03, from the same conversation, Ed: *the status quo is in effect just another proposal … can we do some massive simplifications?*): the adoption threshold leaves the mechanism as a member-facing concept; the text is the ranking's top once the quorum is met. It overtakes 1361.
 
