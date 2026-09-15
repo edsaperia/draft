@@ -530,7 +530,10 @@ const act = async (seat) => {
   const options = [];
   // somebody waiting at the door comes before the text: an admission dealt
   // into the hand is judged ahead of the card on top of it (a member would)
-  const admission = cards.find(isAdmission);
+  const admission = cards.find(isAdmission)
+    // …or the pair its own row asks with, where the hand holds no card on it
+    // (Q1393): the row carries it from the same build the page reads it on
+    || ((p.settingRaces ?? []).find((s) => /^admit:/.test(s.settingId) && !s.judged && s.ask) || {}).ask;
   if (admission && m.gates?.judging !== false) options.push(['admit', 0.8]);
   if (cards.length && m.gates?.judging !== false) options.push(['judge', 0.55]);
   if (openMotions.length) options.push(['answer-motion', 0.2]);

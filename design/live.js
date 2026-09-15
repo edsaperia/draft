@@ -414,9 +414,15 @@ window.LIVE = (function () {
     // served race card carries the two option ids; keep prefers the standing
     // side, the proposal prefers the candidate side, abstain is indifference
     // the served race card carrying a setting's motion, by the setting's id
+    // — and where the hand holds none, the pair the setting race's own row
+    // asks with (Q1393): an admission a busy room's hot set never deals is
+    // still a vote every member is owed, and the row carries it as a clause
+    // row carries its `ask` (Q1202)
     const raceCardOf = (settingId) => ((env.cs && env.cs.v && env.cs.v.raceCards) || []).find((x) =>
       (x.a.setting && x.a.setting.settingId === settingId) ||
-      (x.b.setting && x.b.setting.settingId === settingId));
+      (x.b.setting && x.b.setting.settingId === settingId))
+      || (((env.cs && env.cs.v && env.cs.v.settingRaces) || []).find((s) => s.settingId === settingId && s.ask) || {}).ask
+      || undefined;
     // one encoding of a pairwise judgment on a served card: the engine marks
     // which option is what stands (OptionView.incumbent), and keep / prefer /
     // indifferent translate into the race's own outcome vocabulary here and

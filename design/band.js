@@ -706,6 +706,9 @@ window.BAND = (function () {
       get open() { return S.open; }, get E() { return E(); },
       mustAct: (c) => !c.done() && !(c.optional && S.app.submitted),
       yours: (c) => c.k === 'apply' && S.app.submitted,
+      // every one of the five stays in the rail, done ones grey (Q1392): the
+      // way back to an answer — the rationale most of all — is its entry
+      pinAll: true,
       // the shut door is news, not an ask (SURFACE E33, Q901) — the only news
       // an applicant is ever served, and grey the moment they OK it
       news: (c) => c.k === 'apply' && applyShutOnMe() && !S.app.shutAcked,

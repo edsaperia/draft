@@ -6514,7 +6514,12 @@
     // rather than narrowing it, because *this* entry is still a pinning kind —
     // whether it gets to pin is a question about the whole queue, and only
     // `layoutQueue`, which can see both populations at once, can answer it.
-    return { id: c.k, html, pinned: st !== 'wait' && st !== 'done', rank: RAIL_RANK[st],
+    // an applicant's five stay listed whatever their state (`pinAll`, Q1392,
+    // Ed 2026-09-16: *they should appear as greyed out queue cards in the
+    // sidebar, so I can easily get back to them, as I have nothing else to
+    // see or do*): a filed entry is a position in the gutter for a member,
+    // and an applicant has no gutter to find it in
+    return { id: c.k, html, pinned: !!cx.pinAll || (st !== 'wait' && st !== 'done'), rank: RAIL_RANK[st],
       u: RAIL_U[st], mine: st === 'yours', news: st === 'news', anchor: () => anchorOf(c.k) };
   }
   // **The birth-pass sees the whole rail** (Q1338, Ed 2026-09-11). It used to

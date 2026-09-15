@@ -216,8 +216,14 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
     const here = myJ.filter(onRace(ids));
     const dealt = served !== null && served.cards.some((c) => c.kind === 'edge' && c.raceId === r.id);
     const ask = served === null || dealt ? null : api.askOn(r.id, HAND, served.t);
+    // **The pair crosses, as a clause row's does** (Q1393, the lantern-house
+    // room, 2026-09-16). `askable` alone told the page a vote could be had
+    // and gave it nothing to vote with: the hot set is three races, a busy
+    // room's text races outvalue an admission, and twenty members each
+    // holding four text cards never met the applicant. Same blind CardView
+    // as the clause rows carry (Q1202) — no standing, no author.
     return { id: r.id, settingId: r.settingId, closeness: r.closeness, judges: r.leaderJudges, floor,
-      judged: here.some((j) => !j.superseded && !j.locked), askable: dealt || ask !== null };
+      judged: here.some((j) => !j.superseded && !j.locked), askable: dealt || ask !== null, ask };
   });
   const mine = api.myCandidates().flatMap((m) => {
     const c = engine.getCandidate(m.id);
