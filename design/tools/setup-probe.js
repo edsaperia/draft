@@ -40,7 +40,7 @@
    * post-confirm toc (headings from session.js). */
   const ALLOWLIST = [];
   /* Empty since the re-freeze of 2026-08-22 (the glyph rename: the
-   * threshold 🌡️, the ramp 🪜, removal 🥾 — and with it the Proposals
+   * the bar 🌡️, the ramp 🪜, removal 🥾 — and with it the Proposals
    * preamble freeze the previous run had left pending). A fresh
    * comparison needs no allowances. */
   const ALLOW_RE = [];
@@ -336,10 +336,6 @@
     ['open-ending', () => openTab('ending')],
     ['choose-ending', () => click('.setupcard [data-set="ending"][data-val="perpetual"]')],
     ['confirm-ending', () => click('.setupcard [data-confirm]')],
-    // 🌡️ is exactly three rungs since Q1158 — the free-number box left
-    ['open-bar', () => openTab('bar')],
-    ['choose-bar', () => click('.setupcard [data-set="tClose"][data-val="80"]')],
-    ['confirm-bar', () => click('.setupcard [data-confirm]')],
     // 👥 collects form and number together since Q1162: the count block is
     // its own rule sentence, the number typed inside it
     ['open-quorum', () => openTab('quorum')],
@@ -397,20 +393,24 @@
     ['seat-founder', () => setSeat('0')],
   ];
 
+  // **The motion is 👥's since 2026-09-15** (Q1362): it was 🌡️'s, which left
+  // the surface with the bar it named. 👥 is the same shape — constitutional,
+  // a number typed into the composer's own control — so the scenario asserts
+  // what it always did: a member composes, the room answers, the card settles.
   const motions = [
     ['seat-bo', () => setSeat('1')],
-    ['open-bar', () => openTab('bar')],
-    ['raise-bar', () => typeInto('.setupcard [data-mnum]', '85')],
+    ['open-quorum', () => openTab('quorum')],
+    ['raise-quorum', () => typeInto('.setupcard [data-mnum]', '4')],
     ['hold-assembly', () => hold('.setupcard [data-holdmotion]')],
     ['seat-founder', () => setSeat('0')],
-    ['open-bar-judging', () => openTab('bar')],
+    ['open-quorum-judging', () => openTab('quorum')],
     ['pick-answer', () => click('.setupcard [data-motion]')],
     ['commit-answer', () => click('.setupcard [data-confirm]')],
     ['seat-cy', () => setSeat('2')],
-    ['open-bar-cy', () => openTab('bar')],
+    ['open-quorum-cy', () => openTab('quorum')],
     ['pick-answer-cy', () => click('.setupcard [data-motion]')],
     ['commit-answer-cy', () => click('.setupcard [data-confirm]')],
-    ['reopen-bar', () => openTab('bar')],
+    ['reopen-quorum', () => openTab('quorum')],
     // *Close* left the surface with Q521(a); a card is closed by its own
     // mark, which is the one way in and out of every card there has ever been
     ['close-card', () => click('.setupcard .chipcol .achip')],

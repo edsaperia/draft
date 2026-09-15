@@ -247,7 +247,8 @@ async function assertSurface(rung) {
     // arrives with it — and F5 holds 🍾 back while 🏛️ is still being served.
     // The OK lives in the browser like the pen's, so the ladder cannot press
     // it either. (Before Q775 this rung reached 🍾 without ever meeting 🏛️,
-    // because `ansDue()` was false: 🪜 was owed by a hand nothing could ask.)
+    // because `ansDue()` was false: 🪜 was owed by a hand nothing could ask —
+    // both settings have since left the surface, Q1362.)
     await okThe('grant-voice');
     const armed = await measure();
     // **the rung stops one press short of the cork** (Q678) — 🍾 is offered,

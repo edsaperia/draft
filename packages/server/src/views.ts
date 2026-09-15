@@ -152,7 +152,10 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
       contested: r.contested,
       incumbentId: r.incumbentId,
       deadlocked: r.deadlocked,
-      // closeness to resolution as a magnitude (SPEC §8.3) — see RaceView
+      // closeness to resolution as a magnitude (SPEC §8.3) — see RaceView.
+      // Since Q1362 (c) it is the leader's judges over the floor, the same
+      // two numbers as the pair below: the rail's fill is how far the room
+      // has got toward the quorum, and this is the wire it rides on.
       closeness: r.closeness,
       // the floor's own number (Q1337): who has judged the leader, its
       // author's voice among them — never the race's traffic

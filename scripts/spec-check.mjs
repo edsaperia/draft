@@ -40,9 +40,11 @@ const read = (rel) => readFileSync(join(ROOT, rel), 'utf8');
 // ---- oracles ----------------------------------------------------------------
 
 // *judgment* and the maths behind it (entry 164, Ed 2026-08-27: the surface
-// says **vote**; the argument for the threshold being a confidence lives at
-// docs.vote/pairwise). Deliberately not `bradley`: 🌡️'s one linking sentence
-// (entry 163) names the method, and it is the sole place it may stand.
+// says **vote**). **And *threshold* itself since 2026-09-15** (Q1362): the bar
+// left the mechanism a member meets, so the word has no site left — the one
+// sanctioned exception, 🌡️'s linking sentence to docs.vote/pairwise (entry
+// 163), went with the card and the page. `bradley` needs no pattern of its own
+// now: nothing may name the method at all, and nothing does.
 // Shared by `checkBannedWords` (the four page files) and `checkShapes`, whose
 // strings live in the bundle (entry 166).
 // *room* for the people who decide (entry 215, Ed 2026-08-28, QA on
@@ -51,7 +53,8 @@ const read = (rel) => readFileSync(join(ROOT, rel), 'utf8');
 // changes"*). §1's row: **the membership**, and *Room* survives only as a
 // place — which is what BANNED_OK below is for.
 const BANNED = [/SPEC §/, /\(§\d/, /\broster\b/, /\bparticipant\b/, /\bthe Founder[’']s OK\b/, /\bcarried change/,
-  /\bjudg(?:e|es|ed|ing|ment|ments)\b/i, /\bcomparisons?\b/i, /\bconfidence\b/i, /\broom\b/i];
+  /\bjudg(?:e|es|ed|ing|ment|ments)\b/i, /\bcomparisons?\b/i, /\bconfidence\b/i, /\broom\b/i,
+  /\bthreshold\b/i];
 
 /**
  * **The one allowance, shared by both readers** — exact strings, never a
@@ -957,10 +960,15 @@ function checkOrder(pm) {
   if (!/mustAct\(c\) && !remedyOnly\(c\)/.test(page))
     find('order', "`otherTasksLeft` counts the 🪪 remedy again — F18/Q828: what is offered *because* the questions are stuck cannot be the reason to withhold them");
   if (!/const otherTasksLeft = \(\) => CARDS\.concat\(GATES\)\s*\n?\s*\.some\(\(c\) => !c\.isGate && railable\(c\)/.test(page))
-    find('order', "`otherTasksLeft` no longer asks `railable` — F18: a task the rail can never offer would withhold every delegated question for ever (🪜)");
-  const commit = page.slice(page.indexOf('function commitSetting('), page.indexOf('function commitSetting(') + 1800);
-  if (commit.indexOf("if (k === 'bar')") > commit.indexOf('if (wantsDelegate(k))'))
-    find('order', "🪜 rides only 🌡️'s *set* branch again — F18: it is the founder's whichever way 🌡️ goes, and nothing else on the surface can ever ask for it");
+    find('order', "`otherTasksLeft` no longer asks `railable` — F18: a task the rail can never offer would withhold every delegated question for ever");
+  // **F18's other half retired with the two settings it was about** (Q1362,
+  // 2026-09-15). It asserted that 🪜 rode 🌡️'s *hand-over* as well as its set,
+  // because 🪜 was in neither ORDER nor any section's keys and a delegated 🌡️
+  // therefore left `mustAct('pace')` true for ever (Q775). Neither has a card
+  // now and both carry a `retiredAnswer`, so nothing is owed and there is no
+  // ride to place; `SURFACE_RETIRED` in `checkComposer` is what holds the pair
+  // to that, and Q775's post-mortem is in design/DECISIONS.md. The `railable`
+  // assertion above stands: it is a rule about any unreachable task.
   note(`  ${rows.length} steps; blocking grant: ${blocker}; ${secs.length} sections`);
 }
 
@@ -1262,7 +1270,9 @@ function checkBeginRows(M, pm) {
   // `machines` is a catalogue setting for replay alone — no card since R-078,
   // and not a row here (Ed, 2026-09-09: *we are not having machines*); the
   // start keeps both powers on it and nothing can be proposed on it
-  const RETIRED = new Set(['machines']);
+  // …and 🌡️ and 🪜 joined it on 2026-09-15 (Q1362 (b), R-117): there is no
+  // approval threshold on the surface, so there is no power over one to keep.
+  const RETIRED = new Set(['machines', 'bar', 'pace']);
   const want = new Set([
     ...M.CATALOGUE.filter((e) => e.kind !== 'personal' && !RETIRED.has(e.id)).map((e) => e.id),
     ...M.DOORS,
@@ -1307,7 +1317,10 @@ function checkComposer(M, pm) {
   // left the surface, so nothing can delegate it and no member is ever asked
   // it — an ANSWER body for it would be copy nothing renders. Exact ids, never
   // a pattern, and re-adding the card removes the entry.
-  const SURFACE_RETIRED = ['machines'];
+  // …joined by 'bar' and 'pace' on 2026-09-15 (Q1362 (b), R-117), the same
+  // road for the same reason: the document's text is the top of the ranking
+  // once the quorum is met, so there is no bar for a member to be asked about.
+  const SURFACE_RETIRED = ['machines', 'bar', 'pace'];
   // …and the catalogue's own record of the same fact must be the same set
   // (entry 259, R-080). `retiredAnswer` is what 🍾 resolves a question nobody
   // can be asked at, and the module reads it as *this setting has no card*:

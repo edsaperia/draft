@@ -209,8 +209,6 @@ const cmd = (op, args) => page.evaluate(async ([slug, op2, args2]) => {
 
 const SETTINGS = [
   ['ending', { endsAtMs: null }],
-  ['pace', { shape: 'fixed' }],
-  ['bar', { pct: 60 }],
   ['quorum', { form: 'count', n: 1 }],
   ['authorship', { rung: 'sealed' }],
   ['judgments', { rung: 'after' }],
@@ -563,7 +561,7 @@ if (admEntry) {
    * Q1182, STYLE T48) — the membership as it stands under *Keep this*, the
    * applicant joining under *Prefer this*, *Abstain* as its own textless block
    * — and it commits on the assembly hold. At *proposal* the membership
-   * decides at the threshold: the card is a judgment between the applicant
+   * decides ✏️: the card is a judgment between the applicant
    * and the membership as it stands, and it commits with ✓. The seat matrix
    * cannot say this — it asserts *who carries the entry*, not what the card
    * asks — so it is asserted here, per price. The consent card's words are
@@ -578,7 +576,7 @@ if (admEntry) {
       commit: 'confirm', called: 'a 🏛️ question' },
     proposal: {
       want: ['Admit them', 'Keep the membership as it is', 'Indifferent'],
-      commit: 'admitgo', called: 'a judgment at the threshold' },
+      commit: 'admitgo', called: 'a judgment the membership decides' },
   }[PRICE];
   if (FORM && card) {
     let formOk = true;

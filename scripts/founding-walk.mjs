@@ -482,9 +482,10 @@ for (let i = 0; i < 40; i++) {
   // alone** (Q832, `journey-walk.mjs`'s own guard, ported). Typing into a
   // rung's field *chooses that rung*, so the fill below un-delegated whatever
   // `--delegate=` had just handed over — silently, and only for a setting whose
-  // value rung carries a field. 🌡️ is exactly that (one `number` input), which
-  // is Ed's own case: `--delegate=bar` walked all the way to a begun document
-  // with 🌡️ founder-held, and the verdict blamed the page.
+  // value rung carries a field. Ed's own case was 🌡️, one `number` input:
+  // `--delegate=bar` walked all the way to a begun document with 🌡️
+  // founder-held, and the verdict blamed the page. That card left the surface
+  // with Q1362; 👥 and ⏱️ carry fields in their blocks and the guard is theirs.
   // with no defaults a card waits for its numbers: fill whatever is empty
   if (next.k !== DELEGATE) await page.evaluate(() => {
     document.querySelectorAll('.setupcard input, .setupcard textarea').forEach((i) => {

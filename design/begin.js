@@ -233,13 +233,15 @@ window.BEGIN = (function () {
     const BEGIN_ROWS = [
       'title', 'slug', 'chamber',
       'admission', 'applications', 'lapse', 'removal', 'invite', 'remove',
-      'rate', 'ending', 'bar', 'pace', 'quorum', 'authorship', 'judgments',
+      'rate', 'ending', 'quorum', 'authorship', 'judgments',
       'text',
       // `machines` is not here (Ed, 2026-09-09: *we are not having machines*):
       // it has had no card since 🤖 left the surface (R-078) and stays in the
       // catalogue for replay alone, so the start keeps both powers on it and
       // nothing can ever be proposed on it — `checkBeginRows` exempts it by
       // name rather than the table pretending it is a setting anybody meets.
+      // **🌡️ and 🪜 joined it on 2026-09-15** (Q1362 (b), R-117): a power over
+      // a setting no card asks about is a power nobody could ever use.
     ];
     // **A switch reflects the tabs** (Ed's rule (i)): the hand actually on a key
     // less what its own ✒️/🛡️ tab has already promised away — the same two
@@ -310,7 +312,7 @@ window.BEGIN = (function () {
     const BEGIN_BATCH = [
       beginTextLine,
       'Members gain ✏️s on it, at the proposal rate.',
-      'Voting opens, and the approval threshold begins its course.',
+      'Voting opens.',
       'The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.',
     ];
     // **🍾 states the diff, not the list** (entry 166): the clauses above already

@@ -175,12 +175,15 @@ await check('design assets serve, design notes do not', async () => {
   return 'assets 200 · notes 404';
 });
 
-await check('the approval-threshold explainer serves at /pairwise (entry 163)', async () => {
-  const r = await get('/pairwise');
-  expect(r.status === 200, `/pairwise status ${r.status}`);
-  expect((r.headers.get('content-type') ?? '').includes('text/html'),
-    `/pairwise content-type ${r.headers.get('content-type')}`);
-  return '200 text/html';
+// The explainer served here until the approval threshold left the surface
+// (Q1362 (b), 2026-09-15). A live host still answering it would be serving
+// last release's design, so the check is kept and inverted.
+await check('the retired threshold explainer is gone from /pairwise (Q1362)', async () => {
+  for (const p of ['/pairwise', '/pairwise.html']) {
+    const r = await get(p);
+    expect(r.status === 404, `${p} status ${r.status}`);
+  }
+  return '404';
 });
 
 await check('an unknown document 404s in json', async () => {

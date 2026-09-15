@@ -48,7 +48,8 @@ const NEW_CLAUSE = process.argv.includes('--new-clause');
 // and each was written to break something. `--delegate-all` hands every
 // delegable setting to the membership as it is served, which is the path that
 // found Q775 — a delegated 🌡️ left 🪜 owed and unservable, and not one of the
-// eleven questions came back. `--proposals-first` takes 🍾 💡 ⚖️ 🏛️ the moment
+// eleven questions came back (both settings left the surface with the bar on
+// 2026-09-15, Q1362; the walk still drives every question there is). `--proposals-first` takes 🍾 💡 ⚖️ 🏛️ the moment
 // any of them is offered rather than in rail order, which is the Q645 shape:
 // acknowledging what a question hands you before answering the question.
 // A delegating founding cannot *begin* — §9.0b resolves no blind question on
@@ -649,7 +650,8 @@ const fillFields = () => page.evaluate(() => {
       // paints its thumb somewhere. So it cannot be skipped for having a
       // `.value` the way every other field is. Snapped to its own step: 👥's
       // share runs 5–100 by 5s, and an off-grid answer is not one a member
-      // could give. (🌡️ was the other one until entry 165 made it rungs.)
+      // could give. (🌡️ was the other one until entry 165 made it rungs, and
+      // it left the surface altogether with Q1362.)
       const lo = +n.min || 0; const hi = +n.max || 100; const st = +n.step || 1;
       n.value = String(Math.min(hi, lo + Math.round((hi - lo) / 2 / st) * st));
       return fire();
@@ -876,7 +878,7 @@ const inviteDoorPreBegin = async () => {
  */
 // the constitutional settings, in the page's own keys: what a founder settles
 // during the founding and what a late arrival used to be handed nine of
-const PREDATING = ['ending', 'bar', 'quorum', 'authorship', 'judgments',
+const PREDATING = ['ending', 'quorum', 'authorship', 'judgments',
   'chamber', 'lapse', 'applications', 'removal'];
 const AMENDED = 'chamber'; // 🌍, constitutional and founder-held after this founding
 let guestPage = null;
@@ -1511,13 +1513,14 @@ const stuckAtBegin = async () => {
 /* ---- the shape's provenance (entry 166) ---------------------------------
  * Read off the band: every clause's text by its page key. The shaped keys are
  * the row's own `sets` off the bundle, less whatever the row hides and less
- * the two settings with no clause to carry a sentence: 🪜, which lives inside
- * 🌡️'s stack, and `machines`, whose card left the surface on 2026-08-29
- * (backlog 251) while the setting stayed in the catalogue for replay — every
- * shape sets it, so all three shaped runs had been red on it since.
+ * the settings with no clause to carry a sentence — the three whose cards
+ * have left the surface while the setting stayed in the catalogue for replay:
+ * `machines` since 2026-08-29 (backlog 251) and `bar` and `pace` since
+ * 2026-09-15 (Q1362). Every shape sets all three, so a shaped run would be red
+ * on each of them without this list.
  * Asserted at the moment 🍾 is served, which is the first moment every
  * section of the constitution is on the page. */
-const NO_CLAUSE = ['pace', 'machines'];
+const NO_CLAUSE = ['pace', 'machines', 'bar'];
 const clauses = () => page.evaluate(() => Object.fromEntries(
   [...document.querySelectorAll('#band .cpara')].map((el) => [
     el.dataset.para || (el.querySelector('[data-tab]') || { dataset: {} }).dataset.tab,
@@ -1642,12 +1645,13 @@ const beginRowsBeforeStart = async () => {
   const rows = await brRows();
   say('rows       · ' + JSON.stringify(rows.map((r) => r.key + ' ' +
     r.cells.map((c) => c.pw + '=' + c.says).join(' '))));
-  // one row per power-holder — seventeen, since the machines row went (Ed,
-  // 2026-09-09: *we are not having machines*; BEGIN_ROWS in session-view.html
-  // is the literal) — ⏱️'s ✒️ the one given cell, 📝 alone laid down
+  // one row per power-holder — fifteen: the machines row went first (Ed,
+  // 2026-09-09: *we are not having machines*), and 🌡️ and 🪜 followed it off
+  // the surface on 2026-09-15 (Q1362). `BEGIN_ROWS` in design/begin.js is the
+  // literal. ⏱️'s ✒️ is the one given cell, 📝 alone laid down
   const givenPen = rows.filter((r) => r.cells.some((c) => c.pw === 'u' && c.says === 'Given')).map((r) => r.key);
   const downPen = rows.filter((r) => r.cells.some((c) => c.pw === 'u' && c.says === 'Laid down')).map((r) => r.key);
-  const ok = rows.length === 17 && givenPen.join() === 'rate' && downPen.join() === 'text';
+  const ok = rows.length === 15 && givenPen.join() === 'rate' && downPen.join() === 'text';
   say('given      · ' + (ok ? '⏱️’s ✒️ cell reads Given and no other row’s does; 📝 alone starts laid down'
     : 'FAIL: ' + rows.length + ' rows · given ' + JSON.stringify(givenPen) +
       ' · laid down ' + JSON.stringify(downPen)));
@@ -1854,18 +1858,18 @@ for (let i = 0; i < 60; i++) {
   // --delegate-all hands over what can be handed over. The founder's own
   // questions (✋ 🖼️ 🎩) and the undelegable settings have no such rung, so
   // `options` falls back to the ordinary ones and the walk answers them.
-  // **⏰ is held back, and that is a finding rather than a convenience**
-  // (Q778). It is the one delegable setting anything depends on — 🌡️ and 🪜
-  // are `deps: ['ending']` — and §9.0a refuses an answer to a dependent while
-  // its dependency is still collecting (`session.ts:1129`). Handing over both
-  // in a room of one puts 🌡️'s question in the rail with a live ✓ that the
-  // module answers `'bar' waits on 'ending'`: the surface offers a question the
-  // spec says is not answerable, and the cascade behind it stalls on an answer
-  // that cannot be given. That is its own defect and its own fix — the page has
-  // no copy of the catalogue's `deps`, and whether a blocked question pauses
-  // the cascade or is looked through is a real call — so it is filed, not
-  // guessed at here. Holding ⏰ leaves the other ten to test what this walk is
-  // for: that every question a founder hands over comes back to them.
+  // **⏰ is held back, and the defect it avoids is no longer reachable**
+  // (Q778, and Q1362). It was the one delegable setting anything depended on —
+  // 🌡️ and 🪜 were `deps: ['ending']` — and §9.0a refuses an answer to a
+  // dependent while its dependency is still collecting (`session.ts:1129`), so
+  // handing over both in a room of one put 🌡️'s question in the rail with a
+  // live ✓ the module answered `'bar' waits on 'ending'`: a question the spec
+  // says is not answerable. Both dependants left the surface on 2026-09-15 and
+  // no setting in the catalogue carries a `deps` list now, so nothing can reach
+  // that state. The hold stays because the page still has no copy of `deps` and
+  // the next setting to declare one would walk straight back into it — and
+  // because what this walk is for is the other ten: that every question a
+  // founder hands over comes back to them.
   const wantDelegate = DELEGATE_ALL && !next.startsWith('ans-') && next !== 'ending';
   let chose = null;
   let offered = await options(wantDelegate);
@@ -3363,7 +3367,7 @@ if (caret) {
     const line = EMPTY_TEXT ? 0 : 1;
     const WHY1 = 'Sundays are the point', WHY2 = 'One is plenty';
     // **The floor goes above the room first.** Under this walk's founding
-    // the floor is one (quorum 1 of 2) and the bar 55%, and an author's
+    // the floor is one (quorum 1 of 2), and an author's
     // derived preference is a mover (§8.2) — so the first judgment anywhere
     // sweeps the *other* challenger in at p ≈ 0.83, and the deck is gone
     // with the race (two runs of this step sealed it exactly so). The founder

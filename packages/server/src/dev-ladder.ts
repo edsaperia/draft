@@ -148,6 +148,14 @@ const addressOf = (i: number): string =>
  * are defined in terms of them: **⏰**, which is the ladder's clock, and **🤝**,
  * which decides whether an application exists to look at at all — drawn from
  * the two rungs that produce one.
+ *
+ * **And a retired setting is drawn by nobody** (pass-6 §3 stage 3, Q1362 (b)).
+ * 🤖 left the surface in 2026-08-29 and 🌡️ and 🪜 on 2026-09-15; each keeps a
+ * `retiredAnswer` and no card, so a value the stagehand sets for it is a value
+ * no founder could have set and no member could have been asked about — a
+ * document the ladder builds would be one nobody can reach by hand. Left
+ * unset, they cost nothing: a retired question holds neither `readiness` nor
+ * 🍾 up, and the engine reads its own pinned constant through the adapter.
  */
 function shuffle(rnd: () => number, endsAtMs: number): {
   values: Map<SettingId, SettingValue>;
@@ -164,6 +172,7 @@ function shuffle(rnd: () => number, endsAtMs: number): {
 
   for (const entry of CATALOGUE) {
     if (skip.has(entry.id) || ladderOwns.has(entry.id)) continue;
+    if (entry.retiredAnswer !== undefined) continue; // 🤖 🌡️ 🪜 — no card, no draw
     values.set(entry.id, drawFor(entry.id, entry.valueType, entry.rungs, rnd));
     // delegation is the state of holding neither power; roughly two in five,
     // so the blind founding, the 👑 route and the crown question are all live
@@ -175,12 +184,10 @@ function shuffle(rnd: () => number, endsAtMs: number): {
 function drawFor(id: SettingId, valueType: string, rungs: readonly string[] | undefined,
   rnd: () => number): SettingValue {
   switch (valueType) {
-    case 'percent': // 🌡️ — high enough to mean something, low enough to be cleared
-      return { pct: between(rnd, 60, 75) };
-    case 'pace': // 🪜 — mostly a ramp, so early adoption is reachable
-      return rnd() < 0.7
-        ? { shape: 'ramp', startPct: between(rnd, 50, 58) }
-        : { shape: 'fixed' };
+    // `percent` (🌡️), `pace` (🪜) and `machines` (🤖) have no draw: the loop
+    // above skips every setting carrying a `retiredAnswer`, so nothing here
+    // is ever asked for one. A draw returning for them would mean a card had
+    // come back, and the `default` below is the right answer until it does.
     case 'quorum': // 👥 — never above the roster, or the document freezes at 🍾
       return rnd() < 0.5
         ? { form: 'share', n: between(rnd, 30, 55) }
@@ -190,8 +197,6 @@ function drawFor(id: SettingId, valueType: string, rungs: readonly string[] | un
         dripMinutes: between(rnd, 10, 30) };
     case 'lapse': // 💤 — never, or far longer than the synthetic past
       return rnd() < 0.7 ? { afterMs: null } : { afterMs: between(rnd, 30, 90) * 24 * HOUR };
-    case 'machines':
-      return { enabled: rnd() < 0.5, budget: between(rnd, 4, 10) };
     case 'ladder':
       return { rung: pick(rnd, rungs ?? ['closed']) };
     case 'price': // 🪪 🥾 — any rung but the cheapest, so the doors have something to show
@@ -209,8 +214,6 @@ function drawFor(id: SettingId, valueType: string, rungs: readonly string[] | un
 function answerFor(setting: SettingId, target: SettingValue, rnd: () => number): SettingValue {
   const v = target as Record<string, unknown>;
   switch (setting) {
-    case 'bar':
-      return { pct: Math.max(50, (v.pct as number) - between(rnd, 0, 12)) };
     case 'quorum':
       return { form: v.form as 'count' | 'share',
         n: Math.max(1, (v.n as number) - between(rnd, 0, 8)) };
@@ -221,8 +224,6 @@ function answerFor(setting: SettingId, target: SettingValue, rnd: () => number):
       return v.afterMs === null
         ? { afterMs: null }
         : { afterMs: (v.afterMs as number) + between(rnd, 0, 30) * 24 * HOUR };
-    case 'machines':
-      return { enabled: v.enabled as boolean, budget: v.budget as number };
     default:
       return target; // ladders: the room's own most-protective answer stands
   }
@@ -563,8 +564,12 @@ async function toReady(host: LadderHost, doc: LoadedDoc, ctx: Ctx): Promise<void
   cs.setConvenorMembership(pen.next(), true);
   cs.confirmStartingText(pen.next(), CHARTER_TEXT);
 
-  // ⏰ first: 🌡️ and 🪜 declare it as a dependency, and a delegated question
-  // on a setting whose dependency has not settled will not open (§9.0a)
+  // ⏰ first: a delegated question on a setting whose dependency has not
+  // settled will not open (§9.0a). Its only two dependants, 🌡️ and 🪜, left
+  // the surface on 2026-09-15 and are no longer drawn here, so the order buys
+  // nothing today — it is kept because the next setting to declare a `deps`
+  // list would want it, and a founding that answers the clock first is the
+  // one the founder actually meets (SURFACE §8's `ORDER`).
   const order: SettingId[] = ['ending', ...[...values.keys()].filter((k) => k !== 'ending')];
   const quorum = values.get('quorum') as { form: 'count' | 'share' } | undefined;
   if (quorum) cs.setQuorumForm(pen.next(), quorum.form); // the form is the founder's (§9.0a)

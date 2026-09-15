@@ -25,7 +25,6 @@ var CONSTITUTION = (() => {
   var browser_exports = {};
   __export(browser_exports, {
     BAR_CEILING_PCT: () => BAR_CEILING_PCT,
-    BAR_RUNGS: () => BAR_RUNGS,
     CATALOGUE: () => CATALOGUE,
     CATALOGUE_BY_ID: () => CATALOGUE_BY_ID,
     ConstitutionSession: () => ConstitutionSession,
@@ -34,7 +33,6 @@ var CONSTITUTION = (() => {
     InMemoryPeople: () => InMemoryPeople,
     JUDGE_GATES: () => JUDGE_GATES,
     MEANING_MAX: () => MEANING_MAX,
-    OWN_RUNG_LABEL: () => OWN_RUNG_LABEL,
     PEOPLE_SCHEMA_VERSION: () => PEOPLE_SCHEMA_VERSION,
     SCHEMA_VERSION: () => SCHEMA_VERSION,
     SHAPED: () => SHAPED,
@@ -81,8 +79,7 @@ var CONSTITUTION = (() => {
     versionOf: () => versionOf,
     view: () => view,
     votesNeeded: () => votesNeeded,
-    warningDue: () => warningDue,
-    winsNeededPct: () => winsNeededPct
+    warningDue: () => warningDue
   });
 
   // src/sha256.ts
@@ -372,18 +369,28 @@ var CONSTITUTION = (() => {
       deps: [],
       judgeGate: false
     },
+    // **The card left the surface on 2026-09-15** (Q1362 (b), Ed's ruling; R-117
+    // and the `machines` precedent at R-080 below). The status quo is a peer —
+    // the document's text is the top of the ranking once the quorum is met — so
+    // there is no bar for a member to be asked about and the engine's own is
+    // pinned at 50 for one release. The setting stays in the catalogue so every
+    // live log replays and so a founder who delegated 🌡️ before the change is
+    // not left holding a question no member can be served: `retiredAnswer` is
+    // what 🍾 resolves it at. `judgeGate` goes with the card — judging can no
+    // longer wait on a question nobody will be asked. → why: R-080, R-117.
     {
       id: "bar",
       glyph: "🌡️",
       kind: "constitutional",
       delegable: true,
       valueType: "percent",
+      retiredAnswer: { pct: 50 },
       consent: {
         ask: "the lowest bar at the close you will accept",
         order: (a, b) => a.pct - b.pct
       },
       deps: ["ending"],
-      judgeGate: true
+      judgeGate: false
     },
     // Ordinary by §9.6's test (pacing re-rates nothing) and **the founder's,
     // not delegable** (Ed, 2026-08-19, closing Q415 — reverting his own
@@ -394,12 +401,18 @@ var CONSTITUTION = (() => {
     // founding question for a {shape, startPct}. The members can still take it
     // over after the start, by the reserve route, where no blind question is
     // needed, so no consent order: nothing ever resolves one (Q560, 2026-08-22).
+    //
+    // **And it left the surface with 🌡️** (Q1362 (b), R-117): the ramp is the
+    // road to a bar that no longer gates anything, so there is nothing left to
+    // pace. Delegable was already false, so nothing can be collecting an answer
+    // for it; `retiredAnswer` is what the founder's own card is resolved at.
     {
       id: "pace",
       glyph: "🪜",
       kind: "ordinary",
       delegable: false,
       valueType: "pace",
+      retiredAnswer: { shape: "fixed" },
       deps: ["ending"],
       judgeGate: false
     },
@@ -2116,7 +2129,7 @@ var CONSTITUTION = (() => {
     const bar = s.settings.get("bar").value;
     const pace = s.settings.get("pace").value;
     const ending = s.settings.get("ending").value;
-    const endPct = bar ? bar.pct : 95;
+    const endPct = bar ? bar.pct : 50;
     const endT = ending ? ending.endsAtMs : null;
     const shape = endT !== null && pace?.shape === "ramp" ? "ramp" : "fixed";
     return seedAnchors(
@@ -2200,10 +2213,13 @@ var CONSTITUTION = (() => {
       say: "A few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.",
       unit: "hours",
       sets: {
-        // Ed: ramp 60→80; 80 is 🌡️'s *Broad agreement* rung. Mind Q840: a room
-        // of one tops out at 79, and 🌡️'s ceiling note already says so.
-        bar: { pct: 80 },
-        pace: { shape: "ramp", startPct: 60 },
+        // **Pinned since 2026-09-15** (Q1362 (b), R-117), as every shape's are:
+        // the bar left the adoption test, so a shape that named one would be
+        // stating a decision nobody has. They stay in `SHAPED` so a document
+        // that never delegated them still has a value to replay against — Ed's
+        // ramp 60→80 for a meeting is in DECISIONS, with the rest of the road.
+        bar: { pct: 50 },
+        pace: { shape: "fixed" },
         // as a share (Ed); everyone is in the room at a meeting
         quorum: { form: "share", n: 50 },
         // names at the end, or earlier by choice — the rung the sign control belongs to
@@ -2229,8 +2245,9 @@ var CONSTITUTION = (() => {
       say: "A few days with people coming and going: a third of the membership is enough to move, one proposal an hour each.",
       unit: "days",
       sets: {
-        bar: { pct: 80 },
-        pace: { shape: "ramp", startPct: 60 },
+        bar: { pct: 50 },
+        // pinned, as every shape's is (R-117)
+        pace: { shape: "fixed" },
         quorum: { form: "share", n: 33 },
         authorship: { rung: "sealedElective" },
         // placeholder — QA may prefer *after* for a conference
@@ -2253,8 +2270,9 @@ var CONSTITUTION = (() => {
         // Ed: *never* is what *ongoing* already said — folded first, because
         // the module refuses a ramp under a perpetual ending
         ending: { endsAtMs: null },
-        // fixed 80 for ongoing (perpetual forces fixed)
-        bar: { pct: 80 },
+        // pinned, as every shape's is (R-117); fixed was already forced here,
+        // a perpetual document admitting no ramp
+        bar: { pct: 50 },
         pace: { shape: "fixed" },
         quorum: { form: "share", n: 25 },
         authorship: { rung: "sealedElective" },
@@ -2941,7 +2959,10 @@ var CONSTITUTION = (() => {
      * collecting or settled — the 🍾 card prints those rows and would print a
      * bare id, having no card to take a title from), `canPropose` (it gates
      * nothing, there being no card to answer it on) and `begin` (it writes the
-     * line). `machines` is the only entry that carries it.
+     * line). `machines` carried it alone until 2026-09-15, when 🌡️ and 🪜 left
+     * the surface the same way (Q1362 (b), R-117) and took the same road: a
+     * founder who delegated the bar before the change is resolved at 50 here,
+     * and the document starts.
      */
     retiredQuestion(id) {
       return entryOf(id).retiredAnswer !== void 0;
@@ -3826,58 +3847,12 @@ var CONSTITUTION = (() => {
   };
 
   // src/meaning.ts
-  var BAR_RUNGS = [
-    // `sentence` is the rung as an option block reads it (CP1/Q1104 (b), Ed
-    // 2026-08-31: the option's text is the rule as it would stand, the percent
-    // stated beside it); `label` survives as the rung's short name — the
-    // distribution strip's word, and 🪜's starting rungs, where a sentence
-    // about *passing* would misstate a bar that only opens the vote.
-    // the sentences are Ed's own (card review 2026-09-02, Q1156/Q1157: a share
-    // of voters is the deliberate simplification — the precise account lives at
-    // /pairwise, which `methodNote` links)
-    {
-      pct: 90,
-      label: "Nearly everyone",
-      sentence: "For a proposal ✏️ to pass, nearly all members that voted on it must prefer it to the alternatives"
-    },
-    {
-      pct: 80,
-      label: "Broad agreement",
-      sentence: "For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives"
-    },
-    {
-      pct: 60,
-      label: "A bare majority",
-      sentence: "For a proposal ✏️ to pass, a majority of the membership that voted must prefer it to the alternatives"
-    }
-  ];
-  var OWN_RUNG_LABEL = "A number of my own";
-  function winsNeededPct(e, pct) {
-    if (!Number.isFinite(e) || !Number.isFinite(pct)) return void 0;
-    if (pct < VOTES_NEEDED_LO_PCT || pct > VOTES_NEEDED_HI_PCT) return void 0;
-    const n = Math.max(1, Math.floor(e));
-    if (n > VOTES_NEEDED_MAX_N) return void 0;
-    const k = votesNeeded(n, Math.floor(pct));
-    return k === 0 ? null : k;
-  }
   function roomPhrase(e) {
     return e <= 1 ? "one" : String(Math.floor(e));
   }
   var roomOf = roomPhrase;
   var MEANING_MAX = 200;
   var fit = (s) => s.length <= MEANING_MAX ? s : null;
-  function winsClause(e, pct) {
-    const k = winsNeededPct(e, pct);
-    if (k === void 0 || k === null) return k;
-    return { k, n: Math.max(1, Math.floor(e)) };
-  }
-  function barMeaning(pct, room) {
-    const w = winsClause(room.e, pct);
-    if (w === void 0) return null;
-    if (w === null || w.n === 1) return null;
-    if (w.k === w.n) return fit("In a membership of " + w.n + ", all " + w.n + " must vote for it by the end.");
-    return fit("In a membership of " + w.n + ", " + w.k + " of " + w.n + " must vote for it by the end.");
-  }
   function spanPhrase(ms) {
     const mins = Math.round(ms / 6e4);
     if (mins < 120) return mins === 1 ? "1 minute" : mins + " minutes";
@@ -3941,28 +3916,9 @@ var CONSTITUTION = (() => {
     if (typeof v.afterMs !== "number" || !Number.isFinite(v.afterMs) || v.afterMs <= 0) return null;
     return fit("A member who says nothing for " + spellPhrase(v.afterMs) + " drops out of the count — the document can go on without them, and they are back the moment they log in.");
   }
-  var rungName = (pct) => {
-    const r = BAR_RUNGS.find((x) => x.pct === Math.floor(pct));
-    return r ? r.label.charAt(0).toLowerCase() + r.label.slice(1) + " (" + Math.floor(pct) + "%)" : Math.floor(pct) + "%";
-  };
-  function paceMeaning(v, room) {
-    const close = room.barPct;
-    if (typeof close !== "number" || !Number.isFinite(close)) return null;
-    if (v.shape === "fixed") {
-      return fit("Stays at " + rungName(close) + " from the moment voting opens to the end.");
-    }
-    if (typeof v.startPct !== "number" || !Number.isFinite(v.startPct)) return null;
-    return fit("Starts at " + rungName(v.startPct) + " when voting opens and climbs to " + rungName(close) + " by the end — early changes pass more easily.");
-  }
   function meaningOf(setting, value, room = { e: 1 }) {
     if (!value) return null;
     switch (setting) {
-      case "bar": {
-        const pct = value.pct;
-        return typeof pct === "number" ? barMeaning(pct, room) : null;
-      }
-      case "pace":
-        return paceMeaning(value, room);
       case "quorum":
         return quorumMeaning(value, room);
       case "rate":

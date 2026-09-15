@@ -3,44 +3,34 @@
  * *we need to help them with 3 preset buttons, and they can edit the precise %
  * if they really want to*).
  *
- * A percent is not a thing anybody has an opinion about. *In a membership of 5,
- * 4 of 5 must vote for it by the end* is. So each rung a card offers carries a
- * sentence saying what taking it would mean for the room **as it stands**, read
- * live on every render the way `barCeilingPct` already is — which is why the
- * sentence names its own dependence (*in a membership of 5*, never a bare *4 of
- * 5*):
- * when a sixth member arrives, the reader can see what moved and why.
+ * A number is not a thing anybody has an opinion about. *In a membership of 5,
+ * 4 of 5 must vote before a proposal can pass* is. So each rung a card offers
+ * carries a sentence saying what taking it would mean for the room **as it
+ * stands**, read live on every render — which is why the sentence names its own
+ * dependence (*in a membership of 5*, never a bare *4 of 5*): when a sixth
+ * member arrives, the reader can see what moved and why.
  *
- * Two things live here rather than page-side:
- *
- * - **The rung labels**, because there are three readers of them — the
- *   founder's card, the member's blind answer card and the distribution strip —
- *   and *one label per rung everywhere* (STYLE T5, Q620) is a rule a shared
- *   list keeps and three literals do not.
- * - **The arithmetic**, because it is the engine's and the page cannot reach
- *   the engine. See `winsNeededPct` below.
+ * The labels live here rather than page-side because there are three readers of
+ * them — the founder's card, the member's blind answer card and the
+ * distribution strip — and *one label per rung everywhere* (STYLE T5, Q620) is
+ * a rule a shared list keeps and three literals do not.
  *
  * `meaningOf` is deliberately one function over `(setting, value, room)` rather
  * than a helper per card: every other ladder on the surface wants the same
  * sentence, and this is the shape that takes them.
  *
- * **And since entry 167 it takes five of them** (Ed: *yes, please do this
- * everywhere*) — 👥 ⏱️ 💤 🪜 🌡️, every setting whose answer is a number
- * rather than a rung with a name. The rules the sentences obey are Ed's:
+ * **Three settings** — 👥 ⏱️ 💤, every setting whose answer is a number rather
+ * than a rung with a name. It was five until 2026-09-15 (Q1362 (b), R-117),
+ * when 🌡️ and 🪜 left the surface with the bar itself: `BAR_RUNGS`,
+ * `OWN_RUNG_LABEL`, `winsNeededPct`, `barMeaning`, `paceMeaning`, `rungName`
+ * and `Room.barPct` described cards nobody will be served again and are gone
+ * with them, the page having stopped importing them in the same pass. The
+ * threshold machinery they read (`threshold.ts`) stays a release longer,
+ * pinned and unable to bite. The rules the sentences obey are Ed's:
  *
- * **Two of the five are retired** (Q1362 (b), Ed 2026-09-15; R-117). 🌡️ and
- * 🪜 left the surface with the bar itself, so `BAR_RUNGS`, `OWN_RUNG_LABEL`,
- * `winsNeededPct`, `barMeaning`, `paceMeaning`, `rungName` and `Room.barPct`
- * describe cards nobody will be served again. They stay here unchanged for
- * exactly as long as the page still imports them — the surface stage of this
- * same pass stops reading them and deletes them in one commit, and the
- * threshold machinery they read goes a release later. **Nothing new may call
- * them**; the three settings left, 👥 ⏱️ 💤, are what this file is about.
- *
- * 1. **A meaning names its own dependence.** 👥's and 🌡️'s is the room, ⏱️'s
- *    the window, 🪜's 🌡️'s own number, and 💤's is the spell alone — so 💤's
- *    sentence names no room, because a false dependence is as wrong as a
- *    missing one.
+ * 1. **A meaning names its own dependence.** 👥's is the room, ⏱️'s the
+ *    window, and 💤's is the spell alone — so 💤's sentence names no room,
+ *    because a false dependence is as wrong as a missing one.
  * 2. **Meanings live on the card, never in the clause.** The clause is the
  *    rule; this is advice at the moment of choosing, and would be false by
  *    next week. Nothing here is written into the constitution.
@@ -48,72 +38,9 @@
  */
 
 import type {
-  LapseValue, PaceValue, PercentValue, QuorumValue, RateValue, SettingValue,
+  LapseValue, QuorumValue, RateValue, SettingValue,
 } from './values.js';
-import { VOTES_NEEDED_HI_PCT, VOTES_NEEDED_LO_PCT, VOTES_NEEDED_MAX_N, votesNeeded } from './threshold.js';
 import { quorumCount } from './populations.js';
-
-/**
- * 🌡️'s three presets, **most protective first** — the order 👁️ and 🪪 already
- * read in, and the one a ladder of refusals has to read in for *the most I will
- * accept* to mean anything.
- *
- * Ed listed them ascending; they are ordered the other way here for that rule.
- * Ed asked for the 60 step, and 70 is deliberately absent: 60 and 70 are the
- * same rung in most small rooms and 70 and 80 collide nearly as often, while
- * 60 · 80 · 90 separate at every roster from four members up.
- */
-export const BAR_RUNGS: readonly { pct: number; label: string; sentence: string }[] = [
-  // `sentence` is the rung as an option block reads it (CP1/Q1104 (b), Ed
-  // 2026-08-31: the option's text is the rule as it would stand, the percent
-  // stated beside it); `label` survives as the rung's short name — the
-  // distribution strip's word, and 🪜's starting rungs, where a sentence
-  // about *passing* would misstate a bar that only opens the vote.
-  // the sentences are Ed's own (card review 2026-09-02, Q1156/Q1157: a share
-  // of voters is the deliberate simplification — the precise account lives at
-  // /pairwise, which `methodNote` links)
-  { pct: 90, label: 'Nearly everyone',
-    sentence: 'For a proposal ✏️ to pass, nearly all members that voted on it must prefer it to the alternatives' },
-  { pct: 80, label: 'Broad agreement',
-    sentence: 'For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives' },
-  { pct: 60, label: 'A bare majority',
-    sentence: 'For a proposal ✏️ to pass, a majority of the membership that voted must prefer it to the alternatives' },
-];
-
-/** The fourth rung: the precise number, for whoever really wants it. */
-export const OWN_RUNG_LABEL = 'A number of my own';
-
-/**
- * **How many of a room of `e` must vote for a change to carry it at `pct`** —
- * `null` where no number of them can (Q840's ceiling, seen from this side), and
- * `undefined` where this cannot say.
- *
- * The arithmetic is engine-core's `winsNeeded`, and the page carries no
- * engine-core, so what it reads is `VOTES_NEEDED` — the table entry 163 copied
- * out of the same fit for the explainer at /pairwise. It is the same claim
- * under a different name: a cell there is `k` votes for and `n − k` against on
- * the incumbent pair, and a room of `e` where everybody votes is exactly
- * `n = e`. There is no second table, and `test/meaning.test.ts` re-runs the
- * engine cell by cell to keep this reading of it honest.
- *
- * The two names differ where the reading does, and the difference matters:
- * /pairwise counts **votes cast**, and says nothing about who has not voted;
- * this counts **the room**, and assumes everybody does. Hence *in a room of 5*
- * in the sentence and *of 5 votes* on the chart.
- *
- * `undefined`, never a guess (STYLE T13): past the table's last room, or at a
- * bar it does not hold, the card says nothing rather than a clamped number.
- * A room smaller than one reads as one — the founder is always in it, which is
- * `barCeilingPct`'s own reasoning about a count that arrives empty.
- */
-export function winsNeededPct(e: number, pct: number): number | null | undefined {
-  if (!Number.isFinite(e) || !Number.isFinite(pct)) return undefined;
-  if (pct < VOTES_NEEDED_LO_PCT || pct > VOTES_NEEDED_HI_PCT) return undefined;
-  const n = Math.max(1, Math.floor(e));
-  if (n > VOTES_NEEDED_MAX_N) return undefined;
-  const k = votesNeeded(n, Math.floor(pct));
-  return k === 0 ? null : k;
-}
 
 /**
  * The room a meaning is about — **everything a sentence here may depend on,
@@ -133,14 +60,13 @@ export interface Room {
   endsAtMs?: number | null;
   /** The caller's clock, since nothing in this package reads one. */
   nowMs?: number;
-  /** 🌡️'s number as it stands, `null` while unset. Read by 🪜 alone. */
-  barPct?: number | null;
 }
 
 /**
  * *one* reads better than *1* at the head of a sentence; the rest are digits.
- * Exported because the page builds the same phrase for `ceilingNote`, and two
- * copies of *a membership of one* are two copies to keep in step (T5). The
+ * Exported because the page built the same phrase for `ceilingNote`, and two
+ * copies of *a membership of one* are two copies to keep in step (T5). That
+ * caller went with 🌡️ (Q1362) and the export stays for the next one. The
  * name stays `roomPhrase`: it is an identifier, not copy (entry 215).
  */
 export function roomPhrase(e: number): string {
@@ -158,27 +84,6 @@ const roomOf = roomPhrase;
  */
 export const MEANING_MAX = 200;
 const fit = (s: string): string | null => (s.length <= MEANING_MAX ? s : null);
-
-/**
- * The shared half of both sentences: how many of the room, or null where the
- * bar is out of the room's reach, or undefined where nothing can be said.
- */
-function winsClause(e: number, pct: number): { k: number; n: number } | null | undefined {
-  const k = winsNeededPct(e, pct);
-  if (k === undefined || k === null) return k;
-  return { k, n: Math.max(1, Math.floor(e)) };
-}
-
-function barMeaning(pct: number, room: Room): string | null {
-  const w = winsClause(room.e, pct);
-  if (w === undefined) return null;
-  // **A bar this room cannot reach, and a room of one, say nothing** (Ed,
-  // 2026-09-02, Q1159, reversing Q840's note: *remove them and say nothing*
-  // — /pairwise covers it for whoever goes looking; T39's nothing-true rule).
-  if (w === null || w.n === 1) return null;
-  if (w.k === w.n) return fit('In a membership of ' + w.n + ', all ' + w.n + ' must vote for it by the end.');
-  return fit('In a membership of ' + w.n + ', ' + w.k + ' of ' + w.n + ' must vote for it by the end.');
-}
 
 /* ---- the spans, worded --------------------------------------------------
    **A span is a phrase, never a number of milliseconds** (T16). One ladder,
@@ -316,32 +221,6 @@ function lapseMeaning(v: LapseValue): string | null {
     'moment they log in.');
 }
 
-/* ---- 🪜 -----------------------------------------------------------------
-   **🪜's dependence is 🌡️'s number, not the room** (rule 1, entry 167). Entry
-   165's sentence counted votes at the start — *in a room of 5, 3 of 5 is
-   enough when voting opens* — which is 🌡️'s own sentence in the opening
-   tense, and left the reader to find the number it climbs *to* on another
-   card. What a start percent means is where the climb begins and where it
-   ends, so the sentence names both rungs and says which way the pacing
-   leans; with 🌡️ unset there is nothing to climb towards and the card says
-   nothing at all. */
-const rungName = (pct: number): string => {
-  const r = BAR_RUNGS.find((x) => x.pct === Math.floor(pct));
-  return r ? r.label.charAt(0).toLowerCase() + r.label.slice(1) + ' (' + Math.floor(pct) + '%)'
-    : Math.floor(pct) + '%';
-};
-
-function paceMeaning(v: PaceValue, room: Room): string | null {
-  const close = room.barPct;
-  if (typeof close !== 'number' || !Number.isFinite(close)) return null;
-  if (v.shape === 'fixed') {
-    return fit('Stays at ' + rungName(close) + ' from the moment voting opens to the end.');
-  }
-  if (typeof v.startPct !== 'number' || !Number.isFinite(v.startPct)) return null;
-  return fit('Starts at ' + rungName(v.startPct) + ' when voting opens and climbs to ' +
-    rungName(close) + ' by the end — early changes pass more easily.');
-}
-
 /**
  * **What this value would mean for this room**, or `null` where there is
  * nothing true to say — in which case the card prints no line at all rather
@@ -364,12 +243,6 @@ export function meaningOf(
 ): string | null {
   if (!value) return null;
   switch (setting) {
-    case 'bar': {
-      const pct = (value as PercentValue).pct;
-      return typeof pct === 'number' ? barMeaning(pct, room) : null;
-    }
-    case 'pace':
-      return paceMeaning(value as PaceValue, room);
     case 'quorum':
       return quorumMeaning(value as QuorumValue, room);
     case 'rate':

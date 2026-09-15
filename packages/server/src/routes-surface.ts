@@ -1,12 +1,14 @@
 /**
  * The files the host serves (refactor Q1352 (m), (n)): the page's own
- * assets, a document's page, the `design/` whitelist, the birth at `/` and
- * the approval-threshold explainer at `/pairwise`. Five rows, last in the
- * table — everything past them is the chain's 404.
+ * assets, a document's page, the `design/` whitelist and the birth at `/`.
+ * Four rows, last in the table — everything past them is the chain's 404.
+ * There were five until 2026-09-15, when the approval-threshold explainer at
+ * `/pairwise` retired with the threshold (Q1362 (b)); **every page this host
+ * serves is now the session-view**, which is SURFACE §1 C1 reaching the host.
  *
  * **A family of its own, unlike the stranger's door**, which looks like one
  * and is not: the door is a fallthrough inside the member view row
- * (`routes-member.ts`), while these five are branches with a boundary the
+ * (`routes-member.ts`), while these four are branches with a boundary the
  * order allows.
  *
  * The order inside the table is load-bearing here and nowhere else in it:
@@ -83,20 +85,12 @@ export const surfaceTable: Route[] = [
       return true;
     },
   },
-  {
-    // The explainer for the approval threshold (entry 163): what one
-    // confidence means in votes, why it is a confidence and not a share.
-    // The first page this host serves that is not a document — 🌡️'s
-    // `methodNote` links here, and the page's own numbers come from
-    // `votesNeeded` in the bundle it loads. Exact path only: no trailing
-    // slash and no /pairwise.html alias, the asset row above deliberately
-    // not matching .html.
-    name: 'GET /pairwise — the threshold explainer',
-    method: 'GET',
-    match: '/pairwise',
-    handler: (ctx, { res }) => {
-      serveFile(res, join(ctx.designDir, 'pairwise.html'));
-      return true;
-    },
-  },
+  // **`/pairwise` was the explainer for the approval threshold** (entry 163) —
+  // what one confidence meant in votes, and why it was a confidence rather
+  // than a share. It retired with the thing it explained on 2026-09-15
+  // (Q1362 (b), pass-6 §3 stage 3): the document's text is the top of the
+  // ranking once the quorum is met, so there is no confidence left for a
+  // member to be told about, and 🌡️'s `methodNote`, its only link, has gone
+  // from the surface. The path 404s like any other; the asset row above
+  // deliberately does not match .html, so no /pairwise.html alias survives it.
 ];

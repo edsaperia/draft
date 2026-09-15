@@ -278,7 +278,6 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     await cmd(ada, 'set-setting',
       { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
     const values: Record<string, unknown> = {
-      pace: { shape: 'fixed' },
       quorum: { form: 'share', n: 60 },
       authorship: { rung: 'sealed' },
       judgments: { rung: 'after' },
@@ -299,11 +298,10 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     }
     // nothing arrives delegated (Ed, 2026-08-21, amending §9.0a): the founder
     // hands each question to the room, which is what opens it for answering
-    for (const setting of ['ending', 'bar', 'chamber']) await cmd(ada, 'delegate', { setting });
+    for (const setting of ['ending', 'chamber']) await cmd(ada, 'delegate', { setting });
     const ends = Date.now() + 7 * 24 * 3600_000;
     for (const [setting, value] of [
       ['ending', { endsAtMs: ends }],
-      ['bar', { pct: 66 }],
     ] as const) {
       for (const cookie of [ada, bo, cy]) {
         await cmd(cookie, 'answer', { setting, value });
@@ -586,7 +584,7 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
       .filter((a) => a.email === 'dee@example.org').length).toBe(1);
     // the applicant's one act is submitting; anything else is refused
     const refused = await post(base, `/api/d/${created.slug}/cmd`,
-      { cmd: 'answer', args: { setting: 'bar', value: { pct: 50 } } }, dee);
+      { cmd: 'answer', args: { setting: 'quorum', value: { form: 'count', n: 2 } } }, dee);
     expect(refused.status).toBe(403);
     const submitted = await post(base, `/api/d/${created.slug}/cmd`,
       { cmd: 'submit-application', args: { name: 'Dee' } }, dee);
@@ -858,18 +856,17 @@ describe('the surface is served', () => {
     expect(sneaky.status).toBe(404);
   });
 
-  // the explainer at /pairwise (entry 163). The body assertion is the point:
-  // the page must reach for `votesNeeded` in the bundle rather than carry a
-  // copy of the table, or the chart and the fit can drift apart in silence.
-  it('serves the approval-threshold explainer at /pairwise', async () => {
+  // **/pairwise retired with the thing it explained** (Q1362 (b), 2026-09-15):
+  // the approval threshold left the surface, so the host serves exactly one
+  // page that is not a document — the birth — and the explainer's path is a
+  // 404 like any other. Asserted rather than deleted because the route was a
+  // named row for a month: a reappearance would mean somebody put the page
+  // back without the rule that needed it.
+  it('does not serve the retired threshold explainer at /pairwise', async () => {
     const { base } = await boot();
-    const page = await fetch(`${base}/pairwise`);
-    expect(page.status).toBe(200);
-    expect(page.headers.get('content-type')).toContain('text/html');
-    expect(await page.text()).toContain('votesNeeded');
-    // exact path only — no alias and no trailing-slash variant
-    expect((await fetch(`${base}/pairwise.html`)).status).toBe(404);
-    expect((await fetch(`${base}/pairwise/`)).status).toBe(404);
+    for (const path of ['/pairwise', '/pairwise.html', '/pairwise/']) {
+      expect((await fetch(`${base}${path}`)).status).toBe(404);
+    }
   });
 
   it('serves the top of the design tree only — no notes, references or tooling', async () => {
@@ -1201,7 +1198,7 @@ describe('the clock closes the document (SPEC §4.6, Q467)', () => {
     await cmd(cy, 'set-identity', { name: 'Cy', picture: 'e🦉' });
     await cmd(ada, 'set-setting', { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
     const values: Record<string, unknown> = {
-      pace: { shape: 'fixed' }, quorum: { form: 'count', n: 2 },
+      quorum: { form: 'count', n: 2 },
       // the elective rung (Q770): sealed by default, signed by choice
       authorship: { rung: 'sealedElective' },
       judgments: { rung: 'after' }, applications: { apply: false },
@@ -1212,10 +1209,10 @@ describe('the clock closes the document (SPEC §4.6, Q467)', () => {
       await cmd(ada, 'reclaim', { setting });
       await cmd(ada, 'set-setting', { setting, value });
     }
-    for (const setting of ['ending', 'bar', 'chamber']) await cmd(ada, 'delegate', { setting });
+    for (const setting of ['ending', 'chamber']) await cmd(ada, 'delegate', { setting });
     const ends = Date.now() + 3600_000;
     for (const [setting, value] of [
-      ['ending', { endsAtMs: ends }], ['bar', { pct: 66 }], ['chamber', { rung: 'link' }],
+      ['ending', { endsAtMs: ends }], ['chamber', { rung: 'link' }],
     ] as const) {
       for (const cookie of [ada, bo, cy]) await cmd(cookie, 'answer', { setting, value });
     }
@@ -1318,12 +1315,11 @@ describe('a laid-down pen is laid down (entry 62)', () => {
   // legal value serves for the set that lands pre-start and the one refused
   // after it, and nothing here turns on a value being novel
   const VALUES: Array<readonly [string, unknown]> = [
-    // ⏰ leads: 🌡️ depends on it, and a ramp needs an endpoint
+    // ⏰ leads: the founding asks the clock first (SURFACE §8's `ORDER`), and
+    // the two settings that declared it as a dependency left the surface
     ['ending', { endsAtMs: 0 }],   // filled in below, once the clock is read
     ['title', { text: 'The Rota, Renamed' }],
     ['link', { slug: 'the-rota-renamed' }],
-    ['bar', { pct: 66 }],
-    ['pace', { shape: 'fixed' }],
     ['quorum', { form: 'count', n: 2 }],
     ['authorship', { rung: 'sealed' }],
     ['judgments', { rung: 'after' }],
@@ -1770,7 +1766,7 @@ describe('👤 authorship on the wire (SPEC §3.5a)', () => {
     await cmd(cy, 'set-identity', { name: 'Cy Marlowe' });
     await cmd(ada, 'set-setting', { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
     const values: Record<string, unknown> = {
-      pace: { shape: 'fixed' }, quorum: { form: 'count', n: 2 },
+      quorum: { form: 'count', n: 2 },
       authorship: { rung }, judgments: { rung: 'after' },
       applications: { apply: false }, admission: { price: 'assembly' },
       machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
@@ -1779,11 +1775,11 @@ describe('👤 authorship on the wire (SPEC §3.5a)', () => {
       await cmd(ada, 'reclaim', { setting });
       await cmd(ada, 'set-setting', { setting, value });
     }
-    for (const setting of ['ending', 'bar', 'chamber']) await cmd(ada, 'delegate', { setting });
+    for (const setting of ['ending', 'chamber']) await cmd(ada, 'delegate', { setting });
     const ends = Date.now() + 3600_000;
     const electors = opts.clerk ? [bo, cy] : [ada, bo, cy];
     for (const [setting, value] of [
-      ['ending', { endsAtMs: ends }], ['bar', { pct: 66 }], ['chamber', { rung: 'link' }],
+      ['ending', { endsAtMs: ends }], ['chamber', { rung: 'link' }],
     ] as const) {
       for (const cookie of electors) await cmd(cookie, 'answer', { setting, value });
     }
@@ -2065,7 +2061,6 @@ describe('the open join link admits (backlog 73)', () => {
     // single voice (§9.0a), and this document has a membership of one
     const values: Record<string, unknown> = {
       ending: { endsAtMs: Date.now() + 3600_000 },
-      pace: { shape: 'fixed' }, bar: { pct: 66 },
       quorum: { form: 'count', n: 1 }, chamber: { rung: 'link' },
       authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
       applications: { apply: true }, admission: { price: 'pen' }, // open: yes, at ✒️
@@ -2165,7 +2160,6 @@ describe('💤 the lapse mails (§9.5a, SURFACE E22)', () => {
     const HOUR = 3_600_000;
     const values: Record<string, unknown> = {
       ending: { endsAtMs: null }, // perpetual: the tick must not close instead
-      pace: { shape: 'fixed' }, bar: { pct: 66 },
       quorum: { form: 'count', n: 1 }, chamber: { rung: 'link' },
       authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
       applications: { apply: false }, admission: { price: 'assembly' },
@@ -2396,7 +2390,7 @@ describe('🥾 exile, resignation and the shut door say so (Q901, E31–E33)', (
     await cmd(ada, 'set-setting',
       { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
     const values: Record<string, unknown> = {
-      ending: { endsAtMs: null }, pace: { shape: 'fixed' }, bar: { pct: 66 },
+      ending: { endsAtMs: null },
       quorum: { form: 'count', n: 1 }, chamber: { rung: 'closed' },
       authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
       applications: { apply: false }, admission: { price: 'assembly' },
@@ -2505,7 +2499,7 @@ describe('🥾 exile, resignation and the shut door say so (Q901, E31–E33)', (
     await cmd(ada, 'set-setting',
       { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
     const values: Record<string, unknown> = {
-      ending: { endsAtMs: null }, pace: { shape: 'fixed' }, bar: { pct: 66 },
+      ending: { endsAtMs: null },
       quorum: { form: 'count', n: 1 }, chamber: { rung: 'closed' },
       authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
       applications: { apply: false }, admission: { price: 'assembly' },
@@ -2582,7 +2576,7 @@ describe('🥾 exile, resignation and the shut door say so (Q901, E31–E33)', (
     await ok(ada, 'set-setting',
       { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
     const values: Record<string, unknown> = {
-      ending: { endsAtMs: null }, pace: { shape: 'fixed' }, bar: { pct: 66 },
+      ending: { endsAtMs: null },
       quorum: { form: 'count', n: 1 }, chamber: { rung: 'link' },
       authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
       applications: { apply: true }, admission: { price: 'proposal' },
@@ -2664,7 +2658,7 @@ describe('the applicant is served the door plus their application (Q1281)', () =
     await ok(ada, 'set-setting',
       { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
     const values: Record<string, unknown> = {
-      ending: { endsAtMs: null }, pace: { shape: 'fixed' }, bar: { pct: 60 },
+      ending: { endsAtMs: null },
       quorum: { form: 'count', n: 1 }, chamber: { rung: 'link' },
       authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
       applications: { apply: true }, admission: { price: 'proposal' },
@@ -2821,11 +2815,11 @@ describe('the pair deck and the judged-pairs ledger (Q1200, Q1201)', () => {
     await cmd(ada, 'set-setting', { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
     const ends = Date.now() + 3600_000;
     const values: Record<string, unknown> = {
-      pace: { shape: 'fixed' }, quorum: { form: 'count', n: 4 },
+      quorum: { form: 'count', n: 4 },
       authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
       applications: { apply: false }, admission: { price: 'assembly' },
       machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
-      ending: { endsAtMs: ends }, bar: { pct: 66 }, chamber: { rung: 'link' },
+      ending: { endsAtMs: ends }, chamber: { rung: 'link' },
     };
     for (const [setting, value] of Object.entries(values)) {
       await cmd(ada, 'reclaim', { setting });
@@ -2964,11 +2958,11 @@ describe('askable races and the pair that rides the view (Q1202)', () => {
     const dee = await follow('dee@example.org');
     await cmd(ada, 'set-setting', { setting: 'rate', value: { grant: 6, cap: 8, dripMinutes: 240 } });
     const values: Record<string, unknown> = {
-      pace: { shape: 'fixed' }, quorum: { form: 'count', n: 4 },
+      quorum: { form: 'count', n: 4 },
       authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
       applications: { apply: false }, admission: { price: 'assembly' },
       machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
-      ending: { endsAtMs: Date.now() + 3600_000 }, bar: { pct: 66 }, chamber: { rung: 'link' },
+      ending: { endsAtMs: Date.now() + 3600_000 }, chamber: { rung: 'link' },
     };
     for (const [setting, value] of Object.entries(values)) {
       await cmd(ada, 'reclaim', { setting });
@@ -3218,7 +3212,7 @@ describe('the slim view (the moon room, 2026-09-11): a poll that says what it ho
     expect(reborn.text).toBe('The latch lifts from inside.');
     await ok('set-setting', { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
     const values: Record<string, unknown> = {
-      ending: { endsAtMs: null }, pace: { shape: 'fixed' }, bar: { pct: 60 },
+      ending: { endsAtMs: null },
       // a quorum of two in a room of one: the proposal below stays live
       // (E = 1 would adopt it on the author's own preference at once)
       quorum: { form: 'count', n: 2 }, chamber: { rung: 'link' },
@@ -3306,11 +3300,11 @@ describe('a sealed record follows its clause (Q1333)', () => {
     const cy = await follow('cy@example.org');
     await cmd(ada, 'set-setting', { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
     const values: Record<string, unknown> = {
-      pace: { shape: 'fixed' }, quorum: { form: 'count', n: 2 },
+      quorum: { form: 'count', n: 2 },
       authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
       applications: { apply: false }, admission: { price: 'assembly' },
       machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
-      ending: { endsAtMs: Date.now() + 3600_000 }, bar: { pct: 66 }, chamber: { rung: 'link' },
+      ending: { endsAtMs: Date.now() + 3600_000 }, chamber: { rung: 'link' },
     };
     for (const [setting, value] of Object.entries(values)) {
       await cmd(ada, 'reclaim', { setting });

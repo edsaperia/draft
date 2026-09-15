@@ -169,8 +169,8 @@ store and document count and is `no-store` · the security headers
 `includeSubDomains` · plain http is redirected and never served · the dev
 outbox is 404 · the phase ladder is not in the artifact (Q674) · API
 responses are `no-store` · design assets serve while notes, probe tooling
-and the frozen reference copies 404 · the approval-threshold explainer
-serves at `/pairwise` · an unknown document 404s in JSON without leaking
+and the frozen reference copies 404 · the retired threshold explainer at
+`/pairwise` 404s · an unknown document 404s in JSON without leaking
 internals · a cross-origin auth POST is refused 403.
 
 ```

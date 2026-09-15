@@ -41,7 +41,7 @@ function constituted(): { doc: LoadedDoc; bridge: EngineBridge; bo: string; cy: 
   cs.arrive(1, cy);
   cs.confirmStartingText(2, TEXT);
   const values: [string, unknown][] = [
-    ['ending', { endsAtMs: ENDS }], ['bar', { pct: 66 }], ['pace', { shape: 'fixed' }],
+    ['ending', { endsAtMs: ENDS }],
     ['quorum', { form: 'count', n: 1 }], ['authorship', { rung: 'sealed' }],
     ['judgments', { rung: 'after' }], ['chamber', { rung: 'link' }],
     ['lapse', { afterMs: null }], ['applications', { apply: false }],
@@ -70,7 +70,7 @@ describe('the close files a stranded proposal into the record (Q1353)', () => {
       hunks: [{ start: 1, end: 2, lines: ['The clubhouse is kept open at weekends.'] }] },
     'weekends are enough');
     expect(rival.raceId).toBe(winner.raceId);
-    // ada prefers bo's, which clears the bar and the floor: it adopts, and
+    // ada prefers bo's, which puts it on top with the floor met: it adopts, and
     // cy's patch cannot be carried across the line it rewrote (SPEC §2.4)
     const inc = bridge.engine.races().find((r) => r.id === winner.raceId)!.incumbentId;
     bridge.judge(20, 'ada', winner.id, inc, 'a');
