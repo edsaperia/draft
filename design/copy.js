@@ -521,19 +521,23 @@ window.COPY = (function () {
     },
     synth: {
       anApplicant: 'an applicant',
-      hasJoined: ' Has Joined',
+      // **a rail entry about a person names them, in a sentence** (Q1375, Ed
+      // 2026-09-15: *"A Member Has Left" can be "[avatar] [name] has left",
+      // and similar with other member-related queue cards. Use [email] if no
+      // name chosen*): the face leads the entry, the name — or the address —
+      // follows, and the sentence is a sentence, not Title Case (STYLE T1's
+      // one exception). The old departure titles named nobody so the walk
+      // golden would not gain a string per departure; the walks name one
+      // fixed person now, and the fixture its own
+      hasJoined: (who) => who + ' has joined',
       admitLead: 'Admit ',
       admitTail: '?',
       released: 'What the Founder Has Laid Down',
       mailGaveUp: 'An Invitation Did Not Send',
-      // the departure news cards (SURFACE E31, E32, E40; Q901). Two titles,
-      // because *removed* and *left* are two different things to be told and
-      // the title is the whole of what the rail entry says; neither names the
-      // person, whom the card's own sentence names — a title carrying a name
-      // would put a fresh string in the copy golden for every departure, which
-      // is `releaseCard`'s own rule
-      departedRemoved: 'A Member Has Been Removed',
-      departedLeft: 'A Member Has Left',
+      // the departure news cards (SURFACE E31, E32, E40; Q901). Two sentences,
+      // because *removed* and *left* are two different things to be told
+      departedRemoved: (who) => who + ' has been removed',
+      departedLeft: (who) => who + ' has left',
       passedLead: 'Passed: ',
       rejectedLead: 'Rejected: ',
       anonymous: 'Anonymous',
@@ -713,6 +717,11 @@ window.COPY = (function () {
     doorEmpty: {
       invite: 'Nobody has been invited yet.',
       remove: 'Nobody is proposed for removal.',
+    },
+    // the chip on an invitation still being decided (Q1370): the row stands
+    // under *Invitees* and in ✉️'s head from the moment the motion is put
+    doorPending: {
+      invite: 'proposed',
     },
     theFounder: 'The Founder',
     crownHand: 'The founder’s own hand — a Founder Action ✒️, not a proposal',

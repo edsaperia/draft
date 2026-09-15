@@ -1136,8 +1136,12 @@ window.BAND = (function () {
               // for the word *Withdraw*: both motion cards' 🗑️ match)
               ? '<button class="btn glyphbtn" data-withdrawmotion="' + c.k + '" title="Withdraw it — the ✏️ comes back in full">🗑️</button>'
               : binBtn()) +
-            '<button class="btn btn-approve glyphbtn"' + (motionPicked(c) ? '' : ' disabled') +
-            ' data-confirm="1">' + TICK + '</button>',
+            // **the mover is not asked to judge their own motion** (K8, Q1370):
+            // their preference is derived, never cast (§3.3), so their card
+            // offers withdraw and no ✓ — the entry is theirs (M3), not an ask
+            (m.by === viewerId() ? ''
+              : '<button class="btn btn-approve glyphbtn"' + (motionPicked(c) ? '' : ' disabled') +
+                ' data-confirm="1">' + TICK + '</button>'),
             g.cards);
         }
         if (m) {

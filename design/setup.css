@@ -119,6 +119,9 @@
      never share a column. */
   .queue.stack .ql { display: flex; align-items: baseline; gap: var(--s1); }
   .queue.stack .ql .subj { font-size: 1.05em; line-height: 1; }
+  /* the person's face on an entry about them (Q1375): the speaker line's own
+     18px disc, centred on the line rather than hung off a baseline it has none of */
+  .queue.stack .ql .qface { align-self: center; margin-top: 0; }
   .queue.stack .ql > .qt { flex: 1; min-width: 0; }
   /* wait/yours/done entries used to wear session-view's .deciding, whose
      meaning there is *you already judged it* (drift fix, 2026-08-18):

@@ -112,7 +112,12 @@ Glyph names are stable (tabulated 2026-09-07, Q1208; the founding order's own gl
 ## 4. Titles and labels
 
 - **T1 · Task titles are Title Case**; bare nouns drop their article (*Title*,
-  *Link*, *Text*).
+  *Link*, *Text*). **One exception: an entry about a person is a sentence
+  naming them** (Q1375, Ed 2026-09-15) — *‹face› Hossein has left*, *‹face›
+  Hossein has been removed*, *‹face› Admit Hossein?*, *‹face› Hossein has
+  joined* — the face leading, the name in the person's own case, their
+  email address where they chose no name, `[redacted]` where the row is gone
+  (T49); the tooltip is the sentence without the face.
 - **T2 · A title says what kind of answer it wants, and that there is a
   choice to make**: *Is the Founder a Member?* wants yes or no; *How many
   ✏️s do members start with?* wants a number; *Choose the Quorum* wants a
@@ -194,7 +199,7 @@ The rules the audit log (§7) audits against, lifted from CLAUDE.md's glossary a
 
 | # | Rule | Example · where enforced |
 |---|---|---|
-| T1 | §4 · Task titles are Title Case | *Title*, *Link*, *Text*; *Is the Founder a Member?* |
+| T1 | §4 · Task titles are Title Case — except an entry about a person, which is a sentence naming them, face first (Q1375) | *Title*, *Link*, *Text*; *Is the Founder a Member?*; *‹face› Hossein has left*, *‹face› Admit Hossein?* (`departureCard`, `admitCard`; `synth` in copy.js) |
 | T2 | §4 · A title says what kind of answer it wants | while outstanding, the ask: *Set the Proposal Pass Threshold* / *Choose the Quorum* / *How Does Somebody Join?*; once settled, the noun: *Proposal Pass Threshold* (Ed's own words, entry 215; Title Case and no question mark by his QA of 2026-08-30 — a noun title takes T1's case like any other) / *Quorum* / *Admissions* (Q1209, Q331 (b)); the power tabs: *Can the Founder Make Amendments at Will?* / *Does the Founder Have a Veto?* (Q615); on the doors, the act: *Can the Founder Invite at Will?* / *Does the Founder Have a Veto over Invitations?* / *Can the Founder Remove at Will?* / *Does the Founder Have a Veto over Removals?* (entry 94) |
 | T3 | §4 · A settled card's head is the rule, not the task's name | `headFor` |
 | T4 | §4 · A task you have to do carries no subtitle | `summary` |

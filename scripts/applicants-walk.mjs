@@ -74,6 +74,10 @@ if (!['proposal', 'assembly', 'pen'].includes(PRICE)) {
   process.exit(1);
 }
 const stuck = [];
+// the applicant's seat outlives its section at ✒️ (Q1375): they leave at the
+// end, and the founder's rail is read for the 🥾 entry that names them
+let guestResign = null;
+let closeGuest = async () => {};
 
 // Q911: a walk on a default port will drive whatever process is listening,
 // and a stale one serves today's page over a week-old engine — so the first
@@ -417,7 +421,16 @@ if (knock.status !== 200 || !knock.body || !knock.body.devLink) {
       } else await readRail('🤝 open again');
     }
   }
-  await guestCtx.close();
+  // the seat stays open for the resign at the end (Q1375); a member's own
+  // *Leave* is `resign`, free and nobody's to refuse (E32)
+  guestResign = () => guest.evaluate(async (slug) => {
+    const r = await fetch(`/api/d/${slug}/cmd`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ cmd: 'resign', args: {} }),
+    });
+    return r.status;
+  }, SLUG);
+  closeGuest = () => guestCtx.close();
 }
 // who the surface should name: the name they gave, or — where arrival was the
 // joining — the address they knocked with
@@ -462,6 +475,10 @@ const seen = await page.evaluate(() => ({
   rail: [...document.querySelectorAll('#rail li')].map((li) => ({
     k: li.dataset.q || (li.querySelector('[data-card]') || { dataset: {} }).dataset.card || null,
     t: (li.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 60),
+    // an entry about a person leads with their face (Q1375): the rail's
+    // `.qface` on the mark's own line
+    face: !!li.querySelector('.ql .qface'),
+    st: ((li.querySelector('button') || { className: '' }).className.match(/st-\w+/) || [''])[0],
   })),
   subs: [...document.querySelectorAll('.csec h2.lvl3')].map((h) => h.textContent.trim()),
   applicantRows: (() => {
@@ -499,7 +516,20 @@ if (!admEntry) {
   say('FAIL: the rail entry does not name the applicant: ' + JSON.stringify(admEntry.t));
   stuck.push('the entry names them');
 } else {
-  say('entry      · ' + JSON.stringify(admEntry.t));
+  say('entry      · ' + JSON.stringify(admEntry.t) + (admEntry.face ? ' · with their face' : ''));
+}
+// **the entry leads with their face** (Q1375, Ed 2026-09-15: *[avatar] [name]
+// has left, and similar with other member-related queue cards*): the admit
+// entry is about a person, so it carries the rail's `.qface` before the words
+if (admEntry && !admEntry.face) {
+  say('FAIL: the admit entry carries no face beside the name (Q1375)');
+  stuck.push('the entry\'s face');
+}
+// **and at ✒️ the sentence is theirs, not a title** (Q1375): *‹address› has
+// joined*, since arrival was the joining and no name was chosen
+if (admEntry && PRICE === 'pen' && !/ has joined$/.test(admEntry.t)) {
+  say('FAIL: at ✒️ the entry should read *‹who› has joined*, saw ' + JSON.stringify(admEntry.t));
+  stuck.push('the joined sentence');
 }
 
 if (admEntry) {
@@ -589,6 +619,57 @@ if (admEntry) {
     // in the walk must not silence what the form turned out to be
     if (formOk) say('form       · ' + FORM.called + ', committing on ' + card.commit);
   }
+  /* **The admit entry is a race entry** (Q1371, Ed 2026-09-15: *should queue
+   * card have progress wash*). At *proposal* the application is a
+   * one-candidate race in the engine, so its entry takes the race entry's
+   * mark and wash: 🪪 while it asks, ⏳ once you have voted and the room has
+   * not finished (the alphabet's `wait` row), never the decided green ✔ —
+   * and its fill is the race's own closeness, the leader's judges over the
+   * floor, not the founder's 100%. The vote is cast here as a member does
+   * it — the *Admit them* lane, then ✓ — and the entry is read back after
+   * the poll. On the pre-fix page the entry stood `st-news` in green before
+   * the vote and `st-ask` after it, its fill 100% throughout. */
+  if (PRICE === 'proposal' && card && admEntry) {
+    const entryNow = () => page.evaluate((k) => {
+      const li = document.querySelector('#rail .qitem[data-q="' + k + '"]');
+      const b = li && li.querySelector('button');
+      if (!b) return null;
+      const svg = b.querySelector('.subj svg');
+      return { st: (b.className.match(/st-\w+/) || [''])[0],
+        mark: svg ? svg.getAttribute('data-mk') : (b.querySelector('.subj') || {}).textContent,
+        fill: ((b.getAttribute('style') || '').match(/--fill: ([^;"]+)/) || [])[1] || null };
+    }, admEntry.k);
+    const was = await entryNow();
+    say('entry      · before voting ' + JSON.stringify(was));
+    if (!was || was.st !== 'st-ask' || was.mark !== '🪪') {
+      say('FAIL: the admit entry should ask under 🪪 before the vote, saw ' + JSON.stringify(was));
+      stuck.push('the entry asks');
+    }
+    if (!was || was.fill === '100%') {
+      say('FAIL: the admit entry wears no evidence meter — fill ' + JSON.stringify(was && was.fill));
+      stuck.push('the evidence meter');
+    }
+    const voted = await page.evaluate(async () => {
+      const c = document.querySelector('.setupcard');
+      const lane = c && c.querySelector('[data-admitpick][data-v="admit"]');
+      if (!lane) return 'no lane';
+      lane.click();
+      await new Promise((s) => setTimeout(s, 400));
+      const go = document.querySelector('.setupcard [data-admitgo]');
+      if (!go || go.disabled) return 'no live ✓';
+      go.click();
+      return 'voted';
+    });
+    say('vote       · ' + voted);
+    if (voted !== 'voted') stuck.push('the vote');
+    await T(5000); // >4s: a poll lands carrying the judged race
+    const now = await entryNow();
+    say('entry      · after voting ' + JSON.stringify(now));
+    if (!now || now.st !== 'st-wait' || now.mark !== 'glass') {
+      say('FAIL: after the vote the admit entry should wait under ⏳, saw ' + JSON.stringify(now));
+      stuck.push('the entry waits');
+    }
+  }
   if (card && !card.text.includes(CALLED)) {
     say('FAIL: the card does not name the applicant');
     stuck.push('the card names them');
@@ -618,6 +699,42 @@ if (admEntry) {
     if (backAgain) stuck.push('the news returns after a reload');
   }
 }
+
+/* **A departure names the person, with their face** (Q1375). At ✒️ the
+ * applicant is a member from arrival, so they can leave: the walk resigns
+ * them and reads the founder's rail for the 🥾 entry — *‹address› has left*,
+ * the address because they chose no name, the face before it. The one walk
+ * that drives a resignation end to end. */
+if (PRICE === 'pen' && guestResign) {
+  const left = await guestResign();
+  say('leave      · resign → ' + left);
+  if (left !== 200) stuck.push('the resignation');
+  else {
+    await page.reload({ waitUntil: 'load' });
+    await T(2500);
+    const dep = await page.evaluate(() => {
+      const li = [...document.querySelectorAll('#rail .qitem')].find((q) => /^dep:/.test(q.dataset.q || ''));
+      if (!li) return null;
+      return { t: (li.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 80),
+        face: !!li.querySelector('.ql .qface'),
+        title: (li.querySelector('button') || {}).title || '' };
+    });
+    say('departure  · ' + JSON.stringify(dep));
+    if (!dep) { say('FAIL: no 🥾 entry for the member who left (E32)'); stuck.push('the departure entry'); }
+    else {
+      if (!dep.face) { say('FAIL: the departure entry carries no face (Q1375)'); stuck.push('the departure\'s face'); }
+      if (!dep.t.includes(CALLED) || !/ has left/.test(dep.t)) {
+        say('FAIL: the departure entry should read *' + CALLED + ' has left*, saw ' + JSON.stringify(dep.t));
+        stuck.push('the departure sentence');
+      }
+      if (dep.title !== CALLED + ' has left') {
+        say('FAIL: the tooltip should be the sentence alone, saw ' + JSON.stringify(dep.title));
+        stuck.push('the departure tooltip');
+      }
+    }
+  }
+}
+await closeGuest();
 
 if (errors.length) { say('page errors· ' + JSON.stringify(errors)); stuck.push('page errors'); }
 say(stuck.length ? '\nFAILED: ' + stuck.join(' · ') : '\nok — an applicant reaches the membership');
