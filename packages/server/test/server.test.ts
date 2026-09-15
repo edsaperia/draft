@@ -51,6 +51,7 @@ type MemberViewPayload = {
     members: Array<{ id: string; name: string | null; arrived: boolean;
       owed: number; answered: number }> };
   text: string; textVersion: number; floor: number;
+  settingRaces: Array<{ id: string; settingId: string; judged: boolean; askable: boolean; ask: unknown }>;
   wallet: number | null;
   walletInfo: { balance: number; nextDripInMs: number | null; dripIntervalMs: number | null;
     cap: number | null } | null;
@@ -613,6 +614,14 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
       (c.a.setting?.settingId ?? '').startsWith('admit:') ||
       (c.b.setting?.settingId ?? '').startsWith('admit:'));
     expect(admitCard).toBeTruthy();
+    // the admission's own row carries the pair it asks with (Q1393): dealt
+    // here, so `ask` is null and `askable` true — a room whose hot set never
+    // deals it reads the pair from the row, which the walk at proposal price
+    // covers and this test, with one race, cannot
+    const admitRow = boView.settingRaces.find((s) => s.settingId.startsWith('admit:'))!;
+    expect(admitRow).toBeTruthy();
+    expect(admitRow.askable).toBe(true);
+    expect('ask' in admitRow).toBe(true);
     const admitSide = (admitCard!.a.setting?.settingId ?? '').startsWith('admit:') &&
       !admitCard!.a.id.startsWith('inc:') ? 'a' : 'b';
     await cmd(bo, 'judge-race',
