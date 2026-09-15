@@ -2208,19 +2208,22 @@
     // card itself (Q461a). Grants stage behind the constitutional OKs
     // (`staged`): you are told what room you are in before you are handed
     // the tools. The cards hang off the gates they belong with (tasksFor).
-    // **🏛️ arrives with the first blind question you are asked** (Q605 (a), Ed
-    // 2026-08-22): for an invitee arriving into a founding with open
-    // questions, at arrival; for a founder-member, at their first delegation;
-    // for a founder who delegates nothing, at 🍾 — its place in ORDER, which
-    // it keeps as the fallback. `early` is the override: the card is visible
-    // the moment any `ans-*` task is due for this viewer, whatever stands
-    // above it in the order, and it hangs off that first question's
-    // paragraph (`voiceHost`) rather than ⚖️'s, because the voice is what
-    // the question is answered with. It still blocks nothing (a gate).
+    // **🏛️ arrives when you first become a member** (Q1365, Ed 2026-09-15:
+    // *you shouldn't be given an action before you've been granted the power;
+    // the question has a 🏛️ submit. You should get a 🏛️ grant when you first
+    // become a member*): the founder-member at the save, an invitee at
+    // arrival, an admitted applicant at admission — `open` is the whole of
+    // it, and `early` says it is served from that moment whatever stands
+    // above it in the order. It hangs on the Founded line beside ✒️ 🛡️
+    // (`onFoundedLine`), the line that says who founded the document and
+    // where every power grant now arrives. It blocks nothing (a gate) — but
+    // **no blind question is served until it is OK'd** (`visible`, the
+    // `ans-*` branch). It replaced Q605's *with the first blind question you
+    // are asked* and F20's 🪪/⚖️ hosts.
     { k: 'grant-voice', g: '🏛️', t: PAGE_COPY.gate.voice.title, own: 'you', isGate: true, isGrant: true,
       grants: '🏛️', textcard: true,
       open: () => !!cs && viewerIsMember() && !!viewerRow().in,
-      early: () => firstAsked() !== null,
+      early: () => !!cs && viewerIsMember() && !!viewerRow().in,
       // the consent-wallet paragraph is cut (Ed's QA, 2026-09-02 pm): the
       // head's three lines are the whole body of the card
       why: '',
@@ -2370,7 +2373,12 @@
     // ✒️ invites or exiles at will, 🛡️ refuses any one. ✉️ stands from the
     // birth, because before the start it is the founder's own invitation
     // box; ❌ once judging opens (before that a row is unticked).
+    // the door composes by whatever price 🪪 decides (Q1364 (b), ❌'s own
+    // rule below): `proposal` races at the bar, `assembly` is constitutional
+    // — without this the card's kind priced every member's invitation at
+    // 🏛️ while the clause beside the box said ✏️
     { k: 'invite', g: '✉️', t: PAGE_COPY.cards.invite.t, kind: 'constitutional',
+      routeOf: () => (admissionPrice() === 'proposal' ? 'ordinary' : 'constitutional'),
       ready: () => true, door: true },
     // the door composes by whatever price the 🥾 setting decides (Q401):
     // `proposal` races at the bar, either consent rung is constitutional
@@ -3051,22 +3059,13 @@
   // duplication goes, every gate keeps its own variants, and the four tabs
   // stack in one gutter column. SURFACE Y21; the reasoning is
   // `design/DECISIONS.md`.
-  const PROPOSAL_CHIPS = ['begin', 'canpropose', 'canjudge', 'grant-voice'];
-  // The preamble is standing exactly when the Proposals section is live, which
-  // `secLive()` decides from the section's own keys — read from the literal so
-  // the two cannot drift.
-  const preambleStands = () => !!cs &&
-    ((SEC.find((s2) => s2.key === 'rate') || { keys: [] }).keys
-      .some((k) => { const c = card(k); return !!c && visible(c); }));
-  // **🏛️'s clause is pinned to the merged paragraph** (Q750): where the
-  // preamble stands, the voice's own sentence merges into it and its tab joins
-  // the stack, so where the sentence lives no longer depends on session state. Q605 is narrowed rather than reversed — the
-  // grant still *arrives* with the first question that needed it, because
-  // `tasksFor` is untouched and the rail entry travels as it always did. The
-  // one state that keeps the old paragraph is the one with no preamble to
-  // join: a member met by a blind question before the constitution has
-  // reached Proposals at all.
-  const voiceInStack = () => preambleStands() && visible(card('grant-voice'));
+  // **🏛️ left this stack for the Founded line** (Q1365, Ed 2026-09-15): the
+  // grant arrives when you become a member, before the constitution has
+  // reached Proposals, so its tab rides beside ✒️ 🛡️ on the one line every
+  // member sees from arrival (`onFoundedLine`). The voice's *sentence* stays
+  // merged into the preamble (Q750) — sentence 3 of `proposalsClause` — so
+  // the preamble still states the constitutional route; only the tab moved.
+  const PROPOSAL_CHIPS = ['begin', 'canpropose', 'canjudge'];
   // The open card is kept in its own group even if it has just gone invisible
   // under the pointer: the strip a card opened into must not lose the tab you
   // are looking at.
@@ -3141,7 +3140,31 @@
       '<div class="cptext"><p class="cpv">' + PAGE_COPY.titledLead + LD + esc(S.title) + RD + '.' +
         (holderLine('title') ? '<br>' + holderLine('title') : '') + '</p></div></div>';
   };
-  const isRoom = (c) => !!(c.key && delegated(c.key));
+  // **A blind question is a fact about the module, not a radio** (Q1364,
+  // 2026-09-15, the lab-2026 room). `isRoom` read the page's delegation
+  // radio — `S.<key> === 'roster'` — which `hydrateS` seeded at boot from
+  // *holder is the membership*. After 🍾 every setting whose powers were
+  // laid down is the membership's, and the page read each as an open blind
+  // question: three phantom answer cards on every load, the resolved
+  // questions' news behind an OK nobody could give, ✉️ priced at the
+  // 🏛️ fallback. A blind question is one the module is **collecting** or
+  // **resolved by the ceremony**; a setting held by nobody at its standing
+  // value is a settled setting like any other. The radio is still the whole
+  // of it before the module holds a state for the key (pre-save, and the
+  // founder's provisional pick) — and reading the module means a page open
+  // across a later delegation learns of it by its poll, where the boot-only
+  // seed never did.
+  const isRoom = (c) => {
+    if (!c.key) return false;
+    const st = csState(c.k);
+    return st ? st.holder === 'members' && (!!st.collecting || st.settledBy === 'ceremony')
+      : delegated(c.key);
+  };
+  // …and whether that question is still **asking**: an answer card exists
+  // only while the module collects, never for a resolved one (whose answers
+  // the blind view no longer carries, so *answered* would read false)
+  const roomAsking = (c) => { const st = csState(c.k);
+    return st ? !!st.collecting : isRoom(c) && (c.in || 0) < E(); };
   // who holds it (§9.7 v0.52): any setting the founder has delegated —
   // pre-start into its founding question, post-start as a hand-over — is
   // the members', and the founder composes on it like any member
@@ -3427,15 +3450,17 @@
   //     by definition until pressed, and the module refuses the press while a
   //     delegated question is still collecting (§9.0b). It is the act the
   //     answers unblock.
-  //   🏛️ — the voice arrives **with the first blind question you are asked**
-  //     (Q605), so it cannot precede that question without a deadlock: the
-  //     grant was withholding the very thing it accompanies.
+  //   🏛️ — the voice arrived **with the first blind question you are asked**
+  //     (Q605, until Q1365 moved it to the moment you become a member), so it
+  //     could not precede that question without a deadlock: the grant was
+  //     withholding the very thing it accompanies.
   // Either way Q408's exception — *a founder with nothing else outstanding is
   // served the rest anyway* — was unreachable, and a founder who founded in
   // one sitting arrived at Begin, was refused, and had nowhere to answer. The
-  // rule is the one `askingFirst` below already states for 🏛️ inside its own
-  // re-entrancy: what a question hands you cannot be the reason to withhold
-  // the question. Ordering is not weakened by this — the file is kept by
+  // rule: what a question hands you cannot be the reason to withhold the
+  // question (a grant is news, never a task left). Since Q1365 the grant
+  // precedes every question by construction, and the question waits on the
+  // grant's OK instead. Ordering is not weakened by this — the file is kept by
   // `ORDER`/`blocksOrder`, and no answer task can exist before its own
   // setting has been delegated, which happens well below the pen.
   // **And a task nothing can serve is not one of them either** (Q775). This
@@ -3578,9 +3603,33 @@
         return !p || !blocksOrder(p);
       });
   };
+  // **A delegated question is a member's the moment it is delegated** (Q1372,
+  // Ed 2026-09-15: *if the founder hasn't decided whether to delegate a
+  // setting yet, how could it be blocking decisions for members?*). The
+  // founding order paces the *founder* (C14, `orderReady`); it used to pace
+  // every reader through the founder's card, so an unanswered 🎩 hid a
+  // member's ⏱️ 👥 for as long as the founder left it — two hours in the
+  // lab room. A setting the membership is being asked about is visible to a
+  // member whatever the founder has left unanswered above it; what the
+  // founder has not reached stays absent, an undecided rule not yet being a
+  // rule. The member's own questions still cascade among themselves
+  // (`ansWaveReady`).
+  const askedOfMember = (c) => !amFounder() && viewerIsMember() && !!c.key &&
+    isRoom(c) && roomAsking(c);
+  // `visible`, clause by clause, in the document's terms:
+  //  - a stranger sees no gate, no personal card and no question;
+  //  - a blind question is served to a member who holds 🏛️ acknowledged
+  //    (Q1365 — *don't show blind questions until you have acknowledged the
+  //    power*), when its turn among their questions has come (`ansWaveReady`,
+  //    `ansDue`), while the room is still collecting it, and on a setting whose
+  //    paragraph is on their page;
+  //  - anything else needs a document to exist if it is a gate, and is on the
+  //    page once the document has begun, once the founder's order has reached
+  //    it, once its own `early` says so — or, for a member, once the founder
+  //    has delegated it (`askedOfMember`).
   const visible = (c) => (isStranger() && (c.isGate || c.kind === 'personal' || c.ansFor) ? false : c.ansFor
-    ? viewerIsMember() && ansDue() && ansWaveReady(c) &&
-      isRoom(card(c.ansFor)) && visible(card(c.ansFor))
+    ? viewerIsMember() && acked('grant-voice') && ansDue() && ansWaveReady(c) &&
+      isRoom(card(c.ansFor)) && roomAsking(card(c.ansFor)) && visible(card(c.ansFor))
     // a gate or a grant belongs to a document that exists: before the save
     // there is nothing to gate and no pen to be given, and its paragraph
     // would otherwise stand in the birth's own band saying so
@@ -3589,48 +3638,13 @@
     // rule reading as undecided (Q510) — with 🥾 never set, the order had hidden
     // 💡 ⚖️ ⏱️ ⏰ 🌡️ 👥 👤 👁️ and their three sections from every reader
     : !(c.hide && c.hide()) && (!c.isGate || !!cs) &&
-      (constituted() || orderReady(c) || !!(c.early && c.early())));
-  // the first delegated question this viewer is being asked, in ORDER — the
-  // question 🏛️ arrives with, and the paragraph it hangs off (Q605 (a))
-  // Re-entrant by construction, so it guards itself: `visible(ans)` asks
-  // `ansDue()`, which counts the other tasks left, which asks `visible` of
-  // this very grant — inside that inner ask the voice simply does not count
-  // as a task left, which is right (it is news, not a question) and what
-  // keeps the answer from depending on itself.
-  let askingFirst = false;
-  const firstAsked = () => {
-    if (askingFirst) return null;
-    askingFirst = true;
-    try {
-      return ORDER.map((k) => ANS.find((a) => a.ansFor === k))
-        .find((a) => a && visible(a)) || null;
-    } finally { askingFirst = false; }
-  };
-  // **A founder-member is handed the voice, so a founder-member is served it**
-  // (Q829, Ed 2026-08-25: *when I (as a founder-member) was granted 🏛️ I did
-  // not get a task — the 🏛️ tab was grey*). The host was the first blind
-  // question asking you, else ⚖️ Judging — and ⚖️ is hidden until 🍾, so before
-  // the start the fallback host was a card nothing could see and `tasksFor`
-  // never reached the grant. A founder who delegates nothing has no blind
-  // question to hang it on and was therefore never served the voice they hold
-  // from the save; and a founder who *does* delegate has one only once
-  // `ansDue()` lets the question through, which for a sole founder-member is
-  // after every other task. Either way the grant sat unacknowledged behind the
-  // very thing it accompanies, which is Q645's shape in a third place.
-  // **🪪 is the pre-start host**: the voice is one every member holds, so the
-  // membership's own clause is where it belongs while there is no question to
-  // ride, and the register is always visible from its place in ORDER. Only the
-  // *enumeration* moves — the tab is pinned to the Proposals preamble by Q750
-  // and the rail entry follows its own chip (`anchorOf`), so nothing changes
-  // where the founder looks.
-  const voiceHost = () => { const a = firstAsked();
-    return a ? a.ansFor : (cs && !constituted() ? 'admission' : 'canjudge'); };
-  // **The two grants whose clause is the Founded line** (Q639 (a), Ed
-  // 2026-08-22). They are still tasks of the 📍 link for every purpose that
-  // counts them — the rail enumerates from `tasksFor`, and so does the
-  // group's own note — but they draw no paragraph of their own: their tabs
-  // stand on the Founded line, and that sentence is their clause.
-  const onFoundedLine = (c) => !!c && (c.k === 'grant-pen' || c.k === 'grant-shield');
+      (constituted() || orderReady(c) || !!(c.early && c.early()) || askedOfMember(c)));
+  // **The three grants whose clause is the Founded line** (Q639 (a), Ed
+  // 2026-08-22; 🏛️ since Q1365). They are still tasks of the 📍 link for
+  // every purpose that counts them — the rail enumerates from `tasksFor`, and
+  // so does the group's own note — but they draw no paragraph of their own:
+  // their tabs stand on the Founded line, and that sentence is their clause.
+  const onFoundedLine = (c) => !!c && (c.k === 'grant-pen' || c.k === 'grant-shield' || c.k === 'grant-voice');
   // **Your identity tabs ride wherever you appear in the document** (Q759, Ed
   // 2026-08-23). Ordinarily that is your own row in the Members list; a clerk
   // has no row there (Q758) and appears in the document only on the Founded
@@ -3655,8 +3669,12 @@
   // not 'once you could have answered' but 'once you have' — the watcher is
   // hidden while the answer is still outstanding, whether or not the question
   // has reached you yet
+  // …and only while the question is still asking (Q1364): a resolved
+  // question's answers leave the blind view, so without `roomAsking` the
+  // resolution news — owed to whoever answered it (Y27) — was hidden behind
+  // *you have not answered*, unservable, and held the gates with it
   const owesOwnAnswer = (c) => { const a = ANS.find((x) => x.ansFor === c.k);
-    return !!a && settled(c) && viewerIsMember() && isRoom(c) && !answered(a); };
+    return !!a && settled(c) && viewerIsMember() && isRoom(c) && roomAsking(c) && !answered(a); };
   // **The sections of the constitution** (Ed, 2026-08-18): subtitles his
   // ask, the grouping and the prose mine to draft — each line says what
   // the section governs, in the surface's own words.
@@ -4008,13 +4026,12 @@
   const ansTaskFor = (c) => (c && c.key && ANSWER[c.k] && (c.in || 0) < E()
     ? [card('ans-' + c.k)].filter((x) => x && visible(x)) : []);
   const tasksFor = (c) => ansTaskFor(c)
-    // the grants stand as tasks beside the gates they belong with (Q461):
-    // the pen and the shield with the 📍 link — issued when the address went
-    // live (Q451) — the voice with the first blind question you are asked,
-    // or with ⚖️ Judging where nothing was delegated to you (Q605 (a)).
-    // ✒️ and 🛡️ are enumerated here and drawn on the Founded line (Q639).
-    .concat(c.k === 'slug' ? [card('grant-pen'), card('grant-shield')].filter(visible)
-      : c.k === voiceHost() ? [card('grant-voice')].filter(visible) : []);
+    // the grants stand as tasks of the 📍 link — the pen and the shield issued
+    // when the address went live (Q451), the voice when you became a member
+    // (Q1365; it was the first blind question's, Q605 (a)) — all three
+    // enumerated here and drawn on the Founded line (Q639).
+    .concat(c.k === 'slug'
+      ? [card('grant-pen'), card('grant-shield'), card('grant-voice')].filter(visible) : []);
   // **The keys the rail can ever list** (Q775). Every section's own keys, plus
   // the three grants and the answer tasks `tasksFor` adds beside them — the
   // whole of what `servedCards` below can produce, read off the same literals
@@ -4126,7 +4143,9 @@
           // and a clerk's ✋🖼️📧 join them (Q759): the Founded line is where
           // a clerk appears in the document, so it is where their identity
           // tabs ride. Five tabs is the tallest this pile gets.
-          const gc = [card('grant-pen'), card('grant-shield')].filter((c) => c && visible(c))
+          // …and 🏛️ rides here for every member (Q1365): the grant of the
+          // membership, on the line that says who founded the document
+          const gc = [card('grant-pen'), card('grant-shield'), card('grant-voice')].filter((c) => c && visible(c))
             .concat(idOnFounded());
           // a member, a stranger, a founder who holds nothing: no pile, and
           // the line renders exactly as it always did
@@ -5796,10 +5815,18 @@
   // both tables are the clause table (`ADM_RULE` · `REMOVAL_RULE` ·
   // `APPL_RULE`), so a price reads the same wherever it is met.
   // the 🥾 price as it stands (Q401) — unset reads as today's rule
-  const removalPrice = () => (takenValOf('removal') || {}).price ||
+  // **The price is the standing value, whoever set it** (Q1364 (b)): these
+  // read the room's answer (`takenValOf`, which is null for a founder-set
+  // value) and fell to the page's own field, so a page whose field was
+  // blank — or `'roster'` for a setting laid down at 🍾 — priced ✉️ at the
+  // 🏛️ fallback while the clause beside it said ✏️. The module's value is
+  // what stands, by any route; the field is only for a page with none.
+  const standingPrice = (k) => { const st = csState(k);
+    return st && st.value && st.value.price ? st.value.price : null; };
+  const removalPrice = () => standingPrice('removal') ||
     (S.removal === 'roster' ? 'consent' : S.removal);
   // the 🪪 price as it stands — unset reads as the most protective, like the fold
-  const admissionPrice = () => (takenValOf('admission') || {}).price ||
+  const admissionPrice = () => standingPrice('admission') ||
     (S.admission === 'roster' || !S.admission ? 'assembly' : S.admission);
   const policyNow = () => { const v = takenValOf('applications');
     return v ? (mayApply(v) ? 'apply' : 'invite') : (S.joinBy || 'invite'); };
@@ -5990,10 +6017,11 @@
     if (c.isClosing) return 'The document closed' + closedAtWords() + '. ' +
       (closeSignatures().length === 0 ? 'Nobody has signed it yet.'
         : closeSignatures().length + (closeSignatures().length === 1 ? ' member has' : ' members have') + ' signed it.');
-    // 🏛️'s own sentence survives only where there is no preamble to join
-    // (Q750) — otherwise the preamble's own sentence 2 states the route
-    if (c.k === 'grant-voice') return voiceInStack() ? proposalsClause()
-      : 'Nothing constitutional passes without every member’s consent.';
+    // 🏛️ draws no paragraph of its own since Q1365 — its tab is on the
+    // Founded line with ✒️ 🛡️ — but its card's head is still the preamble's
+    // three rule lines (Q750; the whole body of the card, Ed's QA 2026-09-02
+    // pm), whichever paragraph the tab stands on
+    if (c.k === 'grant-voice') return proposalsClause();
     // ✒️ and 🛡️ write no sentence (Q639 (a), Ed 2026-08-22). They used to
     // state a count — *The Founder holds the pen on 16 settings.* — which
     // `holderLine` already says on every setting the power turns, and which
@@ -6135,7 +6163,10 @@
       // itself), and since Q639 the two grants, whose clause is the Founded
       // line they hang their tabs on — and open questions, which their title
       // names better than a rule that does not exist yet.
-      if (c.k === 'text' || onFoundedLine(c)) return null;
+      // (🏛️ rides the Founded line too since Q1365, but its head is the
+      // preamble's three rule lines — the whole body of the card, Ed's QA
+      // 2026-09-02 pm — so it falls through to the gate branch below)
+      if (c.k === 'text' || c.k === 'grant-pen' || c.k === 'grant-shield') return null;
       if (c.isGate) return breakLines(linkify(esc(decisionLine(c))));
       if (c.ansFor || c.kind === 'personal') return null;
       if (settled(c)) {
@@ -6195,15 +6226,12 @@
     // approved mockup: the standing address wearing its provenance radio)
     blockHead: (c) => !c.power && !c.record && !c.isGate && !c.ansFor && !c.door &&
       (OPTHEADLESS.has(c.k) || (c.k === 'title' && titleStands()) || (c.k === 'slug' && !!cs)),
-    // a section never folds while it holds the open card or its tasks —
-    // including a card pinned to its `lead` rather than enumerated by its
-    // own keys: 🏛️ hangs on the Proposals preamble (Q750) and appears in
-    // neither `cards` nor `tasksFor`, so without this the fold hid the one
-    // paragraph its card can render in and the rail entry opened nothing
+    // a section never folds while it holds the open card or its tasks
+    // (🏛️ is enumerated by `tasksFor` on the Founded line since Q1365, so
+    // the special case Q750 needed here is gone)
     foldedSec: (sec) => S.folded.has('cs-' + sec.key) &&
       !sec.cards.some((c) => S.open === c.k ||
-        (tasksFor(c) || []).some((t2) => S.open === t2.k)) &&
-      !(sec.key === 'rate' && voiceInStack() && S.open === 'grant-voice'),
+        (tasksFor(c) || []).some((t2) => S.open === t2.k)),
     secToggle: (sec) => secToggleHtml('cs-' + sec.key),
     // the whole constitution folds under its own heading (Ed, 2026-08-19);
     // never while any card is open — a fold must not swallow the open card
@@ -6235,7 +6263,7 @@
     // host setting's pile (`chipsFor` below), so a paragraph of its own would
     // be the same tab drawn twice.
     tasksFor: (c) => (c.power || c.record ? []
-      : tasksFor(c).filter((t) => !t.ansFor && !(t.k === 'grant-voice' && voiceInStack()))),
+      : tasksFor(c).filter((t) => !t.ansFor)),
     // esc before linkify, like the head path (review #1, finding 20): the
     // sentence carries the title, which is member text — unescaped it was
     // stored XSS into the constitution paragraph
@@ -8561,7 +8589,6 @@
     settled: (...a) => settled(...a),
     viewerIsMember: (...a) => viewerIsMember(...a),
     visible: (...a) => visible(...a),
-    voiceHost: (...a) => voiceHost(...a),
   });
   // **The founding never runs out of tasks before 🍾** (Q773, Ed 2026-08-25:
   // *before begin, there shouldn't be a situation where I don't see any
@@ -8592,7 +8619,7 @@
     readiness: (() => { const rd = readinessOf();
       return rd ? { ready: rd.ready, waiting: rd.waiting, holds: rd.holds || [] } : null; })(),
     roomExists: roomExists(), otherTasksLeft: otherTasksLeft(), ansDue: ansDue(),
-    voiceHost: voiceHost(),
+    voiceAcked: acked('grant-voice'),
     order: ORDER.map((k) => { const c = card(k); return !c ? k + ' (no card)'
       : k + ' vis=' + (visible(c) ? 1 : 0) + ' set=' + (settled(c) ? 1 : 0) +
         ' act=' + (mustAct(c) ? 1 : 0) + ' blk=' + (blocksOrder(c) ? 1 : 0) +
@@ -8604,6 +8631,13 @@
     // this readout was written for, named rather than left to be inferred
     owedUnservable: CARDS.filter((c) => !c.isGate && !railable(c) && visible(c) && mustAct(c))
       .map((c) => c.k),
+    // …and news the same way (Q1364 (c)): a card in state `news` that no
+    // rail entry serves is an OK nobody can give, and since the gates and
+    // the 🏛️ grant stage behind the news (`staged`), one of these is a page
+    // that has stopped. `after-begin-walk` and `journey` assert it empty.
+    unservableNews: (() => { const served = new Set(servedCards().map((c) => c.k));
+      return CARDS.filter((c) => visible(c) && stateOf(c, ctx) === 'news' && !served.has(c.k))
+        .map((c) => c.k); })(),
     served: servedCards().map((c) => c.k),
     rail: railEntries.map((e) => e.id),
     // what this seat has acknowledged, beside what the module says it owes

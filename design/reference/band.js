@@ -727,11 +727,24 @@ window.BAND = (function () {
       apply: () => {
         const a = S.app;
         const ready2 = a.started && a.emailVerified && a.name.trim() && a.pic;
+        // **what the application holds so far** (Q1366, Ed 2026-09-15): the
+        // three cards send nothing — a ✓ on ✋ 🖼️ 👋 closes and keeps — and
+        // nothing on the surface said what had been kept until Submit, so a
+        // picture chosen and closed looked unsaved. One row per thing the
+        // submission carries, as given or as not yet given; the card says
+        // what the application *is*, never what Submit does (T45).
+        const H = PAGE_COPY.appcards.holds;
+        const holdRow = (g, label, val) => '<div class="approw"><span class="g">' + g + '</span><span>' + esc(label) + ' · </span>' + val + '</div>';
+        const holds = '<div class="applist">' +
+          holdRow('✋', H.name, a.name.trim() ? '<b>' + esc(a.name.trim()) + '</b>' : '<i>' + esc(H.noName) + '</i>') +
+          holdRow('🖼️', H.picture, a.pic ? avHtml({ n: a.name, pic: a.pic }) : '<i>' + esc(H.noPicture) + '</i>') +
+          holdRow('👋', H.words, a.text.trim() ? '<b>' + esc(a.text.trim()) + '</b>' : '<i>' + esc(H.noWords) + '</i>') +
+          '</div>';
         return '<p class="why">Your application goes before the members as a proposal (✏️) — it passes if the membership is sure enough.</p>' +
           (a.submitted
             ? '<div class="lockline">' + TICK + '<span>Submitted. ' + APPLICANT.judged + ' of ' + E() + ' have voted on it — you will get an email either way.</span></div>'
             : a.started
-            ? '<p class="setnote">' + (ready2 ? 'Everything needed is in — the words are optional.' : 'The email, the name and the picture are needed; the words are optional.') + '</p>'
+            ? holds + '<p class="setnote">' + (ready2 ? 'Everything needed is in — the words are optional.' : 'The email, the name and the picture are needed; the words are optional.') + '</p>'
             : '<p class="setnote">Nothing is collected before you begin, and nothing is sent until you submit.</p>');
       },
       appmail: () => {

@@ -70,7 +70,8 @@
    "rail": [
     "myname",
     "mypic",
-    "grant-pen"
+    "grant-pen",
+    "grant-voice"
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
@@ -83,7 +84,8 @@
    "rail": [
     "myname",
     "mypic",
-    "grant-pen"
+    "grant-pen",
+    "grant-voice"
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
@@ -96,7 +98,8 @@
    "rail": [
     "myname",
     "mypic",
-    "grant-pen"
+    "grant-pen",
+    "grant-voice"
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
@@ -109,7 +112,8 @@
    "rail": [
     "myname",
     "mypic",
-    "grant-pen"
+    "grant-pen",
+    "grant-voice"
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
@@ -121,7 +125,8 @@
    "step": "commit myname",
    "rail": [
     "mypic",
-    "grant-pen"
+    "grant-pen",
+    "grant-voice"
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
@@ -133,7 +138,8 @@
    "step": "open mypic",
    "rail": [
     "mypic",
-    "grant-pen"
+    "grant-pen",
+    "grant-voice"
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
@@ -144,7 +150,8 @@
   {
    "step": "commit mypic",
    "rail": [
-    "grant-pen"
+    "grant-pen",
+    "grant-voice"
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
@@ -155,7 +162,8 @@
   {
    "step": "open grant-pen",
    "rail": [
-    "grant-pen"
+    "grant-pen",
+    "grant-voice"
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
@@ -166,6 +174,7 @@
    "step": "commit grant-pen",
    "rail": [
     "grant-shield",
+    "grant-voice",
     "chamber"
    ],
    "clauses": [
@@ -179,6 +188,7 @@
    "step": "open grant-shield",
    "rail": [
     "grant-shield",
+    "grant-voice",
     "chamber"
    ],
    "clauses": [
@@ -189,6 +199,31 @@
   },
   {
    "step": "commit grant-shield",
+   "rail": [
+    "grant-voice",
+    "chamber"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
+    "chamber: Until the Founder decides, only members can see the document",
+    "founded: Founded by AL Ada Lovell 👑."
+   ]
+  },
+  {
+   "step": "open grant-voice",
+   "rail": [
+    "grant-voice",
+    "chamber"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
+    "chamber: Until the Founder decides, only members can see the document"
+   ]
+  },
+  {
+   "step": "commit grant-voice",
    "rail": [
     "chamber"
    ],
@@ -353,7 +388,6 @@
   {
    "step": "commit removal",
    "rail": [
-    "grant-voice",
     "invite",
     "rate"
    ],
@@ -366,45 +400,7 @@
     "applications: New members may only join by invitation. The Founder may ame",
     "lapse: After 7 days, inactive members lapse and automatically absta",
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
-    "begin: When the document begins, members may propose changes to rul",
-    "rate: The Founder is deciding how often members may propose."
-   ]
-  },
-  {
-   "step": "open grant-voice",
-   "rail": [
-    "grant-voice",
-    "invite",
-    "rate"
-   ],
-   "clauses": [
-    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: The document can only be seen by members. The Founder may am",
-    "founded: Founded by AL Ada Lovell 👑.",
-    "admission: Any member may propose to invite someone to join the members",
-    "applications: New members may only join by invitation. The Founder may ame",
-    "lapse: After 7 days, inactive members lapse and automatically absta",
-    "removal: To remove a member, all members must agree 🏛️. The Founder ",
-    "rate: The Founder is deciding how often members may propose."
-   ]
-  },
-  {
-   "step": "commit grant-voice",
-   "rail": [
-    "invite",
-    "rate"
-   ],
-   "clauses": [
-    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: The document can only be seen by members. The Founder may am",
-    "founded: Founded by AL Ada Lovell 👑.",
-    "admission: Any member may propose to invite someone to join the members",
-    "applications: New members may only join by invitation. The Founder may ame",
-    "lapse: After 7 days, inactive members lapse and automatically absta",
-    "removal: To remove a member, all members must agree 🏛️. The Founder ",
-    "begin: When the document begins, members may propose changes to rul",
+    "?: When the document begins, members may propose changes to rul",
     "rate: The Founder is deciding how often members may propose."
    ]
   },
@@ -423,7 +419,7 @@
     "applications: New members may only join by invitation. The Founder may ame",
     "lapse: After 7 days, inactive members lapse and automatically absta",
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
-    "begin: When the document begins, members may propose changes to rul"
+    "?: When the document begins, members may propose changes to rul"
    ]
   },
   {
@@ -441,7 +437,7 @@
     "applications: New members may only join by invitation. The Founder may ame",
     "lapse: After 7 days, inactive members lapse and automatically absta",
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
-    "begin: When the document begins, members may propose changes to rul",
+    "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
     "ending: The Founder is deciding when the drafting process will end."
    ]
@@ -461,7 +457,7 @@
     "applications: New members may only join by invitation. The Founder may ame",
     "lapse: After 7 days, inactive members lapse and automatically absta",
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
-    "begin: When the document begins, members may propose changes to rul",
+    "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou"
    ]
   },
@@ -480,7 +476,7 @@
     "applications: New members may only join by invitation. The Founder may ame",
     "lapse: After 7 days, inactive members lapse and automatically absta",
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
-    "begin: When the document begins, members may propose changes to rul",
+    "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
     "ending: No more changes to the document may be made after Weekday at",
     "quorum: The Founder is deciding how many members must weigh in befor"
@@ -501,7 +497,7 @@
     "applications: New members may only join by invitation. The Founder may ame",
     "lapse: After 7 days, inactive members lapse and automatically absta",
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
-    "begin: When the document begins, members may propose changes to rul",
+    "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
     "ending: No more changes to the document may be made after Weekday at"
    ]
@@ -521,7 +517,7 @@
     "applications: New members may only join by invitation. The Founder may ame",
     "lapse: After 7 days, inactive members lapse and automatically absta",
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
-    "begin: When the document begins, members may propose changes to rul",
+    "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
     "ending: No more changes to the document may be made after Weekday at",
     "quorum: 5 members must vote on a proposal ✏️ before anything changes",
@@ -543,7 +539,7 @@
     "applications: New members may only join by invitation. The Founder may ame",
     "lapse: After 7 days, inactive members lapse and automatically absta",
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
-    "begin: When the document begins, members may propose changes to rul",
+    "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
     "ending: No more changes to the document may be made after Weekday at",
     "authorship: The Founder is deciding whether anonymous proposers are reve"
@@ -564,7 +560,7 @@
     "applications: New members may only join by invitation. The Founder may ame",
     "lapse: After 7 days, inactive members lapse and automatically absta",
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
-    "begin: When the document begins, members may propose changes to rul",
+    "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
     "ending: No more changes to the document may be made after Weekday at",
     "quorum: 5 members must vote on a proposal ✏️ before anything changes",
@@ -586,7 +582,7 @@
     "applications: New members may only join by invitation. The Founder may ame",
     "lapse: After 7 days, inactive members lapse and automatically absta",
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
-    "begin: When the document begins, members may propose changes to rul",
+    "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
     "ending: No more changes to the document may be made after Weekday at",
     "quorum: 5 members must vote on a proposal ✏️ before anything changes"
@@ -607,7 +603,7 @@
     "applications: New members may only join by invitation. The Founder may ame",
     "lapse: After 7 days, inactive members lapse and automatically absta",
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
-    "begin: When the document begins, members may propose changes to rul",
+    "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
     "ending: No more changes to the document may be made after Weekday at",
     "quorum: 5 members must vote on a proposal ✏️ before anything changes",
@@ -630,7 +626,7 @@
     "applications: New members may only join by invitation. The Founder may ame",
     "lapse: After 7 days, inactive members lapse and automatically absta",
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
-    "begin: When the document begins, members may propose changes to rul",
+    "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
     "ending: No more changes to the document may be made after Weekday at",
     "quorum: 5 members must vote on a proposal ✏️ before anything changes",

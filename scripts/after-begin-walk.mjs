@@ -39,6 +39,9 @@
  *   FAIL · the resolved questions are news the rail serves · rail ["myname","mypic"]
  *   FAIL · the OKs bring 💡 ⚖️ and 🏛️ on the long-lived page · rail ["myname","mypic"]
  *   FAIL · ✉️ composes at 🪪’s price on the long-lived page (proposal) · {"commit":"hold", …}
+ * Since Q1365 (2026-09-15) scene 2 OKs 🏛️ at arrival before answering — the
+ * grant arrives with membership and no blind question is served until its OK —
+ * so the long-lived page's post-🍾 OKs bring 💡 ⚖️ alone.
  */
 import { chromium } from 'playwright';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
@@ -256,6 +259,17 @@ if (SCENE !== '1') {
     const b = btns[btns.length - 1]; if (!b) return 'nothing enabled on ' + k;
     b.click(); return k;
   }, k);
+  // **🏛️ first** (Q1365, Ed 2026-09-15): the grant arrives at arrival on the
+  // Founded line and no blind question is served until it is OK'd — so the
+  // member's page holds the voice and nothing else askable until this press
+  const voiceOk = await page.evaluate(() => new Promise((res) => {
+    const entry = document.querySelector('#rail [data-card="grant-voice"]'); if (!entry) return res('no 🏛️ entry');
+    entry.click();
+    setTimeout(() => { const b = document.querySelector('.setupcard[data-setupcard="grant-voice"] [data-ok]');
+      if (!b || b.disabled) return res('no live OK on 🏛️'); b.click(); res('ok'); }, 700);
+  }));
+  await T(1500);
+  verdict('🏛️ is served at arrival and OK\'d before any question (Q1365)', voiceOk === 'ok', voiceOk);
   const answered = [];
   for (const k of ['ans-chamber', 'ans-rate', 'ans-quorum']) { answered.push(await answerOnPage(k)); await T(1500); }
   verdict('the three questions answered on the page', answered.join() === 'ans-chamber,ans-rate,ans-quorum', JSON.stringify(answered));
@@ -273,8 +287,11 @@ if (SCENE !== '1') {
   await T(POLL);
   const s2 = await state(page);
   say('           · OKs pressed ' + JSON.stringify(pressed));
-  verdict('the OKs bring 💡 ⚖️ and 🏛️ on the long-lived page',
-    ['canpropose', 'canjudge', 'grant-voice'].every((k) => s2.rail.includes(k)), 'rail ' + JSON.stringify(s2.rail));
+  // 🏛️ was OK'd at arrival (Q1365), so after 🍾 the OKs bring the two gates
+  // and the voice is not served again
+  verdict('the OKs bring 💡 ⚖️ on the long-lived page, 🏛️ having been OK\'d at arrival',
+    ['canpropose', 'canjudge'].every((k) => s2.rail.includes(k)) && !s2.rail.includes('grant-voice'),
+    'rail ' + JSON.stringify(s2.rail));
   const r = await inviteRoute(page);
   verdict('✉️ composes at 🪪’s price on the long-lived page (' + PRICE + ')', !r.err && routeOk(r), JSON.stringify(r));
   await page.close();

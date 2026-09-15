@@ -536,9 +536,18 @@ window.LIVE = (function () {
       // undecided '' the page starts every radio at. This line used to read
       // `del(mid) ? 'roster' : 'founder'`, which stated an answer the founder
       // had not given — the same defect as arriving delegated, mirrored.
+      // **…and *roster* means a blind question, never merely the holder**
+      // (Q1364 (a)). After 🍾 a setting whose powers were laid down is the
+      // membership's with the founder's value standing, and this read every
+      // such setting as delegated: ⏱️ 👥 🤝 came back as open answer cards on
+      // every load of a begun document. A question is the room's while the
+      // module collects it or once the ceremony resolved it — the same test
+      // as the page's `isRoom` — and a value the founder set is *founder*
+      // whoever holds the setting now.
       const stOf = (mid) => { try { return env.cs.settingState(mid); } catch (e) { return null; } };
       const byOf = (mid) => { const st = stOf(mid);
-        return del(mid) ? 'roster' : (st && st.settledBy !== null) ? 'founder' : ''; };
+        return del(mid) && st && (st.collecting || st.settledBy === 'ceremony') ? 'roster'
+          : (st && st.settledBy !== null) ? 'founder' : ''; };
       S.quorumBy = byOf('quorum');
       S.rateBy = byOf('rate');
       S.policyBy = byOf('applications');

@@ -6017,10 +6017,11 @@
     if (c.isClosing) return 'The document closed' + closedAtWords() + '. ' +
       (closeSignatures().length === 0 ? 'Nobody has signed it yet.'
         : closeSignatures().length + (closeSignatures().length === 1 ? ' member has' : ' members have') + ' signed it.');
-    // 🏛️ writes no sentence of its own since Q1365 — its tab is on the
-    // Founded line with ✒️ 🛡️ (`onFoundedLine`, so `headFor` returns null and
-    // this is never reached for it); the preamble's sentence 3 states the
-    // constitutional route (Q750)
+    // 🏛️ draws no paragraph of its own since Q1365 — its tab is on the
+    // Founded line with ✒️ 🛡️ — but its card's head is still the preamble's
+    // three rule lines (Q750; the whole body of the card, Ed's QA 2026-09-02
+    // pm), whichever paragraph the tab stands on
+    if (c.k === 'grant-voice') return proposalsClause();
     // ✒️ and 🛡️ write no sentence (Q639 (a), Ed 2026-08-22). They used to
     // state a count — *The Founder holds the pen on 16 settings.* — which
     // `holderLine` already says on every setting the power turns, and which
@@ -6162,7 +6163,10 @@
       // itself), and since Q639 the two grants, whose clause is the Founded
       // line they hang their tabs on — and open questions, which their title
       // names better than a rule that does not exist yet.
-      if (c.k === 'text' || onFoundedLine(c)) return null;
+      // (🏛️ rides the Founded line too since Q1365, but its head is the
+      // preamble's three rule lines — the whole body of the card, Ed's QA
+      // 2026-09-02 pm — so it falls through to the gate branch below)
+      if (c.k === 'text' || c.k === 'grant-pen' || c.k === 'grant-shield') return null;
       if (c.isGate) return breakLines(linkify(esc(decisionLine(c))));
       if (c.ansFor || c.kind === 'personal') return null;
       if (settled(c)) {
