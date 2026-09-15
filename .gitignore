@@ -20,3 +20,4 @@ outbox.jsonl
 
 # Ed's screenshot drop point; the keepers are archived under design/bug-shots-<date>/ (Q1308, 2026-09-10)
 bugs/
+scripts/repro/*.cookie
