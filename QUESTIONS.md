@@ -26,6 +26,7 @@ The index, in the section's own order (nothing is pinned — Ed, 2026-09-07, Q12
 | 1377 | The consent card's radios: *Prefer this* on the standing block too, and *Indifferent* for the textless block | 2026-09-15 | **answered, owed** (Ed, 2026-09-15 20:33: *Keep should be Prefer*; the Abstain radio flagged) | `consent.keepThis`, `consent.abstain` (copy.js); SURFACE §9.3 CP2, Q1182 |
 | 1378 | The power-return tab: no status-quo block under a head that states it, no helper lines, option text is the document's sentence | 2026-09-15 | **answered, owed** (Ed's 19:37 screenshot) | `powerReturnBody`, `pwSaid`, `opts` (session-view.html, copy.js); SURFACE E39, K32; STYLE T5 |
 | 1379 | The gap race card draws its 🔥 tab twice, and the gap's head reads *(no text here)* | 2026-09-15 | **answered, owed** (Ed's 20:31 screenshot) | `gap-site`, `insert-anchor`, `gapHolders`; `gap.nothing*` (copy.js); SURFACE K31; Q1369 |
+| 1380 | The floating edit buttons 📝 ✏️ 🗑️: circles, higher off the screen's foot, and never above the 📝 riding tab | 2026-09-15 | **answered, owed** (Ed, 2026-09-15 20:40) | `edit-door`, `renderEditDoor`, `#editdoor`, `proposal-row`, `riding-tab` (session.js, edit-mode.js, system.css); SURFACE K13, K17, §9's 📝 row; card-audit D1 |
 | 925 | Three more things git knows about overlapping patches | 2026-08-27 | parked | SPEC §2.2, §2.4; Q924 |
 | 109 | Scale: the margin assumes a short rail | 2026-08-16 | waiting on Ed's own read (the walk, 2026-09-14: *look at a moon-shaped room and rule from what you saw* — `docs.vote/d/moon2`, ~156 members, is idle; the alternatives on the table were naming a ceiling of ~30 live questions, or committing to a screen-only margin) | `needs-you-queue` |
 | 282 | A rendered document and a source offset do not agree | 2026-08-17 | deferred past the alpha (Ed, 2026-08-27) | `richToSource` (cards.js) |
@@ -187,6 +188,8 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 
 1379. **The gap race card draws its 🔥 tab twice, and the gap's head reads *(no text here)*.** (Ruled 2026-09-15 by Ed, the 20:31 screenshot's filename: *why am I seeing the 🔥 tab twice, also gap text should just say (no text here)*.) An insertion race between two clauses (`gap-site`, `G<n>`) opened with one 🔥 tab on the held-open highlight above the card and a second 🔥 a hundred pixels lower at the card's left edge, cut by it — the `insert-anchor`'s own tab and the card's strip both drawn for one race. Q1369's measurement (the 🔥 tab's geometry on an open race card) is very likely this. And the gap's head — *Nothing stands here — the charter runs straight from ‹prev›… to ‹next›…* (`gap.nothing`, Q1308) — is one line: *(no text here)*, the eyebrow *The gap as it stands* saying the rest; the before/after/at-all variants collapse to the same line.
 
+1380. **The floating edit buttons: circles, higher, and never above the 📝 riding tab.** (Ruled 2026-09-15 by Ed in chat: *Floating 📝 button shouldn't go above the 📝 tab. Floating edit buttons (📝✏️🗑️) should be in circles, not rectangles. They should sit a bit further from the bottom of the screen.*) Three rulings on the `edit-door` (the sticky 📝 after 🍾, Q1335) and the `proposal-row` it becomes in edit mode (🗑️ at the left, ✏️ at the right, K17): (a) the floating 📝 never rises above the 📝 pile in `#ridetab` — where the riding tab is on screen the door is not, or the door stops beneath it, the builder measuring which; (b) the three floating buttons are circles (`border-radius: 50%`, the glyph centred), where every commit-row button is a rounded rectangle — the floating ones are a different object, a control over the page rather than a row in a card, and wear a different shape; (c) they sit further from the screen's foot than today (the builder proposes the offset, on the spacing scale). SURFACE K13, K17, §9's 📝 row; guard card-audit D1 and a geometry assertion in `npm run journey` for (a).
+
 ## Backlog (provisioned, build later)
 
 | # | Title | Raised | State | Pointers |
@@ -265,7 +268,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1380** — claim by writing the block here, then commit it alone.
+**The next free number is 1381** — claim by writing the block here, then commit it alone.
+
+**1380 is the floating edit buttons** (claimed 2026-09-15 20:42, Ed: *Floating 📝 button shouldn't go above the 📝 tab. Floating edit buttons (📝✏️🗑️) should be in circles, not rectangles. They should sit a bit further from the bottom of the screen*).
 
 **1376–1379 are Ed's screenshot findings of 2026-09-15 evening** (claimed 20:38; two of the screenshots carry his notes as their filenames): 1376 ⏳ on an unvoted motion; 1377 the consent card's radios — *Keep should be Prefer*, *Indifferent* for the textless block; 1378 the power-return tab — no status-quo block, no helper lines, option text is document text; 1379 the gap race card's doubled 🔥 tab and *(no text here)*.
 
