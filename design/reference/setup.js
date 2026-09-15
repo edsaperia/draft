@@ -28,14 +28,19 @@ window.SETUP = (function () {
   // cards.js's one `esc`, coercing, so a title or a data-* attribute here is
   // escaped exactly as a lane's value is.
   const esc = window.CARDS.esc;
+  // The ✓ a **lockline** wears: not a mark but a line's own confirmation, drawn
+  // on the commit tick's stroke so a card's body and its commit row agree.
   const TICK = '<svg class="mkg" viewBox="0 0 12 12"><path d="M2 6.4 L4.7 9.2 L10 2.9"/></svg>';
-  // **The two lifecycle marks this alphabet shares with the charter's are the
-  // charter's** (Ed, 2026-09-14, Q288). ⏳ and ✏️ were emoji literals here while
-  // the session drew its own; now that every lifecycle mark is drawn they come
-  // from the one helper, so the band's rail and the charter's cannot show two
-  // different pencils. `c.g` is untouched — a subject glyph is an emoji.
+  // **The three lifecycle marks this alphabet shares with the charter's are the
+  // charter's** (Ed, 2026-09-14, Q288; the ✔ joined them at Q1360). ⏳ and ✏️
+  // were emoji literals here while the session drew its own, and the ✔ was a
+  // second copy of the stroked tick — which cards.js kept as the *commit* glyph
+  // when the marks became pictures, so the copy here would have left the band
+  // and the charter showing two different ticks on one page. All three come
+  // from the one helper now. `c.g` is untouched — a subject glyph is an emoji.
   const WAITING = window.CARDS.mkHtml('deciding');
   const YOURS = window.CARDS.mkHtml('propose');
+  const DONE = window.CARDS.mkHtml('adopted');
   // **The answer ladders speak the clause** (Q1112 (b)): a rung says the
   // sentence that answer would put into the document, off `cards.js`'s one
   // table — the same string the founder's own card and the composer's lane
@@ -251,7 +256,7 @@ window.SETUP = (function () {
     // wears the subject glyph (💡 while blocked shows 💡) and `done` is
     // untouched, so an acknowledged grant settles exactly as before.
     if (st === 'news' && c.grants) return c.grants;
-    return st === 'ask' ? c.g : st === 'wait' ? WAITING : st === 'yours' ? YOURS : TICK;
+    return st === 'ask' ? c.g : st === 'wait' ? WAITING : st === 'yours' ? YOURS : DONE;
   };
 
   /* ---- the piles ----------------------------------------------------------
