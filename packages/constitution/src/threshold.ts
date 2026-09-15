@@ -8,6 +8,14 @@
  * the shorter remainder (author call, NOTES.md). Same smoothstep as
  * engine-core's adoptionThreshold, so the plain single-anchor case is
  * parity (asserted in test/threshold.test.ts).
+ *
+ * **Pinned, and the surface no longer reads any of this** (Q1362 (b), Ed
+ * 2026-09-15; R-117). The document's text is the top of the ranking once the
+ * quorum is met, so nothing carries or fails to carry on a bar: 🌡️ and 🪜
+ * left the surface, every shape pins 50, and the anchors below now ramp
+ * between one number and itself. Kept whole for one release — every live log
+ * carries the events these fold from, and `adopted` still records a threshold
+ * — and deleted, with SPEC §4.3, in the pass after. Nothing new may read it.
  */
 
 /** Smoothstep: 3x^2 - 2x^3 on [0,1], clamped — engine-core's curve. */

@@ -407,12 +407,14 @@ describe('constituted (§9.6a): the moment judging opens', () => {
     const bo = s.invite(1, 'bo@example.org');
     s.arrive(1, bo);
     s.confirmStartingText(1, 'x');
-    settleAllReserved(s, 2, ['bar']);
+    // 👥 is the gate held back, 🌡️ having left the surface with a
+    // `retiredAnswer` (Q1362 (b), R-117) and so holding nothing up.
+    settleAllReserved(s, 2, ['quorum']);
     expect(s.constitutedAtT).toBeNull();
-    expect(() => s.begin(2)).toThrow(/'bar' is still being decided/); // 🍾 waits on the gates
-    s.answer(3, 'ada', 'bar', { pct: 66 });
-    s.answer(4, bo, 'bar', { pct: 78 });
-    expect(s.settingState('bar').value).toEqual({ pct: 78 });
+    expect(() => s.begin(2)).toThrow(/'quorum' is still being decided/); // 🍾 waits on the gates
+    s.answer(3, 'ada', 'quorum', { form: 'count', n: 1 });
+    s.answer(4, bo, 'quorum', { form: 'count', n: 2 });
+    expect(s.settingState('quorum').value).toEqual({ form: 'count', n: 2 });
     expect(s.constitutedAtT).toBeNull(); // resolved, not begun
     s.begin(4);
     expect(s.constitutedAtT).toBe(4);
@@ -491,55 +493,48 @@ describe('proposing is yours (§9.0b)', () => {
    * amount of answering will clear — so the surface cannot word the remedy
    * from a bare id. Checked as the same question moving through four of them.
    *
-   * **`deps-unsettled` comes first, and names what it waits on** (entry 69):
-   * 🌡️ is served only once ⏰ stands (§9.0a), so a 🌡️ handed over under an
-   * undecided ⏰ is not held up by the room of one — a second member could not
-   * answer it either — and the readout must not send the founder to the door
-   * for it. It is the deps loop's own place in `maybeResolve`: first.
+   * **`deps-unsettled` has no reachable case since 2026-09-15** (Q1362 (b),
+   * R-117). It was 🌡️'s alone — served only once ⏰ stood (§9.0a) — and 🌡️
+   * and 🪜 are the only two entries in the catalogue with a `deps` list at
+   * all; both are retired, and a retired question holds nothing up. The rung,
+   * the loop and its place first in `maybeResolve` all stay, and the day a
+   * setting depends on another the readout is ready for it. Filed for Ed.
    */
   it('readiness names why each question is waiting (Q826, entry 69)', () => {
     const s = openDoc();                          // the founder alone, a member
     s.delegate(0, 'ending');
-    s.delegate(0, 'bar');
+    s.delegate(0, 'quorum');
     const holdOf = (id: string) => s.readiness().holds.find((h) => h.setting === id);
     const whyOf = (id: string) => (holdOf(id) || { why: null }).why;
-    // 🌡️ waits on ⏰ before it waits on anybody, and the dependency is named
-    expect(whyOf('bar')).toBe('deps-unsettled');
-    expect(holdOf('bar')!.on).toEqual(['ending']);
-    // …while ⏰ itself, depending on nothing, is the one handed to a membership
-    // of one: the remedy is a second member or taking it back, and neither is
-    // anywhere in the bare id
+    // ⏰, depending on nothing, is handed to a membership of one: the remedy is
+    // a second member or taking it back, and neither is anywhere in the bare id
     expect(whyOf('ending')).toBe('one-voice');
     expect(holdOf('ending')!.on).toBeUndefined();
-    // and once the dependency stands, 🌡️ falls through to the next rung
-    s.reclaim(1, 'ending');
-    s.setSetting(1, 'ending', { endsAtMs: 1_000_000 });
-    expect(whyOf('bar')).toBe('one-voice');
+    expect(whyOf('quorum')).toBe('one-voice');
     // an invitation in flight stops the resolution before the electorate is
     // counted, and it is already the remedy — so it is the reason given
     const bo = s.invite(1, 'bo@example.org');
-    expect(whyOf('bar')).toBe('invitation-open');
+    expect(whyOf('quorum')).toBe('invitation-open');
     s.arrive(2, bo);
-    expect(whyOf('bar')).toBe('collecting');
+    expect(whyOf('quorum')).toBe('collecting');
     // a judge-gate nobody was asked about is waiting for the founder's own hand
-    expect(whyOf('quorum')).toBe('judge-gate');
+    expect(whyOf('chamber')).toBe('judge-gate');
     // and the ids stay exactly what they were: `begin`'s refusal reads them
     expect(s.readiness().waiting).toEqual(s.readiness().holds.map((h) => h.setting));
   });
 
   it('a delegated question with a membership of one never resolves (Q826)', () => {
     const s = openDoc();
-    // ⏰ set first is what keeps 🌡️ off the `deps-unsettled` rung (entry 69) —
-    // this case is about the one-voice rung below it (§9.0a)
-    s.setSetting(0, 'ending', { endsAtMs: 1_000_000 });   // 🌡️ waits on ⏰ (§9.0a)
-    s.delegate(0, 'bar');
-    s.answer(1, 'ada', 'bar', { pct: 60 });
-    expect(s.settingState('bar').settledBy).toBeNull();
+    // 👥 stands where 🌡️ stood: a retired question is in no readiness list at
+    // all (Q1362 (b), R-117), so it cannot be this rung's example either.
+    s.delegate(0, 'quorum');
+    s.answer(1, 'ada', 'quorum', { form: 'count', n: 2 });
+    expect(s.settingState('quorum').settledBy).toBeNull();
     expect(s.readiness().holds.some((h) => h.why === 'one-voice')).toBe(true);
     // …and taking it back is the other half of the remedy the reason names
-    s.reclaim(2, 'bar');
-    s.setSetting(2, 'bar', { pct: 60 });
-    expect(s.readiness().holds.some((h) => h.setting === 'bar')).toBe(false);
+    s.reclaim(2, 'quorum');
+    s.setSetting(2, 'quorum', { form: 'count', n: 2 });
+    expect(s.readiness().holds.some((h) => h.setting === 'quorum')).toBe(false);
   });
 });
 

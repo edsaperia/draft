@@ -103,6 +103,27 @@ describe('the golden log', () => {
       .toThrow(/pre-people shape \(decision 1253\)/);
   });
 
+  // **A document founded under the old rules still starts under the new**
+  // (Q1362 (b), R-117). The golden delegates 🌡️ and takes the room's answers
+  // for it, and 🌡️ has since left the surface with a `retiredAnswer` — so the
+  // prefix of this log up to its own 🍾 is exactly the shape the retirement
+  // could have wedged: a real pre-start document carrying a bar the room
+  // decided, met by code that no longer has a card for it. It presses.
+  it('replays to the moment before 🍾 and begins from there', () => {
+    const log = frozenLines.map((l) => JSON.parse(l) as LogEntry);
+    const at = log.findIndex((e) => e.event.type === 'constituted');
+    expect(at).toBeGreaterThan(0);
+    const s = ConstitutionSession.replay(log.slice(0, at), frozenPeople());
+    expect(s.constitutedAtT).toBeNull();
+    expect(s.settingState('bar').settledBy).toBe('ceremony'); // the room decided it
+    const r = s.readiness();
+    expect(r.holds).toEqual([]);
+    expect(r.ready).toBe(true);
+    s.begin(log[at]!.event.t);
+    expect(s.constitutedAtT).toBe(log[at]!.event.t);
+    expect(s.canJudge()).toBe(true);
+  });
+
   it('stamps what this build writes', () => {
     const written = goldenWalk().logEntries();
     expect(written.every((e) => e.schemaVersion === SCHEMA_VERSION)).toBe(true);

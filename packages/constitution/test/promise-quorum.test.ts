@@ -441,12 +441,14 @@ describe('promise 5 — the founding is not decided by quorum (§9.0a, R-015, R-
       convenor: { id: 'ada', email: 'ada@example.org', isMember: true },
     }, 0);
     s.setSetting(1, 'quorum', { form: 'count', n: 1 });
-    s.setSetting(1, 'ending', { endsAtMs: 1_000_000 }); // 🌡️'s own dep (§9.0a)
-    s.delegate(1, 'bar');
-    s.answer(1, 'ada', 'bar', { pct: 60 });
+    s.setSetting(1, 'ending', { endsAtMs: 1_000_000 });
+    // 🌍 is the delegated question; 🌡️ stood here until it left the surface
+    // with a `retiredAnswer` (Q1362 (b), R-117) and stopped holding anything up
+    s.delegate(1, 'chamber');
+    s.answer(1, 'ada', 'chamber', { rung: 'link' });
     // one voice is not a room: the answer stands and the question does not
-    expect(s.settingState('bar').settledBy).toBeNull();
-    const why = s.readiness().holds.find((h) => h.setting === 'bar');
+    expect(s.settingState('chamber').settledBy).toBeNull();
+    const why = s.readiness().holds.find((h) => h.setting === 'chamber');
     expect(why?.why).toBe('one-voice');
     // and it is not a quorum shortfall wearing another name — a quorum of 1
     // is satisfied by the one answer, and the question still holds
@@ -463,11 +465,11 @@ describe('promise 5 — the founding is not decided by quorum (§9.0a, R-015, R-
     s.invite(1, 'cy@example.org'); // invited, never arrived
     s.setSetting(1, 'quorum', { form: 'count', n: 1 });
     s.setSetting(1, 'ending', { endsAtMs: 1_000_000 });
-    s.delegate(1, 'bar');
-    s.answer(2, 'ada', 'bar', { pct: 60 });
-    s.answer(2, bo, 'bar', { pct: 70 });
-    expect(s.settingState('bar').settledBy).toBeNull();
-    expect(s.readiness().holds.find((h) => h.setting === 'bar')?.why).toBe('invitation-open');
+    s.delegate(1, 'chamber');
+    s.answer(2, 'ada', 'chamber', { rung: 'link' });
+    s.answer(2, bo, 'chamber', { rung: 'public' });
+    expect(s.settingState('chamber').settledBy).toBeNull();
+    expect(s.readiness().holds.find((h) => h.setting === 'chamber')?.why).toBe('invitation-open');
   });
 });
 

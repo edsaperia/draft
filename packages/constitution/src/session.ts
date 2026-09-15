@@ -868,7 +868,10 @@ export class ConstitutionSession {
    * collecting or settled — the 🍾 card prints those rows and would print a
    * bare id, having no card to take a title from), `canPropose` (it gates
    * nothing, there being no card to answer it on) and `begin` (it writes the
-   * line). `machines` is the only entry that carries it.
+   * line). `machines` carried it alone until 2026-09-15, when 🌡️ and 🪜 left
+   * the surface the same way (Q1362 (b), R-117) and took the same road: a
+   * founder who delegated the bar before the change is resolved at 50 here,
+   * and the document starts.
    */
   private retiredQuestion(id: SettingId): boolean {
     return entryOf(id).retiredAnswer !== undefined;

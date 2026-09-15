@@ -107,8 +107,13 @@ export function toEngineConstitution(
   if (s.constitutedAtT === null) {
     throw new Error('the engine starts where the constitution is settled (§9.0b)');
   }
-  const bar = s.settingState('bar').value as PercentValue;
-  const pace = s.settingState('pace').value as PaceValue | null;
+  // **A null bar or pace cannot throw** (Q1362, R-117). Both left the surface
+  // and every shape still pins them, so a real document has a value for each —
+  // but a log that never met a shape may not, and the engine's bar is a pinned
+  // constant whatever the module holds. 50 and *fixed* are what the pin means,
+  // so they are what a missing value reads as.
+  const bar = (s.settingState('bar').value as PercentValue | null) ?? { pct: 50 };
+  const pace = (s.settingState('pace').value as PaceValue | null) ?? { shape: 'fixed' };
   const ending = s.settingState('ending').value as EndingValue | null;
   const rate = s.settingState('rate').value as RateValue | null;
   const quorum = s.settingState('quorum').value as QuorumValue;

@@ -26,27 +26,30 @@ describe('🍾 begin — the founder starts the document (Q443)', () => {
     }
     // nothing arrives delegated (Ed, 2026-08-21): the two the room decides
     // are handed over first, which is what opens their blind questions
+    // 👥 stands where 🌡️ stood until v0.128: the bar left the surface with a
+    // `retiredAnswer` (Q1362 (b), R-117), so it holds nothing up and cannot be
+    // the example of a question that does.
     s.delegate(1, 'ending');
-    s.delegate(1, 'bar');
+    s.delegate(1, 'quorum');
     s.delegate(1, 'chamber');
     s.answer(2, 'ada', 'ending', { endsAtMs: 1_000_000 });
     s.answer(2, bo, 'ending', { endsAtMs: 1_000_000 });
-    s.answer(2, 'ada', 'bar', { pct: 66 });
-    // bar and chamber are still collecting: bo has not said
+    s.answer(2, 'ada', 'quorum', { form: 'count', n: 2 });
+    // quorum and chamber are still collecting: bo has not said
     const r = s.readiness();
     expect(r.ready).toBe(false);
-    expect(r.waiting).toEqual(['bar', 'chamber']);
-    expect(() => s.begin(3)).toThrow(/'bar', 'chamber' are still being decided/);
+    expect(r.waiting).toEqual(['quorum', 'chamber']);
+    expect(() => s.begin(3)).toThrow(/'quorum', 'chamber' are still being decided/);
     expect(s.constitutedAtT).toBeNull();
     // the readout: counts and names, never a value
     expect(r.members).toEqual([
       { id: 'ada', name: null, arrived: true, owed: 2, answered: 1 }, // the founder, a member too
       { id: bo, name: null, arrived: true, owed: 2, answered: 0 },
     ]);
-    expect(r.questions.find((q) => q.setting === 'bar')).toEqual(
-      { setting: 'bar', settled: false, collecting: true, answered: 1, electorate: 2 });
+    expect(r.questions.find((q) => q.setting === 'quorum')).toEqual(
+      { setting: 'quorum', settled: false, collecting: true, answered: 1, electorate: 2 });
     expect(JSON.stringify(r)).not.toMatch(/pct|rung|endsAtMs/);
-    s.answer(3, bo, 'bar', { pct: 70 });
+    s.answer(3, bo, 'quorum', { form: 'count', n: 2 });
     s.answer(3, 'ada', 'chamber', { rung: 'link' });
     s.answer(3, bo, 'chamber', { rung: 'link' });
     expect(s.readiness().ready).toBe(true);

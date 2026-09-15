@@ -154,6 +154,35 @@ describe('toEngineConstitution: every engine field against the value it came fro
     expect(c.adoptionThresholdEnd).toBe(0.78);
   });
 
+  it('a document that never set the bar or the pace opens at the pin, and does not throw', () => {
+    // **Survey risk 3** (Q1362, R-117): both settings left the surface, and
+    // every shape still pins them — but a document that met no shape and was
+    // never asked leaves the adapter a null where it used to read `.pct` off
+    // the value. 50 and *fixed* are what the pin means, so that is what a
+    // missing value reads as, and the engine opens flat at ½.
+    const s = ConstitutionSession.open({
+      title: 'Hollow Oak Club Charter', slug: 'hollow-oak',
+      convenor: { id: 'ada', email: 'ada@example.org', isMember: true },
+    }, 0);
+    const bo = s.invite(1, 'bo@example.org');
+    s.arrive(1, bo);
+    s.confirmStartingText(2, 'The clubhouse shall be kept open.');
+    for (const [id, v] of [
+      ['ending', { endsAtMs: 1_000_000 }],
+      ['quorum', { form: 'share', n: 60 }],
+      ['authorship', { rung: 'sealed' }],
+      ['judgments', { rung: 'after' }],
+      ['chamber', { rung: 'link' }],
+      ['lapse', { afterMs: null }],
+    ] as Array<[string, unknown]>) s.setSetting(2, id as never, v as never);
+    s.begin(2);                                   // 🍾 waits on neither of them
+    expect(s.settingState('bar').value).toBeNull();
+    expect(s.settingState('pace').value).toBeNull();
+    const { constitution: c } = toEngineConstitution(s, DEFAULT_TUNING, 's');
+    expect(c.adoptionThresholdStart).toBe(0.5);
+    expect(c.adoptionThresholdEnd).toBe(0.5);
+  });
+
   it('a perpetual document pins the window shut rather than losing its ramp', () => {
     // §9.0: perpetual forces a fixed bar, and the engine only knows ramps —
     // so the window is zero-span at the start and the ramp has nowhere to go

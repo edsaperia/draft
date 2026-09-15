@@ -7,6 +7,21 @@
  * `it` says so in its own name and its comment names the finding, so the lock
  * fails the day either side of the disagreement moves without the other.
  *
+ * ## 🪜 is retired (Q1362 (b), Ed 2026-09-15; R-117)
+ *
+ * The bar left the adoption test — the document's text is the top of the
+ * ranking once the quorum is met — so the ramp paces nothing, and 🪜 left the
+ * surface with 🌡️, carrying a `retiredAnswer` of *fixed*. Every shape pins it
+ * fixed, the engine's threshold is pinned flat for one release, and the whole
+ * module goes in the pass after.
+ *
+ * The register is kept, as `promise-machines.test.ts` is for 🤖, and every
+ * promise below is now a promise about a number nothing reads. **The four
+ * `gap:` records survive exactly as they stand**: they are what this file is
+ * for, they are still true of the code, and the deletion pass closes them by
+ * taking the machinery away rather than by fixing it. Nothing here is a claim
+ * that a member can still meet a ramp.
+ *
  * `PaceValue` is `{ shape: 'fixed' }` or `{ shape: 'ramp', startPct }`, 50–100
  * (`values.ts`). The catalogue entry is **ordinary**, **not delegable** (Q415,
  * Q560 — the bar at the close is consent, the ramp that reaches it is

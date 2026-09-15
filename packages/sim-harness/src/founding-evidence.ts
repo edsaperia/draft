@@ -142,8 +142,13 @@ say('\n== founding-8: a staggered ceremony with a never holdout ==============')
   check(s.constitutedAtT === 9, 'the document constituted when the founder pressed 🍾');
   check(s.canJudge(), 'judging opened at that moment (§9.0b)');
 
-  const dist = view(s, bo).resolutions.find((r) => r.setting === 'bar')!;
+  // 👥, not 🌡️: a retired setting's resolution is left out of the view
+  // (R-080, and 🌡️ joined it at Q1362 — R-117), so the strip the room reads
+  // is another question's.
+  const dist = view(s, bo).resolutions.find((r) => r.setting === 'quorum')!;
   eq(dist.distribution.length, 8, 'the distribution is published — 8 answers, no names');
+  check(view(s, bo).resolutions.every((r) => r.setting !== 'bar'),
+    'and the retired 🌡️ publishes no strip at all, though the room answered it');
 
   check(s.verifyChain(), 'the hash chain verifies end to end');
   const replayed = ConstitutionSession.replay([...s.logEntries()]);

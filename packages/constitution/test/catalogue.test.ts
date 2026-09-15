@@ -16,9 +16,11 @@ describe('catalogue integrity (SPEC §9.0–§9.7½)', () => {
     expect(CATALOGUE_BY_ID.has('email' as SettingId)).toBe(false);
   });
 
-  it('judge gate is exactly the six of §9.0b (machines Q352, signing Q767)', () => {
+  it('judge gate is exactly the five of §9.0b (machines Q352, signing Q767, the bar Q1362)', () => {
+    // 🌡️ left the list with the card (Q1362 (b), R-117): judging cannot wait
+    // on a question nobody will be asked, and there is no bar to wait for.
     expect([...JUDGE_GATES].sort()).toEqual(
-      ['authorship', 'bar', 'chamber', 'judgments', 'lapse', 'quorum'].sort(),
+      ['authorship', 'chamber', 'judgments', 'lapse', 'quorum'].sort(),
     );
   });
 

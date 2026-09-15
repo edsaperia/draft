@@ -1117,7 +1117,10 @@ function computeAnchors(s: FoldState, t: number): ThresholdAnchors {
   const bar = s.settings.get('bar')!.value as PercentValue | null;
   const pace = s.settings.get('pace')!.value as PaceValue | null;
   const ending = s.settings.get('ending')!.value as EndingValue | null;
-  const endPct = bar ? bar.pct : 95;
+  // 50 where nothing is settled: the pinned bar (Q1362 (b), R-117), which is
+  // what an unanswered 🌡️ resolves to now that the card has left the surface.
+  // It was 95 — the old ramp's ceiling — while the bar was a real question.
+  const endPct = bar ? bar.pct : 50;
   const endT = ending ? ending.endsAtMs : null;
   const shape: 'fixed' | 'ramp' =
     endT !== null && pace?.shape === 'ramp' ? 'ramp' : 'fixed';
