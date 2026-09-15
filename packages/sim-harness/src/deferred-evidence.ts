@@ -145,6 +145,15 @@ function writeCsv(name: string, header: string, rows: string[]): string {
 
 // ---------------------------------------------------------------------------
 // Q8 — mixed clocks feel: wall-clock drip vs wall-clock threshold ramp
+//
+// **Kept as history** (2026-09-15, Q1362 (b), R-117). The question Q8 asked —
+// whether a bar ramping on the wall clock fights a token drip on the same
+// clock — is answered, and the answer is in `REPORT-deferred-evidence.md`.
+// The ramp retired with SPEC §4.3 and the bar is pinned at 0.5, so
+// `meanThreshold` below now prints the same constant on every row. The arms
+// and the columns stay exactly as they were, because the report cites them
+// and a study rewritten after the fact has measured something else; they go
+// with the threshold machinery in the deletion pass.
 
 interface Q8Row {
   arm: string;

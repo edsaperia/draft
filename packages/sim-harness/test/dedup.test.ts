@@ -156,7 +156,16 @@ describe('sim regression: dedup off is byte-identical to before the gate existed
   // fresh runs agreed, and `Session.replay` reproduces it — which is the
   // invariant this test defends
   // (was acccf5c0e4f15604c46000c691e2cbc60e00e22a84352008c31aec9904bbb46b).
-  const PINNED = 'f4af4c582015e0680e420d78bc409d35990add2279a865e50ae73f3455b445a6';
+  // Re-pinned again 2026-09-15, same ruling, one commit later (70ea6c8, the
+  // TIE_EPS amendment): *equal* now means equal within the fit's noise, so a
+  // leader whose strength sits inside epsilon of the current text's is a tie
+  // and the current text stands. That moves adoption timings on this run
+  // exactly as the rule change above did, and the pin was not re-run when the
+  // amendment landed — so the branch it landed on was red on this file. Four
+  // fresh computations agree: both variants, a second no-gate run, and
+  // `Session.replay` of the first
+  // (was f4af4c582015e0680e420d78bc409d35990add2279a865e50ae73f3455b445a6).
+  const PINNED = '866c68f245fcf558ed9e179bc83f0c9ea586c7d6739ab748e4d98eac1ef26d63';
 
   const run = (withGate: boolean) =>
     runSession({
