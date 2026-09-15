@@ -24,6 +24,7 @@ The index, in the section's own order (nothing is pinned — Ed, 2026-09-07, Q12
 | 1381 | In edit mode a proposal card opens in front of the edit area, never under it | 2026-09-15 | **answered, owed** (Ed, 2026-09-15 20:45) | `edit-mode`, `editing-card`, `decision card` (edit-mode.js, session.js, system.css); SURFACE K13, K31 |
 | 1382 | A patch: each site's card carries its own 🗑️ and nothing else; the floating row's ✏️ submits all and its 🗑️ discards all; a vote on a patch floats too | 2026-09-15 | **answered, owed** (Ed, 2026-09-15 20:52, corrected 21:00, the vote 21:08) | `proposal-row`, `editing-card`, the patch row of SURFACE §9 (cards.js, composer.js, session.js); K17, CP7, Q1108, Q1306 |
 | 1383 | The 📝 edit card draws no hairline at its top | 2026-09-15 | **answered, owed** (Ed, 2026-09-15 21:03) | `edit-mode`, the 📝 card's head (edit-mode.js, session.js, system.css); SURFACE K31, the hairline rule (Q1173) |
+| 1384 | The contents rail's marks queue to the right, covering the document's edge line; on a wide screen the rail takes more width | 2026-09-15 | **answered, owed** (Ed, 2026-09-15 21:30) | `contents-rail`, `.toc`, `--rail-left` (session.js, system.css); SURFACE M10 |
 | 925 | Three more things git knows about overlapping patches | 2026-08-27 | parked | SPEC §2.2, §2.4; Q924 |
 | 109 | Scale: the margin assumes a short rail | 2026-08-16 | waiting on Ed's own read (the walk, 2026-09-14: *look at a moon-shaped room and rule from what you saw* — `docs.vote/d/moon2`, ~156 members, is idle; the alternatives on the table were naming a ceiling of ~30 live questions, or committing to a screen-only margin) | `needs-you-queue` |
 | 282 | A rendered document and a source offset do not agree | 2026-08-17 | deferred past the alpha (Ed, 2026-08-27) | `richToSource` (cards.js) |
@@ -176,6 +177,8 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 
 1383. **The 📝 edit card draws no hairline at its top.** (Ruled 2026-09-15 by Ed in chat: *📝 edit card shouldn't have a hairline at the top.*) In edit mode the column is lifted under one strip (K31) and a hairline runs beneath its head. The hairline rule (Q1173) draws the head↔field line only under a head with content over real controls; the 📝 card's head is the section heading wearing the tab strip, and the prose column beneath is the document, not a control — so by the rule as written it should draw none, and the finding is that it does. The builder finds which rule paints it (`.textcard`? the card shell's head border? the editing strip's own border) and removes it for the 📝 card in both modes, measuring at 1600 and 390; the other cards' hairlines unchanged (card-audit's hairline checks). SURFACE K31; §9's 📝 row.
 
+1384. **The contents rail's marks queue to the right, and the rail takes more width on a wide screen.** (Ruled 2026-09-15 by Ed in chat: *lifecycle symbols in the table of contents should queue up to the right instead of to the left (do something to cover up the document edge line). On a wide screen, the table of contents can take more width.*) Today each heading's marks (M10: at most four, `+n`) queue leftwards from the heading; they are to queue rightwards, towards the document, the last mark nearest the document's edge — and where the marks reach the column's edge they cover the document's border line rather than being cut by it (a ground the marks sit on, or the line stopping beside them; the builder measures). On a wide window (≥ the desktop breakpoint; `--rail-left`) the rail's width grows so the headings wrap less — the builder proposes the width on the layout constants and shows the result at 1600 and at the widest common size, the charter column keeping its measure. SURFACE M10 and the layout constants.
+
 ## Backlog (provisioned, build later)
 
 | # | Title | Raised | State | Pointers |
@@ -254,7 +257,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1384** — claim by writing the block here, then commit it alone.
+**The next free number is 1385** — claim by writing the block here, then commit it alone.
+
+**1384 is the contents rail's marks and width** (claimed 2026-09-15 21:32, Ed: *lifecycle symbols in the table of contents should queue up to the right instead of to the left (do something to cover up the document edge line). On a wide screen, the table of contents can take more width*).
 
 **1383 is the 📝 edit card's hairline** (claimed 2026-09-15 21:04, Ed: *📝 edit card shouldn't have a hairline at the top*).
 
