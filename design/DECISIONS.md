@@ -6578,5 +6578,17 @@ Found by the Q1354 build and put to Ed the same evening, 2026-09-14. **Ruled: ad
 
 | # | Title | Raised | State | Pointers |
 |---|---|---|---|---|
-| 1360 | The lifecycle marks take Fluent Emoji Flat, in colour | 2026-09-15 | ruled and built 2026-09-15 (branch `q1360-fluent-marks`); the four findings above are open | `DRAWN`, `mkHtml` (cards.js); SURFACE §6; Q288 |
+| 1360 | The lifecycle marks take Fluent Emoji Flat, in colour | 2026-09-15 | ruled and built 2026-09-15; the five findings ruled the same afternoon, one of them a second build (branch `q1360-fluent-marks`) | `DRAWN`, `mkHtml` (cards.js); SURFACE §6, Y22; Q288 |
+
+### The five findings, ruled the same afternoon (Ed, 2026-09-15 ~13:55)
+
+**(1) The two Fluent *buttons*: keep the hand-drawn ⏸ and ↻ for those two alone.** The objection is the 2026-08-17 one restated — a plate with a white shape knocked out is a different *kind* of object beside a silhouette, and it was drained to a grey square you could not read at 12px. So the set wins ten of thirteen kinds and loses exactly the two files that are buttons rather than pictures of a thing. **(2) ⏳ in colour is fine**, so `deciding` keeps the hourglass's own colour and the palette's grey rule applies to filed marks only. **(3)** The purple decided pair against the green wash: **accepted as is**. **(4)** The hot pepper's and the pencil's reds: **accepted**. **(5)** The stale `design/reference/` was fixed on main as its own commit (335b4f2).
+
+**Built for (1), 2026-09-15.** `PAUSE` restored from `2217b1a^` — the two bars on the tick's own stroke, `.mkg`, `currentColor` — and `shifted`/`stranded` back to the character `↻`; `PAUSEBTN` and `ARROWS` deleted. SURFACE Y22 returns, widened to name ⏸ as well as ↻.
+
+The colour rules are where this got interesting, because it stopped being a choice and became a measurement. A stroked glyph and a character take `color`; a picture can only be drained. For the two families to read as one grey, the drain has to *land* on `--muted` rather than be tuned towards it — and with the buttons gone it does, because the check and the multiply are single silhouettes on one flat fill: `grayscale(1)` alone puts #785DC8 at **#6A6A6A**, luminance 106.0, against `--muted`'s **#6C757D**, luminance 115.7. Under four percent of the scale apart, measured off the rendered page (`filedYes`, `filedNo` drained; `filedUndecided` and `shifted` painted). So `.mk-filedYes, .mk-filedNo { filter: grayscale(1) }` and nothing else — the `opacity(0.55)` step of the morning was only ever there to sit the plates down, and it went with them. ⏸ and ↻ carry no filter at all: a stroked glyph faded to 0.55 of `--muted` would have been half the ink of the pictures beside it.
+
+One consequence worth writing down: **a filed mark and a live one are now the same lightness and differ only in hue** (both luminance ~106), where before Q1360 filed was the lighter of the two. It reads clearly at 12px — purple against grey is not subtle — but it is a different signal from the one the palette's grey rule describes, and if it ever stops working the fix is the opacity step on the pictures plus a matching one on the glyphs.
+
+`spec-check` keeps the two restored assertions (`.mk-shifted` grey, `.mk-stranded` the yours hue) and gains the rule underneath them: the painted/pictured split is **read out of `MARK`** rather than listed in the checker — a kind whose value is a `mkSvg` picture must carry no `.mk-*` colour, and the three that are not pictures must. Both halves were proven to bite by breaking the stylesheet on purpose.
 
