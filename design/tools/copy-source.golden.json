@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 481
+  "entries": 479
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -457,8 +457,6 @@
   "session.row.inAllPlaces": "ƒ (n) => ' in all ' + n + ' places'",
   "session.row.penCost": " — it passes at once and costs nothing",
   "session.row.placesChanged": "ƒ (n) => (n === 1 ? '1 place changed' : n + ' places changed')",
-  "session.row.reviewAmend": "Review and amend the document",
-  "session.row.reviewPropose": "Review and propose this",
   "session.row.signedSuffix": " — signed",
   "session.row.submitted": "✏️ Submitted",
   "session.row.submittedTitle": "Proposed — one edit spent. It is in the race now.",

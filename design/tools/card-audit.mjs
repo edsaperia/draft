@@ -1528,12 +1528,29 @@ async function walkDoor(page, doors, errors, walk) {
     if (!el) return null;
     const r = el.getBoundingClientRect();
     const R = (x) => Math.round(x * 100) / 100;
-    return { r: [R(r.left), R(r.top), R(r.width), R(r.height)], fontSize: R(parseFloat(getComputedStyle(el).fontSize)), title: el.title };
+    return { r: [R(r.left), R(r.top), R(r.width), R(r.height)], fontSize: R(parseFloat(getComputedStyle(el).fontSize)), title: el.title, radius: getComputedStyle(el).borderRadius };
   }, sel);
   await page.evaluate(() => window.scrollTo(0, 0));
   await wait(page, 150);
   const before = await box(DOOR);
   if (!before) { errors.push(walk + ': no floating 📝 in read mode (Q1335)'); return; }
+  // **D3 — the door hides while the resting tab is below it** (Q1380). On the
+  // fixture the tab rests 30px under the navbar, always above a door at the
+  // foot of a 1000px window, so the case is made by the window: 160px high,
+  // the door's top is above the resting tab's bottom and the door must be
+  // hidden; the window restored, it must be back. Its box is kept either way.
+  await page.setViewportSize({ width: VIEWPORT.width, height: 160 });
+  await wait(page, 250);
+  const short = await page.evaluate(() => {
+    const d = document.querySelector('#editdoor [data-act="edit-door"]');
+    const c = document.querySelector('#ridetab .achip[data-tab="text"]');
+    if (!d || !c) return null;
+    return { chipBottom: c.getBoundingClientRect().bottom, doorTop: d.getBoundingClientRect().top, hidden: getComputedStyle(d).visibility === 'hidden' };
+  });
+  await page.setViewportSize({ width: VIEWPORT.width, height: VIEWPORT.height });
+  await wait(page, 250);
+  const restored = await box(DOOR);
+  const restoredHidden = await page.evaluate(() => getComputedStyle(document.querySelector('#editdoor [data-act="edit-door"]')).visibility === 'hidden');
   await page.click(DOOR);
   await wait(page, 400);
   const commit = await box(ROW);
@@ -1542,7 +1559,7 @@ async function walkDoor(page, doors, errors, walk) {
   await page.evaluate(() => document.querySelector('#ridetab .achip[data-tab="text"]').click());
   await wait(page, 400);
   const after = await box(DOOR);
-  doors.push({ walk, before, commit, doorWhileEditing, editing, after });
+  doors.push({ walk, before, commit, doorWhileEditing, editing, after, short, restored, restoredHidden });
 }
 function doorRules(doors) {
   const out = [];
@@ -1558,6 +1575,21 @@ function doorRules(doors) {
       saw: 'the door at ' + d.before.r.join('×') + ', the row\'s ✏️ at ' + d.commit.r.join('×'), note: d.walk });
     if (!same(d.before, d.after)) out.push({ rule: 'D1', lens: 'positioning', said,
       saw: 'the door at ' + d.before.r.join('×') + ' before, ' + (d.after ? d.after.r.join('×') : 'gone') + ' after leaving', note: d.walk });
+    // **D2 — a floating control is a circle** (Q1380, Ed 2026-09-15): the door,
+    // the row's ✏️ and 🗑️ are 2.5rem across and fully round; the commit-row
+    // buttons inside cards stay rounded rectangles (B-rules).
+    const circle = (b) => !!b && Math.abs(b.r[2] - b.r[3]) <= 0.5 && b.radius === '50%';
+    if (!circle(d.before) || !circle(d.commit)) out.push({ rule: 'D2', lens: 'buttons', said: 'a floating control — the door, the row\'s ✏️ and 🗑️ — is a circle: width is height, border-radius 50% (Q1380)',
+      saw: 'the door ' + d.before.r[2] + '×' + d.before.r[3] + ' r=' + d.before.radius + ', the row\'s ✏️ ' + (d.commit ? d.commit.r[2] + '×' + d.commit.r[3] + ' r=' + d.commit.radius : 'absent'), note: d.walk });
+    // **D3 — the door hides while the resting 📝 tab is below it** (Q1380): hidden
+    // exactly when the tab's bottom is under the door's top, shown otherwise,
+    // the box unchanged.
+    const shortSaid = 'the floating 📝 is hidden while the resting 📝 tab is below it, and back once the tab is above (Q1380)';
+    if (!d.short) out.push({ rule: 'D3', lens: 'positioning', said: shortSaid, saw: 'no door or no riding tab to measure in a 160px window', note: d.walk });
+    else if (d.short.hidden !== (d.short.chipBottom > d.short.doorTop)) out.push({ rule: 'D3', lens: 'positioning', said: shortSaid,
+      saw: 'in a 160px window the tab\'s bottom is at ' + Math.round(d.short.chipBottom) + ' and the door\'s top at ' + Math.round(d.short.doorTop) + ', and the door is ' + (d.short.hidden ? 'hidden' : 'shown'), note: d.walk });
+    if (d.restoredHidden || !same(d.before, d.restored)) out.push({ rule: 'D3', lens: 'positioning', said: shortSaid,
+      saw: 'the window restored, the door is ' + (d.restoredHidden ? 'still hidden' : 'at ' + (d.restored ? d.restored.r.join('×') : 'gone') + ' against ' + d.before.r.join('×')), note: d.walk });
     if (!near(d.before.fontSize, 21.6, 0.3)) out.push({ rule: 'B6', lens: 'buttons', said: 'a glyph commit is 1.35rem (21.6px) inert, armed or held',
       saw: 'the floating 📝 at ' + d.before.fontSize + 'px', note: d.walk });
   }

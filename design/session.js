@@ -149,7 +149,7 @@
   let AUTHOR_RUNG = () => null;
   let SIGNER_PERSON = () => null;
   const {
-    laneBarHtml, clauseHeadHtml, proposalHtml, commitRowHtml, reviseNote,
+    laneBarHtml, clauseHeadHtml, proposalHtml, commitRowHtml, vinBlockHtml, commitBarHtml, reviseNote,
     laneBoxHtml, draftFaceHtml, collapseCard, expandCard, openCardEls, runOnCards,
     collapseCards, expandCards, stillRef, restoreStill, keepStill,
   } = window.CARDS.make({
@@ -2184,7 +2184,7 @@
     caretRangeIn, selectedBlocks, laneCaret, placeCaret,
     startDraft, startDraftFromTyping, startDraftFromRun,
     laneRaw, laneRemark, syncEditCtl,
-    commitBtnHtml, proposalRowHtml, draftRowState, setDraftSigned,
+    commitBtnHtml, proposalRowHtml, proposeCtlTitles, draftRowState, setDraftSigned,
     editCardHtml, mineCardHtml, strandedCardHtml } = COMPOSER;
   // and `laneMode` itself is `COMPOSER.laneMode`, because two things here
   // write it: the column strip's `[]` handler, and the page through
@@ -2700,7 +2700,12 @@
         fieldHtml(proposalHtml(s, { v: 'approve', html: resultOnly(site.marked), why: s.rationale, by: s.by, key: site.key })) +
         reviseNote(s) +
         '<div class="foot">' + T.patch.foot(n) + '</div>' +
-        commitRowHtml(s) +
+        // **The vote floats** (Q1382, Ed 2026-09-15: *the vote for a patch is
+        // also floating, since there is no single card for it to sit on*): the
+        // Indifferent block is an answer and stays on every site card; the
+        // bar — 🗑️ · ❄️? · ✓ — is the proposal-row's, once, at the foot of the
+        // window (`renderPatchRow`), where the one judgment for all sites is cast
+        vinBlockHtml(s) +
         '</div>'
       );
     }
@@ -2805,6 +2810,9 @@
         renderWallet();
       } });
   };
+  // the draft a commit is for: the card's, or — on the proposal-row at the
+  // foot of the window, which stands in no card (Q1382) — the one draft there is
+  const cardIdOf = (el) => { const c = el.closest('.sugg'); return c ? c.dataset.card : (draftOf() || {}).id; };
   const flyStart = (el) => {
     flyStop(false);
     if (el.disabled) return;
@@ -2820,7 +2828,7 @@
       el.classList.add('holding');
       el.setAttribute('aria-disabled', 'true');   // inert, never `disabled` (184)
       holdInFlight = true;
-      const penId = el.closest('.sugg').dataset.card;
+      const penId = cardIdOf(el);
       const penD0 = draftOf();
       holding = { el, pencil: null, anim: null, pen: true, timer: setTimeout(() => {
         flyStop(true);
@@ -2863,7 +2871,7 @@
     // `holding` being non-null is the real guard.
     el.setAttribute('aria-disabled', 'true');
     holdInFlight = true;
-    const id = el.closest('.sugg').dataset.card;
+    const id = cardIdOf(el);
     // **The draft that is proposed is the one the pencil left for.** `act`
     // resolves by id, and the id is `DRAFT_ID` for every draft in turn — so
     // under `click`, where the member is free for the whole flight,
@@ -2907,9 +2915,19 @@
 // these three listeners are byte-for-byte what they always were.
 document.addEventListener('pointerdown', (ev) => {
   if (GESTURE !== 'hold') return;
-  const b = ev.target.closest && ev.target.closest('[data-act="draft-propose"]');
+  // …and the charter's proposal-row's ✏️ / ✒️, which is the hold itself since
+  // Q1382 (never the founder's pre-🍾 row in `#proserow`, whose ✒️ is the
+  // page's own `confirm-starting-text`)
+  const b = ev.target.closest && ev.target.closest('[data-act="draft-propose"], #charter [data-proposalrow] [data-act="row-commit"]');
   if (!b || ev.button !== 0) return;
   ev.preventDefault(); ev.stopPropagation();
+  // …and on the row, with the draft's card closed, the press opens the card
+  // and starts no flight (Q1296): the review comes before the commit
+  if (b.dataset.act === 'row-commit') {
+    const d = draftOf();
+    if (!d) return;
+    if (openId !== d.id) { toggle(d.id, true); return; }
+  }
   flyStart(b);
 });
 document.addEventListener('pointerup', () => { if (GESTURE === 'hold') flyStop(false); });
@@ -3237,20 +3255,26 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     html += '</div>';
     // **the proposal-row, in edit mode** (backlog 204): the foot of the text's
     // card, and the post-🍾 commit follows entry 160's glyph rule — ✒️ where
-    // the Founder holds the pen on the Text, ✏️ otherwise. Pressing it opens
-    // the editing card, where the rationale, the sign choice and the hold live
-    // unchanged. Only where this reader may propose: read mode has no row.
-    // Where the pen is held the row offers ✏️ beside it (entry 161): this
-    // reader may propose, being inside `MAY_PROPOSE()`, and holds the pen too.
+    // the Founder holds the pen on the Text, ✏️ otherwise. **The hold is the
+    // row's** (Q1382, Ed 2026-09-15: *a floating ✏️ to submit all of them and
+    // a floating 🗑️ to discard all of them*): the row's ✏️ used to open the
+    // editing card and press the card's own commit by proxy; the card commits
+    // nothing now — its 🗑️ is its only control — so the pencil flies from
+    // here, and the tooltip is the hold's own (`proposeCtlTitles`). Only where
+    // this reader may propose: read mode has no row. Where the pen is held the
+    // row offers ✏️ beside it (entry 161): this reader may propose, being
+    // inside `MAY_PROPOSE()`, and holds the pen too.
     if (EDITING() && MAY_PROPOSE() && !closedMode) {
       const rs = draftRowState();
       const pen = MAY_PEN();
       const idle = T.row.idle;
+      const pt = proposeCtlTitles(draftOf());
       html += proposalRowHtml({
-        count: rs.changedCount, changed: rs.changed, pen, pair: pen, disabled: !rs.changed,
+        count: rs.changedCount, changed: rs.changed, pen, pair: pen,
+        disabled: !rs.changed || pt.broke, penDisabled: !rs.changed,
         discardDisabled: !rs.count,
-        title: !rs.changed ? idle : pen ? T.row.reviewAmend : T.row.reviewPropose,
-        proposeTitle: !rs.changed ? idle : T.row.reviewPropose,
+        title: !rs.changed ? idle : pen ? pt.penTitle : pt.title,
+        proposeTitle: !rs.changed ? idle : pt.title,
       });
     }
     return html;
@@ -3341,28 +3365,30 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       })
     );
     syncEditCtl();
-    // **The row's commit is the card's** (Q1296, Q1297 — Ed's bot room,
+    // **The row's commit is the commit** (Q1296, Q1297 — Ed's bot room,
     // 2026-09-10: *the 📝 area ✏️ button at the bottom of the screen should
-    // submit that proposal*; *as the founder … click on ✒️ to submit it*).
-    // With no card open the press opens the editing card; with the card
-    // already open on this draft — which is where typing leaves you — the
-    // press is the card's own commit of the same glyph: the same flight,
-    // started on the card's button so it lands by the draft's id exactly as
-    // a press there would, inert while one is in the air. It used to return
-    // in that state, and a commit that takes the press and does nothing is
-    // worse than none. Under the hold gesture a click is not the gesture on
-    // either button, so the row stays as inert as the card.
+    // submit that proposal*; *as the founder … click on ✒️ to submit it* —
+    // and Q1382, Ed 2026-09-15: the site cards commit nothing). It was a
+    // proxy: with no card open it opened the editing card, with the card open
+    // it pressed the card's own ✏️. The card's ✏️ is gone, so the flight
+    // starts on this button and lands by the draft's id (`flyStart` resolves
+    // the id from `draftOf()` where the button is not inside a card), inert
+    // while one is in the air. Under the hold gesture the click is not the
+    // gesture — the document's `pointerdown` listener below starts the hold
+    // on this button as it does on any `draft-propose` control.
     doc.querySelectorAll('[data-proposalrow] [data-act="row-commit"]').forEach((b) =>
       b.addEventListener('click', (ev) => {
         ev.stopPropagation();
         const d = draftOf();
         if (!d) return;
+        // **With the draft's card closed, the press opens it** (Q1296): the
+        // review comes before the commit, and a draft kept through a click
+        // outside (Q1315) is reopened from here. With it open, the press —
+        // the hold, or the click where the click is the gesture — proposes.
         if (openId !== d.id) { toggle(d.id, true); return; }
         if (GESTURE === 'hold' || holding) return;
-        const cb = doc.querySelector('.sugg[data-card="' + d.id + '"] [data-act="draft-propose"]' +
-          (b.dataset.pen === '1' ? '[data-pen="1"]' : ':not([data-pen])'));
-        if (!cb || cb.disabled || cb.getAttribute('aria-disabled') === 'true') return;
-        flyStart(cb);
+        if (b.disabled || b.getAttribute('aria-disabled') === 'true') return;
+        flyStart(b);
       })
     );
   }
@@ -3531,20 +3557,23 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       picked.set(pairKeyOf(s), now);
       // One judgment, however many cards it is showing on (181): every card
       // for this suggestion moves its selection together.
+      const syncSubmit = (submit) => {
+        if (!submit) return;
+        // greyed rather than absent (Ed, 2026-08-16): the corner keeps its
+        // shape from the moment the card opens
+        submit.disabled = now === null;
+        const cast = isJudged(s) && now !== null && now === committedOf(s);
+        submit.setAttribute('aria-pressed', String(cast));
+        submit.title = cast ? window.COPY.grammar.commit.cast
+          : now ? window.COPY.grammar.commit.submit : window.COPY.grammar.commit.choose;
+      };
       openCardEls(s.id).forEach((c) => {
         c.querySelectorAll('[data-v]').forEach((o) =>
           o.setAttribute('aria-pressed', String(now !== null && o.dataset.v === now)));
-        const submit = c.querySelector('[data-act="submit"]');
-        if (submit) {
-          // greyed rather than absent (Ed, 2026-08-16): the corner keeps its
-          // shape from the moment the card opens
-          submit.disabled = now === null;
-          const cast = isJudged(s) && now !== null && now === committedOf(s);
-          submit.setAttribute('aria-pressed', String(cast));
-          submit.title = cast ? window.COPY.grammar.commit.cast
-            : now ? window.COPY.grammar.commit.submit : window.COPY.grammar.commit.choose;
-        }
+        syncSubmit(c.querySelector('[data-act="submit"]'));
       });
+      // …and a patch's ✓, which floats at the foot of the window (Q1382)
+      syncSubmit(document.querySelector('#patchrow [data-patchrow="' + s.id + '"] [data-act="submit"]'));
     };
     doc.querySelectorAll('.sugg [data-v]').forEach((b) => {
       b.addEventListener('click', (ev) => { ev.stopPropagation(); choose(b); });
@@ -4516,11 +4545,40 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // rail always needs positioning; making that a rule rather than a habit at
     // eight call sites removes the whole class of bug. It is idempotent, so the
     // sites that still call it explicitly are harmless.
-    settleTopUrgent(); renderDoc(); renderQueue(); renderToc();
+    settleTopUrgent(); renderDoc(); renderPatchRow(); renderQueue(); renderToc();
     markCurrentSection(); renderWallet(); settleWashes(); settleLift(); layoutQueue(); drawWires();
     // the host's riding tab carries the draft's count (backlog 204) — a DOM
     // poke on the host's side, never a render, so this cannot recurse
     if (hooks.rendered) hooks.rendered();
+  }
+
+  // **The patch row** (Q1382, Ed 2026-09-15: *the vote for a patch is also
+  // floating, since there is no single card for it to sit on*). A patch race
+  // is a card at every site it touches (§9's patch row) and one judgment for
+  // all of them, so its bar of acts — 🗑️ clears the choice and closes, ❄️
+  // where the race offers it, ✓ commits the pick — is drawn once, in the
+  // door's own slot at the foot of the window, while a patch card is open;
+  // the site cards keep their radios and the Indifferent block and carry no
+  // button. Read mode only: opening any card leaves edit mode. The door steps
+  // aside for it (`.doc.patchrow`, system.css) and is back when the card
+  // closes. The acts are the card's own, dispatched by the race's id.
+  function renderPatchRow() {
+    const mount = document.getElementById('patchrow');
+    if (!mount) return;
+    const s = SUGGS.find((x) => x.id === openId && x.kind === 'patch');
+    const on = !!s && !EDITING() && !closedMode;
+    const host = document.getElementById('doc');
+    if (host) host.classList.toggle('patchrow', on);
+    mount.innerHTML = on ? commitBarHtml(s, '', 'proposalrow') : '';
+    if (!on) return;
+    mount.querySelectorAll('[data-act]').forEach((b) =>
+      b.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const what = b.dataset.act === 'submit' ? pickOf(s) : b.dataset.act;
+        if (!what) return;
+        act(s.id, what);
+      })
+    );
   }
 
   // **A keystroke in read mode enters edit mode with that character applied**

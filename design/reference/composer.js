@@ -609,8 +609,12 @@ window.COMPOSER = (function () {
       o = o || {};
       const n = o.count || 0;
       const mid = n === 0 ? '' : T.row.placesChanged(n);
+      // **The row's ✏️ is the hold itself** (Q1382, Ed 2026-09-15): it was a
+      // proxy that opened the editing card and pressed the card's own ✏️, and
+      // the card carries no commit now — so the pencil flies from here, the
+      // ✒️ decrees from here, and the tooltips are the hold's (`proposeCtlTitles`).
       const btn = (pen, title) => '<button class="btn btn-propose glyphbtn emojibtn" data-act="row-commit"' +
-        (pen ? ' data-pen="1"' : '') + (o.disabled ? ' disabled' : '') +
+        (pen ? ' data-pen="1"' : '') + ((pen ? o.penDisabled : o.disabled) ? ' disabled' : '') +
         ' title="' + esc(title || '') + '">' + (pen ? '✒️' : '✏️') + '</button>';
       return '<div class="race-mid commitrow proposalrow" data-proposalrow="1">' +
         '<button class="btn btn-withdraw glyphbtn" data-act="row-discard"' + (o.discardDisabled ? ' disabled' : '') +
@@ -618,6 +622,26 @@ window.COMPOSER = (function () {
         '<span class="rowmid">' + esc(mid) + '</span>' +
         (o.pen ? btn(true, o.title) + (o.pair ? btn(false, o.proposeTitle) : '') : btn(false, o.title)) +
         '</div>';
+    }
+    // **What the row's commits say they will do** (Q1382): the hold's price,
+    // the places it lands in, the signature it carries, and the one case where
+    // the edit costs nothing — re-making a stranded proposal (Q170), whose edit
+    // was spent when it was first proposed and never given back, so an empty
+    // wallet cannot stop the act that gets it back into the race. Computed once
+    // for the row, since the site cards commit nothing.
+    function proposeCtlTitles(d) {
+      const n = d ? d.sites.length : 0;
+      const remake = !!(d && d.rebaseOf);
+      const broke = !remake && env.editsHeld < env.EDIT_RULES.stake;
+      return {
+        broke,
+        title: broke ? T.row.broke
+          : T.row.holdPropose + (n > 1 ? T.row.inAllPlaces(n) : '') +
+            // the hold's tooltip says what leaves: a signed one leaves with your name
+            (d && d.signed ? T.row.signedSuffix : '') +
+            (remake ? T.stranded.keepsCost : T.row.editCost),
+        penTitle: T.row.amend + (n > 1 ? T.row.inAllPlaces(n) : '') + T.row.penCost,
+      };
     }
     // what the row says about the draft as it stands
     const draftRowState = () => {
@@ -669,9 +693,6 @@ window.COMPOSER = (function () {
           p.classList.toggle('on', !!here);
           if (b) b.setAttribute('aria-pressed', String(!!here));
         });
-        // the ✏️, never the ✒️ beside it — a decree leaves with no signature to name
-        const pb = card.querySelector('[data-act="draft-propose"]:not([data-pen])');
-        if (pb) pb.title = pb.title.replace(/( — signed)?( — one edit)/, (d.signed ? ' — signed' : '') + '$2');
         // **The face follows the choice** (K30): signing is the moment the room
         // stops being told nothing about you, so the disc gives way to your own
         // picture as the radio moves. One element is swapped — never the `.said`
@@ -684,17 +705,19 @@ window.COMPOSER = (function () {
           if (tmp.firstElementChild) sp.replaceChild(tmp.firstElementChild, face);
         }
       });
+      // the row's ✏️ — never the ✒️ beside it, a decree leaving with no
+      // signature to name — says so in its tooltip, patched in place like the
+      // card (Q1382: the hold is the row's)
+      env.doc.querySelectorAll('[data-proposalrow] [data-act="row-commit"]:not([data-pen])').forEach((pb) => {
+        pb.title = pb.title.replace(/( — signed)?( — one edit)/, (d.signed ? ' — signed' : '') + '$2');
+      });
     }
 
     function editCardHtml(d, site) {
       const n = d.sites.length;
       const i = d.sites.indexOf(site);
-      // **Re-making a stranded proposal costs nothing** (Q170): the edit was
-      // spent when it was first proposed and the candidate never gave it back,
-      // so an empty wallet cannot stop the one act that gets it back into the
-      // race — and the tooltip says so instead of stating a price.
-      const remake = !!d.rebaseOf;
-      const broke = !remake && env.editsHeld < env.EDIT_RULES.stake;
+      // (the price and the stranded re-make's free pass are the row's tooltips
+      // now — `proposeCtlTitles` — since the card commits nothing, Q1382)
       const rival = liveRivalFor(d, site);
       const seeded = site.origin.find((o) => o.note);
       const step = (to, label, glyph) => (to === null
@@ -735,30 +758,16 @@ window.COMPOSER = (function () {
         // this* where every other card puts *finish this*.
         '<div class="race-mid commitrow">' +
         // …and 🗑️ here is *this* site's (Q1306): on a patch each place's card
-        // puts its own place back, and the row at the foot is the bin for all
+        // puts its own place back, and the row at the foot is the bin for all.
+        // **And it is the card's only control** (Q1382, Ed 2026-09-15: *each
+        // patch should have a 🗑️ to discard only it, but there should be a
+        // floating ✏️ to submit all of them and a floating 🗑️ to discard all
+        // of them*). The ✏️ hold — and the ✒️ beside it where the Founder holds
+        // the pen — lived here too, one per site, so a two-place draft offered
+        // two commits for one act; they are the proposal-row's now, at the foot
+        // of the window (`proposeCtlTitles`), and a site card commits nothing.
         '<button class="btn btn-withdraw glyphbtn" data-act="draft-cancel"' +
         ' title="' + T.row.discardThis + '">🗑️</button>' +
-        // **✏️, and a second press to mean it** (Ed, 2026-08-17). Proposing is
-        // the one irreversible-feeling act on this surface — it spends an edit and
-        // puts your wording in front of the room — and it was a single click on a
-        // button sitting under the text you were typing in.
-        //
-        // The confirmation is not a dialog and not a hold. The button starts as a
-        // bare ✏️ and the first press **arms** it, at which point it says what it
-        // will cost. That keeps the rule the price has always had — *the edit is
-        // spent at Propose, which is where the price is said in words* — and
-        // makes the price itself the confirmation step, rather than bolting a
-        // "sure?" onto it. Pressing anything else disarms it.
-        commitBtnHtml({
-          disabled: broke,
-          title: broke ? T.row.broke
-            : T.row.holdPropose + (n > 1 ? T.row.inAllPlaces(n) : '') +
-              // the hold's tooltip says what leaves: a signed one leaves with your name
-              (d.signed ? T.row.signedSuffix : '') +
-              (remake ? T.stranded.keepsCost : T.row.editCost),
-          penTitle: T.row.amend + (n > 1 ? T.row.inAllPlaces(n) : '') +
-            T.row.penCost,
-        }) +
         '</div>' +
         // Only the two facts that change what pressing ✏️ *does* (Ed, 2026-08-17).
         // What it costs is now shown rather than said — the pencil crosses the
@@ -893,7 +902,7 @@ window.COMPOSER = (function () {
       caretRangeIn, selectedBlocks, laneCaret, placeCaret,
       startDraft, startDraftFromTyping, startDraftFromRun,
       laneRaw, laneRemark, syncEditCtl,
-      commitBtnHtml, proposalRowHtml, draftRowState, setDraftSigned,
+      commitBtnHtml, proposalRowHtml, proposeCtlTitles, draftRowState, setDraftSigned,
       editCardHtml, mineCardHtml, strandedCardHtml,
       // the column's `[]` preference, written from two places outside this
       // file — the strip's own handler in `columnPass`, and the page through

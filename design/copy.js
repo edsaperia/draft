@@ -261,8 +261,6 @@ window.COPY = (function () {
       submitted: '✏️ Submitted',
       submittedTitle: 'Proposed — one edit spent. It is in the race now.',
       idle: 'Nothing has changed yet — type in the document to start a draft',
-      reviewAmend: 'Review and amend the document',
-      reviewPropose: 'Review and propose this',
     },
     // the sign control (Q770): whether your name goes on the draft
     sign: {

@@ -2124,11 +2124,31 @@ const door = await (async () => {
     if (!el) return null;
     const r = el.getBoundingClientRect();
     return [Math.round(r.left * 100) / 100, Math.round(r.top * 100) / 100, Math.round(r.width * 100) / 100, Math.round(r.height * 100) / 100,
-      getComputedStyle(el).fontSize, el.title];
+      getComputedStyle(el).fontSize, el.title, getComputedStyle(el).borderRadius];
   }, sel);
   const DOOR = '#editdoor [data-act="edit-door"]', ROW = '#charter [data-proposalrow] [data-act="row-commit"]';
+  /* **The door stays beneath the 📝 tab** (Q1380, Ed 2026-09-15: *floating 📝
+   * button shouldn't go above the 📝 tab*). At scroll 0 on this page the
+   * charter begins below the fold, so the resting tab is lower on the screen
+   * than the door and the door must be hidden (its box kept — D1); scrolled
+   * so the tab stands above it, the door shows. Both are sampled before the
+   * press, and the press is made with the tab up, where the door is visible.
+   * The pre-fix page drew the door at the foot with the tab a screen below it. */
+  const beneathAt = () => page.evaluate(() => {
+    const d = document.querySelector('#editdoor [data-act="edit-door"]');
+    const c = document.querySelector('#ridetab .achip[data-tab="text"]');
+    if (!d || !c) return null;
+    return { chipBottom: Math.round(c.getBoundingClientRect().bottom), doorTop: Math.round(d.getBoundingClientRect().top),
+      hidden: getComputedStyle(d).visibility === 'hidden' };
+  });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await T(300);
+  const atTop = await beneathAt();
+  await page.evaluate(() => { const c = document.querySelector('#ridetab .achip[data-tab="text"]'); if (c) { c.scrollIntoView({ block: 'start' }); window.scrollBy(0, -200); } });
+  await T(300);
+  const tabUp = await beneathAt();
   const before = await box(DOOR);
-  if (!before) return { before };
+  if (!before) return { before, atTop, tabUp };
   await page.click(DOOR);
   await T(400);
   const entered = { editing: await page.evaluate(() => document.getElementById('doc').classList.contains('editing')),
@@ -2137,13 +2157,20 @@ const door = await (async () => {
   await T(400);
   const left = { editing: await page.evaluate(() => document.getElementById('doc').classList.contains('editing')),
     row: !!(await box(ROW)), door: await box(DOOR) };
-  return { before, entered, left };
+  return { before, entered, left, atTop, tabUp };
 })();
 const sameBox = (a, b) => !!a && !!b && a.slice(0, 4).every((v, i) => Math.abs(v - b[i]) <= 0.5);
-const doorOk = !!door.before && door.before[4] === '21.6px' && door.entered.editing && door.entered.editable === 'true' &&
+// beneath the tab: hidden exactly when the resting tab is below the door's top, shown once it is above (Q1380)
+const beneathOk = !!door.atTop && !!door.tabUp &&
+  door.atTop.hidden === (door.atTop.chipBottom > door.atTop.doorTop) &&
+  !door.tabUp.hidden && door.tabUp.chipBottom <= door.tabUp.doorTop;
+// a floating control is a circle (Q1380): width is height, and fully round
+const circleOk = !!door.before && door.before[2] === door.before[3] && door.before[6] === '50%' &&
+  !!door.entered.commit && door.entered.commit[2] === door.entered.commit[3] && door.entered.commit[6] === '50%';
+const doorOk = beneathOk && circleOk && !!door.before && door.before[4] === '21.6px' && door.entered.editing && door.entered.editable === 'true' &&
   !door.entered.door && sameBox(door.before, door.entered.commit) &&
   !door.left.editing && !door.left.row && sameBox(door.before, door.left.door);
-say('door       · ' + (doorOk ? 'the floating 📝 at ' + door.before.slice(0, 4).join('×') + ' (“' + door.before[5] + '”) enters edit mode, the row\'s ✏️ takes its box, and 📝 on the tab brings it back in the same box'
+say('door       · ' + (doorOk ? 'the floating 📝 at ' + door.before.slice(0, 4).join('×') + ' (“' + door.before[5] + '”), a circle, hidden at the top with the tab ' + (door.atTop.chipBottom - door.atTop.doorTop) + 'px below it and shown with it up, enters edit mode, the row\'s ✏️ takes its box, and 📝 on the tab brings it back in the same box'
   : 'FAIL: ' + JSON.stringify(door)));
 if (!doorOk) stuck.push('the floating 📝 (Q1335)');
 
@@ -2503,7 +2530,7 @@ if (caret) {
   }
   const r = await page.evaluate(() => ({
     editCard: !!document.querySelector('.sugg.editcard'),
-    proposeBtn: !!document.querySelector('[data-act="draft-propose"]:not([disabled])'),
+    proposeBtn: !!document.querySelector('#charter [data-proposalrow] [data-act="row-commit"]:not([data-pen]):not([disabled])'),
   }));
   say('typing     · ' + (r.editCard ? 'opens the editing card' : 'FAIL: no editing card') +
     ' · propose control ' + (r.proposeBtn ? 'present and live' : 'MISSING'));
@@ -2866,7 +2893,8 @@ if (caret) {
       await T(300);
       const flipped = await page.evaluate(() => {
         const d = (window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours');
-        const pb = document.querySelector('.sugg.editcard [data-act="draft-propose"]');
+        // the row's ✏️ carries the hold and its tooltip since Q1382 — the card commits nothing
+        const pb = document.querySelector('#charter [data-proposalrow] [data-act="row-commit"]:not([data-pen])');
         const lane = document.querySelector('.sugg.editcard [data-lane]');
         return { signed: !!(d && d.signed), title: pb ? pb.title : '',
           pressed: [...document.querySelectorAll('.sugg.editcard [data-act="draft-sign"]')].map((b) => b.getAttribute('aria-pressed')),
@@ -2891,7 +2919,8 @@ if (caret) {
    * Playwright can do exactly and for as long as it likes. The flight cannot
    * be judged here and is not asserted; the commit can, and now is.
    * A render is forced in the middle on purpose — that is the failing case. */
-  const pb = await handle('[data-act="draft-propose"]:not([disabled])', 'propose ctl');
+  // **The hold is the proposal-row's ✏️** (Q1382): the site card carries its 🗑️ and nothing else
+  const pb = await handle('#charter [data-proposalrow] [data-act="row-commit"]:not([data-pen]):not([disabled])', 'propose ctl');
   if (pb) await pb.scrollIntoViewIfNeeded();
   const bx = pb ? await pb.boundingBox() : null;
   let ok = false;
@@ -2915,7 +2944,7 @@ if (caret) {
      * max-width — a button that keeps its centre and loses its width has moved
      * just as surely. */
     const mid = await page.evaluate(() => {
-      const b = document.querySelector('[data-act="draft-propose"]');
+      const b = document.querySelector('#charter [data-proposalrow] [data-act="row-commit"]:not([data-pen])');
       const r = b && b.getBoundingClientRect();
       return { holding: window.SESSION.holding,
         flying: !!document.querySelector('.flypencil'), edits: window.SESSION.editsHeld,
