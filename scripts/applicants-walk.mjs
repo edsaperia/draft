@@ -619,6 +619,114 @@ if (admEntry) {
   }
 }
 
+/* ---- Q1366: a returning address applies blank ------------------------ */
+/* **A fresh application starts blank, whoever you were** (Ed, 2026-09-15).
+ * The identity row outlives the seat — the register's departure line still
+ * names who left — so a member who resigns and knocks again with the same
+ * address used to be served their old name on ✋ and their old face on 🖼️ as
+ * if they had just given them: the name task read done before it was met, the
+ * picture card opened on *Chosen*, and a ✓ that changed nothing looked like a
+ * save that failed (the lab-2026 room, 2026-09-15). Asserted on the surface:
+ * a member is invited, names themself with a face, resigns, applies again;
+ * the applicant's rail asks for a name and a picture rather than reporting
+ * them, the served record carries neither, and — the second half — a name
+ * typed and ✓'d shows on the 🪪 card's list of what the application holds,
+ * the face still marked not yet chosen. Skipped at ✒️, where the link is the
+ * joining and there is no application to fill in. */
+if (PRICE !== 'pen') {
+  const RETURNING = 'returning-' + Date.now().toString(36) + '@example.org'; // one address per run: the outbox is shared
+  const inv = await cmd('invite', { email: RETURNING });
+  const invMail = (await devOutbox(BASE)).filter((m) => m.to === RETURNING).pop();
+  const invLink = invMail && linkIn(invMail);
+  if (inv.status !== 200 || !invLink) {
+    say('FAIL: no invitation reached ' + RETURNING + ' → ' + inv.status);
+    stuck.push('the returning member’s invitation');
+  } else {
+    const memCtx = await browser.newContext({ viewport: { width: 1200, height: 900 } });
+    const mem = await memCtx.newPage();
+    await mem.goto(invLink);
+    for (let i = 0; i < 40 && !mem.url().includes('/d/'); i++) await T(500);
+    const memCmd = (op, args) => mem.evaluate(async ([slug, op2, args2]) => {
+      const r = await fetch(`/api/d/${slug}/cmd`, {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ cmd: op2, args: args2 }),
+      });
+      return { status: r.status, body: await r.json().catch(() => null) };
+    }, [SLUG, op, args]);
+    const named = await memCmd('set-identity', { name: 'Rae Before', picture: 'e🦊' });
+    const left = await memCmd('resign', {});
+    await memCtx.close();
+    if (named.status !== 200 || left.status !== 200) {
+      say('FAIL: the returning member could not be named and resigned → ' + named.status + ' / ' + left.status);
+      stuck.push('the resignation');
+    } else {
+      const again = await page.evaluate(async ([slug, email]) => {
+        const r = await fetch(`/api/d/${slug}/apply`, {
+          method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        return { status: r.status, body: await r.json().catch(() => null) };
+      }, [SLUG, RETURNING]);
+      if (again.status !== 200 || !again.body || !again.body.devLink) {
+        say('FAIL: the door refused the returning address → ' + again.status + ' ' + JSON.stringify(again.body));
+        stuck.push('the second knock');
+      } else {
+        const backCtx = await browser.newContext({ viewport: { width: 1200, height: 900 } });
+        const back = await backCtx.newPage();
+        back.on('pageerror', (e) => errors.push('returning applicant: ' + String(e)));
+        await back.goto(again.body.devLink);
+        await T(2200);
+        const served = await back.evaluate(async () => {
+          const v = await (await fetch(location.origin + '/api/d/' + location.pathname.split('/')[2] + '/view')).json();
+          const a = v.applicant || {};
+          const sub = (k) => {
+            const li = document.querySelector('#rail [data-card="' + k + '"]');
+            return li ? (li.textContent || '').replace(/\s+/g, ' ').trim() : null;
+          };
+          return { name: a.name, picture: a.picture, appname: sub('appname'), apppic: sub('apppic') };
+        });
+        const blank = served.name === null && served.picture === null;
+        const asks = served.appname !== null && !served.appname.includes('Rae Before') &&
+          served.apppic !== null && !served.apppic.includes('Chosen');
+        if (!blank || !asks) {
+          say('FAIL: the returning applicant was served their old seat — record name ' +
+            JSON.stringify(served.name) + ', picture ' + JSON.stringify(served.picture) +
+            '; rail ✋ ' + JSON.stringify(served.appname) + ', 🖼️ ' + JSON.stringify(served.apppic) +
+            ' (Q1366: a fresh application starts blank)');
+          stuck.push('the returning applicant starts blank');
+        } else say('returning  · applies blank: ✋ ' + JSON.stringify(served.appname) + ', 🖼️ ' + JSON.stringify(served.apppic));
+        // the second half: what a ✓ keeps is visible before Submit, on the
+        // 🪪 card's list of what the application holds
+        const kept = await back.evaluate(async () => {
+          const click = (sel) => { const el = document.querySelector(sel); if (el) el.click(); return !!el; };
+          if (!click('#rail [data-card="appname"]')) return { step: 'no ✋ entry' };
+          await new Promise((s) => setTimeout(s, 500));
+          const inp = document.querySelector('.setupcard input[data-appname]');
+          if (!inp) return { step: 'no name field' };
+          inp.focus(); inp.value = 'Rae Again'; inp.dispatchEvent(new Event('input', { bubbles: true }));
+          await new Promise((s) => setTimeout(s, 300));
+          const ok = document.querySelector('.setupcard button[data-close]');
+          if (!ok || ok.disabled) return { step: 'the ✓ stayed dark after typing' };
+          ok.click();
+          await new Promise((s) => setTimeout(s, 700));
+          if (!click('#rail [data-card="apply"]')) return { step: 'no 🪪 entry' };
+          await new Promise((s) => setTimeout(s, 500));
+          const rows = [...document.querySelectorAll('.setupcard .applist .approw')]
+            .map((r) => (r.textContent || '').replace(/\s+/g, ' ').trim());
+          return { step: 'ok', rows };
+        });
+        if (kept.step !== 'ok' || !kept.rows.some((r) => r.includes('Rae Again')) ||
+          !kept.rows.some((r) => r.includes(COPY.page.appcards.holds.noPicture))) {
+          say('FAIL: the 🪪 card does not show what the application holds — ' + kept.step +
+            (kept.rows ? ' · rows ' + JSON.stringify(kept.rows) : ''));
+          stuck.push('what the application holds');
+        } else say('holds      · 🪪 lists ' + JSON.stringify(kept.rows));
+        await backCtx.close();
+      }
+    }
+  }
+}
+
 if (errors.length) { say('page errors· ' + JSON.stringify(errors)); stuck.push('page errors'); }
 say(stuck.length ? '\nFAILED: ' + stuck.join(' · ') : '\nok — an applicant reaches the membership');
 await browser.close();
