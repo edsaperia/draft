@@ -226,7 +226,7 @@
   "page.preamble.beforeBegin": "When the document begins, members may propose changes to rules and vote on proposals.",
   "page.preamble.onceAnswered": "once they have answered the questions the Founder delegated",
   "page.preamble.passConstitutional": "A constitutional proposal 🏛️ passes only when all members agree.",
-  "page.preamble.passOrdinary": "A proposal ✏️ passes when the members who voted prefer it and the quorum is met.",
+  "page.preamble.passOrdinary": "A proposal ✏️ is decided once the quorum has voted on it: the text becomes whichever wording the membership prefers, the current text included.",
   "page.preamble.proposeAtBegin": " They may propose changes to rules when the document begins.",
   "page.preamble.proposeLead": "Members may propose changes to rules ",
   "page.preamble.voteOnly": "Members may vote on proposals.",

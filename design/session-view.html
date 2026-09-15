@@ -5815,7 +5815,7 @@
     removal: 'The membership will decide how a member is removed',
     rate: 'The membership will decide how often members should be able to make proposals',
     ending: 'The membership will decide whether changes end on a set date or may be made perpetually',
-    quorum: 'The membership will decide how many members must vote on a proposal ✏️ before it can pass',
+    quorum: 'The membership will decide how many members must vote on a proposal ✏️ before anything changes',
     authorship: 'The membership will decide if anonymous proposals are allowed',
     judgments: 'The membership will decide whether votes are revealed at the end or never',
   };
@@ -5925,7 +5925,7 @@
   // typed value passes its form and only the founder's own field defaults
   const QUORUM_RULE = (n, form) => (((form || S.quorumForm) === 'count')
     ? n + ' members'
-    : n + '% of the membership') + ' must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.';
+    : n + '% of the membership') + ' must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.';
   // **The threshold clause went with the threshold** (Q1362, 2026-09-15).
   // `BAR_RULE` printed 🌡️'s rung sentence with 🪜's ramp sentence hung off
   // it, because the ramp was part of what the threshold said (Q512); the

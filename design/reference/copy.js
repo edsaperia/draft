@@ -662,7 +662,7 @@ window.COPY = (function () {
       asArrive: 'as soon as they arrive',
       andVote: ', and may vote on proposals.',
       voteTail: '. They may begin voting on proposals when the whole constitution has been decided.',
-      passOrdinary: 'A proposal ✏️ passes when the members who voted prefer it and the quorum is met.',
+      passOrdinary: 'A proposal ✏️ is decided once the quorum has voted on it: the text becomes whichever wording the membership prefers, the current text included.',
       passConstitutional: 'A constitutional proposal 🏛️ passes only when all members agree.',
     },
     titledLead: 'The document is titled ',

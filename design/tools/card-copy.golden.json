@@ -209,7 +209,7 @@
    },
    "begin": {
     "eyebrow": "",
-    "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ passes when the members who voted prefer it and the quorum is met.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ is decided once the quorum has voted on it: the text becomes whichever wording the membership prefers, the current text included.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.The document cannot begin while 🌍 Visibility is still being decided.🌍 Visibility is delegated to the membership, and you are its only member: a question answered by one voice has not been handed to anybody. Invite somebody at 🪪 Membership, or take it back on its own card and set it yourself.What the Founder keeps.Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.🪶 Title✒️🛡️📍 Link✒️🛡️🌍 Visibility✒️🛡️🪪 Admissions✒️🛡️🤝 Applications✒️🛡️💤 Lapsing✒️🛡️🥾 Removals✒️🛡️✉️ Invite a Member✒️🛡️❌ Remove a Member✒️🛡️⏱️ Proposal Rate✒️🛡️⏰ Ending✒️🛡️👥 Quorum✒️🛡️👤 Anonymous Proposals✒️🛡️👁️ Vote Reveal✒️🛡️📝 Text✒️🛡️The questions🌍 1 out of 1 of the membership has voted on whether the document can only be seen by members or by anyone with the link.The peopleAda Lovell · answered everythingIt comes back to you the moment somebody else can answer.",
     "options": [],
@@ -383,7 +383,7 @@
    },
    "grant-voice": {
     "eyebrow": "",
-    "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ passes when the members who voted prefer it and the quorum is met.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ is decided once the quorum has voted on it: the text becomes whichever wording the membership prefers, the current text included.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "",
     "options": [],
@@ -680,7 +680,7 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Choose this members must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Choose thisThe membership will decide how many members must vote on a proposal ✏️ before it can pass.Choose this",
+    "body": "% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Choose this members must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Choose thisThe membership will decide how many members must vote on a proposal ✏️ before anything changes.Choose this",
     "options": [
      {
       "set": "quorumForm",
@@ -695,7 +695,7 @@
      {
       "set": "quorumBy",
       "val": "roster",
-      "label": "The membership will decide how many members must vote on a proposal ✏️ before it can pass."
+      "label": "The membership will decide how many members must vote on a proposal ✏️ before anything changes."
      }
     ],
     "inputs": [
@@ -820,22 +820,22 @@
     "eyebrow": "",
     "head": "What Type of Document Is This?",
     "lock": "",
-    "body": "This document is for a meeting.50% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️.Choose thisThis document is for a conference.33% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️.Choose thisThis document is perpetual.Changes to the document may be made perpetually.25% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️.Choose thisThe Founder will decide every setting by hand.Choose this",
+    "body": "This document is for a meeting.50% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️.Choose thisThis document is for a conference.33% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️.Choose thisThis document is perpetual.Changes to the document may be made perpetually.25% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️.Choose thisThe Founder will decide every setting by hand.Choose this",
     "options": [
      {
       "set": "docShape",
       "val": "meeting",
-      "label": "This document is for a meeting.50% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️."
+      "label": "This document is for a meeting.50% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️."
      },
      {
       "set": "docShape",
       "val": "conference",
-      "label": "This document is for a conference.33% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️."
+      "label": "This document is for a conference.33% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️."
      },
      {
       "set": "docShape",
       "val": "ongoing",
-      "label": "This document is perpetual.Changes to the document may be made perpetually.25% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️."
+      "label": "This document is perpetual.Changes to the document may be made perpetually.25% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️."
      },
      {
       "set": "docShape",
@@ -3563,7 +3563,7 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Choose this members must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Choose thisThe membership will decide how many members must vote on a proposal ✏️ before it can pass.Chosen",
+    "body": "% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Choose this members must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Choose thisThe membership will decide how many members must vote on a proposal ✏️ before anything changes.Chosen",
     "options": [
      {
       "set": "quorumForm",
@@ -3578,7 +3578,7 @@
      {
       "set": "quorumBy",
       "val": "roster",
-      "label": "The membership will decide how many members must vote on a proposal ✏️ before it can pass."
+      "label": "The membership will decide how many members must vote on a proposal ✏️ before anything changes."
      }
     ],
     "inputs": [
@@ -3703,22 +3703,22 @@
     "eyebrow": "",
     "head": "What Type of Document Is This?",
     "lock": "",
-    "body": "This document is for a meeting.50% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️.Choose thisThis document is for a conference.33% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️.Choose thisThis document is perpetual.Changes to the document may be made perpetually.25% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️.Choose thisThe Founder will decide every setting by hand.Choose this",
+    "body": "This document is for a meeting.50% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️.Choose thisThis document is for a conference.33% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️.Choose thisThis document is perpetual.Changes to the document may be made perpetually.25% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️.Choose thisThe Founder will decide every setting by hand.Choose this",
     "options": [
      {
       "set": "docShape",
       "val": "meeting",
-      "label": "This document is for a meeting.50% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️."
+      "label": "This document is for a meeting.50% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️."
      },
      {
       "set": "docShape",
       "val": "conference",
-      "label": "This document is for a conference.33% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️."
+      "label": "This document is for a conference.33% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️."
      },
      {
       "set": "docShape",
       "val": "ongoing",
-      "label": "This document is perpetual.Changes to the document may be made perpetually.25% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️."
+      "label": "This document is perpetual.Changes to the document may be made perpetually.25% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️."
      },
      {
       "set": "docShape",
@@ -3952,7 +3952,7 @@
    },
    "begin": {
     "eyebrow": "",
-    "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ passes when the members who voted prefer it and the quorum is met.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ is decided once the quorum has voted on it: the text becomes whichever wording the membership prefers, the current text included.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.What the Founder keeps.Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.🪶 Title✒️🛡️📍 Link✒️🛡️🌍 Visibility✒️🛡️🪪 Admissions✒️🛡️🤝 Applications✒️🛡️💤 Lapsing✒️🛡️🥾 Removals✒️🛡️✉️ Invite a Member✒️🛡️❌ Remove a Member✒️🛡️⏱️ Proposal Rate✒️🛡️⏰ Ending✒️🛡️👥 Quorum✒️🛡️👤 Anonymous Proposals✒️🛡️👁️ Vote Reveal✒️🛡️📝 Text✒️🛡️The questionsThe peopleAda Lovell · nothing owedNobody is kept waiting by this: whoever has not answered can still answer after the start, and the document takes what was said.",
     "options": [],
@@ -4123,7 +4123,7 @@
    },
    "grant-voice": {
     "eyebrow": "",
-    "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ passes when the members who voted prefer it and the quorum is met.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ is decided once the quorum has voted on it: the text becomes whichever wording the membership prefers, the current text included.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "",
     "options": [],
@@ -4418,7 +4418,7 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Choose this members must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Choose thisThe membership will decide how many members must vote on a proposal ✏️ before it can pass.Choose this",
+    "body": "% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Choose this members must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Choose thisThe membership will decide how many members must vote on a proposal ✏️ before anything changes.Choose this",
     "options": [
      {
       "set": "quorumForm",
@@ -4433,7 +4433,7 @@
      {
       "set": "quorumBy",
       "val": "roster",
-      "label": "The membership will decide how many members must vote on a proposal ✏️ before it can pass."
+      "label": "The membership will decide how many members must vote on a proposal ✏️ before anything changes."
      }
     ],
     "inputs": [
@@ -4558,22 +4558,22 @@
     "eyebrow": "",
     "head": "What Type of Document Is This?",
     "lock": "",
-    "body": "This document is for a meeting.50% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️.Choose thisThis document is for a conference.33% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️.Choose thisThis document is perpetual.Changes to the document may be made perpetually.25% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️.Choose thisThe Founder will decide every setting by hand.Choose this",
+    "body": "This document is for a meeting.50% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️.Choose thisThis document is for a conference.33% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️.Choose thisThis document is perpetual.Changes to the document may be made perpetually.25% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️.Choose thisThe Founder will decide every setting by hand.Choose this",
     "options": [
      {
       "set": "docShape",
       "val": "meeting",
-      "label": "This document is for a meeting.50% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️."
+      "label": "This document is for a meeting.50% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️."
      },
      {
       "set": "docShape",
       "val": "conference",
-      "label": "This document is for a conference.33% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️."
+      "label": "This document is for a conference.33% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️."
      },
      {
       "set": "docShape",
       "val": "ongoing",
-      "label": "This document is perpetual.Changes to the document may be made perpetually.25% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️."
+      "label": "This document is perpetual.Changes to the document may be made perpetually.25% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️."
      },
      {
       "set": "docShape",
@@ -4783,7 +4783,7 @@
    },
    "begin": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes when the members who voted prefer it and the quorum is met.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ is decided once the quorum has voted on it: the text becomes whichever wording the membership prefers, the current text included.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "What beginning did.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.",
     "options": [],
@@ -4809,7 +4809,7 @@
    },
    "canjudge": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes when the members who voted prefer it and the quorum is met.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ is decided once the quorum has voted on it: the text becomes whichever wording the membership prefers, the current text included.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "",
     "options": [],
@@ -4835,7 +4835,7 @@
    },
    "canpropose": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes when the members who voted prefer it and the quorum is met.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ is decided once the quorum has voted on it: the text becomes whichever wording the membership prefers, the current text included.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "",
     "options": [],
@@ -4926,7 +4926,7 @@
    },
    "grant-voice": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes when the members who voted prefer it and the quorum is met.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ is decided once the quorum has voted on it: the text becomes whichever wording the membership prefers, the current text included.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "The Founder invited you into the membership, and Constitutional Proposals came with it.",
     "options": [],
@@ -6127,7 +6127,7 @@
    },
    "quorum": {
     "eyebrow": "",
-    "head": "38% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Chosen by the membership",
+    "head": "38% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Chosen by the membership",
     "lock": "",
     "body": "Quorum is % of the membership.Propose this",
     "options": [],
@@ -6236,7 +6236,7 @@
     "eyebrow": "",
     "head": "38% of the membership",
     "lock": "",
-    "body": "D Month YYYY · Passed38% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.The charter should not change until more of us have had our say.Chosen by the membership",
+    "body": "D Month YYYY · Passed38% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.The charter should not change until more of us have had our say.Chosen by the membership",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7219,7 +7219,7 @@
    },
    "quorum": {
     "eyebrow": "",
-    "head": "38% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Chosen by the membership",
+    "head": "38% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Chosen by the membership",
     "lock": "",
     "body": "",
     "options": [],
@@ -7300,7 +7300,7 @@
     "eyebrow": "",
     "head": "38% of the membership",
     "lock": "",
-    "body": "D Month YYYY · Passed38% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.The charter should not change until more of us have had our say.Chosen by the membership",
+    "body": "D Month YYYY · Passed38% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.The charter should not change until more of us have had our say.Chosen by the membership",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7581,7 +7581,7 @@
    },
    "begin": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes when the members who voted prefer it and the quorum is met.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ is decided once the quorum has voted on it: the text becomes whichever wording the membership prefers, the current text included.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "What beginning did.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.",
     "options": [],
@@ -7607,7 +7607,7 @@
    },
    "canjudge": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes when the members who voted prefer it and the quorum is met.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ is decided once the quorum has voted on it: the text becomes whichever wording the membership prefers, the current text included.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "",
     "options": [],
@@ -7633,7 +7633,7 @@
    },
    "canpropose": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes when the members who voted prefer it and the quorum is met.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ is decided once the quorum has voted on it: the text becomes whichever wording the membership prefers, the current text included.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "",
     "options": [],
@@ -7786,7 +7786,7 @@
    },
    "grant-voice": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes when the members who voted prefer it and the quorum is met.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ is decided once the quorum has voted on it: the text becomes whichever wording the membership prefers, the current text included.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "",
     "options": [],
@@ -8952,7 +8952,7 @@
    },
    "quorum": {
     "eyebrow": "",
-    "head": "38% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Chosen by the membership",
+    "head": "38% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Chosen by the membership",
     "lock": "",
     "body": "Quorum is % of the membership.Propose this",
     "options": [],
@@ -9061,7 +9061,7 @@
     "eyebrow": "",
     "head": "38% of the membership",
     "lock": "",
-    "body": "D Month YYYY · Passed38% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.The charter should not change until more of us have had our say.Chosen by the membership",
+    "body": "D Month YYYY · Passed38% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.The charter should not change until more of us have had our say.Chosen by the membership",
     "options": [],
     "inputs": [],
     "foot": [

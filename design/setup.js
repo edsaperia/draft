@@ -1301,10 +1301,10 @@ window.SETUP = (function () {
       // (Q1169). The meaning lines stay: they are meaningOf's, not copy.
       return '<div class="choice" role="radiogroup">' +
       ansRow(f === 'share', 'quorumForm', 'share',
-        box('share', 5, 100) + '% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.',
+        box('share', 5, 100) + '% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.',
         f === 'share' ? mean('share', A.quorum) : '') +
       ansRow(f === 'count', 'quorumForm', 'count',
-        box('count', 1, Math.max(1, E)) + ' members must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.',
+        box('count', 1, Math.max(1, E)) + ' members must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.',
         f === 'count' ? mean('count', A.quorum) : '') +
       '</div>';
     },
