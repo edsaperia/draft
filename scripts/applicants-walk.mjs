@@ -104,7 +104,7 @@ const open = async (k) => {
 // `pageGesture` and `clickIn` are the walks' shared ones (scripts/lib/walk.mjs);
 // `press`, `open` and `typeIn` below are this walk's own — the door's commit
 // is found by its class, and its fields are typed with real keystrokes
-const { pageGesture, clickIn } = onPage(page);
+const { pageGesture } = onPage(page);
 const press = async (ms) => {
   const b = await page.$('.setupcard .commitrow .btn-approve, .setupcard .commitrow [data-confirm]');
   if (!b) return false;
@@ -149,19 +149,6 @@ say('birth      · 📝 title pressed');
 await open('slug');
 await press(1250);
 say('birth      · 📍 slug pressed');
-// **🧭 sits between 📍 and 📧 in the birth order** (entry 166), and a card in
-// ORDER that is not settled blocks everything under it — so a walk that skips
-// it never reaches a live 📧 commit and never births at all. That is entry
-// 203: this walk skipped it from the card's first day, and CI's `walks` job
-// has been red on all three prices ever since. `custom` because this walk is
-// about applicants and not about shapes — the rung that folds nothing.
-await open('shape');
-if (!(await clickIn('.setupcard [data-set="docShape"][data-val="custom"]'))) {
-  say('FAIL: 🧭 offers no rung named custom');
-  stuck.push('the 🧭 rung custom');
-}
-await press(1250);
-say('birth      · 🧭 shape pressed (custom)');
 await open('myemail');
 await typeIn('.setupcard input[type="email"]', 'ada@example.org');
 await press(1250);

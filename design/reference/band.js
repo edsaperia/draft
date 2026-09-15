@@ -49,7 +49,7 @@ window.BAND = (function () {
       changedFrom, checkSlug, chosenRadio, clauseCtx, closingBody, commitFor, commitReady,
       composerOn, consentBody, constituted, csState, cs_titleNow, decidingOf, decisionLine,
       departureLine, directInvite, directRemove, docAddr, docOpen, doorDirect, doorErrHtml, doorErrOn,
-      dripParts, endChipsHtml, endsAtMsOf, fieldsOf, focusOpened, founderCommit, founderDirect,
+      dripParts, endsAtMsOf, fieldsOf, focusOpened, founderCommit, founderDirect,
       founderHandOff, founderInfo, founderMark, founderPairNote, founderPairOn, founderSpeaker,
       founderSpeakerLane, grantProv, groups, iDraft, isChange, isNum, isRoom, isStranger,
       judgedOn, launchFarewell, launchGrant, liveMotionRec, mailGiveUpBatch, mailGiveUpBody,
@@ -60,7 +60,7 @@ window.BAND = (function () {
       proseCounts, pwPair, readinessOf, ready,
       recordBody, releaseBatch, releaseBody, removalPrice, removeSubjectPicker, renderDev,
       renderPowerWallets, renderRail, renderTitle, resolveCounts, routeOfM, sentenceFor,
-      serverNow, settled, shapeClauses, signedClose, slugNoteHtml, slugRefused, standsTyped,
+      serverNow, settled, signedClose, slugNoteHtml, slugRefused, standsTyped,
       strangerCardHtml, strangerReadCard, syncCharter, syncFromCs, syncGrantAcks,
       syncOwedDepartures, syncOwedMailGiveUps, syncOwedOks, syncOwedReleases, takeSnap, takenOf, takenValOf,
       takingBack, textDivs, titlePending, titleStands, viewerId, viewerIsClerk, viewerIsMember,
@@ -332,24 +332,6 @@ window.BAND = (function () {
         // the *Settled.* note went with Ed's card review round 3 (2026-09-05,
         // 39 🎩): a locked card says so by its greyed radios alone
       },
-      // 🧭 (entry 166): the three rows from the bundle's table and a fourth,
-      // custom, whose two strings live here. Nothing preselected (F6); each
-      // rung its title in bold and its consequence beneath. No number is typed
-      // into the page — a row's `say` is the row's.
-      // **A shape's block is its clauses** (Ed's card review round 3,
-      // 2026-09-05, 03): the intro paragraph and the title go, each rung is
-      // Ed's sentence — *This document is for a meeting.* — followed by the
-      // constitution sentences the shape's `sets` would put into the document,
-      // only those (the ones still to be chosen are not listed), through the
-      // same rule builders the constitution prints with. 🪜 rides 🌡️'s
-      // sentence as it does in the clause (Q512); a setting the shape hides
-      // and `machines` (no clause) are left out; custom lists nothing.
-      shape: () =>
-        '<div class="choice" role="radiogroup">' +
-        M.SHAPES.map((r) => opt(S, 'docShape', r.name,
-          esc(PAGE_COPY.shape[r.name]) + shapeClauses(r))).join('') +
-        opt(S, 'docShape', 'custom', esc(PAGE_COPY.shape.custom)) +
-        '</div>',
       // settled, the composer is the second option block, its lane inside the
       // sentence (Ed's QA, 2026-09-02 pm; Q1137's inline pattern) — the birth
       // keeps the big lane, the page's first act
@@ -556,16 +538,14 @@ window.BAND = (function () {
       ending: () => (() => { const V = ladderView('ending');
         return '<div class="choice" role="radiogroup">' +
         theyDecide('ending') +
-        // under a shaped document that did not set ⏰ (a meeting, a conference)
-        // the rung grows chips in the shape's unit above the field (entry 166,
-        // F6: picking a chip fills the rung's own field). **The picker stands
-        // inside the sentence** (Ed's card review 2026-09-02, Q1137's pattern):
-        // the block states the rule with the date where its number goes, so
-        // *At a set time* retired with the stacked field.
+        // **The picker stands inside the sentence** (Ed's card review
+        // 2026-09-02, Q1137's pattern): the block states the rule with the
+        // date where its number goes, so *At a set time* retired with the
+        // stacked field. The chips a shape's unit once grew above the field
+        // left with 🧭 (Q1363).
         opt(V, 'ending', 'ends',
           'No more changes to the document may be made after ' +
-          '<input class="num numin datein" type="datetime-local" data-txt="endsAt" value="' + V.endsAt + '">.',
-          '', endChipsHtml()) +
+          '<input class="num numin datein" type="datetime-local" data-txt="endsAt" value="' + V.endsAt + '">.') +
         rungOpt(V, 'ending', 'perpetual', ENDING_NEVER) +
         '</div>'; })(),
       quorum: () =>
@@ -1646,8 +1626,6 @@ window.BAND = (function () {
       : c.k === 'text' ? (proseCounts().blocks
         ? 'The document begins from what is in the column'
         : 'The document begins empty')
-      // 🧭 reads *Choose it* while dark, in the birth cards' own manner
-      : c.k === 'shape' && !ready(c) ? 'Choose it'
       // CP8 (Q1107): the label states the act even while the commit is dark —
       // *Answer*, *Save*, *Set it* greyed — and the state (*Not answered yet*)
       // lives in the title, which commitTitle already carries.

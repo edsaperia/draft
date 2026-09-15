@@ -45,8 +45,8 @@ const read = (rel) => readFileSync(join(ROOT, rel), 'utf8');
 // sanctioned exception, 🌡️'s linking sentence to docs.vote/pairwise (entry
 // 163), went with the card and the page. `bradley` needs no pattern of its own
 // now: nothing may name the method at all, and nothing does.
-// Shared by `checkBannedWords` (the four page files) and `checkShapes`, whose
-// strings live in the bundle (entry 166).
+// Read by `checkBannedWords` (the four page files); `checkShapes` read it too
+// while the 🧭 table's sentences reached a member (entry 166 → Q1363).
 // *room* for the people who decide (entry 215, Ed 2026-08-28, QA on
 // `/pairwise`: *rather than using "room" in this way, use "the current
 // membership" or "the membership at that time" or "the membership as it
@@ -57,16 +57,13 @@ const BANNED = [/SPEC §/, /\(§\d/, /\broster\b/, /\bparticipant\b/, /\bthe Fou
   /\bthreshold\b/i];
 
 /**
- * **The one allowance, shared by both readers** — exact strings, never a
- * pattern, so it cannot grow by accident and cannot silently readmit *room*
- * for the people who decide. Every entry is the physical sense, which Ed's
- * ruling leaves standing (entry 215); each says which surface it is on.
+ * **The one allowance** — exact strings, never a pattern, so it cannot grow
+ * by accident and cannot silently readmit *room* for the people who decide.
+ * An entry is the physical sense, which Ed's ruling leaves standing (entry
+ * 215), and says which surface it is on. Empty since Q1363: its one entry
+ * was 🧭's *meeting* sentence, which no member reads now.
  */
-const BANNED_OK = [
-  // 🧭's `meeting` row (entry 166) — the one string in the bundle that needs
-  // it, and Ed named it explicitly: a few hours, everybody actually present.
-  'A few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.',
-];
+const BANNED_OK = [];
 const bannedOk = (lit) => BANNED_OK.includes(lit);
 
 function loadCatalogue() {
@@ -236,25 +233,20 @@ function checkReasoning() {
   note(`  ${named.size} ids pointed at, of ${entries.size} entries`);
 }
 
-// ---- the shapes (entry 166) -------------------------------------------------
+// ---- the shapes (entry 166; off the surface since Q1363) -------------------
 
 /**
- * The 🧭 table off the bundle: every row sets every id in `SHAPED`, every
+ * The shape table off the bundle: every row sets every id in `SHAPED`, every
  * value passes `validateFor`, no row names an unavoidable, no key outside
  * `SHAPED ∪ { ending }`, `hides ⊆ keys(sets)`, a perpetual row fixes 🪜, a
- * row with a unit leaves ⏰ for the card, and each `say` is under H4's 200
- * and carries none of `BANNED` — the table's copy reaches the page through
- * the bundle, outside `checkBannedWords`' four-file corpus.
- *
- * …and the page's `SHAPE_NOUN` is asserted to name every row and nothing
- * else. It is the one part of the table the page keeps a copy of — the noun
- * phrase the provenance and 🍾's line are built from — and the copy fails
- * silently in both directions: an unnamed row prints *As for undefined.* on
- * every shaped clause, and `shapeInput()`, which gates on the same map, drops
- * the founder's choice on the way into `open`.
+ * row with a unit leaves ⏰ for the card. The table stays in the module for
+ * replay and the sim sweeps (`alpha-preset`, `churn`) after 🧭 left the birth
+ * (Q1363, Ed 2026-09-15), so a row that no longer folds cleanly is still a
+ * finding. The copy checks on `say` and the page's `SHAPE_NOUN` map went with
+ * the card: no member reads either now.
  */
 function checkShapes(M) {
-  note('Shapes — the 🧭 table against the catalogue');
+  note('Shapes — the table against the catalogue (engine and sim only since Q1363)');
   const rows = M.SHAPES;
   const allowed = new Set([...M.SHAPED, 'ending']);
   for (const r of rows) {
@@ -272,17 +264,6 @@ function checkShapes(M) {
       find('shapes', `${r.name} is perpetual but 🪜 is not fixed`);
     if (r.unit !== null && ending !== undefined) find('shapes', `${r.name} has a unit and sets ⏰ — the shape is ⏰'s unit, never its answer`);
     if (r.unit === null && ending === undefined) find('shapes', `${r.name} has no unit and leaves ⏰ unset`);
-    if (r.say.length > 200) find('shapes', `${r.name}.say is ${r.say.length} characters (H4: 200)`);
-    if (!bannedOk(r.say)) for (const b of BANNED) if (b.test(r.say)) find('shapes', `${r.name}.say — ${b}`);
-    if (r.say.length < 12) find('shapes', `${r.name}.say says nothing`);
-  }
-  const nm = readFileSync(join(ROOT, 'design/session-view.html')).toString('utf8')
-    .match(/const SHAPE_NOUN = \{([^}]*)\}/);
-  if (!nm) find('shapes', 'SHAPE_NOUN not found in session-view.html');
-  else {
-    const nouns = [...nm[1].matchAll(/([a-z]+)\s*:/g)].map((x) => x[1]);
-    for (const r of rows) if (!nouns.includes(r.name)) find('shapes', `SHAPE_NOUN has no phrase for '${r.name}'`);
-    for (const n of nouns) if (!rows.some((r) => r.name === n)) find('shapes', `SHAPE_NOUN names '${n}', which is not a shape`);
   }
   note(`  ${rows.length} shapes, ${M.SHAPED.length} shaped settings, ${M.UNSHAPED.length} unavoidable`);
 }
@@ -1301,11 +1282,11 @@ function checkComposer(M, pm) {
   // a card's title is a literal or, since the copy move (2026-09-05), a
   // reference into copy.js — the row's key and kind are the page's either way
   const cards = [...page.matchAll(/\{ k: '([a-z-]+)', g: [^,]+, t: (?:'[^']*'|PAGE_COPY\.[A-Za-z.]+),[^\n]*?kind: '([a-z]+)'/g)].map((m) => ({ k: m[1], kind: m[2] }));
-  // 🧭 is a decision at the birth, not a setting (entry 166): no motion about
-  // meeting-ness, nothing to compose. 🪪 was exempt here from the register
-  // era, when it had no value — entry 94 made it a price and the exemption
-  // hid its missing PROPOSE entry, so the settled card composed as free text.
-  const composable = cards.filter((c) => c.kind !== 'personal' && c.k !== 'text' && c.k !== 'shape').map((c) => c.k);
+  // 🪪 was exempt here from the register era, when it had no value — entry 94
+  // made it a price and the exemption hid its missing PROPOSE entry, so the
+  // settled card composed as free text. (🧭 was exempt as a decision, not a
+  // setting, until Q1363 took it off the birth.)
+  const composable = cards.filter((c) => c.kind !== 'personal' && c.k !== 'text').map((c) => c.k);
   const propose = topKeys(objLit(page, 'PROPOSE'));
   for (const k of composable) if (!propose.includes(k)) find('composer', `'${k}' is composable but has no PROPOSE entry`);
   for (const k of propose) if (!composable.includes(k)) find('composer', `PROPOSE has '${k}', which is not a composable card`);

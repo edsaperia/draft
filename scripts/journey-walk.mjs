@@ -74,15 +74,6 @@ const DELEGATE_ALL = process.argv.includes('--delegate-all');
 const AUTHORSHIP = (process.argv.find((a) => a.startsWith('--authorship=')) || '').split('=')[1] || 'sealedElective';
 const ELECTIVE = AUTHORSHIP === 'anonymousElective' || AUTHORSHIP === 'sealedElective';
 const PROPOSALS_FIRST = process.argv.includes('--proposals-first');
-// **One founding per shape** (entry 166): `--shape=<meeting|conference|ongoing>`
-// picks that rung on 🧭 at the birth; CI's `walks` job loops the three. Per
-// shape the walk asserts that 🍾 is reachable after the unavoidable cards,
-// that every shaped clause carries *As for a meeting.* while it is still the
-// shape's, that touching 👥 by hand removes that clause's sentence and 🍾's
-// line names 👥, and that no clause carries it after the press. Default
-// custom, which is today's founding untouched.
-const SHAPE = (process.argv.find((a) => a.startsWith('--shape=')) || '').split('=')[1] || 'custom';
-const SHAPED_RUN = SHAPE !== 'custom';
 // **Which gesture this run drives** (backlog 184): no override by default, so
 // the walk follows the page's own `COMMIT_GESTURE`; `--gesture=hold|click`
 // pins it, which is how both positions are walked from one build.
@@ -202,13 +193,6 @@ say('birth      · 📝 title pressed');
 await open('slug');
 await press(1250);
 say('birth      · 📍 slug pressed');
-await open('shape');
-if (!(await clickIn('.setupcard [data-set="docShape"][data-val="' + SHAPE + '"]'))) {
-  say('FAIL: 🧭 offers no rung named ' + SHAPE);
-  stuck.push('the 🧭 rung ' + SHAPE);
-}
-await press(1250);
-say('birth      · 🧭 shape pressed (' + SHAPE + ')');
 await open('myemail');
 await typeIn('.setupcard input[type="email"]', 'ada@example.org');
 await press(1250);
@@ -1510,61 +1494,6 @@ const stuckAtBegin = async () => {
   } else { say('invited    · FAIL: no ✉️ to invite from'); stuck.push('the ✉️ tab at the dead end'); }
 };
 
-/* ---- the shape's provenance (entry 166) ---------------------------------
- * Read off the band: every clause's text by its page key. The shaped keys are
- * the row's own `sets` off the bundle, less whatever the row hides and less
- * the settings with no clause to carry a sentence — the three whose cards
- * have left the surface while the setting stayed in the catalogue for replay:
- * `machines` since 2026-08-29 (backlog 251) and `bar` and `pace` since
- * 2026-09-15 (Q1362). Every shape sets all three, so a shaped run would be red
- * on each of them without this list.
- * Asserted at the moment 🍾 is served, which is the first moment every
- * section of the constitution is on the page. */
-const NO_CLAUSE = ['pace', 'machines', 'bar'];
-const clauses = () => page.evaluate(() => Object.fromEntries(
-  [...document.querySelectorAll('#band .cpara')].map((el) => [
-    el.dataset.para || (el.querySelector('[data-tab]') || { dataset: {} }).dataset.tab,
-    ((el.querySelector('.cpv') || {}).textContent || '').replace(/\s+/g, ' ').trim()])
-  .filter(([k, t]) => k && t)));
-const shapedKeys = () => page.evaluate(([name, noClause]) => {
-  const row = window.CONSTITUTION.shapeOf(name);
-  return Object.keys(row.sets).filter((id) => !noClause.includes(id) && !row.hides.includes(id));
-}, [SHAPE, NO_CLAUSE]);
-const PROVENANCE = /\bAs for (a meeting|a conference|an ongoing document)\./;
-let shapeTouched = false;
-const shapeAtBegin = async () => {
-  const keys = await shapedKeys();
-  const cl = await clauses();
-  const missing = keys.filter((k) => !PROVENANCE.test(cl[k] || ''));
-  say('provenance · ' + keys.length + ' shaped clauses' +
-    (missing.length ? '  FAIL: no *As for…* on ' + JSON.stringify(missing.map((k) => [k, cl[k] || '(no clause)'])) : ''));
-  if (missing.length) stuck.push('provenance missing at 🍾 on ' + missing.join(','));
-  // 💤 hidden where the row says so: no clause, no rail entry
-  const hidden = await page.evaluate((name) => window.CONSTITUTION.shapeOf(name).hides, SHAPE);
-  const shown = hidden.filter((k) => cl[k] || false);
-  if (shown.length) { say('hidden     · FAIL: ' + shown.join(',') + ' has a clause under ' + SHAPE); stuck.push('hidden card drawn: ' + shown.join(',')); }
-  // touch 👥 by hand: the sentence leaves that clause and 🍾 names it
-  if (!(await open('quorum'))) { say('touch      · FAIL: no 👥 tab to touch'); stuck.push('👥 tab'); return; }
-  await page.evaluate(() => {
-    const n = document.querySelector('.setupcard [data-num="quorumPct"], .setupcard [data-num="quorumN"]');
-    if (!n) return;
-    n.value = String(+n.value === 40 ? 45 : 40);
-    for (const e of ['input', 'change']) n.dispatchEvent(new Event(e, { bubbles: true }));
-  });
-  await T(250);
-  const label = await press(1250);
-  const after = await clauses();
-  const gone = !!label && !PROVENANCE.test(after.quorum || '');
-  say('touch 👥   · ' + (gone ? 'its sentence left with the founder’s hand' : 'FAIL: ' + (label ? 'still ' + JSON.stringify(after.quorum) : 'could not commit 👥')));
-  if (!gone) stuck.push('👥 kept its provenance after being touched');
-  shapeTouched = gone;
-  await open('begin');
-  const line = await page.evaluate(() => ((document.querySelector('.setupcard .shapeline') || {}).textContent || '').trim());
-  const lineOk = /^The rules are as for /.test(line) && /except .*Quorum, which the Founder changed\.$/.test(line);
-  say('🍾 line    · ' + (lineOk ? '“' + line + '”' : 'FAIL: ' + JSON.stringify(line)));
-  if (!lineOk) stuck.push('🍾 does not state the diff');
-};
-
 /* ---- 🍾's power table (entry 158, Q1018, R-057; per setting since Q1195 (c),
  * R-098) -------------------------------------------------------------------
  * The Begin card carries a toggle per setting × power, and what it collects is
@@ -1800,7 +1729,6 @@ for (let i = 0; i < 60; i++) {
   // Still walked at the last moment before 🍾, which is the state the door
   // is drawn in: pre-start, `constituted()` false, so ✉️ shows the box
   // rather than the composer whatever the price says.
-  if (next === 'begin' && SHAPED_RUN && !shapeTouched) await shapeAtBegin();
   if (next === 'begin' && !DELEGATE_ALL && !doorWalked) {
     doorWalked = true;
     if (await open('invite')) {
@@ -1964,16 +1892,6 @@ say(L('L1') + (l1Miss.length ? 'FAIL: committed but the tab is not grey: ' + l1M
 if (l1Miss.length) stuck.push('L1: a set tab not grey: ' + l1Miss.join(','));
 // what the press actually laid down, read back off the ✒️/🛡️ tabs
 await beginRowsAfterStart();
-if (SHAPED_RUN && order.includes('begin')) {
-  // after the press nothing is the shape's: the marks are gone from every clause
-  const cl = await clauses();
-  const still = Object.entries(cl).filter(([, t]) => PROVENANCE.test(t)).map(([k]) => k);
-  say('after 🍾   · ' + (still.length ? 'FAIL: still shaped ' + still.join(',') : 'no clause is the shape’s any more'));
-  if (still.length) stuck.push('provenance survived 🍾 on ' + still.join(','));
-  // and the unavoidable cards were the whole of what the founder was asked
-  const asked = order.filter((k) => !k.startsWith('grant-') && !['begin', 'canpropose', 'canjudge'].includes(k));
-  say('asked      · ' + JSON.stringify(asked));
-}
 
 // L8 — a power arrives and is OK'd (`ok · grant-…` above); the acknowledgement
 // is the seat's (`ACK_KEYS` per seat), so after a reload no grant is served

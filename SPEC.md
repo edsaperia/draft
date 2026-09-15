@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.128
+# Group Drafting Engine — Specification v0.129
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -224,7 +224,7 @@ Rules only. The reasoning behind each — the dated rulings, what they replaced,
 | judge-gate | a setting judging waits on, because a judgment is recorded under it or counted towards it |
 | delegable | may open a blind founding question before the start |
 
-**9.0a The founding.** Every setting is born convenor-held, both powers, its question shut and its value unset: nothing arrives delegated and nothing arrives answered. → why: R-001. A shape chosen at the birth is folded as the convenor's own pre-start sets: every setting stays convenor-held, both powers, its question shut. → why: R-053. Before the start the convenor sets what they hold freely, and delegates what they choose; delegating a delegable setting opens its **founding question**, answered **blind** by the arrived members:
+**9.0a The founding.** Every setting is born convenor-held, both powers, its question shut and its value unset: nothing arrives delegated and nothing arrives answered. → why: R-001. **Nothing offered at the birth pre-sets a setting** (v0.129): the shapes — a chosen row folded as the convenor's own pre-start sets — left the birth; a log born with one still replays. → why: R-120. Before the start the convenor sets what they hold freely, and delegates what they choose; delegating a delegable setting opens its **founding question**, answered **blind** by the arrived members:
 
 - each member states their **minimum** — the least they will accept, read along the setting's protective order (§9.7.1's *consent scalar* column) — and the document takes the **most protective** answer. A consent rule rather than a vote: the result satisfies every stated minimum by construction, which is what escapes the bootstrap (*by what quorum do you decide the quorum?*). → why: R-012, R-013
 - **delegate the decision, not the field**: a question collects exactly the binding scalar, while the machinery it rides on stays with the convenor and is ordinary (the threshold at the close and its ramp were the worked example until v0.128, R-117). **The quorum is the exception**: its question collects the **form and the number together**, each member answering as a share of the membership or as a fixed count, and mixed answers resolve at the settle — every answer is read against E as it stands when the question settles, and the answer demanding the most voters wins, its form and its number both standing. The promise each member holds is *no looser than what I accepted, judged when it settles*. A question whose meaning depends on another setting is not served until that setting settles (`deps`, §9.7.1). → why: R-014, R-082
@@ -341,7 +341,6 @@ Out of scope, by ruling: delegating powers to individual members, transferring o
 | decision | what it is | lock | page key |
 |---|---|---|---|
 | 🎩 is the convenor a member | member or clerk (§9.6a); decides whether the convenor owes founding answers at all | locked at the start | hat |
-| 🧭 the shape | a meeting, a conference, ongoing, or custom (§9.0a): folded at the save as the convenor's own pre-start sets, never a setting itself | once, before the save | shape |
 | 📧 the convenor's address | identity, verified by magic link before the save (§9.7a); unique per member (§9.7½) | changeable by its owner | myemail |
 | 🍾 the start | the convenor's explicit act (§9.6a) | once | begin |
 

@@ -22,7 +22,7 @@ import {
   rmSync, writeFileSync,
 } from 'node:fs';
 import { join } from 'node:path';
-import type { LogEntry, PersonId, ShapeName } from '../../constitution/src/index.js';
+import type { LogEntry, PersonId } from '../../constitution/src/index.js';
 
 /**
  * One person's row (PRODUCTION.md decision 436, landed under 1253): the
@@ -44,8 +44,6 @@ export interface PendingCreate {
   isMember: boolean;
   /** Hash of the pre-save text stash's capability id (§9.7a v0.55). */
   stashKey?: string;
-  /** The 🧭 shape chosen before 📧 (entry 166); absent is custom. Restated by every send. */
-  shape?: ShapeName;
 }
 
 export interface TokenRecord {

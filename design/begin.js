@@ -18,10 +18,10 @@
  */
 window.BEGIN = (function () {
   function make(env) {
-    const { S, PAGE_COPY, SEC, SESSION, SHAPE_NOUN } = env;
+    const { S, PAGE_COPY, SEC, SESSION } = env;
     const { amFounder, card, closeSignatures, closedAtWords, constituted, csState, decidingOf, esc, listOf,
       midOf, mustAct, mySignature, nounOf, pkeyOf, pwPair, pwPend, pwPhrase, remedyOnly,
-      servedCards, settled, shapeRow, shapedOn, viewerIsMember, visible, voiceHost } = env;
+      servedCards, settled, viewerIsMember, visible, voiceHost } = env;
     // the founder's readiness readout — live from the view (founder only),
     // fixture from the module itself; null for anybody else
     const readinessOf = () => {
@@ -67,9 +67,9 @@ window.BEGIN = (function () {
     // Ed's own five, and deliberately **not** `SEC[0].keys`, which carries the two
     // doors and the three identity rows beside them: the section is complete when
     // its rules are decided, and ✋ 🖼️ are neither rules nor blocking (Q980).
-    // A rule a shape hides is a decision nobody has (entry 166) and completes the
-    // section by not existing — `settled` says false for it, `S.seen` never having
-    // been written, so the hide is tested here rather than left to it.
+    // A hidden rule completes the section by not existing — `settled` says
+    // false for it, `S.seen` never having been written, so the hide is tested
+    // here rather than left to it (nothing hides one since Q1363; the seam stays).
     const MEMBERSHIP_RULES = ['admission', 'applications', 'hat', 'lapse', 'removal'];
     const membershipStands = () => MEMBERSHIP_RULES.every((k) => { const c = card(k);
       return !c || (c.hide && c.hide()) || settled(c); });
@@ -315,15 +315,6 @@ window.BEGIN = (function () {
       'Voting opens.',
       'The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.',
     ];
-    // **🍾 states the diff, not the list** (entry 166): the clauses above already
-    // say the values, so the card says which of the founder's touches mattered
-    // — every shaped clause still the shape's, or the ones they changed, named
-    // through `settingNamed` and joined by `listOf`. Custom: no line.
-    const shapeLine = () => { const r = shapeRow(); if (!r || !env.cs || constituted()) return '';
-      const changed = Object.keys(r.sets).filter((mid) => !shapedOn(pkeyOf(mid)));
-      const noun = SHAPE_NOUN[env.cs.shape];
-      return '<p class="setnote shapeline">The rules are as for ' + noun +
-        (changed.length ? ', except ' + listOf(changed.map(settingNamed)) + ', which the Founder changed.' : '.') + '</p>'; };
     // **The table itself** (entry 158): drawn only before the press and only
     // for the Founder — after it there is nothing left to choose, and the batch
     // list above says what was chosen. Its shape has moved three times: twelve
@@ -361,7 +352,7 @@ window.BEGIN = (function () {
         BEGIN_ROWS.map(beginRowHtml).join('') + '</tbody></table>';
     };
     const beginBody = (c, rd) => {
-      const batch = shapeLine() +
+      const batch =
         '<div class="unlocks"><b>' + (constituted() ? 'What beginning did.' : 'What beginning does, all at once.') + '</b></div>' +
         // the first item is a function of the power table and the rest are
         // constants — one list, four items, whichever way an item is written

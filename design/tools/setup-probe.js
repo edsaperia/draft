@@ -187,30 +187,6 @@
     ['confirm-title', () => click('.setupcard [data-confirm]')],
     ['open-link', () => openTab('slug')],
     ['confirm-link', () => click('.setupcard [data-confirm]')],
-    /* 🧭 the shape, and the whole founding below it (entry 185's build, found
-     * while adding the step under 🤝). `ORDER` **is** the dependency list, and
-     * 🧭 took its place between 📍 and 📧 at entry 166 — so an unanswered shape
-     * kept 📧 from ever being served and every step from `open-email` down was
-     * dead on the live side: 73 of them, the founding below the address and the
-     * whole of `motions` with it. It is Q910 again, exactly (*an unanswered 🪪
-     * kept 🤝, 🎩, ✋ and 🖼️ from ever being born*), and it hid the same way —
-     * **a step that cannot find its target is recorded as data, and a scenario
-     * that dies early simply has more of it**, so nothing in the run says
-     * *this founding stopped at step 7*. The reference is pre-🧭, so these
-     * three are dead on the ref side until entry 189 re-freezes it. */
-    ['open-shape', () => openTab('shape')],
-    /* **Custom, because a shape hides cards** (entry 136, 2026-09-01). This
-     * scenario used to pick *meeting*, and a meeting `hides: ['lapse']` — Ed's
-     * own ruling, *a decision nobody has* (`packages/constitution/src/shapes.ts`)
-     * — so 💤 had no tab, no card and no clause, and the four steps below it
-     * were dead on the live side while `probe-coverage` reported `✗ lapse`.
-     * That was read as a CP1 selector rot and is not: the selectors were fine,
-     * the card was never born. *Custom* is the shape that hides nothing and
-     * pre-sets nothing, which is what this scenario's own header already
-     * claims — *nothing is pre-answered, so every choice here is a real
-     * click*. A shape that hides a card is `founding-golden`'s to walk. */
-    ['choose-shape', () => click('.setupcard [data-set="docShape"][data-val="custom"]')],
-    ['confirm-shape', () => click('.setupcard [data-confirm]')],
     ['open-email', () => openTab('myemail')],
     ['type-email', () => typeInto('.setupcard input[type="email"]', 'ada@example.org')],
     ['send-verify', () => click('.setupcard [data-confirm]')],

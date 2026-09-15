@@ -457,7 +457,6 @@ window.COPY = (function () {
       title: { t: 'Name the Document', n: 'Title' },
       myemail: { t: 'Enter Your Email', n: 'Your Email' },
       slug: { t: 'Choose the Link', n: 'Link' },
-      shape: { t: 'What Type of Document Is This?', n: 'Document Type' },
       admission: { t: 'How Does Somebody Join?', n: 'Admissions',
         rule: 'Each member says the <b>cheapest</b> admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.',
         takes: 'The document takes the dearest' },
@@ -765,14 +764,6 @@ window.COPY = (function () {
       keptTip: 'Kept — press to lay it down at the start',
       downTip: 'Laid down at the start — press to keep it',
       givenTip: 'Already given up on its own card — it comes back only there',
-    },
-    // 🧭's rungs, Ed's sentences (card review round 3, 2026-09-05, 03); the
-    // clauses each shape sets follow them on the card, built from the rules
-    shape: {
-      meeting: 'This document is for a meeting.',
-      conference: 'This document is for a conference.',
-      ongoing: 'This document is perpetual.',
-      custom: 'The Founder will decide every setting by hand.',
     },
     // the gates and grants (GATES): titles, bodies, locklines
     gate: {

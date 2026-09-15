@@ -1,6 +1,6 @@
 {
  "meta": {
-  "cards": 299,
+  "cards": 296,
   "walks": [
    "answers",
    "charter",
@@ -813,51 +813,6 @@
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
      "Set it"
-    ],
-    "helpers": []
-   },
-   "shape": {
-    "eyebrow": "",
-    "head": "What Type of Document Is This?",
-    "lock": "",
-    "body": "This document is for a meeting.50% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️.Choose thisThis document is for a conference.33% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️.Choose thisThis document is perpetual.Changes to the document may be made perpetually.25% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️.Choose thisThe Founder will decide every setting by hand.Choose this",
-    "options": [
-     {
-      "set": "docShape",
-      "val": "meeting",
-      "label": "This document is for a meeting.50% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️."
-     },
-     {
-      "set": "docShape",
-      "val": "conference",
-      "label": "This document is for a conference.33% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️."
-     },
-     {
-      "set": "docShape",
-      "val": "ongoing",
-      "label": "This document is perpetual.Changes to the document may be made perpetually.25% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️."
-     },
-     {
-      "set": "docShape",
-      "val": "custom",
-      "label": "The Founder will decide every setting by hand."
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "🪶",
-      "title": "Choose it"
-     }
-    ],
-    "hints": [
-     "What Type of Document Is This? — close it",
-     "Put it back as it stands",
-     "Choose it"
     ],
     "helpers": []
    },
@@ -3699,51 +3654,6 @@
     ],
     "helpers": []
    },
-   "shape": {
-    "eyebrow": "",
-    "head": "What Type of Document Is This?",
-    "lock": "",
-    "body": "This document is for a meeting.50% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️.Choose thisThis document is for a conference.33% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️.Choose thisThis document is perpetual.Changes to the document may be made perpetually.25% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️.Choose thisThe Founder will decide every setting by hand.Choose this",
-    "options": [
-     {
-      "set": "docShape",
-      "val": "meeting",
-      "label": "This document is for a meeting.50% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️."
-     },
-     {
-      "set": "docShape",
-      "val": "conference",
-      "label": "This document is for a conference.33% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️."
-     },
-     {
-      "set": "docShape",
-      "val": "ongoing",
-      "label": "This document is perpetual.Changes to the document may be made perpetually.25% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️."
-     },
-     {
-      "set": "docShape",
-      "val": "custom",
-      "label": "The Founder will decide every setting by hand."
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "🪶",
-      "title": "Choose it"
-     }
-    ],
-    "hints": [
-     "What Type of Document Is This? — close it",
-     "Put it back as it stands",
-     "Choose it"
-    ],
-    "helpers": []
-   },
    "slug": {
     "eyebrow": "",
     "head": "",
@@ -4551,51 +4461,6 @@
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
      "Set it"
-    ],
-    "helpers": []
-   },
-   "shape": {
-    "eyebrow": "",
-    "head": "What Type of Document Is This?",
-    "lock": "",
-    "body": "This document is for a meeting.50% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️.Choose thisThis document is for a conference.33% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️.Choose thisThis document is perpetual.Changes to the document may be made perpetually.25% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️.Choose thisThe Founder will decide every setting by hand.Choose this",
-    "options": [
-     {
-      "set": "docShape",
-      "val": "meeting",
-      "label": "This document is for a meeting.50% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️."
-     },
-     {
-      "set": "docShape",
-      "val": "conference",
-      "label": "This document is for a conference.33% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️."
-     },
-     {
-      "set": "docShape",
-      "val": "ongoing",
-      "label": "This document is perpetual.Changes to the document may be made perpetually.25% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️."
-     },
-     {
-      "set": "docShape",
-      "val": "custom",
-      "label": "The Founder will decide every setting by hand."
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "🪶",
-      "title": "Choose it"
-     }
-    ],
-    "hints": [
-     "What Type of Document Is This? — close it",
-     "Put it back as it stands",
-     "Choose it"
     ],
     "helpers": []
    },

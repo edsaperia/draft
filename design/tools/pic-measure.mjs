@@ -81,12 +81,6 @@ await type('.setupcard [data-titlelane]', 'Hollow Oak Club Charter');
 await click('.setupcard [data-confirm]');
 await tab('slug');
 await click('.setupcard [data-confirm]');
-// 🧭 (entry 166) stands between 📍 and 📧 and blocks it, so the walk has to
-// answer it to reach the rest of the founding at all — *custom*, as the
-// card-audit's own founding drive does, so what follows is today's order
-await tab('shape');
-await click('.setupcard [data-set="docShape"][data-val="custom"]');
-await click('.setupcard [data-confirm]');
 await tab('myemail');
 await type('.setupcard input[type="email"]', 'ada@example.org');
 await click('.setupcard [data-confirm]');

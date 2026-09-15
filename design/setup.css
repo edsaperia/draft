@@ -233,9 +233,6 @@
      radio rhythm (Ed's card review round 3, 2026-09-05, A11 on 🪪: the lanes
      became `.pick` blocks so one rule spaces every block on the card) */
   .pick > .lanebar { margin-top: var(--s2); padding-top: 0; }
-  /* 🧭's rungs list the clauses a shape sets, each on its own line under the
-     rung's sentence, at the clause's own size (round 3, 03) */
-  .pick .opttext .shapeclause { display: block; margin-top: var(--s1); }
   /* Q1181 (Ed, 2026-09-05, card review round 3): 🍾's power table asks one
      question per cell — keep it, or lay it down — so it takes one control,
      not a radio pair; the glyph itself is the option, so the box is small and

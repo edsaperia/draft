@@ -37,26 +37,6 @@
   {
    "step": "commit slug",
    "rail": [
-    "shape"
-   ],
-   "clauses": [
-    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T"
-   ]
-  },
-  {
-   "step": "open shape",
-   "rail": [
-    "shape"
-   ],
-   "clauses": [
-    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T"
-   ]
-  },
-  {
-   "step": "commit shape (custom)",
-   "rail": [
     "myemail"
    ],
    "clauses": [

@@ -1,13 +1,19 @@
 /**
+ * **Off the surface since Q1363** (Ed, 2026-09-15: *remove the presets 🧭
+ * from the birth*). No page offers a shape and the server's save passes none
+ * into `open`; the table stays because a log born with one replays through
+ * it (`created.shape` → `SettingView.shaped`) and because the sim sweeps
+ * (`alpha-preset`, `churn`) take its rows as candidate constitutions.
+ *
  * **The shapes are one table in one file** (Ed, 2026-08-27, plan-queue entry
- * 166): easy to inspect, change, add to and remove from. A shape is what the
- * founder chooses at 🧭 before the birth — *a meeting*, *a conference*,
- * *ongoing* — and the save folds its `sets` as **the founder's own pre-start
- * `setting-set` events** at the birth (SPEC §9.0a): every setting stays
+ * 166): easy to inspect, change, add to and remove from. A shape was what the
+ * founder chose at 🧭 before the birth — *a meeting*, *a conference*,
+ * *ongoing* — and the save folded its `sets` as **the founder's own pre-start
+ * `setting-set` events** at the birth (SPEC §9.0a, R-053): every setting stays
  * convenor-held with both powers and its question shut, nothing is delegated,
- * and a set made before the start is owed nothing (§9.6a). The values are
- * *given*, never defaulted, and the band says so on each shaped clause until
- * the founder touches it (`SettingView.shaped`).
+ * and a set made before the start is owed nothing (§9.6a). The values were
+ * *given*, never defaulted, and the band said so on each shaped clause until
+ * the founder touched it (`SettingView.shaped`).
  *
  * **Custom is not a row**: it is the absence of a shape (`null`), and the page
  * offers it as the fourth rung. A row with an empty `sets` would be a shape

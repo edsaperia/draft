@@ -51,14 +51,6 @@ const AS_JSON = process.argv.includes('--json');
 const TAKEBACK = (process.argv.find((a) => a.startsWith('--takeback=')) || '').split('=')[1] || null;
 const DELEGATE = TAKEBACK || (process.argv.find((a) => a.startsWith('--delegate')) || '')
   .split('=')[1] || (process.argv.includes('--delegate') ? 'chamber' : null);
-/**
- * `--shape=<meeting|conference|ongoing|custom>` (entry 166) picks that rung on
- * 🧭 before 📧, so the walk prints the **shortened** order — the rail as it
- * stands at the save and every task the founder is still served — which is
- * what Ed asked to see. Default none: the walk answers 🧭 *custom*, which is
- * today's founding untouched.
- */
-const SHAPE = (process.argv.find((a) => a.startsWith('--shape=')) || '').split('=')[1] || 'custom';
 
 const srv = createServer(async (req, res) => {
   const p = decodeURIComponent(req.url.split('?')[0]);
@@ -261,13 +253,7 @@ const titleClauseAtBirth = async () => {
 };
 const titleClauseAfterSave = async (s) => {
   const said = await clauseText('title');
-  // a shaped document (entry 166) has a membership decision from the save —
-  // 🥾 is the shape's — so the title's power sentence already carries its
-  // assent half; what is asserted there is that the aside is gone and the
-  // sentence still opens as it always did
-  const ok = SHAPE === 'custom' ? said === SAVED_TITLE
-    : typeof said === 'string' && said.startsWith(SAVED_TITLE.slice(0, -1)) && !said.includes(ASIDE);
-  if (!ok) {
+  if (said !== SAVED_TITLE) {
     errors.push('the aside outlived the birth: ' +
       (said === null ? '(no title clause in the band)' : said));
   }
@@ -300,14 +286,6 @@ await record('open slug');
 await clickIn('.setupcard [data-confirm]');
 const atCommitSlug = await record('commit slug');
 asideOnTitleAlone(atCommitSlug);
-
-await openCard('shape');
-await record('open shape');
-if (!(await clickIn('.setupcard [data-set="docShape"][data-val="' + SHAPE + '"]'))) {
-  errors.push('🧭 offers no rung named ' + SHAPE);
-}
-await clickIn('.setupcard [data-confirm]');
-await record('commit shape (' + SHAPE + ')');
 
 await openCard('myemail');
 await record('open myemail');

@@ -12,7 +12,7 @@
  * gave them.
  */
 import { randomBytes } from 'node:crypto';
-import { ConstitutionSession, isShapeName, mayApply, sha256Hex } from '../../constitution/src/index.js';
+import { ConstitutionSession, mayApply, sha256Hex } from '../../constitution/src/index.js';
 import type { ApplicationsValue } from '../../constitution/src/index.js';
 import { LIMITS, cap, emailOk } from './commands.js';
 import { MAILS } from './mailer.js';
@@ -82,12 +82,8 @@ export const authTable: Route[] = [
       const title = cap(expectString(body, 'title'), LIMITS.title, 'the title');
       const email = emailOk(expectString(body, 'email'));
       const isMember = body.isMember !== false;
-      // the 🧭 shape (entry 166): a row's name is kept; `'custom'`, absent or
-      // anything else is **no shape** — refusing an unknown word would let an
-      // old client's send fail on a field it never knew, and dropping it is
-      // the same answer as custom. It rides the token's `pending` exactly as
-      // the title does, so a resend restates it from the page.
-      const shape = isShapeName(body.shape) ? body.shape : undefined;
+      // a `shape` on the send is ignored (Q1363): 🧭 left the birth, and a
+      // page cached from before it may still say `custom` — never a refusal
       /* 📨 is a resend, not a rival (Ed's QA, 2026-08-21: *when I click 📨
          I'm taken back to link*). The first send reserves the address for
          the pending creation (Q462b) — so a second send of the same
@@ -136,8 +132,7 @@ export const authTable: Route[] = [
       const stashKey = sha256Hex(pendingId);
       if (!renewed) await stash.open(stashKey, expMs, slug);
       const token = await auth.mintToken(
-        { kind: 'create', email, pending: { title, slug, email, isMember, stashKey,
-          ...(shape === undefined ? {} : { shape }) } }, nowMs);
+        { kind: 'create', email, pending: { title, slug, email, isMember, stashKey } }, nowMs);
       const link = `${cfg.baseUrl}/auth/create?token=${token}`;
       await writes.sendNow({ to: email, ...MAILS.create(title, slug, link) }, null, token);
       json(res, 200, { ok: true, slug, pendingId,
@@ -235,8 +230,6 @@ export const authTable: Route[] = [
         title: p.title,
         slug,
         convenor: { id: 'founder', email: p.email, isMember: p.isMember },
-        // the shape is folded at the save as the founder's own sets (entry 166)
-        ...(p.shape === undefined ? {} : { shape: p.shape }),
       }, nowMs));
       // the pasted text is waiting in the saved document (§9.7a v0.55) —
       // waiting, not decided: confirming the starting text stays its own act

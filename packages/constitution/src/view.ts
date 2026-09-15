@@ -71,9 +71,9 @@ export interface SettingView {
    * **Given by the shape and untouched, before the start** (entry 166): the
    * 🧭 row named this setting, the convenor's set is the birth's own and
    * nothing has re-set it since, and the document has not begun. The band
-   * appends *As for a meeting.* while this is true and nothing while it is
-   * not; nothing is stored for it. Decided here rather than on the page
-   * because the fixture and the live path both render off `view()`.
+   * appended *As for a meeting.* while this was true; since Q1363 no page
+   * reads it (🧭 left the birth) and it is only ever true on a document born
+   * before that. Nothing is stored for it.
    */
   shaped: boolean;
 }

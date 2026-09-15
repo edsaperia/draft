@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 487
+  "entries": 481
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -136,8 +136,6 @@
   "page.cards.removal.t": "How Is a Member Removed?",
   "page.cards.remove.n": "Removals",
   "page.cards.remove.t": "Remove a Member",
-  "page.cards.shape.n": "Document Type",
-  "page.cards.shape.t": "What Type of Document Is This?",
   "page.cards.slug.n": "Link",
   "page.cards.slug.t": "Choose the Link",
   "page.cards.text.t": "Text",
@@ -324,10 +322,6 @@
   "page.ride.textDash": "Text — ",
   "page.ride.writing": "you are writing; press to stop",
   "page.said": "ƒ (s) => 'You said: “' + s + '”'",
-  "page.shape.conference": "This document is for a conference.",
-  "page.shape.custom": "The Founder will decide every setting by hand.",
-  "page.shape.meeting": "This document is for a meeting.",
-  "page.shape.ongoing": "This document is perpetual.",
   "page.slugNote.free": " is free.",
   "page.slugNote.illegal": "Lower case, digits and hyphens",
   "page.slugNote.suggested": "Suggested from the title — ",

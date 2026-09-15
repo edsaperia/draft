@@ -1058,20 +1058,6 @@ const RUN = {
     await press(page, 1250);
     await openCard(page, 'slug');
     await press(page, 1250);
-    // **🧭 sits between 📍 and 📧** (entry 166), and a card in ORDER that is
-    // not settled blocks everything under it — so a birth that skips it never
-    // reaches a live 📧 commit. Found by entry 203's audit: this harness had
-    // the same gap as `applicants-walk`, and only escaped CI's notice by not
-    // being in CI. `custom` is the rung that folds nothing, which is what the
-    // seats below were written against.
-    await openCard(page, 'shape');
-    const shaped = await page.evaluate(() => {
-      const b = document.querySelector('.setupcard [data-set="docShape"][data-val="custom"]');
-      if (!b) return false; b.click(); return true;
-    });
-    if (!shaped) throw new Error('🧭 offers no rung named custom');
-    await page.waitForTimeout(300);
-    await press(page, 1250);
     await openCard(page, 'myemail');
     await typeIn(page, '.setupcard input[type="email"]', s.email);
     await press(page, 1250);

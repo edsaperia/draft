@@ -291,8 +291,6 @@ window.LIVE = (function () {
         acknowledgeClose: (t, member, comment) => api.cmd('acknowledge-close', { comment }),
         get titleOf() { return self.v.title; },
         get slug() { return self.v.slug; },
-        get shape() { return (self.v.view && self.v.view.shape) || null; },
-        shaped: (mid) => { const st = index().settings.get(mid); return !!(st && st.shaped); },
         get quorumForm() { return self.v.quorumForm; },
         get text() { return self.v.text; },
         E: () => self.v.electorateSize,
@@ -322,7 +320,7 @@ window.LIVE = (function () {
           const mine = q ? q.myAnswer !== null : false;
           return { holder: st.holder, powers: st.powers, powerFrom: st.powerFrom,
             pendingRelease: st.pendingRelease || { unilateral: false, assent: false },
-            value: st.value, shaped: !!st.shaped,
+            value: st.value,
             settledBy: st.settledBy, settledAtT: st.settledAtT,
             collecting: st.collecting,
             distribution: res ? res.distribution : null,
@@ -571,8 +569,8 @@ window.LIVE = (function () {
       const owed = new Set(v.view.owedOks);
       CARDS.forEach((c) => {
         if (c.isGate || c.ansFor) return;
-        // 🧭 is a birth act like the three beside it: seen, never re-offered
-        if (c.k === 'title' || c.k === 'slug' || c.k === 'myemail' || c.k === 'shape') { S.seen.add(c.k); return; }
+        // the three birth acts: seen, never re-offered
+        if (c.k === 'title' || c.k === 'slug' || c.k === 'myemail') { S.seen.add(c.k); return; }
         // the text is never a task (backlog 204): `settled()` answers for it
         if (c.k === 'text') return;
         // ✋ and 🖼️ answer for themselves now, per seat, off `view.identity`'s

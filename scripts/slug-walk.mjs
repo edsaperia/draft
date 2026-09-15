@@ -64,7 +64,7 @@ page.on('response', (r) => { if (r.url().includes('/api/') && r.status() >= 400)
   refused.push(r.status() + ' ' + r.request().method() + ' ' + new URL(r.url()).pathname); });
 // journey's hands, now the walks' shared ones (scripts/lib/walk.mjs), bound to
 // this page with journey's drive: a click scrolls into view and settles 420ms
-const { T, open, typeIn, clickIn, press } = onPage(page);
+const { T, open, typeIn, press } = onPage(page);
 const fails = [];
 const check = (ok, msg) => { say((ok ? '  ok   · ' : '  FAIL · ') + msg); if (!ok) fails.push(msg); };
 /* the state of the 📍 card: what is in the field, whether the commit is
@@ -128,17 +128,6 @@ check(!/is taken/.test(s.note), 'the taken note is gone');
 
 await press(1250);
 say('birth     · 📍 slug pressed (' + FREE + ')');
-// **🧭 sits between 📍 and 📧 in the birth order** (entry 166): a card in
-// ORDER that is not settled blocks everything under it, so this walk could not
-// reach a live 📧 commit either — and passed anyway, because it never asked
-// whether the birth it is named for had happened. The check below is what
-// makes this step necessary rather than merely correct (entry 203).
-await open('shape');
-if (!(await clickIn('.setupcard [data-set="docShape"][data-val="custom"]'))) {
-  check(false, '🧭 offers a rung named custom');
-}
-await press(1250);
-say('birth     · 🧭 shape pressed (custom)');
 await open('myemail');
 await typeIn('.setupcard input[type="email"]', 'ada@example.org');
 await press(1250);
