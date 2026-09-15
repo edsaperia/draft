@@ -28,6 +28,7 @@
     "applicants-walk": "node scripts/applicants-walk.mjs",
     "after-begin-walk": "node scripts/after-begin-walk.mjs",
     "invite-walk": "node scripts/invite-walk.mjs",
+    "member-questions-walk": "node scripts/member-questions-walk.mjs",
     "powers-walk": "node scripts/powers-walk.mjs",
     "room-walk": "node scripts/room-walk.mjs",
     "room-bots": "node scripts/room-bots.mjs",

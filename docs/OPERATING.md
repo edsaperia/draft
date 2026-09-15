@@ -92,7 +92,7 @@ freely; pushing is the decision.
    with `DRAFT_TEST_STORE=pg npm test -w @draft/server`, then
    `npm run build`. **`probe`** (the two design probes, the copy walk,
    probe coverage) and **`walks`** (a dev server booted in the job, then
-   `journey`, `applicants-walk`, `after-begin-walk`, `slug-walk`, `ladder` and `room-walk`
+   `journey`, `applicants-walk`, `after-begin-walk`, `member-questions-walk`, `slug-walk`, `ladder` and `room-walk`
    against it) run in parallel with `ci` and cannot hold the deploy: a red
    there is a red X on the commit, not a held deploy.
 3. CI runs a **boot smoke** on the artifact: it must refuse to boot with no

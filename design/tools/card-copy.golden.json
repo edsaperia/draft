@@ -226,7 +226,6 @@
     ],
     "hints": [
      "Begin — close it",
-     "Constitutional Proposals — settled",
      "Kept — press to lay it down at the start",
      "Already given up on its own card — it comes back only there",
      "Laid down at the start — press to keep it",
@@ -349,6 +348,7 @@
     ],
     "hints": [
      "Founder Actions — close it",
+     "Constitutional Proposals — yours to take",
      "Put it back as it stands"
     ],
     "helpers": [
@@ -374,6 +374,7 @@
     ],
     "hints": [
      "Founder Veto — close it",
+     "Constitutional Proposals — yours to take",
      "Founder Actions — settled",
      "Put it back as it stands"
     ],
@@ -400,6 +401,8 @@
     ],
     "hints": [
      "Constitutional Proposals — close it",
+     "Founder Actions — settled",
+     "Founder Veto — settled",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -3974,7 +3977,6 @@
     ],
     "hints": [
      "Begin — close it",
-     "Constitutional Proposals — settled",
      "Kept — press to lay it down at the start",
      "Laid down at the start — press to keep it",
      "Put it back as it stands",
@@ -4094,6 +4096,7 @@
     ],
     "hints": [
      "Founder Actions — close it",
+     "Constitutional Proposals — yours to take",
      "Put it back as it stands"
     ],
     "helpers": [
@@ -4119,6 +4122,7 @@
     ],
     "hints": [
      "Founder Veto — close it",
+     "Constitutional Proposals — yours to take",
      "Founder Actions — settled",
      "Put it back as it stands"
     ],
@@ -4145,6 +4149,8 @@
     ],
     "hints": [
      "Constitutional Proposals — close it",
+     "Founder Actions — settled",
+     "Founder Veto — settled",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -4767,7 +4773,6 @@
      "Begin — close it",
      "Proposals — settled",
      "Voting — settled",
-     "Constitutional Proposals — settled",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -4793,7 +4798,6 @@
      "Begin — settled",
      "Proposals — settled",
      "Voting — close it",
-     "Constitutional Proposals — settled",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -4819,7 +4823,6 @@
      "Begin — settled",
      "Proposals — close it",
      "Voting — settled",
-     "Constitutional Proposals — settled",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -4914,9 +4917,6 @@
      }
     ],
     "hints": [
-     "Begin — settled",
-     "Proposals — settled",
-     "Voting — settled",
      "Constitutional Proposals — close it",
      "Put it back as it stands"
     ],
@@ -7721,7 +7721,6 @@
      "Begin — close it",
      "Proposals — settled",
      "Voting — settled",
-     "Constitutional Proposals — settled",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -7747,7 +7746,6 @@
      "Begin — settled",
      "Proposals — settled",
      "Voting — close it",
-     "Constitutional Proposals — settled",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -7773,7 +7771,6 @@
      "Begin — settled",
      "Proposals — close it",
      "Voting — settled",
-     "Constitutional Proposals — settled",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -7883,6 +7880,7 @@
     "hints": [
      "Founder Actions — close it",
      "Founder Veto — settled",
+     "Constitutional Proposals — settled",
      "Put it back as it stands"
     ],
     "helpers": [
@@ -7909,6 +7907,7 @@
     "hints": [
      "Founder Actions — settled",
      "Founder Veto — close it",
+     "Constitutional Proposals — settled",
      "Put it back as it stands"
     ],
     "helpers": [
@@ -7933,9 +7932,8 @@
      }
     ],
     "hints": [
-     "Begin — settled",
-     "Proposals — settled",
-     "Voting — settled",
+     "Founder Actions — settled",
+     "Founder Veto — settled",
      "Constitutional Proposals — close it",
      "Put it back as it stands"
     ],

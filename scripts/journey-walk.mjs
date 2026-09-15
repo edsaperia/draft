@@ -240,11 +240,14 @@ say('birth      · saved at ' + page.url());
 // action — and a task you may not action is not shown at all. The two personal
 // cards are the exception the pen's rule does not reach: they are committed
 // with no power at all, so they stand at the save and block nothing (F2, F3).
+// **And 🏛️ is the save's too, for a founder who is a member** (Q1365, Ed
+// 2026-09-15: *you should get a 🏛️ grant when you first become a member*) — a
+// grant is news and blocks nothing, so it stands beside the pen from the save.
 const atSave = await rail();
-const saveWant = ['grant-pen', 'myname', 'mypic'];
+const saveWant = ['grant-pen', 'grant-voice', 'myname', 'mypic'];
 const saveOk = JSON.stringify([...atSave].sort()) === JSON.stringify(saveWant);
 say('at save    · rail ' + JSON.stringify(atSave) +
-  (saveOk ? '' : '  FAIL: expected the pen with ✋ and 🖼️, and nothing else'));
+  (saveOk ? '' : '  FAIL: expected the pen and the voice with ✋ and 🖼️, and nothing else'));
 if (!saveOk) stuck.push('rail at save');
 // **The column carries the document's name from the save** (backlog 33, Ed:
 // *immediately after the birth, when my named document opens for the first

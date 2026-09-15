@@ -412,6 +412,11 @@ jobs:
       # refusal naming no id
       - run: npm run invite-walk -- "$WALK_BASE"
         if: always()
+      # a member arrives while the founder has left 🎩 unanswered and delegated ⏱️ 👥
+      # (Q1365, Q1372): 🏛️ served at arrival on the Founded line, no question until
+      # its OK, then the questions in order whatever the founder has not reached
+      - run: npm run member-questions-walk -- "$WALK_BASE"
+        if: always()
       - run: npm run slug-walk -- "$WALK_BASE" test-charter
         if: always()
       - run: npm run ladder -- "$WALK_BASE"
