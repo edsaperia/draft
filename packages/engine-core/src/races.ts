@@ -30,6 +30,14 @@ import { sha256Hex, stableStringify } from './hash.js';
 import { pairKey } from './routing.js';
 import type { StoredComparison } from './session.js';
 
+/**
+ * How far above the current text's strength a leader must sit to be *on top*
+ * (Q1362, R-114): a tolerance, since two strengths the fit meant to be equal
+ * differ by an optimiser residual of ~1e-16 whose sign follows the order the
+ * judgments arrived in. One judgment moves a strength by ~1e-1 in any room.
+ */
+const TIE_EPS = 1e-9;
+
 /** Candidate ids are `c<n>`; the number orders them by submission. */
 export function candidateNum(id: string): number {
   return Number(id.slice(1));
@@ -181,8 +189,16 @@ export class Races {
     // strictly greater than the current text's, which is to say the top of the
     // whole field is not the current text. Equal strengths are a tie, and a
     // tie leaves the current text standing — the one asymmetry that survives.
+    //
+    // **Equal means equal within the fit's noise** (the stage-1 build's first
+    // finding, 2026-09-15): at a dead-even split the two strengths differ by
+    // a residual of ~1e-16 whose *sign is set by the order the judgments
+    // arrived in*, so a strict `>` let arrival order decide a tie. `TIE_EPS`
+    // is far above any residual the optimiser leaves and far below the
+    // smallest difference one judgment makes (~1e-1 at any room size), so it
+    // changes nothing but the tie.
     const leaderOnTop =
-      leaderId !== null && leaderStrength > (fit.strengths.get(incumbentId) ?? 0);
+      leaderId !== null && leaderStrength > (fit.strengths.get(incumbentId) ?? 0) + TIE_EPS;
     const certification = leaderId === null ? null : 1 - (leaderP ?? 0.5);
     // **The floor counts judges of the winner** (Q1337, Ed 2026-09-11,
     // R-102). The moon room carried changes on 3 to 16 judgments in a room of

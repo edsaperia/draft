@@ -1549,6 +1549,36 @@ describe('the text is the top of the ranking (Q1362, R-114)', () => {
     expect(run(7)).toBe('live');
   });
 
+  it('a dead-even split is a tie whichever order the votes arrived in (TIE_EPS)', () => {
+    // A room of fourteen: the author's derived preference and six more for,
+    // seven against — 7 to 7. The fit's two strengths differ by an optimiser
+    // residual of ~1e-16 whose sign follows the arrival order; without a
+    // tolerance one order carried and the other stood (the stage-1 build's
+    // first finding, 2026-09-15). Both orders must read *not on top*.
+    const run = (againstFirst: boolean) => {
+      const s = openSession({ quorum: { form: 'count', n: 99 } }, 14);
+      const { id } = s.submitCandidate(1000, {
+        author: 'p1', patch: rewrite(0, 1, 'A.'), rationale: 'r',
+      });
+      const inc = s.raceOf(id).incumbentId;
+      const votes: Array<['a' | 'b', string]> = [];
+      for (let i = 2; i <= 14; i++) votes.push([i <= 7 ? 'a' : 'b', `p${i}`]);
+      if (againstFirst) votes.reverse();
+      let t = 2000;
+      for (const [outcome, who] of votes) s.judge((t += 100), who, id, inc, outcome);
+      const race = s.raceOf(id);
+      const fit = s.raceFit(race.id);
+      const diff = Math.abs((fit.strengths.get(id) ?? 0) - (fit.strengths.get(inc) ?? 0));
+      expect(diff).toBeLessThan(1e-9);
+      expect(race.leaderOnTop).toBe(false);
+      s.amend((t += 100), { quorum: null });
+      s.tick(t + 100);
+      return s.getCandidate(id).state;
+    };
+    expect(run(false)).toBe('live');
+    expect(run(true)).toBe('live');
+  });
+
   it('a cycle carries a candidate a direct majority preferred the current text to', () => {
     // **The accepted property** (ruling (a), recorded, not a bug). Y beats X,
     // X beats the current text easily, and the current text beats Y 8–7 head
