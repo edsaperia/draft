@@ -5409,7 +5409,7 @@
      }
     ],
     "hints": [
-     "Set the Proposal Rate — waiting on you",
+     "Set the Proposal Rate — yours, being voted on",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
      "Rejected: a new proposal every 90 minutes — settled",
@@ -5867,7 +5867,7 @@
      }
     ],
     "hints": [
-     "Set the Proposal Rate — waiting on you",
+     "Set the Proposal Rate — yours, being voted on",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
      "Rejected: a new proposal every 90 minutes — settled",
@@ -6031,33 +6031,13 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "Members may make a new proposal ✏️ every 3 hours.Keep thisMembers may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer.Prefer thisIndifferent",
-    "options": [
-     {
-      "set": null,
-      "val": "stands",
-      "label": "Members may make a new proposal ✏️ every 3 hours."
-     },
-     {
-      "set": null,
-      "val": "proposed",
-      "label": "Members may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer."
-     },
-     {
-      "set": null,
-      "val": "either",
-      "label": "Indifferent"
-     }
-    ],
+    "body": "Members may make a new proposal ✏️ every 3 hours.Members may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer.Proposed",
+    "options": [],
     "inputs": [],
     "foot": [
      {
       "label": "🗑️",
       "title": "Withdraw it — the ✏️ comes back in full"
-     },
-     {
-      "label": "",
-      "title": null
      }
     ],
     "hints": [
@@ -6142,7 +6122,7 @@
      }
     ],
     "hints": [
-     "Set the Proposal Rate — waiting on you",
+     "Set the Proposal Rate — yours, being voted on",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Rejected: a new proposal every 90 minutes — close it",

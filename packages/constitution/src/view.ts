@@ -185,11 +185,14 @@ export interface MemberView {
   /**
    * Who has left the membership since arriving, and whose act it was (Q901,
    * SURFACE E31–E32): the register tells the room in a sentence rather than
-   * by a row going missing. Name and picture are register facts (§9.0c); no
-   * email, since the address of somebody who is gone is nobody's business.
+   * by a row going missing. Name and picture are register facts (§9.0c), and
+   * since Q1375 (Ed, 2026-09-15: *use [email] if no name chosen*) the address
+   * rides too, for the rail entry that names them where they chose no name —
+   * the same address the register printed on their row while they were in.
+   * Null where the row is erased.
    */
   departures: Array<{ id: MemberId; name: string | null; picture: string | null;
-    erased: boolean; t: number; by: DepartureBy }>;
+    email: string | null; erased: boolean; t: number; by: DepartureBy }>;
   register: RegisterView;
   /** ✉️ and ❌ (entry 94): the founder's powers over the act, per door. */
   doors: { invite: DoorView; remove: DoorView };
@@ -402,7 +405,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
   const departures = s.departures().map((d) => {
     const rec = s.memberRecords().get(d.member);
     return { id: d.member, name: rec?.name ?? null, picture: rec?.picture ?? null,
-      erased: rec?.erased ?? false, t: d.t, by: d.by };
+      email: rec?.email ?? null, erased: rec?.erased ?? false, t: d.t, by: d.by };
   });
 
   return {

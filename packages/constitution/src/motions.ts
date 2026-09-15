@@ -152,7 +152,9 @@ export function openMotion(s: MotionHost, t: number, by: MemberId,
   // only refusal here was *what already stands*.
   const twin = runningTwin(s, payload);
   if (twin !== null) {
-    throw new Error(`already put — '${twin}' proposes the same; answer it instead (§9.6)`);
+    // the sentence a member reads carries no id (STYLE T1, Q1370): the page
+    // already stands on the twin's own card, which is where they answer it
+    throw new Error('already put — the same has already been proposed; answer it instead (§9.6)');
   }
   if (route === 'constitutional' && heldOutBy(s, by)) {
     throw new Error('one 🏛️ out per member at a time (§9.6)');

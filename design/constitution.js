@@ -918,7 +918,7 @@ var CONSTITUTION = (() => {
     }
     const twin = runningTwin(s, payload);
     if (twin !== null) {
-      throw new Error(`already put — '${twin}' proposes the same; answer it instead (§9.6)`);
+      throw new Error("already put — the same has already been proposed; answer it instead (§9.6)");
     }
     if (route === "constitutional" && heldOutBy(s, by)) {
       throw new Error("one 🏛️ out per member at a time (§9.6)");
@@ -4099,6 +4099,7 @@ var CONSTITUTION = (() => {
         id: d.member,
         name: rec?.name ?? null,
         picture: rec?.picture ?? null,
+        email: rec?.email ?? null,
         erased: rec?.erased ?? false,
         t: d.t,
         by: d.by

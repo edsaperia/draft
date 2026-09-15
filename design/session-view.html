@@ -1012,9 +1012,15 @@
     return cs.departures ? cs.departures().map((d) => {
       const r = cs.memberRecords().get(d.member);
       return { id: d.member, name: r ? r.name : null, picture: r ? r.picture : null,
-        erased: !!(r && r.erased), t: d.t, by: d.by };
+        email: r ? r.email : null, erased: !!(r && r.erased), t: d.t, by: d.by };
     }) : [];
   };
+  // **A person is named by their name, else their address** (Q1375, Ed
+  // 2026-09-15: *use [email] if no name chosen*), `[redacted]` where the row
+  // is gone (T49): the one reader for a rail entry about a person, the same
+  // rule `applicantName` has always applied to an applicant
+  const departedName = (d) => (d.erased ? PAGE_COPY.synth.redacted
+    : d.name || d.email || PAGE_COPY.departed.someone);
   const departureLine = (d) => {
     // an erased person's line still says somebody left — it names no name
     const who = esc(d.erased ? PAGE_COPY.synth.redacted : (d.name || PAGE_COPY.departed.someone));
@@ -2375,7 +2381,12 @@
     // — without this the card's kind priced every member's invitation at
     // 🏛️ while the clause beside the box said ✏️
     { k: 'invite', g: '✉️', t: PAGE_COPY.cards.invite.t, kind: 'constitutional',
-      routeOf: () => (admissionPrice() === 'proposal' ? 'ordinary' : 'constitutional'),
+      // **the door composes by 🪪's price** (Q1370, Ed 2026-09-15): the
+      // commit is the route's own — ✏️ at *proposal*, the 🏛️ hold at
+      // *assembly* (SURFACE §9's ✉️ row). Without this the card's own kind
+      // answered, so a member's invitation wore the assembly hold and its
+      // tooltip while the module raced it at ✏️ — ❌ had this from Q401
+      routeOf: () => (admissionPrice() === 'assembly' ? 'constitutional' : 'ordinary'),
       ready: () => true, door: true },
     // the door composes by whatever price the 🥾 setting decides (Q401):
     // `proposal` races at the bar, either consent rung is constitutional
@@ -2583,10 +2594,26 @@
     // ✒️ there is nothing to ask — the card reports rather than asks
     const ap = applicantById(id);
     const nm = ap ? applicantName(ap) : PAGE_COPY.synth.anApplicant;
-    ADMCACHE[k].t = admissionPrice() === 'pen' ? nm + PAGE_COPY.synth.hasJoined
+    ADMCACHE[k].t = admissionPrice() === 'pen' ? PAGE_COPY.synth.hasJoined(nm)
       : PAGE_COPY.synth.admitLead + nm + PAGE_COPY.synth.admitTail;
+    // the entry leads with their face (Q1375), the name it already carried
+    ADMCACHE[k].face = ap && !ap.erased ? { n: ap.name || ap.email || '', pic: ap.picture } : null;
+    // **An admission at ✏️ price is a race, and its entry wears the race's
+    // meter** (Q1371, Ed 2026-09-15: *should queue card have progress wash*).
+    // The fill is the race's own closeness — the leader's judges over the
+    // floor, as a text race's entry since Q1362 (c) — read off the view's
+    // `settingRaces`; `railEntry` (setup.js) takes it over the founder's
+    // 100%. Undefined at the other two prices, where there is no race.
+    const sr = admissionPrice() === 'proposal' ? settingRaceOf('admit:' + id) : null;
+    ADMCACHE[k].racePct = sr ? Math.round((sr.closeness || 0) * 100) : undefined;
     return ADMCACHE[k];
   };
+  // the engine's own race behind a setting motion on the ordinary route —
+  // an admission at ✏️ price — as the view serves it blind (Q1371): how far
+  // the room has got, and whether this seat has judged it and can still be
+  // asked. Null in the fixture, which races nothing.
+  const settingRaceOf = (sid) => ((cs && cs.isRemote && cs.v.settingRaces) || [])
+    .find((r) => r.settingId === sid) || null;
   // **Everything one act laid down is one card** (entry 162, Q1013). Built on
   // `admitCard`'s pattern, which exists for exactly this shape: a synthetic
   // card with a dynamic key that the module, not the page, is the truth about.
@@ -2640,8 +2667,17 @@
     if (!DEPCACHE[k]) DEPCACHE[k] = { k, departure: id, g: '🥾', kind: 'constitutional',
       early: () => true, hide: () => !owedDeparture(id) };
     const d = owedDeparture(id);
+    // **the entry names the person, with their face** (Q1375, Ed 2026-09-15:
+    // *"A Member Has Left" can be "[avatar] [name] has left"*): a sentence
+    // about them, their address where they chose no name, their face at the
+    // rail's own size beside it (`railEntry` draws `face`); the tooltip is
+    // the sentence alone. The old titles named nobody so the walk golden
+    // would not gain a string per departure; the walks name one fixed
+    // person now, and the fixture its own
+    const who = d ? departedName(d) : PAGE_COPY.departed.someone;
     DEPCACHE[k].t = d && d.by === 'self'
-      ? PAGE_COPY.synth.departedLeft : PAGE_COPY.synth.departedRemoved;
+      ? PAGE_COPY.synth.departedLeft(who) : PAGE_COPY.synth.departedRemoved(who);
+    DEPCACHE[k].face = d ? { n: d.erased ? '' : (d.name || d.email || ''), pic: d.erased ? null : d.picture } : null;
     return DEPCACHE[k];
   };
   const departureKeys = () => owedDepartures()
@@ -3795,6 +3831,7 @@
           (p.founder ? ' ' + founderMark() : '') +
           (p.lapsed && p.in ? ' <span class="chip pending">lapsed</span>' : '') +
           (gaveUpRow(p) ? ' <span class="chip pending">that did not send</span>' : '') +
+          pendingChip(p) +
           '</span>' +
           // outside `.mn`: the name is text and this is a control
           (gaveUpRow(p) ? '<button class="btn small" data-act="resend-invite" data-member="' +
@@ -3820,7 +3857,8 @@
         // stall, not a departure, and they abstain rather than leave.
         const lapsedOut = others.filter((p) => p.in && p.lapsed && !pendingOut.has(p.mid));
         const here = others.filter((p) => p.in && !p.lapsed && !pendingOut.has(p.mid));
-        const invited = others.filter((p) => !p.in);
+        // …and the invitations still being decided, marked *proposed* (Q1370)
+        const invited = others.filter((p) => !p.in).concat(invitePendingRows());
         // **Leaving is free** (entry 94): a member's own row carries the one
         // act nobody may refuse — and the founder's membership is ordinary
         // membership (§9.6a, entry 248), so their row carries it too. Before
@@ -4468,14 +4506,36 @@
   // sentence stands beneath the list, in the same head.
   const doorPeople = (c) => {
     const rows = c.k === 'invite'
-      ? S.roster.filter((p) => !p.in)
+      ? S.roster.filter((p) => !p.in).concat(invitePendingRows())
       : (cs ? S.roster.filter((p) => removalPendingIds().has(p.mid || 'founder')) : []);
     const empty = c.k === 'invite' ? PAGE_COPY.doorEmpty.invite : PAGE_COPY.doorEmpty.remove;
     return '<div class="headpeople">' + (rows.length
       ? rows.map((p) => '<span class="hp">' + avHtml(p) + ' ' +
-          esc(p.n || p.e || 'Anonymous') + '</span>').join('')
+          esc(p.n || p.e || 'Anonymous') + pendingChip(p) + '</span>').join('')
       : '<span class="hpnone">' + empty + '</span>') + '</div>';
   };
+  // **An invitation proposed and not yet decided is a line under *Invitees***
+  // (Q1370, Ed 2026-09-15: the mover's press *acknowledged nothing — no line
+  // under Invitees, the card still reading Nobody has been invited yet*). A
+  // door stands by its result, and a motion in flight is a result in the
+  // making: one row per running invite motion, built off the record since
+  // the person is on no roster until it carries, wearing *proposed* the way
+  // a lapsed row wears *lapsed*. It stands in ✉️'s head and in the
+  // subsection alike, so the *Nobody has been invited yet* sentence counts
+  // it — that sentence is about the list being empty, and it is not.
+  const invitePendingRows = () => {
+    if (!cs || !motionsLive()) return [];
+    const out = [];
+    for (const rec of cs.motionRecords().values()) {
+      if (rec.payload && rec.payload.kind === 'invite' &&
+        (rec.status === 'running' || rec.status === 'awaiting-crown')) {
+        out.push({ n: '', e: inviteeHandle(rec.payload), in: false, pending: true });
+      }
+    }
+    return out;
+  };
+  const pendingChip = (p) => (p.pending
+    ? ' <span class="chip pending">' + esc(PAGE_COPY.doorPending.invite) + '</span>' : '');
   const removalPendingIds = () => {
     const ids = new Set();
     if (!cs || !motionsLive()) return ids;
@@ -4493,12 +4553,15 @@
   // carries a person row's id, and the address the page shows comes off the
   // row — the view resolves it onto the wire; the fixture reads the module's
   // own rows. Null where the row has been erased, and then the handle is
-  // *[redacted]* rather than a name nobody holds any more.
+  // *[redacted]* rather than a name nobody holds any more. **The whole
+  // address since Q1375** (Ed, 2026-09-15: *use [email] if no name chosen*):
+  // it printed the local part alone, the one place on the surface that did,
+  // where the register's rows and every other person-entry print the address.
   const inviteeHandle = (p) => {
     const e = p.email !== undefined ? p.email
       : (cs && cs.people && typeof cs.people.get === 'function'
         ? ((cs.people.get(p.person) || {}).email || null) : null);
-    return e ? e.split('@')[0] : PAGE_COPY.synth.redacted;
+    return e || PAGE_COPY.synth.redacted;
   };
   // what a typed motion proposes, said in the page's own vocabulary
   const motionDisplay = (rec) => {
@@ -4704,6 +4767,21 @@
     const rec = liveMotionRec(c);
     if (!rec) return false;
     if (rec.route === 'constitutional') return rec.answers.has(viewerId());
+    // **The mover stands at accept from the open** (K8) on either route: an
+    // ordinary motion of yours asks you nothing, whatever marker the page
+    // holds (Q1370 — the mover was asked to judge their own invitation)
+    if (rec.by !== null && rec.by !== undefined && rec.by === viewerId()) return true;
+    // **An admission at ✏️ price is judged in the engine, and the engine
+    // says so** (Q1371): the page's own marker below was never written for
+    // it, so every admit entry read *unvoted* for ever
+    if (c.admit) {
+      const sr = settingRaceOf('admit:' + c.admit);
+      if (sr) return !!sr.judged && !sr.askable;
+      // the race has resolved and the motion has not yet settled (the bridge's
+      // next tick): nothing is left to ask, and no card is served for it
+      if (cs && cs.isRemote) return !((cs.v && cs.v.raceCards) || []).some((x) =>
+        [x.a, x.b].some((s2) => s2 && s2.setting && s2.setting.settingId === 'admit:' + c.admit));
+    }
     return motionPicked(c) && myMAnsOk().has(c.k);
   };
   // **Two routes, two counts, spelled once** (entry 138). A constitutional
@@ -5469,7 +5547,19 @@
         '<span class="off">' + off + '</span><span class="on">' + onW + '</span></button></div>';
     }).join('') + '</div>';
   const MOTION_PICKS = { constitutional: ['no', 'yes', 'abstain'], ordinary: ['stands', 'proposed', 'either'] };
-  const motionBlocks = (key, stands, proposed, why, route) => {
+  const motionBlocks = (key, stands, proposed, why, route, mover) => {
+    // **The mover's own card asks nothing** (K8, Q1370): the two blocks with
+    // the proposed one marked as theirs — the radio the composer's *Proposed*,
+    // inert, the ledger's own mark — and no third block, since there is
+    // nothing to be indifferent about in a thing you put yourself
+    if (mover) {
+      const block = (html, on) => '<div class="pick' + (on ? ' on' : '') + '">' +
+        '<span class="opttext">' + html + '</span>' +
+        '<span class="lanepick lmark" aria-pressed="' + on + '"><i class="dot" aria-hidden="true"></i>' +
+        (on ? '<span class="on">' + esc(window.COPY.grammar.lane.proposed) + '</span>' : '') + '</span></div>';
+      return '<div class="choice">' + block(esc(stands), false) +
+        block(esc(proposed) + (why ? window.CARDS.speakerHtml(why) : ''), true) + '</div>';
+    }
     const [k, p, t] = MOTION_PICKS[route] || MOTION_PICKS.constitutional;
     return consentPicks(key, [
       [k, esc(stands), 'keep'],
@@ -5477,9 +5567,9 @@
       [t, '', t],
     ]);
   };
-  const inviteBody = (m, route) =>
-    motionBlocks('invite', PAGE_COPY.consent.staysAsIs, PAGE_COPY.consent.joins(m.invite), m.why, route);
-  const removeBody = (m, route) => {
+  const inviteBody = (m, route, mover) =>
+    motionBlocks('invite', PAGE_COPY.consent.staysAsIs, PAGE_COPY.consent.joins(m.invite), m.why, route, mover);
+  const removeBody = (m, route, mover) => {
     const nm = nameOfMember(m.removee);
     // 🏛️ without [avatar] (Q401a): under 'others' the subject sees the
     // motion running against them — ruled, Ed 2026-08-19 — and is asked
@@ -5488,23 +5578,26 @@
       return '<p class="why">' + PAGE_COPY.consent.removeSelfWhy + '</p>' +
         '<p class="setnote">' + PAGE_COPY.consent.removeSelfCount(m.judged || 0, Math.max(E() - 1, 0)) + '</p>';
     }
-    return motionBlocks('remove', PAGE_COPY.consent.staysIn(nm), PAGE_COPY.consent.leaves(nm), m.why, route);
+    return motionBlocks('remove', PAGE_COPY.consent.staysIn(nm), PAGE_COPY.consent.leaves(nm), m.why, route, mover);
   };
   // a set motion: the standing clause against the proposed one — the
   // paragraph's own sentence (`decisionLine`) against the full sentence for
   // the motion's own value (A3), never its short label
-  const motionPairBody = (c, m, route) => (m.invite ? inviteBody(m, route)
-    : m.removee !== undefined ? removeBody(m, route)
+  const motionPairBody = (c, m, route, mover) => (m.invite ? inviteBody(m, route, mover)
+    : m.removee !== undefined ? removeBody(m, route, mover)
     // a return in flight (Q386): the power's rule as it stands against the
     // rule it would put back — `m.to` is `pwSaid`'s sentence, the same one the
     // block below the compose offer states, so answering reads as proposing did
-    : c.power ? motionBlocks(c.k, powerHeadLine(c), m.to, m.why, route) + deckLedgerHtml(c)
+    : c.power ? motionBlocks(c.k, powerHeadLine(c), m.to, m.why, route, mover) + deckLedgerHtml(c)
     : (() => { const rec = liveMotionRec(c);
       const v = rec && rec.payload && rec.payload.kind === 'set' ? rec.payload.value : null;
-      return motionBlocks(c.k, decisionLine(c), (v !== null && sentenceFor(c.k, v)) || m.to, m.why, route) +
+      return motionBlocks(c.k, decisionLine(c), (v !== null && sentenceFor(c.k, v)) || m.to, m.why, route, mover) +
         deckLedgerHtml(c); })());
   const consentBody = (c, m) => motionPairBody(c, m, 'constitutional');
-  const ordinaryBody = (c, m) => motionPairBody(c, m, 'ordinary');
+  // the mover's ordinary card is theirs, not an ask (K8, Q1370): the blocks
+  // inert with the proposed one marked, and the commit row withdraw alone
+  const ordinaryBody = (c, m) => motionPairBody(c, m, 'ordinary',
+    m.by !== null && m.by !== undefined && m.by === viewerId());
 
   /* **The road back to a laid-down power is offered on the tab it went down
      from** (Q386, Ed 2026-09-14: *at the moment founder powers are handed over
@@ -5762,7 +5855,13 @@
     // every arrived member but the convenor*), so the module's `owedOks`
     // carries them from the moment they are set and this is the only thing
     // holding them back until 🍾 (SURFACE F8, E4: owed at the start, not before).
-    || (constituted() && !amFounder() && !c.ansFor && !c.isGate && !c.door && !isRoom(c) && c.own !== 'you' &&
+    // **…and never an admission** (Q1371, Ed 2026-09-15): the admit card wears
+    // 🪪's constitutional kind, and this branch read it as a rule set over your
+    // head — green ✔, owed an OK — whenever its motion was out of reach (the
+    // ⚖️ OK not yet given, or the page's judgment marker never written). An
+    // admission is a door standing by its result: a task at *proposal* and
+    // *assembly*, news only at *pen*, which the chain above already says.
+    || (constituted() && !amFounder() && !c.ansFor && !c.isGate && !c.door && !c.admit && !isRoom(c) && c.own !== 'you' &&
       // **and an ordinary setting the founder *changed*** (Q530, Ed
       // 2026-08-22). An ordinary rule the founder simply made is not news —
       // nothing was asked and anybody may motion it whenever they like — but
@@ -6268,6 +6367,17 @@
     // glyph, and the watcher on a setting you handed over leaves the rail
     voted: (c) => !c.record && !(c.power && !motionOn(c)) &&
       (motionOn(c) ? answeredMotion(c) : !!c.ansFor && answered(c)),
+    // **An ordinary motion of yours is a thing of your own in flight** (Q1370,
+    // Ed 2026-09-15; M3's *yours*, the alphabet's ✏️ row): it asks you
+    // nothing — the mover stands at accept from the open (K8) — and settles
+    // never; withdraw is the remaining act, so the entry is force-kept as a
+    // proposal of yours is. A constitutional motion of yours keeps ⏳: you
+    // have answered it and the room has not finished (Q1286 (a)). Before
+    // this the mover's invitation had no entry at all where the ⚖️ OK was
+    // still owed, and where it was not the card asked them to judge it.
+    yours: (c) => !c.record && (() => { const m = motionOn(c);
+      return !!m && m.kind === 'ordinary' && m.status === 'running' &&
+        m.by !== null && m.by !== undefined && m.by === viewerId(); })(),
     news: (c) => (c.power || c.record ? false : news(c)),
     // the paragraph seam, so 🏛️ draws no clause of its own where the
     // preamble is standing to carry it (Q750). The rail reads `tasksFor`
@@ -8659,6 +8769,13 @@
     // an ack the page invented, and one the module keeps re-owing after a
     // press — and neither can be told from the other by reading the rail
     okd: [...S.okd], owed: [...(owedSettings() || [])],
+    // the admit cards as the band reads them (Q1371): the price, whether a
+    // motion is found for each, and the predicates its state is read from
+    admits: admitKeys().map((k) => { const c = card(k); return { k, price: admissionPrice(),
+      motion: !!motionOn(c), settled: settled(c), news: news(c), wait: waiting(c),
+      act: mustAct(c), st: stateOf(c, ctx), live: motionsLive(), mayJudge: mayJudge(),
+      recs: cs ? [...cs.motionRecords().values()].filter((r) => motionTargets(r) === k)
+        .map((r) => ({ id: r.id, status: r.status, route: r.route, waits: motionWaitsOnMe(r) })) : null }; }),
   });
   const extra = {
     entries: () => railEntries,

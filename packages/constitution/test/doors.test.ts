@@ -154,10 +154,11 @@ describe('departures — what the view says about who left (Q901)', () => {
     s.remove(7, cy);
     const v = view(s, bo);
     expect(v.departures).toEqual([{ id: cy, name: v.departures[0]!.name,
-      picture: v.departures[0]!.picture, erased: false, t: 7, by: 'convenor' }]);
+      picture: v.departures[0]!.picture, email: 'cy@example.org', erased: false, t: 7, by: 'convenor' }]);
     expect(v.members.some((m) => m.id === cy)).toBe(false);
-    // no email: the address of somebody who is gone is nobody's business
-    expect(Object.keys(v.departures[0]!)).not.toContain('email');
+    // the address rides since Q1375 (Ed, 2026-09-15: *use [email] if no name
+    // chosen*) — the rail entry names them by it where they chose no name
+    expect(v.departures[0]!.email).toBe('cy@example.org');
   });
 
   it('after resignation the view lists one departure by the member themself', () => {
@@ -193,11 +194,11 @@ describe('departures — what the view says about who left (Q901)', () => {
     expect(s.memberRecords().get(dee)!.arrivedAtT).toBeNull();
     s.remove(4, dee);
     expect(s.departures()).toEqual([{ member: dee, t: 4, by: 'convenor' }]);
-    // nameless, since they never gave one: the view carries the fact and
-    // the page's line says *a member* rather than an address
+    // nameless, since they never gave one: the view carries the fact, and
+    // since Q1375 the address, which is what the rail entry names them by
     const v = view(s, bo);
     expect(v.departures.map((d) => [d.id, d.name, d.t, d.by])).toEqual([[dee, null, 4, 'convenor']]);
-    expect(Object.keys(v.departures[0]!)).not.toContain('email');
+    expect(v.departures[0]!.email).toBe('dee@example.org');
   });
 });
 
