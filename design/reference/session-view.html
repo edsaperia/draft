@@ -1407,11 +1407,18 @@
     sentAddr: '', inviteOne: '', inviteMany: '',
     mPick: {}, // a deck per setting (Q1348): the motion the founder chose to look at, by setting
     mAnsFor: {}, // …and which motion `mAns` was pressed for, so the deck's next motion starts unpressed
+    // the power tabs' *Keep this* (Q386), by tab key: the block that proposes
+    // nothing, so it cannot live in `S.draft` — pressing it clears the draft,
+    // and nothing is pressed on a card that has just opened (F6)
+    pwKeep: new Set(),
     // the last refusal, against the card it belongs to: {k, m} (Q811)
     doorErr: null,
     viewer: 0,
     app: { started: false, email: '', emailSent: false, emailVerified: false,
-      mailOpen: false, name: '', pic: '', text: '', submitted: false, csId: null },
+      mailOpen: false, name: '', pic: '', text: '', submitted: false, csId: null,
+      // whether the door shutting under you has been acknowledged (E33, Q901):
+      // the module is the truth about it, this is the provisional layer's copy
+      shutAcked: false },
     ending: '', endsAt: '',
     // 🪜 is the one thing that arrives answered (Q512): rising from 55%,
     // stated inside the threshold's own clause and changed on its tab
@@ -1562,6 +1569,27 @@
     return out.sort((a, b) => a.at - b.at);
   };
   const mailGiveUpBatch = (id) => mailGiveUpBatches().find((b) => b.id === id) || null;
+  // **And the same for a departure** (SURFACE E31, E32, E40; Q901, Ed
+  // 2026-09-14). The register's grey sentence tells the room who left; it asks
+  // nothing, so a member who was not reading the list that day never met it.
+  // Every departure now owes an OK as well, and the module is the truth in
+  // both directions here as it is for a release batch — nothing about a
+  // departure is kept per device. `departuresOf` above is the register's own
+  // list, in the order the acts happened, so the owed ones are that list
+  // filtered and the card reads its sentence from the same row the list does.
+  const owedDepartureIds = () => {
+    if (!cs) return null;
+    if (cs.isRemote) return new Set((cs.v && cs.v.view && cs.v.view.owedDepartures) || []);
+    const id = viewerId(); if (!id) return null;
+    let rec = null;
+    try { rec = cs.memberRecords().get(id) || null; } catch (e) { return null; }
+    return rec && rec.departuresOwed ? new Set(rec.departuresOwed) : null;
+  };
+  const owedDepartures = () => {
+    const owed = owedDepartureIds(); if (!owed) return [];
+    return departuresOf().filter((d) => owed.has(d.id));
+  };
+  const owedDeparture = (id) => owedDepartures().find((d) => d.id === id) || null;
   // **One press dismisses the task** (Q846, Ed: *I click a queue-card, click
   // OK, then click the queue-card again, then click OK, then the queue card
   // goes*). The press adds the key and sends `give-ok` in the same act, and
@@ -1620,6 +1648,13 @@
   const syncOwedMailGiveUps = () => {
     for (const b of mailGiveUpBatches()) {
       const k = 'mail:' + b.id;
+      if (!okInFlight.has(k)) S.okd.delete(k);
+    }
+  };
+  /** And for a departure (SURFACE E31, E32, E40; Q901), the same rule. */
+  const syncOwedDepartures = () => {
+    for (const d of owedDepartures()) {
+      const k = 'dep:' + d.id;
       if (!okInFlight.has(k)) S.okd.delete(k);
     }
   };
@@ -2537,7 +2572,7 @@
   ];
   const card = (k) => CARDS.find((c) => c.k === k) || ANS.find((c) => c.k === k) ||
     GATES.find((c) => c.k === k) || powerCard(k) || admitCard(k) || recordCard(k) ||
-    releaseCard(k) || mailGiveUpCard(k);
+    releaseCard(k) || mailGiveUpCard(k) || departureCard(k);
   // **The governance tab group** (403/405, Ed 2026-08-19): every held-able
   // setting is three questions — the value, ✒️ who-has-the-pen, 🛡️ do-carried-changes-need-the-Founder’s-OK — drawn as a
   // pile: the value’s tab in front, the two power tabs beneath. The tabs
@@ -2643,6 +2678,27 @@
   };
   const mailGiveUpKeys = () => mailGiveUpBatches()
     .filter((b) => !S.okd.has('mail:' + b.id)).map((b) => 'mail:' + b.id);
+  // **A departure is news, and is owed an OK** (SURFACE E31, E32, E40; Q901,
+  // Ed 2026-09-14). `releaseCard`'s shape exactly, and for its reasons: a
+  // synthetic card with a dynamic key the module rather than the page is the
+  // truth about. Two titles and no name in either — *removed* and *left* are
+  // two different things to be told, and the person is named by the card's own
+  // sentence, which is the register's own line about them (C10: the office
+  // attributes it, and an erased row stands as `[redacted]`).
+  const DEPCACHE = {};
+  const departureCard = (k) => {
+    const mm = /^dep:(.+)$/.exec(k);
+    if (!mm) return undefined;
+    const id = mm[1];
+    if (!DEPCACHE[k]) DEPCACHE[k] = { k, departure: id, g: '🥾', kind: 'constitutional',
+      early: () => true, hide: () => !owedDeparture(id) };
+    const d = owedDeparture(id);
+    DEPCACHE[k].t = d && d.by === 'self'
+      ? PAGE_COPY.synth.departedLeft : PAGE_COPY.synth.departedRemoved;
+    return DEPCACHE[k];
+  };
+  const departureKeys = () => owedDepartures()
+    .filter((d) => !S.okd.has('dep:' + d.id)).map((d) => 'dep:' + d.id);
   // **A settled motion files behind the rule it was about** (Q942, entry 72,
   // Ed 2026-08-25: *when a proposal for a change in a setting passes or is
   // rejected, it should leave a tab, the same as with a text amendment*). The
@@ -2815,6 +2871,14 @@
   // which is the same grammar as the wallets, and 🛡️ is a thing you hold and
   // lay down like any of them.
   const vetoLabel = (k, has) => PAGE_COPY.pw.veto(has, pwNoun(k));
+  // **The rule a return proposal would put back, naming its setting** (Q386).
+  // One sentence for the block on the tab, the rail's subtitle, the deck's
+  // ledger line and the record's title, so the four cannot drift. 🛡️'s is
+  // `vetoLabel`'s own — it already names the setting — stripped of the bold
+  // the negative half carries, since these sites escape their text.
+  const pwSaid = (k, power) => (power === 'assent' || power === 'a'
+    ? vetoLabel(k, true).replace(/<\/?b>/g, '')
+    : PAGE_COPY.pw.amendAtWill(pwNoun(k)));
   // the radio labels, per setting where the generic ones would be untrue
   const PW_OPTS = {
     '*': PAGE_COPY.pw.opts.star,
@@ -3296,6 +3360,8 @@
     if (c.release) return S.okd.has(c.k);
     // and a mail that gave up, which asks only to have been read (E34)
     if (c.mailgiveup) return S.okd.has(c.k);
+    // and a departure, which asks only to have been read (E31, E32, E40)
+    if (c.departure) return S.okd.has(c.k);
     if (c.door) return true;                                   // doors, not decisions
     if (c.isBegin) return constituted();                       // 🍾: settled by the press
     if (c.isClosing) return signedClose();                     // 🥂: settled by your signature
@@ -3673,7 +3739,8 @@
       // to the whole membership. Both are enumerated here because the rail
       // reads a section's own keys: a card no section enumerates is a card
       // nothing can serve.
-      extraKeys: () => admitKeys().concat(mailGiveUpKeys()),
+      // …and one 🥾 per departure still owed your OK (SURFACE E31, E32, E40)
+      extraKeys: () => admitKeys().concat(mailGiveUpKeys(), departureKeys()),
       // **Members and Applications are subsections** (Ed, 2026-08-18):
       // Members IS the list — 🪪, the tab for invitations, stands beside
       // it, and the bottom row is your own membership wearing the ✋ and
@@ -3912,8 +3979,11 @@
           // table of words hidden where nobody reads copy.
           (isStranger()
             ? memSub('Members', strangerRows + departureLines(), [], true)
+            // 🥾's departure news stands on the *Members* heading beside 🎩
+            // (Q901): the sentence it opens is the register line under these
+            // very rows, and the card replaces the paragraph they stand in
             : memSub('Members', nobody + here.map(memRow).join('') + meBlock + departureLines(),
-                ['hat'], false, !!openId) +
+                ['hat'].concat(departureKeys()), false, !!openId) +
               memSub('Invitees', invited.length ? invited.map(memRow).join('')
                 : '<div class="memrow nobody">(no outstanding invitations)</div>',
                 // 📭 stands on the *Invitees* heading (E34): the give-up is
@@ -4025,8 +4095,24 @@
   // delegated question shut for ever. Whatever makes a task owed must make it
   // served; where it cannot, the task must not block.
   const railable = (c) => !!c && (!!c.ansFor || !!c.admit || !!c.release || !!c.mailgiveup ||
+    (!!c.power && !!motionOn(c)) ||
+    !!c.departure ||
     SEC.some((s2) => s2.keys.includes(c.k)) ||
     c.k === 'grant-pen' || c.k === 'grant-shield' || c.k === 'grant-voice');
+  /* **A return in flight is a rail entry like any other motion** (Q386;
+     SURFACE E39, E10's rule). A power tab has no rail entry of its own — it is
+     a tab on the rule's own pile and asks nothing until somebody moves — so
+     the tabs enter the rail here, and only while a motion stands on them: the
+     entry's fill is the room's, `c.motionIn` being the same count Q1319 put on
+     a setting's own entry. Written on the cached card object, `admitCard`'s
+     way, so nothing but this has to know these can be served. */
+  const pwMotionCards = (c) => (!cs || !PW_KEYS.includes(c.k) ? []
+    : ['pw:u:' + c.k, 'pw:a:' + c.k].map(card).filter((pc) => {
+      if (!pc) return false;
+      const rec = liveMotionRec(pc);
+      pc.motionIn = rec && rec.route === 'constitutional' ? rec.answers.size : undefined;
+      return !!rec;
+    }));
   // **The rail's own set, in one place** (Q773). The rail is what tells a
   // founder there is anything left to do, so *what is being served* has to be
   // a question anything can ask — 🍾's own last-resort door asks it, and so
@@ -4042,7 +4128,7 @@
     // they can act on*). ⏳ entries stay: they are where the fill says how
     // far the room has got.
     secLive().flatMap((s2) => s2.cards)
-      .flatMap((c) => [c].concat(tasksFor(c)))
+      .flatMap((c) => [c].concat(tasksFor(c)).concat(pwMotionCards(c)))
       .filter((c) => !owesOwnAnswer(c))
       .filter((c) => ((c.isGate && !c.isBegin && !c.isClosing) ? stateOf(c, ctx) === 'news' : stateOf(c, ctx) !== 'done'))
       // **A setting you handed over and do not answer is not a task** (Ed,
@@ -4407,10 +4493,20 @@
   // `motionOn`, `answeredMotion` and `mustAct` all key on this, so an
   // application raises a task the way any other motion does (Ed, 2026-08-26:
   // *applications should generate a task when they are made*).
+  // **A proposal to hand one power back stands on that power's own tab**
+  // (Q386, Ed 2026-09-14: *these tabs are where it should be possible to
+  // propose to return powers to the Founder*). The tab is where the power was
+  // laid down, so it is where the road back is offered and answered; a
+  // `reserve` naming both powers has no single tab and keeps the setting's
+  // own card, which is where it has always landed.
+  const pwKeyOf = (mid2, power) =>
+    'pw:' + (power === 'assent' ? 'a' : 'u') + ':' + pkeyOf(mid2);
   const motionTargets = (rec) =>
     rec.payload.kind === 'invite' ? 'invite'
     : rec.payload.kind === 'remove' ? 'remove'
     : rec.payload.kind === 'admit' ? 'adm:' + rec.payload.applicant
+    : rec.payload.kind === 'reserve' && (rec.payload.power === 'unilateral' ||
+        rec.payload.power === 'assent') ? pwKeyOf(rec.payload.setting, rec.payload.power)
     : pkeyOf(rec.payload.kind === 'set' || rec.payload.kind === 'reserve'
       ? rec.payload.setting : 'admission');
   // the members a removal is running against (entry 94): the ❌ door's
@@ -4458,8 +4554,16 @@
   const motionDisplay = (rec) => {
     const p = rec.payload;
     if (p.kind === 'reserve') {
-      const rc = card(pkeyOf(p.setting));
-      return 'Returns ' + (rc ? '“' + nounOf(rc) + '”' : p.setting) + ' to the founder’s reserve';
+      // **One power named is the rule it would put back** (Q386): the line is
+      // read in the rail, in the deck's ledger and as the record's own title,
+      // with no card head over it, so it states the rule the way the
+      // constitution would carry it and names the setting (`pw.amendAtWill`
+      // for ✒️, `vetoLabel`'s own sentence for 🛡️). The both-powers form has
+      // no one rule to state and keeps the sentence it has always had.
+      const rk = pkeyOf(p.setting);
+      if (p.power === 'unilateral' || p.power === 'assent') return pwSaid(rk, p.power);
+      const rc = card(rk);
+      return PAGE_COPY.motionRec.returnsTitle(rc ? '“' + nounOf(rc) + '”' : p.setting);
     }
     if (p.kind === 'invite') return inviteeHandle(p) + ' joins the membership';
     if (p.kind === 'remove') return nameOfMember(p.member) + ' leaves the membership';
@@ -4554,7 +4658,12 @@
     (rec.payload.kind === 'set' || rec.payload.kind === 'reserve');
   // 🪜 has no pile of its own, so a motion on it files behind 🌡️ — the same
   // fold `chipsFor` makes for the setting itself
-  const pileKeyOf = (rec) => { const k = motionTargets(rec); return k === 'pace' ? 'bar' : k; };
+  // …and a power tab has no pile of its own either (Q386): a settled return
+  // files behind the rule, in the same stack the tab itself stands in, so the
+  // fold is the same one 🪜 takes into 🌡️'s.
+  const pileKeyOf = (rec) => { const k0 = motionTargets(rec);
+    const mm = /^pw:(?:u|a):(.+)$/.exec(k0); const k = mm ? mm[1] : k0;
+    return k === 'pace' ? 'bar' : k; };
   // the module hands back `settledAtT` and the wire hands back `at`, the same
   // pair `lastAmendment` normalises
   const recAt = (rec) => (rec.at !== undefined && rec.at !== null ? rec.at
@@ -4697,6 +4806,14 @@
   // membership sentences parse at commit, where the row is at hand
   function draftPayload(d) {
     const dc = card(d.k);
+    // **A power tab proposes a power, not a value** (Q386): one tab names one
+    // power, so the payload does too — never the both-powers form, which no
+    // tab stands for. The lane's sentence is what the card said; the payload
+    // is the tab's own identity, so nothing is parsed back out of words.
+    if (dc && dc.power) {
+      return { kind: 'reserve', setting: midOf(dc.base),
+        power: dc.power === 'a' ? 'assent' : 'unilateral' };
+    }
     if (dc && dc.door) {
       if (/ leaves the membership$/.test(d.to)) {
         const nm = d.to.replace(/ leaves the membership$/, '');
@@ -5465,12 +5582,77 @@
   // the motion's own value (A3), never its short label
   const motionPairBody = (c, m, route) => (m.invite ? inviteBody(m, route)
     : m.removee !== undefined ? removeBody(m, route)
+    // a return in flight (Q386): the power's rule as it stands against the
+    // rule it would put back — `m.to` is `pwSaid`'s sentence, the same one the
+    // block below the compose offer states, so answering reads as proposing did
+    : c.power ? motionBlocks(c.k, powerHeadLine(c), m.to, m.why, route) + deckLedgerHtml(c)
     : (() => { const rec = liveMotionRec(c);
       const v = rec && rec.payload && rec.payload.kind === 'set' ? rec.payload.value : null;
       return motionBlocks(c.k, decisionLine(c), (v !== null && sentenceFor(c.k, v)) || m.to, m.why, route) +
         deckLedgerHtml(c); })());
   const consentBody = (c, m) => motionPairBody(c, m, 'constitutional');
   const ordinaryBody = (c, m) => motionPairBody(c, m, 'ordinary');
+
+  /* **The road back to a laid-down power is offered on the tab it went down
+     from** (Q386, Ed 2026-09-14: *at the moment founder powers are handed over
+     on power-tabs … these tabs are where it should be possible to propose to
+     return powers to the founder*). SPEC §9.7 rule 4 has always said the road
+     back is a constitutional `reserve` motion and the module has always taken
+     one; nothing on the surface put one, so the road was unreachable.
+
+     One tab is one power, so the payload names one (`reserve` with `power`) —
+     never the both-powers form, which belongs to no single tab. The blocks are
+     the tab's own (`PW_OPTS`): what stands with *Keep this*, and the rule the
+     Founder would hold again with the composer's *Propose this*, so a member
+     proposing and a founder choosing read the same two sentences.
+
+     **The founder's own tab is untouched**: they lay a power down here, and
+     asking them to propose returning it to themselves is asking them twice.
+     A clerk and a stranger see nothing new either — neither is a member who
+     may move. 🪪 is out because the module refuses a reserve on it (the
+     register's crown is 🤝's), and the two doors because `door:invite` and
+     `door:remove` are no catalogue setting for a reserve to name. */
+  const PW_RETURNABLE = PW_KEYS.filter((k) => !DOOR_KEYS.includes(k) && k !== 'admission');
+  const pwHeldNow = (c) => (c.power === 'u'
+    ? pwPair(c.base).u && !pwPend(c.base).u
+    : pwPair(c.base).a && !pwPend(c.base).a);
+  const powerReturnOn = (c) => !!c.power && PW_RETURNABLE.includes(c.base) &&
+    motionsLive() && docOpen() && viewerIsMember() && !amFounder() &&
+    !pwHeldNow(c) && !motionOn(c);
+  const pwReturnSaid = (c) => pwSaid(c.base, c.power);
+  // the composer's own block, `laneBlock`'s shape with room for the option's
+  // note beneath its sentence — `inputBlock`'s arrangement, since a `<p>`
+  // cannot stand inside the `.opttext` span. The texts are `PW_OPTS`', which
+  // `powerLane` also prints raw: the 🛡️ pair's negative carries its own bold
+  // (T6), and escaping here would put the tag on the card.
+  const pwBlock = (on, text, note, bar) =>
+    '<div class="pick' + (on ? ' on' : '') + '"><span class="opttext">' + text + '</span>' +
+    (note ? '<p class="setnote">' + note + '</p>' : '') + bar + '</div>';
+  const powerReturnBody = (c) => {
+    const L = pwOpts(c.base, c.power);
+    // the empty draft is an object, never null: `laneBarHtml` asks the draft
+    // whether it is locked, so a null one takes the whole render with it
+    const d = (S.draft && S.draft.k === c.k) ? S.draft : { k: c.k, to: '', why: '' };
+    const said = pwReturnSaid(c);
+    const keep = '<div class="lanebar"><button class="lanepick" type="button"' +
+      ' aria-pressed="' + (S.pwKeep.has(c.k) ? 'true' : 'false') + '"' +
+      ' data-pwkeep="' + esc(c.k) + '" title="' + esc(PAGE_COPY.consent.keepThis) + '">' +
+      '<i class="dot" aria-hidden="true"></i>' +
+      '<span class="off">' + esc(PAGE_COPY.consent.keepThis) + '</span>' +
+      '<span class="on">' + esc(PAGE_COPY.consent.kept) + '</span></button></div>';
+    return '<div class="choice" role="radiogroup">' +
+      pwBlock(S.pwKeep.has(c.k), L.given[0] || powerHeadLine(c), L.given[1], keep) +
+      // pressed by the lane's own value, never by the draft existing: a reason
+      // typed before either block is chosen makes a draft with an empty `to`
+      pwBlock(d.to === said, L.held[0] || said, L.held[1],
+        // the words are the composer's own, stated rather than derived: this
+        // card is never the founder's, so `composeWords`' two-commit branch
+        // must not be reachable from it
+        PC.laneBarHtml(d, said, { edit: false, words: {
+          off: window.COPY.grammar.lane.propose, on: window.COPY.grammar.lane.proposed,
+          title: window.COPY.grammar.lane.proposeTitle } })) +
+      '</div>';
+  };
 
   // dev only (with the dropdown, Ed 362): complete the founding in one press,
   // because motions live on the far side of it and the mock has no persistence
@@ -5654,6 +5836,7 @@
   const closeSignatures = () => (!cs || !cs.closed ? []
     : cs.isRemote ? ((cs.v.view.closed && cs.v.view.closed.signatures) || []) : cs.closingSignatures());
   const news = (c) => (c.mailgiveup ? !S.okd.has(c.k) // E34: owed is the whole of it
+    : c.departure ? !S.okd.has(c.k) // E31/E32/E40: owed is the whole of it
     : c.release ? !S.okd.has(c.k)   // owed is the whole of it
     : c.admit ? admissionPrice() === 'pen' && !S.okd.has(c.k)
     : motionOn(c) ? false
@@ -6271,13 +6454,18 @@
     // sentence, and a record's is what it says it is. **A record is history,
     // not a task**: nothing is owed an OK, so it is `done` from the moment it
     // exists and wears the grey the band gives a settled thing.
-    mustAct: (c) => (c.power || c.record ? false : mustAct(c)),
-    waiting: (c) => (c.power || c.record ? false : waiting(c)),
+    // **A power tab asks nothing until somebody moves on it** (Q386): the tab
+    // has never been a task and still is not, but a return in flight is a
+    // 🏛️ motion like any other — it asks, and once you have answered it waits
+    // — so the three predicates read the motion where there is one, and the
+    // tab is grey again the moment it settles.
+    mustAct: (c) => (c.record || (c.power && !motionOn(c)) ? false : mustAct(c)),
+    waiting: (c) => (c.record || (c.power && !motionOn(c)) ? false : waiting(c)),
     // which wait is a vote of yours (Ed, 2026-09-08, Q1286 (a)): a delegated
     // question you answered, or a motion you answered — those wear ⏳ and
     // stay in the rail like a race's ⏳ (Q1202); every other wait keeps its
     // glyph, and the watcher on a setting you handed over leaves the rail
-    voted: (c) => !c.power && !c.record &&
+    voted: (c) => !c.record && !(c.power && !motionOn(c)) &&
       (motionOn(c) ? answeredMotion(c) : !!c.ansFor && answered(c)),
     news: (c) => (c.power || c.record ? false : news(c)),
     // the paragraph seam, so 🏛️ draws no clause of its own where the
@@ -6310,7 +6498,9 @@
       // give-up is about somebody in the register, so its tab is beside the
       // subsection they are listed under — which is `admitCard`'s arrangement
       // and deliberately not `releaseCard`'s, a release belonging to no clause
-      if (c.power || c.ansFor || c.record || c.mailgiveup) return [c];
+      // …and 🥾's departure news stands in the *Members* pile for the same
+      // reason (E31, E32, E40): the person who left was listed there
+      if (c.power || c.ansFor || c.record || c.mailgiveup || c.departure) return [c];
       // the Proposals opening is one clause carrying four tabs (Q748): the
       // group is the same whichever of the four you come in by, and `para`
       // opens the card at 🍾's paragraph for any of them
@@ -6554,7 +6744,28 @@
       // is arrival (entry 94), open at a price is applying
       const applying = policyNow() === 'apply' && admissionPrice() !== 'pen';
       const now2 = applying && canJudge();
-      railEntries = now2 ? APPCARDS().map((c) => entryOf(c, appCtx)) : [];
+      // **A submitted application's card stands whatever 🤝 says** (SURFACE
+      // Y28, Q1357, Ed 2026-09-14). The door's state is about *new*
+      // applications: 🤝 whether strangers may knock and 🪪 what a knock
+      // costs. An application already submitted is a race running in the
+      // engine (`admit:<id>`, §9.7½), and it runs on regardless — so the
+      // rail keeps it, the count, the state and the settle when it comes,
+      // exactly as it does while the door stands open. Before this the
+      // applicant lost their own card the moment 🤝 shut, while the members
+      // went on voting on them.
+      const standing = S.app.submitted && canJudge();
+      // **A door that shut under you leaves one entry standing** (SURFACE
+      // E33, Q901, Ed 2026-09-14). The rail empties the moment 🤝 shuts,
+      // which is right for the four tasks an application is made of — there
+      // is nothing left to fill in — and wrong for 🪪 itself, which is now
+      // news owed an OK: without this the sentence was reachable only on a
+      // card that happened to be open already, and the OK could not be
+      // pressed at all. It goes when the OK does. That news is for somebody
+      // who had *not* submitted, which is why `applyShutOnMe` excludes them.
+      railEntries = (now2 || standing) ? APPCARDS().map((c) => entryOf(c, appCtx))
+        : applyShutNews()
+          ? APPCARDS().filter((c) => c.k === 'apply').map((c) => entryOf(c, appCtx))
+          : [];
       stageWords = 'reading only · ' +
         (!applying ? (policyNow() === 'apply' ? 'anyone with the link may join' : 'membership is by invitation')
           : now2 ? 'applications open' : 'applications open when the document begins');
@@ -6795,6 +7006,7 @@
     cs_titleNow: (...a) => cs_titleNow(...a),
     decidingOf: (...a) => decidingOf(...a),
     decisionLine: (...a) => decisionLine(...a),
+    departureLine: (...a) => departureLine(...a),
     directInvite: (...a) => directInvite(...a),
     directRemove: (...a) => directRemove(...a),
     docAddr: (...a) => docAddr(...a),
@@ -6842,12 +7054,15 @@
     namePickNow: (...a) => namePickNow(...a),
     oneVoiceAsk: (...a) => oneVoiceAsk(...a),
     ordinaryBody: (...a) => ordinaryBody(...a),
+    owedDeparture: (...a) => owedDeparture(...a),
     pairWords: (...a) => pairWords(...a),
     penOkFor: (...a) => penOkFor(...a),
     perpetual: (...a) => perpetual(...a),
     picPickNow: (...a) => picPickNow(...a),
     policyNow: (...a) => policyNow(...a),
     powerBody: (...a) => powerBody(...a),
+    powerReturnOn: (...a) => powerReturnOn(...a),
+    powerReturnBody: (...a) => powerReturnBody(...a),
     proseCounts: (...a) => proseCounts(...a),
     pwPair: (...a) => pwPair(...a),
     readinessOf: (...a) => readinessOf(...a),
@@ -6876,6 +7091,7 @@
     syncCharter: (...a) => syncCharter(...a),
     syncFromCs: (...a) => syncFromCs(...a),
     syncGrantAcks: (...a) => syncGrantAcks(...a),
+    syncOwedDepartures: (...a) => syncOwedDepartures(...a),
     syncOwedMailGiveUps: (...a) => syncOwedMailGiveUps(...a),
     syncOwedOks: (...a) => syncOwedOks(...a),
     syncOwedReleases: (...a) => syncOwedReleases(...a),
@@ -6895,7 +7111,7 @@
   });
   const { render, refreshCommit, roomNow, meanLine, syncMeaning, standingBlock, unchangedCard,
     foundedAt, foundedClause, closedAtWords, resendTitle, APPLICANT, MEMBER_EMAILS, APPCARDS,
-    appCtx } = BND;
+    appCtx, applyShutNews } = BND;
 
   // ---- wiring ------------------------------------------------------------
   // **The picture card is an uploader** (Ed, 2026-08-18). Delegated, because
@@ -7039,6 +7255,18 @@
     if (amo) { S.app.mailOpen = true; return render(); }
     const ast = ev.target.closest('[data-appstart]');
     if (ast) { S.app.started = true; return render(); }
+    // **The OK on a door that shut under you** (SURFACE E33, Q901): the 🪪
+    // card is news while 🤝 stands shut, and this is the press that clears it.
+    // Its own act rather than the band's `data-ok`, because an applicant holds
+    // no member record and nothing about them lives in `S.okd` — the module
+    // remembers it on their own row, so the press sends and the card's state
+    // follows the answer.
+    const aso = ev.target.closest('[data-appshutok]');
+    if (aso) { S.app.shutAcked = true; S.open = null;
+      if (cs && S.app.csId && cs.ackApplyShut) {
+        try { cs.ackApplyShut(now(), S.app.csId); } catch (e) { console.warn('[cs]', e && e.message); }
+      }
+      return render(); }
     const asu = ev.target.closest('[data-appsubmit]');
     if (asu && !asu.disabled) { S.open = 'apply';
       // **The wire's answer decides whether it was submitted** (Q901, E33).
@@ -7096,6 +7324,14 @@
       if (word) S.mAns[S.open] = word; else delete S.mAns[S.open];
       return render();
     }
+    // the power tab's *Keep this* (Q386): the block that proposes nothing, so
+    // it drops the draft rather than holding one, and a second press lets go
+    const pk = ev.target.closest('[data-pwkeep]');
+    if (pk) {
+      const k = pk.dataset.pwkeep;
+      if (S.pwKeep.has(k)) S.pwKeep.delete(k); else S.pwKeep.add(k);
+      if (S.draft && S.draft.k === k) S.draft = null;
+      return render(); }
     const mval = ev.target.closest('[data-mval]');
     if (mval) {
       if (S.draft && S.draft.k === S.open && S.draft.to === mval.dataset.mval) {
@@ -7104,6 +7340,8 @@
       if (!S.draft || S.draft.k !== S.open) S.draft = { k: S.open, to: '', why: '' };
       S.draft.to = mval.dataset.mval;
       S.draft.val = mvalTyped(S.open, mval.dataset.mval);
+      // …and the other block lets go, the two being one choice (Q386)
+      S.pwKeep.delete(S.open);
       return render(); }
     if (ev.target.closest('[data-dropmotion]'))
       return closeThen(() => { S.draft = null; S.open = null; });
@@ -7239,6 +7477,10 @@
       // and the OK on one sender pass's dead mail (SURFACE E34), the same way
       if (cs && kk.startsWith('mail:') && viewerId()) {
         try { holdOkInFlight(kk, cs.ackMailGaveUp(now(), viewerId(), kk.slice(5))); } catch (e) {}
+      }
+      // and the OK on one departure (SURFACE E31, E32, E40), the same way
+      if (cs && kk.startsWith('dep:') && viewerId()) {
+        try { holdOkInFlight(kk, cs.ackDeparture(now(), viewerId(), kk.slice(4))); } catch (e) {}
       } });
     const toggleFold = (k2) => {
       if (S.folded.has(k2)) S.folded.delete(k2); else S.folded.add(k2); };

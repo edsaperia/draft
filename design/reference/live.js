@@ -386,6 +386,12 @@ window.LIVE = (function () {
         // one card per amendment (SURFACE E35), so the body names the candidate
         ackAmendment: (t, member, candidate) => api.cmd('ack-amendment', { candidate }),
         ackMailGaveUp: (t, member, batch) => api.cmd('ack-mail-gave-up', { batch }),
+        // one card per departure (SURFACE E31, E32, E40), so the body names
+        // who left — the whitelist injects whose OK it is
+        ackDeparture: (t, member, departed) => api.cmd('ack-departure', { member: departed }),
+        // the applicant's second act (SURFACE E33): the OK on a door that
+        // shut under them — their own seat, so the body names nothing
+        ackApplyShut: () => api.cmd('ack-apply-shut', {}),
         resendInvite: (t, member) => api.cmd('resend-invite', { member }),
         openMotion: (t, by, payload, why) => api.cmd('open-motion', { payload, why }),
         answerMotion: (t, member, motion, answer) => api.cmd('answer-motion', { motion, answer }),

@@ -507,6 +507,13 @@ window.COPY = (function () {
       appname: 'Your Name',
       apppic: 'Your Picture',
       apptext: 'Your Application',
+      // **the door shut under you** (SURFACE E33, Q901): the sentence the 🪪
+      // card wears once 🤝 has shut and before Submit, moved here from the page
+      // with the OK that now closes it. `shutTitle` replaces *Apply for
+      // Membership* while it stands — the card is news at that point and a
+      // title asking for an application would offer one that cannot be made
+      shut: 'The rule has changed since you began: this document is now invitation-only, so your application cannot be submitted.',
+      shutTitle: 'Applications Have Closed',
     },
     // the power tabs' titles (T6–T9) and the synthetic cards' titles
     pwTitle: {
@@ -524,6 +531,14 @@ window.COPY = (function () {
       admitTail: '?',
       released: 'What the Founder Has Laid Down',
       mailGaveUp: 'An Invitation Did Not Send',
+      // the departure news cards (SURFACE E31, E32, E40; Q901). Two titles,
+      // because *removed* and *left* are two different things to be told and
+      // the title is the whole of what the rail entry says; neither names the
+      // person, whom the card's own sentence names — a title carrying a name
+      // would put a fresh string in the copy golden for every departure, which
+      // is `releaseCard`'s own rule
+      departedRemoved: 'A Member Has Been Removed',
+      departedLeft: 'A Member Has Left',
       passedLead: 'Passed: ',
       rejectedLead: 'Rejected: ',
       anonymous: 'Anonymous',
@@ -596,6 +611,13 @@ window.COPY = (function () {
       // second glyph being the route's own commit — ✏️ or 🏛️
       chooseOrPropose: (routeGlyph) => 'Choose ✒️ or Propose ' + routeGlyph + ' this',
       chosenOrProposed: (routeGlyph) => 'Chosen ✒️ or Proposed ' + routeGlyph,
+      // **What a proposal to hand a power back says, away from its own tab**
+      // (Q386, Ed 2026-09-14). On the card the two blocks are the tab's own
+      // (`PW_OPTS`), which say *this* and *it* because the head above them
+      // names the setting — but a rail subtitle, a deck line and a record
+      // title are read with no head over them, so this one names it. The 🛡️
+      // half is `vetoLabel`'s own sentence, which already does.
+      amendAtWill: (noun) => 'The Founder may amend ' + noun + ' at will.',
       // the four read-only notes (*The Founder holds this…*, *Given up…*)
       // went with Ed's card review round 3 (2026-09-05, 52/53): a tab with
       // nothing to set is its head sentence and a close-only OK
@@ -613,7 +635,11 @@ window.COPY = (function () {
       gone: 'This record is no longer on the document.',
       passed: 'Passed',
       rejected: 'Rejected',
-      reserveReturned: (what) => 'The membership returned ' + what + ' to the founder’s reserve.',
+      // *the Founder*, never *the reserve* — the engine's word (Q386's follow-up,
+      // Ed 2026-09-14); the one-power path says the same
+      reserveReturned: (what) => 'The membership returned ' + what + ' to the Founder.',
+      // the both-powers motion's own title, the record's line before it settles
+      returnsTitle: (what) => 'Returns ' + what + ' to the Founder',
       reserveKept: (what) => 'The membership kept ' + what + ' with the membership.',
       titleNoun: 'the document’s title',
       ruleNoun: 'this rule',
