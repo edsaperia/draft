@@ -573,8 +573,15 @@ const STEPS = [
         // matched on the subject line, which carries the document's title,
         // and the two phrases are disjoint by construction
         mail: { package: /has lapsed/, warning: /is about to lapse/ } }] },
+  // `waitsOn`: an application at 🪪's *proposal* price is an ordinary motion
+  // (E21's Channel column), and since Q1367 the admit card finds its motion
+  // through the one list every motion uses, which stages a motion the viewer
+  // cannot yet act on behind the ⚖️ OK (C9, Q1344) — E11's rule, E11's line.
+  // Before Q1367 the admit card read the record directly and was served to a
+  // member who had not acknowledged voting; the 2026-09-15 re-run found the
+  // three member seats without it, and this is the rule, not a fault.
   { id: 'knock', epoch: 'live', kind: 'knock', seat: 'applicant',
-    events: [{ id: 'E21', key: 'adm:', at: 'knock' }] },
+    events: [{ id: 'E21', key: 'adm:', at: 'knock', waitsOn: 'canjudge' }] },
   // 🥾 stands at `proposal` in `SETTINGS`, so a removal put by one member
   // against another is E11 — *an ordinary motion is put, a removal too* —
   // and the ❌ card is where the page carries it (`motionTargets` returns the
