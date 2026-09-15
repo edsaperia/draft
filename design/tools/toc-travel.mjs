@@ -24,6 +24,14 @@
  * an entry naming a heading inside something folded unfolds it and then travels,
  * so an anchor with nothing laid out behind it is clicked like any other rather
  * than skipped, and a click that leaves it that way is a failure.
+ *
+ * And since **Q1384** (Ed, 2026-09-15) it is where the rail's marks are
+ * measured: every heading's marks lie to the right of the heading's own box
+ * (they take nothing from its width, so no heading wraps for a mark), none is
+ * clipped by the list's scrolling box, and a run that reaches the document's
+ * border covers it — the element under the border at the run's height is the
+ * run's own. Three sizes: the third is the wide step at which the rail takes
+ * 300px, so the wider page is measured too.
  */
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
@@ -33,7 +41,7 @@ import { chromium } from 'playwright';
 
 const DESIGN = join(resolve(fileURLToPath(new URL('../..', import.meta.url))), 'design');
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.txt': 'text/plain' };
-const SIZES = [{ width: 1600, height: 1000 }, { width: 1280, height: 900 }];
+const SIZES = [{ width: 1600, height: 1000 }, { width: 1280, height: 900 }, { width: 1920, height: 1000 }];
 // the fixture that actually has constitution sections in the rail: the band is
 // what puts `#cs-…` anchors there, and `tocLead` emits them only once there is
 // a saved document to point at
@@ -147,6 +155,49 @@ async function measureAt(browser, base, size, fails) {
     }
   }
   for (const e of pageErrors) fails.push(label + ': page error — ' + e);
+
+  // **The marks queue rightwards, out of the rail** (Q1384). Measured from
+  // scroll 0 with the list scrolled to its top, so the first screen of runs
+  // is under the viewport and `elementFromPoint` can answer for them.
+  await page.evaluate(() => { window.scrollTo(0, 0); const ul = document.querySelector('#toc'); if (ul) ul.scrollTop = 0; });
+  const marks = await page.evaluate(() => {
+    const ul = document.querySelector('#toc');
+    const doc = document.querySelector('.doc');
+    if (!ul || !doc) return { none: true };
+    const ulBox = ul.getBoundingClientRect(), docX = doc.getBoundingClientRect().left;
+    const out = { runs: 0, crossing: 0, onScreen: 0, bad: [] };
+    for (const li of ul.querySelectorAll('li')) {
+      // the run, or on a page from before Q1384 the bare span, so the pre-fix
+      // failure names the geometry rather than an absent class
+      const a = li.querySelector('a'), run = li.querySelector('.tocmarks .run') || li.querySelector('.tocmarks');
+      if (!a || !run) continue;
+      out.runs++;
+      const ab = a.getBoundingClientRect(), rb = run.getBoundingClientRect();
+      const text = JSON.stringify((a.textContent || '').trim().slice(0, 30));
+      if (rb.left < ab.right - 0.5) out.bad.push(text + ': marks start at ' + rb.left.toFixed(1) + ', left of the heading’s right edge ' + ab.right.toFixed(1));
+      // the row's own gap and the span's margin are the only things between the
+      // heading and the row's edge: a mark that took room would show here
+      const span = run.parentElement, lb = li.getBoundingClientRect();
+      const allowed = parseFloat(getComputedStyle(li).columnGap) + parseFloat(getComputedStyle(span).marginLeft);
+      if (ab.right < lb.right - allowed - 0.5) out.bad.push(text + ': the heading gave up ' + (lb.right - ab.right - allowed).toFixed(1) + 'px of its row to the marks');
+      if (rb.right > ulBox.right + 0.5) out.bad.push(text + ': the run ends at ' + rb.right.toFixed(1) + ', past the list’s box at ' + ulBox.right.toFixed(1) + ' — clipped');
+      if (rb.right > docX) {
+        out.crossing++;
+        if (rb.top >= 0 && rb.bottom <= window.innerHeight) {
+          out.onScreen++;
+          const hit = document.elementFromPoint(docX + 0.5, rb.top + rb.height / 2);
+          if (!hit || !(run === hit || run.contains(hit))) out.bad.push(text + ': the run crosses the document’s edge at ' + docX.toFixed(1) + ' but ' + (hit ? hit.tagName.toLowerCase() + '.' + hit.className : 'nothing') + ' is what is painted there');
+        }
+      }
+    }
+    return out;
+  });
+  if (marks.none) fails.push(label + ': no rail or no document to measure the marks against');
+  else {
+    if (!marks.runs) fails.push(label + ': the rail carries no marks — nothing of Q1384 was measured');
+    for (const b of marks.bad) fails.push(label + ': ' + b);
+    console.log('toc-travel ' + label + ': ' + marks.runs + ' heading(s) carry marks, ' + marks.crossing + ' run(s) cross the document’s edge, ' + marks.onScreen + ' of them checked for cover');
+  }
   // both numbers, so the margin is visible rather than merely satisfied: the
   // page derives its clearance from `--nav-h` while the bar's height is its own
   const bar = await page.evaluate(() => ({

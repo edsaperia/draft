@@ -4417,9 +4417,11 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       .sort((a, b) => keepRank(a[0]) - keepRank(b[0]) || a[1] - b[1])
       .slice(0, TOC_MARKS).map(([, i]) => i));
     const shown = marks.filter((_, i) => keep.has(i));
-    return '<span class="tocmarks" aria-hidden="true">' + shown.map(mkHtml).join('') +
+    // the `.run` is the marks' own box — their ground and their width — inside
+    // a zero-width span, so they queue rightwards out of the rail (Q1384)
+    return '<span class="tocmarks" aria-hidden="true"><span class="run">' + shown.map(mkHtml).join('') +
       (marks.length > shown.length ? '<span class="more">+' + (marks.length - shown.length) + '</span>' : '') +
-      '</span>';
+      '</span></span>';
   }
 
   function renderToc() {

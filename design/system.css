@@ -221,6 +221,20 @@
     padding-bottom: 60px;
   }
   .wrap { max-width: 1440px; margin: 0 auto; padding: 0 var(--s4); }
+  /* **On a wide window the contents rail takes more width** (Q1384, Ed
+     2026-09-15: *on a wide screen, the table of contents can take more
+     width*). The page is capped at `.wrap`'s 1440px, so the rail can only grow
+     if the cap grows with it — and it grows by exactly the rail's step, so the
+     charter column keeps its 860px and its 70ch measure and the task rail its
+     290px: the extra width is the rail's alone. One step, at 1680, the first
+     width at which the wider page still leaves the window a margin; the
+     reference size of every probe and audit (1600) is untouched. Headings at
+     lvl3 get 250px of text instead of 160, which is one line for all but the
+     longest in the fixture. */
+  @media (min-width: 1680px) {
+    :root { --rail-left: 300px; }
+    .wrap { max-width: 1530px; }   /* 1440 + the rail's 90 */
+  }
 
   /* **An eyebrow: the small upper-case label that names a region or a block.**
      One rule, so they cannot drift apart — which is what it said before the
@@ -458,10 +472,28 @@
   .toc {
     position: sticky; top: var(--nav-h);
     max-height: calc(100vh - var(--nav-h) - var(--s4)); display: flex; flex-direction: column;
+    /* **The marks queue rightwards, out of the rail and over the document's
+       edge** (Q1384, Ed 2026-09-15: *lifecycle symbols in the table of contents
+       should queue up to the right instead of to the left (do something to cover
+       up the document edge line)*). They used to sit flush right and grow
+       leftwards into the heading, so five marks folded *Bringing a Guest* onto
+       two lines and *Accounts and Inspection* likewise. Now every heading's
+       marks start at the rail's edge and run towards the document, the last
+       nearest its edge, and the heading keeps the rail's whole width. The list
+       scrolls inside itself, so the marks have to stay inside it: the list's
+       box is widened by `--toc-overhang` on the right — padding, so the marks
+       are in its padding box and `overflow-y: auto` does not clip them, and a
+       negative margin of the same size, so the rail's column does not grow.
+       The overhang is the width of four marks and a `+n`. The rail paints
+       above the document (a sticky box is positioned, but the document comes
+       later in the source), which is what lets a mark cover the border. */
+    --toc-overhang: 88px;
+    z-index: 1;
   }
   .toc h2 { margin: 0 0 var(--s2); flex: none; }
   .toc ul {
-    list-style: none; margin: 0; padding: 0 var(--s1) 0 0; display: flex; flex-direction: column; gap: 1px;
+    list-style: none; margin: 0 calc(-1 * var(--toc-overhang)) 0 0; padding: 0 var(--toc-overhang) 0 0;
+    display: flex; flex-direction: column; gap: 1px;
     overflow-y: auto; overscroll-behavior: contain;
     scrollbar-width: none; -ms-overflow-style: none;   /* it scrolls, quietly (Ed, 186) */
   }
@@ -508,11 +540,21 @@
   }
   .toc a:hover { background: var(--light); color: var(--fg); }
   .toc a.current { background: var(--light); color: var(--fg); font-weight: 600; border-left-color: var(--primary); }
-  /* lifecycle marks in the contents rail (Ed, 177): held small and tight to the
-     right edge so they read as a margin annotation, not as part of the heading */
+  /* lifecycle marks in the contents rail (Ed, 177): held small so they read as
+     a margin annotation, not as part of the heading. Since Q1384 the span is a
+     zero-width flex item at the heading's end — it takes no room from the
+     text, so the heading never wraps for a mark — and its `.run` overflows
+     rightwards from the rail's edge, in document order, on a ground of the
+     page's own colour: where the run crosses the document's border the ground
+     covers the line, and the marks read as riding the edge rather than being
+     cut by it. */
   .tocmarks {
+    flex: none; width: 0; overflow: visible; display: flex; align-items: center;
+    margin-left: 2px; font-size: var(--t-micro); line-height: 1; letter-spacing: -1px;
+  }
+  .tocmarks .run {
     flex: none; display: flex; align-items: center; gap: 1px;
-    font-size: var(--t-micro); line-height: 1; padding-right: 2px; letter-spacing: -1px;
+    padding: 1px 3px; background: var(--bg); border-radius: var(--r-sm);
   }
   /* **The marks alphabet: Fluent Emoji, Flat, in colour — except ⏸ and ↻**
      (Ed, 2026-09-15, Q1360: *Fluent Flat is perfect!*, and the same afternoon

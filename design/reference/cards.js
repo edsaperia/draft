@@ -335,19 +335,74 @@ window.CARDS = (function () {
   // to end beside its incumbent; here the incumbent is at the head and the
   // whole point of the band is comparison.
   const MARK_FLOOR = 0.5;
+  // ---- the markdown-aware diff (Q1368, Ed 2026-09-15) ---------------------
+  // **A proposal is read, not checked**: its wording renders through the same
+  // reading the clause takes (K19, K22), emphasis as emphasis rather than as
+  // asterisks. The diff still runs on the source — what is proposed *is*
+  // markdown — but each whole text has its markers found first, exactly as
+  // `mdToHtml` finds them (a pair closed on the same line), and replaced by
+  // one sentinel per kind; a token then carries its marker with it, and a run
+  // of emphasis that straddles a change is closed at the piece's edge and
+  // reopened on the far side, so the HTML nests whatever the diff cut
+  // through. Rendering each piece on its own (`markHtml2(t, mk, mdToHtml)`)
+  // could not: a piece holding one `**` of a pair printed it.
+  const MD_SENT = { '**': '\uE000', '*': '\uE001', '`': '\uE002' };
+  const MD_TAG = { '\uE000': 'strong', '\uE001': 'em', '\uE002': 'code' };
+  const mdMask = (src) => String(src).split(MD_RX).map((part) => {
+    if (/^\*\*[\s\S]+\*\*$/.test(part)) return MD_SENT['**'] + part.slice(2, -2) + MD_SENT['**'];
+    if (/^\*[\s\S]+\*$/.test(part)) return MD_SENT['*'] + part.slice(1, -1) + MD_SENT['*'];
+    if (/^`[\s\S]+`$/.test(part)) return MD_SENT['`'] + part.slice(1, -1) + MD_SENT['`'];
+    return part;
+  }).join('');
+  const mdDiffPieces = (oldText, newText, withDel) =>
+    diffPieces(mdMask(oldText), mdMask(newText), withDel);
+  // one piece's text as HTML: a sentinel toggles its tag in `state`, and every
+  // tag open inside the piece is closed before the piece ends — the state
+  // carried to the next piece reopens it there
+  const mdRun = (t, state) => {
+    let out = '', buf = '';
+    const wrap = (s) => {
+      let h = esc(s);
+      for (const tag of ['code', 'em', 'strong']) if (state[tag]) h = '<' + tag + '>' + h + '</' + tag + '>';
+      return h;
+    };
+    for (const ch of t) {
+      const tag = MD_TAG[ch];
+      if (tag) { if (buf) { out += wrap(buf); buf = ''; } state[tag] = !state[tag]; }
+      else buf += ch;
+    }
+    if (buf) out += wrap(buf);
+    return out;
+  };
+  // the pieces as marked HTML: an unchanged piece reads in the new text's
+  // state and advances both, a cut in the old text's, an addition in the
+  // new's; a highlight never opens or closes on a space (`markHtml2`'s rule)
+  function mdPiecesHtml(pieces) {
+    const before = {}, after = {};
+    return pieces.map(([t, mk]) => {
+      if (!mk) { const h = mdRun(t, after); mdRun(t, before); return h; }
+      const m = t.match(/^(\s*)([\s\S]*?)(\s*)$/);
+      const tag = mk === 'del' ? 'del' : 'ins';
+      const inner = mdRun(m[2], mk === 'del' ? before : after);
+      return esc(m[1]) + (inner ? '<' + tag + '>' + inner + '</' + tag + '>' : '') + esc(m[3]);
+    }).join('');
+  }
+  // the whole marked wording, links live as the clause's are (`mdLine`)
+  const mdDiffHtml = (oldText, newText, withDel) =>
+    linkifyHtml(mdPiecesHtml(mdDiffPieces(oldText, newText, withDel)));
   function wordingHtml(oldText, newText, force) {
     if (!String(newText ?? '').trim()) return '<div class="lp empty"><br></div>';
-    const pieces = diffPieces(oldText, newText, false);
+    const pieces = mdDiffPieces(oldText, newText, false);
     let same = 0, all = 0;
     for (const [t, mk] of pieces) {
       if (/^\s+$/.test(t)) continue;
       all += t.length;
       if (!mk) same += t.length;
     }
-    if (!force && (!all || same / all < MARK_FLOOR)) return mdToHtml(newText);
+    if (!force && (!all || same / all < MARK_FLOOR)) return mdLine(newText);
     // rendered, not raw: a proposal is read, not checked, so emphasis in it
     // should look like emphasis rather than like asterisks
-    return pieces.map(([t, mk]) => (mk ? markHtml2(t, mk, mdToHtml) : mdToHtml(t))).join('');
+    return linkifyHtml(mdPiecesHtml(pieces));
   }
   // Blocks are split on newlines *after* the diff, so a run of new wording that
   // spans a paragraph break is still one comparison rather than two.
@@ -1336,7 +1391,7 @@ window.CARDS = (function () {
     esc, resultOnly, stripTags, pct, plainLabel, URG_LO, URG_HI,
     RULES, clauseOf, clauseRungs,
     TICK, PAUSE, VS16, MARK, DRAWN, mkHtml, markHtml,
-    tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks,
+    tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks, mdDiffPieces, mdPiecesHtml, mdDiffHtml,
     headFlags, originText, MD_RX, mdToHtml, htmlToMd, mdStrip, mdBlock, linkify, linkifyHtml, mdLine,
     MD_ONE, mdLead, mdInner, mdParts, richToSource, sourceToRich, readLane,
     laneSeed, laneProposeHtml, laneCtlHtml, speakerHtml, railSpeakerHtml, secToggleHtml, fieldHtml, fieldOf, groundNote,

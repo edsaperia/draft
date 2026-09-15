@@ -918,7 +918,7 @@ var CONSTITUTION = (() => {
     }
     const twin = runningTwin(s, payload);
     if (twin !== null) {
-      throw new Error(`already put — '${twin}' proposes the same; answer it instead (§9.6)`);
+      throw new Error("already put — the same has already been proposed; answer it instead (§9.6)");
     }
     if (route === "constitutional" && heldOutBy(s, by)) {
       throw new Error("one 🏛️ out per member at a time (§9.6)");
@@ -1973,7 +1973,7 @@ var CONSTITUTION = (() => {
           motion: null,
           shutAcked: false
         };
-        s.applicants.set(event.applicant, withPerson(s, state));
+        s.applicants.set(event.applicant, withApplicantPerson(s, state));
         s.nextApplicantN += 1;
         break;
       }
@@ -2095,6 +2095,22 @@ var CONSTITUTION = (() => {
       name: field("name"),
       picture: field("picture"),
       erased: field("erased")
+    });
+  }
+  function withApplicantPerson(s, state) {
+    const people = s.people;
+    const field = (key, onlyOnceGiven) => ({
+      enumerable: true,
+      get() {
+        if (onlyOnceGiven && (this.status === "started" || this.status === "verified")) return null;
+        return resolvePerson(people, this.person)[key];
+      }
+    });
+    return Object.defineProperties(state, {
+      email: field("email", false),
+      name: field("name", true),
+      picture: field("picture", true),
+      erased: field("erased", false)
     });
   }
   function foldSet(s, id, value, by, t) {
@@ -3460,10 +3476,7 @@ var CONSTITUTION = (() => {
       if (!a || a.status !== "verified") {
         throw new Error("an application is verified by magic link before it can be submitted (§9.7½)");
       }
-      const patch = {};
-      if (fields.name !== void 0) patch.name = fields.name;
-      if (fields.picture !== void 0) patch.picture = fields.picture;
-      this.people.set(a.person, patch);
+      this.people.set(a.person, { name: fields.name ?? null, picture: fields.picture ?? null });
       const e = { type: "application-submitted", t, applicant };
       if (fields.words !== void 0) e.words = fields.words;
       this.emit(e);
@@ -4086,6 +4099,9 @@ var CONSTITUTION = (() => {
         id: d.member,
         name: rec?.name ?? null,
         picture: rec?.picture ?? null,
+        // the address only where no name stands (Q1375, Ed: *use the email if no
+        // name chosen*) — a named member's address is nobody's business (Q901)
+        email: rec?.name ? null : rec?.email ?? null,
         erased: rec?.erased ?? false,
         t: d.t,
         by: d.by

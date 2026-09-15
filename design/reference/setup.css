@@ -89,6 +89,13 @@
     border-radius: var(--r-sm); padding: var(--s2) var(--s3); margin: 0 0 var(--s4); }
   .lockline { font-size: var(--t-cap); color: var(--muted); margin: 0 0 var(--s4);
     display: flex; align-items: center; gap: var(--s2); }
+  /* what the application holds so far (Q1366): one row per thing the
+     submission carries — the glyph, the label, the value or its absence */
+  .applist { font-size: var(--t-ui); margin: 0 0 var(--s4); display: grid; gap: var(--s2); }
+  .applist .approw { display: flex; align-items: center; gap: var(--s2); min-width: 0; }
+  .applist .approw > span:first-child + span { color: var(--muted); flex: none; }
+  .applist .approw b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .applist .approw i { color: var(--muted); }
 
 /* ---------------------------------------------------------------------------
    THE RAIL — one rail, the session's own margin index.
@@ -119,6 +126,9 @@
      never share a column. */
   .queue.stack .ql { display: flex; align-items: baseline; gap: var(--s1); }
   .queue.stack .ql .subj { font-size: 1.05em; line-height: 1; }
+  /* the person's face on an entry about them (Q1375): the speaker line's own
+     18px disc, centred on the line rather than hung off a baseline it has none of */
+  .queue.stack .ql .qface { align-self: center; margin-top: 0; }
   .queue.stack .ql > .qt { flex: 1; min-width: 0; }
   /* wait/yours/done entries used to wear session-view's .deciding, whose
      meaning there is *you already judged it* (drift fix, 2026-08-18):
