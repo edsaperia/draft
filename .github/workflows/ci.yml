@@ -397,6 +397,11 @@ jobs:
         if: always()
       - run: npm run applicants-walk -- "$WALK_BASE" --price=pen
         if: always()
+      # a member's invitation motion on the surface (Q1370): the ✏️ commit at
+      # 🪪 proposal, the mover's ✏️ entry, the *proposed* invitee, the twin
+      # refusal naming no id
+      - run: npm run invite-walk -- "$WALK_BASE"
+        if: always()
       - run: npm run slug-walk -- "$WALK_BASE" test-charter
         if: always()
       - run: npm run ladder -- "$WALK_BASE"
