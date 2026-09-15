@@ -149,3 +149,9 @@ And the bot-room QA (ruling (e)) should be watched for exactly the seed above: o
 - `src/alpha-preset.ts`, `src/alpha-preset-values.ts` — the two bar rungs retired, the preset's own bar pinned at 0.5, the *more often than the shipped defaults* check restated as non-regression.
 - `src/deferred-evidence.ts` — Q8's threshold columns untouched, with a note saying they are history.
 - `test/dedup.test.ts` — the rolling-hash pin re-run (finding 7).
+
+## The CLAUDE.md entry, for whoever folds this
+
+One glossary bullet under **Tooling**, beside `alpha-preset` and `soak-harness`. Not placed by this build — `CLAUDE.md` was not edited.
+
+- `churn-study` [symbol] — **does a peer status quo oscillate** (`packages/sim-harness/src/churn.ts`, `npm run churn -w @draft/sim-harness`): `flips` and `reversions` read off the engine's log, a room of fifteen over the three shapes' windows. The bar arm is a pinned null result and a guard; the floor is the brake. Findings: `packages/sim-harness/REPORT-churn.md`. Q1362 stage 5.
