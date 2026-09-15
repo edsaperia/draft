@@ -26,6 +26,7 @@
     "toc-travel": "node design/tools/toc-travel.mjs",
     "journey": "node scripts/journey-walk.mjs",
     "applicants-walk": "node scripts/applicants-walk.mjs",
+    "after-begin-walk": "node scripts/after-begin-walk.mjs",
     "powers-walk": "node scripts/powers-walk.mjs",
     "room-walk": "node scripts/room-walk.mjs",
     "room-bots": "node scripts/room-bots.mjs",
