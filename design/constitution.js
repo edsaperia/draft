@@ -4099,7 +4099,9 @@ var CONSTITUTION = (() => {
         id: d.member,
         name: rec?.name ?? null,
         picture: rec?.picture ?? null,
-        email: rec?.email ?? null,
+        // the address only where no name stands (Q1375, Ed: *use the email if no
+        // name chosen*) — a named member's address is nobody's business (Q901)
+        email: rec?.name ? null : rec?.email ?? null,
         erased: rec?.erased ?? false,
         t: d.t,
         by: d.by
