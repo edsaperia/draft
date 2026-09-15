@@ -616,7 +616,7 @@ const STEPS = [
       return { payload: { kind: 'remove', member: row.id },
         why: 'the clubhouse keys were never returned' };
     },
-    events: [{ id: 'E11', key: 'remove', at: 'remove-motion', waitsOn: 'canjudge' }] },
+    events: [{ id: 'E11', key: (D) => (D.motionIds["remove-motion"] ? 'mo:' + D.motionIds["remove-motion"] : null), noKey: 'the motion remove-motion put came back with no id', at: 'remove-motion', waitsOn: 'canjudge' }] },
   // **👁️ judgments** (promise-coverage entry 84, batch L). Four rows that put
   // real judgments on the wire, so every seat's `view()` snapshot from here on
   // has something to leak and a later run can diff against these: a running
@@ -644,7 +644,7 @@ const STEPS = [
     // `waitsOn`: E10's Channel column gates the whole entry on the 🏛️ OK
     // (C9, Q1344), and no seat here but the founder has pressed one — the
     // assertion's own note says what that buys and what it still holds
-    events: [{ id: 'E10', key: 'judgments', at: 'judgments-motion', waitsOn: 'grant-voice' }] },
+    events: [{ id: 'E10', key: (D) => (D.motionIds["judgments-motion"] ? 'mo:' + D.motionIds["judgments-motion"] : null), noKey: 'the motion judgments-motion put came back with no id', at: 'judgments-motion', waitsOn: 'grant-voice' }] },
   // one keep, and the motion stands running for the rest of the run: a keep
   // does not settle a 🏛️ motion, it blocks it (§9.6, `maybeSettleMotions`),
   // which is exactly the state worth snapshotting — two answers on the wire,
@@ -834,7 +834,7 @@ const STEPS = [
   { id: 'return-motion', epoch: 'live', kind: 'cmd', seat: 'lapsed', cmd: 'open-motion', ifHat: 'member',
     args: () => ({ payload: { kind: 'reserve', setting: 'rate', power: 'unilateral' },
       why: 'one hand is quicker than three when the drip needs changing' }),
-    events: [{ id: 'E39', key: 'pw:u:rate', at: 'return-motion', waitsOn: 'grant-voice' }] },
+    events: [{ id: 'E39', key: (D) => (D.motionIds["return-motion"] ? 'mo:' + D.motionIds["return-motion"] : null), noKey: 'the motion return-motion put came back with no id', at: 'return-motion', waitsOn: 'grant-voice' }] },
   // **A member removed by a carried motion** (SURFACE E40; Q901, Ed
   // 2026-09-14; stepped by Q1359) — the last row of the live epoch, because
   // it takes a seat out of the document and every cell above it says *every
@@ -888,6 +888,7 @@ for (const s of STEPS) for (const e of s.events) {
 /** One document, one founder's hat, the step table over it. */
 async function runDocument(hat) {
   const D = {
+    motionIds: {},            // open-motion results by step id (Q1367): the rail keys the motion rows assert
     hat, slug: null, docbase: null, title: 'Seat matrix ' + Date.now(),
     stamp: String(Date.now()).slice(-8), applicantId: null, closed: false,
     // the steps that did not happen on this document, by index — skipped by
@@ -1129,6 +1130,11 @@ const RUN = {
     // plain object awaits to itself
     const r = await cmdAs(D, step.seat, step.cmd, await step.args(D));
     if (r.status !== 200) throw new Error(`${step.cmd} as ${step.seat} → ${r.status} ${JSON.stringify(r.body)}`);
+    // **A motion's entry is its own** (Q1367): keyed `mo:<id>` on every seat,
+    // never by the setting, the door or the power tab it is about — so the
+    // id the command minted is kept by step, and the motion rows' keys are
+    // functions that read it at the assertion (E10, E11, E39)
+    if (step.cmd === 'open-motion' && r.body && r.body.result) D.motionIds[step.id] = r.body.result;
     if (step.reload) {
       const page = D.seats[step.seat].page;
       await page.reload({ waitUntil: 'domcontentloaded' });
