@@ -397,6 +397,12 @@ jobs:
         if: always()
       - run: npm run applicants-walk -- "$WALK_BASE" --price=pen
         if: always()
+      # a member's page across 🍾 when every power is laid down (Q1364, the
+      # lab-2026 room): no phantom answer cards, the resolved questions' news
+      # servable, ✉️ composing at 🪪's price — on the polled page and on a
+      # fresh load
+      - run: npm run after-begin-walk -- "$WALK_BASE"
+        if: always()
       - run: npm run slug-walk -- "$WALK_BASE" test-charter
         if: always()
       - run: npm run ladder -- "$WALK_BASE"

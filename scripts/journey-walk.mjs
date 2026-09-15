@@ -1168,6 +1168,18 @@ const secondSeatOnAmendment = async () => {
         .filter((l) => before2.some((k) => String(l).startsWith(k + ' ')))) +
       ' · okd ' + JSON.stringify(arrived.f.okd) + ' · owed ' + JSON.stringify(arrived.f.owed)));
   if (before2.length) stuck.push('post-🍾 acks that predate the member: ' + before2.join(','));
+  // …and a begun document asks no blind question, and every news card it
+  // serves has a rail entry (Q1364 (a), (c)): read on the page that watched
+  // 🍾 by its poll, and again after the reload below
+  const noPhantoms = (s, when) => {
+    const ans = (s.rail || []).filter((k) => /^ans-/.test(k));
+    const unserved = ((s.f || {}).unservableNews) || [];
+    const ok = !ans.length && !unserved.length;
+    say('begun seat · ' + (ok ? 'no answer card and no unservable news ' + when
+      : 'FAIL ' + when + ': answer cards ' + JSON.stringify(ans) + ' · unservable news ' + JSON.stringify(unserved)));
+    if (!ok) stuck.push('the member seat after 🍾 ' + when);
+  };
+  noPhantoms(arrived, 'through the poll');
   // one press, and one only
   const before = guestOks;
   await guestPage.evaluate((k) => {
@@ -1200,6 +1212,7 @@ const secondSeatOnAmendment = async () => {
   say('reloaded   · ' + (stillGone ? 'the module has the acknowledgement'
     : 'FAIL: the task came back on a reload · served ' + JSON.stringify((reloaded.f || {}).served)));
   if (!stillGone) stuck.push('the OK did not reach the module');
+  noPhantoms(reloaded, 'on a fresh load');
   say('give-ok    · ' + (guestOks - before) + ' sent for one press' +
     (guestOks - before === 1 ? '' : '  FAIL: expected exactly one'));
   if (guestOks - before !== 1) stuck.push('give-ok was sent ' + (guestOks - before) + ' times');
@@ -1712,10 +1725,18 @@ for (let i = 0; i < 60; i++) {
   // bug go by. Read each turn, because the state that produces it is transient:
   // it appears the moment a setting is handed over and is gone once the rail
   // moves on.
-  const owed = ((await founding()) || {}).owedUnservable || [];
+  const fNow = (await founding()) || {};
+  const owed = fNow.owedUnservable || [];
   if (owed.length) {
     say('  UNSERVED · at ' + next + ' these are owed and beyond any rail: ' + JSON.stringify(owed));
     stuck.push('owedUnservable at ' + next + ': ' + owed.join(','));
+  }
+  // …and news the same way (Q1364 (c)): a card in state `news` no rail entry
+  // serves is an OK nobody can give, and the gates stage behind it
+  const unservedNews = fNow.unservableNews || [];
+  if (unservedNews.length) {
+    say('  UNSERVED · at ' + next + ' this news is beyond any rail: ' + JSON.stringify(unservedNews));
+    stuck.push('unservableNews at ' + next + ': ' + unservedNews.join(','));
   }
   if (!(await open(next))) { stuck.push(next + ' (would not open)'); continue; }
   // **The door is ✉️, and it stopped being 🪪 on 2026-08-26** (entry 94,
