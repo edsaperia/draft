@@ -416,54 +416,25 @@
 
   const verdicts = new Map();
   let justArrived = null;
-  // ---- the pair a judgment is about (Q1200, Q1201) ----------------------
+  // ---- the pair a judgment is about (Q1200, Q1201, Q1367) ---------------
   // Provisional judgment state — `resolved`, `verdicts`, `picked`,
-  // `committed`, the arrival receipt — is about a **pair**, never an item.
-  // A live race is a deck (Q1200): its entry re-lights with the next pair
-  // the moment one is judged, so a verdict keyed by the race would dress a
-  // pair you have not seen in the last one's answer. And a ⏳ card is a
-  // ledger of the pairs already judged (Q1201), any of which a press makes
-  // the card's active pair. Keyed by item id plus the pair's ids where an
-  // item carries a pair, and by the id alone where it does not — the
-  // fixture's items, the diagonals, the motions — so every existing reader
-  // keeps working through these helpers and the fixture is byte-identical.
+  // `committed`, the arrival receipt — is about a **pair**, never a race.
+  // **One item is one pair** (Q1367, Ed 2026-09-15: *decision cards in rival
+  // races show past votes on the card itself, whereas these should be in
+  // separate tabs in the stack*): the host builds an item per pair the
+  // router dealt you and per pair you have judged, so a race with three
+  // pairs is three tabs and three entries, and the card shows the pair it
+  // is about and nothing else. The deck (Q1200: one entry re-lighting with
+  // the next pair) and the ledger (Q1201: the judged pairs listed beneath)
+  // both went with that ruling. Keyed by item id plus the pair's ids where
+  // an item carries a pair, and by the id alone where it does not — the
+  // fixture's items, the diagonals, the motions — so every reader keeps
+  // working through these helpers.
   const pairKey = (id, a, b) => id + ':' + [a, b].sort().join(':');
-  // the front of the deck: the pair the entry is about, and the rail's state
+  // the pair the item is about, and the rail's state
   const frontKeyOf = (g) => (g.card ? pairKey(g.id, g.card.a, g.card.b) : g.id);
-  // the ledger block pressed on the open card, per item — cleared as it closes
-  const activeLedger = new Map();
-  const ledgerKeyOf = (g, e) => pairKey(g.id, e.a.id, e.b.id);
-  const ledgerEntryOf = (g) => {
-    const k = activeLedger.get(g.id);
-    return (k && (g.ledger || []).find((e) => ledgerKeyOf(g, e) === k)) || null;
-  };
-  const closeLedger = (id) => { activeLedger.delete(id); };
-  // the pair the open card is about: the ledger block pressed, else the front
-  const pairKeyOf = (g) => { const e = ledgerEntryOf(g); return e ? ledgerKeyOf(g, e) : frontKeyOf(g); };
-  const activeCardOf = (g) => {
-    const e = ledgerEntryOf(g);
-    return e ? { a: e.a.id, b: e.b.id, inc: e.a.inc ? 'a' : e.b.inc ? 'b' : null } : (g.card || null);
-  };
-  // a ledger entry's verdict in the card's own vocabulary: the quick card's
-  // keep / approve where the incumbent is a side, the race card's a / b
-  // where it is not, and indifferent for a tie
-  const whatOfEntry = (e) => (e.outcome === 'tie' ? 'indifferent'
-    : (e.a.inc || e.b.inc) ? ((e.outcome === 'a' ? e.a : e.b).inc ? 'keep' : 'approve')
-    : e.outcome);
-  // the item as the open card draws it: reshaped to the ledger pair pressed,
-  // else itself — the front of the deck is what the host built it from
-  function cardViewOf(s) {
-    const e = ledgerEntryOf(s);
-    if (!e) return s;
-    if (e.a.inc || e.b.inc) {
-      const c = e.a.inc ? e.b : e.a;
-      return { ...s, kind: 'quick', isInsert: false, marked: c.marked || '',
-        rationale: c.rationale, by: c.by || null, candId: c.id };
-    }
-    return { ...s, kind: 'race', race: {
-      a: { id: e.a.id, text: e.a.text, rationale: e.a.rationale, by: e.a.by || null },
-      b: { id: e.b.id, text: e.b.text, rationale: e.b.rationale, by: e.b.by || null } } };
-  }
+  const pairKeyOf = frontKeyOf;
+  const activeCardOf = (g) => g.card || null;
   // Decisions have a read state (Ed, 112): one you haven't opened pins itself
   // to the screen, and settles down into a dot at its clause once you have.
   const readSeals = new Set();
@@ -484,9 +455,9 @@
   const stateOf = (g) => g.state === 'sealed' ? 'sealed'
     : g.mine ? 'yours'
     : (g.state === 'deciding' || resolved.has(frontKeyOf(g))) ? 'deciding' : 'needs';
-  // judged is about the card's active pair: a ledger block pressed on a live
-  // card is a pair already judged, whatever the front of the deck is
-  const isJudged = (g) => !!ledgerEntryOf(g) || stateOf(g) !== 'needs';
+  // judged is about the item's own pair (Q1367): a judged pair is its own
+  // item, in state `deciding`, with the verdict it was given as its `pick`
+  const isJudged = (g) => stateOf(g) !== 'needs';
   // **A deadlock is not shown until you have paid into it** (Ed, 297/298,
   // 2026-08-17: *force drafters to do all the judging in the race first, and
   // then encourage them to propose alternatives*). Until you have judged, a
@@ -532,8 +503,10 @@
   // The volume gate: as many live **questions** as there are people on the
   // roster, a race counting once — which it does here, because a suggestion in
   // this fixture *is* a question.
-  const liveQuestions = () =>
-    SUGGS.filter((g) => stateOf(g) !== 'sealed' && !g.unproposed && !isDiagonal(g)).length;
+  // …and a race is one question however many of its pairs are items (Q1367)
+  const liveQuestions = () => new Set(
+    SUGGS.filter((g) => stateOf(g) !== 'sealed' && !g.unproposed && !isDiagonal(g))
+      .map((g) => g.raceId || g.id)).size;
   // **What pins itself, and why** (Ed, 2026-08-17, in two passes). An adopted
   // decision always pins: the text under your eye moved, which is news whether
   // or not you had anything to do with it. A retired one is not news — somebody
@@ -1814,17 +1787,16 @@
   const picked = new Map();
   // an explicit null means "deselected in this session", which has to outrank
   // the fixture's own pick on a card you have judged before and reopened.
-  // A ledger pair pressed (Q1201) arrives with its verdict pre-selected — the
-  // view's own record of what you said, until you choose otherwise.
-  const pickOf = (s) => (picked.has(pairKeyOf(s)) ? picked.get(pairKeyOf(s))
-    : ledgerEntryOf(s) ? whatOfEntry(ledgerEntryOf(s)) : (s.pick ?? null));
+  // A judged pair's item arrives with its verdict pre-selected (Q1201, Q1367)
+  // — the view's own record of what you said, as the item's `pick`, until
+  // you choose otherwise.
+  const pickOf = (s) => (picked.has(pairKeyOf(s)) ? picked.get(pairKeyOf(s)) : (s.pick ?? null));
   // What is actually on the record, as against what is merely selected. The
   // tick reads pressed while the two agree and springs back out the moment you
   // choose something else (Ed, 216) — so a reopened judgment shows plainly that
   // it is already cast, and equally plainly when you have an uncommitted change.
   const committed = new Map();
-  const committedOf = (s) => (committed.has(pairKeyOf(s)) ? committed.get(pairKeyOf(s))
-    : ledgerEntryOf(s) ? whatOfEntry(ledgerEntryOf(s)) : (s.pick ?? null));
+  const committedOf = (s) => (committed.has(pairKeyOf(s)) ? committed.get(pairKeyOf(s)) : (s.pick ?? null));
   const isCast = (s) => isJudged(s) && pickOf(s) !== null && pickOf(s) === committedOf(s);
 
   // 197 made the lane itself the button. Retired at Ed's QA of 2026-08-16: the
@@ -2457,71 +2429,11 @@
   // **A race waiting behind a park on the same clause** (SURFACE E36, R-100;
   // Ed, 2026-09-09, Q1015): the batch passes it over until the Founder
   // answers a park it overlaps, and every card the race can open says so in
-  // one sentence — the live card, the ledger card, the race card alike. The
+  // one sentence — the quick card and the race card alike. The
   // item carries the sentence itself (`blockedByPark`), read off copy by the
   // page, so this draws it and never words it.
   const parkNote = (s) => (s.blockedByPark
     ? '<p class="setnote">' + esc(s.blockedByPark) + '</p>' : '');
-  // ---- the ledger (Q1201) -------------------------------------------------
-  // The pairs you judged on this race, oldest first: under the live card
-  // while the deck still holds a pair for you, and alone on the ⏳ card once
-  // it does not. Each block is the two wordings with the side you chose
-  // marked — the lane radio's own dot, inert — and a press makes that pair
-  // the card's active pair with your verdict pre-selected, so choosing
-  // differently and ✓ sends the revision SPEC §4.4 allows on the same pair.
-  // A pair a ground shift locked (↻) does not answer a press; its note says
-  // why. Nothing here is anybody else's (§3.5): every line is your own act,
-  // and the verdict a pair was given this visit shows until the poll brings
-  // it back from the view. Drawn from `proposalHtml`'s own pieces — a
-  // `propblock` per pair, `rtext` wordings, `wordingHtml` for a candidate's
-  // change against the clause — rather than through it, since a pair is two
-  // wordings under one press and a proposal block is one under a speaker.
-  function ledgerHtml(s) {
-    const L = s.ledger || [];
-    if (!L.length) return '';
-    const key = (s.keys ?? [])[0];
-    const cur = runTextFor(s, key);        // the run's text: what a candidate is diffed against (Q1308)
-    const active = ledgerEntryOf(s);
-    const G = window.COPY.grammar;
-    const mark = (on) => '<span class="lanepick lmark" aria-pressed="' + on + '"><i class="dot" aria-hidden="true"></i></span>';
-    return '<div class="field ledger"><div class="fieldlab">' + esc(T.ledger.label(L.length)) + '</div>' +
-      L.map((e) => {
-        const k = ledgerKeyOf(s, e);
-        const what = committed.has(k) ? committed.get(k) : whatOfEntry(e);
-        const chosen = (x, letter) => (what === 'indifferent' ? false
-          : (e.a.inc || e.b.inc) ? (x.inc ? what === 'keep' : what === 'approve') : what === letter);
-        const side = (x, letter) => '<div class="lside' + (chosen(x, letter) ? ' on' : '') + '">' + mark(chosen(x, letter)) +
-          '<div class="rtext">' + (x.text == null ? '' : x.inc
-            ? '<span class="rsub">' + esc(T.ledger.current) + '</span>' + esc(x.text)
-            : wordingHtml(cur, x.text)) + '</div></div>';
-        return '<div class="propblock ledgerpair' + (active === e ? ' active' : '') + (e.locked ? ' locked' : '') + '"' +
-          (e.locked ? '' : ' role="button" tabindex="0" data-ledger="' + esc(k) + '" title="' + esc(T.ledger.revise) + '"') + '>' +
-          side(e.a, 'a') + side(e.b, 'b') +
-          (what === 'indifferent'
-            ? '<div class="lside on">' + mark(true) + '<div class="rtext none">' + esc(G.commit.indifferent) + '</div></div>' : '') +
-          (e.locked ? '<div class="srationale locked">' + esc(e.note || '') + G.revise.shiftedTail + '</div>' : '') +
-          '</div>';
-      }).join('') + '</div>';
-  }
-  // **The ⏳ card is your ledger** (Q1201): the deck empty and no block
-  // pressed, the card is the clause and the pairs you judged, with one
-  // commit row (§9.1) whose ✓ waits for a block to be pressed — there is no
-  // pair to be indifferent about yet, so no Indifferent block either
-  function ledgerCardHtml(s) {
-    const key = (s.keys ?? [])[0];
-    const G = window.COPY.grammar;
-    return (
-      '<div class="sugg quick-open ledger-open" data-card="' + s.id + '" data-site="' + (key || '') + '">' +
-      clauseHeadHtml(s, Object.assign(headOpts(s, key), { chips: chipsFor(key, s.id) })) +
-      ledgerHtml(s) + crownNote(s) + parkNote(s) +
-      '<div class="race-mid commitrow">' +
-      '<button class="btn glyphbtn" data-act="clear-close" title="' + G.commit.binLocked + '">🗑️</button>' +
-      '<span class="rightpair"><button class="btn btn-approve glyphbtn" disabled data-act="submit"' +
-      ' title="' + esc(T.ledger.pickFirst) + '">' + TICK + '</button></span>' +
-      '</div>' +
-      '</div>'
-    );
-  }
   function suggCardHtml(s, siteKey) {
     if (stateOf(s) === 'sealed') return sealedCardHtml(s);
     if (stuck(s)) return deadlockCardHtml(s);
@@ -2631,13 +2543,11 @@
         '</div>'
       );
     }
-    // **The card is about one pair** (Q1200, Q1201): the ledger block you
-    // pressed, else the front of the deck — `cardViewOf` reshapes the item
-    // to that pair and the two judgment cards below draw it; the ledger of
-    // pairs already judged stands under either. With the deck empty and no
-    // block pressed the card is the ledger alone.
-    const sv = cardViewOf(s);
-    if (!s.card && !ledgerEntryOf(s) && (s.ledger || []).length) return ledgerCardHtml(s);
+    // **The card is about one pair, and one pair is one item** (Q1200, Q1201,
+    // Q1367): the two judgment cards below draw the item's own pair and
+    // nothing of any other pair on the race — the other pairs are their own
+    // tabs in the clause's stack.
+    const sv = s;
     if (sv.kind === 'race') {
       // The clause, which this card had never shown (Ed, QA 2026-08-16) — a
       // reader was being asked to choose between two rewrites without being
@@ -2645,7 +2555,7 @@
       // pair is not about it**: two challengers were dealt, and a judgment is
       // of two candidates. The current text is a peer in the field like any
       // other (Q1362 (a)), and where the router deals it as one of the pair
-      // `cardViewOf` reshapes the item to a quick card — whose head carries
+      // the host builds the item as a quick card — whose head carries
       // the lane, in the same words as the proposal's. The old reason here
       // was that displacement was settled by the adoption threshold rather
       // than by this judgment; there is no threshold, and the ranking these
@@ -2661,7 +2571,6 @@
           proposalHtml(sv, { v: 'a', html: wordingHtml(cur, sv.race.a.text), why: sv.race.a.rationale, by: sv.race.a.by }) +
           proposalHtml(sv, { v: 'b', html: wordingHtml(cur, sv.race.b.text), why: sv.race.b.rationale, by: sv.race.b.by }), 2) +
         reviseNote(sv) + crownNote(sv) + parkNote(sv) +
-        ledgerHtml(s) +
         // The one thing a race card cannot say any other way: the pair on it
         // is two challengers, so nothing on the card says *the clause above
         // is fine as it is*, and a reader could reasonably think one of them
@@ -2728,7 +2637,6 @@
       groundNote(sv) +
       fieldHtml(proposalHtml(sv, { v: 'approve', html: prop, why: sv.rationale, by: sv.by, edit: noEdit })) +
       reviseNote(sv) + crownNote(sv) + parkNote(sv) +
-      ledgerHtml(s) +
       commitRowHtml(sv) +
       '</div>'
     );
@@ -3417,7 +3325,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
 
   // **The card pass**: what an open card carries — the routes into the
   // composer and its lanes, the desk on a deadlocked race, the choosing, the
-  // ledger, the commit row and the OK that marks a record read.
+  // commit row and the OK that marks a record read.
   function cardPass() {
     // ✏️ on a lane: start writing from that wording (Ed, 228).
     doc.querySelectorAll('[data-propose-from]').forEach((b) =>
@@ -3566,25 +3474,6 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         smoothScrollBy(target.getBoundingClientRect().top - READ_LINE, () => { layoutQueue(); drawWires(); });
       })
     );
-    // a ledger block pressed (Q1201): that pair becomes the card's active
-    // pair, your verdict pre-selected, and the card is drawn again in place
-    // with its clause held still — the strip's own promise, that what you
-    // were looking at does not move
-    const pressLedger = (b) => {
-      const card = b.closest('.sugg');
-      const id = card.dataset.card;
-      activeLedger.set(id, b.dataset.ledger);
-      const q = String(id).replace(/["\\]/g, '\\$&');
-      keepStill(() => renderAll(), '.sugg[data-card="' + q + '"] .headclause');
-      layoutQueue(); drawWires();
-    };
-    doc.querySelectorAll('.sugg [data-ledger]').forEach((b) => {
-      b.addEventListener('click', (ev) => { ev.stopPropagation(); pressLedger(b); });
-      b.addEventListener('keydown', (ev) => {
-        if (ev.key !== 'Enter' && ev.key !== ' ') return;
-        ev.preventDefault(); ev.stopPropagation(); pressLedger(b);
-      });
-    });
     doc.querySelectorAll('.sugg [data-act]').forEach((b) =>
       b.addEventListener('click', (ev) => {
         ev.stopPropagation();
@@ -3873,9 +3762,6 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     const closing = openId;
     const next = openId === id ? null : id;
     if (!closing && !next) return;
-    // a ledger block pressed is a posture of the open card (Q1201): closing
-    // the card, or leaving it for another, puts the deck's front back
-    if (closing) closeLedger(closing);
     // …and the host is told **whose** card is opening (Q1134): the editing card
     // is edit mode's own — a keystroke in edit mode is what opens it (K13) — so
     // it is not one of K31's *any other card opening*, and it must not leave.
@@ -4133,9 +4019,8 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // The first few words are enough to recognise, and they are the words the
     // member actually chose rather than a position on a screen.
     const quote = (t) => '“' + String(t || '').split(/\s+/).slice(0, 6).join(' ') + '…”';
-    // the verdict names the pair the card was about (Q1201): a ledger block
-    // pressed, else the front of the deck
-    const sv = s ? cardViewOf(s) : s;
+    // the verdict names the item's own pair (Q1367)
+    const sv = s;
     const verdict =
       what === 'approve' ? T.verdict.approve
       : what === 'keep' ? T.verdict.keep
@@ -4151,7 +4036,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     if (what === 'clear-close') {
       const s0 = SUGGS.find((x) => x.id === id);
       if (s0 && !resolved.has(pairKeyOf(s0))) s0.pick = null;
-      const shut = () => { if (openId === id) openId = null; closeLedger(id); renderAll(); drawWires(); };
+      const shut = () => { if (openId === id) openId = null; renderAll(); drawWires(); };
       if (openId === id) collapseCards(id, shut); else shut();
       return;
     }
@@ -4183,10 +4068,10 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // *revisable and still running*, and clicking it reopens the card to
     // revise. The card runs its closing motion onto its own paragraph, the
     // queue entry re-renders around it.
-    // **A judgment is about a pair** (Q1200, Q1201): the ledger block pressed,
-    // else the front of the deck. The receipt fires on the first judgment of
-    // each pair, every one being a commit, and the host is told which pair
-    // the verdict goes back on.
+    // **A judgment is about a pair, and the item is the pair** (Q1200, Q1201,
+    // Q1367). The receipt fires on the first judgment of each pair, every
+    // one being a commit, and the host is told which pair the verdict goes
+    // back on.
     const key = pairKeyOf(s);
     const pair = activeCardOf(s);
     const firstTime = !resolved.has(key);
@@ -4199,7 +4084,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       resolved.add(key);
       justArrived = firstTime ? key : null;
       if (hooks.judge) hooks.judge(id, what, pair);
-      const shut = () => { if (openId === id) openId = null; closeLedger(id); renderAll(); drawWires(); };
+      const shut = () => { if (openId === id) openId = null; renderAll(); drawWires(); };
       if (openId === id) collapseCards(id, shut); else shut();
     }, firstTime && btn ? 240 : 0);
   }

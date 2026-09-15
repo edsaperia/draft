@@ -1,6 +1,6 @@
 {
  "meta": {
-  "cards": 296,
+  "cards": 307,
   "walks": [
    "answers",
    "charter",
@@ -1393,6 +1393,7 @@
      "Guests — notice — open it",
      "Guests — open it",
      "Close this one",
+     "Guests — numbers — open it",
      "8 decided and filed at this clause — open them",
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
@@ -1946,6 +1947,38 @@
      "I can’t split them",
      "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
+    ],
+    "helpers": []
+   },
+   "race-guests-rivals": {
+    "eyebrow": "The clause as it stands",
+    "head": "Friends of the house are welcome whenever a member is in.",
+    "lock": "",
+    "body": "Proposed · 2 rival proposalsFriends of the house are welcome whenever a member is in, up to three at a time without telling anybody.Nobody minds two friends. Nine is a party, and a party is a thing you mention.Preferred✏️ propose editFriends of the house are welcome whenever a member is in, and until the quiet hours begin.Welcome and “welcome at three in the morning” are different offers, and only one of them is fair on whoever is asleep upstairs.Prefer this✏️ propose edit",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Clears your choice and closes — there is nothing here to put back"
+     },
+     {
+      "label": "Recorded — choose again to change it",
+      "title": "Recorded — choose again to change it"
+     }
+    ],
+    "hints": [
+     "Guests — notice — open it",
+     "Guests — open it",
+     "Guests — numbers — open it",
+     "Close this one",
+     "8 decided and filed at this clause — open them",
+     "A member wrote this. Who, is sealed until the closing record.",
+     "Say you prefer this proposal — nothing leaves the card until you submit",
+     "Write your own version of this proposal. Free to open — proposing costs one edit.",
+     "I can’t split them",
+     "Clears your choice and closes — there is nothing here to put back",
+     "Recorded — choose again to change it"
     ],
     "helpers": []
    },
@@ -2545,6 +2578,7 @@
      "Guests — notice — open it",
      "Guests — open it",
      "Close this one",
+     "Guests — numbers — open it",
      "8 decided and filed at this clause — open them",
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
@@ -3045,6 +3079,33 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
+     "I can’t split them",
+     "Close — your vote stays on the record"
+    ],
+    "helpers": []
+   },
+   "race-guests-rivals": {
+    "eyebrow": "The clause as it stands",
+    "head": "Friends of the house are welcome whenever a member is in.",
+    "lock": "",
+    "body": "Proposed · 2 rival proposalsFriends of the house are welcome whenever a member is in, up to three at a time without telling anybody.Nobody minds two friends. Nine is a party, and a party is a thing you mention.Preferred✏️ propose editFriends of the house are welcome whenever a member is in, and until the quiet hours begin.Welcome and “welcome at three in the morning” are different offers, and only one of them is fair on whoever is asleep upstairs.Prefer this✏️ propose edit",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Close — your vote stays on the record"
+     }
+    ],
+    "hints": [
+     "Guests — notice — open it",
+     "Guests — open it",
+     "Guests — numbers — open it",
+     "Close this one",
+     "8 decided and filed at this clause — open them",
+     "A member wrote this. Who, is sealed until the closing record.",
+     "Say you prefer this proposal — nothing leaves the card until you submit",
+     "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "I can’t split them",
      "Close — your vote stays on the record"
     ],
@@ -4605,46 +4666,56 @@
    },
    "authorship": {
     "eyebrow": "",
-    "head": "",
+    "head": "All proposals are made anonymously.Chosen by the membership",
     "lock": "",
-    "body": "All proposals are made anonymously.Keep thisAll proposals are made anonymously, and all names are revealed at the end.Names put pressure on people; the writing should stand alone.Prefer thisAbstain",
+    "body": "A proposer is never named unless they sign the proposal themselves.Propose thisProposers are named in the closing record, never before.Propose thisProposers are named in the closing record, and sooner if they sign.Propose thisEvery proposal carries its proposer’s name from the moment it is made.Propose this",
     "options": [
      {
       "set": null,
-      "val": "no",
-      "label": "All proposals are made anonymously."
+      "val": "Nobody’s name unless they choose",
+      "label": "A proposer is never named unless they sign the proposal themselves."
      },
      {
       "set": null,
-      "val": "yes",
-      "label": "All proposals are made anonymously, and all names are revealed at the end.Names put pressure on people; the writing should stand alone."
+      "val": "Names at the close",
+      "label": "Proposers are named in the closing record, never before."
      },
      {
       "set": null,
-      "val": "abstain",
-      "label": "Abstain"
+      "val": "Names at the close, or earlier by choice",
+      "label": "Proposers are named in the closing record, and sooner if they sign."
+     },
+     {
+      "set": null,
+      "val": "Names from the start",
+      "label": "Every proposal carries its proposer’s name from the moment it is made."
      }
     ],
     "inputs": [],
     "foot": [
      {
       "label": "🗑️",
-      "title": "Put it back as it stands"
+      "title": "Discard this motion"
      },
      {
       "label": "🏛️",
-      "title": "Give your answer"
+      "title": "One 🏛️ each — withdraw yours first"
      }
     ],
     "hints": [
-     "Are Proposals Anonymous? — close it",
+     "We should change this because…",
+     "Anonymous Proposals — close it",
+     "Are Proposals Anonymous? — waiting on you",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "Put it back as it stands",
-     "Give your answer"
+     "Propose this — nothing leaves the card until you submit",
+     "This is how your reason will reach everybody else: with your name off it.",
+     "Discard this motion",
+     "One 🏛️ each — withdraw yours first"
     ],
-    "helpers": []
+    "helpers": [
+     "We should change this because…"
+    ]
    },
    "begin": {
     "eyebrow": "",
@@ -4726,26 +4797,33 @@
    },
    "chamber": {
     "eyebrow": "",
-    "head": "",
-    "lock": "",
-    "body": "The document can be seen by anyone with the link.The document can only be seen by members.Chosen by the membershipWho reads the document should be the membership’s call.",
+    "head": "The document can be seen by anyone with the link.Chosen by the Founder ✒️",
+    "lock": "Decided by the members.",
+    "body": "Set toAnyone with the linkDecided by the members.The Founder has changed who may read the document from members only to anyone with the link.ABAsh Bellamy 👑Readers who are not members should see what we are building.",
     "options": [],
     "inputs": [],
     "foot": [
      {
       "label": "🗑️",
       "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
      }
     ],
     "hints": [
      "Visibility — close it",
+     "Who Can See the Document? — waiting on others",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Passed: Anyone with the link — settled",
-     "A member wrote this. Who, is sealed until the closing record.",
+     "The founder’s own hand — a Founder Action ✒️, not a proposal",
      "Put it back as it stands"
     ],
-    "helpers": []
+    "helpers": [
+     "Decided by the members."
+    ]
    },
    "ending": {
     "eyebrow": "",
@@ -4946,6 +5024,118 @@
     "helpers": [
      "We should change this because…"
     ]
+   },
+   "mo:mo-3": {
+    "eyebrow": "",
+    "head": "",
+    "lock": "",
+    "body": "The document can be seen by anyone with the link.The document can only be seen by members.Chosen by the membershipWho reads the document should be the membership’s call.",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     }
+    ],
+    "hints": [
+     "Visibility — decided; it waits for your OK",
+     "Who Can See the Document? — close it",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Passed: Anyone with the link — settled",
+     "A member wrote this. Who, is sealed until the closing record.",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "mo:mo-4": {
+    "eyebrow": "",
+    "head": "",
+    "lock": "",
+    "body": "All proposals are made anonymously.Keep thisAll proposals are made anonymously, and all names are revealed at the end.Names put pressure on people; the writing should stand alone.Prefer thisAbstain",
+    "options": [
+     {
+      "set": null,
+      "val": "no",
+      "label": "All proposals are made anonymously."
+     },
+     {
+      "set": null,
+      "val": "yes",
+      "label": "All proposals are made anonymously, and all names are revealed at the end.Names put pressure on people; the writing should stand alone."
+     },
+     {
+      "set": null,
+      "val": "abstain",
+      "label": "Abstain"
+     }
+    ],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "🏛️",
+      "title": "Give your answer"
+     }
+    ],
+    "hints": [
+     "Anonymous Proposals — settled",
+     "Are Proposals Anonymous? — close it",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "A member wrote this. Who, is sealed until the closing record.",
+     "Put it back as it stands",
+     "Give your answer"
+    ],
+    "helpers": []
+   },
+   "mo:mo-5": {
+    "eyebrow": "",
+    "head": "",
+    "lock": "",
+    "body": "Members may make a new proposal ✏️ every 3 hours.Keep thisMembers may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer.Prefer thisIndifferent",
+    "options": [
+     {
+      "set": null,
+      "val": "stands",
+      "label": "Members may make a new proposal ✏️ every 3 hours."
+     },
+     {
+      "set": null,
+      "val": "proposed",
+      "label": "Members may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer."
+     },
+     {
+      "set": null,
+      "val": "either",
+      "label": "Indifferent"
+     }
+    ],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Withdraw it — the ✏️ comes back in full"
+     },
+     {
+      "label": "",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Proposal Rate — settled",
+     "Set the Proposal Rate — close it",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Rejected: a new proposal every 90 minutes — settled",
+     "A member wrote this. Who, is sealed until the closing record.",
+     "Withdraw it — the ✏️ comes back in full"
+    ],
+    "helpers": []
    },
    "myemail": {
     "eyebrow": "",
@@ -5164,6 +5354,7 @@
     ],
     "hints": [
      "We should change this because…",
+     "Anonymous Proposals — settled",
      "Are Proposals Anonymous? — waiting on you",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
@@ -5198,6 +5389,7 @@
     ],
     "hints": [
      "Visibility — decided; it waits for your OK",
+     "Who Can See the Document? — waiting on others",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
      "Passed: Anyone with the link — settled",
@@ -5409,6 +5601,7 @@
      }
     ],
     "hints": [
+     "Proposal Rate — settled",
      "Set the Proposal Rate — waiting on you",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
@@ -5622,6 +5815,7 @@
     ],
     "hints": [
      "We should change this because…",
+     "Anonymous Proposals — settled",
      "Are Proposals Anonymous? — waiting on you",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
@@ -5656,6 +5850,7 @@
     ],
     "hints": [
      "Visibility — decided; it waits for your OK",
+     "Who Can See the Document? — waiting on others",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
      "Passed: Anyone with the link — settled",
@@ -5867,6 +6062,7 @@
      }
     ],
     "hints": [
+     "Proposal Rate — settled",
      "Set the Proposal Rate — waiting on you",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
@@ -6029,46 +6225,41 @@
    },
    "rate": {
     "eyebrow": "",
-    "head": "",
+    "head": "Members may make a new proposal ✏️ every 3 hours.Chosen by the Founder ✒️",
     "lock": "",
-    "body": "Members may make a new proposal ✏️ every 3 hours.Keep thisMembers may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer.Prefer thisIndifferent",
-    "options": [
+    "body": "Members may make a new proposal ✏️ every minutes.Propose this",
+    "options": [],
+    "inputs": [
      {
-      "set": null,
-      "val": "stands",
-      "label": "Members may make a new proposal ✏️ every 3 hours."
-     },
-     {
-      "set": null,
-      "val": "proposed",
-      "label": "Members may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer."
-     },
-     {
-      "set": null,
-      "val": "either",
-      "label": "Indifferent"
+      "type": "number",
+      "ph": null
      }
     ],
-    "inputs": [],
     "foot": [
      {
       "label": "🗑️",
-      "title": "Withdraw it — the ✏️ comes back in full"
+      "title": "Discard this motion"
      },
      {
-      "label": "",
-      "title": null
+      "label": "✏️",
+      "title": "Propose it"
      }
     ],
     "hints": [
-     "Set the Proposal Rate — close it",
+     "We should change this because…",
+     "Proposal Rate — close it",
+     "Set the Proposal Rate — waiting on you",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Rejected: a new proposal every 90 minutes — settled",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "Withdraw it — the ✏️ comes back in full"
+     "Propose this — nothing leaves the card until you submit",
+     "This is how your reason will reach everybody else: with your name off it.",
+     "Discard this motion",
+     "Propose it"
     ],
-    "helpers": []
+    "helpers": [
+     "We should change this because…"
+    ]
    },
    "rec:chamber:0": {
     "eyebrow": "",
@@ -6089,6 +6280,7 @@
     ],
     "hints": [
      "Visibility — decided; it waits for your OK",
+     "Who Can See the Document? — waiting on others",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Passed: Anyone with the link — close it",
@@ -6142,6 +6334,7 @@
      }
     ],
     "hints": [
+     "Proposal Rate — settled",
      "Set the Proposal Rate — waiting on you",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
@@ -6371,6 +6564,7 @@
      "Anonymous Proposals — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
+     "Anonymous Proposals — settled",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -6396,6 +6590,7 @@
      "Visibility — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
+     "Visibility — settled",
      "Passed: Anyone with the link — settled",
      "Put it back as it stands"
     ],
@@ -6472,6 +6667,86 @@
      "Lapsing — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "mo:mo-3": {
+    "eyebrow": "",
+    "head": "Visibility",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Visibility — settled",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Visibility — close it",
+     "Passed: Anyone with the link — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "mo:mo-4": {
+    "eyebrow": "",
+    "head": "Anonymous Proposals",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Anonymous Proposals — settled",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Anonymous Proposals — close it",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "mo:mo-5": {
+    "eyebrow": "",
+    "head": "Proposal Rate",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Proposal Rate — settled",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Proposal Rate — close it",
+     "Rejected: a new proposal every 90 minutes — settled",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -7129,6 +7404,7 @@
      "Proposal Rate — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
+     "Proposal Rate — settled",
      "Rejected: a new proposal every 90 minutes — settled",
      "Put it back as it stands"
     ],
@@ -7403,46 +7679,56 @@
    },
    "authorship": {
     "eyebrow": "",
-    "head": "",
+    "head": "All proposals are made anonymously.Chosen by the membership",
     "lock": "",
-    "body": "All proposals are made anonymously.Keep thisAll proposals are made anonymously, and all names are revealed at the end.Names put pressure on people; the writing should stand alone.Prefer thisAbstain",
+    "body": "A proposer is never named unless they sign the proposal themselves.Propose thisProposers are named in the closing record, never before.Propose thisProposers are named in the closing record, and sooner if they sign.Propose thisEvery proposal carries its proposer’s name from the moment it is made.Propose this",
     "options": [
      {
       "set": null,
-      "val": "no",
-      "label": "All proposals are made anonymously."
+      "val": "Nobody’s name unless they choose",
+      "label": "A proposer is never named unless they sign the proposal themselves."
      },
      {
       "set": null,
-      "val": "yes",
-      "label": "All proposals are made anonymously, and all names are revealed at the end.Names put pressure on people; the writing should stand alone."
+      "val": "Names at the close",
+      "label": "Proposers are named in the closing record, never before."
      },
      {
       "set": null,
-      "val": "abstain",
-      "label": "Abstain"
+      "val": "Names at the close, or earlier by choice",
+      "label": "Proposers are named in the closing record, and sooner if they sign."
+     },
+     {
+      "set": null,
+      "val": "Names from the start",
+      "label": "Every proposal carries its proposer’s name from the moment it is made."
      }
     ],
     "inputs": [],
     "foot": [
      {
       "label": "🗑️",
-      "title": "Withdraw it — your 🏛️ comes back whole"
+      "title": "Discard this motion"
      },
      {
       "label": "🏛️",
-      "title": "Give your answer"
+      "title": "One 🏛️ each — withdraw yours first"
      }
     ],
     "hints": [
-     "Are Proposals Anonymous? — close it",
+     "We should change this because…",
+     "Anonymous Proposals — close it",
+     "Are Proposals Anonymous? — waiting on others",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "Withdraw it — your 🏛️ comes back whole",
-     "Give your answer"
+     "Propose this — nothing leaves the card until you submit",
+     "This is how your reason will reach everybody else: with your name off it.",
+     "Discard this motion",
+     "One 🏛️ each — withdraw yours first"
     ],
-    "helpers": []
+    "helpers": [
+     "We should change this because…"
+    ]
    },
    "begin": {
     "eyebrow": "",
@@ -7524,10 +7810,16 @@
    },
    "chamber": {
     "eyebrow": "",
-    "head": "",
+    "head": "The document can be seen by anyone with the link.Chosen by the Founder ✒️",
     "lock": "",
-    "body": "The document can be seen by anyone with the link.The document can only be seen by members.Chosen by the membershipWho reads the document should be the membership’s call.",
-    "options": [],
+    "body": "The document can only be seen by members.Chosen ✒️ or Proposed 🏛️Why are you changing this?ABAsh Bellamy 👑",
+    "options": [
+     {
+      "set": "chamber",
+      "val": "closed",
+      "label": "The document can only be seen by members."
+     }
+    ],
     "inputs": [],
     "foot": [
      {
@@ -7535,25 +7827,29 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "🛡️",
-      "title": "Refuse — the Founder Veto holds it, and what stands stands"
+      "label": "✒️",
+      "title": "Set it"
      },
      {
-      "label": "✒️",
-      "title": "Accept — a Founder Action passes it now"
+      "label": "🏛️",
+      "title": "One 🏛️ each — withdraw yours first"
      }
     ],
     "hints": [
-     "Who Can See the Document? — close it",
+     "I am changing this because…",
+     "Visibility — close it",
+     "Who Can See the Document? — waiting on others",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Passed: Anyone with the link — settled",
-     "A member wrote this. Who, is sealed until the closing record.",
+     "The founder’s own hand — a Founder Action ✒️, not a proposal",
      "Put it back as it stands",
-     "Refuse — the Founder Veto holds it, and what stands stands",
-     "Accept — a Founder Action passes it now"
+     "Set it",
+     "One 🏛️ each — withdraw yours first"
     ],
-    "helpers": []
+    "helpers": [
+     "I am changing this because…"
+    ]
    },
    "ending": {
     "eyebrow": "",
@@ -7807,6 +8103,128 @@
      "We should change this because…"
     ]
    },
+   "mo:mo-3": {
+    "eyebrow": "",
+    "head": "",
+    "lock": "",
+    "body": "The document can be seen by anyone with the link.The document can only be seen by members.Chosen by the membershipWho reads the document should be the membership’s call.",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "🛡️",
+      "title": "Refuse — the Founder Veto holds it, and what stands stands"
+     },
+     {
+      "label": "✒️",
+      "title": "Accept — a Founder Action passes it now"
+     }
+    ],
+    "hints": [
+     "Visibility — settled",
+     "Who Can See the Document? — close it",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Passed: Anyone with the link — settled",
+     "A member wrote this. Who, is sealed until the closing record.",
+     "Put it back as it stands",
+     "Refuse — the Founder Veto holds it, and what stands stands",
+     "Accept — a Founder Action passes it now"
+    ],
+    "helpers": []
+   },
+   "mo:mo-4": {
+    "eyebrow": "",
+    "head": "",
+    "lock": "",
+    "body": "All proposals are made anonymously.Keep thisAll proposals are made anonymously, and all names are revealed at the end.Names put pressure on people; the writing should stand alone.PreferredAbstain",
+    "options": [
+     {
+      "set": null,
+      "val": "no",
+      "label": "All proposals are made anonymously."
+     },
+     {
+      "set": null,
+      "val": "yes",
+      "label": "All proposals are made anonymously, and all names are revealed at the end.Names put pressure on people; the writing should stand alone."
+     },
+     {
+      "set": null,
+      "val": "abstain",
+      "label": "Abstain"
+     }
+    ],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Withdraw it — your 🏛️ comes back whole"
+     },
+     {
+      "label": "🏛️",
+      "title": "Give your answer"
+     }
+    ],
+    "hints": [
+     "Anonymous Proposals — settled",
+     "Are Proposals Anonymous? — close it",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "A member wrote this. Who, is sealed until the closing record.",
+     "Withdraw it — your 🏛️ comes back whole",
+     "Give your answer"
+    ],
+    "helpers": []
+   },
+   "mo:mo-5": {
+    "eyebrow": "",
+    "head": "",
+    "lock": "",
+    "body": "Members may make a new proposal ✏️ every 3 hours.Keep thisMembers may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer.Prefer thisIndifferent",
+    "options": [
+     {
+      "set": null,
+      "val": "stands",
+      "label": "Members may make a new proposal ✏️ every 3 hours."
+     },
+     {
+      "set": null,
+      "val": "proposed",
+      "label": "Members may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer."
+     },
+     {
+      "set": null,
+      "val": "either",
+      "label": "Indifferent"
+     }
+    ],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Proposal Rate — settled",
+     "Set the Proposal Rate — close it",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Rejected: a new proposal every 90 minutes — settled",
+     "A member wrote this. Who, is sealed until the closing record.",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
    "myemail": {
     "eyebrow": "",
     "head": "",
@@ -7997,6 +8415,7 @@
      }
     ],
     "hints": [
+     "Anonymous Proposals — settled",
      "Are Proposals Anonymous? — waiting on others",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
@@ -8033,6 +8452,7 @@
      }
     ],
     "hints": [
+     "Visibility — settled",
      "Who Can See the Document? — waiting on others",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
@@ -8215,6 +8635,7 @@
      }
     ],
     "hints": [
+     "Proposal Rate — settled",
      "Set the Proposal Rate — waiting on you",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
@@ -8440,6 +8861,7 @@
      }
     ],
     "hints": [
+     "Anonymous Proposals — settled",
      "Are Proposals Anonymous? — waiting on others",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
@@ -8476,6 +8898,7 @@
      }
     ],
     "hints": [
+     "Visibility — settled",
      "Who Can See the Document? — waiting on others",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
@@ -8658,6 +9081,7 @@
      }
     ],
     "hints": [
+     "Proposal Rate — settled",
      "Set the Proposal Rate — waiting on you",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
@@ -8854,46 +9278,51 @@
    },
    "rate": {
     "eyebrow": "",
-    "head": "",
+    "head": "Members may make a new proposal ✏️ every 3 hours.Chosen by the Founder ✒️",
     "lock": "",
-    "body": "Members may make a new proposal ✏️ every 3 hours.Keep thisMembers may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer.Prefer thisIndifferent",
+    "body": "Members may make a new proposal ✏️ every minuteshoursdays.Choose ✒️ or Propose ✏️ thisWhy are you changing this?ABAsh Bellamy 👑",
     "options": [
      {
-      "set": null,
-      "val": "stands",
-      "label": "Members may make a new proposal ✏️ every 3 hours."
-     },
-     {
-      "set": null,
-      "val": "proposed",
-      "label": "Members may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer."
-     },
-     {
-      "set": null,
-      "val": "either",
-      "label": "Indifferent"
+      "set": "rateBy",
+      "val": "founder",
+      "label": "Members may make a new proposal ✏️ every minuteshoursdays."
      }
     ],
-    "inputs": [],
+    "inputs": [
+     {
+      "type": "number",
+      "ph": null
+     }
+    ],
     "foot": [
      {
       "label": "🗑️",
       "title": "Put it back as it stands"
      },
      {
-      "label": "",
-      "title": null
+      "label": "✒️",
+      "title": "Set it"
+     },
+     {
+      "label": "✏️",
+      "title": "Propose it"
      }
     ],
     "hints": [
-     "Set the Proposal Rate — close it",
+     "I am changing this because…",
+     "Proposal Rate — close it",
+     "Set the Proposal Rate — waiting on you",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Rejected: a new proposal every 90 minutes — settled",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "Put it back as it stands"
+     "The founder’s own hand — a Founder Action ✒️, not a proposal",
+     "Put it back as it stands",
+     "Set it",
+     "Propose it"
     ],
-    "helpers": []
+    "helpers": [
+     "I am changing this because…"
+    ]
    },
    "rec:chamber:0": {
     "eyebrow": "",
@@ -8913,6 +9342,7 @@
      }
     ],
     "hints": [
+     "Visibility — settled",
      "Who Can See the Document? — waiting on others",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
@@ -8967,6 +9397,7 @@
      }
     ],
     "hints": [
+     "Proposal Rate — settled",
      "Set the Proposal Rate — waiting on you",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",

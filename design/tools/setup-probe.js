@@ -379,11 +379,14 @@
     ['raise-quorum', () => typeInto('.setupcard [data-mnum]', '4')],
     ['hold-assembly', () => hold('.setupcard [data-holdmotion]')],
     ['seat-founder', () => setSeat('0')],
-    ['open-quorum-judging', () => openTab('quorum')],
+    // **the motion is its own card** (Q1367): a tab in 👥's pile and a rail
+    // entry of its own, keyed ; the rail entry is the way in, the
+    // pile's front tab being the rule's own
+    ['open-motion-judging', () => click('#rail [data-card^="mo:"]')],
     ['pick-answer', () => click('.setupcard [data-motion]')],
     ['commit-answer', () => click('.setupcard [data-confirm]')],
     ['seat-cy', () => setSeat('2')],
-    ['open-quorum-cy', () => openTab('quorum')],
+    ['open-motion-cy', () => click('#rail [data-card^="mo:"]')],
     ['pick-answer-cy', () => click('.setupcard [data-motion]')],
     ['commit-answer-cy', () => click('.setupcard [data-confirm]')],
     ['reopen-quorum', () => openTab('quorum')],

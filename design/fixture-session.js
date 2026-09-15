@@ -447,6 +447,22 @@ window.FIXTURE_SESSION = (function () {
       rationale: 'Nobody minds two friends. Nine is a party, and a party is a thing you mention.'
     },
     {
+      // **A judged pair is its own tab** (Q1367, Ed 2026-09-15): two
+      // challengers on the same race as the pair above, judged, standing as
+      // a second ⏳ in the Guests stack — one object per pair, in one place;
+      // the card reopens with the verdict given pre-selected, revisable.
+      id: 'race-guests-rivals', kind: 'race', keys: ['guests'], state: 'deciding',
+      verdict: 'preferred “Friends of the house are welcome…”', pick: 'a',
+      qLabel: '§ Guests — numbers', urgency: 0.2,
+      pct: 60, cap: 'you have voted — three of the fourteen so far, quorum is 5',
+      race: {
+        a: { text: 'Friends of the house are welcome whenever a member is in, up to three at a time without telling anybody.',
+             rationale: 'Nobody minds two friends. Nine is a party, and a party is a thing you mention.' },
+        b: { text: 'Friends of the house are welcome whenever a member is in, and until the quiet hours begin.',
+             rationale: 'Welcome and “welcome at three in the morning” are different offers, and only one of them is fair on whoever is asleep upstairs.' },
+      },
+    },
+    {
       // **A deadlock you find out about by judging** (Ed, 297/298). This one is
       // stuck and says nothing about it: it is an ordinary 💡 race until you
       // have judged it, and turns ⚔️ the moment you do. The pair below it is
