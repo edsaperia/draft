@@ -349,6 +349,7 @@ The post-mortems: what broke, why it broke, and the shape of the mistake so it i
 - **The engine log is a hash chain too, and the bridge was seeding it with names and addresses as participant handles** (2026-09-08, the people split): the handle is the member id now. Guard: `packages/constitution/test/people.test.ts`, which scans both logs for the strings two walks gave people.
 - **A delegated card could not be taken back on any key** (Q1318, Ed 2026-09-11): the holder flag cleared for 👥 alone, the per-setting pen lock read a members-held setting as no pen, and the standing block compared a valueless card with itself — ✒️ dark three ways. Guard: `founding-walk --takeback=applications` and `=chamber`, red on the pre-fix page.
 - **`askOn` rebuilt every race from every judgment, once per race per seat per poll** (Q1324, docs.vote 2026-09-11): thirty-one members at a dozen races saturated one core — views 500–1000 ms, commands 2–13 s, then 502s. `Session.derived` memoises per state version, and since Q1326 the version moves at every mutation *inside* a fold too. Guards: `derived.test.ts`, `memo-differential.test.ts`.
+- **Held by the membership is not asked of the membership** (Q1364): `isRoom` read the holder radio, so a 🍾 that laid everything down brought ⏱️ 👥 🤝 back as answer cards, hid a resolved question's news behind *you have not answered*, and priced ✉️ 🏛️ at ✏️. A blind question is what the module collects or resolved (SURFACE Y29). Guards: `npm run after-begin-walk`; `journey`'s `unservableNews`.
 
 ## The spec pass
 
