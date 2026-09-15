@@ -5989,24 +5989,8 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "Members may make a new proposal ✏️ every 3 hours.Prefer thisMembers may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer.Prefer thisIndifferent",
-    "options": [
-     {
-      "set": null,
-      "val": "stands",
-      "label": "Members may make a new proposal ✏️ every 3 hours."
-     },
-     {
-      "set": null,
-      "val": "proposed",
-      "label": "Members may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer."
-     },
-     {
-      "set": null,
-      "val": "either",
-      "label": "Indifferent"
-     }
-    ],
+    "body": "Members may make a new proposal ✏️ every 3 hours.Members may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer.Proposed",
+    "options": [],
     "inputs": [],
     "foot": [
      {
