@@ -535,6 +535,16 @@ const IN_PAGE = () => {
       const openTab = card.querySelector('.achip[data-tab="' + CSS.escape(key) + '"], ' +
         '.achip[data-anchor="' + CSS.escape(key) + '"], [data-tab="' + CSS.escape(key) + '"]');
       const openText = card.querySelector('.clausehead .rtext, .headrule, .headtitle');
+      // tabs for this card standing **outside** it while it is open (Q1379):
+      // an open card replaces its paragraph or its held-open gap, so its one
+      // tab is the strip's; a second, on an anchor the card did not replace,
+      // is the doubled 🔥 Ed saw
+      // — the charter's tabs, keyed data-anchor; the band's piles are
+      // setup.js's, whose open card is measured by P7's switch pass
+      const outside = [...document.querySelectorAll('.achip[data-anchor="' + CSS.escape(key) + '"]')]
+        // …a patch opens a card at every place it touches (Ed, 181; §9's patch
+        // row), so a tab inside one of its other cards is not outside it
+        .filter((t) => !t.closest('.sugg[data-card="' + CSS.escape(key) + '"]')).length;
       const s = getComputedStyle(card);
       const travel = (a, b) => (a && b ? [Math.round((b[0] - a[0]) * 100) / 100, Math.round((b[1] - a[1]) * 100) / 100] : null);
       return {
@@ -558,6 +568,7 @@ const IN_PAGE = () => {
                closedW: before && before.tabW, openW: openTab ? Math.round(openTab.getBoundingClientRect().width * 100) / 100 : null,
                boxTravel: travel(before && before.tab, rect(openTab)),
                rightEdge: openTab && card ? R2(openTab.getBoundingClientRect().right - card.getBoundingClientRect().left) : null,
+               outside,
                gapH: before && before.gapH != null ? before.gapH : null,
                gapTabTop: before && before.gapTabTop != null ? before.gapTabTop : null,
                travel: travel(before && before.glyph, glyphBox(openTab)) },
@@ -668,6 +679,15 @@ function rulesFor(card, tok) {
       at('P3', 'positioning', 'the active tab grows 8px to the left, plus the 2px tuck under the card',
         'it grows ' + grew + 'px and its left edge moves ' + left + 'px');
     }
+  }
+  // **P10 — one tab per open card** (Q1379, Ed 2026-09-15: *why am I seeing
+  // the 🔥 tab twice*). A gap race's held-open anchor drew its own tab above
+  // the card while the card's strip drew the same race's tab at its left
+  // edge; the open card replaces its anchor now, as it replaces a clause's
+  // paragraph, so with the card open no tab for it stands outside it.
+  if (card.tab.outside) {
+    at('P10', 'positioning', 'one tab per open card — the strip\'s, none outside it (Q1379)',
+      card.tab.outside + ' tab' + (card.tab.outside === 1 ? '' : 's') + ' for this card stand outside it while it is open');
   }
   // **P9 — a held-open gap is the height of a tab** (Q1334, Ed 2026-09-11:
   // *gaps for proposed insertions should be the same vertical height as a

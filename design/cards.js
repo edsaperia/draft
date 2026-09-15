@@ -991,7 +991,7 @@ window.CARDS = (function () {
         (o.html !== undefined
           ? '<div class="rtext">' + o.html + '</div>'
           : o.text === null
-          ? '<div class="rtext none">' + esc(o.nothing != null ? o.nothing : G.head.nothingAtAll) + '</div>'
+          ? '<div class="rtext none">' + esc(o.nothing != null ? o.nothing : G.head.noText) + '</div>'
           : '<div class="rtext">' + mdLine(o.text) + '</div>') +
         '</div>' +
         // **The head's lane is a lane like any other** (Q1362 (a), 2026-09-15):

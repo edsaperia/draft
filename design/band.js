@@ -52,7 +52,7 @@ window.BAND = (function () {
       dripParts, endsAtMsOf, fieldsOf, focusOpened, founderCommit, founderDirect,
       founderHandOff, founderInfo, founderMark, founderPairNote, founderPairOn, founderSpeaker,
       founderSpeakerLane, grantProv, groups, iDraft, isChange, isNum, isRoom, isStranger,
-      judgedOn, launchFarewell, launchGrant, liveMotionRec, mailGiveUpBatch, mailGiveUpBody,
+      hostKeyOf, judgedOn, launchFarewell, launchGrant, liveMotionRec, mailGiveUpBatch, mailGiveUpBody,
       mayPen, mayPenOn, me, membersHold, midOf, motionBlocks, motionOn, motionPicked,
       motionTargets, nameOfMember, namePickNow, oneVoiceAsk, ordinaryBody, owedDeparture,
       pairWords, penOkFor,
@@ -1109,7 +1109,7 @@ window.BAND = (function () {
           // the full clause sentence, never the short label (Ed's card review
           // round 3, 2026-09-05, 31 🌍: *"Members only" => "The document can
           // only be seen by members."*)
-          const toClause = (rawV !== null && sentenceFor(c.k, rawV)) || m.to;
+          const toClause = (rawV !== null && sentenceFor(hostKeyOf(c), rawV)) || m.to;
           return cardHtml(c, ctx,
             '<div class="pick"><span class="opttext">' + esc(decisionLine(c)) + '</span></div>' +
             '<div class="pick on"><span class="opttext">' + esc(toClause) + '</span>' +

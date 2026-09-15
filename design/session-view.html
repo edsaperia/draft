@@ -1387,8 +1387,6 @@
     titleBy: 'founder', slugBy: 'founder', policyBy: '',
     mailOpen: false,
     sentAddr: '', inviteOne: '', inviteMany: '',
-    mPick: {}, // a deck per setting (Q1348): the motion the founder chose to look at, by setting
-    mAnsFor: {}, // …and which motion `mAns` was pressed for, so the deck's next motion starts unpressed
     // (`pwKeep`, the power tabs' *Keep this* by tab key, left with Q1378: the
     // return tab is one block, the change, and the head is what stands)
     // the last refusal, against the card it belongs to: {k, m} (Q811)
@@ -2529,7 +2527,7 @@
   ];
   const card = (k) => CARDS.find((c) => c.k === k) || ANS.find((c) => c.k === k) ||
     GATES.find((c) => c.k === k) || powerCard(k) || admitCard(k) || recordCard(k) ||
-    releaseCard(k) || mailGiveUpCard(k) || departureCard(k);
+    motionCard(k) || releaseCard(k) || mailGiveUpCard(k) || departureCard(k);
   // **The governance tab group** (403/405, Ed 2026-08-19): every held-able
   // setting is three questions — the value, ✒️ who-has-the-pen, 🛡️ do-carried-changes-need-the-Founder’s-OK — drawn as a
   // pile: the value’s tab in front, the two power tabs beneath. The tabs
@@ -4087,24 +4085,22 @@
   // delegated question shut for ever. Whatever makes a task owed must make it
   // served; where it cannot, the task must not block.
   const railable = (c) => !!c && (!!c.ansFor || !!c.admit || !!c.release || !!c.mailgiveup ||
-    (!!c.power && !!motionOn(c)) ||
+    !!c.motion ||
     !!c.departure ||
     SEC.some((s2) => s2.keys.includes(c.k)) ||
     c.k === 'grant-pen' || c.k === 'grant-shield' || c.k === 'grant-voice');
-  /* **A return in flight is a rail entry like any other motion** (Q386;
-     SURFACE E39, E10's rule). A power tab has no rail entry of its own — it is
-     a tab on the rule's own pile and asks nothing until somebody moves — so
-     the tabs enter the rail here, and only while a motion stands on them: the
-     entry's fill is the room's, `c.motionIn` being the same count Q1319 put on
-     a setting's own entry. Written on the cached card object, `admitCard`'s
-     way, so nothing but this has to know these can be served. */
-  const pwMotionCards = (c) => (!cs || !PW_KEYS.includes(c.k) ? []
-    : ['pw:u:' + c.k, 'pw:a:' + c.k].map(card).filter((pc) => {
-      if (!pc) return false;
-      const rec = liveMotionRec(pc);
-      pc.motionIn = rec && rec.route === 'constitutional' ? rec.answers.size : undefined;
-      return !!rec;
-    }));
+  /* **Every running motion is its own card** (Q1367, Ed 2026-09-15: *other
+     proposals should not be shown on the decision card but in tab stack and
+     as more queue cards*). A motion on a setting, on a power tab (Q386's
+     return) or on a door is a synthetic card keyed `mo:<id>`, a tab in the
+     pile of the clause it is about — behind the rule's own tab, before the
+     filed records — and a rail entry of its own; its card shows that motion
+     alone. The pile's host card carries no motion any more: its tab opens
+     the rule as it stands, and the composer. Written `admitCard`'s way, so
+     nothing but this has to know these can be served; `motionIn` is the
+     motion's answers, the same count Q1319 put on a setting's own entry. */
+  const motionCardsFor = (c) => (!cs || !c || c.isGate || c.ansFor || c.admit || c.motion || !motionsLive() ? []
+    : liveMotions().filter((rec) => pileKeyOf(rec) === c.k).map((rec) => card('mo:' + rec.id)).filter(Boolean));
   // **The rail's own set, in one place** (Q773). The rail is what tells a
   // founder there is anything left to do, so *what is being served* has to be
   // a question anything can ask — 🍾's own last-resort door asks it, and so
@@ -4120,7 +4116,7 @@
     // they can act on*). ⏳ entries stay: they are where the fill says how
     // far the room has got.
     secLive().flatMap((s2) => s2.cards)
-      .flatMap((c) => [c].concat(tasksFor(c)).concat(pwMotionCards(c)))
+      .flatMap((c) => [c].concat(tasksFor(c)).concat(motionCardsFor(c)))
       .filter((c) => !owesOwnAnswer(c))
       .filter((c) => ((c.isGate && !c.isBegin && !c.isClosing) ? stateOf(c, ctx) === 'news' : stateOf(c, ctx) !== 'done'))
       // **A setting you handed over and do not answer is not a task** (Ed,
@@ -4329,17 +4325,11 @@
   // (Ed, 2026-09-12: *[user avatar] Rationale text; if no rationale, no body
   // text*) — it was *Under motion — [the value]*, which the card says at
   // once on opening; the disc is the card's own sealed speaker, since a
-  // motion names no mover (SURFACE C13). The deck's count (Q1348) rides
-  // beneath, on its own line, whether or not a reason was given.
+  // motion names no mover (SURFACE C13). One motion, one entry (Q1367): no
+  // count of others rides beneath, each having an entry of its own.
   const summary = (c) => {
     const m = motionOn(c);
-    if (m) {
-      // the deck's count (Q1348): how many others on this rule still wait for you
-      const me = viewerId();
-      const others = deckMotions(c).filter((r) => r.id !== m.id && !(me && r.answers.has(me))).length;
-      return window.CARDS.railSpeakerHtml(m.why, null) +
-        (others ? '<span class="qv">' + esc(PAGE_COPY.deck.moreAlone(others)) + '</span>' : '');
-    }
+    if (m) return window.CARDS.railSpeakerHtml(m.why, null);
     return '';
   };
 
@@ -4599,55 +4589,62 @@
   const motionWaitsOnMe = (rec) => rec.status === 'running' && viewerIsMember() &&
     !(rec.by !== null && rec.by !== undefined && rec.by === viewerId()) &&
     !(rec.route === 'constitutional' ? mayVoice() : mayJudge());
-  // **A setting's entry holds a deck** (Q1348, Ed 2026-09-12: *a deck per
-  // setting, like the pair-deck*; SURFACE E10, M18): every motion running on
-  // the setting, in the order they were put. The card shows the one you
-  // chose from the ledger, else the first you have not answered, else the
-  // first — so the entry asks while anything is unanswered and files ⏳
-  // only once you have answered them all. Before this the first running
-  // motion was the whole of it, and a member who had answered it stood at
-  // ⏳ over every rival they could never reach (moon2, twenty-six on 💤).
-  const deckMotions = (c) => {
-    if (!cs || !c || c.isGate || c.ansFor || !motionsLive()) return [];
+  // every motion still running or awaiting the crown, in the order they were
+  // put — minus the ones that wait on a grant this member has not taken up
+  // (C9, Q1344), which are nowhere on their page until they do
+  const liveMotions = () => {
+    if (!cs) return [];
     const out = [];
     for (const rec of cs.motionRecords().values()) {
       if (rec.status !== 'running' && rec.status !== 'awaiting-crown') continue;
-      if (motionTargets(rec) !== c.k) continue;
-      if (motionWaitsOnMe(rec)) return [];
+      if (motionWaitsOnMe(rec)) continue;
       out.push(rec);
     }
     return out;
   };
+  // **One motion, one card** (Q1367): a synthetic card wearing its host's
+  // glyph, title and kind — the setting's, the power tab's or the door's —
+  // with `motion` naming the record and `hostKey` the card it stands in the
+  // pile of. Resolves to nothing once the motion has settled, so a stale
+  // `S.open` simply closes, as a record's does. An admit motion keeps its
+  // own card (`admitCard`), one applicant being one motion already.
+  const MOCACHE = {};
+  const motionCard = (k) => {
+    const mm = /^mo:(.+)$/.exec(k);
+    if (!mm || !cs) return undefined;
+    let rec = null;
+    try { rec = cs.motionRecords().get(mm[1]) || null; } catch (e) { rec = null; }
+    if (!rec || (rec.status !== 'running' && rec.status !== 'awaiting-crown')) return undefined;
+    if (rec.payload.kind === 'admit' || motionWaitsOnMe(rec)) return undefined;
+    const host = card(motionTargets(rec));
+    if (!host) return undefined;
+    if (!MOCACHE[k]) MOCACHE[k] = { k, motion: rec.id, early: () => true };
+    const mc = MOCACHE[k];
+    // recomputed rather than frozen, for `admitCard`'s reason: the host's
+    // labels are the page's copy, and the count moves with every answer
+    for (const f of ['g', 't', 'n', 'kind', 'key', 'power', 'base', 'door', 'rule', 'hide']) {
+      if (host[f] !== undefined) mc[f] = host[f]; else delete mc[f];
+    }
+    mc.hostKey = host.k;
+    mc.motionIn = rec.route === 'constitutional' ? rec.answers.size : undefined;
+    return mc;
+  };
+  // the card a motion card stands for: itself where it has no motion
+  const hostOf = (c) => (c && c.motion ? (card(c.hostKey) || c) : c);
+  const hostKeyOf = (c) => (c && c.motion ? c.hostKey : c.k);
   const liveMotionRec = (c) => {
-    const deck = deckMotions(c);
-    if (!deck.length) return null;
-    const picked = S.mPick && S.mPick[c.k] ? deck.find((r) => r.id === S.mPick[c.k]) : null;
-    if (picked) return picked;
-    const me = viewerId();
-    return deck.find((r) => !(me && r.answers.has(me))) || deck[0];
+    if (!cs || !c || !motionsLive()) return null;
+    if (c.motion) {
+      let rec = null;
+      try { rec = cs.motionRecords().get(c.motion) || null; } catch (e) { rec = null; }
+      return rec && (rec.status === 'running' || rec.status === 'awaiting-crown') && !motionWaitsOnMe(rec) ? rec : null;
+    }
+    // an admit motion targets its own card (entry 96)
+    if (!c.admit) return null;
+    for (const rec of liveMotions()) if (motionTargets(rec) === c.k) return rec;
+    return null;
   };
-  // the ledger under the card: every motion on the setting, each with your
-  // answer, the one shown marked; pressing another shows it instead, its
-  // lane pre-pressed with the answer you gave, revisable until it settles
   const deckAnswerWord = { accept: 'yes', keep: 'no', abstain: 'abstain' };
-  const deckLedgerHtml = (c) => {
-    const deck = deckMotions(c);
-    if (deck.length < 2) return '';
-    const me = viewerId();
-    const shown = liveMotionRec(c);
-    return '<div class="mdeck"><p class="eyebrow fieldlab">' + esc(PAGE_COPY.deck.heading(deck.length)) + '</p>' +
-      deck.map((rec) => {
-        const ans = me ? rec.answers.get(me) : undefined;
-        const v = rec.payload && rec.payload.kind === 'set' ? rec.payload.value : null;
-        const what = (v !== null && sentenceFor(c.k, v)) || motionDisplay(rec);
-        const you = ans ? PAGE_COPY.deck.yours[ans] : PAGE_COPY.deck.unanswered;
-        return '<button type="button" class="mdeck-item' + (shown && shown.id === rec.id ? ' on' : '') + '"' +
-          ' data-mpick="' + esc(rec.id) + '" data-answer="' + esc(ans || '') + '"' +
-          (shown && shown.id === rec.id ? ' aria-current="true"' : '') + '>' +
-          '<span class="mdeck-what">' + esc(what) + '</span>' +
-          '<span class="mdeck-you">' + esc(shown && shown.id === rec.id ? PAGE_COPY.deck.showing : you) + '</span></button>';
-      }).join('') + '</div>';
-  };
   const motionOn = (c) => { const rec = liveMotionRec(c); return rec ? pageMotion(rec) : null; };
   // **A record is a settled motion on a setting** (Q942). Withdrawn and
   // kept-at-close motions file nothing — Ed's words are *passes or is
@@ -4741,14 +4738,15 @@
   // Constitutional commits are answerMotion; ordinary judging is a page-side
   // marker feeding the dev adjudication seam (the engine's job post-368).
   const myMAnsOk = () => (viewerRow().mAnsOk || (viewerRow().mAnsOk = new Set()));
-  // **The pressed lane belongs to one motion** (Q1348): `mAns` is what you
-  // pressed and `mAnsFor` which motion it was pressed for. Where the deck
-  // now shows another motion, the lane reads the answer you gave *that*
-  // one from the record — nothing, where you have not answered it — so a
-  // press meant for the first motion never rides into the second.
+  // **The pressed lane belongs to one motion** (Q1348, Q1367): `mAns` is keyed
+  // by the motion card, so a press on one motion never rides into another;
+  // where nothing is pressed this visit, the lane reads the answer you gave
+  // from the record — nothing, where you have not answered it — so a motion
+  // you answered reopens with your answer pre-pressed, revisable
   const effMAns = (c) => {
+    if (S.mAns[c.k] !== undefined) return S.mAns[c.k];
     const rec = liveMotionRec(c);
-    if (!rec || !S.mAnsFor[c.k] || S.mAnsFor[c.k] === rec.id) return S.mAns[c.k];
+    if (!rec || rec.route !== 'constitutional') return undefined;
     const me = viewerId();
     const a = me ? rec.answers.get(me) : undefined;
     return a ? deckAnswerWord[a] : undefined;
@@ -5557,9 +5555,9 @@
       [t, '', t],
     ]);
   };
-  const inviteBody = (m, route, mover) =>
-    motionBlocks('invite', PAGE_COPY.consent.staysAsIs, PAGE_COPY.consent.joins(m.invite), m.why, route, mover);
-  const removeBody = (m, route, mover) => {
+  const inviteBody = (c, m, route, mover) =>
+    motionBlocks(c.k, PAGE_COPY.consent.staysAsIs, PAGE_COPY.consent.joins(m.invite), m.why, route, mover);
+  const removeBody = (c, m, route, mover) => {
     const nm = nameOfMember(m.removee);
     // 🏛️ without [avatar] (Q401a): under 'others' the subject sees the
     // motion running against them — ruled, Ed 2026-08-19 — and is asked
@@ -5568,21 +5566,22 @@
       return '<p class="why">' + PAGE_COPY.consent.removeSelfWhy + '</p>' +
         '<p class="setnote">' + PAGE_COPY.consent.removeSelfCount(m.judged || 0, Math.max(E() - 1, 0)) + '</p>';
     }
-    return motionBlocks('remove', PAGE_COPY.consent.staysIn(nm), PAGE_COPY.consent.leaves(nm), m.why, route, mover);
+    return motionBlocks(c.k, PAGE_COPY.consent.staysIn(nm), PAGE_COPY.consent.leaves(nm), m.why, route, mover);
   };
   // a set motion: the standing clause against the proposed one — the
   // paragraph's own sentence (`decisionLine`) against the full sentence for
   // the motion's own value (A3), never its short label
-  const motionPairBody = (c, m, route, mover) => (m.invite ? inviteBody(m, route, mover)
-    : m.removee !== undefined ? removeBody(m, route, mover)
+  // the picks are keyed by the motion card (`c.k`), the sentences by the
+  // setting it is about (`hostKeyOf`) — one motion, one card (Q1367)
+  const motionPairBody = (c, m, route, mover) => (m.invite ? inviteBody(c, m, route, mover)
+    : m.removee !== undefined ? removeBody(c, m, route, mover)
     // a return in flight (Q386): the power's rule as it stands against the
     // rule it would put back — `m.to` is `pwSaid`'s sentence, the same one the
     // block below the compose offer states, so answering reads as proposing did
-    : c.power ? motionBlocks(c.k, powerHeadLine(c), m.to, m.why, route, mover) + deckLedgerHtml(c)
+    : c.power ? motionBlocks(c.k, powerHeadLine(c), m.to, m.why, route, mover)
     : (() => { const rec = liveMotionRec(c);
       const v = rec && rec.payload && rec.payload.kind === 'set' ? rec.payload.value : null;
-      return motionBlocks(c.k, decisionLine(c), (v !== null && sentenceFor(c.k, v)) || m.to, m.why, route, mover) +
-        deckLedgerHtml(c); })());
+      return motionBlocks(c.k, decisionLine(c), (v !== null && sentenceFor(hostKeyOf(c), v)) || m.to, m.why, route, mover); })());
   const consentBody = (c, m) => motionPairBody(c, m, 'constitutional');
   // the mover's ordinary card is theirs, not an ask (K8, Q1370): the blocks
   // inert with the proposed one marked, and the commit row withdraw alone
@@ -6101,7 +6100,9 @@
   const breakLines = (s) => String(s).replace(/\n/g, '<br>');
   // `withPowers` — true only from the paragraph seam (ctx.decisionLine): the
   // document states the holder line, the card does not (Ed, 2026-09-03)
-  const decisionLine = (c, withPowers) => {
+  const decisionLine = (c0, withPowers) => {
+    // a motion card states the sentence of the setting it is about (Q1367)
+    const c = hostOf(c0);
     // a grant's paragraph states the document's rule (third person, the same
     // for every reader); the card that opens on it is yours
     // 🍾's clause is the Proposals preamble (Ed, 2026-08-22): the tab hangs
@@ -6335,7 +6336,8 @@
     // paragraph its card can render in and the rail entry opened nothing
     foldedSec: (sec) => S.folded.has('cs-' + sec.key) &&
       !sec.cards.some((c) => S.open === c.k ||
-        (tasksFor(c) || []).some((t2) => S.open === t2.k)) &&
+        (tasksFor(c) || []).some((t2) => S.open === t2.k) ||
+        motionCardsFor(c).some((t2) => S.open === t2.k)) &&
       !(sec.key === 'rate' && voiceInStack() && S.open === 'grant-voice'),
     secToggle: (sec) => secToggleHtml('cs-' + sec.key),
     // the whole constitution folds under its own heading (Ed, 2026-08-19);
@@ -6422,7 +6424,9 @@
       // question, or its power tabs — is always in front and the records stand
       // behind it in settle order. The ordering is this list's, never a second
       // sort.
-      return withPw.concat(settledMotionsFor(k)
+      // …every motion running here is its own tab (Q1367), between the
+      // rule's own tabs and the records
+      return withPw.concat(motionCardsFor(card(k))).concat(settledMotionsFor(k)
         .map((_rec, i) => card('rec:' + k + ':' + i)).filter(Boolean));
     },
     // **The lockline tells the truth about who set it** (Q510(a), Ed
@@ -6939,6 +6943,7 @@
     launchFarewell: (...a) => launchFarewell(...a),
     launchGrant: (...a) => launchGrant(...a),
     liveMotionRec: (...a) => liveMotionRec(...a),
+    hostKeyOf: (...a) => hostKeyOf(...a),
     mailGiveUpBatch: (...a) => mailGiveUpBatch(...a),
     mailGiveUpBody: (...a) => mailGiveUpBody(...a),
     mayPen: (...a) => mayPen(...a),
@@ -7206,24 +7211,7 @@
     const adg = ev.target.closest('[data-admitgo]');
     if (adg && !adg.disabled) { liveJudgeAdmit(adg.getAttribute('data-admitgo')); return; }
     const mo2 = ev.target.closest('[data-motion]');
-    if (mo2) {
-      S.mAns[S.open] = mo2.dataset.motion;
-      const shown = liveMotionRec(card(S.open));
-      if (shown) S.mAnsFor[S.open] = shown.id;
-      return render();
-    }
-    // the deck's ledger (Q1348): show that motion, its lane pre-pressed with
-    // the answer you gave it, so a change of mind is one press away
-    const mpick = ev.target.closest('[data-mpick]');
-    if (mpick && S.open) {
-      S.mPick[S.open] = mpick.dataset.mpick;
-      S.mAnsFor[S.open] = mpick.dataset.mpick;
-      const word = deckAnswerWord[mpick.dataset.answer];
-      if (word) S.mAns[S.open] = word; else delete S.mAns[S.open];
-      return render();
-    }
-    // (the power tab's *Keep this* press went with Q1378: the return tab is
-    // one block, and a second press on it lets the draft go, below)
+    if (mo2) { S.mAns[S.open] = mo2.dataset.motion; return render(); }
     const mval = ev.target.closest('[data-mval]');
     if (mval) {
       if (S.draft && S.draft.k === S.open && S.draft.to === mval.dataset.mval) {
@@ -7484,10 +7472,7 @@
               const pressed = effMAns(cw);
               cs.answerMotion(now(), viewerId(), rec.id,
                 pressed === 'yes' ? 'accept' : pressed === 'abstain' ? 'abstain' : 'keep');
-              // the deck moves on (Q1348): the next press shows the next
-              // motion you have not answered, and the lane you pressed
-              // stays this motion's, so nothing rides into the next
-              S.mAns[cw.k] = pressed; S.mAnsFor[cw.k] = rec.id; delete S.mPick[cw.k];
+              S.mAns[cw.k] = pressed;
               syncFromCs();
             } else if (rec && cs.isRemote) {
               liveJudge(cw); myMAnsOk().add(cw.k);
