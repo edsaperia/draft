@@ -4708,7 +4708,7 @@
     "eyebrow": "",
     "head": "All proposals are made anonymously.Chosen by the membership",
     "lock": "",
-    "body": "All proposals are made anonymously.Prefer thisAll proposals are made anonymously, and all names are revealed at the end.Names put pressure on people; the writing should stand alone.Prefer thisIndifferent",
+    "body": "A proposer is never named unless they sign the proposal themselves.Propose thisProposers are named in the closing record, never before.Propose thisProposers are named in the closing record, and sooner if they sign.Propose thisEvery proposal carries its proposer’s name from the moment it is made.Propose this",
     "options": [
      {
       "set": null,
@@ -4722,8 +4722,13 @@
      },
      {
       "set": null,
-      "val": "abstain",
-      "label": "Indifferent"
+      "val": "Names at the close, or earlier by choice",
+      "label": "Proposers are named in the closing record, and sooner if they sign."
+     },
+     {
+      "set": null,
+      "val": "Names from the start",
+      "label": "Every proposal carries its proposer’s name from the moment it is made."
      }
     ],
     "inputs": [],
@@ -5082,7 +5087,7 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "All proposals are made anonymously.Keep thisAll proposals are made anonymously, and all names are revealed at the end.Names put pressure on people; the writing should stand alone.Prefer thisAbstain",
+    "body": "All proposals are made anonymously.Prefer thisAll proposals are made anonymously, and all names are revealed at the end.Names put pressure on people; the writing should stand alone.Prefer thisIndifferent",
     "options": [
      {
       "set": null,
@@ -5097,7 +5102,7 @@
      {
       "set": null,
       "val": "abstain",
-      "label": "Abstain"
+      "label": "Indifferent"
      }
     ],
     "inputs": [],
@@ -5126,33 +5131,13 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "Members may make a new proposal ✏️ every 3 hours.Keep thisMembers may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer.Prefer thisIndifferent",
-    "options": [
-     {
-      "set": null,
-      "val": "stands",
-      "label": "Members may make a new proposal ✏️ every 3 hours."
-     },
-     {
-      "set": null,
-      "val": "proposed",
-      "label": "Members may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer."
-     },
-     {
-      "set": null,
-      "val": "either",
-      "label": "Indifferent"
-     }
-    ],
+    "body": "Members may make a new proposal ✏️ every 3 hours.Members may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer.Proposed",
+    "options": [],
     "inputs": [],
     "foot": [
      {
       "label": "🗑️",
       "title": "Withdraw it — the ✏️ comes back in full"
-     },
-     {
-      "label": "",
-      "title": null
      }
     ],
     "hints": [
@@ -5612,6 +5597,7 @@
      }
     ],
     "hints": [
+     "Proposal Rate — settled",
      "Set the Proposal Rate — yours, being voted on",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
@@ -6051,6 +6037,7 @@
      }
     ],
     "hints": [
+     "Proposal Rate — settled",
      "Set the Proposal Rate — yours, being voted on",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
@@ -6212,19 +6199,28 @@
     "eyebrow": "",
     "head": "Members may make a new proposal ✏️ every 3 hours.Chosen by the Founder ✒️",
     "lock": "",
-    "body": "Members may make a new proposal ✏️ every 3 hours.Members may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer.Proposed",
+    "body": "Members may make a new proposal ✏️ every minutes.Propose this",
     "options": [],
-    "inputs": [],
+    "inputs": [
+     {
+      "type": "number",
+      "ph": null
+     }
+    ],
     "foot": [
      {
       "label": "🗑️",
-      "title": "Withdraw it — the ✏️ comes back in full"
+      "title": "Discard this motion"
+     },
+     {
+      "label": "✏️",
+      "title": "Propose it"
      }
     ],
     "hints": [
      "We should change this because…",
      "Proposal Rate — close it",
-     "Set the Proposal Rate — waiting on you",
+     "Set the Proposal Rate — yours, being voted on",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Rejected: a new proposal every 90 minutes — settled",
@@ -6310,6 +6306,7 @@
      }
     ],
     "hints": [
+     "Proposal Rate — settled",
      "Set the Proposal Rate — yours, being voted on",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
@@ -7656,7 +7653,7 @@
     "eyebrow": "",
     "head": "All proposals are made anonymously.Chosen by the membership",
     "lock": "",
-    "body": "All proposals are made anonymously.Prefer thisAll proposals are made anonymously, and all names are revealed at the end.Names put pressure on people; the writing should stand alone.Prefer thisIndifferent",
+    "body": "A proposer is never named unless they sign the proposal themselves.Propose thisProposers are named in the closing record, never before.Propose thisProposers are named in the closing record, and sooner if they sign.Propose thisEvery proposal carries its proposer’s name from the moment it is made.Propose this",
     "options": [
      {
       "set": null,
@@ -7670,8 +7667,13 @@
      },
      {
       "set": null,
-      "val": "abstain",
-      "label": "Indifferent"
+      "val": "Names at the close, or earlier by choice",
+      "label": "Proposers are named in the closing record, and sooner if they sign."
+     },
+     {
+      "set": null,
+      "val": "Names from the start",
+      "label": "Every proposal carries its proposer’s name from the moment it is made."
      }
     ],
     "inputs": [],
@@ -8109,7 +8111,7 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "All proposals are made anonymously.Keep thisAll proposals are made anonymously, and all names are revealed at the end.Names put pressure on people; the writing should stand alone.PreferredAbstain",
+    "body": "All proposals are made anonymously.Prefer thisAll proposals are made anonymously, and all names are revealed at the end.Names put pressure on people; the writing should stand alone.PreferredIndifferent",
     "options": [
      {
       "set": null,
@@ -8124,7 +8126,7 @@
      {
       "set": null,
       "val": "abstain",
-      "label": "Abstain"
+      "label": "Indifferent"
      }
     ],
     "inputs": [],
@@ -8153,7 +8155,7 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "Members may make a new proposal ✏️ every 3 hours.Keep thisMembers may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer.Prefer thisIndifferent",
+    "body": "Members may make a new proposal ✏️ every 3 hours.Prefer thisMembers may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer.Prefer thisIndifferent",
     "options": [
      {
       "set": null,
@@ -9236,7 +9238,7 @@
     "eyebrow": "",
     "head": "Members may make a new proposal ✏️ every 3 hours.Chosen by the Founder ✒️",
     "lock": "",
-    "body": "Members may make a new proposal ✏️ every 3 hours.Prefer thisMembers may make a new proposal ✏️ every 6 hours.Fewer, better proposals — let the wait be longer.Prefer thisIndifferent",
+    "body": "Members may make a new proposal ✏️ every minuteshoursdays.Choose ✒️ or Propose ✏️ thisWhy are you changing this?ABAsh Bellamy 👑",
     "options": [
      {
       "set": "rateBy",

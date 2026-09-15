@@ -148,14 +148,20 @@ else say('motion     · ' + mo.id + ' ' + mo.route + ' running, mine=' + mo.mine
 if (mo && mo.route !== 'ordinary') fail('the route', 'the motion should race at ✏️, saw ' + mo.route);
 
 const r1 = await rail(mover);
-const inv = r1.find((e) => e.k === 'invite');
+// under Q1367 a running motion is its own card, `mo:<id>`, wearing the door's ✉️ — the entry and the tab are the motion's, not the door's
+const isMo = (e) => /^mo:/.test(e.k);
+const inv = r1.find(isMo);
 say('rail       · ' + JSON.stringify(r1.map((e) => e.k + ':' + e.st)));
 if (!inv) fail('the entry', 'the mover has no ✉️ entry (Q1370\'s shape)');
 else if (inv.st !== 'st-yours') fail('the entry', 'the mover\'s ✉️ entry should be theirs (st-yours ✏️), saw ' + inv.st);
 
+await mover.evaluate(() => { const t = document.querySelector('[data-tab^="mo:"]'); if (t) t.click(); });
+await T(800);
 const shown = await mover.evaluate(() => {
-  const card = document.querySelector('.setupcard[data-setupcard="invite"]');
+  const card = document.querySelector('.setupcard[data-setupcard^="mo:"]');
   return {
+    tabs: [...document.querySelectorAll('[data-tab]')].map((t) => t.dataset.tab).filter((k) => /invite|mo:/.test(k)),
+    open: [...document.querySelectorAll('.setupcard')].map((c) => c.dataset.setupcard),
     head: (card && card.querySelector('.headpeople') || {}).textContent?.replace(/\s+/g, ' ').trim(),
     chips: [...(card ? card.querySelectorAll('.headpeople .chip') : [])].map((c) => c.textContent.trim()),
     radios: [...(card ? card.querySelectorAll('button.lanepick') : [])].length,
@@ -170,7 +176,7 @@ if (shown.commits.some((t) => /✓|Answer/.test(t)) || shown.commits.length !== 
   fail('the commit row', 'the mover\'s row should be withdraw alone, saw ' + JSON.stringify(shown.commits));
 }
 // the subsection: close the card and read *Invitees* as document text
-await mover.evaluate(() => { const t = document.querySelector('[data-tab="invite"]'); if (t) t.click(); });
+await mover.evaluate(() => { const t = document.querySelector('[data-tab^="mo:"]'); if (t) t.click(); });
 await T(800);
 const sub = await mover.evaluate(() => {
   const h = document.getElementById('cs-mem-invitees');
@@ -183,7 +189,7 @@ if (!sub || !/newbie/.test(sub) || !/proposed/.test(sub)) fail('the subsection',
 /* ---- the other member is asked ----------------------------------------- */
 const judge = await seat(m2);
 const r2 = await rail(judge);
-const inv2 = r2.find((e) => e.k === 'invite');
+const inv2 = r2.find(isMo);
 say('other seat · ' + JSON.stringify(r2.map((e) => e.k + ':' + e.st)));
 if (!inv2) fail('the other entry', 'the other member has no ✉️ entry');
 else if (inv2.st !== 'st-ask') fail('the other entry', 'the other member\'s ✉️ entry should ask (st-ask), saw ' + inv2.st);

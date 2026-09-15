@@ -3965,7 +3965,11 @@
                 : '<div class="memrow nobody">(no outstanding invitations)</div>',
                 // 📭 stands on the *Invitees* heading (E34): the give-up is
                 // about somebody listed here, and this is where a reader looks
-                ['invite', 'pw:u:invite', 'pw:a:invite'].concat(mailGiveUpKeys())) +
+                // …and a running invitation motion is its own tab in this pile
+                // (Q1367: one motion, one card — `motionCardsFor`, as `chipsFor`
+                // does for a setting; this pile is listed by hand, so it lists them too)
+                ['invite', 'pw:u:invite', 'pw:a:invite'].concat(mailGiveUpKeys())
+                  .concat(motionCardsFor(card('invite')).map((c) => c.k))) +
               (policyNow() === 'apply'
                 ? memSub('Applicants', memApplicantRows() ||
                   '<div class="memrow nobody">(no applicants at the moment)</div>', admitKeys()) : '') +
@@ -3973,7 +3977,7 @@
                 ? memSub('Lapsed', lapsedOut.map(memRow).join(''), []) : '') +
               memSub('Proposed for removal', proposedOut.length ? proposedOut.map(memRow).join('')
                 : '<div class="memrow nobody">(nobody proposed for removal)</div>',
-                ['remove', 'pw:u:remove', 'pw:a:remove']));
+                ['remove', 'pw:u:remove', 'pw:a:remove'].concat(motionCardsFor(card('remove')).map((c) => c.k))));
       } },
     // **Proposals reads second** (Q871, Q872, Ed 2026-08-26: *Proposals above
     // Decisions* — reversing *Proposals reads fourth*, Ed 2026-08-21). That
@@ -4471,11 +4475,12 @@
   // quo the act is about — so opening ❌ never hides the people it acts on.
   // ✉️ heads with the invitees, ❌ with the proposed-for-removal; the price
   // sentence stands beneath the list, in the same head.
+  // a motion card on a door (`mo:…`, Q1367) heads with its host door's people
   const doorPeople = (c) => {
-    const rows = c.k === 'invite'
+    const rows = hostKeyOf(c) === 'invite'
       ? S.roster.filter((p) => !p.in).concat(invitePendingRows())
       : (cs ? S.roster.filter((p) => removalPendingIds().has(p.mid || 'founder')) : []);
-    const empty = c.k === 'invite' ? PAGE_COPY.doorEmpty.invite : PAGE_COPY.doorEmpty.remove;
+    const empty = hostKeyOf(c) === 'invite' ? PAGE_COPY.doorEmpty.invite : PAGE_COPY.doorEmpty.remove;
     return '<div class="headpeople">' + (rows.length
       ? rows.map((p) => '<span class="hp">' + avHtml(p) + ' ' +
           esc(p.n || p.e || 'Anonymous') + pendingChip(p) + '</span>').join('')
@@ -5013,7 +5018,7 @@
   // is, it always is — without this the membership card never composed, and
   // invitations and removals had no door.
   // a door whose act the viewer's own word performs is a box, not a composer
-  const doorDirect = (c) => !!c.door && (c.k === 'invite' ? directInvite() : directRemove());
+  const doorDirect = (c) => !!c.door && (hostKeyOf(c) === 'invite' ? directInvite() : directRemove());
   // **On a closed document nobody composes** (entry 62, SURFACE K2). This is
   // its own term rather than something `motionsLive()` provides: `canJudge()`
   // is `constitutedAtT !== null` and has never asked about the
@@ -6210,11 +6215,11 @@
         // 2026-09-02): where the viewer's word sends, the head is the people
         // alone — the composer branch keeps the price, which is what a
         // member composing needs
-        if (c.k === 'invite' && doorDirect(c)) return doorPeople(c);
+        if (hostKeyOf(c) === 'invite' && doorDirect(c)) return doorPeople(c);
         // ❌ heads with its people alone (Ed's QA, 2026-09-02 pm): the policy
         // is 🥾's clause to state — *this is the place to remove, not where
         // the removal policy is set*
-        if (c.k === 'remove') return doorPeople(c);
+        if (hostKeyOf(c) === 'remove') return doorPeople(c);
         const rule = settled(c) ? breakLines(linkify(esc(decisionLine(c))))
           : composerOn(c) ? esc(standsOf(c.k)) : '';
         return doorPeople(c) + (rule ? '<div class="doorrule">' + rule + '</div>' : '');
