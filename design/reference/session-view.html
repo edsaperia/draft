@@ -402,7 +402,7 @@
   const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml: cardHtml0,
     nameBody, pictureBody, opt, num, numIn, ctlWord, someIn, ANSWER, stateOf, labelOf, nounOf,
     MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml, stripHtml, readBody,
-    routeFor, motionCommitHtml, BLINDNOTE, methodNote, listOf, syncSlider } = window.SETUP;
+    routeFor, motionCommitHtml, BLINDNOTE, listOf, syncSlider } = window.SETUP;
   // **Every card can carry a refusal** (Q1330, SURFACE Y25): the settings,
   // motion and door bodies draw `doorErrHtml` where the control that tried
   // stands, and every other kind — a gate, a grant, an answer, news — drew
@@ -1040,33 +1040,22 @@
   // the rung keeps their 12; and **only on the transition** into the rung, so
   // a field they deliberately cleared is not refilled behind them. Called
   // before the assignment, which is what makes the transition visible.
-  // …and since entry 165 the traffic runs both ways on a percent ladder,
-  // because there the rung **is** the value. A preset carries its own holder
-  // with it — picking *Broad agreement* is picking the number and taking the
-  // question back in one press — and picking *A number of my own* off a preset
-  // has to empty the field, or the fourth rung would light with 80 in it and
-  // read as the preset it is not. A number typed back to 80 lands on *Broad
-  // agreement* again, which is the same rule seen from the other side: the
-  // rung is the value, matched by value and never by label (Q620).
+  // …entry 165's other half — the traffic running *back* from a typed number
+  // onto the rung that means it, so that 80 lit *Broad agreement* — went with
+  // 🌡️ on 2026-09-15 (Q1362): the bar was the page's one percent ladder, the
+  // only control whose rung **was** its value. One-way fill is what is left.
   const fillRung = (key, val) => {
     if (key === 'rateBy' && val === 'founder' && S.rateBy !== 'founder') {
       for (const k of Object.keys(RATE_START)) if (unset(S[k])) S[k] = RATE_START[k];
     }
-    if (key === 'tClose') S.barBy = 'founder';
-    if (key === 'tStart') S.shape = 'ramp';
     // a ⏰ chip is the *At a set time* rung's own field (entry 166, F6)
     if (key === 'endsAt') S.ending = 'ends';
-    const rungPct = (v) => M.BAR_RUNGS.some((r) => r.pct === +v);
-    if (key === 'barBy' && val === 'founder' && rungPct(S.tClose)) S.tClose = '';
   };
   // the founder's provisional radio state → the typed value the module takes
   const TYPED = {
     title: () => ({ text: S.title }),
     slug: () => ({ slug: S.slug }),
     ending: () => (S.ending === 'perpetual' ? { endsAtMs: null } : { endsAtMs: Date.parse(S.endsAt) }),
-    bar: () => ({ pct: +S.tClose }),
-    pace: () => (S.shape === 'ramp' && S.ending !== 'perpetual'
-      ? { shape: 'ramp', startPct: +S.tStart } : { shape: 'fixed' }),
     quorum: () => (S.quorumForm === 'count'
       ? { form: 'count', n: +S.quorumN } : { form: 'share', n: +S.quorumPct }),
     authorship: () => ({ rung: S.authorship }),
@@ -1085,7 +1074,6 @@
     // the form is the member's own since Q1162 — the block they chose, never
     // the founder's frame
     quorum: (v) => ({ form: S.myAns.quorumForm || S.quorumForm, n: +v }),
-    bar: (v) => ({ pct: +v }),
     ending: (v) => (v === 'never' ? { endsAtMs: null } : { endsAtMs: Date.parse(v) }),
     authorship: (v) => ({ rung: v }),
     judgments: (v) => ({ rung: v }),
@@ -1101,7 +1089,7 @@
   // a typed value → the page's own vocabulary (what STANDS/DECIDED speak)
   const PAGEVAL = {
     // rate's page scalar is the interval since Q1160
-    quorum: (v) => v.n, bar: (v) => v.pct, rate: (v) => v.dripMinutes,
+    quorum: (v) => v.n, rate: (v) => v.dripMinutes,
     ending: (v) => (v.endsAtMs === null ? 'never' : msToLocal(v.endsAtMs)),
     // **the day count is exact, never rounded** (Q1321): a spell the room
     // set under a day rounded to *0 days* on every reader; the fraction
@@ -1226,7 +1214,7 @@
       c.heads ? n(c.heads, PAGE_COPY.prose.heading) : '']) + PAGE_COPY.prose.below;
   };
   // which page field carries a setting's delegation radio ('roster' = the members')
-  const DKEY = { ending: 'ending', bar: 'barBy', quorum: 'quorumBy',
+  const DKEY = { ending: 'ending', quorum: 'quorumBy',
     authorship: 'authorship', judgments: 'judgments',
     chamber: 'chamber', rate: 'rateBy', lapse: 'lapse', removal: 'removal',
     // v0.52: these three only ever read 'roster' once their options render
@@ -1244,23 +1232,16 @@
     if (k === 'quorum' && cs.quorumForm !== S.quorumForm) {
       try { cs.setQuorumForm(now(), S.quorumForm); } catch (e) {}
     }
-    // 🪜 rides 🌡️'s commit (Q512): it is not a task of its own, so setting the
-    // threshold sets the pacing with it — at whatever its tab holds, which is
-    // rising from 55% until somebody changes it.
-    // **And it rides the hand-over too** (Q775, Ed 2026-08-25: *maybe the 🌡️
-    // and 🪜 didn't generate a task*). The ramp is the founder's whichever way
-    // 🌡️ goes — the bar at the close is consent, the ramp that reaches it is
-    // pacing (Q341/Q415) — so it is owed either way. It rode only the *set*
-    // branch, below the delegate return, and 🪜 is in neither ORDER nor any
-    // section's keys, so nothing on the surface could ever ask for it: a
-    // delegated 🌡️ left `mustAct('pace')` true for ever, `otherTasksLeft()`
-    // counted it, `ansDue()` was false, and **not one delegated question ever
-    // reached the founder**. It stands above the return now, so the commit
-    // answers it whichever branch the commit takes.
-    if (k === 'bar') {
-      S.seen.add('pace');
-      try { cs.setSetting(now(), midOf('pace'), TYPED.pace()); } catch (e) {}
-    }
+    // **Both halves of F18 retired together** (Q1362, 2026-09-15). 🪜 rode
+    // 🌡️'s commit because it was no task of its own (Q512), and Q775's fix
+    // moved that ride above the delegate return so a handed-over bar still
+    // answered the ramp — the defect being that 🪜 was in neither `ORDER` nor
+    // any section's keys, so nothing on the surface could ask for it and a
+    // delegated 🌡️ left `mustAct('pace')` true for ever. There is no ride
+    // left to place: the bar is not a member's question any more and neither
+    // setting has a card, so both carry a `retiredAnswer` and 🍾 resolves
+    // whatever a founder handed over before the change. The post-mortem is
+    // Q775's, in design/DECISIONS.md.
     if (wantsDelegate(k)) { cs.delegate(now(), mid); return; }
     if (csDelegated(k)) cs.reclaim(now(), mid);
     watchSet(k, cs.setSetting(now(), mid, TYPED[k](), (S.setWhy && S.setWhy[k]) || undefined));
@@ -1281,13 +1262,13 @@
   // has to be remembered rather than derived: one snapshot per opening,
   // taken in render after the module has had its say, and compared to decide
   // whether the bin has anything to throw away.
-  const REVERTKEYS = () => ['title', 'slug', 'docShape', 'ending', 'endsAt', 'endChip', 'tClose', 'shape', 'tStart',
+  const REVERTKEYS = () => ['title', 'slug', 'docShape', 'ending', 'endsAt', 'endChip',
     'quorumForm', 'quorumPct', 'quorumN', 'joinBy', 'policyBy', 'titleBy', 'slugBy',
     'lapse', 'lapseDays', 'removal', 'removeWho', 'admission', 'authorship', 'judgments',
     // ⏱️'s number and unit fields (Q1161) — missing until Q1286 (e), so 🗑️ on
     // ⏱️ left the typed number on the card and a later ✒️ would have committed it
     'grant', 'dripMin', 'dripN', 'dripUnit', 'cap', 'chamber',
-    'barBy', 'quorumBy', 'rateBy', 'myname', 'mypic', 'myemail', 'hatPick',
+    'quorumBy', 'rateBy', 'myname', 'mypic', 'myemail', 'hatPick',
     'namePick', 'picPick', 'appPicPick',
     // ✋ 🖼️'s unsent value rides the snapshot too (Q1327): 🗑️ puts the draft
     // back to what it was at the opening, and the standing value is untouched
@@ -1389,7 +1370,8 @@
     // else's — dropped whenever the open card changes.
     title: '', titleDraft: null, slug: '',
     // 🧭 the document's shape, chosen before 📧 (entry 166): '' until chosen,
-    // then a row's name or 'custom'. **Never `S.shape`, which is 🪜's.**
+    // then a row's name or 'custom'. It is `docShape` rather than `shape`
+    // because `S.shape` was 🪜's, which left the surface with 🌡️ (Q1362).
     docShape: '',
     // which ⏰ chip was pressed (entry 166), by the chip's own id — the values
     // move with the clock, so the highlight cannot be read off `endsAt`
@@ -1420,9 +1402,6 @@
       // the module is the truth about it, this is the provisional layer's copy
       shutAcked: false },
     ending: '', endsAt: '',
-    // 🪜 is the one thing that arrives answered (Q512): rising from 55%,
-    // stated inside the threshold's own clause and changed on its tab
-    barBy: '', tClose: '', shape: 'ramp', tStart: 55,
     quorumBy: '', quorumForm: '', quorumPct: '', quorumN: '',
     joinBy: '', admission: '',
     lapse: '', lapseDays: '',
@@ -2148,7 +2127,7 @@
   // `key` is the state field that carries delegation, and it is what decides
   // which **pile** a card stands in: taking a setting back moves its tab from
   // the members' pile to the founder's, in front of you.
-  const DELEGABLE = ['ending', 'barBy', 'quorumBy', 'authorship',
+  const DELEGABLE = ['ending', 'quorumBy', 'authorship',
     'judgments', 'rateBy', 'chamber', 'lapse', 'removal', 'admission', 'policyBy'];
   const delegated = (key) => DELEGABLE.includes(key) && S[key] === 'roster';
 
@@ -2471,31 +2450,12 @@
       dist: [2, 3, 5, 3, 1], distTop: 4, distEnds: ['Tue', 'Never'] },
 
     // — the constitution -------------------------------------------------
-    // **The threshold is two decisions of different kinds** (Ed, 2026-08-18,
-    // Q341). Consent is about the bar **at the close**, where an adoption is
-    // permanent — one number. How it gets there is *pacing*, ordinary by §9.6's
-    // own test, on the next card.
-    // **Its strip is drawn over the rungs, from the room's own answers**
-    // (entry 165): `strip: 'rungs'` is what `watchBody` reads, and
-    // `distribution` is a list of the answers themselves rather than a
-    // histogram — a fixture literal here, overwritten by `resolveCounts` from
-    // the module on any document that has one. Every other card on this page
-    // still draws the Hollow Oak histogram wherever it is opened, which is a
-    // defect of its own and not this entry's to fix.
-    { k: 'bar', g: '🌡️', t: PAGE_COPY.cards.bar.t, n: PAGE_COPY.cards.bar.n, kind: 'constitutional', gate: 'judge', key: 'barBy', p: 0.64,
-      rule: PAGE_COPY.cards.bar.rule,
-      takes: PAGE_COPY.cards.bar.takes, result: 'Broad agreement — 80%', strip: 'rungs',
-      taken: { pct: 80 },
-      distribution: [{ pct: 80 }, { pct: 80 }, { pct: 72 }, { pct: 72 }, { pct: 72 },
-        { pct: 60 }, { pct: 60 }, { pct: 60 }, { pct: 60 }, { pct: 60 },
-        { pct: 60 }, { pct: 60 }, { pct: 60 }, { pct: 60 }] },
-    // **Not a task** (Q512, Ed 2026-08-21: *I don't think it should be in the
-    // queue; just default it to 55%*). It is the one setting that arrives
-    // answered — a deliberate exception to *nothing is pre-answered*, because
-    // the ramp is part of what the threshold says rather than a question of
-    // its own. Its tab stands in 🌡️'s stack for anybody who wants to change
-    // it, and 🌡️'s own commit sets it.
-    { k: 'pace', g: '🪜', t: PAGE_COPY.cards.pace.t, n: PAGE_COPY.cards.pace.n, kind: 'ordinary', dep: ['bar'], changeable: true },
+    // **🌡️ and 🪜 stood here until 2026-09-15** (Q1362, Ed: *the status quo is
+    // in effect just another proposal*). The bar was the one number a member
+    // could not read — a confidence, not a share — and the rule that needed it
+    // is gone: the document's text on a footprint is whichever candidate the
+    // ranking puts on top once the quorum is met. 👥 below is what is left of
+    // the pair, and it is the number the room actually controls.
     // The number is the room's; the **form** — count or share — is the
     // founder's wording of the question (Ed, 2026-08-18: *quorum can either be
     // a fixed number or a proportion of membership size*; §9.0a).
@@ -2845,14 +2805,13 @@
   // proposals are about, so there is one grammar and no exceptions.
   //
   // The nouns are written here rather than taken from the cards' titles,
-  // because most of those titles are **questions** — *Proposal pass
-  // threshold?*, *Do Memberships Lapse?* — and a question cannot follow
+  // because most of those titles are **questions** — *Can Strangers Apply?*,
+  // *Do Memberships Lapse?* — and a question cannot follow
   // "about". The fallback is *this*, so a setting added to the catalogue
   // without a noun states something true rather than "undefined".
   const PW_NOUN = {
     title: PAGE_COPY.pw.noun.title, slug: PAGE_COPY.pw.noun.slug, text: PAGE_COPY.pw.noun.text,
-    ending: PAGE_COPY.pw.noun.ending, bar: PAGE_COPY.pw.noun.bar,
-    pace: PAGE_COPY.pw.noun.pace, quorum: PAGE_COPY.pw.noun.quorum,
+    ending: PAGE_COPY.pw.noun.ending, quorum: PAGE_COPY.pw.noun.quorum,
     authorship: PAGE_COPY.pw.noun.authorship, judgments: PAGE_COPY.pw.noun.judgments,
     chamber: PAGE_COPY.pw.noun.chamber, rate: PAGE_COPY.pw.noun.rate, lapse: PAGE_COPY.pw.noun.lapse,
     removal: PAGE_COPY.pw.noun.removal,
@@ -3246,8 +3205,9 @@
   // the keystroke repaints in place and the blur re-renders, but what the
   // number *means* must not depend on which of the two got there first.
   // Emptying the box falls back to the rung the box lives in where there is
-  // one — on 🌡️ that is *A number of my own*, which is a place to answer and
-  // not an answer — and to nothing where there is not (💤, ⏱️).
+  // one — a place to answer and not an answer — and to nothing where there is
+  // not (💤, ⏱️). 🌡️'s *A number of my own* was the rung that shape was
+  // written for; it left the surface with the bar (Q1362).
   const setAnsNum = (t) => {
     const k = t.dataset.ansnum;
     const pick = t.closest('.pick');
@@ -3293,8 +3253,6 @@
     judgments: () => !!S.judgments,
     lapse: () => S.lapse === 'never' || (!!S.lapse && isNum(S.lapseDays)),
     ending: () => S.ending === 'perpetual' || (!!S.ending && !!S.endsAt),
-    bar: () => isNum(S.tClose),
-    pace: () => S.shape === 'fixed' || (S.shape === 'ramp' && isNum(S.tStart)),
     quorum: () => !!S.quorumForm && isNum(S.quorumForm === 'count' ? S.quorumN : S.quorumPct),
     // the cap cannot be below the grant: the module quietly raises it, so a
     // cap of 2 beside a grant of 5 would print a rule the document does not have
@@ -3436,10 +3394,12 @@
   } });
   // **The strip and the statline under it are the room's, not the fixture's**
   // (entry 165). `c.in` has always been written onto the record from the
-  // module here; `distribution` and `result` join it on the one card whose
-  // strip is drawn over rungs, so what a member reads after the question
+  // module here; `taken` joins it, so what a member reads after the question
   // closes is what the room actually answered. A document with no resolution
   // yet leaves the literals where they are, which is what the fixture reads.
+  // The `strip: 'rungs'` half — a strip drawn over the ladder itself, and a
+  // `result` naming the rung the room landed on — belonged to 🌡️ alone and
+  // went with it (Q1362); no card names a rung as its value now.
   const liveStrip = (c, st) => {
     if (!st.distribution || !st.distribution.length) return;
     // **What the room took, as a typed value** (entry 167). The statline says
@@ -3449,27 +3409,16 @@
     // below. Every consent-resolved card gets it; the fixture cards carry
     // their own literal for the walk that never reaches a module.
     c.taken = st.distribution[0];
-    if (c.strip !== 'rungs') return;
-    c.distribution = st.distribution;
-    // **What the strip is about is the resolution, not the value.** The
-    // statline beside it says *The document takes the highest*, which is a
-    // sentence about the blind collection — and a motion carried since then
-    // has moved `st.value` away from it, so reading the value here would put a
-    // number under that sentence the room never answered. `distribution[0]` is
-    // the taken answer by construction (`resolveConsent` sorts and takes the
-    // head), which is also the column the strip accents: one fact, twice.
-    const pct = +st.distribution[0].pct;
-    const rung = M.BAR_RUNGS.find((r) => r.pct === pct);
-    c.result = (rung ? rung.label + ' — ' : '') + pct + '%';
   };
 
   // **A card with a dependency does not appear until its dependency is settled**
   // (Ed, 2026-08-18: *if there are dependencies, just don't show them the next
   // cards until they're done*). Two dependencies, both real: anything the room
   // can be asked waits on the **roster**, since *the members decide* means
-  // nothing until there are members; and the threshold, the drip and the ending
-  // date wait on **whether it ends**, since a rising bar needs an endpoint and
-  // the drip is paced against one.
+  // nothing until there are members; and the drip and the ending date wait on
+  // **whether it ends**, the drip being paced against one. 🌡️ and 🪜 were the
+  // other two, a rising bar needing an endpoint; both left the surface with
+  // the bar itself (Q1362).
   // **A delegated question waits for a room** (Ed, 2026-08-19: *if only the
   // founder is on the document … they shouldn't be shown the delegated
   // decision until members have been invited*). Handing a setting to the
@@ -3597,13 +3546,13 @@
     'grant-pen', 'grant-shield', 'chamber',
     'admission', 'applications', 'hat', 'lapse', 'removal',
     'canpropose', 'canjudge', 'grant-voice', 'rate',
-    'ending', 'bar', 'quorum',
+    'ending', 'quorum',
     'authorship', 'judgments',
     'text', 'begin'];
   // a card in the order waits for everything above it and nothing else: the
   // ORDER *is* the dependency list. Since Q619 (b) (2026-08-22) a `dep` array
-  // survives only on the four cards outside it — 🪜 pace, ✉️ ❌ the doors and
-  // 🥂 — which `orderReady` still paces by their own dependency; the answer
+  // survives only on the cards outside it — ✉️ ❌ the doors and 🥂, 🪜 having
+  // left with 🌡️ — which `orderReady` still paces by their own dependency; the answer
   // tasks cascade in ORDER too (`ansWaveReady`), so nothing else reads one.
   // **A gate holds its place without holding the queue.** A gate is settled
   // only once it has been OK'd, and ⚖️ Judging cannot open until the whole
@@ -4039,15 +3988,13 @@
       extraKeys: () => releaseKeys() },
     { key: 'deciding', title: 'Decisions',
       text: '',
-      // ⏰ when it ends, 🌡️ how sure the room must be at that point, 🪜 how
-      // that number gets there, 👥 how many must have judged. The threshold
-      // and its pacing are one thought on two cards, so they are adjacent;
-      // quorum is a different kind of number and reads last (Ed, 2026-08-21).
-      keys: ['ending', 'closing', 'bar', 'quorum'],
-      // 🪜 is in neither `keys` nor ORDER (Q512, finding 598): it has no
-      // clause and no rail entry — it arrives answered, is stated inside the
-      // threshold clause, and is changed on a tab in 🌡️'s own stack.
-      body: (h) => ['ending', 'closing', 'bar', 'quorum'].map(card)
+      // ⏰ when it ends, 👥 how many must have voted. Two of the four left on
+      // 2026-09-15 (Q1362): 🌡️ *how sure the room must be at that point* and
+      // 🪜 *how that number gets there* were the confidence, and the rule that
+      // asked for one is gone — the wording the room prefers stands once the
+      // quorum is met, so 👥 is the whole of what this section decides.
+      keys: ['ending', 'closing', 'quorum'],
+      body: (h) => ['ending', 'closing', 'quorum'].map(card)
         .filter((c) => c && visible(c)).map((c) => h.para(c) + h.tasks(c)).join('') },
     // "Anonymity" (Ed, 2026-08-19), not "Privacy"
     { key: 'privacy', title: 'Anonymity',
@@ -4251,12 +4198,6 @@
     ending: () => (perpetual() ? 'Never — it runs until too few members are active'
       : new Date(endingVal() || S.endsAt).toLocaleString(undefined,
         { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false })),
-    bar: () => (takenOf('bar') || S.tClose) + '% sure at the end',
-    pace: () => { const v = takenValOf('pace');
-      const shape2 = v ? v.shape : S.shape;
-      const start2 = v && v.shape === 'ramp' ? v.startPct : S.tStart;
-      return (perpetual() ? PAGE_COPY.val.fixedNoEnd
-        : shape2 === 'ramp' ? PAGE_COPY.val.risingFrom(start2) : 'The same number throughout'); },
     quorum: () => (S.quorumForm === 'count'
       ? PAGE_COPY.val.quorumOf(Math.min(takenOf('quorum') || S.quorumN, E()), E())
       : PAGE_COPY.val.quorumPct(takenOf('quorum') || S.quorumPct, quorumCount(), E())),
@@ -4288,7 +4229,6 @@
   const said = PAGE_COPY.said;
   const ANSVALUE = {
     quorum: (v) => said(QUORUM_RULE(v, S.myAns.quorumForm)),
-    bar: (v) => said(BAR_RULE(v, null)),
     ending: (v) => said(ENDING_RULE(v === 'never' || isNaN(Date.parse(v)) ? 'never' : v)),
     authorship: (v) => said(AUTH_RULE[v] || v),
     judgments: (v) => said(JUDG_RULE[v] || v),
@@ -4310,7 +4250,7 @@
     // own number and unit
     rate: (v) => said(RATE_RULE(+v * (DRIP_UNITS[S.myAns.rateUnit] || 1))),
   };
-  const ANSASK = { quorum: PAGE_COPY.ask.lowest, bar: PAGE_COPY.ask.lowest,
+  const ANSASK = { quorum: PAGE_COPY.ask.lowest,
     ending: PAGE_COPY.ask.latest, authorship: PAGE_COPY.ask.most,
     judgments: PAGE_COPY.ask.most,
     chamber: PAGE_COPY.ask.most,
@@ -4571,8 +4511,6 @@
     const k = pkeyOf(p.setting);
     if (k === 'title') return p.value.text;
     if (k === 'slug') return docAddr(p.value.slug);
-    if (k === 'pace') return (p.value.shape === 'fixed' ? 'The same number throughout'
-      : 'Rising from ' + p.value.startPct + '%');
     if (k === 'applications') return APPL_RULE(mayApply(p.value) ? 'apply' : 'invite');
     if (k === 'admission') return ADM_RULE[p.value.price];
     if (k === 'removal') return REMOVAL_RULE[p.value.price];
@@ -4656,14 +4594,12 @@
   const settledRecord = (rec) => !!rec && !!rec.payload &&
     (rec.status === 'carried' || rec.status === 'held') &&
     (rec.payload.kind === 'set' || rec.payload.kind === 'reserve');
-  // 🪜 has no pile of its own, so a motion on it files behind 🌡️ — the same
-  // fold `chipsFor` makes for the setting itself
-  // …and a power tab has no pile of its own either (Q386): a settled return
-  // files behind the rule, in the same stack the tab itself stands in, so the
-  // fold is the same one 🪜 takes into 🌡️'s.
+  // A power tab has no pile of its own (Q386): a settled return files behind
+  // the rule, in the same stack the tab itself stands in. 🪜 took the same
+  // fold into 🌡️'s pile until both left the surface (Q1362), so a key is now
+  // always its own pile.
   const pileKeyOf = (rec) => { const k0 = motionTargets(rec);
-    const mm = /^pw:(?:u|a):(.+)$/.exec(k0); const k = mm ? mm[1] : k0;
-    return k === 'pace' ? 'bar' : k; };
+    const mm = /^pw:(?:u|a):(.+)$/.exec(k0); return mm ? mm[1] : k0; };
   // the module hands back `settledAtT` and the wire hands back `at`, the same
   // pair `lastAmendment` normalises
   const recAt = (rec) => (rec.at !== undefined && rec.at !== null ? rec.at
@@ -4901,9 +4837,6 @@
     ending: (v) => (v.endsAtMs === null ? 'never'
       : new Date(v.endsAtMs).toLocaleString(undefined,
         { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false })),
-    bar: (v) => v.pct + '%',
-    pace: (v) => (v.shape === 'ramp' ? 'rising from ' + v.startPct + '%'
-      : 'the same number throughout'),
     quorum: (v) => (v.form === 'share' ? v.n + '% of the members' : v.n + ' members'),
     authorship: (v) => ({ anonymous: 'nobody ever named',
       anonymousElective: 'nobody named unless they choose to be',
@@ -4922,23 +4855,16 @@
   // `WORDS`'s short phrase, which survives for the narrated *from x to y*
   // lines alone. One function over the same rule builders `DECIDED` reads,
   // taking a **module** value rather than the document's, so a record can
-  // say what stood at a past moment. 🌡️ and 🪜 read each other, as the
-  // clause does: the ramp is part of what the threshold says (Q512).
+  // say what stood at a past moment. It read 🌡️ and 🪜 off each other until
+  // both left the surface (Q1362); every case here is its own value now.
   const sentenceFor = (k, v) => {
     if (v === null || v === undefined) return null;
     try {
-      const pv = takenValOf('pace');
-      const rampStart = pv ? (pv.shape === 'ramp' ? pv.startPct : null)
-        : (S.shape === 'ramp' ? S.tStart : null);
       switch (k) {
         case 'title': return 'The document is titled ' + LD + v.text + RD + '.';
         case 'slug': return 'The document lives at ' + docAddr(v.slug) + '.';
         case 'ending': return ENDING_RULE(v.endsAtMs === null ? 'never' : msToLocal(v.endsAtMs));
         case 'quorum': return QUORUM_RULE(v.n, v.form);
-        case 'bar': return BAR_RULE(v.pct, perpetual() ? null : rampStart);
-        case 'pace': return v.shape !== 'ramp' || perpetual()
-          ? 'The approval threshold stays the same all the way through.'
-          : 'The approval threshold starts at ' + v.startPct + '% and rises to ' + (takenOf('bar') || S.tClose) + '% by the end.';
         case 'authorship': return AUTH_RULE[v.rung] || null;
         case 'judgments': return JUDG_RULE[v.rung] || null;
         case 'chamber': return CHAMBER_RULE[v.rung] ? CHAMBER_RULE[v.rung]() : null;
@@ -5398,14 +5324,6 @@
       // the address gained its route still round-trips into the box
       '<input data-mslug="1" value="' + esc((d.to || '').replace(/^docs\.vote\/(?:d\/)?/, '')) + '" style="width:12rem">.',
       '<p class="setnote">' + PAGE_COPY.composeNote.redirect + '</p>', d, 'slug'),
-    pace: (d) => lanesFor(d, [['The same number throughout',
-        'The approval threshold stays the same all the way through.']], 'pace') +
-      inputBlock('The approval threshold starts at ' +
-        '<input class="num" type="number" min="50" max="99" data-mpace="1" value="' +
-        esc((/^Rising/.test(d.to) && (d.to.match(/\d+/) || [])[0]) || S.tStart) + '">% and rises to the number at the end.',
-        // a motion is composed with the setting's own control (K1), so the
-        // meaning belongs beside it exactly as on the founder's card
-        meanLine('pace', d.val && d.val.shape ? d.val : null), d, 'pace', /^Rising/.test(d.to)),
     rate: (d) => {
       // one number since Q1160: a motion proposes the interval, and the
       // standing grant and cap ride through unchanged
@@ -5428,19 +5346,6 @@
           'The drafting process has no set end — it runs until too few members are active.']], 'ending') +
         (never ? '<p class="setnote">' + PAGE_COPY.composeNote.neverNeedsAll + '</p>' : '');
     },
-    // the ceiling note (Q840) rides the founder's own control as well as the
-    // member's slider — a founder setting 85% alone in the room is told
-    // exactly what a member answering 85% is told. `max` is 99 here, this
-    // field's own ceiling, so the note goes quiet at E ≥ 10.
-    bar: (d) => inputBlock('A proposal passes when the members are ' +
-      '<input class="num" type="number" min="50" max="99" data-mnum="% sure at the end" value="' +
-      esc((d.to.match(/\d+/) || [])[0] || takenOf('bar') || S.tClose) + '">% sure at the end.',
-      meanLine('bar', d.val && d.val.pct !== undefined ? d.val : null), d, 'bar') +
-      // and the method note with it (entry 163): the pen's set card is the
-      // founder card in its second epoch, so a founder who first meets 🌡️
-      // after the save would otherwise never be offered the explainer.
-      // (The ceiling note is gone — Q1159.)
-      methodNote(),
     quorum: (d) => (S.quorumForm === 'count'
       ? inputBlock('Quorum is <input class="num" type="number" min="1" max="99" data-mnum=" of the membership" value="' +
         esc((d.to.match(/\d+/) || [])[0] || takenOf('quorum') || quorumCount()) + '"> of the membership.',
@@ -5667,7 +5572,6 @@
     hydrateFromModule(null);
     S.quorumForm = cs.quorumForm;
     for (const mid of Object.keys(r.sets)) S.seen.add(pkeyOf(mid));
-    if (r.sets.bar) S.barBy = 'founder';
     if (r.sets.quorum) S.quorumBy = 'founder';
     if (r.sets.rate) S.rateBy = 'founder'; };
   // ⏩ settle the founding — now a scripted drive of REAL module commands
@@ -5723,7 +5627,6 @@
       // in the mockup describes. This literal is the old default set, and
       // the only place it survives.
       const SEED = { ending: 'roster', endsAt: '2026-08-20T18:00',
-        barBy: 'roster', tClose: 78, shape: 'ramp', tStart: 55,
         quorumBy: 'roster', quorumForm: 'share', quorumPct: 33, quorumN: 5,
         joinBy: 'invite', policyBy: 'roster', lapse: 'roster', lapseDays: 90,
         removal: 'roster', admission: 'roster', authorship: 'roster', judgments: 'roster',
@@ -5755,10 +5658,10 @@
         try { commitSetting(k); } catch (e) {}
       }
       // the room answers what was delegated — real commands, every seat,
-      // dependency order (ending first: the bar question waits on it)
+      // in the founding's own order (⏰ first, as SURFACE §8's `ORDER` has it)
       const FILL = { ending: S.endsAt || '2026-08-20T18:00',
         quorum: (S.quorumForm === 'count' ? S.quorumN : S.quorumPct),
-        bar: S.tClose, authorship: 'anonymous',
+        authorship: 'anonymous',
         judgments: 'never', chamber: 'closed', applications: 'invite',
         // a ⏱️ answer is the interval since Q1160 (minutes — ANSTYPED reads
         // the member's unit, which ⏩ leaves at its minutes default)
@@ -5880,11 +5783,9 @@
   const WHAT = {
     admission: 'how new members are admitted',
     ending: 'when the drafting process will end',
-    quorum: 'how many members must weigh in before a question can pass',
     // *the membership* twice in one sentence: `WHAT` is read inside *The
     // membership changed …*, so this one takes **members** (entry 215)
-    bar: 'how sure members must be at the close',
-    pace: 'how the approval threshold climbs to the close',
+    quorum: 'how many members must weigh in before a question can pass',
     authorship: 'whether anonymous proposers are revealed',
     judgments: 'whether votes are revealed with the record',
     chamber: 'who may read the document',
@@ -5916,7 +5817,6 @@
     removal: 'The membership will decide how a member is removed',
     rate: 'The membership will decide how often members should be able to make proposals',
     ending: 'The membership will decide whether changes end on a set date or may be made perpetually',
-    bar: 'The membership will decide what proportion of votes a proposal ✏️ needs to pass',
     quorum: 'The membership will decide how many members must vote on a proposal ✏️ before it can pass',
     authorship: 'The membership will decide if anonymous proposals are allowed',
     judgments: 'The membership will decide whether votes are revealed at the end or never',
@@ -5927,29 +5827,27 @@
   // guard had silently excluded it), and the identity cards ✋ 🖼️ 📧 now that
   // they are option-block cards too. An answer card matches through `ansFor`.
   const OPTHEADLESS = new Set(['chamber', 'admission', 'applications', 'hat',
-    'lapse', 'removal', 'rate', 'ending', 'bar', 'quorum', 'authorship', 'judgments',
+    'lapse', 'removal', 'rate', 'ending', 'quorum', 'authorship', 'judgments',
     'myname', 'mypic', 'myemail']);
   // ---- 🧭 the shape (entry 166) — read from the bundle's table, never a
   // number of the page's own ----------------------------------------------
   // the shape as a noun phrase, for the provenance and the 🍾 line
   const SHAPE_NOUN = { meeting: 'a meeting', conference: 'a conference', ongoing: 'an ongoing document' };
   // the clauses a shape's `sets` would print, in the table's own order (03)
+  // the settings that have left the surface: every shape still pins them, so
+  // the value is there for the engine and nothing on the page reads it
+  const RETIRED_MIDS = new Set(['machines', 'bar', 'pace']);
   const shapeClauses = (r) => {
     const sets = r.sets || {};
-    const never = !!(sets.ending && sets.ending.endsAtMs === null);
     const out = [];
     for (const mid of Object.keys(sets)) {
-      if (mid === 'machines' || mid === 'pace' || (r.hides || []).includes(mid)) continue;
+      // a setting the surface has retired prints no clause: 🤖 since
+      // 2026-08-29, 🌡️ and 🪜 since 2026-09-15 (Q1362). Every shape still
+      // pins all three, so the values are there and nothing reads them.
+      if (RETIRED_MIDS.has(mid) || (r.hides || []).includes(mid)) continue;
       const v = sets[mid];
       let s = null;
-      try {
-        if (mid === 'bar') {
-          const p = sets.pace;
-          s = BAR_RULE(v.pct, p && p.shape === 'ramp' && !never ? p.startPct : null);
-        } else {
-          s = sentenceFor(pkeyOf(mid), v);
-        }
-      } catch (e) { s = null; }
+      try { s = sentenceFor(pkeyOf(mid), v); } catch (e) { s = null; }
       if (s) out.push('<span class="shapeclause">' + esc(s) + '</span>');
     }
     return out.join('');
@@ -6029,27 +5927,11 @@
   // typed value passes its form and only the founder's own field defaults
   const QUORUM_RULE = (n, form) => (((form || S.quorumForm) === 'count')
     ? n + ' members'
-    : n + '% of the membership') + ' must vote on a proposal ✏️ before it can pass.';
-  // a ramp that starts where it ends is not a ramp (Ed: *if there is no
-  // ramp, the clause can just be blank*)
-  // **The clause is the card's sentence** (Q1290, Ed 2026-09-08: *they should
-  // match, and it should be the text on the decision card*): a rung answer
-  // prints its own `BAR_RUNGS` sentence word for word, a number of its own
-  // the same sentence with the percent in it. The old *N% sure a proposal is
-  // better* wording is gone from the document. A ramp adds one sentence in
-  // 🪜's own terms — the rung names, as `meaningOf('pace')` says them.
-  const barRungName = (p) => {
-    const r = M.BAR_RUNGS.find((x) => x.pct === +p);
-    return r ? r.label.charAt(0).toLowerCase() + r.label.slice(1) + ' (' + p + '%)' : p + '%';
-  };
-  const BAR_RULE = (pct, start) => {
-    const rung = M.BAR_RUNGS.find((r) => r.pct === +pct);
-    const plain = rung ? rung.sentence
-      : 'For a proposal ✏️ to pass, ' + pct + '% of the members that voted on it must prefer it to the alternatives';
-    return plain + '.' + (isNum(start) && +start < +pct
-      ? ' Voting opens at ' + barRungName(start) + ' and climbs to ' + barRungName(pct) + ' by the end.'
-      : '');
-  };
+    : n + '% of the membership') + ' must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.';
+  // **The threshold clause went with the threshold** (Q1362, 2026-09-15).
+  // `BAR_RULE` printed 🌡️'s rung sentence with 🪜's ramp sentence hung off
+  // it, because the ramp was part of what the threshold said (Q512); the
+  // constitution now says what carries a proposal in 👥's clause alone.
   // Ed's sentences (card review 2026-09-02, Q1149 — the options swap so the
   // card leads with lapsing; Q1168 — *automatically abstain* is §9.5a's own
   // mechanism, stated accurately)
@@ -6084,22 +5966,6 @@
     quorum: () => { const tv = takenValOf('quorum');
       return tv ? QUORUM_RULE(tv.n, tv.form)
         : QUORUM_RULE(S.quorumForm === 'count' ? S.quorumN : S.quorumPct); },
-    // **The ramp is part of what the threshold says** (Q512, Ed 2026-08-21:
-    // *if there is no ramp, the clause can just be blank — maybe the ramp can
-    // be in the threshold setting stack, rather than a whole separate
-    // clause*). So 🪜 has no clause of its own: a fixed threshold is one
-    // sentence, a rising one is the same sentence saying where it starts.
-    bar: () => { const v = takenValOf('pace');
-      const shape2 = v ? v.shape : S.shape;
-      const start2 = v && v.shape === 'ramp' ? v.startPct : S.tStart;
-      const pct = takenOf('bar') || S.tClose;
-      return BAR_RULE(pct, !perpetual() && shape2 === 'ramp' ? start2 : null); },
-    pace: () => { const v = takenValOf('pace');
-      const shape2 = v ? v.shape : S.shape;
-      const start2 = v && v.shape === 'ramp' ? v.startPct : S.tStart;
-      return (perpetual() || shape2 !== 'ramp'
-        ? 'The approval threshold stays the same all the way through.'
-        : 'The approval threshold starts at ' + start2 + '% and rises to ' + (takenOf('bar') || S.tClose) + '% by the end.'); },
     authorship: () => AUTH_RULE[
       takenOf('authorship') || (S.authorship === 'roster' ? 'anonymous' : S.authorship)],
     judgments: () => JUDG_RULE[
@@ -6489,10 +6355,6 @@
       // the paragraph is the document speaking, holder line included
       // (Ed, 2026-09-03) — the card heads call decisionLine without it
       : breakLines(linkify(esc(decisionLine(c, true))))),
-    // 🪜 has no paragraph of its own (Q512): the ramp is part of what the
-    // threshold says, so its tab stands in 🌡️'s stack and opening it opens
-    // at 🌡️'s own clause — which is also where its rail entry anchors,
-    // since anchorOf falls back to the tab's paragraph.
     chipsFor: (c) => {
       // 📭 stands in the *Invitees* pile, not the Proposals one (E34): the
       // give-up is about somebody in the register, so its tab is beside the
@@ -6505,9 +6367,10 @@
       // group is the same whichever of the four you come in by, and `para`
       // opens the card at 🍾's paragraph for any of them
       if (PROPOSAL_CHIPS.includes(c.k) || c.release) return proposalChips();
-      const k = c.k === 'pace' ? 'bar' : c.k;
-      const base = (k === 'bar' && card('pace') && visible(card('pace')))
-        ? [card('bar'), card('pace')] : [card(k)];
+      // 🪜 shared 🌡️'s stack, having no clause of its own; both left the
+      // surface on 2026-09-15 (Q1362), so every card is its own pile again
+      const k = c.k;
+      const base = [card(k)];
       // your own answer to a delegated question stands in the pile of the
       // clause it answers (Q787): the value's tab, your question, then the
       // two power tabs. `stackOrder` puts whichever is asking in front, so an
@@ -7229,8 +7092,7 @@
     if (ev.target.matches('[data-mnum]')) {
       S.draft.to = ev.target.value + ev.target.dataset.mnum;
       const nv = +ev.target.value;
-      S.draft.val = (S.open === 'bar') ? { pct: nv }
-        : (S.open === 'quorum') ? { form: S.quorumForm, n: nv }
+      S.draft.val = (S.open === 'quorum') ? { form: S.quorumForm, n: nv }
         : (S.open === 'lapse') ? { afterMs: nv * 86400000 }
         : null;
       return render();
@@ -7736,16 +7598,12 @@
     const o = ev.target.closest('[data-set]');
     if (o) { const nv = setVal(o.dataset.val);
       fillRung(o.dataset.set, nv);
-      // a percent rung writes the field the number box writes, so it writes a
-      // **number** — `setVal` speaks in the strings an attribute carries, and
-      // one key with two types is a comparison waiting to go wrong (entry 165).
-      // The empty string is the one value left alone: it is 🪜's own-number
-      // rung clearing the field, and `+''` is 0, which is a bar nobody set.
-      S[o.dataset.set] = ((o.dataset.set === 'tClose' || o.dataset.set === 'tStart') && nv !== '')
-        ? +nv : nv;
+      // entry 165's number-typed rungs were 🌡️'s and 🪜's alone and went with
+      // them (Q1362): no rung on the page writes a number now, so the value an
+      // attribute carries is the string it carries.
+      S[o.dataset.set] = nv;
       // a ⏰ chip lights by its own id, not by the date it happens to carry
       if (o.dataset.set === 'endsAt') S.endChip = o.dataset.chip || '';
-      if (perpetual() && S.shape === 'ramp') S.shape = 'fixed';
       // **Picking a value takes the question back, whatever the key** (Q1318,
       // Ed 2026-09-11: *I should be able to choose a value to take it back
       // with ✒️, but I wasn't able to do that here*). Where a card's value and
@@ -7758,8 +7616,8 @@
       // written, and never by the delegate rung itself, which writes 'roster'
       // into that same key. Written from blank as well as from 'roster' —
       // *held and set reads founder* (the holder-radio rule beside
-      // `hydrateS`), which is what 👥's line and 🌡️'s `fillRung` always did,
-      // and what ⏩'s seed reads to tell a set flag from an untouched one.
+      // `hydrateS`), which is what 👥's line always did, and what ⏩'s seed
+      // reads to tell a set flag from an untouched one.
       // Before the start only: the rung is one-way after it
       // (`delegateRung`), and past 🍾 the flag is hydration's record of who
       // holds, not a choice in flight.
@@ -8725,13 +8583,13 @@
       field: [g.race.a, g.race.b].map((c, j) => ({ hunks: [{ lines: [c.text] }], rationale: c.rationale,
         p: c.p ?? (j === 0 ? 0.58 : 0.47), outcome: 'undecided', author: null })),
       displaced: [String((FIX.DOC.find((l) => l.key === g.keys[0]) || {}).x || '')],
-      threshold: 0.74, judges: 6, judgedByMe: i === 0,
+      judges: 6, judgedByMe: i === 0,
     }));
     FIX.CLOSED = { undecided: und, items: und.map((o, i) => {
       const best = o.field.slice().sort((x, y) => y.p - x.p)[0];
       return { id: 'rec:' + o.raceId, kind: 'quick', keys: ['U:' + o.raceId], state: 'sealed',
         qLabel: 'Backlog', urgency: 0, pct: 100, cap: 'undecided at the close — the text stood',
-        decided: { outcome: 'undecided', when: whenOf(o.when), p: best.p, bar: o.threshold, judges: o.judges },
+        decided: { outcome: 'undecided', when: whenOf(o.when), p: best.p, judges: o.judges },
         undecided: true, won: 'b', optionB: best.hunks[0].lines[0], replaced: o.displaced[0],
         rationale: best.rationale, verdict: o.judgedByMe ? 'voted on this' : undefined, unread: false,
         slate: o.field.map((f) => ({ text: f.hunks[0].lines[0], rationale: f.rationale, p: f.p, won: f === best })) };

@@ -1235,53 +1235,15 @@ window.SETUP = (function () {
     return xs.slice(0, -1).join(', ') + ' and ' + xs[xs.length - 1];
   };
 
-  /* **The threshold card names the ceiling its own room can reach** (Q840, Ed
-     2026-08-26 (a)). The bar is a confidence, and a confidence is bounded by
-     the evidence the room can produce: an ordinary race holds one comparison
-     per member on the incumbent pair, so a room of one that agrees with
-     itself gets to 79% and no further, and a bar of 80 can never be cleared
-     however long the document runs. The mechanism is untouched — the room may
-     still answer 85%; it is told what 85% will mean for a room this size
-     before it answers.
-
-     The number is `barCeilingPct` from the module bundle, which is
-     engine-core's own fit copied out (the page carries no engine-core). It is
-     read **live, on every render, from the room as it stands** — no snapshot
-     at the founding — so the sentence is present-tense about the room now and
-     says the ceiling rises as members arrive, which is what keeps it true a
-     minute later.
-
-     `max` is what the control the note sits under can express: 95 for the
-     founding slider, 99 for the founder's own number field. A room that can
-     already reach everything its control offers is told nothing, which is most
-     rooms. And it is its own line rather than a third sentence in `.why`,
-     because `.why` is capped at 200 characters (card-audit H4) and 🌡️'s body
-     was cut to fit under Q764. */
-  /* **The one place the method is named** (entry 163). 🌡️ asks for a number
-     nobody can answer with conviction, because the number is not what it looks
-     like: it is a confidence rather than a share of the votes, and what one
-     confidence means in people depends on how many votes a change has
-     collected. Ed's ruling was to leave the question and the input alone and
-     explain it once, properly, on a page of its own — so this sentence names
-     the method, says in plain words what it buys, and links out.
-
-     Its own element, never inside `.why`: `.why` is capped at 200 characters
-     (card-audit H4) and 🌡️'s body was cut to fit under Q764, which is exactly
-     why `ceilingNote` sits outside it too.
-
-     **A new tab**, because the founder card is met during the birth, when the
-     page holds unsaved state a same-tab navigation would lose (`birth-pass`,
-     the stash) — the charter's `linkify` anchors open the same way. Inert
-     markup with no handler and no state, so the 4s poll re-rendering the card
-     wholesale costs it nothing, and an anchor is a real control to the
-     dead-click nudge, which is structural. */
-  // Ed's own sentences (card review 2026-09-02, Q1156 — T15 amended for this
-  // note alone); the link to /pairwise is load-bearing and stays
-  const methodNote = () =>
-    '<p class="methodnote">docs.vote uses the Bradley–Terry–Davidson voting method to decide ' +
-    'whether a proposal ✏️ passes. It uses probability to compensate for when only a small ' +
-    'fraction of the membership vote — ' +
-    '<a href="/pairwise" target="_blank" rel="noopener">read more</a>.</p>';
+  /* **The method note and the ceiling note went with 🌡️** (Q1362, 2026-09-15).
+     Both existed because the bar asked for a number nobody could answer with
+     conviction: `ceilingNote` (Q840) said what a confidence a room this size
+     cannot reach would mean, and `methodNote` (entry 163) named the method
+     once, properly, and linked to the `/pairwise` explainer. There is no
+     confidence left on the surface to explain — the wording the room prefers
+     stands once the quorum is met — so the note, the page and its route go
+     together. Q840's mechanism finding is untouched: `barCeilingPct` and
+     `threshold.test.ts` stand, unable to bite at a pinned bar. */
 
   /* **What choosing this would do, in this room** (entry 167). One line, one
      class, one home for the sentence: the module writes it and every surface
@@ -1314,27 +1276,6 @@ window.SETUP = (function () {
     '<p class="meaning" data-meaning="' + esc(key) + '">' +
     esc((value && window.CONSTITUTION.meaningOf(key, value, room || { e: 1 })) || '') + '</p>';
 
-  // `ceilingNote` deleted (Ed, 2026-09-02, Q1159, reversing Q840's note):
-  // the ceiling lines go and nothing replaces them anywhere — /pairwise
-  // carries the account. Q840's mechanism finding is untouched
-  // (`barCeilingPct` and threshold.test.ts stand).
-
-  /* 🌡️'s blind answer, as a ladder (entry 165). The meaning under each rung
-     is read live from the room as it stands: a sentence about a room of five
-     stops being true when a sixth arrives, and naming the room in the
-     sentence is what lets the reader see that it moved. */
-  const barMeaning = (pct, room) =>
-    window.CONSTITUTION.meaningOf('bar', { pct: +pct }, room) || '';
-  // **Exactly three rungs, and no free-number block** (Ed, 2026-09-02, Q1158,
-  // reversing Q1104 (b) for 🌡️ alone — the pattern survives on 🪜, 👥 and
-  // ⏱️). The `'own'` rung, its box and its `data-ansnum` hook are gone; the
-  // % figure went with Ed's QA of 2026-09-02 pm (*Remove %s*).
-  const barLadder = (A, room) => ladder(A, 'bar',
-    window.CONSTITUTION.BAR_RUNGS.map((r) => ({
-      // the rung's block text is the rule as it would stand (Q1104 (b))
-      v: r.pct, t: esc(r.sentence), e: barMeaning(r.pct, room),
-    })));
-
   /* One body per delegable question — the copy a member answers against,
      identical on both surfaces because it is the same question.
      `room` is the fourth argument since entry 167: what a value would mean is
@@ -1360,27 +1301,13 @@ window.SETUP = (function () {
       // (Q1169). The meaning lines stay: they are meaningOf's, not copy.
       return '<div class="choice" role="radiogroup">' +
       ansRow(f === 'share', 'quorumForm', 'share',
-        box('share', 5, 100) + '% of the membership must vote on a proposal ✏️ before it can pass.',
+        box('share', 5, 100) + '% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.',
         f === 'share' ? mean('share', A.quorum) : '') +
       ansRow(f === 'count', 'quorumForm', 'count',
-        box('count', 1, Math.max(1, E)) + ' members must vote on a proposal ✏️ before it can pass.',
+        box('count', 1, Math.max(1, E)) + ' members must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.',
         f === 'count' ? mean('count', A.quorum) : '') +
       '</div>';
     },
-    bar: (A, E, _form, room) =>
-      // Q1175: the question paragraph and blind note are gone; the rungs and
-      // the method note (Ed's own, Q1156, with its /pairwise link) remain
-      // **Three rungs and a number** (entry 165, Ed 2026-08-27: *we need to
-      // help them with 3 preset buttons, and they can edit the precise % if
-      // they really want to*). The slider that stood here asked for a percent
-      // and offered a sentence about what living at it feels like; a rung asks
-      // for a judgment and says what it would cost this room in votes, which
-      // is a thing a member can actually hold an opinion about. Same rungs,
-      // same order and same labels as the founder's card, from the one list
-      // (T5, Q620) — and the same `.above` dimming as 👁️, so *the most I will
-      // accept* still reads as a ladder of what you are refusing.
-      barLadder(A, room || { e: E }) +
-      methodNote(),
     authorship: (A) =>
       ladder(A, 'authorship', [
         { v: 'anonymous', t: RULE('authorship', 'anonymous'), e: '' },
@@ -1687,5 +1614,5 @@ window.SETUP = (function () {
     FACE_TONES, faceToneRow, faceToned, setFaceTone,
     setFaceTaken, faceTakenBy, faceBtn, emojiPicker,
     routeFor, motionCommitHtml,
-    slider, syncSlider, ladder, ANSWER, BLINDNOTE, methodNote, meaningLine, listOf, gateBody, wirePicDrop, MAILS, renderMailModal, birthPass };
+    slider, syncSlider, ladder, ANSWER, BLINDNOTE, meaningLine, listOf, gateBody, wirePicDrop, MAILS, renderMailModal, birthPass };
 })();

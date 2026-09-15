@@ -631,8 +631,9 @@
   .queue button[aria-current="true"] { box-shadow: var(--shadow-xl); }
 
   /* The wash is the progress bar (Ed, 105/116): how far the fill reaches is
-     closeness to resolution, how strong the colour is is urgency, and the hue
-     is lifecycle (Ed, 162). Built per entry in wash().
+     closeness to resolution — since Q1362 (c), how far the room has got
+     toward the quorum — how strong the colour is is urgency, and the hue is
+     lifecycle (Ed, 162). Built per entry in wash().
 
      Painted as a bar rather than as a gradient (Ed, 2026-08-17) so that both
      halves of it can move: no browser interpolates between two gradients, so
@@ -1544,10 +1545,12 @@
 
      Whether it carries a lane-bar is not a style choice — it is what the
      mechanism is actually asking. On a quick card or a patch the judgment
-     *is* incumbent against proposal, so the block is one of the two things
-     being judged and picks like a lane. On a race both lanes are
-     challengers and nothing here can vote to keep the clause: displacement
-     is settled by the adoption-threshold, not by this judgment (SPEC §5).
+     *is* the current text against a proposal, so the block is one of the two
+     things being judged and picks like a lane — in the same words as the
+     proposal's, the current text being a peer in the field (Q1362). On a race
+     both lanes are challengers and this pair is not about the clause above:
+     it stays in the ranking either way, and stands unless the membership
+     comes to prefer one of them.
      There the block is reference only — greyed, no controls — and it is the
      thing the race card was missing, since a reader was being asked to
      choose between two rewrites without being shown what they rewrite. */

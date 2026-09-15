@@ -425,19 +425,9 @@
   .meaning { font-size: var(--t-small); color: var(--muted); margin-top: var(--s2); }
   .meaning:empty { display: none; }
 
-  /* the one place the method is named, and the link out to /pairwise (entry
-     163). Card review round 3 (Ed, 2026-09-05, A10, reading 1192): "important
-     and shouldn't be in tiny text" — the ceiling note's grey caption size read
-     as a footnote nobody need read, so it takes the .unlocks blue-box
-     treatment instead, at question size. The anchor still takes an
-     underline rather than the accent, so the only hot thing on the card
-     stays the control. */
-  .methodnote { font-size: var(--t-ui); color: var(--primary-emphasis); background: var(--primary-subtle);
-    border-radius: var(--r-sm); padding: var(--s2) var(--s3); line-height: 1.45; margin: var(--s3) 0; }
-  .methodnote a { color: inherit; text-decoration: underline;
-    text-decoration-thickness: 1px; text-underline-offset: 2.5px;
-    text-decoration-color: var(--border); }
-  .methodnote a:hover { text-decoration-color: currentColor; text-decoration-thickness: 1.5px; }
+  /* `.methodnote` — the one place the method was named, and the link out
+     to /pairwise (entry 163) — went with 🌡️ on 2026-09-15 (Q1362). No card
+     names a method now, and the blue-box treatment it borrowed is .unlocks's. */
 
 /* ---------------------------------------------------------------------------
    THE ROSTER, and the distribution it produces.

@@ -869,7 +869,9 @@ window.CARDS = (function () {
       // the register is the caller's (CP2): a judgment's lane prefers; a
       // composer's lane proposes, or chooses where the chooser alone decides
       // (Ed, 2026-09-06) — the words arrive as `opts.words`, the default is
-      // the judgment's pair
+      // the judgment's pair. **Every lane on a judgment card takes that
+      // default, the current text's included** (Q1362 (a)): the field has no
+      // privileged member, so it can have no privileged register.
       const w = o.words || { off: G.lane.prefer, on: G.lane.preferred, title: G.lane.pickTitle };
       return '<div class="lanebar">' +
         '<button class="lanepick" type="button" ' + env.valAttr + '="' + esc(String(v)) + '"' +
@@ -940,6 +942,13 @@ window.CARDS = (function () {
           ? '<div class="rtext none">' + esc(o.nothing != null ? o.nothing : G.head.nothingAtAll) + '</div>'
           : '<div class="rtext">' + mdLine(o.text) + '</div>') +
         '</div>' +
+        // **The head's lane is a lane like any other** (Q1362 (a), 2026-09-15):
+        // the current text is a candidate in the field, authored by nobody and
+        // staked with nothing, so it takes `laneBarHtml`'s own default pair —
+        // *Prefer this* / *Preferred* — and never a *Keep* register of its own.
+        // What says it is the current text is the head's label above it. The
+        // lane **id** stays `keep`: that is the value `judge()` sends and the
+        // server reads, and only the words were ever the asymmetry.
         (opt ? laneBarHtml(s, o.v, { lane: 'keep', key: o.key, edit: o.edit }) : '') +
         '</div>';
     }

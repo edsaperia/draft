@@ -1,6 +1,6 @@
 {
  "meta": {
-  "cards": 314,
+  "cards": 299,
   "walks": [
    "answers",
    "charter",
@@ -207,58 +207,11 @@
     ],
     "helpers": []
    },
-   "bar": {
-    "eyebrow": "",
-    "head": "",
-    "lock": "",
-    "body": "docs.vote uses the Bradley–Terry–Davidson voting method to decide whether a proposal ✏️ passes. It uses probability to compensate for when only a small fraction of the membership vote — read more.For a proposal ✏️ to pass, nearly all members that voted on it must prefer it to the alternativesChoose thisFor a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternativesChoose thisFor a proposal ✏️ to pass, a majority of the membership that voted must prefer it to the alternativesChoose thisThe membership will decide what proportion of votes a proposal ✏️ needs to pass.Choose this",
-    "options": [
-     {
-      "set": "tClose",
-      "val": "90",
-      "label": "For a proposal ✏️ to pass, nearly all members that voted on it must prefer it to the alternatives"
-     },
-     {
-      "set": "tClose",
-      "val": "80",
-      "label": "For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives"
-     },
-     {
-      "set": "tClose",
-      "val": "60",
-      "label": "For a proposal ✏️ to pass, a majority of the membership that voted must prefer it to the alternatives"
-     },
-     {
-      "set": "barBy",
-      "val": "roster",
-      "label": "The membership will decide what proportion of votes a proposal ✏️ needs to pass."
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "✒️",
-      "title": "Set it"
-     }
-    ],
-    "hints": [
-     "Set the Proposal Pass Threshold — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands",
-     "Set it"
-    ],
-    "helpers": []
-   },
    "begin": {
     "eyebrow": "",
-    "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ passes when it meets the approval threshold.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ passes when the members who voted prefer it and the quorum is met.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
-    "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens, and the approval threshold begins its course.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.The document cannot begin while 🌍 Visibility is still being decided.🌍 Visibility is delegated to the membership, and you are its only member: a question answered by one voice has not been handed to anybody. Invite somebody at 🪪 Membership, or take it back on its own card and set it yourself.What the Founder keeps.Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.🪶 Title✒️🛡️📍 Link✒️🛡️🌍 Visibility✒️🛡️🪪 Admissions✒️🛡️🤝 Applications✒️🛡️💤 Lapsing✒️🛡️🥾 Removals✒️🛡️✉️ Invite a Member✒️🛡️❌ Remove a Member✒️🛡️⏱️ Proposal Rate✒️🛡️⏰ Ending✒️🛡️🌡️ Proposal Pass Threshold✒️🛡️🪜 Rising Threshold✒️🛡️👥 Quorum✒️🛡️👤 Anonymous Proposals✒️🛡️👁️ Vote Reveal✒️🛡️📝 Text✒️🛡️The questions🌍 1 out of 1 of the membership has voted on whether the document can only be seen by members or by anyone with the link.The peopleAda Lovell · answered everythingIt comes back to you the moment somebody else can answer.",
+    "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.The document cannot begin while 🌍 Visibility is still being decided.🌍 Visibility is delegated to the membership, and you are its only member: a question answered by one voice has not been handed to anybody. Invite somebody at 🪪 Membership, or take it back on its own card and set it yourself.What the Founder keeps.Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.🪶 Title✒️🛡️📍 Link✒️🛡️🌍 Visibility✒️🛡️🪪 Admissions✒️🛡️🤝 Applications✒️🛡️💤 Lapsing✒️🛡️🥾 Removals✒️🛡️✉️ Invite a Member✒️🛡️❌ Remove a Member✒️🛡️⏱️ Proposal Rate✒️🛡️⏰ Ending✒️🛡️👥 Quorum✒️🛡️👤 Anonymous Proposals✒️🛡️👁️ Vote Reveal✒️🛡️📝 Text✒️🛡️The questions🌍 1 out of 1 of the membership has voted on whether the document can only be seen by members or by anyone with the link.The peopleAda Lovell · answered everythingIt comes back to you the moment somebody else can answer.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -430,7 +383,7 @@
    },
    "grant-voice": {
     "eyebrow": "",
-    "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ passes when it meets the approval threshold.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ passes when the members who voted prefer it and the quorum is met.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "",
     "options": [],
@@ -727,17 +680,17 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "% of the membership must vote on a proposal ✏️ before it can pass.Choose this members must vote on a proposal ✏️ before it can pass.Choose thisThe membership will decide how many members must vote on a proposal ✏️ before it can pass.Choose this",
+    "body": "% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Choose this members must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Choose thisThe membership will decide how many members must vote on a proposal ✏️ before it can pass.Choose this",
     "options": [
      {
       "set": "quorumForm",
       "val": "share",
-      "label": "% of the membership must vote on a proposal ✏️ before it can pass."
+      "label": "% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands."
      },
      {
       "set": "quorumForm",
       "val": "count",
-      "label": "members must vote on a proposal ✏️ before it can pass."
+      "label": "members must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands."
      },
      {
       "set": "quorumBy",
@@ -867,22 +820,22 @@
     "eyebrow": "",
     "head": "What Type of Document Is This?",
     "lock": "",
-    "body": "This document is for a meeting.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives. Voting opens at a bare majority (60%) and climbs to broad agreement (80%) by the end.50% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️.Choose thisThis document is for a conference.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives. Voting opens at a bare majority (60%) and climbs to broad agreement (80%) by the end.33% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️.Choose thisThis document is perpetual.Changes to the document may be made perpetually.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives.25% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️.Choose thisThe Founder will decide every setting by hand.Choose this",
+    "body": "This document is for a meeting.50% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️.Choose thisThis document is for a conference.33% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️.Choose thisThis document is perpetual.Changes to the document may be made perpetually.25% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️.Choose thisThe Founder will decide every setting by hand.Choose this",
     "options": [
      {
       "set": "docShape",
       "val": "meeting",
-      "label": "This document is for a meeting.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives. Voting opens at a bare majority (60%) and climbs to broad agreement (80%) by the end.50% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️."
+      "label": "This document is for a meeting.50% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️."
      },
      {
       "set": "docShape",
       "val": "conference",
-      "label": "This document is for a conference.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives. Voting opens at a bare majority (60%) and climbs to broad agreement (80%) by the end.33% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️."
+      "label": "This document is for a conference.33% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️."
      },
      {
       "set": "docShape",
       "val": "ongoing",
-      "label": "This document is perpetual.Changes to the document may be made perpetually.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives.25% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️."
+      "label": "This document is perpetual.Changes to the document may be made perpetually.25% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️."
      },
      {
       "set": "docShape",
@@ -3398,53 +3351,6 @@
     ],
     "helpers": []
    },
-   "bar": {
-    "eyebrow": "",
-    "head": "",
-    "lock": "",
-    "body": "docs.vote uses the Bradley–Terry–Davidson voting method to decide whether a proposal ✏️ passes. It uses probability to compensate for when only a small fraction of the membership vote — read more.For a proposal ✏️ to pass, nearly all members that voted on it must prefer it to the alternativesChoose thisFor a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternativesChoose thisFor a proposal ✏️ to pass, a majority of the membership that voted must prefer it to the alternativesChoose thisThe membership will decide what proportion of votes a proposal ✏️ needs to pass.Chosen",
-    "options": [
-     {
-      "set": "tClose",
-      "val": "90",
-      "label": "For a proposal ✏️ to pass, nearly all members that voted on it must prefer it to the alternatives"
-     },
-     {
-      "set": "tClose",
-      "val": "80",
-      "label": "For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives"
-     },
-     {
-      "set": "tClose",
-      "val": "60",
-      "label": "For a proposal ✏️ to pass, a majority of the membership that voted must prefer it to the alternatives"
-     },
-     {
-      "set": "barBy",
-      "val": "roster",
-      "label": "The membership will decide what proportion of votes a proposal ✏️ needs to pass."
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "✒️",
-      "title": "Set it"
-     }
-    ],
-    "hints": [
-     "Set the Proposal Pass Threshold — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands",
-     "Set it"
-    ],
-    "helpers": []
-   },
    "chamber": {
     "eyebrow": "",
     "head": "",
@@ -3657,17 +3563,17 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "% of the membership must vote on a proposal ✏️ before it can pass.Choose this members must vote on a proposal ✏️ before it can pass.Choose thisThe membership will decide how many members must vote on a proposal ✏️ before it can pass.Chosen",
+    "body": "% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Choose this members must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Choose thisThe membership will decide how many members must vote on a proposal ✏️ before it can pass.Chosen",
     "options": [
      {
       "set": "quorumForm",
       "val": "share",
-      "label": "% of the membership must vote on a proposal ✏️ before it can pass."
+      "label": "% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands."
      },
      {
       "set": "quorumForm",
       "val": "count",
-      "label": "members must vote on a proposal ✏️ before it can pass."
+      "label": "members must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands."
      },
      {
       "set": "quorumBy",
@@ -3797,22 +3703,22 @@
     "eyebrow": "",
     "head": "What Type of Document Is This?",
     "lock": "",
-    "body": "This document is for a meeting.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives. Voting opens at a bare majority (60%) and climbs to broad agreement (80%) by the end.50% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️.Choose thisThis document is for a conference.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives. Voting opens at a bare majority (60%) and climbs to broad agreement (80%) by the end.33% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️.Choose thisThis document is perpetual.Changes to the document may be made perpetually.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives.25% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️.Choose thisThe Founder will decide every setting by hand.Choose this",
+    "body": "This document is for a meeting.50% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️.Choose thisThis document is for a conference.33% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️.Choose thisThis document is perpetual.Changes to the document may be made perpetually.25% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️.Choose thisThe Founder will decide every setting by hand.Choose this",
     "options": [
      {
       "set": "docShape",
       "val": "meeting",
-      "label": "This document is for a meeting.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives. Voting opens at a bare majority (60%) and climbs to broad agreement (80%) by the end.50% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️."
+      "label": "This document is for a meeting.50% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️."
      },
      {
       "set": "docShape",
       "val": "conference",
-      "label": "This document is for a conference.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives. Voting opens at a bare majority (60%) and climbs to broad agreement (80%) by the end.33% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️."
+      "label": "This document is for a conference.33% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️."
      },
      {
       "set": "docShape",
       "val": "ongoing",
-      "label": "This document is perpetual.Changes to the document may be made perpetually.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives.25% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️."
+      "label": "This document is perpetual.Changes to the document may be made perpetually.25% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️."
      },
      {
       "set": "docShape",
@@ -4044,58 +3950,11 @@
     ],
     "helpers": []
    },
-   "bar": {
-    "eyebrow": "",
-    "head": "",
-    "lock": "",
-    "body": "docs.vote uses the Bradley–Terry–Davidson voting method to decide whether a proposal ✏️ passes. It uses probability to compensate for when only a small fraction of the membership vote — read more.For a proposal ✏️ to pass, nearly all members that voted on it must prefer it to the alternativesChoose thisFor a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternativesChoose thisFor a proposal ✏️ to pass, a majority of the membership that voted must prefer it to the alternativesChoose thisThe membership will decide what proportion of votes a proposal ✏️ needs to pass.Choose this",
-    "options": [
-     {
-      "set": "tClose",
-      "val": "90",
-      "label": "For a proposal ✏️ to pass, nearly all members that voted on it must prefer it to the alternatives"
-     },
-     {
-      "set": "tClose",
-      "val": "80",
-      "label": "For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives"
-     },
-     {
-      "set": "tClose",
-      "val": "60",
-      "label": "For a proposal ✏️ to pass, a majority of the membership that voted must prefer it to the alternatives"
-     },
-     {
-      "set": "barBy",
-      "val": "roster",
-      "label": "The membership will decide what proportion of votes a proposal ✏️ needs to pass."
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "✒️",
-      "title": "Set it"
-     }
-    ],
-    "hints": [
-     "Set the Proposal Pass Threshold — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands",
-     "Set it"
-    ],
-    "helpers": []
-   },
    "begin": {
     "eyebrow": "",
-    "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ passes when it meets the approval threshold.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ passes when the members who voted prefer it and the quorum is met.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
-    "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens, and the approval threshold begins its course.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.What the Founder keeps.Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.🪶 Title✒️🛡️📍 Link✒️🛡️🌍 Visibility✒️🛡️🪪 Admissions✒️🛡️🤝 Applications✒️🛡️💤 Lapsing✒️🛡️🥾 Removals✒️🛡️✉️ Invite a Member✒️🛡️❌ Remove a Member✒️🛡️⏱️ Proposal Rate✒️🛡️⏰ Ending✒️🛡️🌡️ Proposal Pass Threshold✒️🛡️🪜 Rising Threshold✒️🛡️👥 Quorum✒️🛡️👤 Anonymous Proposals✒️🛡️👁️ Vote Reveal✒️🛡️📝 Text✒️🛡️The questionsThe peopleAda Lovell · nothing owedNobody is kept waiting by this: whoever has not answered can still answer after the start, and the document takes what was said.",
+    "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.What the Founder keeps.Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.🪶 Title✒️🛡️📍 Link✒️🛡️🌍 Visibility✒️🛡️🪪 Admissions✒️🛡️🤝 Applications✒️🛡️💤 Lapsing✒️🛡️🥾 Removals✒️🛡️✉️ Invite a Member✒️🛡️❌ Remove a Member✒️🛡️⏱️ Proposal Rate✒️🛡️⏰ Ending✒️🛡️👥 Quorum✒️🛡️👤 Anonymous Proposals✒️🛡️👁️ Vote Reveal✒️🛡️📝 Text✒️🛡️The questionsThe peopleAda Lovell · nothing owedNobody is kept waiting by this: whoever has not answered can still answer after the start, and the document takes what was said.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -4264,7 +4123,7 @@
    },
    "grant-voice": {
     "eyebrow": "",
-    "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ passes when it meets the approval threshold.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ passes when the members who voted prefer it and the quorum is met.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "",
     "options": [],
@@ -4559,17 +4418,17 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "% of the membership must vote on a proposal ✏️ before it can pass.Choose this members must vote on a proposal ✏️ before it can pass.Choose thisThe membership will decide how many members must vote on a proposal ✏️ before it can pass.Choose this",
+    "body": "% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Choose this members must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Choose thisThe membership will decide how many members must vote on a proposal ✏️ before it can pass.Choose this",
     "options": [
      {
       "set": "quorumForm",
       "val": "share",
-      "label": "% of the membership must vote on a proposal ✏️ before it can pass."
+      "label": "% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands."
      },
      {
       "set": "quorumForm",
       "val": "count",
-      "label": "members must vote on a proposal ✏️ before it can pass."
+      "label": "members must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands."
      },
      {
       "set": "quorumBy",
@@ -4699,22 +4558,22 @@
     "eyebrow": "",
     "head": "What Type of Document Is This?",
     "lock": "",
-    "body": "This document is for a meeting.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives. Voting opens at a bare majority (60%) and climbs to broad agreement (80%) by the end.50% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️.Choose thisThis document is for a conference.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives. Voting opens at a bare majority (60%) and climbs to broad agreement (80%) by the end.33% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️.Choose thisThis document is perpetual.Changes to the document may be made perpetually.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives.25% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️.Choose thisThe Founder will decide every setting by hand.Choose this",
+    "body": "This document is for a meeting.50% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️.Choose thisThis document is for a conference.33% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️.Choose thisThis document is perpetual.Changes to the document may be made perpetually.25% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️.Choose thisThe Founder will decide every setting by hand.Choose this",
     "options": [
      {
       "set": "docShape",
       "val": "meeting",
-      "label": "This document is for a meeting.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives. Voting opens at a bare majority (60%) and climbs to broad agreement (80%) by the end.50% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️."
+      "label": "This document is for a meeting.50% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every 5 minutes.To remove a member, all members must agree 🏛️."
      },
      {
       "set": "docShape",
       "val": "conference",
-      "label": "This document is for a conference.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives. Voting opens at a bare majority (60%) and climbs to broad agreement (80%) by the end.33% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️."
+      "label": "This document is for a conference.33% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can be seen by anyone with the link.Members may make a new proposal ✏️ every hour.To remove a member, all members must agree 🏛️."
      },
      {
       "set": "docShape",
       "val": "ongoing",
-      "label": "This document is perpetual.Changes to the document may be made perpetually.For a proposal ✏️ to pass, most of the membership that voted on it must prefer it to the alternatives.25% of the membership must vote on a proposal ✏️ before it can pass.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️."
+      "label": "This document is perpetual.Changes to the document may be made perpetually.25% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Proposals may be made anonymously, and all names are revealed at the end.Votes are never revealed.The document can only be seen by members.Members may make a new proposal ✏️ every day.After 30 days, inactive members lapse and automatically abstain from votes.To remove a member, all members apart from them must agree 🏛️."
      },
      {
       "set": "docShape",
@@ -4922,49 +4781,11 @@
     ],
     "helpers": []
    },
-   "bar": {
-    "eyebrow": "",
-    "head": "For a proposal ✏️ to pass, 82% of the members that voted on it must prefer it to the alternatives. Voting opens at 55% and climbs to 82% by the end.Chosen by the membership",
-    "lock": "",
-    "body": "A proposal passes when the members are % sure at the end.Propose thisdocs.vote uses the Bradley–Terry–Davidson voting method to decide whether a proposal ✏️ passes. It uses probability to compensate for when only a small fraction of the membership vote — read more.",
-    "options": [],
-    "inputs": [
-     {
-      "type": "number",
-      "ph": null
-     }
-    ],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Discard this motion"
-     },
-     {
-      "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
-     }
-    ],
-    "hints": [
-     "We should change this because…",
-     "Proposal Pass Threshold — close it",
-     "Rising Threshold — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "Passed: 82% sure at the end — settled",
-     "Propose this — nothing leaves the card until you submit",
-     "This is how your reason will reach everybody else: with your name off it.",
-     "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
-    ],
-    "helpers": [
-     "We should change this because…"
-    ]
-   },
    "begin": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes when it meets the approval threshold.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes when the members who voted prefer it and the quorum is met.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
-    "body": "What beginning did.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens, and the approval threshold begins its course.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.",
+    "body": "What beginning did.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -4988,7 +4809,7 @@
    },
    "canjudge": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes when it meets the approval threshold.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes when the members who voted prefer it and the quorum is met.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "",
     "options": [],
@@ -5014,7 +4835,7 @@
    },
    "canpropose": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes when it meets the approval threshold.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes when the members who voted prefer it and the quorum is met.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "",
     "options": [],
@@ -5105,7 +4926,7 @@
    },
    "grant-voice": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes when it meets the approval threshold.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes when the members who voted prefer it and the quorum is met.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "The Founder invited you into the membership, and Constitutional Proposals came with it.",
     "options": [],
@@ -5388,51 +5209,6 @@
     ],
     "helpers": []
    },
-   "pace": {
-    "eyebrow": "",
-    "head": "The approval threshold starts at 55% and rises to 82% by the end.",
-    "lock": "",
-    "body": "The approval threshold stays the same all the way through.Propose thisThe approval threshold starts at % and rises to the number at the end.Propose thisLast amended D MonthThe Founder has changed how the approval threshold climbs to the close from rising from 55% to rising from 55%.ABAsh Bellamy 👑No reason given.",
-    "options": [
-     {
-      "set": null,
-      "val": "The same number throughout",
-      "label": "The approval threshold stays the same all the way through."
-     }
-    ],
-    "inputs": [
-     {
-      "type": "number",
-      "ph": null
-     }
-    ],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Discard this motion"
-     },
-     {
-      "label": "✏️",
-      "title": "Propose it"
-     }
-    ],
-    "hints": [
-     "We should change this because…",
-     "Proposal Pass Threshold — settled",
-     "Rising Threshold — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "Passed: 82% sure at the end — settled",
-     "Propose this — nothing leaves the card until you submit",
-     "This is how your reason will reach everybody else: with your name off it.",
-     "The founder’s own hand — a Founder Action ✒️, not a proposal",
-     "Discard this motion",
-     "Propose it"
-    ],
-    "helpers": [
-     "We should change this because…"
-    ]
-   },
    "pw:a:admission": {
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
@@ -5526,48 +5302,6 @@
      "Are Proposals Anonymous? — waiting on you",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
-     "Keep this",
-     "Propose this — nothing leaves the card until you submit",
-     "This is how your reason will reach everybody else: with your name off it.",
-     "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
-    ],
-    "helpers": [
-     "Nothing waits on the Founder.",
-     "Each one comes as a 👑 question — assent or refuse.",
-     "We should change this because…"
-    ]
-   },
-   "pw:a:bar": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "The Founder does not have a veto over proposals passed by the membership about the approval threshold.Nothing waits on the Founder.Keep thisThe Founder has a veto over proposals passed by the membership about the approval threshold.Each one comes as a 👑 question — assent or refuse.Propose this",
-    "options": [
-     {
-      "set": null,
-      "val": "The Founder has a veto over proposals passed by the membership about the approval threshold.",
-      "label": "The Founder has a veto over proposals passed by the membership about the approval threshold."
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Discard this motion"
-     },
-     {
-      "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
-     }
-    ],
-    "hints": [
-     "We should change this because…",
-     "Proposal Pass Threshold — settled",
-     "Rising Threshold — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Passed: 82% sure at the end — settled",
      "Keep this",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
@@ -5779,6 +5513,7 @@
      "Quorum — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
+     "Passed: 38% of the membership — settled",
      "Keep this",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
@@ -6037,48 +5772,6 @@
      "We should change this because…"
     ]
    },
-   "pw:u:bar": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "Only by proposal, like anybody.The Founder proposes like a member.Keep thisThe Founder changes it at will.No proposal needed for the Founder’s own hand.Propose this",
-    "options": [
-     {
-      "set": null,
-      "val": "The Founder may amend the approval threshold at will.",
-      "label": "The Founder changes it at will."
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Discard this motion"
-     },
-     {
-      "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
-     }
-    ],
-    "hints": [
-     "We should change this because…",
-     "Proposal Pass Threshold — settled",
-     "Rising Threshold — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Passed: 82% sure at the end — settled",
-     "Keep this",
-     "Propose this — nothing leaves the card until you submit",
-     "This is how your reason will reach everybody else: with your name off it.",
-     "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
-    ],
-    "helpers": [
-     "The Founder proposes like a member.",
-     "No proposal needed for the Founder’s own hand.",
-     "We should change this because…"
-    ]
-   },
    "pw:u:chamber": {
     "eyebrow": "",
     "head": "The Founder may amend this at will.",
@@ -6278,6 +5971,7 @@
      "Quorum — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
+     "Passed: 38% of the membership — settled",
      "Keep this",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
@@ -6433,7 +6127,7 @@
    },
    "quorum": {
     "eyebrow": "",
-    "head": "33% of the membership must vote on a proposal ✏️ before it can pass.Chosen by the membership",
+    "head": "38% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Chosen by the membership",
     "lock": "",
     "body": "Quorum is % of the membership.Propose this",
     "options": [],
@@ -6458,6 +6152,7 @@
      "Quorum — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
+     "Passed: 38% of the membership — settled",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
@@ -6510,34 +6205,6 @@
     ],
     "helpers": []
    },
-   "rec:bar:0": {
-    "eyebrow": "",
-    "head": "82% sure at the end",
-    "lock": "",
-    "body": "D Month YYYY · PassedFor a proposal ✏️ to pass, 82% of the members that voted on it must prefer it to the alternatives. Voting opens at 55% and climbs to 82% by the end.The charter should not change on a bare majority of the evidence.Chosen by the membership",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Proposal Pass Threshold — settled",
-     "Rising Threshold — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "Passed: 82% sure at the end — close it",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
    "rec:chamber:0": {
     "eyebrow": "",
     "head": "Anyone with the link",
@@ -6561,6 +6228,33 @@
      "Does the Founder Have a Veto? — settled",
      "Passed: Anyone with the link — close it",
      "The founder’s own hand — a Founder Action ✒️, not a proposal",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "rec:quorum:0": {
+    "eyebrow": "",
+    "head": "38% of the membership",
+    "lock": "",
+    "body": "D Month YYYY · Passed38% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.The charter should not change until more of us have had our say.Chosen by the membership",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Quorum — settled",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Passed: 38% of the membership — close it",
+     "A member wrote this. Who, is sealed until the closing record.",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -6816,33 +6510,6 @@
     ],
     "helpers": []
    },
-   "bar": {
-    "eyebrow": "",
-    "head": "For a proposal ✏️ to pass, 82% of the members that voted on it must prefer it to the alternatives. Voting opens at 55% and climbs to 82% by the end.Chosen by the membership",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Proposal Pass Threshold — close it",
-     "Rising Threshold — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "Passed: 82% sure at the end — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
    "chamber": {
     "eyebrow": "",
     "head": "The document can be seen by anyone with the link.Chosen by the Founder ✒️",
@@ -6944,33 +6611,6 @@
     ],
     "helpers": []
    },
-   "pace": {
-    "eyebrow": "",
-    "head": "The approval threshold starts at 55% and rises to 82% by the end.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Proposal Pass Threshold — settled",
-     "Rising Threshold — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "Passed: 82% sure at the end — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
    "pw:a:admission": {
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
@@ -7042,33 +6682,6 @@
      "Anonymous Proposals — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
-   "pw:a:bar": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Proposal Pass Threshold — settled",
-     "Rising Threshold — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Passed: 82% sure at the end — settled",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -7195,6 +6808,7 @@
      "Quorum — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
+     "Passed: 38% of the membership — settled",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -7375,33 +6989,6 @@
     ],
     "helpers": []
    },
-   "pw:u:bar": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Proposal Pass Threshold — settled",
-     "Rising Threshold — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Passed: 82% sure at the end — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
    "pw:u:chamber": {
     "eyebrow": "",
     "head": "The Founder may amend this at will.",
@@ -7524,6 +7111,7 @@
      "Quorum — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
+     "Passed: 38% of the membership — settled",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -7631,7 +7219,7 @@
    },
    "quorum": {
     "eyebrow": "",
-    "head": "33% of the membership must vote on a proposal ✏️ before it can pass.Chosen by the membership",
+    "head": "38% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Chosen by the membership",
     "lock": "",
     "body": "",
     "options": [],
@@ -7650,6 +7238,7 @@
      "Quorum — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
+     "Passed: 38% of the membership — settled",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -7680,34 +7269,6 @@
     ],
     "helpers": []
    },
-   "rec:bar:0": {
-    "eyebrow": "",
-    "head": "82% sure at the end",
-    "lock": "",
-    "body": "D Month YYYY · PassedFor a proposal ✏️ to pass, 82% of the members that voted on it must prefer it to the alternatives. Voting opens at 55% and climbs to 82% by the end.The charter should not change on a bare majority of the evidence.Chosen by the membership",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Proposal Pass Threshold — settled",
-     "Rising Threshold — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "Passed: 82% sure at the end — close it",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
    "rec:chamber:0": {
     "eyebrow": "",
     "head": "Anyone with the link",
@@ -7731,6 +7292,33 @@
      "Does the Founder Have a Veto? — settled",
      "Passed: Anyone with the link — close it",
      "The founder’s own hand — a Founder Action ✒️, not a proposal",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "rec:quorum:0": {
+    "eyebrow": "",
+    "head": "38% of the membership",
+    "lock": "",
+    "body": "D Month YYYY · Passed38% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.The charter should not change until more of us have had our say.Chosen by the membership",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Quorum — settled",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Passed: 38% of the membership — close it",
+     "A member wrote this. Who, is sealed until the closing record.",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -7991,49 +7579,11 @@
     ],
     "helpers": []
    },
-   "bar": {
-    "eyebrow": "",
-    "head": "For a proposal ✏️ to pass, 82% of the members that voted on it must prefer it to the alternatives. Voting opens at 55% and climbs to 82% by the end.Chosen by the membership",
-    "lock": "",
-    "body": "A proposal passes when the members are % sure at the end.Propose thisdocs.vote uses the Bradley–Terry–Davidson voting method to decide whether a proposal ✏️ passes. It uses probability to compensate for when only a small fraction of the membership vote — read more.",
-    "options": [],
-    "inputs": [
-     {
-      "type": "number",
-      "ph": null
-     }
-    ],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Discard this motion"
-     },
-     {
-      "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
-     }
-    ],
-    "hints": [
-     "We should change this because…",
-     "Proposal Pass Threshold — close it",
-     "Rising Threshold — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "Passed: 82% sure at the end — settled",
-     "Propose this — nothing leaves the card until you submit",
-     "This is how your reason will reach everybody else: with your name off it.",
-     "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
-    ],
-    "helpers": [
-     "We should change this because…"
-    ]
-   },
    "begin": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes when it meets the approval threshold.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes when the members who voted prefer it and the quorum is met.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
-    "body": "What beginning did.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens, and the approval threshold begins its course.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.",
+    "body": "What beginning did.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -8057,7 +7607,7 @@
    },
    "canjudge": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes when it meets the approval threshold.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes when the members who voted prefer it and the quorum is met.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "",
     "options": [],
@@ -8083,7 +7633,7 @@
    },
    "canpropose": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes when it meets the approval threshold.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes when the members who voted prefer it and the quorum is met.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "",
     "options": [],
@@ -8236,7 +7786,7 @@
    },
    "grant-voice": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes when it meets the approval threshold.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes when the members who voted prefer it and the quorum is met.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "",
     "options": [],
@@ -8514,73 +8064,6 @@
     ],
     "helpers": []
    },
-   "pace": {
-    "eyebrow": "",
-    "head": "The approval threshold starts at 55% and rises to 82% by the end.",
-    "lock": "",
-    "body": "FixedStays at 78% from the moment voting opens to the end.Choose ✒️ or Propose ✏️ thisRisingChosen ✒️ or Proposed ✏️Nearly everyone90%Choose ✒️ or Propose ✏️ thisBroad agreement80%Choose ✒️ or Propose ✏️ thisA bare majority60%Choose ✒️ or Propose ✏️ thisStarts at a bare majority (60%) when voting opens and climbs to 78% by the end — early changes pass more easily.A number of my ownChosen ✒️ or Proposed ✏️Starts at 55% when voting opens and climbs to 78% by the end — early changes pass more easily.When voting opens%Why are you changing this?ABAsh Bellamy 👑",
-    "options": [
-     {
-      "set": "shape",
-      "val": "fixed",
-      "label": "Fixed"
-     },
-     {
-      "set": "shape",
-      "val": "ramp",
-      "label": "Rising"
-     },
-     {
-      "set": "tStart",
-      "val": "60",
-      "label": "A bare majority60%"
-     },
-     {
-      "set": "tStart",
-      "val": null,
-      "label": "A number of my own"
-     }
-    ],
-    "inputs": [
-     {
-      "type": "number",
-      "ph": null
-     }
-    ],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "✒️",
-      "title": "Set it"
-     },
-     {
-      "label": "✏️",
-      "title": "Propose it"
-     }
-    ],
-    "hints": [
-     "I am changing this because…",
-     "Proposal Pass Threshold — settled",
-     "Rising Threshold — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "Passed: 82% sure at the end — settled",
-     "The founder’s own hand — a Founder Action ✒️, not a proposal",
-     "Put it back as it stands",
-     "Set it",
-     "Propose it"
-    ],
-    "helpers": [
-     "Stays at 78% from the moment voting opens to the end.",
-     "Starts at a bare majority (60%) when voting opens and climbs to 78% by the end — early changes pass more easily.",
-     "Starts at 55% when voting opens and climbs to 78% by the end — early changes pass more easily.",
-     "%",
-     "I am changing this because…"
-    ]
-   },
    "pw:a:admission": {
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
@@ -8652,33 +8135,6 @@
      "Are Proposals Anonymous? — waiting on others",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
-   "pw:a:bar": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Proposal Pass Threshold — settled",
-     "Rising Threshold — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Passed: 82% sure at the end — settled",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -8860,6 +8316,7 @@
      "Quorum — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
+     "Passed: 38% of the membership — settled",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -9125,33 +8582,6 @@
     ],
     "helpers": []
    },
-   "pw:u:bar": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Proposal Pass Threshold — settled",
-     "Rising Threshold — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Passed: 82% sure at the end — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
    "pw:u:chamber": {
     "eyebrow": "",
     "head": "The Founder may amend this at will.",
@@ -9329,6 +8759,7 @@
      "Quorum — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
+     "Passed: 38% of the membership — settled",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -9521,7 +8952,7 @@
    },
    "quorum": {
     "eyebrow": "",
-    "head": "33% of the membership must vote on a proposal ✏️ before it can pass.Chosen by the membership",
+    "head": "38% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.Chosen by the membership",
     "lock": "",
     "body": "Quorum is % of the membership.Propose this",
     "options": [],
@@ -9546,6 +8977,7 @@
      "Quorum — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
+     "Passed: 38% of the membership — settled",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
@@ -9598,34 +9030,6 @@
     ],
     "helpers": []
    },
-   "rec:bar:0": {
-    "eyebrow": "",
-    "head": "82% sure at the end",
-    "lock": "",
-    "body": "D Month YYYY · PassedFor a proposal ✏️ to pass, 82% of the members that voted on it must prefer it to the alternatives. Voting opens at 55% and climbs to 82% by the end.The charter should not change on a bare majority of the evidence.Chosen by the membership",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Proposal Pass Threshold — settled",
-     "Rising Threshold — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "Passed: 82% sure at the end — close it",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
    "rec:chamber:0": {
     "eyebrow": "",
     "head": "Anyone with the link",
@@ -9649,6 +9053,33 @@
      "Does the Founder Have a Veto? — settled",
      "Passed: Anyone with the link — close it",
      "The founder’s own hand — a Founder Action ✒️, not a proposal",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "rec:quorum:0": {
+    "eyebrow": "",
+    "head": "38% of the membership",
+    "lock": "",
+    "body": "D Month YYYY · Passed38% of the membership must vote on a proposal ✏️ before it can pass; the wording more of them prefer is the one that stands.The charter should not change until more of us have had our say.Chosen by the membership",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Quorum — settled",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Passed: 38% of the membership — close it",
+     "A member wrote this. Who, is sealed until the closing record.",
      "Put it back as it stands"
     ],
     "helpers": []
