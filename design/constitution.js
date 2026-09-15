@@ -1973,7 +1973,7 @@ var CONSTITUTION = (() => {
           motion: null,
           shutAcked: false
         };
-        s.applicants.set(event.applicant, withPerson(s, state));
+        s.applicants.set(event.applicant, withApplicantPerson(s, state));
         s.nextApplicantN += 1;
         break;
       }
@@ -2095,6 +2095,22 @@ var CONSTITUTION = (() => {
       name: field("name"),
       picture: field("picture"),
       erased: field("erased")
+    });
+  }
+  function withApplicantPerson(s, state) {
+    const people = s.people;
+    const field = (key, onlyOnceGiven) => ({
+      enumerable: true,
+      get() {
+        if (onlyOnceGiven && (this.status === "started" || this.status === "verified")) return null;
+        return resolvePerson(people, this.person)[key];
+      }
+    });
+    return Object.defineProperties(state, {
+      email: field("email", false),
+      name: field("name", true),
+      picture: field("picture", true),
+      erased: field("erased", false)
     });
   }
   function foldSet(s, id, value, by, t) {
@@ -3460,10 +3476,7 @@ var CONSTITUTION = (() => {
       if (!a || a.status !== "verified") {
         throw new Error("an application is verified by magic link before it can be submitted (§9.7½)");
       }
-      const patch = {};
-      if (fields.name !== void 0) patch.name = fields.name;
-      if (fields.picture !== void 0) patch.picture = fields.picture;
-      this.people.set(a.person, patch);
+      this.people.set(a.person, { name: fields.name ?? null, picture: fields.picture ?? null });
       const e = { type: "application-submitted", t, applicant };
       if (fields.words !== void 0) e.words = fields.words;
       this.emit(e);

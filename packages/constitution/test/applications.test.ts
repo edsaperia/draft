@@ -134,6 +134,37 @@ describe('applications (§9.7½, entry 94): one switch, 🪪’s price, one iden
     expect(s.applicantRecords().get(ap)!.status).toBe('admitted');
     expect(s.E()).toBe(4);
   });
+
+  // **A fresh application starts blank, whoever you were** (Q1366, Ed
+  // 2026-09-15). The row outlives the seat — the register's departure line
+  // still names who left — so a returning address knocks on a row already
+  // carrying a name and a face, and the applicant's record used to read them
+  // back as if they had been given: ✋ showed the old name, 🖼️ opened on
+  // *Chosen*. Nothing is given until the submission, and the submission is
+  // the whole of it.
+  it('a returning address applies blank, and the submission is what stands (Q1366)', () => {
+    const { s, bo } = buildConstituted({
+      applications: { apply: true }, admission: { price: 'proposal' } });
+    s.setIdentity(2, bo, { name: 'Bo Before', picture: 'e🦊' });
+    s.resign(3, bo);
+    expect(s.memberRecords().get(bo)!.name).toBe('Bo Before'); // the departure line still has a name
+    const ap = s.startApplication(4, 'bo@example.org');
+    s.verifyApplication(5, ap);
+    const a = s.applicantRecords().get(ap)!;
+    expect(a.person).toBe(s.memberRecords().get(bo)!.person); // one person, one row
+    expect(a.email).toBe('bo@example.org');
+    expect(a.name).toBeNull(); // nothing given yet, whatever the row holds
+    expect(a.picture).toBeNull();
+    expect(view(s, bo).applicants.find((x) => x.id === ap)!.name).toBeNull();
+    s.submitApplication(6, ap, { name: 'Bo Again' }); // a name, no picture
+    expect(a.name).toBe('Bo Again');
+    expect(a.picture).toBeNull(); // not given, so not carried from the old seat
+    // the row is the person's, so the departed seat now reads the new name
+    // too — the record resolves live (decision 1253), as it does for a
+    // member who renames
+    expect(s.memberRecords().get(bo)!.name).toBe('Bo Again');
+    expect(s.memberRecords().get(bo)!.picture).toBeNull();
+  });
 });
 
 describe('the view withholds (§3.5/§9.0a): blindness is the projection layer', () => {

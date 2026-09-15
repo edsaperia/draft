@@ -927,7 +927,7 @@ function applyPresence(s: FoldState, event: ConstitutionEvent): void {
         motion: null,
         shutAcked: false,
       };
-      s.applicants.set(event.applicant, withPerson(s, state));
+      s.applicants.set(event.applicant, withApplicantPerson(s, state));
       s.nextApplicantN += 1;
       break;
     }
@@ -1068,6 +1068,34 @@ function withPerson<T extends { person: PersonId }>(s: FoldState, state: T): T &
   return Object.defineProperties(state, {
     email: field('email'), name: field('name'), picture: field('picture'), erased: field('erased'),
   }) as T & ResolvedPerson;
+}
+
+/**
+ * **A fresh application starts blank, whoever you were** (Q1366, Ed
+ * 2026-09-15). The row is the person's and survives a seat they gave up
+ * (decision 1253: the register's departure line still has to name them), so
+ * a returning address knocks with a row already carrying the departed seat's
+ * name and picture — and the applicant's page was born with them filled in,
+ * ✋ showing the old name rather than asking and 🖼️ opening on *Chosen*. An
+ * application has given nothing until it is submitted, so until then the
+ * record reads name and picture as nothing, whatever the row holds; from the
+ * submission on it reads the row like any record, and the submission writes
+ * exactly what the applicant gave (`submitApplication`). Email and erasure
+ * resolve live throughout: the address is the applicant's identity here.
+ */
+function withApplicantPerson(s: FoldState, state: ApplicantState): ApplicantRecord {
+  const people = s.people;
+  const field = (key: keyof ResolvedPerson, onlyOnceGiven: boolean): PropertyDescriptor => ({
+    enumerable: true,
+    get(this: ApplicantState) {
+      if (onlyOnceGiven && (this.status === 'started' || this.status === 'verified')) return null;
+      return resolvePerson(people, this.person)[key];
+    },
+  });
+  return Object.defineProperties(state, {
+    email: field('email', false), name: field('name', true),
+    picture: field('picture', true), erased: field('erased', false),
+  }) as ApplicantRecord;
 }
 
 function foldSet(s: FoldState, id: SettingId, value: SettingValue, by: 'convenor' | 'crown',

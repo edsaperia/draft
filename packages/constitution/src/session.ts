@@ -1468,10 +1468,14 @@ export class ConstitutionSession {
     }
     // the name and picture to the row, the words to the log (decision 1253;
     // free text is stage 12's second part and stays in the event)
-    const patch: { name?: string; picture?: string } = {};
-    if (fields.name !== undefined) patch.name = fields.name;
-    if (fields.picture !== undefined) patch.picture = fields.picture;
-    this.people.set(a.person, patch);
+    // **The submission is the whole of the identity it gives** (Q1366, Ed
+    // 2026-09-15: a fresh application starts blank, whoever you were). A
+    // returning address knocks on a row that still carries the seat it gave
+    // up, and until now a field left out of the submission left the row's
+    // old value standing — so an applicant whose page showed nothing could be
+    // put before the members under a name they never gave. What is not
+    // given is nothing, and the row says so.
+    this.people.set(a.person, { name: fields.name ?? null, picture: fields.picture ?? null });
     const e: ConstitutionEvent = { type: 'application-submitted', t, applicant };
     if (fields.words !== undefined) e.words = fields.words;
     this.emit(e);
