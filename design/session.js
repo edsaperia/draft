@@ -65,13 +65,15 @@
   // The roster and its quorum: F = min(⌈E/3⌉, F_max) distinct movers before
   // anything can be adopted (SPEC §8.2, where it is called the *floor*). The
   // interface says **quorum** (Ed, 190) — it is quorum for a decision rather
-  // than for a meeting, which is the intuition people already have. This is
-  // the number that is actually a headcount; the adoption-threshold beside it
-  // is a confidence, not a vote share.
+  // than for a meeting, which is the intuition people already have. Since
+  // Q1362 it is the **only** number in the adoption test: the text on a
+  // footprint is whichever candidate the ranking puts on top once this many
+  // members have weighed in, and the confidence that used to stand beside it
+  // is pinned and out of the member's sight.
 
   // Creation-time constitution (SPEC §9.0). The starting number of edits and
   // the rate they come back are per-document parameters chosen when the
-  // document is made, exactly like quorum and the bar (Ed, 2026-08-16) — so
+  // document is made, exactly like the quorum (Ed, 2026-08-16) — so
   // they are held here as named rules rather than as numbers scattered
   // through the render.
   // Where this member stands: five held, three fifths of the way to a sixth.
@@ -769,16 +771,16 @@
   // lifecycle classes still colour them, and the match is a property of the
   // drawing rather than a hope about a font. ↻ stays a character: it has no
   // partner whose weight it must equal, and no font disagrees about an arrow.
-  // **Ed's own pair, for now** (2026-08-17): 👍 for the reading of the room and
-  // ✒️ for the line it had to cross. Drawn line art was tried first — a gauge and
-  // a hurdle on the same stroke as ✔ and ✖ — and the honest finding is that at
-  // eyebrow size line art does not survive: the gauge read as a caret and the
+  // **Ed's own pair, for now** (2026-08-17): 👤 for how many weighed in and 👍
+  // for the reading of the membership. Drawn line art was tried first — a gauge
+  // and a hurdle on the same stroke as ✔ and ✖ — and the honest finding is that
+  // at eyebrow size line art does not survive: the gauge read as a caret and the
   // hurdle as a Greek letter. Emoji are bitmapped for exactly this size, which
   // is the one job they do better than anything we can draw. They bring their
-  // own colour back, which is the cost.
+  // own colour back, which is the cost. A third unit, ✒️ for the line a reading
+  // had to cross, went with the bar (Q1362).
   const PEOPLE = "<span class=\"unit\">👤</span>";
   const JUDG = "<span class=\"unit\">👍</span>";
-  const BAR = "<span class=\"unit\">✒️</span>";
   // did anything displace the incumbent?
   const carried = (g) => fieldOf(g).some((c) => c.won);
   // Whatever wants you most keeps its place on the screen whatever else is
@@ -2056,28 +2058,25 @@
     return (
       '<div class="sugg sealed-open" data-card="' + s.id + '"' +
       (skey ? ' data-site="' + skey + '"' : '') + '>' +
-      // The axis and the bar moved up here when the field label went: they govern
-      // every number on the card, including the one now in the head.
-      // **The eyebrow states the outcome, in units** (Ed, 2026-08-17). Two
-      // quantities are being compared and they are different in kind — what the
-      // room came to think, and the line that had to be crossed — so each gets a
-      // mark: a gauge for the reading, a hurdle for the bar. With those, the whole
-      // result is one line: *86% cleared 72%*, or *41% did not*. The comparator
-      // does the work a sentence was doing.
       // **The whole record in one line** (Ed, 2026-08-17). It was three places —
       // an eyebrow, a rank label under it, and a record band at the foot — for
-      // four numbers that belong together: how many weighed in, what they came
-      // to, and what it had to clear. Each gets its unit and they read as one
-      // sentence. Quorum and your own verdict move into the tooltip, where they
-      // are still there for anybody who wants them and cost no ink.
+      // numbers that belong together: how many weighed in and what they came to.
+      // Each gets its unit and they read as one sentence. Quorum and your own
+      // verdict move into the tooltip, where they are still there for anybody
+      // who wants them and cost no ink.
+      // **The comparator went with the bar** (Q1362, 2026-09-15). The line used
+      // to end *86% 👍 > 72% ✒️*: two quantities of different kinds — what the
+      // membership came to think, and the line that had to be crossed. There is
+      // no line to cross, so there is nothing to compare the reading against,
+      // and the ✒️ that stood for it here — the one place on the surface where
+      // the pen glyph did not mean the Founder's own hand — goes with it.
       '<div class="rechead" title="' +
       esc(T.record.tooltip(d.judges ?? 0, ROSTER, FLOOR,
         yours ? T.record.youSaid(yours) : T.record.youNever)) + '">' +
       '<span>' + (und ? T.record.undecided : T.record.decided) + ' · ' + (d.judges ?? 0) + '/' + ROSTER + PEOPLE +
-      // an undecided race with no reading prints no numbers: 0% > 0% is a
-      // sentence about nothing
-      (und && !(d.bar > 0) ? '' : ' · ' + pct(best) + JUDG +
-        (best >= (d.bar ?? 0) ? ' &gt; ' : ' &lt; ') + pct(d.bar) + BAR) + '</span>' +
+      // an undecided race nobody read prints no reading: 0% is a number about
+      // nothing
+      (und && !(best > 0) ? '' : ' · ' + pct(best) + JUDG) + '</span>' +
       '<span class="sub">' + esc(d.when || '') + '</span></div>' +
       // **The cap line** (SPEC §4.2, R-051; Q945, Ed 2026-08-27). Where the
       // ranking fit this decision was taken on ran out of its iteration cap,
@@ -2642,9 +2641,15 @@
     if (sv.kind === 'race') {
       // The clause, which this card had never shown (Ed, QA 2026-08-16) — a
       // reader was being asked to choose between two rewrites without being
-      // shown what they rewrite. It carries no control, because nothing on a
-      // race can vote to keep it: displacement is settled by the
-      // adoption-threshold, not by this judgment (SPEC §5).
+      // shown what they rewrite. It carries no control here because **this
+      // pair is not about it**: two challengers were dealt, and a judgment is
+      // of two candidates. The current text is a peer in the field like any
+      // other (Q1362 (a)), and where the router deals it as one of the pair
+      // `cardViewOf` reshapes the item to a quick card — whose head carries
+      // the lane, in the same words as the proposal's. The old reason here
+      // was that displacement was settled by the adoption threshold rather
+      // than by this judgment; there is no threshold, and the ranking these
+      // judgments feed is what decides.
       const rkey = (sv.keys ?? [])[0];
       const cur = runTextFor(sv, rkey);    // the run's text, as the head reads it (Q1308)
       return (
@@ -2657,11 +2662,11 @@
           proposalHtml(sv, { v: 'b', html: wordingHtml(cur, sv.race.b.text), why: sv.race.b.rationale, by: sv.race.b.by }), 2) +
         reviseNote(sv) + crownNote(sv) + parkNote(sv) +
         ledgerHtml(s) +
-        // The one thing a race card cannot say any other way: neither of its
-        // two candidates has an incumbent radio, so nothing on the card votes
-        // to keep the clause, and a reader could reasonably think one of them
-        // must win. Everything else that used to be here was the design
-        // explaining itself.
+        // The one thing a race card cannot say any other way: the pair on it
+        // is two challengers, so nothing on the card says *the clause above
+        // is fine as it is*, and a reader could reasonably think one of them
+        // must win. Neither has to: the clause above is in the same ranking
+        // and stays unless the room comes to prefer one of them (Q1362 (a)).
         '<div class="foot">' + T.race.foot + '</div>' +
         commitRowHtml(sv) +
         '</div>'
@@ -2700,7 +2705,10 @@
       );
     }
     // quick (including insert) — the race card's own geometry, with the
-    // incumbent on the left, so choosing the left lane *is* keep-current.
+    // current text on the left. **Both lanes read the same words** (Q1362 (a)):
+    // the current text is a candidate in the field authored by nobody, so it is
+    // preferred or not preferred exactly as its rival is. The lane's id stays
+    // `keep`, which is the value `judge()` sends and the server knows.
     // A proposed section has no clause of its own to edit into, so neither
     // lane offers ✏️ — writing a rival section is a different gesture and
     // nobody has designed it (Q261).
