@@ -98,7 +98,7 @@
   // design/reference/: card HTML byte-identical, geometry 0.0px.
   const {
     esc, resultOnly, stripTags, pct, plainLabel, URG_LO, URG_HI,
-    TICK, CROSS, MARK, DRAWN, mkHtml, markHtml,
+    TICK, MARK, DRAWN, mkHtml, markHtml,
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks,
     headFlags, originText, mdToHtml, htmlToMd, mdStrip, mdLine,
     richToSource, sourceToRich, readLane,
@@ -4259,14 +4259,15 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       hue ? tint(hue, active ? 0.30 : 0.17) : 'transparent');
   };
 
-  // **The state, not the glyph.** Two states can now share a character — a
-  // filed tick and an adopted one are the same ✔ in two colours — so everything
-  // that used to compare marks compares *kinds* instead. It also collapses the
-  // duplicated ternary that markOf and its colour lookup had each grown.
+  // **The state, not the glyph.** Two states share one picture — a filed tick
+  // and an adopted one are the same check, one of them desaturated — so
+  // everything that used to compare marks compares *kinds* instead. It also
+  // collapses the duplicated ternary that markOf and its colour lookup had
+  // each grown.
   const markKindOf = (g) => {
     const st = stateOf(g);
     // the third filed mark (Q469): a race unresolved at the close is
-    // *undecided*, distinct from kept — PAUSE, grey from the start
+    // *undecided*, distinct from kept — the pause button, grey from the start
     return st === 'sealed' ? (g.undecided ? 'filedUndecided'
                               : isUnread(g) ? (carried(g) ? 'adopted' : 'retired')
                                           : (carried(g) ? 'filedYes' : 'filedNo'))
