@@ -564,10 +564,13 @@
   const classFor = (g) => (g.mine ? 'yours' : '');
   const tint = (hue, a) => 'rgba(var(--lc-' + hue + '), ' + a.toFixed(3) + ')';
   // Colour says lifecycle (Ed, 162); the wash is still the progress bar it
-  // always was, so how far the fill reaches is closeness to resolution. On a
-  // needs-you card the strength of the colour is also urgency — one device,
-  // three readings. A deadlocked race washes grey: more judgment won't move it
-  // (SPEC §8.3), which is the one case where the state is not the whole story.
+  // always was, so how far the fill reaches is closeness to resolution — and
+  // since Q1362 (c) that is **how far the room has got toward the quorum**:
+  // the voters a race has collected over the voters it needs, the one number
+  // the room controls. On a needs-you card the strength of the colour is also
+  // urgency — one device, three readings. A deadlocked race washes grey: more
+  // judgment won't move it (SPEC §8.3), which is the one case where the state
+  // is not the whole story.
   //
   // Split into a colour and a fill (Ed, 2026-08-17). It used to be one
   // hard-stopped linear-gradient, which said the same thing but could not be
@@ -930,12 +933,12 @@
           const w = oneLine ? wash(g, g.shifted ? 'closed' : 'deciding')
             : wash(g, anchHue(g) || 'open', stuck(g) ? 0.55 : u);
           // **A diagonal has no progress** (Ed, 2026-08-17). The fill is
-          // closeness-to-resolution, and a diagonal never resolves: salience is
-          // a continuous ranking with no bar to clear and no threshold to
-          // ratify, which is exactly why it can be advisory. A bar on it was
-          // claiming a finish line that does not exist. So it washes flat, for
-          // the same reason an unproposed draft does — there is nothing to be
-          // close to.
+          // closeness-to-resolution — how far the room has got toward the
+          // quorum — and a diagonal never resolves: salience is a continuous
+          // ranking with no floor to meet, which is exactly why it can be
+          // advisory. A bar on it was claiming a finish line that does not
+          // exist. So it washes flat, for the same reason an unproposed draft
+          // does — there is nothing to be close to.
           return washAttrs(qKey(g, e), w.col, isDiagonal(g) ? '100%' : w.fill);
         })() + '>' +
         (oneLine

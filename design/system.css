@@ -631,8 +631,9 @@
   .queue button[aria-current="true"] { box-shadow: var(--shadow-xl); }
 
   /* The wash is the progress bar (Ed, 105/116): how far the fill reaches is
-     closeness to resolution, how strong the colour is is urgency, and the hue
-     is lifecycle (Ed, 162). Built per entry in wash().
+     closeness to resolution — since Q1362 (c), how far the room has got
+     toward the quorum — how strong the colour is is urgency, and the hue is
+     lifecycle (Ed, 162). Built per entry in wash().
 
      Painted as a bar rather than as a gradient (Ed, 2026-08-17) so that both
      halves of it can move: no browser interpolates between two gradients, so

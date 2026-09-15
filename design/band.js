@@ -68,13 +68,13 @@ window.BAND = (function () {
     // the shared module, the same names the page destructures from it
     const { esc, TICK, avHtml, bandHtml, fitBand, nameBody, pictureBody, opt, num, numIn,
       ctlWord, ANSWER, stateOf, nounOf, MAILS, renderMailModal, gateBody, pileHtml, readBody,
-      routeFor, methodNote, listOf } = window.SETUP;
+      routeFor, listOf } = window.SETUP;
     // ---- the bodies a founder fills in ------------------------------------
     // **Constitutional settings default to the room; ordinary ones default to
     // you** (Ed, 2026-08-18, agreeing the proposal rate back to the founder). One rule
     // where there had been a rule and three exceptions, and the ordinary /
     // constitutional cut is what explains it: an ordinary setting can be taken
-    // back by the room at any time with a motion at the bar, so defaulting it to
+    // back by the room at any time with an ordinary motion, so defaulting it to
     // the founder costs them nothing. A constitutional one cannot — changing it
     // needs everybody — so it has to be theirs from the start or it is not
     // really theirs at all.
@@ -175,42 +175,12 @@ window.BAND = (function () {
       return ' at ' + p2(d0.getHours()) + ':' + p2(d0.getMinutes()) + ' on ' +
         d0.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
     };
-    // **A rung that carries a percent, and says what the percent would do**
-    // (entry 165, Ed 2026-08-27: *3 preset buttons, and they can edit the
-    // precise % if they really want to*). `opt`'s exact markup — the same
-    // `.pick` · `.lanepick` · `.exp` · `.inner` a settings choice is drawn with
-    // — plus two things only a percent ladder has: the number itself in small
-    // type after the rung's name, and an `.exp` that is not fixed copy but the
-    // module's sentence about **this room as it stands**, re-read on every
-    // render the way `ceilingNote` is.
-    //
-    // An options object rather than `opt`'s positionals because the four rungs
-    // of one ladder disagree about three things at once — the own rung sets a
-    // different key from the three presets, states its own `on` (*whatever is
-    // not a preset*), and is the only one carrying a field.
-    const pctRung = (o) => {
-      const on = !!o.on;
-      const pw = pairWords(o.set, o.val) || { off: 'Choose this', on: 'Chosen' };
-      return '<div class="pick' + (on ? ' on' : '') + (o.off ? ' off' : '') + '">' +
-        // three of the four rungs are the rule as it would stand and take the
-        // clause font; the fourth, *A number of my own*, is the ladder's escape
-        // rather than a rung of it and says so in a control's voice (T46)
-        '<span class="opttext">' + (o.ctl ? ctlWord(esc(o.label)) : esc(o.label)) +
-        (o.pct ? '<span class="pct">' + o.pct + '%</span>' : '') + '</span>' +
-        '<button class="lanepick" aria-pressed="' + on + '"' + (o.off ? ' disabled' : '') +
-        (o.off ? '' : ' data-set="' + o.set + '" data-val="' + o.val + '"') + '>' +
-        '<span class="dot"></span><span class="off">' + esc(pw.off) + '</span>' +
-        '<span class="on">' + esc(pw.on) + '</span></button>' +
-        // `mean` is the rung whose sentence is about a number being typed rather
-        // than about a fixed preset, so it carries the `data-meaning` hook
-        // `syncMeaning` writes into — without it the sentence under the caret
-        // keeps saying what the *previous* number meant until the field blurs.
-        // The slot is rendered even while empty, which `.exp:empty` hides.
-        (o.exp || o.mean
-          ? '<span class="exp"' + (o.mean ? ' data-meaning="' + esc(o.mean) + '"' : '') + '>' +
-            esc(o.exp || '') + '</span>' : '') +
-        (o.inner ? '<span class="inner">' + o.inner + '</span>' : '') + '</div>';
-    };
+    // **The percent ladder left with the percent** (Q1362, 2026-09-15).
+    // `pctRung` drew entry 165's rungs — the number in small type after the
+    // rung's name, and an `.exp` that was the module's sentence about this
+    // room as it stands — and its only two users were 🌡️'s three presets and
+    // 🪜's start ladder inside *Rising*. No control on this surface asks for a
+    // percent now; `opt` draws every block there is.
     // **The room every meaning is about, built once per read** (entry 167).
     // Four fields and no more, because a sentence may depend on the room and on
     // nothing else: the arrived membership, ⏰'s answer as it stands, this
@@ -226,7 +196,6 @@ window.BAND = (function () {
       e: E(),
       endsAtMs: endingKnown() ? endsAtMsOf() : undefined,
       nowMs: serverNow(),
-      barPct: isNum(S.tClose) ? +S.tClose : ((takenValOf('bar') || {}).pct ?? null),
     });
     // what a value would mean for the room as it stands, or nothing
     const meaning = (k, v) => M.meaningOf(k, v, roomNow()) || '';
@@ -248,15 +217,6 @@ window.BAND = (function () {
       if (!slot) return;
       slot.textContent = (!CHOSEN[k] || CHOSEN[k]()) ? meaning(k, TYPED[k]()) : '';
     };
-    const isRungPct = (v) => M.BAR_RUNGS.some((r) => r.pct === +v);
-    // 🌡️'s ladder: the three presets, then the number itself. The three set
-    // `tClose` directly (`fillRung` takes `barBy` with them); the fourth is the
-    // card's original *I set it* rung under its own name, so the field, its
-    // `data-num` and the probe's two steps are exactly where they were.
-    // **Exactly three rungs** (Ed, 2026-09-02, Q1158, reversing Q1104 (b) for
-    // 🌡️ alone): *A number of my own* and its box are gone from this card —
-    // the pattern survives on 🪜, 👥 and ⏱️, and the composer still takes a
-    // number for a motion.
     // ---- **What stands is not offered back** (Q1293, Ed 2026-09-09, reading
     // (a)) ------------------------------------------------------------------
     // A settled option-block card drawn for the founder's own hand carries the
@@ -282,7 +242,7 @@ window.BAND = (function () {
     // the whole card equals what stands, so a number typed into the standing
     // form lights its block (F6: typing into a rung's field is choosing it)
     const RUNG_KEYS = new Set(['chamber', 'joinBy', 'admission', 'removal', 'authorship',
-      'judgments', 'lapse', 'ending', 'quorumForm', 'rateBy', 'barBy', 'tClose', 'shape',
+      'judgments', 'lapse', 'ending', 'quorumForm', 'rateBy',
       'quorumBy', 'policyBy']);
     // the standing value as the page's own fields, on a scratch object — the
     // holder keys ride along, since a founder-set value is held `'founder'`
@@ -292,7 +252,6 @@ window.BAND = (function () {
       const T = {};
       fieldsOf(midOf(k), st.value, T);
       if (k === 'quorum') { T.quorumForm = st.value.form; T.quorumBy = 'founder'; }
-      if (k === 'bar') T.barBy = 'founder';
       if (k === 'rate') T.rateBy = 'founder';
       if (k === 'applications') T.policyBy = 'founder';
       return T;
@@ -337,55 +296,6 @@ window.BAND = (function () {
     const rungOpt = (V, key, val, ttl, exp, inner, off, extra) =>
       (V.__stand && sameField(V.__stand[key], val) ? '' : opt(V, key, val, ttl, exp, inner, off, extra));
 
-    const barRungs = (V) =>
-      M.BAR_RUNGS.filter((r) => !(V.__stand && V.__stand.barBy === 'founder' && sameField(V.__stand.tClose, r.pct)))
-      .map((r) => pctRung({
-        // the block text is the rule as it would stand (Q1104 (b)); the short
-        // label stays the strip's and 🪜's. No % figure on the rung (Ed's QA,
-        // 2026-09-02 pm: *Remove %s*) — the sentence is the whole rung; 🪜's
-        // start ladder keeps its numbers, being a ladder *of* numbers.
-        set: 'tClose', val: r.pct, label: r.sentence,
-        on: V.barBy === 'founder' && +V.tClose === r.pct,
-        exp: meaning('bar', { pct: r.pct }),
-      })).join('');
-    // 🪜's, inside *Rising*: the same three percents read as a starting bar, and
-    // a rung is dimmed where it would not actually start below the close — a
-    // ramp that starts at its own ceiling is not a ramp. The close is the
-    // founder's own field where they have set one, else what the room settled;
-    // with neither known nothing is dimmed, because nothing is yet false.
-    const startRungs = () => {
-      const close = isNum(S.tClose) ? +S.tClose : takenOf('bar');
-      const dim = (pct) => isNum(close) && pct >= +close;
-      // a dimmed rung carries no sentence: since entry 167 the sentence names
-      // where the climb ends as well as where it starts, and *starts at broad
-      // agreement and climbs to broad agreement* is what a ramp that does not
-      // ramp would say — the dimming is already the whole of that fact
-      // **A dimmed rung is never the chosen one, and what it leaves behind falls
-      // to the own-number rung.** Lowering 🌡️ under a start already taken from a
-      // preset dims every rung at or above it — including the one that is on —
-      // and a disabled rung cannot be clicked off, so the box has to come back or
-      // the card has no way left to change its own number.
-      const stray = (v) => isRungPct(v) && dim(+v);
-      return M.BAR_RUNGS.map((r) => pctRung({
-        set: 'tStart', val: r.pct, label: r.label, pct: r.pct, off: dim(r.pct),
-        on: S.shape === 'ramp' && +S.tStart === r.pct && !dim(r.pct),
-        exp: dim(r.pct) ? '' : meaning('pace', { shape: 'ramp', startPct: r.pct }),
-      })).join('') +
-        // **The own rung sets the field it is about, not the shape**, and it is
-        // T5 that says so: 🌡️'s fourth rung can wear `barBy=founder` because
-        // that pair means nothing else on the card, but 🪜 has no holder key and
-        // `shape=ramp` is already *Rising*'s — one rung value with two labels,
-        // which `card-audit`'s cross-card pass reads as one rung that cannot
-        // make up its mind. So it clears the start instead, which is also what
-        // choosing it means: an empty box to type your own number into.
-        pctRung({
-          set: 'tStart', val: '', label: M.OWN_RUNG_LABEL, mean: 'pace', ctl: true,
-          on: S.shape === 'ramp' && (!isRungPct(S.tStart) || stray(S.tStart)),
-          exp: isNum(S.tStart) && (!isRungPct(S.tStart) || stray(S.tStart))
-            ? meaning('pace', { shape: 'ramp', startPct: +S.tStart }) : '',
-          inner: '<span class="setrow2">' + num(S, 'tStart', 'When voting opens', 50, 99, '%') + '</span>',
-        });
-    };
     const BODY = {
       // the retrospective branch keys on the **start**, not on the OK (Q820):
       // until 🍾 the column below is still the founder's and still the answer,
@@ -611,7 +521,7 @@ window.BAND = (function () {
         : '<p class="why">' + ({
             consent: 'Removing a member is a proposal every member answers, including them — nobody leaves against their will.',
             assembly: 'Removing a member is a proposal every other member answers; they see it running.',
-            proposal: 'Removing a member is a proposal the membership decides at the approval threshold.' })[removalPrice()] +
+            proposal: 'Removing a member is a proposal the membership decides.' })[removalPrice()] +
           ' Anybody may leave at any time.</p>' + doorErrHtml('remove')),
 
       // **The door, apart from the register** (Ed, 2026-08-18). The policy is
@@ -658,34 +568,6 @@ window.BAND = (function () {
           '', endChipsHtml()) +
         rungOpt(V, 'ending', 'perpetual', ENDING_NEVER) +
         '</div>'; })(),
-      bar: () =>
-        // read before choosing whether to set it or hand it over (entry 163)
-        methodNote() +
-        '<div class="choice" role="radiogroup">' +
-        theyDecide('bar') +
-        barRungs(ladderView('bar')) +
-        '</div>',
-      pace: () =>
-        '<div class="choice" role="radiogroup">' +
-        // **Fixed first** (entry 167, rule 4): it is the more demanding shape —
-        // a change made an hour in faces the same number as one made at the
-        // close — so it heads the ladder, as *the most I will accept* does
-        // everywhere else. Both explanations come from the family now: *The
-        // same number all the way through.* and *Starts lower…* restated the
-        // rung's own name, where the sentence says what the number would be.
-        // Both explanations are the family's now, and where it has nothing true
-        // to say — 🌡️ unset, so there is no number to hold or climb to — the
-        // rung carries its name alone rather than a stand-in of the card's own.
-        // `ctlWord` on both (T46): 🪜's two rungs are the shape's own names —
-        // the sentence each would set is `DECIDED.pace`'s, printed elsewhere
-        opt(S, 'shape', 'fixed', ctlWord('Fixed'), meaning('pace', { shape: 'fixed' })) +
-        // *Rising* carries no sentence of its own: what a rise would mean
-        // depends on where it starts, and every rung inside it says so — the
-        // fourth one included. A sentence here would be one of theirs, printed
-        // twice on one card (T36).
-        opt(S, 'shape', 'ramp', ctlWord('Rising'), '',
-          '<div class="choice">' + startRungs() + '</div>', perpetual()) +
-        '</div>' + (perpetual() ? '<p class="setnote">With no end date there is nothing to climb towards, so the number stays fixed.</p>' : ''),
       quorum: () =>
         // **The form joins the question** (Ed, 2026-09-02, Q1162 — Q341
         // reversed for 👥 alone, R-082): two blocks, each the rule as it would
@@ -1068,7 +950,7 @@ window.BAND = (function () {
               : '<span class="off">Prefer this</span><span class="on">Preferred</span>') +
             '</button></div>';
           return cardHtml(c, ctx, said +
-            '<p class="why">The membership decides this at the approval threshold.</p>' +
+            '<p class="why">The membership decides this.</p>' +
             (rc ? '<div class="choice" role="radiogroup" aria-label="Admit them?">' +
               lane('admit', 'Admit them') +
               lane('stands', 'Keep the membership as it is') +

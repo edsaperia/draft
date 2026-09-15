@@ -468,8 +468,9 @@ window.LIVE = (function () {
       switch (mid) {
         case 'ending': T.ending = x.endsAtMs === null ? 'perpetual' : 'ends';
           if (x.endsAtMs !== null) T.endsAt = msToLocal(x.endsAtMs); return;
-        case 'bar': T.tClose = x.pct; return;
-        case 'pace': T.shape = x.shape; if (x.startPct) T.tStart = x.startPct; return;
+        // 🌡️ and 🪜 had a case each until 2026-09-15 (Q1362): the page holds
+        // no field for either now, and a document that carries their values
+        // hydrates without them, as it does for 🤖
         case 'quorum': if (x.form === 'share') T.quorumPct = x.n; else T.quorumN = x.n; return;
         case 'authorship': T.authorship = x.rung; return;
         case 'judgments': T.judgments = x.rung; return;
@@ -490,7 +491,7 @@ window.LIVE = (function () {
         default: return;
       }
     }
-    const FIELDED_MIDS = ['ending', 'bar', 'pace', 'quorum', 'authorship', 'judgments',
+    const FIELDED_MIDS = ['ending', 'quorum', 'authorship', 'judgments',
       'chamber', 'rate', 'lapse', 'removal', 'admission', 'applications'];
     function hydrateFromModule(skipKey) {
       const val2 = (mid) => { const st = env.cs.settingState(mid); return st && st.value; };
@@ -540,7 +541,6 @@ window.LIVE = (function () {
       const stOf = (mid) => { try { return env.cs.settingState(mid); } catch (e) { return null; } };
       const byOf = (mid) => { const st = stOf(mid);
         return del(mid) ? 'roster' : (st && st.settledBy !== null) ? 'founder' : ''; };
-      S.barBy = byOf('bar');
       S.quorumBy = byOf('quorum');
       S.rateBy = byOf('rate');
       S.policyBy = byOf('applications');
@@ -947,7 +947,11 @@ window.LIVE = (function () {
           // real number and the 0.3 is reached only where there is no card at
           // all, a race with nothing left to ask you. The fill is the race's
           // closeness to resolution — a magnitude the engine cannot be made
-          // to sign (Q501).
+          // to sign (Q501) — and since Q1362 (c) that magnitude is **the
+          // leader's judges over the floor**: voters so far over voters
+          // required, the one number the room controls. It is the same two
+          // numbers as `judges` and `floor` below; the engine sends the ratio
+          // so the page never divides.
           urgency: rc && rc.urgency != null ? rc.urgency : 0.3,
           pct: Math.round((r.closeness || 0) * 100),
           judges: r.judges || 0, floor: r.floor,
