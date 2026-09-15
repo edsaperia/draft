@@ -167,7 +167,9 @@ async function measureAt(browser, base, size, fails) {
     const ulBox = ul.getBoundingClientRect(), docX = doc.getBoundingClientRect().left;
     const out = { runs: 0, crossing: 0, onScreen: 0, bad: [] };
     for (const li of ul.querySelectorAll('li')) {
-      const a = li.querySelector('a'), run = li.querySelector('.tocmarks .run');
+      // the run, or on a page from before Q1384 the bare span, so the pre-fix
+      // failure names the geometry rather than an absent class
+      const a = li.querySelector('a'), run = li.querySelector('.tocmarks .run') || li.querySelector('.tocmarks');
       if (!a || !run) continue;
       out.runs++;
       const ab = a.getBoundingClientRect(), rb = run.getBoundingClientRect();

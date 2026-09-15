@@ -2111,7 +2111,8 @@
           rest.map((c) => {
             return '<div class="ranked' + (c.incumbent ? ' wasthere' : '') + '">' +
             '<div class="rtag">' + tag(c) + line(c) + '</div>' +
-            '<div class="rtext">' + esc(c.text) + '</div>' +
+            // read as the clause is (Q1368): a candidate's text is markdown
+            '<div class="rtext">' + mdLine(c.text) + '</div>' +
             // the same blank disc a live card gives it: whoever argued for this is
             // still sealed unless the session's visibility setting says otherwise
             spk(c) + '</div>';
@@ -2491,8 +2492,9 @@
         const chosen = (x, letter) => (what === 'indifferent' ? false
           : (e.a.inc || e.b.inc) ? (x.inc ? what === 'keep' : what === 'approve') : what === letter);
         const side = (x, letter) => '<div class="lside' + (chosen(x, letter) ? ' on' : '') + '">' + mark(chosen(x, letter)) +
+          // the current text reads as the clause does (Q1368): `mdLine`, never the source
           '<div class="rtext">' + (x.text == null ? '' : x.inc
-            ? '<span class="rsub">' + esc(T.ledger.current) + '</span>' + esc(x.text)
+            ? '<span class="rsub">' + esc(T.ledger.current) + '</span>' + mdLine(x.text)
             : wordingHtml(cur, x.text)) + '</div></div>';
         return '<div class="propblock ledgerpair' + (active === e ? ' active' : '') + (e.locked ? ' locked' : '') + '"' +
           (e.locked ? '' : ' role="button" tabindex="0" data-ledger="' + esc(k) + '" title="' + esc(T.ledger.revise) + '"') + '>' +
@@ -4386,9 +4388,11 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       .sort((a, b) => keepRank(a[0]) - keepRank(b[0]) || a[1] - b[1])
       .slice(0, TOC_MARKS).map(([, i]) => i));
     const shown = marks.filter((_, i) => keep.has(i));
-    return '<span class="tocmarks" aria-hidden="true">' + shown.map(mkHtml).join('') +
+    // the `.run` is the marks' own box — their ground and their width — inside
+    // a zero-width span, so they queue rightwards out of the rail (Q1384)
+    return '<span class="tocmarks" aria-hidden="true"><span class="run">' + shown.map(mkHtml).join('') +
       (marks.length > shown.length ? '<span class="more">+' + (marks.length - shown.length) + '</span>' : '') +
-      '</span>';
+      '</span></span>';
   }
 
   function renderToc() {

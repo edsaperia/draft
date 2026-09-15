@@ -536,9 +536,18 @@ window.LIVE = (function () {
       // undecided '' the page starts every radio at. This line used to read
       // `del(mid) ? 'roster' : 'founder'`, which stated an answer the founder
       // had not given — the same defect as arriving delegated, mirrored.
+      // **…and *roster* means a blind question, never merely the holder**
+      // (Q1364 (a)). After 🍾 a setting whose powers were laid down is the
+      // membership's with the founder's value standing, and this read every
+      // such setting as delegated: ⏱️ 👥 🤝 came back as open answer cards on
+      // every load of a begun document. A question is the room's while the
+      // module collects it or once the ceremony resolved it — the same test
+      // as the page's `isRoom` — and a value the founder set is *founder*
+      // whoever holds the setting now.
       const stOf = (mid) => { try { return env.cs.settingState(mid); } catch (e) { return null; } };
       const byOf = (mid) => { const st = stOf(mid);
-        return del(mid) ? 'roster' : (st && st.settledBy !== null) ? 'founder' : ''; };
+        return del(mid) && st && (st.collecting || st.settledBy === 'ceremony') ? 'roster'
+          : (st && st.settledBy !== null) ? 'founder' : ''; };
       S.quorumBy = byOf('quorum');
       S.rateBy = byOf('rate');
       S.policyBy = byOf('applications');
@@ -832,9 +841,12 @@ window.LIVE = (function () {
       end: Math.max(...hunks.map((h) => h.end)) });
     const plain = (lines, sp) => lines.slice(sp.start, sp.end).filter((l) => l.trim()).map(unhead).join('\n');
     // the mark the quick card shows: cards.js's own diff, del and ins both
-    // (resultOnly drops the dels where the card states the result)
-    const markedOf = (before, after) => window.CARDS.diffPieces(before, after, true)
-      .map(([t, mk]) => (mk ? window.CARDS.markHtml2(t, mk) : esc(t))).join('');
+    // (resultOnly drops the dels where the card states the result) —
+    // **rendered as the clause is** (Q1368, Ed 2026-09-15): the markdown-aware
+    // diff, so `**Recorder**` reads bold on the proposal block and in the
+    // ledger as it does in the clause above them, where this used to escape
+    // the source and print the asterisks
+    const markedOf = (before, after) => window.CARDS.mdDiffHtml(before, after, true);
     // the nearest heading above; on a document with none, the document's own
     // title — the outermost heading (Q1303, Ed 2026-09-10) — and only with no
     // title either, the clause's first words

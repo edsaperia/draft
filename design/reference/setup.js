@@ -610,7 +610,11 @@ window.SETUP = (function () {
     const motion = c.motionIn !== undefined;
     const room = motion || ctx.isRoom(c);
     const got = motion ? c.motionIn : (c.in || 0);
+    // …and a race's own closeness where the card is a race (Q1371): the
+    // surface writes `racePct` on an admission at ✏️ price, so the admit
+    // entry's bar is the leader's judges over the floor, as a text race's is
     const fill = ctx.fillOf ? ctx.fillOf(c)
+      : c.racePct !== undefined ? c.racePct + '%'
       : room ? Math.min(100, Math.round(got / ctx.E * 100)) + '%' : '100%';
     return '<li class="qitem" data-q="' + c.k + '">' +
       '<button class="' + (st === 'ask' || st === 'news' ? 'needs' : 'qwait') + ' st-' + st + '"' +
@@ -619,6 +623,12 @@ window.SETUP = (function () {
       ' title="' + esc(room ? got + ' of ' + ctx.E + ' have answered' : labelOf(c, ctx)) + '"' +
       ' style="--washcol: ' + w.col + '; --washbg: ' + w.bg + '; --fill: ' + fill + '">' +
       '<span class="ql"><span class="subj" aria-hidden="true">' + markOf(c, ctx) + '</span>' +
+      // **an entry about a person leads with their face** (Q1375, Ed
+      // 2026-09-15): the surface writes `face` on the departure and admit
+      // cards, and the rail draws it at the speaker line's own size
+      // (`railSpeakerHtml`'s `.qface`) between the mark and the sentence; the
+      // tooltip above is the sentence alone
+      (c.face ? '<span class="qface" aria-hidden="true">' + avHtml(c.face) + '</span>' : '') +
       '<span class="qt">' + esc(labelOf(c, ctx)) + '</span></span>' +
       // the summary is the entry's body: markup where the context hands
       // markup (the member surface's — a spoken rationale, a news line, the
