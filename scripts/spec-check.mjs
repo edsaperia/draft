@@ -829,7 +829,7 @@ function checkOrder(pm) {
   // there is a section to name. It is deliberately not in `SEC.rate.keys`
   // (admitting it would make the whole section live from its place in ORDER),
   // hence an override rather than a `secOf` lookup.
-  const hosts = { 'grant-pen': 'lead', 'grant-shield': 'lead', 'grant-voice': 'rate', title: 'lead', slug: 'lead', shape: 'lead', myemail: 'lead', chamber: 'lead' };
+  const hosts = { 'grant-pen': 'lead', 'grant-shield': 'lead', 'grant-voice': 'lead', title: 'lead', slug: 'lead', shape: 'lead', myemail: 'lead', chamber: 'lead' };
   for (const r of rows) {
     const want = r.section.split(/[,—(]/)[0].trim();
     const got = (r.key in hosts) ? hosts[r.key] : secOf(r.key);
@@ -905,11 +905,12 @@ function checkOrder(pm) {
   const offered = page.slice(page.indexOf('const beginOffered ='), page.indexOf('const beginOffered =') + 1600);
   if (!/readinessOf\(\)/.test(offered) || !/rd\.ready/.test(offered))
     find('order', "🍾's `beginOffered` no longer asks the module's `readiness()` — the page would be deciding *show* from state the module contradicts");
-  // …and the voice half is `visible(card(voiceHost()))`, never `mustAct` alone:
-  // with nothing delegated 🏛️ hangs off ⚖️, which is hidden until 🍾, so a bare
-  // `mustAct` holds 🍾 shut for ever (the Q645 deadlock, in a new place).
-  if (!/visible\(card\(voiceHost\(\)\)\) && mustAct\(card\('grant-voice'\)\)/.test(offered))
-    find('order', "🍾's voice half no longer asks whether 🏛️ is being *served* — a bare mustAct deadlocks a founder who delegates nothing");
+  // …and the voice half is `visible(card('grant-voice'))`, never `mustAct` alone:
+  // a clerk founder never opens 🏛️ (Q1365: it is the member's, on the Founded
+  // line), so a bare `mustAct` holds 🍾 shut for ever (the Q645 deadlock, in a
+  // new place).
+  if (!/visible\(card\('grant-voice'\)\) && mustAct\(card\('grant-voice'\)\)/.test(offered))
+    find('order', "🍾's voice half no longer asks whether 🏛️ is being *served* — a bare mustAct deadlocks a clerk founder");
   // F18, the two halves of *the founding never runs out of tasks* (Q773–Q777).
   // Each is a one-line predicate a refactor could drop with everything still
   // rendering, and the failure is silent by construction: a founder with an

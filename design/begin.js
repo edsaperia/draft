@@ -21,7 +21,7 @@ window.BEGIN = (function () {
     const { S, PAGE_COPY, SEC, SESSION } = env;
     const { amFounder, card, closeSignatures, closedAtWords, constituted, csState, decidingOf, esc, listOf,
       midOf, mustAct, mySignature, nounOf, pkeyOf, pwPair, pwPend, pwPhrase, remedyOnly,
-      servedCards, settled, viewerIsMember, visible, voiceHost } = env;
+      servedCards, settled, viewerIsMember, visible } = env;
     // the founder's readiness readout — live from the view (founder only),
     // fixture from the module itself; null for anybody else
     const readinessOf = () => {
@@ -161,16 +161,15 @@ window.BEGIN = (function () {
       if (!rd) return false;
       if (!rd.ready) return nothingElseServed();
       // …and the voice — but only where the voice is actually being served.
-      // `tasksFor` hangs 🏛️ off `voiceHost()`: the first blind question asking
-      // you, or ⚖️ Judging where nothing was delegated to you — and ⚖️ is hidden
-      // until 🍾. So a founder who delegates nothing is never offered the voice
-      // before the start, and `mustAct` alone (which is true from their
-      // arrival, the card being open and unacknowledged) would hold 🍾 shut for
-      // ever: the Q645 deadlock in a new place, and the one this file already
-      // warns about above `otherTasksLeft` — *what a question hands you cannot
-      // be the reason to withhold the question*. The same clause covers a
-      // clerk, who is not a member and never opens 🏛️ at all.
-      return !(visible(card(voiceHost())) && mustAct(card('grant-voice')));
+      // 🏛️ arrives when you become a member (Q1365) and rides the Founded
+      // line, so for a founder-member it is served from the save; a clerk is
+      // not a member and never opens it, so `visible` is false for them and
+      // a bare `mustAct` (true from arrival, the card being open and
+      // unacknowledged) would hold 🍾 shut for ever — the Q645 deadlock in a
+      // new place, and the one this file already warns about above
+      // `otherTasksLeft`: *what a question hands you cannot be the reason to
+      // withhold the question*.
+      return !(visible(card('grant-voice')) && mustAct(card('grant-voice')));
     };
     const glyphOfSetting = (mid) => { const c = card(pkeyOf(mid)); return c ? c.g + ' ' : ''; };
     // a setting named inside a sentence — its glyph and its noun (`nounOf`:
