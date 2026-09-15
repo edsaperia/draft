@@ -514,19 +514,23 @@
     flex: none; display: flex; align-items: center; gap: 1px;
     font-size: var(--t-micro); line-height: 1; padding-right: 2px; letter-spacing: -1px;
   }
-  /* **The marks alphabet: Fluent Emoji, Flat, in colour** (Ed, 2026-09-15,
-     Q1360: *Fluent Flat is perfect!*). Q288 had every mark drawn by hand and
-     inked from the palette, on the argument that an emoji is the one thing in
-     the alphabet the palette cannot reach. Ed's first look at the drawings
-     retired that argument: the pictures come from one set now — the same on
-     every machine, which is what *drawn* was ever for — and they keep their own
-     colour. The paths are inlined in cards.js under the set's MIT notice.
+  /* **The marks alphabet: Fluent Emoji, Flat, in colour — except ⏸ and ↻**
+     (Ed, 2026-09-15, Q1360: *Fluent Flat is perfect!*, and the same afternoon
+     *keep the hand-drawn ⏸ and ↻ for those two alone*). Q288 had every mark
+     drawn by hand and inked from the palette, on the argument that an emoji is
+     the one thing in the alphabet the palette cannot reach. Ed's first look at
+     those drawings retired the argument: ten of the thirteen kinds come from one
+     set now — the same picture on every machine, which is what *drawn* was ever
+     for — and keep their own colour, inlined in cards.js under the set's MIT
+     notice. The two Fluent files not taken are the ones that are *buttons*, a
+     plate with a white shape knocked out, which this alphabet has refused since
+     2026-08-17.
 
-     So the rules below are no longer where the alphabet's colour is decided.
-     What is left for them is the palette's other rule — **grey means nothing is
-     being asked of you** — which a colour picture takes as a desaturation
-     rather than as a repaint. */
-  .mk { line-height: 1; }
+     So these rules are no longer where the alphabet's colour is decided; they
+     are where its three painted marks are coloured, and where the palette's
+     other rule — **grey means nothing is being asked of you** — reaches a
+     picture, which takes it as a drain rather than a repaint. */
+  .mk { font-family: inherit; font-weight: 700; line-height: 1; }
   /* An action glyph, drawn on the same stroke as the lifecycle marks so a
      control and a mark never look like they came from different sets. */
   /* Unit marks: a gauge for a reading of the room, a hurdle for the line it had
@@ -544,27 +548,36 @@
      attribute whatever the value. Same box as the glyph it replaces, so nothing
      on any of the three columns moves. */
   .mkp { width: 1em; height: 1em; display: inline-block; vertical-align: -0.13em; }
-  /* **Filed is the picture desaturated** (Q1360). Which way it went is still the
-     picture — a check, a multiply, a pause — and whether it still wants anything
-     from you is still the grey, which is the rule the whole palette runs on. It
-     is reached by draining the colour out rather than by choosing one: a filed
-     mark is the decided mark, one step further away.
+  /* **Filed is the picture drained** (Q1360). Which way it went is still the
+     picture — a check or a multiply — and whether it still wants anything from
+     you is still the grey, which is the rule the whole palette runs on; it is
+     reached by draining the colour out rather than by choosing one, so a filed
+     mark is the decided mark one step further away.
 
-     The opacity is the second half of it and it is doing real work. Three of the
-     four filed marks are Fluent *button* pictures — a filled plate with a white
-     shape knocked out — and a plate carries far more weight at 12px than a
-     stroke did, so grayscale alone leaves a filed row louder than the live marks
-     above it. 0.55 is where a filed ✔ sits at about the ink of `--muted`, which
-     is what it wore before, and the pause and arrows plates stop shouting. */
-  .mk-filedYes, .mk-filedNo, .mk-filedUndecided,
-  .mk-shifted { filter: grayscale(1) opacity(0.55); }
+     **Grayscale alone, no opacity step.** The two are single silhouettes on one
+     flat fill, and their luminance grey lands within a few points of `--muted`
+     — which is exactly what ⏸ and ↻ beside them are painted, so the four filed
+     marks read as one family without anything being tuned to match. (This rule
+     carried `opacity(0.55)` for half a day, when ⏸ and ↻ were Fluent *button*
+     pictures: a plate is far heavier at 12px than a silhouette and had to be
+     faded to sit down. Ed sent the buttons back the same afternoon and the
+     opacity went with them.) */
+  .mk-filedYes, .mk-filedNo { filter: grayscale(1); }
+  /* **The three the palette still paints.** ⏸ is a stroked glyph and ↻ a
+     character, so both take `color` like any other ink, and the grey is the same
+     `--muted` the drained pictures land on. */
+  .mk-filedUndecided { color: var(--muted); }
   /* ↻ is information — the race will ask you again, it is not asking now — so
-     it files with them (Ed, Q612, 2026-08-22), while **the same picture in its
-     own colour is `stranded`**: your proposal could not be carried across and
-     it is asking. Q170's rule that the two are told apart by the hue survives
-     Q1360 by luck — the arrows button is blue, which is what `yours` wears.
-     `.mk-stranded` is therefore deliberately absent from the rule above; the
-     checker asserts it stays absent. */
+     it wears the filed grey: grey means nothing is asked of you (Ed, Q612,
+     2026-08-22). Blue is for your own work, and a ground shift is not that. */
+  .mk-shifted { color: var(--muted); }
+  /* ...and the same ↻ in blue where what the ground moved under was a proposal
+     of your own (Ed, 2026-09-14, Q170). It is asking — re-make it here, or
+     withdraw it — and everything of yours that still has an act on it is blue,
+     so the glyph says what happened and the hue says whose it is. This pair is
+     why ↻ staying a character is load-bearing and not merely historical: one
+     shape in two colours needs a shape a colour can reach. */
+  .mk-stranded { color: rgb(var(--lc-yours)); }
   /* a drawn glyph has no plate to give it width, so at the two small sizes it
      needs a little of its own or the marks sit on top of each other */
   .tocmarks .mk { font-size: 1.15em; letter-spacing: 0.06em; }

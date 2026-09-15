@@ -449,23 +449,37 @@ function checkMarks() {
     const ex = /^yes/.test(r['exempt?']);
     if (ex !== (r.kind === 'urgent' || MINE_KINDS.includes(r.kind))) find('marks', `${r.kind}: exempt column disagrees with the exemption literal`);
   }
-  // **Filed is the picture drained, and it is the only thing the palette still
-  // does to a mark** (Q1360). The rule that replaced the `.mk-*` colours has to
-  // name all four filed kinds — a filed mark that kept its colour would say the
-  // document still wants something from you — and it has to leave `stranded`
-  // out, because ↻ shares its picture with `shifted` and the colour is the whole
-  // of what tells the two apart (Q170).
-  const FILED = ['filedYes', 'filedNo', 'filedUndecided', 'shifted'];
+  // **Painted or drained, and which a kind gets is decided in cards.js** (Q1360
+  // as Ed amended it the same day). Ten of the thirteen are Fluent pictures that
+  // bring their own colour; ⏸ is this repo's own stroked glyph and ↻ is a
+  // character, and those three the palette paints. So the split is read out of
+  // `MARK` rather than listed here: a kind whose value is a `mkSvg` picture must
+  // **not** carry a `.mk-*` colour, and the three that are not pictures must.
+  const markSrc = objLit(cards, 'MARK').replace(/\/\/[^\n]*/g, '');
+  const valOf = (k) => ((markSrc.match(new RegExp(`(?:^|[,{])\\s*${k}:\\s*([^,\\n]+)`)) || [])[1] || '').trim();
+  const painted = markKeys.filter((k) => !/^[A-Z]+$/.test(valOf(k)) || valOf(k) === 'PAUSE');
   // the rules, not the prose about them — this file's comments name the classes
   const rules = css.replace(/\/\*[\s\S]*?\*\//g, '');
-  const desat = rules.match(/((?:\.mk-[A-Za-z]+,?\s*)+)\{\s*filter:\s*grayscale\(1\)[^}]*\}/);
-  if (!desat) find('marks', 'no `.mk-*  { filter: grayscale(1) … }` rule — the filed marks are no longer drained (Q1360)');
-  else {
-    const on = [...desat[1].matchAll(/\.mk-([A-Za-z]+)/g)].map((m) => m[1]);
-    for (const k of FILED) if (!on.includes(k)) find('marks', `${k} does not carry the filed desaturation (Q1360) — grey is how the surface says nothing is asked of you`);
-    for (const k of on) if (!FILED.includes(k)) find('marks', `${k} carries the filed desaturation and is not filed (Q1360)`);
+  const colouredBy = {};
+  for (const m of rules.matchAll(/((?:\.mk-[A-Za-z]+,?\s*)+)\{([^}]*)\}/g))
+    for (const c of m[1].matchAll(/\.mk-([A-Za-z]+)/g)) (colouredBy[c[1]] ||= []).push(m[2]);
+  const setsColour = (k) => (colouredBy[k] || []).some((b) => /\bcolor:/.test(b));
+  const drains = (k) => (colouredBy[k] || []).some((b) => /filter:\s*grayscale\(1\)/.test(b));
+  for (const k of markKeys) {
+    if (painted.includes(k) && !setsColour(k)) find('marks', `${k} is a painted mark (${valOf(k) || '?'}) and no \`.mk-${k}\` rule gives it a colour (Q1360)`);
+    if (!painted.includes(k) && setsColour(k)) find('marks', `${k} is a Fluent picture and a \`.mk-${k}\` rule still sets \`color\`, which nothing in it reads (Q1360)`);
   }
-  if (/\.mk-[A-Za-z]+[^{}]*\{[^}]*\bcolor:/.test(rules)) find('marks', 'a `.mk-*` rule still sets `color` — since Q1360 a mark is a colour picture and nothing reads it');
+  // **Filed is the picture drained**: the two filed pictures, and only those —
+  // `filedUndecided` beside them is painted `--muted` instead, and it has to land
+  // on the same grey (measured 2026-09-15: grayscale alone puts the check within
+  // a few points of `--muted`, which is why the rule carries no opacity step).
+  for (const k of ['filedYes', 'filedNo']) if (!drains(k)) find('marks', `${k} is not drained — a filed mark that kept its colour says the document still wants something from you (Q1360)`);
+  for (const k of markKeys) if (drains(k) && !['filedYes', 'filedNo'].includes(k)) find('marks', `${k} carries the filed drain and is not a filed picture (Q1360)`);
+  if (!/\.mk-filedUndecided\s*\{\s*color:\s*var\(--muted\)/.test(rules)) find('marks', '⏸ (.mk-filedUndecided) is not the filed grey — it is painted, not drained (Q469, Q1360)');
+  // **↻ is a character, and the two who wear it are told apart by a colour**
+  // (SURFACE Y22, Q170): the one thing that would break if it were a picture.
+  if (!/\.mk-shifted\s*\{\s*color:\s*var\(--muted\)/.test(rules)) find('marks', '↻ (.mk-shifted) is not grey (Q612)');
+  if (!/\.mk-stranded\s*\{\s*color:\s*rgb\(var\(--lc-yours\)\)/.test(rules)) find('marks', '↻ blue (.mk-stranded) is not the yours hue (Q170)');
   const lc = (n) => (css.match(new RegExp(`--lc-${n}:\\s*([0-9, ]+)`)) || [])[1];
   if (lc('deciding') !== lc('closed')) find('marks', '--lc-deciding and --lc-closed are not one grey');
   note(`  ${rows.length} marks; KEEP_ORDER ${keep.length}, STACK_ORDER ${stack.length}`);

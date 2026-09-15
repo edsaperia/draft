@@ -652,7 +652,7 @@
 .queue .subj .mkp { width: 13px; height: 13px; }
 .queue button.st-done .subj, .queue button.st-wait .subj { color: rgb(var(--lc-closed)); }
 .queue button.st-news .subj { color: var(--ok); }
-.achip.st-done .mkp, .queue button.st-done .subj .mkp { filter: grayscale(1) opacity(0.55); }
+.achip.st-done .mkp, .queue button.st-done .subj .mkp { filter: grayscale(1); }
 /* the constitution block's lines are the way to a settled card now that its
    tab says only ✔ — a button, but drawn as the line it always was */
 button.cline { border: 0; background: none; padding: 0; text-align: left;

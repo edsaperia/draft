@@ -80,31 +80,54 @@ window.CARDS = (function () {
   // pictures, and the two part company here: a commit is *pressed*, it greys
   // while nothing is chosen and it lights on `--primary` when armed, all of
   // which want `currentColor` and none of which a colour picture can do. So
-  // `.mkg` — one stroke width, `fill: none`, `stroke: currentColor` — is this
-  // glyph's class alone now. `CROSS` and `PAUSE` went with the marks: nothing
-  // but `MARK` had ever used them.
+  // `.mkg` — one stroke width, `fill: none`, `stroke: currentColor` — is the
+  // stroke family's class, and `CROSS` went with the marks: nothing but `MARK`
+  // had ever used it.
   const TICK = "<svg class=\"mkg\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><path d=\"M2 6.4 L4.7 9.2 L10 2.9\"/></svg>";
+  // **The third filed mark** (Ed, Q469, 2026-08-20: *⏸️ it is! — but draw
+  // your own to match ✔️*). A race unresolved at the close is *undecided*,
+  // distinct from kept (SPEC §4.6): two vertical bars at the tick and
+  // cross's own stroke width, spanning the cross's height, in currentColor.
+  //
+  // **And it is the one mark Q1360 did not hand to Fluent** (Ed, 2026-09-15,
+  // on the first build's finding 1). Fluent's ⏸ is its *pause button*: a filled
+  // blue plate with two white bars knocked out of it, which is word for word
+  // what Ed rejected on 2026-08-17 — *they carry their own background unlike
+  // all the other symbols* — and at 12px, drained, it reads as a grey square
+  // whose contents you cannot make out. Two bars on the tick's own stroke say
+  // the same thing and stay in the alphabet. ↻ is the same ruling; see `MARK`.
+  const PAUSE = "<svg class=\"mkg\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><path d=\"M4.3 2.9 L4.3 9.1 M7.7 2.9 L7.7 9.1\"/></svg>";
   // **The ramp is an emoji again** (Ed, 2026-08-22): the drawn wedge is
   // retired and the pace card wears 🪜, which rejoins it to every other
   // subject glyph.
   const VS16 = "︎";
-  // **The whole alphabet is Fluent Emoji, Flat, in colour** (Ed, 2026-09-15,
-  // Q1360: *Fluent Flat is perfect!*). Q288 had drawn six silhouettes by hand
-  // and inked all thirteen from the palette; the drawings were path coordinates
-  // written blind, never rendered beside the emoji they replaced, and Ed's first
-  // look at them was *they look very different … I'd like them to look more
-  // exactly like they look here ✏️✒️*. A proof sheet put the OS emoji, those
-  // drawings and Microsoft's Fluent Flat and Color files side by side, and Flat
-  // won.
+  // **The alphabet is Fluent Emoji, Flat, in colour — except ⏸ and ↻** (Ed,
+  // 2026-09-15, Q1360: *Fluent Flat is perfect!*, and the same day: *keep the
+  // hand-drawn ⏸ and ↻ for those two alone*). Q288 had drawn six silhouettes by
+  // hand and inked all thirteen from the palette; the drawings were path
+  // coordinates written blind, never rendered beside the emoji they replaced,
+  // and Ed's first look at them was *they look very different … I'd like them
+  // to look more exactly like they look here ✏️✒️*. A proof sheet put the OS
+  // emoji, those drawings and Microsoft's Fluent Flat and Color files side by
+  // side, and Flat won.
+  //
+  // The two exceptions are the two Fluent files that are **buttons** rather
+  // than pictures of a thing — a filled plate with a white shape knocked out —
+  // and that shape of object was rejected in this alphabet on 2026-08-17, and
+  // again on sight in 2026-09-15's build. So ⏸ stays the two drawn bars above
+  // and ↻ stays the character it always was; the palette paints those three
+  // kinds and the eight pictures below — ten of the thirteen kinds, the check
+  // and the multiply each serving a decided kind and its filed twin — bring
+  // their own colour.
   //
   // What survives of Q288 is the **rule**: every lifecycle mark is drawn, which
   // now means *one set, the same picture on every machine* rather than whichever
   // emoji font the reader happens to have. What does not survive is Q288's
-  // reasoning that the palette has to be able to reach the mark — these pictures
-  // bring their own colour and keep it. Grey is still how the surface says
-  // nothing is asked of you, and a **filed** mark gets it by desaturation
-  // (`.mk-filedYes/No/Undecided`, `.mk-shifted` in system.css) rather than by
-  // being repainted.
+  // reasoning that the palette has to be able to reach every mark — these
+  // pictures bring their own colour and keep it. Grey is still how the surface
+  // says nothing is asked of you, and a **filed** picture gets it by
+  // desaturation (`.mk-filedYes`, `.mk-filedNo` in system.css) where ⏸ and ↻
+  // get it by being painted `--muted` as they always were.
   //
   // Source: https://github.com/microsoft/fluentui-emoji — Copyright (c)
   // Microsoft Corporation, **MIT licence** (its LICENSE file). Each picture is
@@ -138,11 +161,10 @@ window.CARDS = (function () {
   // both upright), which is what the 2026-08-17 ✔/✖ pairing was chosen for
   const CHECK = mkSvg('check', '<path fill-rule="evenodd" clip-rule="evenodd" d="M28.9278 10.3004C30.1588 11.6067 30.0977 13.6636 28.7914 14.8946L13.9394 28.8901C12.6481 30.107 10.6193 30.0632 9.38167 28.7917L3.11793 22.3567C1.86596 21.0705 1.89371 19.0129 3.17992 17.7609C4.46612 16.509 6.52372 16.5367 7.77569 17.8229L11.809 21.9665L24.3336 10.164C25.6399 8.93304 27.6968 8.99411 28.9278 10.3004Z" fill="#785DC8"/>');
   const MULTIPLY = mkSvg('multiply', '<path d="M7.2225 2.8925C6.0325 1.7025 4.0825 1.7025 2.8925 2.8925C1.7025 4.0925 1.7025 6.0325 2.8925 7.2325L11.6405 15.9765L2.9025 24.7225C1.7125 25.9125 1.7125 27.8625 2.9025 29.0525C4.0925 30.2425 6.0425 30.2425 7.2325 29.0525L15.9735 20.3075L24.7125 29.0425C25.9025 30.2325 27.8525 30.2325 29.0425 29.0425C30.2325 27.8525 30.2325 25.9025 29.0425 24.7125L20.3045 15.9745L29.0525 7.2225C30.2425 6.0325 30.2425 4.0825 29.0525 2.8925C27.8525 1.7025 25.9025 1.7025 24.7125 2.8925L15.9715 11.6415L7.2225 2.8925Z" fill="#785DC8"/>');
-  // undecided at the close — pause button
-  const PAUSEBTN = mkSvg('pause', '<path d="M2 6C2 3.79086 3.79086 2 6 2H26C28.2091 2 30 3.79086 30 6V26C30 28.2091 28.2091 30 26 30H6C3.79086 30 2 28.2091 2 26V6Z" fill="#00A6ED"/><path d="M12 9C11.4477 9 11 9.44772 11 10V22C11 22.5523 11.4477 23 12 23H14C14.5523 23 15 22.5523 15 22V10C15 9.44772 14.5523 9 14 9H12Z" fill="white"/><path d="M18 9C17.4477 9 17 9.44772 17 10V22C17 22.5523 17.4477 23 18 23H20C20.5523 23 21 22.5523 21 22V10C21 9.44772 20.5523 9 20 9H18Z" fill="white"/>');
-  // the ground moved — the counterclockwise arrows button, and it retires ↻ as
-  // a text character: one picture, two owners, told apart by the filed grey
-  const ARROWS = mkSvg('arrows', '<path d="M2 6C2 3.79086 3.79086 2 6 2H26C28.2091 2 30 3.79086 30 6V26C30 28.2091 28.2091 30 26 30H6C3.79086 30 2 28.2091 2 26V6Z" fill="#00A6ED"/><path d="M7.94621 14.3589C7.94818 14.7419 8.25815 15.0518 8.64112 15.0538L14.7803 15.0854C15.4043 15.0887 15.7191 14.3343 15.2778 13.893L13.4049 12.0201C13.294 11.9092 13.3113 11.7244 13.446 11.6442C14.1935 11.1992 15.0669 10.9436 16 10.9436C18.2766 10.9436 20.1978 12.4652 20.8023 14.5468C20.8686 14.7752 21.0709 14.9436 21.3087 14.9436H23.3719C23.6726 14.9436 23.9064 14.6793 23.8481 14.3844C23.1227 10.7125 19.8847 7.94363 16 7.94363C14.2092 7.94363 12.5558 8.53205 11.2226 9.5261C11.121 9.60188 10.9787 9.59388 10.889 9.50423L9.10701 7.7222C8.66574 7.28092 7.91134 7.59568 7.91456 8.21973L7.94621 14.3589Z" fill="white"/><path d="M22.692 24.2778L20.9291 22.5148C20.8413 22.4271 20.7027 22.4173 20.6012 22.4888C19.2998 23.4054 17.7127 23.9436 16 23.9436C12.1153 23.9436 8.87727 21.1748 8.15185 17.5029C8.09357 17.2079 8.3274 16.9436 8.62809 16.9436H10.6913C10.9291 16.9436 11.1314 17.1121 11.1977 17.3405C11.8021 19.4221 13.7234 20.9436 16 20.9436C16.847 20.9436 17.6448 20.733 18.3439 20.3613C18.4864 20.2856 18.5088 20.0945 18.3946 19.9803L16.5212 18.107C16.0799 17.6657 16.3947 16.9113 17.0188 16.9145L23.1579 16.9462C23.5409 16.9481 23.8509 17.2581 23.8528 17.6411L23.8845 23.7802C23.8877 24.4043 23.1333 24.719 22.692 24.2778Z" fill="white"/>');
+  // **The two Fluent files this alphabet does not take** are the pause button
+  // and the counterclockwise arrows button, and they are the two that are
+  // *buttons*: a rounded blue plate with a white shape knocked out. ⏸ keeps the
+  // two drawn bars above and ↻ keeps its character; see the note on `PAUSE`.
   const MARK = {
     // A rail entry is somebody's proposal, not a question the system invented,
     // so it wears a lightbulb rather than a question mark (Ed, 241). The move
@@ -184,19 +206,22 @@ window.CARDS = (function () {
     // the race will ask you again — nothing is rewritten, and no new candidate
     // appears: what comes back is a pair to judge, on wordings that already exist
     //
-    // **↻ stopped being a character at Q1360**: it was the last mark in the
-    // alphabet rendered from the font rather than drawn, kept that way because
-    // it had no partner whose weight it had to equal (SURFACE Y22). It has the
-    // counterclockwise arrows button now like everything else.
-    shifted: ARROWS,
-    // **The same picture, two owners** (Ed, 2026-09-14, Q170). The text moved
-    // under something of yours, and which one it was is what tells them apart:
-    // a vote of yours (above) is information and files grey, a *proposal* of
-    // yours is still asking — re-make it against the clause as it now reads or
-    // withdraw it — and stands in the arrows button's own full colour (SPEC
-    // §2.4, §2.6; SURFACE E38). Q170's rule survives Q1360 by luck: the button
-    // is blue, which is the hue `yours` was already wearing.
-    stranded: ARROWS,
+    // **↻ is still a character** (SURFACE Y22), and it is the only mark that is:
+    // it has no partner whose weight it must equal, so nothing about it drifts
+    // between machines that matters. Q1360 gave it the counterclockwise arrows
+    // button for half a day and Ed sent it back the same afternoon — that file
+    // is a plate with a white shape knocked out, and a plate is what this
+    // alphabet has refused since 2026-08-17.
+    shifted: '↻',
+    // **The same ↻, in your own blue** (Ed, 2026-09-14, Q170). The text moved
+    // under something of yours, and the colour says which: grey where it was a
+    // vote (above), `--lc-yours` where it was a proposal — one whose rebase
+    // onto the new wording failed, so it is out of every race and held for you
+    // until you re-make it against the clause as it now reads or withdraw it
+    // (SPEC §2.4, §2.6; SURFACE E38). One shape, one meaning, two owners — and
+    // the two are told apart by a `color`, which is why ↻ being painted rather
+    // than pictured is load-bearing rather than merely historical.
+    stranded: '↻',
     // A decision says which way it went, not just that it happened (Ed, 160):
     // a matched pair, so the outcome is legible before you open anything. The
     // 2026-08-17 argument for ✖ U+2716 over Unicode's own ✘ U+2718 — a pair has
@@ -208,25 +233,27 @@ window.CARDS = (function () {
     // **Filed keeps which way it went** (Ed, 2026-08-17). ☑️ collapsed both
     // outcomes into one mark the moment you acknowledged them, which threw away
     // the only thing about a settled clause anybody ever wants from a margin:
-    // *did this change or not*. Same pictures, desaturated — the difference
+    // *did this change or not*. Same two pictures, desaturated — the difference
     // between decided and filed is whether it still wants something from you,
-    // and grey is exactly what this surface uses to say that (system.css).
+    // and grey is exactly what this surface uses to say that (system.css). ⏸
+    // beside them has nowhere to file *from*, so it is painted that grey.
     filedYes: CHECK,     // filed, and the charter changed
     filedNo: MULTIPLY,   // filed, and the incumbent held
-    filedUndecided: PAUSEBTN, // filed at the close, nothing decided: the incumbent stands, undecided
+    filedUndecided: PAUSE, // filed at the close, nothing decided: the incumbent stands, undecided
   };
-  // Which mark this is, so the filed ones can be greyed and so a walk can read
-  // a mark's kind off it — **every lifecycle mark is drawn; a subject glyph is
-  // an emoji** (Ed, 2026-09-14, Q288). Since Q1360 *drawn* means *from the one
-  // set, the same picture on every machine*; what the `.mk-*` rules decide is no
-  // longer the alphabet's colour but which of it is filed.
+  // Which mark this is, so the palette can reach the three it still paints, the
+  // two filed pictures can be drained, and a walk can read a mark's kind off it
+  // — **every lifecycle mark is drawn; a subject glyph is an emoji** (Ed,
+  // 2026-09-14, Q288). Since Q1360 *drawn* means *from the one set, the same
+  // picture on every machine* for ten of the thirteen; ⏸ is this file's own two
+  // bars and ↻ is a character, and those three the `.mk-*` rules still colour.
   const DRAWN = ['needs', 'urgent', 'stuck', 'weigh', 'deciding', 'propose',
     'adopted', 'retired', 'filedYes', 'filedNo', 'filedUndecided', 'shifted', 'stranded'];
 
-  // The picture, wrapped in its kind — the queue, the contents rail, the gutter
-  // tab and a card's head all show the same mark and must show it the same way.
-  // The wrapper is what the filed treatment hangs on and what a walk reads a
-  // mark's kind from (journey-walk, after Q288: never the textContent).
+  // The mark, wrapped in its kind — the queue, the contents rail, the gutter tab
+  // and a card's head all show the same mark and must show it the same way. The
+  // wrapper is what the colour and the filed treatment hang on, and what a walk
+  // reads a mark's kind from (journey-walk, after Q288: never the textContent).
   const mkHtml = (kind) => (DRAWN.includes(kind)
     ? '<span class="mk mk-' + kind + '">' + MARK[kind] + '</span>' : MARK[kind]);
   const markHtml = (kind) => '<span class="qmark" aria-hidden="true">' + mkHtml(kind) + '</span>';
@@ -1288,7 +1315,7 @@ window.CARDS = (function () {
   return {
     esc, resultOnly, stripTags, pct, plainLabel, URG_LO, URG_HI,
     RULES, clauseOf, clauseRungs,
-    TICK, VS16, MARK, DRAWN, mkHtml, markHtml,
+    TICK, PAUSE, VS16, MARK, DRAWN, mkHtml, markHtml,
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks,
     headFlags, originText, MD_RX, mdToHtml, htmlToMd, mdStrip, mdBlock, linkify, linkifyHtml, mdLine,
     MD_ONE, mdLead, mdInner, mdParts, richToSource, sourceToRich, readLane,
