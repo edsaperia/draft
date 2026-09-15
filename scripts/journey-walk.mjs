@@ -1273,6 +1273,31 @@ const motionFillOnAmended = async () => {
   const ok1 = !!e1 && e1.fill === '50%' && e1.title === '1 of 2 have answered' && !own1;
   say('motion fill· ' + (ok1 ? 'the founder’s entry for the motion reads its answers: ' + e1.title + ' · fill ' + e1.fill + ' · ' + e1.state + ' · 🌍’s own entry absent'
     : 'FAIL: the founder’s entry for the motion does not read its answers · ' + JSON.stringify({ e1, own1 })));
+  /* ---- ⏳ is a vote of yours (Q1376, Ed's 20:27 screenshot 2026-09-15: a
+   * 💤 motion's entry wearing ⏳ on grey with nothing chosen on its card). A
+   * **fresh load** of the founder's page, the motion unanswered by them: the
+   * entry asks, wears 🌍 — the subject glyph, never the hourglass — and the
+   * card opens with nothing pressed; the mover's own page, reloaded, still
+   * reads ⏳ with their accept from the put pre-pressed. */
+  await page.reload();
+  await page.waitForFunction(() => !!document.querySelector('#rail li'), null, { timeout: 30_000 });
+  await T(2600);
+  const f1 = await entryAt(page, mKey);
+  await open(mKey);
+  const fCard = await page.evaluate((k) => {
+    const c = document.querySelector('[data-setupcard="' + k + '"]');
+    return c ? [...c.querySelectorAll('[data-motion]')].map((b) => b.dataset.motion + ':' + b.getAttribute('aria-pressed')) : null;
+  }, mKey);
+  await closeCard();
+  await guestPage.reload();
+  await guestPage.waitForFunction(() => !!document.querySelector('#rail li'), null, { timeout: 30_000 });
+  await guestPage.waitForTimeout(2600);
+  const fG = await entryAt(guestPage, mKey);
+  const freshOk = !!f1 && f1.state === 'st-ask' && f1.mark === '🌍' && !!fCard && fCard.length === 3 && fCard.every((l) => /:false$/.test(l)) &&
+    !!fG && fG.mark === 'deciding';
+  say('unvoted ⏳ · ' + (freshOk ? 'fresh loads: the founder’s unanswered entry asks and wears 🌍, its card nothing pressed; the mover’s reads ⏳'
+    : 'FAIL: ' + JSON.stringify({ f1, fCard, fG })));
+  if (!freshOk) stuck.push('⏳ on an unvoted motion (Q1376)');
   if (!ok1) stuck.push('the 🏛️ motion’s fill on the founder’s entry');
   const okG = !!g1 && g1.fill === '50%' && g1.title === '1 of 2 have answered' && g1.mark === 'deciding';
   say('mover’s ⏳ · ' + (okG ? 'the mover’s own entry is a ⏳ wait with the same bar: ' + g1.title
@@ -3385,7 +3410,9 @@ if (caret) {
             ledger: card.querySelectorAll('.ledger, .ledgerpair').length };
         }, id);
       };
-      const judge = async (id, v) => {
+      const VERDICTS = ['approve', 'keep', 'a', 'b', 'indifferent'];
+      const judge = async (id0, v0) => {
+        const [id, v] = VERDICTS.includes(id0) ? [v0, id0] : [id0, v0];
         const okJ = await page.evaluate(([id, val]) => {
           const q = String(id).replace(/["\\]/g, '\\$&');
           const card = document.querySelector('.sugg[data-card="' + q + '"], .sugg[data-card^="' + q + '#"]');
@@ -3703,18 +3730,27 @@ const powerReturnOnATab = async () => {
     : 'FAIL: armed ' + armed));
   if (!put) { stuck.push('the 🏛️ hold on a power tab'); return; }
   await T(5000);
-  // the founder meets it on the tab, never on ⏱️'s own card
-  const ask = await page.evaluate((k) => {
+  // the founder meets it as the motion's own entry and tab in ⏱️'s pile
+  // (Q1367), never on ⏱️'s own card and no longer on the power tab itself,
+  // which opens the rule and the offer; the motion's id is read off the view
+  const retId = await page.evaluate(() => fetch(location.pathname.replace('/d/', '/api/d/') + '/view')
+    .then((r) => r.json())
+    .then((j) => ((j.view && j.view.motions) || [])
+      .filter((m) => m.payload.kind === 'reserve' && m.status === 'running').map((m) => m.id)[0] || null)
+    .catch(() => null));
+  const MK = retId ? 'mo:' + retId : null;
+  const ask = MK ? await page.evaluate((k) => {
     const li = document.querySelector('#rail li[data-q="' + k + '"]');
     const b = li && li.querySelector('button');
     return b ? { title: b.getAttribute('title'),
-      state: [...b.classList].find((c) => c.startsWith('st-')) || null } : null;
-  }, PW);
-  const askOk = !!ask && ask.state === 'st-ask' && /1 of 3 have answered/.test(ask.title || '');
-  say('return ask2· ' + (askOk ? 'the founder’s rail asks on the tab itself: ' + ask.title
-    : 'FAIL: ' + JSON.stringify(ask)));
-  if (!askOk) stuck.push('the founder’s ask on the power tab');
-  if (!(await open(PW))) { say('return card· FAIL: the founder cannot open ' + PW); stuck.push('the founder’s power-tab card'); return; }
+      state: [...b.classList].find((c) => c.startsWith('st-')) || null,
+      inPile: !!document.querySelector('#band .achip[data-chip="' + k + '"]') } : null;
+  }, MK) : null;
+  const askOk = !!ask && ask.state === 'st-ask' && /1 of 3 have answered/.test(ask.title || '') && ask.inPile;
+  say('return ask2· ' + (askOk ? 'the founder’s rail asks as the return’s own entry, its tab in ⏱️’s pile: ' + ask.title
+    : 'FAIL: ' + JSON.stringify({ retId, ask })));
+  if (!askOk) stuck.push('the founder’s ask on the return');
+  if (!MK || !(await open(MK))) { say('return card· FAIL: the founder cannot open ' + MK); stuck.push('the founder’s return card'); return; }
   const lanes = await page.evaluate(() => [...document.querySelectorAll('.setupcard [data-motion]')].map((b) => b.dataset.motion));
   await clickIn('.setupcard [data-motion="yes"]');
   const said = await press(1250);
