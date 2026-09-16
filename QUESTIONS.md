@@ -214,7 +214,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1394** — claim by writing the block here, then commit it alone.
+**The next free number is 1399** — claim by writing the block here, then commit it alone.
+
+**1394–1398 are the first accessibility audit** (claimed 2026-09-16 01:40, from an overnight pass against PRODUCTION.md stage 13, whose row has read *not started — no audit has run; nothing in the tree names one* since the stage table was written): 1394 the audit itself, its instrument and the plain defects · 1395 the glyph is the name — what a member hears where the surface shows a picture · 1396 nothing on the page announces itself, under a 4s poll · 1397 what the keyboard cannot reach: the tabs behind a stack, and the wallets · 1398 the near-misses — `--muted` at 4.44 against 4.5, and the 21.5–23.6px targets. Measured, not changed: every row is a surface decision, and three of them move a frozen reference.
 
 **1392–1393 are the applicant's wait** (claimed 2026-09-16 00:48, Ed as an applicant in the `lantern-house` room): 1392 *after I answer my application questions, they should appear as greyed out queue cards in the sidebar, so I can easily get back to them (as I have nothing else to see or do, and as far as I can tell there's no way to get back to the application rationale at all)* · 1393 *I'm still waiting for my application to be accepted!* — an admission the hand does not hold cannot be voted on: the hot set is three races, a busy room's text races outvalue it, and a setting race's row carries no `ask` pair where a clause row does (Q1202), so twenty members each holding four text cards never met it.
 
