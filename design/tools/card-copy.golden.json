@@ -5063,7 +5063,7 @@
     "eyebrow": "",
     "head": "Leave the Membership",
     "lock": "",
-    "body": "If you give up your membership you may not be able to rejoin: coming back costs what any new member pays. Leaving is immediate, and nobody has to agree.",
+    "body": "If you give up your membership you may not be able to rejoin: the membership will have to decide whether to re-admit you. Leaving is immediate, and nobody has to agree.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5085,7 +5085,7 @@
      "Leave the Membership"
     ],
     "helpers": [
-     "If you give up your membership you may not be able to rejoin: coming back costs what any new member pays. Leaving is immediate, and nobody has to agree."
+     "If you give up your membership you may not be able to rejoin: the membership will have to decide whether to re-admit you. Leaving is immediate, and nobody has to agree."
     ]
    },
    "mo:mo-3": {
@@ -8109,7 +8109,7 @@
     "eyebrow": "",
     "head": "Leave the Membership",
     "lock": "",
-    "body": "If you give up your membership you may not be able to rejoin: coming back costs what any new member pays. Leaving is immediate, and nobody has to agree.",
+    "body": "If you give up your membership you may not be able to rejoin: the membership will have to decide whether to re-admit you. Leaving is immediate, and nobody has to agree.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -8131,7 +8131,7 @@
      "Leave the Membership"
     ],
     "helpers": [
-     "If you give up your membership you may not be able to rejoin: coming back costs what any new member pays. Leaving is immediate, and nobody has to agree."
+     "If you give up your membership you may not be able to rejoin: the membership will have to decide whether to re-admit you. Leaving is immediate, and nobody has to agree."
     ]
    },
    "mo:mo-3": {

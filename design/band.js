@@ -445,7 +445,7 @@ window.BAND = (function () {
         draft: S.mynameDraft, locked: !!(env.cs && !docOpen()) }),
       mypic: () => pictureBody(me(), { pick: picPickNow(), draft: S.mypicDraft,
         locked: !!(env.cs && !docOpen()) }),
-      // 🌂 (Q1395, Ed 2026-09-16): the warning is the whole body — *if you
+      // 🌂 (Q1400, Ed 2026-09-16): the warning is the whole body — *if you
       // give up your membership you may not be able to rejoin* — and the
       // row's ✓ is the act (`data-act="resign"`, the same press *Leave* was)
       leave: () => '<p class="why">' + PAGE_COPY.cards.leave.body + '</p>',
@@ -757,7 +757,7 @@ window.BAND = (function () {
             ? holds + '<p class="setnote">' + (ready2 ? 'Everything needed is in — the words are optional.' : 'The email, the name and the picture are needed; the words are optional.') + '</p>'
             : '<p class="setnote">Nothing is collected before you begin, and nothing is sent until you submit.</p>');
       },
-      // **A body holds choices; an action is the row's** (Q1394, Ed
+      // **A body holds choices; an action is the row's** (Q1399, Ed
       // 2026-09-16: *avoid body buttons that are an action rather than a
       // choice*). The send is the row's 📧 (below, with the stranger's rule);
       // the pretend inbox stays a mockup device, as the founder's is (BIRTH).
@@ -824,7 +824,7 @@ window.BAND = (function () {
         }
       } else if (c.k === 'appmail' && !a.emailSent && !a.emailVerified) {
         // the send is the row's 📧, armed by a valid address that is nobody
-        // else's — the stranger's 📧 rule (reading 1194, T47), since Q1394
+        // else's — the stranger's 📧 rule (reading 1194, T47), since Q1399
         foot = binBtn() +
           '<button class="btn btn-approve glyphbtn emojibtn"' + (appAddrOk() ? '' : ' disabled') +
           ' data-appmailsend="1" title="Send the link">📧</button>';
@@ -1404,7 +1404,7 @@ window.BAND = (function () {
         // its ✒️ for now: its act is a dropdown plus *❌ Remove*, and that is a
         // change of its own.
         const foot = c.leaveDoor
-          // 🌂 (Q1395): the warning is the body, the ✓ is the act — the same
+          // 🌂 (Q1400): the warning is the body, the ✓ is the act — the same
           // `resign` press *Leave* was, free and nobody's to refuse (E32)
           ? binBtn() + '<button class="btn btn-approve glyphbtn" data-act="resign" title="' + PAGE_COPY.cards.leave.t + '">' + TICK + '</button>'
           : (c.k === 'invite' && doorDirect(c))
