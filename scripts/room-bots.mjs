@@ -97,6 +97,14 @@ const KEY = flag('key', process.env.DRAFT_BOT_KEY || null);
 const OUTBOX = KEY
   ? { path: '/api/bots/outbox', init: { headers: { authorization: `Bearer ${KEY}` } } }
   : { path: '/api/dev/outbox', init: {} };
+/**
+ * `--members a@bots.docs.vote,b@…` — seats to take without an invitation to
+ * follow (2026-09-16, the lantern-house room): a host restart wipes the bot
+ * outbox, so a runner started after one finds no mail and no address to log
+ * in with. Each named member asks for a login link, which lands in the
+ * outbox like any other and is followed from there.
+ */
+const MEMBERS = (flag('members', '') || '').split(',').map((s) => s.trim()).filter(Boolean);
 const TEND_MIN = duration(flag('tend', '10s'));
 const TEND_MAX = TEND_MIN * 3;
 const REPORT_EVERY = duration(flag('report', '5m'));
@@ -677,6 +685,10 @@ const main = async () => {
   console.log(`  invite bots through ✉️ at any address at ${BOT_DOMAIN} — e.g. ada.lovelace@${BOT_DOMAIN} — and they arrive here.\n`);
   const ticker = setInterval(summary, REPORT_EVERY);
   process.on('SIGINT', () => { stopping = true; clearInterval(ticker); summary(); process.exit(0); });
+  for (const email of MEMBERS) {
+    if (!isBot(email)) { say(nameOf(email), '✗ not a bot address — only bots.docs.vote seats are taken here'); continue; }
+    try { await relogin(email); } catch (e) { say(nameOf(email), `✗ ${e.message}`); }
+  }
   await watchOutbox();
 };
 
