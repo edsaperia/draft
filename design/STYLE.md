@@ -32,7 +32,7 @@ the audit log (§7); this is the checklist. §§1–6 state the rules by subject
 | `(no text here)` (a gap's head) | *Nothing stands here — the charter runs straight from … to …* | Ed, 2026-09-15, Q1379, by name: the eyebrow *The gap as it stands* says the rest. The other bracketed string — T49. |
 | *A, B and C* | *A and B and C*, *A, B, and C* | Three or more things in one sentence take commas and a final *and*, with no serial comma — the register these documents already write in. The shape is a decision and it is made **once**: `listOf` in `design/setup.js` is the only joiner, never a join written at the site (Q630). |
 
-Glyph names are stable (tabulated 2026-09-07, Q1208; the founding order's own glyph column is SURFACE §8's `ORDER`):
+Glyph names are stable (tabulated 2026-09-07, Q1208; the founding order's own glyph column is SURFACE §8's `ORDER`). **Since Q1401 (Ed, 2026-09-16) every one of them is drawn** — Microsoft's Fluent Emoji, Flat, the set Q1360 gave the lifecycle marks — so **the character in this column is the glyph's name, not its picture**: it is what the code, the copy, this table and every walk say, and what a drawn glyph carries on `data-char`, but the reader's own emoji font no longer renders it. That holds inside a sentence too (Q1401 (a), Ed: *draw them in prose too*), so a clause reading *all members must agree 🏛️* carries the same object the commit row carries. Three glyphs stay the platform's: a member's face, which is their own choice; the stagehand's furniture; and the mail modal's, which previews another medium.
 
 | Setting | Glyph | Note |
 |---|---|---|

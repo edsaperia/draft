@@ -248,6 +248,8 @@ Every power is an object you hold, kept where you can see it, spent by flying it
 
 Parsed by `spec-check`'s `checkSockets`: every class has a rule in `system.css` and is one the wallet renderers (`renderWallet`, `renderPowerWallets`, `showSay`) can set, every class they set has a row, `empty` is never struck and `gone` is `visibility: hidden` (Q1239).
 
+**A socket's tool is drawn** (Q1401), from the same Fluent Flat set as the marks and through the same `glyphHtml` — the socket, the bubble's own big glyph, and every traveller the flights put in the air, so a pencil crossing the room and a pencil in the wallet are one picture. The socket goes on stating the size (24px, because the avatar sets 26) and `.gl` follows it at 1em; the navbar's height is unchanged. The strike stays on the socket (`::after`) and never inside the glyph, and `notheld`'s grayscale drains a picture rather than repainting it, which is Q1360's rule. The ∞ is still the text character in `.pmore`, never an `<i>`: the flights find their token with `#penwallet i`.
+
 <!-- spec-check: sockets -->
 | state | class | look | when |
 |---|---|---|---|
@@ -485,6 +487,7 @@ Every card the surface draws:
 - **A hairline earns its place** (Q1173). The head↔field rule draws only under a head with content over real controls: a card with no head draws none — **an empty placeholder head is no head, so the birth's 🪶 draws none either** (card review 2026-09-05, A5) — a card that is only a head and some text (the grants) draws none, and a settled rule drawn as the first block carries its own border instead. The record card, having no head, draws none of its own (Q1186). **Two hairlines with nothing between them never appear.**
 - **The pair groups at the far right.** 🗑️ stays at the very left; where a card offers the founder's power beside the route's commit (K29), the two stand together at the right, the power immediately left of the route's commit — ✒️ ✏️, and 🛡️ ✒️ on a 👑 question. Indifferent keeps its place with the option blocks (CP4).
 - **A button offering an act wears its glyph alone; one reporting what already happened says so in words** (STYLE T47). ✏️ Propose → ✏️, 🍾 Begin → 🍾, 🏛️ Ask all members → 🏛️, ✓ Answer → ✓; **✏️ Submitted** keeps its word, the mover's 🗑️ on both motion cards is the glyph alone (Ed, 2026-09-05), and **OK** keeps its word, having no glyph.
+- **And the glyph it wears is drawn** (Q1401), from the same Fluent Flat set as the marks, through `glyphHtml`. `.btn.glyphbtn` goes on stating the one size and `.gl` follows it at 1em, so a commit is the same size in every state on every card (B6); the held state transforms the button and never the picture. **The ✓ is the exception and stays cards.js's stroked `TICK`** — a commit is pressed, greys while nothing is chosen and lights on `--primary` when armed, none of which a colour picture can do (Q1360's own ruling). A control is identified by `data-gl`, never by its text: a picture puts nothing in `textContent`, and `glyphTextOf` is what hands the character back to anything that needs to read it.
 
 | control | where | hold | ground | rule |
 |---|---|---|---|---|

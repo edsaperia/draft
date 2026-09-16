@@ -225,7 +225,9 @@ for (const key of ['quorum']) {
       return {
         val: b ? b.dataset.ansval : null,
         on: p.classList.contains('on'),
-        label: (p.querySelector('.opttext') ? p.querySelector('.opttext').textContent : '').replace(/\s+/g, ' ').trim(),
+        // the ✏️ inside the rule is a drawn glyph since Q1401, and a picture
+        // puts nothing in the text — `glyphTextOf` hands back the sentence
+        label: (p.querySelector('.opttext') ? window.CARDS.glyphTextOf(p.querySelector('.opttext')) : '').replace(/\s+/g, ' ').trim(),
         box: box ? { value: box.value, min: +box.min, max: +box.max } : null,
       };
     }).filter((p) => p.val);
