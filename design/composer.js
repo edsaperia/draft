@@ -862,7 +862,7 @@ window.COMPOSER = (function () {
         ' title="' + (d.awaiting ? esc(d.cap || '') : T.row.withdraw +
         (n > 1 ? T.row.allPlaces(n) : '') + T.row.withdrawCost) + '">' + glyphHtml('🗑️') + '</button>' +
         '<button class="btn btn-propose" aria-pressed="true" disabled' +
-        ' title="' + T.row.submittedTitle + '">' + T.row.submitted + '</button>' +
+        ' title="' + T.row.submittedTitle + '">' + glyphify(T.row.submitted) + '</button>' +
         '</div>' +
         '</div>'
       );

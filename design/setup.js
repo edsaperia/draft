@@ -365,7 +365,7 @@ window.SETUP = (function () {
     // is tag-safe and refuses to enter a `contenteditable` — the open card
     // inside has already been through it, and it is idempotent, a drawn glyph
     // leaving no character behind for a second pass to find.
-    return groups.map((g) => {
+    return glyphify(groups.map((g) => {
       // **The constitution is document text** (Ed, 2026-08-18: *a distinct
       // paragraph for each decision, with the relevant tab to the left of
       // it*). A section rather than a pile: the heading, the people, the
@@ -516,7 +516,7 @@ window.SETUP = (function () {
         // constitutional settings' current values, legible without opening
         // a single tab (Ed, 2026-08-18)
         (g.block ? g.block() : '') + '</div></div>';
-    }).join('');
+    }).join(''));
   }
 
   /* Two measurement passes (a third fitted the .setrow piles with a
@@ -630,7 +630,7 @@ window.SETUP = (function () {
       : room ? Math.min(100, Math.round(got / ctx.E * 100)) + '%' : '100%';
     // the entry's own sentences take the drawn glyphs too (Q1401 (a)) — the
     // tooltip above is inside a tag, so it keeps the character a tooltip needs
-    return '<li class="qitem" data-q="' + c.k + '">' +
+    return glyphify('<li class="qitem" data-q="' + c.k + '">' +
       '<button class="' + (st === 'ask' || st === 'news' ? 'needs' : 'qwait') + ' st-' + st + '"' +
       ' data-card="' + c.k + '" data-washkey="set:' + c.k + '"' +
       ' aria-current="' + (ctx.open === c.k) + '"' +
@@ -649,7 +649,7 @@ window.SETUP = (function () {
       // deck's count), else a plain teaser wrapped here (the applicant's and
       // the stranger's contexts still hand text)
       (ctx.summary(c) ? (/^</.test(ctx.summary(c)) ? ctx.summary(c) : '<span class="qwhy">' + ctx.summary(c) + '</span>') : '') +
-      '</button></li>';
+      '</button></li>');
   }
 
   /* ---- the card shell -----------------------------------------------------
@@ -710,7 +710,7 @@ window.SETUP = (function () {
     // `title=` stays the character a tooltip needs) and it refuses to enter a
     // `contenteditable`, so the title lane, the rationale and the
     // application's words — all of them somebody's own text — are untouched.
-    return '<div class="' + shellCls + '" role="tabpanel" data-setupcard="' + c.k + '">' +
+    return glyphify('<div class="' + shellCls + '" role="tabpanel" data-setupcard="' + c.k + '">' +
       CB.clauseHeadHtml(oo.s || c, {
         label: null, wash: false,
         marks: stripHtml(siblings || [c], ctx),
@@ -721,7 +721,7 @@ window.SETUP = (function () {
         v: oo.v, edit: false,
       }) +
       '<div class="field">' + body + '</div>' +
-      '<div class="race-mid commitrow">' + foot + '</div></div>';
+      '<div class="race-mid commitrow">' + foot + '</div></div>');
   }
 
   /* ---- the bodies that are the same on both surfaces ----------------------- */

@@ -339,6 +339,12 @@ window.CARDS = (function () {
      surface still draws one set. `data-gl` is the key, for anything that has
      to recognise a glyph without knowing its character.
 
+     And it is the character **as the caller wrote it**, variation selector and
+     all, rather than the table's base form: a reader that puts the characters
+     back has to give back the string that was there, or every copy golden
+     shifts by one invisible codepoint and reports that the words changed when
+     only the drawing did.
+
      Unmapped in, escaped character out: a glyph the sprite has no picture for
      falls back to the platform's, which is what makes a missing asset a
      finding rather than a blank. */
@@ -346,7 +352,7 @@ window.CARDS = (function () {
     const k = glyphKey(ch);
     if (!k) return esc(ch);
     return '<svg class="gl" role="img" aria-label="' + esc(GLYPH[k][1]) + '" data-gl="' + k
-      + '" data-char="' + esc(GLYPH[k][0]) + '"><use href="#fl-' + k + '"></use></svg>';
+      + '" data-char="' + esc(ch) + '"><use href="#fl-' + k + '"></use></svg>';
   };
   // Every mapped character, longest first, each swallowing a variation
   // selector after it so the selector is not left stranded in the text.
@@ -788,7 +794,7 @@ window.CARDS = (function () {
     // "propose edit" rather than "edit this" (Ed, 2026-08-17): what the button
     // starts is a *proposal*, and "edit this" promises an edit — which is the
     // one thing this surface never lets you do to the charter directly.
-    G.proposeEdit.label + '</button>';
+    glyphify(G.proposeEdit.label) + '</button>';
 
   const initials = (n) => String(n).trim().split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 
