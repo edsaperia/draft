@@ -2410,7 +2410,7 @@
       // the card, and with nothing to put back it simply closes it.
           '<div class="race-mid commitrow">' +
           '<button class="btn btn-withdraw glyphbtn" data-act="draft-cancel"' +
-          ' title="' + (site ? T.row.discardThis : T.row.closeNothing) + '">🗑️</button>' +
+          ' title="' + (site ? T.row.discardThis : T.row.closeNothing) + '">' + glyphHtml('🗑️') + '</button>' +
           commitBtnHtml({
             disabled: !(site && !broke),
             title: T.row.holdPropose + T.row.editCost,
@@ -2508,12 +2508,12 @@
         fieldHtml(proposalHtml(s, { html: resultOnly(s.marked), why: s.rationale, by: s.by })) +
         '<div class="foot">' + T.crown.foot + '</div>' +
         '<div class="race-mid commitrow">' +
-        '<button class="btn glyphbtn" data-act="clear-close" title="' + T.crown.close + '">🗑️</button>' +
+        '<button class="btn glyphbtn" data-act="clear-close" title="' + T.crown.close + '">' + glyphHtml('🗑️') + '</button>' +
         '<span class="rightpair">' +
         '<button class="btn glyphbtn" data-act="crown-refuse"' +
-        ' title="' + T.crown.refuse + '">🛡️</button>' +
+        ' title="' + T.crown.refuse + '">' + glyphHtml('🛡️') + '</button>' +
         '<button class="btn btn-approve glyphbtn" data-act="crown-accept"' +
-        ' title="' + T.crown.accept + '">✒️</button>' +
+        ' title="' + T.crown.accept + '">' + glyphHtml('✒️') + '</button>' +
         '</span></div>' +
         '</div>'
       );
@@ -2539,7 +2539,7 @@
             '<button class="btn btn-approve okbtn" data-seen="' + s.id + '"' +
             ' title="' + T.record.okTitle + '">' + T.record.ok + '</button></div>'
           : '<div class="race-mid commitrow">' +
-            '<button class="btn glyphbtn" data-act="clear-close" title="' + window.COPY.grammar.commit.binLocked + '">🗑️</button>' +
+            '<button class="btn glyphbtn" data-act="clear-close" title="' + window.COPY.grammar.commit.binLocked + '">' + glyphHtml('🗑️') + '</button>' +
             '<span></span></div>') +
         '</div>'
       );

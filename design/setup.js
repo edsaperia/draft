@@ -359,6 +359,12 @@ window.SETUP = (function () {
      instead — the card is where its pile was, which is the same move a decision
      card makes on its paragraph. */
   function bandHtml(groups, ctx, cardFor) {
+    // **the constitution's own sentences carry drawn glyphs** (Q1401 (a)): a
+    // clause paragraph saying *all members must agree 🏛️* wears the same
+    // picture the commit does. One pass over the whole band, because the pass
+    // is tag-safe and refuses to enter a `contenteditable` — the open card
+    // inside has already been through it, and it is idempotent, a drawn glyph
+    // leaving no character behind for a second pass to find.
     return groups.map((g) => {
       // **The constitution is document text** (Ed, 2026-08-18: *a distinct
       // paragraph for each decision, with the relevant tab to the left of
@@ -622,6 +628,8 @@ window.SETUP = (function () {
     const fill = ctx.fillOf ? ctx.fillOf(c)
       : c.racePct !== undefined ? c.racePct + '%'
       : room ? Math.min(100, Math.round(got / ctx.E * 100)) + '%' : '100%';
+    // the entry's own sentences take the drawn glyphs too (Q1401 (a)) — the
+    // tooltip above is inside a tag, so it keeps the character a tooltip needs
     return '<li class="qitem" data-q="' + c.k + '">' +
       '<button class="' + (st === 'ask' || st === 'news' ? 'needs' : 'qwait') + ' st-' + st + '"' +
       ' data-card="' + c.k + '" data-washkey="set:' + c.k + '"' +
@@ -694,6 +702,14 @@ window.SETUP = (function () {
     const shellCls = 'sugg setupcard' +
       (asBlock ? ' rulehead' : (!rule && noTitle && !clauseHtml) || bare ? ' nohead' : '') +
       (c.textcard ? ' textcard' : '');
+    // **The glyphs inside the card's own sentences are drawn too** (Q1401 (a),
+    // Ed 2026-09-16: *draw them in prose too*). A clause reading *all members
+    // must agree 🏛️* names the same object the commit row holds, so it is the
+    // same picture. The whole card goes through `glyphify` in one piece rather
+    // than each sentence being hunted: the pass is tag-safe (a glyph in a
+    // `title=` stays the character a tooltip needs) and it refuses to enter a
+    // `contenteditable`, so the title lane, the rationale and the
+    // application's words — all of them somebody's own text — are untouched.
     return '<div class="' + shellCls + '" role="tabpanel" data-setupcard="' + c.k + '">' +
       CB.clauseHeadHtml(oo.s || c, {
         label: null, wash: false,
@@ -1017,9 +1033,9 @@ window.SETUP = (function () {
         ' title="' + (heldOut ? 'One 🏛️ each — withdraw yours first'
           : clickGesture ? 'Ask all members — a full one-second assembly'
           : 'Ask all members — a full one-second hold') + '"' +
-        ' data-holdmotion="' + c.k + '">🏛️</button>'
+        ' data-holdmotion="' + c.k + '">' + glyphHtml('🏛️') + '</button>'
       : '<button class="btn btn-approve glyphbtn emojibtn"' + (dto ? '' : ' disabled') +
-        ' data-putmotion="1" title="Propose it">✏️</button>';
+        ' data-putmotion="1" title="Propose it">' + glyphHtml('✏️') + '</button>';
   };
 
   /* ---- the consent controls, shared -----------------------------------------

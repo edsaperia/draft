@@ -41,6 +41,9 @@ window.COMPOSER = (function () {
   // own instance of it, and arrive through `env` like anything else of its.
   const T = window.COPY.session;
   const { esc, fieldHtml, headFlags, laneBlocks, originText, speakerHtml } = window.CARDS;
+  // the drawn glyphs (Q1401): the row's circles and the card's own buttons are
+  // pictures from the one set, the sentences beside them take glyphify
+  const { glyphHtml, glyphify } = window.CARDS;
 
   function make(env) {
     // defined by the time this runs — a `const` above the call site, or a
@@ -578,10 +581,10 @@ window.COMPOSER = (function () {
     function commitBtnHtml(o) {
       const pen = MAY_PEN();
       const propose = '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose"' +
-        (o.disabled ? ' disabled' : '') + ' title="' + esc(o.title) + '">✏️</button>';
+        (o.disabled ? ' disabled' : '') + ' title="' + esc(o.title) + '">' + glyphHtml('✏️') + '</button>';
       if (!pen) return propose;
       return '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose" data-pen="1"' +
-        (o.penDisabled ? ' disabled' : '') + ' title="' + esc(o.penTitle) + '">✒️</button>' + propose;
+        (o.penDisabled ? ' disabled' : '') + ' title="' + esc(o.penTitle) + '">' + glyphHtml('✒️') + '</button>' + propose;
     }
     /**
      * **The proposal-row** (backlog 204, SURFACE §9.1, K31): the commit row of
@@ -618,10 +621,10 @@ window.COMPOSER = (function () {
         // charter's row: a decree needs no edit in the wallet), else `disabled`
         // like the ✏️ (the founder's pre-🍾 row states one flag for its one ✒️)
         (pen ? ' data-pen="1"' : '') + ((pen && o.penDisabled !== undefined ? o.penDisabled : o.disabled) ? ' disabled' : '') +
-        ' title="' + esc(title || '') + '">' + (pen ? '✒️' : '✏️') + '</button>';
+        ' title="' + esc(title || '') + '">' + glyphHtml(pen ? '✒️' : '✏️') + '</button>';
       return '<div class="race-mid commitrow proposalrow" data-proposalrow="1">' +
         '<button class="btn btn-withdraw glyphbtn" data-act="row-discard"' + (o.discardDisabled ? ' disabled' : '') +
-        ' title="' + esc(o.discardTitle || T.row.discardAll) + '">🗑️</button>' +
+        ' title="' + esc(o.discardTitle || T.row.discardAll) + '">' + glyphHtml('🗑️') + '</button>' +
         '<span class="rowmid">' + esc(mid) + '</span>' +
         (o.pen ? btn(true, o.title) + (o.pair ? btn(false, o.proposeTitle) : '') : btn(false, o.title)) +
         '</div>';
@@ -770,7 +773,7 @@ window.COMPOSER = (function () {
         // two commits for one act; they are the proposal-row's now, at the foot
         // of the window (`proposeCtlTitles`), and a site card commits nothing.
         '<button class="btn btn-withdraw glyphbtn" data-act="draft-cancel"' +
-        ' title="' + T.row.discardThis + '">🗑️</button>' +
+        ' title="' + T.row.discardThis + '">' + glyphHtml('🗑️') + '</button>' +
         '</div>' +
         // Only the two facts that change what pressing ✏️ *does* (Ed, 2026-08-17).
         // What it costs is now shown rather than said — the pencil crosses the
@@ -857,7 +860,7 @@ window.COMPOSER = (function () {
         '<div class="race-mid commitrow">' +
         '<button class="btn btn-withdraw glyphbtn" data-act="draft-withdraw"' + (d.awaiting ? ' disabled' : '') +
         ' title="' + (d.awaiting ? esc(d.cap || '') : T.row.withdraw +
-        (n > 1 ? T.row.allPlaces(n) : '') + T.row.withdrawCost) + '">🗑️</button>' +
+        (n > 1 ? T.row.allPlaces(n) : '') + T.row.withdrawCost) + '">' + glyphHtml('🗑️') + '</button>' +
         '<button class="btn btn-propose" aria-pressed="true" disabled' +
         ' title="' + T.row.submittedTitle + '">' + T.row.submitted + '</button>' +
         '</div>' +
@@ -892,9 +895,9 @@ window.COMPOSER = (function () {
         '<p class="setnote">' + esc(T.stranded.note) + '</p>' +
         '<div class="race-mid commitrow">' +
         '<button class="btn btn-withdraw glyphbtn" data-act="draft-withdraw"' + off +
-        ' title="' + (T.row.withdraw + (n > 1 ? T.row.allPlaces(n) : '') + T.row.withdrawCost) + '">🗑️</button>' +
+        ' title="' + (T.row.withdraw + (n > 1 ? T.row.allPlaces(n) : '') + T.row.withdrawCost) + '">' + glyphHtml('🗑️') + '</button>' +
         '<button class="btn btn-propose glyphbtn" data-act="draft-remake"' + off +
-        ' title="' + esc(T.stranded.remake) + '">✏️</button>' +
+        ' title="' + esc(T.stranded.remake) + '">' + glyphHtml('✏️') + '</button>' +
         '</div>' +
         '</div>'
       );

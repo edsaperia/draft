@@ -360,12 +360,34 @@ window.CARDS = (function () {
      Applied **after escaping**, exactly as `linkify` is and for the same
      reason — and, like `linkifyHtml`, it walks the text between the tags only,
      so a glyph inside a `title="…"` or a `value="…"` is left as the character
-     it has to be. The contenteditable prose column is never run through it:
-     the document's text is the member's, and a picture inside a caret's reach
-     would become harvested markup (the `sectoggle` lesson). */
+     it has to be.
+
+     **And it refuses to enter a caret's reach.** Everything inside a
+     `contenteditable` element is somebody's own text — a title being typed, a
+     rationale, an application's words, the document itself — and a picture
+     written into one becomes markup the harvest reads back (the `sectoggle`
+     lesson: a button inside contenteditable becomes harvested text). So an
+     opening tag carrying `contenteditable` (anything but `="false"`) starts a
+     skip that runs to its matching close, counted by tag name so a nested
+     `<div>` inside an editable `<div>` cannot end it early. That is what lets
+     a whole card, rail entry or band paragraph be handed to this in one piece
+     instead of the sentence sites being hunted one at a time. */
+  const VOIDTAG = /^(area|base|br|col|embed|hr|img|input|link|meta|source|track|wbr)$/;
   function glyphify(html) {
-    return String(html).split(/(<[^>]*>)/).map((seg) =>
-      (seg.startsWith('<') ? seg : seg.replace(GLYPH_RX, (m) => glyphHtml(m)))).join('');
+    let skip = 0, holder = null;
+    return String(html).split(/(<[^>]*>)/).map((seg) => {
+      if (!seg.startsWith('<')) return skip ? seg : seg.replace(GLYPH_RX, (m) => glyphHtml(m));
+      const m = seg.match(/^<\/?([a-zA-Z][\w-]*)/);
+      const tag = m ? m[1].toLowerCase() : '';
+      if (skip) {
+        if (seg[1] === '/') { if (tag === holder) skip--; }
+        else if (tag === holder && !/\/>$/.test(seg) && !VOIDTAG.test(tag)) skip++;
+      } else if (/\scontenteditable(?![-\w])/.test(seg) && !/contenteditable\s*=\s*"false"/.test(seg)
+                 && !VOIDTAG.test(tag) && !/\/>$/.test(seg)) {
+        holder = tag; skip = 1;
+      }
+      return seg;
+    }).join('');
   }
   /* **Reading a glyph back off the page.** A drawn glyph contributes nothing
      to `textContent`, and the surface has two kinds of reader that depended on
@@ -1202,7 +1224,7 @@ window.CARDS = (function () {
       return '<div class="race-mid commitrow' + (cls ? ' ' + cls : '') + '"' +
         (cls ? ' data-patchrow="' + s.id + '"' : '') + '>' +
         '<button class="btn glyphbtn" data-act="clear-close" title="' +
-        (env.lockedOf(s) ? G.commit.binLocked : G.commit.bin) + '">🗑️</button>' +
+        (env.lockedOf(s) ? G.commit.binLocked : G.commit.bin) + '">' + glyphHtml('🗑️') + '</button>' +
         (extra || '') +
         // The two acts on this card share the right-hand corner, in the order you
         // would reach for them: ❄️ first because it is the one that says *not now*,
@@ -1212,7 +1234,7 @@ window.CARDS = (function () {
         ((insists || env.isChilled(s.id))
           ? '<button class="btn glyphbtn chill" data-act="chill"' +
             ' aria-pressed="' + env.isChilled(s.id) + '" title="' +
-            (env.isChilled(s.id) ? G.commit.chillOn : G.commit.chillOff) + '">❄️</button>'
+            (env.isChilled(s.id) ? G.commit.chillOn : G.commit.chillOff) + '">' + glyphHtml('❄️') + '</button>'
           : '') +
         (env.lockedOf(s) ? '' : '<button class="btn btn-approve glyphbtn"' +
           (pick ? '' : ' disabled') +

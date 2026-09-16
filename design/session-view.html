@@ -452,6 +452,10 @@
   // every member-readable string this script renders lives in copy.js (Ed's
   // brief, 2026-09-05, Part 3: copy edits touch that file only)
   const PAGE_COPY = window.COPY.page;
+  // the drawn glyphs (Q1401): every glyph this page emits as markup is one
+  // picture from the Fluent Flat set, and every sentence that carries one goes
+  // through `glyphify` — after escaping, exactly where `linkify` runs
+  const { glyphHtml, glyphify } = window.CARDS;
   // **A setup card opens and closes like a decision card** (Ed, 2026-08-18:
   // *the whole point of building off session-view is that we would have all
   // this stuff*): cards.js own expandCard/collapseCard, which have been
@@ -1402,7 +1406,7 @@
   // close*, and with nothing to put back it is simply the close. That also
   // retires the dirty predicates the row was keeping in three places.
   const binBtn = () => '<button class="btn glyphbtn" data-revert="1"' +
-    ' title="' + PAGE_COPY.binPutBack + '">🗑️</button>';
+    ' title="' + PAGE_COPY.binPutBack + '">' + glyphHtml('🗑️') + '</button>';
 
   const S = {
     // **Nothing in the document changes until ✒️** (Ed's QA, 2026-08-19: the
@@ -1492,7 +1496,7 @@
     return '<span class="founderMark" title="' + (c
       ? PAGE_COPY.founderMark.crowned
       : PAGE_COPY.founderMark.none) + '">' +
-      (c ? '👑' : '📯') + '</span>';
+      glyphHtml(c ? '👑' : '📯') + '</span>';
   };
   // Q445: per-setting permission is the lock's, never the wallet's — holding
   // the pen *somewhere* is what puts it in your topbar
@@ -3858,7 +3862,7 @@
           '</span>' +
           // outside `.mn`: the name is text and this is a control
           (gaveUpRow(p) ? '<button class="btn small" data-act="resend-invite" data-member="' +
-            esc(p.mid || '') + '" title="Send the invitation again">📨</button>' : '') +
+            esc(p.mid || '') + '" title="Send the invitation again">' + glyphHtml('📨') + '</button>' : '') +
           '</div>';
         // **One subsection per status** (entry 95, Ed 2026-08-26: *these are
         // sections of the constitution, one per status, and the document's own
@@ -5011,7 +5015,7 @@
     const f = founderInfo();
     return '<div class="speaker founderspoke">' + avHtml(f) +
       '<div class="spksaid"><span class="who">' + esc((f.n || '').trim() || PAGE_COPY.theFounder) +
-      ' <span title="' + PAGE_COPY.crownHand + '">👑</span></span>' +
+      ' <span title="' + PAGE_COPY.crownHand + '">' + glyphHtml('👑') + '</span></span>' +
       (why ? '<div class="said">' + esc(why) + '</div>'
         : '<div class="said none">' + window.COPY.grammar.speaker.noReason + '</div>') + '</div></div>';
   };
@@ -5025,7 +5029,7 @@
     // the lanebox is what whyLane wraps a member's reason in
     return '<div class="lanebox whylane"><div class="speaker founderspoke">' + avHtml(f) +
       '<div class="spksaid"><span class="who">' + esc((f.n || '').trim() || PAGE_COPY.theFounder) +
-      ' <span title="' + PAGE_COPY.crownHand + '">👑</span></span>' +
+      ' <span title="' + PAGE_COPY.crownHand + '">' + glyphHtml('👑') + '</span></span>' +
       '<div class="said edit-why' + (v ? '' : ' blank') + '" contenteditable="plaintext-only"' +
       ' spellcheck="false" data-setwhy="1"' +
       ' data-placeholder="' + PAGE_COPY.whyChangingPlaceholder + '">' + esc(v) + '</div></div></div></div>';

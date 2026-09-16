@@ -831,7 +831,7 @@ window.BAND = (function () {
         // else's — the stranger's 📧 rule (reading 1194, T47), since Q1399
         foot = binBtn() +
           '<button class="btn btn-approve glyphbtn emojibtn"' + (appAddrOk() ? '' : ' disabled') +
-          ' data-appmailsend="1" title="Send the link">📧</button>';
+          ' data-appmailsend="1" title="Send the link">' + glyphHtml('📧') + '</button>';
       } else {
         foot = binBtn() +
           '<button class="btn btn-approve glyphbtn"' + (c.done() || c.optional ? '' : ' disabled') + ' data-close="1">' + TICK + '</button>';
@@ -912,7 +912,7 @@ window.BAND = (function () {
             constituted() ? binBtn() + '<button class="btn btn-approve okbtn" data-close="1">OK</button>'
               : binBtn() +
                 '<button class="btn btn-approve glyphbtn emojibtn btn-pen" data-confirm="1" data-begin="1"' + (can ? '' : ' disabled') +
-                ' title="' + (can ? 'Begin the document — a full one-second hold' : 'The document cannot begin yet') + '">🍾</button>',
+                ' title="' + (can ? 'Begin the document — a full one-second hold' : 'The document cannot begin yet') + '">' + glyphHtml('🍾') + '</button>',
             g.cards);
         }
         // **The admit judgment, on its own card** (entry 96): the applicant at
@@ -950,7 +950,7 @@ window.BAND = (function () {
             return cardHtml(c, ctx, said +
               motionBlocks(c.k, PAGE_COPY.consent.staysAsIs, PAGE_COPY.consent.joins(applicantName(ap)), null, 'constitutional'),
               binBtn() + '<button class="btn btn-approve glyphbtn emojibtn"' +
-              (motionPicked(c) ? '' : ' disabled') + ' data-confirm="1" title="Give your answer">🏛️</button>',
+              (motionPicked(c) ? '' : ' disabled') + ' data-confirm="1" title="Give your answer">' + glyphHtml('🏛️') + '</button>',
               g.cards);
           }
           // **✏️ — the membership decides**, its own one-candidate race against
@@ -1090,16 +1090,16 @@ window.BAND = (function () {
           if (pm) {
             return cardHtml(c, ctx, consentBody(c, pm),
               (pm.by === viewerId()
-                ? '<button class="btn glyphbtn" data-withdrawmotion="' + c.k + '" title="Withdraw it — your 🏛️ comes back whole">🗑️</button>'
+                ? '<button class="btn glyphbtn" data-withdrawmotion="' + c.k + '" title="Withdraw it — your 🏛️ comes back whole">' + glyphHtml('🗑️') + '</button>'
                 : binBtn()) +
               '<button class="btn btn-approve glyphbtn emojibtn"' + (motionPicked(c) ? '' : ' disabled') +
-              ' data-confirm="1" title="Give your answer">🏛️</button>', g.cards);
+              ' data-confirm="1" title="Give your answer">' + glyphHtml('🏛️') + '</button>', g.cards);
           }
           if (powerReturnOn(c)) {
             const pd = (S.draft && S.draft.k === c.k) ? S.draft : { k: c.k, to: '', why: '' };
             return cardHtml(c, ctx, powerReturnBody(c) + whyLane(pd),
               '<button class="btn glyphbtn" data-dropmotion="1"' +
-              ' title="Discard this motion">🗑️</button>' + commitFor(c), g.cards);
+              ' title="Discard this motion">' + glyphHtml('🗑️') + '</button>' + commitFor(c), g.cards);
           }
           const pHeld = c.power === 'u' ? pwPair(c.base).u : pwPair(c.base).a;
           // …and never on a closed document (entry 62): `relinquish` and
@@ -1115,7 +1115,7 @@ window.BAND = (function () {
           return cardHtml(c, ctx, powerBody(c),
             (editable ? binBtn() +
               '<button class="btn btn-approve glyphbtn emojibtn" data-confirm="1"' +
-              ' title="Set it">✒️</button>'
+              ' title="Set it">' + glyphHtml('✒️') + '</button>'
               : binBtn() + '<button class="btn btn-approve okbtn" data-close="1">OK</button>'),
             g.cards);
         }
@@ -1151,9 +1151,9 @@ window.BAND = (function () {
               // the pen (Ed, 2026-09-02, Q1154)
               ? binBtn() + '<span class="rightpair">' +
                 '<button class="btn glyphbtn emojibtn" data-crownq="reject"' +
-                ' title="Refuse — the Founder Veto holds it, and what stands stands">🛡️</button>' +
+                ' title="Refuse — the Founder Veto holds it, and what stands stands">' + glyphHtml('🛡️') + '</button>' +
                 '<button class="btn btn-approve glyphbtn emojibtn" data-crownq="accept"' +
-                ' title="Accept — a Founder Action passes it now">✒️</button></span>'
+                ' title="Accept — a Founder Action passes it now">' + glyphHtml('✒️') + '</button></span>'
               : binBtn()), g.cards);
         }
         // a live motion takes the route its own value asks for (329a)
@@ -1172,7 +1172,7 @@ window.BAND = (function () {
             (m.by === viewerId()
               // …glyph alone since 2026-09-05 (Ed, closing T47's one exception
               // for the word *Withdraw*: both motion cards' 🗑️ match)
-              ? '<button class="btn glyphbtn" data-withdrawmotion="' + c.k + '" title="Withdraw it — the ✏️ comes back in full">🗑️</button>'
+              ? '<button class="btn glyphbtn" data-withdrawmotion="' + c.k + '" title="Withdraw it — the ✏️ comes back in full">' + glyphHtml('🗑️') + '</button>'
               : binBtn()) +
             // **the mover is not asked to judge their own motion** (K8, Q1370):
             // their preference is derived, never cast (§3.3), so their card
@@ -1196,10 +1196,10 @@ window.BAND = (function () {
           // The commit is 🏛️ — your consent, given (C4).
           return cardHtml(c, ctx, consentBody(c, m),
             (m.by === viewerId()
-              ? '<button class="btn glyphbtn" data-withdrawmotion="' + c.k + '" title="Withdraw it — your 🏛️ comes back whole">🗑️</button>'
+              ? '<button class="btn glyphbtn" data-withdrawmotion="' + c.k + '" title="Withdraw it — your 🏛️ comes back whole">' + glyphHtml('🗑️') + '</button>'
               : binBtn()) +
             '<button class="btn btn-approve glyphbtn emojibtn"' + (motionPicked(c) ? '' : ' disabled') +
-            ' data-confirm="1" title="Give your answer">🏛️</button>', g.cards);
+            ' data-confirm="1" title="Give your answer">' + glyphHtml('🏛️') + '</button>', g.cards);
         }
         // — unless it is a decision you are owed: the OK comes before the
         // motion, since an unacknowledged rule sits in the rail until it is
@@ -1223,7 +1223,7 @@ window.BAND = (function () {
             doorErrHtml(c.k);
           return cardHtml(c, ctx, body2 + changeHalf(c),
             '<button class="btn glyphbtn" data-dropmotion="1"' +
-            ' title="Discard this motion">🗑️</button>' +
+            ' title="Discard this motion">' + glyphHtml('🗑️') + '</button>' +
             commitFor(c), g.cards);
         }
         // the room reaches the answer bodies as a fourth argument (entry 167):
@@ -1420,7 +1420,7 @@ window.BAND = (function () {
           // empty box is owed.
           ? binBtn() + '<span class="rightpair">' +
             '<button class="btn btn-approve glyphbtn emojibtn" data-act="invite"' +
-            ' title="Send the invitations — your word sends">✒️</button>' +
+            ' title="Send the invitations — your word sends">' + glyphHtml('✒️') + '</button>' +
             founderCommit(card('invite')) + '</span>'
           // …and the same for a founder whose hand is off this setting (entry
           // 62): the body above is already the settled card, and a settled card
@@ -1434,7 +1434,7 @@ window.BAND = (function () {
           ? binBtn() + '<span class="rightpair">' +
             '<button class="btn btn-approve glyphbtn emojibtn" data-exile="1"' +
             (S.removeWho ? '' : ' disabled') +
-            ' title="Remove them — your word removes">✒️</button>' +
+            ' title="Remove them — your word removes">' + glyphHtml('✒️') + '</button>' +
             founderCommit(card('remove')) + '</span>'
         : ((!amFounder() || founderHandOff(c)) && c.own !== 'you' && !c.ansFor)
           ? (stateOf(c, ctx) === 'news'
@@ -1468,7 +1468,7 @@ window.BAND = (function () {
             // explanation when the wallet is what is missing.
             (commitReady(c) && (!env.cs || mayPenOn('title')) ? '' : ' disabled') +
             ' data-confirm="1" title="' + (!env.cs || mayPen() ? commitTitle(c) : penWaitTitle) + '">' +
-            (env.cs ? '✒️' : '🪶') + '</button>' +
+            glyphHtml(env.cs ? '✒️' : '🪶') + '</button>' +
             // …and the room's route beside it, where the pen is still held
             // (entry 161): the Founder's own act stays where their eye already
             // goes and putting it to the membership is the deliberate second
@@ -1489,7 +1489,7 @@ window.BAND = (function () {
           ? binBtn() +
             '<button class="btn btn-approve glyphbtn emojibtn" data-resend="1"' +
             (EMAIL_OK.test(S.myemail) ? '' : ' disabled') +
-            ' title="' + resendTitle() + '">📨</button>'
+            ' title="' + resendTitle() + '">' + glyphHtml('📨') + '</button>'
           : c.k === 'hat'
           ? (() => {
               // **CP9 (Q1106): locked at 🍾 for ever, so no commit at all** —
@@ -1507,7 +1507,7 @@ window.BAND = (function () {
                 // `docOpen()`, since `set-convenor-membership` is refused after
                 // the close like everything else (entry 62, Ed B25 (a)).
                 (dirty && mayPen() && docOpen() ? '' : ' disabled') +
-                ' data-confirm="1" title="' + (mayPen() ? 'Set it' : penWaitTitle) + '">✒️</button>'; })()
+                ' data-confirm="1" title="' + (mayPen() ? 'Set it' : penWaitTitle) + '">' + glyphHtml('✒️') + '</button>'; })()
           : stateOf(c, ctx) === 'news'
           ? binBtn() +
             '<button class="btn btn-approve okbtn" data-ok="' + newsKey + '">OK</button>'
@@ -1545,7 +1545,11 @@ window.BAND = (function () {
           (commitReady(c) && (penOkFor(commitGlyph, c) ||
             (commitGlyph === '✒️' && mayPen() && docOpen() && takingBack(c.k))) ? '' : ' disabled') +
           ' data-confirm="1" title="' +
-          (penOkFor(commitGlyph) ? commitTitle(c) : penWaitTitle) + '">' + commitGlyph + '</button>' +
+          // the drawn glyph, unless the commit is the ✓ — cards.js's stroked
+          // `TICK`, already markup and deliberately not a picture (Q1360: a
+          // commit greys and lights on `currentColor`, which no picture can do)
+          (penOkFor(commitGlyph) ? commitTitle(c) : penWaitTitle) + '">' +
+          (commitGlyph === TICK ? TICK : glyphHtml(commitGlyph)) + '</button>' +
           // the route's own commit, after the pen (entry 161) — see the title
           // branch above for why it stands second. **Never a door here**: ❌
           // reaches this branch (its row keeps an inert ✒️), and a door's second

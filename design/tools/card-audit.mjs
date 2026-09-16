@@ -123,6 +123,14 @@ const IN_PAGE = () => {
       if (n.nodeType !== 1) continue;
       const st = getComputedStyle(n);
       if (st.display === 'none' || st.visibility === 'hidden') continue;
+      // **A drawn glyph reads as its character** (Q1401). Since the subject,
+      // wallet and commit glyphs became pictures they contribute nothing to
+      // the text — so a commit button would read as empty, every label would
+      // lose its glyph, and G2's *a subject glyph names one thing* would
+      // compare nothing against nothing and pass. `data-char` is the
+      // character the picture stands for, which is what a member reads.
+      const ch = n.getAttribute && n.getAttribute('data-char');
+      if (ch && String(n.tagName).toLowerCase() === 'svg') { s += ch; continue; }
       s += visText(n);
     }
     return s;
@@ -597,6 +605,39 @@ const IN_PAGE = () => {
         clause: { closed: before && before.text, open: rect(openText),
                   travel: travel(before && before.text, rect(openText)) },
         nextHead: nextHeadAfter(card),
+        // **Nothing on a card draws a glyph as a character** (Q1401, G1). The
+        // subject, wallet and commit glyphs are pictures from one set now, and
+        // the way that fails is quiet: a site the conversion missed keeps
+        // rendering the platform's emoji beside thirty that are drawn, and
+        // every geometric check passes because a box is a box. So the page is
+        // asked the direct question — is there a mapped character left in a
+        // text node anywhere on this card, its rail entry or the topbar.
+        //
+        // Three exclusions, all of them the ruling's own: the contenteditable
+        // prose column (the document's text is the member's, and a picture
+        // inside a caret's reach becomes harvested markup), the mail modal
+        // (it previews another medium and is off the design system) and the
+        // stagehand furniture (the dev switch and the ladder bar).
+        rawGlyphs: (() => {
+          const G = (window.CARDS && window.CARDS.GLYPH) || {};
+          const chars = Object.keys(G).map((k) => G[k][0]);
+          if (!chars.length) return ['(no GLYPH table)'];
+          const SKIP = '[contenteditable="true"], #prose, .mailmodal, .mailwrap, .devswitch, .ladderbar, #probe-report';
+          const seen = new Set();
+          const scan = (root, where) => {
+            if (!root) return;
+            const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+            for (let n = w.nextNode(); n; n = w.nextNode()) {
+              const p = n.parentElement;
+              if (!p || p.closest(SKIP)) continue;
+              for (const c of chars) if (n.nodeValue.indexOf(c) !== -1) seen.add(where + ' ' + c);
+            }
+          };
+          scan(card, 'card');
+          scan(document.querySelector('#rail'), 'rail');
+          scan(document.querySelector('.navbar'), 'topbar');
+          return [...seen];
+        })(),
       };
     },
   };
@@ -1120,6 +1161,28 @@ function crossCard(cards) {
       out.push({ rule: 'G2', lens: 'cross-card', said: 'a subject glyph names one thing (STYLE §1)',
         saw: g + ' heads ' + keys.size + ' different cards', note: [...keys].join(', ') });
     }
+  }
+
+  /* **Every glyph is drawn** (Q1401, Ed 2026-09-16). One picture per glyph,
+     from Microsoft's Fluent Flat set — so a mapped character surviving in a
+     text node is a site the conversion missed, and it will go on drawing
+     whatever emoji font the reader's machine carries beside thirty that do
+     not. Reported per character with the places it was seen, because that is
+     what names the site; `rawGlyphs` is collected on every card. */
+  const rawWhere = new Map();
+  for (const c of cards) {
+    for (const r of c.rawGlyphs || []) {
+      if (!rawWhere.has(r)) rawWhere.set(r, new Set());
+      rawWhere.get(r).add(c.walk + '·' + c.key);
+    }
+  }
+  for (const [r, where] of rawWhere) {
+    const [zone, ch] = r.split(' ');
+    out.push({ rule: 'G1', lens: 'cross-card',
+      said: 'every subject, wallet and commit glyph is drawn — the character is its name, never its picture',
+      saw: ch + ' is still a character in the ' + zone + ' on ' + where.size
+        + (where.size === 1 ? ' card' : ' cards'),
+      note: [...where].slice(0, 10).join(', ') });
   }
 
   // Where the lockline stands. It opens a read-only body and closes a grant's,
