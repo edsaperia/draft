@@ -418,11 +418,21 @@
     return window.CARDS.secToggleHtml(n, !collapsed.has(n), cls);
   }
 
+  // **One proposal, one tab per place** (Ed, 2026-09-16, the tims-birthday
+  // room: *for my whole-document rewrite I now see a blue proposal tab beside
+  // every clause. It should only be shown once, against the first clause*).
+  // An item made of sites — a proposal of yours, a draft, a patch — stands at
+  // each site's **first** block and at no other block the site runs over: one
+  // site, one tab, where its card opens (`swallowOpen`, `site.keys[0]`). A
+  // race or a pair keeps a tab at every block of its span (Q1308).
+  const tabKeysOf = (s) => (s.sites
+    ? s.sites.map((x) => (x.keys ? x.keys[0] : x.key)).filter(Boolean)
+    : (s.keys ?? []));
   function suggFor(key) {
     // Anchors persist while a race is still deciding — a judged suggestion
     // is revisable until it seals or its ground shifts.
     return SUGGS.filter((s) => s.state !== 'sealed' && served(s) &&
-      ((s.keys ?? []).includes(key) || (s.pair ?? []).some((c) => c.key === key)));
+      (tabKeysOf(s).includes(key) || (s.pair ?? []).some((c) => c.key === key)));
   }
 
   const verdicts = new Map();

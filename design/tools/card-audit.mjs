@@ -1738,6 +1738,14 @@ async function walkCharter(page, base, cards, errors, { closed, doors } = {}) {
   const ids = await page.evaluate(() => window.SESSION.SUGGS.map((s) => s.id));
   for (const id of ids) {
     const before = await page.evaluate((k) => window.__CA.closedGeo(k), id);
+    // **T2 — one proposal, one tab per place** (Ed, 2026-09-16: *for my
+    // whole-document rewrite I now see a blue proposal tab beside every
+    // clause. It should only be shown once, against the first clause*).
+    // `mine-guests-wording` runs over two blocks; closed, it carries one tab.
+    if (id === 'mine-guests-wording') {
+      const tabs = await page.evaluate(() => document.querySelectorAll('#charter .achip[data-anchor="mine-guests-wording"]').length);
+      if (tabs !== 1) errors.push(walk + ': T2 — mine-guests-wording should carry one tab, at its first block; saw ' + tabs);
+    }
     // **A way in, and then a card** — the two halves `openAndMeasure` has
     // always told apart and this walk never did (Q897). It drives `toggle()`
     // rather than a click, so it can open something the surface offers no

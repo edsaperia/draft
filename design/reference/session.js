@@ -418,11 +418,21 @@
     return window.CARDS.secToggleHtml(n, !collapsed.has(n), cls);
   }
 
+  // **One proposal, one tab per place** (Ed, 2026-09-16, the tims-birthday
+  // room: *for my whole-document rewrite I now see a blue proposal tab beside
+  // every clause. It should only be shown once, against the first clause*).
+  // An item made of sites — a proposal of yours, a draft, a patch — stands at
+  // each site's **first** block and at no other block the site runs over: one
+  // site, one tab, where its card opens (`swallowOpen`, `site.keys[0]`). A
+  // race or a pair keeps a tab at every block of its span (Q1308).
+  const tabKeysOf = (s) => (s.sites
+    ? s.sites.map((x) => (x.keys ? x.keys[0] : x.key)).filter(Boolean)
+    : (s.keys ?? []));
   function suggFor(key) {
     // Anchors persist while a race is still deciding — a judged suggestion
     // is revisable until it seals or its ground shifts.
     return SUGGS.filter((s) => s.state !== 'sealed' && served(s) &&
-      ((s.keys ?? []).includes(key) || (s.pair ?? []).some((c) => c.key === key)));
+      (tabKeysOf(s).includes(key) || (s.pair ?? []).some((c) => c.key === key)));
   }
 
   const verdicts = new Map();
@@ -2952,6 +2962,15 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         cardDone = true;
         return card(openSugg, key);
       }
+      // **An open card swallows every block of its span** (Q1407, Ed
+      // 2026-09-16): a run's card stands where the run begins and the rest of
+      // the run is inside it — its head is the whole run (Q1308) — exactly as
+      // a draft site's is above, so the text is never on the page twice with
+      // the run's tabs standing under the card that already holds it. A
+      // diagonal is the one multi-key card this does not reach: its two keys
+      // are two clauses it stands beside, not a run it replaces.
+      if (openSugg.kind !== 'diagonal' && (openSugg.keys ?? []).length > 1 &&
+          openSugg.keys.includes(key) && openSugg.keys[0] !== key) return { html: '', swallowed: true };
       if (cardDone) return { html: '', swallowed: false };
       // the key matters to a diagonal, which spans two clauses and needs to say
       // which of them it is standing in

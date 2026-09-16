@@ -7053,3 +7053,15 @@ The deploy of Q1401, Q1402, 👍 and the floating circles went out at 16:34 with
 | # | Title | Raised | State | Pointers |
 |---|---|---|---|---|
 | 1407 | A pair's card is cut to the pair's span; an open card swallows its run | 2026-09-16 | ruled and built 2026-09-16 | `spanOfSides`, `pairItem`, `sideOfId`, `baseFor` (live.js); `swallowOpen` (session.js); SURFACE M18; card-audit P10 on `race-quorum` |
+
+## Q1408: one tab per site for a proposal of yours (Ed, 2026-09-16)
+
+**The ruling.** *For my whole-document rewrite I now see a blue proposal tab beside every clause. I think it should only be shown once, against the first clause.* Ed in the tims-birthday room, 2026-09-16, minutes after Q1407 went live.
+
+**What was wrong.** `suggFor(key)` matched an item at every key it carried, and a `mine` item's `keys` is every block of its span (Q1308 keyed a race to every block of its run, and the yours item took the same shape), so a rewrite of the whole plan wore its ✏️ in the gutter of all 47 blocks, though its card opens at the first (`swallowOpen`, `site.keys[0]`).
+
+**The build.** `tabKeysOf(s)`: an item made of sites — a proposal of yours, an unproposed draft, a patch — stands at each site's first block, `x.keys[0]` (or `x.key`, the fixture's single-key sites); everything else keeps its `keys`. `suggFor` reads through it, so the gutter, the head's strip and the two clause passes agree. The fixture's `mine-guests-wording` runs over the guests clause and the duty clause after it (`guestsDuty` keyed), and card-audit's **T2** reads one tab for it on the closed page. Rejected: cutting every multi-block item to one tab — a race spanning several blocks is Q1308's ruling and Ed spoke of his own proposal; listed as the open half of Q1408.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 1408 | One tab per site for a proposal of yours | 2026-09-16 | ruled and built 2026-09-16; the race half open | `tabKeysOf`, `suggFor` (session.js); SURFACE M18; `mine-guests-wording`, `guestsDuty` in the fixture; card-audit T2 |

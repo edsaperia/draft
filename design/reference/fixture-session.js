@@ -155,7 +155,9 @@ window.FIXTURE_SESSION = (function () {
     { t: 'h', level: 2, x: 'Guests' },
     { t: 'h', level: 3, x: 'Bringing a Guest' },
     { t: 'p', key: 'guests', x: 'Friends of the house are welcome whenever a member is in.' },
-    { t: 'p', x: 'A member is responsible for their guest: for what the guest breaks, for what the guest is told about the other members, and for the guest’s knowing when to go home.' },
+    // keyed since Ed's one-tab ruling (2026-09-16): the guests draft below runs
+    // over this paragraph too, and stands at the first alone
+    { t: 'p', key: 'guestsDuty', x: 'A member is responsible for their guest: for what the guest breaks, for what the guest is told about the other members, and for the guest’s knowing when to go home.' },
     { t: 'p', x: 'A guest who has been brought a dozen times is generally nominated, and the house has learned to be glad of this rather than awkward about it.' },
     { t: 'h', level: 3, x: 'Guests Staying Over' },
     { t: 'p', x: 'A guest may stay in the Guest Bedroom if it is claimed for them, or on the Common Room sofa if it is not, and in the latter case must be up before the first member comes down.' },
@@ -501,9 +503,15 @@ window.FIXTURE_SESSION = (function () {
       qLabel: '§ Guests', urgency: 0.3,
       pct: 20, cap: 'yours · one of the fourteen has voted — quorum is 5',
       rationale: '“Whenever a member is in” is doing the work already — it is the being-in that makes it hospitality rather than a key.',
-      sites: [{ key: 'guests', keys: ['guests'], label: '§ Guests',
-        text: 'Friends of the house are welcome whenever a member is in, which is what makes them guests and not visitors.',
-        origin: [{ t: 'p', key: 'guests', x: 'Friends of the house are welcome whenever a member is in.' }] }]
+      // **a site over two blocks** (Ed, 2026-09-16: *for my whole-document
+      // rewrite I now see a blue proposal tab beside every clause. It should
+      // only be shown once, against the first clause*): the draft rewrites the
+      // guests clause and the duty clause after it, and card-audit's T2 reads
+      // one tab for it, at the first
+      sites: [{ key: 'guests', keys: ['guests', 'guestsDuty'], label: '§ Guests',
+        text: 'Friends of the house are welcome whenever a member is in, which is what makes them guests and not visitors.\nA member answers for their guest: for what the guest breaks, and for what the guest is told about the other members.',
+        origin: [{ t: 'p', key: 'guests', x: 'Friends of the house are welcome whenever a member is in.' },
+          { t: 'p', key: 'guestsDuty', x: 'A member is responsible for their guest: for what the guest breaks, for what the guest is told about the other members, and for the guest’s knowing when to go home.' }] }]
     },
     {
       id: 'quick-guests-pets', kind: 'quick', keys: ['guests'], state: 'sealed',
