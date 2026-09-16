@@ -1478,7 +1478,9 @@ const railOf = (page) => page.evaluate(() => ({
     // has to fall through to the card key rather than stand as ''
     return { key: li.dataset.q || (li.querySelector('[data-card]') || { dataset: {} }).dataset.card || '?',
       kind: st ? st.slice(3) : null,
-      mark: (li.querySelector('.subj') || {}).textContent ? li.querySelector('.subj').textContent.trim() : null,
+      // a subject glyph is drawn since Q1401, so its character comes back off
+      // the picture rather than out of the (empty) text
+      mark: li.querySelector('.subj') ? (window.CARDS.glyphTextOf(li.querySelector('.subj')).trim() || null) : null,
       site: li.dataset.site ?? null };
   }),
   // the band's tabs: the tab, the rail entry and the card are one thing (F17),

@@ -141,7 +141,7 @@ export const openCard = async (page, k, { settleMs = 320 } = {}) => {
 export const press = async (page, holdMs) => {
   const box = await page.evaluate(() => {
     const b = [...document.querySelectorAll('.setupcard .commitrow button')]
-      .find((x) => !x.disabled && !/🗑/.test(x.textContent));
+      .find((x) => !x.disabled && !/🗑/.test(x.textContent) && !x.querySelector('[data-gl="bin"]'));
     if (!b) return null;
     b.scrollIntoView({ block: 'center' });
     const r = b.getBoundingClientRect();
@@ -152,7 +152,7 @@ export const press = async (page, holdMs) => {
     // which is the one shape a check must not have: a false alarm on a page
     // that is working. The title is what the button says when the glyph is a
     // drawing.
-    const label = b.textContent.trim() || b.getAttribute('title') || 'commit';
+    const label = window.CARDS.glyphTextOf(b).trim() || b.getAttribute('title') || 'commit';
     return { x: r.x + r.width / 2, y: r.y + r.height / 2, label };
   });
   if (!box) return null;

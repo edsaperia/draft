@@ -448,7 +448,7 @@ if (!EMPTY_TEXT) {
   }).join('\n').trim());
   const saved = await page.evaluate(() => {
     const b = document.querySelector('#proserow [data-act="row-commit"]');
-    const glyph = b ? b.textContent.trim() : null;
+    const glyph = b ? window.CARDS.glyphTextOf(b).trim() : null;
     if (!b || b.disabled) return { glyph, live: false };
     b.click();
     return { glyph, live: true };
@@ -657,7 +657,7 @@ const fillFields = () => page.evaluate(() => {
 });
 const committable = () => page.evaluate(() =>
   [...document.querySelectorAll('.setupcard .commitrow button')]
-    .some((x) => !x.disabled && !/🗑/.test(x.textContent)));
+    .some((x) => !x.disabled && !/🗑/.test(x.textContent) && !x.querySelector('[data-gl="bin"]')));
 
 /* ---- the invite door (backlog 51, Q811–Q816) ---------------------------
  * Ed, on genesis: *I managed to invite one additional member … and further
@@ -832,7 +832,7 @@ const inviteDoorPreBegin = async () => {
     const row = c && c.querySelector('.commitrow');
     const send = row && row.querySelector('[data-act="invite"]');
     return {
-      send: send ? (send.textContent || '').trim() : '(no send button)',
+      send: send ? window.CARDS.glyphTextOf(send).trim() : '(no send button)',
       h: send ? Math.round(send.getBoundingClientRect().height) : 0,
       title: send ? send.title : '',
       bin: !!(row && row.querySelector('[data-revert]')),
@@ -1266,7 +1266,7 @@ const motionFillOnAmended = async () => {
     return { fill: b.dataset.fill || null, title: b.getAttribute('title'),
       // the mark is drawn (Q288): its kind is the `.mk-<kind>` class, never its text
       mark: (b.querySelector('.subj .mk') ? ([...b.querySelector('.subj .mk').classList].find((c) => c.startsWith('mk-')) || '').slice(3)
-        : ((b.querySelector('.subj') || {}).textContent || '').trim()),
+        : (b.querySelector('.subj') ? window.CARDS.glyphTextOf(b.querySelector('.subj')) : '').trim()),
       state: [...b.classList].find((c) => c.startsWith('st-')) || null };
   }, key);
   const wire = (pg, cmd, args) => pg.evaluate(([c, a]) => fetch(location.pathname.replace('/d/', '/api/d/') + '/cmd', {
@@ -1358,7 +1358,7 @@ const motionDeckOnAmended = async () => {
     return { fill: b.dataset.fill || null, title: b.getAttribute('title'),
       // the mark is drawn (Q288): its kind is the `.mk-<kind>` class, never its text
       mark: (b.querySelector('.subj .mk') ? ([...b.querySelector('.subj .mk').classList].find((c) => c.startsWith('mk-')) || '').slice(3)
-        : ((b.querySelector('.subj') || {}).textContent || '').trim()),
+        : (b.querySelector('.subj') ? window.CARDS.glyphTextOf(b.querySelector('.subj')) : '').trim()),
       state: [...b.classList].find((c) => c.startsWith('st-')) || null };
   }, key);
   const wire = (pg, cmd, args) => pg.evaluate(([c, a]) => fetch(location.pathname.replace('/d/', '/api/d/') + '/cmd', {
@@ -2108,7 +2108,7 @@ const editState = await page.evaluate(() => {
   return { editing: document.getElementById('doc').classList.contains('editing'),
     row: !!b, greyed: !!(b && b.disabled), glyph: b ? b.textContent.trim() : null,
     // Ed's QA of 2026-08-30: the pen-holding founder-member is offered ✒️ *and* ✏️ (entry 161)
-    commits: [...document.querySelectorAll('#charter [data-proposalrow] [data-act="row-commit"]')].map((x) => x.textContent.trim()),
+    commits: [...document.querySelectorAll('#charter [data-proposalrow] [data-act="row-commit"]')].map((x) => window.CARDS.glyphTextOf(x).trim()),
     // the row has no ground of its own
     rowGround: rs ? { bg: rs.backgroundColor, shadow: rs.boxShadow, border: rs.borderTopStyle } : null,
     // the pile is the strip in edit mode: every tab pressable

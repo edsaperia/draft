@@ -634,9 +634,12 @@ if (admEntry) {
       const li = document.querySelector('#rail .qitem[data-q="' + k + '"]');
       const b = li && li.querySelector('button');
       if (!b) return null;
-      const svg = b.querySelector('.subj svg');
+      // a lifecycle mark is a picture named by `data-mk`; since Q1401 a
+      // **subject** glyph is a picture too, and its name is its own character
+      const svg = b.querySelector('.subj svg[data-mk]');
+      const subj = b.querySelector('.subj');
       return { st: (b.className.match(/st-\w+/) || [''])[0],
-        mark: svg ? svg.getAttribute('data-mk') : (b.querySelector('.subj') || {}).textContent,
+        mark: svg ? svg.getAttribute('data-mk') : (subj ? window.CARDS.glyphTextOf(subj).trim() : null),
         fill: ((b.getAttribute('style') || '').match(/--fill: ([^;"]+)/) || [])[1] || null };
     }, admEntry.k);
     const was = await entryNow();

@@ -71,7 +71,7 @@ const check = (ok, msg) => { say((ok ? '  ok   · ' : '  FAIL · ') + msg); if (
    pressable, what it says for itself, and what the note under it reads */
 const slugState = () => page.evaluate(() => {
   const b = [...document.querySelectorAll('.setupcard .commitrow button')]
-    .find((x) => !/🗑/.test(x.textContent));
+    .find((x) => !/🗑/.test(x.textContent) && !x.querySelector('[data-gl="bin"]'));
   return {
     value: (document.querySelector('.setupcard [data-slug]') || {}).value,
     disabled: b ? b.disabled : null,
