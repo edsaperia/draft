@@ -101,6 +101,9 @@
   const {
     esc, resultOnly, stripTags, pct, plainLabel, URG_LO, URG_HI,
     TICK, MARK, DRAWN, mkHtml, markHtml,
+    // the drawn glyphs (Q1401): the commit row's buttons, the units in an
+    // eyebrow, and the glyphs inside the charter column's own sentences
+    glyphHtml, glyphify,
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks,
     headFlags, originText, mdToHtml, htmlToMd, mdStrip, mdLine,
     richToSource, sourceToRich, readLane,
@@ -746,7 +749,7 @@
   // is the one job they do better than anything we can draw. They bring their
   // own colour back, which is the cost. A third unit, ✒️ for the line a reading
   // had to cross, went with the bar (Q1362).
-  const PEOPLE = "<span class=\"unit\">👤</span>";
+  const PEOPLE = '<span class="unit">' + glyphHtml('👤') + '</span>';
   const JUDG = "<span class=\"unit\">👍</span>";
   // did anything displace the incumbent?
   const carried = (g) => fieldOf(g).some((c) => c.won);
@@ -2758,7 +2761,7 @@
       const b = el.getBoundingClientRect();
       pencil = document.createElement('div');
       pencil.className = 'flypencil';
-      pencil.textContent = '✏️';
+      pencil.innerHTML = glyphHtml('✏️');
       pencil.style.left = (a.left + a.width / 2) + 'px';
       pencil.style.top = (a.top + a.height / 2) + 'px';
       document.body.appendChild(pencil);
