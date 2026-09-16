@@ -256,17 +256,23 @@ jobs:
       - run: npm run drawer-walk
         if: always()
 
-  # **Last green on `main`: never, as of 2026-08-29.** Red from its birth on
-  # 2026-08-27 until the 🧭 shape card (entry 166) was answered by every walk
-  # that births through the surface — `applicants-walk` was never taught it,
-  # so all three of its steps died at *no creation mail* before reaching a
-  # single applicant assertion, and every *CI's walks cover it* claimed in a
-  # review since 08-27 was false (entry 203).
+  # **Last green on `main`: 2026-09-16** (run 143, `fba9d3e` — every step, the
+  # seat matrix at both hats included). **First green: 2026-09-07** (run 104,
+  # `030383d7`), and green on most runs since. Red from its birth on
+  # 2026-08-27 until then: the 🧭 shape card (entry 166) was not answered by
+  # every walk that births through the surface — `applicants-walk` was never
+  # taught it, so all three of its steps died at *no creation mail* before
+  # reaching a single applicant assertion, and every *CI's walks cover it*
+  # claimed in a review between 08-27 and 09-07 was false (entry 203).
   #
   # **This line is kept by hand**, and it is the whole point of it: when a run
-  # of this job is green on `main`, replace *never, as of …* with that run's
-  # date. Nothing else here distinguishes a job that guards something from a
-  # job that has never once passed, and a red X nobody reads is not coverage.
+  # of this job is green on `main`, replace the date above with that run's.
+  # Nothing else here distinguishes a job that guards something from a job
+  # that has never once passed, and a red X nobody reads is not coverage. The
+  # line had gone the other way by 2026-09-16 — it still read *never, as of
+  # 2026-08-29* nine days and some forty runs after the job started passing,
+  # which is the same failure in the other direction: a green job the file
+  # calls dead earns no trust either. Read from the API, not from memory.
   #
   # The four walks that need a running product server (entry 142, Q917 (a),
   # Ed 2026-08-27): `journey`, `applicants-walk`, `slug-walk` and `ladder`
