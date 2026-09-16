@@ -2952,6 +2952,15 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         cardDone = true;
         return card(openSugg, key);
       }
+      // **An open card swallows every block of its span** (Q1407, Ed
+      // 2026-09-16): a run's card stands where the run begins and the rest of
+      // the run is inside it — its head is the whole run (Q1308) — exactly as
+      // a draft site's is above, so the text is never on the page twice with
+      // the run's tabs standing under the card that already holds it. A
+      // diagonal is the one multi-key card this does not reach: its two keys
+      // are two clauses it stands beside, not a run it replaces.
+      if (openSugg.kind !== 'diagonal' && (openSugg.keys ?? []).length > 1 &&
+          openSugg.keys.includes(key) && openSugg.keys[0] !== key) return { html: '', swallowed: true };
       if (cardDone) return { html: '', swallowed: false };
       // the key matters to a diagonal, which spans two clauses and needs to say
       // which of them it is standing in

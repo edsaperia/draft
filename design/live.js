@@ -933,12 +933,24 @@ window.LIVE = (function () {
         // the contested footprint is a list of spans; the page anchors the race
         // at their union (one clause run)
         const csp = spanOf(r.contested && r.contested.length ? r.contested : r.candidates.flatMap((c) => c.hunks));
-        const site = siteOfSpan(csp, lines);
-        const keys = site.keys;
-        const inc = plain(lines, csp);
-        const textOf = (c) => applyIn(lines, csp, c.hunks);
-        const srcOf = textOf;     // one text since Q1406 — the source, markers kept; `src` stays for the seed's readers (Q1403)
         const byId = (id) => r.candidates.find((c) => c.id === id);
+        // **A pair's card is cut to the pair's own span** (Q1407, Ed 2026-09-16,
+        // from the screenshot *why am I seeing the whole text in this
+        // amendment*): the race's span is the union of every candidate's
+        // footprint, so once one proposal rewrote the whole document a
+        // one-line proviso in the same race drew the whole document at its
+        // head and in both lanes. Each pair takes the lines its two readings
+        // differ on — the union of its two sides' hunks, the incumbent
+        // contributing none — its site, its keys and its label from that span,
+        // and each lane is that span's reading. The ⚔️ slate alone keeps the
+        // race's whole span, being the whole field at once.
+        const spanOfSides = (...sideIds) => {
+          const hs = sideIds.map(byId).filter(Boolean).flatMap((c) => c.hunks || []);
+          return hs.length ? spanOf(hs) : csp;
+        };
+        const textIn = (c, sp) => applyIn(lines, sp, c.hunks);
+        const textOf = (c) => textIn(c, csp);     // the slate's reading, over the race's span
+        const srcOf = textOf;     // one text since Q1406 — the source, markers kept; `src` stays for the seed's readers (Q1403)
         // a name the server attached is one the reveal rule allowed (a signed
         // proposal, Q770, or one made under `public`): the live card shows it,
         // and since backlog 255 their face with it — the picture rides the same
@@ -948,19 +960,21 @@ window.LIVE = (function () {
         // current text, a candidate as its reading with its diff and its case.
         // A side the view no longer names (the incumbent a shift replaced)
         // keeps its id and draws no text.
-        const sideOfId = (id) => {
-          if (id === r.incumbentId) return { id, inc: true, text: inc };
+        const sideOfId = (id, sp) => {
+          const incText = plain(lines, sp);
+          if (id === r.incumbentId) return { id, inc: true, text: incText };
           const c = byId(id);
           if (!c) return { id, inc: false, text: null };
-          const t = textOf(c);
-          return { id, inc: false, text: t, src: srcOf(c), marked: markedOf(inc, t), rationale: c.rationale, by: byOf(c) };
+          const t = textIn(c, sp);
+          return { id, inc: false, text: t, src: t, marked: markedOf(incText, t), rationale: c.rationale, by: byOf(c) };
         };
         // the pair's own key rides the item id: one item per pair, and the
         // provisional layer (session.js's `pairKey`) is keyed the same way
         const pairId = (x, y) => r.id + '#' + [x, y].sort().join(':');
-        const base = {
+        // what every item on this race carries, at the site of its own span (Q1407)
+        const baseFor = (site) => ({
           raceId: r.id, ...site,
-          qLabel: labelFor(site.insertAfterKey || keys[0]),
+          qLabel: labelFor(site.insertAfterKey || site.keys[0]),
           // the fill is the race's closeness to resolution — a magnitude the
           // engine cannot be made to sign (Q501) — and since Q1362 (c) that
           // magnitude is **the leader's judges over the floor**: voters so far
@@ -977,7 +991,7 @@ window.LIVE = (function () {
           blockedByPark: r.blockedByPark ? PARK.blocked : false,
           deadlocked: !!r.deadlocked,
           crownWaits: textAssent,
-        };
+        });
         // a race holding only my own proposal is mine to withdraw, not to judge
         // — the `mine` item carries it (the author's preference is derived, never
         // asked). **Unconditional again since backlog 253** (Ed, 2026-08-29): the
@@ -994,13 +1008,16 @@ window.LIVE = (function () {
         const waitCap = r.blockedByPark ? PARK.blocked : RAIL.votedStillRunning;
         // the item for one pair: the quick card where the current text is a
         // side, the race card where two challengers were dealt
-        const pairItem = (A, B, extra) => {
+        const pairItem = (aId, bId, extra) => {
+          const sp = spanOfSides(aId, bId);                  // the pair's own span (Q1407)
+          const base = baseFor(siteOfSpan(sp, lines));
+          const A = sideOfId(aId, sp), B = sideOfId(bId, sp);
           const incSide = A.inc ? 'a' : B.inc ? 'b' : null;
           const card = { a: A.id, b: B.id, inc: incSide };
           if (incSide) {
             const c = A.inc ? B : A;
             return { ...base, ...extra, id: pairId(A.id, B.id), kind: 'quick', card,
-              marked: c.marked || markedOf(inc, c.text || ''), rationale: c.rationale, by: c.by || null,
+              marked: c.marked || markedOf(plain(lines, sp), c.text || ''), rationale: c.rationale, by: c.by || null,
               candId: c.id, src: c.src, ...slate };
           }
           return { ...base, ...extra, id: pairId(A.id, B.id), kind: 'race', card,
@@ -1010,16 +1027,16 @@ window.LIVE = (function () {
         // a judgment's verdict in the card's own vocabulary: the quick card's
         // keep / approve where the incumbent is a side, the race card's a / b
         // where it is not, and indifferent for a tie
-        const whatOf = (A, B, outcome) => (outcome === 'tie' ? 'indifferent'
-          : (A.inc || B.inc) ? ((outcome === 'a' ? A : B).inc ? 'keep' : 'approve')
+        const isInc = (id) => id === r.incumbentId;
+        const whatOf = (a, b, outcome) => (outcome === 'tie' ? 'indifferent'
+          : (isInc(a) || isInc(b)) ? (isInc(outcome === 'a' ? a : b) ? 'keep' : 'approve')
           : outcome);
         const judgedKeys = new Set();
         for (const j of r.myJudgments || []) {
-          const A = sideOfId(j.a), B = sideOfId(j.b);
           judgedKeys.add(pairId(j.a, j.b));
           // a pair a ground shift locked (↻) is told so and its verdict cannot
           // be changed; every other judged pair is yours to revise (§4.4)
-          items.push(pairItem(A, B, { state: 'deciding', pick: whatOf(A, B, j.outcome),
+          items.push(pairItem(j.a, j.b, { state: 'deciding', pick: whatOf(j.a, j.b, j.outcome),
             cap: waitCap, shifted: j.locked ? SHIFTED_NOTE : false, locked: !!j.locked, urgency: 0.3 }));
         }
         for (const rc of asked) {
@@ -1029,7 +1046,7 @@ window.LIVE = (function () {
           // that same top since Q98 — so every entry with a card carries a
           // real number and the 0.3 is reached only where there is no card at
           // all
-          items.push(pairItem(sideOfId(rc.a.id), sideOfId(rc.b.id), { state: 'needs',
+          items.push(pairItem(rc.a.id, rc.b.id, { state: 'needs',
             cap: RAIL.wantsVote, urgency: rc.urgency != null ? rc.urgency : 0.3 }));
         }
         // a race with nothing dealt and nothing judged — passed over by the
@@ -1039,15 +1056,20 @@ window.LIVE = (function () {
         if (!asked.length && !(r.myJudgments || []).length) {
           const others = r.candidates.filter((c) => !c.mine);
           const c0 = others[0] || r.candidates[0];
-          const rest = { ...base, id: r.id, state: r.judged ? 'deciding' : 'needs',
+          const two = !(r.candidates.length === 1 || others.length < 2);
+          // its span is the pair's it would show (Q1407): the one candidate's, or the two challengers' together
+          const sp0 = two ? spanOfSides(others[0].id, others[1].id) : spanOfSides(c0.id);
+          const rest = { ...baseFor(siteOfSpan(sp0, lines)), id: r.id, state: r.judged ? 'deciding' : 'needs',
             cap: r.judged ? waitCap : RAIL.wantsVote, urgency: 0.3, card: null, ...slate };
-          if (r.candidates.length === 1 || others.length < 2) {
-            items.push({ ...rest, kind: 'quick', marked: markedOf(inc, textOf(c0)),
-              rationale: c0.rationale, by: byOf(c0), candId: c0.id, src: srcOf(c0) });
+          if (!two) {
+            const t0 = textIn(c0, sp0);
+            items.push({ ...rest, kind: 'quick', marked: markedOf(plain(lines, sp0), t0),
+              rationale: c0.rationale, by: byOf(c0), candId: c0.id, src: t0 });
           } else {
+            const ta = textIn(others[0], sp0), tb = textIn(others[1], sp0);
             items.push({ ...rest, kind: 'race',
-              race: { a: { id: others[0].id, text: textOf(others[0]), src: srcOf(others[0]), rationale: others[0].rationale, by: byOf(others[0]) },
-                      b: { id: others[1].id, text: textOf(others[1]), src: srcOf(others[1]), rationale: others[1].rationale, by: byOf(others[1]) } } });
+              race: { a: { id: others[0].id, text: ta, src: ta, rationale: others[0].rationale, by: byOf(others[0]) },
+                      b: { id: others[1].id, text: tb, src: tb, rationale: others[1].rationale, by: byOf(others[1]) } } });
           }
         }
       }

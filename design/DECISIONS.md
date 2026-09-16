@@ -7037,3 +7037,19 @@ The deploy of Q1401, Q1402, 👍 and the floating circles went out at 16:34 with
 | # | Title | Raised | State | Pointers |
 |---|---|---|---|---|
 | 1406 | A text is read in blocks — the head, the lanes, the slate | 2026-09-16 | built and pushed 2026-09-16 | `mdBlocksHtml`, `wordingHtml`, `clauseHeadHtml` (cards.js); `markedOf`, `applyIn`, `plain`, `textOfF` (live.js); `runTextFor`, `headOpts` (session.js); the composer's proposed-card head; `.rtext .lp` (system.css); SURFACE K19; `race-quorum` in the fixture; card-audit T1 |
+
+## Q1407: a pair's card is cut to the pair's span, and an open card swallows its run (Ed, 2026-09-16)
+
+**The report.** Ed's screenshot from the tims-birthday room, 2026-09-16 21:10, titled *why am I seeing the whole text in this amendment*: a bot's one-line proviso on the venue clause, its card's head and both lanes the whole 47-line plan, and the plan standing again below the card with a 🔥 tab on every paragraph.
+
+**Why.** Two facts stacked. The engine puts every candidate that overlaps another into one race whose contested span is the union of their footprints; Ed's own proposal c11 had rewritten all 47 lines, so every proviso in the room joined its race and the page drew each pair over the race's span (`csp`), the head from `runTextFor` over every key of it. And the charter's `swallowOpen` replaced only the run's first block with the card — the draft-site branch above it already swallowed a whole run, the race branch never did — so the other 46 blocks stood under the card, each keyed to the race and wearing its tab. card-audit's P10 said the same of the fixture's quorum run the moment Q1406 gave the fixture one.
+
+**The ruling.** *Cut to the pair, swallow its blocks* (Ed, 2026-09-16, the recommended option of four). Rejected with it: cutting the span but leaving the run's tabs standing (the text twice on the page); keeping the race's span and fixing only the swallow (a proviso in that room would still show all 47 lines); filing it.
+
+**The build.** live.js: `spanOfSides(...ids)` is the union of the named sides' hunks, the incumbent contributing none and an empty union falling back to the race's span; `pairItem(aId, bId, extra)` computes the pair's span, its site (`siteOfSpan`, so a pair of insertions is a gap site), its `baseFor(site)` — keys, label, fill — and its two sides' readings over that span (`sideOfId(id, sp)`, `textIn(c, sp)`), the incumbent as `plain(lines, sp)`; the judged pairs and the dealt pairs go through it by id, `whatOf` reads the incumbent by id; the nothing-dealt fallback takes the one candidate's span or the two challengers' union; the ⚔️ slate alone keeps `textOf` over the race's span. session.js: `swallowOpen` returns *swallowed* for every key of an open multi-key card after its first, the diagonal excepted, before the `cardDone` gate. Judging is untouched — the engine still ranks within the race; the page shows a judge the lines the pair differs on.
+
+**Guard.** card-audit P10 on the fixture's `race-quorum` (a two-key run since Q1406) is the swallow's: it fired before this and is clear after. The cut has no walk of its own — the fixture's items are authored per pair and cannot hold a union span; an ad hoc headless check on the journey document (a whole-text rewrite from one member, a one-line proviso from another, the founder's items read) confirmed the proviso's pair at one key. Owed: a journey line for it.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 1407 | A pair's card is cut to the pair's span; an open card swallows its run | 2026-09-16 | ruled and built 2026-09-16 | `spanOfSides`, `pairItem`, `sideOfId`, `baseFor` (live.js); `swallowOpen` (session.js); SURFACE M18; card-audit P10 on `race-quorum` |
