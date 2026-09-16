@@ -255,6 +255,119 @@ window.CARDS = (function () {
     ? '<span class="mk mk-' + kind + '">' + MARK[kind] + '</span>' : MARK[kind]);
   const markHtml = (kind) => '<span class="qmark" aria-hidden="true">' + mkHtml(kind) + '</span>';
 
+  // ---- the subject, wallet and commit glyphs, drawn ------------------------
+  // **Q1401 (Ed, 2026-09-16: *we should convert the subject glyphs and also
+  // the wallet and commit glyphs to fluent flat*).** Q1360 gave the thirteen
+  // lifecycle marks to Microsoft's Fluent Emoji, Flat; this finishes the job
+  // for every other glyph the surface draws as a picture — a setting's subject
+  // (🪪 🌍 ⏰ …), the wallets' four verbs and the veto (🪶 ✒️ 🛡️ ✏️ 🏛️), and the
+  // commit row's buttons (🗑️ ❄️ 📧 …).
+  //
+  // What survives of Q288 — *a subject glyph is an emoji* — is the **character
+  // as the glyph's name**: every card definition, every `ORDER` row, every
+  // walk selector, SPEC's and SURFACE's tables and the furniture scan keep the
+  // character, because that is the glyph's identity. What goes is the platform
+  // rendering it, which was a different picture on every machine.
+  //
+  // Out of scope deliberately: a member's **face** (`emojiface`, the picker),
+  // which is the member's own choice and stays the platform's emoji; the
+  // stagehand furniture (⏩ ⏭ 📬, off the design system); and the mail modal,
+  // which previews another medium.
+  //
+  // `GLYPH` is key → [character, name]. **One entry per line, in exactly this
+  // shape**: `scripts/fluent-glyphs.mjs` reads this block to know which
+  // symbols the sprite must hold, so the table and the pictures cannot drift
+  // apart in silence. The name is the Fluent folder's, lower-cased — it is
+  // what the emoji announced, so it is what the drawing announces.
+  const GLYPH = {
+    'quill': ['🪶', 'feather'],
+    'pin': ['📍', 'round pushpin'],
+    'card': ['🪪', 'identification card'],
+    'handshake': ['🤝', 'handshake'],
+    'zzz': ['💤', 'zzz'],
+    'boot': ['🥾', 'hiking boot'],
+    'stopwatch': ['⏱', 'stopwatch'],
+    'alarm': ['⏰', 'alarm clock'],
+    'busts': ['👥', 'busts in silhouette'],
+    'bust': ['👤', 'bust in silhouette'],
+    'writing': ['✍', 'writing hand'],
+    'eye': ['👁', 'eye'],
+    'globe': ['🌍', 'globe showing europe-africa'],
+    'memo': ['📝', 'memo'],
+    'tophat': ['🎩', 'top hat'],
+    'bulb': ['💡', 'light bulb'],
+    'scale': ['⚖', 'balance scale'],
+    'crown': ['👑', 'crown'],
+    'horn': ['📯', 'postal horn'],
+    'umbrella': ['🌂', 'closed umbrella'],
+    'hand': ['✋', 'raised hand'],
+    'picture': ['🖼', 'framed picture'],
+    'email': ['📧', 'e-mail'],
+    'envelope': ['✉', 'envelope'],
+    'cross': ['❌', 'cross mark'],
+    'bottle': ['🍾', 'bottle with popping cork'],
+    'glasses': ['🥂', 'clinking glasses'],
+    'mailbox-gave-up': ['📭', 'open mailbox with lowered flag'],
+    'incoming': ['📨', 'incoming envelope'],
+    'mailbox': ['📬', 'open mailbox with raised flag'],
+    'wave': ['👋', 'waving hand'],
+    'pen': ['✒', 'black nib'],
+    'shield': ['🛡', 'shield'],
+    'voice': ['🏛', 'classical building'],
+    'pencil': ['✏', 'pencil'],
+    'bin': ['🗑', 'wastebasket'],
+    'snowflake': ['❄', 'snowflake'],
+    'link': ['🔗', 'link'],
+    'label': ['🏷', 'label'],
+  };
+  // The table's characters are the **base** codepoints; the surface writes
+  // most of them with a variation selector after (✏️, ✒️, 🛡️) and a few without
+  // (🪪, ✋), and both must find the same picture. So the selector is stripped
+  // at the lookup rather than doubled in the table.
+  const VS = /[︎️]/g;
+  const BY_CHAR = {};
+  for (const k of Object.keys(GLYPH)) BY_CHAR[GLYPH[k][0]] = k;
+  const glyphKey = (ch) => BY_CHAR[String(ch).replace(VS, '')];
+  /* **One renderer, and every site that draws a glyph as a picture goes
+     through it.** A site that *stores* or *compares* a glyph keeps the
+     character — `c.g`, `ORDER`, `RESERVED_EMOJI`, a walk's selector.
+
+     `data-char` carries the character the picture stands for, which is what
+     lets a walk that used to read a control's `textContent` keep reading the
+     same string: the copy audit and card-audit rebuild the text with the
+     characters put back, so the goldens say what they always said and the
+     surface still draws one set. `data-gl` is the key, for anything that has
+     to recognise a glyph without knowing its character.
+
+     Unmapped in, escaped character out: a glyph the sprite has no picture for
+     falls back to the platform's, which is what makes a missing asset a
+     finding rather than a blank. */
+  const glyphHtml = (ch) => {
+    const k = glyphKey(ch);
+    if (!k) return esc(ch);
+    return '<svg class="gl" role="img" aria-label="' + esc(GLYPH[k][1]) + '" data-gl="' + k
+      + '" data-char="' + esc(GLYPH[k][0]) + '"><use href="#fl-' + k + '"></use></svg>';
+  };
+  // Every mapped character, longest first, each swallowing a variation
+  // selector after it so the selector is not left stranded in the text.
+  const GLYPH_RX = new RegExp('(?:' + Object.keys(BY_CHAR)
+    .sort((a, b) => b.length - a.length)
+    .map((c) => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')[\\uFE0E\\uFE0F]?', 'g');
+  /* **Glyphs inside sentences are drawn too** (Q1401 (a), Ed 2026-09-16: *draw
+     them in prose too*). A clause reading *all members must agree 🏛️* carries
+     the same object the commit row carries, so it is the same picture.
+
+     Applied **after escaping**, exactly as `linkify` is and for the same
+     reason — and, like `linkifyHtml`, it walks the text between the tags only,
+     so a glyph inside a `title="…"` or a `value="…"` is left as the character
+     it has to be. The contenteditable prose column is never run through it:
+     the document's text is the member's, and a picture inside a caret's reach
+     would become harvested markup (the `sectoggle` lesson). */
+  function glyphify(html) {
+    return String(html).split(/(<[^>]*>)/).map((seg) =>
+      (seg.startsWith('<') ? seg : seg.replace(GLYPH_RX, (m) => glyphHtml(m)))).join('');
+  }
+
   // ---- the diff / markdown engine -----------------------------------------
 
   const tokens = (s) => String(s).split(/(\s+|[.,;:!?()\[\]"'’‘“”—–]+)/).filter((t) => t !== '' && t !== undefined);
@@ -1391,6 +1504,7 @@ window.CARDS = (function () {
     esc, resultOnly, stripTags, pct, plainLabel, URG_LO, URG_HI,
     RULES, clauseOf, clauseRungs,
     TICK, PAUSE, VS16, MARK, DRAWN, mkHtml, markHtml,
+    GLYPH, glyphKey, glyphHtml, glyphify,
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks, mdDiffPieces, mdPiecesHtml, mdDiffHtml,
     headFlags, originText, MD_RX, mdToHtml, htmlToMd, mdStrip, mdBlock, linkify, linkifyHtml, mdLine,
     MD_ONE, mdLead, mdInner, mdParts, richToSource, sourceToRich, readLane,

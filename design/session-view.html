@@ -392,6 +392,23 @@
   </div>
 </div>
 <svg id="wires" aria-hidden="true"></svg>
+<!-- **the drawn glyphs' sprite** (Q1401): one `<symbol>` per glyph, generated
+     from cards.js's GLYPH table by `npm run fluent-glyphs` and committed, so
+     the build never reaches the network. It is fetched and **injected inline**
+     rather than referenced: a `<use href="fluent-glyphs.svg#fl-…">` to an
+     external file is blocked on file:// and from a page served at /d/<slug>,
+     and inline is the one form that works everywhere. Nothing waits on it —
+     `.gl` states the box, so every measurement is the same whether the picture
+     has landed or not, and a `<use>` whose symbol arrives a tick later simply
+     appears. A fetch that fails leaves empty boxes and nothing else broken. -->
+<div id="glyphsprite"></div>
+<script>
+(function () {
+  fetch('fluent-glyphs.svg').then((r) => (r.ok ? r.text() : '')).then((t) => {
+    if (t) document.getElementById('glyphsprite').innerHTML = t;
+  }).catch(() => {});
+})();
+</script>
 
 <script src="constitution.js"></script>
 <script src="copy.js"></script>
