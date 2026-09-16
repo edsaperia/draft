@@ -9,6 +9,9 @@ coverage/
 design/tools/card-audit*.json
 # the seat matrix's snapshots, same reasoning: a run is snapshots, not an artifact
 design/tools/seat-matrix*.json
+# the accessibility audit's payload, same reasoning: the findings live in
+# design/REPORT-a11y.md, the run that produced them does not
+design/tools/a11y-audit*.json
 
 # server runtime state: plaintext member emails, magic-link tokens, HMAC secret.
 # A public repo must never be one careless `git add` away from these.
