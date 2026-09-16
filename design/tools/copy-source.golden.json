@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 433
+  "entries": 435
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -120,6 +120,8 @@
   "page.cards.lapse.rule": "Each member says the shortest gap they would accept, and the document takes the longest — <b>never</b> being longer than any of them — so nobody loses their membership faster than they accepted.",
   "page.cards.lapse.t": "Do Memberships Lapse?",
   "page.cards.lapse.takes": "The document takes the longest",
+  "page.cards.leave.body": "If you give up your membership you may not be able to rejoin: coming back costs what any new member pays. Leaving is immediate, and nobody has to agree.",
+  "page.cards.leave.t": "Leave the Membership",
   "page.cards.myemail.n": "Your Email",
   "page.cards.myemail.t": "Enter Your Email",
   "page.cards.myname.n": "Your Name",

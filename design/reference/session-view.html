@@ -2356,6 +2356,14 @@
     { k: 'myemail', g: '📧', t: PAGE_COPY.cards.myemail.t, n: PAGE_COPY.cards.myemail.n, kind: 'personal', own: 'you',
       hide: () => S.viewer === 'applicant', changeable: true,
       ready: () => S.emailVerified || (!S.emailSent && EMAIL_OK.test(S.myemail)) },
+    // 🌂 (Q1395, Ed 2026-09-16: *the leave button should be on a card in the
+    // profile stack*): a door on your own row, never a task — nothing asks
+    // you to leave — so it stands in the row's stack and nowhere in the rail;
+    // one label in every state; its body is the warning and its ✓ resigns.
+    // Post-🍾 only: before the start the founder's way out is the 🎩 untick.
+    { k: 'leave', g: '🌂', t: PAGE_COPY.cards.leave.t, kind: 'personal', own: 'you', leaveDoor: true,
+      hide: () => !(constituted() && viewerIsMember() && !isStranger() && docOpen()),
+      ready: () => true },
     // `slugKnown` is what stops a fast founder committing inside the window
     // between a keystroke and the answer about it — the address is legal,
     // nothing has refused it *yet*, and the send would be the first to ask
@@ -3361,6 +3369,7 @@
     // verified is the whole of what this card asks (a member's address is
     // verified by arrival; changing it un-verifies and asks again)
     if (c.k === 'myemail') return S.emailVerified;
+    if (c.leaveDoor) return true;                              // a door, not a decision (Q1395)
     // an admission: at ✒️ it is news, settled by your OK; otherwise it is the
     // judgment 🪪's price asks for, settled when you have given it
     if (c.admit) return admissionPrice() === 'pen'
@@ -3408,6 +3417,7 @@
   const mustAct = (c) => (motionOn(c) ? (viewerIsMember() && !viewerLapsed() && !answeredMotion(c) && !motionExcludesMe(c))
     : c.isBegin ? (amFounder() && !constituted())
     : c.isClosing ? false
+    : c.leaveDoor ? false                                      // nothing asks you to leave (Q1395)
     // 🪪 is the remedy for a `one-voice` wait, and while that is what the
     // document is waiting for it is asking something (Q828, `oneVoiceRemedy`)
     // …and it asks the same thing, for its own reason, once the Membership
@@ -3697,7 +3707,8 @@
   // line, so their ✋🖼️📧 stack joins the grants' pile on it. The open-card
   // path comes free — that paragraph already routes an open pile card through
   // `paraWith` — and so does the rail anchor, `hostParaOf` reading `data-chip`.
-  const myIdCards = () => ['myname', 'mypic', 'myemail'].map(card).filter((c) => c && visible(c));
+  // …and 🌂 last, the way out at the end of the stack (Q1395)
+  const myIdCards = () => ['myname', 'mypic', 'myemail', 'leave'].map(card).filter((c) => c && visible(c));
   const idOnFounded = () => (cs && amFounder() && !viewerIsMember() ? myIdCards() : []);
   // One question card per delegable setting, born when its setting is handed
   // over and gone if it is taken back. Same glyph, same title — it is the
@@ -3857,10 +3868,10 @@
         // **Leaving is free** (entry 94): a member's own row carries the one
         // act nobody may refuse — and the founder's membership is ordinary
         // membership (§9.6a, entry 248), so their row carries it too. Before
-        // the start it is the 🎩 untick instead, which `constituted()` already
-        // excludes; a clerk has no row here at all (`viewerIsMember`).
-        const leaveBtn = constituted() && viewerIsMember() && !isStranger()
-          ? ' <button class="btn small" data-act="resign" title="Leave the membership now — nobody has to agree">Leave</button>' : '';
+        // the start it is the 🎩 untick instead. Since Q1395 (Ed, 2026-09-16)
+        // the act is the 🌂 card in the row's own stack, not a button in the
+        // text: a body holds choices, an action is the row's (§9.1).
+        const leaveBtn = '';
         // *(nobody else here yet)* counts the arrived rows alone (Q870), and
         // now that every other status has a heading of its own it is a
         // statement about *Members* and nothing else.
@@ -6514,7 +6525,13 @@
     // rather than narrowing it, because *this* entry is still a pinning kind —
     // whether it gets to pin is a question about the whole queue, and only
     // `layoutQueue`, which can see both populations at once, can answer it.
-    return { id: c.k, html, pinned: st !== 'wait' && st !== 'done', rank: RAIL_RANK[st],
+    // an applicant's five stay listed whatever their state (`pinAll`, Q1392,
+    // Ed 2026-09-16: *they should appear as greyed out queue cards in the
+    // sidebar, so I can easily get back to them, as I have nothing else to
+    // see or do*): a filed entry is a position in the gutter for a member,
+    // and an applicant has no gutter to find it in. The state chain stays a
+    // literal in front — `spec-check` reads it against SURFACE §6's alphabet.
+    return { id: c.k, html, pinned: st !== 'wait' && st !== 'done' || !!cx.pinAll, rank: RAIL_RANK[st],
       u: RAIL_U[st], mine: st === 'yours', news: st === 'news', anchor: () => anchorOf(c.k) };
   }
   // **The birth-pass sees the whole rail** (Q1338, Ed 2026-09-11). It used to

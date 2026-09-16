@@ -1,6 +1,6 @@
 {
  "meta": {
-  "cards": 309,
+  "cards": 311,
   "walks": [
    "answers",
    "charter",
@@ -5059,6 +5059,35 @@
      "We should change this because…"
     ]
    },
+   "leave": {
+    "eyebrow": "",
+    "head": "Leave the Membership",
+    "lock": "",
+    "body": "If you give up your membership you may not be able to rejoin: coming back costs what any new member pays. Leaving is immediate, and nobody has to agree.",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "Leave the Membership",
+      "title": "Leave the Membership"
+     }
+    ],
+    "hints": [
+     "Your Name — settled",
+     "Your Picture — settled",
+     "Your Email — settled",
+     "Leave the Membership — close it",
+     "Put it back as it stands",
+     "Leave the Membership"
+    ],
+    "helpers": [
+     "If you give up your membership you may not be able to rejoin: coming back costs what any new member pays. Leaving is immediate, and nobody has to agree."
+    ]
+   },
    "mo:mo-3": {
     "eyebrow": "",
     "head": "",
@@ -5178,6 +5207,7 @@
      "Your Name — settled",
      "Your Picture — settled",
      "Your Email — close it",
+     "Leave the Membership — settled",
      "Put it back as it stands",
      "Save"
     ],
@@ -5226,6 +5256,7 @@
      "Your Name — close it",
      "Your Picture — settled",
      "Your Email — settled",
+     "Leave the Membership — settled",
      "Put it back as it stands",
      "Save"
     ],
@@ -5273,6 +5304,7 @@
      "Your Name — settled",
      "Your Picture — close it",
      "Your Email — settled",
+     "Leave the Membership — settled",
      "Put it back as it stands",
      "Save"
     ],
@@ -8073,6 +8105,35 @@
      "We should change this because…"
     ]
    },
+   "leave": {
+    "eyebrow": "",
+    "head": "Leave the Membership",
+    "lock": "",
+    "body": "If you give up your membership you may not be able to rejoin: coming back costs what any new member pays. Leaving is immediate, and nobody has to agree.",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "Leave the Membership",
+      "title": "Leave the Membership"
+     }
+    ],
+    "hints": [
+     "Your Name — settled",
+     "Your Picture — settled",
+     "Your Email — settled",
+     "Leave the Membership — close it",
+     "Put it back as it stands",
+     "Leave the Membership"
+    ],
+    "helpers": [
+     "If you give up your membership you may not be able to rejoin: coming back costs what any new member pays. Leaving is immediate, and nobody has to agree."
+    ]
+   },
    "mo:mo-3": {
     "eyebrow": "",
     "head": "",
@@ -8222,6 +8283,7 @@
      "Your Name — settled",
      "Your Picture — settled",
      "Your Email — close it",
+     "Leave the Membership — settled",
      "Put it back as it stands",
      "Save"
     ],
@@ -8270,6 +8332,7 @@
      "Your Name — close it",
      "Your Picture — settled",
      "Your Email — settled",
+     "Leave the Membership — settled",
      "Put it back as it stands",
      "Save"
     ],
@@ -8312,6 +8375,7 @@
      "Your Name — settled",
      "Your Picture — close it",
      "Your Email — settled",
+     "Leave the Membership — settled",
      "Put it back as it stands",
      "Save"
     ],

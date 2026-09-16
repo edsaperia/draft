@@ -456,6 +456,10 @@ window.COPY = (function () {
         rule: 'Each member says the <b>most open</b> door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.' },
       myname: { t: 'Choose Your Name', n: 'Your Name' },
       mypic: { t: 'Choose Your Picture', n: 'Your Picture' },
+      // 🌂 (Q1395, Ed 2026-09-16): a door on your own row, one label in every
+      // state, and its body is the warning
+      leave: { t: 'Leave the Membership',
+        body: 'If you give up your membership you may not be able to rejoin: coming back costs what any new member pays. Leaving is immediate, and nobody has to agree.' },
       text: { t: 'Text' },
       ending: { t: 'When Does It End?', n: 'Ending',
         routeNote: 'What this takes depends on what you write. A different date is a proposal ✏️ like any other. <b>Never</b> — no end date at all — needs every member to agree, because every change made so far was made under a promise that the document would seal on a date and be signed.',

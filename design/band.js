@@ -445,6 +445,10 @@ window.BAND = (function () {
         draft: S.mynameDraft, locked: !!(env.cs && !docOpen()) }),
       mypic: () => pictureBody(me(), { pick: picPickNow(), draft: S.mypicDraft,
         locked: !!(env.cs && !docOpen()) }),
+      // 🌂 (Q1395, Ed 2026-09-16): the warning is the whole body — *if you
+      // give up your membership you may not be able to rejoin* — and the
+      // row's ✓ is the act (`data-act="resign"`, the same press *Leave* was)
+      leave: () => '<p class="why">' + PAGE_COPY.cards.leave.body + '</p>',
       // **Whether the founder is in it is its own question** (Ed, 2026-08-18).
       // It had been the top half of the roster card, which made a decision about
       // one person a preamble to a list of everybody — and the founder is a hat
@@ -1399,7 +1403,11 @@ window.BAND = (function () {
         // founder, and would otherwise get the bin alone. ❌'s direct form keeps
         // its ✒️ for now: its act is a dropdown plus *❌ Remove*, and that is a
         // change of its own.
-        const foot = (c.k === 'invite' && doorDirect(c))
+        const foot = c.leaveDoor
+          // 🌂 (Q1395): the warning is the body, the ✓ is the act — the same
+          // `resign` press *Leave* was, free and nobody's to refuse (E32)
+          ? binBtn() + '<button class="btn btn-approve glyphbtn" data-act="resign" title="' + PAGE_COPY.cards.leave.t + '">' + TICK + '</button>'
+          : (c.k === 'invite' && doorDirect(c))
           // **the send is the row's commit** (Q1166): ✒️ where the viewer's
           // word sends, beside the route's commit where the founder holds both
           // (the pair at the right, ✒️ immediately left — Q1154). A click, not
