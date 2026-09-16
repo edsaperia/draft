@@ -423,11 +423,14 @@
   // every clause. It should only be shown once, against the first clause*).
   // An item made of sites — a proposal of yours, a draft, a patch — stands at
   // each site's **first** block and at no other block the site runs over: one
-  // site, one tab, where its card opens (`swallowOpen`, `site.keys[0]`). A
-  // race or a pair keeps a tab at every block of its span (Q1308).
+  // site, one tab, where its card opens (`swallowOpen`, `site.keys[0]`). **And
+  // a race or a pair spanning several blocks stands at its first block alone**
+  // (Ed, 2026-09-16, closing Q1408's open half: *yes, except with a
+  // multi-site patch*) — Q1308's tab at every block of the run is retired; the
+  // card still swallows the whole span when it opens.
   const tabKeysOf = (s) => (s.sites
     ? s.sites.map((x) => (x.keys ? x.keys[0] : x.key)).filter(Boolean)
-    : (s.keys ?? []));
+    : (s.keys ?? []).slice(0, 1));
   function suggFor(key) {
     // Anchors persist while a race is still deciding — a judged suggestion
     // is revisable until it seals or its ground shifts.
