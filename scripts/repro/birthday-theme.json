@@ -1,0 +1,48 @@
+{
+  "name": "birthday",
+  "rewritePrefix": "Unless Tim says otherwise,",
+  "provisos": [
+    "Tim must not find out about this.",
+    "Whoever forgets owes the group a round.",
+    "This can change on the day if the weather turns.",
+    "Somebody should text the group when it is done.",
+    "Sam has the final say on anything to do with the flat.",
+    "Allergies go in the group chat by Thursday.",
+    "Latecomers bring ice.",
+    "Nothing here stops anyone bringing a plus-one, within reason.",
+    "This is a suggestion, not a rule, if Tim's mum comes.",
+    "Photos of this stay off the internet."
+  ],
+  "newClauses": [
+    "Somebody brings a speaker that actually works.",
+    "We put up bunting and at least one balloon arch, however tacky.",
+    "There is a jug of something non-alcoholic that is not just orange juice.",
+    "Somebody is on door duty so Tim does not walk in on the setup.",
+    "Fairy lights on the balcony, weather permitting.",
+    "We take one group photo before anybody has had a drink.",
+    "There is a birthday hat, and Tim wears it for the cake at least.",
+    "Leo brings the good glasses from his place.",
+    "We book a taxi for Tim at the end so he is not the one sorting it out.",
+    "Somebody writes down every embarrassing story told, for the card next year.",
+    "A quiet corner is kept for anyone who needs a breather.",
+    "Whoever arrives first puts the kettle on."
+  ],
+  "modals": [
+    ["\\bmust\\b", "should"], ["\\bshould\\b", "must"], ["\\bmay\\b", "can"], ["\\bcan\\b", "may"],
+    ["\\bat least\\b", "no more than"], ["\\bno more than\\b", "at least"], ["\\balways\\b", "usually"],
+    ["\\bnever\\b", "hardly ever"], ["\\beverybody\\b", "anybody who can"], ["\\bnobody\\b", "almost nobody"]
+  ],
+  "why": {
+    "proviso": ["Otherwise this goes wrong the moment Tim asks a question.", "Just in case.", "Learned this the hard way last year."],
+    "number": ["That number felt made up.", "More is more, it's a birthday.", "Fewer, or we will never eat it all.", "Rounder number, easier to remember."],
+    "modal": ["Nobody will actually do this if we make it a rule.", "This one really does matter.", "Softer, we are friends not a committee."],
+    "trim": ["The second bit is obvious.", "Shorter.", "We all know why."],
+    "rewrite": ["It is Tim's day, he gets a veto.", "He will have opinions."],
+    "delete": ["We won't do this and we know it.", "Too much faff.", "Covered by the bit above."],
+    "insert": ["We forgot this last time.", "Somebody has to be on this or it won't happen.", "Small thing, big difference."],
+    "merge": ["One thing, one line.", "These go together."],
+    "split": ["Two jobs hiding in one sentence.", "Easier to argue about one half."],
+    "motion": ["Worth a try for this one.", "Eight of us don't need the strict version.", "Let's see if people agree."],
+    "generic": ["Better.", "Nicer.", "I'd rather this.", ""]
+  }
+}

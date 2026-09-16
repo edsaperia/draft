@@ -48,6 +48,7 @@
  * wrote in advance would give you a coin flip on everything.
  */
 
+import { readFileSync } from 'node:fs';
 import { sleep, post as postTo, followLink } from './lib/walk.mjs';
 
 /* -- arguments --------------------------------------------------------- */
@@ -65,8 +66,10 @@ const urlArg = argv.find((a) => /^https?:\/\//.test(a));
 
 const usage = () => {
   console.error(`usage: npm run room-bots -- <document url> [--key <DRAFT_BOT_KEY>] [--min 30s] [--max 7m] ` +
-    `[--heat 0.6] [--motions 0.08] [--seed <word>]\n` +
+    `[--heat 0.6] [--motions 0.08] [--seed <word>] [--theme <file.json>] [--members a@bots.docs.vote,b@…]\n` +
     `  the url is the document's own, e.g. https://docs.vote/d/hollow-oak\n` +
+    `  --theme swaps what the bots write (provisos, new clauses, verb swaps, reasons) — e.g. scripts/repro/birthday-theme.json\n` +
+    `  --members seats members already on the roster by login link, after a host restart wiped the outbox\n` +
     `  --key (or DRAFT_BOT_KEY in the environment) reads the host's bot outbox, which is how a room ` +
     `runs on docs.vote; without it the dev outbox is read, which needs a dev server`);
   process.exit(2);
@@ -201,7 +204,26 @@ const TEMPERAMENTS = [
 
 /* -- what a bot writes -------------------------------------------------- */
 
-const PROVISOS = [
+/**
+ * **A theme is the bots' vocabulary, swapped whole** (Ed, 2026-09-16: *a plan
+ * for Tim's birthday. Eight bots, writing birthday related suggestions*). The
+ * four banks below are a charter's; `--theme <file>` reads a JSON with any of
+ * `provisos`, `newClauses`, `modals` (pairs of pattern and replacement, the
+ * pattern a regex source), `why` (merged key by key) and `rewritePrefix`, and
+ * whatever the file leaves out keeps the charter's words. The edit *shapes*
+ * — proviso, number, modal, trim, rewrite, delete, insert, merge, split — are
+ * the same under every theme; only what they say changes. Example:
+ * `scripts/repro/birthday-theme.json`.
+ */
+const THEME_FILE = flag('theme', null);
+const THEME = (() => {
+  if (!THEME_FILE) return {};
+  try { return JSON.parse(readFileSync(THEME_FILE, 'utf8')); }
+  catch (e) { console.error(`could not read the theme ${THEME_FILE}: ${e.message}`); process.exit(2); }
+})();
+const themed = (key, dflt) => (Array.isArray(THEME[key]) && THEME[key].length ? THEME[key] : dflt);
+
+const PROVISOS = themed('provisos', [
   'This does not apply during the summer recess.',
   'Any member may ask for this to be reviewed at the next meeting.',
   'The Founder may waive this in writing.',
@@ -212,8 +234,8 @@ const PROVISOS = [
   'This is reviewed annually.',
   'Guests are exempt.',
   'Where this conflicts with the law, the law prevails.',
-];
-const NEW_CLAUSES = [
+]);
+const NEW_CLAUSES = themed('newClauses', [
   'Minutes are circulated within a week of every meeting.',
   'A member who misses three consecutive meetings is written to.',
   'The treasurer reports the balance at every meeting.',
@@ -224,13 +246,18 @@ const NEW_CLAUSES = [
   'Accounts are open to any member on request.',
   'No member speaks twice on a question until every member who wishes to has spoken once.',
   'A quorum is whoever turns up, provided the meeting was announced.',
-];
-const MODALS = [
-  [/\bmust\b/, 'may'], [/\bmay\b/, 'must'], [/\bshall\b/, 'should'], [/\bshould\b/, 'shall'],
-  [/\bat least\b/, 'no more than'], [/\bno more than\b/, 'at least'], [/\balways\b/, 'usually'],
-  [/\bnever\b/, 'rarely'], [/\bevery\b/, 'any'], [/\ball\b/, 'most'],
-];
-const WHY = {
+]);
+const MODALS = Array.isArray(THEME.modals) && THEME.modals.length
+  ? THEME.modals.map(([re, to]) => [new RegExp(re), to])
+  : [
+    [/\bmust\b/, 'may'], [/\bmay\b/, 'must'], [/\bshall\b/, 'should'], [/\bshould\b/, 'shall'],
+    [/\bat least\b/, 'no more than'], [/\bno more than\b/, 'at least'], [/\balways\b/, 'usually'],
+    [/\bnever\b/, 'rarely'], [/\bevery\b/, 'any'], [/\ball\b/, 'most'],
+  ];
+/** The rewrite shape's opening, the one phrase the shapes hard-code. */
+const REWRITE_PREFIX = typeof THEME.rewritePrefix === 'string' && THEME.rewritePrefix.trim()
+  ? THEME.rewritePrefix.trim() : 'Unless the membership agrees otherwise,';
+const WHY = Object.assign({
   proviso: ['The rule is right but needs a safety valve.', 'Otherwise this bites in cases nobody meant.',
     'A small exception saves a large argument later.'],
   number: ['The number was arbitrary; this one is a real limit.', 'Tighter.', 'Looser — the old figure was never met.',
@@ -247,7 +274,7 @@ const WHY = {
   motion: ['Worth trying for a while.', 'The current setting suits a bigger room than this one.',
     'Let us see whether the room agrees.'],
   generic: ['Reads better.', 'Clearer.', 'I would rather this.', ''],
-};
+}, THEME.why && typeof THEME.why === 'object' ? THEME.why : {});
 
 const isHeading = (line) => /^#+\s/.test(line);
 const sentences = (s) => s.match(/[^.!?]+[.!?]+(\s|$)/g)?.map((x) => x.trim()) ?? [s];
@@ -289,9 +316,9 @@ const SHAPES = {
   },
   rewrite: (r, lines, i) => {
     const s = lines[i].trim();
-    if (/^unless the membership/i.test(s)) return null;
+    if (s.toLowerCase().startsWith(REWRITE_PREFIX.toLowerCase())) return null;
     return { hunks: [{ start: i, end: i + 1,
-      lines: [`Unless the membership agrees otherwise, ${s[0].toLowerCase()}${s.slice(1)}`] }],
+      lines: [`${REWRITE_PREFIX} ${s[0].toLowerCase()}${s.slice(1)}`] }],
       why: pick(r, WHY.rewrite), label: 'prefixed an escape clause' };
   },
   delete: (r, lines, i) => ({ hunks: [{ start: i, end: i + 1, lines: [] }],
