@@ -69,6 +69,10 @@ window.BAND = (function () {
     const { esc, TICK, avHtml, bandHtml, fitBand, nameBody, pictureBody, opt, num, numIn,
       ctlWord, ANSWER, stateOf, nounOf, MAILS, renderMailModal, gateBody, pileHtml, readBody,
       routeFor, listOf } = window.SETUP;
+    // the drawn glyphs (Q1401): one picture per character wherever the band
+    // emits a glyph as markup — a commit button, an application's hold row —
+    // and `glyphify` for the glyphs inside the band's own sentences
+    const { glyphHtml, glyphify } = window.CARDS;
     // ---- the bodies a founder fills in ------------------------------------
     // **Constitutional settings default to the room; ordinary ones default to
     // you** (Ed, 2026-08-18, agreeing the proposal rate back to the founder). One rule
@@ -744,7 +748,7 @@ window.BAND = (function () {
         // submission carries, as given or as not yet given; the card says
         // what the application *is*, never what Submit does (T45).
         const H = PAGE_COPY.appcards.holds;
-        const holdRow = (g, label, val) => '<div class="approw"><span class="g">' + g + '</span><span>' + esc(label) + ' · </span>' + val + '</div>';
+        const holdRow = (g, label, val) => '<div class="approw"><span class="g">' + glyphHtml(g) + '</span><span>' + esc(label) + ' · </span>' + val + '</div>';
         const holds = '<div class="applist">' +
           holdRow('✋', H.name, a.name.trim() ? '<b>' + esc(a.name.trim()) + '</b>' : '<i>' + esc(H.noName) + '</i>') +
           holdRow('🖼️', H.picture, a.pic ? avHtml({ n: a.name, pic: a.pic }) : '<i>' + esc(H.noPicture) + '</i>') +

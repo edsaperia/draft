@@ -367,6 +367,31 @@ window.CARDS = (function () {
     return String(html).split(/(<[^>]*>)/).map((seg) =>
       (seg.startsWith('<') ? seg : seg.replace(GLYPH_RX, (m) => glyphHtml(m)))).join('');
   }
+  /* **Reading a glyph back off the page.** A drawn glyph contributes nothing
+     to `textContent`, and the surface has two kinds of reader that depended on
+     it: the hold ladder, which asks *which wallet does this commit spend from*
+     by looking at the button, and the copy walks, which record a control's
+     label as its text. Both ask this instead — the element's text with every
+     picture's own character put back where it stands — so what they read is
+     the string they always read, whoever is drawing it.
+
+     Not a convenience: a reader that keeps asking `textContent` finds a
+     button whose glyph has become a picture indistinguishable from a button
+     that has no glyph at all, and the failure is silent (the *every radio says
+     the same words* gotcha's cousin — an identifier that stops identifying). */
+  function glyphTextOf(node) {
+    if (!node) return '';
+    let out = '';
+    for (const n of node.childNodes) {
+      if (n.nodeType === 3) out += n.nodeValue;
+      else if (n.nodeType === 1) {
+        const tag = String(n.tagName).toLowerCase();
+        if (tag === 'svg' && n.getAttribute('data-char')) out += n.getAttribute('data-char');
+        else out += glyphTextOf(n);
+      }
+    }
+    return out;
+  }
 
   // ---- the diff / markdown engine -----------------------------------------
 
@@ -1504,7 +1529,7 @@ window.CARDS = (function () {
     esc, resultOnly, stripTags, pct, plainLabel, URG_LO, URG_HI,
     RULES, clauseOf, clauseRungs,
     TICK, PAUSE, VS16, MARK, DRAWN, mkHtml, markHtml,
-    GLYPH, glyphKey, glyphHtml, glyphify,
+    GLYPH, glyphKey, glyphHtml, glyphify, glyphTextOf,
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks, mdDiffPieces, mdPiecesHtml, mdDiffHtml,
     headFlags, originText, MD_RX, mdToHtml, htmlToMd, mdStrip, mdBlock, linkify, linkifyHtml, mdLine,
     MD_ONE, mdLead, mdInner, mdParts, richToSource, sourceToRich, readLane,

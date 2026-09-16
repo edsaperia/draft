@@ -37,10 +37,16 @@ window.SETUP = (function () {
   // second copy of the stroked tick — which cards.js kept as the *commit* glyph
   // when the marks became pictures, so the copy here would have left the band
   // and the charter showing two different ticks on one page. All three come
-  // from the one helper now. `c.g` is untouched — a subject glyph is an emoji.
+  // from the one helper now. **And since Q1401 `c.g` is drawn too** — from the
+  // same Fluent Flat set, through `glyphHtml` — so a tab, a rail entry and a
+  // card head show a subject the way they show a mark: one picture, the same
+  // on every machine. The card literals keep the character; only what is
+  // *emitted as markup* changes.
   const WAITING = window.CARDS.mkHtml('deciding');
   const YOURS = window.CARDS.mkHtml('propose');
   const DONE = window.CARDS.mkHtml('adopted');
+  const glyphHtml = window.CARDS.glyphHtml;
+  const glyphify = window.CARDS.glyphify;
   // **The answer ladders speak the clause** (Q1112 (b)): a rung says the
   // sentence that answer would put into the document, off `cards.js`'s one
   // table — the same string the founder's own card and the composer's lane
@@ -218,7 +224,7 @@ window.SETUP = (function () {
     // in them can still be acted on — they are a menu, and a menu of ✔s
     // names nothing. The grey wash still says settled; only the rail entry
     // retires to the drawn ✔, because an entry is leaving, not filing.
-    if (tab && st === 'done') return c.g;
+    if (tab && st === 'done') return glyphHtml(c.g);
     // **And the front of a setting's own pile keeps it while the rule is news**
     // (Q1320, Ed 2026-09-11: *setting itself with setting icon should sit at
     // the top of setting tab stacks*). Q1299 put the rule's tab in front of
@@ -230,7 +236,7 @@ window.SETUP = (function () {
     // pile's word (`pileHtml` / `stripHtml`), so a news tab that is not the
     // front of a setting's pile — a grant behind 🍾, 📭 on *Invitees* — is
     // untouched.
-    if (tab && host && st === 'news') return c.g;
+    if (tab && host && st === 'news') return glyphHtml(c.g);
     // **A delegated card waiting on the room keeps its own glyph** (SURFACE
     // §6's `wait` row; Ed, 2026-08-21, widened from *constitutional* to every
     // delegated setting by Q517 (a), 2026-08-29: what makes the wait nothing
@@ -247,7 +253,7 @@ window.SETUP = (function () {
     // awaiting its blockers, 🍾 awaiting the founder, a setting you handed over
     // and do not answer. The surface says which wait is a vote (`ctx.voted`);
     // a surface with no such predicate has no votes to wait on.
-    if (st === 'wait' && !(ctx.voted && ctx.voted(c))) return c.g;
+    if (st === 'wait' && !(ctx.voted && ctx.voted(c))) return glyphHtml(c.g);
     // **A grant wears the glyph of the power it grants** (entry 180, Ed: *users
     // don't realise that anything will change when they click OK, it just looks
     // like information*). Every other news card is decided-and-owed-a-reading;
@@ -255,8 +261,8 @@ window.SETUP = (function () {
     // say *take this* rather than wearing the ✔ that means seen. `ask` still
     // wears the subject glyph (💡 while blocked shows 💡) and `done` is
     // untouched, so an acknowledged grant settles exactly as before.
-    if (st === 'news' && c.grants) return c.grants;
-    return st === 'ask' ? c.g : st === 'wait' ? WAITING : st === 'yours' ? YOURS : DONE;
+    if (st === 'news' && c.grants) return glyphHtml(c.grants);
+    return st === 'ask' ? glyphHtml(c.g) : st === 'wait' ? WAITING : st === 'yours' ? YOURS : DONE;
   };
 
   /* ---- the piles ----------------------------------------------------------
@@ -1139,7 +1145,7 @@ window.SETUP = (function () {
         '<div class="lockline">' + (open ? TICK : '') + '<span>' +
         (open ? c.done : c.waiting) + '</span></div>') +
       (open ? '' : '<div class="gatelist">' + c.blockers().map((b) =>
-        '<span class="gaterow"><span class="gg">' + b.g + '</span>' + esc(b.t) + '</span>').join('') + '</div>') +
+        '<span class="gaterow"><span class="gg">' + glyphHtml(b.g) + '</span>' + esc(b.t) + '</span>').join('') + '</div>') +
       (note ? '<p class="setnote">' + note + '</p>' : '');
   };
 
