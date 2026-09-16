@@ -24,21 +24,27 @@ keeps, and for the same reason.
   standard sweep — contrast, roles, labels, landmarks. Run with `wcag2a`,
   `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa`, `best-practice` and
   `experimental`, the last being where `target-size` lives.
-- **Eleven hand probes (A1–A15)** own the half axe cannot see, because each is
+- **Twelve hand probes (A1–A16)** own the half axe cannot see, because each is
   a fact about *this* surface: a name that is a glyph, a radiogroup whose
   options are identical by design (CP1), a control the page invents with a
-  pointer cursor, a commit that is only ever a held pointer.
+  pointer cursor, a commit that is only ever a held pointer. **A16 is driven
+  rather than read** — it opens a card with the Enter key and commits a
+  judgment with the Enter key, and asks after each what holds focus, which no
+  static read of the DOM can answer.
 
 Four epochs, each with its 48 cards opened one at a time and read inside its
 own box: **birth** (`/session-view.html`), **session**, **band** and **closed**
 (the `fixture=session` payloads). Two window sizes, 1600×1000 and 390×844 —
 `card-audit`'s own discipline, because a finding that moves with the viewport
-is a layout fact and not a defect.
+is a layout fact and not a defect. And **both positions of SURFACE §7.2's
+commit-gesture switch**, since the shipped position is *click* and the
+documented alternative is *hold*, where a keyboard has no equivalent gesture
+(`--gesture=hold`, the page's own `?gesture=hold`).
 
 | | 1600×1000 | 390×844 |
 |---|---|---|
-| distinct hand findings | 42 | 48 |
-| sightings | 867 | 733 |
+| distinct hand findings | 44 | 50 |
+| sightings | 873 | 739 |
 | axe rules violated | 6 | 5 |
 | axe nodes | 108 | 82 |
 | tab stops, session | 189 | 147 |
@@ -115,7 +121,38 @@ name. That is markup, not copy, and it moves a frozen reference.
 - Evidence: `design/cards.js`, the `option-block` renderer; SURFACE §9.3, CP1,
   CP2; `design/session.js` `.lanebar`.
 
-### 3 · Nothing on the page announces itself — Q1396
+### 3 · Every act drops the keyboard at the top of the page — Q1397
+
+Driven, not read, and the same answer six times out of six.
+
+| the act | where focus lands |
+|---|---|
+| Enter on a clause tab, opening its card | `<body>` — 3 of 3 cards |
+| Enter on an enabled ✓, committing a judgment | `<body>` — 3 of 3 cards |
+
+A decision card **replaces its own paragraph** when it opens and **runs its
+whole box back onto that paragraph** when it closes — the two motions the
+surface is proudest of, and both of them destroy the element the keyboard was
+standing on. Nothing catches it, so focus resets to the document.
+
+What that costs a keyboard user is the whole product. The tab they pressed is
+somewhere in the middle of a long charter; after one judgment they are back at
+the top of the page with 189 tab stops between them and the next question.
+Casting a second vote means tabbing there again. Casting ten is not credible.
+
+The good news in the same measurement, and the reason this row is *focus* and
+not *reachability*: **the ✓ is properly focusable and Enter does commit it**,
+in both gesture positions — the card closed and the judgment landed each time.
+The act works. It is only the aftermath that is unhandled, which makes this a
+smaller fix than it reads: hand focus to the entry the card collapsed into, or
+to the clause's tab, at both ends.
+
+- Seen by: A16, which is new in this audit and exists because of this row.
+- Related: SURFACE C1–C5 and L1–L9 govern what opens and closes a card and
+  what it focuses. Whether *what it focuses* has ever meant the keyboard is
+  the question.
+
+### 4 · Nothing on the page announces itself — Q1396
 
 There is **no `aria-live`, `role="status"`, `role="alert"` or `role="log"`
 anywhere on the surface** — zero across all four epochs (`grep -c aria-live`
@@ -136,7 +173,7 @@ modal an `announced-pause` draws.
 - Deliberately *not* a finding: `room-pulse` is content-free by design
   (SPEC §3.5), and should stay silent.
 
-### 4 · The glyph is the name — Q1395
+### 5 · The glyph is the name — Q1395
 
 Where the surface shows a picture, the picture is the whole of what a screen
 reader has to say. **76 sightings on 26 cards** for the discard 🗑️ alone.
@@ -167,7 +204,7 @@ member-readable text the surface has never written.
 `a#quill`'s name at the birth is `🪶🪶🪶🪶` — the glyph repeated, which is the
 wallet's count bleeding into the link's text content.
 
-### 5 · What the keyboard cannot reach — Q1397
+### 6 · What the keyboard cannot reach — Q1397
 
 Three groups, and only the first is clearly a defect.
 
@@ -202,7 +239,7 @@ focus order (the ✓ greyed until something is chosen, SURFACE §9.1, and a clos
 document taking no edit, which `powers-walk` asserts) — 88 sightings of correct
 behaviour, excluded by name rather than left to read as defects.
 
-### 6 · The near-misses — Q1398
+### 7 · The near-misses — Q1398
 
 Two rows that fail by a margin small enough to be invisible and large enough to
 be a failure.
@@ -236,7 +273,7 @@ they are the ones `design/MOBILE.md` already expects: its *Status* section
 records that the two-tap and tap targets are not built. A 14px socket is the
 smallest target on the product.
 
-### 7 · Structure — Q1394
+### 8 · Structure — Q1394
 
 Three rows, all confirmed by both instruments, all cheap.
 
@@ -258,13 +295,26 @@ Three rows, all confirmed by both instruments, all cheap.
 
 Stated so the silence is worth something, which is the seat matrix's own rule.
 
-- **No hold-only commit was found unreachable** (A14). The audit read
-  `SESSION.holdMs` and the gesture's own markers on every epoch and the list
-  came back empty at both sizes — SURFACE §7.2's switch is on *click* in these
-  fixtures, so the press-and-hold path was not exercised. **This is the one
-  probe that did not get to run**, and the 🏛️ assembly press and the ✏️
-  propose hold are exactly where a keyboard has no equivalent gesture. It wants
-  a live-path run (`journey`'s server) before anyone concludes anything.
+- **The hold gesture was reached, and the news is mostly good** (A14). The
+  first run of this audit could not answer the question — SURFACE §7.2's switch
+  is on *click*, so nothing was held and the probe reported an empty list,
+  which is *not asked* wearing the clothes of *nothing wrong*. The audit now
+  takes `--gesture=hold` and drives the page's own `?gesture=hold`. At that
+  position: **the ✓ is still focusable and Enter still commits it** — the same
+  6-of-6 result as under click — because `submit` goes through the click path
+  in both positions.
+
+  The exception, established by reading rather than by driving: **`draft-propose`
+  returns early under hold** (`design/session.js:3520`, *held, not clicked*) and
+  the hold itself is driven by document-level `pointerdown` / `pointerup`
+  (`:2823`, `:2839`), with no `keydown` bound anywhere for it. The only keydown
+  handlers on the surface are the lane chooser's Enter/Space (`:3499`),
+  edit-mode's, and the wallet's Escape. So under the hold gesture a keyboard
+  user can **choose** an option and cannot **spend** one. It could not be
+  driven to prove it, because the fixture has no enabled `draft-propose` on any
+  of its 48 cards — every one is greyed for want of a choice. **The switch is
+  an accessibility switch as well as a design one**, and that is worth knowing
+  before the trial (backlog 184) is ever flipped.
 - **A6 came back empty on its first run, and the emptiness was the bug.** The
   probe asked `[role="radiogroup"], fieldset` for its options, found none on
   any epoch, and reported nothing — which reads in a summary line as *the
@@ -293,6 +343,7 @@ Stated so the silence is worth something, which is the seat matrix's own rule.
 ```
 npm run a11y-audit                 # the four epochs at 1600×1000, every card
 npm run a11y-audit:narrow          # the same at 390×844
+npm run a11y-audit -- --gesture=hold          # the other position of §7.2's switch
 npm run a11y-audit -- --scene=session --cards=0
 npm run a11y-audit -- --json       # the payload on stdout
 ```

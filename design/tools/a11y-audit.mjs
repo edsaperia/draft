@@ -57,6 +57,21 @@ const OUT = arg('out', join(DESIGN, 'tools', 'a11y-audit.json'));
 const WITH_CARDS = arg('cards', '1') !== '0';
 /** an explicit axe-core build, for a tree that does not carry the package */
 const AXE_PATH = arg('axe', null);
+/**
+ * Which position of SURFACE §7.2's commit-gesture switch to read. The shipped
+ * position is **click**, and at click A14 has nothing to find — which is how
+ * the first run of this audit reported an empty hold row and meant only *not
+ * asked*. `?gesture=hold` is the page's own by-eye comparison (`COMMIT_GESTURE`
+ * in session.js), and it is where a keyboard has no equivalent gesture at all,
+ * so the audit can reach the question rather than record a silence.
+ */
+const GESTURE = arg('gesture', 'click');
+if (!['click', 'hold'].includes(GESTURE)) {
+  console.error('no such gesture: ' + GESTURE + ' — the switch is click or hold (SURFACE §7.2)');
+  process.exit(2);
+}
+const withGesture = (url) =>
+  GESTURE === 'hold' ? url + (url.includes('?') ? '&' : '?') + 'gesture=hold' : url;
 
 /**
  * The epochs. Each is a URL the fixture already serves — the birth is the
@@ -458,6 +473,96 @@ const focusRules = () => {
 };
 
 /**
+ * A16 · **where the keyboard is left standing.** Driven rather than read: a
+ * card is opened from its own tab with the Enter key, and a judgment is
+ * committed with the Enter key, and after each the audit asks what holds
+ * focus. This is the half no static probe can see — a card *replaces its own
+ * paragraph* when it opens and runs its whole box back onto that paragraph
+ * when it closes (CLAUDE.md, `decision card`), so the element the keyboard was
+ * standing on stops existing at both ends of the act.
+ *
+ * Bounded to a few cards on purpose: it is the same answer every time, and
+ * forty-eight of them would cost a minute to say it forty-eight times.
+ */
+async function focusWalk(page, base, url, errors) {
+  const out = { opened: [], committed: [] };
+  const CARDS = 3;
+  try {
+    await page.goto(base + url, { waitUntil: 'networkidle' });
+
+    // opening: Enter on a clause tab, which is the only way into a card from
+    // the document (CLAUDE.md, `clause-tab`)
+    // **the page rebuilds under the act**, so a handle taken before the press
+    // is detached by the time the next one is wanted — the whole charter
+    // column re-renders when a card opens. Each tab is therefore found afresh
+    // on a freshly loaded page, which is also the only way each open is
+    // measured from the same starting state.
+    const anchors = await page.evaluate((n) =>
+      [...document.querySelectorAll('.achip[role="button"][tabindex="0"]')]
+        .map((el) => el.getAttribute('data-anchor')).filter(Boolean).slice(0, n), CARDS);
+    for (const anchor of anchors) {
+      try {
+        await page.goto(base + url, { waitUntil: 'networkidle' });
+        const sel = '.achip[role="button"][data-anchor="' + anchor.replace(/"/g, '\\"') + '"]';
+        await page.focus(sel);
+        await page.keyboard.press('Enter');
+        await page.waitForTimeout(400);
+        out.opened.push({
+          card: anchor,
+          focus: await page.evaluate(() => {
+            const a = document.activeElement;
+            if (!a || a === document.body) return 'body';
+            return window.__A11Y.pathOf(a);
+          }),
+          insideCard: await page.evaluate((id) => {
+            const a = document.activeElement;
+            const card = document.querySelector('.sugg[data-card="' + (id || '').replace(/"/g, '\\"') + '"]');
+            return !!(a && card && card.contains(a));
+          }, anchor),
+        });
+      } catch (e) { errors.push('focus open ' + anchor + ': ' + (e && e.message)); }
+    }
+
+    // committing: Enter on an enabled ✓, then where the keyboard stands
+    await page.goto(base + url, { waitUntil: 'networkidle' });
+    const ids = await page.evaluate(() => {
+      const S = window.SESSION;
+      if (!S || !S.SUGGS) return [];
+      const live = [];
+      for (const s of S.SUGGS) {
+        S.toggle(s.id, false);
+        const b = document.querySelector('.sugg[data-card="' + s.id.replace(/"/g, '\\"') + '"] [data-act="submit"]');
+        if (b && !b.hasAttribute('disabled')) live.push(s.id);
+        S.toggle(s.id, false);
+        if (live.length >= 3) break;
+      }
+      return live;
+    });
+    for (const id of ids) {
+      try {
+        await page.evaluate((c) => window.SESSION.toggle(c, false), id);
+        const sel = '.sugg[data-card="' + id.replace(/"/g, '\\"') + '"] [data-act="submit"]';
+        await page.focus(sel);
+        await page.keyboard.press('Enter');
+        await page.waitForTimeout(900);
+        out.committed.push({
+          card: id,
+          focus: await page.evaluate(() => {
+            const a = document.activeElement;
+            if (!a || a === document.body) return 'body';
+            return window.__A11Y.pathOf(a);
+          }),
+          cardGone: await page.evaluate((c) => !document.querySelector('.sugg[data-card="' + c.replace(/"/g, '\\"') + '"]'), id),
+        });
+      } catch (e) { errors.push('focus commit ' + id + ': ' + (e && e.message)); }
+    }
+  } catch (e) {
+    errors.push('focus walk threw: ' + (e && e.message));
+  }
+  return out;
+}
+
+/**
  * A14 · a commit that is only ever a held pointer. The page states its own
  * gesture (SURFACE §7.2's switch, read through `SESSION.holdMs` and the
  * `.holding` machinery), so this asks the page rather than guessing: a control
@@ -579,7 +684,7 @@ async function main() {
     if (!WANT.includes(s.name)) continue;
     const scene = { name: s.name, what: s.what, url: s.url };
     try {
-      await page.goto(base + s.url, { waitUntil: 'networkidle' });
+      await page.goto(base + withGesture(s.url), { waitUntil: 'networkidle' });
       await page.evaluate(() => window.scrollTo(0, 0));
       if (axe) await page.addScriptTag({ content: axe.src });
       scene.probes = await page.evaluate(PROBES, null);
@@ -614,6 +719,9 @@ async function main() {
           await page.evaluate((cid) => { try { window.SESSION.toggle(cid, false); } catch { /* shut */ } }, id);
         }
       }
+
+      // the driven pass, on the one scene that has cards to drive
+      if (s.name === 'session') scene.focus = await focusWalk(page, base, withGesture(s.url), errors);
     } catch (e) {
       scene.threw = String(e && e.message || e);
       errors.push(s.name + ' scene threw: ' + scene.threw);
@@ -686,6 +794,21 @@ async function main() {
     if (p.page.h1 === 0) add('A15 h1', 'the page has one first-level heading', 'no h1', s.name, s.name);
     if (p.headings.n && p.headings.first && p.headings.first.lvl !== 1) add('A10 headings', 'the first heading is h1', 'the first heading is h' + p.headings.first.lvl, p.headings.first.path, s.name);
     if (s.focusRules && !s.focusRules.some((r) => r.visible)) add('A12 focus ring', 'a focused control is visibly focused', 'no :focus-visible rule in any stylesheet', s.name, s.name);
+    if (s.focus) {
+      for (const o of s.focus.opened) {
+        if (!o.insideCard) {
+          add('A16 focus', 'opening a card leaves the keyboard inside it',
+            'the card opened and focus is on ' + o.focus, o.card, s.name);
+        }
+      }
+      for (const c of s.focus.committed) {
+        if (c.focus === 'body') {
+          add('A16 focus', 'a committed card hands the keyboard on, it does not drop it',
+            'the card closed and focus fell to <body> — the keyboard is back at the top of the page',
+            c.card, s.name);
+        }
+      }
+    }
     if (s.holds && s.holds.holders.length) {
       for (const h of s.holds.holders.filter((h) => !h.focusable)) {
         add('A14 hold', 'a commit made by holding has a key that does the same', 'a ' + (s.holds.holdMs || '?') + 'ms hold, not focusable', h.path, s.name);
