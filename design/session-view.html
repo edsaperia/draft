@@ -2635,6 +2635,15 @@
   // 🛡️ — a sword and a shield, one writes and one only refuses, where 🔧
   // and 👑 were not opposites at all. 👑 stays the mark beside a *person*
   // who holds either power anywhere; 📯 the mark of one who holds none.
+  // **A laid-down power's tab leaves the pile** (Q1404, Ed 2026-09-16: *when
+  // a founder relinquishes a power ✒️🛡️, that power tab should disappear
+  // from the tab stack, so there's no longer a route to regaining it*). Once
+  // the document has begun, a power the Founder does not hold has no tab, for
+  // any reader — the 👑 news still arrives, the record still files behind the
+  // rule. Before 🍾 the tab stays: a pre-start release is revisable (R-048),
+  // and the founding's delegation reads *given* on both tabs until the start.
+  const pwGone = (k, power) => constituted() &&
+    !(power === 'u' ? pwPair(k).u : pwPair(k).a);
   const powerCard = (k) => {
     const mm = /^pw:(u|a):(.+)$/.exec(k);
     if (!mm || !PW_KEYS.includes(mm[2])) return undefined;
@@ -2645,10 +2654,15 @@
         t: DOOR_PW_TITLES[mm[2]] ? DOOR_PW_TITLES[mm[2]][mm[1]]
           : mm[1] === 'u' ? PAGE_COPY.pwTitle.genericU
           : PAGE_COPY.pwTitle.genericA,
+        hide: () => pwGone(mm[2], mm[1]),
       };
     }
     return PWCACHE[k];
   };
+  // the two power tabs a pile draws: the pair, less whatever is laid down
+  // (the door piles filter by `visible` themselves, through `memSub`)
+  const pwTabsFor = (k) => ['u', 'a'].map((p) => card('pw:' + p + ':' + k))
+    .filter((c) => c && (visible(c) || S.open === c.k));
   // **The admit judgment stands under *Applicants*** (entry 96, Ed 2026-08-26:
   // *a door stands by its result*). One card per person still asking, wearing
   // 🪪 because an admission is what it decides, and taking the form 🪪's price
@@ -2927,11 +2941,11 @@
   // which is the same grammar as the wallets, and 🛡️ is a thing you hold and
   // lay down like any of them.
   const vetoLabel = (k, has) => PAGE_COPY.pw.veto(has, pwNoun(k));
-  // **The rule a return proposal would put back, naming its setting** (Q386).
-  // One sentence for the block on the tab, the rail's subtitle, the deck's
-  // ledger line and the record's title, so the four cannot drift. 🛡️'s is
-  // `vetoLabel`'s own — it already names the setting — stripped of the bold
-  // the negative half carries, since these sites escape their text.
+  // **The rule a `reserve` motion would put back, naming its setting** (Q386;
+  // since Q1404 read only off a motion a log already carries — the record's
+  // title, the rail's subtitle, the consent card's block — never composed).
+  // 🛡️'s is `vetoLabel`'s own — it already names the setting — stripped of
+  // the bold the negative half carries, since these sites escape their text.
   const pwSaid = (k, power) => (power === 'assent' || power === 'a'
     ? vetoLabel(k, true).replace(/<\/?b>/g, '')
     : PAGE_COPY.pw.amendAtWill(pwNoun(k)));
@@ -3016,7 +3030,8 @@
     const givingDelegates = !live && held && !otherHeldNow && isDelegable(k);
     const cur = S[key] || (held ? 'held' : 'given');
     // the founder chooses between the two states, so both blocks stand here
-    // (a member's return tab offers the change alone — `powerReturnBody`);
+    // (a member never meets these blocks: a held tab reads its head sentence
+    // to them, and a laid-down one is not drawn at all — Q1404);
     // each is the clause sentence and nothing beneath it, except the *given*
     // block's one consequence — one way, delegates, or at the start (Q1378)
     return '<div class="choice" role="radiogroup">' +
@@ -3230,7 +3245,7 @@
     // Pre-save the *card* still opens beside the big heading rather than
     // here, so the clause stands on its own while it is open.
     if (!cs && !settled(card('title'))) return '';
-    const chips = cs ? [card('title'), card('pw:u:title'), card('pw:a:title')] : [card('title')];
+    const chips = cs ? [card('title')].concat(pwTabsFor('title')) : [card('title')];
     const openHere = (cs || settled(card('title'))) && chips.find((c) => S.open === c.k);
     if (openHere) return h.paraWith(openHere, chips);
     return '<div class="cpara">' + h.pile(chips) +
@@ -4529,12 +4544,12 @@
   // `motionOn`, `answeredMotion` and `mustAct` all key on this, so an
   // application raises a task the way any other motion does (Ed, 2026-08-26:
   // *applications should generate a task when they are made*).
-  // **A proposal to hand one power back stands on that power's own tab**
-  // (Q386, Ed 2026-09-14: *these tabs are where it should be possible to
-  // propose to return powers to the Founder*). The tab is where the power was
-  // laid down, so it is where the road back is offered and answered; a
-  // `reserve` naming both powers has no single tab and keeps the setting's
-  // own card, which is where it has always landed.
+  // **A one-power `reserve` targets that power's tab** — a key the page no
+  // longer draws once the power is laid down (Q1404): the surface composes no
+  // reserve since the road back closed, but a log made before it, or the
+  // ladder's stagehand, may still carry one running, and its motion card
+  // stands in the setting's pile by `pileKeyOf` whether or not the tab does;
+  // a `reserve` naming both powers keeps the setting's own key as it always has.
   const pwKeyOf = (mid2, power) =>
     'pw:' + (power === 'assent' ? 'a' : 'u') + ':' + pkeyOf(mid2);
   const motionTargets = (rec) =>
@@ -4693,6 +4708,10 @@
     for (const f of ['g', 't', 'n', 'kind', 'key', 'power', 'base', 'door', 'rule', 'hide']) {
       if (host[f] !== undefined) mc[f] = host[f]; else delete mc[f];
     }
+    // a power tab hides once its power is laid down (Q1404), but a `reserve`
+    // still running on it is the room's question whether or not the tab
+    // stands, so the motion card does not inherit that one hide
+    if (host.power) delete mc.hide;
     mc.hostKey = host.k;
     mc.motionIn = rec.route === 'constitutional' ? rec.answers.size : undefined;
     return mc;
@@ -4887,14 +4906,8 @@
   // membership sentences parse at commit, where the row is at hand
   function draftPayload(d) {
     const dc = card(d.k);
-    // **A power tab proposes a power, not a value** (Q386): one tab names one
-    // power, so the payload does too — never the both-powers form, which no
-    // tab stands for. The lane's sentence is what the card said; the payload
-    // is the tab's own identity, so nothing is parsed back out of words.
-    if (dc && dc.power) {
-      return { kind: 'reserve', setting: midOf(dc.base),
-        power: dc.power === 'a' ? 'assent' : 'unilateral' };
-    }
+    // (a power tab composed a `reserve` naming its one power from Q386 to
+    // Q1404; the road back is closed and no tab stands for a laid-down power)
     if (dc && dc.door) {
       if (/ leaves the membership$/.test(d.to)) {
         const nm = d.to.replace(/ leaves the membership$/, '');
@@ -5643,9 +5656,9 @@
   // setting it is about (`hostKeyOf`) — one motion, one card (Q1367)
   const motionPairBody = (c, m, route, mover) => (m.invite ? inviteBody(c, m, route, mover)
     : m.removee !== undefined ? removeBody(c, m, route, mover)
-    // a return in flight (Q386): the power's rule as it stands against the
-    // rule it would put back — `m.to` is `pwSaid`'s sentence, the same one the
-    // block below the compose offer states, so answering reads as proposing did
+    // a return still in flight from a log made before Q1404 closed the road
+    // (or the ladder's stagehand): the power's rule as it stands against the
+    // rule it would put back — `m.to` is `pwSaid`'s sentence
     : c.power ? motionBlocks(c.k, powerHeadLine(c), m.to, m.why, route, mover)
     : (() => { const rec = liveMotionRec(c);
       const v = rec && rec.payload && rec.payload.kind === 'set' ? rec.payload.value : null;
@@ -5656,60 +5669,17 @@
   const ordinaryBody = (c, m) => motionPairBody(c, m, 'ordinary',
     m.by !== null && m.by !== undefined && m.by === viewerId());
 
-  /* **The road back to a laid-down power is offered on the tab it went down
-     from** (Q386, Ed 2026-09-14: *at the moment founder powers are handed over
-     on power-tabs … these tabs are where it should be possible to propose to
-     return powers to the founder*). SPEC §9.7 rule 4 has always said the road
-     back is a constitutional `reserve` motion and the module has always taken
-     one; nothing on the surface put one, so the road was unreachable.
-
-     One tab is one power, so the payload names one (`reserve` with `power`) —
-     never the both-powers form, which belongs to no single tab. **The card is
-     one block** (Q1378, Ed 2026-09-15: *status quo is already there so does
-     not need to be an option, cull helper text, option text is not document
-     text*): the head states what stands, so the block is the rule the Founder
-     would hold again — the clause sentence, `pwOptText`'s — with the
-     composer's *Propose this*, the rationale lane and 🏛️. The *Keep this*
-     block that restated the head, and the grey line under each, went.
-
-     **The founder's own tab is untouched**: they lay a power down here, and
-     asking them to propose returning it to themselves is asking them twice.
-     A clerk and a stranger see nothing new either — neither is a member who
-     may move. 🪪 is out because the module refuses a reserve on it (the
-     register's crown is 🤝's), and the two doors because `door:invite` and
-     `door:remove` are no catalogue setting for a reserve to name. */
-  const PW_RETURNABLE = PW_KEYS.filter((k) => !DOOR_KEYS.includes(k) && k !== 'admission');
-  const pwHeldNow = (c) => (c.power === 'u'
-    ? pwPair(c.base).u && !pwPend(c.base).u
-    : pwPair(c.base).a && !pwPend(c.base).a);
-  const powerReturnOn = (c) => !!c.power && PW_RETURNABLE.includes(c.base) &&
-    motionsLive() && docOpen() && viewerIsMember() && !amFounder() &&
-    !pwHeldNow(c) && !motionOn(c);
-  const pwReturnSaid = (c) => pwSaid(c.base, c.power);
-  // the composer's own block, `laneBlock`'s shape. The text is `pwOptText`'s,
-  // which `powerLane` also prints raw: the negative carries its own bold
-  // (T6), and escaping here would put the tag on the card.
-  const pwBlock = (on, text, bar) =>
-    '<div class="pick' + (on ? ' on' : '') + '"><span class="opttext">' + text + '</span>' + bar + '</div>';
-  const powerReturnBody = (c) => {
-    // the empty draft is an object, never null: `laneBarHtml` asks the draft
-    // whether it is locked, so a null one takes the whole render with it
-    const d = (S.draft && S.draft.k === c.k) ? S.draft : { k: c.k, to: '', why: '' };
-    const said = pwReturnSaid(c);
-    return '<div class="choice" role="radiogroup">' +
-      // pressed by the lane's own value, never by the draft existing: a reason
-      // typed before the block is chosen makes a draft with an empty `to`.
-      // The block's text is the clause the return would put back; `said`,
-      // the payload's sentence, names the setting for the sites with no head
-      pwBlock(d.to === said, pwOptText(c.base, c.power, true),
-        // the words are the composer's own, stated rather than derived: this
-        // card is never the founder's, so `composeWords`' two-commit branch
-        // must not be reachable from it
-        PC.laneBarHtml(d, said, { edit: false, words: {
-          off: window.COPY.grammar.lane.propose, on: window.COPY.grammar.lane.proposed,
-          title: window.COPY.grammar.lane.proposeTitle } })) +
-      '</div>';
-  };
+  /* **The road back is closed** (Q1404, Ed 2026-09-16: *when a founder
+     relinquishes a power ✒️🛡️, that power tab should disappear from the tab
+     stack, so there's no longer a route to regaining it*). Q386 had offered a
+     member the road back on the laid-down power's own tab — one block, the
+     rule it would put back, *Propose this* and a 🏛️ naming one power in a
+     `reserve` payload (`powerReturnBody`, `powerReturnOn`, `PW_RETURNABLE`,
+     all gone). The tab leaves the pile the moment the power is laid down
+     after the start (`pwGone`), so nothing stands to offer it on. The module
+     keeps the `reserve` route so a log that carries one replays, and the page
+     keeps what *reads* one — `motionDisplay`, `recordBody`, the consent card
+     on a motion still running — and nothing that composes one. */
 
   // dev only (with the dropdown, Ed 362): complete the founding in one press,
   // because motions live on the far side of it and the mock has no persistence
@@ -6482,12 +6452,13 @@
       const base = [card(k)];
       // your own answer to a delegated question stands in the pile of the
       // clause it answers (Q787): the value's tab, your question, then the
-      // two power tabs. `stackOrder` puts whichever is asking in front, so an
+      // two power tabs — those still held, once the document has begun (Q1404).
+      // `stackOrder` puts whichever is asking in front, so an
       // unanswered question leads and an answered one falls in beside the
       // watcher — one place to click, and no clause about the founder.
       const withAns = base.concat(ansTaskFor(card(k)));
       const withPw = (cs && PW_KEYS.includes(k))
-        ? withAns.concat([card('pw:u:' + k), card('pw:a:' + k)]) : withAns;
+        ? withAns.concat(pwTabsFor(k)) : withAns;
       // **and behind all of it, what has already been decided here** (Q942).
       // `stackOrder` ranks `done` last and sorts stably, so the rule — or its
       // question, or its power tabs — is always in front and the records stand
@@ -7041,8 +7012,6 @@
     picPickNow: (...a) => picPickNow(...a),
     policyNow: (...a) => policyNow(...a),
     powerBody: (...a) => powerBody(...a),
-    powerReturnOn: (...a) => powerReturnOn(...a),
-    powerReturnBody: (...a) => powerReturnBody(...a),
     proseCounts: (...a) => proseCounts(...a),
     pwPair: (...a) => pwPair(...a),
     readinessOf: (...a) => readinessOf(...a),
