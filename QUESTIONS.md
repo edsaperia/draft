@@ -214,7 +214,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1395** — claim by writing the block here, then commit it alone.
+**The next free number is 1396** — claim by writing the block here, then commit it alone.
+
+**1395 is the 🌂 card** (claimed 2026-09-16 01:55, Ed answering Q1394's item 4: *instead of in the document, the leave button should be on a card in the profile stack, with the symbol 🌂. It should give a warning before submitting — if you give up your membership you may not be able to rejoin*): *Leave* leaves the Members row; a member's own row carries a fourth tab, 🌂, whose card is the warning and whose commit resigns.
 
 **1394 is Ed's rule on body buttons** (claimed 2026-09-16 01:20, Ed answering Q1390's open item: *we should try and avoid body buttons that are an action rather than a choice (e.g. radios, toggles)*): a card's body holds choices; an action is the commit row's. The applicant's 📧 sends from the row; the sweep of the rest is the block's build.
 
