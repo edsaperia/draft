@@ -4679,6 +4679,16 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     })();
 
     addEventListener('resize', () => { layoutQueue(); onViewportChange(); });
+    // **A font that lands after the first layout is a resize** (Q1402): the
+    // document's face is `font-display: swap`, so the page lays itself out
+    // in Charter or Georgia and the rail, the wires and the band's fits are
+    // measured against those metrics; when Charis arrives the text reflows
+    // and every absolutely placed thing beside it is 25px stale until the
+    // next scroll or poll. Every handler that re-measures on a resize is the
+    // set that must re-run, so the page hands itself one.
+    if (document.fonts && document.fonts.addEventListener) {
+      document.fonts.addEventListener('loadingdone', () => dispatchEvent(new Event('resize')));
+    }
     // the wallet has a phone form (`renderWallet`), so a width crossing the
     // line redraws it once — never per resize event, which a flight in the
     // air would not survive

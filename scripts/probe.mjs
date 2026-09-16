@@ -233,6 +233,11 @@ async function runSide(context, base, probe, side) {
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.goto(base + probe[side], { waitUntil: 'load' });
   await page.waitForFunction(probe.ready, null, { timeout: 20_000 });
+  // the document's face is `font-display: swap` (Q1402), so `load` can fire
+  // with the page laid out in the fallback and the rail measured against
+  // it; both sides wait for the fonts, then the page's own relayout on the
+  // swap (session.js hands itself a resize) gets its frame
+  await page.evaluate(() => document.fonts.ready);
   // the probes' precondition: both pages from scroll 0, one settled frame
   await page.evaluate(() => { window.scrollTo(0, 0); });
   await page.waitForTimeout(250);

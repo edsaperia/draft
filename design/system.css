@@ -1886,6 +1886,15 @@
   /* the clause reads as the document, because it *is* the document: same
      size, same colour, no box — only the label above it says it has been
      lifted into a card */
+  /* …and in the document's face (Q1402): a clause standing as a head, a
+     candidate's wording in a block, the field of a record and the text a
+     record replaced are the document's text wherever the card stands — the
+     band's cards are outside the column, so the face is stated here and
+     not left to inheritance. A card's *title* in the same slot (the ask or
+     the noun, `.headtitle`) is chrome and keeps the sans (setup.css). */
+  .clausehead .rtext, .propblock .rtext, .ranked .rtext, .replaced .rtext {
+    font-family: var(--font-text); line-height: var(--lh-text);
+  }
   .clausehead .rtext { font-size: var(--t-body); margin-bottom: 0; }
   .clausehead .rtext.none { color: var(--muted); font-style: italic; }
   /* The card's own content column is laid on the same axis as the prose, so a
@@ -2062,8 +2071,10 @@
   .speaker .disc::after {
     width: 14px; height: 10px; border-radius: 7px 7px 0 0; bottom: -1px; transform: translateX(-50%);
   }
+  /* the sealed speaker's words are a member's sentence: the document's face
+     (Q1402); the name over them, where one is shown, stays a label */
   .speaker .said {
-    font-size: var(--t-small); line-height: 1.45; color: var(--fg);
+    font-family: var(--font-text); font-size: var(--t-small); line-height: 1.45; color: var(--fg);
     align-self: center;
   }
   .speaker .said.none { color: var(--muted); font-style: italic; }
@@ -2111,7 +2122,11 @@
      =================================================================== */
   /* block, not flex: the lane is a text editor and the browser puts a caret
      between block children far more predictably than between flex items */
-  .lanebox .editlane { display: block; font-size: var(--t-body); }
+  /* the lane is where a member writes document text, so it is set in the
+     document's face (Q1402) — and its rationale field beneath, which is the
+     sealed speaker's slot written into */
+  .lanebox .editlane { display: block; font-size: var(--t-body); font-family: var(--font-text); line-height: var(--lh-text); }
+  .lanebox .edit-why { font-family: var(--font-text); }
   .editcard .lp, .lanebox .lp { margin: 0 0 var(--s2); }
   .editcard .lp:last-child, .lanebox .lp:last-child { margin-bottom: 0; }
   /* the one box left on the surface: a text editor says it is one by looking
@@ -2402,8 +2417,8 @@
     padding-left: 10px; border-left: 2px solid var(--border);
   }
   /* the head here is a question rather than a clause, so it carries a question's
-     weight instead of the document's */
-  .diag-open .clausehead .rtext { font-weight: 600; }
+     weight instead of the document's — Charis Bold, the face having no 600 (Q1402) */
+  .diag-open .clausehead .rtext { font-weight: 700; }
   /* the solid --primary fill is retired with the subtle one (Q1153): a word
      commit is the base .btn at weight 600, armed said by elevation */
   .btn.btn-approve { font-weight: 600; }
@@ -2524,7 +2539,7 @@
   }
   .ranked .rtext { margin-bottom: 0; }
   .ranked:not(.stood) .rtext { color: var(--muted); }
-  .ranked:not(.stood) .swhy { font-weight: 500; color: var(--muted); }
+  .ranked:not(.stood) .swhy { font-weight: 400; color: var(--muted); }   /* 500 → Regular: the face has no medium (Q1402) */
   .pline {
     margin-left: auto; font-size: var(--t-small); color: var(--muted);
     font-variant-numeric: tabular-nums; letter-spacing: 0;

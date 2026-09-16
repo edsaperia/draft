@@ -74,11 +74,16 @@
   .setupcard .clausehead .rtext { margin: 0; }
   .setupcard .clausehead .headtitle { font-size: var(--t-lead); font-weight: 600; }
   .setupcard h2 { font-size: var(--t-lead); font-weight: 600; margin: 0 0 var(--s2); }
-  .setupcard .why { color: var(--muted); font-size: var(--t-small); margin: 0 0 var(--s4); max-width: 60ch; }
+  /* a card's body and its note are sentences a member reads, so they take
+     the document's face (Q1402); the title above them stays chrome */
+  .setupcard .why { color: var(--muted); font-size: var(--t-small); margin: 0 0 var(--s4); max-width: 60ch;
+    font-family: var(--font-text); line-height: var(--lh-text); }
   /* a text-only card (the grants) is read, not scanned past — its one
      paragraph is the body, at body size (Ed's QA, 2026-09-02 pm) */
   .setupcard.textcard .why { font-size: var(--t-body); color: var(--ink); }
-  .setupcard .setnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); }
+  .setupcard .setnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3);
+    font-family: var(--font-text); line-height: var(--lh-text); }
+  .setupcard .clausehead .headtitle { font-family: var(--font-ui); line-height: 1.5; }
   .setupcard .body { border-top: 1px solid var(--border); padding-top: var(--s3); margin-top: var(--s3); }
   /* the hairline between the constitution and the document proper, and the
      title as the charter's own heading (Ed, 2026-08-19). Both stand from the
@@ -197,7 +202,9 @@
      whose own comment says *a clause under judgment*, and the document's
      weight is normal: `600` was the other half of what made it a control. */
   .pick .opttext { display: block; font-size: var(--t-body); font-weight: 400;
-    color: var(--fg); max-width: 58ch; }
+    color: var(--fg); max-width: 58ch;
+    /* …and in the document's face (Q1402): an option is a clause offered */
+    font-family: var(--font-text); line-height: var(--lh-text); }
   /* …and a control's own word is not clause text (T46's second half). The
      minority of options whose text never was a document sentence — *Fixed*,
      *Rising*, *Never*, *I set it*, *Kept*, *Admit them* — keep the treatment
@@ -207,7 +214,9 @@
      spelling works — the class on the whole block's text where a builder
      draws nothing else (`consentPicks`, the admit lanes, 🍾's table), or
      `ctlWord` around one label where its siblings are clauses. */
-  .pick .opttext.ctl, .pick .opttext .ctl { font-size: var(--t-ui); font-weight: 600; }
+  .pick .opttext.ctl, .pick .opttext .ctl { font-size: var(--t-ui); font-weight: 600;
+    /* a control's own word is chrome — the T46 distinction is a font distinction too (Q1402) */
+    font-family: var(--font-ui); line-height: 1.5; }
   /* **A number inside a clause is a word in it** (Q1137, Ed: *the input boxes
      should be inline*). `.num`'s 5.5rem is a field standing in a `.fld`
      column; set in prose it reads as a form, so the inline variant takes the
@@ -966,7 +975,10 @@ button.cline:hover b { text-decoration: underline; }
    (card review round 3, 2026-09-05, A1/Q1174) — one hover treatment, not two. */
 
 /* ---- 🍾 and 🥂, and the closed page (Q443, Q468, Q470 — 2026-08-21) ----- */
-  .setupcard .batch { margin: 0 0 var(--s3); padding-left: 18px; font-size: var(--t-small); color: var(--ink); }
+  /* 🍾's batch and 🥂's signatures are read as document text (Q1402) */
+  .setupcard .batch { margin: 0 0 var(--s3); padding-left: 18px; font-size: var(--t-small); color: var(--ink);
+    font-family: var(--font-text); line-height: var(--lh-text); }
+  .setupcard .gatelist.sigs { font-family: var(--font-text); }
   .setupcard .batch li { margin: 2px 0; }
   .setupcard .readiness .fieldlab { margin-top: var(--s3); }
   .setupcard .readiness .gaterow .rsub { color: var(--muted); font-weight: 400; }

@@ -308,8 +308,9 @@ if (!EMPTY_TEXT) {
     pr.classList.remove('empty');
     pr.dispatchEvent(new InputEvent('input', { bubbles: true }));
     // **the card's geometry before 🍾** (Ed's QA, 2026-08-30): the tab rests
-    // level with the first line; at the page's end the card's foot is
-    // `.doc`'s own and the row floats over it at the window's foot
+    // centred on the first line box (Q1402 — level with its top while the
+    // two were both 30px); at the page's end the card's foot is `.doc`'s
+    // own and the row floats over it at the window's foot
     return out;
   });
   await T(300);
@@ -317,7 +318,14 @@ if (!EMPTY_TEXT) {
     const pr = document.getElementById('prose');
     const tab = document.querySelector('#ridetab .achip[data-tab="text"]');
     const row = document.querySelector('#proserow [data-proposalrow]');
-    const o = { lineDelta: tab && pr.firstElementChild ? Math.round(tab.getBoundingClientRect().top - pr.firstElementChild.getBoundingClientRect().top) : null };
+    const first = pr.firstElementChild;
+    const lineCentre = (el) => {
+      const r = el.getBoundingClientRect(); const cs = getComputedStyle(el);
+      const lh = parseFloat(cs.lineHeight); const pt = parseFloat(cs.paddingTop) || 0;
+      return r.top + pt + (Number.isFinite(lh) ? lh : r.height - pt) / 2;
+    };
+    const centre = (el) => { const r = el.getBoundingClientRect(); return r.top + r.height / 2; };
+    const o = { lineDelta: tab && first ? Math.round(centre(tab) - lineCentre(first)) : null };
     window.scrollTo(0, document.body.scrollHeight);
     const doc = document.querySelector('.doc').getBoundingClientRect();
     o.footDelta = Math.round(doc.bottom - pr.getBoundingClientRect().bottom);
@@ -2123,8 +2131,14 @@ const editState = await page.evaluate(() => {
     consRight: consTab ? Math.round(consTab.getBoundingClientRect().right) : null,
     // the outline rose above the first line by the gutter, and the text did not move
     padTop: col ? Math.round(first.getBoundingClientRect().top - col.getBoundingClientRect().top) : null,
-    // the tab rests level with the document's first line, not the title (Ed's QA, 2026-08-30)
-    lineDelta: ride && first ? Math.round(ride.getBoundingClientRect().top - first.getBoundingClientRect().top) : null,
+    // the tab rests on the document's first line, not the title (Ed's QA,
+    // 2026-08-30) — centred on its line box since Q1402 (a 30px tab on a
+    // 24.8px line sits 2.6px above its top), so centre against centre
+    lineDelta: ride && first ? (() => {
+      const r = ride.getBoundingClientRect(); const f = first.getBoundingClientRect();
+      const cs = getComputedStyle(first); const lh = parseFloat(cs.lineHeight); const pt = parseFloat(cs.paddingTop) || 0;
+      return Math.round((r.top + r.height / 2) - (f.top + pt + (Number.isFinite(lh) ? lh : f.height - pt) / 2));
+    })() : null,
     // which block the delta above was measured against, said out loud: the
     // page's own rule reads `col.firstElementChild` (`rideLine`), so a walk
     // reading anything else is comparing two different lines
