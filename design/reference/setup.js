@@ -31,6 +31,8 @@ window.SETUP = (function () {
   // The ✓ a **lockline** wears: not a mark but a line's own confirmation, drawn
   // on the commit tick's stroke so a card's body and its commit row agree.
   const TICK = '<svg class="mkg" viewBox="0 0 12 12"><path d="M2 6.4 L4.7 9.2 L10 2.9"/></svg>';
+  // 🌂's commit, the arrow out (Ed, 2026-09-16) — drawn once, in cards.js
+  const ARROW_OUT = window.CARDS.ARROW_OUT;
   // **The three lifecycle marks this alphabet shares with the charter's are the
   // charter's** (Ed, 2026-09-14, Q288; the ✔ joined them at Q1360). ⏳ and ✏️
   // were emoji literals here while the session drew its own, and the ✔ was a
@@ -1642,7 +1644,7 @@ window.SETUP = (function () {
     '<span class="pf' + (p.n === meName ? ' me' : '') + '">' + avHtml(p) +
     esc(p.n) + (p.n === meName ? ' (you)' : '') + '</span>').join('') + '</div>';
 
-  return { esc, TICK, initials, avHtml, hueOf, washOf, stateOf, labelOf, nounOf, markOf, railEntry,
+  return { esc, TICK, ARROW_OUT, initials, avHtml, hueOf, washOf, stateOf, labelOf, nounOf, markOf, railEntry,
     bandHtml, fitBand, pileHtml, stripHtml, cardHtml, readBody,
     nameBody, pictureBody, opt, setPickWords, num, numIn, ctlWord, faces, someIn, FACE_EMOJI,
     FACE_TONES, faceToneRow, faceToned, setFaceTone,

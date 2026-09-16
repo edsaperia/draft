@@ -649,6 +649,17 @@ window.COMPOSER = (function () {
         penTitle: T.row.amend + (n > 1 ? T.row.inAllPlaces(n) : '') + T.row.penCost,
       };
     }
+    // the single-site card's own commit (Ed, 2026-09-16): the row's ✏️ / ✒️
+    // pair, drawn on the card under the card's act names, so the hold and
+    // the click handlers that always answered `draft-propose` serve it
+    const singleSiteCommitHtml = (d) => {
+      const rs = draftRowState();
+      const pt = proposeCtlTitles(d);
+      const btn = (pen) => '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose"' +
+        (pen ? ' data-pen="1"' : '') + ((pen ? !rs.changed : (!rs.changed || pt.broke)) ? ' disabled' : '') +
+        ' title="' + esc(pen ? pt.penTitle : pt.title) + '">' + glyphHtml(pen ? '✒️' : '✏️') + '</button>';
+      return MAY_PEN() ? btn(true) + btn(false) : btn(false);
+    };
     // what the row says about the draft as it stands
     const draftRowState = () => {
       const d = draftOf();
@@ -714,7 +725,7 @@ window.COMPOSER = (function () {
       // the row's ✏️ — never the ✒️ beside it, a decree leaving with no
       // signature to name — says so in its tooltip, patched in place like the
       // card (Q1382: the hold is the row's)
-      env.doc.querySelectorAll('[data-proposalrow] [data-act="row-commit"]:not([data-pen])').forEach((pb) => {
+      env.doc.querySelectorAll('[data-proposalrow] [data-act="row-commit"]:not([data-pen]), .sugg [data-act="draft-propose"]:not([data-pen])').forEach((pb) => {
         pb.title = pb.title.replace(/( — signed)?( — one edit)/, (d.signed ? ' — signed' : '') + '$2');
       });
     }
@@ -774,6 +785,15 @@ window.COMPOSER = (function () {
         // of the window (`proposeCtlTitles`), and a site card commits nothing.
         '<button class="btn btn-withdraw glyphbtn" data-act="draft-cancel"' +
         ' title="' + T.row.discardThis + '">' + glyphHtml('🗑️') + '</button>' +
+        // **…except on a single-site draft, whose card carries the commit
+        // too** (Ed, 2026-09-16: *proposal cards don't have ✏️ any more — we
+        // removed them from multi-site patches to make it clearer that
+        // they're multi-site, but they should be there for single-site
+        // edits*). One place, one card, so the ✏️ — and the ✒️ beside it
+        // where the Founder holds the pen — stands where the act is read,
+        // the same hold as the row's and disabled by the same rule; a patch
+        // keeps only the row's *submit all*.
+        (n === 1 ? singleSiteCommitHtml(d) : '') +
         '</div>' +
         // Only the two facts that change what pressing ✏️ *does* (Ed, 2026-08-17).
         // What it costs is now shown rather than said — the pencil crosses the

@@ -404,9 +404,24 @@
 <div id="glyphsprite"></div>
 <script>
 (function () {
-  fetch('fluent-glyphs.svg').then((r) => (r.ok ? r.text() : '')).then((t) => {
-    if (t) document.getElementById('glyphsprite').innerHTML = t;
-  }).catch(() => {});
+  // **And a fetch that fails is tried again** (Ed's screenshot, 2026-09-16
+  // 17:38: a live page with every box empty, an hour after a deploy that
+  // paused and replaced the host — the one fetch had met the paused instance
+  // and nothing ever asked again). Eight tries, the wait doubling from a
+  // second to about two minutes; a sprite that never comes still costs
+  // nothing but the pictures.
+  var wait = 1000, left = 8;
+  function load() {
+    fetch('fluent-glyphs.svg').then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) {
+      if (t) { document.getElementById('glyphsprite').innerHTML = t; return; }
+      again();
+    }).catch(again);
+  }
+  function again() {
+    if (left-- <= 0) return;
+    setTimeout(load, wait); wait = Math.min(wait * 2, 120000);
+  }
+  load();
 })();
 </script>
 
@@ -1781,9 +1796,19 @@
     const std = name ? 'myname' : 'mypic', dk = std + 'Draft', pk = name ? 'namePick' : 'picPick';
     const prev = S[std], draft = S[dk];
     S[pk] = null; S[dk] = '';
-    if (pick === 'keep' || pick === null) return;
-    if (pick !== 'anon' && !draft) return;
-    S[std] = pick === 'anon' ? '' : draft;
+    if (pick === null) return;
+    // **Keeping what stands answers a card that is still asking** (Ed,
+    // 2026-09-16: *after I have chosen name and picture, the tasks still
+    // appear yellow*). A member admitted from an application arrives with
+    // the name and picture they gave at the door, but the answered flags
+    // are the ✋ / 🖼️ commit's alone (Q645), so the two cards asked again
+    // with the standing value preselected on *keep* — and *keep* sent
+    // nothing, so no press could ever clear the ask. On an answered card
+    // *keep* stays the status quo and sends nothing; on an unanswered one
+    // the press sends the standing value, which is the act the flag records.
+    if (pick === 'keep' && identityAnswered(k)) return;
+    if (pick !== 'anon' && pick !== 'keep' && !draft) return;
+    if (pick !== 'keep') S[std] = pick === 'anon' ? '' : draft;
     if (!cs) return;
     if (name) S.nameSet = true; else S.picSet = true;
     const back = () => { S[std] = prev; S[dk] = draft; };

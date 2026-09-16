@@ -84,6 +84,11 @@ window.CARDS = (function () {
   // stroke family's class, and `CROSS` went with the marks: nothing but `MARK`
   // had ever used it.
   const TICK = "<svg class=\"mkg\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><path d=\"M2 6.4 L4.7 9.2 L10 2.9\"/></svg>";
+  // **🌂's commit is an arrow out, up and to the right** (Ed, 2026-09-16:
+  // *🌂 action button should be an arrow pointing up and right instead of
+  // the check mark*): leaving is not agreeing to anything, so the tick is the
+  // wrong picture. The same stroke family as the tick, on the same grid.
+  const ARROW_OUT = "<svg class=\"mkg\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><path d=\"M3 9 L9 3 M4.6 3 H9 V7.4\"/></svg>";
   // **The third filed mark** (Ed, Q469, 2026-08-20: *⏸️ it is! — but draw
   // your own to match ✔️*). A race unresolved at the close is *undecided*,
   // distinct from kept (SPEC §4.6): two vertical bars at the tick and
@@ -1557,7 +1562,7 @@ window.CARDS = (function () {
   return {
     esc, resultOnly, stripTags, pct, plainLabel, URG_LO, URG_HI,
     RULES, clauseOf, clauseRungs,
-    TICK, PAUSE, VS16, MARK, DRAWN, mkHtml, markHtml,
+    TICK, ARROW_OUT, PAUSE, VS16, MARK, DRAWN, mkHtml, markHtml,
     GLYPH, glyphKey, glyphHtml, glyphify, glyphTextOf,
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks, mdDiffPieces, mdPiecesHtml, mdDiffHtml,
     headFlags, originText, MD_RX, mdToHtml, htmlToMd, mdStrip, mdBlock, linkify, linkifyHtml, mdLine,

@@ -66,7 +66,7 @@ window.BAND = (function () {
       takingBack, textDivs, titlePending, titleStands, viewerId, viewerIsClerk, viewerIsMember,
       wantsDelegate, whyLane, wordsFor } = env;
     // the shared module, the same names the page destructures from it
-    const { esc, TICK, avHtml, bandHtml, fitBand, nameBody, pictureBody, opt, num, numIn,
+    const { esc, TICK, ARROW_OUT, avHtml, bandHtml, fitBand, nameBody, pictureBody, opt, num, numIn,
       ctlWord, ANSWER, stateOf, nounOf, MAILS, renderMailModal, gateBody, pileHtml, readBody,
       routeFor, listOf } = window.SETUP;
     // the drawn glyphs (Q1401): one picture per character wherever the band
@@ -867,8 +867,13 @@ window.BAND = (function () {
     // can end up showing zero.
     function renderBand() {
       drawBand();
+      // **…and after the birth the title stands in both places** (Ed,
+      // 2026-09-16: *I want the title both at the top of the document above
+      // the constitution and also at the top of the text*): from 🍾 the row
+      // shows whatever the band draws, and only the founder's pre-🍾 column
+      // head takes its place.
       document.getElementById('titlepara').closest('.titlerow').style.display =
-        band.querySelector('.doctitle.dochead') ? 'none' : '';
+        band.querySelector('.doctitle.dochead') && !constituted() ? 'none' : '';
     }
     function drawBand() {
       if (isStranger()) {
@@ -1410,7 +1415,7 @@ window.BAND = (function () {
         const foot = c.leaveDoor
           // 🌂 (Q1400): the warning is the body, the ✓ is the act — the same
           // `resign` press *Leave* was, free and nobody's to refuse (E32)
-          ? binBtn() + '<button class="btn btn-approve glyphbtn" data-act="resign" title="' + PAGE_COPY.cards.leave.t + '">' + TICK + '</button>'
+          ? binBtn() + '<button class="btn btn-approve glyphbtn" data-act="resign" title="' + PAGE_COPY.cards.leave.t + '">' + ARROW_OUT + '</button>'
           : (c.k === 'invite' && doorDirect(c))
           // **the send is the row's commit** (Q1166): ✒️ where the viewer's
           // word sends, beside the route's commit where the founder holds both

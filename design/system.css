@@ -1358,9 +1358,15 @@
      nothing above it to rule off. The first heading of the column keeps its
      rank and drops its rule; a heading below a `.doctitle` is the first
      heading too. In edit mode the column is split around an open card, and
-     only the first segment's first heading is the card's top. */
-  #prose > .docline.lvl1:first-child, #prose > .doctitle + .docline.lvl1,
-  #charter > .prose:first-of-type > .docline.lvl1:first-child,
+     only the first segment's first heading is the card's top.
+     **First among the blocks, not first child** (Ed, 2026-09-16: *no
+     hairlines under either title — the only one in the document is between
+     the constitution section and the text section*): a gap held open at
+     the very start of the column (`G0`, its anchor drawn before the first
+     block) made the first heading a second child, and the rule came back
+     under the title. */
+  #prose > .docline.lvl1:nth-child(1 of .docline, p, .doctitle), #prose > .doctitle + .docline.lvl1,
+  #charter > .prose:first-of-type > .docline.lvl1:nth-child(1 of .docline, p, .doctitle),
   #charter > .prose:first-of-type > .doctitle + .docline.lvl1 { border-top: 0; padding-top: 0; }
   /* the fold triangle sits in the chip-gutter, in line with the anchor marks —
      centred on the heading's first line box (`--line`, Q1402): its own box is

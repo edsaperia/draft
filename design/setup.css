@@ -89,6 +89,9 @@
      title as the charter's own heading (Ed, 2026-08-19). Both stand from the
      save (backlog 33), and the title stands there alone: the big heading
      above the constitution is the pre-save one and leaves at the save. */
+  /* **The one hairline in the document** (Ed, 2026-09-16): between the
+     constitution section and the text section, in either mode; no heading
+     carries one under the title (system.css's first-heading rule). */
   .cpara.docsep { border-top: 1px solid var(--border); margin: var(--s5) 0 var(--s4); padding: 0; }
   .unlocks { font-size: var(--t-cap); color: var(--primary-emphasis); background: var(--primary-subtle);
     border-radius: var(--r-sm); padding: var(--s2) var(--s3); margin: 0 0 var(--s4); }
