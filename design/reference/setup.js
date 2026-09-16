@@ -37,10 +37,16 @@ window.SETUP = (function () {
   // second copy of the stroked tick — which cards.js kept as the *commit* glyph
   // when the marks became pictures, so the copy here would have left the band
   // and the charter showing two different ticks on one page. All three come
-  // from the one helper now. `c.g` is untouched — a subject glyph is an emoji.
+  // from the one helper now. **And since Q1401 `c.g` is drawn too** — from the
+  // same Fluent Flat set, through `glyphHtml` — so a tab, a rail entry and a
+  // card head show a subject the way they show a mark: one picture, the same
+  // on every machine. The card literals keep the character; only what is
+  // *emitted as markup* changes.
   const WAITING = window.CARDS.mkHtml('deciding');
   const YOURS = window.CARDS.mkHtml('propose');
   const DONE = window.CARDS.mkHtml('adopted');
+  const glyphHtml = window.CARDS.glyphHtml;
+  const glyphify = window.CARDS.glyphify;
   // **The answer ladders speak the clause** (Q1112 (b)): a rung says the
   // sentence that answer would put into the document, off `cards.js`'s one
   // table — the same string the founder's own card and the composer's lane
@@ -218,7 +224,7 @@ window.SETUP = (function () {
     // in them can still be acted on — they are a menu, and a menu of ✔s
     // names nothing. The grey wash still says settled; only the rail entry
     // retires to the drawn ✔, because an entry is leaving, not filing.
-    if (tab && st === 'done') return c.g;
+    if (tab && st === 'done') return glyphHtml(c.g);
     // **And the front of a setting's own pile keeps it while the rule is news**
     // (Q1320, Ed 2026-09-11: *setting itself with setting icon should sit at
     // the top of setting tab stacks*). Q1299 put the rule's tab in front of
@@ -230,7 +236,7 @@ window.SETUP = (function () {
     // pile's word (`pileHtml` / `stripHtml`), so a news tab that is not the
     // front of a setting's pile — a grant behind 🍾, 📭 on *Invitees* — is
     // untouched.
-    if (tab && host && st === 'news') return c.g;
+    if (tab && host && st === 'news') return glyphHtml(c.g);
     // **A delegated card waiting on the room keeps its own glyph** (SURFACE
     // §6's `wait` row; Ed, 2026-08-21, widened from *constitutional* to every
     // delegated setting by Q517 (a), 2026-08-29: what makes the wait nothing
@@ -247,7 +253,7 @@ window.SETUP = (function () {
     // awaiting its blockers, 🍾 awaiting the founder, a setting you handed over
     // and do not answer. The surface says which wait is a vote (`ctx.voted`);
     // a surface with no such predicate has no votes to wait on.
-    if (st === 'wait' && !(ctx.voted && ctx.voted(c))) return c.g;
+    if (st === 'wait' && !(ctx.voted && ctx.voted(c))) return glyphHtml(c.g);
     // **A grant wears the glyph of the power it grants** (entry 180, Ed: *users
     // don't realise that anything will change when they click OK, it just looks
     // like information*). Every other news card is decided-and-owed-a-reading;
@@ -255,8 +261,8 @@ window.SETUP = (function () {
     // say *take this* rather than wearing the ✔ that means seen. `ask` still
     // wears the subject glyph (💡 while blocked shows 💡) and `done` is
     // untouched, so an acknowledged grant settles exactly as before.
-    if (st === 'news' && c.grants) return c.grants;
-    return st === 'ask' ? c.g : st === 'wait' ? WAITING : st === 'yours' ? YOURS : DONE;
+    if (st === 'news' && c.grants) return glyphHtml(c.grants);
+    return st === 'ask' ? glyphHtml(c.g) : st === 'wait' ? WAITING : st === 'yours' ? YOURS : DONE;
   };
 
   /* ---- the piles ----------------------------------------------------------
@@ -353,7 +359,13 @@ window.SETUP = (function () {
      instead — the card is where its pile was, which is the same move a decision
      card makes on its paragraph. */
   function bandHtml(groups, ctx, cardFor) {
-    return groups.map((g) => {
+    // **the constitution's own sentences carry drawn glyphs** (Q1401 (a)): a
+    // clause paragraph saying *all members must agree 🏛️* wears the same
+    // picture the commit does. One pass over the whole band, because the pass
+    // is tag-safe and refuses to enter a `contenteditable` — the open card
+    // inside has already been through it, and it is idempotent, a drawn glyph
+    // leaving no character behind for a second pass to find.
+    return glyphify(groups.map((g) => {
       // **The constitution is document text** (Ed, 2026-08-18: *a distinct
       // paragraph for each decision, with the relevant tab to the left of
       // it*). A section rather than a pile: the heading, the people, the
@@ -504,7 +516,7 @@ window.SETUP = (function () {
         // constitutional settings' current values, legible without opening
         // a single tab (Ed, 2026-08-18)
         (g.block ? g.block() : '') + '</div></div>';
-    }).join('');
+    }).join(''));
   }
 
   /* Two measurement passes (a third fitted the .setrow piles with a
@@ -616,7 +628,9 @@ window.SETUP = (function () {
     const fill = ctx.fillOf ? ctx.fillOf(c)
       : c.racePct !== undefined ? c.racePct + '%'
       : room ? Math.min(100, Math.round(got / ctx.E * 100)) + '%' : '100%';
-    return '<li class="qitem" data-q="' + c.k + '">' +
+    // the entry's own sentences take the drawn glyphs too (Q1401 (a)) — the
+    // tooltip above is inside a tag, so it keeps the character a tooltip needs
+    return glyphify('<li class="qitem" data-q="' + c.k + '">' +
       '<button class="' + (st === 'ask' || st === 'news' ? 'needs' : 'qwait') + ' st-' + st + '"' +
       ' data-card="' + c.k + '" data-washkey="set:' + c.k + '"' +
       ' aria-current="' + (ctx.open === c.k) + '"' +
@@ -635,7 +649,7 @@ window.SETUP = (function () {
       // deck's count), else a plain teaser wrapped here (the applicant's and
       // the stranger's contexts still hand text)
       (ctx.summary(c) ? (/^</.test(ctx.summary(c)) ? ctx.summary(c) : '<span class="qwhy">' + ctx.summary(c) + '</span>') : '') +
-      '</button></li>';
+      '</button></li>');
   }
 
   /* ---- the card shell -----------------------------------------------------
@@ -688,7 +702,15 @@ window.SETUP = (function () {
     const shellCls = 'sugg setupcard' +
       (asBlock ? ' rulehead' : (!rule && noTitle && !clauseHtml) || bare ? ' nohead' : '') +
       (c.textcard ? ' textcard' : '');
-    return '<div class="' + shellCls + '" role="tabpanel" data-setupcard="' + c.k + '">' +
+    // **The glyphs inside the card's own sentences are drawn too** (Q1401 (a),
+    // Ed 2026-09-16: *draw them in prose too*). A clause reading *all members
+    // must agree 🏛️* names the same object the commit row holds, so it is the
+    // same picture. The whole card goes through `glyphify` in one piece rather
+    // than each sentence being hunted: the pass is tag-safe (a glyph in a
+    // `title=` stays the character a tooltip needs) and it refuses to enter a
+    // `contenteditable`, so the title lane, the rationale and the
+    // application's words — all of them somebody's own text — are untouched.
+    return glyphify('<div class="' + shellCls + '" role="tabpanel" data-setupcard="' + c.k + '">' +
       CB.clauseHeadHtml(oo.s || c, {
         label: null, wash: false,
         marks: stripHtml(siblings || [c], ctx),
@@ -699,7 +721,7 @@ window.SETUP = (function () {
         v: oo.v, edit: false,
       }) +
       '<div class="field">' + body + '</div>' +
-      '<div class="race-mid commitrow">' + foot + '</div></div>';
+      '<div class="race-mid commitrow">' + foot + '</div></div>');
   }
 
   /* ---- the bodies that are the same on both surfaces ----------------------- */
@@ -1011,9 +1033,9 @@ window.SETUP = (function () {
         ' title="' + (heldOut ? 'One 🏛️ each — withdraw yours first'
           : clickGesture ? 'Ask all members — a full one-second assembly'
           : 'Ask all members — a full one-second hold') + '"' +
-        ' data-holdmotion="' + c.k + '">🏛️</button>'
+        ' data-holdmotion="' + c.k + '">' + glyphHtml('🏛️') + '</button>'
       : '<button class="btn btn-approve glyphbtn emojibtn"' + (dto ? '' : ' disabled') +
-        ' data-putmotion="1" title="Propose it">✏️</button>';
+        ' data-putmotion="1" title="Propose it">' + glyphHtml('✏️') + '</button>';
   };
 
   /* ---- the consent controls, shared -----------------------------------------
@@ -1139,7 +1161,7 @@ window.SETUP = (function () {
         '<div class="lockline">' + (open ? TICK : '') + '<span>' +
         (open ? c.done : c.waiting) + '</span></div>') +
       (open ? '' : '<div class="gatelist">' + c.blockers().map((b) =>
-        '<span class="gaterow"><span class="gg">' + b.g + '</span>' + esc(b.t) + '</span>').join('') + '</div>') +
+        '<span class="gaterow"><span class="gg">' + glyphHtml(b.g) + '</span>' + esc(b.t) + '</span>').join('') + '</div>') +
       (note ? '<p class="setnote">' + note + '</p>' : '');
   };
 

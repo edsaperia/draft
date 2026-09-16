@@ -30,6 +30,10 @@ window.WALLETS = (function () {
     const { S, SESSION, PW_KEYS, HOLD_MS, LIVESLUG, LIVEMODE } = env;
     const { ackPersists, amFounder, charterOn, csState, esc, isStranger, mayPen, mayPropose,
       mayShield, mayVoice, penLocks, pwState, shieldLocks, signedClose, viewerId, viewerIsMember } = env;
+    // the drawn glyphs (Q1401): a socket's tool is a picture from the one set,
+    // and `glyphTextOf` is how the hold ladder still reads which glyph a
+    // commit carries now that the character is no longer in the button's text
+    const { glyphHtml, glyphify, glyphTextOf } = window.CARDS;
     // ---- the wallet family (Q444–448, 453, 458, 461; 2026-08-21) -----------
     // 🪶 top left: four feathers at the birth, one spent per founding act
     // (title, link, the mail), the fourth permanent and the logo. ✏️ ✒️ 🛡️ 🏛️
@@ -55,9 +59,9 @@ window.WALLETS = (function () {
       // either way, and the one feather that remains after the founding is
       // the logo on both widths
       const qh = SESSION.narrow()
-        ? '<i' + (quillGhost ? ' class="gone"' : '') + '>🪶</i>' + (left > 1 ? '<span class="pmore">' + left + '</span>' : '')
+        ? '<i' + (quillGhost ? ' class="gone"' : '') + '>' + glyphHtml('🪶') + '</i>' + (left > 1 ? '<span class="pmore">' + left + '</span>' : '')
         : Array.from({ length: left }, (_, i) =>
-          '<i' + (quillGhost && i === left - 1 ? ' class="gone"' : '') + '>🪶</i>').join('');
+          '<i' + (quillGhost && i === left - 1 ? ' class="gone"' : '') + '>' + glyphHtml('🪶') + '</i>').join('');
       if (q.innerHTML !== qh) q.innerHTML = qh;
       const notApp = S.viewer !== 'applicant' && !isStranger() &&
         // after the farewell the wallets are gone (a reader arriving after the
@@ -88,7 +92,7 @@ window.WALLETS = (function () {
       // wrapped in `.pencils` like the ✏️ row, so the glyph and its count are one
       // object at the same 1px gap rather than two children of the wallet's own
       // 6px one — the pen and its ∞ are a single statement, not two things
-      const penh = '<span class="pencils"><i' + (penGhost ? ' class="gone"' : '') + '>✒️</i>' +
+      const penh = '<span class="pencils"><i' + (penGhost ? ' class="gone"' : '') + '>' + glyphHtml('✒️') + '</i>' +
         // in flight the whole wallet goes quiet: a lone ∞ counts nothing
         '<span class="pmore' + (penGhost ? ' gone' : '') + '">∞</span></span>';
       // **The socket is always there; the slash says whether the tool is yours**
@@ -108,7 +112,7 @@ window.WALLETS = (function () {
       // sockets outright (`gonewallet`, the residual on Q532), retired here.
       const gone = env.cs && env.cs.closed && (farewellDone || signedClose() || !viewerIsMember());
       const socket = (el, held, inner, glyph) => {
-        const h = held && !gone ? inner : '<i>' + glyph + '</i>';
+        const h = held && !gone ? inner : '<i>' + glyphHtml(glyph) + '</i>';
         // the idempotent write the quill has always had, extended to the rest
         // (Q531): these strings almost never change, and rewriting identical
         // markup every render destroys any animation running on the token —
@@ -125,11 +129,11 @@ window.WALLETS = (function () {
       const shield = document.getElementById('shieldwallet');
       const showShield = notApp && mayShield();
       socket(shield, showShield,
-        '<span class="pencils"><i>🛡️</i><span class="pmore">∞</span></span>', '🛡️');
+        '<span class="pencils"><i>' + glyphHtml('🛡️') + '</i><span class="pmore">∞</span></span>', '🛡️');
       const voice = document.getElementById('voicewallet');
       const out = heldMotion();
       const showVoice = notApp && mayVoice();
-      socket(voice, showVoice, '<i' + (out || voiceGhost ? ' class="gone"' : '') + '>🏛️</i>', '🏛️');
+      socket(voice, showVoice, '<i' + (out || voiceGhost ? ' class="gone"' : '') + '>' + glyphHtml('🏛️') + '</i>', '🏛️');
       // one sentence per socket, from one table, in both channels: the tooltip a
       // pointer gets and the bubble a press gets say exactly the same thing
       [q, pen, shield, voice].forEach((el) => { if (el) el.title = SAY(el).t; });
@@ -216,7 +220,7 @@ window.WALLETS = (function () {
       const s = SAY(el);
       // the symbol, bigger than it is in the socket — in the wallet it is a
       // token in a row and here it is the subject of the sentence beside it
-      sayEl.innerHTML = '<span class="saysym">' + s.g + '</span><span class="saytxt">' + esc(s.t) +
+      sayEl.innerHTML = '<span class="saysym">' + glyphHtml(s.g) + '</span><span class="saytxt">' + glyphify(esc(s.t)) +
         (el.id === 'quill' ? '<br><a class="doclink" href="/">Start a new document</a>' : '') + '</span>';
       const r = el.getBoundingClientRect();
       // clamped to the window, with the nib following the socket rather than the
@@ -427,7 +431,7 @@ window.WALLETS = (function () {
           live: '.setupcard [data-putmotion]', r0: -24, r1: 0, easing: 'cubic-bezier(.45, .05, .3, 1)' }
         : null;
       if (!b.matches('[data-confirm]')) return null;
-      if (!env.cs && /🪶/.test(b.textContent) && document.querySelector('#quill i')) return { g: '🪶', sel: '#quill i' };
+      if (!env.cs && /🪶/.test(glyphTextOf(b)) && document.querySelector('#quill i')) return { g: '🪶', sel: '#quill i' };
       // 🍾 has no wallet and never will (Q516: a wallet is a capacity you hold
       // and spend, and beginning is a moment that happens once) — but it is
       // held like every consequential act, and the cork flies **out of the
@@ -439,7 +443,7 @@ window.WALLETS = (function () {
       // order*, so `#doctitle, .doctitle` would have aimed the cork at a
       // display:none element with a rect of zeros — the top-left of the window.
       // Neither of these two can match it.
-      if (env.cs && /🍾/.test(b.textContent)) return { g: '🍾', sel: null, to: '.doctitle.dochead, #charter .doctitle' };
+      if (env.cs && /🍾/.test(glyphTextOf(b))) return { g: '🍾', sel: null, to: '.doctitle.dochead, #charter .doctitle' };
       // **Asks whether the pen is held, not whether it is drawn** (Q532). This
       // used to test `document.querySelector('#penwallet i')` — the token's mere
       // presence — which was a true proxy only while an unheld wallet rendered
@@ -448,7 +452,7 @@ window.WALLETS = (function () {
       // working hold, and the guard that swallows a hold's trailing click reads
       // `isPenCommit(held)`, so its behaviour would have shifted with it. The
       // question was always *do you hold a pen*, and `mayPen()` is that question.
-      if (env.cs && /✒️/.test(b.textContent) && mayPen()) return { g: '✒️', sel: '#penwallet i' };
+      if (env.cs && /✒️/.test(glyphTextOf(b)) && mayPen()) return { g: '✒️', sel: '#penwallet i' };
       return null;
     };
     let penHold = null, penHoldFired = false, penPointerDown = false, penNudge = null;

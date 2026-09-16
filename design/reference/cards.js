@@ -255,6 +255,172 @@ window.CARDS = (function () {
     ? '<span class="mk mk-' + kind + '">' + MARK[kind] + '</span>' : MARK[kind]);
   const markHtml = (kind) => '<span class="qmark" aria-hidden="true">' + mkHtml(kind) + '</span>';
 
+  // ---- the subject, wallet and commit glyphs, drawn ------------------------
+  // **Q1401 (Ed, 2026-09-16: *we should convert the subject glyphs and also
+  // the wallet and commit glyphs to fluent flat*).** Q1360 gave the thirteen
+  // lifecycle marks to Microsoft's Fluent Emoji, Flat; this finishes the job
+  // for every other glyph the surface draws as a picture — a setting's subject
+  // (🪪 🌍 ⏰ …), the wallets' four verbs and the veto (🪶 ✒️ 🛡️ ✏️ 🏛️), and the
+  // commit row's buttons (🗑️ ❄️ 📧 …).
+  //
+  // What survives of Q288 — *a subject glyph is an emoji* — is the **character
+  // as the glyph's name**: every card definition, every `ORDER` row, every
+  // walk selector, SPEC's and SURFACE's tables and the furniture scan keep the
+  // character, because that is the glyph's identity. What goes is the platform
+  // rendering it, which was a different picture on every machine.
+  //
+  // Out of scope deliberately: a member's **face** (`emojiface`, the picker),
+  // which is the member's own choice and stays the platform's emoji; the
+  // stagehand furniture (⏩ ⏭ 📬, off the design system); and the mail modal,
+  // which previews another medium.
+  //
+  // `GLYPH` is key → [character, name]. **One entry per line, in exactly this
+  // shape**: `scripts/fluent-glyphs.mjs` reads this block to know which
+  // symbols the sprite must hold, so the table and the pictures cannot drift
+  // apart in silence. The name is the Fluent folder's, lower-cased — it is
+  // what the emoji announced, so it is what the drawing announces.
+  const GLYPH = {
+    'quill': ['🪶', 'feather'],
+    'pin': ['📍', 'round pushpin'],
+    'card': ['🪪', 'identification card'],
+    'handshake': ['🤝', 'handshake'],
+    'zzz': ['💤', 'zzz'],
+    'boot': ['🥾', 'hiking boot'],
+    'stopwatch': ['⏱', 'stopwatch'],
+    'alarm': ['⏰', 'alarm clock'],
+    'busts': ['👥', 'busts in silhouette'],
+    'bust': ['👤', 'bust in silhouette'],
+    'writing': ['✍', 'writing hand'],
+    'eye': ['👁', 'eye'],
+    'globe': ['🌍', 'globe showing europe-africa'],
+    'memo': ['📝', 'memo'],
+    'tophat': ['🎩', 'top hat'],
+    'bulb': ['💡', 'light bulb'],
+    'scale': ['⚖', 'balance scale'],
+    'crown': ['👑', 'crown'],
+    'horn': ['📯', 'postal horn'],
+    'umbrella': ['🌂', 'closed umbrella'],
+    'hand': ['✋', 'raised hand'],
+    'picture': ['🖼', 'framed picture'],
+    'email': ['📧', 'e-mail'],
+    'envelope': ['✉', 'envelope'],
+    'cross': ['❌', 'cross mark'],
+    'bottle': ['🍾', 'bottle with popping cork'],
+    'glasses': ['🥂', 'clinking glasses'],
+    'mailbox-gave-up': ['📭', 'open mailbox with lowered flag'],
+    'incoming': ['📨', 'incoming envelope'],
+    'mailbox': ['📬', 'open mailbox with raised flag'],
+    'wave': ['👋', 'waving hand'],
+    'pen': ['✒', 'black nib'],
+    'shield': ['🛡', 'shield'],
+    'voice': ['🏛', 'classical building'],
+    'pencil': ['✏', 'pencil'],
+    'bin': ['🗑', 'wastebasket'],
+    'snowflake': ['❄', 'snowflake'],
+    'link': ['🔗', 'link'],
+    'label': ['🏷', 'label'],
+  };
+  // The table's characters are the **base** codepoints; the surface writes
+  // most of them with a variation selector after (✏️, ✒️, 🛡️) and a few without
+  // (🪪, ✋), and both must find the same picture. So the selector is stripped
+  // at the lookup rather than doubled in the table.
+  const VS = /[︎️]/g;
+  const BY_CHAR = {};
+  for (const k of Object.keys(GLYPH)) BY_CHAR[GLYPH[k][0]] = k;
+  const glyphKey = (ch) => BY_CHAR[String(ch).replace(VS, '')];
+  /* **One renderer, and every site that draws a glyph as a picture goes
+     through it.** A site that *stores* or *compares* a glyph keeps the
+     character — `c.g`, `ORDER`, `RESERVED_EMOJI`, a walk's selector.
+
+     `data-char` carries the character the picture stands for, which is what
+     lets a walk that used to read a control's `textContent` keep reading the
+     same string: the copy audit and card-audit rebuild the text with the
+     characters put back, so the goldens say what they always said and the
+     surface still draws one set. `data-gl` is the key, for anything that has
+     to recognise a glyph without knowing its character.
+
+     And it is the character **as the caller wrote it**, variation selector and
+     all, rather than the table's base form: a reader that puts the characters
+     back has to give back the string that was there, or every copy golden
+     shifts by one invisible codepoint and reports that the words changed when
+     only the drawing did.
+
+     Unmapped in, escaped character out: a glyph the sprite has no picture for
+     falls back to the platform's, which is what makes a missing asset a
+     finding rather than a blank. */
+  const glyphHtml = (ch) => {
+    const k = glyphKey(ch);
+    if (!k) return esc(ch);
+    return '<svg class="gl" role="img" aria-label="' + esc(GLYPH[k][1]) + '" data-gl="' + k
+      + '" data-char="' + esc(ch) + '"><use href="#fl-' + k + '"></use></svg>';
+  };
+  // Every mapped character, longest first, each swallowing a variation
+  // selector after it so the selector is not left stranded in the text.
+  const GLYPH_RX = new RegExp('(?:' + Object.keys(BY_CHAR)
+    .sort((a, b) => b.length - a.length)
+    .map((c) => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')[\\uFE0E\\uFE0F]?', 'g');
+  /* **Glyphs inside sentences are drawn too** (Q1401 (a), Ed 2026-09-16: *draw
+     them in prose too*). A clause reading *all members must agree 🏛️* carries
+     the same object the commit row carries, so it is the same picture.
+
+     Applied **after escaping**, exactly as `linkify` is and for the same
+     reason — and, like `linkifyHtml`, it walks the text between the tags only,
+     so a glyph inside a `title="…"` or a `value="…"` is left as the character
+     it has to be.
+
+     **And it refuses to enter a caret's reach.** Everything inside a
+     `contenteditable` element is somebody's own text — a title being typed, a
+     rationale, an application's words, the document itself — and a picture
+     written into one becomes markup the harvest reads back (the `sectoggle`
+     lesson: a button inside contenteditable becomes harvested text). So an
+     opening tag carrying `contenteditable` (anything but `="false"`) starts a
+     skip that runs to its matching close, counted by tag name so a nested
+     `<div>` inside an editable `<div>` cannot end it early. That is what lets
+     a whole card, rail entry or band paragraph be handed to this in one piece
+     instead of the sentence sites being hunted one at a time. */
+  const VOIDTAG = /^(area|base|br|col|embed|hr|img|input|link|meta|source|track|wbr)$/;
+  function glyphify(html) {
+    let skip = 0, holder = null;
+    return String(html).split(/(<[^>]*>)/).map((seg) => {
+      if (!seg.startsWith('<')) return skip ? seg : seg.replace(GLYPH_RX, (m) => glyphHtml(m));
+      const m = seg.match(/^<\/?([a-zA-Z][\w-]*)/);
+      const tag = m ? m[1].toLowerCase() : '';
+      if (skip) {
+        if (seg[1] === '/') { if (tag === holder) skip--; }
+        else if (tag === holder && !/\/>$/.test(seg) && !VOIDTAG.test(tag)) skip++;
+      } else if (/\scontenteditable(?![-\w])/.test(seg) && !/contenteditable\s*=\s*"false"/.test(seg)
+                 && !VOIDTAG.test(tag) && !/\/>$/.test(seg)) {
+        holder = tag; skip = 1;
+      }
+      return seg;
+    }).join('');
+  }
+  /* **Reading a glyph back off the page.** A drawn glyph contributes nothing
+     to `textContent`, and the surface has two kinds of reader that depended on
+     it: the hold ladder, which asks *which wallet does this commit spend from*
+     by looking at the button, and the copy walks, which record a control's
+     label as its text. Both ask this instead — the element's text with every
+     picture's own character put back where it stands — so what they read is
+     the string they always read, whoever is drawing it.
+
+     Not a convenience: a reader that keeps asking `textContent` finds a
+     button whose glyph has become a picture indistinguishable from a button
+     that has no glyph at all, and the failure is silent (the *every radio says
+     the same words* gotcha's cousin — an identifier that stops identifying). */
+  function glyphTextOf(node) {
+    if (!node) return '';
+    let out = '';
+    for (const n of node.childNodes) {
+      if (n.nodeType === 3) out += n.nodeValue;
+      else if (n.nodeType === 1) {
+        const tag = String(n.tagName).toLowerCase();
+        if (tag === 'svg' && n.getAttribute('data-char')) out += n.getAttribute('data-char');
+        else out += glyphTextOf(n);
+      }
+    }
+    return out;
+  }
+
   // ---- the diff / markdown engine -----------------------------------------
 
   const tokens = (s) => String(s).split(/(\s+|[.,;:!?()\[\]"'’‘“”—–]+)/).filter((t) => t !== '' && t !== undefined);
@@ -628,7 +794,7 @@ window.CARDS = (function () {
     // "propose edit" rather than "edit this" (Ed, 2026-08-17): what the button
     // starts is a *proposal*, and "edit this" promises an edit — which is the
     // one thing this surface never lets you do to the charter directly.
-    G.proposeEdit.label + '</button>';
+    glyphify(G.proposeEdit.label) + '</button>';
 
   const initials = (n) => String(n).trim().split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 
@@ -1064,7 +1230,7 @@ window.CARDS = (function () {
       return '<div class="race-mid commitrow' + (cls ? ' ' + cls : '') + '"' +
         (cls ? ' data-patchrow="' + s.id + '"' : '') + '>' +
         '<button class="btn glyphbtn" data-act="clear-close" title="' +
-        (env.lockedOf(s) ? G.commit.binLocked : G.commit.bin) + '">🗑️</button>' +
+        (env.lockedOf(s) ? G.commit.binLocked : G.commit.bin) + '">' + glyphHtml('🗑️') + '</button>' +
         (extra || '') +
         // The two acts on this card share the right-hand corner, in the order you
         // would reach for them: ❄️ first because it is the one that says *not now*,
@@ -1074,7 +1240,7 @@ window.CARDS = (function () {
         ((insists || env.isChilled(s.id))
           ? '<button class="btn glyphbtn chill" data-act="chill"' +
             ' aria-pressed="' + env.isChilled(s.id) + '" title="' +
-            (env.isChilled(s.id) ? G.commit.chillOn : G.commit.chillOff) + '">❄️</button>'
+            (env.isChilled(s.id) ? G.commit.chillOn : G.commit.chillOff) + '">' + glyphHtml('❄️') + '</button>'
           : '') +
         (env.lockedOf(s) ? '' : '<button class="btn btn-approve glyphbtn"' +
           (pick ? '' : ' disabled') +
@@ -1391,6 +1557,7 @@ window.CARDS = (function () {
     esc, resultOnly, stripTags, pct, plainLabel, URG_LO, URG_HI,
     RULES, clauseOf, clauseRungs,
     TICK, PAUSE, VS16, MARK, DRAWN, mkHtml, markHtml,
+    GLYPH, glyphKey, glyphHtml, glyphify, glyphTextOf,
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks, mdDiffPieces, mdPiecesHtml, mdDiffHtml,
     headFlags, originText, MD_RX, mdToHtml, htmlToMd, mdStrip, mdBlock, linkify, linkifyHtml, mdLine,
     MD_ONE, mdLead, mdInner, mdParts, richToSource, sourceToRich, readLane,

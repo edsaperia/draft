@@ -23,6 +23,9 @@
 window.FLIGHTS = (function () {
   function make(env) {
     const { REDUCED, NARROW, dripIn } = env;
+    // the drawn glyphs (Q1401): a traveller carries the same picture the socket
+    // holds, so a pencil in the air and a pencil in the wallet are one object
+    const { glyphHtml, glyphify } = window.CARDS;
     // The wallet: one glyph per edit you hold, and a tray under the next one
     // whose fill is how far the drip has got toward it. Spending removes a
     // pencil; the tray keeps whatever it had accrued, which is what makes the
@@ -85,7 +88,7 @@ window.FLIGHTS = (function () {
       const land = () => { walletShow = null; renderWallet(); };
       const pencil = document.createElement('div');
       pencil.className = 'flypencil';
-      pencil.textContent = '✏️';
+      pencil.innerHTML = glyphHtml('✏️');
       pencil.style.left = (from.left + from.width / 2) + 'px';
       pencil.style.top = (from.top + from.height / 2) + 'px';
       document.body.appendChild(pencil);
@@ -108,7 +111,7 @@ window.FLIGHTS = (function () {
       const o = opts || {};
       const el = document.createElement('div');
       el.className = 'flypencil' + (o.cls ? ' ' + o.cls : '');
-      el.textContent = glyph;
+      el.innerHTML = glyphHtml(glyph);
       const start = REDUCED() ? to : from;
       el.style.left = (start.left + start.width / 2) + 'px';
       el.style.top = (start.top + start.height / 2) + 'px';
@@ -277,7 +280,7 @@ window.FLIGHTS = (function () {
       // empty into a bare pill (the `gonewallet` state, retired with this).
       if (!walletHeld || env.closedMode) {
         env.walletEl.className = 'wallet notheld';
-        const nh = '<span class="pencils"><i>✏️</i></span>';
+        const nh = '<span class="pencils"><i>' + glyphHtml('✏️') + '</i></span>';
         if (env.walletEl.innerHTML !== nh) env.walletEl.innerHTML = nh;
         env.walletEl.title = env.closedMode ? '' : (walletTitle || '');
         applyLean();
@@ -296,7 +299,7 @@ window.FLIGHTS = (function () {
       // drip tray are desktop width, and the top row has the title to keep.
       // The flights still find their token at `#wallet i`.
       if (NARROW()) {
-        const nh = '<span class="pencils"><i' + (walletGhost ? ' class="gone"' : '') + '>✏️</i>' +
+        const nh = '<span class="pencils"><i' + (walletGhost ? ' class="gone"' : '') + '>' + glyphHtml('✏️') + '</i>' +
           '<span class="pmore">' + held + '</span></span>';
         if (env.walletEl.innerHTML !== nh) env.walletEl.innerHTML = nh;
         applyLean();
@@ -318,7 +321,7 @@ window.FLIGHTS = (function () {
       // it; the title still says what it is for anybody who hovers.
       env.walletEl.innerHTML =
         '<span class="pencils">' +
-        Array.from({ length: drawn }, (_, i) => '<i' + gh(i) + '>✏️</i>').join('') +
+        Array.from({ length: drawn }, (_, i) => '<i' + gh(i) + '>' + glyphHtml('✏️') + '</i>').join('') +
         (rest > 0 ? '<span class="pmore' + (walletGhost && !drawn ? ' gone' : '') +
           '">+' + rest + '</span>' : '') +
         // The countdown carries the drip's own wash: the fill *is* how far the

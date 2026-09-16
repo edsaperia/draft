@@ -1,2 +1,6 @@
 design/constitution.js -diff linguist-generated=true text eol=lf
 design/fluent-glyphs.svg -diff linguist-generated=true text eol=lf
+# the probe's frozen copies are byte copies of the two files above, so they
+# take the same endings or every re-freeze rewrites the whole file (Q1401)
+design/reference/constitution.js -diff linguist-generated=true text eol=lf
+design/reference/fluent-glyphs.svg -diff linguist-generated=true text eol=lf

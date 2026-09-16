@@ -20,6 +20,9 @@
 window.DOOR = (function () {
   function make(env) {
     const { S, PAGE_COPY, FOUNDER, LIVEMODE, LIVESLUG, api, SESSION, ctx } = env;
+    // the drawn glyphs (Q1401): every glyph this file emits as markup is one
+    // picture from the Fluent Flat set, and the sentences take glyphify
+    const { glyphHtml, glyphify } = window.CARDS;
     const { policyNow, admissionPrice, avHtml, esc, csState, card, recordBody, cardHtml,
       binBtn, departedSentence, textDivs, hydrateFromModule, blocksOf, isStranger, E, render } = env;
     // There is no login screen. A stranger arrives at the three columns: the
@@ -305,7 +308,7 @@ window.DOOR = (function () {
           field;
       const foot = binBtn() + (STRS.sent !== c.k
         ? '<button class="btn btn-approve glyphbtn emojibtn"' + (okAddr ? '' : ' disabled') +
-          ' data-strsend="' + c.k + '" title="Send the link">📧</button>'
+          ' data-strsend="' + c.k + '" title="Send the link">' + glyphHtml('📧') + '</button>'
         : '');
       return cardHtml(c, strRailCtx, body, foot, [c]);
     }
