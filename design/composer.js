@@ -40,7 +40,7 @@ window.COMPOSER = (function () {
   // the four names below that come out of `CARDS.make(env)` are session.js's
   // own instance of it, and arrive through `env` like anything else of its.
   const T = window.COPY.session;
-  const { esc, fieldHtml, headFlags, laneBlocks, originText, speakerHtml } = window.CARDS;
+  const { esc, fieldHtml, laneBlocks, originText, speakerHtml } = window.CARDS;
   // the drawn glyphs (Q1401): the row's circles and the card's own buttons are
   // pictures from the one set, the sentences beside them take glyphify
   const { glyphHtml, glyphify } = window.CARDS;
@@ -48,7 +48,7 @@ window.COMPOSER = (function () {
   function make(env) {
     // defined by the time this runs — a `const` above the call site, or a
     // hoisted declaration — and never reassigned, so each can be a value
-    const { blockBeforeGap, blockHtml, chipsFor, currentTextFor, drawWires,
+    const { blockBeforeGap, blockHtml, chipsFor, currentTextFor, sourceTextFor, markerFor, drawWires,
       gapAfter, gapBefore, gapFields, gapLabel, headingForKey, isGapKey,
       layoutQueue, lineOf, renderAll, stuck, toggle,
       clauseHeadHtml, draftFaceHtml, keepStill, laneBoxHtml } = env;
@@ -143,16 +143,18 @@ window.COMPOSER = (function () {
       d.sites.sort((a, b) => docIndexOfKey(a.keys[0]) - docIndexOfKey(b.keys[0]));
       return { site: s, offset: 0 };
     }
-    // What a site records about each block it replaces. The block *type* travels
-    // with it (Ed, 2026-08-17) so a heading still reads as a heading in the lane
-    // and in the proposal — otherwise editing a section title alongside its
-    // paragraph would silently flatten it into body text.
+    // What a site records about each block it replaces. Its text is the
+    // block's **source line** — marker and words (Q1403; the type travelled
+    // as flags until then, Ed 2026-08-17) — so a heading reads as a heading
+    // in the lane and in the proposal because its `# ` is in the text, where
+    // the member can also delete it. The block's kind still rides along for
+    // anything that asks what the block *was* (the card's head).
     function originOf(key, seed) {
       const l = lineOf(key) || {};
       // a gap has nothing standing in it: an empty paragraph origin, marked so
       // the card's head can say which gap and the host can send an insertion
       if (isGapKey(key)) return { key, text: '', note: seed ? seed.note : null, t: 'p', gap: true };
-      return { key, text: seed ? seed.text : currentTextFor(key), note: seed ? seed.note : null,
+      return { key, text: seed ? seed.text : sourceTextFor(key), note: seed ? seed.note : null,
                t: l.t, level: l.level, bullet: !!l.bullet };
     }
 
@@ -329,7 +331,7 @@ window.COMPOSER = (function () {
         }
       }
       else {
-        const added = addDraftSite(d, key, (initial ? initial.text : (seed ? seed.text : currentTextFor(key))), seed);
+        const added = addDraftSite(d, key, (initial ? initial.text : (seed ? seed.text : sourceTextFor(key))), seed);
         site = added.site; offset = added.offset;
       }
       syncDraftKeys(d);
@@ -372,7 +374,13 @@ window.COMPOSER = (function () {
     function startDraftFromTyping(p, ev) {
       const key = p.dataset.key;
       if (!key) return;
+      // the caret is measured in the **words** — the column's marker is a
+      // `.nocaret` span, drawn and never counted — and the lane holds the
+      // **source line**, marker first (Q1403), so every offset moves past the
+      // marker on its way from the one to the other
       const orig = currentTextFor(key);
+      const mark = markerFor(key);
+      const src = mark + orig;
       const sel = caretRangeIn(p) || { start: orig.length, end: orig.length };
       let a = Math.min(sel.start, orig.length), b = Math.min(sel.end, orig.length);
       // **Enter at a clause edge inserts rather than rewrites** (backlog 204,
@@ -386,6 +394,7 @@ window.COMPOSER = (function () {
         if (a === orig.length) return startDraft(gapAfter(key), null, { text: '', caret: 0 });
         if (a === 0 && orig.length) return startDraft(gapBefore(key), null, { text: '', caret: 0 });
       }
+      a += mark.length; b += mark.length;
       let ins = '';
       switch (ev.inputType) {
         case 'insertText': ins = ev.data == null ? '' : ev.data; break;
@@ -396,14 +405,24 @@ window.COMPOSER = (function () {
         case 'insertFromPaste':
           ins = (ev.dataTransfer && ev.dataTransfer.getData('text/plain')) || ''; break;
         case 'deleteContentBackward':
-          if (a === b) { if (a === 0) return joinWithNeighbour(key, -1, d0); a -= 1; }
+          // **Backspace at the words' start of a heading or bullet takes the
+          // marker off whole** (Q1403): the block becomes a paragraph with the
+          // caret where it was, and the next backspace — now at a paragraph's
+          // start — is Q1302's join. From the column the caret cannot stand
+          // inside the marker, so this is the one way the keystroke reaches
+          // it; in the open lane the marker is ordinary text.
+          if (a === b) {
+            if (mark && a === mark.length) { a = 0; }
+            else if (a === 0) return joinWithNeighbour(key, -1, d0);
+            else a -= 1;
+          }
           break;
         case 'deleteContentForward':
-          if (a === b) { if (b >= orig.length) return joinWithNeighbour(key, 1, d0); b += 1; }
+          if (a === b) { if (b >= src.length) return joinWithNeighbour(key, 1, d0); b += 1; }
           break;
         default: return;                       // formatting commands have nothing to do here
       }
-      startDraft(key, null, { text: orig.slice(0, a) + ins + orig.slice(b), caret: a + ins.length });
+      startDraft(key, null, { text: src.slice(0, a) + ins + src.slice(b), caret: a + ins.length });
     }
 
     // **Backspace at the start of a clause joins it to the one above** (Q1302,
@@ -414,9 +433,10 @@ window.COMPOSER = (function () {
     // made by the keystroke a text editor makes it with. It used to be swallowed
     // and do nothing. Nothing to join at a gap, above the first clause or
     // below the last; a neighbour already in a draft keeps its own lane. The
-    // joined line takes the upper block's rank (`hunksOf` prefixes the one
-    // line from `origin[0]`), so a paragraph pulled up into a heading becomes
-    // part of the heading, as it would anywhere.
+    // joined line takes the upper block's rank — its source line, marker and
+    // all, leads and the lower block's words follow (Q1403; `hunksOf` sends
+    // the lane's lines as they are) — so a paragraph pulled up into a heading
+    // becomes part of the heading, as it would anywhere.
     function joinWithNeighbour(key, dir, d0) {
       if (isGapKey(key)) return;
       const at = docIndexOfKey(key);
@@ -424,7 +444,7 @@ window.COMPOSER = (function () {
       if (!nb || !nb.key || isGapKey(nb.key)) return;
       if (d0 && (siteFor(d0, key) || siteFor(d0, nb.key))) return;
       const [k1, k2] = dir < 0 ? [nb.key, key] : [key, nb.key];
-      const t1 = currentTextFor(k1);
+      const t1 = sourceTextFor(k1);
       const d = ensureDraft();
       const site = addDraftRun(d, [k1, k2], t1 + currentTextFor(k2));
       syncDraftKeys(d);
@@ -453,13 +473,16 @@ window.COMPOSER = (function () {
     // it comes out as one candidate and not as a patch.
     function startDraftFromRun(picked, ev) {
       const keys = picked.blocks.map((b) => b.dataset.key);
-      const texts = keys.map(currentTextFor);
+      // the run is the blocks' source lines (Q1403); a caret measured in a
+      // block's words moves past that block's own marker
+      const texts = keys.map(sourceTextFor);
+      const marks = keys.map((k) => markerFor(k).length);
       const run = texts.join('\n');
       const flat = (block, node, off) => {
         const i = picked.blocks.indexOf(block);
         const within = offsetIn(block, node, off);
         if (i < 0 || within == null) return null;
-        return texts.slice(0, i).reduce((n, t) => n + t.length + 1, 0) + Math.min(within, texts[i].length);
+        return texts.slice(0, i).reduce((n, t) => n + t.length + 1, 0) + Math.min(within + marks[i], texts[i].length);
       };
       const r = picked.range;
       let a = flat(picked.a, r.startContainer, r.startOffset);
@@ -851,7 +874,7 @@ window.COMPOSER = (function () {
         clauseHeadHtml(d, { text: s.origin.map((o) => o.text).join(' '), key: s.keys[0],
                             chips: chipsFor(s.keys[0], d.id) }) +
         fieldHtml('<div class="propblock"><div class="rtext">' +
-          laneBlocks(s.text, originText(s), headFlags(s)) + '</div>' +
+          laneBlocks(s.text, originText(s)) + '</div>' +
           speakerHtml(d.rationale, undefined, mineSpeaker(d)) + '</div>',
           1, T.compose.proposedLab)
       );

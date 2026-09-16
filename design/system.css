@@ -1297,14 +1297,14 @@
     color: var(--muted); pointer-events: none; user-select: none;
   }
   .doc .bullet:has(+ .bullet), .lp.bullet:has(+ .lp.bullet) { margin-bottom: var(--s1); }
-  /* the marker itself, where the source is shown: in the column with `[]`
-     pressed, put back before the block in a `.nocaret` span; in a lane, the
-     characters the author typed, dimmed and still text (`laneBlocks`) — and
-     where they stand the dot does not */
+  /* the marker itself, where the source is shown: in the column in edit mode
+     — rendered or with `[]` pressed, since Q1403 — put back before the block
+     in a `.nocaret` span; in a lane, the characters the author typed, dimmed
+     and still text (`laneBlocks`) — and where they stand the dot does not */
   .mdmark { color: var(--muted); }
   .lp.bullet:has(.mdmark) { padding-left: 0; }
-  .lp.bullet:has(.mdmark)::before, .doc .prose.mdsrc .bullet::before { content: none; }
-  .doc .prose.mdsrc .bullet { padding-left: 0; }
+  .lp.bullet:has(.mdmark)::before, .doc .bullet:has(> .mdmark)::before { content: none; }
+  .doc .bullet:has(> .mdmark) { padding-left: 0; }
   /* source mode is the whole column at once: the same monospace the lane's
      markdown mode wears, so the two never disagree about what a character is */
   .doc .prose.mdsrc, .doc .prose.mdsrc .docline {
@@ -1425,7 +1425,7 @@
   }
   /* an anchored bullet keeps the anchor's own left padding under the indent */
   .doc .anch.bullet { padding-left: calc(var(--s3) + var(--s5)); }
-  .doc .prose.mdsrc .anch.bullet { padding-left: var(--s3); }
+  .doc .anch.bullet:has(> .mdmark) { padding-left: var(--s3); }
   .anch.active:hover { box-shadow: none; }
   /* **The prose carries no highlight** (Ed, 2026-08-17). A contested clause
      used to wear its lifecycle hue behind the words; it now wears nothing, and

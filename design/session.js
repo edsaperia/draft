@@ -105,7 +105,7 @@
     // eyebrow, and the glyphs inside the charter column's own sentences
     glyphHtml, glyphify,
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks,
-    headFlags, originText, mdToHtml, htmlToMd, mdStrip, mdLine,
+    originText, mdToHtml, htmlToMd, mdStrip, mdLine,
     richToSource, sourceToRich, readLane,
     laneSeed, laneProposeHtml, laneCtlHtml, speakerHtml, fieldHtml, fieldOf, groundNote,
     headOnlyHeight, cardBody, COLLAPSE_MS, EXPAND_MS,
@@ -178,6 +178,7 @@
     ownChip: (s) => ownChipHtml(s),
     laneRaw: () => laneRaw(),
     currentTextFor: (k) => currentTextFor(k),
+    markerFor: (k) => markerFor(k),
     root: () => doc,
     readLine: () => READ_LINE,
     reduced: () => REDUCED(),
@@ -217,15 +218,20 @@
   // the docs.vote addresses, and a bullet block (`line.bullet`, read off a
   // `- ` prefix by the host's `blocksOf` exactly as `# ` makes a heading)
   // takes its class here. In edit mode with the `[]` toggle pressed the whole
-  // column shows its **source** instead — the characters as stored, and the
-  // block's marker put back in front of it in a `.nocaret` span, so it is
-  // read and never counted: the caret offsets `startDraftFromTyping`
-  // measures stay offsets into `line.x`, which carries no marker.
+  // column shows its **source** instead — the characters as stored. **And in
+  // edit mode the block's marker is always shown** (Q1403, Ed 2026-09-16: *in
+  // edit mode you should always see the markdown #s for headings, otherwise
+  // you have no way of editing them*): rendered or source, `# ` / `## ` /
+  // `- ` stands in front of the block in a `.nocaret` span, so it is read and
+  // never counted — the caret offsets `startDraftFromTyping` measures stay
+  // offsets into `line.x`, and the composer adds the marker's length itself
+  // when it opens the lane (where the marker is real, editable text).
   const srcMode = () => laneRaw() && EDITING() && !closedMode;
+  const markShown = () => EDITING() && !closedMode;
   const markerOf = (l) => (l.t === 'h' ? '#'.repeat(l.level || 1) + ' ' : l.bullet ? '- ' : '');
-  const blockHtml = (l) => (srcMode()
-    ? (markerOf(l) ? '<span class="nocaret mdmark" contenteditable="false">' + markerOf(l) + '</span>' : '') + esc(l.x)
-    : mdLine(l.x));
+  const blockHtml = (l) =>
+    (markShown() && markerOf(l) ? '<span class="nocaret mdmark" contenteditable="false">' + markerOf(l) + '</span>' : '') +
+    (srcMode() ? esc(l.x) : mdLine(l.x));
   const bulletCls = (l) => (l.bullet ? ' bullet' : '');
 
   // ---- gap sites (backlog 204, Q261) ---------------------------------------
@@ -280,6 +286,12 @@
     const line = DOC.find((l) => l.key === key);
     return line ? line.x : '';
   }
+  // …and the same block as the **source line** the engine holds — the marker
+  // and the words (Q1403): what a lane is seeded with and what a proposal
+  // sends, so a heading's rank is text the member can edit rather than a
+  // class the origin re-applies. `markerFor` is the marker alone.
+  const markerFor = (key) => { const l = DOC.find((x) => x.key === key); return l ? markerOf(l) : ''; };
+  const sourceTextFor = (key) => markerFor(key) + currentTextFor(key);
   // **The head is the whole run** (Q1308, Ed's bot room 2026-09-10): a race
   // whose contested span covers several blocks — a merge, a patch across
   // neighbours — is keyed to every block in the run, and its head showed the
@@ -2133,7 +2145,7 @@
   // name defined by now and never reassigned; a call is one `init` replaces;
   // an accessor is one the page swaps under the surface after load.
   const COMPOSER = window.COMPOSER.make({
-    blockBeforeGap, blockHtml, chipsFor, currentTextFor, drawWires,
+    blockBeforeGap, blockHtml, chipsFor, currentTextFor, sourceTextFor, markerFor, drawWires,
     gapAfter, gapBefore, gapFields, gapLabel, headingForKey, isGapKey,
     layoutQueue, lineOf, renderAll, stuck, toggle,
     // this surface's own instance of the card grammar's factory half — the
@@ -3374,7 +3386,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         const [id, lane, key] = b.dataset.proposeFrom.split('|');
         const s = SUGGS.find((x) => x.id === id);
         if (!s) return;
-        startDraft(key || (s.keys ?? [])[0], laneSeed(s, lane, key));
+        startDraft(key || (s.keys ?? [])[0], laneSeed(s, lane, key, markerFor));
       })
     );
     // The composer's own fields. Neither re-renders the document: a re-render
@@ -3406,7 +3418,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
           ? (ev.data || '')
           : ((ev.dataTransfer && ev.dataTransfer.getData('text/plain')) || '');
         const key = el.dataset.deadwhy;
-        startDraft(key, null, { text: currentTextFor(key), caret: 0 });
+        startDraft(key, null, { text: sourceTextFor(key), caret: 0 });
         const d = draftOf();
         if (d) d.rationale = ch;
         renderQueue();
@@ -3445,7 +3457,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         site.text = readLane(el);
         const off = laneCaret(el);
         el.classList.toggle('md', laneRaw());
-        el.innerHTML = laneBlocks(site.text, originText(site), headFlags(site), laneRaw());
+        el.innerHTML = laneBlocks(site.text, originText(site), laneRaw());
         if (off != null) placeCaret(el, off);
         layoutQueue(); drawWires();
       };
@@ -4505,8 +4517,12 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     const key = p.dataset.key;
     const orig = currentTextFor(key);
     const sel = picked && picked.blocks[0] === p ? caretRangeIn(p) : null;
-    const a = sel && sel.start != null ? Math.min(sel.start, orig.length) : orig.length;
-    startDraft(key, null, { text: orig.slice(0, a) + ch + orig.slice(a), caret: a + ch.length });
+    // the caret is measured in the words (the column's marker is `.nocaret`,
+    // Q1403) and the lane holds the source line, so the offset moves past
+    // the marker on the way in
+    const a = (sel && sel.start != null ? Math.min(sel.start, orig.length) : orig.length) + markerFor(key).length;
+    const src = sourceTextFor(key);
+    startDraft(key, null, { text: src.slice(0, a) + ch + src.slice(a), caret: a + ch.length });
     return true;
   }
 
@@ -4759,7 +4775,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     HEADS = DOC.filter((l) => l.t === 'h').map((l) => l.level ?? 1);
     SUGGS.filter((s) => s.kind === 'draft').forEach((d) => {
       d.sites.forEach((s) => {
-        if (!s.origin) s.origin = s.keys.map((k) => ({ key: k, text: currentTextFor(k), note: null }));
+        if (!s.origin) s.origin = s.keys.map((k) => ({ key: k, text: sourceTextFor(k), note: null }));
         // a site keyed to a gap carries its own anchor's bookkeeping (Q1311)
         if (isGapKey(s.keys[0]) && !s.gapKey) Object.assign(s, gapFields(s.keys[0]));
       });
@@ -4878,6 +4894,9 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     init, setData, renderAll, toggle, clauseKeysOf, closeCard, setWallet, setRoom, setClosed,
     setDocClosed,
     clockText, dateWords,
+    // a block as the engine's source line — marker and words (Q1403): the
+    // live layer builds a proposal's origins with it
+    sourceTextFor, markerFor,
     // edit mode's shared pieces (backlog 204): the row both hosts draw, the
     // read-mode keystroke, and what the riding tab says about the draft
     proposalRowHtml, typeAt, draftRowState, dropDraft,
