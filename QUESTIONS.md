@@ -223,7 +223,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1406** — claim by writing the block here, then commit it alone.
+**The next free number is 1407** — claim by writing the block here, then commit it alone.
+
+**1406 is the card's text losing its blocks** (claimed 2026-09-16 21:15, Ed in the tims-birthday room: *"The clause as it stands" doesn't seem to render linebreaks (and perhaps other formatting)*): the head renders a run's clauses joined by a space through the one-line renderer, so a multi-block clause reads as one paragraph and a heading in it loses its rank; the live proposal lanes take the same single string (`markedOf` → `resultOnly`), so a multi-line candidate does too; and since Q1403 the editing card's head joins origin *source* lines, so a `## ` marker can show raw. `laneBlocks` already splits, dresses and marks blocks — the fix is to read every text site through it.
 
 **1405 is the admission carrying the identity answers** (claimed 2026-09-16 20:08, from Ed's live-room note *after I have chosen name and picture, the tasks still appear yellow*): a member admitted from an application arrives with the name and picture they gave at the door, but the answered flags are the ✋ / 🖼️ commit's alone (Q645), so the two cards asked again. The page half — a ✓ on *keep* answers a card still asking — is 5450dfe; this number is the engine half: `member-admitted` carries `nameSet` / `pictureSet` for what the submission gave — read off the applicant's record at the emit, absent where nothing was given, so the common event serialises as before — and the fold copies them onto the member. **Built and merged 2026-09-16** (branch `q1405-admit`); a log-schema addition and so a full deploy — Ed, the same evening: *restarting lantern-house is fine, it's just a test instance*. Guards: `applications.test.ts`, the server's whole-road test, `applicants-walk` at *assembly* and ✒️.
 
