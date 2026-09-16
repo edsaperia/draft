@@ -753,15 +753,17 @@ window.BAND = (function () {
             ? holds + '<p class="setnote">' + (ready2 ? 'Everything needed is in — the words are optional.' : 'The email, the name and the picture are needed; the words are optional.') + '</p>'
             : '<p class="setnote">Nothing is collected before you begin, and nothing is sent until you submit.</p>');
       },
+      // **A body holds choices; an action is the row's** (Q1394, Ed
+      // 2026-09-16: *avoid body buttons that are an action rather than a
+      // choice*). The send is the row's 📧 (below, with the stranger's rule);
+      // the pretend inbox stays a mockup device, as the founder's is (BIRTH).
       appmail: () => {
         const a = S.app;
-        const taken = MEMBER_EMAILS.has(a.email.trim().toLowerCase());
-        const okAddr = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a.email) && !taken;
         return a.emailVerified
           ? '<div class="lockline">' + TICK + '<span>Verified — <b>' + esc(a.email) + '</b> is your identity here.</span></div>'
           : a.emailSent
           ? '<p class="why">Sent to <b>' + esc(a.email) + '</b>. Nothing is submitted until the address has proved it works — it is your identity here, and the only way the answer can reach you.</p>' +
-            '<div style="margin-top:var(--s3)"><button class="btn" data-appmailopen="1">Open your inbox</button></div>' +
+            (env.cs && env.cs.isRemote ? '' : '<div style="margin-top:var(--s3)"><button class="btn" data-appmailopen="1">Open your inbox</button></div>') +
             // **the field stays** (Q609, 2026-08-22): *Wrong address?* was a button
             // whose whole job was to put the field back, as on 📧 — so the field
             // stays under the sent note, and typing a different address is the
@@ -769,8 +771,7 @@ window.BAND = (function () {
             '<span class="fld"><label>Your email</label><input type="email" data-appmail="1" value="' + esc(a.email) + '" placeholder="you@example.com"></span>'
           : '<p class="why">Your email is your <b>identity</b> here — the magic link is the login, the answer to your application arrives on it, and no two members may share one. It has to prove it works before you can submit.</p>' +
             '<span class="fld"><label>Your email</label><input type="email" data-appmail="1" value="' + esc(a.email) + '" placeholder="you@example.com"></span>' +
-            (taken ? '<p class="setnote"><b>Already a member’s address.</b> A member email is one identity — if it is yours, log in with it instead of applying.</p>' : '') +
-            '<div style="margin-top:var(--s3)"><button class="btn"' + (okAddr ? '' : ' disabled') + ' data-appmailsend="1">Send the link</button></div>';
+            (appAddrTaken() ? '<p class="setnote"><b>Already a member’s address.</b> A member email is one identity — if it is yours, log in with it instead of applying.</p>' : '');
       },
       appname: () => '<p class="why">What the members will call you — in the application, and in the membership if it passes.</p>' +
         '<span class="fld"><label>Your name</label><input data-appname="1" value="' + esc(S.app.name) + '" placeholder="Your name"></span>',
@@ -817,12 +818,22 @@ window.BAND = (function () {
             ? '<p class="why">' + esc(APPLY_SHUT) + '</p>'
             : doorErrHtml('apply');
         }
+      } else if (c.k === 'appmail' && !a.emailSent && !a.emailVerified) {
+        // the send is the row's 📧, armed by a valid address that is nobody
+        // else's — the stranger's 📧 rule (reading 1194, T47), since Q1394
+        foot = binBtn() +
+          '<button class="btn btn-approve glyphbtn emojibtn"' + (appAddrOk() ? '' : ' disabled') +
+          ' data-appmailsend="1" title="Send the link">📧</button>';
       } else {
         foot = binBtn() +
           '<button class="btn btn-approve glyphbtn"' + (c.done() || c.optional ? '' : ' disabled') + ' data-close="1">' + TICK + '</button>';
       }
       return cardHtml(c, appCtx, body, foot, [c]);
     }
+    /** the applicant's address is already a member's — one identity per address (§9.7½) */
+    const appAddrTaken = () => MEMBER_EMAILS.has(S.app.email.trim().toLowerCase());
+    /** an address the 📧 will send to: well-formed and nobody else's */
+    const appAddrOk = () => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(S.app.email) && !appAddrTaken();
 
     // ---- the band: two piles, and the card one of them opens into ----------
     // **One title, one place, at every step** (backlog 33). The big heading at
