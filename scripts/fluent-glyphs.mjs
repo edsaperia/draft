@@ -73,6 +73,7 @@ const SOURCE = {
   snowflake: ['Snowflake', 'snowflake'],
   link: ['Link', 'link'],
   label: ['Label', 'label'],
+  thumbs: ['Thumbs up', 'thumbs_up'],
 };
 
 // ---- the page's own table, read out of cards.js ---------------------------

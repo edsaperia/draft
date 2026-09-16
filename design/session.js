@@ -745,12 +745,13 @@
   // for the reading of the membership. Drawn line art was tried first — a gauge
   // and a hurdle on the same stroke as ✔ and ✖ — and the honest finding is that
   // at eyebrow size line art does not survive: the gauge read as a caret and the
-  // hurdle as a Greek letter. Emoji are bitmapped for exactly this size, which
-  // is the one job they do better than anything we can draw. They bring their
-  // own colour back, which is the cost. A third unit, ✒️ for the line a reading
-  // had to cross, went with the bar (Q1362).
+  // hurdle as a Greek letter. A coloured picture does survive there, so both
+  // units are the Fluent Flat drawings since Q1401 (👍 from 2026-09-16, Ed:
+  // *👍 should be drawn*), through the one renderer, so the pair is the same
+  // picture on every machine. A third unit, ✒️ for the line a reading had to
+  // cross, went with the bar (Q1362).
   const PEOPLE = '<span class="unit">' + glyphHtml('👤') + '</span>';
-  const JUDG = "<span class=\"unit\">👍</span>";
+  const JUDG = '<span class="unit">' + glyphHtml('👍') + '</span>';
   // did anything displace the incumbent?
   const carried = (g) => fieldOf(g).some((c) => c.won);
   // Whatever wants you most keeps its place on the screen whatever else is

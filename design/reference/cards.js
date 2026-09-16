@@ -319,6 +319,7 @@ window.CARDS = (function () {
     'snowflake': ['❄', 'snowflake'],
     'link': ['🔗', 'link'],
     'label': ['🏷', 'label'],
+    'thumbs': ['👍', 'thumbs up'],
   };
   // The table's characters are the **base** codepoints; the surface writes
   // most of them with a variation selector after (✏️, ✒️, 🛡️) and a few without
