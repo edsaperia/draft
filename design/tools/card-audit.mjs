@@ -1700,8 +1700,9 @@ function doorRules(doors) {
     if (!same(d.before, d.after)) out.push({ rule: 'D1', lens: 'positioning', said,
       saw: 'the door at ' + d.before.r.join('×') + ' before, ' + (d.after ? d.after.r.join('×') : 'gone') + ' after leaving', note: d.walk });
     // **D2 — a floating control is a circle** (Q1380, Ed 2026-09-15): the door,
-    // the row's ✏️ and 🗑️ are 2.5rem across and fully round; the commit-row
-    // buttons inside cards stay rounded rectangles (B-rules).
+    // the row's ✏️ and 🗑️ are `--float-d` across (3rem since Ed's 2026-09-16
+    // *larger, and stand out more*) and fully round, lifted by shadow; the
+    // commit-row buttons inside cards stay 2.5rem rounded rectangles (B-rules).
     const circle = (b) => !!b && Math.abs(b.r[2] - b.r[3]) <= 0.5 && b.radius === '50%';
     if (!circle(d.before) || !circle(d.commit)) out.push({ rule: 'D2', lens: 'buttons', said: 'a floating control — the door, the row\'s ✏️ and 🗑️ — is a circle: width is height, border-radius 50% (Q1380)',
       saw: 'the door ' + d.before.r[2] + '×' + d.before.r[3] + ' r=' + d.before.radius + ', the row\'s ✏️ ' + (d.commit ? d.commit.r[2] + '×' + d.commit.r[3] + ' r=' + d.commit.radius : 'absent'), note: d.walk });

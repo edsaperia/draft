@@ -1059,8 +1059,8 @@
   .race-mid.commitrow.proposalrow {
     --row-foot: var(--s5);
     border-top: 0; padding-top: var(--s2); padding-bottom: var(--row-foot);
-    box-sizing: border-box; height: calc(2.5rem + var(--s2) + var(--row-foot));
-    margin-top: calc(-1 * (2.5rem + var(--s2) + var(--row-foot)));
+    box-sizing: border-box; height: calc(var(--float-d) + var(--s2) + var(--row-foot));
+    margin-top: calc(-1 * (var(--float-d) + var(--s2) + var(--row-foot)));
   }
   .proposalrow .btn { pointer-events: auto; }
   /* **A floating control is a circle** (Q1380, Ed 2026-09-15: *floating edit
@@ -1071,7 +1071,29 @@
      own height, so nothing else about it moves — and fully round. Scoped by
      the floating context, never by re-styling `.btn.glyphbtn`: B6's one glyph
      size is untouched. */
-  .proposalrow .btn.glyphbtn { width: 2.5rem; border-radius: 50%; }
+  .proposalrow { --float-d: 3rem; }
+  .proposalrow .btn.glyphbtn { width: var(--float-d); height: var(--float-d); border-radius: 50%; }
+  /* **A floating control is above the page, and says so by depth** (Ed,
+     2026-09-16: *larger, and stand out more from the text … I don't want to
+     give them coloured backgrounds*). At 2.5rem with a hairline and the
+     commit row's own `--shadow-md`, the circle wore exactly what a button
+     inside a card wears, so nothing about it said *over* the text. Now
+     3rem — the smallest step that makes it a different class of object
+     from the 40px commit row — the hairline dropped (open is said by depth,
+     not by outline: the same rule the decision card floats by), and
+     `--shadow-xl` at rest: the disc is the highest thing on the page, over
+     the lifted column that wears `--shadow-xl` itself, so it casts no less.
+     Hover is the surface's ordinary hover and nothing more — there is no
+     rung above xl, and **the box never moves**: a 1px hover rise was tried
+     and card-audit D1 read the door 1px higher after a round trip, the
+     pointer resting on it; the thing you click does not move. A held ✏️
+     keeps the commit row's rule — no shadow while held, pressed down — and
+     both rules are written at the row's full specificity because the
+     commit row's rest, hover and held shadows (further down) outrank three
+     classes. The glyph stays at its one size (B6): the disc grew, not the
+     picture in it. */
+  .race-mid.commitrow.proposalrow .btn.glyphbtn { border-color: transparent; box-shadow: var(--shadow-xl); }
+  .race-mid.commitrow.proposalrow .btn.glyphbtn.holding { box-shadow: none; }
   .proposalrow .rowmid { flex: 1; text-align: center; font-size: var(--t-small); color: var(--muted); }
   /* the gap block (Q1090): the empty document's `blank` treatment, its own
      sentence, and a little air above it so it reads as *after* the last clause */
