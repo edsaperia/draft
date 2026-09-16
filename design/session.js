@@ -3561,6 +3561,23 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   // Own the animation rather than asking for behavior:'smooth' — native smooth
   // scrolling is silently a no-op in some browser configurations, and this also
   // gives us a definite "it has landed" moment to re-measure from.
+  // **Nothing rebuilds under a travel** (Ed, 2026-09-16: *sometimes when I
+  // click on a queue card, the corresponding decision card is not brought
+  // into view correctly*). The move runs with the old card still standing and
+  // the swap happens on arrival — but a render landing *during* the move
+  // (the live 4s poll, in a bot room most polls) re-laid the column under the
+  // scroll and invalidated the arrival: measured on the fixture, a re-render
+  // 150ms into a travel left no card open and the page at the top. So a
+  // travel is a gesture in flight, like a hold, and both polls defer on it
+  // (`pressInFlight` reads `SESSION.travelling`). Never a name copied at
+  // make time: the flag is read live, as the hold's is. **The window is the
+  // whole open sequence, not the scroll alone**: measured again, the render
+  // that lost the card landed 150ms after the click, before the scroll had
+  // begun — the folds and the old card's collapse run first — so the flag
+  // reads `pendingId`, set at `toggle` and cleared at its `settle`, capped at
+  // three seconds so a sequence that never settles cannot stop the polls.
+  let travelling = false;
+  let travelSince = 0;
   function smoothScrollBy(delta, done) {
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
       scrollTo(0, scrollY + delta);
@@ -3571,10 +3588,11 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     const dur = Math.min(700, Math.max(260, Math.abs(delta) * 0.5));
     const t0 = performance.now();
     const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+    travelling = true;
     const step = (now) => {
       const t = Math.min(1, (now - t0) / dur);
       scrollTo(0, from + delta * ease(t));
-      if (t < 1) requestAnimationFrame(step); else done();
+      if (t < 1) requestAnimationFrame(step); else { travelling = false; done(); }
     };
     requestAnimationFrame(step);
   }
@@ -3833,6 +3851,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     const my = ++seqToken;
     const alive = () => my === seqToken;
     pendingId = next;                             // keeps the wire drawn throughout
+    travelSince = Date.now();                     // …and the polls off it (`travelling`)
 
     const settle = () => { if (!alive()) return; pendingId = null; drawWires(); };
 
@@ -4897,6 +4916,8 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     get openId() { return openId; },
     /** true while a propose hold is in the air — the host must not re-render */
     get holding() { return holdInFlight; },
+    // a rail click's travel to its card, still running (the polls defer on it)
+    get travelling() { return travelling || (pendingId !== null && Date.now() - travelSince < 3000); },
     // the commit gesture, resolved once at load — the page and setup.js read
     // this rather than keeping a second copy of the constant (backlog 184)
     get gesture() { return GESTURE; },

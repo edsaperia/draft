@@ -8131,7 +8131,9 @@
   // seconds is by far the longest of them, so a 4 s poll could rebuild the
   // card under the room convening (backlog 184). It is a real fix rather than
   // a consequence of the switch, and it holds in both positions.
-  const pressInFlight = () => WAL.penHold || SESSION.holding || assembly ||
+  // …and a travel (Ed, 2026-09-16): a rail click's scroll to its card is a
+  // gesture in flight too, and a poll landing inside it lost the card
+  const pressInFlight = () => WAL.penHold || SESSION.holding || SESSION.travelling || assembly ||
     (sliderHold && Date.now() - sliderHold < 30_000);
   // A lane rebuilt on every keystroke would lose the caret, so typing repaints
   // the bar and the rail and leaves the card alone — only the commit control,
