@@ -562,20 +562,67 @@ window.CARDS = (function () {
   // the whole marked wording, links live as the clause's are (`mdLine`)
   const mdDiffHtml = (oldText, newText, withDel) =>
     linkifyHtml(mdPiecesHtml(mdDiffPieces(oldText, newText, withDel)));
-  function wordingHtml(oldText, newText, force) {
-    if (!String(newText ?? '').trim()) return '<div class="lp empty"><br></div>';
-    const pieces = mdDiffPieces(oldText, newText, false);
-    let same = 0, all = 0;
-    for (const [t, mk] of pieces) {
-      if (/^\s+$/.test(t)) continue;
-      all += t.length;
-      if (!mk) same += t.length;
+  // **A text is read in blocks** (Q1406, Ed in the tims-birthday room,
+  // 2026-09-16: *"The clause as it stands" doesn't seem to render linebreaks,
+  // and perhaps other formatting*). The one reading of a clause or a
+  // candidate wherever one is *read* rather than edited — the head, a
+  // proposal lane, a record's slate: the markdown-aware diff over the whole
+  // source (Q1368), then the pieces cut into blocks at the newlines, each
+  // block dressed as the lane's own preview dresses it (`laneBlocks`) — a
+  // `# ` heading at its rank, a `- ` bullet with its dot — and its marker
+  // consumed rather than shown, since nobody is editing here. `oldText` null
+  // means no marking; with it, additions are green (result-only, 274) unless
+  // less than `MARK_FLOOR` of the new text survives from the old, when the
+  // wording states itself plain (`force` skips the floor, the deadlock card's
+  // rule). Before this the head and the lanes went through `mdLine`, one
+  // string into one box, so a clause of several paragraphs read as one and a
+  // heading in it lost its rank.
+  function mdBlocksHtml(oldText, newText, force) {
+    const src = String(newText ?? '');
+    if (!src.trim()) return '<div class="lp empty"><br></div>';
+    let pieces = oldText == null ? [[mdMask(src), null]] : mdDiffPieces(oldText, src, false);
+    if (oldText != null && !force) {
+      let same = 0, all = 0;
+      for (const [t, mk] of pieces) {
+        if (/^\s+$/.test(t)) continue;
+        all += t.length;
+        if (!mk) same += t.length;
+      }
+      if (!all || same / all < MARK_FLOOR) pieces = [[mdMask(src), null]];
     }
-    if (!force && (!all || same / all < MARK_FLOOR)) return mdLine(newText);
-    // rendered, not raw: a proposal is read, not checked, so emphasis in it
-    // should look like emphasis rather than like asterisks
-    return linkifyHtml(mdPiecesHtml(pieces));
+    // the pieces cut into blocks at the newlines — a run of new wording that
+    // spans a paragraph break stays one comparison, as `laneBlocks` keeps it
+    const blocks = [[]];
+    for (const [t, mk] of pieces) {
+      t.split('\n').forEach((part, k) => {
+        if (k > 0) blocks.push([]);
+        if (part) blocks[blocks.length - 1].push([part, mk]);
+      });
+    }
+    // emphasis state carries across pieces and blocks exactly as
+    // `mdPiecesHtml` carries it, so a mark the diff cut through still nests
+    const before = {}, after = {};
+    const html = blocks.map((ps) => {
+      const typed = mdBlock(ps.map(([t]) => t).join(''));
+      let lead = typed ? typed.marker.length : 0;      // the marker comes off the front, never marked
+      const body = [];
+      for (const [t, mk] of ps) {
+        let s = t;
+        if (lead > 0) { const take = s.slice(0, lead); s = s.slice(take.length); lead -= take.length; if (!s) continue; }
+        if (!mk) { body.push(mdRun(s, after)); mdRun(s, before); continue; }
+        const m = s.match(/^(\s*)([\s\S]*?)(\s*)$/);
+        const tag = mk === 'del' ? 'del' : 'ins';
+        const inner = mdRun(m[2], mk === 'del' ? before : after);
+        body.push(esc(m[1]) + (inner ? '<' + tag + '>' + inner + '</' + tag + '>' : '') + esc(m[3]));
+      }
+      const inner = body.join('');
+      return '<div class="lp' + (typed && typed.t === 'h' ? ' hblock lvl' + typed.level : '') +
+        (typed && typed.t === 'b' ? ' bullet' : '') + (inner ? '' : ' empty') + '">' + (inner || '<br>') + '</div>';
+    }).join('');
+    return linkifyHtml(html);
   }
+  // a candidate's wording against the clause, in blocks (Q1406)
+  const wordingHtml = (oldText, newText, force) => mdBlocksHtml(oldText, newText, force);
   // Blocks are split on newlines *after* the diff, so a run of new wording that
   // spans a paragraph break is still one comparison rather than two.
   //
@@ -1170,7 +1217,9 @@ window.CARDS = (function () {
           ? '<div class="rtext">' + o.html + '</div>'
           : o.text === null
           ? '<div class="rtext none">' + esc(o.nothing != null ? o.nothing : G.head.noText) + '</div>'
-          : '<div class="rtext">' + mdLine(o.text) + '</div>') +
+          // the clause in blocks (Q1406): a run of paragraphs keeps its
+          // breaks, a heading in it its rank — `o.text` is the source
+          : '<div class="rtext">' + (String(o.text).trim() ? mdBlocksHtml(null, o.text) : esc(o.text)) + '</div>') +
         '</div>' +
         // **The head's lane is a lane like any other** (Q1362 (a), 2026-09-15):
         // the current text is a candidate in the field, authored by nobody and
@@ -1575,7 +1624,7 @@ window.CARDS = (function () {
     RULES, clauseOf, clauseRungs,
     TICK, ARROW_OUT, PAUSE, VS16, MARK, DRAWN, mkHtml, markHtml,
     GLYPH, glyphKey, glyphHtml, glyphify, glyphTextOf,
-    tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks, mdDiffPieces, mdPiecesHtml, mdDiffHtml,
+    tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks, mdDiffPieces, mdPiecesHtml, mdDiffHtml, mdBlocksHtml,
     originText, MD_RX, mdToHtml, htmlToMd, mdStrip, mdBlock, linkify, linkifyHtml, mdLine,
     MD_ONE, mdLead, mdInner, mdParts, richToSource, sourceToRich, readLane,
     laneSeed, laneProposeHtml, laneCtlHtml, speakerHtml, railSpeakerHtml, secToggleHtml, fieldHtml, fieldOf, groundNote,

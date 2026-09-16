@@ -1768,6 +1768,25 @@ async function walkCharter(page, base, cards, errors, { closed, doors } = {}) {
       ['.sugg[data-card="' + id + '"]', id, before]);
     if (m) { m.walk = walk; cards.push(m); }
     else if (wayIn) errors.push(walk + ': ' + id + ' opened nothing');
+    // **T1 — a text is read in blocks** (Q1406, Ed 2026-09-16: *"The clause
+    // as it stands" doesn't seem to render linebreaks (and perhaps other
+    // formatting)*). `race-quorum` runs over two paragraphs and its candidate
+    // a ends in a bullet: the head must hold two `.lp` blocks, each lane at
+    // least two, the bullet dressed as one, and no block marker printed as
+    // characters — the head and the lanes went through the one-line
+    // renderer before, so a run read as one paragraph.
+    if (m && id === 'race-quorum') {
+      const t1 = await page.evaluate(() => {
+        const c = document.querySelector('.sugg[data-card="race-quorum"]');
+        if (!c) return null;
+        const lanes = [...c.querySelectorAll('.propblock .rtext')].map((r) => r.querySelectorAll('.lp').length);
+        return { head: c.querySelectorAll('.clausehead .rtext .lp').length, lanes,
+          bullets: c.querySelectorAll('.propblock .rtext .lp.bullet').length,
+          rawMarker: /(^|\n)(#{1,3}|-) /.test(c.textContent) };
+      });
+      const ok = !!t1 && t1.head === 2 && t1.lanes.length === 2 && t1.lanes.every((n) => n >= 2) && t1.bullets === 1 && !t1.rawMarker;
+      if (!ok) errors.push(walk + ': T1 — race-quorum should read in blocks (head 2, lanes ≥2 each, one bullet, no raw marker): ' + JSON.stringify(t1));
+    }
     await page.evaluate((k) => { try { window.SESSION.toggle(k, false); } catch (e) { /* already closed */ } }, id);
     await wait(page, 120);
   }

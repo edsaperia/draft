@@ -871,7 +871,9 @@ window.COMPOSER = (function () {
         // `public` — and the blank disc where it is sealed, which is the point.
         // The line is your only reading of your own proposal, so it has to be
         // the room's reading of it.
-        clauseHeadHtml(d, { text: s.origin.map((o) => o.text).join(' '), key: s.keys[0],
+        // the run's source lines, one per block (Q1406): the head renders
+        // blocks, so a heading among them keeps its rank rather than its hashes
+        clauseHeadHtml(d, { text: s.origin.map((o) => o.text).join('\n'), key: s.keys[0],
                             chips: chipsFor(s.keys[0], d.id) }) +
         fieldHtml('<div class="propblock"><div class="rtext">' +
           laneBlocks(s.text, originText(s)) + '</div>' +

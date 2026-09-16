@@ -837,23 +837,26 @@ window.LIVE = (function () {
     // a candidate's reading of a span: the current lines with its hunks
     // applied — the words for the card, or with `src` the **source lines**
     // exactly, which is what a lane seeded from the candidate holds (Q1403)
-    const applyIn = (lines, sp, hunks, src) => {
+    const applyIn = (lines, sp, hunks) => {
       const region = lines.slice(sp.start, sp.end);
       for (const h of (hunks || []).slice().sort((a, b) => b.start - a.start)) {
         region.splice(h.start - sp.start, h.end - h.start, ...h.lines);
       }
-      return region.filter((l) => l.trim()).map(src ? (l) => l : unhead).join('\n');
+      return region.filter((l) => l.trim()).join('\n');
     };
     const spanOf = (hunks) => ({ start: Math.min(...hunks.map((h) => h.start)),
       end: Math.max(...hunks.map((h) => h.end)) });
-    const plain = (lines, sp) => lines.slice(sp.start, sp.end).filter((l) => l.trim()).map(unhead).join('\n');
+    const plain = (lines, sp) => lines.slice(sp.start, sp.end).filter((l) => l.trim()).join('\n');
     // the mark the quick card shows: cards.js's own diff, del and ins both
     // (resultOnly drops the dels where the card states the result) —
     // **rendered as the clause is** (Q1368, Ed 2026-09-15): the markdown-aware
     // diff, so `**Recorder**` reads bold on the proposal block and in the
     // ledger as it does in the clause above them, where this used to escape
     // the source and print the asterisks
-    const markedOf = (before, after) => window.CARDS.mdDiffHtml(before, after, true);
+    // …and **in blocks** (Q1406): a candidate of several paragraphs keeps its
+    // breaks and a heading in it its rank — the markers ride the text now,
+    // `unhead` no longer taken off it, and `mdBlocksHtml` consumes them
+    const markedOf = (before, after) => window.CARDS.mdBlocksHtml(before, after);
     // the nearest heading above; on a document with none, the document's own
     // title — the outermost heading (Q1303, Ed 2026-09-10) — and only with no
     // title either, the clause's first words
@@ -934,7 +937,7 @@ window.LIVE = (function () {
         const keys = site.keys;
         const inc = plain(lines, csp);
         const textOf = (c) => applyIn(lines, csp, c.hunks);
-        const srcOf = (c) => applyIn(lines, csp, c.hunks, true);     // the seed's own text (Q1403)
+        const srcOf = textOf;     // one text since Q1406 — the source, markers kept; `src` stays for the seed's readers (Q1403)
         const byId = (id) => r.candidates.find((c) => c.id === id);
         // a name the server attached is one the reveal rule allowed (a signed
         // proposal, Q770, or one made under `public`): the live card shows it,
@@ -1197,14 +1200,14 @@ window.LIVE = (function () {
         const keys = site.keys;
         const gapSite = site.isInsert
           ? { gapKey: site.gapKey, insertAfterKey: site.insertAfterKey, isInsert: true } : {};
-        const textOfF = (f) => f.hunks.flatMap((h) => h.lines).map(unhead).join('\n');
-        const plainOfF = (f) => f.hunks.flatMap((h) => h.lines).filter((l) => l.trim()).map(unhead).join('\n');
+        const textOfF = (f) => f.hunks.flatMap((h) => h.lines).join('\n');
+        const plainOfF = (f) => f.hunks.flatMap((h) => h.lines).filter((l) => l.trim()).join('\n');
         // the seal lifts at the record (§3.5a): `records` stays sealed, the
         // closed `record` carries the names where the anonymity ladder allows
         const byName = (f) => authorBy(f.author) || unsealed.get(f.id || f.candidateId) || null;
         const best = field.slice().sort((x, y) => (y.p ?? -1) - (x.p ?? -1))[0];
         const winner = field.find((f) => f.outcome === 'adopted') || (undecided ? best : null) || field[0] || {};
-        const replaced = (o.displaced || []).filter((l) => l.trim()).map(unhead).join('\n') || undefined;
+        const replaced = (o.displaced || []).filter((l) => l.trim()).join('\n') || undefined;
         const slate = field.length > 1
           ? { slate: field.map((f) => ({ text: textOfF(f), src: f.hunks.flatMap((h) => h.lines).join('\n'),
               rationale: f.rationale, by: byName(f),
@@ -1283,7 +1286,7 @@ window.LIVE = (function () {
         }
         const sp = { start: lo, end: hi };
         const keys = keysOfSpan(sp, lines);
-        const replaced = (c.displaced || []).filter((l) => l.trim()).map(unhead).join('\n') || undefined;
+        const replaced = (c.displaced || []).filter((l) => l.trim()).join('\n') || undefined;
         items.push({ id: 'amd:' + a.candidate, kind: 'quick', keys, state: 'sealed',
           qLabel: labelFor(keys[0]), urgency: 0, pct: 100,
           cap: 'the Founder amended this',

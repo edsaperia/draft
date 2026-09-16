@@ -203,7 +203,9 @@ window.FIXTURE_SESSION = (function () {
     { t: 'p', x: 'A matter not on the notice may still be decided if every member present agrees to take it, and not otherwise.' },
     { t: 'h', level: 3, x: 'Quorum' },
     { t: 'p', key: 'quorum', x: 'A meeting needs half the membership present to decide anything, and two-thirds to decide anything reserved.' },
-    { t: 'p', x: 'A meeting that falls short of quorum may still be held, and may still talk, and may minute what it thinks, but decides nothing.' },
+    // keyed since Q1406: the quorum race runs over this paragraph too, so the
+    // fixture holds one card whose head and lanes are several blocks
+    { t: 'p', key: 'quorumShort', x: 'A meeting that falls short of quorum may still be held, and may still talk, and may minute what it thinks, but decides nothing.' },
     { t: 'h', level: 2, x: 'Deciding' },
     { t: 'h', level: 3, x: 'Ordinary Decisions' },
     { t: 'p', x: 'An ordinary decision is taken by a majority of those present and voting, and takes effect at the close of the meeting unless it says otherwise.' },
@@ -340,17 +342,21 @@ window.FIXTURE_SESSION = (function () {
       ]
     },
     {
-      id: 'race-quorum', kind: 'race', keys: ['quorum'], state: 'needs',
+      // **a run of two paragraphs** (Q1406, Ed 2026-09-16: *"The clause as it
+      // stands" doesn't seem to render linebreaks*): the head is both clauses,
+      // candidate a ends in a bullet, candidate b keeps two paragraphs — the
+      // one fixture card card-audit's T1 reads for its blocks
+      id: 'race-quorum', kind: 'race', keys: ['quorum', 'quorumShort'], state: 'needs',
       qLabel: '§ Quorum',
       urgency: 0.58,
       pct: 40, cap: 'two of the fourteen have voted — quorum is 5',
       race: {
         a: {
-          text: 'A meeting needs eight members present to decide anything, and ten to decide anything reserved, counted at the moment the question is put.',
+          text: 'A meeting needs eight members present to decide anything, and ten to decide anything reserved, counted at the moment the question is put.\n- A meeting short of quorum may talk and minute what it thinks, and decides nothing.',
           rationale: 'Fractions of a membership that changes size are a trap. Fixed numbers can be checked by looking round the room, and cannot be argued about afterwards.'
         },
         b: {
-          text: 'A meeting needs half the membership present to decide anything, and two-thirds to decide anything reserved; a member who has given their view in writing to the Steward counts as present for quorum but not for the vote.',
+          text: 'A meeting needs half the membership present to decide anything, and two-thirds to decide anything reserved; a member who has given their view in writing to the Steward counts as present for quorum but not for the vote.\nA meeting that falls short of quorum may still be held, and may still talk, and may minute what it thinks, but decides nothing.',
           rationale: 'People travel and people work nights. Letting a written view hold your place stops the house from being unable to act because three of us are away.'
         }
       }

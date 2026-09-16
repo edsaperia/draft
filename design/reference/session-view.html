@@ -8611,7 +8611,7 @@
       out.push({ t: 'h', level: 1, x: 'Backlog', key: 'U:head' });
       for (const o of und) {
         const best = bestOf(o);
-        const text = best ? best.hunks.flatMap((h) => h.lines).map(unhead).join(' ') : (o.displaced || []).join(' ');
+        const text = best ? best.hunks.flatMap((h) => h.lines).map(unhead).join(' ') : (o.displaced || []).map(unhead).join(' ');
         out.push({ t: 'p', x: text || '(the text stood)', key: 'U:' + (o.raceId || o.candidateId) });
       }
     }

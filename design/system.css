@@ -1924,6 +1924,10 @@
     font-family: var(--font-text); line-height: var(--lh-text);
   }
   .clausehead .rtext { font-size: var(--t-body); margin-bottom: 0; }
+  /* a text read in blocks (Q1406): the head's, a lane's and a slate's `.lp`
+     blocks stand a paragraph gap apart, as the editing lane's do */
+  .rtext .lp { margin: 0 0 var(--s2); }
+  .rtext .lp:last-child { margin-bottom: 0; }
   .clausehead .rtext.none { color: var(--muted); font-style: italic; }
   /* The card's own content column is laid on the same axis as the prose, so a
      clause does not shift sideways when it becomes a head — and the `.chipcol`

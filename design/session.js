@@ -104,7 +104,7 @@
     // the drawn glyphs (Q1401): the commit row's buttons, the units in an
     // eyebrow, and the glyphs inside the charter column's own sentences
     glyphHtml, glyphify,
-    tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks,
+    tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks, mdBlocksHtml,
     originText, mdToHtml, htmlToMd, mdStrip, mdLine,
     richToSource, sourceToRich, readLane,
     laneSeed, laneProposeHtml, laneCtlHtml, speakerHtml, fieldHtml, fieldOf, groundNote,
@@ -299,8 +299,10 @@
   // reads the run as one piece, as a composer site does (225).
   function runTextFor(s, key) {
     const keys = (s && s.keys) || [];
-    if (keys.length < 2 || !keys.includes(key) || keys.some(isGapKey)) return currentTextFor(key);
-    return keys.map(currentTextFor).filter(Boolean).join(' ');
+    // the source lines (Q1406): the head renders blocks, so a run keeps its
+    // paragraph breaks and a heading its rank
+    if (keys.length < 2 || !keys.includes(key) || keys.some(isGapKey)) return sourceTextFor(key);
+    return keys.map(sourceTextFor).filter(Boolean).join('\n');
   }
   // the insert head's line: *(no text here)*, whatever stands either side —
   // the eyebrow, *The gap as it stands*, says the rest (Q1379, Ed 2026-09-15;
@@ -1883,7 +1885,7 @@
       '<span class="sub">' + esc((s.decided || {}).when || '') + '</span></div>' +
       (skey
         ? clauseHeadHtml(s, {
-            text: currentTextFor(skey), key: skey, chips: chipsFor(skey, s.id),
+            text: sourceTextFor(skey), key: skey, chips: chipsFor(skey, s.id),
             label: null,
           })
         : '') +
@@ -2097,7 +2099,7 @@
             return '<div class="ranked' + (c.incumbent ? ' wasthere' : '') + '">' +
             '<div class="rtag">' + tag(c) + line(c) + '</div>' +
             // read as the clause is (Q1368): a candidate's text is markdown
-            '<div class="rtext">' + mdLine(c.text) + '</div>' +
+            '<div class="rtext">' + mdBlocksHtml(null, c.text) + '</div>' +
             // the same blank disc a live card gives it: whoever argued for this is
             // still sealed unless the session's visibility setting says otherwise
             spk(c) + '</div>';
@@ -2359,7 +2361,7 @@
     return (
       '<div class="sugg dead-open" data-card="' + s.id + '"' +
       (key ? ' data-site="' + key + '"' : '') + '>' +
-      clauseHeadHtml(s, { text: currentTextFor(key), key: key, chips: chipsFor(key, s.id),
+      clauseHeadHtml(s, { text: sourceTextFor(key), key: key, chips: chipsFor(key, s.id),
                           label: T.dead.headLabel }) +
       // The card's own voice, and the only place it raises it. On a race card a
       // line like this is a caveat at the foot; here it is the whole point of
@@ -2618,7 +2620,7 @@
         // picks like any proposal. The fixture's `marked` is already the full
         // diff, so a stacked proposal can state its own change without
         // recomputing one.
-        clauseHeadHtml(s, { text: currentTextFor(site.key), key: site.key, v: 'keep',
+        clauseHeadHtml(s, { text: sourceTextFor(site.key), key: site.key, v: 'keep',
                             chips: chipsFor(site.key, s.id) }) +
         fieldHtml(proposalHtml(s, { v: 'approve', html: resultOnly(site.marked), why: s.rationale, by: s.by, key: site.key })) +
         reviseNote(s) +
@@ -4092,7 +4094,8 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // Without lane letters, a race verdict has to name the text itself (197).
     // The first few words are enough to recognise, and they are the words the
     // member actually chose rather than a position on a screen.
-    const quote = (t) => '“' + String(t || '').split(/\s+/).slice(0, 6).join(' ') + '…”';
+    // the words alone: a text carries its block markers since Q1406
+    const quote = (t) => '“' + String(t || '').replace(/^(#{1,3}|-)\s+/gm, '').split(/\s+/).slice(0, 6).join(' ') + '…”';
     // the verdict names the item's own pair (Q1367)
     const sv = s;
     const verdict =
