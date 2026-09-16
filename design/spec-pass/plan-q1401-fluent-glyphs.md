@@ -16,7 +16,7 @@ Three families, one renderer:
 
 **Out of scope, deliberately:** a member's **face** (`emojiface`, the picker, `FACE_EMOJI`) — a face is the member's choice and stays the platform's emoji; the **lifecycle marks** (done, Q1360); the stagehand furniture (`.devswitch`, the ladder bar, 📬); the mail modal (off the design system).
 
-**Undecided, put to Ed as Q1401 (a):** the glyph **inside a clause sentence** — *all members must agree 🏛️*, *the membership decides ✏️*, *at will ✒️* (copy.js `RULES`), and the ✏️/🏛️/✒️ inside `PAGE_COPY` sentences. Two readings: (i) drawn too, by a post-escape substitution at every reading site (the way `linkify` works — applied **after** escaping, never before); (ii) left as characters inside prose, since a sentence is text and the picture is a control's. The plan builds (i) as stage 4 and stage 4 is skipped if Ed rules (ii). **Build stages 1–3 and 5 regardless.**
+**Ruled, Q1401 (a) — Ed, 2026-09-16 08:35: *draw them in prose too*. Stage 4 builds.** The question as it was put: the glyph **inside a clause sentence** — *all members must agree 🏛️*, *the membership decides ✏️*, *at will ✒️* (copy.js `RULES`), and the ✏️/🏛️/✒️ inside `PAGE_COPY` sentences. Two readings: (i) drawn too, by a post-escape substitution at every reading site (the way `linkify` works — applied **after** escaping, never before); (ii) left as characters inside prose, since a sentence is text and the picture is a control's. The plan builds (i) as stage 4 and stage 4 is skipped if Ed rules (ii). **Build stages 1–3 and 5 regardless.**
 
 ## The sizes
 
