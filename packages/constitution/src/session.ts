@@ -1175,6 +1175,7 @@ export class ConstitutionSession {
       convenorSeatVacant: () => this.convenorSeatVacant(),
       afterRosterChange: (t, cause, member) => this.afterRosterChange(t, cause, member),
       rereadLapse: (t) => this.rereadLapse(t),
+      answeredAtDoor: (applicant) => this.answeredAtDoor(applicant),
     };
   }
 
@@ -1488,7 +1489,8 @@ export class ConstitutionSession {
     // application *is* the proposal.
     if (this.priceOf('admission') === 'pen') {
       const id = `m-${this.nextMemberN}`;
-      this.emit({ type: 'member-admitted', t, applicant, member: id });
+      this.emit({ type: 'member-admitted', t, applicant, member: id,
+        ...this.answeredAtDoor(applicant) });
       this.afterRosterChange(t, 'arrival', id);
     } else {
       this.emit({ type: 'motion-opened', t, motion: `mo-${this.nextMotionN}`,
@@ -1496,6 +1498,25 @@ export class ConstitutionSession {
         route: this.priceOf('admission') === 'assembly' ? 'constitutional' : 'ordinary',
         stake: 0 });
     }
+  }
+
+  /**
+   * **What the applicant answered at the door, for the seat being born**
+   * (Q1405). ✋ and 🖼️ are asked of a member as *were you ever asked* (Q645),
+   * and an admission used to carry the name and picture across on the row
+   * while leaving both flags false — so a member who had chosen both at the
+   * door met the two cards again. The answer is read off the record, which
+   * after a submission is exactly what the submission gave: it writes both
+   * fields, absent → null (Q1366), so a null here is *not given* and a blank
+   * string is the Anonymous answer, as it is on `identity-set`. Read at the
+   * emit and written into the event, never derived at the fold — the shape
+   * `created` uses for a founder who arrives already named.
+   */
+  private answeredAtDoor(applicant: string): { nameSet?: true; pictureSet?: true } {
+    const a = this.applicants.get(applicant);
+    if (!a) throw new Error(`unknown applicant '${applicant}'`);
+    return { ...(a.name !== null ? { nameSet: true as const } : {}),
+      ...(a.picture !== null ? { pictureSet: true as const } : {}) };
   }
 
   // -------------------------------------------------------------------------

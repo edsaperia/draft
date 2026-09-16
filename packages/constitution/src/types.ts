@@ -342,7 +342,19 @@ export type ConstitutionEvent =
    *  (stage 12's second part, redaction at the projection, is not this). */
   | { type: 'application-submitted'; t: number; applicant: ApplicantId; words?: string }
   | { type: 'application-proposed'; t: number; applicant: ApplicantId; by: MemberId }
-  | { type: 'member-admitted'; t: number; applicant: ApplicantId; member: MemberId }
+  /**
+   * What the applicant answered at the door arrives with them (Q1405, Ed's
+   * live-room note 2026-09-16: *after I have chosen name and picture, the
+   * tasks still appear yellow*): the flags are `ConvenorRef`'s, in the same
+   * shape and for the same reason — Q645's *was it ever answered*, recorded
+   * where the seat is born. Present only where the submission gave that
+   * field (`submitApplication` writes both, absent → null, Q1366), so the
+   * common admission serialises as it always did and an older log reads
+   * as *unanswered*, which is what its fold said. No schema bump: absence
+   * keeps its old meaning, like `shape` and `why`.
+   */
+  | { type: 'member-admitted'; t: number; applicant: ApplicantId; member: MemberId;
+      nameSet?: true; pictureSet?: true }
   | { type: 'application-refused'; t: number; applicant: ApplicantId }
   /**
    * **The door shut on an application, and the applicant said they had read

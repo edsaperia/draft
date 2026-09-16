@@ -77,6 +77,7 @@ const stuck = [];
 // the applicant's seat outlives its section at ✒️ (Q1375): they leave at the
 // end, and the founder's rail is read for the 🥾 entry that names them
 let guestResign = null;
+let guestSeat = null;
 let closeGuest = async () => {};
 
 // Q911: a walk on a default port will drive whatever process is listening,
@@ -430,6 +431,25 @@ if (knock.status !== 200 || !knock.body || !knock.body.devLink) {
     });
     return r.status;
   }, SLUG);
+  // the seat the admitted applicant is served (Q1405): by the seat mail's
+  // link where one is given — it swaps the `app:` cookie for the member's, as
+  // the returning section's invitation does — else the page they already hold
+  guestSeat = async (link) => {
+    if (link) {
+      await guest.goto(link);
+      for (let i = 0; i < 40 && !guest.url().includes('/d/'); i++) await T(500);
+    } else await guest.reload({ waitUntil: 'load' });
+    await T(2500);
+    return guest.evaluate(async () => {
+      const v = await (await fetch(location.origin + '/api/d/' + location.pathname.split('/')[2] + '/view')).json();
+      return {
+        me: v.me || null,
+        identity: (v.view && v.view.identity) || null,
+        rail: [...document.querySelectorAll('#rail li')]
+          .map((li) => li.dataset.q || (li.querySelector('[data-card]') || { dataset: {} }).dataset.card || null),
+      };
+    });
+  };
   closeGuest = () => guestCtx.close();
 }
 // who the surface should name: the name they gave, or — where arrival was the
@@ -700,6 +720,94 @@ if (admEntry) {
     say('the OK     · ' + (backAgain ? 'FAIL: the news came back after a reload'
       : 'dismissed, and still gone after a reload'));
     if (backAgain) stuck.push('the news returns after a reload');
+  }
+
+  /* **What they told the door arrives with them** (Q1405, Ed's live-room
+   * note 2026-09-16: *after I have chosen name and picture, the tasks still
+   * appear yellow*). The admission carried the name and the picture across on
+   * the row, but ✋ and 🖼️ ask *were you ever asked* (Q645) and only a
+   * member's own `identity-set` had ever answered that — so a member admitted
+   * from an application met both cards again. Asserted on the seat the
+   * admission hands them: at *assembly* the founder consents, the seat mail's
+   * link is followed, and the new member's rail holds neither ✋ nor 🖼️, the
+   * view saying both were answered; at ✒️ the arrival gave nothing, and the
+   * same read is the control — both cards still ask. *proposal* is not read:
+   * the race adopts on the engine's cooldown, which this walk does not wait
+   * on. */
+  if (PRICE === 'assembly' && card && card.commit === 'confirm' && guestSeat) {
+    const chose = await page.evaluate((joins) => {
+      const c = document.querySelector('.setupcard');
+      const block = c && [...c.querySelectorAll('.pick')]
+        .find((p) => ((p.querySelector('.opttext') || {}).textContent || '').trim() === joins);
+      const b = block && block.querySelector('.lanepick');
+      if (!b) return false;
+      b.click();
+      return true;
+    }, COPY.page.consent.joins(NAME));
+    await T(400);
+    const held = chose && await press(1600);
+    if (!held) { say('FAIL: could not consent to the admission on the 🏛️ card'); stuck.push('the consent'); }
+    else {
+      await T(1500);
+      // **the door's 🛡️ is born held** (SPEC §9.7 rule 9): a carried
+      // admission parks behind the founder's assent, so the crown question
+      // is answered over the wire as the founding's settings were — the
+      // crown card is journey's to walk, not this one's
+      const founderView = await page.evaluate(async (slug) =>
+        (await (await fetch(`/api/d/${slug}/view`)).json()), SLUG);
+      const crown = ((founderView.view && founderView.view.crownTasks) || [])[0];
+      if (!crown) { say('FAIL: the carried admission raised no crown question for the founder\'s 🛡️'); stuck.push('the crown question'); }
+      else {
+        const assent = await cmd('answer-crown-question', { question: crown.id, outcome: 'accept' });
+        say('🛡️ assent · ' + crown.id + ' → ' + assent.status);
+        if (assent.status !== 200) stuck.push('the crown\'s assent');
+        await T(1500);
+      }
+      // the seat mail lands on the outbox's next sender pass, not on the
+      // commit that raised it, so it is polled for rather than read once
+      let seatLink = null;
+      for (let i = 0; i < 40 && !seatLink; i++) {
+        const seatMail = (await devOutbox(BASE))
+          .filter((m) => m.to === APPLICANT && /\/auth\/login/.test(linkIn(m) || '')).pop();
+        seatLink = seatMail ? linkIn(seatMail) : null;
+        if (!seatLink) await T(500);
+      }
+      if (!seatLink) {
+        say('FAIL: no seat mail reached the admitted applicant — ' + JSON.stringify(seatLink));
+        stuck.push('the seat mail');
+      } else {
+        const seat = await guestSeat(seatLink);
+        const asks = seat.rail.filter((k) => k === 'myname' || k === 'mypic');
+        const answered = !!(seat.identity && seat.identity.nameSet && seat.identity.pictureSet);
+        say('admitted   · seat ' + JSON.stringify(seat.me) + ' · identity ' + JSON.stringify(seat.identity) +
+          ' · rail ' + JSON.stringify(seat.rail));
+        if (!seat.me) { say('FAIL: the seat mail did not seat the admitted applicant as a member'); stuck.push('the admitted seat'); }
+        if (!answered) {
+          say('FAIL: the admitted member is read as not having answered ✋ 🖼️ (Q1405)');
+          stuck.push('the door\'s answers arrive');
+        }
+        if (asks.length) {
+          say('FAIL: the admitted member is asked again for what they told the door — ' + JSON.stringify(asks) + ' (Q1405)');
+          stuck.push('✋ 🖼️ asked again');
+        }
+        if (seat.me && answered && !asks.length) say('Q1405      · what they told the door arrived with them: no ✋ 🖼️ ask');
+      }
+    }
+  }
+  if (PRICE === 'pen' && guestSeat) {
+    const seat = await guestSeat(null);
+    const asks = seat.rail.filter((k) => k === 'myname' || k === 'mypic');
+    say('arrived    · seat ' + JSON.stringify(seat.me) + ' · identity ' + JSON.stringify(seat.identity) +
+      ' · asks ' + JSON.stringify(asks));
+    if (!seat.me) { say('FAIL: the arrival holds no member seat'); stuck.push('the arrival\'s seat'); }
+    if (!seat.identity || seat.identity.nameSet || seat.identity.pictureSet) {
+      say('FAIL: an arrival that gave nothing is read as having answered — ' + JSON.stringify(seat.identity) + ' (Q1405)');
+      stuck.push('the control: nothing given');
+    }
+    if (asks.length !== 2) {
+      say('FAIL: an arrival that gave nothing should still be asked ✋ and 🖼️, saw ' + JSON.stringify(asks) + ' (Q645)');
+      stuck.push('the control: still asked');
+    }
   }
 }
 
