@@ -32,6 +32,38 @@
    and beside its component is the better place for it.
    ========================================================================== */
   /* ===================================================================
+     The document's face (Q1402, Ed 2026-09-16: *use Charis SIL*). Four
+     faces, self-hosted from `design/fonts/` — a Latin subset written by
+     `npm run charis-subset` from SIL's Charis 7.000 release under the OFL
+     (the licence is beside them) and committed, so the build never reaches
+     the network. Named relatively, as the sprite is fetched: the host
+     serves `fonts/` at the root and under a document (routes-surface.ts).
+     `swap` is the rule: the page never waits on the font, and the fallback
+     stack behind it — Charter, Charis's ancestor and metric-close, then
+     Georgia — is what `--font-text` names, so the swap barely moves. The
+     `unicode-range` is the subset's own list (`RANGES` in the script).
+     ================================================================== */
+  @font-face {
+    font-family: 'Charis SIL'; font-style: normal; font-weight: 400; font-display: swap;
+    src: url(fonts/CharisSIL-Regular.woff2) format('woff2');
+    unicode-range: U+0020-007E, U+00A0-00FF, U+0100-017F, U+2000-206F, U+20AC;
+  }
+  @font-face {
+    font-family: 'Charis SIL'; font-style: italic; font-weight: 400; font-display: swap;
+    src: url(fonts/CharisSIL-Italic.woff2) format('woff2');
+    unicode-range: U+0020-007E, U+00A0-00FF, U+0100-017F, U+2000-206F, U+20AC;
+  }
+  @font-face {
+    font-family: 'Charis SIL'; font-style: normal; font-weight: 700; font-display: swap;
+    src: url(fonts/CharisSIL-Bold.woff2) format('woff2');
+    unicode-range: U+0020-007E, U+00A0-00FF, U+0100-017F, U+2000-206F, U+20AC;
+  }
+  @font-face {
+    font-family: 'Charis SIL'; font-style: italic; font-weight: 700; font-display: swap;
+    src: url(fonts/CharisSIL-BoldItalic.woff2) format('woff2');
+    unicode-range: U+0020-007E, U+00A0-00FF, U+0100-017F, U+2000-206F, U+20AC;
+  }
+  /* ===================================================================
      Tokens. Deliberately single-theme (light) — Ed, 2026-08-14.
      Bootstrap-plain, pending the design and branding pass (Ed, 198).
      =================================================================== */
@@ -118,19 +150,55 @@
        yellow either, which is a lifecycle wash saying *this wants you*. */
     --ins-bg: #FFF1A8;            /* the highlighter — added words     */
 
-    /* --- type scale. Four sizes and a caption; anything outside this
-           list is a mistake rather than a decision ------------------ */
-    --t-lead: 1.25rem;      /* the document's title                    */
+    /* --- the two families (Q1402, Ed 2026-09-16). The document's text is
+           Charis SIL — the prose, the constitution's clause sentences, a
+           card's body and option text, a rationale, a record, the closing
+           signatures — and the chrome stays the system sans: the topbar,
+           the rails, tabs, buttons, eyebrows, counts, a control's own word
+           (T46's distinction is a font distinction too). The ladder below
+           is shared by both; the family is taken by class, never by
+           element, so a `<p>` in the rail stays sans. ---------------- */
+    --font-text: 'Charis SIL', Charter, Georgia, 'Times New Roman', serif;
+    --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+    /* --- type scale: a modular scale on the major second, 1.125, six
+           steps, 1rem the body (Q1402). Each step is a power of the ratio,
+           rounded to three decimals; every one lands within a pixel of the
+           ladder it replaced, so nothing outside the document visibly
+           moved. Anything outside this list is a mistake rather than a
+           decision — a glyph size is the one allowed literal. --------- */
+    --t-lead: 1.266rem;     /* 1.125²  — a card's title, the title lane  */
     /* A clause under judgment is the document's own text, so it is set at the
        document's own size (Ed, 2026-08-17). It had been a notch smaller, which
        meant a clause *changed size* the moment its card opened even though it
        had been made to stay in exactly the same place — the one movement left,
        and the more distracting for being the only one. */
-    --t-body: 1rem;         /* a lane's text, a clause under judgment  */
-    --t-ui: 0.875rem;       /* card and rail titles, buttons           */
-    --t-small: 0.8125rem;   /* rationales, one-line entries            */
-    --t-cap: 0.72rem;       /* captions, footers, notes                */
-    --t-micro: 0.65rem;     /* eyebrow labels only                     */
+    --t-body: 1rem;         /* 1.125⁰  — a lane's text, a clause under judgment */
+    --t-ui: 0.889rem;       /* 1.125⁻¹ — card and rail titles, buttons   */
+    --t-small: 0.79rem;     /* 1.125⁻² — rationales, one-line entries    */
+    --t-cap: 0.702rem;      /* 1.125⁻³ — captions, footers, notes        */
+    --t-micro: 0.624rem;    /* 1.125⁻⁴ — eyebrow labels only             */
+
+    /* --- the document's headings: a second ladder, the perfect fourth,
+           1.333, standing on the body (Q1402, Ed: *in general I prefer
+           larger headings in documents, it makes them easier to skim*).
+           The title two steps up, a part one, a chapter one major second
+           up, a section at the body's own size in italic — size says
+           rank, so no rank is tracked or capitalised. ----------------- */
+    --h-title: 1.777rem;    /* 1.333² — the document's title, Regular    */
+    --h1: 1.333rem;         /* 1.333¹ — a part, Regular, ruled           */
+    --h2: 1.125rem;         /* 1.125¹ — a chapter, Bold                  */
+    --h3: 1rem;             /*         — a section, Italic               */
+    /* the text face's line-height: Charis's x-height is large and its
+       descenders long, so the body takes a step more air than the sans
+       did (1.5). 16px × 1.55 is 24.8px, off the 4px grid by 0.8 — the
+       nearest on-grid steps, 24 and 28, are the sans's crowding and a
+       leading too open for a clause; the measured choice stands (Q1402). */
+    --lh-text: 1.55;
+    /* …and the two large heading steps take a heading's leading: a title
+       wrapping at 1.55 read as double-spaced. A chapter and a section stay
+       on the text's own. */
+    --lh-head: 1.25;
 
     /* --- spacing. A 4px grid; use the step, not the pixel ---------- */
     --s1: 4px;
@@ -214,7 +282,7 @@
   body {
     background: var(--bg);
     color: var(--fg);
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: var(--font-ui);   /* the chrome; the text sites take --font-text by class */
     font-size: 16px;
     line-height: 1.5;
     margin: 0;
@@ -1095,7 +1163,15 @@
      as a length. An unregistered custom property substitutes its tokens and
      resolves `ch` against whoever *uses* it — which is how `.doctitle`'s own
      `70ch`, read at `--t-lead`, came to be a different width from the prose's
-     and to never bind at all. */
+     and to never bind at all.
+
+     **Re-measured for the document's face and kept** (Q1402): `70ch` is
+     resolved here, on `.doc`, in the chrome's sans — so the column is 604px
+     at 16px in either face — and Charis SIL at that width holds 82.2
+     characters per full line where the sans held 82.8 (`npm run
+     type-measure`, the Hollow Oak fixture at 1600; 33.3 against 33.3 at
+     390). The serif's average width is the sans's, so the measure does not
+     move. */
   @property --measure { syntax: "<length>"; inherits: true; initial-value: 0px; }
   .doc {
     --measure: 70ch;
@@ -1169,12 +1245,23 @@
   #patchrow { display: contents; }
   .doc.patchrow #editdoor [data-editdoor] { display: none; }
   #charter { display: contents; }
+  /* **The column is the document's face** (Q1402): Charis SIL at the text's
+     leading, taken here by class so that everything the column holds — a
+     clause, a bullet, a heading, a card's head standing in a clause's place —
+     is set in it, and nothing outside the column is. */
   .doc .prose {
     max-width: calc(var(--measure) + 2 * var(--measure-gutter));
     padding: 0 var(--measure-gutter);
     margin: 0 auto;
+    font-family: var(--font-text); line-height: var(--lh-text);
   }
-  .doc .doctitle { font-size: var(--t-lead); font-weight: 600; margin: 0 0 18px; text-wrap: balance; }
+  /* the title: the top of the heading ladder, Regular — Charis Bold at this
+     size is heavy, and the size does the work (Q1402). Stated in full here
+     because the birth's `h1#doctitle` stands outside the column. */
+  .doc .doctitle {
+    font-family: var(--font-text); font-size: var(--h-title); font-weight: 400;
+    line-height: var(--lh-head); margin: 0 0 var(--s5); text-wrap: balance;
+  }
   .doc p { margin: 0 0 var(--s3); position: relative; }
   /* **The bullet block** (Q1294, Ed 2026-09-10): a line beginning `- `, one
      block per line like a heading — the charter's `p.bullet`, the founder's
@@ -1216,17 +1303,31 @@
      charter draws them as h2, the founder's pre-🍾 column as div.docline
      (`relabel`, `textDivs`), and the two must look alike (Q1304, Ed's bot
      room 2026-09-10: a typed heading lost its # and its rank at once) */
+  /* **A skimming ladder** (Q1402, Ed 2026-09-16: *in general I prefer larger
+     headings in documents, it makes them easier to skim*): the perfect
+     fourth on the body — a part at `--h1` Regular with its rule, a chapter
+     at `--h2` Bold, a section at the body's size in Italic and full ink (a
+     heading a reader skims by must not be grey). Size says rank, so the
+     tracking and the capitals that made a small sans heading read as one
+     are gone. Margins on the spacing scale, more air above than below.
+     `--line` is each rank's first-line box, which the fold triangle and the
+     gutter tab beside it are centred on (below). */
   .doc .docline {
-    font-size: var(--t-cap); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
-    color: var(--muted); margin: 22px 0 var(--s2); position: relative;
+    --line: calc(var(--h3) * var(--lh-text));
+    font-family: var(--font-text); font-size: var(--h3); font-weight: 400; font-style: italic;
+    line-height: var(--lh-text); color: var(--fg); margin: var(--s4) 0 var(--s1); position: relative;
   }
   .doc .docline.lvl1 {
     --head-rule: 14px;
-    font-size: var(--t-body); color: var(--fg); letter-spacing: 0.08em;
-    margin: 46px 0 14px; padding-top: var(--head-rule); border-top: 1px solid var(--border);
+    --line: calc(var(--h1) * var(--lh-head));
+    font-size: var(--h1); font-style: normal; line-height: var(--lh-head);
+    margin: calc(2 * var(--s5)) 0 var(--s3); padding-top: var(--head-rule); border-top: 1px solid var(--border);
   }
-  .doc .docline.lvl2 { font-size: var(--t-small); color: var(--fg); margin: 30px 0 10px; }
-  .doc .docline.lvl3 { font-size: var(--t-cap); color: var(--muted); margin: 22px 0 var(--s2); }
+  .doc .docline.lvl2 {
+    --line: calc(var(--h2) * var(--lh-text));
+    font-size: var(--h2); font-weight: 700; font-style: normal; margin: var(--s5) 0 var(--s2);
+  }
+  .doc .docline.lvl3 { font-size: var(--h3); font-style: italic; margin: var(--s4) 0 var(--s1); }
   .doc .prose > .docline.lvl1:first-child { margin-top: var(--s5); }
   /* **The 📝 card draws no hairline at its top** (Q1383, Ed 2026-09-15). A
      document whose first block is a `# ` heading opened with the heading's
@@ -1239,8 +1340,14 @@
   #prose > .docline.lvl1:first-child, #prose > .doctitle + .docline.lvl1,
   #charter > .prose:first-of-type > .docline.lvl1:first-child,
   #charter > .prose:first-of-type > .doctitle + .docline.lvl1 { border-top: 0; padding-top: 0; }
-  /* the fold triangle sits in the chip-gutter, in line with the anchor marks */
-  .doc h2.docline .sectoggle { position: absolute; right: 100%; margin-right: var(--s3); top: -2px; }
+  /* the fold triangle sits in the chip-gutter, in line with the anchor marks —
+     centred on the heading's first line box (`--line`, Q1402): its own box is
+     its glyph at `--t-cap` on a line-height of 1 plus 2px of padding each side */
+  .doc h2.docline .sectoggle {
+    position: absolute; right: 100%; margin-right: var(--s3);
+    top: calc((var(--line) - var(--t-cap) - 4px) / 2);
+  }
+  .doc h2.docline.lvl1 .sectoggle { top: calc(var(--head-rule) + (var(--line) - var(--t-cap) - 4px) / 2); }
   .doc h2.docline .sechint {
     margin-left: 10px; font-weight: 400; text-transform: none; letter-spacing: 0;
     font-size: var(--t-cap); color: var(--muted); font-style: italic;
@@ -1260,9 +1367,13 @@
      gutter reads as a margin index. */
   .doc h2.docline .chipcol { margin-right: calc(14px + var(--s3)); }
   .doc h2.docline.marked .sectoggle { margin-right: calc(14px + var(--s3) + 34px + var(--s1)); }
-  /* A part heading's rule and the air under it sit above its words, so its
-     marks clear both — the chipcol is positioned against the padding box. */
-  .doc h2.docline.lvl1 .chipcol { top: calc(var(--head-rule) + 0.15em); }
+  /* A heading's tab is centred on its first line box — a 30px tab on a
+     line of `--line` (Q1402; it sat 0.15em under the top edge, a paragraph's
+     offset, when every rank was smaller than the tab). A part heading's rule
+     and the air under it sit above its words, so its marks clear both — the
+     chipcol is positioned against the padding box. */
+  .doc h2.docline .chipcol { top: calc((var(--line) - 30px) / 2); }
+  .doc h2.docline.lvl1 .chipcol { top: calc(var(--head-rule) + (var(--line) - 30px) / 2); }
   /* (the 900px rule that flattened the heading's gutter went with MOBILE.md's
      first cut, 2026-09-12: the gutter stays a column at every width) */
 
@@ -1350,14 +1461,15 @@
   .nocaret { display: contents; }
   /* a heading inside a lane or a head keeps its weight, so editing a section
      title alongside its paragraph does not silently flatten it to body text */
+  /* a lane is document text (Q1402): the face and the leading of the column */
+  .lp { font-family: var(--font-text); line-height: var(--lh-text); }
   .lp.hblock { font-weight: 700; }
   /* …and since Q1294 at the rank it will land at — the three heading ranks'
      own treatment (`.doc .docline`) without their margins and rule, so a
      typed `# ` previews as the heading it becomes */
-  .lp.hblock.lvl1, .lp.hblock.lvl2, .lp.hblock.lvl3 { text-transform: uppercase; letter-spacing: 0.05em; }
-  .lp.hblock.lvl1 { font-size: var(--t-body); letter-spacing: 0.08em; }
-  .lp.hblock.lvl2 { font-size: var(--t-small); }
-  .lp.hblock.lvl3 { font-size: var(--t-cap); color: var(--muted); }
+  .lp.hblock.lvl1 { font-size: var(--h1); font-weight: 400; line-height: var(--lh-head); }
+  .lp.hblock.lvl2 { font-size: var(--h2); font-weight: 700; }
+  .lp.hblock.lvl3 { font-size: var(--h3); font-weight: 400; font-style: italic; }
   /* **Spaces are preserved** (Ed, 2026-08-17: "I can't write spaces into the
      proposal text"). The lane rewrites its own markup on every keystroke so the
      green marking can follow the caret, which means a space you have just typed

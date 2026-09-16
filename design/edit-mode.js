@@ -176,25 +176,42 @@ window.EDIT_MODE = (function () {
       const line = rideLine();
       if (line) {
         // the sticky box's *natural* top: measured with the stickiness off for
-        // one reflow, since a stuck box reports where it is, not where it lives
+        // one reflow, since a stuck box reports where it is, not where it lives.
+        // **Centred on the line box, not flush with it** (Q1402): a 30px tab
+        // on the title's old 30px line box was centred by coincidence; the
+        // title's line is 35.5px in the document's face, so the tab's own
+        // height — measured, never 30 — is centred on the line's own height.
+        // The lift may be negative: where the box's natural top is the
+        // first line's own top (the charter), centring a 30px tab on a
+        // 35.5px line moves it 2.8px *down*, which the old `Math.max(0, …)`
+        // clamp swallowed.
+        const tab = rt.querySelector('.achip');
+        const tabH = tab ? tab.getBoundingClientRect().height : 30;
         rt.style.position = 'static';
-        const up = Math.max(0, rt.getBoundingClientRect().top - line.top);
+        const up = rt.getBoundingClientRect().top - (line.top + (line.lineBox - tabH) / 2);
         rt.style.position = '';
-        rt.style.setProperty('--ride-up', up + 'px');
+        rt.style.setProperty('--ride-up', up.toFixed(2) + 'px');
       }
       syncRideTab();
     }
     // **the line the tab rests beside**: the first block of whichever column
     // is in use — the charter's post-🍾, `#prose` before — or, in an empty
     // column, its content top (edit mode's padding-top is paid for by a
-    // negative margin, so the line is where it was and the tab does not move)
+    // negative margin, so the line is where it was and the tab does not move).
+    // `lineBox` is the first line's own height: the block's computed
+    // line-height, or its box where that is `normal` (Q1402).
     function rideLine() {
       const col = constituted() ? document.querySelector('#charter > .prose') : document.getElementById('prose');
       if (!col) return null;
       const first = col.firstElementChild;
-      if (first) return first.getBoundingClientRect();
+      if (first) {
+        const r = first.getBoundingClientRect();
+        const lh = parseFloat(getComputedStyle(first).lineHeight);
+        const pt = parseFloat(getComputedStyle(first).paddingTop) || 0;
+        return { top: r.top + pt, bottom: r.bottom, lineBox: Number.isFinite(lh) ? lh : r.height };
+      }
       const r = col.getBoundingClientRect(), pt = parseFloat(getComputedStyle(col).paddingTop) || 0;
-      return { top: r.top + pt, bottom: r.top + pt + 24 };
+      return { top: r.top + pt, bottom: r.top + pt + 24, lineBox: 24 };
     }
     // detached: the line the tab rests beside has scrolled out under the
     // navbar, so the tab is riding rather than resting

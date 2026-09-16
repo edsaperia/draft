@@ -58,8 +58,8 @@
      every other top-level heading has. So they take `.docline.lvl1`'s own type
      and stop being eyebrows, since an eyebrow that is 16px is not one. */
   .setrow .pilehead {
-    font-size: var(--t-body); font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.08em; color: var(--fg);
+    font-family: var(--font-text); font-size: var(--h1); font-weight: 400;
+    line-height: var(--lh-head); color: var(--fg);
   }
 
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden;
@@ -237,7 +237,7 @@
   /* the lane's text matches the standing title in the card's own head
      (#titlepara .setupcard .clausehead .headrule .headdoct, below) — the two
      are the same sentence at two moments, not two sizes of it (A9). */
-  #titlepara .pick .opttext .titlelane { font-size: var(--t-lead); font-weight: 600; }
+  #titlepara .pick .opttext .titlelane { font-size: var(--h-title); font-weight: 400; line-height: var(--lh-head); }
   .pick > .lanepick { margin-top: var(--s2); }
   /* a composer lane's radio bar inside an option block takes the block's own
      radio rhythm (Ed's card review round 3, 2026-09-05, A11 on 🪪: the lanes
@@ -559,7 +559,7 @@
   /* the title's composer. The same `.lanebox` the `editing-card` writes in, at
      the size the title is actually read at, because the whole point of writing
      in the place is that you see what you are making. */
-  .titlelane { font-size: var(--t-lead); font-weight: 600; }
+  .titlelane { font-family: var(--font-text); font-size: var(--h-title); font-weight: 400; line-height: var(--lh-head); }
   .titlelane:empty::before, .titlelane.blank::before {
     content: attr(data-ph); color: var(--muted); font-weight: 400; }
 
@@ -715,8 +715,14 @@ button.cline:hover b { text-decoration: underline; }
    direct-child rule above never reached it and the glyph stepped 10px on open
    (Ed, 2026-09-06) — the rule `fitTitleCard` says pins it in x, at last */
 #titlepara > #titlechip > .chipcol { margin-right: calc(14px + var(--s3)); }
+/* the constitution is document text (Q1402): every clause sentence, the
+   section's line of prose and the state line take the document's face and
+   leading; a name set bold inside one is Charis Bold */
+.constsec .cptext, .constsec .cpv, .constsec .csintro, .constsec .pilewho {
+  font-family: var(--font-text); line-height: var(--lh-text);
+}
 .constsec .cptext { margin: 0; padding-top: 3px; }
-.constsec .cptext b { font-weight: 600; }
+.constsec .cptext b { font-weight: 700; }
 .constsec .cpara.notab { min-height: 0; }
 .constsec .cpara.notab .cptext { padding-top: 0; }
 /* same margins as a closed paragraph — the measured shift does the rest */
@@ -853,7 +859,9 @@ button.cline:hover b { text-decoration: underline; }
 
 /* a rule standing as a card's head is the clause, not a title: document size
    and colour, exactly as it stood on the page (Ed's QA, 2026-08-18) */
-.setupcard .clausehead .headrule { font-size: 1rem; font-weight: 400; line-height: 1.55; }
+.setupcard .clausehead .headrule {
+  font-family: var(--font-text); font-size: var(--t-body); font-weight: 400; line-height: var(--lh-text);
+}
 
 /* the head-rule correction is a margin, and a block parent lets a child's
    top margin collapse straight through it — fitBand's pass measured,
@@ -876,8 +884,11 @@ button.cline:hover b { text-decoration: underline; }
 /* at the birth the title card's head IS the big heading; post-save it opens
    at its own clause and the title sits inside the sentence at document size
    (Ed, 2026-08-19) */
-#titlepara .setupcard .clausehead .headrule .headdoct { font-size: var(--t-lead); }
-.setupcard .clausehead .headrule .headdoct { font-weight: 600; }
+/* …and at the title's own type (Q1402): the top of the heading ladder in
+   Regular, exactly `.doctitle`'s, since `fitTitleCard` lays this text onto
+   the big heading and the two must not differ by a weight */
+#titlepara .setupcard .clausehead .headrule .headdoct { font-size: var(--h-title); line-height: var(--lh-head); }
+.setupcard .clausehead .headrule .headdoct { font-weight: 400; }
 .setupcard .clausehead .headrule .headdoct.ph { color: var(--muted); font-weight: 400; }
 
 /* links in the constitution are real links (Ed, 2026-08-19): ink-coloured,
