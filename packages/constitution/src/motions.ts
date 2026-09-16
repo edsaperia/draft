@@ -75,6 +75,10 @@ export interface MotionHost {
   convenorSeatVacant(): boolean;
   afterRosterChange(t: number, cause: 'arrival' | 'departure', member: MemberId): void;
   rereadLapse(t: number): void;
+  /** What the applicant answered at the door, for the `member-admitted` a
+   *  carried admission emits (Q1405): the session's own reader, so the
+   *  motion route and the pen route write the same flags. */
+  answeredAtDoor(applicant: string): { nameSet?: true; pictureSet?: true };
 }
 
 export function openMotion(s: MotionHost, t: number, by: MemberId,
@@ -417,8 +421,10 @@ export function settleCarriedEffects(s: MotionHost, t: number, rec: MotionRecord
   }
   if (rec.payload.kind === 'admit') {
     const id = `m-${s.nextMemberN}`;
+    // what they told the door arrives with them (Q1405): ✋ and 🖼️ are asked
+    // of a member as *were you ever asked*, and the answers were given
     s.emit({ type: 'member-admitted', t, applicant: rec.payload.applicant,
-      member: id });
+      member: id, ...s.answeredAtDoor(rec.payload.applicant) });
     // an admitted applicant inherits the constitution and is owed nothing
     // for it, like any other joiner (§9.7½, §9.0a)
     s.afterRosterChange(t, 'arrival', id); // and is present

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildConstituted } from './helpers.js';
 import { ConstitutionSession } from '../src/session.js';
+import type { InMemoryPeople } from '../src/people.js';
 import { view } from '../src/view.js';
 
 describe('applications (§9.7½, entry 94): one switch, 🪪’s price, one identity rule', () => {
@@ -164,6 +165,74 @@ describe('applications (§9.7½, entry 94): one switch, 🪪’s price, one iden
     // member who renames
     expect(s.memberRecords().get(bo)!.name).toBe('Bo Again');
     expect(s.memberRecords().get(bo)!.picture).toBeNull();
+  });
+
+  // **What the applicant answered at the door arrives with them** (Q1405,
+  // Ed's live-room note 2026-09-16: *after I have chosen name and picture,
+  // the tasks still appear yellow*). The admission copied the row across —
+  // the name and the picture — but ✋ and 🖼️ ask *were you ever asked*
+  // (Q645), and only `identity-set` had ever set those flags, so a member
+  // admitted from an application met both cards again. The flags ride
+  // `member-admitted` in `ConvenorRef`'s shape, and a replay reads them off
+  // the event, never the row.
+  const admittedFrom = (s: ConstitutionSession, email: string) =>
+    [...s.memberRecords().values()].find((m) => m.email === email)!;
+  const admissionEvent = (s: ConstitutionSession) =>
+    s.logEntries().map((e) => e.event).find((e) => e.type === 'member-admitted')!;
+
+  it('an applicant who gave a name and a picture is admitted having answered both (Q1405)', () => {
+    const { s } = buildConstituted({
+      applications: { apply: true }, admission: { price: 'proposal' } });
+    const ap = s.startApplication(3, 'dee@example.org');
+    s.verifyApplication(4, ap);
+    s.submitApplication(5, ap, { name: 'Dee', picture: 'e🦡', words: 'I keep bees.' });
+    s.adjudicateOrdinaryMotion(6, s.applicantRecords().get(ap)!.motion!, 'carried');
+    const dee = admittedFrom(s, 'dee@example.org');
+    expect(dee.name).toBe('Dee');
+    expect(dee.picture).toBe('e🦡');
+    expect(dee.nameSet).toBe(true);
+    expect(dee.pictureSet).toBe(true);
+    expect(view(s, dee.id).identity)
+      .toEqual({ name: 'Dee', picture: 'e🦡', nameSet: true, pictureSet: true });
+    // the act is in the log, in the founder's own shape (`ConvenorRef`)
+    expect(admissionEvent(s)).toMatchObject({ nameSet: true, pictureSet: true });
+  });
+
+  it('one who gave neither is admitted having answered nothing, and the event is as it was', () => {
+    const { s } = buildConstituted({
+      applications: { apply: true }, admission: { price: 'pen' } });
+    const ap = s.startApplication(3, 'dee@example.org');
+    s.verifyApplication(4, ap);
+    s.submitApplication(5, ap); // an empty application is a real application
+    const dee = admittedFrom(s, 'dee@example.org');
+    expect(dee.nameSet).toBe(false);
+    expect(dee.pictureSet).toBe(false);
+    expect(view(s, dee.id).identity)
+      .toEqual({ name: null, picture: null, nameSet: false, pictureSet: false });
+    // no key at all, so the common admission serialises exactly as before
+    expect(Object.keys(admissionEvent(s)).sort()).toEqual(['applicant', 'member', 't', 'type']);
+  });
+
+  it('a name alone answers ✋ alone, and a replay reads the flags off the log', () => {
+    const { s } = buildConstituted({
+      applications: { apply: true }, admission: { price: 'pen' } });
+    const ap = s.startApplication(3, 'dee@example.org');
+    s.verifyApplication(4, ap);
+    s.submitApplication(5, ap, { name: 'Dee' });
+    const dee = admittedFrom(s, 'dee@example.org');
+    expect(dee.nameSet).toBe(true);
+    expect(dee.pictureSet).toBe(false);
+    expect(admissionEvent(s)).toMatchObject({ nameSet: true });
+    expect('pictureSet' in admissionEvent(s)).toBe(false);
+    const again = ConstitutionSession.replay([...s.logEntries()], s.people);
+    expect(again.rollingHash()).toBe(s.rollingHash());
+    expect(again.memberRecords().get(dee.id)!.nameSet).toBe(true);
+    expect(again.memberRecords().get(dee.id)!.pictureSet).toBe(false);
+    // and the flags outlive the row: an erased person was still asked
+    (s.people as InMemoryPeople).erase(dee.person);
+    const erased = ConstitutionSession.replay([...s.logEntries()], s.people);
+    expect(erased.memberRecords().get(dee.id)!.name).toBeNull();
+    expect(erased.memberRecords().get(dee.id)!.nameSet).toBe(true);
   });
 });
 

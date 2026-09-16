@@ -955,6 +955,14 @@ function applyPresence(s: FoldState, event: ConstitutionEvent): void {
       // — and with it the name and picture they gave — comes with them
       const rec = freshMember(s, event.member, a.person, event.t, event.t,
         { via: 'application', by: 'members' });
+      // and so do the answers (Q1405): the row carried the name and the
+      // picture across, but the *answered* flags are set by `identity-set`
+      // alone, so ✋ and 🖼️ asked the new member what they had told the door.
+      // Read off the event, never the row, for the reason `identity-set`
+      // gives — the act is what is recorded, and a row erased later must not
+      // change what a replay says was answered.
+      rec.nameSet = event.nameSet === true;
+      rec.pictureSet = event.pictureSet === true;
       s.members.set(event.member, rec);
       s.nextMemberN += 1;
       break;

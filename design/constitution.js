@@ -1112,7 +1112,8 @@ var CONSTITUTION = (() => {
         type: "member-admitted",
         t,
         applicant: rec.payload.applicant,
-        member: id
+        member: id,
+        ...s.answeredAtDoor(rec.payload.applicant)
       });
       s.afterRosterChange(t, "arrival", id);
     }
@@ -2003,6 +2004,8 @@ var CONSTITUTION = (() => {
           event.t,
           { via: "application", by: "members" }
         );
+        rec.nameSet = event.nameSet === true;
+        rec.pictureSet = event.pictureSet === true;
         s.members.set(event.member, rec);
         s.nextMemberN += 1;
         break;
@@ -3234,7 +3237,8 @@ var CONSTITUTION = (() => {
         personFor: (email) => this.personFor(email),
         convenorSeatVacant: () => this.convenorSeatVacant(),
         afterRosterChange: (t, cause, member) => this.afterRosterChange(t, cause, member),
-        rereadLapse: (t) => this.rereadLapse(t)
+        rereadLapse: (t) => this.rereadLapse(t),
+        answeredAtDoor: (applicant) => this.answeredAtDoor(applicant)
       };
     }
     openMotion(t, by, input, why) {
@@ -3482,7 +3486,13 @@ var CONSTITUTION = (() => {
       this.emit(e);
       if (this.priceOf("admission") === "pen") {
         const id = `m-${this.nextMemberN}`;
-        this.emit({ type: "member-admitted", t, applicant, member: id });
+        this.emit({
+          type: "member-admitted",
+          t,
+          applicant,
+          member: id,
+          ...this.answeredAtDoor(applicant)
+        });
         this.afterRosterChange(t, "arrival", id);
       } else {
         this.emit({
@@ -3495,6 +3505,26 @@ var CONSTITUTION = (() => {
           stake: 0
         });
       }
+    }
+    /**
+     * **What the applicant answered at the door, for the seat being born**
+     * (Q1405). ✋ and 🖼️ are asked of a member as *were you ever asked* (Q645),
+     * and an admission used to carry the name and picture across on the row
+     * while leaving both flags false — so a member who had chosen both at the
+     * door met the two cards again. The answer is read off the record, which
+     * after a submission is exactly what the submission gave: it writes both
+     * fields, absent → null (Q1366), so a null here is *not given* and a blank
+     * string is the Anonymous answer, as it is on `identity-set`. Read at the
+     * emit and written into the event, never derived at the fold — the shape
+     * `created` uses for a founder who arrives already named.
+     */
+    answeredAtDoor(applicant) {
+      const a = this.applicants.get(applicant);
+      if (!a) throw new Error(`unknown applicant '${applicant}'`);
+      return {
+        ...a.name !== null ? { nameSet: true } : {},
+        ...a.picture !== null ? { pictureSet: true } : {}
+      };
     }
     // -------------------------------------------------------------------------
     // Reads used by projections (view.ts owns the member-facing surface)
