@@ -122,9 +122,10 @@ jobs:
             echo "documents only — the host is untouched"; exit 0
           fi
           if [ "$lane" = surface ] && [ -n "$BASE" ] && [ -n "$BOT_KEY" ]; then
-            # the served set: the page files at the top of design/, as
-            # server.ts's asset routes and surface.ts's SURFACE_NAME allow
-            tar --format=ustar -czf surface.tgz $(ls design/*.html design/*.js design/*.css design/*.svg design/*.png design/*.woff design/*.woff2 design/*.txt 2>/dev/null)
+            # the served set: the page files at the top of design/, and the
+            # document's face under design/fonts/ with its licence (Q1402),
+            # as routes-surface.ts's asset rows and surface.ts's SURFACE_NAME allow
+            tar --format=ustar -czf surface.tgz $(ls design/*.html design/*.js design/*.css design/*.svg design/*.png design/*.woff design/*.woff2 design/*.txt design/fonts/*.woff2 design/fonts/OFL.txt 2>/dev/null)
             if curl -fsS -X POST "$BASE/api/admin/surface?sha=$GITHUB_SHA" \
                  -H "authorization: Bearer $BOT_KEY" -H 'content-type: application/gzip' \
                  --data-binary @surface.tgz -o surface.json; then

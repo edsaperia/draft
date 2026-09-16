@@ -321,6 +321,9 @@ const MIME: Record<string, string> = {
   '.jpg': 'image/jpeg',
   '.ico': 'image/x-icon',
   '.json': 'application/json; charset=utf-8',
+  '.woff2': 'font/woff2',
+  '.woff': 'font/woff',
+  '.txt': 'text/plain; charset=utf-8',
 };
 
 export function serveFile(res: ServerResponse, filePath: string): void {

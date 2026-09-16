@@ -53,7 +53,16 @@ describe('the tar reader', () => {
     expect(files.map((f) => f.name)).toEqual(['session-view.html', 'system.css', 'x.svg']);
     expect(files[2]!.data.length).toBe(700);
     expect(files[0]!.data.toString()).toBe(page);
-    for (const bad of ['design/reference/system.css', 'design/tools/probe.js', 'packages/x.js', '../design/a.js', 'design/notes.md']) {
+    // the one subfolder (Q1402): a font and its licence under design/fonts/,
+    // and nothing a level deeper or in any other folder
+    const fonted = readTarGz(gzipSync(packTar([
+      { name: 'design/session-view.html', data: Buffer.from(page) },
+      { name: 'design/fonts/CharisSIL-Regular.woff2', data: Buffer.from('wOF2') },
+      { name: 'design/fonts/OFL.txt', data: Buffer.from('licence') },
+    ])));
+    expect(fonted.map((f) => f.name)).toEqual(['session-view.html', 'fonts/CharisSIL-Regular.woff2', 'fonts/OFL.txt']);
+    for (const bad of ['design/reference/system.css', 'design/tools/probe.js', 'packages/x.js', '../design/a.js', 'design/notes.md',
+                       'design/fonts/deeper/x.woff2', 'design/reference/fonts/x.woff2', 'design/fonts/../x.js']) {
       expect(SURFACE_NAME.test(bad), bad).toBe(false);
       expect(() => readTarGz(gzipSync(packTar([{ name: 'design/session-view.html', data: Buffer.from(page) }, { name: bad, data: Buffer.from('x') }])))).toThrow(/not a page file/);
     }
@@ -84,16 +93,30 @@ describe('the surface route', () => {
       // it was design/pairwise.html until that page retired with the
       // threshold (Q1362), and a script proves the same route
       { name: 'design/cards.js', data: Buffer.from('/* cards */') },
+      // and the document's face (Q1402): a file in the one subfolder, which
+      // the installer has to make before it can write
+      { name: 'design/fonts/CharisSIL-Regular.woff2', data: Buffer.from('wOF2-bytes') },
     ])));
     const body = await r.text();
     expect(r.status, body).toBe(200);
     const j = JSON.parse(body) as { ok: boolean; sha: string; files: string[] };
-    expect(j.files).toEqual(['session-view.html', 'system.css', 'cards.js']);
+    expect(j.files).toEqual(['session-view.html', 'system.css', 'cards.js', 'fonts/CharisSIL-Regular.woff2']);
 
     for (const p of ['/', '/system.css', '/cards.js', '/design/system.css']) {
       const got = await fetch(base + p);
       expect(got.status, p).toBe(200);
       expect(got.headers.get('x-build'), p).toBe('bbbbbbb');
+    }
+    // the font answers where system.css's relative url resolves — at the
+    // root, under a document — and through the /design/ whitelist, as a font
+    for (const p of ['/fonts/CharisSIL-Regular.woff2', '/d/fonts/CharisSIL-Regular.woff2', '/design/fonts/CharisSIL-Regular.woff2']) {
+      const got = await fetch(base + p);
+      expect(got.status, p).toBe(200);
+      expect(got.headers.get('content-type'), p).toBe('font/woff2');
+      expect(await got.text(), p).toBe('wOF2-bytes');
+    }
+    for (const p of ['/design/fonts/deeper/x.woff2', '/design/fonts/x.js', '/d/fonts/x.css', '/fonts/x.css']) {
+      expect((await fetch(base + p)).status, p).toBe(404);
     }
     expect(await (await fetch(`${base}/`)).text()).toContain('a new surface');
     expect(await (await fetch(`${base}/system.css`)).text()).toBe('body{color:red}');

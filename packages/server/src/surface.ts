@@ -17,11 +17,14 @@
  */
 import { gunzipSync } from 'node:zlib';
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 
 /** What the host serves from `design/`: the page files at the top of the
- *  tree and nothing below it (server.ts's asset routes are the mirror). */
-export const SURFACE_NAME = /^design\/[A-Za-z0-9][A-Za-z0-9._-]*\.(js|css|html|svg|png|woff2?|txt)$/;
+ *  tree, and the one subfolder the page loads from — `design/fonts/`, the
+ *  document's face (Q1402) — and nothing else below it (routes-surface.ts's
+ *  asset rows are the mirror). Exactly one level, and only that folder:
+ *  `design/reference/` and `design/tools/` are still not a surface. */
+export const SURFACE_NAME = /^design\/(fonts\/)?[A-Za-z0-9][A-Za-z0-9._-]*\.(js|css|html|svg|png|woff2?|txt)$/;
 
 /** The largest upload accepted: the whole of design/'s served files are
  *  under two megabytes gzipped, and a tar of something else is not a
@@ -65,7 +68,12 @@ export function readTarGz(gz: Buffer): SurfaceFile[] {
 /** Write the files into `dir` (created), the page's whole served set. */
 export function installSurface(files: readonly SurfaceFile[], dir: string): string[] {
   mkdirSync(dir, { recursive: true });
-  for (const f of files) writeFileSync(join(dir, f.name), f.data);
+  // a font is `fonts/<name>` (SURFACE_NAME's one subfolder), so its folder
+  // is made before it is written
+  for (const f of files) {
+    if (f.name.includes('/')) mkdirSync(join(dir, dirname(f.name)), { recursive: true });
+    writeFileSync(join(dir, f.name), f.data);
+  }
   return files.map((f) => f.name);
 }
 

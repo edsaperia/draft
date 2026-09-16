@@ -58,8 +58,8 @@
      every other top-level heading has. So they take `.docline.lvl1`'s own type
      and stop being eyebrows, since an eyebrow that is 16px is not one. */
   .setrow .pilehead {
-    font-size: var(--t-body); font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.08em; color: var(--fg);
+    font-family: var(--font-text); font-size: var(--h1); font-weight: 400;
+    line-height: var(--lh-head); color: var(--fg);
   }
 
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden;
@@ -74,11 +74,16 @@
   .setupcard .clausehead .rtext { margin: 0; }
   .setupcard .clausehead .headtitle { font-size: var(--t-lead); font-weight: 600; }
   .setupcard h2 { font-size: var(--t-lead); font-weight: 600; margin: 0 0 var(--s2); }
-  .setupcard .why { color: var(--muted); font-size: var(--t-small); margin: 0 0 var(--s4); max-width: 60ch; }
+  /* a card's body and its note are sentences a member reads, so they take
+     the document's face (Q1402); the title above them stays chrome */
+  .setupcard .why { color: var(--muted); font-size: var(--t-small); margin: 0 0 var(--s4); max-width: 60ch;
+    font-family: var(--font-text); line-height: var(--lh-text); }
   /* a text-only card (the grants) is read, not scanned past — its one
      paragraph is the body, at body size (Ed's QA, 2026-09-02 pm) */
   .setupcard.textcard .why { font-size: var(--t-body); color: var(--ink); }
-  .setupcard .setnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); }
+  .setupcard .setnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3);
+    font-family: var(--font-text); line-height: var(--lh-text); }
+  .setupcard .clausehead .headtitle { font-family: var(--font-ui); line-height: 1.5; }
   .setupcard .body { border-top: 1px solid var(--border); padding-top: var(--s3); margin-top: var(--s3); }
   /* the hairline between the constitution and the document proper, and the
      title as the charter's own heading (Ed, 2026-08-19). Both stand from the
@@ -197,7 +202,9 @@
      whose own comment says *a clause under judgment*, and the document's
      weight is normal: `600` was the other half of what made it a control. */
   .pick .opttext { display: block; font-size: var(--t-body); font-weight: 400;
-    color: var(--fg); max-width: 58ch; }
+    color: var(--fg); max-width: 58ch;
+    /* …and in the document's face (Q1402): an option is a clause offered */
+    font-family: var(--font-text); line-height: var(--lh-text); }
   /* …and a control's own word is not clause text (T46's second half). The
      minority of options whose text never was a document sentence — *Fixed*,
      *Rising*, *Never*, *I set it*, *Kept*, *Admit them* — keep the treatment
@@ -207,7 +214,9 @@
      spelling works — the class on the whole block's text where a builder
      draws nothing else (`consentPicks`, the admit lanes, 🍾's table), or
      `ctlWord` around one label where its siblings are clauses. */
-  .pick .opttext.ctl, .pick .opttext .ctl { font-size: var(--t-ui); font-weight: 600; }
+  .pick .opttext.ctl, .pick .opttext .ctl { font-size: var(--t-ui); font-weight: 600;
+    /* a control's own word is chrome — the T46 distinction is a font distinction too (Q1402) */
+    font-family: var(--font-ui); line-height: 1.5; }
   /* **A number inside a clause is a word in it** (Q1137, Ed: *the input boxes
      should be inline*). `.num`'s 5.5rem is a field standing in a `.fld`
      column; set in prose it reads as a form, so the inline variant takes the
@@ -237,7 +246,7 @@
   /* the lane's text matches the standing title in the card's own head
      (#titlepara .setupcard .clausehead .headrule .headdoct, below) — the two
      are the same sentence at two moments, not two sizes of it (A9). */
-  #titlepara .pick .opttext .titlelane { font-size: var(--t-lead); font-weight: 600; }
+  #titlepara .pick .opttext .titlelane { font-size: var(--h-title); font-weight: 400; line-height: var(--lh-head); }
   .pick > .lanepick { margin-top: var(--s2); }
   /* a composer lane's radio bar inside an option block takes the block's own
      radio rhythm (Ed's card review round 3, 2026-09-05, A11 on 🪪: the lanes
@@ -559,7 +568,7 @@
   /* the title's composer. The same `.lanebox` the `editing-card` writes in, at
      the size the title is actually read at, because the whole point of writing
      in the place is that you see what you are making. */
-  .titlelane { font-size: var(--t-lead); font-weight: 600; }
+  .titlelane { font-family: var(--font-text); font-size: var(--h-title); font-weight: 400; line-height: var(--lh-head); }
   .titlelane:empty::before, .titlelane.blank::before {
     content: attr(data-ph); color: var(--muted); font-weight: 400; }
 
@@ -715,8 +724,14 @@ button.cline:hover b { text-decoration: underline; }
    direct-child rule above never reached it and the glyph stepped 10px on open
    (Ed, 2026-09-06) — the rule `fitTitleCard` says pins it in x, at last */
 #titlepara > #titlechip > .chipcol { margin-right: calc(14px + var(--s3)); }
+/* the constitution is document text (Q1402): every clause sentence, the
+   section's line of prose and the state line take the document's face and
+   leading; a name set bold inside one is Charis Bold */
+.constsec .cptext, .constsec .cpv, .constsec .csintro, .constsec .pilewho {
+  font-family: var(--font-text); line-height: var(--lh-text);
+}
 .constsec .cptext { margin: 0; padding-top: 3px; }
-.constsec .cptext b { font-weight: 600; }
+.constsec .cptext b { font-weight: 700; }
 .constsec .cpara.notab { min-height: 0; }
 .constsec .cpara.notab .cptext { padding-top: 0; }
 /* same margins as a closed paragraph — the measured shift does the rest */
@@ -853,7 +868,9 @@ button.cline:hover b { text-decoration: underline; }
 
 /* a rule standing as a card's head is the clause, not a title: document size
    and colour, exactly as it stood on the page (Ed's QA, 2026-08-18) */
-.setupcard .clausehead .headrule { font-size: 1rem; font-weight: 400; line-height: 1.55; }
+.setupcard .clausehead .headrule {
+  font-family: var(--font-text); font-size: var(--t-body); font-weight: 400; line-height: var(--lh-text);
+}
 
 /* the head-rule correction is a margin, and a block parent lets a child's
    top margin collapse straight through it — fitBand's pass measured,
@@ -876,8 +893,11 @@ button.cline:hover b { text-decoration: underline; }
 /* at the birth the title card's head IS the big heading; post-save it opens
    at its own clause and the title sits inside the sentence at document size
    (Ed, 2026-08-19) */
-#titlepara .setupcard .clausehead .headrule .headdoct { font-size: var(--t-lead); }
-.setupcard .clausehead .headrule .headdoct { font-weight: 600; }
+/* …and at the title's own type (Q1402): the top of the heading ladder in
+   Regular, exactly `.doctitle`'s, since `fitTitleCard` lays this text onto
+   the big heading and the two must not differ by a weight */
+#titlepara .setupcard .clausehead .headrule .headdoct { font-size: var(--h-title); line-height: var(--lh-head); }
+.setupcard .clausehead .headrule .headdoct { font-weight: 400; }
 .setupcard .clausehead .headrule .headdoct.ph { color: var(--muted); font-weight: 400; }
 
 /* links in the constitution are real links (Ed, 2026-08-19): ink-coloured,
@@ -955,7 +975,10 @@ button.cline:hover b { text-decoration: underline; }
    (card review round 3, 2026-09-05, A1/Q1174) — one hover treatment, not two. */
 
 /* ---- 🍾 and 🥂, and the closed page (Q443, Q468, Q470 — 2026-08-21) ----- */
-  .setupcard .batch { margin: 0 0 var(--s3); padding-left: 18px; font-size: var(--t-small); color: var(--ink); }
+  /* 🍾's batch and 🥂's signatures are read as document text (Q1402) */
+  .setupcard .batch { margin: 0 0 var(--s3); padding-left: 18px; font-size: var(--t-small); color: var(--ink);
+    font-family: var(--font-text); line-height: var(--lh-text); }
+  .setupcard .gatelist.sigs { font-family: var(--font-text); }
   .setupcard .batch li { margin: 2px 0; }
   .setupcard .readiness .fieldlab { margin-top: var(--s3); }
   .setupcard .readiness .gaterow .rsub { color: var(--muted); font-weight: 400; }

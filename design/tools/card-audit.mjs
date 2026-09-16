@@ -157,7 +157,10 @@ const IN_PAGE = () => {
              primary: hex2rgb(raw('--primary')), primarySubtle: hex2rgb(raw('--primary-subtle')),
              primaryEmphasis: hex2rgb(raw('--primary-emphasis')), ok: hex2rgb(raw('--ok')) },
       type: { lead: rem('--t-lead'), body: rem('--t-body'), ui: rem('--t-ui'),
-              small: rem('--t-small'), cap: rem('--t-cap'), micro: rem('--t-micro') },
+              small: rem('--t-small'), cap: rem('--t-cap'), micro: rem('--t-micro'),
+              // the document's heading ladder (Q1402): the title standing in
+              // its card, and its composer lane, are set at `--h-title`
+              hTitle: rem('--h-title'), h1: rem('--h1'), h2: rem('--h2'), h3: rem('--h3') },
       space: [1, 2, 3, 4, 5].map((i) => px(raw('--s' + i))),
       shadow: { sm: raw('--shadow-sm'), md: raw('--shadow-md'), lg: raw('--shadow-lg'), xl: raw('--shadow-xl') },
     };
@@ -211,8 +214,12 @@ const IN_PAGE = () => {
       const dot = b.querySelector('.dot');
       const row = b.closest('.pick') || b;
       const rr = rect(row);
-      const pr = prevRow ? rect(prevRow) : null;
-      const gap = (pr && rr && flush(prevRow, row)) ? R2(rr[1] - (pr[1] + pr[3])) : null;
+      // the gap is taken from the two live rects and rounded once: rounding
+      // top and height first and adding them put a 0.01 hair on a gap that
+      // is exactly 16 whenever a row's height is fractional, which every row
+      // in the document's face is at a 24.8px line box (Q1402)
+      const gap = (prevRow && rr && flush(prevRow, row))
+        ? R2(row.getBoundingClientRect().top - prevRow.getBoundingClientRect().bottom) : null;
       prevRow = row;
       return { label: txt(b), x: (rect(dot) || rect(b))[0], dot: !!dot,
                on: b.getAttribute('aria-pressed') === 'true'

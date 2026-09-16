@@ -4,3 +4,10 @@ design/fluent-glyphs.svg -diff linguist-generated=true text eol=lf
 # take the same endings or every re-freeze rewrites the whole file (Q1401)
 design/reference/constitution.js -diff linguist-generated=true text eol=lf
 design/reference/fluent-glyphs.svg -diff linguist-generated=true text eol=lf
+# the document's face (Q1402): four subset woff2 files and SIL's licence as
+# released, written by `npm run charis-subset` and proved byte-identical by
+# its --check — so nothing may touch their bytes on the way in or out
+design/fonts/*.woff2 binary
+design/fonts/OFL.txt -text -diff
+design/reference/fonts/*.woff2 binary
+design/reference/fonts/OFL.txt -text -diff
