@@ -404,9 +404,24 @@
 <div id="glyphsprite"></div>
 <script>
 (function () {
-  fetch('fluent-glyphs.svg').then((r) => (r.ok ? r.text() : '')).then((t) => {
-    if (t) document.getElementById('glyphsprite').innerHTML = t;
-  }).catch(() => {});
+  // **And a fetch that fails is tried again** (Ed's screenshot, 2026-09-16
+  // 17:38: a live page with every box empty, an hour after a deploy that
+  // paused and replaced the host — the one fetch had met the paused instance
+  // and nothing ever asked again). Eight tries, the wait doubling from a
+  // second to about two minutes; a sprite that never comes still costs
+  // nothing but the pictures.
+  var wait = 1000, left = 8;
+  function load() {
+    fetch('fluent-glyphs.svg').then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) {
+      if (t) { document.getElementById('glyphsprite').innerHTML = t; return; }
+      again();
+    }).catch(again);
+  }
+  function again() {
+    if (left-- <= 0) return;
+    setTimeout(load, wait); wait = Math.min(wait * 2, 120000);
+  }
+  load();
 })();
 </script>
 
