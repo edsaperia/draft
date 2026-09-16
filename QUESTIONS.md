@@ -223,7 +223,13 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1403** — claim by writing the block here, then commit it alone.
+**The next free number is 1406** — claim by writing the block here, then commit it alone.
+
+**1405 is the admission carrying the identity answers** (claimed 2026-09-16 20:08, from Ed's live-room note *after I have chosen name and picture, the tasks still appear yellow*): a member admitted from an application arrives with the name and picture they gave at the door, but the answered flags are the ✋ / 🖼️ commit's alone (Q645), so the two cards asked again. The page half — a ✓ on *keep* answers a card still asking — is 5450dfe; this number is the engine half: `application-submitted` carries `nameSet` / `pictureSet` for the acts the applicant's own cards recorded, and `member-admitted` copies them onto the member. Built on branch `q1405-admit`; a log-schema addition, so its merge is a full deploy and waits for Ed's timing.
+
+**1404 is a laid-down power leaving the tab stack** (claimed 2026-09-16 20:08, Ed: *when a founder relinquishes a power ✒️🛡️, that power tab should disappear from the tab stack (so there's no longer a route to regaining it)*): reverses Q386's `power-return` road (SURFACE E39, K32; SPEC §9.7 rule 4). Built on branch `q1404-powertabs`.
+
+**1403 is the heading markers in edit mode** (claimed 2026-09-16 20:08, Ed: *in edit mode you should always see the markdown #s for headings, otherwise you have no way of editing them*): the column and the draft lane both stripped an existing heading's marker and carried the rank beside the text, while a typed `#` was shown; the marker is text end to end now. Built on branch `q1403-headings`.
 
 **1402 is the type: a modular scale and Charis SIL** (claimed 2026-09-16 09:05, Ed: *I think I'd like to change the typographic scale in the document to the modular scale, and to use Charis SIL. I am open to discussion/suggestions*). Open, under discussion: the scope (the document's prose, or every text on the surface), the ratio (a major second, 1.125, lands within a pixel of today's six steps; a minor third, 1.2, is a real re-cut), the pairing (Charis for text, the system sans for the chrome — recommended), self-hosting a Latin subset as woff2 beside the page, the measure and the line-height a serif wants, and Charis's four faces against the surface's 600 weight. Today's ladder is 1.25 / 1 / 0.875 / 0.8125 / 0.72 / 0.65 rem on `system-ui`. **Ruled 2026-09-16 09:05–09:20 and built the same day on branch `q1402`** (`design/spec-pass/plan-q1402-type.md`): text not chrome, a major second for the ladder, a perfect fourth for the headings, a committed Latin subset; the reasoning and the measured numbers are in `design/DECISIONS.md`. **Open residue, (5): small caps** — Ed, *not sure*; moot while the chrome stays sans, the `smcp` feature is kept in the subset against it.
 
