@@ -223,7 +223,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1401** — claim by writing the block here, then commit it alone.
+**The next free number is 1402** — claim by writing the block here, then commit it alone.
+
+**1401 is the glyphs in Fluent Flat** (claimed 2026-09-16 08:25, Ed: *we should convert the subject glyphs and also the wallet and commit glyphs to fluent flat*): after the lifecycle marks (Q1360), every subject glyph — the settings', the doors', the gates', the identity cards', 🌂 — the five wallet glyphs and the commit glyphs are drawn from Fluent Emoji Flat; Q288's *a subject glyph is an emoji* falls with it. A plan, not a hot edit: the glyphs ride copy strings and clause sentences, the picker's furniture scan, the flights and the storm.
 
 **1400 is the 🌂 card** (claimed 2026-09-16 01:55, Ed answering Q1399's item 4: *instead of in the document, the leave button should be on a card in the profile stack, with the symbol 🌂. It should give a warning before submitting — if you give up your membership you may not be able to rejoin*): *Leave* leaves the Members row; a member's own row carries a fourth tab, 🌂, whose card is the warning and whose commit resigns.
 
