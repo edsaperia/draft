@@ -101,6 +101,9 @@
   const {
     esc, resultOnly, stripTags, pct, plainLabel, URG_LO, URG_HI,
     TICK, MARK, DRAWN, mkHtml, markHtml,
+    // the drawn glyphs (Q1401): the commit row's buttons, the units in an
+    // eyebrow, and the glyphs inside the charter column's own sentences
+    glyphHtml, glyphify,
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks,
     headFlags, originText, mdToHtml, htmlToMd, mdStrip, mdLine,
     richToSource, sourceToRich, readLane,
@@ -746,7 +749,7 @@
   // is the one job they do better than anything we can draw. They bring their
   // own colour back, which is the cost. A third unit, ✒️ for the line a reading
   // had to cross, went with the bar (Q1362).
-  const PEOPLE = "<span class=\"unit\">👤</span>";
+  const PEOPLE = '<span class="unit">' + glyphHtml('👤') + '</span>';
   const JUDG = "<span class=\"unit\">👍</span>";
   // did anything displace the incumbent?
   const carried = (g) => fieldOf(g).some((c) => c.won);
@@ -2397,7 +2400,7 @@
       // ask for one from somebody who cannot give it.
       (MAY_PROPOSE()
         ? '<div class="field bridgedesk"><div class="fieldlab">' +
-          T.dead.deskLab + '</div>' +
+          glyphify(T.dead.deskLab) + '</div>' +
           '<div class="propblock">' + laneBoxHtml(d, site, site ? null : key) + '</div></div>' +
       // The same row as the editing card's, and it stays the same row: 🗑️ at
       // the very left for the whole of a proposal's life, the commit control at
@@ -2407,7 +2410,7 @@
       // the card, and with nothing to put back it simply closes it.
           '<div class="race-mid commitrow">' +
           '<button class="btn btn-withdraw glyphbtn" data-act="draft-cancel"' +
-          ' title="' + (site ? T.row.discardThis : T.row.closeNothing) + '">🗑️</button>' +
+          ' title="' + (site ? T.row.discardThis : T.row.closeNothing) + '">' + glyphHtml('🗑️') + '</button>' +
           commitBtnHtml({
             disabled: !(site && !broke),
             title: T.row.holdPropose + T.row.editCost,
@@ -2431,7 +2434,7 @@
   // item carries the sentence itself (`blockedByPark`), read off copy by the
   // page, so this draws it and never words it.
   const parkNote = (s) => (s.blockedByPark
-    ? '<p class="setnote">' + esc(s.blockedByPark) + '</p>' : '');
+    ? '<p class="setnote">' + glyphify(esc(s.blockedByPark)) + '</p>' : '');
   function suggCardHtml(s, siteKey) {
     if (stateOf(s) === 'sealed') return sealedCardHtml(s);
     if (stuck(s)) return deadlockCardHtml(s);
@@ -2505,12 +2508,12 @@
         fieldHtml(proposalHtml(s, { html: resultOnly(s.marked), why: s.rationale, by: s.by })) +
         '<div class="foot">' + T.crown.foot + '</div>' +
         '<div class="race-mid commitrow">' +
-        '<button class="btn glyphbtn" data-act="clear-close" title="' + T.crown.close + '">🗑️</button>' +
+        '<button class="btn glyphbtn" data-act="clear-close" title="' + T.crown.close + '">' + glyphHtml('🗑️') + '</button>' +
         '<span class="rightpair">' +
         '<button class="btn glyphbtn" data-act="crown-refuse"' +
-        ' title="' + T.crown.refuse + '">🛡️</button>' +
+        ' title="' + T.crown.refuse + '">' + glyphHtml('🛡️') + '</button>' +
         '<button class="btn btn-approve glyphbtn" data-act="crown-accept"' +
-        ' title="' + T.crown.accept + '">✒️</button>' +
+        ' title="' + T.crown.accept + '">' + glyphHtml('✒️') + '</button>' +
         '</span></div>' +
         '</div>'
       );
@@ -2530,13 +2533,13 @@
       return (
         '<div class="sugg quick-open park-open" data-card="' + s.id + '" data-site="' + (pkey || '') + '">' +
         clauseHeadHtml(s, Object.assign(headOpts(s, pkey), { chips: chipsFor(pkey, s.id) })) +
-        '<p class="setnote">' + esc(s.parkNote || '') + '</p>' +
+        '<p class="setnote">' + glyphify(esc(s.parkNote || '')) + '</p>' +
         (s.unread && !readSeals.has(s.id)
           ? '<div class="race-mid commitrow"><span></span>' +
             '<button class="btn btn-approve okbtn" data-seen="' + s.id + '"' +
             ' title="' + T.record.okTitle + '">' + T.record.ok + '</button></div>'
           : '<div class="race-mid commitrow">' +
-            '<button class="btn glyphbtn" data-act="clear-close" title="' + window.COPY.grammar.commit.binLocked + '">🗑️</button>' +
+            '<button class="btn glyphbtn" data-act="clear-close" title="' + window.COPY.grammar.commit.binLocked + '">' + glyphHtml('🗑️') + '</button>' +
             '<span></span></div>') +
         '</div>'
       );
@@ -2758,7 +2761,7 @@
       const b = el.getBoundingClientRect();
       pencil = document.createElement('div');
       pencil.className = 'flypencil';
-      pencil.textContent = '✏️';
+      pencil.innerHTML = glyphHtml('✏️');
       pencil.style.left = (a.left + a.width / 2) + 'px';
       pencil.style.top = (a.top + a.height / 2) + 'px';
       document.body.appendChild(pencil);

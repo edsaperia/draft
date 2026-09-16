@@ -447,7 +447,19 @@
         for (const g of Object.keys(sa.geo)) {
           const ga = JSON.stringify(sa.geo[g]);
           const gb = JSON.stringify((sb.geo || {})[g]);
-          if (ga !== gb) note('geo.' + g, 'geometry differs');
+          // **A geometry diff says which box and by how much.** *geometry
+          // differs* over a list of forty rects is a verdict with no evidence
+          // in it, and the reader's next move — work out whether a card grew
+          // by two pixels or a paragraph reflowed — was a re-run by hand every
+          // time. The first differing entry and its two rects are the whole of
+          // what makes the line actionable (Q1401, on the ⏱️ card).
+          if (ga !== gb) {
+            const A = sa.geo[g] || []; const B = (sb.geo || {})[g] || [];
+            let i = 0; while (i < Math.max(A.length, B.length) &&
+              JSON.stringify(A[i]) === JSON.stringify(B[i])) i++;
+            note('geo.' + g, 'geometry differs — ' + A.length + ' vs ' + B.length +
+              ' boxes; first at [' + i + '] ' + JSON.stringify(A[i]) + ' vs ' + JSON.stringify(B[i]));
+          }
         }
       }
     }

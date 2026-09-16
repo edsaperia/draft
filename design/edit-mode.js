@@ -19,6 +19,9 @@
 window.EDIT_MODE = (function () {
   function make(env) {
     const { PAGE_COPY, SESSION } = env;
+    // the drawn glyphs (Q1401): every glyph this file emits as markup is one
+    // picture from the Fluent Flat set, and the sentences take glyphify
+    const { glyphHtml, glyphify } = window.CARDS;
     const { amFounder, beatEl, card, closeThen, constituted, esc, focusProse, isStranger, mayPropose,
       pileHtml, proseText, render, renderToc, srcDivs, stripHtml, tabFor, textDivs } = env;
     // **The text is always a card, with two modes**, and the 📝 tab is the door
@@ -76,7 +79,7 @@ window.EDIT_MODE = (function () {
       ed.innerHTML = show
         ? '<div class="race-mid commitrow proposalrow" data-editdoor="1"><span class="rowmid"></span>' +
           '<button class="btn btn-propose glyphbtn emojibtn" data-act="edit-door" title="' +
-          esc(PAGE_COPY.ride.textDash + PAGE_COPY.ride.pressToWrite) + '">📝</button></div>'
+          esc(PAGE_COPY.ride.textDash + PAGE_COPY.ride.pressToWrite) + '">' + glyphHtml('📝') + '</button></div>'
         : '';
       syncEditDoor();
     }

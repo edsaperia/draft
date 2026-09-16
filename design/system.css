@@ -601,6 +601,16 @@
      attribute whatever the value. Same box as the glyph it replaces, so nothing
      on any of the three columns moves. */
   .mkp { width: 1em; height: 1em; display: inline-block; vertical-align: -0.13em; }
+  /* **A subject, wallet or commit glyph** (Q1401). Same discipline as
+     `emojiface`: *a glyph is a glyph, not a disc* — no box, no ground, `1em`
+     square, so it takes the size of the text it stands in at every site at
+     once. The three sites that state a size — the gutter tab, the topbar
+     socket, the commit button — go on stating it on the container, and the
+     picture follows. Not `.mkg` for the same reason `.mkp` is not: that rule's
+     `fill: none` would empty every one of these into an outline.
+     `vertical-align` is `.mkp`'s, so a subject glyph and a lifecycle mark sit
+     on one line in the piles that hold both. */
+  .gl { width: 1em; height: 1em; display: inline-block; vertical-align: -0.13em; }
   /* **Filed is the picture drained** (Q1360). Which way it went is still the
      picture — a check or a multiply — and whether it still wants anything from
      you is still the grey, which is the rule the whole palette runs on; it is

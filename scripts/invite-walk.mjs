@@ -119,9 +119,9 @@ const composed = await mover.evaluate(async () => {
   if (!ta) return { err: 'no address box: ' + card.textContent.trim().replace(/\s+/g, ' ').slice(0, 160) };
   ta.focus(); ta.value = 'newbie@example.org'; ta.dispatchEvent(new Event('input', { bubbles: true }));
   await new Promise((s) => setTimeout(s, 400));
-  const b = [...card.querySelectorAll('.commitrow button')].filter((x) => !x.disabled && !/🗑/.test(x.textContent)).pop();
+  const b = [...card.querySelectorAll('.commitrow button')].filter((x) => !x.disabled && !/🗑/.test(x.textContent) && !x.querySelector('[data-gl="bin"]')).pop();
   if (!b) return { err: 'no live commit after typing' };
-  return { glyph: b.textContent.trim(), title: b.title, hold: b.hasAttribute('data-holdmotion') };
+  return { glyph: window.CARDS.glyphTextOf(b).trim(), title: b.title, hold: b.hasAttribute('data-holdmotion') };
 });
 if (composed.err) fail('the composer', composed.err);
 else {
@@ -132,7 +132,7 @@ else {
 }
 // the press: a real pointer on the commit, held or clicked by the page's gesture
 const pressed = await mover.evaluate(async () => {
-  const b = [...document.querySelectorAll('.setupcard .commitrow button')].filter((x) => !x.disabled && !/🗑/.test(x.textContent)).pop();
+  const b = [...document.querySelectorAll('.setupcard .commitrow button')].filter((x) => !x.disabled && !/🗑/.test(x.textContent) && !x.querySelector('[data-gl="bin"]')).pop();
   if (!b) return false;
   const ev = (t) => b.dispatchEvent(new PointerEvent(t, { bubbles: true, pointerId: 1, isPrimary: true }));
   ev('pointerdown'); await new Promise((s) => setTimeout(s, 1300)); ev('pointerup'); b.click();

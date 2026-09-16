@@ -150,11 +150,11 @@ const runDocument = async (hat) => {
       const b = s
         ? document.querySelector('.setupcard ' + s + ':not([disabled])')
         : [...document.querySelectorAll('.setupcard .commitrow button')]
-          .find((x) => !x.disabled && !/🗑/.test(x.textContent));
+          .find((x) => !x.disabled && !/🗑/.test(x.textContent) && !x.querySelector('[data-gl="bin"]'));
       if (!b) return null;
       b.scrollIntoView({ block: 'center' });
       const r = b.getBoundingClientRect();
-      return { x: r.x + r.width / 2, y: r.y + r.height / 2, label: b.textContent.trim() };
+      return { x: r.x + r.width / 2, y: r.y + r.height / 2, label: window.CARDS.glyphTextOf(b).trim() };
     }, sel || null);
     if (!box) return null;
     await page.mouse.move(box.x, box.y);
@@ -418,8 +418,8 @@ const runDocument = async (hat) => {
     const c = document.querySelector('.setupcard');
     if (!c) return null;
     const live = [...c.querySelectorAll('.commitrow button')]
-      .filter((b) => !b.disabled && !/🗑/.test(b.textContent))
-      .map((b) => b.textContent.trim());
+      .filter((b) => !b.disabled && !/🗑/.test(b.textContent) && !b.querySelector('[data-gl="bin"]'))
+      .map((b) => window.CARDS.glyphTextOf(b).trim());
     return {
       lane: !!c.querySelector('[data-titlelane]'),
       radio: !!c.querySelector('[data-set]'),

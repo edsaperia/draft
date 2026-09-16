@@ -540,7 +540,9 @@ if (DELEGATE && !TAKEBACK) {
     errors.push('🍾 began the document with ' + DELEGATE + ' delegated and the founder its only voice (R-015)');
   } else {
     const st = await page.evaluate(() => {
-      const t = (el) => (el ? el.textContent.replace(/\s+/g, ' ').trim() : '');
+      // the cork is a drawn glyph since Q1401, so its character comes back
+      // through the picture rather than out of the button's (empty) text
+      const t = (el) => (el ? window.CARDS.glyphTextOf(el).replace(/\s+/g, ' ').trim() : '');
       const c = document.querySelector('.setupcard');
       const cork = c && [...c.querySelectorAll('.commitrow button')].find((b) => /🍾/.test(t(b) || b.title));
       return { open: !!c, cork: cork ? (cork.disabled ? 'off' : 'on') : 'none', said: t(c) };

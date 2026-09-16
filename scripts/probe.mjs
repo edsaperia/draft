@@ -98,6 +98,10 @@ const FROZEN = [
   // setup-probe's whole subject, so a freeze that left it behind would
   // compare today's cards against yesterday's band
   'band.js',
+  // the drawn glyphs' sprite (Q1401): the reference page fetches it beside
+  // itself, so a freeze without it would compare drawn glyphs against empty
+  // boxes and read every one of them as a change
+  'fluent-glyphs.svg',
 ];
 
 /** Byte-copy design/<name> over design/reference/<name>, reporting each. */

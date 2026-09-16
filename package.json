@@ -44,6 +44,7 @@
     "copy-freeze": "node scripts/copy-check.mjs --update && node scripts/copy-check.mjs --walk --update",
     "qa:freeze": "node scripts/qa-freeze.mjs",
     "emoji-data": "node scripts/emoji-data.mjs",
+    "fluent-glyphs": "node scripts/fluent-glyphs.mjs",
     "founder-answers": "node scripts/founding-walk.mjs --delegate=chamber",
     "spec-check": "node scripts/spec-check.mjs",
     "design": "node scripts/design-server.mjs"

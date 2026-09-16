@@ -516,13 +516,18 @@ function checkSetupAlphabet() {
   const cell = (s, col) => (byState.get(s) || {})[col] || '';
   const glyph = (c) => /subject glyph/.test(c);
   // branch 1: a done tab keeps the subject glyph; the done rail entry retires to the drawn ✔
-  if (!/if \(tab && st === 'done'\) return c\.g;/.test(mo)) find('setup-alphabet', "markOf: no `tab && st === 'done'` branch — the table says a done tab wears the subject glyph");
+  // **Since Q1401 the subject glyph is drawn too** (Ed, 2026-09-16), from the
+  // same Fluent Flat set as the marks — so each of these branches hands the
+  // character to `glyphHtml` rather than emitting it. The rule the table states
+  // is unchanged (which mark each state wears); what the patterns now pin is
+  // that the glyph goes out as one picture and not as the platform's emoji.
+  if (!/if \(tab && st === 'done'\) return glyphHtml\(c\.g\);/.test(mo)) find('setup-alphabet', "markOf: no `tab && st === 'done'` branch — the table says a done tab wears the subject glyph, drawn (Q1401)");
   if (!glyph(cell('done', 'tab mark'))) find('setup-alphabet', `done: markOf hands a done tab the subject glyph, the tab-mark cell says "${cell('done', 'tab mark')}"`);
   if (!/drawn.*✔/.test(cell('done', 'rail mark'))) find('setup-alphabet', `done: markOf hands a done rail entry TICK, the rail-mark cell says "${cell('done', 'rail mark')}"`);
   // branch 1a: the front of a setting's own pile keeps the subject glyph while
   // the rule is news (Q1320, Ed 2026-09-11) — `host` is the pile's word, and
   // pileHtml/stripHtml have to hand it to the chip or the branch is dead
-  if (!/if \(tab && host && st === 'news'\) return c\.g;/.test(mo))
+  if (!/if \(tab && host && st === 'news'\) return glyphHtml\(c\.g\);/.test(mo))
     find('setup-alphabet', "markOf: no `tab && host && st === 'news'` branch — the table says the front of a setting's pile keeps the subject glyph while the rule is news (Q1320)");
   if (!/except the front of a setting's own pile, which keeps the subject glyph/.test(cell('news', 'tab mark')))
     find('setup-alphabet', `news: markOf hands the front of a setting's pile the subject glyph, the tab-mark cell says "${cell('news', 'tab mark')}"`);
@@ -530,7 +535,7 @@ function checkSetupAlphabet() {
     if (!setup.includes('chipHtml(c, ctx, { ' + site + ' })'))
       find('setup-alphabet', `setup.js: chipHtml is no longer told which chip is the host at \`{ ${site} }\` — the news-glyph branch has nothing to key on`);
   // branch 2: a grant's news wears the power's glyph, in both columns
-  if (!/if \(st === 'news' && c\.grants\) return c\.grants;/.test(mo)) find('setup-alphabet', 'markOf: no grant branch — the table says a grant wears the glyph of the power it grants');
+  if (!/if \(st === 'news' && c\.grants\) return glyphHtml\(c\.grants\);/.test(mo)) find('setup-alphabet', 'markOf: no grant branch — the table says a grant wears the glyph of the power it grants');
   for (const col of ['rail mark', 'tab mark']) {
     if (!/glyph of the power it grants/.test(cell('news', col))) find('setup-alphabet', `news: markOf hands a grant its power's glyph, the ${col} cell says "${cell('news', col)}"`);
     if (!/drawn.*✔/.test(cell('news', col))) find('setup-alphabet', `news: markOf hands every other news card TICK, the ${col} cell says "${cell('news', col)}"`);
@@ -541,7 +546,7 @@ function checkSetupAlphabet() {
   // stroked tick as the *commit* glyph when the marks became pictures, so a copy
   // of it here would have put two different ticks on one page. All three
   // constants are checked against `mkHtml` — one alphabet, asserted at the seam.
-  if (!/return st === 'ask' \? c\.g : st === 'wait' \? WAITING : st === 'yours' \? YOURS : DONE;/.test(mo))
+  if (!/return st === 'ask' \? glyphHtml\(c\.g\) : st === 'wait' \? WAITING : st === 'yours' \? YOURS : DONE;/.test(mo))
     find('setup-alphabet', 'markOf: the fall-through is no longer `ask → glyph · wait → WAITING (⏳) · yours → YOURS (✏️) · else DONE (✔)`');
   for (const [name, kind] of [['WAITING', 'deciding'], ['YOURS', 'propose'], ['DONE', 'adopted']])
     if (!new RegExp(`const ${name} = window\\.CARDS\\.mkHtml\\('${kind}'\\);`).test(setup))
@@ -559,7 +564,7 @@ function checkSetupAlphabet() {
   // Q1286 (a)): markOf keeps the subject glyph on every wait that is not a
   // vote of yours, and the surface says which wait is a vote (`ctx.voted`)
   const waitCell = cell('wait', 'rail mark');
-  if (!/if \(st === 'wait' && !\(ctx\.voted && ctx\.voted\(c\)\)\) return c\.g;/.test(mo))
+  if (!/if \(st === 'wait' && !\(ctx\.voted && ctx\.voted\(c\)\)\) return glyphHtml\(c\.g\);/.test(mo))
     find('setup-alphabet', 'markOf: the wait branch no longer asks `ctx.voted` — the table says ⏳ where you have voted, else the subject glyph (Q1286 (a))');
   if (!/where you have voted/.test(waitCell) || !/otherwise the subject glyph/.test(waitCell))
     find('setup-alphabet', `wait: markOf hands ⏳ to a vote of yours and the glyph to every other wait; the rail-mark cell says "${waitCell.slice(0, 80)}…"`);

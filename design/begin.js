@@ -19,6 +19,9 @@
 window.BEGIN = (function () {
   function make(env) {
     const { S, PAGE_COPY, SEC, SESSION } = env;
+    // the drawn glyphs (Q1401): every glyph this file emits as markup is one
+    // picture from the Fluent Flat set, and the sentences take glyphify
+    const { glyphHtml, glyphify } = window.CARDS;
     const { amFounder, card, closeSignatures, closedAtWords, constituted, csState, decidingOf, esc, listOf,
       midOf, mustAct, mySignature, nounOf, pkeyOf, pwPair, pwPend, pwPhrase, remedyOnly,
       servedCards, settled, viewerIsMember, visible } = env;
@@ -333,7 +336,7 @@ window.BEGIN = (function () {
       return '<td class="bcell"><button class="pwtoggle" type="button" aria-pressed="' + kept + '"' +
         ' data-bkey="' + k + '" data-bpw="' + pw + '"' + (st === 'given' ? ' disabled' : '') +
         ' title="' + (st === 'given' ? PAGE_COPY.begin.givenTip : kept ? PAGE_COPY.begin.keptTip : PAGE_COPY.begin.downTip) + '">' +
-        '<span class="tg">' + (pw === 'u' ? '✒️' : '🛡️') + '</span></button></td>';
+        '<span class="tg">' + glyphHtml(pw === 'u' ? '✒️' : '🛡️') + '</span></button></td>';
     };
     // the setting cell: the card's glyph and its noun through `settingNamed`,
     // the one reader of a setting's name inside a sentence — the doors read
