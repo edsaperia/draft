@@ -812,7 +812,6 @@ window.LIVE = (function () {
     // drip clock, no judge counts.
     const lineIdx = (key) => +String(key).slice(1);
     const unhead = (l) => String(l).replace(/^#{1,3}\s+/, '');
-    const headOf = (o) => (o && o.t === 'h' ? '#'.repeat(o.level || 1) + ' ' : o && o.bullet ? '- ' : '');
     // the keys of a span, the ones the charter actually shows first (a blank
     // line is a line the engine counts and nothing the page anchors to)
     const keysOfSpan = (sp, lines) => {
@@ -835,13 +834,15 @@ window.LIVE = (function () {
       const gapKey = 'G' + sp.start;
       return { keys: [gapKey], gapKey, insertAfterKey: at >= 0 ? 'L' + at : null, isInsert: true };
     };
-    // a candidate's reading of a span: the current lines with its hunks applied
-    const applyIn = (lines, sp, hunks) => {
+    // a candidate's reading of a span: the current lines with its hunks
+    // applied — the words for the card, or with `src` the **source lines**
+    // exactly, which is what a lane seeded from the candidate holds (Q1403)
+    const applyIn = (lines, sp, hunks, src) => {
       const region = lines.slice(sp.start, sp.end);
       for (const h of (hunks || []).slice().sort((a, b) => b.start - a.start)) {
         region.splice(h.start - sp.start, h.end - h.start, ...h.lines);
       }
-      return region.filter((l) => l.trim()).map(unhead).join('\n');
+      return region.filter((l) => l.trim()).map(src ? (l) => l : unhead).join('\n');
     };
     const spanOf = (hunks) => ({ start: Math.min(...hunks.map((h) => h.start)),
       end: Math.max(...hunks.map((h) => h.end)) });
@@ -933,6 +934,7 @@ window.LIVE = (function () {
         const keys = site.keys;
         const inc = plain(lines, csp);
         const textOf = (c) => applyIn(lines, csp, c.hunks);
+        const srcOf = (c) => applyIn(lines, csp, c.hunks, true);     // the seed's own text (Q1403)
         const byId = (id) => r.candidates.find((c) => c.id === id);
         // a name the server attached is one the reveal rule allowed (a signed
         // proposal, Q770, or one made under `public`): the live card shows it,
@@ -948,7 +950,7 @@ window.LIVE = (function () {
           const c = byId(id);
           if (!c) return { id, inc: false, text: null };
           const t = textOf(c);
-          return { id, inc: false, text: t, marked: markedOf(inc, t), rationale: c.rationale, by: byOf(c) };
+          return { id, inc: false, text: t, src: srcOf(c), marked: markedOf(inc, t), rationale: c.rationale, by: byOf(c) };
         };
         // the pair's own key rides the item id: one item per pair, and the
         // provisional layer (session.js's `pairKey`) is keyed the same way
@@ -985,7 +987,7 @@ window.LIVE = (function () {
         // an all-mine race.
         if (r.candidates.every((c) => c.mine)) continue;
         const slate = r.deadlocked
-          ? { slate: r.candidates.map((x) => ({ text: textOf(x), rationale: x.rationale })) } : {};
+          ? { slate: r.candidates.map((x) => ({ text: textOf(x), src: srcOf(x), rationale: x.rationale })) } : {};
         const waitCap = r.blockedByPark ? PARK.blocked : RAIL.votedStillRunning;
         // the item for one pair: the quick card where the current text is a
         // side, the race card where two challengers were dealt
@@ -996,11 +998,11 @@ window.LIVE = (function () {
             const c = A.inc ? B : A;
             return { ...base, ...extra, id: pairId(A.id, B.id), kind: 'quick', card,
               marked: c.marked || markedOf(inc, c.text || ''), rationale: c.rationale, by: c.by || null,
-              candId: c.id, ...slate };
+              candId: c.id, src: c.src, ...slate };
           }
           return { ...base, ...extra, id: pairId(A.id, B.id), kind: 'race', card,
-            race: { a: { id: A.id, text: A.text, rationale: A.rationale, by: A.by || null },
-                    b: { id: B.id, text: B.text, rationale: B.rationale, by: B.by || null } }, ...slate };
+            race: { a: { id: A.id, text: A.text, src: A.src, rationale: A.rationale, by: A.by || null },
+                    b: { id: B.id, text: B.text, src: B.src, rationale: B.rationale, by: B.by || null } }, ...slate };
         };
         // a judgment's verdict in the card's own vocabulary: the quick card's
         // keep / approve where the incumbent is a side, the race card's a / b
@@ -1038,11 +1040,11 @@ window.LIVE = (function () {
             cap: r.judged ? waitCap : RAIL.wantsVote, urgency: 0.3, card: null, ...slate };
           if (r.candidates.length === 1 || others.length < 2) {
             items.push({ ...rest, kind: 'quick', marked: markedOf(inc, textOf(c0)),
-              rationale: c0.rationale, by: byOf(c0), candId: c0.id });
+              rationale: c0.rationale, by: byOf(c0), candId: c0.id, src: srcOf(c0) });
           } else {
             items.push({ ...rest, kind: 'race',
-              race: { a: { id: others[0].id, text: textOf(others[0]), rationale: others[0].rationale, by: byOf(others[0]) },
-                      b: { id: others[1].id, text: textOf(others[1]), rationale: others[1].rationale, by: byOf(others[1]) } } });
+              race: { a: { id: others[0].id, text: textOf(others[0]), src: srcOf(others[0]), rationale: others[0].rationale, by: byOf(others[0]) },
+                      b: { id: others[1].id, text: textOf(others[1]), src: srcOf(others[1]), rationale: others[1].rationale, by: byOf(others[1]) } } });
           }
         }
       }
@@ -1126,9 +1128,12 @@ window.LIVE = (function () {
         const keys = keysOfSpan(sp, lines);
         const sites = spans.map((x, i) => {
           const ks = keysOfSpan(x, lines);
-          return { keys: ks, label: labelFor(ks[0]), text: hunks[i].lines.map(unhead).join('\n'),
+          // the site's text and its origin are **source lines** (Q1403): the
+          // hunk as proposed, the block as it stands, markers and all — the
+          // card dims the marker, and a re-make sends the lines as they are
+          return { keys: ks, label: labelFor(ks[0]), text: hunks[i].lines.join('\n'),
             origin: ks.map((k) => { const l = SESSION.DOC.find((x2) => x2.key === k) || {};
-              return { key: k, text: l.x || '', note: null, t: l.t, level: l.level }; }) };
+              return { key: k, text: SESSION.sourceTextFor(k), note: null, t: l.t, level: l.level }; }) };
         });
         // once proposed the sign choice is part of its record (Q770): the line
         // says *signed* and offers no switch
@@ -1201,7 +1206,8 @@ window.LIVE = (function () {
         const winner = field.find((f) => f.outcome === 'adopted') || (undecided ? best : null) || field[0] || {};
         const replaced = (o.displaced || []).filter((l) => l.trim()).map(unhead).join('\n') || undefined;
         const slate = field.length > 1
-          ? { slate: field.map((f) => ({ text: textOfF(f), rationale: f.rationale, by: byName(f),
+          ? { slate: field.map((f) => ({ text: textOfF(f), src: f.hunks.flatMap((h) => h.lines).join('\n'),
+              rationale: f.rationale, by: byName(f),
               underNote: underNoteOf(f), refusal: f.reason || null,
               p: f.p == null ? undefined : f.p, won: f === winner && (adopted || undecided) })) } : {};
         // **The card says which text it changed** where the clause under it has
@@ -1342,6 +1348,12 @@ window.LIVE = (function () {
       // **One helper, two doors** (R-058): ✏️ proposes and ✒️ decrees over
       // exactly the same hunks. The empty-document rule and the clamp are
       // subtle enough that a second copy would drift.
+      //
+      // **The lines go as the lane holds them** (Q1403): a lane's text is the
+      // candidate's markdown, marker and all, so nothing is put back in front
+      // of a line here — until Q1403 the origin block's `# ` was, which meant
+      // a heading's rank could not be changed from the lane and a marker
+      // typed on a heading would have been doubled.
       const hunksOf = (d) => {
         const nLines = env.cs.text === '' ? 0 : String(env.cs.text).split('\n').length;
         return d.sites.map((site) => {
@@ -1350,13 +1362,15 @@ window.LIVE = (function () {
           // at the line the gap stands before, clamped to the text's end
           if (/^G\d+$/.test(site.keys[0])) {
             const n = Math.min(lineIdx(site.keys[0]), nLines);
-            return { start: n, end: n, lines: ls.map((ln, i) => headOf(site.origin[i]) + ln) };
+            return { start: n, end: n, lines: ls };
           }
           const start = Math.min(lineIdx(site.keys[0]), nLines);
           return { start, end: Math.max(start, Math.min(lineIdx(site.keys[site.keys.length - 1]) + 1, nLines)),
-            lines: ls.map((ln, i) => headOf(site.origin[i]) + ln) };
+            lines: ls };
         });
       };
+      // what a draft would send, readable by a walk (`SESSION.LIVE_HOOKS.hunksOf`)
+      env.LIVE_HOOKS.hunksOf = hunksOf;
       // ✒️ on the Text (R-058, entry 160): the Founder's amendment passes the
       // instant it is submitted, so there is nothing to keep a local id for and
       // no wallet to re-read — the command's own refresh brings back a document

@@ -1,6 +1,6 @@
 {
  "meta": {
-  "cards": 311,
+  "cards": 263,
   "walks": [
    "answers",
    "charter",
@@ -4656,8 +4656,6 @@
     "hints": [
      "We should change this because…",
      "Admissions — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
@@ -4693,8 +4691,6 @@
     "hints": [
      "We should change this because…",
      "Applications — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
@@ -4746,8 +4742,6 @@
      "We should change this because…",
      "Anonymous Proposals — close it",
      "Are Proposals Anonymous? — waiting on you",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
@@ -4893,8 +4887,6 @@
     "hints": [
      "We should change this because…",
      "Ending — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
@@ -5012,8 +5004,6 @@
     "hints": [
      "We should change this because…",
      "Vote Reveal — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
@@ -5048,8 +5038,6 @@
     "hints": [
      "We should change this because…",
      "Lapsing — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
@@ -5148,8 +5136,6 @@
     "hints": [
      "Anonymous Proposals — settled",
      "Are Proposals Anonymous? — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "A member wrote this. Who, is sealed until the closing record.",
      "Put it back as it stands",
      "Give your answer"
@@ -5310,106 +5296,6 @@
     ],
     "helpers": []
    },
-   "pw:a:admission": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Admissions — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
-   "pw:a:applications": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "The Founder may refuse proposals that the membership pass.Propose this",
-    "options": [
-     {
-      "set": null,
-      "val": "The Founder has a veto over proposals passed by the membership about applications.",
-      "label": "The Founder may refuse proposals that the membership pass."
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Discard this motion"
-     },
-     {
-      "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
-     }
-    ],
-    "hints": [
-     "We should change this because…",
-     "Applications — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Propose this — nothing leaves the card until you submit",
-     "This is how your reason will reach everybody else: with your name off it.",
-     "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
-    ],
-    "helpers": [
-     "We should change this because…"
-    ]
-   },
-   "pw:a:authorship": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "The Founder may refuse proposals that the membership pass.Propose this",
-    "options": [
-     {
-      "set": null,
-      "val": "The Founder has a veto over proposals passed by the membership about anonymous proposals.",
-      "label": "The Founder may refuse proposals that the membership pass."
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Discard this motion"
-     },
-     {
-      "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
-     }
-    ],
-    "hints": [
-     "We should change this because…",
-     "Anonymous Proposals — settled",
-     "Are Proposals Anonymous? — waiting on you",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Propose this — nothing leaves the card until you submit",
-     "This is how your reason will reach everybody else: with your name off it.",
-     "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
-    ],
-    "helpers": [
-     "We should change this because…"
-    ]
-   },
    "pw:a:chamber": {
     "eyebrow": "",
     "head": "The Founder may refuse proposals that the membership pass.",
@@ -5437,43 +5323,6 @@
     ],
     "helpers": []
    },
-   "pw:a:ending": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "The Founder may refuse proposals that the membership pass.Propose this",
-    "options": [
-     {
-      "set": null,
-      "val": "The Founder has a veto over proposals passed by the membership about the ending.",
-      "label": "The Founder may refuse proposals that the membership pass."
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Discard this motion"
-     },
-     {
-      "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
-     }
-    ],
-    "hints": [
-     "We should change this because…",
-     "Ending — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Propose this — nothing leaves the card until you submit",
-     "This is how your reason will reach everybody else: with your name off it.",
-     "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
-    ],
-    "helpers": [
-     "We should change this because…"
-    ]
-   },
    "pw:a:invite": {
     "eyebrow": "",
     "head": "The Founder may refuse invitations and applications that the membership pass.",
@@ -5498,118 +5347,6 @@
      "Put it back as it stands"
     ],
     "helpers": []
-   },
-   "pw:a:judgments": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "The Founder may refuse proposals that the membership pass.Propose this",
-    "options": [
-     {
-      "set": null,
-      "val": "The Founder has a veto over proposals passed by the membership about vote reveal.",
-      "label": "The Founder may refuse proposals that the membership pass."
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Discard this motion"
-     },
-     {
-      "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
-     }
-    ],
-    "hints": [
-     "We should change this because…",
-     "Vote Reveal — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Propose this — nothing leaves the card until you submit",
-     "This is how your reason will reach everybody else: with your name off it.",
-     "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
-    ],
-    "helpers": [
-     "We should change this because…"
-    ]
-   },
-   "pw:a:lapse": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "The Founder may refuse proposals that the membership pass.Propose this",
-    "options": [
-     {
-      "set": null,
-      "val": "The Founder has a veto over proposals passed by the membership about membership lapse.",
-      "label": "The Founder may refuse proposals that the membership pass."
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Discard this motion"
-     },
-     {
-      "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
-     }
-    ],
-    "hints": [
-     "We should change this because…",
-     "Lapsing — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Propose this — nothing leaves the card until you submit",
-     "This is how your reason will reach everybody else: with your name off it.",
-     "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
-    ],
-    "helpers": [
-     "We should change this because…"
-    ]
-   },
-   "pw:a:quorum": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "The Founder may refuse proposals that the membership pass.Propose this",
-    "options": [
-     {
-      "set": null,
-      "val": "The Founder has a veto over proposals passed by the membership about quorum.",
-      "label": "The Founder may refuse proposals that the membership pass."
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Discard this motion"
-     },
-     {
-      "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
-     }
-    ],
-    "hints": [
-     "We should change this because…",
-     "Quorum — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Passed: 38% of the membership — settled",
-     "Propose this — nothing leaves the card until you submit",
-     "This is how your reason will reach everybody else: with your name off it.",
-     "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
-    ],
-    "helpers": [
-     "We should change this because…"
-    ]
    },
    "pw:a:rate": {
     "eyebrow": "",
@@ -5637,43 +5374,6 @@
      "Put it back as it stands"
     ],
     "helpers": []
-   },
-   "pw:a:removal": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "The Founder may refuse proposals that the membership pass.Propose this",
-    "options": [
-     {
-      "set": null,
-      "val": "The Founder has a veto over proposals passed by the membership about member removal.",
-      "label": "The Founder may refuse proposals that the membership pass."
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Discard this motion"
-     },
-     {
-      "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
-     }
-    ],
-    "hints": [
-     "We should change this because…",
-     "Removals — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Propose this — nothing leaves the card until you submit",
-     "This is how your reason will reach everybody else: with your name off it.",
-     "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
-    ],
-    "helpers": [
-     "We should change this because…"
-    ]
    },
    "pw:a:remove": {
     "eyebrow": "",
@@ -5750,106 +5450,6 @@
     ],
     "helpers": []
    },
-   "pw:u:admission": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Admissions — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
-   "pw:u:applications": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "The Founder may amend this at will.Propose this",
-    "options": [
-     {
-      "set": null,
-      "val": "The Founder may amend applications at will.",
-      "label": "The Founder may amend this at will."
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Discard this motion"
-     },
-     {
-      "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
-     }
-    ],
-    "hints": [
-     "We should change this because…",
-     "Applications — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Propose this — nothing leaves the card until you submit",
-     "This is how your reason will reach everybody else: with your name off it.",
-     "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
-    ],
-    "helpers": [
-     "We should change this because…"
-    ]
-   },
-   "pw:u:authorship": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "The Founder may amend this at will.Propose this",
-    "options": [
-     {
-      "set": null,
-      "val": "The Founder may amend anonymous proposals at will.",
-      "label": "The Founder may amend this at will."
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Discard this motion"
-     },
-     {
-      "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
-     }
-    ],
-    "hints": [
-     "We should change this because…",
-     "Anonymous Proposals — settled",
-     "Are Proposals Anonymous? — waiting on you",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Propose this — nothing leaves the card until you submit",
-     "This is how your reason will reach everybody else: with your name off it.",
-     "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
-    ],
-    "helpers": [
-     "We should change this because…"
-    ]
-   },
    "pw:u:chamber": {
     "eyebrow": "",
     "head": "The Founder may amend this at will.",
@@ -5877,43 +5477,6 @@
     ],
     "helpers": []
    },
-   "pw:u:ending": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "The Founder may amend this at will.Propose this",
-    "options": [
-     {
-      "set": null,
-      "val": "The Founder may amend the ending at will.",
-      "label": "The Founder may amend this at will."
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Discard this motion"
-     },
-     {
-      "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
-     }
-    ],
-    "hints": [
-     "We should change this because…",
-     "Ending — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Propose this — nothing leaves the card until you submit",
-     "This is how your reason will reach everybody else: with your name off it.",
-     "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
-    ],
-    "helpers": [
-     "We should change this because…"
-    ]
-   },
    "pw:u:invite": {
     "eyebrow": "",
     "head": "The Founder may invite people at will.",
@@ -5938,118 +5501,6 @@
      "Put it back as it stands"
     ],
     "helpers": []
-   },
-   "pw:u:judgments": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "The Founder may amend this at will.Propose this",
-    "options": [
-     {
-      "set": null,
-      "val": "The Founder may amend vote reveal at will.",
-      "label": "The Founder may amend this at will."
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Discard this motion"
-     },
-     {
-      "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
-     }
-    ],
-    "hints": [
-     "We should change this because…",
-     "Vote Reveal — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Propose this — nothing leaves the card until you submit",
-     "This is how your reason will reach everybody else: with your name off it.",
-     "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
-    ],
-    "helpers": [
-     "We should change this because…"
-    ]
-   },
-   "pw:u:lapse": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "The Founder may amend this at will.Propose this",
-    "options": [
-     {
-      "set": null,
-      "val": "The Founder may amend membership lapse at will.",
-      "label": "The Founder may amend this at will."
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Discard this motion"
-     },
-     {
-      "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
-     }
-    ],
-    "hints": [
-     "We should change this because…",
-     "Lapsing — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Propose this — nothing leaves the card until you submit",
-     "This is how your reason will reach everybody else: with your name off it.",
-     "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
-    ],
-    "helpers": [
-     "We should change this because…"
-    ]
-   },
-   "pw:u:quorum": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "The Founder may amend this at will.Propose this",
-    "options": [
-     {
-      "set": null,
-      "val": "The Founder may amend quorum at will.",
-      "label": "The Founder may amend this at will."
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Discard this motion"
-     },
-     {
-      "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
-     }
-    ],
-    "hints": [
-     "We should change this because…",
-     "Quorum — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Passed: 38% of the membership — settled",
-     "Propose this — nothing leaves the card until you submit",
-     "This is how your reason will reach everybody else: with your name off it.",
-     "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
-    ],
-    "helpers": [
-     "We should change this because…"
-    ]
    },
    "pw:u:rate": {
     "eyebrow": "",
@@ -6077,43 +5528,6 @@
      "Put it back as it stands"
     ],
     "helpers": []
-   },
-   "pw:u:removal": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "The Founder may amend this at will.Propose this",
-    "options": [
-     {
-      "set": null,
-      "val": "The Founder may amend member removal at will.",
-      "label": "The Founder may amend this at will."
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Discard this motion"
-     },
-     {
-      "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
-     }
-    ],
-    "hints": [
-     "We should change this because…",
-     "Removals — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Propose this — nothing leaves the card until you submit",
-     "This is how your reason will reach everybody else: with your name off it.",
-     "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
-    ],
-    "helpers": [
-     "We should change this because…"
-    ]
    },
    "pw:u:remove": {
     "eyebrow": "",
@@ -6215,8 +5629,6 @@
     "hints": [
      "We should change this because…",
      "Quorum — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "Passed: 38% of the membership — settled",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
@@ -6312,8 +5724,6 @@
     ],
     "hints": [
      "Quorum — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "Passed: 38% of the membership — close it",
      "A member wrote this. Who, is sealed until the closing record.",
      "Put it back as it stands"
@@ -6379,8 +5789,6 @@
     "hints": [
      "We should change this because…",
      "Removals — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
@@ -6516,8 +5924,6 @@
     ],
     "hints": [
      "Admissions — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -6541,8 +5947,6 @@
     ],
     "hints": [
      "Applications — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -6566,8 +5970,6 @@
     ],
     "hints": [
      "Anonymous Proposals — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "Anonymous Proposals — settled",
      "Put it back as it stands"
     ],
@@ -6619,8 +6021,6 @@
     ],
     "hints": [
      "Ending — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -6644,8 +6044,6 @@
     ],
     "hints": [
      "Vote Reveal — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -6669,8 +6067,6 @@
     ],
     "hints": [
      "Lapsing — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -6721,8 +6117,6 @@
     ],
     "hints": [
      "Anonymous Proposals — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "Anonymous Proposals — close it",
      "Put it back as it stands"
     ],
@@ -6755,81 +6149,6 @@
     ],
     "helpers": []
    },
-   "pw:a:admission": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Admissions — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
-   "pw:a:applications": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Applications — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
-   "pw:a:authorship": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Anonymous Proposals — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
    "pw:a:chamber": {
     "eyebrow": "",
     "head": "The Founder may refuse proposals that the membership pass.",
@@ -6856,107 +6175,6 @@
     ],
     "helpers": []
    },
-   "pw:a:ending": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Ending — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
-   "pw:a:judgments": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Vote Reveal — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
-   "pw:a:lapse": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Lapsing — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
-   "pw:a:quorum": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Quorum — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Passed: 38% of the membership — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
    "pw:a:rate": {
     "eyebrow": "",
     "head": "The Founder may refuse proposals that the membership pass.",
@@ -6979,31 +6197,6 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
      "Rejected: a new proposal every 90 minutes — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
-   "pw:a:removal": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Removals — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -7058,81 +6251,6 @@
     ],
     "helpers": []
    },
-   "pw:u:admission": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Admissions — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
-   "pw:u:applications": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Applications — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
-   "pw:u:authorship": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Anonymous Proposals — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
    "pw:u:chamber": {
     "eyebrow": "",
     "head": "The Founder may amend this at will.",
@@ -7159,107 +6277,6 @@
     ],
     "helpers": []
    },
-   "pw:u:ending": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Ending — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
-   "pw:u:judgments": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Vote Reveal — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
-   "pw:u:lapse": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Lapsing — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
-   "pw:u:quorum": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Quorum — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Passed: 38% of the membership — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
    "pw:u:rate": {
     "eyebrow": "",
     "head": "The Founder may amend this at will.",
@@ -7282,31 +6299,6 @@
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
      "Rejected: a new proposal every 90 minutes — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
-   "pw:u:removal": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Removals — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -7380,8 +6372,6 @@
     ],
     "hints": [
      "Quorum — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "Passed: 38% of the membership — settled",
      "Put it back as it stands"
     ],
@@ -7460,8 +6450,6 @@
     ],
     "hints": [
      "Quorum — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "Passed: 38% of the membership — close it",
      "A member wrote this. Who, is sealed until the closing record.",
      "Put it back as it stands"
@@ -7514,8 +6502,6 @@
     ],
     "hints": [
      "Removals — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -7633,8 +6619,6 @@
     "hints": [
      "We should change this because…",
      "Admissions — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
@@ -7670,8 +6654,6 @@
     "hints": [
      "We should change this because…",
      "Applications — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
@@ -7723,8 +6705,6 @@
      "We should change this because…",
      "Anonymous Proposals — close it",
      "Are Proposals Anonymous? — waiting on others",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
@@ -7883,8 +6863,6 @@
     "hints": [
      "We should change this because…",
      "Ending — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
@@ -8058,8 +7036,6 @@
     "hints": [
      "We should change this because…",
      "Vote Reveal — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
@@ -8094,8 +7070,6 @@
     "hints": [
      "We should change this because…",
      "Lapsing — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
@@ -8204,8 +7178,6 @@
     "hints": [
      "Anonymous Proposals — settled",
      "Are Proposals Anonymous? — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "A member wrote this. Who, is sealed until the closing record.",
      "Withdraw it — your 🏛️ comes back whole",
      "Give your answer"
@@ -8381,87 +7353,11 @@
     ],
     "helpers": []
    },
-   "pw:a:admission": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Admissions — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
-   "pw:a:applications": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Applications — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
-   "pw:a:authorship": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Anonymous Proposals — settled",
-     "Are Proposals Anonymous? — waiting on others",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
    "pw:a:chamber": {
     "eyebrow": "",
     "head": "The Founder may refuse proposals that the membership pass.",
     "lock": "",
-    "body": "The Founder may refuse proposals that the membership pass.ChosenThe Founder may not refuse proposals that the membership pass.One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder may refuse proposals that the membership pass.ChosenThe Founder may not refuse proposals that the membership pass.One way — it cannot be taken back.Choose this",
     "options": [
      {
       "set": "pw:a:chamber",
@@ -8495,39 +7391,14 @@
      "Set it"
     ],
     "helpers": [
-     "One way — the road back is the members’ to give."
+     "One way — it cannot be taken back."
     ]
-   },
-   "pw:a:ending": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Ending — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Put it back as it stands"
-    ],
-    "helpers": []
    },
    "pw:a:invite": {
     "eyebrow": "",
     "head": "The Founder may refuse invitations and applications that the membership pass.",
     "lock": "",
-    "body": "The Founder may refuse invitations and applications that the membership pass.ChosenThe Founder may not refuse invitations and applications that the membership pass.One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder may refuse invitations and applications that the membership pass.ChosenThe Founder may not refuse invitations and applications that the membership pass.One way — it cannot be taken back.Choose this",
     "options": [
      {
       "set": "pw:a:invite",
@@ -8559,90 +7430,14 @@
      "Set it"
     ],
     "helpers": [
-     "One way — the road back is the members’ to give."
+     "One way — it cannot be taken back."
     ]
-   },
-   "pw:a:judgments": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Vote Reveal — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
-   "pw:a:lapse": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Lapsing — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
-   "pw:a:quorum": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Quorum — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Passed: 38% of the membership — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": []
    },
    "pw:a:rate": {
     "eyebrow": "",
     "head": "The Founder may refuse proposals that the membership pass.",
     "lock": "",
-    "body": "The Founder may refuse proposals that the membership pass.ChosenThe Founder may not refuse proposals that the membership pass.One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder may refuse proposals that the membership pass.ChosenThe Founder may not refuse proposals that the membership pass.One way — it cannot be taken back.Choose this",
     "options": [
      {
       "set": "pw:a:rate",
@@ -8676,39 +7471,14 @@
      "Set it"
     ],
     "helpers": [
-     "One way — the road back is the members’ to give."
+     "One way — it cannot be taken back."
     ]
-   },
-   "pw:a:removal": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Removals — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Put it back as it stands"
-    ],
-    "helpers": []
    },
    "pw:a:remove": {
     "eyebrow": "",
     "head": "The Founder may refuse removals that the membership pass.",
     "lock": "",
-    "body": "The Founder may refuse removals that the membership pass.ChosenThe Founder may not refuse removals that the membership pass.One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder may refuse removals that the membership pass.ChosenThe Founder may not refuse removals that the membership pass.One way — it cannot be taken back.Choose this",
     "options": [
      {
       "set": "pw:a:remove",
@@ -8740,14 +7510,14 @@
      "Set it"
     ],
     "helpers": [
-     "One way — the road back is the members’ to give."
+     "One way — it cannot be taken back."
     ]
    },
    "pw:a:slug": {
     "eyebrow": "",
     "head": "The Founder may refuse proposals that the membership pass.",
     "lock": "",
-    "body": "The Founder may refuse proposals that the membership pass.ChosenThe Founder may not refuse proposals that the membership pass.One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder may refuse proposals that the membership pass.ChosenThe Founder may not refuse proposals that the membership pass.One way — it cannot be taken back.Choose this",
     "options": [
      {
       "set": "pw:a:slug",
@@ -8779,14 +7549,14 @@
      "Set it"
     ],
     "helpers": [
-     "One way — the road back is the members’ to give."
+     "One way — it cannot be taken back."
     ]
    },
    "pw:a:title": {
     "eyebrow": "",
     "head": "The Founder may refuse proposals that the membership pass.",
     "lock": "",
-    "body": "The Founder may refuse proposals that the membership pass.ChosenThe Founder may not refuse proposals that the membership pass.One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder may refuse proposals that the membership pass.ChosenThe Founder may not refuse proposals that the membership pass.One way — it cannot be taken back.Choose this",
     "options": [
      {
       "set": "pw:a:title",
@@ -8818,90 +7588,14 @@
      "Set it"
     ],
     "helpers": [
-     "One way — the road back is the members’ to give."
+     "One way — it cannot be taken back."
     ]
-   },
-   "pw:u:admission": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Admissions — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
-   "pw:u:applications": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Applications — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
-   "pw:u:authorship": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Anonymous Proposals — settled",
-     "Are Proposals Anonymous? — waiting on others",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": []
    },
    "pw:u:chamber": {
     "eyebrow": "",
     "head": "The Founder may amend this at will.",
     "lock": "",
-    "body": "The Founder may amend this at will.ChosenThe Founder may not amend this at will.One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder may amend this at will.ChosenThe Founder may not amend this at will.One way — it cannot be taken back.Choose this",
     "options": [
      {
       "set": "pw:u:chamber",
@@ -8935,39 +7629,14 @@
      "Set it"
     ],
     "helpers": [
-     "One way — the road back is the members’ to give."
+     "One way — it cannot be taken back."
     ]
-   },
-   "pw:u:ending": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Ending — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": []
    },
    "pw:u:invite": {
     "eyebrow": "",
     "head": "The Founder may invite people at will.",
     "lock": "",
-    "body": "The Founder may invite people at will.ChosenThe Founder may not invite people at will.One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder may invite people at will.ChosenThe Founder may not invite people at will.One way — it cannot be taken back.Choose this",
     "options": [
      {
       "set": "pw:u:invite",
@@ -8999,90 +7668,14 @@
      "Set it"
     ],
     "helpers": [
-     "One way — the road back is the members’ to give."
+     "One way — it cannot be taken back."
     ]
-   },
-   "pw:u:judgments": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Vote Reveal — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
-   "pw:u:lapse": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Lapsing — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": []
-   },
-   "pw:u:quorum": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Quorum — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Passed: 38% of the membership — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": []
    },
    "pw:u:rate": {
     "eyebrow": "",
     "head": "The Founder may amend this at will.",
     "lock": "",
-    "body": "The Founder may amend this at will.ChosenThe Founder may not amend this at will.One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder may amend this at will.ChosenThe Founder may not amend this at will.One way — it cannot be taken back.Choose this",
     "options": [
      {
       "set": "pw:u:rate",
@@ -9116,39 +7709,14 @@
      "Set it"
     ],
     "helpers": [
-     "One way — the road back is the members’ to give."
+     "One way — it cannot be taken back."
     ]
-   },
-   "pw:u:removal": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
-    "hints": [
-     "Removals — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": []
    },
    "pw:u:remove": {
     "eyebrow": "",
     "head": "The Founder may remove members at will.",
     "lock": "",
-    "body": "The Founder may remove members at will.ChosenThe Founder may not remove members at will.One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder may remove members at will.ChosenThe Founder may not remove members at will.One way — it cannot be taken back.Choose this",
     "options": [
      {
       "set": "pw:u:remove",
@@ -9180,14 +7748,14 @@
      "Set it"
     ],
     "helpers": [
-     "One way — the road back is the members’ to give."
+     "One way — it cannot be taken back."
     ]
    },
    "pw:u:slug": {
     "eyebrow": "",
     "head": "The Founder may amend this at will.",
     "lock": "",
-    "body": "The Founder may amend this at will.ChosenThe Founder may not amend this at will.One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder may amend this at will.ChosenThe Founder may not amend this at will.One way — it cannot be taken back.Choose this",
     "options": [
      {
       "set": "pw:u:slug",
@@ -9219,14 +7787,14 @@
      "Set it"
     ],
     "helpers": [
-     "One way — the road back is the members’ to give."
+     "One way — it cannot be taken back."
     ]
    },
    "pw:u:title": {
     "eyebrow": "",
     "head": "The Founder may amend this at will.",
     "lock": "",
-    "body": "The Founder may amend this at will.ChosenThe Founder may not amend this at will.One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder may amend this at will.ChosenThe Founder may not amend this at will.One way — it cannot be taken back.Choose this",
     "options": [
      {
       "set": "pw:u:title",
@@ -9258,7 +7826,7 @@
      "Set it"
     ],
     "helpers": [
-     "One way — the road back is the members’ to give."
+     "One way — it cannot be taken back."
     ]
    },
    "quorum": {
@@ -9286,8 +7854,6 @@
     "hints": [
      "We should change this because…",
      "Quorum — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "Passed: 38% of the membership — settled",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
@@ -9393,8 +7959,6 @@
     ],
     "hints": [
      "Quorum — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "Passed: 38% of the membership — close it",
      "A member wrote this. Who, is sealed until the closing record.",
      "Put it back as it stands"
@@ -9460,8 +8024,6 @@
     "hints": [
      "We should change this because…",
      "Removals — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",

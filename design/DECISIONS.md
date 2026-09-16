@@ -7005,3 +7005,19 @@ The deploy of Q1401, Q1402, 👍 and the floating circles went out at 16:34 with
 | # | Title | Raised | State | Pointers |
 |---|---|---|---|---|
 | 1404 | A laid-down power's tab leaves the pile — the road back is closed | 2026-09-16 | ruled and built 2026-09-16 (branch `q1404-powertabs`); reverses Q386 | `pwGone`, `pwTabsFor` (session-view.html); SPEC §9.7 rules 4, 7, 8 (v0.130), R-121; SURFACE §8's power-tabs row, E39 and K32 retired; `npm run journey`'s `return` lines, `npm run powers-walk` |
+
+## Q1403: a heading's marker is text in edit mode (Ed, 2026-09-16)
+
+**The ruling.** *In edit mode you should always see the markdown #s for headings, otherwise you have no way of editing them.* Ed's live-room note of 2026-09-16, claimed as Q1403.
+
+**What was wrong.** Two halves stripped the marker. The column drew a heading's `# ` only with `[]` pressed; rendered, the block wore its rank as a class and no marker. The draft lane did the same: `laneBlocks` took a `kinds` argument (`headFlags`, read off the site's origin) that re-applied the origin's rank to any marker-less block, and `hunksOf` put `headOf(origin)` back in front of every line it sent — so a heading whose words you edited kept its rank whatever you typed, a marker you deleted came back at the send, and a marker typed on a heading would have doubled. Only a *typed* marker previewed (Q1294), which is why the bug read as *no way of editing them*.
+
+**The build.** The marker is text end to end. The column shows every block's marker in edit mode, rendered or source, in a `.nocaret` span (`markShown`, session.js) — drawn and never counted, so the caret offsets the composer measures stay offsets into the words. The lane holds the block's **source line** (`sourceTextFor`, `markerFor`): every opening — a keystroke, a selected run, a join, ✏️ from a lane, the dead lane's first keystroke — seeds the lane with marker and words and adds the marker's length to a caret measured in the column. `laneBlocks` lost `kinds`; the marker alone ranks a block. `hunksOf` sends the lane's lines as they are, the origin prefix gone, and `SESSION.LIVE_HOOKS.hunksOf` is readable by a walk. Backspace at the start of a heading's words takes the marker off whole — the block becomes a paragraph, and the next backspace is Q1302's join. A live item carries `src` beside `text` (`applyIn(…, true)` in live.js) so a lane seeded from a candidate holds its exact markdown; a fixture item with no `src` is re-marked line by line from the block it replaces (`laneSeed`'s `headFor`). The bullet rules key on `:has(> .mdmark)` rather than `.mdsrc`, since the marker now stands in rendered edit mode too.
+
+**Rejected.** Keeping the rank as a class and offering a rank control beside the lane (a second way to say what the text already says — a candidate's text *is* markdown, Ed 2026-08-17). Showing the marker in read mode (the reader's page is rendered; the marker is an editing affordance and nothing else).
+
+**Guard.** None of its own: the probes' references cover the rendered lane and `journey`'s edit-mode step reads the column's geometry, but nothing asserts a heading's `# ` stands in the column in edit mode or that a lane opened on one holds it as text. Owed — a `journey` or `card-audit` line — and listed for Ed with the merge.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 1403 | A heading's marker is text in edit mode | 2026-09-16 | ruled and built 2026-09-16 (branch `q1403-headings`); no guard yet | `markShown`, `sourceTextFor`, `markerFor` (session.js); `laneBlocks`, `laneSeed` (cards.js); `startDraftFromTyping`, `joinWithNeighbour`, `startDraftFromRun` (composer.js); `applyIn`, `hunksOf` (live.js); SURFACE K22, §9's 📝 row |

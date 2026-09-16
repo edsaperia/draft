@@ -578,21 +578,20 @@ window.CARDS = (function () {
   }
   // Blocks are split on newlines *after* the diff, so a run of new wording that
   // spans a paragraph break is still one comparison rather than two.
-  // `kinds` says what each block of the run *was* — `{ h: level }` for a
-  // heading, `{ b: true }` for a bullet, null for a paragraph (`headFlags`) —
-  // so a section title still reads as one wherever the run is shown. Matched
-  // by position, which holds while the block count does — and where the
-  // author has added or removed lines it simply stops claiming, which is the
-  // honest failure.
   //
-  // **A typed marker previews as it will land** (Q1294, Ed 2026-09-10): a
-  // block whose text begins `# ` or `- ` wears the heading or bullet treatment
+  // **A marker previews as it will land** (Q1294, Ed 2026-09-10): a block
+  // whose text begins `# ` or `- ` wears the heading or bullet treatment
   // here, with the marker itself dimmed in a `.mdmark` span — still text, so
   // the caret counts it and `htmlToMd` writes it back: what is proposed is the
-  // source, and the engine's `blocksOf` reads the same prefix on landing. The
-  // marker outranks the origin, since a paragraph retyped as a heading *is*
-  // one now. In markdown mode nothing is dressed at all.
-  function laneBlocks(text, oldText, kinds, raw) {
+  // source, and the engine's `blocksOf` reads the same prefix on landing.
+  // **And the marker is the only thing that ranks a block** (Q1403, Ed
+  // 2026-09-16): the lane holds the candidate's markdown exactly — an
+  // existing heading arrives with its `# ` as real text (`sourceTextFor`), a
+  // block whose marker is deleted is a paragraph, a typed marker makes a
+  // heading. Until Q1403 a `kinds` argument re-applied the origin's rank to
+  // a marker-less block, which is what made a heading's rank uneditable. In
+  // markdown mode nothing is dressed at all.
+  function laneBlocks(text, oldText, raw) {
     // `raw` is markdown mode: the characters as they are, monospace, nothing
     // rendered — which is the whole point of the mode, since it exists to let
     // somebody check that their edit is exactly what they meant.
@@ -612,7 +611,7 @@ window.CARDS = (function () {
     // caret in — and says what it is through a pseudo-element, so the helper is
     // drawn without being *content*: nothing for `htmlToMd` to serialise back
     // into the candidate, and nothing for the caret to land after.
-    return blocks.map((ps, i) => {
+    return blocks.map((ps) => {
       const src = ps.map(([t]) => t).join('');
       const typed = raw ? null : mdBlock(src);
       // the marker's characters come off the front of the pieces, whatever
@@ -629,15 +628,13 @@ window.CARDS = (function () {
         }
         body.push(mark ? markHtml2(s, mark, render) : render(s));
       }
-      const kind = typed ? (typed.t === 'h' ? { h: typed.level } : { b: true }) : (kinds && kinds[i]) || null;
+      const kind = typed ? (typed.t === 'h' ? { h: typed.level } : { b: true }) : null;
       const inner = (marker ? '<span class="mdmark">' + esc(marker) + '</span>' : '') + body.join('');
       return '<div class="lp' + (kind && kind.h ? ' hblock lvl' + kind.h : '') +
         (kind && kind.b ? ' bullet' : '') +
         (inner ? '' : ' empty') + '">' + (inner || '<br>') + '</div>';
     }).join('');
   }
-  const headFlags = (site) => site.origin.map((o) =>
-    (o.t === 'h' ? { h: o.level || 1 } : o.bullet ? { b: true } : null));
 
   // ---- markdown -------------------------------------------------------
   // A candidate's text **is** markdown (Ed, 2026-08-17). Most people want to
@@ -779,20 +776,29 @@ window.CARDS = (function () {
   // seed means the clause's own current text, which is what the composer uses
   // by default — so the left-hand lane of a quick card or a patch, which is the
   // current text, needs no seed at all.
-  function laneSeed(s, lane, key) {
+  // **The seed is the candidate's source** (Q1403): a lane holds markdown with
+  // its block markers as text, so a seed off a live item takes its `src` —
+  // the hunk's lines exactly, the rank it proposed included — and an item
+  // that carries only words (the fixture, a marked reading) has each line
+  // re-marked with the block it replaces (`headFor`, the host's marker
+  // reader), so a seeded heading keeps its rank until the member changes it.
+  function laneSeed(s, lane, key, headFor) {
     if (lane === 'keep') return null;
     const note = G.seedNote;
+    const rehead = (text, keys) => String(text).split('\n')
+      .map((ln, i) => ((headFor && keys && keys[i]) ? headFor(keys[i]) : '') + ln).join('\n');
+    const seed = (src, text, keys) => ({ text: src != null ? src : rehead(text, keys), note });
     // a `deadlock-card`'s field is a slate, so the lane is its index in it
     if (String(lane).startsWith('slate:')) {
       const c = (s.slate || [])[+String(lane).slice(6)];
-      return c ? { text: c.text, note } : null;
+      return c ? seed(c.src, c.text, s.keys) : null;
     }
-    if (s.kind === 'race') return { text: lane === 'a' ? s.race.a.text : s.race.b.text, note };
+    if (s.kind === 'race') { const c = lane === 'a' ? s.race.a : s.race.b; return seed(c.src, c.text, s.keys); }
     if (s.kind === 'patch') {
       const site = s.sites.find((x) => x.key === key) || s.sites[0];
-      return { text: stripTags(resultOnly(site.marked)), note };
+      return seed(site.src, stripTags(resultOnly(site.marked)), site.keys || [site.key]);
     }
-    return { text: stripTags(resultOnly(s.marked)), note };
+    return seed(s.src, stripTags(resultOnly(s.marked)), s.keys);
   }
   const laneProposeHtml = (s, lane, key) =>
     '<button class="lanepropose" data-propose-from="' + s.id + '|' + lane + '|' + (key || '') +
@@ -1327,11 +1333,16 @@ window.CARDS = (function () {
       // `env.laneRaw()` is the one view state read here.
       return '<div class="lanebox' + (blank ? ' blanklane' : '') + '">' +
         (blank
+          // the blank lane is the clause as the column draws it in edit mode
+          // (Q1403): its marker shown and uncounted, the first keystroke
+          // opening the real lane where the marker is text
           ? '<div class="editlane" contenteditable="true" data-deadlane data-key="' + blank +
-            '" spellcheck="false"><div class="lp">' + esc(env.currentTextFor(blank)) + '</div></div>'
+            '" spellcheck="false"><div class="lp">' +
+            (env.markerFor(blank) ? '<span class="nocaret mdmark" contenteditable="false">' + esc(env.markerFor(blank)) + '</span>' : '') +
+            esc(env.currentTextFor(blank)) + '</div></div>'
           : '<div class="editlane' + (env.laneRaw() ? ' md' : '') + '" contenteditable="true" data-lane="' +
             site.keys[0] + '" spellcheck="false">' +
-            laneBlocks(site.text, originText(site), headFlags(site), env.laneRaw()) + '</div>') +
+            laneBlocks(site.text, originText(site), env.laneRaw()) + '</div>') +
         // …and the face on it is **what everybody else will see**, not what you
         // know (K30, backlog 255). One place decides it, because `setDraftSigned`
         // patches the same element in place when the sign choice flips.
@@ -1565,7 +1576,7 @@ window.CARDS = (function () {
     TICK, ARROW_OUT, PAUSE, VS16, MARK, DRAWN, mkHtml, markHtml,
     GLYPH, glyphKey, glyphHtml, glyphify, glyphTextOf,
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks, mdDiffPieces, mdPiecesHtml, mdDiffHtml,
-    headFlags, originText, MD_RX, mdToHtml, htmlToMd, mdStrip, mdBlock, linkify, linkifyHtml, mdLine,
+    originText, MD_RX, mdToHtml, htmlToMd, mdStrip, mdBlock, linkify, linkifyHtml, mdLine,
     MD_ONE, mdLead, mdInner, mdParts, richToSource, sourceToRich, readLane,
     laneSeed, laneProposeHtml, laneCtlHtml, speakerHtml, railSpeakerHtml, secToggleHtml, fieldHtml, fieldOf, groundNote,
     initials, PERSON, avHtml,

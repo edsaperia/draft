@@ -81,7 +81,10 @@ await page.goto(base + '/session-view.html');
 await page.waitForTimeout(400);
 
 const snap = () => page.evaluate(() => {
-  const txt = (el) => (el ? el.textContent.replace(/\s+/g, ' ').trim() : null);
+  // a drawn glyph (Q1401) has no text of its own: the characters are read
+  // back through the page's own reader, so 👑 and 🏛️ stay in the record
+  const read = (el) => (window.CARDS && window.CARDS.glyphTextOf ? window.CARDS.glyphTextOf(el) : el.textContent);
+  const txt = (el) => (el ? read(el).replace(/\s+/g, ' ').trim() : null);
   const rail = [...document.querySelectorAll('#rail li')].map((li) => ({
     k: li.dataset.q || (li.querySelector('[data-card]') || {dataset:{}}).dataset.card || null,
     title: txt(li.querySelector('.qt')),
@@ -144,7 +147,8 @@ const clauseText = (k) => page.evaluate((kk) => {
   const p = [...document.querySelectorAll('#band .cpara')].find((el) =>
     (el.dataset.para || (el.querySelector('[data-tab]') || { dataset: {} }).dataset.tab) === kk);
   const v = p && p.querySelector('.cpv');
-  return v ? v.textContent.replace(/\s+/g, ' ').trim() : null;
+  const read = (el) => (window.CARDS && window.CARDS.glyphTextOf ? window.CARDS.glyphTextOf(el) : el.textContent);
+  return v ? read(v).replace(/\s+/g, ' ').trim() : null;
 }, k);
 const penCount = async () => {
   const t = await page.evaluate(() => {

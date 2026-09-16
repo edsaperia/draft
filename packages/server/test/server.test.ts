@@ -77,6 +77,8 @@ type MemberViewPayload = {
     crownTasks: Array<{ id: string; motion: string | null;
       text?: { candidateId: string; summary: string } }>;
     closed: null | { at: number; mySignature: { comment: string } | null; signatures: unknown[] };
+    /** ✋ 🖼️ as the seat holds them — the flags are *were you ever asked* (Q645, Q1405) */
+    identity: { name: string | null; picture: string | null; nameSet: boolean; pictureSet: boolean };
   };
 };
 
@@ -648,7 +650,7 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     // name and no picture, so the seat the mail hands them reads ✋ answered
     // and 🖼️ not — before this both read unanswered and the page asked the
     // new member both again
-    const seated = await consume((await lastMailTo(dataDir, 'dee@example.org')).link);
+    const seated = await consume((await lastMailTo(dataDir, 'dee@example.org')).link!);
     expect(seated.status).toBe(302);
     const deeSeat = await (await fetch(`${base}/api/d/${created.slug}/view`,
       { headers: { cookie: cookieOf(seated) } })).json() as MemberViewPayload;

@@ -1616,6 +1616,11 @@ const brSet = async (k, pw, val) => {
 // sentence held and given, so the card's whole text always carries both
 // *may* and *may not*, and only the head says which stands
 const pwSays = async (base, pw) => {
+  // from a closed pile every time: `open(base)` on a base card already open
+  // toggles it shut, and since Q1404 a read of a laid-down power's tab leaves
+  // the base card open behind it — so the next read on the same pile found
+  // nothing to open and a held ✒️ read as a missing tab
+  await closeCard();
   if (!(await open(base))) return null;
   if (!(await open('pw:' + pw + ':' + base))) return null;
   return page.evaluate(() =>
@@ -1675,6 +1680,16 @@ const beginRowsAfterStart = async () => {
   ];
   for (const [base, pw, held, phrase, what] of want) {
     const line = await pwSays(base, pw);
+    // **a power the start laid down has no tab** (Q1404, Ed 2026-09-16): the
+    // proof that it went is that there is nothing to open — before Q1404 the
+    // tab stood and its sentence read *may not*, which is what `phrase` was for
+    if (!held) {
+      const gone = line === null;
+      say('after 🍾   · ' + (gone ? what + ' — and its tab is gone (Q1404)'
+        : 'FAIL: ' + base + ' ' + pw + ' still has a tab · ' + JSON.stringify(String(line).slice(0, 220))));
+      if (!gone) stuck.push('the laid-down ' + pw + ' tab on ' + base + ' still in the pile after 🍾');
+      continue;
+    }
     if (line === null) {
       say('after 🍾   · FAIL: no ' + (pw === 'u' ? '✒️' : '🛡️') + ' tab on ' + base);
       stuck.push('the ' + pw + ' tab on ' + base + ' after 🍾'); continue;
@@ -2160,6 +2175,17 @@ const editState = await page.evaluate(() => {
         rowMode: document.querySelectorAll('#charter [data-proposalrow] .lmode').length };
     })() };
 });
+// **the pile is 📝 and the Text's held powers, no more** (Q1404): a power 🍾
+// laid down has no tab, so the fan is read off the view's own `powers` for
+// the Text rather than assumed to be three — on this document the founder
+// never opened 🍾's Text row, so both went and the strip is 📝 alone
+const textPowersHeld = await page.evaluate(() => fetch(location.pathname.replace('/d/', '/api/d/') + '/view')
+  .then((r) => r.json())
+  .then((j) => { const s = (((j.view || j).settings) || []).find((x) => x.setting === 'startingText');
+    return s ? (s.powers && s.powers.unilateral ? 1 : 0) + (s.powers && s.powers.assent ? 1 : 0) : null; })
+  .catch(() => null));
+const wantRide = textPowersHeld === null ? null : 1 + textPowersHeld;
+editState.wantRide = wantRide;
 const stripOk = !!editState.strip && editState.strip.order === 'BI[]' && editState.strip.top === 1 &&
   editState.strip.right === 8 && editState.strip.laneCtl === 0 && editState.strip.rowMode === 0;
 const rowBare = editState.rowGround && /rgba\(0, 0, 0, 0\)|transparent/.test(editState.rowGround.bg) &&
@@ -2169,11 +2195,11 @@ const rowBare = editState.rowGround && /rgba\(0, 0, 0, 0\)|transparent/.test(edi
 const pairOk = editState.commits[editState.commits.length - 1] === '✏️' &&
   (editState.commits.length === 1 || editState.commits.join('') === '✒️✏️');
 const editOk = (await hostEditable()) === 'true' && editState.editing && editState.row && editState.greyed &&
-  pairOk && rowBare && editState.rideTabs === 3 &&
+  pairOk && rowBare && wantRide !== null && editState.rideTabs === wantRide &&
   editState.rideRight === editState.consRight + 2 && editState.padTop === 24 &&
   Math.abs(editState.lineDelta) <= 1 && editState.runway === 0 && stripOk &&
   (EMPTY_TEXT ? !editState.gap : editState.gap);
-say('edit mode  · ' + JSON.stringify(editState) + (editOk ? '' : '  FAIL: 📝 should lift the column (24px over the first line), fan the pile to three tabs on the constitution\'s gutter, draw the bare row greyed with ✏️ (✒️ only beside it), the B · I · [] strip at the card\'s top right with no lane carrying controls, and the trailing gap'));
+say('edit mode  · ' + JSON.stringify(editState) + (editOk ? '' : '  FAIL: 📝 should lift the column (24px over the first line), fan the pile to 📝 plus the Text\'s held powers (' + wantRide + ' tabs, Q1404) on the constitution\'s gutter, draw the bare row greyed with ✏️ (✒️ only beside it), the B · I · [] strip at the card\'s top right with no lane carrying controls, and the trailing gap'));
 if (!editOk) stuck.push('edit mode');
 /* ---- a click outside leaves edit mode after 🍾 too (Q1315, Ed 2026-09-11:
  * *clicking outside of cards should close them*, ruled for both eras): on

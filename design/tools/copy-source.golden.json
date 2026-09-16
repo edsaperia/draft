@@ -243,7 +243,7 @@
   "page.pw.mayNotYet": "ƒ (parts) => 'From the start, the Founder may not ' + parts.join(', or ') + '.'",
   "page.pw.notes.atBeginTail": "It takes effect when the document begins.",
   "page.pw.notes.delegatesTail": "Neither power would be left, so it hands the question to the membership straight away.",
-  "page.pw.notes.oneWayTail": "One way — the road back is the members’ to give.",
+  "page.pw.notes.oneWayTail": "One way — it cannot be taken back.",
   "page.pw.notes.opensWithValue": "Opens once this setting has a value.",
   "page.pw.notes.revisable": "Revisable until the document begins. Giving both up hands the question to the members — delegation is exactly the state of holding neither.",
   "page.pw.notes.vetoNeedsPen": "A veto can only be held where the Founder still amends it at will — take back the ✒️ first.",
