@@ -223,7 +223,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1402** — claim by writing the block here, then commit it alone.
+**The next free number is 1403** — claim by writing the block here, then commit it alone.
+
+**1402 is the type: a modular scale and Charis SIL** (claimed 2026-09-16 09:05, Ed: *I think I'd like to change the typographic scale in the document to the modular scale, and to use Charis SIL. I am open to discussion/suggestions*). Open, under discussion: the scope (the document's prose, or every text on the surface), the ratio (a major second, 1.125, lands within a pixel of today's six steps; a minor third, 1.2, is a real re-cut), the pairing (Charis for text, the system sans for the chrome — recommended), self-hosting a Latin subset as woff2 beside the page, the measure and the line-height a serif wants, and Charis's four faces against the surface's 600 weight. Today's ladder is 1.25 / 1 / 0.875 / 0.8125 / 0.72 / 0.65 rem on `system-ui`.
 
 **1401 is the glyphs in Fluent Flat** (claimed 2026-09-16 08:25, Ed: *we should convert the subject glyphs and also the wallet and commit glyphs to fluent flat*): after the lifecycle marks (Q1360), every subject glyph — the settings', the doors', the gates', the identity cards', 🌂 — the five wallet glyphs and the commit glyphs are drawn from Fluent Emoji Flat; Q288's *a subject glyph is an emoji* falls with it. A plan, not a hot edit: the glyphs ride copy strings and clause sentences, the picker's furniture scan, the flights and the storm.
 
