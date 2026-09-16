@@ -43,9 +43,9 @@
  * ci.yml, not this comment.**
  */
 import { createServer } from 'node:http';
-import { copyFileSync, existsSync, readFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { readFile, stat } from 'node:fs/promises';
-import { extname, join, normalize, resolve, sep } from 'node:path';
+import { dirname, extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
@@ -102,6 +102,15 @@ const FROZEN = [
   // itself, so a freeze without it would compare drawn glyphs against empty
   // boxes and read every one of them as a change
   'fluent-glyphs.svg',
+  // the document's face (Q1402): the reference page's system.css asks for
+  // `fonts/…` beside itself, so a freeze without them would render the
+  // frozen side in Georgia against a live side in Charis and every text
+  // rect would read as a change
+  'fonts/CharisSIL-Regular.woff2',
+  'fonts/CharisSIL-Italic.woff2',
+  'fonts/CharisSIL-Bold.woff2',
+  'fonts/CharisSIL-BoldItalic.woff2',
+  'fonts/OFL.txt',
 ];
 
 /** Byte-copy design/<name> over design/reference/<name>, reporting each. */
@@ -121,7 +130,8 @@ function refreeze() {
     const from = join(DESIGN, name);
     const to = join(REFERENCE, name);
     const differs = !existsSync(to) || !readFileSync(from).equals(readFileSync(to));
-    if (differs) { copyFileSync(from, to); changed++; }
+    // a name in a subfolder (the fonts) needs its folder in the reference
+    if (differs) { mkdirSync(dirname(to), { recursive: true }); copyFileSync(from, to); changed++; }
     console.log(`  ${differs ? 'copied ' : 'same   '} ${name}`);
   }
   console.log(changed

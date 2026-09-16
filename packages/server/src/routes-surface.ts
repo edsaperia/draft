@@ -44,6 +44,25 @@ export const surfaceTable: Route[] = [
     },
   },
   {
+    // **The document's face** (Q1402): system.css's `@font-face` names its
+    // files relatively — `fonts/<name>.woff2` — so they resolve to
+    // /fonts/x at the root and to /d/fonts/x under a document, the one
+    // subfolder of design/ the page loads from (surface.ts's SURFACE_NAME
+    // is the mirror). The folder is named here, never taken from the path,
+    // so no separator from the request reaches the disk.
+    name: 'GET a font',
+    method: 'GET',
+    match: ({ seg }) => {
+      const last = seg.length > 0 ? seg[seg.length - 1]! : '';
+      return /^[A-Za-z0-9][A-Za-z0-9._-]*\.woff2?$/.test(last) &&
+        ((seg.length === 2 && seg[0] === 'fonts') || (seg.length === 3 && seg[0] === 'd' && seg[1] === 'fonts'));
+    },
+    handler: (ctx, { res, seg }) => {
+      serveFile(res, join(ctx.designDir, 'fonts', seg[seg.length - 1]!));
+      return true;
+    },
+  },
+  {
     name: 'GET /d/:slug — a document’s page',
     method: 'GET',
     match: ({ seg }) => seg[0] === 'd' && seg.length === 2,
@@ -65,7 +84,14 @@ export const surfaceTable: Route[] = [
       // by extension alone until staging showed the comment was untrue —
       // design/tools/session-probe.js and the whole of design/reference
       // answered 200 (Q478, fixed 2026-08-20). No separator survives, so
-      // this is also a second lock on traversal.
+      // this is also a second lock on traversal — except the one folder
+      // the page loads from, `fonts/` (Q1402), whose files and whose
+      // licence are named by a fixed pattern rather than by the path.
+      const font = /^fonts\/([A-Za-z0-9][A-Za-z0-9._-]*\.(woff2?|txt))$/.exec(rel.replace(/\\/g, '/'));
+      if (font) {
+        serveFile(res, join(ctx.designDir, 'fonts', font[1]!));
+        return true;
+      }
       if (rel.includes('/') || rel.includes('\\') || rel.startsWith('..') ||
           rel.includes('..') || !/\.(js|css|svg|png|woff2?)$/.test(rel)) {
         json(res, 404, { error: 'not found' });

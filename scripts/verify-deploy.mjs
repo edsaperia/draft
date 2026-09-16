@@ -175,6 +175,27 @@ await check('design assets serve, design notes do not', async () => {
   return 'assets 200 · notes 404';
 });
 
+// **The document's face is served** (Q1402): system.css asks for
+// `fonts/CharisSIL-Regular.woff2` relative to itself, so it resolves to
+// /fonts/… at the root and /d/fonts/… under a document. A host that refused
+// the folder would fall back to Georgia and say nothing, so one face is
+// fetched at both and must answer as a font; the notes stay 404 beside it.
+await check('the document\'s face serves from design/fonts (Q1402)', async () => {
+  for (const p of ['/fonts/CharisSIL-Regular.woff2', '/design/fonts/CharisSIL-Regular.woff2']) {
+    const r = await get(p);
+    expect(r.status === 200, `${p} status ${r.status}`);
+    expect((r.headers.get('content-type') ?? '') === 'font/woff2',
+      `${p} content-type ${r.headers.get('content-type')}`);
+    const bytes = new Uint8Array(await r.arrayBuffer());
+    expect(bytes.length > 10000 && String.fromCharCode(...bytes.subarray(0, 4)) === 'wOF2',
+      `${p} is not a woff2 (${bytes.length} bytes)`);
+  }
+  for (const p of ['/design/fonts/deeper/x.woff2', '/fonts/x.js', '/design/fonts/x.js']) {
+    expect((await get(p)).status === 404, `${p} answered`);
+  }
+  return 'woff2 200 at / and /design · folder locked';
+});
+
 // The explainer served here until the approval threshold left the surface
 // (Q1362 (b), 2026-09-15). A live host still answering it would be serving
 // last release's design, so the check is kept and inverted.
