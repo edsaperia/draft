@@ -644,6 +644,17 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     // the admitted member was mailed their seat (review #1, finding 7)
     expect((await lastMailTo(dataDir, 'dee@example.org')).link).toContain('/auth/login');
     expect(deeMember!.arrivedAtT).not.toBeNull();
+    // **what they told the door arrives with them** (Q1405): dee gave a
+    // name and no picture, so the seat the mail hands them reads ✋ answered
+    // and 🖼️ not — before this both read unanswered and the page asked the
+    // new member both again
+    const seated = await consume((await lastMailTo(dataDir, 'dee@example.org')).link);
+    expect(seated.status).toBe(302);
+    const deeSeat = await (await fetch(`${base}/api/d/${created.slug}/view`,
+      { headers: { cookie: cookieOf(seated) } })).json() as MemberViewPayload;
+    expect(deeSeat.me).toBe(deeMember!.id);
+    expect(deeSeat.view.identity)
+      .toEqual({ name: 'Dee', picture: null, nameSet: true, pictureSet: false });
     // a member's address gets the same 200 as anybody — the apply door
     // is not a membership oracle (review #1, finding 8) — and a login
     // mail goes out instead of a refusal
