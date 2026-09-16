@@ -589,12 +589,12 @@ window.COPY = (function () {
       // second glyph being the route's own commit — ✏️ or 🏛️
       chooseOrPropose: (routeGlyph) => 'Choose ✒️ or Propose ' + routeGlyph + ' this',
       chosenOrProposed: (routeGlyph) => 'Chosen ✒️ or Proposed ' + routeGlyph,
-      // **What a proposal to hand a power back says, away from its own tab**
-      // (Q386, Ed 2026-09-14). On the card the block is the clause sentence
-      // (`pwLine`), which says *this* because the head above it names the
-      // setting — but a rail subtitle, a deck line and a record title are
-      // read with no head over them, so this one names it. The 🛡️ half is
-      // `vetoLabel`'s own sentence, which already does.
+      // **What a `reserve` motion says, away from its tab** (Q386, Ed
+      // 2026-09-14): a rail subtitle, a deck line and a record title are read
+      // with no head over them, so this one names the setting. The 🛡️ half is
+      // `vetoLabel`'s own sentence, which already does. The road back closed
+      // with Q1404, so nothing on the surface composes one; the sentence
+      // survives for the record of one a log already carries.
       amendAtWill: (noun) => 'The Founder may amend ' + noun + ' at will.',
       // the four read-only notes (*The Founder holds this…*, *Given up…*)
       // went with Ed's card review round 3 (2026-09-05, 52/53): a tab with
@@ -602,7 +602,8 @@ window.COPY = (function () {
       // …and the three tails stand alone under the founder's *given* block
       // since Q1378 took the helper line they used to follow
       notes: {
-        oneWayTail: 'One way — the road back is the members’ to give.',
+        // (*the road back is the members’ to give* until Q1404 closed it)
+        oneWayTail: 'One way — it cannot be taken back.',
         delegatesTail: 'Neither power would be left, so it hands the question to the membership straight away.',
         atBeginTail: 'It takes effect when the document begins.',
         vetoNeedsPen: 'A veto can only be held where the Founder still amends it at will — take back the ✒️ first.',

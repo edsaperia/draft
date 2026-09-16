@@ -166,9 +166,10 @@
  *     pair of rows ahead of the park, since a decree is refused while one
  *     stands. Its audience is one seat, so the row is as much about the four
  *     that must carry nothing.
- *   · **E39** needs a laid-down power, which `lay-down` has just made, and
- *     puts §9.7 rule 4's `reserve` on ⏱️'s ✒️ tab — the page's own payload,
- *     asserted on the tab's key rather than the setting's.
+ *   · **E39** needed a laid-down power, which `lay-down` has just made, and
+ *     put §9.7 rule 4's `reserve` on ⏱️'s ✒️ tab. **Retired with the row**
+ *     (Q1404, Ed 2026-09-16): a laid-down power has no tab and no road back,
+ *     so nothing on the surface puts one and the step went, as E23's did.
  *   · **E40** takes a seat **out** of the document, so it stands last in the
  *     live epoch and brings two new ideas with it: `left`, which stops every
  *     *every member* cell counting a seat the document no longer seats, and
@@ -365,18 +366,9 @@ const AUDIENCE = {
   // stranded it — the strand is the Founder's pen and the entry is not theirs.
   'the author, and nobody else: it is out of every race, so no other seat has anything to be told or asked':
     (s, step, ctx, ev) => s.name === (STEPS[stepIndex(ev.author)] || {}).seat,
-  // E39, a proposal to hand a laid-down power back (Q386; read here by
-  // Q1359). The cell says *as E10* and means it: the same set, the mover
-  // standing at accept from the put and so carrying a ledger rather than an
-  // ask. The two clauses that follow it are not second tests —
-  //  · **the Founder's own tab is unchanged** is about the *offer*: they lay
-  //    a power down on that tab and are never offered the road back to
-  //    themselves. They still answer the motion there, which is the whole
-  //    point of Q386's ruling and what `journey`'s `powerReturnOnATab`
-  //    asserts, so the founder seat is inside this audience like any member;
-  //  · **a clerk and a stranger meet nothing new** is `isMember` already.
-  "every member answers it, as E10; the mover stands at accept from the put (K8). **The Founder's own tab is unchanged** — they lay a power down there and do not propose returning it to themselves — and a clerk and a stranger meet nothing new":
-    activeButTheMover,
+  // (E39's cell — *every member answers it, as E10 …* — stood here from Q1359
+  // to Q1404, when the row was retired: the road back is closed, and a
+  // retired row's dash audience has no step to read it, as E23's has none.)
   // E40, a member removed by a carried motion (Q901; read here by Q1359),
   // and **E31's cell word for word** — the same tells, the room's act rather
   // than the Founder's. Two halves on two channels, which is why the row
@@ -816,32 +808,11 @@ const STEPS = [
   { id: 'lay-down', epoch: 'live', kind: 'cmd', seat: 'founder', cmd: 'relinquish',
     args: () => ({ setting: 'rate', power: 'unilateral' }),
     events: [{ id: 'E9', key: 'rel:', at: 'lay-down' }] },
-  // **The road back to a laid-down power** (SURFACE E39; Q386, Ed
-  // 2026-09-14; stepped by Q1359). It stands immediately behind `lay-down`
-  // because that row is what makes it possible: ⏱️'s ✒️ has just left the
-  // Founder's hand, and §9.7 rule 4's `reserve` is the one way it returns.
-  // The payload names **one power**, since one tab is one power, and the
-  // page puts exactly this over the wire from ⏱️'s ✒️ tab (`motionTargets`
-  // → `pw:u:rate`, which is also the key asserted here).
-  //
-  // The row exercises both sides of its cell in one snapshot: the mover is
-  // outside the audience — the put stands them at accept, so their entry is a
-  // ⏳ ledger and the `wants` filter does not count it as an ask — while the
-  // founder, who acknowledged 🏛️ at `ok-voice`, is inside it and is asked
-  // **on the tab itself**, never on ⏱️'s own card (Q386's whole point, and
-  // what `journey`'s `powerReturnOnATab` asserts card-side).
-  // `waitsOn` is E10's: the entry stages behind the 🏛️ OK (C9, Q1344), which
-  // only the founder has pressed on this document (`ok-voice`).
-  //
-  // **`lapsed` moves it, not `early`**: §9.6 allows one 🏛️ out per member at
-  // a time and `early`'s is still running from `judgments-motion` — the first
-  // run of this row was refused *one 🏛️ out per member at a time*. The seat
-  // the clock lapsed and the read revived (R-096) is an ordinary member again
-  // and holds none, which is the arithmetic E10's own note sets out.
-  { id: 'return-motion', epoch: 'live', kind: 'cmd', seat: 'lapsed', cmd: 'open-motion', ifHat: 'member',
-    args: () => ({ payload: { kind: 'reserve', setting: 'rate', power: 'unilateral' },
-      why: 'one hand is quicker than three when the drip needs changing' }),
-    events: [{ id: 'E39', key: (D) => (D.motionIds["return-motion"] ? 'mo:' + D.motionIds["return-motion"] : null), noKey: 'the motion return-motion put came back with no id', at: 'return-motion', waitsOn: 'grant-voice' }] },
+  // (`return-motion` stood here from Q1359 to Q1404 — the `lapsed` seat
+  // putting §9.7 rule 4's `reserve` on ⏱️'s ✒️ behind `lay-down`, E39 read on
+  // every seat. The road back is closed and the row retired, so the step went
+  // with it; the module still takes a `reserve` for replay, but a step that
+  // puts what no surface can put would assert a route nobody has.)
   // **A member removed by a carried motion** (SURFACE E40; Q901, Ed
   // 2026-09-14; stepped by Q1359) — the last row of the live epoch, because
   // it takes a seat out of the document and every cell above it says *every
@@ -1834,10 +1805,13 @@ say(`tables     · SURFACE §2 events ${EVENTS.length} rows · seats ${SEATS.len
 // count is a **shape** tripwire, not a coverage guarantee: it says a row
 // moved under the table, and somebody then decides whether the table should
 // grow a step for it. **Ed decided, the same day** (Q1359): all three, and
-// they have steps — `strand-propose` + `strand-pen`, `return-motion` and
+// they got steps — `strand-propose` + `strand-pen`, `return-motion` and
 // `carry-removal`. What each of them had to buy first is at its own row: the
 // pen kept on the Text at 🍾, a `reserve` behind `lay-down`, and a carry that
 // takes a seat out of the document and so has to stand last in its epoch.
+// **E39 was retired two days later** (Q1404): the row stays in the table,
+// struck through with a dash audience like E23, so the count holds at 40 and
+// its step is gone.
 if (EVENTS.length !== 40) {
   shape.push(`SURFACE §2 has ${EVENTS.length} event rows, not the 40 this table was written against`);
 }

@@ -463,6 +463,25 @@ const runDocument = async (hat) => {
   // ⏱️'s pen, by hand, on a live document — the second of the two tab routes
   await layByHand('rate');
   say('by hand    · ✒️ laid down on ⏱️ through its own tab, after 🍾');
+  // **…and the tab it went down from is gone** (Q1404, Ed 2026-09-16: *that
+  // power tab should disappear from the tab stack, so there's no longer a
+  // route to regaining it*). ⏱️'s pile is opened again and its ✒️ tab must
+  // not be there to open — for the founder, whose own tab this was — while
+  // the 🛡️ the start kept still opens. `openCard` retries once on its own,
+  // so a *no* here has been asked twice.
+  {
+    const bad = [];
+    if (!(await openCard('rate'))) bad.push('⏱️ would not open');
+    else {
+      if (await openCard('pw:u:rate')) bad.push('the laid-down ✒️ still has a tab');
+      const kept = await page.evaluate(() => !!document.querySelector('#band .achip[data-chip="pw:a:rate"]'));
+      if (!kept) bad.push('the 🛡️ the start kept has no tab');
+    }
+    if (bad.length) fail('⏱️ after lay-down · ' + bad.join(' · '));
+    say('tab gone   · ' + (bad.length ? 'FAIL — ' + bad.join(' · ')
+      : '⏱️’s ✒️ tab left the pile with the pen; the 🛡️ tab stays — PASS'));
+    await clickIn('.setupcard [data-revert]');
+  }
 
   for (const s of AUDIT) {
     if (!(await openCard(s.k))) { say('  ' + s.g + ' ' + s.k.padEnd(13) + '· no tab on the page'); continue; }
