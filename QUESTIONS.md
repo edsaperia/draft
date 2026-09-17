@@ -223,7 +223,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1409** — claim by writing the block here, then commit it alone.
+**The next free number is 1429** — claim by writing the block here, then commit it alone.
+
+**1409–1428 are reserved for the proposal-shapes pass** (claimed 2026-09-17 01:25, overnight, on Ed's *is there a way you could predict or search for them?* after Q1406–Q1408): a static reading of the span-to-block mapping against a matrix of proposal shapes (`design/REPORT-proposal-shapes.md`), and a walk, `scripts/proposal-shapes.mjs`, that makes one proposal per cell through the real API and asserts the invariants per seat. Each red is one number: a finding where SURFACE already states the rule, fixed on its own branch unmerged (Ed, 2026-09-17: *fix on branches where a rule exists*); a question where no rule exists. Unused numbers are released at the fold.
 
 **1408 is one tab per site for a proposal of yours** (claimed 2026-09-16 22:45, Ed in the tims-birthday room: *for my whole-document rewrite I now see a blue proposal tab beside every clause. I think it should only be shown once, against the first clause*): a `mine` item was keyed to every block of its span (Q1308's rule for races), so a rewrite of the whole plan wore ✏️ in every gutter. **Ruled and built 2026-09-16**: `tabKeysOf` in session.js — an item made of sites stands at each site's first block; a race or a pair still at every block. SURFACE M18; the fixture's `mine-guests-wording` runs over two blocks and card-audit's T2 reads one tab. **The race half ruled the same evening** (Ed: *yes, except with a multi-site patch*): a race or a pair spanning several blocks stands at its first block alone, `tabKeysOf` taking `keys[0]`; Q1308's every-block keying is retired, a patch alone keeping a tab per site.
 
