@@ -2140,7 +2140,11 @@
         html.replace(/<(br|\/p|\/div|\/li|\/h[1-6]|\/tr)[^>]*>/gi, '\n'), 'text/html');
       txt = parsed.body ? parsed.body.textContent || '' : '';
     }
-    let lines = txt.split(/\n{2,}|\n/).filter((l) => l.trim());
+    // **A Windows clipboard ends its lines with a return** (Q1432): Chrome on
+    // Windows hands over `\r\n`, and a `\r` left on a line defeats the heading
+    // re-mark below and rides into every block. The lane's own paste
+    // (session.js) already strips it; so does this one.
+    let lines = txt.replace(/\r/g, '').split(/\n{2,}|\n/).filter((l) => l.trim());
     const first = lines[0] && lines[0].match(/^#\s+(.+)$/);
     if (first && !S.title) { S.title = first[1]; lines = lines.slice(1);
       S.seen.add('title');

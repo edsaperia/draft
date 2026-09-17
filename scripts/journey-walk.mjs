@@ -488,7 +488,9 @@ if (!EMPTY_TEXT) {
     const darkBefore = !!(b && b.disabled);
     // two paragraphs into an **empty block** — Chromium nests the pasted
     // divs inside it, and the column must unwrap them (Q1314's second shape)
-    window.__paste(pr, { text: 'Members pay dues by March.\nGuests sign the book.' });
+    // with Windows line ends, as Chrome's clipboard hands them over (Q1432): the
+    // column strips the return, and the confirmed text below has none
+    window.__paste(pr, { text: 'Members pay dues by March.\r\nGuests sign the book.' });
     return { darkBefore };
   });
   await T(400);

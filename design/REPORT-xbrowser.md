@@ -238,7 +238,7 @@ Chromium and Firefox measure the same to within 0.1px. Screenshots:
 - **`color-mix()` and `:has()` floors were not probed directly.** Every engine
   here supports both, so the run cannot tell you what an older one does; the
   audits agreeing on all 263 cards is evidence about *these three builds* only.
-- **A real paste is untested on every engine.** Every paste in this pass was a
+- **A real paste was untested on every engine when this was written; finding 2's resolution above tested one on all three the same afternoon** (Firefox correct, WebKit's trusted event empty, Chrome on Windows carrying `\r\n` — Q1432). Every paste in the original pass was a
   constructed `ClipboardEvent`, which is exactly what finding 2 turns on.
 - **Only five walks carry the seam.** `applicants-walk`, `seat-matrix`,
   `founding-walk`, `slug-walk`, `room-walk`, `ladder`, `powers-walk`,
