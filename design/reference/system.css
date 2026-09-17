@@ -804,11 +804,17 @@
     display: inline; margin: 0; font-weight: 400;
   }
   .queue button.deciding { color: var(--muted); }
-  .queue button.deciding .ql { font-weight: 500; font-size: var(--t-small); }
+  /* **One title size on every entry, `--t-ui`** (Ed, 2026-09-18, Q1448 (b)).
+     A one-line entry used to drop to `--t-small`, so a rail mixing asks and
+     one-liners alternated two sizes down the column and read as a defect. What
+     tells *not asked of you* apart is the weight, the colour and the single
+     line — three signals already — and size was a fourth nobody needed. The
+     mark keeps its own size: it is a fixed box, not a title (`.qmark`). */
+  .queue button.deciding .ql { font-weight: 500; }
   .queue button.deciding.shifted .ql { color: var(--muted); }
   /* a decision you have not acknowledged is quiet, not unimportant, and stays
      pinned until you deal with it (Ed, 112) */
-  .queue button.unread .ql { font-weight: 600; font-size: var(--t-small); color: var(--fg); }
+  .queue button.unread .ql { font-weight: 600; color: var(--fg); }
   /* A filed line is the **same object, quieter** (Ed, 2026-08-17). It is not a
      different kind of entry from an unacknowledged one — it is the same entry
      after you have dealt with it — so it keeps the shape and gives up the
@@ -819,9 +825,15 @@
      flex rather than one truncating line: the title takes what is left and
      ellipses, and the time never gets eaten by a long one. It is also the only
      thing on a sealed entry the reader is scanning *down* a column for. */
-  .queue button.unread .ql { display: flex; align-items: baseline; gap: 6px; }
+  /* **No `gap` on a title row** (Ed's screenshot, 2026-09-17: the distance from
+     the mark to the title ran 0 · 4 · 6 · 10 · 12px by kind of entry). The
+     space after the mark is the mark's own margin (the ruling at `.qmark`
+     below), and a row `gap` lands between the mark and the title as well as
+     where it was wanted, so it stacked on that margin — here 6 + 6. What this
+     gap was *for* is the time, so the time carries it. */
+  .queue button.unread .ql { display: flex; align-items: baseline; }
   .queue button.unread .qt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .queue button.unread .qv.when { margin-left: auto; flex: none; }
+  .queue button.unread .qv.when { margin-left: auto; padding-left: 6px; flex: none; }
   .queue button.unread .qv { color: var(--muted); }
   /* a deadlocked race states its unusual ask in full, and its caption is an
      instruction rather than a progress note (Ed, 166) */
@@ -839,7 +851,7 @@
   .queue button.yours { padding: var(--s1) 10px; }
   .queue button.yours .ql {
     display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    font-weight: 600; font-size: var(--t-small);
+    font-weight: 600;
   }
   .queue button.yours .qv { display: inline; margin: 0; font-weight: 400; }
   .queue button.yours.drafting { padding: var(--s2) 10px; }
