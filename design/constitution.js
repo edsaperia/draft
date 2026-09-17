@@ -1098,6 +1098,7 @@ var CONSTITUTION = (() => {
       });
     } else if (rec.payload.kind === "remove") {
       const target = rec.payload.member;
+      if (s.members.get(target).removed) return;
       const wasInE = inE(s.members.get(target));
       s.emit({ type: "member-removed", t, member: target, viaMotion: rec.id });
       oweDeparture(s, t, target);

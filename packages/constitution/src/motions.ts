@@ -444,6 +444,17 @@ export function settleCarriedEffects(s: MotionHost, t: number, rec: MotionRecord
     // an invitee counts toward nothing until they arrive — no roster follow-ons
   } else if (rec.payload.kind === 'remove') {
     const target = rec.payload.member;
+    // **Nobody leaves twice** (issue #6, F3). Three roads lead out — the
+    // Founder's ❌, this motion and 🌂 — and the subject of a removal
+    // resigning while the room decides is the ordinary case, not a
+    // contrivance. Carrying on top of a departure that already happened
+    // recorded a second one at a later time, overwrote `removedBy` so the
+    // record said the room exiled somebody who had walked out, and owed
+    // every remaining member the 🥾 card about that person again. The
+    // motion **carried** all the same — the room said yes — and there is
+    // nothing left for it to do, which is the invite arm's rule above at
+    // the other door.
+    if (s.members.get(target)!.removed) return;
     const wasInE = inE(s.members.get(target)!);
     s.emit({ type: 'member-removed', t, member: target, viaMotion: rec.id });
     // the room is told, and owes an OK for it (SURFACE E38, Q901) — before

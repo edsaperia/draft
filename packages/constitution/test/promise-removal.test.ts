@@ -472,6 +472,49 @@ describe('🥾 whatever the rung: what a departure takes with it (§9.3)', () =>
   });
 });
 
+/**
+ * **A removal outlived its subject** (issue #6, F3). There are three roads
+ * out — the Founder's ❌, a carried 🥾 motion and 🌂 — and nothing stopped a
+ * motion on one of them from carrying after another had already taken the
+ * person. Somebody resigning while the room decides whether to remove them is
+ * the ordinary case, not a contrivance: it is exactly what one does when that
+ * motion is put. The carry then recorded a **second** departure at a later
+ * time, overwrote `removedBy` so the record said the room exiled somebody who
+ * had walked out, and owed every remaining member a 🥾 news card about the
+ * same person a second time.
+ */
+describe('🥾 a removal that carries after its subject has already gone (issue #6, F3)', () => {
+  it('records one departure, keeps `self`, and owes the news once', () => {
+    const { s, bo, cy } = buildConstituted({ removal: { price: 'assembly' } });
+    const m = s.openMotion(3, bo, { kind: 'remove', member: cy });
+    // …and cy walks out while the room is answering, which is free and asks
+    // nobody (🌂, always at ✒️)
+    s.resign(4, cy);
+    expect(s.departures().map((d) => d.member)).toEqual([cy]);
+    // the motion settles on the electorate cy has just left
+    s.answerMotion(5, 'ada', m, 'accept');
+    expect(s.motionRecords().get(m)!.status).toBe('carried');
+    // one departure, and it is the one that happened
+    expect(s.departures()).toHaveLength(1);
+    expect(s.departures()[0]!.by).toBe('self');
+    // and the room is told once — the 🥾 card is keyed by who left, so a
+    // second owing is a second card about a departure that did not happen
+    expect(view(s, 'ada').owedDepartures).toEqual([cy]);
+    expect(view(s, bo).owedDepartures).toEqual([cy]);
+  });
+
+  it('the Founder’s ❌ and a carried motion on the same member are one departure too', () => {
+    const { s, bo, cy } = buildConstituted({ removal: { price: 'assembly' },
+      doors: { remove: { unilateral: true, assent: false } } });
+    const m = s.openMotion(3, bo, { kind: 'remove', member: cy });
+    s.remove(4, cy); // the pen gets there first
+    s.answerMotion(5, 'ada', m, 'accept');
+    expect(s.motionRecords().get(m)!.status).toBe('carried');
+    expect(s.departures()).toHaveLength(1);
+    expect(s.departures()[0]!.by).toBe('convenor');
+  });
+});
+
 describe('🥾 after the close nothing changes but the signing (§4.6)', () => {
   it('every road out refuses, and a running removal is kept at the close', () => {
     const { s, bo, cy } = buildConstituted({ removal: { price: 'consent' },
