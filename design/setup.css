@@ -537,7 +537,9 @@
    THE IDENTITY CARD — how you appear in this room (Ed, 2026-08-18).
    --------------------------------------------------------------------------- */
   /* the uploader: a drop box that is mostly the picture it will hold */
-  .picdrop { display: flex; align-items: center; gap: var(--s4);
+  /* wrapping so the refusal below takes its own line rather than squeezing
+     the button; empty, it adds no gap and no height */
+  .picdrop { display: flex; align-items: center; gap: var(--s4); flex-wrap: wrap;
     border: 1px dashed var(--border); border-radius: var(--r-md);
     padding: var(--s4); margin-bottom: var(--s4); }
   .picdrop.over { border-color: var(--primary); background: var(--light); }

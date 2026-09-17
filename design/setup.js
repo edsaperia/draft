@@ -921,7 +921,17 @@ window.SETUP = (function () {
           ? '<div class="picdrop" data-picinto="' + into + '"><div class="picact">' +
             '<label class="btn">' + (uploaded ? 'Choose another' : 'Choose a picture') +
             '<input type="file" accept="image/*" data-picfile="1"></label>' +
-            (uploaded ? avHtml({ n: me.n, pic: draft }, 'big') : '') + '</div></div>'
+            (uploaded ? avHtml({ n: me.n, pic: draft }, 'big') : '') + '</div>' +
+            // **A refusal needs somewhere to be said** (2026-09-17). `refuse`
+            // below writes into `.picnote`, and until this line nothing ever
+            // rendered one: `querySelector` returned null and all four
+            // refusals — not a picture, too big, unreadable, too heavy to
+            // store — closed the file dialog in silence. Born empty, so the
+            // box says nothing until a file is turned away; it is re-rendered
+            // empty by a picture that lands and by choosing another block,
+            // which is how it clears. A live region, because the message
+            // arrives without anything moving the focus.
+            '<span class="picnote" role="status"></span></div>'
           : '', oo.locked) +
       opt(pickState, pk, 'emoji', ctlWord('Pick an emoji'), '',
         oo.pick === 'emoji' && !oo.locked ? emojiPicker(draft || pic, me.n, at) : '', oo.locked) +
@@ -1189,6 +1199,9 @@ window.SETUP = (function () {
   const PIC_MAX_SOURCE = 20 * 1024 * 1024;
   // the server's own `LIMITS.picture`, over the stored string
   const PIC_MAX_STORED = 40_000;
+  // the four refusals, from the one copy file (copy.js loads before cards.js,
+  // which loads before this)
+  const PIC_COPY = window.COPY.page.picNote;
   const wirePicDrop = (onFile) => {
     const refuse = (zone, msg) => {
       const note = zone && zone.querySelector('.picnote');
@@ -1197,12 +1210,12 @@ window.SETUP = (function () {
     const take = async (file, zone) => {
       const into = (zone && zone.dataset.picinto) || 'me';
       if (!file) return;
-      if (!/^image\//.test(file.type)) return refuse(zone, 'That is not a picture.');
-      if (file.size > PIC_MAX_SOURCE) return refuse(zone, 'That picture is too big to open here.');
+      if (!/^image\//.test(file.type)) return refuse(zone, PIC_COPY.notImage);
+      if (file.size > PIC_MAX_SOURCE) return refuse(zone, PIC_COPY.tooBig);
       let bmp;
       try {
         bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
-      } catch (e) { return refuse(zone, 'That picture could not be opened.'); }
+      } catch (e) { return refuse(zone, PIC_COPY.unreadable); }
       const cv = document.createElement('canvas');
       cv.width = PIC_SIDE; cv.height = PIC_SIDE;
       const cx = cv.getContext('2d');
@@ -1230,7 +1243,7 @@ window.SETUP = (function () {
       // rather than assumed: handing over a string the Save will refuse is
       // the very defect above, arrived at by the other road.
       if (out.length > PIC_MAX_STORED) {
-        return refuse(zone, 'That picture will not compress small enough — try a simpler one.');
+        return refuse(zone, PIC_COPY.tooHeavy);
       }
       onFile(out, into);
     };
