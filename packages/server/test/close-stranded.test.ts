@@ -51,7 +51,7 @@ function constituted(): { doc: LoadedDoc; bridge: EngineBridge; bo: string; cy: 
   ];
   for (const [id, v] of values) cs.setSetting(2, id as never, v as never);
   cs.begin(3);
-  const doc = { id: 'd-1', cs, people, persisted: 0, provisional: null } as LoadedDoc;
+  const doc = { id: 'd-1', cs, people, persisted: 0, relayed: 0, provisional: null } as LoadedDoc;
   const bridge = new EngineBridge(cs, { t: 4, rngSeed: 'q1353' });
   asEngineDoc(doc).bridge = bridge;
   return { doc, bridge, bo, cy };

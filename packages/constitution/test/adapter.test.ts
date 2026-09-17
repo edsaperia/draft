@@ -32,8 +32,10 @@
  *   founding happened to settle at.
  */
 import { describe, expect, it } from 'vitest';
+import { DEFAULT_CONSTITUTION } from '../../engine-core/src/session.js';
 import type { Constitution } from '../../engine-core/src/types.js';
 import { DEFAULT_TUNING, authorshipBase, engineFieldsFor, toEngineConstitution } from '../src/adapter.js';
+import type { EngineTuning } from '../src/adapter.js';
 import { ConstitutionSession } from '../src/session.js';
 import { adoptionFloor, quorumCount } from '../src/populations.js';
 import type { EndingValue, LadderValue, PercentValue, QuorumValue, RateValue } from '../src/values.js';
@@ -310,16 +312,31 @@ describe('DEFAULT_TUNING: the engine\'s own numbers (Appendix A, Q335)', () => {
     expect(DEFAULT_TUNING).toEqual({
       adoptionFloorMax: 12,
       deadlockMinComparisons: 20,
-      deadlockEpsilon: 0.005,
+      deadlockEpsilon: 0.02,
       cooldownMs: 5 * 60_000,
       redraftLimit: 2,
       rationaleMaxChars: 300,
       boutGapMs: 90_000,
       hotSetSize: 3,
       explorationEvery: 7,
-      rivalGateProb: 0.35,
-      rivalGateMinComparisons: 6,
+      rivalGateProb: 0.5,
+      rivalGateMinComparisons: 3,
     });
+  });
+
+  // **Issue #14 (A)** (Ed, 2026-09-17: *align the running system to the spec
+  // in this deploy*). The table above used to be a copy, and three of its
+  // numbers had drifted from the engine's — 0.005 · 0.35 · 6 against
+  // Appendix A's 0.02 · 0.5 · 3 — so every document the product ever opened
+  // ran on tuning the spec never published, invisibly, because `spec-check`
+  // read the engine's table and nothing read this one. The literals above
+  // stay: a test that only compared two expressions would pass on any pair
+  // of wrong numbers, and the pin is what names the number Appendix A
+  // publishes. This is the other half — that there is one table, not two.
+  it('is the engine\'s own table, field for field, and not a copy of it', () => {
+    for (const k of Object.keys(DEFAULT_TUNING) as Array<keyof EngineTuning>) {
+      expect(DEFAULT_TUNING[k], k).toBe(DEFAULT_CONSTITUTION[k]);
+    }
   });
 
   it('the cooldown is inside §4.2\'s ceiling', () => {

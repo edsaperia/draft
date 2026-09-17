@@ -9,8 +9,13 @@
  * hook given every path does exactly what it did. Proven by
  * design/tools/session-probe.js against design/reference/.
  *
- * Load order: copy.js → cards.js → session.js → the page's own script (the
- * fixture + init). */
+ * Load order: **session-view.html's own script-tag block is the source of
+ * truth** (:428–452, fourteen files), never a list restated here — the list
+ * that was here named three of them and would have broken the page (issue
+ * #21). What this file needs standing before it is evaluated: copy.js and
+ * cards.js, and flights.js and composer.js, whose `make(env)` it calls at
+ * load (Q1352). The page's own script — the fixture and `SESSION.init` —
+ * comes after. */
 (function () {
   // Every member-readable string this surface renders lives in copy.js (Ed's
   // brief, 2026-09-05, Part 3: copy edits touch that file only); `T` is the
@@ -99,7 +104,7 @@
   // make() time). The lift is proven by design/tools/session-probe.js against
   // design/reference/: card HTML byte-identical, geometry 0.0px.
   const {
-    esc, resultOnly, stripTags, pct, plainLabel, URG_LO, URG_HI,
+    esc, resultOnly, laneHtml, stripTags, pct, plainLabel, URG_LO, URG_HI,
     TICK, MARK, DRAWN, mkHtml, markHtml,
     // the drawn glyphs (Q1401): the commit row's buttons, the units in an
     // eyebrow, and the glyphs inside the charter column's own sentences
@@ -428,14 +433,24 @@
   // (Ed, 2026-09-16, closing Q1408's open half: *yes, except with a
   // multi-site patch*) — Q1308's tab at every block of the run is retired; the
   // card still swallows the whole span when it opens.
+  // **And a sealed record takes the same rule** (Q1418, Ed 2026-09-17, from
+  // the proposal-shapes pass PF3/PF4): Q1408 was written for what is live, so
+  // a record over a run of blocks — a split adopted, a heading and its
+  // paragraph rewritten — wore a filed tab in every one of those gutters and
+  // the run stood under its own open card. A decided question is one question,
+  // and stands where its run begins, exactly as the race it came from did.
+  // `tabAt` is that one test, asked by every gutter: the live strip
+  // (`suggFor`), the filed pile (`filedFor`) and the record's own door
+  // (`sealedAt`).
   const tabKeysOf = (s) => (s.sites
     ? s.sites.map((x) => (x.keys ? x.keys[0] : x.key)).filter(Boolean)
     : (s.keys ?? []).slice(0, 1));
+  const tabAt = (s, key) => tabKeysOf(s).includes(key);
   function suggFor(key) {
     // Anchors persist while a race is still deciding — a judged suggestion
     // is revisable until it seals or its ground shifts.
     return SUGGS.filter((s) => s.state !== 'sealed' && served(s) &&
-      (tabKeysOf(s).includes(key) || (s.pair ?? []).some((c) => c.key === key)));
+      (tabAt(s, key) || (s.pair ?? []).some((c) => c.key === key)));
   }
 
   const verdicts = new Map();
@@ -2255,8 +2270,10 @@
   // what is *not* in here: a decision that is decided but unread is still asking
   // for its OK, so it stays in the live part of the strip with everything else
   // that wants something. Filed is the state that wants nothing.
+  // …and it files at the record's **first** block, never at every block of its
+  // run (Q1418) — one decided question, one tab, like the live one it was.
   function filedFor(key) {
-    return key ? SUGGS.filter((g) => (g.keys ?? []).includes(key) &&
+    return key ? SUGGS.filter((g) => tabAt(g, key) &&
       stateOf(g) === 'sealed' && !isUnread(g)) : [];
   }
 
@@ -2533,7 +2550,7 @@
       return (
         '<div class="sugg quick-open" data-card="' + s.id + '" data-site="' + (ckey || '') + '">' +
         clauseHeadHtml(s, Object.assign(headOpts(s, ckey), { chips: chipsFor(ckey, s.id) })) +
-        fieldHtml(proposalHtml(s, { html: resultOnly(s.marked), why: s.rationale, by: s.by })) +
+        fieldHtml(proposalHtml(s, { html: laneHtml(s.marked), why: s.rationale, by: s.by })) +
         '<div class="foot">' + T.crown.foot + '</div>' +
         '<div class="race-mid commitrow">' +
         '<button class="btn glyphbtn" data-act="clear-close" title="' + T.crown.close + '">' + glyphHtml('🗑️') + '</button>' +
@@ -2635,7 +2652,7 @@
         // recomputing one.
         clauseHeadHtml(s, { text: sourceTextFor(site.key), key: site.key, v: 'keep',
                             chips: chipsFor(site.key, s.id) }) +
-        fieldHtml(proposalHtml(s, { v: 'approve', html: resultOnly(site.marked), why: s.rationale, by: s.by, key: site.key })) +
+        fieldHtml(proposalHtml(s, { v: 'approve', html: laneHtml(site.marked), why: s.rationale, by: s.by, key: site.key })) +
         reviseNote(s) +
         '<div class="foot">' + T.patch.foot(n) + '</div>' +
         // **The vote floats** (Q1382, Ed 2026-09-15: *the vote for a patch is
@@ -2662,8 +2679,8 @@
     // all-new (a live insertion is one line and brings none — Q1308)
     const prop = sv.isInsert
       ? (sv.newHeading ? '<div class="rtext"><ins>' + esc(sv.newHeading) + '</ins></div>' : '') +
-        '<div class="rtext">' + resultOnly(sv.marked) + '</div>'
-      : resultOnly(sv.marked);
+        '<div class="rtext">' + laneHtml(sv.marked) + '</div>'
+      : laneHtml(sv.marked);
     return (
       '<div class="sugg quick-open" data-card="' + sv.id + '" data-site="' + (key || '') + '">' +
       clauseHeadHtml(sv, Object.assign(headOpts(sv, key), { v: 'keep', edit: noEdit,
@@ -3044,6 +3061,33 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         '" contenteditable="false">' + chips + '</span>';
     };
 
+    // **The pile a newcomer sees** (Q1413, Ed 2026-09-17: *keep the rule, but
+    // the charter's tabs draw greyed behind the OKs*). The same object in the
+    // same gutter, in the one posture this surface has always used for *this
+    // wants nothing from you*: the hourglass, drained to grey, in the closed
+    // hue — **grey means nothing is being asked of you** (SURFACE §6). It is
+    // not a control: no `data-anchor`, so no handler binds to it and a press
+    // opens nothing, which is C14 whole — no act before the power. And it is
+    // no entry: the rail and the contents rail never see these items, because
+    // a margin index is a list of what asks you.
+    //
+    // One tab per question, in the live pile's own order and geometry, so
+    // `fitStacks` fits it like any other and the gutter says *how many* without
+    // saying what or how urgent — neither of which is a newcomer's business
+    // until the power is theirs.
+    const heldStackHtml = (held) => {
+      const stack = stackOrder(held);
+      const chips = stack.map((g, i) => {
+        const behind = i > 0;
+        return '<span class="achip held' + (behind ? ' behind' : '') + '"' +
+          (behind ? ' aria-hidden="true"' : ' title="' + T.chip.held + '"') +
+          ' style="--chiphue: var(--lc-closed); z-index:' + (stack.length - i) + '">' +
+          mkHtml('deciding') + '</span>';
+      }).join('');
+      return '<span class="chipcol' + (stack.length > 1 ? ' stack' : '') +
+        '" contenteditable="false">' + chips + '</span>';
+    };
+
     // **A gap at the very start has no block before it** (backlog 204, Q261:
     // *at the very start on the gap before it*). `G0`'s `insertAfterKey` is
     // null, so the anchor the gap card hangs on cannot be emitted after a
@@ -3152,7 +3196,8 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         // was filed. A paragraph has had the `wasResolved` half for as long as
         // it has had the live one, so the heading takes both or neither.
         const hlive = line.key ? suggFor(line.key) : [];
-        const hSealedAt = (g) => (resolved.has(frontKeyOf(g)) || g.state === 'sealed') && (g.keys ?? []).includes(line.key);
+        // at the run's first block alone, as the live tab was (Q1418)
+        const hSealedAt = (g) => (resolved.has(frontKeyOf(g)) || g.state === 'sealed') && tabAt(g, line.key);
         // **The open record is the one that opens, not the first one found**
         // (Ed, 2026-09-11, the moon room: *queue card that does not open
         // decision card* — a ✔ on the Food heading). Two records landed on
@@ -3180,6 +3225,12 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
             chipStyle(hDecided) + ' data-anchor="' + hDecided.id + '" title="' +
             esc(plainLabel(hDecided.qLabel)) + T.chip.decided + '">' + mkHtml(markKindOf(hDecided)) + '</span></span>';
         }
+        // a heading is an addressable block like any other (Q897), so a
+        // question held back from this reader greys in its gutter too (Q1413)
+        if (!marks) {
+          const heldHead = heldFor(line.key);
+          if (heldHead.length) marks = heldStackHtml(heldHead);
+        }
         const inside = collapsed.has(secN) ? suggestionsInSection(secN) : 0;
         html += '<h2 class="docline editable' + (marks ? ' marked' : '') +
           ' lvl' + (line.level ?? 1) + '" id="sec-' + secN + '"' +
@@ -3196,7 +3247,8 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       // a settled clause still opens its record from the document side (Ed, 112)
       // the open one first, where two records share a clause (Q1298): the
       // first in `SUGGS` order is otherwise the only one this door can draw
-      const sealedAt = (g) => (resolved.has(frontKeyOf(g)) || g.state === 'sealed') && (g.keys ?? []).includes(line.key);
+      // …and it stands at the run's first block alone (Q1418)
+      const sealedAt = (g) => (resolved.has(frontKeyOf(g)) || g.state === 'sealed') && tabAt(g, line.key);
       const wasResolved = line.key && !live.length
         ? (SUGGS.find((g) => g.id === openId && sealedAt(g)) ?? SUGGS.find(sealedAt))
         : undefined;
@@ -3226,9 +3278,15 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
           // text flow so the caret lands at offset 0. The sentence promises
           // typing only to somebody who may propose.
           const blank = line.key && !line.x && !wasResolved;
+          // **and a question this reader may not act on yet stands greyed in
+          // the gutter** (Q1413): only where nothing else claims the column,
+          // which is every clause of a busy document for somebody who has not
+          // accepted Voting — the gutter is one column wide and the live or
+          // filed tab already says there is something here.
+          const heldHere = wasResolved ? [] : heldFor(line.key);
           // …and the gap block takes the same treatment with its own sentence
           // (Q1090: one rule, two sentences — the rule is the geometry)
-          html += '<p class="editable' + (wasResolved ? ' anch resolved' : '') + (blank ? ' blank' : '') + (line.gap ? ' gap' : '') + bulletCls(line) + '"' +
+          html += '<p class="editable' + (wasResolved ? ' anch resolved' : '') + (heldHere.length ? ' anch held' : '') + (blank ? ' blank' : '') + (line.gap ? ' gap' : '') + bulletCls(line) + '"' +
             (wasResolved ? ' data-anchor="' + wasResolved.id + '"' +
               anchWash(wasResolved, openId === wasResolved.id, line.key) : '') +
             (line.key ? ' data-key="' + line.key + '"' : '') +
@@ -3237,6 +3295,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
               : T.blank.plain) + '"' : '') + '>' +
             (wasResolved ? '<span class="chipcol" contenteditable="false"><span class="achip" tabindex="0"' + chipStyle(wasResolved) + ' data-anchor="' + wasResolved.id +
               '" title="' + esc(plainLabel(wasResolved.qLabel)) + T.chip.decided + '">' + mkHtml(markKindOf(wasResolved)) + '</span></span>' : '') +
+            (heldHere.length ? heldStackHtml(heldHere) : '') +
             blockHtml(line) + '</p>';
         }
       }
@@ -4825,9 +4884,24 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   const KEPT_UNJUDGED = new Set(['park', 'draft', 'crown']);
   const withheld = (g) => !KEPT_UNJUDGED.has(g.kind) && !g.mine && !MAY_JUDGE();
 
+  // **…but the document does not read as empty while they wait** (Q1413, Ed
+  // 2026-09-17, from the proposal-shapes walk's surprise: a new member of a
+  // busy document boots to zero proposals and a rail of OKs). The rule above
+  // stands whole — no rail entry, no card, no act before the power — and the
+  // **gutter** alone says the document has life in it: every question held
+  // back draws a greyed tab beside its clause, opening nothing. So what a
+  // newcomer meets is a document with questions standing in the margin and a
+  // queue of OKs that leads to them, rather than prose and a rail of
+  // paperwork. They are kept here rather than in `SUGGS` so that the seven
+  // readers of that array are untouched — the whole point of filtering at
+  // ingest — and one render site reads this one.
+  let HELD = [];
+  const heldFor = (key) => (key ? HELD.filter((g) => tabAt(g, key)) : []);
+
   // The data, keyed and seeded exactly as the page did it at load.
   function bindData(d, s) {
     DOC = d; SUGGS = s.filter((g) => !withheld(g));
+    HELD = s.filter((g) => withheld(g));
     // a card that has just been withheld cannot stay open behind it
     if (openId != null && !SUGGS.some((g) => g.id === openId)) openId = null;
     // Always-on typing means *every* clause can be edited, so every clause needs

@@ -1,8 +1,9 @@
 /**
- * Pure-TypeScript synchronous SHA-256 (FIPS 180-4). engine-core hashes via
- * node:crypto, which a browser bundle cannot carry — this module is the
- * package's whole answer to that, with the same sha256Hex(string) signature
- * and the same bytes out (cross-checked against node:crypto in
+ * Pure-TypeScript synchronous SHA-256 (FIPS 180-4) — the byte-twin of
+ * `packages/engine-core/src/sha256.ts`, which the engine adopted in 367b for
+ * the same reason: node:crypto is the one import a browser bundle cannot
+ * carry. Same sha256Hex(string) signature, same bytes out (cross-checked
+ * against node:crypto in
  * test/sha256.test.ts, including the lone-surrogate replacement behaviour
  * of Node's UTF-8 encoder). No platform imports, no TextEncoder: the UTF-8
  * encoding is done by hand so the compile target needs neither DOM nor node.

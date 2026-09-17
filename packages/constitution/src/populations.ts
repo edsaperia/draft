@@ -29,9 +29,18 @@ export function motionElectorateOf<M extends MemberState>(members: Iterable<M>):
   return eOf(members);
 }
 
-/** The room's quorum as a count (§4.2): a fixed count, or ⌈share × E⌉. */
+/**
+ * The room's quorum as a count (§4.2): a fixed count, or ⌈share × E⌉.
+ *
+ * **The product before the quotient** (issue #24): `Math.ceil((n / 100) * E)`
+ * is not ⌈n·E/100⌉, because `n / 100` is not representable in binary for most
+ * integer shares — 28 % of 25 landed a hair above 7 and the room told
+ * *7 of 25* was held to 8. Twenty-seven (share, E) pairs read one too many
+ * that way, all of them at E ≥ 25. `n * E` is exact for every share the
+ * surface can state, so the ceiling is the only rounding left.
+ */
 export function quorumCount(quorum: QuorumValue, E: number): number {
-  return quorum.form === 'count' ? quorum.n : Math.ceil((quorum.n / 100) * E);
+  return quorum.form === 'count' ? quorum.n : Math.ceil((quorum.n * E) / 100);
 }
 
 /** The statistical half of the adoption floor (§4.2, §8.2). */

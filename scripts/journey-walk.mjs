@@ -2971,6 +2971,92 @@ if (caret) {
   say('leave draft· ' + (leftOk ? '📝 with a draft open leaves edit mode and keeps the draft'
     : 'FAIL: ' + JSON.stringify(left) + ' · the draft was ' + JSON.stringify(beforeLeave)));
   if (!leftOk) stuck.push('leaving edit mode with a draft open');
+  /* ---- **the reload waits until nothing is unsent** (issue #12; Ed,
+   * 2026-09-17: *defer the reload until nothing is unsent*). A push moves
+   * `x-build`, and `noteBuild` used to reload every open page the moment it
+   * saw a new one — so a member several paragraphs into a proposal lost the
+   * lot within 4s, an unproposed draft living nowhere but in `SUGGS`. The
+   * state driven here is exactly the one that cost the work, and it is the
+   * state this block already stands in: a draft typed and not proposed, edit
+   * mode left, no card open. The header is overridden on the poll's own
+   * answer, which is where the page reads it.
+   *
+   * **Two halves, because a deferral must not become a never** (Q1347 still
+   * stands): this page holds the draft and must sit still, and a second page
+   * on the same document in the same seat — nothing unsent on it — must
+   * reload within a poll or two. On the pre-fix page the first half navigates
+   * within 4s and the draft is gone. A server with no `DRAFT_BUILD_SHA`
+   * sends no `x-build` at all and there is nothing here to drive. */
+  if (!health.build) {
+    say('build wait · skipped — this server reports no x-build, so no build can change under the page');
+  } else {
+    const FAKE_BUILD = 'deadbeefdeadbeef';
+    const VIEWS = '**/api/d/*/view*';
+    // the poll's own answer, with one header moved: the body is re-sent as
+    // text and the two transfer headers are dropped rather than replayed,
+    // since what is fulfilled is the decoded body
+    const fakeBuild = (p) => p.route(VIEWS, async (route) => {
+      try {
+        const res = await route.fetch();
+        const headers = { ...res.headers(), 'x-build': FAKE_BUILD };
+        delete headers['content-encoding']; delete headers['content-length'];
+        await route.fulfill({ status: res.status(), headers, body: await res.text() });
+      } catch { await route.fallback(); }
+    });
+    let navs = 0;
+    const onNav = (f) => { if (f === page.mainFrame()) navs++; };
+    page.on('framenavigated', onNav);
+    // a mark the reload would take with it: `navs` says the frame moved and
+    // this says the document did, and neither is the other's restatement
+    await page.evaluate(() => { window.__i12 = 1; });
+    await fakeBuild(page);
+    await T(9500);                    // two whole 4s polls and the change
+    const held = await page.evaluate(() => {
+      const d = (window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours');
+      return { mark: window.__i12 || 0, unproposed: !!(d && d.unproposed),
+        draft: d ? (d.sites || []).map((s) => s.text).join('¶') : null };
+    });
+    // …and the real build answering again disarms the pending reload, so the
+    // steps below run on the page they have always run on
+    await page.unroute(VIEWS);
+    await T(4600);
+    const disarmed = await page.evaluate(() => window.__i12 || 0);
+    page.off('framenavigated', onNav);
+    const heldOk = navs === 0 && held.mark === 1 && disarmed === 1 &&
+      held.unproposed && held.draft === beforeLeave;
+    say('build wait · ' + (heldOk
+      ? 'a new x-build under an unproposed draft moved nothing for two polls, and the draft is where it was'
+      : 'FAIL: ' + JSON.stringify({ navs, ...held, disarmed, was: beforeLeave })));
+    if (!heldOk) stuck.push('the deferred reload under a draft');
+    // the other half, on a second page in the same seat: nothing unsent, so
+    // the same change reloads it — a page must not run the old surface for ever
+    const clean = await (async () => {
+      // the walk's own page owns its context (`browser.newPage`), so the
+      // second seat is a context of its own carrying the same cookie
+      const ctxB = await browser.newContext({ storageState: await page.context().storageState() });
+      const p2 = await ctxB.newPage();
+      try {
+        // **the build a page holds comes from a poll, not from its boot**: the
+        // boot's own view fetch never reaches `noteBuild`, so a page whose
+        // first *poll* carried the fake build would simply take it as its own
+        // and sit still for ever. Two answers, then the override.
+        let views = 0;
+        p2.on('response', (r) => { if (/\/view(\?|$)/.test(r.url())) views++; });
+        await p2.goto(page.url());
+        await p2.waitForFunction(() => !!window.SESSION, null, { timeout: 30_000 });
+        for (let i = 0; i < 40 && views < 2; i++) await p2.waitForTimeout(500);
+        let n = 0;
+        p2.on('framenavigated', (f) => { if (f === p2.mainFrame()) n++; });
+        await fakeBuild(p2);
+        for (let i = 0; i < 20 && !n; i++) await p2.waitForTimeout(500);
+        return n;
+      } finally { await p2.close(); await ctxB.close(); }
+    })();
+    say('build reload· ' + (clean > 0
+      ? 'a second page with nothing unsent takes the same change within a poll'
+      : 'FAIL: a page holding nothing unsent never reloaded on a new x-build'));
+    if (!clean) stuck.push('the reload on a clean page');
+  }
   /* …and back in: the draft is still on the page, reachable from its own chip,
    * with the text it had. A leave that quietly dropped the draft would pass
    * every assertion above and fail here. */
@@ -3334,18 +3420,28 @@ if (caret) {
       motion: !!document.querySelector('#rail [data-q^="mo:"], #rail [data-card^="mo:"]'),
       suggs: (window.SESSION.SUGGS || []).map((g) => g.kind + ':' + g.state + (g.mine ? ':mine' : '')),
       tabs: document.querySelectorAll('#charter .achip').length,
+      // **the two populations of tab** (Q1413, Ed 2026-09-17): a live tab is a
+      // control and carries `data-anchor`; a **greyed** one stands for a
+      // question this member may not act on yet, drawn so the document does
+      // not read as empty behind their OKs — and it is not a control at all
+      live: document.querySelectorAll('#charter .achip[data-anchor]').length,
+      held: document.querySelectorAll('#charter .achip.held').length,
       judgeServed: !!document.querySelector('#rail [data-card="canjudge"]'),
     }));
     // a race's rail id is the race's (`r:<candidate>`), a sealed record's `rec:`;
     // a park is `park:` and the member's own proposal `mine:` — neither is a race entry
     const isRace = (q) => /^(r:|rec:)/.test(q);
     const g0 = await railOf();
-    const none = !g0.rail.some(isRace) && !g0.motion && g0.suggs.every((s) => /^(park|draft|crown):/.test(s));
+    const none = !g0.rail.some(isRace) && !g0.motion && g0.suggs.every((s) => /^(park|draft|crown):/.test(s)) &&
+      g0.held > 0;
     say('⚖️ waits   · ' + (none
-      ? 'before the OK the member’s rail holds no race and no ⏱️ motion · rail ' + JSON.stringify(g0.rail) +
+      ? 'before the OK the member’s rail holds no race and no ⏱️ motion, and the ' + g0.held +
+        ' question' + (g0.held === 1 ? '' : 's') +
+        ' held back stands greyed in the gutter (Q1413) · rail ' + JSON.stringify(g0.rail) +
         ' · suggs ' + JSON.stringify(g0.suggs) + ' · tabs ' + g0.tabs
-      : 'FAIL: a race is served before ⚖️ is acknowledged · rail ' + JSON.stringify(g0.rail) +
-        ' · suggs ' + JSON.stringify(g0.suggs)));
+      : 'FAIL: ' + (g0.held ? 'a race is served before ⚖️ is acknowledged'
+        : 'no greyed tab stands for the races held back (Q1413)') + ' · rail ' + JSON.stringify(g0.rail) +
+        ' · suggs ' + JSON.stringify(g0.suggs) + ' · held ' + g0.held));
     if (!none) stuck.push('a race served before the ⚖️ OK (Q1328)');
     // **A gate's entry is its name and its mark** (Q1374, Ed 2026-09-15:
     // *queue cards had body text*). The founder never meets 💡 ⚖️ as cards
@@ -3375,13 +3471,19 @@ if (caret) {
       });
       await T(2500);                             // the OK's own round trip and refresh
       const g1 = await railOf();
-      const arrived = pressed && g1.rail.some(isRace) && g1.motion && g1.tabs > g0.tabs &&
+      // **the grey turns live** (Q1413): the tab count no longer grows — the
+      // questions were already drawn in the gutter — so what the OK changes is
+      // *which kind* of tab stands there: every greyed one becomes a control
+      const arrived = pressed && g1.rail.some(isRace) && g1.motion &&
+        g1.live > g0.live && g1.held === 0 &&
         g1.suggs.some((s) => !/^(park|draft|crown):/.test(s));
       say('⚖️ OK      · ' + (arrived
-        ? 'the OK lands and the races arrive, the ⏱️ motion with them · rail ' + JSON.stringify(g1.rail) +
-          ' · suggs ' + JSON.stringify(g1.suggs) + ' · tabs ' + g0.tabs + '→' + g1.tabs
+        ? 'the OK lands and the races arrive, the ⏱️ motion with them; every greyed tab becomes a control (' +
+          g0.live + '→' + g1.live + ' live, ' + g0.held + '→' + g1.held + ' greyed) · rail ' + JSON.stringify(g1.rail) +
+          ' · suggs ' + JSON.stringify(g1.suggs)
         : 'FAIL: pressed ' + pressed + ' · rail ' + JSON.stringify(g1.rail) +
-          ' · suggs ' + JSON.stringify(g1.suggs) + ' · tabs ' + g0.tabs + '→' + g1.tabs));
+          ' · suggs ' + JSON.stringify(g1.suggs) + ' · live ' + g0.live + '→' + g1.live +
+          ' · greyed ' + g0.held + '→' + g1.held));
       if (!arrived) stuck.push('the races did not arrive on the ⚖️ OK (Q1328)');
     }
   }

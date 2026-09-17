@@ -29,12 +29,16 @@
  * Admit motions (§9.7½ v0.56, Q397): each is its own one-candidate race
  * against `the membership as it stands` — a synthetic per-applicant
  * setting (`admit:<id>`, standing {member: false}), which is what makes
- * two applicants structurally unable to share a race. The author is the
- * seconder under `proposed` (their ✏️ the stake, their why the rationale)
- * or the applicant themself under `apply` — added as a voice for exactly
- * this one act and suspended in the same breath, so they author their own
- * admission (§3.3's author-preference is truly theirs) while counting
- * toward no E, no quorum and no floor.
+ * two applicants structurally unable to share a race. **The author is the
+ * applicant themself**: an application is a stranger proposing their own
+ * invitation (entry 94), so the motion opens with no mover and the applicant
+ * is added as a voice for exactly this one act and suspended in the same
+ * breath — they author their own admission (§3.3's author-preference is
+ * truly theirs) while counting toward no E, no quorum and no floor. The old
+ * second — a member staking a ✏️ to propose an applicant — went with the
+ * `proposed` rung, which is why `enterAdmitRace` still takes a `by` that
+ * nothing passes; the `application-proposed` fold arm and the status stay
+ * for replay.
  */
 
 import { Session as EngineSession } from '../../engine-core/src/session.js';

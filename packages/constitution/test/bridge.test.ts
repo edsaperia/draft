@@ -4,6 +4,7 @@
  * 👑); what stands flows back as ground; amendments bind races in flight.
  */
 import { describe, expect, it } from 'vitest';
+import type { Event as EngineEvent } from '../../engine-core/src/types.js';
 import { EngineBridge } from '../src/engine-bridge.js';
 import { DEFAULT_TUNING } from '../src/adapter.js';
 import { buildConstituted } from './helpers.js';
@@ -506,5 +507,43 @@ describe("the host's pacing is ground (R-086, Ed 2026-09-05)", () => {
     });
     silent.tick(10);
     expect(silent.engine.constitution.cooldownMs).toBe(300_000);
+  });
+
+  /**
+   * **And nothing else is** (issue #14 (A), Ed 2026-09-17). Aligning
+   * `DEFAULT_TUNING` to Appendix A moves the numbers a *new* document is
+   * born on; it must not move one already open. The tuning rides the
+   * `opened` event, a resume replays that log, and the sweep re-states the
+   * cooldown alone — so a document born on the old table keeps 0.005 · 0.35
+   * · 6 for life, which is the no-silent-change rule (R-086's precedent read
+   * the other way round). If this ever goes red, every live room's
+   * mechanism changed under it mid-session.
+   */
+  it('a document born on the pre-alignment table keeps it when today’s host resumes it', () => {
+    const { s } = buildConstituted();
+    const BORN = {
+      ...DEFAULT_TUNING, deadlockEpsilon: 0.005,
+      rivalGateProb: 0.35, rivalGateMinComparisons: 6, cooldownMs: 300_000,
+    };
+    const born = new EngineBridge(s, { t: 3, rngSeed: 'issue-14a', tuning: BORN });
+    expect(born.engine.constitution.deadlockEpsilon).toBe(0.005);
+    const at = born.engine.log.length;
+
+    const today = new EngineBridge(s, {
+      t: 3, rngSeed: 'issue-14a', tuning: { ...DEFAULT_TUNING, cooldownMs: 0 },
+      resume: { log: [...born.engine.log], ...born.state() },
+    });
+    today.tick(10);
+    expect(today.engine.constitution.cooldownMs).toBe(0);           // the host's
+    expect(today.engine.constitution.deadlockEpsilon).toBe(0.005);  // the document's
+    expect(today.engine.constitution.rivalGateProb).toBe(0.35);
+    expect(today.engine.constitution.rivalGateMinComparisons).toBe(6);
+
+    // and the log says so: one amendment, naming one field
+    const fresh = today.engine.log.slice(at).map((e) => e.event)
+      .filter((e): e is Extract<EngineEvent, { type: 'constitution-amended' }> =>
+        e.type === 'constitution-amended');
+    expect(fresh).toHaveLength(1);
+    expect(Object.keys(fresh[0]!.changes)).toEqual(['cooldownMs']);
   });
 });

@@ -392,10 +392,23 @@ export class FilePersistence implements MaintainablePersistence {
 
   /* -- the mail outbox ------------------------------------------------------ */
 
+  /** **A write that did not land leaves nothing behind** (issue #7): the map
+   *  is what the sender reads, so rows kept in memory after a failed save
+   *  would go out and then go out again when the relay behind them is
+   *  retried. Postgres gets this from its own statement; here it is the
+   *  rollback. */
   async putOutbox(rows: readonly OutboxRow[]): Promise<void> {
     if (rows.length === 0) return;
+    const before = rows.map((r) => [r.id, this.outbox.get(r.id)] as const);
     for (const row of rows) this.outbox.set(row.id, row);
-    this.saveOutbox();
+    try {
+      this.saveOutbox();
+    } catch (e) {
+      for (const [id, was] of before) {
+        if (was === undefined) this.outbox.delete(id); else this.outbox.set(id, was);
+      }
+      throw e;
+    }
   }
 
   async listPendingOutbox(nowMs: number, limit: number): Promise<OutboxRow[]> {

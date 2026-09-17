@@ -47,6 +47,25 @@ export class StorePeople extends InMemoryPeople {
     this.dirty.clear();
     return out;
   }
+
+  /**
+   * **Rows an append did not land stay dirty** (issue #7). `takeDirty`
+   * empties the set before the append is awaited, and there was no way back:
+   * one transient store error — a Postgres transaction that rolls back rows
+   * and entries together — dropped those rows for ever, because the next
+   * persist re-sends the entries and the set no longer names the rows. The
+   * log holds no identity (decision 1253), so what was lost was a member's
+   * only address, name and picture: after the next boot they could not log
+   * in by magic link again and read as erased to everybody, while the log
+   * itself was complete and nothing was quarantined or even logged.
+   *
+   * Adding back is safe under a command that landed mid-append: the set is a
+   * set, and a person touched while the append was in flight is named by it
+   * already, so the next persist writes whatever their row says then.
+   */
+  restoreDirty(rows: readonly PersonRow[]): void {
+    for (const row of rows) this.dirty.add(row.personId);
+  }
 }
 
 export interface LoadedDoc {
@@ -56,6 +75,18 @@ export interface LoadedDoc {
   people: StorePeople;
   /** How many log entries are already persisted. */
   persisted: number;
+  /**
+   * How many of those have had the mail they imply written into the outbox
+   * (issue #7). Its own cursor, because the two steps are two acts and only
+   * the first of them is the source of truth: the relay ran off what
+   * `store.persist` returned, and that cursor had already advanced — so a
+   * throw anywhere after the append (the engine persist, the token flush,
+   * the outbox write) meant those entries' mail was never sent by anybody,
+   * leaving an invitee listed with no mail, no link and nothing to resend.
+   * Never ahead of `persisted`: mail follows the fold, and a relay before
+   * the append would promise what the log does not hold.
+   */
+  relayed: number;
   /** The founder's unconfirmed starting text (§9.7a v0.55), or null. */
   provisional: string | null;
   /** When the last save was rejected by the store for a reason a retry
@@ -95,7 +126,11 @@ export class DocStore {
         const people = new StorePeople(await this.persistence.readPeople(id));
         const cs = ConstitutionSession.replay(log, people);
         const provisional = await this.persistence.readProvisional(id);
-        this.register({ id, cs, people, persisted: log.length, provisional });
+        // `relayed` starts level with `persisted` (issue #7): what a past
+        // instance persisted, it relayed — a boot must not re-send the mail
+        // of every invitation the document has ever carried
+        this.register({ id, cs, people, persisted: log.length,
+          relayed: log.length, provisional });
       } catch (e) {
         // one corrupt log must not stop every other document serving
         // (review #1, finding 11): quarantine loudly — the document 404s
@@ -122,9 +157,14 @@ export class DocStore {
     await this.persistence.createDoc(id);
     const people = new StorePeople();
     const cs = ConstitutionSession.open(input, t, people);
-    const doc: LoadedDoc = { id, cs, people, persisted: 0, provisional: null };
+    const doc: LoadedDoc = { id, cs, people, persisted: 0, relayed: 0, provisional: null };
     this.register(doc);
     await this.persist(doc);
+    // the birth's own entries relay nothing — they are the document coming
+    // into existence, and the founder's creation mail is `sendNow`'s, sent
+    // before this. Without this line the first commit after the save would
+    // find `relayed` behind `persisted` and relay the genesis (issue #7)
+    doc.relayed = doc.persisted;
     return doc;
   }
 
@@ -158,7 +198,15 @@ export class DocStore {
     const fresh = log.slice(doc.persisted);
     const rows = doc.people.takeDirty();
     if (fresh.length > 0 || rows.length > 0) {
-      await this.persistence.appendDocLog(doc.id, fresh, rows);
+      try {
+        await this.persistence.appendDocLog(doc.id, fresh, rows);
+      } catch (e) {
+        // the rows go back in the dirty set, or a failed append loses them
+        // for ever (issue #7): see `restoreDirty`. The entries need no such
+        // care — the cursor below is what carries them, and it has not moved
+        doc.people.restoreDirty(rows);
+        throw e;
+      }
       // **Advance by what was written, never to the log's length** (Q1322,
       // docs.vote 2026-09-11): `logEntries()` is the live array, and a
       // command applied while the append was in flight — seconds, under a

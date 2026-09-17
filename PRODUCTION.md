@@ -16,15 +16,18 @@ overnight mandate and its running log, stage 8's log, the design-day backlog,
 the hosting and domain notes, the stage write-ups as they stood — is
 `design/DECISIONS.md` § *PRODUCTION.md, the history lifted 2026-09-07*.
 
-## Where it stands (2026-09-07)
+## Where it stands (2026-09-17)
 
 docs.vote has served the product since 2026-08-20 — one Render service, the
 alpha home (481 (a)), from Postgres since 23:30 that night with no disk
 (498 (b)), mail from `mail.docs.vote` via Resend, the operator mailed at every
 birth. CI deploys on green and verifies the live host afterwards, so **a push
-to `main` is a deploy** (476). Stages 0–11 are done; 15 has had two passes;
-12 is drafted and parked; 13, 14 and 16 are not started; 17–18 are planned in
-`design/MOBILE.md`; 19 is in progress.
+to `main` is a deploy** (476). Stages 0–11 are done; 15 has had three passes,
+the third on 2026-09-17; 12 is drafted and parked; 13 is not started as a
+stage but has been **measured** (`design/REPORT-a11y.md`, 2026-09-16); 14 and
+16 are not started; **17's first cut is live** — a one-column phone layout
+since 2026-09-12, well short of what `design/MOBILE.md` asks for — and 18 is
+not started; 19 is in progress.
 
 ## The stages
 
@@ -41,20 +44,20 @@ Commit hashes are this repository's; *running log* means the lifted log in
 | 3 | The nine security fixes, and security review #1 | done 2026-08-20 | `906ab30`, `3ccc78a`; the defect table below, every row verified 2026-09-07 |
 | 4 | Staging live on Render, verified; deploy-on-green wired (476) | done 2026-08-20 | `288845a`; `scripts/verify-deploy.mjs`; `ci.yml`'s *deploy to Render, then verify* step; Q477 (a)/(b), Q478 |
 | 5 | Schema version on the log envelope (480) and the golden-log test | done 2026-08-20 | `0803eff`, `9ac2793`; `packages/constitution/test/golden-log.test.ts` |
-| 6 | Postgres backend, the importer with the hash oracle, CI over both stores; cut over and drilled on the live database, the disk deleted | done 2026-08-20 (cutover 23:30, disk gone 23:45) | `076d919`; `packages/server/src/pg-persistence.ts`, `copy-store.ts`, `tools.ts`; `docs/runbooks/postgres-cutover.md`; `ci.yml` *the server walk again, over Postgres*. Not built, by decision: projection tables and the `people` table — *Owed* below |
+| 6 | Postgres backend, the importer with the hash oracle, CI over both stores; cut over and drilled on the live database, the disk deleted | done 2026-08-20 (cutover 23:30, disk gone 23:45) | `076d919`; `packages/server/src/pg-persistence.ts`, `copy-store.ts`, `tools.ts`; `docs/runbooks/postgres-cutover.md`; `ci.yml` *the server walk again, over Postgres*. Not built, by decision: the **projection tables** — *Owed* below. The `people` table was not built at this stage and is not owed by it: it arrived with decision 1253 as migration 5 on 2026-09-08 (`pg-persistence.ts`'s `MIGRATIONS`; stage 12 below) |
 | 7 | `/healthz`, the request log, graceful SIGTERM, the two cutover switches | done 2026-08-20 | `1829889`; `docs/runbooks/deploy-health-shutdown.md`; `render.yaml` `healthCheckPath: /healthz` |
 | 8 | Surface merge (Q418 (a)): one page, text proposals through the engine end to end, `design/STYLE.md` written, both references re-frozen | done 2026-08-21 | `aaf057b`, live as `7e81d30`; `design/session-view.html`, `design/STYLE.md` |
-| 9 | Resend domain and deliverability (433) | done 2026-08-20 | DNS confirmed by query (DKIM at `resend._domainkey.mail.docs.vote`, SPF and MX at `send.mail.docs.vote`); the domain verified and the sandbox sender cleared by Ed (running log, 23:15); `config.ts:199` defaults the sender to `docs.vote <invitations@mail.docs.vote>`; OPERATING §1. The one real send to a non-Resend address the stage asked for happened — Ed's word, 2026-09-07 (Q1251), the date itself unrecorded |
+| 9 | Resend domain and deliverability (433) | done 2026-08-20 | DNS confirmed by query (DKIM at `resend._domainkey.mail.docs.vote`, SPF and MX at `send.mail.docs.vote`); the domain verified and the sandbox sender cleared by Ed (running log, 23:15); `config.ts`'s `mailFrom` defaults the sender to `docs.vote <invitations@mail.docs.vote>`; OPERATING §1. The one real send to a non-Resend address the stage asked for happened — Ed's word, 2026-09-07 (Q1251), the date itself unrecorded |
 | 10 | docs.vote live (481 (a)); security review #2 | live: done 2026-08-20; review #2: **deferred by Ed, 2026-09-07 (Q1252), until the product is more stable** | certificate issued, `www` and http 301, `npm run verify` 10/10 on the host; two source passes ran (`c8a732d`, 2026-08-20; the stranger's door, `083d95e`, 2026-08-21 — stored XSS at the public door, pinned by a server test) and `verify-deploy` checks headers, exposed paths and error leakage on every deploy. The post-deployment review the stage promised, and stage 19's targeted review of the seams changed since, wait together for a stable product |
 | 11 | Backups and the restore drill; `repair-tail` for torn files | done 2026-08-20 | `8f9d56c`; `draft-tools drill` passed on the live database (2 documents, 16 entries, every hash identical); `docs/runbooks/backup-and-restore.md`; 499 (a) |
 | 12 | Privacy, ToS, retention, erasure | **open** — drafted, parked | `docs/legal/PRIVACY.md` and `TERMS.md` (`2a70192`; placeholders marked, not in force, not linked from the product); Q500's eight decisions **parked by Ed, 2026-08-29, until go-live is actually scheduled** |
 | 13 | Accessibility | **open** — not started as a stage, but **measured 2026-09-16**: the first audit ran and raised Q1394–Q1398, nothing on the surface changed. Its plan document is still owed when the stage is scheduled, in `design/MOBILE.md`'s shape — precedence declared, cite rather than restate, per-stage acceptance with file:line evidence (Ed, 2026-09-07, Q1255) — and now has an evidence base to be built on | `design/REPORT-a11y.md` (44 findings at 1600×1000, 50 at 390×844, four confirmed by two independent instruments); `design/tools/a11y-audit.mjs`, `npm run a11y-audit`. The worst row is the judgment lanes: 79 sightings on 27 cards where two rival wordings share one accessible name and sit in no group. Beside it, driven rather than read: **every act drops the keyboard at the top of the page** — opening a card and committing a judgment both leave focus on `<body>`, 6 of 6. The only Level-A failure is that the page has no `<html>` element, so it declares no language |
 | 14 | Performance, caching, stress tests | **open** — not started as a stage | the instruments exist: `soak-harness` (`packages/sim-harness/src/soak.ts`, 2026-08-27) and the alpha preset below; **load waits until behaviour is as expected** (Ed, 2026-08-26 — stage 19) |
-| 15 | Documentation review — the gate is *somebody else can operate it* | **open** — the documents are right (first pass 2026-08-20, re-verified 2026-09-07), but the gate is literal (Ed, 2026-09-07, Q1254): it closes when an operator who is neither Ed nor a session follows a runbook cold to its end; on the go-live checklist | `752b41d`; `docs/OPERATING.md`, the three runbooks, `README.md` |
-| 16 | Rollback, go-live checklist, soft launch | **open** — not started | the checklist below; built so far, the mail kill-switch `DRAFT_MAIL_OFF` (`config.ts:60`); no error reporting exists (OPERATING §4) |
-| 17 | Mobile read + judge — `design/MOBILE.md` stages 0–4 | **planned** 2026-08-23 (655–673), not built | no `mobile-walk` in `scripts/` |
-| 18 | PWA · push · offline — `design/MOBILE.md` stage 5 | **planned**, not built | as 17 |
-| 19 | Supervised beta — the criterion below | **open** — in progress | built: the seat matrix (`scripts/seat-matrix.mjs`, 2026-08-27, plan-queue batch N), the copy freeze (`scripts/copy-check.mjs`, both goldens), promise-coverage (batch L, 2026-08-27, backlog entries 78–86); not yet: the fix batch sized from L, the scripted sittings |
+| 15 | Documentation review — the gate is *somebody else can operate it* | **open** — three passes (2026-08-20, 2026-09-07, and **2026-09-17**, issue #15, which found the `DRAFT_STORE` row telling an operator to boot production on the ephemeral store, two stale counts, both CI job lists short, the documents-only lane described as a glob it is not, and every restart procedure silent about the pause and about the surface a restart drops). The gate is literal (Ed, 2026-09-07, Q1254): it closes when an operator who is neither Ed nor a session follows a runbook cold to its end; on the go-live checklist. **The convention the third pass adopted** (Ed, 2026-09-17): evidence points at a file and a symbol, never a line number | `752b41d`; `docs/OPERATING.md`, the four runbooks, `README.md` |
+| 16 | Rollback, go-live checklist, soft launch | **open** — not started | the checklist below; built so far, the mail kill-switch `DRAFT_MAIL_OFF` (`config.ts`'s `mailOff`; OPERATING §2) and the **announced pause** the deploy already uses as a maintenance mode (`write-path.ts`'s `PauseState`, Q1345); no error reporting exists (OPERATING §4) |
+| 17 | Mobile read + judge — `design/MOBILE.md` stages 0–4 | **open** — planned 2026-08-23 (655–673); a **first cut is live since 2026-09-12** (`b95e44b`, `435b8fe`), read + judge on one column with both rails as drawers, and the stage's own plan is what is still owed | `design/MOBILE.md` § *Status — the first cut, 2026-09-12* and the two passes after it (Q1350–Q1351, Q1387–Q1388), which list what is built and what is not; guards `npm run card-audit:narrow` and `npm run drawer-walk` (CI's `probe` job). **Not built**: the two-tap confirm, the tap targets, the pinned/flow split, and `mobile-walk` — there is still no such script in `scripts/` |
+| 18 | PWA · push · offline — `design/MOBILE.md` stage 5 | **planned**, not built | no service worker, manifest, VAPID or push anywhere; notification is email only (`design/MOBILE.md` § *Server*) |
+| 19 | Supervised beta — the criterion below | **open** — in progress | built: the seat matrix (`scripts/seat-matrix.mjs`, 2026-08-27, plan-queue batch N), the copy freeze (`scripts/copy-check.mjs`, both goldens), promise-coverage (batch L, 2026-08-27, backlog entries 78–86); not yet: the fix batch sized from L, the scripted sittings. **Issues #2–#28** — an automated review of the tree (2026-09-16), read and ruled by Ed one at a time on the afternoon of 2026-09-17 — is the fix batch that arrived instead of L's: merged that afternoon, #2 · #3 · #4 · #5 · #7 · #9 · #13 · #14's tuning half · #20 · #24 · #26 and the Q1412 group; built beside them, #6's invitation race · #8 · #11 · #12 · #15 (this file and `docs/OPERATING.md`) · #18 · #21; scheduled rather than built, #10 · #23 · #28 after the weekend, #17 behind #8's `ci.yml`, and #14's withdrawal half and #27 as spec-pass work. Each issue's own commit says what it changed |
 
 The original plan put the surface merge at stage 2; it moved to 8 so that
 three weeks of backend work needed no design QA and a staging service existed
@@ -126,11 +129,12 @@ early, painful once real logs exist:
    remain, because the group's decision was made with them.*
 
 
-**Where stage 12 stands (2026-09-07).** Parts 1 and 2 are not built: no
-`people` table and no `person_id` exist (`grep -r person_id
-packages/server/src` finds nothing; the Postgres migrations create
-`documents`, `document_log`, `engine_log`, `provisional`, `bridge_state`,
-`tokens`, `stashes`, `outbox` and `schema_migrations`). Decision 436 adopted
+**Where stage 12 stands.** *As of 2026-09-07*, parts 1 and 2 were not built:
+there was no `people` table and no `person_id` (the Postgres migrations then
+created `documents`, `document_log`, `engine_log`, `provisional`,
+`bridge_state`, `tokens`, `stashes`, `outbox` and `schema_migrations` and
+nothing else). Part 1 landed the next day and the rest of this paragraph
+says so. Decision 436 adopted
 them for the first schema and stage 6 deferred them as an event-shape change
 with hash consequences for a supervised session; real logs have existed since
 2026-08-20, so the *nearly free* window this section describes had closed.
@@ -156,13 +160,16 @@ decisions are parked until go-live is scheduled.
 
 ## Stages 17 and 18 — the phone
 
-Decided by Ed on 2026-08-23 (655–673) and not built. The plan, its
-`mobile-walk` and the PWA · push · offline stage are `design/MOBILE.md`, which
-wins on everything about narrow layout; nothing about it is restated here.
+Decided by Ed on 2026-08-23 (655–673). The plan, its `mobile-walk` and the
+PWA · push · offline stage are `design/MOBILE.md`, which wins on everything
+about narrow layout; nothing about it is restated here — **including what is
+built**, since a first cut of stage 17 went live on 2026-09-12 and that
+document's *Status* section, with the two passes after it, is the record of
+what it does and does not do. Stage 18 is untouched.
 
 ## Go-live checklist (stage 16)
 
-CI green on the release SHA · migrations applied and projections matching ·
+CI green on the release SHA · migrations applied ·
 restore drill within 7 days · health checks green and error reporting
 receiving a test event · `/api/dev/outbox` absent from the artifact and
 `design/*.notes.md` unreachable · headers, cert, HSTS, redirect verified live ·
@@ -174,29 +181,42 @@ the deletion · mail kill-switch and maintenance mode tested, then off · an
 operator who is neither Ed nor a session follows one runbook cold to its end
 (stage 15's gate, Q1254).
 
+**Struck from this gate on 2026-09-17** (Ed, issue #15): *and projections
+matching*, which stood beside *migrations applied*. The projection tables
+are **not built, by decision** — the server replays into memory and reads
+nothing from them (*Owed by a later session*, below) — so the clause named
+something that does not exist and no release could ever have satisfied it.
+Nothing replaces it: a new clause would be a new gate, and that is Ed's to
+write.
+
 **Soft launch in three steps:** Ed alone with a real document for a week →
 3–5 friends on one document with the logs watched daily → a Newspeak House
 cohort. A named observation point after each.
 
 ## Security defects and review findings
 
-Every row below was re-verified against the tree on 2026-09-07; the evidence
-column is where to look. File:line references are to `packages/server/src`
-unless another path is given.
+Every row below was re-verified against the tree on 2026-09-07 and its
+evidence re-pointed on **2026-09-17** (issue #15); the evidence column is
+where to look. **A cell names a file and a symbol, never a line number**
+(Ed, 2026-09-17): every line number this table carried was dead, most of
+them killed by the Q1352 route split, which took `server.ts` from some two
+thousand lines to three hundred and moved the rest into `routes-*.ts` — a
+cell citing `server.ts:1812` was pointing past the end of the file it named.
+Paths are under `packages/server/src` unless another is given.
 
 ### Stage 3 — the nine defects (found 2026-08-20, fixed in `906ab30` and `3ccc78a`)
 
 | # | Defect, as found | State | Evidence |
 |---|---|---|---|
 | 1 | `GET /api/dev/outbox` unauthenticated, serving the last 30 magic links, 404ing only when `RESEND_API_KEY` was set | fixed — deleted from the production build, never flag-gated (437) | `scripts/build-server.mjs`: `dropLabels: ['DEV']`, `NEVER_IN_PROD` names `/api/dev/`; `ci.yml`'s boot smoke asserts the 404; `verify-deploy` check *"/api/dev/outbox is not in the artifact (437)"* |
-| 2 | No `Secure` cookie flag, no HSTS, no http→https redirect | fixed | `server.ts:649` `httpsOn`; `:683` HSTS a year with `includeSubDomains`; `:1812` `; Secure` on every cookie; `verify-deploy` checks *HSTS a year* and *http is redirected, never served* |
-| 3 | `ipOf()` read the socket only — one bucket for everybody behind the proxy; 3 of 8 routes limited | fixed, then fixed again on staging (below) | `server.ts:1754` reads `cf-connecting-ip`, else `x-forwarded-for` counted from the right by `DRAFT_PROXY_HOPS` (`config.ts:205`); `tooMany()` guards nine doors (`server.ts:915`–`1384`: slug, docs, pending, auth ×3, login, apply, stranger); `verify-deploy --limits` |
-| 4 | Attribute-context XSS: `esc()` escaped only `&` and `<`; `avHtml` put a stored `picture` unescaped into `style="background-image:url(…)"`; `set-identity` validated nothing | fixed at the source and again at the sink | `design/setup.js:31` escapes `& < > " '`; `commands.ts` `validPicture` admits one emoji grapheme or a data-URI image and nothing else; `design/cards.js:470` re-tests the data-URI shape before it enters a style attribute |
-| 5 | No input validation or length limits; unbounded strings written permanently into an append-only log | fixed | `commands.ts:43` `LIMITS`; `cap()` on every string a command accepts |
-| 6 | CSRF rested on `SameSite=Lax` alone; `readJson` never checked Content-Type; the magic-link routes were state-changing GETs that scanners would burn | fixed | Origin check on every auth POST, `server.ts:673`; `application/json` required, `:1707`; the magic-link GET serves an interstitial that POSTs the token, and the POST is what consumes it, `:1016`–`1033` |
-| 7 | Applicants received the full member read, every member's email included | fixed | `server.ts:1435`–`1456`: an applicant is served their own application and the document's face, the text following 🌍 |
-| 8 | `POST /apply` wrote to the log while unauthenticated | fixed | `server.ts:1130`–`1137`: the door writes nothing; the write moved to `POST /auth/apply`, after the address has proved it works |
-| 9 | Non-constant-time HMAC compare; internal error strings returned; no security headers, CSP included; no fail-fast config validation | fixed | `auth.ts:81` `timingSafeEqual`; `server.ts:643` answers 500 with *something went wrong* and logs the rest; `:679`–`:680` `referrer-policy` and `content-security-policy`; the production artifact refuses to boot half-configured, naming every missing variable (OPERATING §2) |
+| 2 | No `Secure` cookie flag, no HSTS, no http→https redirect | fixed | `server.ts`'s `httpsOn` and the header block in `route()` — `strict-transport-security` a year with `includeSubDomains`, and the 301 on an `x-forwarded-proto: http`; `routes.ts`'s `setCookie` puts `; Secure` on every cookie; `verify-deploy` checks *HSTS a year* and *http is redirected, never served* |
+| 3 | `ipOf()` read the socket only — one bucket for everybody behind the proxy; 3 of 8 routes limited | fixed, then fixed again on staging (below) | `routes.ts`'s `ipOf` reads `cf-connecting-ip`, else `x-forwarded-for` counted from the right by `DRAFT_PROXY_HOPS` (`config.ts`'s `proxyHops`); `routes.ts`'s `tooMany` guards nine doors — slug, docs, pending, auth ×3, login, apply, stranger, now in `routes-auth.ts` and `routes-member.ts` since Q1352 — and a tenth bucket refuses wrong keys at the bot outbox; `grep -rn "tooMany(" packages/server/src` is the list of record. `verify-deploy --limits` |
+| 4 | Attribute-context XSS: `esc()` escaped only `&` and `<`; `avHtml` put a stored `picture` unescaped into `style="background-image:url(…)"`; `set-identity` validated nothing | fixed at the source and again at the sink | `design/cards.js`'s `esc` is the one five-character escape — `& < > " '`, coercing — and `design/setup.js` takes it as `window.CARDS.esc` rather than keeping a second; `commands.ts`'s `validPicture` admits one emoji grapheme or a data-URI image and nothing else; `design/cards.js`'s `avHtml` re-tests the data-URI shape before it enters a `style` attribute |
+| 5 | No input validation or length limits; unbounded strings written permanently into an append-only log | fixed | `commands.ts`'s `LIMITS`; `cap()` and `capValue()` on every string a command accepts |
+| 6 | CSRF rested on `SameSite=Lax` alone; `readJson` never checked Content-Type; the magic-link routes were state-changing GETs that scanners would burn | fixed | Origin check on every auth POST, in `server.ts`'s `route()` against `baseOrigin`; `application/json` required by `routes.ts`'s `readJson`, **on the MIME essence rather than a substring since issue #20**; the magic-link GET serves `routes-auth.ts`'s `interstitial`, and the POST it makes is what consumes the token |
+| 7 | Applicants received the full member read, every member's email included | fixed | `routes-member.ts`'s view route, applicant branch (Q1281): an applicant is served `views.ts`'s `strangerView` — the document's face, the text following 🌍 — plus their own application row and nothing else |
+| 8 | `POST /apply` wrote to the log while unauthenticated | fixed | `routes-auth.ts`, `POST /api/d/:slug/apply`: the door writes nothing to the log; the write moved to `POST /auth/apply`, after the address has proved it works |
+| 9 | Non-constant-time HMAC compare; internal error strings returned; no security headers, CSP included; no fail-fast config validation | fixed | `auth.ts` compares with `timingSafeEqual`, and so does `routes.ts`'s bearer check; `server.ts`'s error handler answers 500 with *something went wrong* and logs the rest; its header block sets `referrer-policy: no-referrer` and the three `content-security-policy` directives; the production artifact refuses to boot half-configured, naming every missing variable (OPERATING §2) |
 
 ### Found on staging (stage 4, 2026-08-20) — both fixed the same day
 
@@ -209,18 +229,18 @@ unless another path is given.
 
 | Surface | What it exposes | Guard | Evidence |
 |---|---|---|---|
-| `GET /api/bots/outbox`, in the production artifact and outside the `DEV:` label | The host's filed mail to `*@bots.docs.vote` only — the mailer files nothing else there and hands none of it to Resend — so a key in the wrong hands acts as the bots in bot rooms and nothing more. Accepted by Ed: *we can have bot users in prod — we're still in alpha* | `DRAFT_BOT_KEY` as `Authorization: Bearer`, compared with `timingSafeEqual`; unset, the route is a 404 with an unknown path's body; wrong keys rate-limited per IP (`tooMany('bots')`), right ones never; 401 carries no detail; rotated by changing the variable | `packages/server/src/server.ts` `bearerOk` and the route; `bots.test.ts` (404 without a key, 401 wrong or missing, 200 right, the domain rule exact against `bots.docs.vote.evil.com` and `notbots.docs.vote`); `verify-deploy` check *the bot outbox is closed to a stranger (Q1310)*; OPERATING §10 |
+| `GET /api/bots/outbox`, in the production artifact and outside the `DEV:` label | The host's filed mail to `*@bots.docs.vote` only — the mailer files nothing else there and hands none of it to Resend — so a key in the wrong hands acts as the bots in bot rooms and nothing more. Accepted by Ed: *we can have bot users in prod — we're still in alpha* | `DRAFT_BOT_KEY` as `Authorization: Bearer`, compared with `timingSafeEqual`; unset, the route is a 404 with an unknown path's body; wrong keys rate-limited per IP (`tooMany('bots')`), right ones never; 401 carries no detail; rotated by changing the variable | `routes.ts`'s `bearerOk` and `bearerRefused`, and `routes-admin.ts`'s `GET /api/bots/outbox` — the same guard the pause and the surface reload sit behind; `bots.test.ts` (404 without a key, 401 wrong or missing, 200 right, the domain rule exact against `bots.docs.vote.evil.com` and `notbots.docs.vote`); `verify-deploy` check *the bot outbox is closed to a stranger (Q1310)*; OPERATING §10 |
 
 ### Review #1 (stages 2–3; 19 findings, 14 fixed in `3ccc78a`) — the residuals
 
 | Finding | State | Evidence |
 |---|---|---|
 | 6a — the bridge emitted the motion before the engine accepted the candidate | fixed 2026-08-20, stage 5, by a compensating event rather than a reorder | `9ac2793` |
-| 13 — one cookie for all documents | fixed 2026-08-21, stage 8 | `server.ts:1811` `cookieName(docId)` — `draft_session_<docId>` |
-| 15 — mail failure was silent: a transient Resend failure lost an invitation the log said was sent | fixed 2026-08-23: the outbox table and sender loop; since 2026-08-29 a give-up is reported to the founder as 📭 | `packages/server/src/outbox.ts` (`d102cac`); the `outbox` migration, `pg-persistence.ts:113`; `mail-give-up.test.ts` (`b319c55`); SURFACE E34 |
+| 13 — one cookie for all documents | fixed 2026-08-21, stage 8 | `routes.ts`'s `cookieName(docId)` — `draft_session_<docId>` |
+| 15 — mail failure was silent: a transient Resend failure lost an invitation the log said was sent | fixed 2026-08-23: the outbox table and sender loop; since 2026-08-29 a give-up is reported to the founder as 📭 | `packages/server/src/outbox.ts` (`d102cac`); migration 4, `outbox`, in `pg-persistence.ts`'s `MIGRATIONS`; `mail-give-up.test.ts` (`b319c55`); SURFACE E34 |
 | 19 — emoji reservation and one-face-one-member were client-side only | fixed 2026-08-21, stage 8 | `packages/server/src/faces.ts` |
-| 11, second half — a torn log tail had no repair | fixed 2026-08-20, stage 11 | `draft-tools repair-tail`, `tools.ts:99`; `docs/runbooks/backup-and-restore.md` |
-| An applicant who lost their cookie was locked out | fixed 2026-08-20 (Ed: (a)) — the apply door re-sends the verification mail for an application already underway | `server.ts:1157`–`1170` |
+| 11, second half — a torn log tail had no repair | fixed 2026-08-20, stage 11 | `draft-tools repair-tail`, the `'repair-tail'` case in `tools.ts`; `docs/runbooks/backup-and-restore.md` |
+| An applicant who lost their cookie was locked out | fixed 2026-08-20 (Ed: (a)) — the apply door re-sends the verification mail for an application already underway | `routes-auth.ts`, the `underway` branch of `POST /api/d/:slug/apply` (Q439 (a)) |
 
 ### Review #2 (2026-08-20, `c8a732d`; 16 findings, 14 fixed) — recorded, not fixed
 
@@ -244,7 +264,7 @@ unless another path is given.
 |---|---|---|
 | — | Persistence: Postgres, **hybrid** — the hash-chained log as rows, source of truth; projection tables derived and rebuildable. SPEC §11 replay survives. | decided |
 | — | First users: Ed + a few friends. Abuse/Sybil/moderation are not launch blockers; correctness, data safety, deliverability and the security fixes are. | decided |
-| — | Public reads at launch (🌍 offers them; the server has no unauthenticated read path yet). | decided |
+| — | Public reads at launch (🌍 offers them). **Built**: the stranger's door, 2026-08-21 — a seatless `GET /api/d/:slug/view` served by `views.ts`'s `strangerView` when the request carries no live seat, rate-limited per IP, showing what 🌍 allows and nothing more; the page's half is `design/door.js`. | decided; the read path exists |
 | — | Deploy: GitHub → hosting; mail via Resend; domain docs.vote. | decided |
 | 418 | Surface merge: **(a)** — one file, fixture only for states the server cannot yet produce; engine wiring for text proposals in the same pass; STYLE.md during; residuals 13 and 19 ride along. | decided 2026-08-21 |
 | 430 | Push to the public GitHub repo. | decided 2026-08-20 |

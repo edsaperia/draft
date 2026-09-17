@@ -91,6 +91,13 @@ await tab('myname');
 await type('.setupcard input[data-txt="myname"]', 'Ada Lovell');
 await click('.setupcard [data-confirm]');
 await tab('mypic');
+// **🖼️ is three option blocks since Q1165** (`pictureBody`, setup.js), and
+// each control appears only when its block is chosen — so there is no grid on
+// the open card at all until *Pick an emoji* is the answer. This walk went on
+// clicking where the grid used to be, threw `no such target` on the way in and
+// measured nothing: a tool named in a gotcha as what reads the avatar rules
+// had not read them since the card was rebuilt.
+await click('.setupcard [data-set="picPick"][data-val="emoji"]');
 // the whole list is in the box since entry 186, so the fox needs no search
 await click('.setupcard .avopt[data-pic="e🦊"]');
 await click('.setupcard [data-confirm]');

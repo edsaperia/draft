@@ -3241,7 +3241,7 @@
    },
    "rec:fx-u1": {
     "eyebrow": "",
-    "head": "A meeting needs eight members present to decide anything, and ten to decide anything reserved, counted at the moment the question is put.A meeting short of quorum may talk and minute what it thinks, and decides nothing.",
+    "head": "A meeting needs eight members present to decide anything, and ten to decide anything reserved, counted at the moment the question is put.",
     "lock": "",
     "body": "the text that standsA meeting needs half the membership present to decide anything, and two-thirds to decide anything reserved.47%A meeting needs half the membership present to decide anything, and two-thirds to decide anything reserved; a member who has given their view in writing to the Steward counts as present for quorum but not for the vote.A meeting that falls short of quorum may still be held, and may still talk, and may minute what it thinks, but decides nothing.People travel and people work nights. Letting a written view hold your place stops the house from being unable to act because three of us are away.",
     "options": [],
@@ -6793,7 +6793,7 @@
     "eyebrow": "",
     "head": "The document can be seen by anyone with the link.Chosen by the Founder ✒️",
     "lock": "",
-    "body": "The document can only be seen by members.Chosen ✒️ or Proposed 🏛️Why are you changing this?ABAsh Bellamy 👑",
+    "body": "The document can only be seen by members.Choose ✒️ or Propose 🏛️ thisWhy are you changing this?ABAsh Bellamy 👑",
     "options": [
      {
       "set": "chamber",

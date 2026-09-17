@@ -267,7 +267,11 @@ export async function createDraftServer(cfg: ServerConfig,
     // pipeline — these directives bite without breaking it
     res.setHeader('x-content-type-options', 'nosniff');
     // which bytes are answering (see cfg.buildSha): CI polls this after a
-    // deploy so that "verified" is a statement about the new build
+    // deploy so that "verified" is a statement about the new build. **A
+    // surface upload moves it** (Q1347), which is what makes an open page
+    // reload — so this header names the page's commit, not the process's.
+    // Which *process* is running is `booted` in `/healthz` (issue #8, F1),
+    // and that is the field the deploy lane compares against.
     if (ctx.buildSha !== null) res.setHeader('x-build', ctx.buildSha);
     // tokens, views and interstitials must never sit in a cache
     // (review #1, finding 10)

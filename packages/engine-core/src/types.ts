@@ -1,5 +1,6 @@
 /**
- * Core domain types for the draft engine (SPEC v0.12).
+ * Core domain types for the draft engine (SPEC.md, whose own header carries
+ * the version — a number pinned here rots the moment the spec is amended).
  *
  * The engine is an event-sourced, deterministic state machine: commands
  * (with caller-supplied timestamps) produce events; events append to a

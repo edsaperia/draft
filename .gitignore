@@ -24,6 +24,13 @@ secret.txt
 tokens.json
 outbox.jsonl
 
+# the deploy step's own scratch, written into the runner's checkout and again
+# by anybody dry-running the lane by hand (issue #8): the live host's /healthz
+# from before the deploy, and the page files the surface lane packs
+/before.json
+/surface.json
+/surface.tgz
+
 # Ed's screenshot drop point; the keepers are archived under design/bug-shots-<date>/ (Q1308, 2026-09-10)
 bugs/
 scripts/repro/*.cookie
