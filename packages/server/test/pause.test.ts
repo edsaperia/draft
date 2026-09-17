@@ -133,6 +133,17 @@ describe('the announced pause (Q1345)', () => {
     const door = (await (await fetch(`${base}/api/d/${slug}/view`)).json()) as View & { stranger: true };
     expect(door.stranger).toBe(true);
     expect(door.paused).toMatchObject({ expectedMs: 90_000 });
+    // **…and so does the door's quiet poll** (issue #11, F5). The page reads
+    // the host's two flags off every answer before it reads anything else,
+    // and `short` is what tells it there is no view underneath — so a door
+    // answer carrying neither read as a full view with no pause in it, and a
+    // stranger's page put the maintenance modal up on one poll and took it
+    // down on the next for as long as the deploy lasted.
+    const doorShort = (await (await fetch(
+      `${base}/api/d/${slug}/view?since=${door.seq}.${door.eseq}`)).json()) as View;
+    expect(doorShort.short).toBe(true);
+    expect(doorShort.paused).toMatchObject({ expectedMs: 90_000 });
+    expect(doorShort.stalled).toBe(false);
 
     // a command is refused with the pause in the answer, and nothing moved
     const refused = await setChamber(base, slug, cookie, 'public');

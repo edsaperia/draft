@@ -1752,9 +1752,12 @@ describe("the stranger's door (Q452/455/456)", () => {
     expect(k.body.members.list).toEqual([{ name: 'Ada Lovell', picture: null, erased: false }]);
     expect(k.body.text).toBe('# The orchard\nThe apples are shared at harvest.');
 
-    // the poll's short answer works for a stranger too
+    // the poll's short answer works for a stranger too — the seqs, the word
+    // that says there is no view under them, and the host's two flags, which
+    // a caught-up page has no other way of hearing (issue #11, F5)
     const quiet = await fetch(`${base}/api/d/${slug}/view?since=${k.body.seq}.${k.body.eseq}`);
-    expect(Object.keys(await quiet.json() as object).sort()).toEqual(['eseq', 'seq']);
+    expect(Object.keys(await quiet.json() as object).sort())
+      .toEqual(['eseq', 'paused', 'seq', 'short', 'stalled']);
 
     // a command still needs a seat
     const refused = await post(base, `/api/d/${slug}/cmd`, { cmd: 'set-identity', args: { name: 'x' } });
