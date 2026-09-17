@@ -223,7 +223,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1446** — claim by writing the block here, then commit it alone.
+**The next free number is 1447** — claim by writing the block here, then commit it alone.
+
+**1446 is the same motion put again the moment it fails** (claimed 2026-09-17 23:42, Ed, from a bot room: *multiple proposals to change a constitutional setting for the same option. I think we are supposed to de-dupe these*). Q1348's twin rule (R-103) is built and holds — an identical payload is refused while its twin is **running** or **awaiting the crown**, and no other live status exists — but a 🏛️ motion is *held* by one *keep*, a held motion is no twin, and the same value can be put again at once: by the bots' near-deterministic values (💤 never ↔ 14 days, 👁️ one rung ↔ the other) a room of twenty re-puts a failed value over and over, and the pile files each settled one behind the rule (Q942), which reads as many proposals for one option. Every re-put asks the whole membership again. Not confirmed from the room — a stranger's view carries no motions. Candidates: (a) leave it, a human room does not behave this way; (b) a value the membership has just held cannot be put again until something has changed — the setting, or who the membership is — the twin rule's own idea, the question having been answered; (c) the same member cannot re-put a value that was held. Open; not needed for Sunday 2026-09-20.
 
 **1445 is the page not knowing which build served its own HTML** (claimed 2026-09-17 22:42, Q1438's builder): since Q1438 `HOST.build` is the boot answer's `x-build`, which shrinks the hole and does not close it — a deploy landing in the milliseconds between the HTML response and the boot's view fetch still has the page adopt the new build as its own and never reload. A build stamp in the page's own HTML, read at boot, would close it; the surface-reload lane (Q1347) would have to write it. Open; small; after Sunday.
 
