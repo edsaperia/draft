@@ -3056,8 +3056,17 @@
     // to them, and a laid-down one is not drawn at all — Q1404);
     // each is the clause sentence and nothing beneath it, except the *given*
     // block's one consequence — one way, delegates, or at the start (Q1378)
+    // **…except past the start, where the head has already said it** (Q1430,
+    // Ed 2026-09-17, on his screenshot of a doubled sentence): live, the only
+    // state this branch is reached in is *held*, so the held block is word for
+    // word the rule the head states — and a head is not offered back. It is
+    // the omission `rungOpt` already makes on a value card's standing rung,
+    // filtered by **what the block would set** rather than by its words
+    // (Q620). What is left is the one act the card is for, and 🗑️ puts the
+    // pick back here as it does on every other card.
     return '<div class="choice" role="radiogroup">' +
-      powerLane(key, 'held', pwOptText(k, c.power, true), '', cur === 'held', blockAHeld) +
+      (live ? ''
+        : powerLane(key, 'held', pwOptText(k, c.power, true), '', cur === 'held', blockAHeld)) +
       powerLane(key, 'given', pwOptText(k, c.power, false),
         (live ? PAGE_COPY.pw.notes.oneWayTail
           : givingDelegates
@@ -3069,6 +3078,25 @@
       (blockGive ? '<p class="setnote">' + PAGE_COPY.pw.notes.opensWithValue + '</p>' : '') +
       (!live ? '<p class="setnote">' + PAGE_COPY.pw.notes.revisable + '</p>' : '');
   };
+  // **Before the start a power card has no head** (Q1430, the other half of
+  // Ed's ruling): the head states the rule as it stands, and before 🍾 the
+  // rule as it stands *is* the held block, so the founder read *The Founder
+  // may amend the title at will.* twice, once with **Chosen** under it. A
+  // value card hides the doubling because its head and its rungs are worded
+  // differently; T6 (Q1378) made a power option the clause sentence itself,
+  // which is what brought the two into register. Nothing stands yet at the
+  // birth that the blocks do not state completely, so the blocks are the
+  // whole choice and the head keeps only its strip — the thirteen
+  // option-block settings cards' own arrangement (Q1151, F15).
+  //
+  // Exactly where the two blocks are drawn, and nowhere else: a member's or a
+  // stranger's power tab, and a closed document's, are their head sentence
+  // and nothing else (Ed's card review round 3, 52/53; Q1183), so those keep
+  // it — the predicate is `powerBody`'s own pre-start test, read back. A card
+  // under a motion draws `consentBody` rather than these blocks and keeps its
+  // head too.
+  const powerHeadless = (c) => !!c.power && !(cs && cs.constitutedAtT !== null) &&
+    amFounder() && docOpen() && !motionOn(c);
   /**
    * **What a settled motion says about itself** (Q942): passed or rejected and
    * when, what was proposed (the head), what changed, and the reason. The
@@ -6277,7 +6305,10 @@
     headFor: (c) => {
       // the card head, which has replaced the paragraph that gave *this* its
       // referent — so the sentence names its setting (Q1429)
-      if (c.power) return esc(powerHeadLine(c, true));
+      // …and at the birth there is no head at all, the two blocks being the
+      // whole choice (Q1430); `noTitleHead` below carries the same test, so
+      // the name does not come back in the head's place
+      if (c.power) return powerHeadless(c) ? null : esc(powerHeadLine(c, true));
       // **A record's head is what was proposed** (Q942) — the way the top of
       // the ranking is a sealed text record's head (SURFACE §9). The outcome
       // and its date are the field's first line, not the clause.
@@ -6378,7 +6409,12 @@
     // and the record. Only ✒️ 🛡️ ever drew a title here (the other three
     // head with the Proposals clause through `headFor`), but the rule is the
     // card kind's, not the pair's.
-    noTitleHead: (c) => c.textcard || (!c.power && !c.isGate && !c.door &&
+    // …nor a power tab at the birth (Q1430): `headFor` has dropped its
+    // sentence, and without this the card would answer with its *question* —
+    // *Can the Founder Make Amendments at Will?* — which the two blocks below
+    // answer completely. The name stays on the entry, the tooltip and the
+    // record, exactly as it does for the thirteen.
+    noTitleHead: (c) => c.textcard || powerHeadless(c) || (!c.power && !c.isGate && !c.door &&
       (c.record || (c.k === 'slug' && !cs) ||
         OPTHEADLESS.has(c.k) || (c.ansFor && OPTHEADLESS.has(c.ansFor)) ||
         (c.k !== 'title' && !atTheDoor() && !!motionOn(c)))),
