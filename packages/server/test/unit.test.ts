@@ -207,6 +207,41 @@ describe('DocStore', () => {
     expect(back.bySlug('charter')!.cs.rollingHash()).toBe(doc.cs.rollingHash());
   });
 
+  // **A failed append keeps the people rows it carried** (issue #7): the
+  // dirty set was emptied before the append was awaited and there was no way
+  // back, so one transient store error dropped those rows for ever — and the
+  // log holds no identity (decision 1253), so the member it named came back
+  // from the next boot erased, with no address to log in by, while the log
+  // itself was complete. On Postgres the rows and the entries share one
+  // transaction, which rolls back together; the next persist re-sent the
+  // entries and not the rows.
+  it('a failed append keeps the people rows it carried', async () => {
+    const dir = tmp();
+    const p = new FilePersistence(dir);
+    const realAppend = p.appendDocLog.bind(p);
+    let appends = 0;
+    p.appendDocLog = async (id, entries, rows) => {
+      appends += 1;
+      // the invitation's own append, refused the way a transaction that
+      // rolls back is: nothing of it reached the store, rows included
+      if (appends === 2) throw new Error('the store refused this append');
+      return realAppend(id, entries, rows);
+    };
+    const store = new DocStore(p);
+    const doc = await store.create('d-1', {
+      title: 'Charter', slug: 'charter',
+      convenor: { id: 'founder', email: 'a@x.org', isMember: true },
+    }, 1000);
+    const m = doc.cs.invite(1001, 'b@x.org');
+    await expect(store.persist(doc)).rejects.toThrow();
+    doc.cs.invite(1002, 'c@x.org');   // any second command
+    await store.persist(doc);         // …and the row rides out with it
+    const back = new DocStore(new FilePersistence(dir));
+    await back.loadAll();
+    expect(back.quarantined()).toEqual([]);
+    expect(back.byId('d-1')!.cs.memberRecords().get(m)!.email).toBe('b@x.org');
+  });
+
   // **One document, on the operator's word, typed twice** (Q1322): the tool
   // refuses without the flag, refuses a flag naming another document,
   // refuses an id the store does not hold, and deletes exactly one.

@@ -47,6 +47,25 @@ export class StorePeople extends InMemoryPeople {
     this.dirty.clear();
     return out;
   }
+
+  /**
+   * **Rows an append did not land stay dirty** (issue #7). `takeDirty`
+   * empties the set before the append is awaited, and there was no way back:
+   * one transient store error — a Postgres transaction that rolls back rows
+   * and entries together — dropped those rows for ever, because the next
+   * persist re-sends the entries and the set no longer names the rows. The
+   * log holds no identity (decision 1253), so what was lost was a member's
+   * only address, name and picture: after the next boot they could not log
+   * in by magic link again and read as erased to everybody, while the log
+   * itself was complete and nothing was quarantined or even logged.
+   *
+   * Adding back is safe under a command that landed mid-append: the set is a
+   * set, and a person touched while the append was in flight is named by it
+   * already, so the next persist writes whatever their row says then.
+   */
+  restoreDirty(rows: readonly PersonRow[]): void {
+    for (const row of rows) this.dirty.add(row.personId);
+  }
 }
 
 export interface LoadedDoc {
@@ -158,7 +177,15 @@ export class DocStore {
     const fresh = log.slice(doc.persisted);
     const rows = doc.people.takeDirty();
     if (fresh.length > 0 || rows.length > 0) {
-      await this.persistence.appendDocLog(doc.id, fresh, rows);
+      try {
+        await this.persistence.appendDocLog(doc.id, fresh, rows);
+      } catch (e) {
+        // the rows go back in the dirty set, or a failed append loses them
+        // for ever (issue #7): see `restoreDirty`. The entries need no such
+        // care — the cursor below is what carries them, and it has not moved
+        doc.people.restoreDirty(rows);
+        throw e;
+      }
       // **Advance by what was written, never to the log's length** (Q1322,
       // docs.vote 2026-09-11): `logEntries()` is the live array, and a
       // command applied while the append was in flight — seconds, under a
