@@ -31,7 +31,7 @@
  * first: a pointer cannot press what is off screen.
  */
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
-import { say, linkIn, onPage, browserFor } from './lib/walk.mjs';
+import { say, linkIn, onPage, browserFor, installPaste } from './lib/walk.mjs';
 
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
 // --empty-text: found the document on a confirmed-empty text (Q649 (a)) and
@@ -111,6 +111,9 @@ say(`journey-walk against ${BASE} · build ${health.build ?? 'unreported'}`);
 const browser = await browserFor().launch();
 const page = await browser.newPage({ viewport: { width: 1600, height: 1100 } });
 if (GESTURE) await page.addInitScript((g) => { window.COMMIT_GESTURE_OVERRIDE = g; }, GESTURE);
+// the three pastes below hand the column their own clipboard: a `DataTransfer`
+// on an untrusted event is chromium-only (walk.mjs's `installPaste`)
+await installPaste(page);
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));
 // **A refused command is a failure even when the walk recovers from it**
@@ -300,10 +303,8 @@ if (!EMPTY_TEXT) {
     // the first line, the lift of 24px) are measured against a paragraph,
     // and a lvl1 heading first brings its own top margin and rule.
     pr.focus({ preventScroll: true });
-    const dt = new DataTransfer();
-    dt.setData('text/plain', 'The clubhouse shall be kept open on Tuesdays.\n\nEvery member may bring one guest.\n\n' +
-      '# House rules\n\nGuests sign the **book** at the door.\n\n- No dogs');
-    pr.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+    window.__paste(pr, { text: 'The clubhouse shall be kept open on Tuesdays.\n\nEvery member may bring one guest.\n\n' +
+      '# House rules\n\nGuests sign the **book** at the door.\n\n- No dogs' });
     pr.classList.remove('empty');
     pr.dispatchEvent(new InputEvent('input', { bubbles: true }));
     // **the card's geometry before 🍾** (Ed's QA, 2026-08-30): the tab rests
@@ -487,9 +488,7 @@ if (!EMPTY_TEXT) {
     const darkBefore = !!(b && b.disabled);
     // two paragraphs into an **empty block** — Chromium nests the pasted
     // divs inside it, and the column must unwrap them (Q1314's second shape)
-    const dt = new DataTransfer();
-    dt.setData('text/plain', 'Members pay dues by March.\nGuests sign the book.');
-    pr.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+    window.__paste(pr, { text: 'Members pay dues by March.\nGuests sign the book.' });
     return { darkBefore };
   });
   await T(400);
@@ -501,9 +500,7 @@ if (!EMPTY_TEXT) {
     const d = document.createElement('div'); d.innerHTML = '<br>'; pr.appendChild(d);
     const r = document.createRange(); r.setStart(d, 0); r.collapse(true);
     const s = getSelection(); s.removeAllRanges(); s.addRange(r);
-    const dt = new DataTransfer();
-    dt.setData('text/html', '<p>The bar closes at <b>eleven</b>.</p>');
-    pr.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+    window.__paste(pr, { html: '<p>The bar closes at <b>eleven</b>.</p>' });
   });
   await T(400);
   Object.assign(pasteLit, await page.evaluate(() => {
