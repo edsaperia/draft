@@ -436,7 +436,10 @@ export function runCommand(
   args: Args,
   bridge: EngineBridge | null = null,
 ): unknown {
-  const handler = HANDLERS[cmd];
-  if (!handler) throw new Error(`unknown command '${cmd}'`);
+  // the whitelist is the table's own keys and nothing it inherits: a plain
+  // lookup answered `constructor` and `toString` out of Object.prototype, and
+  // what came back was serialised into the reply (issue #5)
+  if (!Object.hasOwn(HANDLERS, cmd)) throw new Error(`unknown command '${cmd}'`);
+  const handler = HANDLERS[cmd]!;
   return handler(cs, actor, t, args, bridge);
 }
