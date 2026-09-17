@@ -202,7 +202,9 @@ export const authTable: Route[] = [
       const { req, res, nowMs } = r;
       const { cfg, store, stash, auth, writes, commits } = ctx;
       if (r.tooMany('auth', 60)) return true;
-      const rec = await auth.useToken(await readTokenBody(req), nowMs);
+      const token = await readTokenBody(req);
+      if (pausedDoor(ctx, r, token)) return true;
+      const rec = await auth.useToken(token, nowMs);
       if (!rec || rec.kind !== 'create' || !rec.pending) {
         spentPage(ctx, r, PAGE.used, 'create');
         return true;
@@ -375,7 +377,9 @@ export const authTable: Route[] = [
       const { req, res, nowMs } = r;
       const { store, auth, writes } = ctx;
       if (r.tooMany('auth', 60)) return true;
-      const rec = await auth.useToken(await readTokenBody(req), nowMs);
+      const token = await readTokenBody(req);
+      if (pausedDoor(ctx, r, token)) return true;
+      const rec = await auth.useToken(token, nowMs);
       if (!rec || rec.kind !== 'apply' || rec.docId === undefined) {
         spentPage(ctx, r, PAGE.used, 'apply');
         return true;
@@ -427,7 +431,9 @@ export const authTable: Route[] = [
       const { req, res, nowMs } = r;
       const { store, auth, writes } = ctx;
       if (r.tooMany('auth', 60)) return true;
-      const rec = await auth.useToken(await readTokenBody(req), nowMs);
+      const token = await readTokenBody(req);
+      if (pausedDoor(ctx, r, token)) return true;
+      const rec = await auth.useToken(token, nowMs);
       if (!rec || rec.kind !== 'login' || rec.docId === undefined ||
           rec.memberId === undefined) {
         spentPage(ctx, r, PAGE.used, 'login');
@@ -477,6 +483,13 @@ const PAGE = {
   ask: 'Send yourself a new one:',
   send: 'Send the link',
   placeholder: 'you@example.com',
+  /** The announced pause, met on a link rather than on a card (issue #9).
+   *  The page's own modal says *quick database maintenance* and *about a
+   *  minute*; this is the same news to somebody who has no document open
+   *  yet, and the same promise — nothing here has been used up. */
+  paused: 'docs.vote is having a moment of quick maintenance.',
+  pausedKept: 'Your link is still good — nothing has been used. Wait about a minute, then try it again.',
+  pausedRetry: 'Try the link again',
   /** The door's own answer, and not an oracle either way (`design/door.js`). */
   sentLogin: 'If that address is on the membership, a link is on its way.',
   sentApply: 'A link is on its way — follow it to continue your application.',
@@ -495,6 +508,43 @@ function interstitial(action: string, token: string): string {
     '<input type="hidden" name="token" value="' + e(token) + '">' +
     '<noscript><button type="submit">Continue</button></noscript></form>' +
     '<script>document.forms[0].submit()</script>');
+}
+
+/**
+ * **A link followed during a deploy pause spends nothing** (issue #9; the
+ * pause itself is Q1345). The three doors below consume a single-use token,
+ * and a paused instance persists nothing — so a link followed in the few
+ * minutes a deploy takes seated nobody, founded nothing, and burned the one
+ * token the person had: on the new instance an invitee read `arrived: false`
+ * and a founder's promised address stood empty. The check sits **before**
+ * `useToken`, which is the whole of the remedy — the same link, a minute
+ * later, still works.
+ *
+ * Answered as a **page** rather than as the cmd route's JSON: these are form
+ * POSTs from the interstitial, and a person is looking at the result. The
+ * status is the cmd route's all the same — 503, since the host is whole and
+ * merely waiting — with `retry-after` saying the minute the sentence says.
+ * The form re-posts the token that arrived, so the remedy is one press and
+ * needs no second mail; without script it is an ordinary form and still is.
+ */
+function pausedDoor(ctx: RouteContext, r: Req, token: string): boolean {
+  if (ctx.pause.now(r.nowMs) === null) return false;
+  // the address travels with the form, exactly as the interstitial sends it
+  const d = r.url.searchParams.get('d') ?? '';
+  const action = d === '' ? r.path : `${r.path}?d=${encodeURIComponent(d)}`;
+  // same-origin, for the reason the interstitial gives: under the global
+  // no-referrer policy a form POST's Origin serializes as *null*, and the
+  // cross-site check on `/auth/*` would refuse the retry as an attack
+  r.res.setHeader('referrer-policy', 'same-origin');
+  r.res.setHeader('retry-after', '60');
+  html(r.res, shell(
+    '<p>' + e(PAGE.paused) + '</p>' +
+    '<p>' + e(PAGE.pausedKept) + '</p>' +
+    '<form method="post" action="' + e(action) + '">' +
+    '<input type="hidden" name="token" value="' + e(token) + '">' +
+    '<button type="submit" style="padding: .4rem .8rem">' +
+    e(PAGE.pausedRetry) + '</button></form>'), 503);
+  return true;
 }
 
 /**

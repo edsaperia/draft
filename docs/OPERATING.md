@@ -130,7 +130,12 @@ freely; pushing is the decision.
    503 and the pause in the answer, ticks nothing, and says `paused` on
    every view answer, so every open page draws the maintenance modal with
    the bar; the new instance boots unpaused and the page reloads itself when
-   a new `x-build` answers. A pause lifts itself after fifteen minutes, so a
+   a new `x-build` answers. A magic link followed in those minutes is refused
+   with a maintenance page rather than a redirect, and its single-use token is
+   not spent, so the person's own link works again once the pause lifts; a
+   command that was already queued behind a write when the pause landed is
+   refused with the same 503, never answered 200 for a write that did not
+   happen (issue #9). A pause lifts itself after fifteen minutes, so a
    deploy that never lands cannot hold a room; `POST /api/admin/resume`
    lifts it by hand. **Do not deploy while a room is live if you can help
    it** — the pause makes it safe, not free: the room waits.

@@ -51,6 +51,13 @@ import { driveBridge, foldTime, persistEngine } from './engine-host.js';
  * never lands cannot hold a document for ever. Nothing applied in memory
  * during a pause is lost on the surviving instance: `persist` slices from
  * its cursor, so the next commit after a resume writes it all.
+ *
+ * **Three refusals, not one** (issue #9). *Refuses every command* is the cmd
+ * route's own check, made before anything is applied; a command already
+ * behind the chain when the pause lands meets `commit`, which answers `null`
+ * and is refused with the same 503 and the same payload; and a magic link
+ * followed meanwhile meets `pausedDoor` in `routes-auth.ts`, before its
+ * single-use token is spent, so the link is still good a minute later.
  */
 export class PauseState {
   static readonly EXPECTED_MS = 6 * 60_000;
@@ -284,9 +291,25 @@ export class WritePath {
     outbox.kick(nowMs);
   }
 
-  /** Persist a document's fresh entries, durably, in order. A 200 means
-   *  this resolved; the WriteChain is what makes "in order" true. */
-  commit(doc: LoadedDoc, nowMs: number): Promise<number> {
+  /**
+   * Persist a document's fresh entries, durably, in order. A 200 means this
+   * resolved; the WriteChain is what makes "in order" true.
+   *
+   * **`null` is the pause, and it is not a length** (issue #9). A command
+   * that passes the cmd route's own pause check can still meet a pause
+   * here — the route checks before it applies, this runs behind the chain,
+   * and a deploy's pause lands somewhere between — and what came back then
+   * was `logEntries().length`, a perfectly ordinary number the route sent
+   * as a 200 with a `seq` beside it, although nothing had reached the
+   * store. So the paused case is a value of its own: every caller that
+   * reads the return can tell durable from waiting, and the one that does
+   * — the cmd route — answers the same 503 and the same `paused` payload
+   * as a command refused at the door. **Not a throw**: the central handler
+   * would answer it 400, the view path's presence commit would break the
+   * paused view an idle member is meant to get, and `tellGaveUp`'s loop
+   * would abort at the first paused document.
+   */
+  commit(doc: LoadedDoc, nowMs: number): Promise<number | null> {
     const { cfg, commits, pause, persistence, store } = this.d;
     return commits.run(doc.id, async () => {
       // the engine rides every commit (Q391): born at constitute, synced
@@ -295,7 +318,7 @@ export class WritePath {
       // paused (Q1345): nothing reaches the store from this instance until
       // the pause lifts — what was applied in memory waits behind the
       // cursor and lands on the next commit after a resume
-      if (pause.now(nowMs) !== null) return doc.cs.logEntries().length;
+      if (pause.now(nowMs) !== null) return null;
       // the document log first — it is the source of truth, and the
       // bridge's persisted cursor points into it (review #2, finding 2):
       // a crash after this and before the engine persist leaves a cursor
