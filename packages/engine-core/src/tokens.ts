@@ -31,14 +31,34 @@ export function openLedger(constitution: Constitution, joinedAtMs: number): Ledg
   return ledger;
 }
 
-/** Credit all drip ticks due at time t, respecting the cap per tick. */
+/**
+ * Credit all drip ticks due at time t, respecting the cap per tick.
+ *
+ * **Counted, never looped** (issue #4). This walked the ticks one at a time —
+ * `while (nextDripT <= t) nextDripT += interval` — and an interval below
+ * float precision at epoch milliseconds leaves `next + interval === next`,
+ * so the loop never ended and the one Node thread stopped serving every
+ * document, at boot as well as live. The constitution layer floors the
+ * interval at a whole minute, and this counts the ticks instead, so the
+ * library cannot spin however small an interval it is handed.
+ *
+ * Tick for tick the same answer: the loop credits 1 per tick while the
+ * balance is under the cap and nothing once it is at or over it (a refund
+ * may leave it over — refunds are never forfeit), which is the balance line
+ * below; and the advance is exact for every interval the floor admits, a
+ * whole minute being a whole number of milliseconds. Guard:
+ * `test/tokens.test.ts`, which sweeps the two against each other.
+ */
 export function materialize(ledger: Ledger, constitution: Constitution, t: number): void {
   const interval = dripIntervalMs(constitution);
   if (!Number.isFinite(interval) || interval <= 0) return;
-  while (ledger.nextDripT <= t) {
-    ledger.balance = Math.min(ledger.balance + 1, Math.max(ledger.balance, constitution.tokenCap));
-    ledger.nextDripT += interval;
-  }
+  if (!(ledger.nextDripT <= t)) return; // the loop's own test, NaN included
+  const ticks = Math.floor((t - ledger.nextDripT) / interval) + 1;
+  ledger.balance = Math.max(
+    ledger.balance,
+    Math.min(ledger.balance + ticks, constitution.tokenCap),
+  );
+  ledger.nextDripT += ticks * interval;
 }
 
 /**
