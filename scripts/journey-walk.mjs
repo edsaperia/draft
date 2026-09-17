@@ -3743,6 +3743,33 @@ if (caret) {
       say('deck       · FAIL: could not raise the floor above the room · ' + JSON.stringify(floored.error));
       stuck.push('the deck’s floor');
     }
+    // **And a third seat, since Q1439** (R-126). The count of 3 above used to
+    // be *above the room* and hold every race at the floor; no quorum may ask
+    // for more than half of the group now, so in a room of two the floor is
+    // one however high the count — and one approving voice, the author's own
+    // derived preference among them, carries the leader away mid-step. At
+    // three the same count reads ⌈3/2⌉ = 2, which the one author's preference
+    // does not meet, and the race stands for its pairs to be judged. cy is
+    // invited already; the login door seats them, which is what the askable
+    // section below does a few steps later anyway.
+    const cySeat = await fetch(BASE + '/api/d/' + slug + '/login', { method: 'POST',
+      headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: GUEST2 }) })
+      .then((r) => r.json()).catch(() => null);
+    const cySeatLink = (cySeat && cySeat.devLink) || await invitationLink(GUEST2);
+    if (!cySeatLink) {
+      say('deck seat  · FAIL: no way in for ' + GUEST2 + ' — the floor cannot be held at two');
+      stuck.push('the deck’s third seat');
+    } else {
+      const ctxDeck = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+      const deckPage = await ctxDeck.newPage();
+      deckPage.on('pageerror', (e) => errors.push('[cy] ' + String(e)));
+      await deckPage.goto(cySeatLink);
+      for (let i = 0; i < 40 && !deckPage.url().includes('/d/'); i++) await deckPage.waitForTimeout(500);
+      await deckPage.waitForTimeout(2600);
+      say('deck seat  · ' + (deckPage.url().includes('/d/')
+        ? 'a third seat is here, so a count of 3 is under half the room and holds the race'
+        : 'FAIL: the third seat never landed'));
+    }
     await T(4600);                                   // the founder's poll takes the new floor
     const sent2 = await guestPage.evaluate(([n, why]) => {
       const api = location.pathname.replace('/d/', '/api/d/');
@@ -3858,13 +3885,23 @@ if (caret) {
           const ok2 = c1.card && /quick-open/.test(c1.cls) && c1.keepLane && c1.whys.length === 1 && c1.whys[0] === first && c1.ledger === 0;
           say('pairs 2    · ' + (ok2 ? 'its card is that pair, quick, its reason “' + first + '”, no ledger' : 'FAIL: ' + JSON.stringify(c1)));
           if (!ok2) stuck.push('the first pair’s card');
-          // **Indifferent, deliberately**: a room of two has a floor of one, so
-          // one approving vote adopts the challenger on the spot and the race
-          // seals into a record (the first run of this step did exactly that).
-          // A tie leaves every posterior at 0.5 and the race standing.
+          // **Keep, deliberately** — *the current text*, on both pairs. A room
+          // of two has a floor of one, so one approving vote adopts the
+          // challenger on the spot and the race seals into a record (the first
+          // run of this step did exactly that), taking with it everything
+          // there was left to judge.
+          //
+          // It was *Indifferent* until Q1439, on the reasoning that a tie
+          // leaves every posterior at 0.5 and the race standing. That is no
+          // longer enough: **an indifferent member steps out of the group the
+          // quorum is a share of** (ruling i), so two ties leave a group of
+          // one — the author — and a floor of one, which the author's own
+          // derived preference meets the moment anybody measures the leader at
+          // all. *Keep* holds the race open for the reason a room actually
+          // holds one open: it prefers the text it has (R-114's asymmetry).
           // 3 — judged: that entry is ⏳ now, and the other pair's entry is lit
           // beside it — its own, not the same one re-lit
-          const j1 = await judge(q1.id, 'indifferent');
+          const j1 = await judge(q1.id, 'keep');
           const e2 = await entries();
           const q2 = quickOf(e2, other);
           const ok3 = j1 && byId(e2, q1.id) && byId(e2, q1.id).mark === 'deciding' && lit(q2) && q2.id !== q1.id;
@@ -3877,7 +3914,7 @@ if (caret) {
           const ok4 = c2.card && /quick-open/.test(c2.cls) && c2.whys.length === 1 && c2.whys[0] === other && c2.ledger === 0;
           say('pairs 4    · ' + (ok4 ? 'the other pair’s own entry opens it, its reason “' + other + '”' : 'FAIL: ' + JSON.stringify(c2)));
           if (!ok4) stuck.push('the second pair’s card');
-          const j2 = ok3 ? await judge(q2.id, 'indifferent') : false;
+          const j2 = ok3 ? await judge(q2.id, 'keep') : false;
           const e3 = await entries();
           const r3 = rivalOf(e3);
           const ok5 = j2 && byId(e3, q2.id) && byId(e3, q2.id).mark === 'deciding' && byId(e3, q1.id).mark === 'deciding' && lit(r3);
@@ -3916,25 +3953,39 @@ if (caret) {
           const e5 = await entries();
           const l1 = await openEntry(q1.id);
           const okL1 = e5.length === 3 && e5.every((e) => e.mark === 'deciding') && l1.card && /quick-open/.test(l1.cls) &&
-            l1.keepLane && l1.pressed.join() === 'indifferent' && l1.cast === 'true' && l1.ledger === 0;
-          say('revise 1   · ' + (okL1 ? 'after a reload three ⏳ entries stand; the first pair’s tab opens it with Indifferent pre-selected and ✓ pressed'
+            l1.keepLane && l1.pressed.join() === 'keep' && l1.cast === 'true' && l1.ledger === 0;
+          say('revise 1   · ' + (okL1 ? 'after a reload three ⏳ entries stand; the first pair’s tab opens it with the current text pre-selected and ✓ pressed'
             : 'FAIL: ' + JSON.stringify({ e5, l1 })));
           if (!okL1) stuck.push('a judged pair after a reload');
           // Q1385 — the 11th's shape exactly: a judged pair's card on a fresh load
           say('bare word  · ' + (l1.card && !l1.bare ? 'the judged pair’s card after a reload prints no bare undefined or NaN'
             : 'FAIL: ' + JSON.stringify(l1.bare)));
           if (l1.card && l1.bare) stuck.push('a bare word on the reloaded judged card (Q1385)');
-          // 7 — choose the other lane, ✓: the revision goes on the same pair
-          const jr = await judge(q1.id, 'keep');
+          // 7 — choose the other lane, ✓: the revision goes on the same pair.
+          //
+          // **On the rival pair since Q1439**, where it was the first quick
+          // pair. The revision has to leave the race standing for the entries
+          // to be read after it, and neither lane of a quick pair does that
+          // any more in a room this size: pressing *this wording* is an
+          // approval and meets the floor, and pressing *Indifferent* takes
+          // the member **out of the group the quorum is a share of** (ruling
+          // i), which drops the floor to one and lets the author's own derived
+          // preference carry it. Flipping the rival pair changes which
+          // challenger leads and approves neither of them (ruling k), so the
+          // race stands and the claim is the claim it always was: the other
+          // lane revises that pair, and the revision comes off the wire.
+          // its own tab first: the card open above is the quick pair's
+          await openEntry(r3.id);
+          const jr = await judge(r3.id, 'b');
           await T(1500);
           await page.reload();
           await page.waitForFunction(() => !!(window.SESSION && window.SESSION.SUGGS && window.SESSION.SUGGS.length &&
             document.querySelector('#rail li')), null, { timeout: 30_000 });
           await T(1500);
           const e6 = await entries();
-          const l3 = await openEntry(q1.id);
-          const okL3 = jr && e6.length === 3 && l3.card && l3.pressed.join() === 'keep' && l3.cast === 'true';
-          say('revise 2   · ' + (okL3 ? 'revised to keep, and after a reload the same tab opens with keep pre-selected — off the wire alone; still three entries'
+          const l3 = await openEntry(r3.id);
+          const okL3 = jr && e6.length === 3 && l3.card && l3.pressed.join() === 'b' && l3.cast === 'true';
+          say('revise 2   · ' + (okL3 ? 'the rival pair revised to its other wording, and after a reload its own tab opens with that block pre-selected — off the wire alone; still three entries'
             : 'FAIL: judged ' + jr + ' · ' + JSON.stringify({ e6, l3 })));
           if (!okL3) stuck.push('the revision of a judged pair');
           await closeCard();
@@ -3974,10 +4025,20 @@ if (caret) {
             say('askable    · FAIL: could not raise the floor above three seats · ' + JSON.stringify(floored4.error));
             stuck.push('the askable case’s floor');
           }
-          const link2 = await invitationLink(GUEST2);
+          // **The login door first, the invitation as the fallback** — the
+          // shape the ⏳-deck section below already uses. cy is seated by the
+          // pairs section now (Q1439: the floor cannot be put above the room,
+          // so that step needs a third seat), which spends their invitation
+          // and leaves a login mail in the outbox beside it; a walk that
+          // reaches for *the* mail matching an address after that can pick
+          // either one. Minting a fresh link asks for exactly what is wanted.
+          const lj2 = await fetch(BASE + '/api/d/' + slug + '/login', { method: 'POST',
+            headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: GUEST2 }) })
+            .then((r) => r.json()).catch(() => null);
+          const link2 = (lj2 && lj2.devLink) || await invitationLink(GUEST2);
           let cyPage = null;
           if (!link2) {
-            say('askable    · FAIL: no invitation link in the outbox for ' + GUEST2);
+            say('askable    · FAIL: no way in for ' + GUEST2);
             stuck.push('the third seat’s link');
           } else {
             const ctx2 = await browser.newContext({ viewport: { width: 1400, height: 1000 } });

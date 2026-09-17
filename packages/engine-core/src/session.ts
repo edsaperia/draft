@@ -27,7 +27,7 @@ import { rebaseHunks } from './text/rebase.js';
 import { fitDavidson } from './ranking/davidson.js';
 import { chainHash, sha256Hex, stableStringify } from './hash.js';
 import { Routing, contextKey, pairKey, type RoutingHost } from './routing.js';
-import { Races, candidateNum, type RacesHost } from './races.js';
+import { Races, candidateNum, floorFor, type RacesHost } from './races.js';
 import { smoothstep } from './adoption-threshold.js';
 import {
   balanceAt,
@@ -161,7 +161,36 @@ interface RosterEntry {
   /** Response-time samples within bouts, for c_p (SPEC §8.1). */
   latencies: number[];
   lastActionT: number | null;
+  /**
+   * **When they arrived, and when they last came back** (Q1439): a member's
+   * 💤 period on a candidate cannot start before they were there to be asked
+   * (§8.2), so the awaited set needs both — `participant-added` (or the open),
+   * and the latest `participant-resumed` where they have lapsed and returned.
+   */
+  arrivedT: number;
+  resumedT: number | null;
 }
+
+/**
+ * **The events that can move a race's ground** (Q1439; SPEC §4.4). A ground is
+ * the hash of the text on the contested spans, or of a setting's standing, so
+ * it changes when the text changes, when a standing is set, or when the field
+ * itself changes — a candidate joining, leaving, being rebased or being
+ * parked. `apply` records the moment each new ground first stood, and a
+ * member's period on a pair runs from it (`answerableSince`), so a ground
+ * shift restarts every period rather than abstaining the people who had
+ * already answered.
+ *
+ * A `comparison` is deliberately not here: a judgment cannot change what is
+ * racing or what the text says, and this is the hot path the moon room's
+ * measurement is about (Q1324) — one race build per judgment, not two.
+ */
+const GROUND_MOVERS: ReadonlySet<Event['type']> = new Set<Event['type']>([
+  'candidate-submitted', 'candidate-withdrawn', 'candidate-retired',
+  'candidate-undecided', 'candidate-confirmed', 'candidate-rebased',
+  'rebase-failed', 'candidate-awaiting-assent', 'co-signed', 'adopted',
+  'text-decreed', 'standing-set',
+]);
 
 // the incumbent pseudo-id's prefix is types.ts's since routing.ts reads it
 // too; re-exported here so its importers need not move
@@ -190,27 +219,43 @@ export class Session {
   private comparisons: StoredComparison[] = [];
   /**
    * **Edge judgments indexed as they land** (the moon room, 2026-09-11): by
-   * the ground they were cast on, and by each candidate they touch. Both
-   * per-race scans below — the usable set behind every fit, and the
-   * locked-evidence test the feed asks per race — walked every judgment in
-   * the room once per race per state version, which at a hundred races
-   * over thousands of judgments was a quarter of a saturated host and the
-   * whole of a command's fold (the fold reads `races()` uncached). A race's
-   * usable judgments all share its incumbent as ground, and a locked one
-   * touches one of its members, so each scan reads its own bucket alone.
+   * each candidate they touch. Both per-race scans below — the usable set
+   * behind every fit, and the locked-evidence test the feed asks per race —
+   * walked every judgment in the room once per race per state version, which
+   * at a hundred races over thousands of judgments was a quarter of a
+   * saturated host and the whole of a command's fold (the fold reads
+   * `races()` uncached). A judgment usable in a race touches one of its
+   * members, so each scan reads its members' own buckets and nothing else.
    * Comparisons only ever append, in `apply`, so the buckets are exact.
+   *
+   * **The ground-keyed bucket went with the race-wide ground** (Q1441): a
+   * judgment's ground is its own pair's now, so a race and its judgments
+   * share no key — the candidate index is the whole of the lookup, and it
+   * always held every judgment the ground bucket did.
    */
-  private edgesByGround = new Map<string, StoredComparison[]>();
   private edgesByCandidate = new Map<string, StoredComparison[]>();
   /**
-   * Contextual pair keys already judged, per participant (feed
-   * exclusion only — revision stays open, SPEC §4.4). Edge keys carry
-   * the ground id, so a ground shift re-opens the pair to everyone,
-   * including participants who judged the old ground.
+   * Contextual pair keys already judged, per participant (feed exclusion
+   * only — revision stays open, SPEC §4.4). Edge keys carry the **pair's**
+   * ground since Q1441, so a change to the text that pair compared re-opens
+   * it to everyone, and a rival joining the race re-opens nothing.
    */
   private judgedPairs = new Map<string, Set<string>>();
   /** Comparisons at seq < evidenceSince[id] are dead for candidate id (SPEC §2.4). */
   private evidenceSince = new Map<string, number>();
+  /** When each of those resets landed (Q1439): the period on the pair restarts. */
+  private evidenceSinceT = new Map<string, number>();
+  /**
+   * **When each ground first stood** (Q1439; SPEC §4.4, §8.2). Written by
+   * `apply` at every `GROUND_MOVERS` event and never read back by the write
+   * that records it, so a fold cannot ask after a ground it is in the middle
+   * of creating; a ground the map has not heard of reads as *now*, which is
+   * the right answer for one being created and the safe answer for anything
+   * else — a period that has only just started abstains nobody. A ground id
+   * that recurs (text changed and changed back) keeps its first moment,
+   * which is also when the judgments cast on it became usable again.
+   */
+  private groundSinceT = new Map<string, number>();
   private edgeCount = 0;
   private lastAdoptionT: number | null = null;
   private closedFlag = false;
@@ -401,11 +446,30 @@ export class Session {
     if (event.t < this.lastT) throw new Error('timestamps must be non-decreasing');
     try {
       this.applyEvent(event, seq);
+      // **The grounds, recorded as they appear** (Q1439): after the arm, so
+      // the field is what this event left, and here rather than in twelve arms
+      // so no future arm can move a ground and forget to date it. Both roads
+      // in — `emit` and `replay` — come through `apply`, which is what makes
+      // the map fold identically.
+      if (GROUND_MOVERS.has(event.type)) this.noteGrounds(event.t);
     } finally {
       // the fold touches as it goes (Q1326); this is the net under it, so a
       // mutation that forgot cannot outlive the event that made it
       this.touch();
     }
+  }
+
+  /**
+   * Date any ground this event brought into being (Q1439). `groundIds()` asks
+   * only the grouping and the text, so it cannot read the map it is about to
+   * fill; and a ground already dated keeps its date.
+   */
+  private noteGrounds(t: number): void {
+    let added = false;
+    for (const g of this.raceRules.groundIds()) {
+      if (!this.groundSinceT.has(g)) { this.groundSinceT.set(g, t); added = true; }
+    }
+    if (added) this.touch();
   }
 
   private applyEvent(event: Event, seq: number): void {
@@ -432,6 +496,8 @@ export class Session {
             ledger: openLedger(event.constitution, event.t),
             latencies: [],
             lastActionT: null,
+            arrivedT: event.t,
+            resumedT: null,
           });
         }
         this.touch();
@@ -445,6 +511,8 @@ export class Session {
           ledger: openLedger(this.constitutionValue, event.t),
           latencies: [],
           lastActionT: null,
+          arrivedT: event.t,
+          resumedT: null,
         });
         this.touch();
         break;
@@ -463,7 +531,11 @@ export class Session {
       }
       case 'participant-resumed': {
         const entry = this.roster.get(event.participantId);
-        if (entry) entry.suspended = false;
+        if (entry) {
+          entry.suspended = false;
+          // back in the room, and awaited afresh on everything (Q1439, §8.2)
+          entry.resumedT = event.t;
+        }
         this.touch();
         break;
       }
@@ -477,6 +549,7 @@ export class Session {
             ? { patch: event.patch, footprint: footprint(event.patch.hunks) }
             : { footprint: [] }),
           ...(event.setting ? { setting: event.setting } : {}),
+          submittedT: event.t,
           state: 'live',
           stakePaid: this.constitutionValue.stake,
           peakW: 0,
@@ -506,7 +579,11 @@ export class Session {
         // whole rebuild of every race gone from every judgment; the fit
         // `updatePeaks` needs is a different question and is taken fresh.
         const race = event.kind === 'edge' ? this.raceOfPair(event.aId, event.bId) : null;
-        const groundId = race === null ? null : race.incumbentId;
+        // **The pair's own ground, not the race's** (Q1441; SPEC §4.4 → why:
+        // R-129): the current text under the lines of the two wordings being
+        // compared. A rival joining or leaving the race changes no text, so it
+        // changes no stamp and voids nothing.
+        const groundId = race === null ? null : this.raceRules.pairGround(event.aId, event.bId);
         const stored: StoredComparison = {
           seq,
           t: event.t,
@@ -519,8 +596,6 @@ export class Session {
         };
         this.comparisons.push(stored);
         if (event.kind === 'edge' && groundId !== null) {
-          const g = this.edgesByGround.get(groundId);
-          if (g) g.push(stored); else this.edgesByGround.set(groundId, [stored]);
           for (const id of [event.aId, event.bId]) {
             if (id.startsWith(INC_PREFIX)) continue;
             const b = this.edgesByCandidate.get(id);
@@ -640,6 +715,7 @@ export class Session {
           rationale: event.rationale,
           patch: event.patch,
           footprint: footprint(event.patch.hunks),
+          submittedT: event.t,
           state: 'adopted',
           stakePaid: 0,
           peakW: 0,
@@ -683,6 +759,9 @@ export class Session {
         // Evidence resets: pre-confirmation comparisons no longer speak
         // for this candidate (SPEC §2.4).
         this.evidenceSince.set(event.id, seq);
+        // and when it landed (Q1439): the pair became answerable afresh, so
+        // every member's 💤 period on it restarts here (§8.2)
+        this.evidenceSinceT.set(event.id, event.t);
         this.fitCache.clear();
         this.touch();
         break;
@@ -968,30 +1047,36 @@ export class Session {
   }
 
   /**
-   * F = max(Q, min(ceil(E/3), F_max)) — SPEC §4.2: the room's quorum
-   * riding on the statistical minimum. A share-quorum is re-derived from
-   * current E on every call, so it tracks the roster (§9.3).
+   * **The floor over the whole of E** — F as it stands for a race nobody has
+   * left waiting: `max(Q′, min(⌈E/3⌉, F_max))` with the group equal to E,
+   * which is what it is at the moment a candidate is submitted and everybody
+   * is still awaited. The arithmetic, both bases and the cap are `floorFor` in
+   * `races.ts` (SPEC §4.2; Q1439 → why: R-125, R-126), and the constitution
+   * layer keeps its own copy of the same line (`populations.ts`) because it
+   * derives F without a Session; `floor-agreement.test.ts` holds the two
+   * equal.
    *
-   * The share is ⌈n·E/100⌉, **the product before the quotient** (issue #24):
-   * `(n / 100) * E` is not the same number — `0.56` is not representable in
-   * binary and 56 % of 25 landed a hair above 14, holding that room to 15
-   * judges where the card promised 14. Twenty-seven (share, E) pairs read one
-   * too many that way, all at E ≥ 25. The constitution layer keeps its own
-   * copy of this line (`populations.ts`, `quorumCount`) because the engine
-   * derives F from the engine's roster and never asks it; the two move
-   * together or not at all.
+   * **The number that decides an adoption is the race's own** (`RaceView.floor`),
+   * not this one: Q1439's quorum is read against the group, and the group
+   * shrinks as silences abstain. This stays for the readers that want the
+   * room's number rather than a particular race's — the host's view, the
+   * sim's evidence, the record's *quorum was n* line.
    */
   adoptionFloor(): number {
     const e = this.eCount();
-    const q = this.constitutionValue.quorum;
-    const quorumN =
-      q === null ? 0 : q.form === 'count' ? q.n : Math.ceil((q.n * e) / 100);
-    return Math.max(quorumN, Math.min(Math.ceil(e / 3), this.constitutionValue.adoptionFloorMax));
+    return floorFor(this.constitutionValue, e, e);
   }
 
   /** E (SPEC §8.2): arrived, non-removed, non-lapsed — engine-side. */
   private eCount(): number {
-    return [...this.roster.values()].filter((r) => !r.removed && !r.suspended).length;
+    return this.eMembers().length;
+  }
+
+  /** E by id (SPEC §8.2), which is who a candidate can still be waiting on. */
+  private eMembers(): string[] {
+    return this.derived('eMembers', () => [...this.roster.entries()]
+      .filter(([, r]) => !r.removed && !r.suspended)
+      .map(([id]) => id));
   }
 
   /**
@@ -1079,7 +1164,10 @@ export class Session {
         const race = candidates.length > 0 ? raceOfMember.get(candidates[0]!) : undefined;
         locked =
           race === undefined ||
-          race.incumbentId !== c.groundId ||
+          // **its own pair's ground** (Q1441): the text the two wordings
+          // displaced, not the race's whole contested area — a rival joining
+          // locks nobody's judgment
+          this.raceRules.pairGround(c.aId, c.bId) !== c.groundId ||
           candidates.some((id) => {
             if (!race.members.includes(id)) return true;
             const since = this.evidenceSince.get(id);
@@ -1506,14 +1594,21 @@ export class Session {
    * objects and are read, never written. `askOn`, `feed`, `judgments` and
    * the host's view all read this, so one judgment costs one rebuild
    * however many seats poll between it and the next.
+   *
+   * **And it takes a clock** (Q1439): the floor is read against the group the
+   * leader is waiting on, and a silence leaves that group when 💤's period
+   * runs — with no event to mark it. `t` defaults to the last event's time,
+   * which is the only default a pure fold can honestly have (a replay, a
+   * post-close query and a test all mean *as the log left it*); a live caller
+   * passes its own now, and the server's view path does.
    */
-  races(): RaceView[] {
-    return this.raceRules.races();
+  races(t: number = this.lastT): RaceView[] {
+    return this.raceRules.races(t);
   }
 
   /** The live race holding a candidate; throws if it is not in one. */
-  raceOf(candidateId: string): RaceView {
-    return this.raceRules.raceOf(candidateId);
+  raceOf(candidateId: string, t: number = this.lastT): RaceView {
+    return this.raceRules.raceOf(candidateId, t);
   }
 
   /** A race's Davidson fit over its usable comparisons (SPEC §4.1). */
@@ -1567,11 +1662,13 @@ export class Session {
     // The pinned bar (R-117): nothing gates on it, and `adopted` and
     // `candidate-awaiting-assent` still record it, so no event shape moves.
     const threshold = this.adoptionThreshold(t);
-    const floor = this.adoptionFloor();
-    const ready = this.races()
+    // **The batch reads the races at its own moment** (Q1439): who has
+    // abstained, and so what each floor is, depends on `t` — which is why the
+    // metronome's own tick can release a batch that no judgment did.
+    const ready = this.races(t)
       // `clearsFloor` is the test, shared with `races()`'s `blockedByPark`
       // (R-100). What it asks, and why:
-      .filter((r) => this.raceRules.clearsFloor(r, floor))
+      .filter((r) => this.raceRules.clearsFloor(r))
           // The top of the field and the floor, and then the helper's last
           // clause, whose reason is long enough to keep here beside the batch
           // it governs.
@@ -1614,12 +1711,16 @@ export class Session {
       // `converged` is false in exactly one circumstance — the iteration cap
       // running out with the gradient still above tolerance — which is why
       // the record's word is *cap* and not *gradient*.
-      .map((r): { leaderId: string; p: number;
+      .map((r): { leaderId: string; p: number; approvals: number; floor: number;
         cappedFit?: { iterations: number; gradMax: number } } => {
         const fit = this.raceRules.fitRaceMembers(r.members, r.incumbentId);
         return {
           leaderId: r.leaderId as string,
           p: r.leaderP as number,
+          // the two numbers the batch decided on, snapshotted with the fit
+          // and carried to the record (Q1439; SPEC §8.2)
+          approvals: r.approvals,
+          floor: r.floor,
           // absent means converged, all the way out to the log (R-051)
           ...(fit.converged
             ? {}
@@ -1649,14 +1750,15 @@ export class Session {
     // it `blockedByPark`, and it is looked at again next batch. Everything
     // else parks beside the standing parks, each its own 👑 question, oldest
     // race first as always.
-    for (const { leaderId, p, cappedFit } of ready) {
+    for (const { leaderId, p, approvals, floor, cappedFit } of ready) {
       const c = this.candidate(leaderId);
       if (c.state !== 'live') continue;
+      const decided = { approvals, floor };
       // a setting race is untouched by any of this (Q390): it carries no
       // patch, changes no text, and adopts in the same batch as before —
       // but it was decided by the same fit and takes the same mark (R-051)
       if (c.patch === undefined) {
-        this.adopt(t, leaderId, p, threshold, undefined, cappedFit); continue;
+        this.adopt(t, leaderId, p, threshold, undefined, cappedFit, decided); continue;
       }
       // read fresh each time: a park made earlier in this batch is in the
       // set by its fold, and an adoption earlier in this batch has moved
@@ -1668,7 +1770,7 @@ export class Session {
           ...(cappedFit ? { cappedFit } : {}) });
         continue;
       }
-      this.adopt(t, leaderId, p, threshold, undefined, cappedFit);
+      this.adopt(t, leaderId, p, threshold, undefined, cappedFit, decided);
     }
   }
 
@@ -1696,10 +1798,13 @@ export class Session {
    * and deserves the same honesty.
    */
   private adopt(t: number, candidateId: string, p: number, threshold: number,
-    raceIdIn?: string, cappedFit?: { iterations: number; gradMax: number }): void {
+    raceIdIn?: string, cappedFit?: { iterations: number; gradMax: number },
+    decided?: { approvals: number; floor: number }): void {
     const winner = this.candidate(candidateId);
     const raceId = raceIdIn ?? this.raceIdOf(candidateId);
-    const mark = cappedFit ? { cappedFit } : {};
+    // the cap mark and the two numbers the batch decided on (R-051; Q1439),
+    // both absent rather than `undefined` where the caller has none
+    const mark = { ...(cappedFit ? { cappedFit } : {}), ...(decided ?? {}) };
     if (!winner.patch) {
       // A setting race carried (Q390): the verdict is recorded and the
       // stake refunded; the value lands via setStanding, host-called,
@@ -1942,15 +2047,16 @@ export class Session {
       }
       return { text: this.document(), applied, appliedSettings };
     }
+    // as the log stands (Q1439): on a live session this is a projection, and
+    // the real final batch runs at the close's own `t` through `sweepAdoptions`
     const races = this.races();
-    const floor = this.adoptionFloor();
     const winners: Candidate[] = [];
     const appliedSettings: Array<{ settingId: string; candidateId: string }> = [];
     for (const r of races) {
-      // the batch's own test (Q1337, R-114): the top of the field, F judges of
-      // the leader, and the room having judged it — the close renders nothing
-      // the sweep would not
-      if (!this.raceRules.clearsFloor(r, floor)) continue;
+      // the batch's own test (Q1337, R-114; Q1439, R-125): the top of the
+      // field, F approvals of the leader, and the room having judged it — the
+      // close renders nothing the sweep would not
+      if (!this.raceRules.clearsFloor(r)) continue;
       if (r.settingId !== undefined) {
         appliedSettings.push({ settingId: r.settingId, candidateId: r.leaderId! });
         continue;
@@ -2019,8 +2125,8 @@ export class Session {
   }
 
   /** The pair a race can still ask this participant, dealt or not (Q1202). */
-  askOn(participantId: string, raceId: string): Card | null {
-    return this.routing.askOn(participantId, raceId);
+  askOn(participantId: string, raceId: string, t: number = this.lastT): Card | null {
+    return this.routing.askOn(participantId, raceId, t);
   }
 
   /** A participant's feed (SPEC §8.3): one hand per seat per state version. */
@@ -2046,12 +2152,12 @@ export class Session {
         this.raceRules.usableComparisons(members, incumbentId),
       fitRaceMembers: (members, incumbentId) =>
         this.raceRules.fitRaceMembers(members, incumbentId),
-      races: () => this.races(),
+      races: (t) => this.races(t),
+      pairGround: (aId, bId) => this.raceRules.pairGround(aId, bId),
       eCount: () => this.eCount(),
       salienceFitOver: (races) => this.salienceFitOver(races),
       salienceWeightsOver: (races, fit) => this.salienceWeightsOver(races, fit),
       adoptionThreshold: (t) => this.adoptionThreshold(t),
-      adoptionFloor: () => this.adoptionFloor(),
       constitution: () => this.constitutionValue,
       logLength: () => this.log.length,
     };
@@ -2063,13 +2169,23 @@ export class Session {
       derived: (key, compute) => this.derived(key, compute),
       candidates: () => this.candidates,
       candidate: (id) => this.candidate(id),
-      edgesByGround: (incumbentId) => this.edgesByGround.get(incumbentId) ?? [],
+      edgesByCandidate: (id) => this.edgesByCandidate.get(id) ?? [],
       evidenceSince: (id) => this.evidenceSince.get(id),
+      evidenceSinceT: (id) => this.evidenceSinceT.get(id),
       suspended: (id) => this.roster.get(id)?.suspended === true,
+      eMembers: () => this.eMembers(),
+      // the later of arriving and coming back (Q1439, §8.2): before either,
+      // nobody could have been asked. `-Infinity` for somebody off the roster
+      // — `eMembers` never names one, so this is a floor and not a case.
+      arrivalT: (id) => {
+        const r = this.roster.get(id);
+        return r === undefined ? -Infinity : Math.max(r.arrivedT, r.resumedT ?? -Infinity);
+      },
+      // a ground the fold has not dated yet is one being created now
+      groundSince: (groundId) => this.groundSinceT.get(groundId) ?? this.lastT,
       settingStanding: (settingId) => this.settingsMap.get(settingId),
       currentLines: () => this.currentLines(),
       constitution: () => this.constitutionValue,
-      adoptionFloor: () => this.adoptionFloor(),
       fitCache: () => this.fitCache,
       maxPairValue: (fit, members, incumbentId, excludeJudgedBy, rivalGateOpen) =>
         this.routing.maxPairValue(fit, members, incumbentId, excludeJudgedBy, rivalGateOpen),

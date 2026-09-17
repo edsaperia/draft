@@ -20,7 +20,12 @@ function open(over: Record<string, unknown> = {}): Session {
   return Session.open(
     {
       text: TEXT,
-      roster: roster(4),
+      // **Eight, since Q1439** (R-126): no quorum asks for more than half, so
+      // a count of 4 in a room of four is read as 2 and the second approval
+      // on any race carries it — these tests need a race that survives the
+      // judgment whose invalidation they are about. At eight the same count
+      // of 4 is under the cap and still out of reach of two voices.
+      roster: roster(8),
       constitution: makeConstitution({
         windowStartMs: 0,
         windowEndMs: 10 * HOUR,

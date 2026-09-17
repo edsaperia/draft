@@ -100,15 +100,30 @@ describe('the adoption floor: the engine and the constitution agree (§4.2)', ()
   });
 
   it('quorum raises the floor and the clamp never lowers it below quorum', () => {
-    // §4.2: the max is outside the min, so a quorum above F_max still binds
-    expect(engineFloor(9, { form: 'count', n: 8 }, 1)).toBe(8);
-    expect(adoptionFloor(8, 9, 1)).toBe(8);
+    // §4.2: the max is outside the min, so a quorum above F_max still binds.
+    // **Up to half** (Q1439, R-126): a count of 8 in a room of 9 is read as
+    // ⌈9/2⌉ = 5, which is still above F_max of 1 and still binds over it.
+    expect(engineFloor(9, { form: 'count', n: 8 }, 1)).toBe(5);
+    expect(adoptionFloor(8, 9, 1)).toBe(5);
+    // and under the cap nothing moved: a count of 4 in a room of 9 is 4
+    expect(engineFloor(9, { form: 'count', n: 4 }, 1)).toBe(4);
+    expect(adoptionFloor(4, 9, 1)).toBe(4);
+  });
+
+  it('no quorum may ask for more than half, on either side (Q1439, R-126)', () => {
+    // the count form is the only one that can reach the cap from the surface:
+    // a share above 50 is refused at validation (`values.ts`)
+    for (const E of [1, 2, 5, 8, 25]) {
+      const half = Math.ceil(E / 2);
+      expect(adoptionFloor(999, E, 12)).toBe(Math.max(half, Math.min(Math.ceil(E / 3), 12)));
+      expect(engineFloor(E, { form: 'count', n: 999 }, 12)).toBe(adoptionFloor(999, E, 12));
+    }
   });
 
   it('a share quorum tracks E identically on both sides', () => {
     for (const E of [1, 3, 4, 7, 9, 10]) {
-      const q: QuorumValue = { form: 'share', n: 60 };
-      expect(quorumCount(q, E)).toBe(Math.ceil(0.6 * E));
+      const q: QuorumValue = { form: 'share', n: 40 };
+      expect(quorumCount(q, E)).toBe(Math.ceil((40 * E) / 100));
       expect(engineFloor(E, q, 12)).toBe(adoptionFloor(quorumCount(q, E), E, 12));
     }
   });

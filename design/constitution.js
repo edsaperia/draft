@@ -278,7 +278,7 @@ var CONSTITUTION = (() => {
         if (v.form !== "count" && v.form !== "share") return "quorum: form must be 'count' or 'share'";
         if (v.form === "count")
           return isInt(v.n) && v.n >= 0 ? null : "quorum: count n must be an integer ≥ 0";
-        return isFiniteNum(v.n) && v.n >= 0 && v.n <= 100 ? null : "quorum: share n must be 0–100";
+        return isFiniteNum(v.n) && v.n >= 0 && v.n <= 50 ? null : "quorum: share n must be 0–50 — no quorum asks for more than half (Q1439)";
       case "ladder":
         return typeof v.rung === "string" ? null : "ladder: { rung: string } required";
       case "rate":
@@ -327,7 +327,7 @@ var CONSTITUTION = (() => {
     return Math.ceil(E / 3);
   }
   function adoptionFloor(quorumN, E, fMax) {
-    return Math.max(quorumN, Math.min(adoptionFloorTerm(E), fMax));
+    return Math.max(Math.min(quorumN, Math.ceil(E / 2)), Math.min(adoptionFloorTerm(E), fMax));
   }
 
   // src/catalogue.ts
@@ -3939,7 +3939,6 @@ var CONSTITUTION = (() => {
   function roomPhrase(e) {
     return e <= 1 ? "one" : String(Math.floor(e));
   }
-  var roomOf = roomPhrase;
   var MEANING_MAX = 200;
   var fit = (s) => s.length <= MEANING_MAX ? s : null;
   function spanPhrase(ms) {
@@ -3966,22 +3965,22 @@ var CONSTITUTION = (() => {
     if (days !== null && days >= 28 && days <= 31) return "a month";
     return spellWords(ms);
   }
-  function quorumBody(q, n) {
-    if (q > n) {
-      return q + " of you must have voted before a change can pass, so nothing can pass until more members arrive.";
-    }
-    if (n === 1) return "your own vote is the whole quorum, and nothing waits on anybody else.";
-    if (q >= n) return "all " + n + " of you must have voted on a change before it can pass.";
-    if (q <= 1) return "one vote is enough for a change to pass, so nothing waits for anybody else.";
-    return "at least " + q + " of you must have voted on a change before it can pass.";
+  var HALF_NOTE = " No quorum can ask for more than half.";
+  function quorumBody(q, n, form, pct) {
+    if (n === 1) return "In a membership of one, your own vote is the whole quorum.";
+    const of = q + " of " + n;
+    return form === "share" ? "At least " + pct + "% (" + of + ") of the membership must prefer a proposal before it can be adopted." : "At least " + of + " members must prefer a proposal before it can be adopted.";
   }
   function quorumMeaning(v, room) {
     if (typeof v.n !== "number" || !Number.isFinite(v.n)) return null;
     const n = Math.max(1, Math.floor(room.e));
-    const q = quorumCount(v, n);
-    if (!Number.isFinite(q)) return null;
-    const body = quorumBody(q, n);
-    return fit(v.form === "share" ? Math.round(v.n) + "% of a membership of " + roomOf(n) + " is " + q + ": " + body : "In a membership of " + roomOf(n) + ", " + body);
+    const asked = quorumCount(v, n);
+    if (!Number.isFinite(asked)) return null;
+    const q = Math.min(asked, Math.ceil(n / 2));
+    const pct = Math.min(Math.round(v.n), 50);
+    const body = quorumBody(q, n, v.form, pct);
+    const capped = q < asked ? HALF_NOTE : "";
+    return fit(body + capped) ?? fit(body);
   }
   function rateMeaning(v, room) {
     const { grant, cap, dripMinutes } = v;
@@ -4001,9 +4000,13 @@ var CONSTITUTION = (() => {
     return fit(whole) ?? fit("Over a session of " + spanPhrase(windowMs) + ", about " + total + " proposals each.");
   }
   function lapseMeaning(v) {
-    if (v.afterMs === null) return fit("Nobody ever drops out of the count, however long they are away.");
+    if (v.afterMs === null) {
+      return fit("Nobody ever drops out of the count, and a proposal waits for everyone however long they are away.");
+    }
     if (typeof v.afterMs !== "number" || !Number.isFinite(v.afterMs) || v.afterMs <= 0) return null;
-    return fit("A member who says nothing for " + spellPhrase(v.afterMs) + " drops out of the count — the document can go on without them, and they are back the moment they log in.");
+    const spell = spellPhrase(v.afterMs);
+    const whole = "A member who says nothing for " + spell + " drops out of the count, and a proposal stops waiting for anyone who has not voted on it in that time. They are back the moment they log in.";
+    return fit(whole) ?? fit("A member who says nothing for " + spell + " drops out of the count, and a proposal stops waiting for them.");
   }
   function meaningOf(setting, value, room = { e: 1 }) {
     if (!value) return null;

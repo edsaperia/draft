@@ -13,6 +13,15 @@
  * This is also the oracle for the Postgres migration (stage 6) and for the
  * restore drill (stage 11): rows that move must verify to this same
  * rolling hash. Re-freeze deliberately with `npm run golden:freeze`.
+ *
+ * **Re-frozen 2026-09-17** (Q1439, R-126): the walk set 👥 to a share of 60,
+ * and no quorum may ask for more than half now — `validateValue` refuses one
+ * above 50, so the walk could not be written at all, let alone re-emitted.
+ * It says 40 instead. **One event differs** — entry 30's `setting-set`, the
+ * value alone — and the thirty-eight hashes from there to the end follow it.
+ * That is the whole of the diff, and it is what a reader should check: no
+ * event shape moved, nothing was added or dropped, and `entries` is still 68
+ * (was bff05415d9a44d78a8520020bb07b509523ec93fb9c02f31aa6c42f4fd8143a9).
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';

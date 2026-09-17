@@ -247,17 +247,23 @@ describe('session lifecycle', () => {
   });
 
   describe('the floor counts judges of the winner, not movers on the race (Q1337, R-102)', () => {
-    // A room of fifteen at a quorum of 60%: F = max(9, min(5, 12)) = 9. Three
+    // A room of fifteen at a quorum of half: F = max(8, min(5, 12)) = 8. Three
     // rivals on one line — the moon room's shape, where a race holding many
     // rivals met F on rival judgments while its leader had been judged by
     // almost nobody, and the record read *16 of 168* under a quorum of 60.
+    //
+    // **The quorum is 50, not 60, since Q1439** (R-126): no quorum may ask for
+    // more than half, so 60 % of fifteen would be read as ⌈15/2⌉ = 8 whatever
+    // the card said, and a share above 50 is refused at validation now. The
+    // shape under test — a crowded race whose leader almost nobody has judged
+    // — is the same at eight.
     const crowded = () => {
-      const s = openSession({ quorum: { form: 'share', n: 60 },
+      const s = openSession({ quorum: { form: 'share', n: 50 },
         adoptionThresholdStart: 0.6, adoptionThresholdEnd: 0.6 }, 15);
       const { id: c1 } = s.submitCandidate(1000, { author: 'p1', patch: rewrite(0, 1, 'A.'), rationale: 'r' });
       const { id: c2 } = s.submitCandidate(2000, { author: 'p2', patch: rewrite(0, 1, 'B.'), rationale: 'r' });
       const { id: c3 } = s.submitCandidate(3000, { author: 'p3', patch: rewrite(0, 1, 'C.'), rationale: 'r' });
-      expect(s.adoptionFloor()).toBe(9);
+      expect(s.adoptionFloor()).toBe(8);
       const inc = s.raceOf(c1).incumbentId;
       // one judge of c1, which makes it the leader
       s.judge(4000, 'p4', c1, inc, 'a');
@@ -280,27 +286,37 @@ describe('session lifecycle', () => {
       expect(race.leaderJudges).toBe(2);         // but only p1's own voice and p4 have judged c1
       expect(race.leaderMeasured).toBe(1);
       expect(s.getCandidate(c1).state).toBe('live');
-      // and the meter says so: the floor's distance is the leader's, 2 of 9,
+      // and the meter says so: the floor's distance is the leader's, 2 of 8,
       // where movers over F would have read full
-      expect(race.closeness).toBeLessThanOrEqual(2 / 9 + 1e-9);
+      expect(race.closeness).toBeLessThanOrEqual(2 / 8 + 1e-9);
+      // the nine tie judgments were on a rival pair, so nobody has answered
+      // *c1 against the current text*: they are all still awaited (Q1439)
+      expect(race.approvals).toBe(2);
+      expect(race.group).toBe(15);
     });
 
-    it('nine judges of the leader carry it — against the incumbent or against a rival alike', () => {
+    it('eight approvals carry it — and a win over a rival is not one (Q1439, R-125)', () => {
       const { s, c1, c2, inc } = crowded();
-      // p1's voice and p4 make two; a judgment of c1 against a *rival* is a
-      // judgment of c1 (Ed: F members must have judged the winning candidate)
+      // **The rule this test used to state is amended** (Q1439, ruling k). It
+      // was *nine judges of the leader carry it, against the incumbent or
+      // against a rival alike* (R-102): the floor counted judgments of the
+      // winner whichever pair they were on. The floor counts **approvals**
+      // now — *this over the current text* — so the win over a rival below
+      // moves the meter and the ranking and buys the leader nothing toward
+      // its floor, and it is the eighth approval that carries it.
       let t = 5000;
       s.judge((t += 1000), 'p5', c1, c2, 'a');
-      expect(s.raceOf(c1).leaderJudges).toBe(3);
-      // six more against the incumbent: the ninth judge is the adoption
+      expect(s.raceOf(c1).leaderJudges).toBe(3); // a judgment of c1, as before
+      expect(s.raceOf(c1).approvals).toBe(2);    // and no approval of it
+      // six more against the incumbent: the eighth approval is the adoption
       for (const [i, p] of ['p6', 'p7', 'p8', 'p9', 'p10', 'p11'].entries()) {
         const events = s.judge((t += 1000), p, c1, inc, 'a');
-        const judges = 4 + i;
-        if (judges < 9) {
-          expect(events.some((e) => e.type === 'adopted'), `judge ${judges} of 9`).toBe(false);
-          expect(s.raceOf(c1).leaderJudges).toBe(judges);
+        const approvals = 3 + i;
+        if (approvals < 8) {
+          expect(events.some((e) => e.type === 'adopted'), `approval ${approvals} of 8`).toBe(false);
+          expect(s.raceOf(c1).approvals).toBe(approvals);
         } else {
-          expect(events.some((e) => e.type === 'adopted'), `judge ${judges} of 9`).toBe(true);
+          expect(events.some((e) => e.type === 'adopted'), `approval ${approvals} of 8`).toBe(true);
         }
       }
       expect(s.getCandidate(c1).state).toBe('adopted');
@@ -819,7 +835,7 @@ describe('session lifecycle', () => {
 });
 
 describe('ground shifts lock judgments and re-serve pairs (SPEC §4.4, Q50)', () => {
-  it('an adoption within the race locks ALL its judgments, rival-vs-rival included', () => {
+  it('an adoption within the race locks the pairs whose text it changed, and only those', () => {
     const s = openWide();
     // A chain race: w (lines 2-3) — cA (lines 1-2) — cB (line 1) — cC (line 1).
     // cB and cC survive w's adoption by clean rebase; cA conflicts.
@@ -881,42 +897,45 @@ describe('ground shifts lock judgments and re-serve pairs (SPEC §4.4, Q50)', ()
     expect(adopted).toBe(true);
     expect(s.getCandidate(cA).state).toBe('rebase-pending');
 
-    // The survivors' race re-forms on the new ground: same words on the
-    // contested line, but the race's incumbent changed (adoption within
-    // the race) — a material shift. Everything locks, including the
-    // rival pair Ed's conservative reading covers.
+    // The survivors' race re-forms with a new **race-wide** incumbent id:
+    // the field changed and the contested area with it. **And that is no
+    // longer what locks a judgment** (Q1441, Ed 2026-09-17, R-129): the
+    // rival pair below compared the wording on line 1, which w's adoption
+    // never touched, so the room's answer about it is still an answer about
+    // the text that stands. Until Q1441 the race-wide fingerprint voided it —
+    // *a new rival joining a clause shouldn't change a preference between two
+    // other rivals*, and neither should a neighbour's adoption.
     const race = s.raceOf(cB);
     expect(race.members).toEqual([cB, cC]);
     expect(race.incumbentId).not.toBe(oldInc);
-    expect(race.comparisons).toBe(0); // measured evidence restarts from nothing
-    // One mover, not none: the author's preference for their own live
-    // candidates is derived against the *current* incumbent (§3.3, Q245b), so
-    // unlike a judgment it does not lock on a ground shift — surviving it is
-    // the whole reason it is derived rather than recorded. What restarts is
-    // the room's evidence, and that is what `comparisons` counts.
+    expect(race.comparisons).toBe(1); // the rival judgment survives the shift
     expect(race.distinctMovers).toBe(1);
     expect(race.leaderP).toBeGreaterThan(0.5); // both challengers carry their author
     const rival = s
       .judgments()
-      .find((j) => j.participantId === 'p1' && j.kind === 'edge' && j.locked);
-    expect(rival?.locked).toBe(true);
-    expect(rival?.superseded).toBe(false); // locked, not superseded
+      .find((j) => j.participantId === 'p1' && [j.aId, j.bId].includes(cB) &&
+        [j.aId, j.bId].includes(cC));
+    expect(rival?.locked).toBe(false);
+    expect(rival?.superseded).toBe(false);
+    // What *did* lock is every judgment about text that is gone: the three
+    // cast on w against the old text, w itself having carried
+    expect(s.judgments().filter((j) => [j.aId, j.bId].includes(w))
+      .every((j) => j.locked)).toBe(true);
 
-    // The pair re-enters as a fresh question: the same participant may
-    // judge it again on the new ground, and it counts.
+    // The pair is not a fresh question either, so another member's judgment
+    // of it adds to the evidence rather than restarting it.
     s.judge(t + 1000, 'p5', cB, cC, 'b');
-    expect(s.raceOf(cB).comparisons).toBe(1);
+    expect(s.raceOf(cB).comparisons).toBe(2);
 
-    // The re-opened race gets router priority: its fresh pairs are back
-    // in the feed even for participants who judged the old ground.
+    // The race is still in the feed for a member who has pairs left on it.
     const feed = s.feed('p5', 5, t + 2000);
     expect(feed.length).toBeGreaterThan(0);
     expect(feed.some((c) => c.raceId === s.raceOf(cB).id)).toBe(true);
 
-    // Replay reproduces the shift, the locks, and the fresh evidence.
+    // Replay reproduces the shift, the locks, and the evidence that survived.
     const replayed = Session.replay(s.log);
     expect(replayed.rollingHash()).toBe(s.rollingHash());
-    expect(replayed.raceOf(cB).comparisons).toBe(1);
+    expect(replayed.raceOf(cB).comparisons).toBe(2);
   });
 
   it('context drift is not material: adoption elsewhere that moves a span locks nothing', () => {
@@ -977,8 +996,14 @@ describe('rival-pair gating (SPEC §8.3, Q48)', () => {
   /**
    * Hold the floor out of reach so no adoption interferes. It froze the
    * threshold at 0.99 until v0.128, when the bar left the test (R-114).
+   *
+   * **And it takes a room of nine since Q1439** (R-126): no quorum may ask for
+   * more than half, so a count of 99 in a room of five is read as ⌈5/2⌉ = 3
+   * and the third approval below would carry the race out from under the gate
+   * it is testing. At nine the same count reads 5, which the four voices here
+   * never reach.
    */
-  const openGated = () => openSession({ quorum: { form: 'count', n: 99 } });
+  const openGated = () => openSession({ quorum: { form: 'count', n: 99 } }, 9);
 
   const twoRivals = (s: Session) => {
     const { id: c1 } = s.submitCandidate(1000, {
@@ -1025,9 +1050,16 @@ describe('rival-pair gating (SPEC §8.3, Q48)', () => {
     // Third incumbent comparison crosses the minimum with P > 0.5.
     s.judge(5000, 'p5', c1, inc, 'a');
     expect(s.raceOf(c1).rivalGateOpen).toBe(true);
-    // Rival pairs now compete on value like any other pair — and being
-    // unmeasured, the rival pair is the most informative card for a
-    // fresh judge.
+    // **The decisive pair comes first** (Q1439): the race is short of its
+    // floor and p2 has not answered *the leader against the current text*,
+    // which is the only answer that can move it — so that is what they are
+    // served, ahead of the unmeasured rival pair that would otherwise move
+    // the model most.
+    expect(s.feed('p2', 6, 6000).every((c) => c.subtype === 'incumbent')).toBe(true);
+    // Once they have answered it, rival pairs compete on value like any other
+    // pair — and being unmeasured, the rival pair is then the most informative
+    // card for this judge.
+    s.judge(5500, 'p2', c1, inc, 'b');
     const feed = s.feed('p2', 6, 6000);
     expect(feed.some((c) => c.subtype === 'rival')).toBe(true);
   });
@@ -1060,15 +1092,21 @@ describe('rival-pair gating (SPEC §8.3, Q48)', () => {
 describe('quorum in the adoption floor (SPEC §4.2, 367b)', () => {
   it('a count quorum raises the floor above the statistical minimum', () => {
     const s = openSession({ quorum: { form: 'count', n: 4 } });
-    // ceil(5/3) = 2; the room asked for 4 — the room's number governs.
-    expect(s.adoptionFloor()).toBe(4);
+    // ceil(5/3) = 2; the room asked for 4 — the room's number governs, **up
+    // to half** (Q1439, R-126), so in a room of five it is read as 3
+    expect(s.adoptionFloor()).toBe(3);
+    // and a count under the cap is the count itself
+    expect(openSession({ quorum: { form: 'count', n: 3 } }, 9).adoptionFloor()).toBe(3);
   });
 
   it('a share quorum tracks E as the roster changes', () => {
-    const s = openSession({ quorum: { form: 'share', n: 60 } });
-    expect(s.adoptionFloor()).toBe(3); // ceil(0.6 × 5)
+    // 50 rather than 60 (Q1439, R-126: a share above half is refused now)
+    const s = openSession({ quorum: { form: 'share', n: 50 } });
+    expect(s.adoptionFloor()).toBe(3); // ceil(50 × 5 / 100)
     s.addParticipant(1, { id: 'p6', handle: 'F' });
-    expect(s.adoptionFloor()).toBe(4); // ceil(0.6 × 6)
+    expect(s.adoptionFloor()).toBe(3); // ceil(50 × 6 / 100)
+    s.addParticipant(2, { id: 'p7', handle: 'G' });
+    expect(s.adoptionFloor()).toBe(4); // ceil(50 × 7 / 100)
   });
 
   it('a quorum below the statistical minimum never lowers the floor', () => {
@@ -1079,7 +1117,11 @@ describe('quorum in the adoption floor (SPEC §4.2, 367b)', () => {
 
 describe('suspension — lapse engine-side (SPEC §9.5a, §8.2, 367b)', () => {
   it('a suspended participant leaves E, cannot act, and their cast judgments stand', () => {
-    const s = openSession({ quorum: { form: 'share', n: 60 } });
+    // a room of nine, so the two approvals below stay short of the floor
+    // whatever the roster does (Q1439: no quorum above half — at five, this
+    // race would carry on p2's approval and there would be no suspension left
+    // to test)
+    const s = openSession({ quorum: { form: 'share', n: 50 } }, 9);
     const { id: c1 } = s.submitCandidate(1000, {
       author: 'p1',
       patch: rewrite(0, 1, 'A.'),
@@ -1087,17 +1129,18 @@ describe('suspension — lapse engine-side (SPEC §9.5a, §8.2, 367b)', () => {
     });
     const inc = s.raceOf(c1).incumbentId;
     s.judge(2000, 'p2', c1, inc, 'a');
-    expect(s.adoptionFloor()).toBe(3); // ceil(0.6 × 5)
+    expect(s.adoptionFloor()).toBe(5); // ceil(50 × 9 / 100)
     s.suspendParticipant(3000, 'p2');
     s.suspendParticipant(3000, 'p3');
-    expect(s.adoptionFloor()).toBe(2); // E = 3: max(ceil(1.8), ceil(3/3))
+    expect(s.adoptionFloor()).toBe(4); // E = 7: max(ceil(3.5), ceil(7/3))
     // The judgment already cast keeps counting (§9.5a).
     expect(s.raceOf(c1).distinctMovers).toBe(2);
+    expect(s.raceOf(c1).approvals).toBe(2);
     // But a suspended member cannot act until they return.
     expect(() => s.judge(4000, 'p2', c1, inc, 'a')).toThrow(/suspended/);
     s.resumeParticipant(5000, 'p2');
     expect(s.judge(6000, 'p2', c1, inc, 'b')).toBeDefined();
-    expect(s.adoptionFloor()).toBe(3); // E = 4 → max(ceil(2.4), 2)
+    expect(s.adoptionFloor()).toBe(4); // E = 8 → max(ceil(4), 3)
   });
 
   it("a suspended author's derived preference is not a mover (§9.7.3 X11, Q583)", () => {
@@ -1159,8 +1202,12 @@ describe('ParticipantApi.outcomes (stage 8): resolutions are public, nothing els
 
 describe('stage 8 follow-up: closeness, urgency, the record and the wallet clock', () => {
   it('closeness is a magnitude: mirror races read identically whichever side leads', () => {
+    // a room of nine, so the three approvals the 'a' mirror casts stay under
+    // the floor (Q1439: at five, `openHeld`'s capped floor of 3 would carry
+    // it mid-mirror and there would be no race left to read)
+    const held = () => openSession({ quorum: { form: 'count', n: 99 } }, 9);
     const mk = (dir: 'a' | 'b') => {
-      const s = openHeld();
+      const s = held();
       const { id } = s.submitCandidate(1000, {
         author: 'p1', patch: rewrite(0, 1, 'Membership needs a sponsor.'), rationale: 'r',
       });
@@ -1178,7 +1225,7 @@ describe('stage 8 follow-up: closeness, urgency, the record and the wallet clock
     expect(toward.closeness).toBeLessThanOrEqual(1);
     expect(toward.closeness).toBeCloseTo(against.closeness, 10);
     // a fresh race sits at the bottom of the scale
-    const s = openHeld();
+    const s = held();
     const { id } = s.submitCandidate(1000, {
       author: 'p1', patch: rewrite(0, 2, 'Decisions are made by vote.'), rationale: 'r',
     });
@@ -1549,23 +1596,34 @@ describe('the text is the top of the ranking (Q1362, R-114)', () => {
   });
 
   it('eight for and seven against carries; seven for and eight against does not', () => {
-    // A room of fifteen, the author's derived preference the first voice for.
-    // The floor is held out of reach while the room votes and dropped at the
-    // end, so the batch decides on the finished tally rather than on whatever
-    // was true after some particular vote — a race is otherwise carried by the
-    // first majority that passes through it, which is the cooldown's business
-    // and not this rule's.
+    // Fourteen people vote and the author's derived preference is the first
+    // voice for, so the tally is 8 to 7 or 7 to 8. The floor is held out of
+    // reach while they vote and dropped at the end, so the batch decides on
+    // the finished tally rather than on whatever was true after some
+    // particular vote — a race is otherwise carried by the first majority that
+    // passes through it, which is the cooldown's business and not this rule's.
+    //
+    // **The room is twenty-four, not fifteen, since Q1439** (R-126): no quorum
+    // may ask for more than half, so a count of 99 in a room of fifteen is
+    // read as 8 — exactly the tally — and the race carried mid-vote. At
+    // twenty-four the cap is 12, above either tally, and the statistical
+    // minimum the amendment leaves behind is ⌈24/3⌉ = 8, which the eight
+    // approvals meet and the seven do not. Ten people never vote; silence
+    // imputes nothing (💤 is unset here), so they stay in the group and the
+    // capped quorum stays 12.
     const run = (forVotes: number) => {
-      const s = openSession({ quorum: { form: 'count', n: 99 } }, 15);
+      const s = openSession({ quorum: { form: 'count', n: 99 } }, 24);
       const { id } = s.submitCandidate(1000, {
         author: 'p1', patch: rewrite(0, 1, 'A.'), rationale: 'r',
       });
       const inc = s.raceOf(id).incumbentId;
+      expect(s.raceOf(id).floor).toBe(12);
       let t = 2000;
       for (let i = 2; i <= 15; i++) {
         s.judge((t += 100), `p${i}`, id, inc, i <= forVotes ? 'a' : 'b');
       }
       expect(s.raceOf(id).leaderOnTop).toBe(forVotes === 8);
+      expect(s.raceOf(id).approvals).toBe(forVotes === 8 ? 8 : 7);
       s.amend((t += 100), { quorum: null });
       s.tick(t + 100);
       return s.getCandidate(id).state;
@@ -1580,8 +1638,13 @@ describe('the text is the top of the ranking (Q1362, R-114)', () => {
     // residual of ~1e-16 whose sign follows the arrival order; without a
     // tolerance one order carried and the other stood (the stage-1 build's
     // first finding, 2026-09-15). Both orders must read *not on top*.
+    // **A room of twenty, thirteen of whom vote, since Q1439** (R-126): the
+    // capped quorum is 10, above the seven approvals either order produces, so
+    // the dead-even fit is read on a live race in both — at fourteen the cap
+    // would be exactly seven and the *for*-first order would carry the race at
+    // 7–0 before the dissent arrived.
     const run = (againstFirst: boolean) => {
-      const s = openSession({ quorum: { form: 'count', n: 99 } }, 14);
+      const s = openSession({ quorum: { form: 'count', n: 99 } }, 20);
       const { id } = s.submitCandidate(1000, {
         author: 'p1', patch: rewrite(0, 1, 'A.'), rationale: 'r',
       });
@@ -1611,7 +1674,12 @@ describe('the text is the top of the ranking (Q1362, R-114)', () => {
     // on top of the field. The floor is held out of reach while the room
     // judges, then dropped, so the batch decides on the finished evidence
     // rather than on whatever was true after some particular vote.
-    const s = openSession({ quorum: { form: 'count', n: 99 } }, 16);
+    //
+    // **Eighteen seats, not sixteen, since Q1439** (R-126): X collects eight
+    // approvals on the way, and at sixteen the capped quorum is eight, so X
+    // carried before Y's own votes arrived. At eighteen the cap is nine and
+    // the minimum the amendment leaves is ⌈18/3⌉ = 6, which Y's seven meet.
+    const s = openSession({ quorum: { form: 'count', n: 99 } }, 18);
     const { id: x } = s.submitCandidate(1000, {
       author: 'p1', patch: rewrite(0, 1, 'X.'), rationale: 'r' });
     const { id: y } = s.submitCandidate(1100, {
@@ -1651,7 +1719,12 @@ describe('the text is the top of the ranking (Q1362, R-114)', () => {
     // posterior is far tighter. Until v0.128 the leader was argmax of that
     // probability, so this race would have carried Y; the ranking's own
     // ordering carries X.
-    const s = openSession({ quorum: { form: 'count', n: 99 } }, 20);
+    //
+    // **Twenty-eight seats, not twenty, since Q1439** (R-126): Y collects
+    // thirteen approvals here, and at twenty the capped quorum is ten, so Y
+    // carried while it was still briefly the leader. At twenty-eight the cap
+    // is fourteen, above both tallies, and the fit is read on a live race.
+    const s = openSession({ quorum: { form: 'count', n: 99 } }, 28);
     const { id: x } = s.submitCandidate(1000, {
       author: 'p1', patch: rewrite(0, 1, 'X.'), rationale: 'r' });
     const { id: y } = s.submitCandidate(1100, {
@@ -1670,9 +1743,16 @@ describe('the text is the top of the ranking (Q1362, R-114)', () => {
     expect(race.leaderP).toBeCloseTo(fit.probBeats(x, inc), 12);
   });
 
-  it('Indifferent counts toward the floor: the member was asked, and answered', () => {
-    // Ruling (d). A room of five, F = 2: the author's derived preference and
-    // one member who answered *Indifferent* meet it, and the proposal carries.
+  it('Indifferent steps out of the group, and approves nothing (Q1439, ruling i)', () => {
+    // **Q1362's ruling (d) is amended** (Ed, 2026-09-17, Q1439 ruling i). It
+    // read *Indifferent counts toward the floor: the member was asked, and
+    // answered*, and at a floor of two the author's own preference plus one
+    // *Indifferent* carried the proposal — a change adopted with exactly one
+    // person behind it. An indifferent member is still *answered*: the meter
+    // counts their judgment and the race stops waiting on them. What they are
+    // not is an approval, and they leave the group the quorum is a share of,
+    // which is the only reading under which indifference neither helps nor
+    // hinders.
     const s = openSession();
     const { id } = s.submitCandidate(1000, {
       author: 'p1', patch: rewrite(0, 1, 'A.'), rationale: 'r',
@@ -1681,8 +1761,15 @@ describe('the text is the top of the ranking (Q1362, R-114)', () => {
     expect(s.adoptionFloor()).toBe(2);
     expect(s.raceOf(id).leaderJudges).toBe(1); // the author alone
     const events = s.judge(2000, 'p2', id, inc, 'tie').map((e) => e.type);
-    expect(events).toContain('adopted');
-    expect(s.getCandidate(id).state).toBe('adopted');
+    expect(events).not.toContain('adopted');
+    expect(s.getCandidate(id).state).toBe('live');
+    const race = s.raceOf(id);
+    expect(race.leaderJudges).toBe(2);  // the meter counted it (ruling b)
+    expect(race.approvals).toBe(1);     // and the floor did not
+    expect(race.group).toBe(4);         // p2 is out of the group at once
+    // and the one voice left is one short of the minimum, which is where it
+    // should have been all along
+    expect(race.floor).toBe(2);
   });
 
   it('the backlog ranks by the peak a candidate reached, not by its distance to a bar', () => {
@@ -1691,7 +1778,10 @@ describe('the text is the top of the ranking (Q1362, R-114)', () => {
     // the ranking flattened into salience alone (R-117). The peak is the
     // score now. Both candidates sit in one race, so they share a salience
     // weight and the ratio of their scores is the ratio of their peaks.
-    const s = openHeld();
+    //
+    // A room of nine, since X collects four approvals below and `openHeld`'s
+    // capped floor in a room of five is three (Q1439, R-126).
+    const s = openSession({ quorum: { form: 'count', n: 99 } }, 9);
     const { id: x } = s.submitCandidate(1000, {
       author: 'p1', patch: rewrite(0, 1, 'X.'), rationale: 'r' });
     const { id: y } = s.submitCandidate(1100, {

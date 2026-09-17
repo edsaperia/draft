@@ -105,7 +105,7 @@ function penHeld(opts: { bar?: number; perpetual?: boolean; ramp?: number } = {}
     ending: { endsAtMs: opts.perpetual ? null : 1_000_000 },
     bar: { pct: opts.bar ?? 66 },
     pace: opts.ramp === undefined ? { shape: 'fixed' } : { shape: 'ramp', startPct: opts.ramp },
-    quorum: { form: 'share', n: 60 },
+    quorum: { form: 'share', n: 40 },
     authorship: { rung: 'sealed' },
     judgments: { rung: 'after' },
     chamber: { rung: 'link' },
@@ -146,7 +146,7 @@ function preStartAllButBar(opts: { endingSettled?: boolean } = {}) {
   s.confirmStartingText(2, 'The clubhouse shall be kept open.');
   const values: Record<string, unknown> = {
     pace: { shape: 'fixed' },
-    quorum: { form: 'share', n: 60 },
+    quorum: { form: 'share', n: 40 },
     authorship: { rung: 'sealed' },
     judgments: { rung: 'after' },
     chamber: { rung: 'link' },

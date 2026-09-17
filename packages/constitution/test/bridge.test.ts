@@ -136,6 +136,54 @@ describe('a carried amendment binds a race in flight (§9.6/Q328)', () => {
   });
 });
 
+/**
+ * **💤's period reaches the engine, and moves when the room moves it** (Q1439
+ * ruling c, Ed 2026-09-17; SPEC §9.5a → why: R-127). The engine has never
+ * heard of a lapse — that arrives as `participant-suspended` — but it needs
+ * the *span*, because silence on one candidate for that long is an abstention
+ * on it (§8.2). It rides `engineFieldsFor('lapse', …)` like 👥's quorum, so
+ * the birth carries it and the bridge's standing diff carries every change.
+ */
+describe('💤’s period crosses to the engine (Q1439)', () => {
+  it('the birth carries it, and a change after the start reaches the engine', () => {
+    const HOUR = 3_600_000;
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 6 * HOUR } });
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'lapse-period' });
+    expect(bridge.engine.constitution.abstainAfterMs).toBe(6 * HOUR);
+
+    // the room moves it: 💤 is constitutional, so unanimity settles it and the
+    // standing diff in `sync` hands the new span over
+    // 💤 is the founder's in this fixture, so the room's unanimity parks
+    // behind the 🛡️ and the crown's answer is what carries it (§9.7 rule 6)
+    const carry = (t: number, value: unknown): void => {
+      const m = s.openMotion(t, bo, { kind: 'set', setting: 'lapse', value: value as never });
+      expect(s.motionRecords().get(m)!.route).toBe('constitutional');
+      s.answerMotion(t + 1, 'ada', m, 'accept');
+      s.answerMotion(t + 2, cy, m, 'accept');
+      if (s.motionRecords().get(m)!.status === 'awaiting-crown') {
+        const q = s.logEntries().map((e) => e.event)
+          .find((e) => e.type === 'crown-question-opened' && e.motion === m) as { question: string };
+        s.answerCrownQuestion(t + 3, q.question, 'accept');
+      }
+      expect(s.motionRecords().get(m)!.status).toBe('carried');
+    };
+    carry(10, { afterMs: 2 * HOUR });
+    bridge.sync(20);
+    expect(bridge.engine.constitution.abstainAfterMs).toBe(2 * HOUR);
+
+    // and *never* is null all the way through, which imputes nothing
+    carry(30, { afterMs: null });
+    bridge.sync(40);
+    expect(bridge.engine.constitution.abstainAfterMs).toBe(null);
+  });
+
+  it('a document whose 💤 says never carries null, not a missing field', () => {
+    const { s } = buildConstituted(); // the fixture's own 💤 is never
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'lapse-never' });
+    expect(bridge.engine.constitution.abstainAfterMs).toBe(null);
+  });
+});
+
 describe('the close (Q390: winners carry, the rest are held)', () => {
   it('adjudicates every raced motion at the close', () => {
     const { s, bo } = buildConstituted();
@@ -161,7 +209,10 @@ describe('roster truth flows cs → engine', () => {
     // different mechanism, so here we assert the relay path with the
     // engine's own commands instead.
     bridge.engine.suspendParticipant(10, bo);
-    expect(bridge.engine.adoptionFloor()).toBe(2); // max(ceil(0.6×2)=2, ceil(2/3)=1)
+    // **A room of two asks for one** (Q1439, R-126): ⌈0.6 × 2⌉ = 2 is
+    // everybody, and no quorum may ask for more than half, so it is read as
+    // ⌈2/2⌉ = 1 — which is also ⌈2/3⌉, the minimum, either way
+    expect(bridge.engine.adoptionFloor()).toBe(1);
     bridge.engine.resumeParticipant(11, bo);
     expect(bridge.engine.adoptionFloor()).toBe(2);
   });

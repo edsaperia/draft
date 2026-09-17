@@ -40,7 +40,7 @@ const settleAllReserved = (s: ConstitutionSession, t: number,
     ending: { endsAtMs: 1_000_000 },
     bar: { pct: 78 },
     pace: { shape: 'ramp', startPct: 55 },
-    quorum: { form: 'share', n: 60 },
+    quorum: { form: 'share', n: 40 },
     authorship: { rung: 'sealed' },
 
     judgments: { rung: 'after' },
@@ -195,7 +195,7 @@ describe('blind collection and the consent rule live (§9.0a)', () => {
     const s = openDelegated();
     s.setQuorumForm(1, 'count');
     // the old refusal of a form other than the convenor's is gone
-    s.answer(2, 'ada', 'quorum', { form: 'share', n: 60 });
+    s.answer(2, 'ada', 'quorum', { form: 'share', n: 40 });
     s.answer(3, 'ada', 'quorum', { form: 'count', n: 2 });
   });
 
@@ -308,7 +308,7 @@ describe('📯 is reachable (§9.7 v0.51)', () => {
     s.confirmStartingText(1, 'x');
     const answers = {
       ending: { endsAtMs: 1_000_000 }, bar: { pct: 66 },
-      quorum: { form: 'share', n: 60 },
+      quorum: { form: 'share', n: 40 },
       authorship: { rung: 'sealed' },
       judgments: { rung: 'after' }, chamber: { rung: 'link' },
       applications: { apply: false },

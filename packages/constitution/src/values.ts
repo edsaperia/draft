@@ -120,7 +120,19 @@ export function validateValue(type: ValueTypeName, v: unknown): string | null {
       if (v.form !== 'count' && v.form !== 'share') return "quorum: form must be 'count' or 'share'";
       if (v.form === 'count')
         return isInt(v.n) && (v.n as number) >= 0 ? null : 'quorum: count n must be an integer ≥ 0';
-      return isFiniteNum(v.n) && v.n >= 0 && v.n <= 100 ? null : 'quorum: share n must be 0–100';
+      // **No quorum above half** (Q1439, Ed 2026-09-17, R-126): ✏️ is *enough
+      // of the room* and 🏛️ is *everybody*, so an approval quorum of 100 %
+      // would make them one rung — and the consent rule takes the strictest
+      // answer, so uncapped, one founding answer would hand every member a
+      // standing veto over the text and over the motion that would lower it.
+      // The **share** is refused here, at the value; the **count** form cannot
+      // be (E moves under it) and the engine's own cap does that half, against
+      // the group each race is waiting on. Validation re-runs on replay
+      // (Q1329), so a live alpha document above 50 is quarantined at the
+      // deploy — accepted, Ed's ruling (l): *discard at will*.
+      return isFiniteNum(v.n) && v.n >= 0 && v.n <= 50
+        ? null
+        : 'quorum: share n must be 0–50 — no quorum asks for more than half (Q1439)';
     case 'ladder':
       return typeof v.rung === 'string' ? null : 'ladder: { rung: string } required';
     case 'rate':

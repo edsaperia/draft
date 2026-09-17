@@ -64,7 +64,7 @@ function founderSet(over: {
     ['ending', { endsAtMs: over.endsAtMs === undefined ? 1_000_000 : over.endsAtMs }],
     ['bar', { pct: over.bar ?? 66 }],
     ['pace', over.pace ?? { shape: 'fixed' }],
-    ['quorum', over.quorum ?? { form: 'share', n: 60 }],
+    ['quorum', over.quorum ?? { form: 'share', n: 40 }],
     ['rate', over.rate ?? { grant: 3, cap: 7, dripMinutes: 90 }],
     ['authorship', { rung: over.authorship ?? 'sealed' }],
     ['judgments', { rung: 'after' }],
@@ -136,6 +136,9 @@ describe('toEngineConstitution: every engine field against the value it came fro
       'boutGapMs', 'hotSetSize', 'explorationEvery', 'salienceEvery',
       'windowStartMs', 'windowEndMs', 'authorshipVisibility', 'quorum', 'rngSeed',
       'rivalGateProb', 'rivalGateMinComparisons',
+      // 💤's period (Q1439, R-127): the engine needs the span, since silence
+      // on one candidate for that long is an abstention on it (§8.2)
+      'abstainAfterMs',
     ];
     expect(Object.keys(c).sort()).toEqual([...KNOWN].sort());
     for (const k of KNOWN) expect(c[k], k).toBeDefined();
@@ -171,7 +174,7 @@ describe('toEngineConstitution: every engine field against the value it came fro
     s.confirmStartingText(2, 'The clubhouse shall be kept open.');
     for (const [id, v] of [
       ['ending', { endsAtMs: 1_000_000 }],
-      ['quorum', { form: 'share', n: 60 }],
+      ['quorum', { form: 'share', n: 40 }],
       ['authorship', { rung: 'sealed' }],
       ['judgments', { rung: 'after' }],
       ['chamber', { rung: 'link' }],
@@ -211,7 +214,16 @@ describe('toEngineConstitution: every engine field against the value it came fro
     const { constitution: c, quorumN, floor } = toEngineConstitution(s, DEFAULT_TUNING, 's');
     expect(c.quorum).toEqual({ form: 'count', n: 4 });
     expect(quorumN).toBe(4);
-    for (const E of [1, 5, 20]) expect(floor(E)).toBe(Math.max(4, Math.min(Math.ceil(E / 3), 12)));
+    // **the count itself does not track E, but the cap does** (Q1439, R-126):
+    // a count of 4 asks for 4 from six people up and for half the room below
+    // that, since no quorum may ask for more than half
+    for (const E of [1, 5, 20]) {
+      expect(floor(E), `E = ${E}`).toBe(
+        Math.max(Math.min(4, Math.ceil(E / 2)), Math.min(Math.ceil(E / 3), 12)));
+    }
+    expect(floor(1)).toBe(1);
+    expect(floor(5)).toBe(3);
+    expect(floor(20)).toBe(7);
   });
 
   it('the five elective and plain authorship rungs all reach an engine value', () => {

@@ -158,15 +158,21 @@ describe('threshold anchors (§4.3, v0.48)', () => {
 describe('populations (§4.2, §8.2, v0.48: one E, three uses)', () => {
   it('quorum: a fixed count, or ⌈share × E⌉', () => {
     expect(quorumCount({ form: 'count', n: 5 }, 14)).toBe(5);
-    expect(quorumCount({ form: 'share', n: 60 }, 14)).toBe(9); // ⌈8.4⌉
-    expect(quorumCount({ form: 'share', n: 100 }, 7)).toBe(7);
+    // the shares are 40 and 50 rather than 60 and 100 since Q1439 (R-126):
+    // no quorum asks for more than half, and `values.ts` refuses one above it
+    expect(quorumCount({ form: 'share', n: 40 }, 14)).toBe(6); // ⌈5.6⌉
+    expect(quorumCount({ form: 'share', n: 50 }, 7)).toBe(4);  // ⌈3.5⌉
   });
 
-  it('F = max(Q, min(⌈E/3⌉, F_max)) — the room’s number rides the minimum', () => {
+  it('F = max(Q′, min(⌈E/3⌉, F_max)) — the room’s number rides the minimum', () => {
     expect(adoptionFloorTerm(14)).toBe(5);
     expect(adoptionFloor(3, 14, 12)).toBe(5);  // formula floor wins
-    expect(adoptionFloor(9, 14, 12)).toBe(9);  // the room raises it
-    expect(adoptionFloor(2, 100, 12)).toBe(12); // F_max caps the formula, not Q
+    expect(adoptionFloor(7, 14, 12)).toBe(7);  // the room raises it, up to half
+    // **and never past half** (Q1439, R-126): a quorum of 9 in a room of 14
+    // is read as ⌈14/2⌉ = 7, 🏛️'s rung being *everybody* and not ✏️'s
+    expect(adoptionFloor(9, 14, 12)).toBe(7);
+    expect(adoptionFloor(2, 100, 12)).toBe(12); // F_max caps the formula, not Q′
     expect(adoptionFloor(20, 100, 12)).toBe(20);
+    expect(adoptionFloor(80, 100, 12)).toBe(50);
   });
 });

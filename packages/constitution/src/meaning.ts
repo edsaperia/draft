@@ -72,7 +72,6 @@ export interface Room {
 export function roomPhrase(e: number): string {
   return e <= 1 ? 'one' : String(Math.floor(e));
 }
-const roomOf = roomPhrase;
 
 /**
  * **A sentence that will not fit is no sentence.** card-audit's H4 caps a
@@ -139,37 +138,52 @@ function spellPhrase(afterMs: number): string {
 }
 
 /* ---- 👥 -----------------------------------------------------------------
-   Two shapes of the same sentence. The **count** form leads with the room,
-   like 🌡️'s; the **share** form leads with the arithmetic, because a share
-   is the one answer whose consequence the reader cannot do in their head —
-   *34% of a room of 5 is 2* is the whole of what a share is asking them to
-   agree to, and it moves when somebody joins.
+   **Ed's own sentence** (Q1439, rulings (p) and (m), 2026-09-17): *At least
+   50% (5 of 10) of the membership must prefer a proposal before it can be
+   adopted.* Three things in it are rulings rather than drafting.
 
-   Every branch ends in the floor and nothing else (Ed, 2026-09-06, Q1196;
-   R-088). Until v0.99 three of them ended in *the document freezes*, which
-   was 👥's other job; there is no freeze now, so the one consequence each
-   sentence states (T37) is the only one the setting has — how many must
-   have voted on a change before it can pass. */
-function quorumBody(q: number, n: number): string {
-  if (q > n) {
-    return q + ' of you must have voted before a change can pass, so nothing can pass ' +
-      'until more members arrive.';
-  }
-  if (n === 1) return 'your own vote is the whole quorum, and nothing waits on anybody else.';
-  if (q >= n) return 'all ' + n + ' of you must have voted on a change before it can pass.';
-  if (q <= 1) return 'one vote is enough for a change to pass, so nothing waits for anybody else.';
-  return 'at least ' + q + ' of you must have voted on a change before it can pass.';
+   **It says *prefer*, and *a proposal*** — the quorum counts approvals now
+   (R-125), not judgments either way, so *must have voted on a change* was no
+   longer what the number means: a member who voted against the proposal has
+   voted, and does not count toward it.
+
+   **Every share carries its own (x of y)** (ruling m: *wherever we show a %
+   of membership, we should have (x of y) after showing the actual numbers*),
+   which is also rule 1 — a meaning names its own dependence — done in four
+   characters instead of a clause. `x` is ⌈n·y/100⌉, the product before the
+   quotient (issue #24).
+
+   **And the share shown is the true one, never above 50** (ruling a, R-126):
+   no quorum may ask for more than half, so a count or a share above that is
+   restated as the number the room will actually be held to, and the sentence
+   says why rather than quietly disagreeing with the control.
+
+   Every branch still ends in the floor and nothing else (Ed, 2026-09-06,
+   Q1196; R-088): one consequence per value (T37), and there is no freeze. */
+const HALF_NOTE = ' No quorum can ask for more than half.';
+
+function quorumBody(q: number, n: number, form: 'count' | 'share', pct: number): string {
+  if (n === 1) return 'In a membership of one, your own vote is the whole quorum.';
+  const of = q + ' of ' + n;
+  return form === 'share'
+    ? 'At least ' + pct + '% (' + of + ') of the membership must prefer a proposal ' +
+      'before it can be adopted.'
+    : 'At least ' + of + ' members must prefer a proposal before it can be adopted.';
 }
 
 function quorumMeaning(v: QuorumValue, room: Room): string | null {
   if (typeof v.n !== 'number' || !Number.isFinite(v.n)) return null;
   const n = Math.max(1, Math.floor(room.e));
-  const q = quorumCount(v, n);
-  if (!Number.isFinite(q)) return null;
-  const body = quorumBody(q, n);
-  return fit(v.form === 'share'
-    ? Math.round(v.n) + '% of a membership of ' + roomOf(n) + ' is ' + q + ': ' + body
-    : 'In a membership of ' + roomOf(n) + ', ' + body);
+  const asked = quorumCount(v, n);
+  if (!Number.isFinite(asked)) return null;
+  // the number the room is actually held to (R-126); the statistical minimum
+  // ⌈E/3⌉ can raise the *floor* above this, which is the mechanism's and not
+  // this setting's — the sentence speaks for 👥
+  const q = Math.min(asked, Math.ceil(n / 2));
+  const pct = Math.min(Math.round(v.n), 50);
+  const body = quorumBody(q, n, v.form, pct);
+  const capped = q < asked ? HALF_NOTE : '';
+  return fit(body + capped) ?? fit(body);
 }
 
 /* ---- ⏱️ -----------------------------------------------------------------
@@ -214,11 +228,26 @@ function rateMeaning(v: RateValue, room: Room): string | null {
    lapse depends on is the spell and nothing else, and a false dependence is
    as wrong as a missing one. */
 function lapseMeaning(v: LapseValue): string | null {
-  if (v.afterMs === null) return fit('Nobody ever drops out of the count, however long they are away.');
+  if (v.afterMs === null) {
+    // **the second job, in the *never* branch too** (Q1439 ruling c): with no
+    // period nothing is imputed from silence, so a proposal waits for
+    // everybody however long they are away
+    return fit('Nobody ever drops out of the count, and a proposal waits for everyone ' +
+      'however long they are away.');
+  }
   if (typeof v.afterMs !== 'number' || !Number.isFinite(v.afterMs) || v.afterMs <= 0) return null;
-  return fit('A member who says nothing for ' + spellPhrase(v.afterMs) +
-    ' drops out of the count — the document can go on without them, and they are back the ' +
-    'moment they log in.');
+  const spell = spellPhrase(v.afterMs);
+  // **One period, two jobs** (Q1439, Ed: *if they're silent on everything they
+  // lapse, if they're silent on individual motions they abstain*). Both are
+  // consequences of the one span, so both are in the one sentence — T37's
+  // *one consequence per value* is about one *value*, and this value does
+  // exactly these two things. The shorter fallback keeps the second job,
+  // which is the new half a reader cannot guess.
+  const whole = 'A member who says nothing for ' + spell + ' drops out of the count, and a ' +
+    'proposal stops waiting for anyone who has not voted on it in that time. They are back ' +
+    'the moment they log in.';
+  return fit(whole) ?? fit('A member who says nothing for ' + spell + ' drops out of the ' +
+    'count, and a proposal stops waiting for them.');
 }
 
 /**

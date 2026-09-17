@@ -165,7 +165,17 @@ describe('sim regression: dedup off is byte-identical to before the gate existed
   // fresh computations agree: both variants, a second no-gate run, and
   // `Session.replay` of the first
   // (was f4af4c582015e0680e420d78bc409d35990add2279a865e50ae73f3455b445a6).
-  const PINNED = '866c68f245fcf558ed9e179bc83f0c9ea586c7d6739ab748e4d98eac1ef26d63';
+  // Re-pinned 2026-09-17 (Q1439, SPEC §4.2/§8.2 v0.132, R-125/R-126): the
+  // adoption floor counts **approvals** of the leader — its latest judgment
+  // against the current text, preferring it — rather than judgments of it
+  // either way, and no quorum asks for more than half the group. Adoption
+  // timings move throughout this run: a race that met F on judgments against
+  // its own leader now waits for people who prefer it, and the router leads
+  // the unheard with the leader against the current text. Both variants below
+  // produced this hash, a second no-gate run agreed and `Session.replay`
+  // reproduces it — which is the invariant this test defends
+  // (was 866c68f245fcf558ed9e179bc83f0c9ea586c7d6739ab748e4d98eac1ef26d63).
+  const PINNED = 'a5fa29c1a1b97ac7a99fb4dbbfa17f16c5fa4fab47eb0255dfaab4d84adb1827';
 
   const run = (withGate: boolean) =>
     runSession({
@@ -249,6 +259,30 @@ describe('dedup-gate in a full scripted run', () => {
         boutGapMs: 30 * 60_000,
         cardSeconds: 10,
       },
+      // **Three who prefer the clause as it stands** (Q1439). The room used to
+      // be the two drafters alone under a quorum of 99, which held the floor
+      // out of reach so the original stayed live for its twin to meet. No
+      // quorum may ask for more than half now (R-126), so in a room of two the
+      // floor is one and the first approval carries the original away — and
+      // the twin meets nothing. **A race is held open by disagreement now,
+      // not by an unreachable number**, which is the whole of Q1439: these
+      // three sit at the incumbent's own position, so they prefer the clause
+      // as it stands, the two drafters' approvals never reach the floor of
+      // three, and both candidates stay live. They never draft
+      // (`draftiness: 0`), so the duplicate the gate is about is still the
+      // second drafter's.
+      ...[1, 2, 3].map((i) => ({
+        id: `s${i}`,
+        handle: `S${i}`,
+        temperament: 'Test persona.',
+        stances: { meetings: -0.6 },
+        salience: { meetings: 0.8 },
+        noise: 0,
+        draftiness: 0,
+        boutCards: 3,
+        boutGapMs: 30 * 60_000,
+        cardSeconds: 10,
+      })),
     ],
   };
 
