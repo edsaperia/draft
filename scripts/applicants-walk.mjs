@@ -78,6 +78,8 @@ const stuck = [];
 // end, and the founder's rail is read for the 🥾 entry that names them
 let guestResign = null;
 let guestSeat = null;
+// …and what their own page says once the seat is gone (issue #11, F2)
+let guestDoor = null;
 let closeGuest = async () => {};
 
 // Q911: a walk on a default port will drive whatever process is listening,
@@ -469,6 +471,14 @@ if (knock.status !== 200 || !knock.body || !knock.body.devLink) {
     });
     return r.status;
   }, SLUG);
+  // what the resigned seat's own page has become, read after the act (issue
+  // #11, F2): the door's one sentence, and the rows it is drawing
+  guestDoor = () => guest.evaluate(() => {
+    const h = document.getElementById('holding');
+    return { holding: !!h && !h.hidden,
+      sentence: h ? (h.textContent || '').trim().slice(0, 60) : null,
+      rows: document.querySelectorAll('.memrow .mn').length };
+  }).catch((e) => ({ threw: String(e && e.message).split('\n')[0] }));
   // the seat the admitted applicant is served (Q1405): by the seat mail's
   // link where one is given — it swaps the `app:` cookie for the member's, as
   // the returning section's invitation does — else the page they already hold
@@ -1023,6 +1033,22 @@ if (PRICE === 'pen' && guestResign) {
       say('FAIL: the member who resigned is still listed on the open page — ' +
         JSON.stringify(stillThere) + ' (issue #11, F2)');
       stuck.push('the departed row on the open page');
+    }
+    /* **And the page that resigned is the door** — the other side of the same
+     * poll, and the one F2's splice has to be safe on. A seat that dies
+     * mid-session becomes the door, and the payload that says so moves the
+     * viewer to `'stranger'` *before* `syncFromCs` runs, so the splice finds
+     * no row of its own to take out and the reader is never left indexed at
+     * -1. Read on the guest's own page, which is still open, and worth its
+     * own line because a throw here would be swallowed by the poll's catch
+     * and leave a page that has simply stopped: the door's one sentence is
+     * the proof it re-drew rather than died. */
+    const doorNow = guestDoor ? await guestDoor() : { threw: 'no guest page' };
+    say('the seat   · the page that resigned reads ' + JSON.stringify(doorNow));
+    if (!doorNow || doorNow.threw || !doorNow.holding) {
+      say('FAIL: the seat that died mid-session did not become the door — ' +
+        JSON.stringify(doorNow) + ' (issue #11, F2)');
+      stuck.push('the resigned seat at the door');
     }
     await page.reload({ waitUntil: 'load' });
     await T(2500);
