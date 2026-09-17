@@ -223,7 +223,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1429** — claim by writing the block here, then commit it alone.
+**The next free number is 1430** — claim by writing the block here, then commit it alone.
+
+**1429 is the power card naming its setting** (claimed 2026-09-17 01:55, Ed: *from looking at the card text you don't know what setting they're referring to because when the card is open the setting text is hidden … "The Founder may amend the title at will"*): a power option is the clause sentence (T6, Q1378), written to stand under the setting's paragraph, and the card replaces that paragraph, so *this* has no referent on the card. On the decision card only — the head line, the two option blocks, a motion's head — the sentence takes the setting's noun (`PW_NOUN`, already the rail's and the record's) in place of *this*, in the text setting's own shape: *The Founder may amend the title at will.* / *The Founder may refuse changes to the title that the membership pass.*; the document paragraph keeps *this*. The nouns written for *a veto over proposals about X* are re-read for *amend X* (the anonymity rule, the vote-reveal rule, the quorum rule …). Built overnight on branch `q1429-power-card-noun`, unmerged, for Ed's sign-off on the template, the nouns and T6.
 
 **1409–1428 are reserved for the proposal-shapes pass** (claimed 2026-09-17 01:25, overnight, on Ed's *is there a way you could predict or search for them?* after Q1406–Q1408): a static reading of the span-to-block mapping against a matrix of proposal shapes (`design/REPORT-proposal-shapes.md`), and a walk, `scripts/proposal-shapes.mjs`, that makes one proposal per cell through the real API and asserts the invariants per seat. Each red is one number: a finding where SURFACE already states the rule, fixed on its own branch unmerged (Ed, 2026-09-17: *fix on branches where a rule exists*); a question where no rule exists. Unused numbers are released at the fold.
 
