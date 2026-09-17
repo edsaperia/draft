@@ -1,5 +1,5 @@
 /**
- * The adoption threshold on the session clock (SPEC §4.3, v0.12) —
+ * The adoption threshold on the session clock (SPEC §4.3) —
  * the confidence bar a challenger's win-probability had to clear.
  *
  * **Pinned at 0.5 since v0.128** (Q1362 (b), Ed 2026-09-15, R-117). Adoption

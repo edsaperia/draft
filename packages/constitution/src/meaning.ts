@@ -226,13 +226,12 @@ function lapseMeaning(v: LapseValue): string | null {
  * nothing true to say — in which case the card prints no line at all rather
  * than an approximation.
  *
- * *by the end* on 🌡️ because the number is the bar at the close, where the
- * ramp has finished rising; *when voting opens* on 🪜 because that is the one
- * moment its start describes.
- *
- * **Five settings, and every other one returns `null`** — 👤 👁️ 🌍 🪪 🥾 🤝
- * 🤖 ⏰, the personal cards and the text, whose own rung sentences say what
- * they mean without arithmetic. `null` is what makes this safe to call from a
+ * **Three settings — 👥 ⏱️ 💤 — and every other one returns `null`**: 👤 👁️
+ * 🌍 🪪 🥾 🤝 🤖 ⏰, the personal cards and the text, whose own rung sentences
+ * say what they mean without arithmetic. It was five until 2026-09-15, when
+ * 🌡️ and 🪜 left the surface with the bar itself (Q1362 (b), R-117) and took
+ * `barMeaning` and `paceMeaning` with them — so nothing here says *by the
+ * end* or *when voting opens* any more. `null` is what makes this safe to call from a
  * generic rung builder: a caller that gets one prints nothing and never falls
  * back to a sentence of its own.
  */
