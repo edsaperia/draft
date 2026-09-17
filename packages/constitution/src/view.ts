@@ -8,7 +8,7 @@
  */
 
 import type { ConstitutionSession } from './session.js';
-import type { Arrival, DepartureBy, MemberId, MotionPayload, Power, PowerKey,
+import type { Arrival, DepartureBy, MemberId, MotionId, MotionPayload, Power, PowerKey,
   PowerSource } from './types.js';
 import type { MotionRoute, SettingId } from './catalogue.js';
 import { CATALOGUE, entryOf } from './catalogue.js';
@@ -204,6 +204,14 @@ export interface MemberView {
    * moment and whose act it was, so nothing about a departure is stated twice.
    */
   owedDepartures: MemberId[];
+  /**
+   * The motions **you moved** that failed and are still owed your OK (SURFACE
+   * E41; Q1447), oldest first, as motion ids into `motions` below — which
+   * carries the payload, the route, the reason and when each settled, so
+   * nothing about a failure is stated twice. Empty for everybody but the
+   * mover: a rejection is not news the room is owed.
+   */
+  owedHeld: MotionId[];
   /**
    * The acts that laid powers down and are still owed your OK (entry 162,
    * Q1013), oldest first: one entry per act, carrying the whole of what that
@@ -442,6 +450,21 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
     // name, the moment and whose act it was for every one of them — a second
     // copy is a second truth, and the card reads the register's own row
     owedDepartures: me ? departures.filter((d) => me.departuresOwed.has(d.id)).map((d) => d.id) : [],
+    // the failed motions still owed your OK (SURFACE E41; Q1447), oldest
+    // first: the ids alone, because `motions` already carries the payload,
+    // the route, the reason and the moment for every one of them — a second
+    // copy is a second truth. A motion whose record cannot be found is
+    // **skipped** rather than served bare, exactly as `owedAmendments` skips
+    // an amendment whose record is gone
+    owedHeld: me
+      ? [...me.heldOwed]
+          .flatMap((id) => {
+            const rec = s.motionRecords().get(id);
+            return rec ? [{ id, at: rec.settledAtT ?? rec.openedAtT }] : [];
+          })
+          .sort((a, b) => a.at - b.at)
+          .map((x) => x.id)
+      : [],
     // newest last, so the rail meets the acts in the order they happened; a
     // seat with no member record gets [], exactly as `owedOks` does
     owedReleases: me

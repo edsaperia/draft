@@ -320,6 +320,13 @@ const HANDLERS: Record<string, Handler> = {
   'ack-departure': (cs, a, t, args) => {
     cs.ackDeparture(t, a.memberId, str(args, 'member'));
   },
+  // the OK on one failed motion of your own (SURFACE E41; Q1447), the same
+  // shape: the whitelist injects the actor, so the body names the motion and
+  // nothing else — and the module owes it to the mover alone, so a seat
+  // naming somebody else's motion is silently nothing
+  'ack-held': (cs, a, t, args) => {
+    cs.ackHeld(t, a.memberId, str(args, 'motion'));
+  },
   // 📨 — E34 says the gave-up row is *the founder's ✉️ row*, so the re-send is
   // theirs. Entry 94 lets any member invite while 🪪 stands at ✒️, and
   // widening this to match is a surface ruling nobody has made (Q1031).

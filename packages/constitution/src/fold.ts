@@ -237,6 +237,10 @@ export function apply(s: FoldState, event: ConstitutionEvent, _seq: number): voi
           // and the departure news with them, for the same reason (Q901)
           rec.departuresOwed = prev.departuresOwed;
           rec.departuresGiven = prev.departuresGiven;
+          // and the mover's failed motions, for the same reason (Q1447): the
+          // proposal was theirs whichever seat they were sitting in
+          rec.heldOwed = prev.heldOwed;
+          rec.heldGiven = prev.heldGiven;
           rec.lastActivityT = prev.lastActivityT;
         } else {
           rec.lastActivityT = Math.max(rec.lastActivityT, s.convenor.lastActivityT);
@@ -585,6 +589,21 @@ export function apply(s: FoldState, event: ConstitutionEvent, _seq: number): voi
       const m = s.members.get(event.member)!;
       m.departuresOwed.delete(event.departed);
       m.departuresGiven.add(event.departed);
+      touch(s, event.member, event.t);
+      break;
+    }
+    case 'held-owed': {
+      // nothing is minted here, for `departure-owed`'s reason: the event
+      // carries the id of the motion it is about, and the motion record
+      // below holds the payload, the reason and when it settled (SURFACE
+      // E41; Q1447)
+      s.members.get(event.member)!.heldOwed.add(event.motion);
+      break;
+    }
+    case 'held-ok': {
+      const m = s.members.get(event.member)!;
+      m.heldOwed.delete(event.motion);
+      m.heldGiven.add(event.motion);
       touch(s, event.member, event.t);
       break;
     }
@@ -1060,6 +1079,7 @@ function freshMember(s: FoldState, id: MemberId, person: PersonId, invitedAtT: n
     amendmentsOwed: new Set(), amendmentsGiven: new Set(),
     mailGaveUpOwed: new Set(), mailGaveUpGiven: new Set(), mailGaveUp: false,
     departuresOwed: new Set(), departuresGiven: new Set(),
+    heldOwed: new Set(), heldGiven: new Set(),
     invitationExpired: false, closingAck: null,
   };
   return withPerson(s, state);

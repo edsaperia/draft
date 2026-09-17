@@ -849,6 +849,19 @@ var CONSTITUTION = (() => {
     if (!m.departuresOwed.has(departed)) return;
     s.emit({ type: "departure-ok", t, member, departed });
   }
+  function oweHeld(s, t, motion, mover, kind) {
+    if (mover === null || kind === "admit") return;
+    const m = s.members.get(mover);
+    if (!m || m.removed || m.arrivedAtT === null) return;
+    s.emit({ type: "held-owed", t, motion, member: mover });
+  }
+  function ackHeld(s, t, member, motion) {
+    s.requireOpen("acknowledging");
+    const m = s.members.get(member);
+    if (!m) throw new Error(`unknown member '${member}'`);
+    if (!m.heldOwed.has(motion)) return;
+    s.emit({ type: "held-ok", t, motion, member });
+  }
   function resendInvite(s, t, member, by) {
     s.requireOpen("re-sending an invitation");
     const m = s.members.get(member);
@@ -981,6 +994,7 @@ var CONSTITUTION = (() => {
     const rec = s.motions.get(motion);
     if (!rec || rec.status !== "running") return;
     s.emit({ type: "motion-withdrawn", t, motion });
+    oweHeld(s, t, motion, rec.by, rec.payload.kind);
   }
   function adjudicateOrdinaryMotion(s, t, motion, outcome) {
     s.requireOpen("a motion");
@@ -1154,6 +1168,7 @@ var CONSTITUTION = (() => {
     if (rec.payload.kind === "admit") {
       s.emit({ type: "application-refused", t, applicant: rec.payload.applicant });
     }
+    oweHeld(s, t, rec.id, rec.by, rec.payload.kind);
   }
   function samePayload(a, b) {
     if (a.kind !== b.kind) return false;
@@ -1471,6 +1486,8 @@ var CONSTITUTION = (() => {
             rec.mailGaveUp = prev.mailGaveUp;
             rec.departuresOwed = prev.departuresOwed;
             rec.departuresGiven = prev.departuresGiven;
+            rec.heldOwed = prev.heldOwed;
+            rec.heldGiven = prev.heldGiven;
             rec.lastActivityT = prev.lastActivityT;
           } else {
             rec.lastActivityT = Math.max(rec.lastActivityT, s.convenor.lastActivityT);
@@ -1732,6 +1749,17 @@ var CONSTITUTION = (() => {
         const m = s.members.get(event.member);
         m.departuresOwed.delete(event.departed);
         m.departuresGiven.add(event.departed);
+        touch(s, event.member, event.t);
+        break;
+      }
+      case "held-owed": {
+        s.members.get(event.member).heldOwed.add(event.motion);
+        break;
+      }
+      case "held-ok": {
+        const m = s.members.get(event.member);
+        m.heldOwed.delete(event.motion);
+        m.heldGiven.add(event.motion);
         touch(s, event.member, event.t);
         break;
       }
@@ -2102,6 +2130,8 @@ var CONSTITUTION = (() => {
       mailGaveUp: false,
       departuresOwed: /* @__PURE__ */ new Set(),
       departuresGiven: /* @__PURE__ */ new Set(),
+      heldOwed: /* @__PURE__ */ new Set(),
+      heldGiven: /* @__PURE__ */ new Set(),
       invitationExpired: false,
       closingAck: null
     };
@@ -3178,6 +3208,12 @@ var CONSTITUTION = (() => {
     ackDeparture(t, member, departed) {
       ackDeparture(this.owedState(), t, member, departed);
     }
+    /** The OK on one failed motion of your own (SURFACE E41, Q1447). The owing
+     *  has no delegate beside it: every road to a failure is inside
+     *  `motions.ts`, which calls `oweHeld` through its own host. */
+    ackHeld(t, member, motion) {
+      ackHeld(this.owedState(), t, member, motion);
+    }
     resendInvite(t, member, by) {
       resendInvite(this.owedState(), t, member, by);
     }
@@ -4212,6 +4248,16 @@ var CONSTITUTION = (() => {
       // name, the moment and whose act it was for every one of them — a second
       // copy is a second truth, and the card reads the register's own row
       owedDepartures: me ? departures.filter((d) => me.departuresOwed.has(d.id)).map((d) => d.id) : [],
+      // the failed motions still owed your OK (SURFACE E41; Q1447), oldest
+      // first: the ids alone, because `motions` already carries the payload,
+      // the route, the reason and the moment for every one of them — a second
+      // copy is a second truth. A motion whose record cannot be found is
+      // **skipped** rather than served bare, exactly as `owedAmendments` skips
+      // an amendment whose record is gone
+      owedHeld: me ? [...me.heldOwed].flatMap((id) => {
+        const rec = s.motionRecords().get(id);
+        return rec ? [{ id, at: rec.settledAtT ?? rec.openedAtT }] : [];
+      }).sort((a, b) => a.at - b.at).map((x) => x.id) : [],
       // newest last, so the rail meets the acts in the order they happened; a
       // seat with no member record gets [], exactly as `owedOks` does
       owedReleases: me ? [...s.releaseBatchRecords().values()].filter((b) => me.releasesOwed.has(b.id)).sort((a, b) => a.t - b.t).map((b) => ({ id: b.id, at: b.t, releases: b.releases.map((r) => ({ ...r })) })) : [],

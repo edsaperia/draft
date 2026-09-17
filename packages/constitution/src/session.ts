@@ -1104,6 +1104,13 @@ export class ConstitutionSession {
     owed.ackDeparture(this.owedState(), t, member, departed);
   }
 
+  /** The OK on one failed motion of your own (SURFACE E41, Q1447). The owing
+   *  has no delegate beside it: every road to a failure is inside
+   *  `motions.ts`, which calls `oweHeld` through its own host. */
+  ackHeld(t: number, member: MemberId, motion: MotionId): void {
+    owed.ackHeld(this.owedState(), t, member, motion);
+  }
+
   resendInvite(t: number, member: MemberId, by: MemberId): void {
     owed.resendInvite(this.owedState(), t, member, by);
   }
