@@ -131,6 +131,16 @@ window.LIVE = (function () {
     const api = {
       chain: Promise.resolve(),
       birth: null, // {pendingId, devLink, slug} once the creation mail is sent
+      // **The boot's own answer says which build it is too** (Q1438; Ed,
+      // 2026-09-17: *ok*). `noteBuild` is made here, where `HOST` is, but the
+      // three boots are `LIVE.make`'s and reach it through `api` — which they
+      // already hold for `api.refresh`. Until this crossed, `HOST.build` was
+      // first set by the 4s poll, so a page whose HTML came off the old build
+      // and whose first poll answered from the new one adopted the new build
+      // as its own and never reloaded: a hole in Q1347's `surface-reload`,
+      // widest for the page loaded during a deploy, which is the one that
+      // most needs the reload.
+      noteBuild,
       post(path, body) {
         return fetch(path, { method: 'POST',
           headers: { 'content-type': 'application/json' },
@@ -756,6 +766,16 @@ window.LIVE = (function () {
       const dev = document.querySelector('.devswitch');
       if (dev) dev.style.display = 'none';
       fetch('/api/d/' + LIVESLUG + '/view').then((r) => {
+        // **which build this page is** (Q1438), read off the boot's own
+        // answer and before anything is done with it, so the page's build is
+        // its own from its first answer rather than from its first poll. All
+        // three boots below are this one fetch — the member's, the door's and
+        // the applicant's are branches of its payload, not fetches of their
+        // own — so this is the whole of it. It cannot reload here: the first
+        // build `noteBuild` is ever told is simply taken (`HOST.build ===
+        // null`), and a retry that lands on a *different* build is a page
+        // whose bytes are already stale, which is the reload's own case.
+        api.noteBuild(r.headers.get('x-build'));
         if (r.status === 401) { console.warn('[live] no seat and no door'); return null; }
         // **The first view is the only one there is until it lands** (issue
         // #11, F3). The 4s poll starts at the foot of a successful boot, so

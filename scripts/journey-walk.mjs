@@ -3027,15 +3027,24 @@ if (caret) {
     const VIEWS = '**/api/d/*/view*';
     // the poll's own answer, with one header moved: the body is re-sent as
     // text and the two transfer headers are dropped rather than replayed,
-    // since what is fulfilled is the decoded body
-    const fakeBuild = (p) => p.route(VIEWS, async (route) => {
-      try {
-        const res = await route.fetch();
-        const headers = { ...res.headers(), 'x-build': FAKE_BUILD };
-        delete headers['content-encoding']; delete headers['content-length'];
-        await route.fulfill({ status: res.status(), headers, body: await res.text() });
-      } catch { await route.fallback(); }
-    });
+    // since what is fulfilled is the decoded body.
+    // `gate(seen)` says which answers are faked, `seen` counting from zero —
+    // the halves below want *every* answer, *every answer after the boot's*
+    // (Q1438), and *every answer once the walk says so*, and a gate decided
+    // in the route rather than by a timer is the only way the last two are
+    // not a race against the 4s poll
+    const fakeBuild = (p, gate = () => true) => {
+      let seen = 0;
+      return p.route(VIEWS, async (route) => {
+        if (!gate(seen++)) { await route.fallback(); return; }
+        try {
+          const res = await route.fetch();
+          const headers = { ...res.headers(), 'x-build': FAKE_BUILD };
+          delete headers['content-encoding']; delete headers['content-length'];
+          await route.fulfill({ status: res.status(), headers, body: await res.text() });
+        } catch { await route.fallback(); }
+      });
+    };
     let navs = 0;
     const onNav = (f) => { if (f === page.mainFrame()) navs++; };
     page.on('framenavigated', onNav);
@@ -3069,18 +3078,25 @@ if (caret) {
       const ctxB = await browser.newContext({ storageState: await page.context().storageState() });
       const p2 = await ctxB.newPage();
       try {
-        // **the build a page holds comes from a poll, not from its boot**: the
-        // boot's own view fetch never reaches `noteBuild`, so a page whose
-        // first *poll* carried the fake build would simply take it as its own
-        // and sit still for ever. Two answers, then the override.
-        let views = 0;
-        p2.on('response', (r) => { if (/\/view(\?|$)/.test(r.url())) views++; });
-        await p2.goto(page.url());
-        await p2.waitForFunction(() => !!window.SESSION, null, { timeout: 30_000 });
-        for (let i = 0; i < 40 && views < 2; i++) await p2.waitForTimeout(500);
+        // **the build a page holds comes from its boot** (Q1438): the boot's
+        // own view fetch goes through `noteBuild` like every other answer, so
+        // the real build is the page's own from the first answer it gets and
+        // the very next poll can move it. The route is installed *before* the
+        // load and lets exactly one answer — the boot's — through untouched,
+        // so nothing here races the 4s timer.
+        //
+        // This is the shape the hole used to force: until the fix the boot
+        // told `noteBuild` nothing, `HOST.build` was first set by the poll,
+        // and a page whose first poll carried a build other than its own
+        // bytes' simply adopted it and sat still for ever — a hole in
+        // Q1347's `surface-reload`, and pre-fix this half waits out its
+        // twenty half-seconds and reports no navigation at all.
         let n = 0;
         p2.on('framenavigated', (f) => { if (f === p2.mainFrame()) n++; });
-        await fakeBuild(p2);
+        await fakeBuild(p2, (seen) => seen >= 1);
+        await p2.goto(page.url());
+        await p2.waitForFunction(() => !!window.SESSION, null, { timeout: 30_000 });
+        n = 0;                          // the load itself is a navigation
         for (let i = 0; i < 20 && !n; i++) await p2.waitForTimeout(500);
         return n;
       } finally { await p2.close(); await ctxB.close(); }
