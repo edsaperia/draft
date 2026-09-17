@@ -1,5 +1,5 @@
 /**
- * The design surface, served. `npm run design` → http://localhost:8137/
+ * The design surface, served. `npm run design` → the addresses it prints.
  *
  * It exists because the fixture is the only place the **stagehand** lives —
  * the dev seat dropdown and ⏩ settle the founding — and both `liveBoot` and
@@ -14,10 +14,17 @@
  * /reference/ copies rendering with their own relative assets, and anything
  * that wants a real origin.
  *
- *   /                        the founding fixture, from a blank arrival
- *   /?fixture=session        the Hollow Oak session, mid-flight
- *   /?fixture=session&closed=1   the closed document
- *   /reference/              the byte-frozen copy, for eyeballing a diff
+ *   /session-view.html                     the founding, from a blank arrival
+ *   /session-view.html?fixture=session     the Hollow Oak session, mid-flight
+ *   /session-view.html?fixture=session&closed=1   the closed document
+ *   /reference/                            the byte-frozen copy, for a diff
+ *
+ * **Every address names the page, because `/` is not the fixture.** At
+ * pathname `/` the page boots as the live birth (`BIRTH`, session-view.html),
+ * which wants an API this server does not have, so `/?fixture=session` is a
+ * blank arrival and the query is never read (issue #21). Every tool in the
+ * repository already opens `/session-view.html`, which is why nothing caught
+ * it; this file and README were the two places that said otherwise.
  */
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
@@ -72,9 +79,10 @@ server.on('error', (err) => {
 });
 
 server.listen(PORT, () => {
-  console.log('design surface  http://localhost:' + PORT + '/            port from ' + PORT_FROM);
-  console.log('  the founding  http://localhost:' + PORT + '/            ⏩ and the seat dropdown are here');
-  console.log('  a live room   http://localhost:' + PORT + '/?fixture=session');
-  console.log('  the close     http://localhost:' + PORT + '/?fixture=session&closed=1');
-  console.log('  frozen copy   http://localhost:' + PORT + '/reference/');
+  const at = 'http://localhost:' + PORT;
+  console.log('design surface  port ' + PORT + ', from ' + PORT_FROM);
+  console.log('  the founding  ' + at + '/session-view.html            ⏩ and the seat dropdown are here');
+  console.log('  a live room   ' + at + '/session-view.html?fixture=session');
+  console.log('  the close     ' + at + '/session-view.html?fixture=session&closed=1');
+  console.log('  frozen copy   ' + at + '/reference/');
 });
