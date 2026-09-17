@@ -1,5 +1,6 @@
 /**
- * @draft/engine-core — the group drafting engine (SPEC v0.12, phase P1).
+ * @draft/engine-core — the group drafting engine (the mechanism is SPEC.md,
+ * whose own header carries the version; phase P1).
  * Pure and deterministic: no wall clock, no unseeded randomness, no I/O.
  */
 
