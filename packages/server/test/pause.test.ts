@@ -88,6 +88,15 @@ const view = async (base: string, slug: string, cookie: string, since?: string):
   (await (await fetch(`${base}/api/d/${slug}/view${since ? '?since=' + since : ''}`, { headers: { cookie } })).json()) as View;
 const setChamber = (base: string, slug: string, cookie: string, rung: string) =>
   post(base, `/api/d/${slug}/cmd`, { cmd: 'set-setting', args: { setting: 'chamber', value: { rung } } }, { cookie });
+/** The interstitial's own POST: the form the magic-link GET serves, sent
+ *  from a browser that is looking at it (issue #9). */
+const spend = (base: string, door: 'create' | 'login' | 'apply', token: string) =>
+  fetch(`${base}/auth/${door}`, {
+    method: 'POST', redirect: 'manual',
+    headers: { 'content-type': 'application/x-www-form-urlencoded', origin: base },
+    body: new URLSearchParams({ token }).toString(),
+  });
+const tokenOf = (link: string): string => new URL(link).searchParams.get('token')!;
 
 describe('the announced pause (Q1345)', () => {
   it('is an unknown path without the key and refuses a wrong one', async () => {
@@ -135,6 +144,57 @@ describe('the announced pause (Q1345)', () => {
     expect((await setChamber(base, slug, cookie, 'public')).status).toBe(200);
     expect((await view(base, slug, cookie)).seq).toBeGreaterThan(full.seq);
   });
+
+  /**
+   * **A magic link followed while the host is paused spends nothing** (issue
+   * #9). The three doors that consume a single-use token wrote through the
+   * pause: the arrival was applied on the instance about to die, the token
+   * was gone, and on the new instance the invitee read `arrived: false` — or,
+   * for `/auth/create`, the address they were promised stood empty. Each door
+   * checks the pause before `useToken` now, and answers the person a page.
+   */
+  it('the three token doors refuse while paused, spend nothing, and work on the same link after', async () => {
+    const { base } = await boot('test-key');
+    const auth = { authorization: 'Bearer test-key' };
+    const { slug, cookie } = await found(base, 'Door');
+
+    // a login link, an application's link, and a creation's link — all three
+    // minted before the pause, as an invitee's mail would have been
+    const login = tokenOf(((await (await post(base, `/api/d/${slug}/login`,
+      { email: 'founder.door@example.org' })).json()) as { devLink: string }).devLink);
+    await post(base, `/api/d/${slug}/cmd`,
+      { cmd: 'set-setting', args: { setting: 'applications', value: { apply: true } } }, { cookie });
+    const apply = tokenOf(((await (await post(base, `/api/d/${slug}/apply`,
+      { email: 'stranger@example.org' })).json()) as { devLink: string }).devLink);
+    const made = (await (await post(base, '/api/docs',
+      { title: 'Founded Mid-Deploy', email: 'f.mid@example.org' })).json()) as { slug: string; devLink: string };
+
+    await post(base, '/api/admin/pause', {}, auth);
+    for (const [door, token] of [['login', login], ['apply', apply], ['create', tokenOf(made.devLink)]] as const) {
+      const r = await spend(base, door, token);
+      expect(r.status, `${door} while paused`).toBe(503);
+      expect(r.headers.get('content-type')).toContain('text/html');
+      // the retry form posts to /auth/*, which refuses a cross-site POST —
+      // and under the global no-referrer policy a form's Origin serializes
+      // as null, which is the trap the interstitial already names
+      expect(r.headers.get('referrer-policy')).toBe('same-origin');
+      const page = await r.text();
+      // a person is looking at this, so it is a page and it names the remedy
+      expect(page).toContain('maintenance');
+      expect(page).toContain('again');
+    }
+    // nothing was founded at the promised address, and nothing was spent
+    expect((await fetch(`${base}/api/d/${made.slug}/view`)).status).toBe(404);
+
+    await post(base, '/api/admin/resume', {}, auth);
+    const seated = await spend(base, 'login', login);
+    expect(seated.status, await seated.text()).toBe(302);
+    expect(seated.headers.get('location')).toBe(`/d/${slug}`);
+    expect((await spend(base, 'apply', apply)).status).toBe(302);
+    expect((await spend(base, 'create', tokenOf(made.devLink))).status).toBe(302);
+    expect((await fetch(`${base}/api/d/${made.slug}/view`)).status).toBe(200);
+  });
+
 });
 
 describe('the red flag (Q1346)', () => {
