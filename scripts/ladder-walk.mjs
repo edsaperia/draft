@@ -191,7 +191,17 @@ function measure() {
     clauseTabs: q('.achip'), // the clause tab in the chip-gutter
     beginTask: q('#rail [data-card="begin"], #band [data-tab="begin"]'),
     penTask: q('#rail [data-card="grant-pen"], #band [data-tab="grant-pen"]'),
-    wallet: q('#wallet i'),
+    // **`walletHeld` is wallet render state** (CLAUDE.md's gotchas), and the
+    // socket says which state it is in. Every socket draws its tool at all
+    // times — the not-held branch of `renderWallet` (design/flights.js)
+    // writes the same struck ✏️ into the same `#wallet i` — so counting
+    // tokens only ever said *the navbar exists*, which is true on a page
+    // holding no document at all. It is the class that carries the answer:
+    // `wallet` on a seat that holds ✏️, `wallet notheld` on one that does
+    // not. A count could not be the fix either, because a held wallet with
+    // the drip at zero (`wallet empty`) draws no token and would read red
+    // for the opposite reason.
+    walletClass: document.querySelector('#wallet')?.className ?? null,
     // real people only: `.memrow.nobody` is the empty-list placeholder, so
     // counting every `.memrow` let "the membership is drawn" pass on a
     // membership of nobody (Q757)
@@ -260,7 +270,9 @@ async function assertSurface(rung) {
     check(rung, 'the charter is drawn', m.clauses > 10, `${m.clauses} blocks`);
     check(rung, 'clauses carry their tabs', m.clauseTabs > 5, `${m.clauseTabs}`);
     check(rung, 'the rail has judging to offer', m.railEntries > 0, `${m.railEntries} entries`);
-    check(rung, 'the ✏️ wallet is drawn', m.wallet > 0, `${m.wallet}`);
+    check(rung, 'the ✏️ wallet is drawn and held',
+      m.walletClass !== null && !/\bnotheld\b/.test(m.walletClass),
+      m.walletClass === null ? 'no socket' : `class="${m.walletClass}"`);
     check(rung, 'the membership is drawn', m.members > 1, `${m.members} rows`);
   }
   if (rung === 'closing') {

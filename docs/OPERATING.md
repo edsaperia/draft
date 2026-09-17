@@ -6,7 +6,16 @@ plan — the stages, what is left of them, the decisions — and
 `design/DECISIONS.md` carries the reasoning; this file is the map, and where
 they disagree the code wins — every claim here was checked against
 `packages/server/src/config.ts`, `render.yaml`, `.github/workflows/ci.yml`
-and `scripts/verify-deploy.mjs` rather than against the plan.
+and `scripts/verify-deploy.mjs` rather than against the plan, last on
+**2026-09-17** (issue #15), which found the `DRAFT_STORE` row, the check and
+field counts, both CI job lists, the documents-only lane and every restart
+procedure out of date.
+
+**Evidence here names a file and a symbol, never a line number** (Ed,
+2026-09-17). A line number is right for a day and wrong for ever after, and
+the one route split of Q1352 invalidated every one this file and
+PRODUCTION.md carried; a symbol is what `grep` finds and what survives the
+next move.
 
 Procedures — cutovers, restores, incident steps — live in
 [`docs/runbooks/`](runbooks/). This file tells you what the pieces are; a
@@ -50,14 +59,14 @@ in the repo).
 | `DRAFT_SECRET` | HMAC secret for session cookies and for tokens at rest | A random 32-byte secret persisted to `secret.txt` in the data dir | `render.yaml`, `generateValue: true` — so nothing is written to the disk in production |
 | `RESEND_API_KEY` | Real mail when set; the dev outbox otherwise | unset | Dashboard |
 | `DRAFT_MAIL_FROM` | The `From` header on every mail | `docs.vote <invitations@mail.docs.vote>` | Dashboard, `sync: false` — **read §8, trap 2 before trusting it** |
-| `DRAFT_MAIL_OFF` | The mail kill-switch (stage 16): `1` holds every queued mail **pending** — nothing is lost and nothing goes out — and clearing it delivers the backlog. `/healthz` reports it as `mail: off` | unset (mail on) | Not set. An env-var change and a restart; no deploy |
+| `DRAFT_MAIL_OFF` | The mail kill-switch (stage 16): `1` holds every queued mail **pending** — nothing is lost and nothing goes out — and clearing it delivers the backlog. `/healthz` reports it as `mail: off` | unset (mail on) | Not set. An env-var change and a restart; no deploy — **§3's *Restarting the live host* first**, for the pause and for the surface a restart drops |
 | `DRAFT_NOTIFY_EMAIL` | Operator notification: every document birth is mailed here | `edsaperia@gmail.com`, compiled in | Not set. Setting it **empty** switches the notification off |
-| `DRAFT_BOT_KEY` | The key to the bot outbox (§10, Q1310): mail to any address at `bots.docs.vote` is filed on the host instead of sent, and `GET /api/bots/outbox` serves the file to the bearer of this key. Unset or empty, the route is a 404 like any unknown path | unset | Dashboard, `sync: false`, on both services. Rotate by changing it; a restart applies it |
-| `DRAFT_STORE` | `file` or `pg` — where the bytes live. Absent means `file`. An unrecognised value is a **boot refusal**, never a fallback | `file` | Not set. This is the Postgres cutover switch (§7) |
+| `DRAFT_BOT_KEY` | The key to the bot outbox (§10, Q1310): mail to any address at `bots.docs.vote` is filed on the host instead of sent, and `GET /api/bots/outbox` serves the file to the bearer of this key. Unset or empty, the route is a 404 like any unknown path | unset | Dashboard, `sync: false`, on both services. Rotate by changing it; a restart applies it — **§3's *Restarting the live host* first**. Rotating it also takes the key CI pauses and uploads the surface with, so change the `DRAFT_BOT_KEY` repository secret in the same sitting |
+| `DRAFT_STORE` | `file` or `pg` — where the bytes live. Absent means `file`. An unrecognised value is a **boot refusal**, never a fallback | `file` — the code's default (`config.ts`, `storeRaw`), **not production's value** | **`pg` in production**, and has been since the cutover of 2026-08-20 23:30 (§1, §7). Dashboard: `render.yaml` declares the key `sync: false`, so the value is not in the repo and a blueprint sync does not set it. This is the Postgres cutover switch, so **a service brought up without it boots on the file store** — which since 498(b) is an empty directory on the ephemeral instance filesystem, wiped at the next deploy. `/healthz` `store` says which one answered; on docs.vote it must read `pg` |
 | `DATABASE_URL` | Postgres connection string; required when `DRAFT_STORE=pg` | unset | Dashboard, when it exists — the frankfurt database's **internal** connection string |
 | `DRAFT_TRUST_PROXY` | `1`/`0`. Trust `x-forwarded-*` for the client IP and the original protocol | On in the built artifact, off in dev | Not set — the build's default is already right on Render |
 | `DRAFT_PROXY_HOPS` | How many proxies **append** to `x-forwarded-for`, i.e. how far from the right the client's own entry sits. Only consulted when the proxy states the client no other way | `1` | Not set. **Never raise it "to be safe"** — a count larger than the real chain reads an entry the client supplied, which is the spoof the count exists to prevent |
-| `DRAFT_COOLDOWN_MS` | The adoption metronome (SPEC §4.2) — how long after one adoption before the document can change again. Engine tuning, **never a room decision**: not a setting, not in the catalogue, not in the record. Above 5 min is a **boot refusal**, not a clamp | `0` — no cooldown; adoptions land as they clear (Ed, 2026-09-05, SPEC v0.97) | Not set. **Setting it switches pacing on**: `60000` gives a 15-minute room fifteen moments when the document can change. Before 2026-09-05 the unset default was the engine's `300000`, and docs.vote ran at it from the day it went live — the one-minute value in the earlier docs was never set anywhere. Read at boot, so changing it is a restart; every document the host serves is re-paced to the value at its next minute tick, by an amendment in its own engine log (R-086). `/healthz` states the value in force |
+| `DRAFT_COOLDOWN_MS` | The adoption metronome (SPEC §4.2) — how long after one adoption before the document can change again. Engine tuning, **never a room decision**: not a setting, not in the catalogue, not in the record. Above 5 min is a **boot refusal**, not a clamp | `0` — no cooldown; adoptions land as they clear (Ed, 2026-09-05, SPEC v0.97) | Not set. **Setting it switches pacing on**: `60000` gives a 15-minute room fifteen moments when the document can change. Before 2026-09-05 the unset default was the engine's `300000`, and docs.vote ran at it from the day it went live — the one-minute value in the earlier docs was never set anywhere. Read at boot, so changing it is a restart — **§3's *Restarting the live host* first**; every document the host serves is re-paced to the value at its next minute tick, by an amendment in its own engine log (R-086). `/healthz` states the value in force |
 | `DRAFT_DESIGN_DIR` | Where `design/` is | `./design`, else `../../design`, whichever exists | Not set |
 | `RENDER_GIT_COMMIT` | The commit the process was built from, served as the `x-build` header and as `booted` in `/healthz` — a page upload moves the header, never the field (issue #8) | — | Render sets it |
 | `DRAFT_BUILD_SHA` | The same, anywhere that is not Render | unset | Not set |
@@ -90,11 +99,20 @@ freely; pushing is the decision.
    `npm test`, `npm run spec-check`, `npm run copy-check`,
    `npm run clock-check`, re-runs the server's own tests against Postgres
    with `DRAFT_TEST_STORE=pg npm test -w @draft/server`, then
-   `npm run build`. **`probe`** (the two design probes, the copy walk,
-   probe coverage) and **`walks`** (a dev server booted in the job, then
-   `journey`, `applicants-walk`, `after-begin-walk`, `member-questions-walk`, `slug-walk`, `ladder` and `room-walk`
-   against it) run in parallel with `ci` and cannot hold the deploy: a red
-   there is a red X on the commit, not a held deploy.
+   `npm run build`. **`probe`** and **`walks`** run in parallel with `ci`
+   and cannot hold the deploy: a red there is a red X on the commit, not a
+   held deploy. **Each job's own step list in `ci.yml` is the list of
+   record** — both grow — but as they stand, `probe` runs the two design
+   probes against the frozen reference (`probe --strict`), the rendered
+   copy golden (`copy-check --walk`), `probe-coverage`, `toc-travel`,
+   `drawer-walk` and `picture-walk`; and `walks` boots a dev server in the
+   job and runs `journey`, `founder-answers` (self-starting, its own
+   server), `applicants-walk` at all three admission prices,
+   `after-begin-walk`, `invite-walk`, `member-questions-walk`, `slug-walk`,
+   `ladder`, `room-walk` against a second server with the cooldown at 0,
+   and last — about ten minutes of it — `seat-matrix --hat=both`, whose
+   exit 3 (a SURFACE §2 cell nobody has written a rule for) reddens the job
+   like any other failure.
 3. CI runs a **boot smoke** on the artifact: it must refuse to boot with no
    secrets; configured, it must serve `/`, serve `/setup.js`, answer
    `/healthz` with `"store":"file"`, send `x-content-type-options: nosniff`,
@@ -111,9 +129,19 @@ freely; pushing is the decision.
    commit that never deployed stays in the range until it does** — the
    whole of it, so a red server push followed by a design-only fix-up takes
    the full lane rather than serving the new page over the old engine
-   (design/DECISIONS.md:6907). One of three lanes follows. **Documents
-   only** (`*.md`, `docs/`): nothing is
-   deployed. **The surface only** (`design/` and documents): the served
+   (design/DECISIONS.md:6907). The test is on **paths**, not on names: a
+   file is the host's unless it is under `docs/`, is a `.md` file at the
+   **top level of the repository**, or is a served surface file — a name
+   `surface.ts`'s `SURFACE_NAME` admits under `design/` (a test in
+   `surface.test.ts` holds `ci.yml`'s filter to that pattern). **Documents
+   only** — every changed file is under `docs/` or is a top-level `.md`:
+   nothing is deployed. `packages/server/NOTES.md` and `design/MOBILE.md`
+   are not documents by this filter, being neither at the top level nor
+   under `docs/`: a push touching only the first takes the full, paused lane
+   below, and one touching only the second takes the full lane too, since a
+   `.md` under `design/` is not a served file. **The surface only** (every
+   changed file is a document by that rule or a served surface file, and at
+   least one is the latter): the served
    page files at the top of `design/` are packed as one ustar tar.gz and
    `POST`ed to `$DRAFT_BASE_URL/api/admin/surface?sha=<commit>` bearing
    `DRAFT_BOT_KEY`; the running host unpacks them into
@@ -185,13 +213,84 @@ If a deploy's live verification fails: revert the commit, push the revert,
 confirm the live host is healthy, and write it up. Do not push a fix forward
 past a red verification.
 
+**Five changes to the lane machinery land in the same deploy as this
+description** (issue #8, ruled 2026-09-17), so the paragraphs above are
+written with them in place and `.github/workflows/ci.yml` is the record of
+what the workflow actually does:
+
+- `/healthz` gains **`booted`**, the commit the *process* booted with, beside
+  the `build` it serves — which a surface upload moves and a restart moves
+  back. The lane is chosen against `booted` rather than against `x-build`
+  alone, so a host that took a surface upload can no longer read as a host
+  running that commit's server code.
+- The surface lane's file list derives from `surface.ts`'s own
+  `SURFACE_NAME` — the regexp the host validates the upload against — rather
+  than from a list of globs repeated in the workflow, which is how the two
+  could disagree about what a page file is.
+- Deploys **serialise**: two pushes cannot have their deploys in the air at
+  once, which is the overlap the pause exists to survive.
+- A deploy that **fails** resumes the host it paused, rather than leaving the
+  room waiting out the fifteen-minute self-lift.
+- `verify-deploy` asserts the live **store** and the **quarantine count**, so
+  a host that came up on the file store, or that lost a document at boot, is
+  a red deploy rather than a quiet one.
+
+### Restarting the live host
+
+A restart is not a deploy, but on Render it is the same event from the
+instance's point of view: with no disk (498(b)) the platform can start the
+new instance beside the old and move traffic across, so two processes hold
+the same document for some seconds. That is exactly the split §11's
+`stalled` describes — the primary key on (document, seq) refuses one
+writer's rows, its cursor is behind the database for good, and every later
+write on it fails. So:
+
+1. **Pause first**, for the same reason CI pauses before a deploy (§3, step
+   4). Paused, the old instance persists nothing, refuses every command with
+   503 and the pause in the answer, ticks nothing, and every open page draws
+   the maintenance modal instead of meeting an error:
+
+       curl -fsS -X POST -H "authorization: Bearer $DRAFT_BOT_KEY" \
+         -H 'content-type: application/json' -d '{}' \
+         https://docs.vote/api/admin/pause
+
+   For a restart that only re-reads an environment variable the pause is a
+   **courtesy to open pages** and a guard against the overlap; it is not a
+   data gate. For `erase`, `delete` and `wipe` it **is** a data step, and the
+   pause goes before the tool runs, not before the restart — see §5.
+2. **Restart.** Render dashboard → the service → *Manual Deploy → Restart*.
+3. **The pause needs no lifting after a restart** — it lives in the old
+   process's memory and the new one boots unpaused — and it lifts itself
+   after fifteen minutes in any case (`PauseState.MAX_MS`). If you paused and
+   then did **not** restart, lift it by hand: `POST /api/admin/resume`, same
+   key. Check `/healthz` `paused` is `null` either way.
+4. **Read `/healthz` `surface` afterwards.** A surface upload lives only in
+   the process's memory and in a directory under the *ephemeral* data dir
+   (`routes-admin.ts`'s `POST /api/admin/surface` sets `designDir`,
+   `buildSha` and `surfaceSha`; `server.ts` boots `surfaceSha` as `null` and
+   nothing else ever writes it). So **after any restart the host serves the
+   page files of its own artifact** — the commit of the last *full* deploy —
+   and `x-build` reads that commit again. Every surface-lane push since then
+   is silently gone. If `surface` is `null` while the last green `main` run
+   took the surface lane, re-run that run's deploy job, or push again to take
+   the full lane. Nothing announces this on its own, which is why it is a
+   step here.
+
 ## 4. Verifying by hand
 
 `verify-deploy.mjs` proves things about the **environment** that no unit
 test can reach — TLS, HSTS, the redirect, the dev outbox's absence from a
-real deploy, the design tree's notes staying unreachable. Everything it does
-by default is a GET or a deliberately-refused cross-origin POST; nothing
-writes to a log or mints a mail, so **it is safe to run against production**.
+real deploy, the design tree's notes staying unreachable. Everything it does by
+default is a GET or a **POST it expects to be refused**, and nothing it does
+is accepted — so nothing writes to a log or mints a mail, and **it is safe
+to run against production**. The POSTs are there because a 404 for a GET on
+a POST-only route proves nothing (Q674): `/api/dev/ladder` and
+`/api/dev/seat` are asked with their real method and must 404; the three
+admin routes — `/api/admin/pause`, `/api/admin/resume` and
+`/api/admin/surface` — are asked carrying a **wrong** bearer token and must
+answer 401 (or 404 on a host with no key); the bot outbox is asked with no
+key and with a wrong one; and one cross-origin POST to `/auth/login` must be
+refused 403.
 
 ```
 npm run verify https://docs.vote
@@ -200,15 +299,24 @@ npm run verify https://docs.vote
 or equivalently `node scripts/verify-deploy.mjs https://docs.vote`. It
 prints one line per check and exits non-zero if any failed.
 
-The twelve default checks: `/` serves HTML · `/healthz` states its build,
-store and document count and is `no-store` · the security headers
-(`nosniff`, `no-referrer`, and the three CSP directives) · HSTS a year with
+**The run is its own list**, and the list of record is the sequence of
+`check(…)` calls in `scripts/verify-deploy.mjs` — it has grown five times
+since this paragraph first counted it, and issue #8 adds to it again, so
+what follows says what the default run covers and deliberately does not
+give a number. `/` serves HTML · `/healthz` states its build, store and
+document count and is `no-store` · the security headers (`nosniff`,
+`no-referrer`, and the three CSP directives) · HSTS a year with
 `includeSubDomains` · plain http is redirected and never served · the dev
-outbox is 404 · the phase ladder is not in the artifact (Q674) · API
-responses are `no-store` · design assets serve while notes, probe tooling
-and the frozen reference copies 404 · the retired threshold explainer at
-`/pairwise` 404s · an unknown document 404s in JSON without leaking
-internals · a cross-origin auth POST is refused 403.
+outbox is 404 · the error log's tail at `/api/dev/errors` is 404 (Q1330) ·
+the phase ladder is not in the artifact, asked with its real method (Q674) ·
+the pause, resume and surface-reload routes refuse a stranger (Q1345,
+Q1347) · the bot outbox refuses a stranger (Q1310) · API responses are
+`no-store` · design assets serve while notes, probe tooling and the frozen
+reference copies 404 · the document's face serves as a woff2 from
+`design/fonts/` at both the root and under a document, with the folder
+otherwise locked (Q1402) · the retired threshold explainer at `/pairwise`
+404s (Q1362) · an unknown document 404s in JSON without leaking internals ·
+a cross-origin auth POST is refused 403.
 
 **Four options** (issue #8), all off by default so a bare run is the same
 script it always was. `--before=<file>` is a `/healthz` body read before the
@@ -227,7 +335,7 @@ disk (§9).
 npm run verify https://docs.vote -- --limits
 ```
 
-adds a thirteenth: it hammers `/api/docs/pending` — the one rate-limited door
+adds one more check: it hammers `/api/docs/pending` — the one rate-limited door
 that neither sends mail nor writes a log — with a *spoofed*
 `x-forwarded-for` on every request, and expects a 429. It is off by default
 because it leaves a 429 in the platform's logs.
@@ -242,19 +350,28 @@ after a real convention.
 the health route rather than that anything is wrong; check `x-build` against
 `git log` before treating it as an incident.
 
-`/healthz` is also the service's own health check path, and answers
-`{ ok, build, surface, booted, catalogue, store, documents, uptimeSeconds,
-mail, devMail, outbox, errors, cooldownMs }`. **Three of those are commits
-and they are not the same question** (issue #8): `booted` is what the
-*process* was built from and nothing can move it; `surface` is the last page
-upload (Q1347), or null; `build` is whichever of the two is answering in
-`x-build`, which is `surface` once there has been one. A host whose `build`
-names today's commit and whose `booted` names last week's is serving a new
-page over an old engine — which is a real incident, not a curiosity
-(design/DECISIONS.md:6907). Adding `--booted=<commit>` to a verify run
-asserts the engine by name, and `--booted=same` (with `--before`) asserts it
-has not moved. It is the one route excluded from the access
-log, so a health check every few seconds does not drown it. `devMail` is
+`/healthz` is also the service's own health check path. **The route is the
+list of record** — `GET /healthz` in `packages/server/src/routes-admin.ts`,
+where each field carries the reason it is there — and as it stands it
+answers `{ ok, build, surface, booted, catalogue, store, documents,
+documentsSkipped, documentsQuarantined, documentsStalled, paused,
+uptimeSeconds, mail, devMail, outbox, errors, cooldownMs }`. **Three of
+those are commits and they are not the same question** (issue #8): `booted`
+is what the *process* was built from and nothing can move it; `surface` is
+the last page upload (Q1347), or `null` — §3's *Restarting the live host* on
+why a `null` there after a restart is not nothing; `build` is whichever of
+the two is answering in `x-build`, which is `surface` once there has been
+one. A host whose `build` names today's commit and whose `booted` names last
+week's is serving a new page over an old engine — which is a real incident,
+not a curiosity (design/DECISIONS.md:6907). Adding `--booted=<commit>` to a
+verify run asserts the engine by name, and `--booted=same` (with `--before`)
+asserts it has not moved. The other four that are not self-explanatory:
+`documentsSkipped` counts logs below schema version 2 and is 0 on docs.vote
+since the wipe (§5); `documentsQuarantined` counts logs whose replay threw
+(§5 point 1); `documentsStalled` counts documents the store has refused for
+good (§11); and `paused` is the announced pause's payload, or `null`. It is
+the one route excluded from the access log, so a health check every few
+seconds does not drown it. `devMail` is
 whether the host runs without a Resend key — the birth page reads it to
 decide whether to ask for the stagehand's controls (Q1349), and it is `false`
 on docs.vote.
@@ -388,13 +505,26 @@ Five things to know about it:
    typed by habit. It is how a quarantined document leaves the store once
    its rows are not worth repairing — the full sequence, with what each
    command prints, is `docs/runbooks/backup-and-restore.md` § *Deleting a
-   quarantined document*. On Render: the service's *Shell* tab, then
+   quarantined document*. On Render: **pause the host first** (§3's
+   *Restarting the live host*, and the paragraph below on why the pause
+   comes before the tool rather than before the restart), then the service's
+   *Shell* tab, then
    `node dist/draft-tools.mjs delete "$DATABASE_URL" <docId> --i-understand-this-deletes-the-document=<docId>`,
-   then *Manual Deploy → Restart* so the running server forgets it.
+   then *Manual Deploy → Restart* so the running server forgets it — which
+   lifts the pause with the old process.
 
-   `erase` is run **against a stopped service, or the service is restarted
-   after it** — a running server holds the rows in memory until it reloads.
-   That is the procedure until go-live is scheduled (Ed, 2026-09-08, decision
+   `erase` is run **against a paused or stopped service, and the service is
+   restarted after it** — a running server holds the rows in memory until it
+   reloads, and it can write one back. The rows are a dirty set
+   (`StorePeople.takeDirty`, `store.ts`): every commit that *touches* a
+   person — a name set, a picture chosen, an invitation carrying an address
+   — upserts that person's row beside the entries, so one such command after
+   the erase restores the row the tool deleted, from memory, with no error
+   anywhere. **This is why the pause goes before the tool and not before the
+   restart**: paused, the write path persists nothing at all
+   (`WritePath.commit` answers `null`), so there is no window in which a
+   command can undo the erase. The same applies to `delete` and `wipe`.
+   Erase-then-restart is the procedure until go-live is scheduled (Ed, 2026-09-08, decision
    1287): an operator route on the running server, so the row leaves memory
    and store in one act, is owed then and not before, the restart being
    honest while the store holds only alpha documents.
@@ -610,8 +740,11 @@ the same outbox.
 `bots.docs.vote`, and therefore acting as those bots in the rooms they were
 invited to: judging, proposing, moving, signing as them. Nothing more — no
 real member's mail is ever in that file, and a bot has no power a member
-lacks. Rotate by changing the variable in the dashboard and restarting;
-every link already filed stays one-use as before.
+lacks. Rotate by changing the variable in the dashboard and restarting
+(§3's *Restarting the live host*); every link already filed stays one-use as
+before. Two things ride the same key: CI's pause and its surface upload, so
+the `DRAFT_BOT_KEY` repository secret is rotated in the same sitting or the
+next deploy runs unpaused and falls back to the full lane.
 
 ## 11. The error log
 
@@ -662,9 +795,12 @@ on it fails, `/healthz` counts it under `documentsStalled`, every view
 answer carries `stalled: true`, and the page flies a red flag where the
 alpha flag stands: *This document cannot save changes at the moment.
 Nothing you do here will be kept.* A save that lands clears it. A stalled
-document on docs.vote is recovered by a restart, which reloads it from the
+document on docs.vote is recovered by a restart (§3's *Restarting the live
+host* — pause first, and read `surface` after), which reloads it from the
 database at the other writer's last row; what the stalled instance took in
-memory after the split is gone.
+memory after the split is gone. The pause matters more here than anywhere
+else: a stalled document is the evidence that two instances were writing at
+once, and a restart taken without one is how the same split happens again.
 
 **Reading it.** On a dev server, `GET /api/dev/errors` serves the last
 fifty, newest first, the outbox's own shape — the route is under the `DEV`
