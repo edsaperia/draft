@@ -223,7 +223,13 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1436** — claim by writing the block here, then commit it alone.
+**The next free number is 1439** — claim by writing the block here, then commit it alone.
+
+**1438 is the boot's own fetch never telling the page which build it is** (claimed 2026-09-17 20:40, issue #12's builder, found while writing that issue's guard): `liveBoot`'s view fetch is a raw `fetch` whose headers never reach `noteBuild`, so `HOST.build` is first set by the 4s **poll** — and a page whose HTML came from the old build but whose first poll already answers from the new one adopts the new build as its own and never reloads (a hole in Q1347's `surface-reload`). **Ed, 2026-09-17 20:31: ok** — the boot fetch goes through `noteBuild` like every other answer; built with the small fixes after issue #6 lands.
+
+**1437 is a proposal grant of 0** (claimed 2026-09-17 20:40, issue #26's builder: *grant 0 legal*): `validateValue`'s `rate` arm takes `grant ≥ 0`, `cap ≥ 1`, `dripMinutes ≥ 1`, so a document can be set to start every member with an empty ✏️ wallet. **Not a dead room** — the first proposal arrives after one drip interval — and not reachable from the page, which fixes 3 and 3 (Q1160, R-083; issue #27, R-123 leaves the API open for instruments). Put to Ed first as *a room where nobody can ever propose*, which was the session's error and was corrected before he ruled; raising the floor in the validator would also quarantine any saved document at grant 0 on load, since replay re-validates every value (Q1329, the trap issue #4 met). **Ed, 2026-09-17 20:38: leave it legal.** Nothing is built.
+
+**1436 is a refused invitation motion leaving a person row behind** (claimed 2026-09-17 20:40, issue #2's builder): `openMotion`'s invite arm writes the address's `people` row (`motions.ts`, `s.people.set`) before the refusals that follow it — the twin rule, the mover's wallet since issue #26 — so a motion that is refused leaves a row no event names. Hygiene rather than harm: the row holds an address and nothing else, and the next invitation of that address reuses it; but it is identity stored for somebody nobody invited (decision 1253). **Ed, 2026-09-17 20:31: please fix** — the row is written once nothing can refuse the motion; built with the small fixes after issue #6 lands.
 
 **1435 is the founder's rate box accepting a fraction of a minute** (claimed 2026-09-17 18:05, issue #4's builder): the ⏱️ number box is `min="1"` with no `step`, and the page reads its value as typed, so a founder who types 1.5 minutes now meets the server's refusal (issue #4, R-124: a whole minute or more) where the value used to be accepted. A dead-end press, not a hang. **Ed, 2026-09-17: ok** — the box takes whole minutes; a small page change, after Sunday's live test.
 
