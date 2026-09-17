@@ -301,7 +301,7 @@ d('the copier: the importer, the export and the oracle', () => {
     const again = await copyStore(disk, pg);
     expect(again.unchanged).toEqual(['d-0']);
     expect((await pg.readPeople('d-0')).map((r) => r.personId)).toEqual(['p-1', 'p-3']);
-    expect(await verifyStores(disk, pg)).toBe(1);
+    expect((await verifyStores(disk, pg)).documents).toBe(1);
     // and a destination whose rows differ is a divergence the oracle names
     await pg.appendDocLog('d-0', [], [{ personId: 'p-2', email: 'x@example.org', name: null, picture: null }]);
     await expect(verifyStores(disk, pg)).rejects.toThrow(/d-0: the people rows differ/);
@@ -320,7 +320,7 @@ d('the copier: the importer, the export and the oracle', () => {
     const second = await copyStore(disk, pg);
     expect(second.copied).toEqual([]);
     expect(second.unchanged.sort()).toEqual(['d-0', 'd-1', 'd-2']);
-    expect(await verifyStores(disk, pg)).toBe(3);
+    expect((await verifyStores(disk, pg)).documents).toBe(3);
   });
 
   it('a diverged destination is refused, and nothing is written past it', async () => {
@@ -336,9 +336,17 @@ d('the copier: the importer, the export and the oracle', () => {
     expect(await pg.listDocIds()).toEqual(['d-0']); // d-1, d-2 never started
   });
 
-  it('a corrupted source entry fails the replay oracle, not just the row compare', async () => {
+  /**
+   * **A source document that does not replay is skipped and named** (issue
+   * #13), where it used to throw and the throw was the whole call. docs.vote
+   * holds three quarantined documents Ed chose to keep (Q1322), so every
+   * export and every drill aborted at the first of them — and the sidecars,
+   * copied after the loop, were never reached at all. The oracle is
+   * untouched: a *diverged destination* above still throws.
+   */
+  it('a source document that does not replay is skipped and named, and the rest are copied', async () => {
     const dataDir = tmp();
-    await seedDisk(dataDir, 1);
+    await seedDisk(dataDir, 2);
     // tamper with the disk log's second event without touching its hash
     const path = join(dataDir, 'docs', 'd-0', 'log.jsonl');
     const lines = readFileSync(path, 'utf8').split('\n').filter(Boolean);
@@ -347,7 +355,21 @@ d('the copier: the importer, the export and the oracle', () => {
     lines[1] = JSON.stringify(e);
     writeFileSync(path, lines.join('\n') + '\n');
     const pg = await open();
-    await expect(copyStore(new FilePersistence(dataDir), pg)).rejects.toThrow();
+    const disk = new FilePersistence(dataDir);
+    const r = await copyStore(disk, pg);
+    expect(r.skipped.map((s) => s.id)).toEqual(['d-0']);
+    expect(await pg.listDocIds()).toEqual(['d-1']);
+    expect(r.documents).toBe(1);
+    expect(await pg.readDocLog('d-0')).toEqual([]); // nothing of it was written
+    // the sidecars the abort used to take with it
+    expect(r.tokens).toBe(1);
+    expect(r.stashes).toBe(1);
+    expect(await pg.takeToken('tok1')).toMatchObject({ kind: 'login' });
+    expect(await pg.getStash('stash1')).toMatchObject({ text: 'pending' });
+    // the compare passes over it too, rather than calling it missing
+    const v = await verifyStores(disk, pg);
+    expect(v.documents).toBe(1);
+    expect(v.skipped.map((s) => s.id)).toEqual(['d-0']);
   });
 
   it('the restore drill: pg → a fresh directory is identical to the original disk', async () => {
@@ -358,7 +380,7 @@ d('the copier: the importer, the export and the oracle', () => {
     const restored = tmp();
     const r = await copyStore(pg, new FilePersistence(restored));
     expect(r.documents).toBe(3);
-    expect(await verifyStores(new FilePersistence(dataDir), new FilePersistence(restored))).toBe(3);
+    expect((await verifyStores(new FilePersistence(dataDir), new FilePersistence(restored))).documents).toBe(3);
     // byte-for-byte on the log file too: the export writes what the disk held
     for (const id of ['d-0', 'd-1', 'd-2']) {
       expect(readFileSync(join(restored, 'docs', id, 'log.jsonl'), 'utf8'))
@@ -381,6 +403,39 @@ d('the copier: the importer, the export and the oracle', () => {
     const schema = /schema (drill_\w+)/.exec(said.join('\n'))![1]!;
     const probe = await open();
     // the throwaway schema is gone
+    const { rows } = await (probe as unknown as { pool: { query: (q: string, a: unknown[]) =>
+      Promise<{ rows: unknown[] }> } }).pool.query(
+      'SELECT 1 FROM information_schema.schemata WHERE schema_name = $1', [schema]);
+    expect(rows).toHaveLength(0);
+  });
+
+  /**
+   * **A run that skipped anything exits 1** (issue #13), which is what
+   * stops an incomplete backup reading as a clean one — tools.ts's promise
+   * that the process exits 0 only if the oracle held for every document.
+   * The rest of the disk is drilled all the same.
+   */
+  it('the CLI drill exits 1 over an unreadable document, names it, and drills the rest', async () => {
+    const dataDir = tmp();
+    await seedDisk(dataDir, 3);
+    const path = join(dataDir, 'docs', 'd-0', 'log.jsonl');
+    const lines = readFileSync(path, 'utf8').split('\n').filter(Boolean);
+    const e = JSON.parse(lines[1]!) as { event: { email?: string } };
+    e.event.email = 'evil@example.org';
+    lines[1] = JSON.stringify(e);
+    writeFileSync(path, lines.join('\n') + '\n');
+    const said: string[] = [];
+    const orig = console.log;
+    console.log = (l: string) => { said.push(l); };
+    try {
+      expect(await tools(['drill', dataDir, URL!])).toBe(1);
+    } finally { console.log = orig; }
+    expect(said.some((l) => l.startsWith('d-0: SKIPPED'))).toBe(true);
+    expect(said.some((l) => /drill: 1 document SKIPPED and not drilled — d-0/.test(l))).toBe(true);
+    expect(said.find((l) => l.includes('2 documents survived disk → Postgres → disk'))).toBeTruthy();
+    // and the throwaway schema still went
+    const schema = /schema (drill_\w+)/.exec(said.join('\n'))![1]!;
+    const probe = await open();
     const { rows } = await (probe as unknown as { pool: { query: (q: string, a: unknown[]) =>
       Promise<{ rows: unknown[] }> } }).pool.query(
       'SELECT 1 FROM information_schema.schemata WHERE schema_name = $1', [schema]);

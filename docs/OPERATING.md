@@ -235,12 +235,23 @@ docs/<documentId>/
   bridge.json        the engine bridge's pairing state
 tokens.json          magic-link tokens, sha256-hashed, single-use, expiring
 pending.json         the pre-save text stash, keyed by hashed capability id
+mail-outbox.json     the durable mail queue: everything accepted and not yet
+                     sent (review #1 finding 15). Not `outbox.jsonl` below —
+                     that one records what was sent, this one holds what was
+                     not, and a backup dropping it un-sends whatever is in it
 outbox.jsonl         dev mail only — every mail and its magic link
 bots-outbox.jsonl    mail to *@bots.docs.vote, under either store (§10)
 errors.jsonl         the error log (§11): every refused command and every
                      failed request, one JSON line each, under either store
 secret.txt           only when DRAFT_SECRET is unset (so: dev only)
 ```
+
+**A copy carries the first eight and not the last four.** `export` and
+`import` move everything down to `mail-outbox.json`, because those are what
+the persistence seam holds; `outbox.jsonl`, `bots-outbox.jsonl`,
+`errors.jsonl` and `secret.txt` are written beside it and are not a
+document's state. `docs/runbooks/backup-and-restore.md` is the same list
+as a backup's contents.
 
 Five things to know about it:
 
@@ -265,7 +276,9 @@ Five things to know about it:
    `frozen` · `thawed` event — is quarantined the same way, the error
    naming the key or id (Q1329: nothing is folded, there are no old
    documents). A non-zero there is the boot log's line to read, then §5's
-   tools.
+   tools — and every copier names each of them (`SKIPPED <id> — <reason>`)
+   and exits 1 while copying everything else, so an export is also a way to
+   list them (issue #13; `docs/runbooks/backup-and-restore.md`).
 2. **It is as sensitive as the room.** `people.json` carries every address,
    name and picture, and the log every founding answer **in plaintext** —
    the blindness design withholds at the projection, not at storage — and
@@ -273,17 +286,33 @@ Five things to know about it:
    directory as you would treat the members' inboxes. `data/`, `secret.txt`,
    `tokens.json` and `outbox.jsonl` are all gitignored so a careless
    `git add` cannot publish them.
-3. **Nothing here is ever deleted, except a person's row.** No JSONL log is
-   removed, by hand or by tooling; erasure is deleting one row from
-   `people.json` (or the `people` table), which the log never covered, so
-   every hash holds and the person's seat stands as *[redacted]* wherever
-   a name was printed. Their judgments stay, as the privacy policy says they
-   do.
+3. **Nothing here is ever deleted as part of running the service.** No
+   JSONL log is shortened, pruned or rewritten, by hand or by tooling; a log
+   grows and is otherwise left alone. Deletion is an operator act, and there
+   are exactly three verbs that do it, each behind its own typed refusal
+   (point 5):
+   - **`erase`** deletes one row from `people.json` (or the `people`
+     table), which the log never covered, so every hash holds and the
+     person's seat stands as *[redacted]* wherever a name was printed.
+     Their judgments stay, as the privacy policy says they do.
+   - **`delete`** (Q1322) deletes one whole document — log, engine log,
+     people, provisional text, bridge state — and is how a quarantined
+     document leaves the store.
+   - **`wipe`** deletes every document and every sidecar. It has run once,
+     on Ed's word (2026-09-08).
+
+   `repair-tail` is the near miss: it *shortens* one log to its intact
+   prefix, and it keeps the original byte for byte beside it as
+   `log.jsonl.torn-<time>`, so nothing is lost there either.
 4. **Slugs are not identities.** The directory name is the document id;
    every slug a document has ever worn routes to it, out of the registry
    inside its own log.
-5. **The three people verbs of `draft-tools`** (`node dist/draft-tools.mjs`;
-   `<store>` is a data directory or a `postgres://` URL):
+5. **The `draft-tools` verbs for what is in here** (`node
+   dist/draft-tools.mjs`; `<store>` is a data directory or a `postgres://`
+   URL). The tool has **ten verbs in all** — `node dist/draft-tools.mjs`
+   with no arguments prints the list of record; the four copiers and
+   `repair-tail` are `docs/runbooks/postgres-cutover.md`, and `errors` is
+   §11. These four are the ones that read or delete what a document holds:
 
    ```
    draft-tools people <store> <docId>              list the rows: id, address,
@@ -295,9 +324,12 @@ Five things to know about it:
 
    `delete` (Q1322) removes one document and every row it holds — its log,
    engine log, people, provisional text, bridge state — and nothing else;
-   the id is typed twice so it cannot be typed by habit. It is how a
-   quarantined document leaves the store once its rows are not worth
-   repairing. On Render: the service's *Shell* tab, then
+   tokens, stashes and queued mail that named it are keyed by other things,
+   stay, and expire on their own. The id is typed twice so it cannot be
+   typed by habit. It is how a quarantined document leaves the store once
+   its rows are not worth repairing — the full sequence, with what each
+   command prints, is `docs/runbooks/backup-and-restore.md` § *Deleting a
+   quarantined document*. On Render: the service's *Shell* tab, then
    `node dist/draft-tools.mjs delete "$DATABASE_URL" <docId> --i-understand-this-deletes-the-document=<docId>`,
    then *Manual Deploy → Restart* so the running server forgets it.
 

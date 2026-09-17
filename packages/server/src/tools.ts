@@ -1,11 +1,18 @@
 /**
  * The operator's store tools (PRODUCTION.md stages 6, 11 and 12), built to
- * dist/draft-tools.mjs beside the server. Five copying verbs, none of them
- * deleting anything, and each safe while the service serves from the
- * *other* store (import beside a file-served service, export beside a
- * Postgres-served one): the copier takes no lock on its destination, so
- * never run it against the store that is live. Then three for the people
- * rows (decision 1253) — two that read or delete one row, and the wipe.
+ * dist/draft-tools.mjs beside the server. **Ten verbs, three of which
+ * delete**, and USAGE below is the list of record.
+ *
+ * Four are the copiers — import, export, verify, drill — each safe while
+ * the service serves from the *other* store (import beside a file-served
+ * service, export beside a Postgres-served one): the copier takes no lock
+ * on its destination, so never run it against the store that is live.
+ * `repair-tail` rewrites one log in place, keeping the original. Then the
+ * people rows (decision 1253) and `errors` (Q1330).
+ *
+ * **The three that delete**, each behind its own typed refusal: `erase`
+ * (one person's row), `delete` (one document and its rows, Q1322) and
+ * `wipe` (every document and every sidecar).
  *
  *   people <store> <docId>              list a document's person rows: id,
  *                                        address, whether a name and a
@@ -25,6 +32,17 @@
  *                                        the database's name), printing the
  *                                        count it would have deleted. **Runs
  *                                        only on Ed's word at the time.**
+ *   delete <store> <docId> --i-understand-this-deletes-the-document=<docId>
+ *                                        one document and every row it holds
+ *                                        — log, engine log, people,
+ *                                        provisional text, bridge state —
+ *                                        gone (Q1322). The id is typed twice.
+ *                                        Tokens, stashes and queued mail are
+ *                                        keyed by other things and stay.
+ *   errors <dataDir> [n]                 the last n (50) lines of the error
+ *                                        log, newest first (Q1330); a file in
+ *                                        the data directory under either
+ *                                        store, so a Postgres URL is refused.
  *
  * `<store>` is a data directory, or a `postgres://` URL.
  *
@@ -51,7 +69,10 @@
  *
  * The oracle everywhere is copy-store.ts's: every rolling hash identical,
  * and the destination replaying to the source's last hash. The process
- * exits 0 only if the oracle held for every document.
+ * exits 0 only if the oracle held for every document — **and only if every
+ * document was copied**: a source document that cannot be replayed is
+ * skipped by name and the copier exits 1, so a backup with a hole in it
+ * can never read as clean (issue #13).
  *
  *   node dist/draft-tools.mjs import /var/data "$DATABASE_URL"
  */
@@ -110,11 +131,28 @@ async function openStore(where: string): Promise<{
   return { p: new FilePersistence(dir), name: basename(dir), shown: dir, close: async () => undefined };
 }
 
-function summarise(verb: string, r: CopyReport): void {
+/** Prints the run and returns how many documents it could not read at the
+ *  source — which is the exit code's whole question (issue #13). */
+function summarise(verb: string, r: CopyReport): number {
   say(`${verb}: ${r.documents} documents (${r.copied.length} copied, ` +
     `${r.unchanged.length} already complete), ${r.docEntries} document entries, ` +
     `${r.engineEntries} engine entries, ${r.tokens} tokens, ${r.stashes} stashes, ` +
     `${r.outbox} queued mails — every hash identical`);
+  return noteSkipped(verb, r.skipped);
+}
+
+/** The skipped documents, named one per line and then counted, because a
+ *  run that passed over a document is not a complete backup however green
+ *  the rest of it reads. Returns the count, which is the exit code's whole
+ *  question (issue #13). */
+function noteSkipped(verb: string, skipped: ReadonlyArray<{ id: string; error: string }>): number {
+  for (const s of skipped) say(`${verb}: SKIPPED ${s.id} — ${s.error}`);
+  if (skipped.length > 0) {
+    say(`${verb}: ${skipped.length} document${skipped.length === 1 ? '' : 's'} SKIPPED — ` +
+      'unreadable at the source, nothing of them was written, and this run is NOT a ' +
+      'complete backup. Record the ids (docs/runbooks/backup-and-restore.md).');
+  }
+  return skipped.length;
 }
 
 /**
@@ -301,24 +339,22 @@ export async function main(argv: readonly string[]): Promise<number> {
     case 'import': {
       const pg = await PgPersistence.open(b);
       try {
-        summarise('import', await copyStore(new FilePersistence(a), pg, { log: say }));
+        return summarise('import', await copyStore(new FilePersistence(a), pg, { log: say })) > 0 ? 1 : 0;
       } finally { await pg.close(); }
-      return 0;
     }
     case 'export': {
       const pg = await PgPersistence.open(a);
       try {
-        summarise('export', await copyStore(pg, new FilePersistence(b), { log: say }));
+        return summarise('export', await copyStore(pg, new FilePersistence(b), { log: say })) > 0 ? 1 : 0;
       } finally { await pg.close(); }
-      return 0;
     }
     case 'verify': {
       const pg = await PgPersistence.open(b);
       try {
-        const n = await verifyStores(new FilePersistence(a), pg, { log: say });
-        say(`verify: ${n} documents, every hash identical`);
+        const { documents, skipped } = await verifyStores(new FilePersistence(a), pg, { log: say });
+        say(`verify: ${documents} documents, every hash identical`);
+        return noteSkipped('verify', skipped) > 0 ? 1 : 0;
       } finally { await pg.close(); }
-      return 0;
     }
     case 'drill': {
       // a throwaway schema in the same database, so the drill exercises
@@ -329,18 +365,31 @@ export async function main(argv: readonly string[]): Promise<number> {
       const pg = await PgPersistence.open(b, { schema });
       try {
         const disk = new FilePersistence(a);
+        // the same document is skipped by each of the three walks, so the
+        // drill's verdict is the set of ids, counted once
+        const skipped = new Set<string>();
         say(`drill: importing ${a} into schema ${schema}`);
-        summarise('drill/import', await copyStore(disk, pg, { log: say }));
+        const imported = await copyStore(disk, pg, { log: say });
+        summarise('drill/import', imported);
+        for (const s of imported.skipped) skipped.add(s.id);
         say(`drill: exporting schema ${schema} to ${out}`);
-        summarise('drill/export', await copyStore(pg, new FilePersistence(out), { log: say }));
-        const n = await verifyStores(disk, new FilePersistence(out), { log: say });
-        say(`drill: ${n} documents survived disk → Postgres → disk with every hash identical`);
+        const exported = await copyStore(pg, new FilePersistence(out), { log: say });
+        summarise('drill/export', exported);
+        for (const s of exported.skipped) skipped.add(s.id);
+        const v = await verifyStores(disk, new FilePersistence(out), { log: say });
+        for (const s of v.skipped) skipped.add(s.id);
+        say(`drill: ${v.documents} documents survived disk → Postgres → disk with every hash identical`);
+        if (skipped.size > 0) {
+          say(`drill: ${skipped.size} document${skipped.size === 1 ? '' : 's'} SKIPPED and not ` +
+            `drilled — ${[...skipped].join(', ')}. Record the ids ` +
+            '(docs/runbooks/backup-and-restore.md).');
+        }
+        return skipped.size > 0 ? 1 : 0;
       } finally {
         await pg.dropSchemaAndClose();
         rmSync(out, { recursive: true, force: true });
         say(`drill: dropped schema ${schema} and ${out}`);
       }
-      return 0;
     }
     default:
       console.error(USAGE);

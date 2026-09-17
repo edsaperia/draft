@@ -12,6 +12,12 @@
  * which re-verifies the chain from genesis and must end on the source's
  * last hash. A failed assertion throws before anything else is copied.
  *
+ * **A document the source cannot replay is skipped, not thrown** (issue
+ * #13): it is named in the report, nothing of it is written, and the run
+ * carries on to every other document and to the sidecars — then exits
+ * non-zero, so a backup missing a document can never read as clean. The
+ * oracle is untouched: it still holds for every document that was copied.
+ *
  * Re-runnable: a document already present at the destination has its
  * existing prefix compared entry for entry, and only the remainder is
  * appended — so a second run after a partial first one finishes the job,
@@ -39,6 +45,17 @@ export interface CopyReport {
   /** Queued mail (finding 15). A backup that dropped it would silently
    *  un-send whatever had not gone out yet. */
   outbox: number;
+  /**
+   * **Documents the source itself cannot read back** (issue #13): a torn
+   * log, a broken chain, a shape this build refuses — the same documents
+   * the server quarantines at boot and serves the rest around
+   * (store.ts:92). Nothing of them reaches the destination, and they are
+   * named here rather than thrown, because one of them used to abort the
+   * whole export: every later document, and every sidecar, went uncopied.
+   * A run that skipped anything exits non-zero, so it cannot read as a
+   * clean backup.
+   */
+  skipped: Array<{ id: string; error: string }>;
 }
 
 export interface CopyOptions {
@@ -126,15 +143,43 @@ const asPeople = (rows: readonly PersonRow[]): InMemoryPeople =>
   new InMemoryPeople(rows.map((r) => [r.personId,
     { email: r.email, name: r.name, picture: r.picture }] as const));
 
+/**
+ * **Can the source read this document back at all?** (issue #13.) The
+ * question is asked of the *source*, before anything is written, so a
+ * document that cannot be replayed never reaches the destination in any
+ * state — not even a prefix. It is the boot check exactly (store.ts:92):
+ * read the log, read the rows beside it, replay. Returns the reason it
+ * could not, or null.
+ */
+async function sourceFault(id: string, from: Persistence): Promise<string | null> {
+  try {
+    const log = await from.readDocLog(id);
+    ConstitutionSession.replay(log, asPeople(await from.readPeople(id)));
+    return null;
+  } catch (e) {
+    return e instanceof Error ? e.message : String(e);
+  }
+}
+
 export async function copyStore(from: MaintainablePersistence, to: MaintainablePersistence,
   opts: CopyOptions = {}): Promise<CopyReport> {
   const log = opts.log ?? (() => undefined);
   const report: CopyReport = {
     documents: 0, unchanged: [], copied: [], docEntries: 0, engineEntries: 0,
-    tokens: 0, stashes: 0, outbox: 0,
+    tokens: 0, stashes: 0, outbox: 0, skipped: [],
   };
   const ids = await from.listDocIds();
   for (const id of ids) {
+    // **One unreadable document does not cost the backup everything else**
+    // (issue #13). Until this check the loop threw here, and the throw was
+    // the whole call: every document after it went uncopied, and the
+    // sidecars below — tokens, stashes, the mail queue — never ran at all.
+    const fault = await sourceFault(id, from);
+    if (fault !== null) {
+      report.skipped.push({ id, error: fault });
+      log(`${id}: SKIPPED — does not replay at the source: ${fault}`);
+      continue;
+    }
     report.documents += 1;
     const srcDoc = await from.readDocLog(id);
     const srcEng = await from.readEngineLog(id) as Chained[];
@@ -175,21 +220,35 @@ export async function copyStore(from: MaintainablePersistence, to: MaintainableP
   return report;
 }
 
-/** The same walk, writing nothing: every document at the source must be
- *  at the destination with identical chains. Returns the document count. */
+/**
+ * The same walk, writing nothing: every document at the source must be at
+ * the destination with identical chains. A source document the source
+ * cannot replay is skipped and named, as the copy skips it (issue #13) —
+ * otherwise a drill over a directory holding one would abort at
+ * *missing at the destination*, which is the copy's own deliberate work.
+ * Returns the documents verified and the ones passed over.
+ */
 export async function verifyStores(from: MaintainablePersistence, to: MaintainablePersistence,
-  opts: Pick<CopyOptions, 'log'> = {}): Promise<number> {
+  opts: Pick<CopyOptions, 'log'> = {}):
+  Promise<{ documents: number; skipped: Array<{ id: string; error: string }> }> {
   const log = opts.log ?? (() => undefined);
   const ids = await from.listDocIds();
   const dstIds = new Set(await to.listDocIds());
+  const skipped: Array<{ id: string; error: string }> = [];
   for (const id of ids) {
+    const fault = await sourceFault(id, from);
+    if (fault !== null) {
+      skipped.push({ id, error: fault });
+      log(`${id}: SKIPPED — does not replay at the source: ${fault}`);
+      continue;
+    }
     if (!dstIds.has(id)) throw new Error(`${id}: missing at the destination`);
     const { docEntries, engineEntries } = await assertIdentical(id, from, to);
     log(`${id}: ${docEntries} + ${engineEntries} entries, hashes identical`);
   }
   const mails = await assertOutboxCarried(from, to);
   if (mails > 0) log(`${mails} queued mails, every one carried`);
-  return ids.length;
+  return { documents: ids.length - skipped.length, skipped };
 }
 
 /**

@@ -380,6 +380,73 @@ describe('the people split (decision 1253): rows beside the log', () => {
   });
 });
 
+/**
+ * **The backup must not be all-or-nothing** (issue #13). docs.vote holds
+ * three quarantined documents Ed chose to keep (Q1322), and until this
+ * the first of them aborted `export` and `drill` outright: every later
+ * document went uncopied, and the sidecars — tokens, stashes, the mail
+ * queue — were never reached at all, because they are copied after the
+ * loop. Two file stores here, so the case runs without a database; the
+ * Postgres half, including the exit code, is in pg.test.ts.
+ */
+describe('the copier skips what it cannot read and copies the rest (issue #13)', () => {
+  it('names the unreadable document, copies every other one, and still carries the sidecars', async () => {
+    const dir = tmp();
+    const store = new DocStore(new FilePersistence(dir));
+    for (const [id, slug] of [['d-0', 'one'], ['d-1', 'two'], ['d-2', 'three']] as const) {
+      const doc = await store.create(id, {
+        title: slug, slug, convenor: { id: 'founder', email: `${slug}@x.org`, isMember: true },
+      }, 1000);
+      doc.cs.invite(1001, `ada-${id}@x.org`);
+      await store.persist(doc);
+    }
+    const from = new FilePersistence(dir);
+    await from.putTokens([['tok1',
+      { kind: 'login', email: 'a@x.org', expMs: 9e12, docId: 'd-1', memberId: 'm1' }]]);
+    await from.putStash('stash1', { text: 'pending', expMs: 9e12 });
+    // d-0's second event is tampered with, its hash left alone: exactly the
+    // shape the boot loader quarantines, and the shape docs.vote holds
+    const path = join(dir, 'docs', 'd-0', 'log.jsonl');
+    const lines = readFileSync(path, 'utf8').split('\n').filter(Boolean);
+    const e = JSON.parse(lines[1]!) as { event: Record<string, unknown> };
+    e.event.person = 'p-99';
+    lines[1] = JSON.stringify(e);
+    writeFileSync(path, lines.join('\n') + '\n', 'utf8');
+
+    const out = tmp();
+    const to = new FilePersistence(out);
+    const { copyStore, verifyStores } = await import('../src/copy-store.js');
+    const said: string[] = [];
+    const r = await copyStore(from, to, { log: (l) => said.push(l) });
+    // the one that cannot be read is named, and nothing of it was written
+    expect(r.skipped.map((s) => s.id)).toEqual(['d-0']);
+    expect(r.skipped[0]!.error.length).toBeGreaterThan(0);
+    expect(said.some((l) => l.startsWith('d-0: SKIPPED'))).toBe(true);
+    expect(await to.listDocIds()).toEqual(['d-1', 'd-2']);
+    expect(await to.readDocLog('d-0')).toEqual([]);
+    // …and everything after it in the loop was copied, sidecars included —
+    // the two the abort used to take with it
+    expect(r.documents).toBe(2);
+    expect(r.copied.sort()).toEqual(['d-1', 'd-2']);
+    expect(r.tokens).toBe(1);
+    expect(r.stashes).toBe(1);
+    expect(await to.takeToken('tok1')).toMatchObject({ kind: 'login' });
+    expect(await to.getStash('stash1')).toMatchObject({ text: 'pending' });
+    // the copy is still identical where it copied at all
+    const v = await verifyStores(from, to);
+    expect(v.documents).toBe(2);
+    expect(v.skipped.map((s) => s.id)).toEqual(['d-0']);
+    // and the restored directory boots: nothing in it is quarantined, and
+    // the log came back byte for byte
+    const back = new DocStore(new FilePersistence(out));
+    await back.loadAll();
+    expect(back.quarantined()).toEqual([]);
+    expect(back.bySlug('two')).not.toBeNull();
+    expect(readFileSync(join(out, 'docs', 'd-1', 'log.jsonl'), 'utf8'))
+      .toBe(readFileSync(join(dir, 'docs', 'd-1', 'log.jsonl'), 'utf8'));
+  });
+});
+
 describe('stage 7: the two cutover switches, read inertly', () => {
   it('absent DRAFT_STORE means file; pg needs a URL; anything else refuses', async () => {
     const { configFromEnv } = await import('../src/config.js');
