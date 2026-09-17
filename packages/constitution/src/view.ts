@@ -258,7 +258,13 @@ const MANAGED = CATALOGUE.filter((e) =>
 export function view(s: ConstitutionSession, member: MemberId): MemberView {
   const me = s.memberRecords().get(member) ?? null;
   const isConvenor = member === s.convenorRecord().id;
-  const electorateSize = s.motionElectorate().length;
+  // **E, once, for everything counted against it** (issue #6, F4). The
+  // electorate is read live (R-088) — that is what lets a resignation
+  // complete a motion nobody else has moved on — so every *n of E* readout
+  // has to be counted over the same live set, or the page states a fraction
+  // whose halves came from different rooms.
+  const eIds = new Set(s.motionElectorate());
+  const electorateSize = eIds.size;
 
   const questions: QuestionView[] = [];
   const resolutions: ResolutionView[] = [];
@@ -303,7 +309,6 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
       const answerable = entry.deps.every((d) => s.settingState(d).settledBy !== null);
       // While it runs it can say only how many have answered (§9.0a):
       // any value or running maximum would let the room read itself.
-      const eIds = new Set(s.motionElectorate());
       let answered = 0;
       for (const id of st.answers.keys()) if (eIds.has(id)) answered += 1;
       questions.push({
@@ -347,7 +352,14 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
       mine: rec.by === member,
       at: rec.settledAtT,
       from: s.amendedFrom(rec.id),
-      answeredCount: rec.route === 'constitutional' ? rec.answers.size : 0,
+      // …and the same set here (issue #6, F4). An answer stays on the record
+      // after its author has gone, so the raw size counted people the settle
+      // check no longer waits for: a motion the room could not carry read
+      // *2 of 2 have answered* while a present member had not answered it.
+      // A blind question's count has been read this way since it was written;
+      // a motion's had not.
+      answeredCount: rec.route === 'constitutional'
+        ? [...rec.answers.keys()].filter((id) => eIds.has(id)).length : 0,
       electorateSize,
       myAnswer: rec.answers.get(member) ?? null,
     });

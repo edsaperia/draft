@@ -1173,6 +1173,8 @@ export class ConstitutionSession {
       priceOf: (id) => this.priceOf(id),
       reservedTarget: (rec) => this.reservedTarget(rec),
       requireEmailFree: (email) => this.requireEmailFree(email),
+      personSeated: (person) => this.personSeated(person),
+      personOfApplicant: (applicant) => this.applicants.get(applicant)?.person ?? null,
       personFor: (email) => this.personFor(email),
       convenorSeatVacant: () => this.convenorSeatVacant(),
       afterRosterChange: (t, cause, member) => this.afterRosterChange(t, cause, member),
@@ -1475,6 +1477,15 @@ export class ConstitutionSession {
     if (!a || a.status !== 'verified') {
       throw new Error('an application is verified by magic link before it can be submitted (§9.7½)');
     }
+    // **One address is one member** (issue #6, F2): verifying is not
+    // submitting, and between the two the Founder's ✒️ can have invited this
+    // very address. Submitting would open an admit motion on somebody who
+    // already holds a seat, and its carry would mint a second one. The
+    // sentence is `requireEmailFree`'s, because it is the same refusal: your
+    // road in is already open, so log in by the link you were sent.
+    if (this.personSeated(a.person)) {
+      throw new Error('that address is already on the membership — log in instead (§9.7½)');
+    }
     // the name and picture to the row, the words to the log (decision 1253;
     // free text is stage 12's second part and stays in the event)
     // **The submission is the whole of the identity it gives** (Q1366, Ed
@@ -1667,14 +1678,27 @@ export class ConstitutionSession {
   private requireEmailFree(email: string): void {
     const person = this.people.byEmail(email);
     if (person === null) return;
-    for (const m of this.members.values()) {
-      if (!m.removed && m.person === person) {
-        throw new Error('that address is already on the membership — log in instead (§9.7½)');
-      }
-    }
-    if (this.convenor.person === person && this.members.has(this.convenor.id)) {
+    if (this.personSeated(person)) {
       throw new Error('that address is already on the membership — log in instead (§9.7½)');
     }
+  }
+
+  /**
+   * **Is this person on the membership now?** — the question `requireEmailFree`
+   * was, split out because a *carry* must ask it too (issue #6, F2). Every
+   * road in checked the address where it started and nowhere else, and a
+   * motion is not an act but a permission that lands later: while it ran, the
+   * Founder's ✒️ could invite the same address, or that person could apply, and
+   * the carry then minted a second member row for one person — a second
+   * wallet, a second place in E, and a second voice in every quorum and every
+   * unanimity after it. An **invitee counts**: they hold a seat waiting for
+   * them, and re-inviting them is not a second seat but a second link.
+   */
+  personSeated(person: PersonId): boolean {
+    for (const m of this.members.values()) {
+      if (!m.removed && m.person === person) return true;
+    }
+    return this.convenor.person === person && this.members.has(this.convenor.id);
   }
 
   /** The row holding this address, or the next id to hold it (minted, not yet written). */

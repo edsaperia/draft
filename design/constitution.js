@@ -1087,6 +1087,7 @@ var CONSTITUTION = (() => {
   }
   function settleCarriedEffects(s, t, rec, everyoneHadSay) {
     if (rec.payload.kind === "invite") {
+      if (s.personSeated(rec.payload.person)) return;
       const id = `m-${s.nextMemberN}`;
       s.emit({
         type: "member-invited",
@@ -1097,6 +1098,7 @@ var CONSTITUTION = (() => {
       });
     } else if (rec.payload.kind === "remove") {
       const target = rec.payload.member;
+      if (s.members.get(target).removed) return;
       const wasInE = inE(s.members.get(target));
       s.emit({ type: "member-removed", t, member: target, viaMotion: rec.id });
       oweDeparture(s, t, target);
@@ -1116,6 +1118,8 @@ var CONSTITUTION = (() => {
       shiftRivals(s, t, rec.payload.setting, rec.id, rec.id);
     }
     if (rec.payload.kind === "admit") {
+      const already = s.personOfApplicant(rec.payload.applicant);
+      if (already !== null && s.personSeated(already)) return;
       const id = `m-${s.nextMemberN}`;
       s.emit({
         type: "member-admitted",
@@ -3246,6 +3250,8 @@ var CONSTITUTION = (() => {
         priceOf: (id) => this.priceOf(id),
         reservedTarget: (rec) => this.reservedTarget(rec),
         requireEmailFree: (email) => this.requireEmailFree(email),
+        personSeated: (person) => this.personSeated(person),
+        personOfApplicant: (applicant) => this.applicants.get(applicant)?.person ?? null,
         personFor: (email) => this.personFor(email),
         convenorSeatVacant: () => this.convenorSeatVacant(),
         afterRosterChange: (t, cause, member) => this.afterRosterChange(t, cause, member),
@@ -3497,6 +3503,9 @@ var CONSTITUTION = (() => {
       if (!a || a.status !== "verified") {
         throw new Error("an application is verified by magic link before it can be submitted (§9.7½)");
       }
+      if (this.personSeated(a.person)) {
+        throw new Error("that address is already on the membership — log in instead (§9.7½)");
+      }
       this.people.set(a.person, { name: fields.name ?? null, picture: fields.picture ?? null });
       const e = { type: "application-submitted", t, applicant };
       if (fields.words !== void 0) e.words = fields.words;
@@ -3680,14 +3689,26 @@ var CONSTITUTION = (() => {
     requireEmailFree(email) {
       const person = this.people.byEmail(email);
       if (person === null) return;
-      for (const m of this.members.values()) {
-        if (!m.removed && m.person === person) {
-          throw new Error("that address is already on the membership — log in instead (§9.7½)");
-        }
-      }
-      if (this.convenor.person === person && this.members.has(this.convenor.id)) {
+      if (this.personSeated(person)) {
         throw new Error("that address is already on the membership — log in instead (§9.7½)");
       }
+    }
+    /**
+     * **Is this person on the membership now?** — the question `requireEmailFree`
+     * was, split out because a *carry* must ask it too (issue #6, F2). Every
+     * road in checked the address where it started and nowhere else, and a
+     * motion is not an act but a permission that lands later: while it ran, the
+     * Founder's ✒️ could invite the same address, or that person could apply, and
+     * the carry then minted a second member row for one person — a second
+     * wallet, a second place in E, and a second voice in every quorum and every
+     * unanimity after it. An **invitee counts**: they hold a seat waiting for
+     * them, and re-inviting them is not a second seat but a second link.
+     */
+    personSeated(person) {
+      for (const m of this.members.values()) {
+        if (!m.removed && m.person === person) return true;
+      }
+      return this.convenor.person === person && this.members.has(this.convenor.id);
     }
     /** The row holding this address, or the next id to hold it (minted, not yet written). */
     personFor(email) {
@@ -3995,7 +4016,8 @@ var CONSTITUTION = (() => {
   function view(s, member) {
     const me = s.memberRecords().get(member) ?? null;
     const isConvenor = member === s.convenorRecord().id;
-    const electorateSize = s.motionElectorate().length;
+    const eIds = new Set(s.motionElectorate());
+    const electorateSize = eIds.size;
     const questions = [];
     const resolutions = [];
     const settings = [];
@@ -4041,7 +4063,6 @@ var CONSTITUTION = (() => {
       const retired = entry.retiredAnswer !== void 0;
       if (st.collecting && !retired) {
         const answerable = entry.deps.every((d) => s.settingState(d).settledBy !== null);
-        const eIds = new Set(s.motionElectorate());
         let answered = 0;
         for (const id of st.answers.keys()) if (eIds.has(id)) answered += 1;
         questions.push({
@@ -4082,7 +4103,13 @@ var CONSTITUTION = (() => {
         mine: rec.by === member,
         at: rec.settledAtT,
         from: s.amendedFrom(rec.id),
-        answeredCount: rec.route === "constitutional" ? rec.answers.size : 0,
+        // …and the same set here (issue #6, F4). An answer stays on the record
+        // after its author has gone, so the raw size counted people the settle
+        // check no longer waits for: a motion the room could not carry read
+        // *2 of 2 have answered* while a present member had not answered it.
+        // A blind question's count has been read this way since it was written;
+        // a motion's had not.
+        answeredCount: rec.route === "constitutional" ? [...rec.answers.keys()].filter((id) => eIds.has(id)).length : 0,
         electorateSize,
         myAnswer: rec.answers.get(member) ?? null
       });
