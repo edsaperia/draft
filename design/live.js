@@ -255,7 +255,8 @@ window.LIVE = (function () {
     const { S, CARDS, DKEY, PAGEVAL, STANDS, FOUNDER, LIVESLUG, SESSION, api, prose } = env;
     const { amFounder, applicantAsView, authorBy, avHtml, constituted, csState, cs_titleNow,
       devInboxButton, effMAns, esc, founderInfo, hydrateApplicant, ladderBar, loadGrants,
-      mayApply, midOf, msToLocal, now, pkeyOf, pressInFlight, proseText, pwPair, relabel,
+      mayApply, midOf, motionRaceSettingOf, msToLocal, now, pkeyOf, pressInFlight,
+      proseText, pwPair, relabel,
       render, setStranger, srcDivs, strangerAsView, syncFromCs, syncProseRow, syncWallet,
       textDivs, viewerId } = env;
     // A ConstitutionSession lookalike over the last-fetched view: the page's
@@ -434,8 +435,21 @@ window.LIVE = (function () {
         : (incSide === 'a' ? 'b' : 'a');
       api.cmd('judge-race', { a: rc.a.id, b: rc.b.id, outcome });
     }
+    // **A motion card's race is its motion's, not its key's** (issue #6). Since
+    // Q1367 a motion is its own card keyed `mo:<id>`, and `midOf` maps page
+    // keys to settings — so on the live path every ordinary motion's ✓ looked
+    // up a race called `mo:mo-3`, found none, warned to a console nobody
+    // reads and left the card marked answered with nothing sent. The record
+    // names it (`motionRaceSettingOf`), and for a card that is not a motion —
+    // the settled card judging its own setting's race — the key still does.
+    const judgeSettingOf = (cw) => {
+      if (!cw.motion) return midOf(cw.k);
+      let rec = null;
+      try { rec = env.cs.motionRecords().get(cw.motion) || null; } catch (e) { rec = null; }
+      return motionRaceSettingOf(rec) || midOf(cw.k);
+    };
     function liveJudge(cw) {
-      const mid = midOf(cw.k);
+      const mid = judgeSettingOf(cw);
       const rc = raceCardOf(mid);
       if (!rc) { console.warn('[live] no race card served for', mid); return; }
       judgeRaceCard(rc, effMAns(cw)); // 'stands' | 'proposed' | 'either'

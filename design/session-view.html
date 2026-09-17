@@ -2706,6 +2706,23 @@
   // asked. Null in the fixture, which races nothing.
   const settingRaceOf = (sid) => ((cs && cs.isRemote && cs.v.settingRaces) || [])
     .find((r) => r.settingId === sid) || null;
+  // **A motion card says which race it judges by what it proposes, never by
+  // its key** (issue #6). Since Q1367 a motion is its own card keyed
+  // `mo:<id>`, and `midOf` maps page keys to *settings* — so nothing in the
+  // key names the race, and the ✓ on every ordinary motion looked one up
+  // called `mo:mo-3`, found none and sent nothing. The record says it: a set
+  // motion races on its own setting, and each membership motion on a
+  // synthetic setting of its own (§9.7½, Q397/Q401a) — **the person** for an
+  // invitation, never the address, which is the row's (decision 1253).
+  const motionRaceSettingOf = (rec) => {
+    const p = rec && rec.payload;
+    if (!p) return null;
+    if (p.kind === 'set') return p.setting;
+    if (p.kind === 'invite') return 'invite:' + p.person;
+    if (p.kind === 'remove') return 'remove:' + p.member;
+    if (p.kind === 'admit') return 'admit:' + p.applicant;
+    return null;
+  };
   // **Everything one act laid down is one card** (entry 162, Q1013). Built on
   // `admitCard`'s pattern, which exists for exactly this shape: a synthetic
   // card with a dynamic key that the module, not the page, is the truth about.
@@ -4766,6 +4783,15 @@
     if (host.power) delete mc.hide;
     mc.hostKey = host.k;
     mc.motionIn = rec.route === 'constitutional' ? rec.answers.size : undefined;
+    // …and an ordinary one is a race, so its entry wears the race's own meter
+    // (Q1371's rule, issue #6): the leader's judges over the floor, as a text
+    // race's has since Q1362 (c). Without it every ordinary motion's entry —
+    // an invitation the room is voting on included — read the founder's 100%
+    // from the moment it was put. Undefined where nothing races: the fixture,
+    // and a constitutional motion, which counts answers instead.
+    const msr = rec.route === 'ordinary'
+      ? settingRaceOf(motionRaceSettingOf(rec) || '') : null;
+    if (msr) mc.racePct = Math.round((msr.closeness || 0) * 100); else delete mc.racePct;
     return mc;
   };
   // the card a motion card stands for: itself where it has no motion
@@ -4910,6 +4936,13 @@
       if (cs && cs.isRemote) return !((cs.v && cs.v.raceCards) || []).some((x) =>
         [x.a, x.b].some((s2) => s2 && s2.setting && s2.setting.settingId === 'admit:' + c.admit));
     }
+    // **And so is every other ordinary motion** (issue #6): the marker below
+    // is this visit's only, so a reload asked again for a vote already cast —
+    // which, once an invitation could be raced at all, meant the room being
+    // asked about the same person for as long as the race stood open. Q1371's
+    // reading, on the race the record names rather than on `admit:` alone.
+    const sr = settingRaceOf(motionRaceSettingOf(rec) || '');
+    if (sr) return !!sr.judged && !sr.askable;
     return motionPicked(c) && myMAnsOk().has(c.k);
   };
   // **Two routes, two counts, spelled once** (entry 138). A constitutional
@@ -8444,6 +8477,7 @@
     loadGrants: (...a) => loadGrants(...a),
     mayApply: (...a) => mayApply(...a),
     midOf: (...a) => midOf(...a),
+    motionRaceSettingOf: (...a) => motionRaceSettingOf(...a),
     msToLocal: (...a) => msToLocal(...a),
     now: (...a) => now(...a),
     pkeyOf: (...a) => pkeyOf(...a),

@@ -71,7 +71,7 @@ type MemberViewPayload = {
     signatures: Array<{ member: string; name: string | null; comment: string; t: number }> };
   view: {
     questions: Array<{ setting: string; answered: number; answeredCount: number; myAnswer: unknown }>;
-    members: Array<{ id: string; email: string; name: string | null }>;
+    members: Array<{ id: string; email: string; name: string | null; arrived: boolean }>;
     applicants: Array<{ id: string; email: string; name: string | null }>;
     motions: Array<{ id: string; route: string; status: string; payload: unknown }>;
     crownTasks: Array<{ id: string; motion: string | null;
@@ -3555,5 +3555,108 @@ describe('🥾 at ✏️: a mover with no ✏️ is refused, and the document go
     const replayed = await (await fetch(`${again.base}/api/d/${slug}/view`,
       { headers: { cookie: ada } })).json() as MemberViewPayload;
     expect(replayed.view.motions.map((m) => m.id)).toEqual([opened]);
+  });
+});
+
+/**
+ * **A room priced *members must vote* could invite nobody** (issue #6, F1).
+ * One price prices every road in (entry 94), so at 🪪 *proposal* an invitation
+ * is an ordinary motion — and in this layer ordinary means *a race*. The
+ * bridge raced `admit` and `remove` and walked past `invite`, so the motion
+ * had no candidate anywhere: no member was ever served it, `answer-motion`
+ * refused it as an ordinary motion, it outlived the close, and the twin rule
+ * then held the address against everybody who tried again.
+ *
+ * The HTTP half of `bridge.test.ts`'s *an invitation is its own race at ✏️*:
+ * what a member's blind view actually carries about it, that the mover is
+ * never asked their own (§3.3), and that the carry ends where a direct ✉️
+ * ends — an invitee with a login link in their inbox.
+ */
+describe('🪪 at ✏️: an invitation is raced, judged and mailed (#6)', () => {
+  it('the room is served the race, the mover is not, and the carry invites', async () => {
+    const { base, dataDir } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Invite Race Charter', email: 'ada@example.org',
+    })).json() as { ok: boolean; slug: string; devLink: string };
+    const ada = cookieOf(await consume(created.devLink));
+    const slug = created.slug;
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const body = await (await post(base, `/api/d/${slug}/cmd`,
+        { cmd: name, args }, cookie)).json() as { error?: string; result?: unknown };
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+      return body.result;
+    };
+    const viewOf = async (cookie: string) => (await (await fetch(
+      `${base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as MemberViewPayload;
+    const seat = async (email: string) => {
+      await cmd(ada, 'invite', { email });
+      return cookieOf(await consume((await lastMailTo(dataDir, email)).link!));
+    };
+    await cmd(ada, 'confirm-starting-text', { text: 'The clubhouse shall be kept open.' });
+    const bo = await seat('bo@example.org');
+    const cy = await seat('cy@example.org');
+    const values: Record<string, unknown> = {
+      rate: { grant: 4, cap: 8, dripMinutes: 240 },
+      ending: { endsAtMs: null },
+      quorum: { form: 'count', n: 1 }, chamber: { rung: 'closed' },
+      authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
+      applications: { apply: false },
+      admission: { price: 'proposal' }, // 🪪 — members must vote on every joiner
+      removal: { price: 'consent' },
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await cmd(ada, 'reclaim', { setting });
+      await cmd(ada, 'set-setting', { setting, value });
+    }
+    // ✉️'s pair laid down at the door itself (§9.7 rule 9), so the carry
+    // lands without a 👑 question standing between it and the invitation
+    for (const power of ['unilateral', 'assent']) {
+      await cmd(ada, 'relinquish', { setting: 'door:invite', power });
+    }
+    await cmd(ada, 'begin', {});
+
+    // -- a member proposes an invitation, and pays the stake ---------------
+    const motion = await cmd(bo, 'open-motion',
+      { payload: { kind: 'invite', email: 'dee@example.org' }, why: 'she keeps the rota' }) as string;
+    expect((await viewOf(bo)).wallet).toBe(3);
+    const rec = (await viewOf(bo)).view.motions.find((m) => m.id === motion)!;
+    expect(rec.route).toBe('ordinary');
+    expect(rec.status).toBe('running');
+
+    // -- the room is served it as a race, blind ----------------------------
+    const raceOf = (v: MemberViewPayload) =>
+      v.settingRaces.find((r) => r.settingId.startsWith('invite:'));
+    const cyRace = raceOf(await viewOf(cy));
+    expect(cyRace, 'no invite race was served to the room').toBeTruthy();
+    // the race is keyed by the person, never the address (decision 1253)
+    expect(cyRace!.settingId).toBe(`invite:${(rec.payload as { person: string }).person}`);
+    expect(cyRace!.judged).toBe(false);
+    expect(cyRace!.askable).toBe(true);
+    // …and the mover is never asked their own (§3.3, Q1340): the row is
+    // there, because the meter under their entry is the room's progress,
+    // and there is nothing on it for them to answer
+    expect(raceOf(await viewOf(bo))!.askable).toBe(false);
+
+    // -- one judgment carries it ------------------------------------------
+    const cyView = await viewOf(cy);
+    const card = cyView.raceCards.find((c) =>
+      (c.a.setting?.settingId ?? '').startsWith('invite:') ||
+      (c.b.setting?.settingId ?? '').startsWith('invite:'))
+      ?? (cyRace!.ask as { a: CardOption; b: CardOption } | null);
+    expect(card, 'the room was given no pair to judge with').toBeTruthy();
+    const yes = (card!.a.setting?.settingId ?? '').startsWith('invite:') &&
+      !card!.a.id.startsWith('inc:') ? 'a' : 'b';
+    await cmd(cy, 'judge-race', { a: card!.a.id, b: card!.b.id, outcome: yes });
+
+    const after = await viewOf(ada);
+    expect(after.view.motions.find((m) => m.id === motion)!.status).toBe('carried');
+    const dee = after.view.members.find((m) => m.email === 'dee@example.org');
+    expect(dee, 'the carry seated nobody').toBeTruthy();
+    // an invitee counts toward nothing until they arrive (§9.6a)
+    expect(dee!.arrived).toBe(false);
+    expect(after.electorateSize).toBe(3);
+    // and it ends where a direct ✉️ ends: a login link in their inbox
+    expect((await lastMailTo(dataDir, 'dee@example.org')).link).toContain('/auth/login');
   });
 });
