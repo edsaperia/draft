@@ -24,26 +24,49 @@ The switch never falls back silently.
 ## The tool
 
 `dist/draft-tools.mjs` is built beside the server by `npm run build` and
-is on the service's disk after every deploy. Five verbs, none of which
-deletes anything. Four of them are the copiers, and all four are safe
-beside a live service:
+is on the service's disk after every deploy. **Ten verbs, three of which
+delete** — `node dist/draft-tools.mjs` with no arguments prints the list,
+which is the one of record (`tools.ts` `USAGE`).
+
+Four are the copiers, and all four are safe beside a live service:
 
     node dist/draft-tools.mjs import <dataDir> <databaseUrl>   # disk → Postgres
     node dist/draft-tools.mjs export <databaseUrl> <dataDir>   # Postgres → disk
     node dist/draft-tools.mjs verify <dataDir> <databaseUrl>   # compare, write nothing
     node dist/draft-tools.mjs drill  <dataDir> <databaseUrl>   # the restore drill
 
-The fifth, `repair-tail <dataDir> <docId> [--write]`, is not a copier: it
-rewrites one document's log in place (keeping the original byte for byte
-beside it), carries no hash oracle, and must not be run against a store a
-service is serving from. Its procedure is in
+`repair-tail <dataDir> <docId> [--write]` is not a copier: it rewrites one
+document's log in place (keeping the original byte for byte beside it),
+carries no hash oracle, and must not be run against a store a service is
+serving from. Its procedure is in
 [backup-and-restore.md](backup-and-restore.md).
+
+Two read: `people <store> <docId>` lists a document's person rows, and
+`errors <dataDir> [n]` prints the tail of the error log (`docs/OPERATING.md`
+§11; a `postgres://` URL is the wrong address for it and it says so).
+
+**Three delete**, each behind its own typed refusal — nothing here deletes
+on a bare verb:
+
+    node dist/draft-tools.mjs erase  <store> <docId> <personId>
+    node dist/draft-tools.mjs delete <store> <docId> --i-understand-this-deletes-the-document=<docId>
+    node dist/draft-tools.mjs wipe   <store> --i-understand-this-deletes-every-document=<name>
+
+`erase` deletes one person's row (the log stands, every hash holds).
+`delete` (Q1322) deletes one document and every row it holds — log, engine
+log, people, provisional text, bridge state. `wipe` deletes every document
+and every sidecar. `docs/OPERATING.md` §5 has all three in full; `wipe`'s
+own runbook is [wipe.md](wipe.md).
 
 Every copier ends with the oracle: **every rolling hash identical** between
 source and destination, both logs, and the destination replaying from
 genesis to the source's last hash. Exit 0 means it held for every
-document. Exit 1 means it did not, and the output names the document and
-the seq. **Never relax the oracle.** If it fails, stop and write it up.
+document **and that every document was copied**. Exit 1 means it did not,
+and the output names the document and the seq — or names a document it
+**skipped** because the source itself cannot replay it (issue #13: a
+quarantined document does not abort the run, but it does make the run
+incomplete, and the exit code says so). **Never relax the oracle.** If it
+fails, stop and write it up.
 
 `import` is re-runnable: a document already complete is reported
 "already complete"; a partial earlier run is finished from where it
@@ -101,15 +124,25 @@ One row per log entry: `document_log` and `engine_log`, primary key
 `(document_id, seq)`, columns `prev_hash`, `hash`, `event` (text — the
 exact serialised bytes; `event::jsonb` where a reader wants it),
 `schema_version` (nullable: absent means 1). `documents` lists them;
-`provisional`, `bridge_state` keyed by document; `tokens` and `stashes`
-keyed by hash and key with an expiry index; `outbox` is the durable mail
-queue (migration 4, review #1 finding 15); `schema_migrations` records what
-has been applied. Four migrations so far (`pg-persistence.ts` `MIGRATIONS`):
-the first schema, then `stashes.slug` (Q460/462 — the address reserved at
-the birth), `stashes.doc_id` (Q519 — a re-sent link forwards to the document
-the first one made), and `outbox`. Every migration runs at boot, once, under
-an advisory lock; a build that finds a newer schema than it knows refuses to
-start.
+`provisional`, `bridge_state` keyed by document; `people` keyed
+`(document_id, person_id)` and holding every address, name and picture
+(migration 5, decision 1253); `tokens` and `stashes` keyed by hash and key
+with an expiry index; `outbox` is the durable mail queue (migration 4,
+review #1 finding 15); `schema_migrations` records what has been applied.
+
+**Five migrations so far** (`pg-persistence.ts` `MIGRATIONS`, and
+`SCHEMA_VERSION` is the last one's number):
+
+| # | What it adds | Why |
+|---|---|---|
+| 1 | the first schema: `documents`, `document_log`, `engine_log`, `provisional`, `bridge_state`, `tokens`, `stashes` | stage 6 |
+| 2 | `stashes.slug` and its index | Q460/462 — the address reserved at the birth |
+| 3 | `stashes.doc_id` | Q519 — a re-sent link forwards to the document the first one made |
+| 4 | `outbox` and its `outbox_unsent` index | review #1 finding 15 — the durable mail queue |
+| 5 | `people` | decision 1253 — the addresses leave the log and live beside it |
+
+Every migration runs at boot, once, under an advisory lock; a build that
+finds a newer schema than it knows refuses to start.
 
 Writes to a document's log take a per-document advisory lock for the
 batch, and the primary key refuses a second writer on the same seq — a
