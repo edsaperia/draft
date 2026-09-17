@@ -117,6 +117,14 @@ window.COPY = (function () {
       proposeTitle: 'Propose this — nothing leaves the card until you submit',
       propose: 'Propose this',
       proposed: 'Proposed',
+      // **A deletion's lane is a sentence, not a blank** (Q1412, Ed
+      // 2026-09-17): a proposal that removes a clause has no wording to show,
+      // and a lane drawn empty is the one rendering that cannot be told from
+      // unchanged. The lane says what the proposal would do instead, wherever
+      // a candidate is *read* — the pair card, your own proposal, the record's
+      // field. The editing lane keeps its own pseudo-element, having nothing
+      // to serialise back into the draft.
+      removed: 'This clause would be removed.',
     },
     // clauseHeadHtml: the clause lifted into the head
     head: {
@@ -221,8 +229,17 @@ window.COPY = (function () {
       replaced: 'the text it replaced',
       ok: 'OK',
       okTitle: 'It leaves your margin and stays in the record',
-      tooltip: (judges, roster, floor, yoursLine) =>
-        judges + ' of ' + roster + ' weighed in · quorum was ' + floor + ' · ' + yoursLine,
+      // **The quorum counts who preferred it** (Q1439, ruling a): the middle
+      // clause is the count the floor was read against, and the first stays
+      // the count of everybody who voted, whichever way — the two are
+      // different numbers now, and the record says both. `approvals` is
+      // omitted where the view does not carry it, which is every document
+      // until the engine branch lands, and the line then reads as it always
+      // did.
+      tooltip: (judges, roster, floor, yoursLine, approvals) =>
+        judges + ' of ' + roster + ' weighed in · ' +
+        (approvals === null || approvals === undefined ? '' : approvals + ' preferred it · ') +
+        'quorum was ' + floor + ' · ' + yoursLine,
       youSaid: (verdict) => 'you ' + verdict,
       youNever: 'you never voted on this',
       undecided: 'Undecided at the close',
@@ -285,6 +302,12 @@ window.COPY = (function () {
       decided: ' — decided',
       gapSection: ' — a section proposed for this gap',
       filedPile: (n) => n + ' decided and filed at this clause — open them',
+      // **the grey tab a newcomer sees** (Q1413, Ed 2026-09-17): the questions
+      // standing at this clause are not theirs until they have accepted
+      // Voting, so the gutter says the document has life in it and asks for
+      // nothing. One sentence, in the third person: none of this is about you
+      // yet.
+      held: 'The membership is deciding this — it is yours to vote on once you accept Voting',
     },
     // the deadlock card: the reading room and the desk
     dead: {
@@ -352,6 +375,14 @@ window.COPY = (function () {
   // page move (Ed, 2026-09-05, item 4: two passes): the untangled strings.
   // The big checker-read tables keep their key structure in the page; where
   // only their sentence values moved, the reference stands in the value slot.
+  // **What (x of y) looks like, once** (Q1439, ruling m) — the numbers that
+  // follow a share of the membership. It is a local const rather than a
+  // second entry under `val` so that `val.quorumPct` and `val.quorumTail`
+  // cannot drift: the bracket, the word and the spacing are written here and
+  // nowhere else. Missing numbers print nothing, which is what a blind card
+  // with no number typed yet has to show.
+  const quorumTail = (n, e) => (n === null || n === undefined || e === null || e === undefined
+    ? '' : ' (' + n + ' of ' + e + ')');
   const page = {
     // who removed you, and the register's departure lines
     departed: {
@@ -438,6 +469,19 @@ window.COPY = (function () {
       free: ' is free.',
       suggested: 'Suggested from the title — ',
       takenSo: ' is taken, so this one is ',
+    },
+    // 🖼️'s four refusals, said in the uploader's own box. Written inline in
+    // `wirePicDrop` and unreadable until 2026-09-17: nothing rendered the
+    // `.picnote` they were written into, so every refused file closed the
+    // file dialog and left the card exactly as it was. They are refusals and
+    // not helper text — the drag-note and the what-nothing-means paragraph
+    // Ed's card review took off this card (Q1165) stay gone, and the box
+    // says nothing until a file is turned away.
+    picNote: {
+      notImage: 'That is not a picture.',
+      tooBig: 'That picture is too big to open here.',
+      unreadable: 'That picture could not be opened.',
+      tooHeavy: 'That picture will not compress small enough — try a simpler one.',
     },
     // the settings cards (CARDS): two labels each (Q1209, Q331 (b), Ed
     // 2026-09-07) — `t` the ask a card wears while it is outstanding, an
@@ -567,17 +611,35 @@ window.COPY = (function () {
         remove: { u: 'remove members at will', a: 'refuse removals that the membership pass' },
         text: { u: 'amend the text at will', a: 'refuse changes to the text that the membership pass' },
       },
+      // **On the decision card the phrase names its setting** (Q1429, Ed
+      // 2026-09-17: *from looking at the card text you don't know what setting
+      // they're referring to*). The star phrase's *this* is written to stand
+      // under the setting's own paragraph, and the card **replaces** that
+      // paragraph — so on a card the two verb phrases take the noun below, in
+      // the shape `phrase.text` already has. The three settings that name
+      // their object already (`text`, and the doors' `invite` / `remove`)
+      // keep their own wording on both surfaces.
+      amendNoun: (noun) => 'amend ' + noun + ' at will',
+      refuseChangesTo: (noun) => 'refuse changes to ' + noun +
+        ' that the membership pass',
       may: (parts, aside) => 'The Founder' + (aside ? ' (that’s you!)' : '') +
         ' may ' + parts.join(', and ') + '.',
       mayNotYet: (parts) => 'From the start, the Founder may not ' + parts.join(', or ') + '.',
       mayNot: (phrase) => 'The Founder may not ' + phrase + '.',
+      // **A noun that reads in both frames** (Q1429). These were written for
+      // one sentence — *a veto over proposals passed by the membership about
+      // X* — where a bare *quorum* or *visibility* reads well enough. Since
+      // the card's own sentences take them too, each has to survive *amend X
+      // at will* and *changes to X*, which want a thing rather than a topic:
+      // so the ones that name a rule say so. The doors' two are the acts'
+      // (entry 94) and are only ever the veto sentence's.
       noun: {
         title: 'the title', slug: 'the link', text: 'the text',
-        ending: 'the ending', quorum: 'quorum',
-        authorship: 'anonymous proposals', judgments: 'vote reveal',
-        chamber: 'visibility', rate: 'the proposal rate', lapse: 'membership lapse',
-        removal: 'member removal',
-        admission: 'the price of admission', applications: 'applications',
+        ending: 'the ending', quorum: 'the quorum rule',
+        authorship: 'the anonymity rule', judgments: 'the vote-reveal rule',
+        chamber: 'the visibility rule', rate: 'the proposal rate', lapse: 'the lapse rule',
+        removal: 'the removal rule',
+        admission: 'the admission price', applications: 'the applications rule',
         invite: 'invitations', remove: 'removals',
         fallback: 'this',
       },
@@ -653,8 +715,23 @@ window.COPY = (function () {
       asArrive: 'as soon as they arrive',
       andVote: ', and may vote on proposals.',
       voteTail: '. They may begin voting on proposals when the whole constitution has been decided.',
-      passOrdinary: 'A proposal ✏️ is decided once the quorum has voted on it: the text becomes whichever wording the membership prefers, the current text included.',
+      passOrdinary: 'A proposal ✏️ is adopted once enough of the membership prefers it to the current text, and more prefer it than not.',
       passConstitutional: 'A constitutional proposal 🏛️ passes only when all members agree.',
+    },
+    // 👥's rule, in Ed's own words (Q1439, ruling p, 2026-09-17: *At least 50%
+    // (5 of 10) of the membership must prefer a proposal before it can be
+    // adopted*). The quorum counts the members who prefer the proposal to the
+    // current text, so the sentence says *prefer* rather than *vote on*: a
+    // vote against no longer helps a proposal reach its quorum.
+    //
+    // `share` takes the whole share — the percentage and the numbers it comes
+    // to — because a share of the membership is written in one place
+    // (`val.quorumPct`, ruling m); the founder's card, the member's answer
+    // card and the composer hand it the number's own box instead of a
+    // percentage, which is how the number stands inside the clause (Q1137).
+    quorumRule: {
+      share: (share) => 'At least ' + share + ' of the membership must prefer a proposal ✏️ before it can be adopted.',
+      count: (n) => 'At least ' + n + ' members must prefer a proposal ✏️ before it can be adopted.',
     },
     titledLead: 'The document is titled ',
     // the card value lines (VALUE) — the label-vocabulary strings that MVAL
@@ -672,7 +749,15 @@ window.COPY = (function () {
       fixedNoEnd: 'Fixed — no end date to rise towards',
       risingFrom: (n) => 'Rising from ' + n + '%',
       quorumOf: (n, e) => n + ' of ' + e,
-      quorumPct: (pct, n, e) => pct + '% — ' + n + ' of ' + e,
+      // **Every share of the membership is followed by the numbers** (Ed,
+      // 2026-09-17, Q1439 ruling m: *wherever we show a % of membership, we
+      // should have (x of y) after showing the actual numbers*). `quorumPct`
+      // is the one writer of a share, so the rule sentence, the clause, the
+      // strip's taken line and the composer's lane cannot spell it three
+      // ways; `quorumTail` is the same numbers alone, for the cards, whose
+      // own box repaints them in place while the number is being typed.
+      quorumTail,
+      quorumPct: (pct, n, e) => pct + '%' + quorumTail(n, e),
       oneEvery: (phrase) => 'One every ' + phrase,
       // the spell arrives worded — *7 days*, *36 hours*, *90 minutes* — by
       // the module's `spellWords`, never as a bare day count (Q1321)

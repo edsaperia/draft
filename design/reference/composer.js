@@ -40,7 +40,7 @@ window.COMPOSER = (function () {
   // the four names below that come out of `CARDS.make(env)` are session.js's
   // own instance of it, and arrive through `env` like anything else of its.
   const T = window.COPY.session;
-  const { esc, fieldHtml, laneBlocks, originText, speakerHtml } = window.CARDS;
+  const { esc, fieldHtml, laneBlocks, removedHtml, originText, speakerHtml } = window.CARDS;
   // the drawn glyphs (Q1401): the row's circles and the card's own buttons are
   // pictures from the one set, the sentences beside them take glyphify
   const { glyphHtml, glyphify } = window.CARDS;
@@ -61,9 +61,11 @@ window.COMPOSER = (function () {
        clause carries a caret, and the first character you type opens the clause
        into two lanes — what it says on the left, what you are making it say on
        the right — with your rationale above and 🗑️ and the ✏️ hold below. The
-       briefing, the drafting desk and the arrival bar from design/composer.html
-       are all superseded by this; what survives of that mockup is the briefing,
-       and only as an escalation state (SPEC §3.5).
+       briefing, the drafting desk and the arrival bar from the retired
+       composer mockup (design/composer.html until 2026-09-17, Ed's ruling on
+       issue #21; its description is in design/DECISIONS.md under Q70) are all
+       superseded by this; what survives of that mockup is the briefing, and
+       only as an escalation state (SPEC §3.5).
 
        Three things follow from "it is just the document":
          · there is **one** draft at a time, because there is one caret;
@@ -873,10 +875,23 @@ window.COMPOSER = (function () {
         // the room's reading of it.
         // the run's source lines, one per block (Q1406): the head renders
         // blocks, so a heading among them keeps its rank rather than its hashes
-        clauseHeadHtml(d, { text: s.origin.map((o) => o.text).join('\n'), key: s.keys[0],
-                            chips: chipsFor(s.keys[0], d.id) }) +
+        // …and **a gap has no clause to show** (Q1410, the walk's C3, C5 and
+        // C11): a proposal of yours on a gap has an empty origin, so joining
+        // it gave the head a blank box where every other card standing in a
+        // gap says *(no text here)* under *The gap as it stands*. It takes
+        // the insert head too — the same test the editing card makes one
+        // screen up, and `headOpts`' own on the read side.
+        clauseHeadHtml(d, s.origin[0] && s.origin[0].gap
+          ? { text: null, label: T.insert.headLabel, key: s.keys[0],
+              chips: chipsFor(s.keys[0], d.id) }
+          : { text: s.origin.map((o) => o.text).join('\n'), key: s.keys[0],
+              chips: chipsFor(s.keys[0], d.id) }) +
+        // …and **a deletion of yours says so** (Q1412): this lane is read, not
+        // edited, so where the site's text is empty it carries the removal
+        // sentence rather than `laneBlocks`' editable blank — the same reading
+        // the room gets on its pair card.
         fieldHtml('<div class="propblock"><div class="rtext">' +
-          laneBlocks(s.text, originText(s)) + '</div>' +
+          (String(s.text || '').trim() ? laneBlocks(s.text, originText(s)) : removedHtml()) + '</div>' +
           speakerHtml(d.rationale, undefined, mineSpeaker(d)) + '</div>',
           1, T.compose.proposedLab)
       );

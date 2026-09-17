@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 443
+  "entries": 446
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -224,7 +224,7 @@
   "page.preamble.beforeBegin": "When the document begins, members may propose changes to rules and vote on proposals.",
   "page.preamble.onceAnswered": "once they have answered the questions the Founder delegated",
   "page.preamble.passConstitutional": "A constitutional proposal 🏛️ passes only when all members agree.",
-  "page.preamble.passOrdinary": "A proposal ✏️ is decided once the quorum has voted on it: the text becomes whichever wording the membership prefers, the current text included.",
+  "page.preamble.passOrdinary": "A proposal ✏️ is adopted once enough of the membership prefers it to the current text, and more prefer it than not.",
   "page.preamble.proposeAtBegin": " They may propose changes to rules when the document begins.",
   "page.preamble.proposeLead": "Members may propose changes to rules ",
   "page.preamble.voteOnly": "Members may vote on proposals.",
@@ -285,6 +285,8 @@
   "page.pwTitle.inviteU": "Can the Founder Invite at Will?",
   "page.pwTitle.removeA": "Does the Founder Have a Veto over Removals?",
   "page.pwTitle.removeU": "Can the Founder Remove at Will?",
+  "page.quorumRule.count": "ƒ (n) => 'At least ' + n + ' members must prefer a proposal ✏️ before it can be adopted.'",
+  "page.quorumRule.share": "ƒ (share) => 'At least ' + share + ' of the membership must prefer a proposal ✏️ before it can be adopted.'",
   "page.refuseSet": "ƒ (reason) => 'That could not be set: ' + reason + '.'",
   "page.refused": "ƒ (reason) => 'That was refused: ' + reason + '.'",
   "page.ride.pressToWrite": "press to write",
@@ -325,7 +327,8 @@
   "page.val.nothingYet": "Nothing yet",
   "page.val.oneEvery": "ƒ (phrase) => 'One every ' + phrase",
   "page.val.quorumOf": "ƒ (n, e) => n + ' of ' + e",
-  "page.val.quorumPct": "ƒ (pct, n, e) => pct + '% — ' + n + ' of ' + e",
+  "page.val.quorumPct": "ƒ (pct, n, e) => pct + '%' + quorumTail(n, e)",
+  "page.val.quorumTail": "ƒ (n, e) => (n === null || n === undefined || e === null || e === undefined\n    ? '' : ' (' + n + ' of ' + e + ')')",
   "page.val.risingFrom": "ƒ (n) => 'Rising from ' + n + '%'",
   "page.val.startsEmpty": "Starts empty — the membership writes it",
   "page.val.untitled": "Untitled",
@@ -405,7 +408,7 @@
   "session.record.ok": "OK",
   "session.record.okTitle": "It leaves your margin and stays in the record",
   "session.record.replaced": "the text it replaced",
-  "session.record.tooltip": "ƒ (judges, roster, floor, yoursLine) =>\n        judges + ' of ' + roster + ' weighed in · quorum was ' + floor + ' · ' + yoursLine",
+  "session.record.tooltip": "ƒ (judges, roster, floor, yoursLine, approvals) =>\n        judges + ' of ' + roster + ' weighed in · ' +\n        (approvals === null || approvals === undefined ? '' : approvals + ' preferred it · ') +\n        'quorum was ' + floor + ' · ' + yoursLine",
   "session.record.undecided": "Undecided at the close",
   "session.record.youNever": "you never voted on this",
   "session.record.youSaid": "ƒ (verdict) => 'you ' + verdict",
