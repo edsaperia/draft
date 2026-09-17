@@ -214,8 +214,12 @@ jobs:
               if [ "$live" != "$GITHUB_SHA" ]; then echo "x-build reads ${live:-none}, not $GITHUB_SHA"; exit 1; fi
               # `--booted=same`: the page moved, the *server* must not have
               # (issue #8, F1) — an upload that restarted the host, or a
-              # deploy that landed under it, is not the lane we took
-              node scripts/verify-deploy.mjs "$BASE" $VERIFY_BEFORE --booted=same
+              # deploy that landed under it, is not the lane we took.
+              # `--store=pg`: docs.vote has served from Postgres since
+              # 2026-08-20 (docs/OPERATING.md §7), and a host that came up
+              # on `file` would pass every other check here while serving
+              # an empty disk (issue #8, F5)
+              node scripts/verify-deploy.mjs "$BASE" $VERIFY_BEFORE --booted=same --store=pg
               exit $?
             else
               echo "the host did not take the surface — falling back to a full deploy"
@@ -302,8 +306,11 @@ jobs:
             exit 1
           fi
           # and x-build is not enough on its own (issue #8, F1): a surface
-          # upload sets it too, so the engine is asserted by name
-          node scripts/verify-deploy.mjs "$BASE" $VERIFY_BEFORE --booted="$GITHUB_SHA"
+          # upload sets it too, so the engine is asserted by name — and with
+          # it the store and the counts against the pre-deploy reading
+          # (issue #8, F5), since a restart is where a store is lost and a
+          # document is quarantined
+          node scripts/verify-deploy.mjs "$BASE" $VERIFY_BEFORE --booted="$GITHUB_SHA" --store=pg
 
       # **A pause this job made, this job lifts** (issue #8, F4). Everything
       # above can fail after the pause has landed — the hook refused, the

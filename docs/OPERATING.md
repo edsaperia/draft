@@ -205,6 +205,19 @@ and the frozen reference copies 404 · the retired threshold explainer at
 `/pairwise` 404s · an unknown document 404s in JSON without leaking
 internals · a cross-origin auth POST is refused 403.
 
+**Four options** (issue #8), all off by default so a bare run is the same
+script it always was. `--before=<file>` is a `/healthz` body read before the
+deploy, and what it buys is comparison rather than absolutes: the store
+unchanged, the documents no fewer, the quarantined no more — production
+carries three quarantined logs today, so an absolute zero would redden every
+deploy and only this deploy's *change* is this deploy's business.
+`--booted=<commit>` asserts which engine is answering and `--booted=same`
+that it has not moved (see §3). `--store=pg` asserts the store by name, which
+is what CI passes against docs.vote — a host that came up on `file` would
+otherwise pass every check here while serving an empty directory. Against the
+dev host it is `--store=file`, that host's store being the instance's own
+disk (§9).
+
 ```
 npm run verify https://docs.vote -- --limits
 ```
