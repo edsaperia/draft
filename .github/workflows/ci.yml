@@ -75,7 +75,7 @@ jobs:
       - name: the server walk again, over Postgres (stage 6)
         run: DRAFT_TEST_STORE=pg npm test -w @draft/server
       - run: npm run build
-      - name: boot smoke — refuse half-configured, serve configured, no dev routes
+      - name: boot smoke — refuse half-configured, serve configured, no dev routes, come up on Postgres
         run: |
           # the prod artifact refuses to boot without its secrets (defect 9)
           ( node dist/server.mjs || true ) 2>&1 | grep -q 'refuses to boot'
@@ -94,6 +94,63 @@ jobs:
           kill -TERM "$SMOKE_PID"
           wait "$SMOKE_PID" || true
           grep -q "closed cleanly" smoke.log
+
+          # **And once over Postgres, which is what production runs** (issue
+          # #17, F3). Everything above is the artifact on the file store, and
+          # docs.vote has served from Postgres since 2026-08-20
+          # (docs/OPERATING.md §7) — so the one configuration this gate never
+          # booted was the live one. The suite covers `PgPersistence`
+          # thoroughly and through `tsx`; what it cannot cover is the
+          # *bundle* reaching it, and that seam has broken before and in
+          # exactly this way: `pg` is CommonJS and `require`s node builtins,
+          # which esbuild's ESM shim answers with a throw, and the cure in
+          # build-server.mjs's banner was "found by running the artifact, not
+          # the tests". A boot is the only thing that asks the question.
+          #
+          # The database is the job's own `postgres:17-alpine` service, the
+          # same one the pg suite above uses; `PgPersistence.open` migrates
+          # on connect, so an empty `public` schema is all it needs. A fresh
+          # data dir because nothing here should read the file smoke's disk —
+          # on Postgres the directory is for the secret and the outbox alone,
+          # and this run has neither.
+          #
+          # **Polled, never slept**: this step sits inside the deploy gate,
+          # where a fixed wait is either slow on every push or flaky on the
+          # one that matters.
+          DRAFT_STORE=pg DATABASE_URL="$DRAFT_TEST_DATABASE_URL" \
+            DRAFT_DATA_DIR="$RUNNER_TEMP/pgdata" PORT=8198 \
+            DRAFT_SECRET=ci-smoke DRAFT_BASE_URL=https://smoke.invalid \
+            RESEND_API_KEY=ci-smoke DRAFT_TRUST_PROXY=0 \
+            node dist/server.mjs > smoke-pg.log 2>&1 &
+          PG_PID=$!
+          # and a process that has already died is not waited on for thirty
+          # seconds: a store it cannot reach throws out of `PgPersistence.open`
+          # before anything listens, which is the likeliest way this fails
+          for i in $(seq 1 60); do
+            if curl -fsS -m 5 http://localhost:8198/healthz -o pg-health.json; then pgup=1; break; fi
+            if ! kill -0 "$PG_PID" 2>/dev/null; then break; fi
+            sleep 0.5
+          done
+          if [ -z "$pgup" ]; then
+            echo "the artifact never answered /healthz over Postgres — its log follows"
+            cat smoke-pg.log
+            exit 1
+          fi
+          # what `store` says, and that the store answered at all: `documents`
+          # is `[...store.all()].length`, so a number there is a boot that
+          # migrated, connected and replayed — an empty database included
+          node -e '
+            const h = JSON.parse(require("fs").readFileSync("pg-health.json", "utf8"));
+            const bad = [];
+            if (h.ok !== true) bad.push(`ok reads ${JSON.stringify(h.ok)}`);
+            if (h.store !== "pg") bad.push(`store reads ${JSON.stringify(h.store)}, not pg`);
+            if (typeof h.documents !== "number") bad.push(`documents reads ${JSON.stringify(h.documents)}, which is not a number`);
+            if (bad.length) { console.error("the Postgres boot: " + bad.join("; ")); process.exit(1); }
+            console.log(`the artifact is up on Postgres, ${h.documents} documents loaded`);
+          '
+          kill -TERM "$PG_PID"
+          wait "$PG_PID" || true
+          grep -q "closed cleanly" smoke-pg.log
 
       # Deploy on green (stage 4, decision 432): auto-deploy is off at the
       # platform, so this workflow is the single gate — nothing reaches the
