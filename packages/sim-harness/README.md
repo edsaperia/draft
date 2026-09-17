@@ -90,16 +90,20 @@ presentation.
 
 ## Calibration sweep
 
-`npm run sweep -w @draft/sim-harness` — one-factor-at-a-time over nine
-constitution knobs (threshold ramp, token economy, cooldown, hot set,
-exploration/salience rates) × 25 seeds on the clubhouse scenario, ~575
-scripted runs, CSV plus a per-knob summary. LLM-free; costs only CPU.
-Findings so far are folded into SPEC §4.2 and §8.3.
+`npm run sweep -w @draft/sim-harness` — one-factor-at-a-time over seven
+constitution knobs (token economy, cooldown, hot set, exploration/salience
+rates) × 25 seeds on the clubhouse scenario: 425 scripted runs, 25 for the
+shared baseline and 25 for each of the 16 variant values, CSV plus a
+per-knob summary. LLM-free; costs only CPU. Findings so far are folded into
+SPEC §4.2 and §8.3. **The two threshold-ramp rows are commented out** since
+Q1362 (2026-09-15) — the threshold is pinned at 0.5 and is no longer a knob
+anybody turns — which is where the older nine-knob, 575-run shape went.
 
-The run of 2026-08-13 (`runs/sweep-clubhouse.log` and `.csv`, git-ignored;
-575 runs, 25 seeds per value): baseline welfare **0.982 ± 0.021** (per-seed
-0.91–1.00); every knob value between **0.945 and 0.994**, so the mechanism
-is robust everywhere the sweep looked. Two values moved the spec:
+The run of 2026-08-13, on that nine-knob shape (`runs/sweep-clubhouse.log`
+and `.csv`, git-ignored; 575 runs, 25 seeds per value): baseline welfare
+**0.982 ± 0.021** (per-seed 0.91–1.00); every knob value between **0.945
+and 0.994**, so the mechanism is robust everywhere the sweep looked. Two
+values moved the spec:
 `hotSetSize=3` scored 0.994 against the then-default 6's 0.982 and became
 the engine default (Q31, SPEC v0.8); cooldowns of 15 and 30 minutes fell to
 0.958 and 0.945 with adoptions halved, which is why §4.2 caps the cooldown at

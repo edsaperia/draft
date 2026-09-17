@@ -20,6 +20,22 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    # **One deploy at a time** (issue #8, F3). The deploy is a step of this
+    # job, so two pushes in quick succession ran two of them side by side:
+    # on 2026-09-12 runs 34687139656 and 34687164564 overlapped, the first
+    # went red after 27 minutes at *never became 435bf8e*, and which commit
+    # was live afterwards was decided by which hook Render answered last.
+    # A push to main takes one named group and waits its turn; every other
+    # run (a pull request, a re-run) gets a group of its own and is not
+    # serialised. **`cancel-in-progress: false`**: a deploy in flight is
+    # never cancelled — it has already paused the live host, and killing it
+    # is how a room stays paused for fifteen minutes. GitHub's default queue
+    # holds one pending run, so a third quick push cancels the *pending*
+    # second; its changes then deploy with the third, which is exactly what
+    # F1's base handles, the range being the host's rather than the push's.
+    concurrency:
+      group: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'deploy-main' || format('ci-{0}', github.run_id) }}
+      cancel-in-progress: false
     # Stage 6: the Postgres backend is tested against the same major the
     # local container pins (17), or the migration is tested only on one
     # machine. The server's whole HTTP walk runs a second time over it.
@@ -97,30 +113,94 @@ jobs:
           if [ -z "$HOOK" ]; then
             echo "no RENDER_DEPLOY_HOOK secret — skipping deploy"; exit 0
           fi
-          # **What did this push touch?** (Q1347, Ed 2026-09-12: *only
-          # deploys to the engine should break a document, not changes to
-          # the surface*). The compare API lists the files between the
-          # previous head and this one (the checkout is one commit deep).
-          # Three lanes: files outside design/ and the documents → the
-          # full deploy below, paused; only design/ (and documents) → the
-          # served page files are packed and uploaded to the running host,
-          # which serves them at once and states this commit in x-build —
-          # no restart, no pause, no document leaves memory; only
-          # documents → nothing to deploy at all.
+          # **What is the host actually running?** (issue #8, F1.) Ask it
+          # before anything else: `/healthz` names the commit the process
+          # booted with — `booted`, which no page upload can move — and the
+          # commit whose page files were last uploaded on top of it,
+          # `surface`. The body is kept as `before.json`, which the two
+          # verifications below read as their own baseline (F5).
+          hostBase=""; pageBase=""
+          if [ -n "$BASE" ] && curl -fsS -m 20 "$BASE/healthz" -o before.json; then
+            hostBase=$(node -p 'const h=JSON.parse(require("fs").readFileSync("before.json","utf8")); h.booted ?? ""')
+            pageBase=$(node -p 'const h=JSON.parse(require("fs").readFileSync("before.json","utf8")); h.surface ?? h.booted ?? ""')
+            echo "the live host: engine ${hostBase:-unreported}, page ${pageBase:-unreported}"
+          else
+            rm -f before.json
+            echo "the live host did not answer /healthz — the lane falls back to this push's own range"
+          fi
+          # **The lane is what the host is missing, not what this push
+          # carries** (issue #8, F1). It was worked out from
+          # `github.event.before`, which says only what the *previous push*
+          # touched — so when a server push went red and never deployed, the
+          # design-only fix-up behind it compared clean, took the surface
+          # lane, and put the new page on the old engine while x-build swore
+          # to the new commit. A real applicant sat unadmitted for forty
+          # minutes (design/DECISIONS.md:6907). The base is now the host's
+          # own `booted`, so an undeployed commit stays in the range until
+          # it is deployed, and a red run followed by a docs-only push still
+          # takes the full lane.
+          #
+          # A base that cannot be read — no answer, or a host from before
+          # this field existed — leaves `github.event.before` standing,
+          # which is the old behaviour and errs towards deploying more.
+          if [ -z "$hostBase" ]; then hostBase="$BEFORE"; fi
+          if [ -z "$pageBase" ]; then pageBase="$BEFORE"; fi
+          # every path between a base and this commit; non-zero if the base
+          # is not a commit this repository can be compared against
+          compare() {
+            case "$1" in '' | 0000000000000000000000000000000000000000) return 1;; esac
+            gh api "repos/$GITHUB_REPOSITORY/compare/$1...$GITHUB_SHA" --paginate --jq '.files[].filename' 2>/dev/null
+          }
+          # Three lanes (Q1347, Ed 2026-09-12: *only deploys to the engine
+          # should break a document, not changes to the surface*): anything
+          # the host has not got outside design/ and the documents → the
+          # full deploy below, paused; served page files the host has not
+          # got → they are packed and uploaded to the running host, which
+          # serves them at once and states this commit in x-build, no
+          # restart and no document out of memory; nothing either way →
+          # nothing to deploy at all.
+          #
+          # **The page's base is `surface ?? booted`**, never `booted`
+          # alone: after any surface upload the host's page is ahead of its
+          # engine, and comparing against the engine would re-upload the
+          # same files — and every open page would reload — on a push that
+          # changed no page at all.
+          #
+          # **And a served file is not any file under design/** (issue #8,
+          # F2). The filter was `^design/`, so DECISIONS.md, STYLE.md and
+          # everything under design/tools/ took the surface lane: files the
+          # host does not serve and the tar below does not carry, uploaded
+          # as a no-op whose only effect was to move x-build and make every
+          # open page reload itself (run 35033587227 changed one file,
+          # design/tools/toc-travel.mjs, and reloaded the room). The set is
+          # SURFACE_NAME in packages/server/src/surface.ts — the pattern the
+          # host itself refuses an upload by — restated here as an ERE.
+          # **packages/server/test/surface.test.ts asserts the two agree**,
+          # by reading this line, so the copy cannot drift from its source.
+          SURFACE_ERE='^design/(fonts/)?[A-Za-z0-9][A-Za-z0-9._-]*\.(js|css|html|svg|png|woff2?|txt)$'
           lane=full
-          if [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ]; then
-            changed=$(gh api "repos/$GITHUB_REPOSITORY/compare/$BEFORE...$GITHUB_SHA" --paginate --jq '.files[].filename' 2>/dev/null || echo "?")
-            if [ "$changed" != "?" ] && [ -n "$changed" ]; then
-              host=$(printf '%s\n' "$changed" | grep -vE '^(design/|docs/|[^/]+\.md$|QUESTIONS\.md$)' || true)
-              surface=$(printf '%s\n' "$changed" | grep -E '^design/' || true)
-              if [ -z "$host" ] && [ -n "$surface" ]; then lane=surface; fi
-              if [ -z "$host" ] && [ -z "$surface" ]; then lane=docs; fi
+          if changed=$(compare "$hostBase"); then
+            host=$(printf '%s\n' "$changed" | grep -vE '^(design/|docs/|[^/]+\.md$|QUESTIONS\.md$)' || true)
+            if [ -z "$host" ]; then
+              lane=docs
+              if pageChanged=$(compare "$pageBase"); then
+                served=$(printf '%s\n' "$pageChanged" | grep -E "$SURFACE_ERE" || true)
+                if [ -n "$served" ]; then lane=surface; fi
+              else
+                # the page's own base is unreadable: upload rather than skip
+                lane=surface
+              fi
             fi
           fi
-          echo "lane: $lane"
+          echo "lane: $lane (engine base ${hostBase:-none}, page base ${pageBase:-none})"
           if [ "$lane" = docs ]; then
             echo "documents only — the host is untouched"; exit 0
           fi
+          # the pre-deploy reading, where there is one, is what both
+          # verifications compare against (F1's booted commit, F5's store
+          # and counts)
+          VERIFY_BEFORE=""
+          if [ -f before.json ]; then VERIFY_BEFORE="--before=before.json"; fi
           if [ "$lane" = surface ] && [ -n "$BASE" ] && [ -n "$BOT_KEY" ]; then
             # the served set: the page files at the top of design/, and the
             # document's face under design/fonts/ with its licence (Q1402),
@@ -132,7 +212,14 @@ jobs:
               echo "surface reloaded: $(node -e 'console.log(JSON.parse(require("fs").readFileSync("surface.json","utf8")).files.length)') files"
               live=$(curl -s -D - -o /dev/null "$BASE/" | tr -d '\r' | awk 'tolower($1)=="x-build:"{print $2}')
               if [ "$live" != "$GITHUB_SHA" ]; then echo "x-build reads ${live:-none}, not $GITHUB_SHA"; exit 1; fi
-              node scripts/verify-deploy.mjs "$BASE"
+              # `--booted=same`: the page moved, the *server* must not have
+              # (issue #8, F1) — an upload that restarted the host, or a
+              # deploy that landed under it, is not the lane we took.
+              # `--store=pg`: docs.vote has served from Postgres since
+              # 2026-08-20 (docs/OPERATING.md §7), and a host that came up
+              # on `file` would pass every other check here while serving
+              # an empty disk (issue #8, F5)
+              node scripts/verify-deploy.mjs "$BASE" $VERIFY_BEFORE --booted=same --store=pg
               exit $?
             else
               echo "the host did not take the surface — falling back to a full deploy"
@@ -145,15 +232,53 @@ jobs:
           # nothing and every page shows the modal until the new one
           # answers. Needs the DRAFT_BOT_KEY secret (the same key as on the
           # host); without it the deploy still runs, unpaused, and says so.
+          #
+          # **And a pause this step made is this step's to lift** (issue #8,
+          # F4). PAUSED goes into the job's environment, and the step below
+          # this one resumes on any failure from here on — a deploy that
+          # never lands used to leave the room paused until the host's own
+          # fifteen-minute lift, with the job long since red and nobody
+          # watching.
           if [ -n "$BASE" ] && [ -n "$BOT_KEY" ]; then
-            curl -fsS -X POST "$BASE/api/admin/pause" -H "authorization: Bearer $BOT_KEY" \
-              -H 'content-type: application/json' -d '{}' -o /dev/null \
-              && echo "live host paused" || echo "the live host did not accept the pause — deploying anyway"
+            if curl -fsS -X POST "$BASE/api/admin/pause" -H "authorization: Bearer $BOT_KEY" \
+                 -H 'content-type: application/json' -d '{}' -o /dev/null; then
+              echo "PAUSED=1" >> "$GITHUB_ENV"
+              # the poll's own budget, measured from the pause rather than
+              # counted in attempts: PauseState.MAX_MS is fifteen minutes
+              # (packages/server/src/write-path.ts), and the old poll ran
+              # 100 × 15 s = twenty-five, so it spent its last ten minutes
+              # watching an instance that had quietly lifted its own pause
+              # and gone back to writing. Thirteen minutes, on the clock
+              # rather than in attempts, so a slow curl cannot push the
+              # total past the lift — the deadline is read before the sleep,
+              # so the loop can overrun it by one attempt, and the slack
+              # covers that with minutes to spare. The full lane has landed
+              # at three to four and a half.
+              waitSeconds=$(( 13 * 60 ))
+              echo "live host paused"
+            else
+              echo "the live host did not accept the pause — deploying anyway"
+            fi
           else
             echo "no DRAFT_BOT_KEY secret or DRAFT_BASE_URL — deploying without a pause (Q1345)"
           fi
-          curl -fsS -X POST "$HOOK" -o /dev/null
-          echo "deploy triggered; waiting for $GITHUB_SHA to be the build that answers"
+          # unpaused, nothing is waiting on us and the old budget stands
+          if [ -z "$waitSeconds" ]; then waitSeconds=$(( 25 * 60 )); fi
+          # **The hook is told which commit** (issue #8, F3). Bare, it
+          # deploys whatever `main`'s head is when Render gets to it, so a
+          # push landing during the build deployed a commit this run never
+          # tested — and the poll below, which waits for the pushed SHA,
+          # then fails on a deploy that worked. Render's deploy hook takes a
+          # `ref` query parameter, "either a full or short commit SHA"
+          # (render.com/docs/deploys, *Deploying a specific commit*); the
+          # hook URL already carries its own `?key=`, and the case below
+          # holds if it ever does not.
+          case "$HOOK" in
+            *\?*) HOOK_REF="$HOOK&ref=$GITHUB_SHA" ;;
+            *) HOOK_REF="$HOOK?ref=$GITHUB_SHA" ;;
+          esac
+          curl -fsS -X POST "$HOOK_REF" -o /dev/null
+          echo "deploy triggered for $GITHUB_SHA; waiting for it to be the build that answers"
           if [ -z "$BASE" ]; then
             echo "no DRAFT_BASE_URL variable — deployed, not verified"; exit 0
           fi
@@ -161,19 +286,54 @@ jobs:
           # old instance keeps answering 200 for the minutes a deploy takes
           # to build, so "it is up" would verify the build we just replaced.
           # The service states its commit in x-build (see config.buildSha).
-          for i in $(seq 1 100); do
+          #
+          # **Do not re-send the pause while waiting** (issue #8, F4): once
+          # traffic has moved it would pause the *new* instance, which is
+          # the room, not the deploy.
+          deadline=$(( $(date +%s) + waitSeconds ))
+          i=0
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            i=$(( i + 1 ))
             sleep 15
-            live=$(curl -s -D - -o /dev/null "$BASE/" | tr -d '\r' \
+            live=$(curl -s -m 10 -D - -o /dev/null "$BASE/" | tr -d '\r' \
               | awk 'tolower($1)=="x-build:"{print $2}')
             echo "  attempt $i: ${live:-none}"
             if [ "$live" = "$GITHUB_SHA" ]; then deployed=1; break; fi
           done
           if [ -z "$deployed" ]; then
-            echo "the deployed build never became $GITHUB_SHA — refusing to"
-            echo "report a verification of bytes we did not deploy"
+            echo "the deployed build never became $GITHUB_SHA in ${waitSeconds}s — refusing"
+            echo "to report a verification of bytes we did not deploy"
             exit 1
           fi
-          node scripts/verify-deploy.mjs "$BASE"
+          # and x-build is not enough on its own (issue #8, F1): a surface
+          # upload sets it too, so the engine is asserted by name — and with
+          # it the store and the counts against the pre-deploy reading
+          # (issue #8, F5), since a restart is where a store is lost and a
+          # document is quarantined
+          node scripts/verify-deploy.mjs "$BASE" $VERIFY_BEFORE --booted="$GITHUB_SHA" --store=pg
+
+      # **A pause this job made, this job lifts** (issue #8, F4). Everything
+      # above can fail after the pause has landed — the hook refused, the
+      # build never becoming this commit, the verification red — and the
+      # step that failed does not come back to tidy up. Until now the room
+      # then waited on the host's own fifteen-minute lift with a red job
+      # beside it, which is a room paused by nobody for as long as the
+      # deploy's own budget. PAUSED is written to the environment only by
+      # the pause that actually answered, so this runs exactly when there is
+      # something to lift. `resume` is idempotent (routes-admin.ts) and the
+      # new instance boots unpaused, so lifting a pause the deploy already
+      # ended costs nothing; and this step never fails the job, which is
+      # already red — it reports, so the log says whether the room is free.
+      - name: lift the pause if the deploy did not
+        if: failure() && env.PAUSED == '1'
+        env:
+          BASE: ${{ vars.DRAFT_BASE_URL }}
+          BOT_KEY: ${{ secrets.DRAFT_BOT_KEY }}
+        run: |
+          curl -fsS -X POST "$BASE/api/admin/resume" -H "authorization: Bearer $BOT_KEY" \
+            -H 'content-type: application/json' -d '{}' -o /dev/null \
+            && echo "the pause is lifted — the live host is writing again" \
+            || echo "the resume was refused: lift it by hand (docs/OPERATING.md §3) or wait out PauseState.MAX_MS"
 
   # The design probes, headless (Q504(b), 2026-08-21). A probe nobody runs
   # rots silently — the setup reference had drifted 200 diffs from HEAD

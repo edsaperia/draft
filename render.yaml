@@ -55,7 +55,19 @@ services:
       # string, same region) and is safe to set at any time; DRAFT_STORE is
       # the cutover — absent or 'file' serves from the disk, 'pg' from the
       # database — and is set only after the importer has run and its hash
-      # assertions have passed. Unsetting DRAFT_STORE is the rollback.
+      # assertions have passed.
+      #
+      # **Unsetting DRAFT_STORE is no longer a rollback** (issue #8; the
+      # retraction is docs/OPERATING.md §7). It was one on 2026-08-20, while
+      # the disk still held every document and was still being written to.
+      # The cutover ran that night and the disk is gone, so unsetting it now
+      # points the service at an empty directory — a service that has lost
+      # every document rather than one that has rolled back, and it looks
+      # from outside exactly like the real thing. What it is today is a
+      # refusal to boot into an empty service by accident. The restore path
+      # is Render's database backups and docs/runbooks/; the deploy's own
+      # verification asserts `store` is still `pg`, so a service that came
+      # up on the disk is red rather than quietly empty (issue #8, F5).
       - key: DATABASE_URL
         sync: false
       - key: DRAFT_STORE

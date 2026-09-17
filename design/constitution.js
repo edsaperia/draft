@@ -2686,7 +2686,8 @@ var CONSTITUTION = (() => {
      * only once the text confirmed — are both retired. What replaces them is
      * one gate on the setting rather than two on the calendar: a setting nobody
      * has set has nothing to hand over, and the text's own confirmation is one
-     * setting's value among nineteen rather than the whole document's clock.
+     * setting's value among the catalogue's eighteen (SPEC §9.7.1) rather than
+     * the whole document's clock.
      */
     relinquish(t, setting, power) {
       this.requireOpen("giving up a power");

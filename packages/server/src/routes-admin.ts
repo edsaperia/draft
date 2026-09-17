@@ -73,9 +73,22 @@ export const healthTable: Route[] = [
       // bundle, so this discloses nothing the page does not.
       json(res, 200, {
         ok: true,
+        // which commit answers in `x-build`: the booted one until a surface
+        // upload moves it, so every open page reloads itself (Q1347)
         build: ctx.buildSha,
         // the commit whose page files a surface upload put in place (Q1347), or null
         surface: ctx.surfaceSha,
+        // **the commit this process booted with** (issue #8, F1), read from
+        // the artifact's own environment at boot and never written to
+        // again. `build` and `surface` both name the last page upload, so
+        // after one of those nothing here said which *server* was running,
+        // and CI worked its deploy lane out against the previous push
+        // instead: a red server push followed by a design-only fix-up took
+        // the surface lane, put the new page on the old engine, and left a
+        // real applicant unadmitted for forty minutes
+        // (design/DECISIONS.md:6907). This is the one field a surface
+        // upload cannot move, and it is the base the lane reads.
+        booted: ctx.cfg.buildSha,
         catalogue: CATALOGUE.map((e) => e.id).sort(),
         store: ctx.cfg.store,
         documents: [...ctx.store.all()].length,

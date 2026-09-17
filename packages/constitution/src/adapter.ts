@@ -1,11 +1,15 @@
 /**
  * The engine seam (Q334/Q335): translate the room's settled constitution
  * into engine-core's Constitution plus the §4.2 floor inputs, without
- * modifying engine-core in this task. Type-only import — erased at runtime,
- * so the browser bundle carries nothing of engine-core.
+ * modifying engine-core in this task. The types are erased at runtime; the
+ * one value taken from engine-core is `DEFAULT_CONSTITUTION`, the tuning
+ * table below, and it reaches no browser because **the adapter is not in
+ * the bundle** — `src/browser.ts` re-exports `index.ts`, which deliberately
+ * does not export this file (see its own note).
  *
  */
 
+import { DEFAULT_CONSTITUTION } from '../../engine-core/src/session.js';
 import type { Constitution, ConstitutionAmendment } from '../../engine-core/src/types.js';
 import type { ConstitutionSession } from './session.js';
 import type { SettingId } from './catalogue.js';
@@ -27,19 +31,35 @@ export interface EngineTuning {
   rivalGateMinComparisons: number;
 }
 
-/** Engine tuning is the engine's, un-motionable (Q335) — Appendix A values. */
+/**
+ * Engine tuning is the engine's, un-motionable (Q335) — **and it is the
+ * engine's own table rather than a copy of it** (issue #14 (A), Ed
+ * 2026-09-17: *align the running system to the spec in this deploy*). Every
+ * field is read out of `DEFAULT_CONSTITUTION`, which is the one table SPEC
+ * Appendix A names and `spec-check` holds to it, so a restated literal can
+ * no longer drift from the number the spec publishes and the sim studies
+ * measured — which is what 0.005 · 0.35 · 6 had done against Appendix A's
+ * 0.02 · 0.5 · 3, invisibly, on every document the product ever opened.
+ *
+ * This layer overrides **nothing**. The one tuning number the product moves
+ * is the cooldown, and that is the operator's, not the constitution's
+ * (`DRAFT_COOLDOWN_MS`, §4.2, R-086): the server lays it over this table in
+ * `engine-host.ts`, and the bridge re-states it at the sweep. A field added
+ * here takes a line of its own, deliberately, since the engine's table also
+ * holds what is constitutional and what the room decides.
+ */
 export const DEFAULT_TUNING: EngineTuning = {
-  adoptionFloorMax: 12,
-  deadlockMinComparisons: 20,
-  deadlockEpsilon: 0.005,
-  cooldownMs: 5 * 60_000,
-  redraftLimit: 2,
-  rationaleMaxChars: 300,
-  boutGapMs: 90_000,
-  hotSetSize: 3,
-  explorationEvery: 7,
-  rivalGateProb: 0.35,
-  rivalGateMinComparisons: 6,
+  adoptionFloorMax: DEFAULT_CONSTITUTION.adoptionFloorMax,
+  deadlockMinComparisons: DEFAULT_CONSTITUTION.deadlockMinComparisons,
+  deadlockEpsilon: DEFAULT_CONSTITUTION.deadlockEpsilon,
+  cooldownMs: DEFAULT_CONSTITUTION.cooldownMs,
+  redraftLimit: DEFAULT_CONSTITUTION.redraftLimit,
+  rationaleMaxChars: DEFAULT_CONSTITUTION.rationaleMaxChars,
+  boutGapMs: DEFAULT_CONSTITUTION.boutGapMs,
+  hotSetSize: DEFAULT_CONSTITUTION.hotSetSize,
+  explorationEvery: DEFAULT_CONSTITUTION.explorationEvery,
+  rivalGateProb: DEFAULT_CONSTITUTION.rivalGateProb,
+  rivalGateMinComparisons: DEFAULT_CONSTITUTION.rivalGateMinComparisons,
 };
 
 /**

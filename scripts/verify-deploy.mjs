@@ -5,11 +5,21 @@
  * *environment* does — the class of truth a source review cannot reach and
  * a localhost test cannot see: TLS, HSTS, the proxy's redirect, the dev
  * outbox's absence from a real deploy, the design tree's notes staying
- * unreachable. Everything here is a GET; nothing it does writes to a log
- * or mints a mail, so it is safe to run against production.
+ * unreachable. **Almost everything here is a GET**, and the exceptions are
+ * POSTs made to be refused: the phase ladder and the seat switch asked
+ * with their real methods (Q674), the pause, the resume and the surface
+ * upload asked with a wrong key (Q1345, Q1347), a cross-origin login. Each
+ * asserts its own refusal — 401, 403 or 404 — so on the host this script is
+ * for, none of them reaches a handler at all: nothing written to a log,
+ * nothing mailed, and safe to run against production. Against a *dev* host
+ * the ladder's POST is a real route and does build a document, which is the
+ * check going red and the reason it is here. (`--limits` is the one that
+ * leaves a mark either way: a 429 in the platform's logs.)
  *
  *   node scripts/verify-deploy.mjs https://staging.example.com
  *   node scripts/verify-deploy.mjs https://docs.vote --limits
+ *   node scripts/verify-deploy.mjs https://docs.vote --before=before.json \
+ *     --booted=$GITHUB_SHA
  *
  * --limits additionally hammers the one rate-limited door that neither
  * sends mail nor writes to a log (/api/docs/pending, which 404s on an
@@ -22,14 +32,51 @@
  * in the platform's logs.
  */
 
-const base = (process.argv[2] ?? '').replace(/\/$/, '');
-const limits = process.argv.includes('--limits');
+import { readFileSync } from 'node:fs';
+
+const USAGE = `usage: node scripts/verify-deploy.mjs <base-url> [options]
+
+  --limits            also hammer the rate limiter (leaves a 429 in the logs)
+  --before=<file>     a /healthz body read before the deploy, to compare against
+  --booted=<sha|same> the commit the host must have booted with: a commit for a
+                      full deploy, \`same\` for a surface-only one (needs --before)
+  --store=<pg|file>   the store this host must be serving from
+`;
+const argv = process.argv.slice(2);
+if (argv.includes('--help') || argv.includes('-h')) { console.log(USAGE); process.exit(0); }
+const flag = (name) => {
+  const hit = argv.find((a) => a.startsWith(`--${name}=`));
+  return hit === undefined ? null : hit.slice(name.length + 3);
+};
+const base = (argv.find((a) => !a.startsWith('-')) ?? '').replace(/\/$/, '');
+const limits = argv.includes('--limits');
 if (!/^https?:\/\//.test(base)) {
-  console.error('usage: node scripts/verify-deploy.mjs <base-url> [--limits]');
+  console.error(USAGE);
   process.exit(2);
 }
 
+/**
+ * **What the host said before the deploy** (issue #8): CI reads `/healthz`
+ * before it touches anything and hands the body here, so the checks below
+ * can be about the *change* rather than about an absolute nobody can state
+ * — which store was answering, how many documents were loaded, how many of
+ * them were quarantined. Absent (the read failed, or somebody ran this by
+ * hand), every comparison says so and passes.
+ */
+const beforeFile = flag('before');
+let before = null;
+if (beforeFile !== null) {
+  try { before = JSON.parse(readFileSync(beforeFile, 'utf8')); }
+  catch (e) { console.error(`--before=${beforeFile} could not be read: ${e.message}`); }
+}
+/** The commit the host must have booted with, or `same` (issue #8, F1). */
+const bootedWanted = flag('booted');
+/** The store this host must be serving from (issue #8, F5). */
+const storeWanted = flag('store');
+
 const results = [];
+/** The live `/healthz` body, once the check below has read it. */
+let health = null;
 /** Run one named assertion; a throw is a failure, a returned string a note. */
 async function check(name, fn) {
   try {
@@ -61,8 +108,84 @@ await check('/healthz says which build and store are answering (stage 7)', async
   expect(typeof body.documents === 'number', 'no document count');
   // the birth page reads this to ask for the stagehand's controls (Q1349)
   expect(typeof body.devMail === 'boolean', 'no devMail');
-  return `store ${body.store} · ${body.documents} documents · devMail ${body.devMail} · build ${String(body.build ?? 'unknown').slice(0, 12)}`;
+  health = body;
+  return `store ${body.store} · ${body.documents} documents · devMail ${body.devMail}`
+    + ` · build ${String(body.build ?? 'unknown').slice(0, 12)}`
+    + ` · booted ${String(body.booted ?? 'unreported').slice(0, 12)}`;
 });
+
+/**
+ * **Which server is running** (issue #8, F1). `build` is what `x-build`
+ * says, and a surface upload moves it without restarting anything — so
+ * after one of those, `build` naming the pushed commit means only that the
+ * pushed *page* is being served. `booted` is the process's own commit,
+ * which no upload can touch: CI asserts it becomes the pushed commit after
+ * a full deploy, and that it has not moved after a surface-only one. The
+ * deploy this exists for is design/DECISIONS.md:6907 — new page, old
+ * engine, x-build swearing to the new commit, a real applicant stuck.
+ */
+if (bootedWanted !== null) {
+  await check('the commit the host booted with (issue #8)', async () => {
+    const got = health?.booted ?? null;
+    expect(health !== null, 'no /healthz body to read it from');
+    if (bootedWanted === 'same') {
+      const was = before?.booted ?? null;
+      expect(before !== null, 'no --before to compare against');
+      expect(got === was, `booted ${got ?? 'unreported'}, was ${was ?? 'unreported'}`
+        + ' — a surface upload restarted the host, or a deploy landed under it');
+      return `unchanged at ${String(got ?? 'unreported').slice(0, 12)} — the page moved, the server did not`;
+    }
+    expect(typeof got === 'string' && got.length >= 7,
+      'the host reports no booted commit — it is running an artifact from before issue #8');
+    expect(got === bootedWanted || bootedWanted.startsWith(got) || got.startsWith(bootedWanted),
+      `booted ${got}, expected ${bootedWanted} — the deploy did not land`);
+    return `${String(got).slice(0, 12)} — the pushed engine is the one answering`;
+  });
+}
+
+/**
+ * **The store and the counts, against what was there before** (issue #8,
+ * F5). The health check above accepts either store, which is right for a
+ * script anybody may point anywhere and wrong for a deploy: docs.vote has
+ * served from Postgres since 2026-08-20 (OPERATING §7), and a deploy that
+ * came up on `file` would answer every check here perfectly while serving
+ * an empty disk. So CI names the store it expects, and where it has a
+ * pre-deploy reading the three numbers are compared with it: the store the
+ * same, the documents no fewer, the quarantined no more. Absolutes are no
+ * use for the last two — production carries three quarantined logs today
+ * (Q1322), so `=== 0` would redden every deploy, and only the *change*
+ * across this deploy is this deploy's business.
+ */
+if (storeWanted !== null || before !== null) {
+  await check('the store and the counts across the deploy (issue #8)', async () => {
+    expect(health !== null, 'no /healthz body to read them from');
+    const notes = [];
+    if (storeWanted !== null) {
+      expect(health.store === storeWanted, `store ${health.store}, expected ${storeWanted}`);
+      notes.push(`store ${health.store} as asked`);
+    }
+    if (before !== null) {
+      if (typeof before.store === 'string') {
+        expect(health.store === before.store,
+          `store was ${before.store} and is ${health.store} — this deploy changed the store`);
+        notes.push(`store unchanged (${health.store})`);
+      }
+      if (typeof before.documents === 'number') {
+        expect(health.documents >= before.documents,
+          `${health.documents} documents, was ${before.documents} — documents are missing`);
+        notes.push(`${health.documents} documents, was ${before.documents}`);
+      }
+      if (typeof before.documentsQuarantined === 'number') {
+        expect(health.documentsQuarantined <= before.documentsQuarantined,
+          `${health.documentsQuarantined} quarantined, was ${before.documentsQuarantined}`
+          + ' — this deploy could not replay a document it used to serve');
+        notes.push(`${health.documentsQuarantined} quarantined, was ${before.documentsQuarantined}`);
+      }
+    }
+    expect(notes.length > 0, 'nothing to compare: the --before file carried none of the three');
+    return notes.join(' · ');
+  });
+}
 
 await check('security headers (defects 2/9)', async () => {
   const h = (await get('/')).headers;

@@ -18,28 +18,46 @@ Nothing here runs from a laptop: the internal string does not resolve outside Re
    backups of the database are the restore point, on Render's own schedule; nothing else is
    possible, and for a store of test documents nothing else is wanted.
 
-2. **The refusal, first.** Run the wipe without its flag. It prints the count it would delete and
+2. **Pause the host, before the tool runs.** The wipe deletes rows the running server still holds
+   in memory, and a commit that *touches* a person writes that person's row straight back
+   (`StorePeople.takeDirty`, `store.ts`; `docs/OPERATING.md` §5) — so here the pause is a data
+   step, not the courtesy it is before an ordinary restart. Paused, the write path persists
+   nothing at all:
+
+       curl -fsS -X POST -H "authorization: Bearer $DRAFT_BOT_KEY" \
+         -H 'content-type: application/json' -d '{}' \
+         https://docs.vote/api/admin/pause
+
+   It lifts itself after fifteen minutes, so run the rest of this sheet without a break.
+
+3. **The refusal, first.** Run the wipe without its flag. It prints the count it would delete and
    the store it is looking at, deletes nothing, and exits 1:
 
        node dist/draft-tools.mjs wipe "$DATABASE_URL"
 
    Read the count. It should equal `/healthz`'s `documents` + `documentsSkipped`.
 
-3. **The wipe.** The flag takes the database's own name — the last path segment of the URL —
+4. **The wipe.** The flag takes the database's own name — the last path segment of the URL —
    typed in full; the tool refuses any other name and never echoes the expected one:
 
        node dist/draft-tools.mjs wipe "$DATABASE_URL" --i-understand-this-deletes-every-document="${DATABASE_URL##*/}"
 
    (If the URL carries a query string, name the database by hand instead of the expansion.)
 
-4. **Restart the service** — the running host still holds what it loaded at boot. Render
+5. **Restart the service** — the running host still holds what it loaded at boot. Render
    dashboard → the `draft` service → *Manual Deploy → Restart* (or redeploy the same commit).
+   The restart lifts the pause with the old process; if you stop here without restarting, lift it
+   by hand with `POST /api/admin/resume` under the same key.
 
-5. **Verify:** `https://docs.vote/healthz` reports `documents: 0`, `documentsSkipped: 0`,
-   `store: "pg"`. Then found a document at `https://docs.vote/` and read its `/healthz` count go to
+6. **Verify:** `https://docs.vote/healthz` reports `documents: 0`, `documentsSkipped: 0`,
+   `store: "pg"`, and `paused: null`. Read **`surface`** in the same answer: a restart drops any
+   surface upload the host was serving and falls back to the artifact's own `design/`
+   (`docs/OPERATING.md` §3, *Restarting the live host*), so a `null` there after a surface-lane
+   push means the page went back a commit and the deploy job wants re-running. Then found a
+   document at `https://docs.vote/` and read its `/healthz` count go to
    1 — the first document born into the split.
 
-6. **Record it:** the date and the count go into `docs/OPERATING.md` §5's wipe paragraph and
+7. **Record it:** the date and the count go into `docs/OPERATING.md` §5's wipe paragraph and
    PRODUCTION.md's decision 1253 row.
 
 ## What it does not touch

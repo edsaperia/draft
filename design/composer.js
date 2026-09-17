@@ -61,9 +61,11 @@ window.COMPOSER = (function () {
        clause carries a caret, and the first character you type opens the clause
        into two lanes — what it says on the left, what you are making it say on
        the right — with your rationale above and 🗑️ and the ✏️ hold below. The
-       briefing, the drafting desk and the arrival bar from design/composer.html
-       are all superseded by this; what survives of that mockup is the briefing,
-       and only as an escalation state (SPEC §3.5).
+       briefing, the drafting desk and the arrival bar from the retired
+       composer mockup (design/composer.html until 2026-09-17, Ed's ruling on
+       issue #21; its description is in design/DECISIONS.md under Q70) are all
+       superseded by this; what survives of that mockup is the briefing, and
+       only as an escalation state (SPEC §3.5).
 
        Three things follow from "it is just the document":
          · there is **one** draft at a time, because there is one caret;

@@ -7,8 +7,15 @@ Written 2026-08-20 as stage 7 landed. For the map of what runs where, see
 
     curl -s https://docs.vote/healthz
 
-    {"ok":true,"build":"<commit sha>","catalogue":[…],"store":"pg","documents":3,
-     "uptimeSeconds":912,"mail":"on","outbox":{…},"errors":{…},"cooldownMs":0}
+    {"ok":true,"build":"<commit sha>","surface":"<commit sha>","catalogue":[…],
+     "store":"pg","documents":3,"documentsSkipped":0,"documentsQuarantined":0,
+     "documentsStalled":0,"paused":null,"uptimeSeconds":912,"mail":"on",
+     "devMail":false,"outbox":{…},"errors":{…},"cooldownMs":0}
+
+**The route is the list of record** — `GET /healthz` in
+`packages/server/src/routes-admin.ts`, each field beside the reason it is
+there; `docs/OPERATING.md` §4 annotates them. Issue #8 adds `booted`, the
+commit the *process* booted with, beside the `build` it serves.
 
 Production has read `"store":"pg"` since the cutover of 2026-08-20; a
 `"file"` there means `DRAFT_STORE` is unset and the instance is writing to
@@ -28,6 +35,15 @@ a disk that no longer exists between deploys.
   the throws nobody handled since boot and is the number to watch between
   sessions; `cooldownMs` is the adoption metronome in force. All three:
   `docs/OPERATING.md` §2 and §4.
+- `surface` is the commit whose page files a surface upload put in place, or
+  `null`. It is memory-only, so **a restart takes it** and the host goes back
+  to serving the artifact's own `design/`: read it after every restart, and
+  read `docs/OPERATING.md` §3's *Restarting the live host* before taking one.
+- `paused` is the announced pause (Q1345) or `null`; `documentsSkipped`,
+  `documentsQuarantined` and `documentsStalled` count logs the boot would not
+  read, logs whose replay threw, and documents the store has refused for good
+  (`docs/OPERATING.md` §5 and §11). All four should read 0 or `null` on a
+  healthy docs.vote, except the quarantined ones Ed has chosen to keep.
 
 Render's own health check points at `/healthz` (render.yaml). A service
 created from an earlier blueprint keeps its old path until changed in the
@@ -56,13 +72,23 @@ instead.
 ## How a deploy happens
 
 1. Push to `main`. There is no other step: a push is a deploy.
-2. CI lints, typechecks, tests, builds, boot-smokes the artifact (including
-   a SIGTERM and a clean exit), fires the Render deploy hook, waits for
-   `x-build` / `/healthz` to report the pushed SHA, then runs
-   `scripts/verify-deploy.mjs` against the live host.
-3. If verification fails, the workflow is red but **the new build is
+2. CI lints, typechecks, tests, builds and boot-smokes the artifact
+   (including a SIGTERM and a clean exit), then asks **what the push
+   touched** and takes one of three lanes — documents only, the surface
+   only, or the full deploy. `docs/OPERATING.md` §3 has the filter and what
+   each lane does; the short of it is that only the full lane restarts
+   anything, and the full lane **pauses the live host first** (Q1345) before
+   it fires the Render deploy hook.
+3. On the full lane it waits for `x-build` / `/healthz` to report the pushed
+   SHA, then runs `scripts/verify-deploy.mjs` against the live host.
+4. If verification fails, the workflow is red but **the new build is
    already live**. Revert the commit and push the revert; CI deploys the
    revert the same way. Then confirm `/healthz` and write it up.
+
+**A restart is not a deploy but costs the same care**: the platform can run
+two instances for a moment, which is the write split §11's `stalled`
+describes, and a restart drops any surface upload the host was serving.
+`docs/OPERATING.md` §3, *Restarting the live host*, is the sheet for it.
 
 Manual verification at any time (read-only, safe against production):
 
@@ -91,7 +117,7 @@ request in the log lines before each exit.
 
 | Variable | Meaning | Default |
 |---|---|---|
-| `DRAFT_STORE` | `file` or `pg` — **the cutover switch** (stage 6) | `file` (absent) |
+| `DRAFT_STORE` | `file` or `pg` — **the cutover switch** (stage 6) | `file` (absent) — but **production is set to `pg` in the Render dashboard**, and has been since 2026-08-20 |
 | `DATABASE_URL` | where Postgres is; inert while `DRAFT_STORE` is `file` | unset |
 | `RENDER_GIT_COMMIT` / `DRAFT_BUILD_SHA` | shown as `build` | unset |
 
