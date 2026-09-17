@@ -665,6 +665,12 @@ function applyLifecycle(s: FoldState, event: ConstitutionEvent): void {
         moot: null,
       });
       s.nextMotionN += 1;
+      // **An invitation motion mints a person id when it opens** (issue #2),
+      // so the counter moves here and not only when the motion carries — two
+      // invitations open at once used to take the same `p-N`, the second
+      // rewriting the first invitee's address and then being refused as a
+      // twin of the motion it had just overwritten.
+      if (event.payload.kind === 'invite') notePerson(s, event.payload.person);
       if (event.payload.kind === 'admit') {
         s.applicants.get(event.payload.applicant)!.motion = event.motion;
       }

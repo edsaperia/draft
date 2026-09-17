@@ -197,6 +197,29 @@ describe('email is unique through the rows (§9.7½)', () => {
     expect(again.memberRecords().get(dee)!.person).toBe('p-4');
   });
 
+  /**
+   * Issue #2: an invitation motion writes a person row the moment it opens,
+   * so the counter has to move then too. Before this it moved only when the
+   * motion carried (`member-invited`), and the second motion open at the same
+   * time minted the same `p-N` — rewriting the first invitee's address, and
+   * then being refused as a twin of a motion it had just overwritten. The
+   * counter is rebuilt from the log, so replay had the same hole.
+   */
+  it('an invite motion counts the person id it mints, live and on replay', () => {
+    const { s, bo, cy } = buildConstituted({ admission: { price: 'assembly' } });
+    const person = (m: string, x = s) =>
+      (x.motionRecords().get(m)!.payload as { person: string }).person;
+    const dee = s.openMotion(3, bo, { kind: 'invite', email: 'dee@example.org' });
+    const eve = s.openMotion(4, cy, { kind: 'invite', email: 'eve@example.org' });
+    expect(person(dee)).not.toBe(person(eve));
+    expect(s.people.get(person(dee))!.email).toBe('dee@example.org');
+    expect(s.people.get(person(eve))!.email).toBe('eve@example.org');
+    const again = ConstitutionSession.replay([...s.logEntries()], s.people);
+    const fay = again.openMotion(5, 'ada', { kind: 'invite', email: 'fay@example.org' });
+    expect(person(fay, again)).not.toBe(person(eve));
+    expect(again.people.get(person(eve))!.email).toBe('eve@example.org');
+  });
+
   it('an application from an address already applying is refused; a refused one may try again', () => {
     const { s } = buildConstituted({ applications: { apply: true }, admission: { price: 'proposal' } });
     const first = s.startApplication(3, 'eve@example.org');
