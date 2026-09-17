@@ -28,11 +28,20 @@
  * the bundle matches source, so it is a sound stand-in for the TS a plain
  * .mjs cannot import.
  *
- * **Two questions, asked in this order** (entry 105, 2026-08-27). *Which
- * server?* is `walkBase` below — argv, then the environment, then the port,
- * then the server's own default — because a walk that picks its server by a
- * literal port drives whatever answers there, which is how the B2 batch review
- * started a server on 8160 and walked 8199. *Is it this tree?* is
+ * **Three questions, asked in this order** (entry 105, 2026-08-27; the third
+ * is issue #17's F5, 2026-09-17). *Which server?* is `walkBase` below — argv,
+ * then the environment, then the port, then the server's own default —
+ * because a walk that picks its server by a literal port drives whatever
+ * answers there, which is how the B2 batch review started a server on 8160
+ * and walked 8199.
+ *
+ * *Is it a dev server?* is the **devMail** rung of `assertServerBuild`, and
+ * it comes first because it is the only one whose failure is irreversible:
+ * these walks found documents and send mail, and pointed at docs.vote they
+ * would do both for real. Nothing asked this until 2026-09-17, so the check
+ * approved the live host and only the sha accident kept the walks off it.
+ *
+ * *Is it this tree?* is the rest of
  * `assertServerBuild`: the **sha** first when the server reports one — the
  * same `cfg.buildSha` the `x-build` response header carries, against `git
  * rev-parse HEAD` here — because a commit pair is the plainer fact; then the
@@ -122,10 +131,29 @@ export function treeCatalogueIds() {
   return cat.map((e) => e.id).sort();
 }
 
-const die = (label, lines) => {
-  console.error(`\n${label}: refusing to run — this server is not your tree.\n`);
+/**
+ * The refusal. Two headlines, because there are two ways to be the wrong
+ * server and they want different remedies: *not your tree* is answered by
+ * restarting, and *not a dev server* (issue #17, F5) is answered by pointing
+ * somewhere else entirely — the one thing a person must not do on reading it
+ * is start a walk against the host they just named.
+ *
+ * **On Windows the status is 127, not 2.** `process.exit()` while an https
+ * keep-alive socket is mid-close aborts inside libuv
+ * (`!(handle->flags & UV_HANDLE_CLOSING)`), so an `https://` refusal prints
+ * its message and then that line. Pre-existing and not this function's doing
+ * — a bare `await fetch('https://…'); process.exit(2)` does the same on this
+ * machine — and it costs nothing here, where every caller asks only whether
+ * the walk may run. On Linux, and against any `http://` host, it is 2.
+ */
+const die = (label, lines, kind = 'tree') => {
+  console.error(kind === 'tree'
+    ? `\n${label}: refusing to run — this server is not your tree.\n`
+    : `\n${label}: refusing to run — this is not a dev server.\n`);
   for (const l of lines) console.error('  ' + l);
-  console.error('\nRestart the server from this tree, or pass the right base URL.');
+  console.error(kind === 'tree'
+    ? '\nRestart the server from this tree, or pass the right base URL.'
+    : '\nStart a server from this tree without RESEND_API_KEY, and walk that.');
   process.exit(2);
 };
 
@@ -155,6 +183,33 @@ export async function assertServerBuild(base, label = 'walk') {
     return die(label, [`no server answering at ${base} (${e && e.message}).`]);
   }
   const got = health.catalogue;
+  // **Is it a dev server at all?** (Issue #17, F5.) Every walk that calls
+  // this founds documents, sends mail and reads its magic links back out of
+  // the dev outbox, and until 2026-09-17 nothing here said which *kind* of
+  // host it was talking to: `assertServerBuild('https://docs.vote', …)`
+  // answered APPROVED, and all that stood between a shell holding
+  // production's DRAFT_BASE_URL and a real document on the live site was
+  // that HEAD happened not to be the deployed commit. On the day the tree
+  // and the host agree — the hour after a deploy, which is exactly when a
+  // walk is most likely to be run by hand — that accident stops holding.
+  //
+  // `devMail` is the walks' own precondition rather than a proxy for one:
+  // it is `mailer.dev`, true only where RESEND_API_KEY is unset
+  // (mailer.ts), which is the branch that files mail into
+  // `data/outbox.jsonl` for `GET /api/dev/outbox` to hand back. False means
+  // a host that really sends. Asked before the sha and the catalogue
+  // because it is the graver answer: a stale dev server costs an hour, this
+  // costs a document on docs.vote and mail to real people. `!== true`, not
+  // `=== false`, so a server too old to report the field is refused rather
+  // than waved through — the same rule the catalogue rung takes below.
+  if (health.devMail !== true) {
+    return die(label, [
+      `${base} reports devMail ${JSON.stringify(health.devMail)}.`,
+      'It sends real mail through Resend and has no dev outbox to read a magic',
+      'link back from, so this walk would found a real document on it and mail',
+      'real people.',
+    ], 'devmail');
+  }
   // The sha rung, first when it can be asked (entry 105): `health.build` is
   // the same `cfg.buildSha` the `x-build` response header carries, so a
   // server that states its commit is judged on it — the plainer fact, and the
