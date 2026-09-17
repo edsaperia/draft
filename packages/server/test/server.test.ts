@@ -2909,12 +2909,20 @@ describe('the pair deck and the judged-pairs ledger (Q1200, Q1201)', () => {
       `${base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as unknown as Deck;
 
     await cmd(ada, 'confirm-starting-text', { text: 'The clubhouse is open.\nThe rota is weekly.' });
-    for (const who of ['bo', 'cy', 'dee']) await cmd(ada, 'invite', { email: `${who}@example.org` });
+    // **Five seats, not four, since Q1439** (R-126): no quorum may ask for
+    // more than half, so the count of 4 below is read as ⌈4/2⌉ = 2 in a room
+    // of four and the race would carry on dee's first vote. At five it reads
+    // 3, above the two approvals this walk can produce — which is what the
+    // note above means by *the quorum is set above the number of judges*.
+    for (const who of ['bo', 'cy', 'dee', 'eve']) {
+      await cmd(ada, 'invite', { email: `${who}@example.org` });
+    }
     const follow = async (email: string): Promise<string> =>
       cookieOf(await consume((await lastMailTo(dataDir, email)).link!));
     const bo = await follow('bo@example.org');
     const cy = await follow('cy@example.org');
     const dee = await follow('dee@example.org');
+    await follow('eve@example.org'); // arrives, so E counts them (§9.6a)
     await cmd(ada, 'set-setting', { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
     const ends = Date.now() + 3600_000;
     const values: Record<string, unknown> = {
@@ -3053,12 +3061,17 @@ describe('askable races and the pair that rides the view (Q1202)', () => {
 
     const LINES = Array.from({ length: 11 }, (_, i) => `Clause ${i + 1} stands.`);
     await cmd(ada, 'confirm-starting-text', { text: LINES.join('\n') });
-    for (const who of ['bo', 'cy', 'dee']) await cmd(ada, 'invite', { email: `${who}@example.org` });
+    // five seats, so the count of 4 below is under the half-the-room cap
+    // (Q1439, R-126) and dee's one vote does not carry a race away mid-test
+    for (const who of ['bo', 'cy', 'dee', 'eve']) {
+      await cmd(ada, 'invite', { email: `${who}@example.org` });
+    }
     const follow = async (email: string): Promise<string> =>
       cookieOf(await consume((await lastMailTo(dataDir, email)).link!));
     const bo = await follow('bo@example.org');
     const cy = await follow('cy@example.org');
     const dee = await follow('dee@example.org');
+    await follow('eve@example.org'); // arrives, so E counts them (§9.6a)
     await cmd(ada, 'set-setting', { setting: 'rate', value: { grant: 6, cap: 8, dripMinutes: 240 } });
     const values: Record<string, unknown> = {
       quorum: { form: 'count', n: 4 },
@@ -3290,7 +3303,7 @@ describe('the people split (decision 1253): identity beside the log, never in it
 
 describe('the slim view (the moon room, 2026-09-11): a poll that says what it holds is answered without it', () => {
   it('leaves out the text, the records and the projection the page already has, and names them', async () => {
-    const { base } = await boot();
+    const { base, dataDir } = await boot();
     const created = await (await post(base, '/api/docs', {
       title: 'Slim Charter', email: 'ada@example.org',
     })).json() as { ok: boolean; slug: string; devLink: string };
@@ -3314,10 +3327,15 @@ describe('the slim view (the moon room, 2026-09-11): a poll that says what it ho
     expect(reborn.slim).toEqual([]);
     expect(reborn.text).toBe('The latch lifts from inside.');
     await ok('set-setting', { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
+    // **A second seat, since Q1439** (R-126, R-063): the proposal below has to
+    // stay live, and a quorum of two in a room of one no longer holds it —
+    // no quorum may ask for more than half, so at E = 1 the floor is one and
+    // the sole member's own preference is both the floor and the room. With
+    // bo here the room has not measured it, so it waits as before.
+    await ok('invite', { email: 'bo@example.org' });
+    await consume((await lastMailTo(dataDir, 'bo@example.org')).link!);
     const values: Record<string, unknown> = {
       ending: { endsAtMs: null },
-      // a quorum of two in a room of one: the proposal below stays live
-      // (E = 1 would adopt it on the author's own preference at once)
       quorum: { form: 'count', n: 2 }, chamber: { rung: 'link' },
       authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
       applications: { apply: false }, admission: { price: 'proposal' },

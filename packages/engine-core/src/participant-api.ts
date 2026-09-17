@@ -189,13 +189,15 @@ export class ParticipantApi {
    * caller's own `nextCards` arguments or the two are priced against
    * different tops.
    *
-   * No clock in the *pair*: unlike the feed, which prices races against
-   * the threshold now, whether a pair is left to ask does not depend on
-   * the time — and neither does the top, the threshold being a common
-   * divisor that moves no race past another (see `feed`'s memo).
+   * **Whether** a pair is left to ask still does not depend on the clock —
+   * and neither does the top, the threshold being a common divisor that moves
+   * no race past another (see `feed`'s memo). **Which** pair comes first does,
+   * since Q1439: a race short of its floor leads with the leader against the
+   * current text, and whether it is short depends on who has abstained by now.
+   * So `now` goes to the per-race read as well as to the hand.
    */
   askOn(raceId: string, n: number, now: number): CardView | null {
-    const card = this.session.askOn(this.participantId, raceId);
+    const card = this.session.askOn(this.participantId, raceId, now);
     if (card === null) return null;
     const top = handTop(this.session.feed(this.participantId, n, now));
     return this.renderCard(card, relativeUrgency(card.value, top));

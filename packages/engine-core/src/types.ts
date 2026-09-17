@@ -29,18 +29,31 @@ export interface Constitution {
   adoptionThresholdStart: number;
   adoptionThresholdEnd: number;
   /**
-   * F = max(Q, min(ceil(E/3), adoptionFloorMax)) distinct movers per race
-   * (SPEC §4.2, v0.48): the statistical minimum, which the room's quorum
-   * can raise but never lower.
+   * F = max(Q′, min(ceil(E/3), adoptionFloorMax)) **approvals** of the leader
+   * (SPEC §4.2; Q1439, R-125, R-126): the statistical minimum, which the
+   * room's quorum can raise but never lower. The minimum's third is counted on
+   * the whole of E; the quorum against the group the leader is waiting on.
    */
   adoptionFloorMax: number;
   /**
    * The room's settled quorum (SPEC §4.2, §9.0a): a fixed count, or a
-   * share of E (share × E, rounded up), re-derived from current E so a
-   * share-quorum tracks the roster. null = no quorum settled (Q = 0),
-   * which leaves the statistical minimum governing alone.
+   * share — **of the group the leader is waiting on** since Q1439 (R-126),
+   * rounded up — and in either form never more than half of that group.
+   * null = no quorum settled (Q′ = 0), which leaves the statistical minimum
+   * governing alone.
    */
   quorum: { form: 'count' | 'share'; n: number } | null;
+  /**
+   * 💤's period as the engine sees it (SPEC §9.5a; Q1439 ruling c, R-127,
+   * R-128): **one period doing two jobs** — silent on everything for that
+   * long and a membership lapses (which reaches the engine only as
+   * `participant-suspended`); silent on one candidate for that long and the
+   * member abstains on it, leaving the group its floor is read against (§8.2).
+   * `null` is *never*, and so is the field being absent — every log written
+   * before it existed — so nothing is imputed from silence there, exactly as
+   * R-089 had it.
+   */
+  abstainAfterMs?: number | null;
   /** Deadlock requires at least this many comparisons in the race. */
   deadlockMinComparisons: number;
   /** Max pair value below which a race counts as deadlocked. */
@@ -120,6 +133,13 @@ export interface ConstitutionAmendment {
   authorshipVisibility?: Constitution['authorshipVisibility'];
   quorum?: Constitution['quorum'];
   /**
+   * 💤 moving is a real amendment binding races in flight (§4.3, §9.5a;
+   * Q1439): the period is what turns a silence into an abstention, so a
+   * shorter one lets a leader carry sooner and *never* puts every silence
+   * back in the group. It re-rates nothing already adopted.
+   */
+  abstainAfterMs?: number | null;
+  /**
    * 🛡️ on the Text moving is a real amendment binding races in flight
    * (§4.3, R-056): reserving the shield changes what clearing the bar
    * means. The host reports *whether assent is owed*, never the raw
@@ -182,6 +202,14 @@ export interface Candidate {
   setting?: { settingId: string; value: unknown };
   /** Footprint on the version the patch currently targets; [] for settings. */
   footprint: Span[];
+  /**
+   * When it was submitted (Q1439). The pair *this against the current text*
+   * cannot be answered before the candidate exists, so this is one of the
+   * three moments a member's 💤 period on it can start from (§8.2) — the
+   * others being an evidence reset on revision (§2.4) and the ground the race
+   * now stands on (§4.4).
+   */
+  submittedT: number;
   state: CandidateState;
   stakePaid: number;
   /** Peak modeled P(beats incumbent) — refund basis (SPEC §7). */
@@ -251,6 +279,35 @@ export interface RaceView {
    * 0 while there is no leader.
    */
   leaderJudges: number;
+  /**
+   * **The floor's own number since Q1439** (SPEC §4.2, §8.2 → why: R-125):
+   * members who have **approved** the leader — whose latest usable comparison
+   * of it *against the current text* prefers it, the leader's own author among
+   * them by their derived preference (§3.3). A judgment of the leader against
+   * a rival approves neither, *Indifferent* approves nothing, and a judgment
+   * cast before its author left E keeps counting (§9.5a). This, not
+   * `leaderJudges`, is what `clearsFloor` tests: a judgment *against* the
+   * leader can never help it reach its floor.
+   */
+  approvals: number;
+  /**
+   * **The group the leader is waiting on** (SPEC §8.2 → why: R-126, R-127),
+   * at the time the view was taken: its approvers and its opposers, plus the
+   * members of E who have not answered and whose 💤 period has not run out.
+   * *Indifferent* leaves it at once; silence leaves it a period after the
+   * pair as it stands became answerable, or never where 💤 is *never*. A
+   * share-form quorum is a share of **this**, and neither form may ask for
+   * more than half of it.
+   */
+  group: number;
+  /**
+   * **F, at the time the view was taken** (SPEC §4.2): `max(Q′, min(⌈E/3⌉,
+   * F_max))`, the quorum read against `group` and capped at half of it, the
+   * statistical minimum read against the whole of E. It moves with the clock
+   * as well as with the log, because an abstention needs no event — which is
+   * why `races()` takes a `t`.
+   */
+  floor: number;
   /**
    * Measured (non-derived) usable comparisons touching the leader — the
    * room's own judgments of X, R-063's line drawn at the winner: a race is
@@ -492,6 +549,16 @@ export type Event =
        * ordinary case.
        */
       cappedFit?: { iterations: number; gradMax: number };
+      /**
+       * **What the batch decided on** (Q1439; SPEC §8.2's *the winner's
+       * approvals and its floor*): the approvals the winner held and the floor
+       * it met, at the moment the ready set was snapshotted. Optional for the
+       * same compatibility reason as `cappedFit` above — absent on every log
+       * written before the field existed, so the golden logs fold unedited —
+       * and never written as `undefined`.
+       */
+      approvals?: number;
+      floor?: number;
     }
   | {
       /**

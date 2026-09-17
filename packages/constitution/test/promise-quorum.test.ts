@@ -11,11 +11,11 @@
  *
  * | # | The promise, in the room's words | Epoch | Verdict |
  * |---|---|---|---|
- * | 1 | *Nothing changes the document until at least Q of us have weighed in* — on the change itself, and never fewer than ⌈E/3⌉ | live, close | **holds** — `engine-core` `adoptionFloor()`, `r.leaderJudges >= floor` in `clearsFloor`, read by the batch and by the close alike (Q1337: judges of the winner, never movers on the race) |
+ * | 1 | *Nothing changes the document until at least Q of us have voted for it* — on the change itself, never fewer than ⌈E/3⌉ and **never more than half of us** | live, close | **holds** — `engine-core` `floorFor`, `r.approvals >= r.floor` in `clearsFloor`, read by the batch and by the close alike (Q1337: the winner, never the race at large; Q1439: approvals, never judgments) |
  * | 2 | *The question was asked as a count (or a share), and that is how it is answered and how it stands* | pre-Begin | **holds** — `setQuorumForm`'s two refusals, `answer`'s third |
  * | 2 | …and live | live | **gap (fold)** — nothing after 🍾 checks the form: a `set` motion or the founder's own pen re-frames `quorumFormValue` silently, and the composer cannot express the re-frame it permits |
  * | 3 | *If the quorum is a share, it is a share of who is here now* | live | **holds** — `adoptionFloor()` re-derives from `eCount()` on every call; `floor-recomputed` on every roster change |
- * | 4 | *When too few of us are still here to reach quorum, nothing passes — and nothing stops* (§9.5, R-088: there is no freeze) | live | **holds** — `canJudge()` is `constitutedT !== null`; a lapse, a removal or a birth that leaves E under a count-form quorum holds every race at the floor and holds nothing else |
+ * | 4 | *However few of us are left, the quorum is never more than half of us — and nothing stops* (§9.5a, R-088 as amended by Q1439's R-126) | live | **holds** — `canJudge()` is `constitutedT !== null`; a lapse, a removal or a birth that leaves E under a count-form quorum reads it as half the room and holds nothing else. It read *too few of us left and nothing passes* until 2026-09-17: that was the defect, not the promise — one absence held every race for ever |
  * | 5 | *The founding questions themselves are not decided by quorum* | pre-Begin | **holds, by design** — `maybeResolve` has no quorum in it at all; it holds on an open invitation and on one voice |
  * | 6 | *A constitutional motion has no quorum either* | live | **holds, by design** — `maybeSettleMotions` reads `motionElectorateOf`, never `quorumCount` |
  * | — | the arithmetic: *a share of E, rounded up* | all | **gap (fold, both packages)** — `Math.ceil((n / 100) * E)` is not ⌈n·E/100⌉ in binary floating point |
@@ -107,31 +107,36 @@ function buildSolo(quorum: { form: 'count' | 'share'; n: number }) {
 }
 
 describe('promise 1 — nothing carries until Q of us have weighed in (§4.2, §8.2)', () => {
-  it('at exactly the floor a text race adopts, and one mover short of it nothing moves — not on a judgment, not on a tick', () => {
-    // E = 3 and a count of 3: F = max(3, min(⌈3/3⌉, 12)) = 3, so the whole
-    // room must have moved. The author's own derived preference is one mover
-    // (§3.3), so two real judgments make three.
-    const { s, bo, cy } = buildConstituted({ quorum: { form: 'count', n: 3 } });
+  it('at exactly the floor a text race adopts, and one approval short of it nothing moves — not on a judgment, not on a tick', () => {
+    // E = 3 and a count of 2: F = max(min(2, ⌈3/2⌉), min(⌈3/3⌉, 12)) = 2, so
+    // two of the three must have voted **for** it. The author's own derived
+    // preference is one approval (§3.3), so one real judgment makes two.
+    //
+    // **The count was 3 until Q1439** (R-126) — *the whole room must have
+    // moved* — and no quorum may ask for more than half now, so a count of 3
+    // in a room of three is read as 2 and the shape below is one voice
+    // shorter. What promise 1 says is unchanged: nothing carries until Q of
+    // us have voted for it.
+    const { s, bo } = buildConstituted({ quorum: { form: 'count', n: 2 } });
     expect(s.E()).toBe(3);
     const bridge = new EngineBridge(s, { t: 3, rngSeed: 'floor-exact' });
-    expect(bridge.engine.adoptionFloor()).toBe(3);
+    expect(bridge.engine.adoptionFloor()).toBe(2);
 
     const v0 = bridge.engine.currentVersion();
     const { id, raceId } = bridge.proposeText(10, bo,
       patch(v0, ['The clubhouse shall be kept open every day.']), 'nights too');
     const race = () => bridge.engine.races().find((r) => r.id === raceId)!;
     expect(race().distinctMovers).toBe(1); // bo's own preference, and nobody else's
+    expect(race().approvals).toBe(1);
 
-    // one short of the floor: the room's verdict is in and the document does
-    // not move — and a tick does not quietly finish the job either
-    bridge.judge(20, 'ada', id, race().incumbentId, 'a');
-    expect(race().distinctMovers).toBe(2);
+    // one short of the floor: the document does not move — and a tick does
+    // not quietly finish the job either
     expect(bridge.engine.document()).toBe('The clubhouse shall be kept open.');
     bridge.tick(21);
     expect(bridge.engine.document()).toBe('The clubhouse shall be kept open.');
 
-    // exactly the floor — the engine tests `>=`, so F movers is enough
-    bridge.judge(30, cy, id, race().incumbentId, 'a');
+    // exactly the floor — the engine tests `>=`, so F approvals is enough
+    bridge.judge(30, 'ada', id, race().incumbentId, 'a');
     expect(bridge.engine.getCandidate(id).state).toBe('adopted');
     expect(bridge.engine.document()).toBe('The clubhouse shall be kept open every day.');
   });
@@ -190,13 +195,16 @@ describe('promise 1 — nothing carries until Q of us have weighed in (§4.2, §
     expect(bridge.engine.document()).toBe('Open always.');
   });
 
-  it('the close applies the same floor: a race one mover short at T=0 is recorded undecided, never adopted (§4.6)', () => {
-    const { s, bo } = buildConstituted({ quorum: { form: 'count', n: 3 } });
+  it('the close applies the same floor: a race one approval short at T=0 is recorded undecided, never adopted (§4.6)', () => {
+    // a count of 2 in a room of three is the capped floor (Q1439, R-126), and
+    // the one approval the author's own preference makes is one short of it
+    const { s, bo } = buildConstituted({ quorum: { form: 'count', n: 2 } });
     const bridge = new EngineBridge(s, { t: 3, rngSeed: 'close-floor' });
     const v0 = bridge.engine.currentVersion();
     const { id, raceId } = bridge.proposeText(10, bo, patch(v0, ['Open always.']), '');
-    bridge.judge(20, 'ada', id, bridge.engine.races().find((r) => r.id === raceId)!.incumbentId, 'a');
-    expect(bridge.engine.races().find((r) => r.id === raceId)!.distinctMovers).toBe(2); // F = 3
+    const race = bridge.engine.races().find((r) => r.id === raceId)!;
+    expect(race.approvals).toBe(1);
+    expect(race.floor).toBe(2);
 
     const render = bridge.close(1_000_000);
     expect(render.applied).toEqual([]);
@@ -302,8 +310,13 @@ describe('promise 2 — the form never converts (§9.0a, Q341)', () => {
 
 describe('promise 3 — a share is a share of who is here now (§9.3, §8.2)', () => {
   it('the floor rises with an arrival, falls with a removal, and falls with a lapse — re-derived, never stored', () => {
+    // **Half, not 60** (Q1439, R-126): a share above 50 is refused at
+    // validation now, and the engine would read it as half the room anyway,
+    // which would mask the very tracking this promise is about. At 50 the
+    // share and the cap coincide, so the floor moves on every *second*
+    // arrival — which is why two arrive below.
     const { s, bo, cy } = buildConstituted({
-      quorum: { form: 'share', n: 60 },
+      quorum: { form: 'share', n: 50 },
       admission: { price: 'pen' },
       doors: { remove: { unilateral: true, assent: false } },
       lapse: { afterMs: LAPSE_MS },
@@ -313,24 +326,39 @@ describe('promise 3 — a share is a share of who is here now (§9.3, §8.2)', (
       .filter((e) => e.type === 'floor-recomputed') as Array<{ E: number; quorumN: number | null }>;
 
     expect(s.E()).toBe(3);
-    expect(bridge.engine.adoptionFloor()).toBe(2); // ⌈0.6 × 3⌉ = 2
+    expect(bridge.engine.adoptionFloor()).toBe(2); // ⌈50 × 3 / 100⌉ = 2
     const before = floorEvents().length;
 
-    // an arrival: ⌈0.6 × 4⌉ = 3
+    // an arrival into an even room: ⌈50 × 4 / 100⌉ = 2, and the event is
+    // written whether or not the number moved — the floor is re-derived, not
+    // stored, which is what this promise is
     const dee = s.invite(10, 'dee@example.org');
     s.arrive(11, dee);
     bridge.sync(11);
     expect(s.E()).toBe(4);
-    expect(bridge.engine.adoptionFloor()).toBe(3);
-    expect(floorEvents().length).toBe(before + 1);
-    expect(floorEvents().at(-1)).toMatchObject({ E: 4, quorumN: 3 });
-
-    // a removal: back to ⌈0.6 × 3⌉ = 2
-    s.remove(12, dee);
-    bridge.sync(12);
-    expect(s.E()).toBe(3);
     expect(bridge.engine.adoptionFloor()).toBe(2);
-    expect(floorEvents().at(-1)).toMatchObject({ E: 3, quorumN: 2 });
+    expect(floorEvents().length).toBe(before + 1);
+    expect(floorEvents().at(-1)).toMatchObject({ E: 4, quorumN: 2 });
+
+    // and the next one raises it: ⌈50 × 5 / 100⌉ = 3
+    const eve = s.invite(11, 'eve@example.org');
+    s.arrive(12, eve);
+    bridge.sync(12);
+    expect(s.E()).toBe(5);
+    expect(bridge.engine.adoptionFloor()).toBe(3);
+    expect(floorEvents().at(-1)).toMatchObject({ E: 5, quorumN: 3 });
+
+    // a removal: back to ⌈50 × 4 / 100⌉ = 2
+    s.remove(13, eve);
+    bridge.sync(13);
+    expect(s.E()).toBe(4);
+    expect(bridge.engine.adoptionFloor()).toBe(2);
+    expect(floorEvents().at(-1)).toMatchObject({ E: 4, quorumN: 2 });
+    // and dee out again, so the lapse below happens in the room of three the
+    // fixture built
+    s.remove(14, dee);
+    bridge.sync(14);
+    expect(s.E()).toBe(3);
 
     // a lapse: the same fall, by the clock rather than by a hand. bo has said
     // nothing since the founding, so the tick past the 💤 rule lapses them —
@@ -340,8 +368,12 @@ describe('promise 3 — a share is a share of who is here now (§9.3, §8.2)', (
     bridge.sync(LAPSE_TICK);
     expect(s.memberRecords().get(bo)!.lapsed).toBe(true);
     expect(s.E()).toBe(2);
-    expect(bridge.engine.adoptionFloor()).toBe(2); // ⌈0.6 × 2⌉ = 2, the term ⌈2/3⌉ = 1
-    expect(floorEvents().at(-1)).toMatchObject({ E: 2, quorumN: 2 });
+    // ⌈50 × 2 / 100⌉ = 1, and ⌈2/3⌉ = 1: the room of two asks for one either
+    // way, which is also the cap (Q1439, R-126). The event records the raw
+    // count the room's own number gives; what is capped is what the floor
+    // *asks* for.
+    expect(bridge.engine.adoptionFloor()).toBe(1);
+    expect(floorEvents().at(-1)).toMatchObject({ E: 2, quorumN: 1 });
   });
 
   it('a count does not track the room, which is the whole difference between the two forms', () => {
@@ -371,15 +403,24 @@ describe('promise 3 — a share is a share of who is here now (§9.3, §8.2)', (
   });
 });
 
-describe('promise 4 — too few of us left and nothing passes, but nothing stops (§9.5, R-088)', () => {
+describe('promise 4 — the quorum never outgrows the room, and nothing stops (§9.5a, R-088 as amended by R-126)', () => {
   // Until v0.99 this promise read *the document stops*: a freeze, fed by
   // sign-out and by the lapse clock. Ed retired both (2026-09-06, Q1196) —
   // quorum is the adoption floor and only that, so a room that cannot reach
-  // it holds every race at the floor and holds nothing else. Each case below
-  // is the positive of the freeze case it replaced: judging stays open, the
-  // floor stands above E, and the race waits (§8.2).
+  // it held every race at the floor and held nothing else.
+  //
+  // **And since Q1439 it cannot fail to reach it either** (R-126, and §9.5a's
+  // closing paragraph rewritten): a count-form quorum is read against the
+  // group like a share, never more than half of it, so a room that shrinks
+  // takes its quorum down with it. The old promise — *too few of us left and
+  // nothing passes* — was the other face of the defect Q1439 closes: at a
+  // quorum of 100 %, or at any count above the room, one absence held every
+  // race for ever and not voting beat voting no. What survives is the half
+  // that was never in doubt: **nothing stops.** Judging stays open, the
+  // document neither freezes nor parks, and what carries is decided by the
+  // people who are still here.
 
-  it('a lapse that leaves E under a count-form quorum leaves the document judging, with every race held at the floor', () => {
+  it('a lapse that leaves one member takes the quorum down to that room, and the document goes on judging', () => {
     const { s, bo, cy } = buildConstituted({
       quorum: { form: 'count', n: 3 },
       lapse: { afterMs: LAPSE_MS },
@@ -393,12 +434,18 @@ describe('promise 4 — too few of us left and nothing passes, but nothing stops
     expect(s.E()).toBe(1);
     expect(s.canJudge()).toBe(true);                // nothing stops
     bridge.tick(LAPSE_TICK + 1);
-    expect(bridge.engine.adoptionFloor()).toBe(3);  // Q = 3 stands above ⌈1/3⌉
+    // a count of 3 in a room of one is read as ⌈1/2⌉ = 1 (Q1439, R-126); it
+    // used to stand at 3 and hold every race for ever
+    expect(bridge.engine.adoptionFloor()).toBe(1);
+    // and it still does not carry — because **bo has lapsed**, so the one
+    // approval it had, their own derived preference, is no longer cast (§8.2,
+    // R-062): the room that is left has said nothing about it
+    expect(bridge.engine.races().find((r) => r.members.includes(id))!.approvals).toBe(0);
     expect(bridge.engine.getCandidate(id).state).not.toBe('adopted');
     expect(bridge.engine.document()).toBe('The clubhouse shall be kept open.');
   });
 
-  it('a removal that takes E under the quorum does the same, at once — there is no window, because there is nothing to fire', () => {
+  it('a removal does the same, at once — there is no window, because there is nothing to fire', () => {
     const { s, bo, cy } = buildConstituted({
       quorum: { form: 'count', n: 3 },
       doors: { remove: { unilateral: true, assent: false } },
@@ -412,25 +459,43 @@ describe('promise 4 — too few of us left and nothing passes, but nothing stops
     s.tick(12);                                     // the host's tick changes nothing either
     expect(s.canJudge()).toBe(true);
     bridge.tick(12);
-    expect(bridge.engine.adoptionFloor()).toBe(3);  // 3 > ⌈2/3⌉ = 1
+    // a count of 3 in a room of two is read as ⌈2/2⌉ = 1 (Q1439, R-126)
+    expect(bridge.engine.adoptionFloor()).toBe(1);
+    // bo is still here and their own preference is one approval, which meets
+    // that floor — and the race still waits, because **the room has not
+    // measured it** (R-063): nobody but the author has judged it, and at E = 2
+    // the author is not the room
+    const race = bridge.engine.races().find((r) => r.members.includes(id))!;
+    expect(race.approvals).toBe(1);
+    expect(race.floor).toBe(1);
+    expect(race.leaderMeasured).toBe(0);
     expect(bridge.engine.getCandidate(id).state).not.toBe('adopted');
     expect(bridge.engine.document()).toBe('The clubhouse shall be kept open.');
   });
 
-  it('a document born asking for more members than it has is open from the start, and adopts nothing until they arrive', () => {
-    // count 5 with E = 3: the meaning line says *nothing can pass until more
-    // members arrive*, and that is the whole of what happens
+  it('a document born asking for more members than it has asks half the room it has', () => {
+    // count 5 with E = 3: it used to stand at 5 and the meaning line said
+    // *nothing can pass until more members arrive*. Since Q1439 (R-126) it is
+    // read as ⌈3/2⌉ = 2 — the room can decide its own text, at the highest
+    // price ✏️ has — and the sentence that promised otherwise went with it.
     const { s, bo } = buildConstituted({ quorum: { form: 'count', n: 5 } });
     expect(s.canJudge()).toBe(true);
     const bridge = new EngineBridge(s, { t: 3, rngSeed: 'birth-floor' });
-    expect(bridge.engine.adoptionFloor()).toBe(5);
+    expect(bridge.engine.adoptionFloor()).toBe(2);
     const v0 = bridge.engine.currentVersion();
     const { id } = bridge.proposeText(10, bo, patch(v0, ['Open always.']), '');
     s.tick(11);
     expect(s.canJudge()).toBe(true);
     bridge.tick(11);
+    // one approval of two: still short, and the tick adds nothing
     expect(bridge.engine.getCandidate(id).state).not.toBe('adopted');
     expect(bridge.engine.document()).toBe('The clubhouse shall be kept open.');
+    // and the second approval carries it — what the old promise said could
+    // never happen until more members arrived
+    bridge.judge(12, 'ada', id,
+      bridge.engine.races().find((r) => r.members.includes(id))!.incumbentId, 'a');
+    expect(bridge.engine.getCandidate(id).state).toBe('adopted');
+    expect(bridge.engine.document()).toBe('Open always.');
   });
 });
 

@@ -11,6 +11,16 @@
  * `RacesHost`, the narrow view of the session these rules need, and the
  * session hands itself over as that host.
  *
+ * **And a race moves with the clock since Q1439**, not only with the log: a
+ * silence becomes an abstention when 💤's period runs, with no event to mark
+ * it, so the floor is a function of `t`. The split is the discipline that
+ * keeps the memo honest — the memo holds `RaceCore` and `ApprovalCore`, which
+ * the state alone decides (who approved, who opposed, and when each awaited
+ * member's period began), and `viewAt` puts the clock's own numbers on top at
+ * every call. Nothing time-dependent may move into `buildRaces`, and
+ * `races()` without a `t` does not exist: the session's door defaults it to
+ * `lastT`, which is the only honest default a pure fold has.
+ *
  * The memo (`derived`, Q1324) stays the session's own — the state version it
  * keys on is bumped at every mutation the fold makes (Q1326), so a fold that
  * reads `races()` twice with the state changing between the reads still sees
@@ -43,6 +53,60 @@ export function candidateNum(id: string): number {
   return Number(id.slice(1));
 }
 
+/**
+ * **F = max(Q′, min(⌈E/3⌉, F_max))** (SPEC §4.2; Q1439 → why: R-125, R-126).
+ *
+ * Two bases, deliberately different. **Q′ is read against the group** the
+ * leader is waiting on — its approvers, its opposers and the members of E it
+ * is still awaiting — because a quorum is what the room asks of the people who
+ * are actually deciding this question, and a silence that has run its 💤
+ * period is not one of them (§8.2). It is a share of that group, rounded up,
+ * or a fixed count; and **in either form never more than half of it**, since
+ * ✏️ is *enough of the room* and 🏛️ is *everybody*, and an approval quorum of
+ * 100% would make them one rung. **The statistical minimum's third is read
+ * against the whole of E**, where it has always been (R-073): it is a
+ * sufficiency floor, not a consent rule, and reading it against a shrinking
+ * group would let two people carry a room of a hundred — the moon room's
+ * defect (R-102) returning by the back door.
+ *
+ * The share's arithmetic is `⌈n·G/100⌉`, **the product before the quotient**
+ * (issue #24): `(n / 100) * G` is not the same number, and 56 % of 25 landed a
+ * hair above 14. `populations.ts`'s `adoptionFloor` keeps the constitution
+ * layer's copy of this line, and `floor-agreement.test.ts` holds the two
+ * equal — they move together or not at all.
+ */
+export function floorFor(c: Constitution, e: number, group: number): number {
+  const q = c.quorum;
+  const asked = q === null ? 0 : q.form === 'count' ? q.n : Math.ceil((q.n * group) / 100);
+  const quorumN = Math.min(asked, Math.ceil(group / 2));
+  return Math.max(quorumN, Math.min(Math.ceil(e / 3), c.adoptionFloorMax));
+}
+
+/**
+ * **The time-free half of a race** (Q1439): everything the state alone
+ * decides, which is what the session's per-state-version memo may hold.
+ * `approvals`, `group`, `floor`, `closeness` and `blockedByPark` are not here
+ * — they move with the clock, because a silence becomes an abstention with no
+ * event to mark it, and the memo would hand back an answer from before the
+ * period ran.
+ */
+type RaceCore = Omit<RaceView, 'approvals' | 'group' | 'floor' | 'closeness' | 'blockedByPark'>;
+
+/**
+ * The approval count and the group, held in the one shape that does not
+ * depend on the clock: who has approved, how many have answered either way,
+ * and — for each member of E who has not answered — the moment their own
+ * period on this pair began (§8.2). Whether that period has run is the only
+ * question left for `t`.
+ */
+interface ApprovalCore {
+  approvals: number;
+  /** Approvers and opposers together: answered, and in the group wherever they now are. */
+  answered: number;
+  /** One period start per awaited member of E, in engine ms. */
+  awaitedFrom: number[];
+}
+
 /** What the races may read of the session: live closures, no copies. */
 export interface RacesHost {
   /** The session's per-state-version memo (Q1324). */
@@ -55,14 +119,30 @@ export interface RacesHost {
   edgesByGround(incumbentId: string): readonly StoredComparison[];
   /** Comparisons at seq below this are dead for the candidate (SPEC §2.4). */
   evidenceSince(id: string): number | undefined;
+  /** When that evidence reset landed (Q1439): the pair became answerable afresh. */
+  evidenceSinceT(id: string): number | undefined;
   /** Out of E (SPEC §8.2): removed or lapsed, and false for a stranger. */
   suspended(participantId: string): boolean;
+  /** E itself (SPEC §8.2), by id: arrived, non-removed, non-lapsed. */
+  eMembers(): readonly string[];
+  /**
+   * When this member last arrived or returned (Q1439): `participant-added`,
+   * or the later `participant-resumed` where they have lapsed and come back.
+   * Nobody's period on a pair starts before they were there to be asked.
+   */
+  arrivalT(participantId: string): number;
+  /**
+   * When this ground first stood (Q1439; SPEC §4.4): the moment every answer
+   * cast against the race as it now stands became answerable. Recorded by the
+   * fold at each event that can move a ground, so a ground shift restarts
+   * every member's period rather than abstaining the people who had answered.
+   */
+  groundSince(groundId: string): number;
   /** The standing value of a setting (SPEC §9.6), opaque and hash-only. */
   settingStanding(settingId: string): unknown;
   /** The document as it stands, one entry per line. */
   currentLines(): readonly string[];
   constitution(): Constitution;
-  adoptionFloor(): number;
   /** The session's per-race fit cache, cleared by every fold that moves it. */
   fitCache(): Map<string, { key: string; fit: Fit }>;
   /** The routing's active-sampling maximum over a race's pairs (SPEC §8.3). */
@@ -90,11 +170,90 @@ export class Races {
    * the host's view all read this, so one judgment costs one rebuild
    * however many seats poll between it and the next.
    */
-  races(): RaceView[] {
-    return this.host.derived('races', () => this.buildRaces()).slice();
+  races(t: number): RaceView[] {
+    const cores = this.host.derived('races', () => this.buildRaces());
+    // **One picture per state version *and per set of abstentions*** (Q1439,
+    // extending Q1324). The clock enters a race in exactly one place — how
+    // many of the awaited have run out their 💤 period — so the views are
+    // identical at every `t` that reads the same counts, which is every `t`
+    // between two abstentions. Keying on the counts rather than on `t` keeps
+    // the memo exact *and* keeps it hitting: a key of `t` itself would miss on
+    // every poll and rebuild every race view per seat per poll, which is the
+    // read path the second moon room measured at 91% of a saturated host.
+    // The array is a fresh copy each call and the views in it are shared and
+    // read-only, exactly as before.
+    const awaited = cores.map((c) => this.awaitedAt(c.approval, t));
+    return this.host.derived(`races@${awaited.join(',')}`, () => {
+      const parks = this.parkedFootprints();
+      const e = this.host.eMembers().length;
+      return cores.map((c, i) => this.viewAt(c.core, c.approval, awaited[i]!, e, parks));
+    }).slice();
   }
 
-  private buildRaces(): RaceView[] {
+  /**
+   * How many of the members awaited on this race are still awaited at `t`:
+   * everyone whose period has not run out, all of them where 💤 is *never*
+   * (R-127, and R-089's letter — nothing is imputed from silence then).
+   */
+  private awaitedAt(approval: ApprovalCore, t: number): number {
+    const after = this.host.constitution().abstainAfterMs ?? null;
+    if (after === null) return approval.awaitedFrom.length;
+    return approval.awaitedFrom.reduce((n, from) => n + (t < from + after ? 1 : 0), 0);
+  }
+
+  /**
+   * **The clock's own numbers, put on a race** (Q1439): the group as it stands
+   * at `t`, the floor read against it, the meter over that floor, and the park
+   * flag — which asks `clearsFloor` and so cannot be decided before the floor
+   * is. Everything else is the memo's, untouched.
+   */
+  private viewAt(
+    core: RaceCore,
+    approval: ApprovalCore,
+    awaited: number,
+    e: number,
+    parks: Span[][],
+  ): RaceView {
+    const group = approval.answered + awaited;
+    const floor = floorFor(this.host.constitution(), e, group);
+    const view: RaceView = {
+      ...core,
+      approvals: approval.approvals,
+      group,
+      floor,
+      // **Progress toward the quorum** (Q1362 (c), R-118): the leader's
+      // *judges* over the floor, and judges is deliberately still the word —
+      // Ed's ruling (b), Q1439: *the evidence meter counts towards judgements
+      // not approvals (it's just a progress bar)*. So it may read full on a
+      // race that does not carry, which was already true and is still
+      // direction-free: the number says how far the room has got, never which
+      // way it is going.
+      closeness: Math.min(1, core.leaderJudges / Math.max(1, floor)),
+      // set below for a text race, which alone can wait behind a park
+      blockedByPark: false,
+    };
+    if (parks.length > 0 && core.settingId === undefined && this.clearsFloor(view)) {
+      view.blockedByPark = this.overlapsPark(this.host.candidate(view.leaderId!).footprint, parks);
+    }
+    return view;
+  }
+
+  private buildRaces(): Array<{ core: RaceCore; approval: ApprovalCore }> {
+    return this.raceGroups().map((members) => this.buildRaceCore(members));
+  }
+
+  /**
+   * **The field, grouped, and nothing derived from it** (Q1439): the union-find
+   * over footprints and the setting buckets, in the order the views come out
+   * in. Lifted out of `buildRaces` so that the fold can ask for the grounds
+   * alone (`groundIds`) without computing an approval count that would, at
+   * that moment, be asking after the very ground it is about to record.
+   */
+  private raceGroups(): string[][] {
+    return this.host.derived('raceGroups', () => this.buildRaceGroups());
+  }
+
+  private buildRaceGroups(): string[][] {
     const liveAll = [...this.host.candidates().values()].filter((c) => c.state === 'live');
     const live = liveAll.filter((c) => !c.setting);
     // Union-find over footprint conflicts (text candidates).
@@ -119,21 +278,10 @@ export class Races {
       if (g) g.push(c.id);
       else groups.set(root, [c.id]);
     }
-    const views: RaceView[] = [];
-    // **Waiting behind a park** (R-100): a text race whose leader would carry
-    // this batch but whose footprint overlaps a standing park is passed over
-    // by the sweep, and the view says so. The same two tests the sweep runs —
-    // `clearsFloor` and `overlapsPark` — so the flag and the batch cannot
-    // disagree about which race is waiting.
-    const parks = this.parkedFootprints();
-    const floor = this.host.adoptionFloor();
+    const all: string[][] = [];
     for (const members of groups.values()) {
       members.sort((a, b) => candidateNum(a) - candidateNum(b));
-      const view = this.buildRaceView(members);
-      if (parks.length && this.clearsFloor(view, floor)) {
-        view.blockedByPark = this.overlapsPark(this.host.candidate(view.leaderId!).footprint, parks);
-      }
-      views.push(view);
+      all.push(members);
     }
     // Setting races (SPEC §9.6, Q390): all live values on one setting are
     // one race — rivalry needs no footprint test, the setting is the site.
@@ -146,13 +294,34 @@ export class Races {
     }
     for (const members of bySetting.values()) {
       members.sort((a, b) => candidateNum(a) - candidateNum(b));
-      views.push(this.buildRaceView(members));
+      all.push(members);
     }
-    views.sort((a, b) => candidateNum(a.id.slice(2)) - candidateNum(b.id.slice(2)));
-    return views;
+    // the views used to be sorted by `candidateNum(id.slice(2))` after the
+    // two loops, which is exactly this: a race is named for its oldest member
+    all.sort((a, b) => candidateNum(a[0]!) - candidateNum(b[0]!));
+    return all;
   }
 
-  private buildRaceView(members: string[]): RaceView {
+  /**
+   * **The ground each live race now stands on** (Q1439), in `raceGroups`
+   * order and nothing else: the fold records the time a ground first stood,
+   * and it must be able to ask which grounds exist without asking anything
+   * that reads those times back.
+   */
+  groundIds(): string[] {
+    return this.host.derived('groundIds',
+      () => this.raceGroups().map((members) => this.groundOf(members)));
+  }
+
+  /** A race's incumbent id: the text on its contested spans, or a standing. */
+  private groundOf(members: string[]): string {
+    const setting = this.host.candidate(members[0]!).setting;
+    return setting
+      ? this.incumbentIdForSetting(setting.settingId)
+      : this.incumbentIdFor(mergeSpans(members.flatMap((id) => this.host.candidate(id).footprint)));
+  }
+
+  private buildRaceCore(members: string[]): { core: RaceCore; approval: ApprovalCore } {
     const setting = this.host.candidate(members[0]!).setting;
     const contested = setting
       ? []
@@ -228,39 +397,102 @@ export class Races {
     const deadlocked =
       measured.length >= this.host.constitution().deadlockMinComparisons &&
       bestValue < this.host.constitution().deadlockEpsilon;
-    // **Progress toward the quorum** (Q1362 (c), Ed 2026-09-15, R-118): the
-    // leader's judges over the floor, clamped — voters so far over voters
-    // required, the one number the room controls. The lesser-of-two-distances
-    // reading (R-101) is superseded with the bar it measured against: there is
-    // no distance to a bar left to be the shorter of. Still a magnitude and
-    // never a direction (SPEC §8.3) — the count says how far the room has got,
-    // and nothing about which way it is going. A newborn race reads 1/F, its
-    // author being one judge of their own text, and each new judge is a step.
-    const closeness = Math.min(1, leaderJudges / Math.max(1, this.host.adoptionFloor()));
     return {
-      id,
-      members,
-      contested,
-      incumbentId,
-      // Measured comparisons: what the room actually judged, which is the
-      // number the record reports and the number a reader means by "how much
-      // evidence is there". Derived author preferences are voices, not
-      // measurements, so they show up in `distinctMovers` and not here.
-      comparisons: measured.length,
-      distinctMovers: movers.size,
-      leaderJudges,
-      leaderMeasured,
-      leaderP,
-      leaderId,
-      leaderOnTop,
-      certification,
-      deadlocked,
-      rivalGateOpen,
-      closeness,
-      // set by `races()` for a text race, which alone can wait behind a park
-      blockedByPark: false,
-      ...(setting ? { settingId: setting.settingId } : {}),
+      core: {
+        id,
+        members,
+        contested,
+        incumbentId,
+        // Measured comparisons: what the room actually judged, which is the
+        // number the record reports and the number a reader means by "how much
+        // evidence is there". Derived author preferences are voices, not
+        // measurements, so they show up in `distinctMovers` and not here.
+        comparisons: measured.length,
+        distinctMovers: movers.size,
+        leaderJudges,
+        leaderMeasured,
+        leaderP,
+        leaderId,
+        leaderOnTop,
+        certification,
+        deadlocked,
+        rivalGateOpen,
+        ...(setting ? { settingId: setting.settingId } : {}),
+      },
+      approval: this.approvalCore(leaderId, incumbentId, usable),
     };
+  }
+
+  /**
+   * **Who has approved the leader, who has answered, and who is still awaited**
+   * (SPEC §4.2, §8.2; Q1439 → why: R-125, R-127). Strict approval, ruling (k):
+   * only *this over the current text* counts, so a judgment of the leader
+   * against a **rival** approves neither of them — it says which challenger is
+   * better, not that either beats what stands, and counting it as backing
+   * would count a member for a change they may well oppose and reward dodging
+   * the pair. *Indifferent* is an answer and approves nothing: the member is
+   * out of the group at once (ruling i), which is what stops an indifferent
+   * room raising the share everyone else has to clear.
+   *
+   * The author's own preference arrives here as a `derived` comparison on
+   * exactly today's terms (§3.3): one approval of their own candidate and of
+   * nothing else, absent while they are suspended, and overridden by any
+   * explicit judgment of theirs. `usable` has already reduced each participant
+   * to their latest judgment per pair on this ground (§4.4), so nobody is
+   * counted twice.
+   *
+   * **A judgment cast keeps counting after its author leaves E** (§9.5a), so
+   * approvers and opposers are counted wherever they now are; only the
+   * *awaited* set is restricted to E, because only somebody still in the room
+   * can be waited on.
+   */
+  private approvalCore(
+    leaderId: string | null,
+    incumbentId: string,
+    usable: readonly StoredComparison[],
+  ): ApprovalCore {
+    if (leaderId === null) return { approvals: 0, answered: 0, awaitedFrom: [] };
+    const answeredBy = new Set<string>();
+    let approvals = 0;
+    let answered = 0;
+    for (const c of usable) {
+      const onPair =
+        (c.aId === leaderId && c.bId === incumbentId) ||
+        (c.bId === leaderId && c.aId === incumbentId);
+      if (!onPair) continue;
+      answeredBy.add(c.participantId);
+      if (c.outcome === 'tie') continue; // answered, and out of the group
+      answered++;
+      if (c.outcome === 'a' ? c.aId === leaderId : c.bId === leaderId) approvals++;
+    }
+    const from = this.answerableSince(leaderId, incumbentId);
+    const awaitedFrom: number[] = [];
+    for (const m of this.host.eMembers()) {
+      if (answeredBy.has(m)) continue;
+      // **The later of the pair's own moment and the member's** (§8.2):
+      // nobody's period runs before they were there to be asked.
+      awaitedFrom.push(Math.max(from, this.host.arrivalT(m)));
+    }
+    return { approvals, answered, awaitedFrom };
+  }
+
+  /**
+   * **When the pair *as it now stands* became answerable** (Q1439; SPEC §8.2):
+   * the latest of the three moments that can void every earlier answer to it —
+   * the candidate's own submission, an evidence reset on revision (§2.4), and
+   * the ground the race now stands on (§4.4). A ground shift locks the
+   * judgments cast against the old field, so it has to restart the period too:
+   * otherwise a shift would abstain, instantly, everyone who had already
+   * answered — which is the defect this whole rule exists to close, arriving
+   * from the other side.
+   */
+  private answerableSince(leaderId: string, incumbentId: string): number {
+    const reset = this.host.evidenceSinceT(leaderId);
+    return Math.max(
+      this.host.groundSince(incumbentId),
+      this.host.candidate(leaderId).submittedT,
+      reset ?? -Infinity,
+    );
   }
 
   /** The footprints of every candidate parked `awaiting-assent` (R-100). */
@@ -276,17 +508,22 @@ export class Races {
   }
 
   /**
-   * **Ready to carry** (SPEC §4.2; Q1362 (a), R-114): the leader is on top of
-   * the field — the current text among it, and a tie leaving the current text
-   * standing — F distinct participants have judged *it* (Q1337, R-102 — never
-   * the race at large), and the room has judged it at least once, or, at
-   * E = 1, the author is the room (`soleMemberIsLeadersAuthor`). There is no
-   * bar: the threshold left the test at v0.128. One function, read by the
-   * sweep's snapshot, by `finalRender` and by `races()`'s `blockedByPark`, so
-   * none can drift.
+   * **Ready to carry** (SPEC §4.2; Q1362 (a), R-114; Q1439, R-125): the leader
+   * is on top of the field — the current text among it, and a tie leaving the
+   * current text standing — **F members have approved it** (Q1439, amending
+   * R-102's *judged it*, which let an opponent help it reach its floor), and
+   * the room has judged it at least once, or, at E = 1, the author is the room
+   * (`soleMemberIsLeadersAuthor`). There is no bar: the threshold left the test
+   * at v0.128.
+   *
+   * **It reads the two numbers off the view** rather than taking a floor from
+   * its caller, because both now move with the clock: the sweep's snapshot,
+   * `finalRender` and `races()`'s own `blockedByPark` all ask this one
+   * function about one view, so none of them can be reading a floor from a
+   * different moment than the approvals it is comparing.
    */
-  clearsFloor(r: RaceView, floor: number): boolean {
-    return r.leaderJudges >= floor &&
+  clearsFloor(r: RaceView): boolean {
+    return r.approvals >= r.floor &&
       r.leaderId !== null &&
       r.leaderOnTop &&
       (r.leaderMeasured > 0 || this.host.soleMemberIsLeadersAuthor(r));
@@ -332,16 +569,20 @@ export class Races {
     return false;
   }
 
-  raceOf(candidateId: string): RaceView {
-    const race = this.races().find((r) => r.members.includes(candidateId));
+  raceOf(candidateId: string, t: number): RaceView {
+    const race = this.races(t).find((r) => r.members.includes(candidateId));
     if (!race) throw new Error(`candidate ${candidateId} is not in a live race`);
     return race;
   }
 
+  /**
+   * Which race an endpoint is in — membership, which no clock touches, so the
+   * grouping alone answers it and no floor is computed to find out.
+   */
   raceIdOfEndpoint(id: string): string | null {
     if (id.startsWith(INC_PREFIX)) return null;
-    const race = this.races().find((r) => r.members.includes(id));
-    return race ? race.id : null;
+    const members = this.raceGroups().find((g) => g.includes(id));
+    return members ? `r:${members[0]!}` : null;
   }
 
   /**
@@ -373,8 +614,11 @@ export class Races {
     if (aInc || bInc) {
       const candId = aInc ? bId : aId;
       const incId = aInc ? aId : bId;
-      const race = this.raceOf(candId);
-      if (race.incumbentId !== incId) {
+      // membership and the ground, both time-free: classifying a pair asks
+      // nothing about a floor, so it takes no clock (Q1439)
+      const members = this.raceGroups().find((g) => g.includes(candId));
+      if (!members) throw new Error(`candidate ${candId} is not in a live race`);
+      if (this.groundOf(members) !== incId) {
         throw new Error('stale card: incumbent text has changed');
       }
       return 'edge';
@@ -498,10 +742,11 @@ export class Races {
     return fit;
   }
 
+  /** A race's fit, by race id: the grouping and the ground, and no clock. */
   raceFit(raceId: string): Fit {
-    const race = this.races().find((r) => r.id === raceId);
-    if (!race) throw new Error(`unknown race ${raceId}`);
-    return this.fitRaceMembers(race.members, race.incumbentId);
+    const members = this.raceGroups().find((g) => `r:${g[0]!}` === raceId);
+    if (!members) throw new Error(`unknown race ${raceId}`);
+    return this.fitRaceMembers(members, this.groundOf(members));
   }
 
   updatePeaks(race: RaceView): void {

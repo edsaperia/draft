@@ -64,6 +64,11 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
   // per-race judge counts are the record's own numbers (§8.2): a count,
   // never who or which way
   const allJ = engine.judgments();
+  // **The room's own number, for the record's *quorum was n* line** (Q1439):
+  // the floor over the whole of E, which is what it is before anybody has
+  // abstained. A live race carries **its own** floor instead — `r.floor`,
+  // read against the group it is waiting on — and the two differ exactly
+  // when a silence has run out its 💤 period.
   const floor = engine.adoptionFloor();
   // **Once per state, not once per seat** (Q1324). Two things below were
   // proportional to the document's whole history on every poll: the lines
@@ -132,7 +137,9 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
       return { t, wallet: api.wallet(t), cards: api.nextCards(HAND, t) };
     } catch { return null; }
   })();
-  const clauses = engine.races().filter((r) => r.settingId === undefined).map((r) => {
+  // **At this poll's own clock** (Q1439): who has abstained, and so what each
+  // race's floor is, moves with `t` and with no event to mark it.
+  const clauses = engine.races(nowMs).filter((r) => r.settingId === undefined).map((r) => {
     const ids = new Set([...r.members, r.incumbentId]);
     const here = myJ.filter(onRace(ids));
     const standing = here.some((j) => !j.superseded && !j.locked);
@@ -158,10 +165,12 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
       // two numbers as the pair below: the rail's fill is how far the room
       // has got toward the quorum, and this is the wire it rides on.
       closeness: r.closeness,
-      // the floor's own number (Q1337): who has judged the leader, its
-      // author's voice among them — never the race's traffic
+      // the meter's own number (Q1337): who has judged the leader, its
+      // author's voice among them — never the race's traffic. It stays
+      // judgments and not approvals (Q1439, Ed's ruling (b): *it's just a
+      // progress bar*), over **this race's** floor rather than the room's.
       judges: r.leaderJudges,
-      floor,
+      floor: r.floor,
       askable: dealt || ask !== null,
       ask,
       // **waiting behind a park on the same span** (R-100, SURFACE E36): the
@@ -211,7 +220,7 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
   // its own for an ordinary motion's judgment and never set it for an
   // admission, so the admit entry could not tell voted from unvoted and its
   // fill was the founder's 100%.
-  const settingRaces = engine.races().filter((r) => r.settingId !== undefined).map((r) => {
+  const settingRaces = engine.races(nowMs).filter((r) => r.settingId !== undefined).map((r) => {
     const ids = new Set([...r.members, r.incumbentId]);
     const here = myJ.filter(onRace(ids));
     const dealt = served !== null && served.cards.some((c) => c.kind === 'edge' && c.raceId === r.id);
@@ -222,7 +231,8 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
     // room's text races outvalue an admission, and twenty members each
     // holding four text cards never met the applicant. Same blind CardView
     // as the clause rows carry (Q1202) — no standing, no author.
-    return { id: r.id, settingId: r.settingId, closeness: r.closeness, judges: r.leaderJudges, floor,
+    return { id: r.id, settingId: r.settingId, closeness: r.closeness, judges: r.leaderJudges,
+      floor: r.floor,
       judged: here.some((j) => !j.superseded && !j.locked), askable: dealt || ask !== null, ask };
   });
   const mine = api.myCandidates().flatMap((m) => {

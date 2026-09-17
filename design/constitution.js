@@ -327,7 +327,7 @@ var CONSTITUTION = (() => {
     return Math.ceil(E / 3);
   }
   function adoptionFloor(quorumN, E, fMax) {
-    return Math.max(quorumN, Math.min(adoptionFloorTerm(E), fMax));
+    return Math.max(Math.min(quorumN, Math.ceil(E / 2)), Math.min(adoptionFloorTerm(E), fMax));
   }
 
   // src/catalogue.ts

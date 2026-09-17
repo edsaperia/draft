@@ -41,6 +41,15 @@ function rewrite(base: number, line: number, text: string) {
  * identical, so any difference in the readouts is the flag's and nothing
  * else's. A roster of twelve holds the floor at 4, so the race survives long
  * enough to be a race before it adopts.
+ *
+ * **The five judgments are *a against the current text* since Q1439** (R-125,
+ * ruling k). They used to be *a against its rival b*, which reached the old
+ * floor because that counted judges of the winner whichever pair they were
+ * on; the floor counts **approvals** now, and a win over a rival is not one —
+ * it says which challenger is better, not that either beats what stands. The
+ * walk's subject is the flag, so the pair moved rather than the point: it
+ * still carries a machine-authored patch to adoption, which is what makes the
+ * identical readouts worth anything.
  */
 function walk(machineAuthored: boolean): Session {
   const s = Session.open({
@@ -70,9 +79,11 @@ function walk(machineAuthored: boolean): Session {
     patch: rewrite(0, 3, 'Meetings happen monthly.'),
     rationale: 'a cadence',
   });
+  void b;
   for (const [i, p] of ['p4', 'p5', 'p6', 'p7', 'p8'].entries()) {
     if (s.getCandidate(a.id).state !== 'live') break;
-    s.judge(4000 + i * 100, p, a.id, b.id, 'a');
+    const inc = s.races().find((r) => r.members.includes(a.id))!.incumbentId;
+    s.judge(4000 + i * 100, p, a.id, inc, 'a');
   }
   s.tick(7000);
   return s;
