@@ -31,8 +31,8 @@ window.LIVE = (function () {
   function wire(env) {
     const { LIVESLUG, PAGE_COPY, SESSION } = env;
     const { amFounder, applicantAsView, atTheDoor, constituted, esc, hydrateApplicant,
-      hydrateSeen, hydrateValues, proseText, refusalNoted, render, setProse, setStranger,
-      strangerAsView, syncFromCs } = env;
+      hydrateSeen, hydrateValues, openCardDirty, pressInFlight, proseText, refusalNoted,
+      render, setProse, setStranger, strangerAsView, syncFromCs } = env;
     // **The host's two flags** (Q1345, Q1346; Ed, 2026-09-12). `paused` is the
     // announced pause a deploy runs under: the whole page goes behind a modal
     // that names the wait and fills a bar over the host's guess, and every
@@ -43,18 +43,53 @@ window.LIVE = (function () {
     // has seen everything still hears them. And a deploy ends with a new
     // build answering: when `x-build` changes under a page that was paused,
     // the page reloads itself, since its own bytes are the old ones.
-    const HOST = { paused: null, stalled: false, build: null, timer: null };
+    const HOST = { paused: null, stalled: false, build: null, newBuild: null, timer: null };
+    // **The reload waits for the member to be done** (issue #12; Ed,
+    // 2026-09-17: *defer the reload until nothing is unsent*). Q1347 stands —
+    // an open page moves onto the new surface rather than running yesterday's
+    // bytes for ever — but a page holds work that exists nowhere else: an
+    // unproposed draft lives only in `SUGGS`, an answer chosen and not
+    // committed only in `S`, and a reload within 4s of a push threw both away
+    // without asking. This changes *when* the reload happens and nothing
+    // else. Each clause is read live, never copied at make time — a value
+    // taken here would stop deferring the moment the page moved on (the same
+    // trap `wallets.js` names for the poll's own `pressInFlight`):
+    //  · `pressInFlight()` — a hold, a drag, a travel or the assembly is a
+    //    gesture in the air, and nothing rebuilds under a press;
+    //  · `S.editMode` — the column is lifted and the caret is in it;
+    //  · an `unproposed` draft of your own in `SUGGS`, which is exactly the
+    //    item `setData` carries across a data swap (closing a card is not
+    //    discarding, and neither is a deploy);
+    //  · an open card the bin would have something to put back — the page's
+    //    own `openCardDirty`, which asks the snapshot `revertSnap` restores
+    //    from rather than inventing a second idea of unsent. **Not the
+    //    snapshot's existence**: one is taken at every opening and dropped
+    //    only at the commit, so a page that had ever opened a card would
+    //    never reload again.
+    const unsent = () => pressInFlight() || !!env.S.editMode || openCardDirty() ||
+      (SESSION.SUGGS || []).some((x) => x.unproposed && (x.mine || x.id === SESSION.DRAFT_ID));
     function noteBuild(build) {
       if (!build) return;
       if (HOST.build === null) { HOST.build = build; return; }
-      if (build !== HOST.build && HOST.paused === null) location.reload();
-      if (build !== HOST.build) HOST.newBuild = build;
+      // **a build that comes back needs no reload**: the question is whether
+      // the host is serving bytes other than ours, asked again at every poll,
+      // so a rollback to our own build cancels a pending reload rather than
+      // leaving it armed for ever
+      HOST.newBuild = build !== HOST.build ? build : null;
+      // `noteBuild` runs on every poll answer — the 4s one and the refresh
+      // that follows every command — so a deferred reload fires at the first
+      // poll after the draft is proposed or dropped, the card committed or
+      // binned, and the gesture finished. It is never later than 4s after the
+      // member is done, and a page with nothing unsent reloads as it always did.
+      if (HOST.newBuild && HOST.paused === null && !unsent()) location.reload();
     }
     function noteHost(data) {
       const was = HOST.paused;
       HOST.paused = data.paused || null;
       HOST.stalled = !!data.stalled;
-      if (was && !HOST.paused && HOST.newBuild) { location.reload(); return; }
+      // the pause lift after a full deploy defers on the same predicate; the
+      // poll keeps asking, so the reload lands on the first clean one
+      if (was && !HOST.paused && HOST.newBuild && !unsent()) { location.reload(); return; }
       renderHost();
     }
     function renderHost() {
