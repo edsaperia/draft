@@ -916,14 +916,10 @@ window.LIVE = (function () {
       const RAIL = window.COPY.session.rail;
       const PARK = window.COPY.session.park;
       const STRANDED = window.COPY.session.stranded;
-      // **and the ground shift says what happened** (SURFACE E16). The
-      // server's `shifted` is a flag — *a judgment of mine locked by a
-      // ground shift* — and the rail entry's tooltip is the sentence, as
-      // the fixture has always supplied it; handing the renderer `true`
-      // threw `esc` and took the whole rail with it. The live sentence
-      // names no candidate because the view does not carry which one was
-      // adopted, only that this wording is no longer the one you judged.
-      const SHIFTED_NOTE = 'The wording was changed here after you voted, so your vote was about a wording that no longer exists.';
+      // the ground shift's own tooltip (SURFACE E16): the server's `shifted`
+      // is a flag, and handing the renderer `true` threw `esc` and took the
+      // whole rail with it — the sentence is copy.js's, as the fixture's is
+      const SHIFTED_NOTE = window.COPY.session.shifted;
       const items = [];
       for (const r of v.clauses || []) {
         const ids = new Set(r.candidates.map((c) => c.id).concat([r.incumbentId]));

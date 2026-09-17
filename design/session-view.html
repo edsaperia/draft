@@ -6570,8 +6570,8 @@
     // there first. The *when* survives where it is true.
     lockline: (c) => { const st = csState(c.k);
       return st && st.settledBy && st.settledBy !== 'convenor'
-        ? 'Decided by the members.'
-        : 'Set by the founder when the document was made.'; },
+        ? PAGE_COPY.lockline.members
+        : PAGE_COPY.lockline.founder; },
     summary, value, isRoom,
   };
 

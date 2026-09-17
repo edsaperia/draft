@@ -1327,7 +1327,7 @@ window.BAND = (function () {
           // change, not for the road it takes. `founderProposal` reads it here.
           if (amFounder() && env.cs && founderDirect(cc) && isChange(k) && !motionOn(cc) && !membersHold(cc)) {
             const v = (S.setWhy && S.setWhy[k]) || '';
-            return '<div class="body whyset"><p class="eyebrow fieldlab">Why are you changing this?</p>' +
+            return '<div class="body whyset"><p class="eyebrow fieldlab">' + PAGE_COPY.whyChangingLabel + '</p>' +
               founderSpeakerLane(v) + '</div>';
           }
           // anybody else, reading what happened: what changed, and their reason

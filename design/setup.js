@@ -750,7 +750,7 @@ window.SETUP = (function () {
     return '<div class="statline"><span class="k">Set to</span><span class="v">' +
       ctx.value(c) + '</span></div>' +
       '<div class="lockline">' + TICK + '<span>' +
-      esc(ctx.lockline ? ctx.lockline(c) : 'Set by the founder when the document was made.') +
+      esc(ctx.lockline ? ctx.lockline(c) : window.COPY.page.lockline.founder) +
       '</span></div>';
   }
 
