@@ -322,8 +322,13 @@ export class WritePath {
       // the document log first — it is the source of truth, and the
       // bridge's persisted cursor points into it (review #2, finding 2):
       // a crash after this and before the engine persist leaves a cursor
-      // *behind* the log, which resume's sync simply catches up; the other
-      // order leaves it ahead, and the entries in between are never fed
+      // *behind* the log, which resume's sync walks forward again — the
+      // roster changes and the admit and remove races re-enter, but **an
+      // ordinary set motion does not**: its candidate is submitted only
+      // inside `openSetMotion`, never by the walk, so a motion opened in a
+      // lost engine write comes back running with no race behind it and
+      // nothing but its mover's withdrawal ends it (issue #28). The other
+      // order leaves the cursor ahead, and the entries in between are never fed
       try {
         await store.persist(doc);
         await persistEngine(persistence, doc);

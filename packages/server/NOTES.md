@@ -1,13 +1,18 @@
 # @draft/server — author calls (Q368)
 
-- **The log is the only persistence.** One JSONL of the ConstitutionSession's
-  own hash-chained LogEntry per document; loading is `replay` (chain
-  verified), persisting is appending what a command emitted. No snapshot, no
-  second source of truth — the §11 property made operational. Since
-  PRODUCTION.md stage 6 the log may live in Postgres (`pg-persistence.ts`,
-  one row per entry, `DRAFT_STORE=pg`) instead of JSONL; it is the same log
-  behind the same `Persistence` seam, and `copy-store.ts` moves it between
-  the two with every rolling hash asserted identical.
+- **Persistence is the log plus the people rows.** One JSONL of the
+  ConstitutionSession's own hash-chained LogEntry per document; loading is
+  `replay` (chain verified), persisting is appending what a command emitted.
+  No snapshot, no second source of truth — the §11 property made
+  operational. Since PRODUCTION.md stage 6 the log may live in Postgres
+  (`pg-persistence.ts`, one row per entry, `DRAFT_STORE=pg`) instead of
+  JSONL; it is the same log behind the same `Persistence` seam, and
+  `copy-store.ts` moves it between the two with every rolling hash asserted
+  identical. **Identity left the log on 2026-09-08** (decision 1253): a
+  `people` row per person — the email, the name, the picture — is written
+  beside the entries in the same act and handed back to `replay`, the log
+  itself carrying only the id, so erasing a person is one row and every hash
+  still holds. `copy-store.ts` moves the rows with the entries.
   Consequence to hold in mind: the log carries answers in plaintext (the
   package's documented blindness design — projection withholds, storage does
   not), so the data directory is as sensitive as the room. `view()` is the
@@ -69,10 +74,12 @@
   the free ordinary admit motion — **which races** (§9.7½ v0.56, Q397):
   the bridge enters it as its own one-candidate race against the
   membership as it stands, members judge it on their served race cards,
-  and adoption admits. A seconder's propose-applicant is priced through
-  the bridge (the ✏️ stake refused at the door if the wallet is short)
-  and carries the seconder's rationale where one was written (blank is
-  fine, v0.57).
+  and adoption admits. **There is no seconder and no `propose-applicant`
+  command**: an application is a stranger proposing their own invitation
+  (entry 94) and is admitted at 🪪's own price — free, with the applicant
+  as the motion's author and their own words as its rationale (blank is
+  fine, v0.57). At `pen` there is nothing to propose and the submission
+  admits outright; at `assembly` the same motion runs 🏛️.
 - **The dev inbox is an endpoint** (Ed, 2026-08-19): GET /api/dev/outbox
   serves the tail of outbox.jsonl — links intact — so the page can put
   the magic-link mails in a modal instead of asking QA to tail a file.
@@ -89,10 +96,14 @@
 - **The mail-minting doors are rate-limited**, minimally (Q346 territory):
   an in-memory per-IP bucket per door (`tooMany`, nine of them — create,
   login, apply, the three auth landings, the slug and pending checks, the
-  stranger's view — 20 per 10 minutes at the mail doors, more at the
-  read-only ones), the IP read from `cf-connecting-ip` and otherwise from
-  `x-forwarded-for` counted `DRAFT_PROXY_HOPS` from the right — a brake on
-  mail floods, not an abuse story. Restart empties it.
+  stranger's view — create and apply at the default 20 per 10 minutes, more
+  at the read-only ones), the IP read from `cf-connecting-ip` and otherwise
+  from `x-forwarded-for` counted `DRAFT_PROXY_HOPS` from the right — a brake
+  on mail floods, not an abuse story. Restart empties it. **The login door
+  has two buckets** (Q1341, Ed 2026-09-12; `docs/OPERATING.md` §4): 200 per
+  IP in the window, because a convention room arrives on one venue wifi and
+  so on one address, and 5 per email address in the same window, which is
+  what stops a script working one address.
 - **The stranger's door is a seatless read** (Q508–Q510): `GET
   /api/d/:slug/view` without a cookie serves what 🌍 allows — the
   membership and the settled rules, never a name on a proposal — and the
