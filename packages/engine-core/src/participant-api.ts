@@ -133,6 +133,16 @@ export interface OutcomeEntry {
    * of the arithmetic (STYLE §1, §2).
    */
   cappedFit?: { iterations: number; gradMax: number };
+  /**
+   * **What the floor tested, at the moment it was met** (Q1439): how many
+   * members had preferred the winner to the current text, and the floor that
+   * decision was taken against. Both move with the clock while a race runs
+   * (§8.2), so the record carries the adoption's own pair off the `adopted`
+   * event rather than re-deriving today's. Absent on an adoption older than
+   * the rule — an optional pair, so a log from before it folds unchanged.
+   */
+  approvals?: number;
+  floor?: number;
 }
 
 /** The largest routing value in a hand — what every `urgency` is a fraction of. */
@@ -344,7 +354,10 @@ export class ParticipantApi {
           version: c.patch ? Math.max(0, ev.newVersion - 1) : ev.newVersion,
           // spread conditionally, as `reason` is: the key is absent, never
           // `undefined`, because absent is what means converged (R-051)
-          ...(ev.cappedFit ? { cappedFit: ev.cappedFit } : {}) });
+          ...(ev.cappedFit ? { cappedFit: ev.cappedFit } : {}),
+          // the decision's own two numbers (Q1439), absent on an older log
+          ...(typeof ev.approvals === 'number' ? { approvals: ev.approvals } : {}),
+          ...(typeof ev.floor === 'number' ? { floor: ev.floor } : {}) });
       } else if (ev.type === 'candidate-retired') {
         const c = this.session.getCandidate(ev.id);
         out.push({ t: ev.t, candidateId: ev.id, outcome: 'retired',

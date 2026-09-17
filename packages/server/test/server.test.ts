@@ -529,6 +529,14 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     // the judges of the candidate that carried (Q1337): ada's judgment and
     // bo's own voice for it — two, and cy, who authored the rival, is not one
     expect(rec.judges).toBe(2);
+    // …and what the floor actually tested (Q1439): how many *preferred* it, and
+    // the floor that decision was taken against — the two numbers the engine
+    // stamps on `adopted`, carried to the record so the page's *n preferred it ·
+    // quorum was m* line states the decision's own numbers and not today's
+    const recQ = rec as unknown as { approvals?: number; floor?: number };
+    expect(typeof recQ.approvals).toBe('number');
+    expect(typeof recQ.floor).toBe('number');
+    expect(recQ.approvals!).toBeGreaterThanOrEqual(recQ.floor!);
     // one record per race: the adopted rival and the retired one do not file twice
     expect(done.records.filter((r) => r.raceId === r1.raceId)).toHaveLength(1);
 
