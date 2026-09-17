@@ -9,8 +9,13 @@
  * hook given every path does exactly what it did. Proven by
  * design/tools/session-probe.js against design/reference/.
  *
- * Load order: copy.js → cards.js → session.js → the page's own script (the
- * fixture + init). */
+ * Load order: **session-view.html's own script-tag block is the source of
+ * truth** (:428–452, fourteen files), never a list restated here — the list
+ * that was here named three of them and would have broken the page (issue
+ * #21). What this file needs standing before it is evaluated: copy.js and
+ * cards.js, and flights.js and composer.js, whose `make(env)` it calls at
+ * load (Q1352). The page's own script — the fixture and `SESSION.init` —
+ * comes after. */
 (function () {
   // Every member-readable string this surface renders lives in copy.js (Ed's
   // brief, 2026-09-05, Part 3: copy edits touch that file only); `T` is the
