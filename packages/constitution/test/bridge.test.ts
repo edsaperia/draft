@@ -263,6 +263,79 @@ describe('an admit motion is its own race (§9.7½ v0.56, Q397)', () => {
   });
 });
 
+/**
+ * **An invitation at 🪪 *members must vote* is a race like the other two**
+ * (issue #6, F1). One price prices every road in (entry 94), so *proposal*
+ * routes an invitation ordinary — and in this layer ordinary means a race and
+ * nothing else. `sync` entered `admit` and `remove` and walked past `invite`,
+ * so the motion had no candidate anywhere: `answerMotion` refused it as an
+ * ordinary motion, no judgment could reach it, it outlived the close, and the
+ * twin rule then held the address against everybody who tried again. A room at
+ * that price could invite **nobody**.
+ */
+describe('an invitation is its own race at ✏️ (issue #6, §9.7½)', () => {
+  const withPrice = (price: 'proposal' | 'assembly') =>
+    buildConstituted({ bar: 55, quorum: { form: 'count', n: 2 },
+      admission: { price } });
+  /** The person the invitation carries — the address is the row's (1253). */
+  const personOf = (s: ReturnType<typeof withPrice>['s'], motion: string) =>
+    (s.motionRecords().get(motion)!.payload as { kind: 'invite'; person: string }).person;
+
+  it('at ✏️: the mover authors it, the stake is taken, and the carry makes an invitee', () => {
+    const { s, bo, cy } = withPrice('proposal');
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'invite-race' });
+    const motion = bridge.openMotion(10, bo, { kind: 'invite', email: 'dee@example.org' },
+      'she chairs the other committee');
+    // the race is entered on the walk of the log, as the other two are —
+    // which on the server is `driveBridge` at the tail of the same commit
+    bridge.sync(11);
+    const race = bridge.engine.races()
+      .find((r) => r.settingId === `invite:${personOf(s, motion)}`)!;
+    expect(race).toBeDefined();
+    // one candidate, against the membership as it stands and nothing else
+    expect(race.members).toHaveLength(1);
+    const cand = bridge.engine.log.map((e) => e.event).find((e) =>
+      e.type === 'candidate-submitted' && e.id === race.members[0]) as
+      { author: string; rationale: string };
+    expect(cand.author).toBe(bo);          // the mover, never asked their own (§3.3)
+    expect(cand.rationale).toBe('she chairs the other committee');
+    expect(bridge.engine.balance(bo, 10)).toBe(3); // the stake left the wallet (§7)
+
+    // floor 2: bo's derived author-preference plus one judge
+    bridge.judge(20, cy, race.members[0]!, race.incumbentId, 'a');
+    expect(s.motionRecords().get(motion)!.status).toBe('carried');
+    // `member-invited` is what the write path mails, and it names the motion
+    const invited = s.logEntries().map((e) => e.event).filter((e) =>
+      e.type === 'member-invited').at(-1) as { member: string; viaMotion?: string };
+    expect(invited).toBeDefined();
+    expect(invited.viaMotion).toBe(motion);
+    expect(s.memberRecords().get(invited.member)!.email).toBe('dee@example.org');
+    // an invitee counts toward nothing until they arrive
+    expect(s.memberRecords().get(invited.member)!.arrivedAtT).toBeNull();
+    expect(s.E()).toBe(3);
+  });
+
+  it('at 🏛️: the invitation collects consent in the module and never enters the engine', () => {
+    const { s, bo } = withPrice('assembly');
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'invite-assembly' });
+    const motion = bridge.openMotion(10, bo, { kind: 'invite', email: 'dee@example.org' });
+    expect(s.motionRecords().get(motion)!.route).toBe('constitutional');
+    expect(bridge.engine.races().some((r) => String(r.settingId).startsWith('invite:')))
+      .toBe(false);
+    expect(bridge.engine.balance(bo, 10)).toBe(4); // a decision is not priced
+  });
+
+  it('the close holds an invitation the room never judged, and nobody is invited', () => {
+    const { s, bo } = withPrice('proposal');
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'invite-close' });
+    const motion = bridge.openMotion(10, bo, { kind: 'invite', email: 'dee@example.org' });
+    bridge.close(1_000_000);
+    expect(s.motionRecords().get(motion)!.status).toBe('held');
+    expect([...s.memberRecords().values()].some((m) => m.email === 'dee@example.org'))
+      .toBe(false);
+  });
+});
+
 describe('a text proposal races in the engine (stage 8, Q418)', () => {
   const patch = (baseVersion: number, lines: string[]) =>
     ({ baseVersion, hunks: [{ start: 0, end: 1, lines }] });
