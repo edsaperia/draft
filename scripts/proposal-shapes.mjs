@@ -974,6 +974,103 @@ await check('B3', 'C3', null, AFTER[0] === 'A preamble stands before the title.'
 }
 
 /* ==========================================================================
+   Phase 1c — a record over a **run** of blocks (Q1418).
+
+   Q1407's swallow and Q1408's first-block tab were written for what is live,
+   and a decided question is not live: a record over several blocks wore a
+   filed tab in every one of those gutters and the run stood under its own
+   open card, the text twice. **Ed ruled 2026-09-17 that a record takes the
+   race's own rule** — one tab at its first block, the open card swallowing
+   the run — so the cell stops being recorded and starts being asserted.
+
+   C7 is the shape that makes one: a split, one line proposed as two, so the
+   adopted record's span is a two-block run. Adopted here rather than
+   seeded, because the record has to be the engine's own — its `at` carried
+   forward through C3's adoption above (Q1333) — not a fixture's.
+   ========================================================================== */
+ctx.phase = 'p1c'; ctx.seat = '-'; ctx.width = 0; ctx.page = null;
+say('\nPhase 1c — adopting C7, a split, so a record stands over two blocks');
+{
+  const cid = CAND.get('C7');
+  const recordFor = async () => ((await view('founder')).records || [])
+    .find((r) => (r.field || []).some((f) => (f.id || f.candidateId) === cid));
+  for (const who of ['bob', 'cara', 'dan', 'founder']) {
+    if (await recordFor()) break;
+    const p = pairFor(await view(who), cid);
+    if (!p?.card) { await check('R0', 'C7', who, false, 'a judgeable pair on C7', 'none'); continue; }
+    await cmd(who, 'judge-race', { a: p.card.a.id, b: p.card.b.id,
+      outcome: p.card.a.id === cid ? 'a' : 'b' });
+  }
+  let rec = null;
+  const t0 = Date.now();
+  while (Date.now() - t0 < 20_000) {
+    rec = await recordFor();
+    if (rec && rec.outcome === 'adopted') break;
+    rec = null;
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  await check('R0b', 'C7', cid, !!rec, 'C7 adopted within 20s on a cooldown-0 server', !!rec);
+  if (rec) {
+    const SPLIT = (await view('founder')).text.split('\n');
+    ctx.phase = 'p1c';
+    const page = await openSeat('dan', 1600, 1000, 6);
+    const items = await page.evaluate(() => window.__PS.items());
+    const run = items.filter((s) => s.state === 'sealed' && (s.keys || []).length > 1);
+    await check('R1-run', 'C7', rec.raceId || cid, run.length === 1,
+      'one sealed record standing over a run of blocks', run.map((s) => s.keys));
+    const r = run[0];
+    if (r) {
+      ctx.seat = 'dan'; ctx.width = 1600; ctx.page = page;
+      const before = await page.evaluate((id) => window.__PS.closed(id), r.id);
+      // **one tab, at the record's first block** (Q1418) — the live rule
+      await check('R2-tab', 'C7', r.id, before.tabs.length === 1 &&
+        before.tabs[0].key === r.keys[0],
+        `one filed tab, at ${r.keys[0]} (Q1418; Q1408's rule for a race)`,
+        before.tabs.map((t) => t.key));
+      await check('R2-rail', 'C7', r.id, before.rail.length === 1,
+        'one rail entry for the record', before.rail.length);
+      // …and the open card swallows the whole run, as a race's does (Q1407)
+      await page.evaluate((id) => window.__PS.toggle(id), r.id);
+      await T(page, 300);
+      const open = await page.evaluate((id) => window.__PS.open(id), r.id);
+      const stillOut = r.keys.filter((k) => open.visKeys.includes(k));
+      await check('R3-swallow', 'C7', r.id, stillOut.length === 0,
+        `the open record swallows every block of its run: ${JSON.stringify(r.keys)}`,
+        { stillOnThePage: stillOut });
+      await check('R3-cards', 'C7', r.id, open.cards.length === 1,
+        'one open record card', open.cards.length);
+      await check('R3-tabs', 'C7', r.id, open.tabs.filter((t) => !t.inCard).length === 0,
+        'no tab of the record outside its open card', open.tabs.filter((t) => !t.inCard).length);
+      await page.evaluate((id) => window.__PS.toggle(id), r.id);
+      await T(page, 300);
+      const after = await page.evaluate((id) => window.__PS.closed(id), r.id);
+      await check('R4-close', 'C7', r.id, eq(after.visKeys, before.visKeys) &&
+        after.tabs.length === before.tabs.length,
+        'the document is exactly as it was before the record opened (M17)',
+        { tabs: after.tabs.length,
+          missing: before.visKeys.filter((k) => !after.visKeys.includes(k)),
+          extra: after.visKeys.filter((k) => !before.visKeys.includes(k)) });
+      // the record's own field draws a deletion as a sentence too (Q1412):
+      // the field reads through `mdBlocksHtml`, the same renderer the lanes
+      // do, and a rejected deletion is a shape this walk cannot produce
+      // live — so the renderer is asked directly, and named as that.
+      const fieldSays = await page.evaluate(() => {
+        const d = document.createElement('div');
+        d.innerHTML = window.CARDS.mdBlocksHtml('A clause that stood here.', '');
+        return d.textContent.replace(/\s+/g, ' ').trim();
+      });
+      const removed = await page.evaluate(() => window.__PS.removedCopy());
+      await check('R5-field', 'C6', null, fieldSays === NORM(removed),
+        `a record's field renders an empty candidate as ${JSON.stringify(removed)} (Q1412)`,
+        fieldSays, { note: 'asked of the renderer: a rejected deletion is not a shape this walk can produce' });
+      // the split's own blocks, for the record
+      say(`  the split stands as ${JSON.stringify(r.keys.map((k) => SPLIT[+k.slice(1)]))}`);
+    }
+    await page.goto('about:blank');
+  }
+}
+
+/* ==========================================================================
    Phase 2 — Q1407's shape: a whole-document rewrite, a one-line proviso
    inside it and an insertion inside it, all in one race.
    ========================================================================== */

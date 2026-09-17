@@ -428,14 +428,24 @@
   // (Ed, 2026-09-16, closing Q1408's open half: *yes, except with a
   // multi-site patch*) — Q1308's tab at every block of the run is retired; the
   // card still swallows the whole span when it opens.
+  // **And a sealed record takes the same rule** (Q1418, Ed 2026-09-17, from
+  // the proposal-shapes pass PF3/PF4): Q1408 was written for what is live, so
+  // a record over a run of blocks — a split adopted, a heading and its
+  // paragraph rewritten — wore a filed tab in every one of those gutters and
+  // the run stood under its own open card. A decided question is one question,
+  // and stands where its run begins, exactly as the race it came from did.
+  // `tabAt` is that one test, asked by every gutter: the live strip
+  // (`suggFor`), the filed pile (`filedFor`) and the record's own door
+  // (`sealedAt`).
   const tabKeysOf = (s) => (s.sites
     ? s.sites.map((x) => (x.keys ? x.keys[0] : x.key)).filter(Boolean)
     : (s.keys ?? []).slice(0, 1));
+  const tabAt = (s, key) => tabKeysOf(s).includes(key);
   function suggFor(key) {
     // Anchors persist while a race is still deciding — a judged suggestion
     // is revisable until it seals or its ground shifts.
     return SUGGS.filter((s) => s.state !== 'sealed' && served(s) &&
-      (tabKeysOf(s).includes(key) || (s.pair ?? []).some((c) => c.key === key)));
+      (tabAt(s, key) || (s.pair ?? []).some((c) => c.key === key)));
   }
 
   const verdicts = new Map();
@@ -2255,8 +2265,10 @@
   // what is *not* in here: a decision that is decided but unread is still asking
   // for its OK, so it stays in the live part of the strip with everything else
   // that wants something. Filed is the state that wants nothing.
+  // …and it files at the record's **first** block, never at every block of its
+  // run (Q1418) — one decided question, one tab, like the live one it was.
   function filedFor(key) {
-    return key ? SUGGS.filter((g) => (g.keys ?? []).includes(key) &&
+    return key ? SUGGS.filter((g) => tabAt(g, key) &&
       stateOf(g) === 'sealed' && !isUnread(g)) : [];
   }
 
@@ -3152,7 +3164,8 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         // was filed. A paragraph has had the `wasResolved` half for as long as
         // it has had the live one, so the heading takes both or neither.
         const hlive = line.key ? suggFor(line.key) : [];
-        const hSealedAt = (g) => (resolved.has(frontKeyOf(g)) || g.state === 'sealed') && (g.keys ?? []).includes(line.key);
+        // at the run's first block alone, as the live tab was (Q1418)
+        const hSealedAt = (g) => (resolved.has(frontKeyOf(g)) || g.state === 'sealed') && tabAt(g, line.key);
         // **The open record is the one that opens, not the first one found**
         // (Ed, 2026-09-11, the moon room: *queue card that does not open
         // decision card* — a ✔ on the Food heading). Two records landed on
@@ -3196,7 +3209,8 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       // a settled clause still opens its record from the document side (Ed, 112)
       // the open one first, where two records share a clause (Q1298): the
       // first in `SUGGS` order is otherwise the only one this door can draw
-      const sealedAt = (g) => (resolved.has(frontKeyOf(g)) || g.state === 'sealed') && (g.keys ?? []).includes(line.key);
+      // …and it stands at the run's first block alone (Q1418)
+      const sealedAt = (g) => (resolved.has(frontKeyOf(g)) || g.state === 'sealed') && tabAt(g, line.key);
       const wasResolved = line.key && !live.length
         ? (SUGGS.find((g) => g.id === openId && sealedAt(g)) ?? SUGGS.find(sealedAt))
         : undefined;
