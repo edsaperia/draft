@@ -967,6 +967,24 @@ if (PRICE === 'pen' && guestResign) {
   say('leave      · resign → ' + left);
   if (left !== 200) stuck.push('the resignation');
   else {
+    /* **A departure reaches the open page, not only the reloaded one**
+     * (issue #11, F2). The founder's page is still open on the register when
+     * somebody resigns, and the served membership simply stops carrying
+     * them — there is no departed row with a flag on it to iterate. The row
+     * therefore stayed, face and all, under *Members*, for as long as
+     * nobody reloaded. Read one poll after the act and before the reload
+     * below, which would rebuild the rows from the module and pass either
+     * way. */
+    await T(4500);
+    const listed = await page.evaluate(() => [...document.querySelectorAll('.memrow .mn')]
+      .map((r) => (r.textContent || '').replace(/\s+/g, ' ').trim()));
+    const stillThere = listed.filter((t) => t.toLowerCase().includes('rowan'));
+    say('the poll   · register reads ' + JSON.stringify(listed));
+    if (stillThere.length) {
+      say('FAIL: the member who resigned is still listed on the open page — ' +
+        JSON.stringify(stillThere) + ' (issue #11, F2)');
+      stuck.push('the departed row on the open page');
+    }
     await page.reload({ waitUntil: 'load' });
     await T(2500);
     const dep = await page.evaluate(() => {

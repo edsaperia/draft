@@ -2538,6 +2538,15 @@ describe('🥾 exile, resignation and the shut door say so (Q901, E31–E33)', (
     expect(room.departures).toHaveLength(1);
     expect(room.departures[0]).toMatchObject({ id: boId, name: 'Bo Marlowe', by: 'convenor' });
     expect(JSON.stringify(room.departures)).not.toContain('bo@example.org');
+    // **A departure is an absence, on every seat** (issue #11, F2). The served
+    // membership is the whole of it — there is no departed row carrying a
+    // flag — so a page that keeps a row the list no longer holds is a page
+    // listing somebody who has gone. Pinned from every living seat, because
+    // the row the founder went on drawing was the row every member drew too.
+    for (const [who, cookie] of [['the founder', ada], ['a member', cy]] as const) {
+      const ids = (await viewOf(cookie)).view.members.map((m) => m.id);
+      expect(ids, `${who} is still served the removed member's row`).not.toContain(boId);
+    }
 
     // -- resignation: no mail, the same door sentence -----------------------
     await cmd(cy, 'resign', {});
@@ -2552,6 +2561,8 @@ describe('🥾 exile, resignation and the shut door say so (Q901, E31–E33)', (
     expect(cyDoor.departed).toMatchObject({ by: 'self' });
     expect(((await viewOf(ada)).view as unknown as { departures: Array<{ id: string; by: string }> })
       .departures.map((d) => [d.id, d.by])).toEqual([[boId, 'convenor'], [cyId, 'self']]);
+    // …and a resignation is the same absence as an exile (issue #11, F2)
+    expect((await viewOf(ada)).view.members.map((m) => m.id)).not.toContain(cyId);
 
     // -- where 🌍 lets a stranger read the register, the departures ride it --
     await cmd(ada, 'set-setting', { setting: 'chamber', value: { rung: 'link' } });

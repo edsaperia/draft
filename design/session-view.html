@@ -5451,6 +5451,31 @@
         syncIdentity(row, rec);
       }
     }
+    // **A departure is an absence, and an absence cannot be iterated**
+    // (issue #11, F2). The loop above removes a row on `rec.removed`, which
+    // is the module's own flag and is what the fixture's records carry — but
+    // the wire has no such row to read: `view.members` simply leaves a
+    // departed member out (§9.5a), and `remoteCS` builds every record it is
+    // given with `removed: false`. So nothing in the loop could ever fire,
+    // and the founder's open page went on listing a member who had resigned
+    // — with their face, under *Members*, counted in the room — until
+    // somebody reloaded. Live, the served list is the whole membership, so a
+    // row whose record is no longer in it is a row whose member has gone.
+    // **The `!row.founder` guard is load-bearing**: a clerk founder has no
+    // member record at all (🎩 deletes it), so a test on `mid` alone would
+    // delete the clerk's own row from the register.
+    if (cs.isRemote) {
+      // the viewer is held by identity across the splice: `S.viewer` is an
+      // index into this array, and removing a row above it would move the
+      // reader into somebody else's seat
+      const me = S.roster[S.viewer];
+      const live = cs.memberRecords();
+      for (let i = S.roster.length - 1; i >= 0; i--) {
+        const r = S.roster[i];
+        if (!r.founder && r.mid && !live.has(r.mid)) S.roster.splice(i, 1);
+      }
+      if (me) S.viewer = S.roster.indexOf(me);
+    }
     // **A clerk is no member, and still has a name and a face** (§9.7 X15): a
     // founder with no powers and no membership keeps both. They are in no
     // `MemberRecord` at all — 🎩 deletes it — so the register's founder row
