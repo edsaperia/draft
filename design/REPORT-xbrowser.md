@@ -103,6 +103,38 @@ data, which this never becomes. **It is not proven** — see doubt 1 — and the
 fix (a real clipboard write plus a real `Control+V`, or a `text/plain`-only
 fallback the page also serves) is somebody's next commit, not this one's.
 
+> **Resolved 2026-09-17**, and it was the walk's. `installPaste` in
+> `scripts/lib/walk.mjs` hands the listener a `clipboardData` of the walk's own
+> making — an object carrying `getData`/`types`, shadowed onto a real
+> `ClipboardEvent` — instead of a `DataTransfer`, and all three engines then
+> deliver to the page byte for byte what chromium delivered before. `journey`
+> now walks the **same 144 steps on all three**, step for step identical, with
+> no page error and no refused command anywhere — the six failures and the
+> `stash {"text":""}` are gone. Each engine reports the same single FAIL,
+> `after 🍾 · title u`, which is **neither this nor the browser**: Q1429 (merged
+> to main at `0249557`, after this report's commit) made the power card name its
+> setting, and `beginRowsAfterStart`'s table still looks for the old *amend this
+> at will*. That is a walk fix of its own, and a question for Ed rather than
+> something to slip into this one.
+>
+> **The real clipboard was measured too**, which the last section's bullet says
+> this pass did not do, and it is the reason the fix is not a real `Control+V`:
+> `navigator.clipboard.writeText` plus a real press delivers a **trusted** event
+> carrying the payload on chromium and firefox — so **a person pasting into the
+> column on Firefox was never affected by any of this** — but **WebKit's
+> trusted paste answers `''` for every one of the three types it lists**, so a
+> real press would turn the green webkit run red. `keyboard.insertText` fires no
+> `paste` at all on any engine, so it cannot reach the handler under test.
+>
+> One page observation fell out of that measurement and is **not** fixed here:
+> chromium's round trip through the Windows clipboard rewrites `\n` as `\r\n`,
+> and the column keeps the stray return — five blocks each ending in a newline,
+> and `# House rules` left standing as literal text because the trailing
+> character defeats the re-mark, where the identical paste on firefox re-marks
+> correctly. That is a finding about a real Windows paste on the commonest
+> browser there is, and it is a question for Ed rather than this commit's to
+> answer.
+
 **3 · Firefox draws neither the fill nor the ticks on a range input — and no
 card on the surface has one.** *(firefox · hand probe (b) · the page's, and
 latent.)* Confirmed by eye at 2×:

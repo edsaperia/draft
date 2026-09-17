@@ -127,6 +127,56 @@ export const typeIn = async (page, sel, v, { settleMs = 0 } = {}) => {
   return ok;
 };
 
+/**
+ * **A synthetic paste has to carry its own clipboard** (2026-09-17, answering
+ * `design/REPORT-xbrowser.md`'s finding 2). A walk that pastes by handing a
+ * `DataTransfer` to `new ClipboardEvent('paste', …)` is driving chromium and
+ * nothing else: Gecko will not read a `DataTransfer` back out of an untrusted
+ * clipboard event, so on Firefox the page's listener gets a `clipboardData`
+ * whose `types` is empty and whose `getData` answers `''` — measured, all
+ * three engines, 2026-09-17 — and everything downstream of the paste falls
+ * over behind a column that never filled.
+ *
+ * The real clipboard is not the way round it. `navigator.clipboard.writeText`
+ * plus a real `Control+V` delivers a trusted event on chromium and firefox,
+ * but **WebKit's trusted event answers `''` for every one of the three types
+ * it lists**, so a real press would turn a green run red; and chromium's
+ * round trip through the Windows clipboard rewrites `\n` as `\r\n`, which
+ * makes the payload the page receives differ per engine — a walk that drives
+ * a control differently on each engine is testing something else. Nor does
+ * `keyboard.insertText` serve: it fires no `paste` at all (all three), so the
+ * handler under test never runs.
+ *
+ * So the event carries a hand-made `clipboardData` instead of a real one: an
+ * object with the `getData`/`types` a listener reads, shadowed onto a real
+ * `ClipboardEvent` instance. Every engine then hands the page exactly what
+ * chromium's `DataTransfer` handed it before — byte for byte, both fields,
+ * verified against this tree — and the same walk asserts the same things
+ * everywhere. `getData('text')` aliases `text/plain`, as a real one does, and
+ * an absent type answers `''`, which is the case Q1314's HTML-only paste is
+ * about.
+ *
+ * Installed as an init script so it survives every `goto`, and called from
+ * *inside* a walk's own `page.evaluate` — `window.__paste(el, { text, html })`
+ * — because the caret the paste lands on is set in that same evaluate and the
+ * live page re-renders on a 4s poll between any two of them.
+ */
+export const installPaste = (page) => page.addInitScript(() => {
+  window.__paste = (el, payload) => {
+    const p = typeof payload === 'string' ? { text: payload } : (payload || {});
+    const data = new Map();
+    if (p.text != null) data.set('text/plain', p.text);
+    if (p.html != null) data.set('text/html', p.html);
+    const clipboardData = {
+      types: [...data.keys()],
+      getData: (t) => data.get(t === 'text' ? 'text/plain' : t) ?? '',
+    };
+    const ev = new ClipboardEvent('paste', { bubbles: true, cancelable: true });
+    Object.defineProperty(ev, 'clipboardData', { value: clipboardData });
+    return el.dispatchEvent(ev);
+  };
+});
+
 /** Click a control by selector; false when it is missing or disabled, so a
  *  selector that names no rung is a *reported* failure rather than a silent no-op. */
 export const clickIn = async (page, sel, { settleMs = 420, scroll = true } = {}) => {
