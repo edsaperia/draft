@@ -256,6 +256,14 @@ jobs:
       # touch, a drag does not, and an entry still opens its card
       - run: npm run drawer-walk
         if: always()
+      # 🖼️'s refusals, said out loud (2026-09-17): the uploader turns a file
+      # away in four places and writes the reason into a `.picnote` that
+      # nothing rendered, so every refusal was a file dialog closing and
+      # nothing else. Hands the input a file that is not a picture, one that
+      # only claims to be, 25 MB, and a real one; the box has to say something
+      # about the first three and nothing after the fourth.
+      - run: npm run picture-walk
+        if: always()
 
   # **Last green on `main`: 2026-09-16** (run 143, `fba9d3e` — every step, the
   # seat matrix at both hats included). **First green: 2026-09-07** (run 104,

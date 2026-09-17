@@ -434,6 +434,19 @@ window.COPY = (function () {
       suggested: 'Suggested from the title — ',
       takenSo: ' is taken, so this one is ',
     },
+    // 🖼️'s four refusals, said in the uploader's own box. Written inline in
+    // `wirePicDrop` and unreadable until 2026-09-17: nothing rendered the
+    // `.picnote` they were written into, so every refused file closed the
+    // file dialog and left the card exactly as it was. They are refusals and
+    // not helper text — the drag-note and the what-nothing-means paragraph
+    // Ed's card review took off this card (Q1165) stay gone, and the box
+    // says nothing until a file is turned away.
+    picNote: {
+      notImage: 'That is not a picture.',
+      tooBig: 'That picture is too big to open here.',
+      unreadable: 'That picture could not be opened.',
+      tooHeavy: 'That picture will not compress small enough — try a simpler one.',
+    },
     // the settings cards (CARDS): two labels each (Q1209, Q331 (b), Ed
     // 2026-09-07) — `t` the ask a card wears while it is outstanding, an
     // imperative or a question (STYLE T2); `n` the noun it wears once settled,

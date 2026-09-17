@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 435
+  "entries": 439
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -214,6 +214,10 @@
   "page.noAnswer": "ƒ (status) => (status ? 'the server answered ' + status : 'the server could not be reached')",
   "page.nothingToPut": "That could not be proposed: nothing is chosen on this card.",
   "page.penWait": "Founder Actions ✒️ are waiting in your tasks — accept them and this turns.",
+  "page.picNote.notImage": "That is not a picture.",
+  "page.picNote.tooBig": "That picture is too big to open here.",
+  "page.picNote.tooHeavy": "That picture will not compress small enough — try a simpler one.",
+  "page.picNote.unreadable": "That picture could not be opened.",
   "page.preamble.andVote": ", and may vote on proposals.",
   "page.preamble.asArrive": "as soon as they arrive",
   "page.preamble.beforeBegin": "When the document begins, members may propose changes to rules and vote on proposals.",
