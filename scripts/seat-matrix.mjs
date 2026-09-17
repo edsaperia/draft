@@ -456,13 +456,16 @@ const STEPS = [
   // so a reloaded founder is asked 💤 again and everything below it in `ORDER`
   // waits (first run, 2026-08-27: `no begin card to hold … rail ["lapse"]`;
   // a page finding, Q919 — not fixed here). And the one-minute lapse the
-  // `lapsed` seat needs is not expressible on the card (7–365 days). So 💤 is
+  // `lapsed` seat needs is not expressible on the card: it took days alone
+  // until Q1439 and takes minutes now, but no less than five of them. So 💤 is
   // answered **on the card, after the reload**, which is what the page counts
   // as seen, and the minute is then set over the wire without a reload. These
   // two rows stand after `ok-shield`: 💤 is below the grants in `ORDER`, so its
   // card is not in the rail until both are acknowledged.
+  // The field is `lapseN` since Q1439 — the number, in the unit the card opens
+  // on, which is days — where it was `lapseDays`, the day count itself.
   { id: 'lapse-card', epoch: 'before', kind: 'card', seat: 'founder', key: 'lapse', setting: 'lapse',
-    pick: { set: 'lapse', val: 'days' }, fields: { lapseDays: '7' }, events: [] },
+    pick: { set: 'lapse', val: 'days' }, fields: { lapseN: '7' }, events: [] },
   { id: 'lapse-minute', epoch: 'before', kind: 'cmd', seat: 'founder', cmd: 'set-setting',
     args: () => ({ setting: 'lapse', value: { afterMs: LAPSE_AFTER_MS } }), events: [] },
   // 🏛️ is served to a member founder as news once the constitution is settled,
