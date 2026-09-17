@@ -680,8 +680,30 @@ window.LIVE = (function () {
       if (dev) dev.style.display = 'none';
       fetch('/api/d/' + LIVESLUG + '/view').then((r) => {
         if (r.status === 401) { console.warn('[live] no seat and no door'); return null; }
+        // **The first view is the only one there is until it lands** (issue
+        // #11, F3). The 4s poll starts at the foot of a successful boot, so
+        // anything that stops the boot stops the page for ever: one 429 off
+        // the door's own budget — a room of phones behind one venue Wi-Fi
+        // address, which is exactly the case that budget was widened for —
+        // or one 502 from a host being deployed, and the reader is left with
+        // an empty column, an empty rail and no second attempt. Only the
+        // answers that mean *try again* are retried: a 429 and the 5xx
+        // family, plus a fetch that never arrived. **401 stays terminal**,
+        // and so does every other 4xx — a 404 retried on a timer is a page
+        // that polls a document that does not exist for as long as it is
+        // open.
+        if (r.status === 429 || r.status >= 500) {
+          console.warn('[live] boot answered', r.status, '— trying again');
+          return { retry: true };
+        }
         return r.json();
+      }, (e) => {
+        // the answer that never came: a dropped connection is the same
+        // *try again* as a 503, and it is the ordinary one on a bad line
+        console.warn('[live] boot', e && e.message, '— trying again');
+        return { retry: true };
       }).then((data) => {
+        if (data && data.retry) { setTimeout(liveBoot, 4000); return; }
         if (!data) return;
         // **The stagehand's controls are asked for only where the host says
         // it has them** (Q1349, Ed 2026-09-12): `devMail` rides every view

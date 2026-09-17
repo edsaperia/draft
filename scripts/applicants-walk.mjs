@@ -495,6 +495,45 @@ if (knock.status !== 200 || !knock.body || !knock.body.devLink) {
 const CALLED = PRICE === 'pen' ? APPLICANT : NAME;
 
 /* ---- what the founder is served -------------------------------------- */
+/* **One 429 on the first view used to be a blank page for ever** (issue #11,
+ * F3). The 4s poll is started at the foot of a successful boot, so a boot
+ * that fails never starts one: the reader gets an empty column, an empty
+ * rail and no second attempt — on venue Wi-Fi, where a room of phones shares
+ * one address and the door's budget is per address, that is the ordinary
+ * arrival. Driven once, at 🪪 proposal alone (one price is enough for a
+ * page-wide fact, and the other two have their own slow work): the first
+ * view answers 429, the rest go through untouched, and the page must come
+ * back inside the back-off — the founder's seat, clauses in the column,
+ * rows in the register — **without navigating**, which the marker set on the
+ * page after load is the test of. */
+if (PRICE === 'proposal') {
+  let blocked = false;
+  await page.route('**/api/d/*/view*', async (route) => {
+    if (blocked) return route.continue();
+    blocked = true;
+    await route.fulfill({ status: 429, contentType: 'application/json',
+      body: JSON.stringify({ error: 'too many' }) });
+  });
+  await page.goto(DOCBASE + '/d/' + SLUG);
+  await page.evaluate(() => { window.__noReload = true; });
+  await T(6500);
+  const back = await page.evaluate(() => ({
+    kept: window.__noReload === true,
+    viewer: window.__founding ? window.__founding().viewer : '(no readout)',
+    clauses: document.querySelectorAll('#charter .prose p, #prose p').length,
+    rows: document.querySelectorAll('.memrow').length,
+  })).catch((e) => ({ threw: String(e && e.message).split('\n')[0] }));
+  say('boot 429   · ' + JSON.stringify(back));
+  if (back.threw || back.viewer !== 0 || !back.clauses || !back.rows) {
+    say('FAIL: a 429 on the first view left the page blank — it must try again ' +
+      'and draw the document (issue #11, F3)');
+    stuck.push('the boot’s retry');
+  } else if (!back.kept) {
+    say('FAIL: the page recovered by navigating; the boot retries in place (issue #11, F3)');
+    stuck.push('the boot’s retry in place');
+  }
+  await page.unroute('**/api/d/*/view*');
+}
 await page.goto(DOCBASE + '/d/' + SLUG);
 await T(2500);
 
