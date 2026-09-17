@@ -229,7 +229,7 @@
   "page.prose.heading": "heading",
   "page.prose.nothingYet": "Nothing written yet.",
   "page.prose.paragraph": "paragraph",
-  "page.prose.writeready": "What this document is for, in a sentence or two.\n\nStart writing whenever you like — press 📝, or just begin typing. Markdown headings become its sections, and the contents appear beside you as you go.",
+  "page.prose.writeready": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n\nDuis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
   "page.proseRow.discard": "Put the column back to the text as it stands",
   "page.proseRow.save": "Save the text — the document begins from whatever stands here",
   "page.proseRow.saved": "Saved — the document begins from whatever stands here",

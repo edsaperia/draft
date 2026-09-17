@@ -376,9 +376,14 @@ window.COPY = (function () {
     // charter; the invitation beneath it says how to begin. Ed's wording to
     // come; the shape is the point.
     prose: {
-      writeready: 'What this document is for, in a sentence or two.\n\n' +
-        'Start writing whenever you like — press 📝, or just begin typing. ' +
-        'Markdown headings become its sections, and the contents appear beside you as you go.',
+      // two paragraphs of lorem ipsum for now (Ed, 2026-09-17: the sentence
+      // about pressing 📝 and typing had become misleading)
+      writeready: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor ' +
+        'incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud ' +
+        'exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n\n' +
+        'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat ' +
+        'nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui ' +
+        'officia deserunt mollit anim id est laborum.',
       nothingYet: 'Nothing written yet.',
       paragraph: 'paragraph',
       heading: 'heading',
