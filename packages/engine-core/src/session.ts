@@ -971,12 +971,21 @@ export class Session {
    * F = max(Q, min(ceil(E/3), F_max)) — SPEC §4.2: the room's quorum
    * riding on the statistical minimum. A share-quorum is re-derived from
    * current E on every call, so it tracks the roster (§9.3).
+   *
+   * The share is ⌈n·E/100⌉, **the product before the quotient** (issue #24):
+   * `(n / 100) * E` is not the same number — `0.56` is not representable in
+   * binary and 56 % of 25 landed a hair above 14, holding that room to 15
+   * judges where the card promised 14. Twenty-seven (share, E) pairs read one
+   * too many that way, all at E ≥ 25. The constitution layer keeps its own
+   * copy of this line (`populations.ts`, `quorumCount`) because the engine
+   * derives F from the engine's roster and never asks it; the two move
+   * together or not at all.
    */
   adoptionFloor(): number {
     const e = this.eCount();
     const q = this.constitutionValue.quorum;
     const quorumN =
-      q === null ? 0 : q.form === 'count' ? q.n : Math.ceil((q.n / 100) * e);
+      q === null ? 0 : q.form === 'count' ? q.n : Math.ceil((q.n * e) / 100);
     return Math.max(quorumN, Math.min(Math.ceil(e / 3), this.constitutionValue.adoptionFloorMax));
   }
 

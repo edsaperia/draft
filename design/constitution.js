@@ -310,6 +310,26 @@ var CONSTITUTION = (() => {
     return stableStringify(a) === stableStringify(b);
   }
 
+  // src/populations.ts
+  function inE(m) {
+    return m.arrivedAtT !== null && !m.removed && !m.lapsed;
+  }
+  function eOf(members) {
+    return [...members].filter(inE);
+  }
+  function motionElectorateOf(members) {
+    return eOf(members);
+  }
+  function quorumCount(quorum, E) {
+    return quorum.form === "count" ? quorum.n : Math.ceil(quorum.n * E / 100);
+  }
+  function adoptionFloorTerm(E) {
+    return Math.ceil(E / 3);
+  }
+  function adoptionFloor(quorumN, E, fMax) {
+    return Math.max(quorumN, Math.min(adoptionFloorTerm(E), fMax));
+  }
+
   // src/catalogue.ts
   var ladderOrder = (rungs) => (a, b) => rungs.indexOf(b.rung) - rungs.indexOf(a.rung);
   var priceOrder = (rungs) => (a, b) => rungs.indexOf(b.price) - rungs.indexOf(a.price);
@@ -433,7 +453,7 @@ var CONSTITUTION = (() => {
         ask: "the lowest quorum you will accept — a share of the membership or a fixed count",
         order: (a, b, ctx) => {
           const e = Math.max(1, ctx && ctx.e || 1);
-          const demand = (v) => v.form === "count" ? v.n : Math.ceil(v.n / 100 * e);
+          const demand = (v) => quorumCount(v, e);
           const d = demand(a) - demand(b);
           return d !== 0 ? d : a.n - b.n;
         }
@@ -835,26 +855,6 @@ var CONSTITUTION = (() => {
     if (!m || m.removed) throw new Error(`unknown member '${member}'`);
     if (m.arrivedAtT !== null) throw new Error("they are already here — there is nothing to re-send");
     s.emit({ type: "mail-resent", t, member, by });
-  }
-
-  // src/populations.ts
-  function inE(m) {
-    return m.arrivedAtT !== null && !m.removed && !m.lapsed;
-  }
-  function eOf(members) {
-    return [...members].filter(inE);
-  }
-  function motionElectorateOf(members) {
-    return eOf(members);
-  }
-  function quorumCount(quorum, E) {
-    return quorum.form === "count" ? quorum.n : Math.ceil(quorum.n / 100 * E);
-  }
-  function adoptionFloorTerm(E) {
-    return Math.ceil(E / 3);
-  }
-  function adoptionFloor(quorumN, E, fMax) {
-    return Math.max(quorumN, Math.min(adoptionFloorTerm(E), fMax));
   }
 
   // src/motions.ts

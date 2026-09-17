@@ -509,36 +509,66 @@ describe('the arithmetic behind every one of them', () => {
   });
 
   /**
-   * **The gap.** `Math.ceil((n / 100) * E)` is not ⌈n·E/100⌉: `28 / 100` is
-   * not representable in binary, and at E = 25 the product lands a hair
-   * above 7. A sweep of integer n 1..100 × E 1..40 finds exactly two such
-   * values, 28 % and 56 %, both of them statable in the founder's own share
-   * field (`min="1" max="100"`, no step) though not on the blind slider,
-   * whose step is 5. The room is told *28 % — 7 of 25* on the card and held
-   * to 8 in the fold.
+   * **The gap, closed** (issue #24). `Math.ceil((n / 100) * E)` is not
+   * ⌈n·E/100⌉: `28 / 100` is not representable in binary, and at E = 25 the
+   * product lands a hair above 7, so the room told *28 % — 7 of 25* on the
+   * card was held to 8 in the fold. `Math.ceil((n * E) / 100)` is the same
+   * promise in the order that keeps it — for every share the surface can
+   * state the product is a whole number, so the only rounding left is the one
+   * §8.2 asks for.
    *
-   * Whether the wrong number reaches a race depends on the other term: at
-   * E = 25 the floor is `max(Q, min(⌈25/3⌉ = 9, 12))`, so 28 % is masked
-   * (9 either way) and **56 % is not** (15 against the promised 14). That
-   * half is filed in `packages/engine-core/test/adoption-threshold.test.ts`,
-   * which keeps its own copy of the expression.
+   * Whether the wrong number ever reached a race depended on the other term:
+   * at E = 25 the floor is `max(Q, min(⌈25/3⌉ = 9, 12))`, so 28 % was masked
+   * (9 either way) and **56 % was not** (15 against the promised 14) — which
+   * is why it could sit undetected. That half is filed in
+   * `packages/engine-core/test/adoption-threshold.test.ts`, which keeps its
+   * own copy of the expression.
    */
-  it.fails('28 % of 25 is 7, and the fold says 8 (FINDING: the share arithmetic, all epochs)', () => {
+  it('28 % of 25 is 7, and the fold says 7 (issue #24: the share arithmetic, all epochs)', () => {
     expect(quorumCount({ form: 'share', n: 28 }, 25)).toBe(7);
   });
 
-  it.fails('56 % of 25 is 14, and the fold says 15 (FINDING: the same expression, the other value)', () => {
+  it('56 % of 25 is 14, and the fold says 14 (the same expression, the other value)', () => {
     expect(quorumCount({ form: 'share', n: 56 }, 25)).toBe(14);
   });
 
-  it('and those two are the whole of it below E = 41', () => {
+  /**
+   * The twenty-seven pairs the old expression got wrong, none of them below
+   * E = 25 and so none of them reachable by a Newspeak House cohort — but a
+   * convention of a hundred states 7 % and is held to 8, and the design is
+   * not to preclude those rooms (CLAUDE.md, *V1 product decisions*). One of
+   * each distinct share is named here so a regression says which value moved
+   * rather than only that the sweep grew.
+   */
+  it('and every pair the old rounding lost now reads the share exactly', () => {
+    const table: [number, number, number][] = [
+      // share, E, ⌈n·E/100⌉ — the smallest room at which each share went wrong
+      [7, 100, 7],
+      [14, 50, 7],
+      [28, 25, 7],
+      [34, 150, 51],
+      [55, 100, 55],
+      [56, 25, 14],
+      [68, 75, 51],
+      // and a handful the old expression already got right, unmoved
+      [50, 25, 13],
+      [33, 15, 5],
+      [25, 8, 2],
+      [100, 200, 200],
+    ];
+    for (const [n, E, want] of table) {
+      expect([n, E, quorumCount({ form: 'share', n }, E)]).toEqual([n, E, want]);
+    }
+  });
+
+  it('and the whole sweep is exact, to a room of two hundred', () => {
     const off: string[] = [];
     for (let n = 1; n <= 100; n++) {
-      for (let E = 1; E <= 40; E++) {
+      for (let E = 1; E <= 200; E++) {
         const exact = Math.ceil((n * E) / 100);
         if (quorumCount({ form: 'share', n }, E) !== exact) off.push(`${n}%×${E}`);
       }
     }
-    expect(off).toEqual(['28%×25', '56%×25']);
+    expect(off).toEqual([]);
   });
 });

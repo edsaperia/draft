@@ -299,9 +299,12 @@ async function main(): Promise<void> {
   // The floor is `max(Q, min(⌈E/3⌉, 12))` (SPEC §4.2), so at fifteen the
   // statistical minimum is 5 and a quorum below a third of the room buys
   // nothing — which is why the label carries the floor rather than the share.
+  // The share is ⌈n·E/100⌉, the product before the quotient, exactly as
+  // `adoptionFloor` computes it (issue #24) — a label that read one apart
+  // from the floor the run actually used would be worse than no label.
   const floorAt = (q: Constitution['quorum']): number => {
     const e = ROOM.personas.length;
-    const n = q === null ? 0 : q.form === 'count' ? q.n : Math.ceil((q.n / 100) * e);
+    const n = q === null ? 0 : q.form === 'count' ? q.n : Math.ceil((q.n * e) / 100);
     return Math.max(n, Math.min(Math.ceil(e / 3), 12));
   };
   const QUORUMS: { label: string; q: Constitution['quorum'] }[] = [
