@@ -58,7 +58,19 @@ export const memberTable: Route[] = [
           const engineDoc0 = asEngineDoc(doc);
           const eseq = engineDoc0.bridge === null ? 0 : engineDoc0.bridge.engine.log.length;
           if (url.searchParams.get('since') === seq + '.' + eseq) {
-            json(res, 200, { seq, eseq });
+            // **The door's short answer is a short answer, and says so**
+            // (issue #11, F5). The page reads the two host flags off every
+            // answer before it reads anything else, and `short` is what tells
+            // it there is no view underneath — so a door answer carrying
+            // neither read as a full view with no pause and no stall in it,
+            // and every quiet poll at the door cleared the maintenance modal
+            // and the stall flag a moment after the previous answer raised
+            // them. A stranger watching a document through a deploy saw the
+            // modal blink at four-second intervals. The member's short
+            // answer at the foot of this handler has carried all three since
+            // Q1345/Q1346; this is the same three words.
+            json(res, 200, { seq, eseq, short: true,
+              paused: pause.payload(nowMs), stalled: !!doc.stalled });
             return true;
           }
           json(res, 200, { seq, eseq, devMail: mailer.dev, ...strangerView(doc, nowMs, pause.payload(nowMs), session) });

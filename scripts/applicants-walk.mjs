@@ -78,6 +78,8 @@ const stuck = [];
 // end, and the founder's rail is read for the 🥾 entry that names them
 let guestResign = null;
 let guestSeat = null;
+// …and what their own page says once the seat is gone (issue #11, F2)
+let guestDoor = null;
 let closeGuest = async () => {};
 
 // Q911: a walk on a default port will drive whatever process is listening,
@@ -248,12 +250,50 @@ if (knock.status !== 200 || !knock.body || !knock.body.devLink) {
   const guestCtx = await browser.newContext({ viewport: { width: 1200, height: 900 } });
   const guest = await guestCtx.newPage();
   guest.on('pageerror', (e) => errors.push('applicant: ' + String(e)));
+  /* **A door tab whose cookie becomes a member's is a different page**
+   * (issue #11, F1). The second tab is the ordinary one: a phone at the
+   * document's address while the magic link is opened from the mail beside
+   * it — one cookie jar, two pages, and only the one that followed the link
+   * knows anything happened. The other is at the door, and its poll is
+   * answered with a member's payload. It used to seat itself at roster
+   * index 0, which is the founder: the tab reported `amFounder` on somebody
+   * else's cookie. Opened before the link is followed so the door page is
+   * genuinely a stranger's first, and read after the link so what is under
+   * test is the handover rather than the boot. */
+  const doorPage = await guestCtx.newPage();
+  doorPage.on('pageerror', (e) => errors.push('door tab: ' + String(e)));
+  await doorPage.goto(DOCBASE + '/d/' + SLUG);
+  await T(2500);
   await guest.goto(knock.body.devLink);
   await T(2200);
   // **At ✒️ the link is the joining** (Q894–Q896): `/auth/apply` admits the
   // visitor on arrival, so there is no application left to submit and the
   // command is rightly refused. They have given no name either, which is why
   // the news card names them by the address they knocked with.
+  // the door tab, two polls later: whatever the cookie became, it is not the
+  // founder, and at ✒️ — where the link is the joining — it is the new
+  // member's own seat (issue #11, F1)
+  await T(7000);
+  const doorAfter = await doorPage.evaluate(() => (window.__founding ? window.__founding() : null))
+    .catch((e) => ({ threw: String(e && e.message).split('\n')[0] }));
+  say('door tab   · ' + JSON.stringify(doorAfter && { viewer: doorAfter.viewer, amFounder: doorAfter.amFounder }));
+  if (!doorAfter || doorAfter.threw) {
+    say('FAIL: the door tab\'s readout threw — ' + JSON.stringify(doorAfter && doorAfter.threw));
+    stuck.push('the door tab');
+  } else if (doorAfter.amFounder) {
+    say('FAIL: a door tab whose cookie became somebody else\'s reports the founder\'s seat — viewer ' +
+      JSON.stringify(doorAfter.viewer) + ' (issue #11, F1)');
+    stuck.push('the door tab\'s seat');
+  } else if (PRICE === 'pen' && !(typeof doorAfter.viewer === 'number' && doorAfter.viewer !== 0)) {
+    say('FAIL: at ✒️ the door tab should be the new member\'s own seat, saw viewer ' +
+      JSON.stringify(doorAfter.viewer) + ' (issue #11, F1)');
+    stuck.push('the door tab\'s member seat');
+  } else if (PRICE !== 'pen' && doorAfter.viewer !== 'applicant') {
+    say('FAIL: at 🪪 ' + PRICE + ' the door tab should follow its cookie to the applicant seat, saw viewer ' +
+      JSON.stringify(doorAfter.viewer) + ' (issue #11, F1)');
+    stuck.push('the door tab\'s applicant seat');
+  }
+  await doorPage.close();
   if (PRICE === 'pen') {
     say('applicant  · ' + APPLICANT + ' opened the link and was admitted on arrival');
   } else {
@@ -431,6 +471,14 @@ if (knock.status !== 200 || !knock.body || !knock.body.devLink) {
     });
     return r.status;
   }, SLUG);
+  // what the resigned seat's own page has become, read after the act (issue
+  // #11, F2): the door's one sentence, and the rows it is drawing
+  guestDoor = () => guest.evaluate(() => {
+    const h = document.getElementById('holding');
+    return { holding: !!h && !h.hidden,
+      sentence: h ? (h.textContent || '').trim().slice(0, 60) : null,
+      rows: document.querySelectorAll('.memrow .mn').length };
+  }).catch((e) => ({ threw: String(e && e.message).split('\n')[0] }));
   // the seat the admitted applicant is served (Q1405): by the seat mail's
   // link where one is given — it swaps the `app:` cookie for the member's, as
   // the returning section's invitation does — else the page they already hold
@@ -457,6 +505,45 @@ if (knock.status !== 200 || !knock.body || !knock.body.devLink) {
 const CALLED = PRICE === 'pen' ? APPLICANT : NAME;
 
 /* ---- what the founder is served -------------------------------------- */
+/* **One 429 on the first view used to be a blank page for ever** (issue #11,
+ * F3). The 4s poll is started at the foot of a successful boot, so a boot
+ * that fails never starts one: the reader gets an empty column, an empty
+ * rail and no second attempt — on venue Wi-Fi, where a room of phones shares
+ * one address and the door's budget is per address, that is the ordinary
+ * arrival. Driven once, at 🪪 proposal alone (one price is enough for a
+ * page-wide fact, and the other two have their own slow work): the first
+ * view answers 429, the rest go through untouched, and the page must come
+ * back inside the back-off — the founder's seat, clauses in the column,
+ * rows in the register — **without navigating**, which the marker set on the
+ * page after load is the test of. */
+if (PRICE === 'proposal') {
+  let blocked = false;
+  await page.route('**/api/d/*/view*', async (route) => {
+    if (blocked) return route.continue();
+    blocked = true;
+    await route.fulfill({ status: 429, contentType: 'application/json',
+      body: JSON.stringify({ error: 'too many' }) });
+  });
+  await page.goto(DOCBASE + '/d/' + SLUG);
+  await page.evaluate(() => { window.__noReload = true; });
+  await T(6500);
+  const back = await page.evaluate(() => ({
+    kept: window.__noReload === true,
+    viewer: window.__founding ? window.__founding().viewer : '(no readout)',
+    clauses: document.querySelectorAll('#charter .prose p, #prose p').length,
+    rows: document.querySelectorAll('.memrow').length,
+  })).catch((e) => ({ threw: String(e && e.message).split('\n')[0] }));
+  say('boot 429   · ' + JSON.stringify(back));
+  if (back.threw || back.viewer !== 0 || !back.clauses || !back.rows) {
+    say('FAIL: a 429 on the first view left the page blank — it must try again ' +
+      'and draw the document (issue #11, F3)');
+    stuck.push('the boot’s retry');
+  } else if (!back.kept) {
+    say('FAIL: the page recovered by navigating; the boot retries in place (issue #11, F3)');
+    stuck.push('the boot’s retry in place');
+  }
+  await page.unroute('**/api/d/*/view*');
+}
 await page.goto(DOCBASE + '/d/' + SLUG);
 await T(2500);
 
@@ -929,6 +1016,40 @@ if (PRICE === 'pen' && guestResign) {
   say('leave      · resign → ' + left);
   if (left !== 200) stuck.push('the resignation');
   else {
+    /* **A departure reaches the open page, not only the reloaded one**
+     * (issue #11, F2). The founder's page is still open on the register when
+     * somebody resigns, and the served membership simply stops carrying
+     * them — there is no departed row with a flag on it to iterate. The row
+     * therefore stayed, face and all, under *Members*, for as long as
+     * nobody reloaded. Read one poll after the act and before the reload
+     * below, which would rebuild the rows from the module and pass either
+     * way. */
+    await T(4500);
+    const listed = await page.evaluate(() => [...document.querySelectorAll('.memrow .mn')]
+      .map((r) => (r.textContent || '').replace(/\s+/g, ' ').trim()));
+    const stillThere = listed.filter((t) => t.toLowerCase().includes('rowan'));
+    say('the poll   · register reads ' + JSON.stringify(listed));
+    if (stillThere.length) {
+      say('FAIL: the member who resigned is still listed on the open page — ' +
+        JSON.stringify(stillThere) + ' (issue #11, F2)');
+      stuck.push('the departed row on the open page');
+    }
+    /* **And the page that resigned is the door** — the other side of the same
+     * poll, and the one F2's splice has to be safe on. A seat that dies
+     * mid-session becomes the door, and the payload that says so moves the
+     * viewer to `'stranger'` *before* `syncFromCs` runs, so the splice finds
+     * no row of its own to take out and the reader is never left indexed at
+     * -1. Read on the guest's own page, which is still open, and worth its
+     * own line because a throw here would be swallowed by the poll's catch
+     * and leave a page that has simply stopped: the door's one sentence is
+     * the proof it re-drew rather than died. */
+    const doorNow = guestDoor ? await guestDoor() : { threw: 'no guest page' };
+    say('the seat   · the page that resigned reads ' + JSON.stringify(doorNow));
+    if (!doorNow || doorNow.threw || !doorNow.holding) {
+      say('FAIL: the seat that died mid-session did not become the door — ' +
+        JSON.stringify(doorNow) + ' (issue #11, F2)');
+      stuck.push('the resigned seat at the door');
+    }
     await page.reload({ waitUntil: 'load' });
     await T(2500);
     const dep = await page.evaluate(() => {

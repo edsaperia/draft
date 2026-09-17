@@ -1110,6 +1110,39 @@ const lifecycleL9 = async () => {
   const typed = String((+v0 || 5) + 7);
   await typeIn('.setupcard input[data-num="dripN"]', typed);
   await T(250);
+  /* **Closing a card is not discarding, and neither is the 4s poll**
+   * (SURFACE C3, issue #11, F4). The typed number is left standing and the
+   * card is closed the ordinary way — no 🗑️ — and then the *room* moves, so
+   * the next poll carries a full view and hydration runs over every setting
+   * but the open one, of which there is now none. The value written into a
+   * card the member has not committed is theirs until they commit it or bin
+   * it: nothing else may take it back, least of all a timer they cannot see.
+   * The room is moved by the other seat's own picture, set and then put
+   * back, because it is the one change in this walk that nothing later
+   * reads. Confirming Q1161's half of it too: the number is not re-derived
+   * from the minutes, so a blank here is the minutes having been reverted
+   * underneath it. */
+  await closeCard();
+  if (guestPage) {
+    const moved = await setIdentityAt(guestPage, { picture: 'e🦁' });
+    if (moved && moved.error) {
+      say(L('L9') + 'FAIL: the room would not move · ' + JSON.stringify(moved.error));
+      stuck.push('L9: moving the room');
+    }
+    await T(5500);
+    const kept = (await open('rate')) ? await field('.setupcard input[data-num="dripN"]') : '(would not reopen)';
+    const keptOk = kept === typed;
+    say(L('L9') + (keptOk
+      ? '⏱️ ' + typed + ' typed and the card closed unsent; the room moved twice and the poll left it alone (C3)'
+      : 'FAIL: the poll took back what was typed into a closed ⏱️ — reopened reads ' +
+        JSON.stringify(kept) + ', expected ' + JSON.stringify(typed) + ' (SURFACE C3)'));
+    if (!keptOk) stuck.push('L9: the poll reverted an uncommitted ⏱️');
+    await setIdentityAt(guestPage, { picture: GUEST_FACE });
+    await T(1200);
+    if (!(await cardOpen()) && !(await open('rate'))) {
+      say(L('L9') + 'FAIL: ⏱️ would not reopen for the 🗑️'); stuck.push('L9: the ⏱️ tab'); return;
+    }
+  }
   await clickIn('.setupcard [data-revert]');
   const closed = !(await cardOpen());
   const after = await rateValue();

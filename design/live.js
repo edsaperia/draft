@@ -242,7 +242,21 @@ window.LIVE = (function () {
             // the applicant's payload is the door's plus their application
             // (Q1281): reshaped the same way, the application re-read into S
             else if (data.applicant) { setStranger(data); data = applicantAsView(data); env.S.viewer = 'applicant'; hydrateApplicant(data.applicant); }
-            else if (atTheDoor()) { setStranger(null); env.S.viewer = 0; }
+            // …and the other way, which is not a seat moving but a page
+            // becoming a different page (issue #11, F1): a door or applicant
+            // tab whose cookie has become a member's — a magic link followed
+            // in a second tab, an admission at ✒️ — is answered with a
+            // member's payload, and there is no in-place handover for it.
+            // `S.viewer = 0` is the founder's own row, so the page reported
+            // the founder's seat on somebody else's cookie: every predicate
+            // that asks *am I the founder* said yes and the surface offered
+            // acts the server rightly refused. The whole page is rebuilt
+            // instead, which is what the member path's boot does anyway.
+            // There is no loop: the payload after the reload is a member's,
+            // so this branch is not reached again. The only thing lost is an
+            // applicant's unsubmitted words, which membership has just made
+            // moot — there is no application left to submit.
+            else if (atTheDoor()) { location.reload(); return; }
             // the engine's seq moves on every judgment, proposal and adoption,
             // so it is the cheap fingerprint for the charter's side of the view
             const moved = data.seq !== env.cs.v.seq || (data.eseq || 0) !== (env.cs.v.eseq || 0) ||
@@ -532,6 +546,27 @@ window.LIVE = (function () {
     }
     const FIELDED_MIDS = ['ending', 'quorum', 'authorship', 'judgments',
       'chamber', 'rate', 'lapse', 'removal', 'admission', 'applications'];
+    // **Closing a card is not discarding** (SURFACE C3, issue #11, F4), and
+    // the poll did not know it. Hydration skipped the card that is open and
+    // wrote every other setting's value back into `S` four seconds at a
+    // time — so a number typed into ⏱️ and left there while the founder
+    // looked at another card was reverted to the document's own value by the
+    // next poll, silently, and the card reopened reading what it always
+    // read. 🗑️ is the way back from an uncommitted answer, and nothing else
+    // may take it.
+    //
+    // **What is remembered is what hydration itself last wrote**, per
+    // setting. A field that still matches that is a field nobody has
+    // touched, and it follows the server as before; a field that matches
+    // neither what hydration left nor what is arriving is a member's own
+    // unsent hand, and that whole setting is left alone until the hand is
+    // committed or binned. A field that already equals the incoming value is
+    // not a disagreement, so a room that moves *to* what you typed does not
+    // freeze your card. **Not a snapshot test**: a snapshot lives from a
+    // card's first opening until ✓, so skipping on one would stop those
+    // cards following the server at all and let a later ✓ put back somebody
+    // else's change.
+    const wrote = {};
     function hydrateFromModule(skipKey) {
       const val2 = (mid) => { const st = env.cs.settingState(mid); return st && st.value; };
       for (const mid of FIELDED_MIDS) {
@@ -539,7 +574,14 @@ window.LIVE = (function () {
         const x = val2(mid);
         // value non-null implies settled (every module fold sets or nulls
         // the pair together), so this guard is the whole condition
-        if (x) fieldsOf(mid, x, S);
+        if (!x) continue;
+        const t = {};
+        fieldsOf(mid, x, t);
+        const touched = wrote[mid] && Object.keys(t).some((f) =>
+          String(S[f]) !== String(wrote[mid][f]) && String(S[f]) !== String(t[f]));
+        if (touched) continue;
+        Object.assign(S, t);
+        wrote[mid] = t;
       }
     }
 
@@ -701,8 +743,30 @@ window.LIVE = (function () {
       if (dev) dev.style.display = 'none';
       fetch('/api/d/' + LIVESLUG + '/view').then((r) => {
         if (r.status === 401) { console.warn('[live] no seat and no door'); return null; }
+        // **The first view is the only one there is until it lands** (issue
+        // #11, F3). The 4s poll starts at the foot of a successful boot, so
+        // anything that stops the boot stops the page for ever: one 429 off
+        // the door's own budget — a room of phones behind one venue Wi-Fi
+        // address, which is exactly the case that budget was widened for —
+        // or one 502 from a host being deployed, and the reader is left with
+        // an empty column, an empty rail and no second attempt. Only the
+        // answers that mean *try again* are retried: a 429 and the 5xx
+        // family, plus a fetch that never arrived. **401 stays terminal**,
+        // and so does every other 4xx — a 404 retried on a timer is a page
+        // that polls a document that does not exist for as long as it is
+        // open.
+        if (r.status === 429 || r.status >= 500) {
+          console.warn('[live] boot answered', r.status, '— trying again');
+          return { retry: true };
+        }
         return r.json();
+      }, (e) => {
+        // the answer that never came: a dropped connection is the same
+        // *try again* as a 503, and it is the ordinary one on a bad line
+        console.warn('[live] boot', e && e.message, '— trying again');
+        return { retry: true };
       }).then((data) => {
+        if (data && data.retry) { setTimeout(liveBoot, 4000); return; }
         if (!data) return;
         // **The stagehand's controls are asked for only where the host says
         // it has them** (Q1349, Ed 2026-09-12): `devMail` rides every view
