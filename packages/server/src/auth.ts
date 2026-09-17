@@ -18,6 +18,24 @@ export type { PendingCreate, TokenRecord } from './persistence.js';
 const TOKEN_TTL_MS = 7 * 24 * 3600_000;
 const COOKIE_TTL_MS = 90 * 24 * 3600_000;
 
+/**
+ * **The shape of a magic link, in one place** — the token, and beside it the
+ * document's own address as `d`.
+ *
+ * A token is single-use and deleted in the act of reading it (`useToken`), so
+ * a link followed twice tells the server nothing at all: not whose it was,
+ * not what document it was for. That left the second follow — a double click,
+ * a mail forwarded to a colleague, a corporate scanner that runs the
+ * interstitial's auto-submit before the human ever clicks — with no remedy it
+ * could name. The slug is a public name by design (the create mail prints it
+ * in prose already) and it is not a credential, so carrying it in the clear
+ * costs nothing and buys the refusal page a way forward: the document's own
+ * address, and the login door there that mints a fresh link.
+ */
+export const magicLink = (baseUrl: string, kind: 'create' | 'login' | 'apply',
+  token: string, slug: string): string =>
+  `${baseUrl}/auth/${kind}?token=${token}&d=${encodeURIComponent(slug)}`;
+
 export class Auth {
   /** Deferred mints: a relay pass writes the store once, not per mail. */
   private pending: Array<readonly [string, TokenRecord]> = [];

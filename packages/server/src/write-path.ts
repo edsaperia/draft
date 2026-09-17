@@ -23,6 +23,7 @@
  */
 import { sha256Hex } from '../../constitution/src/index.js';
 import type { LogEntry } from '../../constitution/src/index.js';
+import { magicLink } from './auth.js';
 import type { Auth } from './auth.js';
 import type { ServerConfig } from './config.js';
 import type { DocStore, LoadedDoc } from './store.js';
@@ -156,7 +157,8 @@ export class WritePath {
       // deferred: one relay pass persists the token batch once, not per mail
       const token = auth.mintDeferred(
         { kind: 'login', email, docId: doc.id, memberId }, nowMs);
-      return { link: `${cfg.baseUrl}/auth/login?token=${token}`, tokenHash: sha256Hex(token) };
+      return { link: magicLink(cfg.baseUrl, 'login', token, cs.slug),
+        tokenHash: sha256Hex(token) };
     };
     const queue: QueuedMail[] = [];
     const push = (to: string, mail: Omit<Mail, 'to'>, tokenHash?: string): void => {
