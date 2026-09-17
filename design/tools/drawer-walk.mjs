@@ -25,7 +25,7 @@ import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { join, extname, normalize, sep, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright';
+import { browserFor } from '../../scripts/lib/walk.mjs';
 
 const DESIGN = join(resolve(fileURLToPath(new URL('../..', import.meta.url))), 'design');
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.txt': 'text/plain' };
@@ -84,7 +84,7 @@ const emptySpot = async (page) => {
 
 const server = await serveDesign();
 const base = 'http://127.0.0.1:' + server.address().port;
-const browser = await chromium.launch();
+const browser = await browserFor().launch();
 const context = await browser.newContext({ viewport: SIZE, deviceScaleFactor: 1, hasTouch: true, locale: 'en-GB', timezoneId: 'Europe/London' });
 const page = await context.newPage();
 const pageErrors = [];

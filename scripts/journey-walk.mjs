@@ -30,9 +30,8 @@
  * synthetic .click() is not enough, and each control is scrolled into view
  * first: a pointer cannot press what is off screen.
  */
-import { chromium } from 'playwright';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
-import { say, linkIn, onPage } from './lib/walk.mjs';
+import { say, linkIn, onPage, browserFor } from './lib/walk.mjs';
 
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
 // --empty-text: found the document on a confirmed-empty text (Q649 (a)) and
@@ -109,7 +108,7 @@ const health = await assertServerBuild(BASE, 'journey-walk');
 // environment's as often as it is a person's (entry 105)
 say(`journey-walk against ${BASE} · build ${health.build ?? 'unreported'}`);
 
-const browser = await chromium.launch();
+const browser = await browserFor().launch();
 const page = await browser.newPage({ viewport: { width: 1600, height: 1100 } });
 if (GESTURE) await page.addInitScript((g) => { window.COMMIT_GESTURE_OVERRIDE = g; }, GESTURE);
 const errors = [];

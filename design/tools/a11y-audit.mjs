@@ -42,7 +42,7 @@ import { createServer } from 'node:http';
 import { readFile, writeFile, stat } from 'node:fs/promises';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright';
+import { chromium, firefox, webkit } from 'playwright';
 
 const ROOT = resolve(fileURLToPath(new URL('../..', import.meta.url)));
 const DESIGN = join(ROOT, 'design');
@@ -57,6 +57,19 @@ const OUT = arg('out', join(DESIGN, 'tools', 'a11y-audit.json'));
 const WITH_CARDS = arg('cards', '1') !== '0';
 /** an explicit axe-core build, for a tree that does not carry the package */
 const AXE_PATH = arg('axe', null);
+/**
+ * **Which engine reads the surface** (2026-09-17): `--browser=` or
+ * `DRAFT_BROWSER`, chromium by default. axe-core's own rule set is the same
+ * everywhere, but what the DOM *is* — a focusable, a computed name, a contrast
+ * pair — is the engine's, so a finding on one engine and not another is a
+ * cross-browser fact rather than an axe disagreement.
+ */
+const ENGINES = { chromium, webkit, firefox };
+const BROWSER = arg('browser', process.env.DRAFT_BROWSER || 'chromium');
+if (!ENGINES[BROWSER]) {
+  console.error('no such browser: ' + BROWSER + ' — engines are ' + Object.keys(ENGINES).join(', '));
+  process.exit(2);
+}
 /**
  * Which position of SURFACE §7.2's commit-gesture switch to read. The shipped
  * position is **click**, and at click A14 has nothing to find — which is how
@@ -662,7 +675,7 @@ async function main() {
   const server = await serveDesign();
   const base = 'http://127.0.0.1:' + server.address().port;
   const axe = await loadAxe();
-  const browser = await chromium.launch();
+  const browser = await ENGINES[BROWSER].launch();
   const context = await browser.newContext({
     viewport: VIEWPORT, deviceScaleFactor: 1, locale: 'en-GB', timezoneId: 'Europe/London',
   });

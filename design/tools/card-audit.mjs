@@ -36,7 +36,7 @@ import { createServer } from 'node:http';
 import { readFile, writeFile, stat } from 'node:fs/promises';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright';
+import { chromium, firefox, webkit } from 'playwright';
 
 const ROOT = resolve(fileURLToPath(new URL('../..', import.meta.url)));
 const DESIGN = join(ROOT, 'design');
@@ -53,6 +53,19 @@ const BASELINE = arg('baseline', null);
 const SPECIMENS = arg('specimens', null);
 /** how big a box has to be before a specimen flattens it; 0 keeps the default */
 const HEAVY = +arg('heavy', 0);
+/**
+ * **Which engine reads the cards** (2026-09-17). `--browser=` or
+ * `DRAFT_BROWSER`, chromium by default — the default is the compatibility
+ * promise, since every number this instrument has ever reported was measured
+ * in Blink. A typo is refused rather than silently run as chromium, which
+ * would make a clean cross-browser run out of a misspelling.
+ */
+const ENGINES = { chromium, webkit, firefox };
+const BROWSER = arg('browser', process.env.DRAFT_BROWSER || 'chromium');
+if (!ENGINES[BROWSER]) {
+  console.error('no such browser: ' + BROWSER + ' — engines are ' + Object.keys(ENGINES).join(', '));
+  process.exit(2);
+}
 const ALL_WALKS = ['founding', 'answers', 'delegated', 'settled', 'outsiders', 'charter', 'closed'];
 const WALKS = arg('walk', ALL_WALKS.join(',')).split(',').filter(Boolean);
 // a misspelt walk otherwise runs nothing, finds nothing and exits 0 — which is
@@ -1411,9 +1424,19 @@ async function walkFounding(page, base, cards, errors, opts = {}) {
     // with no defaults a card waits for its numbers: fill whatever is empty
     await page.evaluate(() => {
       document.querySelectorAll('.setupcard input, .setupcard textarea').forEach((inp) => {
-        if (inp.value || /^(email|radio|checkbox|file|hidden|range|color)$/.test(inp.type)) return;
-        if (inp.type === 'number') inp.value = String(Math.max(+inp.min || 1, 5));
-        else if (inp.type === 'datetime-local') inp.value = '2026-09-18T18:00';
+        // **The attribute, not the property** (2026-09-17, the cross-browser
+        // pass). An engine that does not implement an input type reports
+        // `type` as `text` — WebKit does exactly this for `datetime-local` —
+        // so the branch below fell through and wrote *Ada Lovell* into ⏰'s
+        // Ends field. The card could not settle, the founding stalled at ⏰,
+        // and the three founding walks each lost the four cards after it with
+        // **no error raised**: 251 cards where chromium measured 263, and the
+        // summary read as coverage. What the markup *says* the field is does
+        // not vary by engine, so that is what is asked.
+        const type = inp.getAttribute('type') || inp.type;
+        if (inp.value || /^(email|radio|checkbox|file|hidden|range|color)$/.test(type)) return;
+        if (type === 'number') inp.value = String(Math.max(+inp.min || 1, 5));
+        else if (type === 'datetime-local') inp.value = '2026-09-18T18:00';
         else inp.value = 'Ada Lovell';
         inp.dispatchEvent(new Event('input', { bubbles: true }));
       });
@@ -1830,7 +1853,8 @@ async function walkCharter(page, base, cards, errors, { closed, doors } = {}) {
 async function main() {
   const server = await serveDesign();
   const base = 'http://127.0.0.1:' + server.address().port;
-  const browser = await chromium.launch();
+  const browser = await ENGINES[BROWSER].launch();
+  const version = browser.version();
   const context = await browser.newContext({
     viewport: VIEWPORT, deviceScaleFactor: 1, locale: 'en-GB', timezoneId: 'Europe/London',
   });
@@ -1856,7 +1880,10 @@ async function main() {
     if (!AS_JSON) console.log('  ' + name + ': ' + (cards.length - n) + ' cards');
   };
 
-  if (!AS_JSON) console.log('card-audit @ ' + VIEWPORT.width + '×' + VIEWPORT.height);
+  // the engine names itself only when it is not the default, so a chromium run
+  // prints and writes exactly what it always did
+  if (!AS_JSON) console.log('card-audit @ ' + VIEWPORT.width + '×' + VIEWPORT.height +
+    (BROWSER === 'chromium' ? '' : ' · ' + BROWSER + ' ' + version));
   await run('founding', () => walkFounding(page, base, cards, errors));
   await run('answers', () => walkAnswers(page, base, cards, errors));
   await run('delegated', () => walkDelegated(page, base, cards, errors));
@@ -1946,7 +1973,8 @@ async function main() {
   }
 
   const payload = {
-    meta: { viewport: VIEWPORT, walks: WALKS, cards: cards.length, seconds: Math.round((Date.now() - t0) / 100) / 10 },
+    meta: { viewport: VIEWPORT, walks: WALKS, cards: cards.length, seconds: Math.round((Date.now() - t0) / 100) / 10,
+      ...(BROWSER === 'chromium' ? {} : { browser: BROWSER, browserVersion: version }) },
     tokens: tok, cards, switches, doors, rollup, cross, errors,
   };
 

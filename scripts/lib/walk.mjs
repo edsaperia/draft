@@ -20,6 +20,37 @@
 
 /* ---- the terminal and argv ---------------------------------------------- */
 
+import { chromium, firefox, webkit } from 'playwright';
+
+/**
+ * **Which engine a walk drives** (2026-09-17, the cross-browser pass before
+ * the first live test). Every walk hardcoded `chromium`, so nothing this
+ * project has ever measured was measured anywhere but Blink — and the people
+ * arriving on Sunday bring Safari and Firefox with them.
+ *
+ * `--browser=chromium|webkit|firefox` on argv, else `DRAFT_BROWSER`, else
+ * chromium: the default is the whole of the compatibility promise, since every
+ * golden, every baseline and every CI job below this line was frozen against
+ * Blink and must stay byte-identical. Answers the Playwright launcher itself,
+ * so a caller writes `const browser = await browserFor().launch()` and keeps
+ * whatever launch options it had.
+ *
+ * An engine nobody installed fails at `launch()` with Playwright's own message,
+ * which names the install command; an engine that is not one of the three is
+ * refused here, because a typo would otherwise run chromium and read as proof.
+ */
+const ENGINES = { chromium, webkit, firefox };
+export const browserFor = (argv = process.argv, env = process.env) => {
+  const named = (argv || []).find((a) => a.startsWith('--browser='));
+  const name = (named ? named.slice('--browser='.length) : (env && env.DRAFT_BROWSER) || '') || 'chromium';
+  const engine = ENGINES[name];
+  if (!engine) {
+    console.error(`no such browser: ${name} — engines are ${Object.keys(ENGINES).join(', ')}`);
+    process.exit(2);
+  }
+  return engine;
+};
+
 export const say = (...a) => console.log(...a);
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 /** `--name=value` from argv, else `dflt` (null when none is given). */
