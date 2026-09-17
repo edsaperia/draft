@@ -63,7 +63,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
-import { say, post as postTo, arg, openCard, press, browserFor } from './lib/walk.mjs';
+import { say, post as postTo, arg, openCard, press, pageGesture, browserFor } from './lib/walk.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8171');
@@ -1084,6 +1084,119 @@ for (const c of P2_CELLS) {
       await check('P2-race', 'P-all/P-one', it.id, (it.keys || [])[0] === 'L0' && (it.keys || []).length === nonBlank,
         'a challenger-vs-challenger card spans the union of the two (Q1407)',
         { first: (it.keys || [])[0], n: (it.keys || []).length });
+    }
+  }
+  await page.goto('about:blank');
+}
+
+/* ==========================================================================
+   Phase 3 — **an emptied site sends a true deletion** (Q1415).
+
+   Every other cell in this walk is proposed over the wire, which is a bot's
+   road; this one is driven through the **composer**, because the defect was
+   the composer's alone. A member who clears a clause and presses ✏️ sent
+   `lines: ['']` — one empty line — where a bot sends `lines: []`, so the
+   adopted record landed on a blank line with no block key, no tab and no
+   card. **Ed ruled 2026-09-17 that an emptied site sends a true deletion.**
+
+   The road is journey-walk's: 📝 is the door, a keystroke in a clause opens
+   the draft, and the proposal-row's ✏️ is the hold that sends it. What is
+   asserted is what the page *would* send (`LIVE_HOOKS.hunksOf`), what the
+   server then holds, and — Q1412's other half — that the author's own card
+   reads the removal sentence rather than a blank.
+   ========================================================================== */
+ctx.phase = 'p3'; ctx.seat = '-'; ctx.width = 0; ctx.page = null;
+say('\nPhase 3 — a clause emptied in the composer');
+{
+  const who = 'dan';
+  const page = await openSeat(who, 1600, 1000, 1);
+  ctx.seat = who; ctx.width = 1600; ctx.page = page;
+  const KEY = 'L' + P2_LINES.findIndex((l) => l.includes('secretary keeps the key'));
+  // 📝 is the door (K13): the riding tab in the constitution's own gutter,
+  // or the floating door where the tab has scrolled past
+  const entered = await page.evaluate(() => {
+    const t = document.querySelector('#ridetab .achip[data-tab="text"]') ||
+      document.querySelector('#editdoor [data-act="edit-door"]');
+    if (!t) return false;
+    t.click();
+    return true;
+  });
+  await T(page, 600);
+  const editing = await page.evaluate(() => document.getElementById('doc').classList.contains('editing'));
+  await check('Q1', 'D1', KEY, entered && editing, '📝 opens edit mode', { entered, editing });
+  if (editing) {
+    await page.evaluate((k) => {
+      const el = document.querySelector('#charter [data-key="' + k + '"]');
+      if (el) el.scrollIntoView({ block: 'center' });
+    }, KEY);
+    await T(page, 250);
+    await page.click(`#charter [data-key="${KEY}"]`, { position: { x: 40, y: 8 } }).catch(() => {});
+    await T(page, 200);
+    // the first keystroke opens the draft (K13), and then the lane is emptied
+    // the way a member empties it: select the whole lane and press Backspace
+    await page.keyboard.type('X');
+    await T(page, 500);
+    const opened = await page.evaluate(() => !!document.querySelector('.sugg.editcard [data-lane]'));
+    await check('Q2', 'D1', KEY, opened, 'a keystroke in the clause opens the editing card', opened);
+    if (opened) {
+      await page.evaluate(() => {
+        const lane = document.querySelector('.sugg.editcard [data-lane]');
+        lane.focus();
+        const r = document.createRange();
+        r.selectNodeContents(lane);
+        const s = getSelection();
+        s.removeAllRanges();
+        s.addRange(r);
+      });
+      await page.keyboard.press('Backspace');
+      await T(page, 500);
+      const d = await page.evaluate(() => window.__PS.draft());
+      const site = d && d.sites && d.sites[0];
+      await check('Q3', 'D1', KEY, !!site && site.text === '' && site.keys.length === 1 &&
+        site.keys[0] === KEY && (site.origin || []).join('').length > 0,
+        'the composer holds one emptied site over the clause that stood there',
+        d && d.sites);
+      // …and the author's own reading of it is a sentence (Q1412)
+      const removed = await page.evaluate(() => window.__PS.removedCopy());
+      // propose it: the row's ✏️, held, exactly as journey drives it
+      const bx = await page.evaluate(() => {
+        const b = document.querySelector('#charter [data-proposalrow] [data-act="row-commit"]:not([data-pen]):not([disabled])');
+        if (!b) return null;
+        b.scrollIntoView({ block: 'center' });
+        const r = b.getBoundingClientRect();
+        return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+      });
+      await check('Q4', 'D1', KEY, !!bx, 'the proposal row offers a live ✏️ over the emptied site', !!bx);
+      if (bx) {
+        await page.mouse.move(bx.x, bx.y);
+        if (await pageGesture(page) === 'click') { await page.mouse.click(bx.x, bx.y); await T(page, 1400); }
+        else { await page.mouse.down(); await T(page, 1400); await page.mouse.up(); }
+        await T(page, 1200);
+        const mine = (await view(who)).mine || [];
+        const live = mine.filter((m) => m.state === 'live');
+        const hunks = live.flatMap((m) => m.patch.hunks || []);
+        const del = hunks.find((x) => (x.lines || []).length === 0 && x.end > x.start);
+        await check('Q5', 'D1', KEY, !!del,
+          'the server holds a candidate whose hunk removes the line (Q1415)',
+          { proposals: live.length, hunks });
+        // the card the author now reads: one lane, and it is the sentence
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await page.waitForFunction(() => !!(window.SESSION && window.__PS), null, { timeout: 20_000 }).catch(() => {});
+        await T(page, 900);
+        const items = await page.evaluate(() => window.__PS.items());
+        const own = items.find((s) => s.kind === 'draft' && !s.unproposed);
+        if (!own) {
+          note('Q6', 'D1', KEY, 'no proposal of dan’s on the page', 'the reload did not bring the item back');
+        } else {
+          await page.evaluate((id) => window.__PS.toggle(id), own.id);
+          await T(page, 350);
+          const card = (await page.evaluate((id) => window.__PS.open(id), own.id)).cards[0];
+          const said = (card ? card.lanes : []).map((l) => NORM(l.text));
+          await check('Q6', 'D1', own.id, said.length === 1 && said[0] === NORM(removed),
+            `the author's own card reads ${JSON.stringify(removed)} (Q1412)`, said);
+          await page.evaluate((id) => window.__PS.toggle(id), own.id);
+        }
+      }
     }
   }
   await page.goto('about:blank');
