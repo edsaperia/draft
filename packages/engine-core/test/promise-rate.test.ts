@@ -156,6 +156,64 @@ describe('⏱️ promise 1 — nobody proposes with an empty wallet', () => {
       author: 'p1', patch: rewrite(0, 1, 'too late'), rationale: '',
     })).toThrow(/closed/i);
   });
+
+  /**
+   * **A read is not a write** (issue #24). `balance()` and `ledgerInfo()`
+   * credited the drip *into the stored ledger*, so merely looking at a wallet
+   * moved it — and the clocks a host reads it at are not monotone: the dev
+   * ladder walks a document's own past (Q681), and a wall clock that steps
+   * back does the same by accident. A read taken ahead of a submission bought
+   * ✏️s the log does not record, and the log is the whole of what a boot has:
+   * `Session.replay` spent them again from an unadvanced ledger, threw
+   * *insufficient tokens*, and the document that answered yesterday was
+   * quarantined at the next restart.
+   *
+   * The wallet a member is shown is unchanged — the same arithmetic, on a
+   * copy. What changes is that the ledger moves where the log says it moves
+   * and nowhere else.
+   */
+  it('a wallet read credits nothing a replay would not', () => {
+    const s = open({ dripMinutes: 1 });
+    drain(s, 'p1', 0);
+    expect(s.balance('p1', 120_000)).toBe(2);   // a view at a later clock
+    expect(() => s.submitCandidate(30_000, {
+      author: 'p1', patch: rewrite(0, 1, 'late'), rationale: '',
+    })).toThrow(/insufficient tokens/);         // and the earlier act is still broke
+  });
+
+  it('and whatever a read is followed by, the log replays to the same wallets', () => {
+    // The assertion that generalises the one above: reads at two clocks, one
+    // of them far ahead of everything that follows, and then a real act at a
+    // third. Live and replayed must agree about every wallet in the room,
+    // which is the property a boot depends on.
+    const s = open({ dripMinutes: 1 });
+    drain(s, 'p1', 0);
+    s.balance('p1', 120_000);
+    s.ledgerInfo('p1', 600_000);
+    s.submitCandidate(90_000, {
+      author: 'p1', patch: rewrite(0, 1, 'later'), rationale: '',
+    });
+    const back = Session.replay(s.log);
+    for (const id of ['p1', 'p2', 'p3', 'p4', 'p5']) {
+      expect([id, back.balance(id, 90_000)]).toEqual([id, s.balance(id, 90_000)]);
+    }
+  });
+
+  it('and the clock the wallet reports is the clock the ledger is actually on', () => {
+    // The copy has to carry `nextDripT` with it, or the tray counts down to a
+    // drip already paid: `ledgerInfo` reads the balance and the clock off one
+    // materialized copy, never the balance from a copy and the clock from the
+    // stored ledger.
+    const s = open({ dripMinutes: 1 });
+    drain(s, 'p1', 0);
+    expect(s.ledgerInfo('p1', 0).nextDripT).toBe(60_000);
+    const at = s.ledgerInfo('p1', 150_000);
+    expect(at.balance).toBe(2);
+    expect(at.nextDripT).toBe(180_000);   // the tick after the two it credited
+    // and the stored ledger is where it was: the same answers, again.
+    expect(s.ledgerInfo('p1', 0).nextDripT).toBe(60_000);
+    expect(s.balance('p1', 0)).toBe(0);
+  });
 });
 
 describe('⏱️ promise 2 — the drip runs on wall-clock real minutes', () => {

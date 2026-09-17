@@ -31,6 +31,7 @@ import { Races, candidateNum, type RacesHost } from './races.js';
 import { smoothstep } from './adoption-threshold.js';
 import {
   balanceAt,
+  creditedAt,
   dripIntervalMs,
   credit,
   materialize,
@@ -984,6 +985,11 @@ export class Session {
     return [...this.roster.values()].filter((r) => !r.removed && !r.suspended).length;
   }
 
+  /**
+   * A wallet read, and **a read is not a write** (issue #24): `creditedAt`
+   * materializes a copy, so looking at a balance at any clock leaves the
+   * stored ledger exactly where the log put it.
+   */
   balance(participantId: string, t: number): number {
     return balanceAt(this.rosterEntry(participantId).ledger, this.constitutionValue, t);
   }
@@ -992,15 +998,18 @@ export class Session {
    * The wallet with its clock (stage 8, Q503a): the balance, when the next
    * drip lands (engine time), the interval, and the cap. `nextDripT` is
    * Infinity when the document does not drip.
+   *
+   * Both numbers come off the **same** credited copy: the balance from a copy
+   * and `nextDripT` from the stored ledger would have the tray counting down
+   * to a drip it had just been paid.
    */
   ledgerInfo(participantId: string, t: number): {
     balance: number; nextDripT: number; dripIntervalMs: number; cap: number;
   } {
-    const ledger = this.rosterEntry(participantId).ledger;
-    const balance = balanceAt(ledger, this.constitutionValue, t);
+    const at = creditedAt(this.rosterEntry(participantId).ledger, this.constitutionValue, t);
     const interval = dripIntervalMs(this.constitutionValue);
     const drips = Number.isFinite(interval) && interval > 0;
-    return { balance, nextDripT: drips ? ledger.nextDripT : Infinity,
+    return { balance: at.balance, nextDripT: drips ? at.nextDripT : Infinity,
       dripIntervalMs: drips ? interval : Infinity, cap: this.constitutionValue.tokenCap };
   }
 

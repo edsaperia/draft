@@ -86,9 +86,25 @@ export function credit(ledger: Ledger, constitution: Constitution, t: number, am
   ledger.balance += amount;
 }
 
+/**
+ * The ledger as it **would** read at t, without writing it (issue #24).
+ *
+ * `materialize` is a write, and the only thing entitled to make one is an
+ * event in the log: a grant at `openLedger`, a `spend`, a `credit`, a
+ * `rephaseDrip`. A reader that materialized in place moved the wallet at
+ * whatever clock it happened to be asked about, and nothing in the log said
+ * so — which a replay, having only the log, then could not reproduce. Every
+ * read goes through this copy, so live and replayed ledgers cannot diverge
+ * however the clocks a host reads at are ordered.
+ */
+export function creditedAt(ledger: Ledger, constitution: Constitution, t: number): Ledger {
+  const copy: Ledger = { ...ledger };
+  materialize(copy, constitution, t);
+  return copy;
+}
+
 export function balanceAt(ledger: Ledger, constitution: Constitution, t: number): number {
-  materialize(ledger, constitution, t);
-  return ledger.balance;
+  return creditedAt(ledger, constitution, t).balance;
 }
 
 /** refund = stake × min(peakW / 0.5, 1.5) (SPEC §7). */
