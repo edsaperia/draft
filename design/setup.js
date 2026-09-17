@@ -1268,8 +1268,6 @@ window.SETUP = (function () {
     });
   };
 
-  const BLINDNOTE = '<p class="blindnote">Nobody sees your answer, and you will see nobody else’s until every one of them is in.</p>';
-
   /* **One joiner for every sentence that names several things** (Q630, Ed
      2026-08-26). The shape of a list of three is a copy decision and it is
      STYLE.md §1's — *A, B and C*, no serial comma — so it is made once here
@@ -1663,5 +1661,5 @@ window.SETUP = (function () {
     FACE_TONES, faceToneRow, faceToned, setFaceTone,
     setFaceTaken, faceTakenBy, faceBtn, emojiPicker,
     routeFor, motionCommitHtml,
-    slider, syncSlider, ladder, ANSWER, BLINDNOTE, meaningLine, listOf, gateBody, wirePicDrop, MAILS, renderMailModal, birthPass };
+    slider, syncSlider, ladder, ANSWER, meaningLine, listOf, gateBody, wirePicDrop, MAILS, renderMailModal, birthPass };
 })();

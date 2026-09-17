@@ -115,8 +115,14 @@ window.BAND = (function () {
       // delegation hands over — `DECIDING`'s per-setting sentence — and carries
       // **no explanation of the blind collection**: the *Not now — every member
       // states…* frame and the per-setting aggregation tail are gone (Q1152).
-      // Blindness is still said to the person it protects, on the member's own
-      // answer card (`BLINDNOTE`).
+      // **And it is not said anywhere else either** (issue #19). This said
+      // blindness survived on the member's own answer card, in a `BLINDNOTE`
+      // constant; Q1175 took the note off every answer body the same evening
+      // — bare blocks, the clause text being the explanation — and left the
+      // constant behind, defined, exported and rendered nowhere, so the
+      // comment described a card nobody has been served since. The constant
+      // is gone with this note. Blindness returns to the surface with the 🍾
+      // redesign (Q1169); until then it is stated in no body at all.
       return '<div class="choice delegrung">' +
         opt(ladderView(c.k), dk, 'roster', decidingOf(c.k) + '.', '') +
         '</div>';
