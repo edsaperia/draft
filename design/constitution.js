@@ -1773,6 +1773,7 @@ var CONSTITUTION = (() => {
           moot: null
         });
         s.nextMotionN += 1;
+        if (event.payload.kind === "invite") notePerson(s, event.payload.person);
         if (event.payload.kind === "admit") {
           s.applicants.get(event.payload.applicant).motion = event.motion;
         }

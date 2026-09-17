@@ -216,6 +216,13 @@ export class Session {
   /** T=0 as the log recorded it (SPEC §4.6); null while open. */
   private closedT: number | null = null;
   private lastT = -Infinity;
+  /**
+   * The highest `c<n>` the log has named (issue #2). It is state like any
+   * other, so the fold rebuilds it — `noteCandidateId` in both minting arms —
+   * and a replayed session mints past it. Before that it started at zero on
+   * every `replay`, and since the live path resumes by replay at each host
+   * restart, the next proposal or decree overwrote the candidate holding `c1`.
+   */
   private candidateCounter = 0;
   /**
    * The threshold ramp's current anchor (SPEC §4.3): where the live
@@ -460,6 +467,7 @@ export class Session {
         break;
       }
       case 'candidate-submitted': {
+        this.noteCandidateId(event.id);
         this.candidates.set(event.id, {
           id: event.id,
           author: event.author,
@@ -624,6 +632,7 @@ export class Session {
         // Everything `adopted` does about the *document* is present, because
         // the document really did change: the version, `lastAdoptionT` (the
         // cooldown metronome is spent, §4.2) and the fit cache.
+        this.noteCandidateId(event.id);
         this.candidates.set(event.id, {
           id: event.id,
           author: event.author,
@@ -911,6 +920,16 @@ export class Session {
     const c = this.candidates.get(id);
     if (!c) throw new Error(`unknown candidate ${id}`);
     return c;
+  }
+
+  /**
+   * The fold's half of minting (issue #2): the counter is rebuilt from every
+   * id the log names, so the two doors that mint one — `submitCandidate` and
+   * `decreeText` — start a replayed session where the log left off.
+   */
+  private noteCandidateId(id: string): void {
+    const n = candidateNum(id);
+    if (Number.isFinite(n)) this.candidateCounter = Math.max(this.candidateCounter, n);
   }
 
   currentVersion(): number {
