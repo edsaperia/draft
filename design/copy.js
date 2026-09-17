@@ -567,17 +567,35 @@ window.COPY = (function () {
         remove: { u: 'remove members at will', a: 'refuse removals that the membership pass' },
         text: { u: 'amend the text at will', a: 'refuse changes to the text that the membership pass' },
       },
+      // **On the decision card the phrase names its setting** (Q1429, Ed
+      // 2026-09-17: *from looking at the card text you don't know what setting
+      // they're referring to*). The star phrase's *this* is written to stand
+      // under the setting's own paragraph, and the card **replaces** that
+      // paragraph — so on a card the two verb phrases take the noun below, in
+      // the shape `phrase.text` already has. The three settings that name
+      // their object already (`text`, and the doors' `invite` / `remove`)
+      // keep their own wording on both surfaces.
+      amendNoun: (noun) => 'amend ' + noun + ' at will',
+      refuseChangesTo: (noun) => 'refuse changes to ' + noun +
+        ' that the membership pass',
       may: (parts, aside) => 'The Founder' + (aside ? ' (that’s you!)' : '') +
         ' may ' + parts.join(', and ') + '.',
       mayNotYet: (parts) => 'From the start, the Founder may not ' + parts.join(', or ') + '.',
       mayNot: (phrase) => 'The Founder may not ' + phrase + '.',
+      // **A noun that reads in both frames** (Q1429). These were written for
+      // one sentence — *a veto over proposals passed by the membership about
+      // X* — where a bare *quorum* or *visibility* reads well enough. Since
+      // the card's own sentences take them too, each has to survive *amend X
+      // at will* and *changes to X*, which want a thing rather than a topic:
+      // so the ones that name a rule say so. The doors' two are the acts'
+      // (entry 94) and are only ever the veto sentence's.
       noun: {
         title: 'the title', slug: 'the link', text: 'the text',
-        ending: 'the ending', quorum: 'quorum',
-        authorship: 'anonymous proposals', judgments: 'vote reveal',
-        chamber: 'visibility', rate: 'the proposal rate', lapse: 'membership lapse',
-        removal: 'member removal',
-        admission: 'the price of admission', applications: 'applications',
+        ending: 'the ending', quorum: 'the quorum rule',
+        authorship: 'the anonymity rule', judgments: 'the vote-reveal rule',
+        chamber: 'the visibility rule', rate: 'the proposal rate', lapse: 'the lapse rule',
+        removal: 'the removal rule',
+        admission: 'the admission price', applications: 'the applications rule',
         invite: 'invitations', remove: 'removals',
         fallback: 'this',
       },

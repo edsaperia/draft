@@ -2874,7 +2874,21 @@
     remove: PAGE_COPY.pw.phrase.remove,
     text: PAGE_COPY.pw.phrase.text,
   };
-  const pwPhrase = (k, power) => (PW_PHRASE[k] || PW_PHRASE['*'])[power];
+  // **`named` is the decision card asking for its setting's noun** (Q1429, Ed
+  // 2026-09-17: *from looking at the card text you don't know what setting
+  // they're referring to*). The generic phrase says *this*, which has a
+  // referent only where the sentence stands under the setting's own
+  // paragraph — and the card replaces that paragraph. So every site that
+  // draws the sentence **on a card** passes `named` and gets the noun in the
+  // `text` setting's own shape; the document paragraph (`holderLine`,
+  // `ctx.decisionLine`) passes nothing and keeps *this*. A setting with its
+  // own phrase already names its object, so `named` never reaches it.
+  const pwPhrase = (k, power, named) => (PW_PHRASE[k] ? PW_PHRASE[k][power]
+    : named
+      ? (power === 'u' || power === 'unilateral'
+        ? PAGE_COPY.pw.amendNoun(pwNoun(k))
+        : PAGE_COPY.pw.refuseChangesTo(pwNoun(k)))
+      : PW_PHRASE['*'][power]);
   // the aside is the birth's title clause and nothing else (Ed, 2026-08-27,
   // backlog 140): it is *the sentence that first names one*, so it is where
   // the Founder learns the word means them — and *repeated, it would read as
@@ -2888,15 +2902,17 @@
   // one given up the moment the document begins
   const founderMayNotYet = (parts) => (parts.length
     ? PAGE_COPY.pw.mayNotYet(parts) : '');
-  const pwLine = (k, power, held, pending) => (pending
-    ? founderMayNotYet([pwPhrase(k, power)])
-    : held ? founderMay([pwPhrase(k, power)])
-      : PAGE_COPY.pw.mayNot(pwPhrase(k, power)));
-  const powerHeadLine = (c) => {
+  // the pending form takes the noun too (Q1429): *From the start, the Founder
+  // may not amend the quorum rule at will.* is the same sentence under a date
+  const pwLine = (k, power, held, pending, named) => (pending
+    ? founderMayNotYet([pwPhrase(k, power, named)])
+    : held ? founderMay([pwPhrase(k, power, named)])
+      : PAGE_COPY.pw.mayNot(pwPhrase(k, power, named)));
+  const powerHeadLine = (c, named) => {
     const p = pwPair(c.base);
     const pend = pwPend(c.base);
     return pwLine(c.base, c.power, c.power === 'u' ? p.u : p.a,
-      c.power === 'u' ? pend.u : pend.a);
+      c.power === 'u' ? pend.u : pend.a, named);
   };
   // **A power card carries no why** (T43, Ed 2026-09-01: item 6 — *the
   // constitution speaks for itself*). The head states the rule as it stands
@@ -2957,8 +2973,10 @@
   // table of paraphrases and helper lines went with it; `vetoLabel`'s
   // setting-naming sentence survives away from the tab (`pwSaid`), where no
   // head names the setting.
-  const pwOptText = (k, power, held) => (held ? pwLine(k, power, true, false)
-    : PAGE_COPY.pw.mayNot(pwPhrase(k, power)).replace(/\bmay not\b/, 'may <b>not</b>'));
+  // an option block is drawn on the card and nowhere else, so it always names
+  // its setting (Q1429) — `named` is not a parameter here, it is the site
+  const pwOptText = (k, power, held) => (held ? pwLine(k, power, true, false, true)
+    : PAGE_COPY.pw.mayNot(pwPhrase(k, power, true)).replace(/\bmay not\b/, 'may <b>not</b>'));
   // **A power option is a proposal block, not a radio label** (Ed,
   // 2026-08-22: *these are too long for radio button text; we should put
   // them above the radios as document text, and then have radio buttons
@@ -4387,7 +4405,9 @@
   // is the one `holderLine`'s own lookup already keeps.
   const value = (c) => (c.ansFor
     ? esc(filled(c) ? ANSVALUE[c.ansFor](S.myAns[c.ansFor]) : ANSASK[c.ansFor])
-    : c.power ? esc(powerHeadLine(c))
+    // `readBody`'s *Set to* line is inside the open card (Q1429), so the rule
+    // it prints names its setting
+    : c.power ? esc(powerHeadLine(c, true))
     // a record has no VALUE of its own either — its title *is* what it says
     : c.record ? esc(c.t)
     : esc(VALUE[c.k] ? VALUE[c.k]() : ''));
@@ -5659,7 +5679,8 @@
     // a return still in flight from a log made before Q1404 closed the road
     // (or the ladder's stagehand): the power's rule as it stands against the
     // rule it would put back — `m.to` is `pwSaid`'s sentence
-    : c.power ? motionBlocks(c.k, powerHeadLine(c), m.to, m.why, route, mover)
+    // the motion's own card, so the standing rule names its setting (Q1429)
+    : c.power ? motionBlocks(c.k, powerHeadLine(c, true), m.to, m.why, route, mover)
     : (() => { const rec = liveMotionRec(c);
       const v = rec && rec.payload && rec.payload.kind === 'set' ? rec.payload.value : null;
       return motionBlocks(c.k, decisionLine(c), (v !== null && sentenceFor(hostKeyOf(c), v)) || m.to, m.why, route, mover); })());
@@ -6250,7 +6271,9 @@
     // opened — never the word “Title” (Ed, 2026-08-18)
     inDocOpenSlot: false,
     headFor: (c) => {
-      if (c.power) return esc(powerHeadLine(c));
+      // the card head, which has replaced the paragraph that gave *this* its
+      // referent — so the sentence names its setting (Q1429)
+      if (c.power) return esc(powerHeadLine(c, true));
       // **A record's head is what was proposed** (Q942) — the way the top of
       // the ranking is a sealed text record's head (SURFACE §9). The outcome
       // and its date are the field's first line, not the clause.
@@ -6430,6 +6453,9 @@
     // title and a power head carry no break, and wrapping them would turn a
     // newline in member-written text into markup after `esc` had made it safe
     decisionLine: (c) => (c.record ? linkify(esc(c.t))
+      // the **document paragraph**, which is the one place *this* has a
+      // referent: the sentence stands under the setting's own clause, so it
+      // takes no noun (Q1429)
       : c.power ? linkify(esc(powerHeadLine(c)))
       // the paragraph is the document speaking, holder line included
       // (Ed, 2026-09-03) — the card heads call decisionLine without it
