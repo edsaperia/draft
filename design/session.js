@@ -99,7 +99,7 @@
   // make() time). The lift is proven by design/tools/session-probe.js against
   // design/reference/: card HTML byte-identical, geometry 0.0px.
   const {
-    esc, resultOnly, stripTags, pct, plainLabel, URG_LO, URG_HI,
+    esc, resultOnly, laneHtml, stripTags, pct, plainLabel, URG_LO, URG_HI,
     TICK, MARK, DRAWN, mkHtml, markHtml,
     // the drawn glyphs (Q1401): the commit row's buttons, the units in an
     // eyebrow, and the glyphs inside the charter column's own sentences
@@ -2533,7 +2533,7 @@
       return (
         '<div class="sugg quick-open" data-card="' + s.id + '" data-site="' + (ckey || '') + '">' +
         clauseHeadHtml(s, Object.assign(headOpts(s, ckey), { chips: chipsFor(ckey, s.id) })) +
-        fieldHtml(proposalHtml(s, { html: resultOnly(s.marked), why: s.rationale, by: s.by })) +
+        fieldHtml(proposalHtml(s, { html: laneHtml(s.marked), why: s.rationale, by: s.by })) +
         '<div class="foot">' + T.crown.foot + '</div>' +
         '<div class="race-mid commitrow">' +
         '<button class="btn glyphbtn" data-act="clear-close" title="' + T.crown.close + '">' + glyphHtml('🗑️') + '</button>' +
@@ -2635,7 +2635,7 @@
         // recomputing one.
         clauseHeadHtml(s, { text: sourceTextFor(site.key), key: site.key, v: 'keep',
                             chips: chipsFor(site.key, s.id) }) +
-        fieldHtml(proposalHtml(s, { v: 'approve', html: resultOnly(site.marked), why: s.rationale, by: s.by, key: site.key })) +
+        fieldHtml(proposalHtml(s, { v: 'approve', html: laneHtml(site.marked), why: s.rationale, by: s.by, key: site.key })) +
         reviseNote(s) +
         '<div class="foot">' + T.patch.foot(n) + '</div>' +
         // **The vote floats** (Q1382, Ed 2026-09-15: *the vote for a patch is
@@ -2662,8 +2662,8 @@
     // all-new (a live insertion is one line and brings none — Q1308)
     const prop = sv.isInsert
       ? (sv.newHeading ? '<div class="rtext"><ins>' + esc(sv.newHeading) + '</ins></div>' : '') +
-        '<div class="rtext">' + resultOnly(sv.marked) + '</div>'
-      : resultOnly(sv.marked);
+        '<div class="rtext">' + laneHtml(sv.marked) + '</div>'
+      : laneHtml(sv.marked);
     return (
       '<div class="sugg quick-open" data-card="' + sv.id + '" data-site="' + (key || '') + '">' +
       clauseHeadHtml(sv, Object.assign(headOpts(sv, key), { v: 'keep', edit: noEdit,

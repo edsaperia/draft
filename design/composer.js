@@ -40,7 +40,7 @@ window.COMPOSER = (function () {
   // the four names below that come out of `CARDS.make(env)` are session.js's
   // own instance of it, and arrive through `env` like anything else of its.
   const T = window.COPY.session;
-  const { esc, fieldHtml, laneBlocks, originText, speakerHtml } = window.CARDS;
+  const { esc, fieldHtml, laneBlocks, removedHtml, originText, speakerHtml } = window.CARDS;
   // the drawn glyphs (Q1401): the row's circles and the card's own buttons are
   // pictures from the one set, the sentences beside them take glyphify
   const { glyphHtml, glyphify } = window.CARDS;
@@ -884,8 +884,12 @@ window.COMPOSER = (function () {
               chips: chipsFor(s.keys[0], d.id) }
           : { text: s.origin.map((o) => o.text).join('\n'), key: s.keys[0],
               chips: chipsFor(s.keys[0], d.id) }) +
+        // …and **a deletion of yours says so** (Q1412): this lane is read, not
+        // edited, so where the site's text is empty it carries the removal
+        // sentence rather than `laneBlocks`' editable blank — the same reading
+        // the room gets on its pair card.
         fieldHtml('<div class="propblock"><div class="rtext">' +
-          laneBlocks(s.text, originText(s)) + '</div>' +
+          (String(s.text || '').trim() ? laneBlocks(s.text, originText(s)) : removedHtml()) + '</div>' +
           speakerHtml(d.rationale, undefined, mineSpeaker(d)) + '</div>',
           1, T.compose.proposedLab)
       );

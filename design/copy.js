@@ -117,6 +117,14 @@ window.COPY = (function () {
       proposeTitle: 'Propose this — nothing leaves the card until you submit',
       propose: 'Propose this',
       proposed: 'Proposed',
+      // **A deletion's lane is a sentence, not a blank** (Q1412, Ed
+      // 2026-09-17): a proposal that removes a clause has no wording to show,
+      // and a lane drawn empty is the one rendering that cannot be told from
+      // unchanged. The lane says what the proposal would do instead, wherever
+      // a candidate is *read* — the pair card, your own proposal, the record's
+      // field. The editing lane keeps its own pseudo-element, having nothing
+      // to serialise back into the draft.
+      removed: 'This clause would be removed.',
     },
     // clauseHeadHtml: the clause lifted into the head
     head: {

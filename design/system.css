@@ -1520,6 +1520,17 @@
     position: absolute; left: 0; top: 0; pointer-events: none;
     color: var(--muted); font-style: italic; font-size: var(--t-small);
   }
+  /* …and a lane that is only **read** says it in words rather than in a
+     pseudo-element (Q1412, Ed 2026-09-17): a pair card's proposal block, your
+     own proposed deletion, the record's field. Real content, because nothing
+     here is serialised back into a candidate and a sentence nobody can select
+     or read aloud is not a sentence. The muted note treatment is the gap
+     head's — `.clausehead .rtext.none` — one step down the scale, so the two
+     "there is nothing here" readings look like the same kind of remark. */
+  .lp.removed {
+    color: var(--muted); font-style: italic; font-size: var(--t-small);
+    font-family: var(--font-ui);
+  }
 
   /* chip-gutter: marks sit in the document's left margin, stacked and
      right-aligned, so the prose column itself stays unbroken. They are the

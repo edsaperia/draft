@@ -504,6 +504,51 @@ function IN_PAGE() {
       window.SESSION.smoothScrollBy = (dy, done) => { window.scrollBy(0, dy); if (done) done(); }; },
     noText: () => (window.COPY && window.COPY.grammar && window.COPY.grammar.head
       ? window.COPY.grammar.head.noText : null),
+    /** the sentence a deletion's lane reads (Q1412) — the copy, never a literal */
+    removedCopy: () => (window.COPY && window.COPY.grammar && window.COPY.grammar.lane
+      ? window.COPY.grammar.lane.removed : null),
+    /** **what a newcomer sees before their OKs are in** (Q1413): the greyed
+     *  tabs in the gutter, the rail's own two populations, and whether any of
+     *  this is a control. `qitem[data-q]` is a charter entry; `[data-card]` is
+     *  a setup task — the OKs a newcomer is holding. */
+    newcomer: () => ({
+      items: (window.SESSION.SUGGS || []).length,
+      held: [...document.querySelectorAll('#charter .achip.held')].map((el) => {
+        const blk = el.closest('[data-key]');
+        const mk = el.querySelector('.mk');
+        return { key: blk ? blk.dataset.key : null,
+          kind: mk ? (mk.className.match(/mk-(\w+)/) || [])[1] : null,
+          anchor: el.getAttribute('data-anchor'), behind: el.classList.contains('behind'),
+          role: el.getAttribute('role'), tabindex: el.getAttribute('tabindex'),
+          grey: getComputedStyle(mk || el).filter };
+      }),
+      // a charter entry carries `data-q`; a setup task carries `data-card`
+      // **and a `data-q` of its own**, so the charter's are the ones with no
+      // card key — the OKs are counted separately below
+      railQ: [...document.querySelectorAll('#rail .qitem[data-q]')]
+        .filter((e) => !e.querySelector('[data-card]') && !e.closest('[data-card]') && !e.dataset.card)
+        .map((e) => e.dataset.q),
+      railCards: [...new Set([...document.querySelectorAll('#rail [data-card]')].map((e) => e.dataset.card))],
+      cards: document.querySelectorAll('#charter .sugg').length,
+      tocMarks: document.querySelectorAll('#toc .mk, .tocmarks .mk').length,
+    }),
+    /** press the first greyed tab and say whether anything opened (Q1413) */
+    pressHeld: () => {
+      const el = document.querySelector('#charter .achip.held');
+      if (!el) return null;
+      el.click();
+      return { cards: document.querySelectorAll('#charter .sugg').length,
+        openId: window.SESSION.openId === undefined ? null : window.SESSION.openId };
+    },
+    /** the draft the composer is holding (Q1415) — what it would send is the
+     *  page's own business (`hunksOf` is closed over inside session-view.html);
+     *  the wire is asserted off the server instead */
+    draft: () => {
+      const d = (window.SESSION.SUGGS || []).find((x) => x.unproposed && x.sites);
+      if (!d) return null;
+      return { sites: d.sites.map((s) => ({ keys: s.keys, text: s.text,
+        origin: (s.origin || []).map((o) => o.text) })) };
+    },
     doc: () => (window.SESSION.DOC || []).map((l) => ({ key: l.key || null, t: l.t || null,
       x: l.x || '', level: l.level || null, gap: !!l.gap })),
     items: () => (window.SESSION.SUGGS || []).map((s) => ({
@@ -654,6 +699,7 @@ function expectOf(item, lines) {
 async function walkItems(page, lines, { railAsserted }) {
   const items = await page.evaluate(() => window.__PS.items());
   const noText = await page.evaluate(() => window.__PS.noText());
+  const removed = await page.evaluate(() => window.__PS.removedCopy());
   for (const s of items) {
     const ex = expectOf(s, lines);
     const cell = ex.cell;
@@ -769,11 +815,20 @@ async function walkItems(page, lines, { railAsserted }) {
       }
       if (s.state === 'sealed') { note('I5', cell, s.id, card.lanes.length + ' lane(s)', 'a record’s field is its own shape'); continue; }
       if (!ex.lanes || !ex.lanes.length) continue;
+      // **A deletion's lane is a sentence** (Q1412, Ed 2026-09-17, ruling on
+      // this walk's own C6: *the lane reads "This clause would be removed." in
+      // the muted note style, so the block is a sentence and not a blank*).
+      // The cell was recorded and unruled until then. The lane that carries it
+      // is the deleting candidate's — on a quick card the one proposal block,
+      // on a challenger pair whichever side is the deletion — so the check is
+      // that one lane says it and no lane is blank. Read out of `COPY`, never
+      // written here twice.
       const isDeletion = cell === 'C6';
       if (isDeletion) {
-        note('I5', cell, s.id,
-          JSON.stringify({ lanes: card.lanes.map((l) => l.blocks && l.blocks.map((b) => b.text)) }),
-          'nothing states what a deletion’s card should draw');
+        const said = card.lanes.map((l) => NORM(l.text));
+        await check('I5-removed', cell, s.id,
+          !!removed && said.includes(NORM(removed)) && said.every((t) => t.length),
+          `one lane reads ${JSON.stringify(removed)} and none is blank (Q1412)`, said);
         continue;
       }
       const wantLanes = s.kind === 'draft' ? [ex.lanes[i] || ex.lanes[0]] : ex.lanes;

@@ -54,6 +54,14 @@ window.CARDS = (function () {
   // A proposal that removes the text **entirely** would come out of here as an
   // empty string, and blank is the one rendering that cannot be told from
   // unchanged — so that case says so in words (Ed, 274).
+  //
+  // The empty block is what an **editing** lane wants: a line you can still put
+  // a caret in, saying what it is through a pseudo-element so there is nothing
+  // for `htmlToMd` to serialise back into the candidate (system.css,
+  // `.lp.empty::before`). A lane that is only *read* wants the opposite —
+  // `removedHtml` below — so this returns the empty block and `laneHtml` is
+  // what a reading site calls.
+  const EMPTY_LP = '<div class="lp empty"><br></div>';
   function resultOnly(marked) {
     const out = marked
       .replace(/\s*<del>[\s\S]*?<\/del>\s*/g, ' ')          // a cut leaves one space behind…
@@ -62,8 +70,23 @@ window.CARDS = (function () {
       .replace(/\s{2}/g, ' ')
       .trim();
     return out.replace(/<[^>]*>/g, '').trim()
-      ? out : '<div class="lp empty"><br></div>';
+      ? out : EMPTY_LP;
   }
+
+  // **A deletion's card draws a sentence** (Q1412, Ed 2026-09-17, from the
+  // proposal-shapes walk's C6: *the head shows the clause and the proposal
+  // block is empty — the card that asks you to delete a clause says nothing*).
+  // One muted note, in the lane's own place, wherever a candidate with no
+  // wording is read: the pair card against the incumbent, a pair of two
+  // deletions, your own proposed deletion, and the record's field. It is real
+  // content, not a pseudo-element, because a reading lane is never serialised
+  // back — which is also what makes it legible to a walk and to a reader.
+  const removedHtml = () => '<div class="lp removed">' + esc(G.lane.removed) + '</div>';
+  // the reading of a marked wording: what would stand, or the removal note
+  const laneHtml = (marked) => {
+    const out = resultOnly(marked);
+    return out === EMPTY_LP ? removedHtml() : out;
+  };
 
   const stripTags = (h) => String(h).replace(/<[^>]+>/g, '');
 
@@ -579,7 +602,8 @@ window.CARDS = (function () {
   // heading in it lost its rank.
   function mdBlocksHtml(oldText, newText, force) {
     const src = String(newText ?? '');
-    if (!src.trim()) return '<div class="lp empty"><br></div>';
+    // nothing would stand here: a deletion, and it says so (Q1412)
+    if (!src.trim()) return removedHtml();
     let pieces = oldText == null ? [[mdMask(src), null]] : mdDiffPieces(oldText, src, false);
     if (oldText != null && !force) {
       let same = 0, all = 0;
@@ -1620,7 +1644,7 @@ window.CARDS = (function () {
   }
 
   return {
-    esc, resultOnly, stripTags, pct, plainLabel, URG_LO, URG_HI,
+    esc, resultOnly, laneHtml, removedHtml, stripTags, pct, plainLabel, URG_LO, URG_HI,
     RULES, clauseOf, clauseRungs,
     TICK, ARROW_OUT, PAUSE, VS16, MARK, DRAWN, mkHtml, markHtml,
     GLYPH, glyphKey, glyphHtml, glyphify, glyphTextOf,
