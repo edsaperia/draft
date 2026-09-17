@@ -325,10 +325,10 @@ describe('🥾 proposal — the membership decides at the bar (Q401a)', () => {
  * login that spends a token, answered 400 for ever; the server drives the
  * bridge before it persists, so nothing since the freeze was ever written.
  *
- * The walk's own guarantee is here; the door that refuses the press before
- * the module ever accepts it is the second half.
+ * Two halves and one `it` each: the walk cannot wedge whatever reaches it,
+ * and the door refuses the press before the module ever accepts it.
  */
-describe('🥾 proposal — a race the mover cannot stake never wedges the walk (#26)', () => {
+describe('🥾 proposal — an empty wallet is refused at the door, and never wedges the walk (#26)', () => {
   /** Propose until the wallet is empty, on a fresh line each time. */
   const drain = (bridge: EngineBridge, by: string, t: number): void => {
     while (bridge.engine.balance(by, t) >= bridge.engine.constitution.stake) {
@@ -336,6 +336,21 @@ describe('🥾 proposal — a race the mover cannot stake never wedges the walk 
         hunks: [{ start: 0, end: 1, lines: [`wording ${bridge.engine.log.length}`] }] }, '');
     }
   };
+
+  it('the bridge prices the press, in the sentence a text proposal is refused with', () => {
+    const { s, bo, cy } = buildConstituted({ removal: { price: 'proposal' } });
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'wedge-door' });
+    drain(bridge, bo, 10);
+    const motions = s.motionRecords().size;
+    expect(() => bridge.openMotion(10, bo, { kind: 'remove', member: cy }))
+      .toThrow('insufficient ✏️ for the stake (§7)');
+    // refused *before* the module accepts it: nothing was opened, so there is
+    // nothing to compensate and nothing for the room to read
+    expect(s.motionRecords().size).toBe(motions);
+    // the wallet is what was refused, never the act: ada still holds four
+    expect(bridge.openMotion(10, 'ada', { kind: 'remove', member: cy }))
+      .toMatch(/^mo-/);
+  });
 
   it('a race the mover cannot stake is withdrawn, and the tick keeps ticking', () => {
     const { s, bo, cy } = buildConstituted({ removal: { price: 'proposal' } });

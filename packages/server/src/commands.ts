@@ -335,12 +335,13 @@ const HANDLERS: Record<string, Handler> = {
     const payload = capValue(args.payload as MotionInput, 'that proposal');
     if (payload !== null && typeof payload === 'object' &&
         payload.kind === 'invite') emailOk(str(payload as never, 'email'));
-    // a live document's set-motions go through the bridge (Q391): an
-    // ordinary route stakes and races in the engine; a constitutional one
-    // opens the unanimity vote exactly as before
-    if (bridge !== null && payload.kind === 'set') {
-      return bridge.openSetMotion(t, a.memberId, payload.setting, payload.value, why).motion;
-    }
+    // **A live document's motions all go through the bridge** (Q391; every
+    // kind since #26): an ordinary route stakes and races in the engine, and
+    // the wallet is what the bridge alone can ask about — the constitution
+    // layer holds none. A constitutional one opens the unanimity vote exactly
+    // as before, free. Before the start there is no engine and no stake, so
+    // the module is the whole of the gate.
+    if (bridge !== null) return bridge.openMotion(t, a.memberId, payload, why);
     return cs.openMotion(t, a.memberId, payload, why);
   },
   'answer-motion': (cs, a, t, args) => {

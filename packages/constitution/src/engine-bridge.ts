@@ -46,6 +46,8 @@ import { stableStringify } from './hash.js';
 import { CATALOGUE, entryOf, motionRouteOf } from './catalogue.js';
 import type { SettingId } from './catalogue.js';
 import type { ConstitutionSession } from './session.js';
+import { membershipRouteOf } from './motions.js';
+import type { MotionInput } from './motions.js';
 import { inE } from './populations.js';
 import { DEFAULT_TUNING, engineFieldsFor, toEngineConstitution,
   type EngineTuning } from './adapter.js';
@@ -129,6 +131,49 @@ export class EngineBridge {
       opts.t,
     );
     this.cursor = cs.logEntries().length;
+  }
+
+  /**
+   * **The door for every motion on a live document** (issue #26). A motion on
+   * the ordinary route *is* a race, and a race costs its mover one ✏️ (§7,
+   * §3.3a) — but the constitution layer holds no wallet, so `cs.openMotion`
+   * cannot price its own act, and until this existed the two membership
+   * motions were priced nowhere at all: the page has no wallet check, the
+   * module accepted the press, and the stake was not asked for until `sync`
+   * entered the race, where the refusal was no longer a refusal but a
+   * document that had stopped answering. A member who had spent their
+   * proposals could freeze a whole room with one press of ❌.
+   *
+   * So the wallet is asked here, **before** the module accepts anything: the
+   * same check, in the same sentence, that `openSetMotion` and `proposeText`
+   * already refuse an empty wallet with, and which the page prints under the
+   * card like any other command refusal (SURFACE Y25) — no new copy. Nothing
+   * is opened, so unlike the `sync` path there is nothing to compensate.
+   *
+   * Every kind comes through, and three of them are priced. `set` is
+   * `openSetMotion`'s, which does its own pricing because only it can say
+   * what a *value* routes as. `reserve` is always constitutional, and a
+   * constitutional motion is free — an empty wallet prices a race and not a
+   * decision — as is `text`, which is a folded record of the pen and never a
+   * press at all. `invite` is priced here although the invitation race is not
+   * built yet (#6 F1): its `motion-opened` already records `stake: 1`, so the
+   * log's own claim is what is being made true, and the guard is standing
+   * when the race lands.
+   */
+  openMotion(t: number, by: MemberId, input: MotionInput, why?: string): MotionId {
+    this.sync(t);
+    const kind = input.kind;
+    if (kind === 'invite' || kind === 'remove' || kind === 'admit') {
+      const price = this.cs.priceOf(kind === 'remove' ? 'removal' : 'admission');
+      if (membershipRouteOf(price, kind) === 'ordinary' &&
+        this.engine.balance(by, t) < this.engine.constitution.stake) {
+        throw new Error('insufficient ✏️ for the stake (§7)');
+      }
+    }
+    if (input.kind === 'set') {
+      return this.openSetMotion(t, by, input.setting, input.value, why).motion;
+    }
+    return this.cs.openMotion(t, by, input, why);
   }
 
   /**

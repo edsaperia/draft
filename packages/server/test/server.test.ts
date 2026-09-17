@@ -3402,3 +3402,104 @@ describe('a sealed record follows its clause (Q1333)', () => {
     expect(cyRecs.map((r) => [r.raceId, r.at])).toEqual(third.records.map((r) => [r.raceId, r.at]));
   });
 });
+
+/**
+ * **A press nobody could pay for froze the document** (issue #26). At 🥾
+ * *members must vote* a removal is a race, and a race costs its mover one ✏️
+ * (§7, §3.3a) — but the stake was not asked for until `EngineBridge.sync`
+ * walked the `motion-opened` entry, long after the module had accepted the
+ * act. The throw escaped `sync`, and `commit` drives the bridge *before* it
+ * persists, so every later command by anybody — and the minute tick, and the
+ * login that spends a token — answered 400 with nothing written.
+ *
+ * The door is `bridge.openMotion`, the same pre-check and the same sentence
+ * `openSetMotion` and `proposeText` already refuse an empty wallet with; the
+ * page needs no new copy because it prints a command's refusal under the card
+ * (SURFACE Y25). The walk's own guarantee — a race that cannot be staked is
+ * withdrawn rather than thrown — is `bridge.test.ts` and
+ * `promise-removal.test.ts`; this is the HTTP half.
+ */
+describe('🥾 at ✏️: a mover with no ✏️ is refused, and the document goes on (#26)', () => {
+  it('the removal answers 400 for the mover only, and every other seat still lands', async () => {
+    const first = await boot();
+    const { base, dataDir } = first;
+    const created = await (await post(base, '/api/docs', {
+      title: 'Wedge Charter', email: 'ada@example.org',
+    })).json() as { ok: boolean; slug: string; devLink: string };
+    const ada = cookieOf(await consume(created.devLink));
+    const slug = created.slug;
+    const send = (cookie: string, name: string, args: unknown) =>
+      post(base, `/api/d/${slug}/cmd`, { cmd: name, args }, cookie);
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const body = await (await send(cookie, name, args)).json() as
+        { error?: string; result?: unknown };
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+      return body.result;
+    };
+    const viewOf = async (cookie: string) => (await (await fetch(
+      `${base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as MemberViewPayload;
+    const seat = async (email: string) => {
+      await cmd(ada, 'invite', { email });
+      return cookieOf(await consume((await lastMailTo(dataDir, email)).link!));
+    };
+    await cmd(ada, 'confirm-starting-text', { text: 'The clubhouse shall be kept open.' });
+    const bo = await seat('bo@example.org');
+    const cy = await seat('cy@example.org');
+    // one ✏️ each and a drip a day away: bo spends theirs and that is that
+    const values: Record<string, unknown> = {
+      rate: { grant: 1, cap: 8, dripMinutes: 1440 },
+      ending: { endsAtMs: null },
+      quorum: { form: 'count', n: 1 }, chamber: { rung: 'closed' },
+      authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
+      applications: { apply: false }, admission: { price: 'assembly' },
+      removal: { price: 'proposal' }, // 🥾 — members must vote
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await cmd(ada, 'reclaim', { setting });
+      await cmd(ada, 'set-setting', { setting, value });
+    }
+    await cmd(ada, 'begin', {});
+    const cyId = (await viewOf(ada)).view.members.find((m) => m.email === 'cy@example.org')!.id;
+
+    // bo spends their one ✏️ on a text proposal, the ordinary way
+    await cmd(bo, 'propose-text', { baseVersion: (await viewOf(bo)).textVersion,
+      hunks: [{ start: 0, end: 1, lines: ['The clubhouse shall be kept warm.'] }],
+      why: 'warmth' });
+    expect((await viewOf(bo)).wallet).toBe(0);
+
+    // -- the press, refused at the door -----------------------------------
+    const seqBefore = (await viewOf(ada)).seq;
+    const refused = await send(bo, 'open-motion', { payload: { kind: 'remove', member: cyId } });
+    expect(refused.status).toBe(400);
+    expect((await refused.json() as { error: string }).error)
+      .toBe('insufficient ✏️ for the stake (§7)');
+    // nothing was opened, so the room reads nothing about it
+    const after = await viewOf(ada);
+    expect(after.seq).toBe(seqBefore);
+    expect(after.view.motions.filter((m) => m.status === 'running')).toEqual([]);
+
+    // -- and the document is not frozen -----------------------------------
+    // every one of these answered 400 before the fix, the log stalled behind
+    // a bridge that threw on the way to the store
+    await cmd(cy, 'set-identity', { name: 'Cy Ravensworth' });
+    await cmd(ada, 'set-identity', { name: 'Ada Quill' });
+    expect((await viewOf(ada)).view.members.find((m) => m.id === cyId)!.name)
+      .toBe('Cy Ravensworth');
+
+    // a seat that can pay puts the very same motion, so the refusal was the
+    // wallet and never the act
+    const opened = await cmd(ada, 'open-motion',
+      { payload: { kind: 'remove', member: cyId } }) as string;
+    expect(opened).toMatch(/^mo-/);
+    expect((await viewOf(ada)).view.motions.some((m) => m.id === opened
+      && m.route === 'ordinary' && m.status === 'running')).toBe(true);
+
+    // and what was refused was never written: a restart replays to here
+    await first.draft.close();
+    const again = await boot({ reuse: first });
+    const replayed = await (await fetch(`${again.base}/api/d/${slug}/view`,
+      { headers: { cookie: ada } })).json() as MemberViewPayload;
+    expect(replayed.view.motions.map((m) => m.id)).toEqual([opened]);
+  });
+});

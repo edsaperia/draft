@@ -81,6 +81,28 @@ export interface MotionHost {
   answeredAtDoor(applicant: string): { nameSet?: true; pictureSet?: true };
 }
 
+/**
+ * **The route a membership motion takes is the price it is put at** (entry
+ * 94): 🪪's for the two ways in, 🥾's for the way out. The three arms of
+ * `openMotion` below read it, and so does `EngineBridge.openMotion`, which
+ * has to know whether the mover owes a stake **before** the module accepts
+ * the act (issue #26) — an ordinary route is a race, and a race costs one ✏️
+ * (§7, §3.3a). One function rather than the same conditional in two files,
+ * because the two disagreeing is exactly the bug: a press the door lets
+ * through on one reading and the bridge cannot stake on the other.
+ *
+ * `pen` is not decided here. At 🪪 ✒️ nobody proposes at all — the invite
+ * command admits outright — so the arm below refuses the motion before it
+ * asks for a route, and an application at that price is never a motion.
+ */
+export function membershipRouteOf(price: Price,
+  kind: 'invite' | 'admit' | 'remove'): MotionRoute {
+  // `assembly` and `consent` are both consent on the way out; the difference
+  // lives in the settle check, not the route (Q401, Ed 2026-08-19)
+  if (kind === 'remove') return price === 'proposal' ? 'ordinary' : 'constitutional';
+  return price === 'assembly' ? 'constitutional' : 'ordinary';
+}
+
 export function openMotion(s: MotionHost, t: number, by: MemberId,
   input: MotionInput, why?: string): MotionId {
   s.requireOpen('a motion');
@@ -135,19 +157,13 @@ export function openMotion(s: MotionHost, t: number, by: MemberId,
     // invite command admits outright — so a motion here is a mistake.
     const price = s.priceOf('admission');
     if (price === 'pen') throw new Error('admission is at ✒️ — invite directly, nothing to propose (§9.7½)');
-    route = price === 'assembly' ? 'constitutional' : 'ordinary';
+    route = membershipRouteOf(price, 'invite');
   } else if (payload.kind === 'remove') {
     const target = s.members.get(payload.member);
     if (!target || !inE(target)) throw new Error(`'${payload.member}' is not a member`);
-    // The route is 🥾's price (Q401, Ed 2026-08-19; entry 94): `proposal`
-    // races, and carries when the room prefers it with the quorum met;
-    // `assembly` and `consent` are consent — the difference lives in the
-    // settle check, not the route.
-    route = s.priceOf('removal') === 'proposal' ? 'ordinary' : 'constitutional';
+    route = membershipRouteOf(s.priceOf('removal'), 'remove');
   } else {
-    // admit rides submitApplication (§9.7½): an application is a stranger
-    // proposing their own invitation, so it pays 🪪's price like one.
-    route = s.priceOf('admission') === 'assembly' ? 'constitutional' : 'ordinary';
+    route = membershipRouteOf(s.priceOf('admission'), 'admit');
   }
   // **An identical motion is refused on either route** (Ed, 2026-09-12,
   // Q1348; SPEC §9.6, R-103): the same payload already running is one
