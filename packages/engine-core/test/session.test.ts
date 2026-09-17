@@ -835,7 +835,7 @@ describe('session lifecycle', () => {
 });
 
 describe('ground shifts lock judgments and re-serve pairs (SPEC §4.4, Q50)', () => {
-  it('an adoption within the race locks ALL its judgments, rival-vs-rival included', () => {
+  it('an adoption within the race locks the pairs whose text it changed, and only those', () => {
     const s = openWide();
     // A chain race: w (lines 2-3) — cA (lines 1-2) — cB (line 1) — cC (line 1).
     // cB and cC survive w's adoption by clean rebase; cA conflicts.
@@ -897,42 +897,45 @@ describe('ground shifts lock judgments and re-serve pairs (SPEC §4.4, Q50)', ()
     expect(adopted).toBe(true);
     expect(s.getCandidate(cA).state).toBe('rebase-pending');
 
-    // The survivors' race re-forms on the new ground: same words on the
-    // contested line, but the race's incumbent changed (adoption within
-    // the race) — a material shift. Everything locks, including the
-    // rival pair Ed's conservative reading covers.
+    // The survivors' race re-forms with a new **race-wide** incumbent id:
+    // the field changed and the contested area with it. **And that is no
+    // longer what locks a judgment** (Q1441, Ed 2026-09-18, R-129): the
+    // rival pair below compared the wording on line 1, which w's adoption
+    // never touched, so the room's answer about it is still an answer about
+    // the text that stands. Until Q1441 the race-wide fingerprint voided it —
+    // *a new rival joining a clause shouldn't change a preference between two
+    // other rivals*, and neither should a neighbour's adoption.
     const race = s.raceOf(cB);
     expect(race.members).toEqual([cB, cC]);
     expect(race.incumbentId).not.toBe(oldInc);
-    expect(race.comparisons).toBe(0); // measured evidence restarts from nothing
-    // One mover, not none: the author's preference for their own live
-    // candidates is derived against the *current* incumbent (§3.3, Q245b), so
-    // unlike a judgment it does not lock on a ground shift — surviving it is
-    // the whole reason it is derived rather than recorded. What restarts is
-    // the room's evidence, and that is what `comparisons` counts.
+    expect(race.comparisons).toBe(1); // the rival judgment survives the shift
     expect(race.distinctMovers).toBe(1);
     expect(race.leaderP).toBeGreaterThan(0.5); // both challengers carry their author
     const rival = s
       .judgments()
-      .find((j) => j.participantId === 'p1' && j.kind === 'edge' && j.locked);
-    expect(rival?.locked).toBe(true);
-    expect(rival?.superseded).toBe(false); // locked, not superseded
+      .find((j) => j.participantId === 'p1' && [j.aId, j.bId].includes(cB) &&
+        [j.aId, j.bId].includes(cC));
+    expect(rival?.locked).toBe(false);
+    expect(rival?.superseded).toBe(false);
+    // What *did* lock is every judgment about text that is gone: the three
+    // cast on w against the old text, w itself having carried
+    expect(s.judgments().filter((j) => [j.aId, j.bId].includes(w))
+      .every((j) => j.locked)).toBe(true);
 
-    // The pair re-enters as a fresh question: the same participant may
-    // judge it again on the new ground, and it counts.
+    // The pair is not a fresh question either, so another member's judgment
+    // of it adds to the evidence rather than restarting it.
     s.judge(t + 1000, 'p5', cB, cC, 'b');
-    expect(s.raceOf(cB).comparisons).toBe(1);
+    expect(s.raceOf(cB).comparisons).toBe(2);
 
-    // The re-opened race gets router priority: its fresh pairs are back
-    // in the feed even for participants who judged the old ground.
+    // The race is still in the feed for a member who has pairs left on it.
     const feed = s.feed('p5', 5, t + 2000);
     expect(feed.length).toBeGreaterThan(0);
     expect(feed.some((c) => c.raceId === s.raceOf(cB).id)).toBe(true);
 
-    // Replay reproduces the shift, the locks, and the fresh evidence.
+    // Replay reproduces the shift, the locks, and the evidence that survived.
     const replayed = Session.replay(s.log);
     expect(replayed.rollingHash()).toBe(s.rollingHash());
-    expect(replayed.raceOf(cB).comparisons).toBe(1);
+    expect(replayed.raceOf(cB).comparisons).toBe(2);
   });
 
   it('context drift is not material: adoption elsewhere that moves a span locks nothing', () => {

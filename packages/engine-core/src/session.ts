@@ -219,23 +219,26 @@ export class Session {
   private comparisons: StoredComparison[] = [];
   /**
    * **Edge judgments indexed as they land** (the moon room, 2026-09-11): by
-   * the ground they were cast on, and by each candidate they touch. Both
-   * per-race scans below — the usable set behind every fit, and the
-   * locked-evidence test the feed asks per race — walked every judgment in
-   * the room once per race per state version, which at a hundred races
-   * over thousands of judgments was a quarter of a saturated host and the
-   * whole of a command's fold (the fold reads `races()` uncached). A race's
-   * usable judgments all share its incumbent as ground, and a locked one
-   * touches one of its members, so each scan reads its own bucket alone.
+   * each candidate they touch. Both per-race scans below — the usable set
+   * behind every fit, and the locked-evidence test the feed asks per race —
+   * walked every judgment in the room once per race per state version, which
+   * at a hundred races over thousands of judgments was a quarter of a
+   * saturated host and the whole of a command's fold (the fold reads
+   * `races()` uncached). A judgment usable in a race touches one of its
+   * members, so each scan reads its members' own buckets and nothing else.
    * Comparisons only ever append, in `apply`, so the buckets are exact.
+   *
+   * **The ground-keyed bucket went with the race-wide ground** (Q1441): a
+   * judgment's ground is its own pair's now, so a race and its judgments
+   * share no key — the candidate index is the whole of the lookup, and it
+   * always held every judgment the ground bucket did.
    */
-  private edgesByGround = new Map<string, StoredComparison[]>();
   private edgesByCandidate = new Map<string, StoredComparison[]>();
   /**
-   * Contextual pair keys already judged, per participant (feed
-   * exclusion only — revision stays open, SPEC §4.4). Edge keys carry
-   * the ground id, so a ground shift re-opens the pair to everyone,
-   * including participants who judged the old ground.
+   * Contextual pair keys already judged, per participant (feed exclusion
+   * only — revision stays open, SPEC §4.4). Edge keys carry the **pair's**
+   * ground since Q1441, so a change to the text that pair compared re-opens
+   * it to everyone, and a rival joining the race re-opens nothing.
    */
   private judgedPairs = new Map<string, Set<string>>();
   /** Comparisons at seq < evidenceSince[id] are dead for candidate id (SPEC §2.4). */
@@ -576,7 +579,11 @@ export class Session {
         // whole rebuild of every race gone from every judgment; the fit
         // `updatePeaks` needs is a different question and is taken fresh.
         const race = event.kind === 'edge' ? this.raceOfPair(event.aId, event.bId) : null;
-        const groundId = race === null ? null : race.incumbentId;
+        // **The pair's own ground, not the race's** (Q1441; SPEC §4.4 → why:
+        // R-129): the current text under the lines of the two wordings being
+        // compared. A rival joining or leaving the race changes no text, so it
+        // changes no stamp and voids nothing.
+        const groundId = race === null ? null : this.raceRules.pairGround(event.aId, event.bId);
         const stored: StoredComparison = {
           seq,
           t: event.t,
@@ -589,8 +596,6 @@ export class Session {
         };
         this.comparisons.push(stored);
         if (event.kind === 'edge' && groundId !== null) {
-          const g = this.edgesByGround.get(groundId);
-          if (g) g.push(stored); else this.edgesByGround.set(groundId, [stored]);
           for (const id of [event.aId, event.bId]) {
             if (id.startsWith(INC_PREFIX)) continue;
             const b = this.edgesByCandidate.get(id);
@@ -1159,7 +1164,10 @@ export class Session {
         const race = candidates.length > 0 ? raceOfMember.get(candidates[0]!) : undefined;
         locked =
           race === undefined ||
-          race.incumbentId !== c.groundId ||
+          // **its own pair's ground** (Q1441): the text the two wordings
+          // displaced, not the race's whole contested area — a rival joining
+          // locks nobody's judgment
+          this.raceRules.pairGround(c.aId, c.bId) !== c.groundId ||
           candidates.some((id) => {
             if (!race.members.includes(id)) return true;
             const since = this.evidenceSince.get(id);
@@ -2145,6 +2153,7 @@ export class Session {
       fitRaceMembers: (members, incumbentId) =>
         this.raceRules.fitRaceMembers(members, incumbentId),
       races: (t) => this.races(t),
+      pairGround: (aId, bId) => this.raceRules.pairGround(aId, bId),
       eCount: () => this.eCount(),
       salienceFitOver: (races) => this.salienceFitOver(races),
       salienceWeightsOver: (races, fit) => this.salienceWeightsOver(races, fit),
@@ -2160,7 +2169,7 @@ export class Session {
       derived: (key, compute) => this.derived(key, compute),
       candidates: () => this.candidates,
       candidate: (id) => this.candidate(id),
-      edgesByGround: (incumbentId) => this.edgesByGround.get(incumbentId) ?? [],
+      edgesByCandidate: (id) => this.edgesByCandidate.get(id) ?? [],
       evidenceSince: (id) => this.evidenceSince.get(id),
       evidenceSinceT: (id) => this.evidenceSinceT.get(id),
       suspended: (id) => this.roster.get(id)?.suspended === true,

@@ -25,13 +25,25 @@ export function pairKey(a: string, b: string): string {
 }
 
 /**
- * Ground-contextual pair key (SPEC §4.4, Q50): edge pairs are keyed to
- * the ground they were judged on, so a material shift re-opens the pair
- * as a fresh question for everyone; diagonals (groundId null) are keyed
- * by the pair alone.
+ * Ground-contextual pair key (SPEC §4.4, Q50): edge pairs are keyed to the
+ * ground they were judged on, so a change to the text they compared re-opens
+ * the pair as a fresh question for everyone; diagonals (groundId null) are
+ * keyed by the pair alone.
+ *
+ * **The incumbent endpoint is not in the key** (Q1441). It used to be, and
+ * that was harmless while the ground was the race's: the two moved together.
+ * A pair's ground is its own now, so a race can widen — changing the
+ * incumbent id every new judgment is cast against — while the pair's ground
+ * stands; keyed by the raw ids, one member's judgment and their own revision
+ * of it would sit under two spellings of *the current text* and neither
+ * supersede the other nor count as served. The candidate ids and the ground
+ * identify the question exactly: `X@g` is *X against the text under X's
+ * lines*, and no other pair can spell itself that way.
  */
 export function contextKey(a: string, b: string, groundId: string | null): string {
-  return groundId === null ? pairKey(a, b) : `${pairKey(a, b)}@${groundId}`;
+  if (groundId === null) return pairKey(a, b);
+  const ids = [a, b].filter((id) => !id.startsWith(INC_PREFIX)).sort();
+  return `${ids.join('|')}@${groundId}`;
 }
 
 /**
@@ -66,6 +78,12 @@ export interface RoutingHost {
   fitRaceMembers(members: string[], incumbentId: string): Fit;
   /** The races as they stand at `t` — the floor rides the clock (Q1439). */
   races(t: number): RaceView[];
+  /**
+   * A pair's own ground (Q1441): the current text under the lines of the two
+   * wordings it compares. Feed exclusion is keyed on it, so a judged pair
+   * re-opens when the text it compared changes and at no other time.
+   */
+  pairGround(aId: string, bId: string): string;
   eCount(): number;
   salienceFitOver(races: RaceView[]): Fit | null;
   salienceWeightsOver(races: RaceView[], fit: Fit | null): Map<string, number>;
@@ -80,10 +98,12 @@ export class Routing {
   constructor(private readonly host: RoutingHost) {}
 
   /**
-   * True when a race carries evidence locked by a ground shift or a
-   * rebase confirmation — i.e. the race was re-opened (SPEC §4.4, Q50)
-   * and its live members were judged before on ground that no longer
-   * exists.
+   * True when a race **holds a voided pair** — a judgment cast against text
+   * that has since changed, or one cut off by a rebase confirmation's evidence
+   * reset (SPEC §4.4, Q50). It keys on each judgment's own pair ground since
+   * Q1441, not on the race's whole contested area, so the re-opened boost
+   * lands on a race some of whose evidence really is gone and never on one
+   * that merely gained a rival.
    */
   hasLockedEvidence(race: RaceView): boolean {
     // a walk over every comparison, per race — once per state version (Q1324)
@@ -96,6 +116,9 @@ export class Routing {
     // members' own buckets hold every candidate; one between two members is
     // read twice, harmlessly — the answer is a boolean
     const pool = race.members.flatMap((m) => this.host.edgesByCandidate(m));
+    // one ground per distinct pair for the length of the scan, as
+    // `buildUsableComparisons` does and for the same measured reason
+    const grounds = new Map<string, string>();
     for (const c of pool) {
       if (c.kind !== 'edge') continue;
       const aMember = memberSet.has(c.aId);
@@ -103,7 +126,13 @@ export class Routing {
       const aOk = aMember || c.aId.startsWith(INC_PREFIX);
       const bOk = bMember || c.bId.startsWith(INC_PREFIX);
       if (!aOk || !bOk || (!aMember && !bMember)) continue;
-      if (c.groundId !== race.incumbentId) return true;
+      const key = pairKey(c.aId, c.bId);
+      let ground = grounds.get(key);
+      if (ground === undefined) {
+        ground = this.host.pairGround(c.aId, c.bId);
+        grounds.set(key, ground);
+      }
+      if (c.groundId !== ground) return true;
       for (const [id, isMember] of [
         [c.aId, aMember],
         [c.bId, bMember],
@@ -139,7 +168,8 @@ export class Routing {
         // While the rival gate is closed, rival pairs carry no serving
         // value (SPEC §8.3, Q48).
         if (!rivalGateOpen && a !== incumbentId && b !== incumbentId) continue;
-        if (excludeJudgedBy && this.host.servedOut(excludeJudgedBy, contextKey(a, b, incumbentId))) {
+        if (excludeJudgedBy &&
+          this.host.servedOut(excludeJudgedBy, contextKey(a, b, this.host.pairGround(a, b)))) {
           continue;
         }
         const v = pairValue(fit, a, b);
@@ -200,7 +230,8 @@ export class Routing {
           if (!include(a, b)) continue;
           // in the scan itself, so both passes see it (R-062, backlog 253)
           if (this.ownIncumbentPair(a, b, incumbentId, participantId)) continue;
-          if (this.host.servedOut(participantId, contextKey(a, b, incumbentId))) continue;
+          if (this.host.servedOut(participantId,
+            contextKey(a, b, this.host.pairGround(a, b)))) continue;
           const v = pairValue(fit, a, b);
           if (best === null || v > best.value) best = { aId: a, bId: b, value: v };
         }
@@ -554,7 +585,8 @@ export class Routing {
       }
     }
     if (!target) return null;
-    const key = contextKey(target.id, target.race.incumbentId, target.race.incumbentId);
+    const key = contextKey(target.id, target.race.incumbentId,
+      this.host.pairGround(target.id, target.race.incumbentId));
     if (this.host.servedOut(participantId, key)) return null;
     return {
       kind: 'exploration',

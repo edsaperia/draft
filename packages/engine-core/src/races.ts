@@ -115,8 +115,13 @@ export interface RacesHost {
   candidates(): ReadonlyMap<string, Candidate>;
   /** Throws for an unknown candidate. */
   candidate(id: string): Candidate;
-  /** Edge judgments cast on this ground, as the fold indexed them. */
-  edgesByGround(incumbentId: string): readonly StoredComparison[];
+  /**
+   * Edge judgments touching a candidate, as the fold indexed them (Q1441): the
+   * ground-keyed bucket went with the race-wide ground, and this is the index
+   * that survives it — a usable judgment shares no key with its race, only
+   * with the candidates it names.
+   */
+  edgesByCandidate(id: string): readonly StoredComparison[];
   /** Comparisons at seq below this are dead for the candidate (SPEC §2.4). */
   evidenceSince(id: string): number | undefined;
   /** When that evidence reset landed (Q1439): the pair became answerable afresh. */
@@ -303,14 +308,16 @@ export class Races {
   }
 
   /**
-   * **The ground each live race now stands on** (Q1439), in `raceGroups`
-   * order and nothing else: the fold records the time a ground first stood,
-   * and it must be able to ask which grounds exist without asking anything
-   * that reads those times back.
+   * **Every pair ground in play** (Q1439, narrowed by Q1441), in `raceGroups`
+   * order: one per live candidate, the ground of *that candidate against the
+   * current text*. The fold records the time each first stood, and a member's
+   * 💤 period on a candidate runs from it (`answerableSince`) — so it must be
+   * able to ask which grounds exist without asking anything that reads those
+   * times back.
    */
   groundIds(): string[] {
     return this.host.derived('groundIds',
-      () => this.raceGroups().map((members) => this.groundOf(members)));
+      () => this.raceGroups().flatMap((members) => members.map((m) => this.pairGround(m))));
   }
 
   /** A race's incumbent id: the text on its contested spans, or a standing. */
@@ -319,6 +326,37 @@ export class Races {
     return setting
       ? this.incumbentIdForSetting(setting.settingId)
       : this.incumbentIdFor(mergeSpans(members.flatMap((id) => this.host.candidate(id).footprint)));
+  }
+
+  /**
+   * **A judgment's ground is its own pair's** (Q1441, Ed 2026-09-18; SPEC §4.4
+   * → why: R-129): the current text under the lines of the wordings it
+   * compares — X's footprint where X is judged against the current text, and
+   * footprint(A) ∪ footprint(B) where two challengers are compared. An
+   * incumbent endpoint contributes nothing: it *is* the text under those
+   * lines. A setting candidate's ground is the standing value, as it always
+   * was, since a setting race displaces no text.
+   *
+   * It replaces the race-wide fingerprint, which hashed the union of **every**
+   * member's footprint and so conflated *the text changed* with *the contested
+   * area changed*: a newcomer touching other lines as well widened the union
+   * and voided every judgment in the race, rival pairs included. A judgment
+   * about text that no longer exists must not count (R-076, which stands);
+   * a judgment about text that still stands must.
+   *
+   * Memoised per candidate set per state version, so the hash is computed once
+   * per distinct pair however many comparisons carry it.
+   */
+  pairGround(aId: string, bId?: string): string {
+    const ids = (bId === undefined ? [aId] : [aId, bId])
+      .filter((id) => !id.startsWith(INC_PREFIX))
+      .sort();
+    return this.host.derived(`pg|${ids.join(',')}`, () => {
+      const setting = ids.length > 0 ? this.host.candidates().get(ids[0]!)?.setting : undefined;
+      if (setting) return this.incumbentIdForSetting(setting.settingId);
+      const spans = ids.flatMap((id) => this.host.candidates().get(id)?.footprint ?? []);
+      return this.incumbentIdFor(mergeSpans(spans));
+    });
   }
 
   private buildRaceCore(members: string[]): { core: RaceCore; approval: ApprovalCore } {
@@ -480,16 +518,18 @@ export class Races {
    * **When the pair *as it now stands* became answerable** (Q1439; SPEC §8.2):
    * the latest of the three moments that can void every earlier answer to it —
    * the candidate's own submission, an evidence reset on revision (§2.4), and
-   * the ground the race now stands on (§4.4). A ground shift locks the
-   * judgments cast against the old field, so it has to restart the period too:
-   * otherwise a shift would abstain, instantly, everyone who had already
-   * answered — which is the defect this whole rule exists to close, arriving
-   * from the other side.
+   * the ground its own pair now stands on (§4.4, as Q1441 narrowed it). A
+   * change to the text under those lines locks the judgments cast against the
+   * old wording, so it has to restart the period too: otherwise it would
+   * abstain, instantly, everyone who had already answered — which is the
+   * defect this whole rule exists to close, arriving from the other side.
    */
-  private answerableSince(leaderId: string, incumbentId: string): number {
+  private answerableSince(leaderId: string, _incumbentId: string): number {
     const reset = this.host.evidenceSinceT(leaderId);
     return Math.max(
-      this.host.groundSince(incumbentId),
+      // **the pair's own ground, not the race's** (Q1441): a rival joining
+      // voids nothing, so it restarts nobody's period either
+      this.host.groundSince(this.pairGround(leaderId)),
       this.host.candidate(leaderId).submittedT,
       reset ?? -Infinity,
     );
@@ -645,25 +685,59 @@ export class Races {
 
   private buildUsableComparisons(members: string[], incumbentId: string): StoredComparison[] {
     const memberSet = new Set(members);
-    // only judgments cast on this race's ground can be usable (the ground
-    // lock below), and the ground bucket holds exactly those, in seq order
-    const filtered = this.host.edgesByGround(incumbentId).filter((c) => {
+    // **Every judgment touching a member, from the members' own buckets**
+    // (Q1441). It used to be the race-wide ground's bucket, which is exactly
+    // what the ground-lock defect was made of; a usable judgment now shares
+    // no key with its race, only with the candidates it names, so the pool is
+    // the union of their buckets — deduped by `seq`, since a judgment between
+    // two members sits in both, and re-sorted, since the merge of two
+    // seq-ordered lists is not one.
+    const pool = new Map<number, StoredComparison>();
+    for (const m of members) {
+      for (const c of this.host.edgesByCandidate(m)) pool.set(c.seq, c);
+    }
+    // One ground per distinct pair for the length of this scan. `pairGround`
+    // is memoised per state version too, but the memo is a dev switch away
+    // from being off (`Session.memo.off`, and `audit` recomputes every hit),
+    // and a hash per comparison rather than per pair is ten times the work on
+    // a race with hundreds of judgments — measured.
+    const grounds = new Map<string, string>();
+    const groundOf = (c: StoredComparison): string => {
+      const key = pairKey(c.aId, c.bId);
+      let g = grounds.get(key);
+      if (g === undefined) { g = this.pairGround(c.aId, c.bId); grounds.set(key, g); }
+      return g;
+    };
+    const filtered = [...pool.values()].filter((c) => {
       if (c.kind !== 'edge') return false;
-      // Ground lock (SPEC §4.4, Q50): a judgment cast on a different
-      // ground — including rival-vs-rival pairs — no longer feeds the
-      // live posterior. The race's ranking restarts from nothing.
-      if (c.groundId !== incumbentId) return false;
+      // **The ground lock, on the pair's own lines** (SPEC §4.4; Q1441 →
+      // why: R-076, R-129). A judgment is a fact about the wordings it
+      // compared *and the text they displaced*: it stops counting when that
+      // text changes, and not before. A rival joining or leaving the race
+      // changes no text and voids nothing.
+      if (c.groundId !== groundOf(c)) return false;
       for (const id of [c.aId, c.bId]) {
         if (id.startsWith(INC_PREFIX)) {
-          if (id !== incumbentId) return false;
-        } else {
-          if (!memberSet.has(id)) return false;
-          const since = this.host.evidenceSince(id);
-          if (since !== undefined && c.seq < since) return false;
+          // **Any incumbent id on a still-valid pair is *this* race's
+          // incumbent** (Q1441). A judgment cast when the race was narrower
+          // carries the race-wide id of that moment, which is no longer the
+          // race's — but its pair's own ground is intact, so the text it
+          // compared is the text that stands, and the endpoint means the
+          // current text. It is normalised below, before the supersession
+          // key, so one member's two judgments of one pair cannot count
+          // twice under two spellings of *the current text*.
+          continue;
         }
+        if (!memberSet.has(id)) return false;
+        const since = this.host.evidenceSince(id);
+        if (since !== undefined && c.seq < since) return false;
       }
       return true;
-    });
+    }).map((c) => (
+      c.aId.startsWith(INC_PREFIX) && c.aId !== incumbentId ? { ...c, aId: incumbentId }
+        : c.bId.startsWith(INC_PREFIX) && c.bId !== incumbentId ? { ...c, bId: incumbentId }
+          : c
+    )).sort((a, b) => a.seq - b.seq);
     // Supersession (SPEC §4.4, Q50): the ranking uses only each
     // participant's latest judgment per pair (per ground); the log and
     // record keep them all.

@@ -292,21 +292,49 @@ describe('silence on one candidate becomes an abstention (R-127)', () => {
     expect(only(s, late + 1).group).toBe(2);
   });
 
-  it('the period restarts when the ground changes (SPEC §4.4)', () => {
+  it('a rival joining restarts nobody’s period — it changes no text (Q1441)', () => {
     const P = 10 * MINUTE;
     const { s } = proposed({ abstainAfterMs: P });
     const late = 1000 + P + 1;
     expect(only(s, late).group).toBe(1); // four abstentions
-    // a rival whose footprint widens the contested area: the ground moves, and
-    // every answer to the old pair locks with it (§4.4)
+    // a rival whose footprint widens the contested area. The race's own
+    // fingerprint moves — and **a judgment's ground is its own pair's**
+    // (Q1441, R-129), so nothing about the leader's pair became answerable
+    // afresh and nobody is awaited again. This test read the other way for
+    // one commit, which is what the ruling corrected.
     s.submitCandidate(late, {
       author: 'p2',
       rationale: 'wider',
       patch: rewriteSpan(s.currentVersion(), 1, 3, 'One rule for both.'),
     });
     const r = only(s, late + 1);
-    expect(r.group).toBe(5); // everybody is awaited again, on the pair as it stands
-    expect(only(s, late + 1 + P + 1).group).toBeLessThan(5);
+    expect(r.group).toBe(1);
+    // and the newcomer's own pair is answerable from *its* submission, so the
+    // room is awaited on it for a period of its own
+    expect(r.leaderId).toBeDefined();
+  });
+
+  it('the period restarts when the pair’s own ground changes (SPEC §4.4)', () => {
+    // **A setting race is where this is visible** (Q1441, and the finding in
+    // the hand-back): a text candidate's pair ground is the text under its own
+    // footprint, and anything that rewrites that text either leaves its words
+    // alone with moved offsets — no change — or conflicts with its patch and
+    // strands it out of every race until `confirmRebase`, whose evidence reset
+    // dates the restart. A setting race's ground is the standing value, which
+    // moves under a live candidate: `setStanding` is the ground shift, and
+    // every period on it starts again.
+    const P = 10 * MINUTE;
+    const s = open({ abstainAfterMs: P });
+    s.setStanding(500, 'ending', { endsAtMs: 1_000 });
+    s.submitCandidate(1000, {
+      author: 'p1', rationale: 'later',
+      setting: { settingId: 'ending', value: { endsAtMs: 9_000_000 } },
+    });
+    const late = 1000 + P + 1;
+    expect(only(s, late).group).toBe(1); // four abstentions
+    s.setStanding(late, 'ending', { endsAtMs: 2_000 });
+    expect(only(s, late + 1).group).toBe(5); // everybody is awaited again
+    expect(only(s, late + 1 + P + 1).group).toBe(1);
   });
 
   it("a member's own arrival starts their period, not the candidate's submission", () => {
