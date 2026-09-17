@@ -878,10 +878,11 @@ var CONSTITUTION = (() => {
     if (!mover || !inE(mover)) throw new Error(`'${by}' is not an arrived member`);
     let route;
     let payload;
+    let row = null;
     if (input.kind === "invite") {
       s.requireEmailFree(input.email);
       const person = s.personFor(input.email);
-      s.people.set(person, { email: input.email });
+      row = { person, email: input.email };
       payload = { kind: "invite", person };
     } else payload = input;
     if (payload.kind === "set") {
@@ -934,6 +935,7 @@ var CONSTITUTION = (() => {
       throw new Error("one 🏛️ out per member at a time (§9.6)");
     }
     const id = `mo-${s.nextMotionN}`;
+    if (row !== null) s.people.set(row.person, { email: row.email });
     const e = {
       type: "motion-opened",
       t,

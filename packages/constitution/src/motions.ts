@@ -145,13 +145,21 @@ export function openMotion(s: MotionHost, t: number, by: MemberId,
   const mover = s.members.get(by);
   if (!mover || !inE(mover)) throw new Error(`'${by}' is not an arrived member`);
   let route: MotionRoute;
-  // the invitation's address becomes a person row here, and only the row's
-  // id rides the motion (decision 1253); every other payload is what it was
+  // the invitation's address becomes a person row, and only the row's id
+  // rides the motion (decision 1253); every other payload is what it was.
+  // **The row itself is written once nothing can refuse the motion** (Q1436):
+  // it used to be written here, above the refusals that follow — 🪪 at ✒️,
+  // the twin rule, the one-🏛️-out rule — so a refused press stored an
+  // address nobody had invited and no event named. `personFor` writes
+  // nothing: it answers the row already holding the address, or the id the
+  // next row would take, which is why the id can be settled here and the row
+  // left until the emit.
   let payload: MotionPayload;
+  let row: { person: PersonId; email: string } | null = null;
   if (input.kind === 'invite') {
     s.requireEmailFree(input.email);
     const person = s.personFor(input.email);
-    s.people.set(person, { email: input.email });
+    row = { person, email: input.email };
     payload = { kind: 'invite', person };
   } else payload = input;
   if (payload.kind === 'set') {
@@ -219,6 +227,10 @@ export function openMotion(s: MotionHost, t: number, by: MemberId,
     throw new Error('one 🏛️ out per member at a time (§9.6)');
   }
   const id = `mo-${s.nextMotionN}`;
+  // the row before the event that names it, and after every refusal (Q1436):
+  // the fold's `notePerson` counts the id off this same event, so the write
+  // and the count still happen in one act
+  if (row !== null) s.people.set(row.person, { email: row.email });
   const e: ConstitutionEvent = { type: 'motion-opened', t, motion: id, by,
     payload, route, stake: route === 'ordinary' ? 1 : 0 };
   if (why !== undefined && why !== '') (e as { why?: string }).why = why;

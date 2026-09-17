@@ -220,6 +220,60 @@ describe('email is unique through the rows (§9.7½)', () => {
     expect(again.people.get(person(eve))!.email).toBe('eve@example.org');
   });
 
+  /**
+   * **Q1436: a refused invitation motion leaves no row behind.** The row was
+   * written at the top of `openMotion`'s invite arm, above every refusal that
+   * follows it — 🪪 standing at ✒️, the twin rule, the one-🏛️-out rule — so a
+   * press that was refused still stored an address, identity kept for
+   * somebody nobody invited and no event names (decision 1253). Hygiene
+   * rather than harm: the row held an address and nothing else, and the next
+   * invitation of it reused the row. The write waits for the emit now.
+   */
+  it('a refused invite motion writes no person row; an accepted one writes exactly one (Q1436)', () => {
+    // 🪪 at ✒️: nobody proposes an invitation at all — the pen admits
+    // outright — so the motion is refused before it is even routed
+    const pen = buildConstituted({ admission: { price: 'pen' } });
+    expect(() => pen.s.openMotion(3, pen.bo, { kind: 'invite', email: 'dee@example.org' }))
+      .toThrow(/admission is at ✒️/);
+    expect(pen.s.people.byEmail('dee@example.org')).toBeNull();
+
+    const { s, bo, cy } = buildConstituted({ admission: { price: 'assembly' } });
+    // one 🏛️ out per member: bo is already holding one, so their invitation
+    // is refused after the route is known and the address is already in hand
+    s.openMotion(3, bo, { kind: 'set', setting: 'admission', value: { price: 'proposal' } });
+    expect(() => s.openMotion(4, bo, { kind: 'invite', email: 'dee@example.org' }))
+      .toThrow(/one 🏛️ out per member/);
+    expect(s.people.byEmail('dee@example.org')).toBeNull();
+
+    // …and the accepted one writes it once, the row the event's id resolves
+    const put = s.openMotion(5, cy, { kind: 'invite', email: 'dee@example.org' });
+    const person = (s.motionRecords().get(put)!.payload as { person: string }).person;
+    expect(s.people.get(person)!.email).toBe('dee@example.org');
+    expect((s.people as InMemoryPeople).entries()
+      .filter(([, r]) => r.email === 'dee@example.org')).toHaveLength(1);
+
+    // the twin refusal is the third road, and it neither writes a second row
+    // nor disturbs the first — the address has one person, whoever asks
+    expect(() => s.openMotion(6, 'ada', { kind: 'invite', email: 'dee@example.org' }))
+      .toThrow(/already put/);
+    expect((s.people as InMemoryPeople).entries()
+      .filter(([, r]) => r.email === 'dee@example.org')).toHaveLength(1);
+
+    // and an address whose row already stands is the same person when the
+    // motion is put again: one row, the id reused (decision 1253)
+    s.withdrawMotion(7, cy, put);
+    const again = s.openMotion(8, cy, { kind: 'invite', email: 'dee@example.org' });
+    expect((s.motionRecords().get(again)!.payload as { person: string }).person).toBe(person);
+    expect((s.people as InMemoryPeople).entries()
+      .filter(([, r]) => r.email === 'dee@example.org')).toHaveLength(1);
+
+    // replay resolves it: the rows are handed in at load, and the log names
+    // the id the write above put them under
+    const replayed = ConstitutionSession.replay([...s.logEntries()], s.people);
+    expect(replayed.people.get(person)!.email).toBe('dee@example.org');
+    expect(replayed.rollingHash()).toBe(s.rollingHash());
+  });
+
   it('an application from an address already applying is refused; a refused one may try again', () => {
     const { s } = buildConstituted({ applications: { apply: true }, admission: { price: 'proposal' } });
     const first = s.startApplication(3, 'eve@example.org');
