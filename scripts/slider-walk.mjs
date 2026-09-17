@@ -3,40 +3,48 @@
  * member delegates 👥, is served their own answer card, and answers it with
  * the control a member actually uses.
  *
- * **It was two questions and it is one.** 🌡️ was the other, and this walk
- * drove its three rungs and its number box until the card left the surface on
- * 2026-09-15 (Q1362) with the bar it set. The three assertions are unchanged
- * and 👥 carries all of them; no control on the surface is a track any more,
- * so *slider* is the name of the walk and nothing else.
+ * **It was two questions and it is one, and it was a track and it is two
+ * number boxes.** 🌡️ was the other question, and this walk drove its rungs
+ * until the card left the surface on 2026-09-15 (Q1362) with the bar it set.
+ * The control went first: Ed's card review of 2026-09-02 retired the consent
+ * slider (Q1162), and 👥 has answered in two option blocks ever since — a
+ * share block and a count block, each the rule as it would stand with its
+ * number inline, the form chosen by the block. **Nothing here drags**, and
+ * nothing on the surface is a track any more, so *slider* is the name of the
+ * walk and nothing else.
  *
  *   node scripts/slider-walk.mjs        # npm run slider-walk
  *
- * It exists because the two defects it guards are both invisible to every
- * other walk here. `founding-walk.mjs` fills a card's inputs by assignment and
- * skips `type=range` outright, so it never touches a slider; nothing at all
- * drags one. And a dispatched `input` event is not a drag: the page answered
- * one correctly the whole time it was broken.
+ * It exists because what it checks is invisible to every other walk here.
+ * `founding-walk.mjs` and `card-audit.mjs` both answer a card by writing a
+ * value into every empty box on it, which is the one thing that can never
+ * see a box born carrying one — a filler reads *empty* and *anchored* the
+ * same way round. This walk reads the card before it touches it, and it
+ * touches exactly one box, so what the other blocks do about it is readable.
  *
- * So both assertions are about a **pointer**:
+ * So the assertions are about the **two blocks**:
  *
- *  1. **Born untouched.** Before the first press the control carries no value
- *     — `.cs.unset`, the readout *Drag to answer*, no fill and a dark commit.
- *     A blind collection that paints a thumb somewhere is offering an anchor,
- *     which is the one thing it exists not to do.
- *  2. **The thumb follows the pointer to the end of the track.** Drag to the
- *     left edge and the value is `min`; drag to the right edge and it is
- *     `max`. This is the assertion a re-render under the press fails: the
- *     first step moves the thumb, the render replaces the element the pointer
- *     is capturing, and every move after that goes nowhere.
- *  3. **The track is the question's own range.** The ends and the step read
- *     off the DOM against what `ANSWER` states (`BOUNDS` below): what a blind
- *     control can express is half of what the setting promises, and nothing
- *     else here reads those literals.
+ *  1. **Two blocks, share first, each the rule with its number inline**
+ *     (Q1137's pattern) — the shape Q1162 put in the slider's place, read off
+ *     the card rather than taken on trust.
+ *  2. **Born untouched.** Before anything is typed neither block is chosen,
+ *     both boxes are empty and the ✓ is dark. A blind collection that shows a
+ *     number somewhere is offering an anchor, which is the one thing it
+ *     exists not to do; this is Q779's defect transposed to the control that
+ *     replaced the one it was found on.
+ *  3. **Typing into a block's box chooses that block**, wakes the ✓, and the
+ *     ✓ files the answer. The form is part of the answer since Q1162, so the
+ *     number and the block it stands in are one act; a box that took a number
+ *     without choosing its own block would collect half an answer.
+ *  4. **The box is the question's own range.** The ends read off the DOM
+ *     against what `ANSWER` states (`BOUNDS` below): what a blind control can
+ *     express is half of what the setting promises, and nothing else here
+ *     reads those literals.
  *
  * Like every walk here it drives the fixture, because what it checks is pure
- * page logic — the same `slider()` and the same `input` handler serve the live
- * path — and the fixture is the only place a founding can be walked from blank
- * without a server, a mailbox and a real address.
+ * page logic — the same `ANSWER.quorum` blocks and the same `input` handler
+ * serve the live path — and the fixture is the only place a founding can be
+ * walked from blank without a server, a mailbox and a real address.
  */
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
@@ -188,10 +196,10 @@ const walkTo = async (stop, delegate) => {
 // fold's own range, and it is asserted nowhere else — `ANSWER` in setup.js is
 // one literal per bound and a typo in it is silent.
 //
-// **The count form is not walked**, and cannot cheaply be: `slider(A,
-// 'quorum', 1, E, …)` is bounded at E, the walk's founding has one arrived
-// member, and a track whose min and max are both 1 has no drag in it. The
-// count form's bounds are locked in the fold instead
+// **The count form's range is not walked**, and cannot cheaply be: its box is
+// `box('count', 1, Math.max(1, E))` in `ANSWER.quorum`, the walk's founding
+// has one arrived member, and a box whose min and max are both 1 states the
+// only number there is. The count form's bounds are locked in the fold instead
 // (`packages/constitution/test/promise-quorum.test.ts`).
 const BOUNDS = {
   quorum: { min: 5, max: 100, step: 5 },
@@ -201,9 +209,9 @@ const BOUNDS = {
    The consent slider retired with Ed's card review of 2026-09-02: the member
    states a **form as well as a number** — a share block and a count block,
    each the rule as it would stand with its number inline (Q1137's pattern).
-   What is asserted is the same three promises transposed: **born untouched**
-   (no block on, boxes empty, dark ✓), **typing into a block's box chooses
-   that block** (F6's rule reaching the answer rungs), and **the range is the
+   What is asserted is the same promises transposed: **born untouched** (no
+   block on, boxes empty, dark ✓), **typing into a block's box chooses that
+   block** (F6's rule reaching the answer rungs), and **the range is the
    question's own** (5–100 on the share box, where the track's ends used to
    be read). */
 for (const key of ['quorum']) {
