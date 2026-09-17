@@ -860,9 +860,25 @@ window.LIVE = (function () {
     // the nearest heading above; on a document with none, the document's own
     // title — the outermost heading (Q1303, Ed 2026-09-10) — and only with no
     // title either, the clause's first words
+    // …and **a gap takes the heading above the gap** (Q1411, the walk's C3
+    // 2026-09-17): a `G<n>` key matches no line in the document, so this walk
+    // met no `break`, ran to the end and kept the *last* heading it passed —
+    // the rail entry for a preamble before the first line read *Disputes*. A
+    // gap stops where it stands, at the last block whose line number is below
+    // its own, which is the rule `blockBeforeGap` reads on the page. With
+    // nothing above it — G0 — no heading is passed at all and the document's
+    // own title stands, which is what the fallback has always said. Asked of
+    // the key itself rather than left to the callers, which pass the block
+    // before the gap where they know it and the gap key where they do not.
+    const gapNum = (key) => { const m = /^G(\d+)$/.exec(String(key || '')); return m ? +m[1] : null; };
     const labelFor = (key) => {
       let h = '';
-      for (const l of SESSION.DOC) { if (l.t === 'h') h = l.x; if (l.key === key) break; }
+      const stop = gapNum(key);
+      for (const l of SESSION.DOC) {
+        if (stop !== null && lineIdx(l.key) >= stop) break;
+        if (l.t === 'h') h = l.x;
+        if (stop === null && l.key === key) break;
+      }
       return h || cs_titleNow() || ((SESSION.DOC.find((l) => l.key === key) || {}).x || '').split(/\s+/).slice(0, 5).join(' ');
     };
     // **Raw values are not copy**: a record's moment reads like a diary entry
