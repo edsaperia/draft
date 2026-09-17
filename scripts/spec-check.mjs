@@ -1742,6 +1742,74 @@ function checkLedger() {
  * candidate in, and nothing else — a state in one list and not the other is
  * either an unwritten mechanism or a dead union member.
  */
+/**
+ * **The floor counts approvals, and 💤's period reaches the engine** (Q1439's
+ * own extension of this checker, the spec pass's step 7).
+ *
+ * Four claims, each the kind that would otherwise go stale silently — a rule
+ * file saying *approvals* over an engine that counts judgments reads exactly
+ * like a rule file that is true.
+ *
+ *  1. **Appendix A's floor row says `approvals` of the leader**, and no longer
+ *     *distinct judges* — the one place the spec publishes F's own unit.
+ *  2. **`clearsFloor` tests approvals against the race's own floor.** The
+ *     behaviour is `approval-floor.test.ts`'s; what is asserted here is the
+ *     shape a later edit could quietly undo — `r.leaderJudges >= floor` put
+ *     back, or a session-wide floor passed in beside a per-race approval
+ *     count. Both numbers come off the one view (R-125).
+ *  3. **The cap is on both copies of the formula.** `races.ts`'s `floorFor`
+ *     decides adoptions and `populations.ts`'s `adoptionFloor` is what the
+ *     room reads; `floor-agreement.test.ts` holds them equal over a grid, and
+ *     this holds each of them to *having* the cap, so a grid that stopped
+ *     covering the capped cases could not hide its removal from both at once.
+ *  4. **💤's period crosses the seam**: the engine declares `abstainAfterMs`
+ *     and the adapter maps 💤 to it. That arm returned `{}` until Q1439, and
+ *     an arm that goes back to returning `{}` leaves a document whose members
+ *     can never abstain, with nothing else red.
+ */
+function checkApprovalFloor() {
+  note('SPEC §4.2 / §8.2 — the floor counts approvals (Q1439)');
+  const rows = tableAfter('SPEC.md', 'tuning');
+  const floorRow = rows.find((r) => /Adoption floor F/.test(r.Parameter || ''));
+  if (!floorRow) find('floor', 'Appendix A has no adoption-floor row for §4.2 to publish');
+  else if (!/approvals/.test(floorRow.Value || ''))
+    find('floor', `Appendix A's floor row does not say what F counts: "${(floorRow.Value || '').slice(0, 80)}" — approvals of the leader since Q1439 (R-125)`);
+  else note('  Appendix A publishes the floor in approvals');
+
+  const races = uncomment(read('packages/engine-core/src/races.ts'));
+  const at = races.indexOf('clearsFloor(r: RaceView)');
+  const body = at < 0 ? '' : races.slice(at, races.indexOf('}', at));
+  if (!/r\.approvals >= r\.floor/.test(body)) {
+    find('floor', '`clearsFloor` no longer tests `r.approvals >= r.floor` — the floor counts approvals, and both numbers ride the one view so the batch, the close and the park flag cannot read them at different moments (Q1439, R-125)');
+  } else note('  `clearsFloor` tests approvals against the race’s own floor');
+
+  const caps = [
+    ['packages/engine-core/src/races.ts', 'floorFor', /Math\.min\(asked, Math\.ceil\(group \/ 2\)\)/],
+    ['packages/constitution/src/populations.ts', 'adoptionFloor', /Math\.min\(quorumN, Math\.ceil\(E \/ 2\)\)/],
+  ];
+  for (const [file, name, pat] of caps) {
+    const src = uncomment(read(file));
+    const i = src.indexOf(`function ${name}(`);
+    const fn = i < 0 ? '' : src.slice(i, src.indexOf('\n}', i));
+    if (!fn) {
+      find('floor', `${file} has no \`${name}\` — the floor's arithmetic lives in two places and both must cap the quorum at half (Q1439, R-126)`);
+    } else if (!pat.test(fn)) {
+      find('floor', `${file}'s \`${name}\` no longer caps the quorum at half the population it is read against (Q1439, R-126) — the two copies move together or not at all`);
+    }
+  }
+  note('  both copies of the formula cap the quorum at half');
+
+  const types = read('packages/engine-core/src/types.ts');
+  if (!/abstainAfterMs\?: number \| null;/.test(types)) {
+    find('floor', "engine-core's `Constitution` no longer declares `abstainAfterMs` — 💤's period is what turns a silence into an abstention (Q1439, R-127)");
+  }
+  const adapter = uncomment(read('packages/constitution/src/adapter.ts'));
+  const lapseArm = adapter.slice(adapter.indexOf("case 'lapse':"), adapter.indexOf('default:'));
+  if (!/abstainAfterMs/.test(lapseArm)) {
+    find('floor', "`engineFieldsFor`'s `lapse` arm no longer hands the engine `abstainAfterMs` — it returned `{}` until Q1439, which left a document whose members could never abstain (R-127)");
+  } else note('  💤’s period crosses the seam to the engine');
+}
+
 function checkCandidateStates() {
   note('SPEC §2.6 state set — equals engine-core’s CandidateState');
   const spec = read('SPEC.md');
@@ -1881,6 +1949,7 @@ checkBannedWords();
 checkListJoiner();
 checkClaudeMd();
 checkLedger();
+checkApprovalFloor();
 checkCandidateStates();
 checkTuning();
 checkMergeable();
