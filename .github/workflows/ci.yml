@@ -430,6 +430,29 @@ jobs:
       # about the first three and nothing after the fourth.
       - run: npm run picture-walk
         if: always()
+      # **The take-back** (Q1318, Ed 2026-09-11: *I should be able to choose
+      # a value to take it back with ✒️, but I wasn't able to do that here*):
+      # hand a setting to the membership, then reclaim it with the pen and a
+      # value in one act — the card's radios before the press, the module's
+      # holder after it, the clause no longer waiting, the founder's own
+      # answer card gone from the rail, and 🍾 beginning with nothing left
+      # delegated. Two shapes, because the defect had three causes and they
+      # do not show on one card: 🤝, whose value and holder are separate
+      # fields and is Ed's own case, and 🌍, where they are the same field.
+      #
+      # They are here rather than in `walks` because `founding-walk.mjs`
+      # **starts its own server** — it serves `design/` itself and takes no
+      # base URL, like `founder-answers` beside it, so it needs nothing this
+      # job has not already got. About 27 s each.
+      #
+      # Like `powers-walk` in the job below, these ran in **no CI job**
+      # until 2026-09-17 (issue #17, F2) while CLAUDE.md named them as
+      # Q1318's guard — *red on the pre-fix page* is worth nothing if
+      # nothing runs the page.
+      - run: node scripts/founding-walk.mjs --takeback=applications
+        if: always()
+      - run: node scripts/founding-walk.mjs --takeback=chamber
+        if: always()
 
   # **Last green on `main`: 2026-09-16** (run 143, `fba9d3e` — every step, the
   # seat matrix at both hats included). **First green: 2026-09-07** (run 104,
@@ -621,6 +644,23 @@ jobs:
       # the whole loop: propose → every member served → vote → adopt, twice,
       # then the 🛡️ park-and-crown path on a ladder document (Q1178)
       - run: npm run room-walk -- "$ROOM_BASE"
+        if: always()
+      # **A laid-down pen is laid down** (entry 62, K2/K29, Ed's batch-B QA
+      # 2026-08-25: *please check that giving up powers actually gives them
+      # up, on all settings where they can be given up*) — every setting the
+      # founder's own card sets, under both hats, before 🍾, after it and on
+      # a closed document, plus ⏰ as the control that keeps its pen.
+      #
+      # It ran in **no CI job at all** until 2026-09-17 (issue #17, F2),
+      # while CLAUDE.md named it as the guard for the `may*`/`can*` rule and
+      # for `mayPenOn(k)`. That is what the eviction rule (Q736) trades a
+      # gotcha's post-mortem for: the red build. A guard nothing runs is not
+      # a guard, and the paragraph it replaced is gone.
+      #
+      # **The base is an argument, not a default**: its own fallback is
+      # 8199, so a bare run here would drive whatever answered there — or
+      # nothing. About two and a half minutes.
+      - run: npm run powers-walk -- "$WALK_BASE"
         if: always()
       # **The seat matrix joins the walks** (Q1205, Ed 2026-09-14: *fix 1282,
       # then the harness joins CI*). Seven seats × three epochs, asserting
