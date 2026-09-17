@@ -127,9 +127,16 @@ export function validateValue(type: ValueTypeName, v: unknown): string | null {
       if (!isInt(v.grant) || (v.grant as number) < 0) return 'rate: grant must be an integer ≥ 0';
       if (!isInt(v.cap) || (v.cap as number) < 1) return 'rate: cap must be an integer ≥ 1';
       if ((v.cap as number) < (v.grant as number)) return 'rate: cap must be ≥ grant';
-      return isFiniteNum(v.dripMinutes) && v.dripMinutes > 0
+      // **The floor is one whole minute** (issue #4): any positive number
+      // passed, and a sub-minute interval spun the engine's drip for ever —
+      // below float precision at epoch milliseconds the tick never advances,
+      // and one crafted answer on a delegated ⏱️ took the host down, at boot
+      // too, since replay re-validates every value (Q1329). Nothing legitimate
+      // sits below it: the card offers `min="1"` × minutes, hours or days, so
+      // what a member can reach is a whole number of minutes either way.
+      return isInt(v.dripMinutes) && (v.dripMinutes as number) >= 1
         ? null
-        : 'rate: dripMinutes must be a positive number of real minutes (Q353)';
+        : 'rate: dripMinutes must be a whole number of real minutes, at least 1 (Q353)';
     case 'lapse':
       if (v.afterMs === null) return null;
       return isFiniteNum(v.afterMs) && v.afterMs > 0
