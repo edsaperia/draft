@@ -335,6 +335,42 @@ describe('an invitation is its own race at ✏️ (issue #6, §9.7½)', () => {
     expect([...s.memberRecords().values()].some((m) => m.email === 'dee@example.org'))
       .toBe(false);
   });
+
+  /**
+   * **And a document that already holds a stuck one is left exactly as it
+   * is** (issue #6, the rollout). `sync` walks the cs log from a persisted
+   * cursor (`BridgeState.cursor`, which `resumeBridge` hands back), so an
+   * entry the pre-fix code walked is never re-read: the deploy cannot enter
+   * a race the persisted engine log does not hold, and the document loads
+   * and answers as before. The old motion stays `running` with the address
+   * held against everybody by the twin rule — until the mover withdraws it,
+   * or the close holds it. This is the whole of the migration, and it is
+   * nothing.
+   */
+  it('a resumed document does not race an invitation the pre-fix code walked past', () => {
+    const { s, bo } = withPrice('proposal');
+    // the document as it stood before the deploy: a bridge, and a motion the
+    // arm above did not exist to enter — `sync` walked the entry and only
+    // moved its cursor
+    const before = new EngineBridge(s, { t: 3, rngSeed: 'invite-resume' });
+    const motion = s.openMotion(10, bo, { kind: 'invite', email: 'dee@example.org' });
+    const asPersisted = { log: [...before.engine.log],
+      cursor: s.logEntries().length, motionCandidates: { ...before.state().motionCandidates } };
+
+    // today's code resumes it, and the walk starts after that entry
+    const today = new EngineBridge(s, { t: 11, rngSeed: 'invite-resume', resume: asPersisted });
+    today.sync(12);
+    expect(today.engine.races().some((r) => String(r.settingId).startsWith('invite:')))
+      .toBe(false);
+    expect(s.motionRecords().get(motion)!.status).toBe('running');
+    // …and the document is in every other way alive: a fresh invitation put
+    // after the deploy is raced as it should be
+    const after = today.openMotion(13, bo, { kind: 'invite', email: 'eve@example.org' });
+    today.sync(14);
+    expect(today.engine.races().some((r) => String(r.settingId).startsWith('invite:')))
+      .toBe(true);
+    expect(s.motionRecords().get(after)!.status).toBe('running');
+  });
 });
 
 describe('a text proposal races in the engine (stage 8, Q418)', () => {

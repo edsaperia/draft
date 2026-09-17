@@ -77,6 +77,34 @@ describe('✉️ — the invite door', () => {
     expect(s.E()).toBe(3); // an invitee counts toward nothing until they arrive
   });
 
+  /**
+   * **The third pair, at the other door in** (issue #6, F2). The carry arms
+   * are two, and the guard above covers one of them: an *application* is
+   * verified before it is submitted, and the pen can invite that address in
+   * between — refused at the door, the test below — but it can equally
+   * invite it while the room is deciding the admission it opened, which
+   * nothing refuses and nothing can. So the `admit` arm asks the same
+   * question at its own carry (`personOfApplicant` → `personSeated`), and
+   * this is what says so: red on the pre-fix arm at a second row and at
+   * E=4, the applicant having been seated twice for one person.
+   */
+  it('a carried admission whose applicant was seated meanwhile seats nobody twice', () => {
+    const { s } = buildConstituted({ applications: { apply: true },
+      admission: { price: 'proposal' },
+      doors: { invite: { unilateral: true, assent: false } } });
+    const ap = s.startApplication(3, 'dee@example.org');
+    s.verifyApplication(4, ap);
+    s.submitApplication(5, ap, { name: 'Dee' });
+    const motion = s.applicantRecords().get(ap)!.motion!;
+    // …and while the room is judging it, the Founder's own ✒️ invites her
+    const direct = s.invite(6, 'dee@example.org');
+    s.adjudicateOrdinaryMotion(7, motion, 'carried');
+    expect(s.motionRecords().get(motion)!.status).toBe('carried');
+    const rows = [...s.memberRecords().values()].filter((r) => r.email === 'dee@example.org');
+    expect(rows.map((r) => r.id)).toEqual([direct]);
+    expect(s.E()).toBe(3); // her seat is the invitation's, and waits for her
+  });
+
   it('a submitted application whose address was seated meanwhile is refused at the door', () => {
     const { s } = buildConstituted({
       applications: { apply: true }, admission: { price: 'assembly' },
