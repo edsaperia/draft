@@ -825,6 +825,47 @@ describe('auth discipline', () => {
   });
 });
 
+/**
+ * **The CSRF gate is the MIME essence** (issue #20). The command API carries
+ * no CSRF token by design (PRODUCTION row 6): what stands between a foreign
+ * page and a member's seat is SameSite=Lax plus the rule that a command must
+ * arrive as `application/json`, a type no cross-origin form can send and no
+ * `fetch` can send without a preflight. `text/plain;x=application/json` is
+ * CORS-safelisted — its essence is `text/plain`, so nothing is preflighted —
+ * and the gate matched by substring, so it passed. Nothing tested it either,
+ * which is why it could pass for as long as it did.
+ */
+describe('the command gate reads the content-type essence (issue #20)', () => {
+  it('refuses a safelisted type that merely contains application/json, and takes a charset', async () => {
+    const { base } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Gate', email: 'gate@example.org',
+    })).json() as { devLink: string; slug: string };
+    const cookie = cookieOf(await consume(created.devLink));
+    const name = (ct: string, to: string) =>
+      fetch(`${base}/api/d/${created.slug}/cmd`, {
+        method: 'POST',
+        headers: { 'content-type': ct, cookie },
+        body: JSON.stringify({ cmd: 'set-identity', args: { name: to } }),
+      });
+    const seen = async (): Promise<string> => JSON.stringify(
+      await (await fetch(`${base}/api/d/${created.slug}/view`,
+        { headers: { cookie } })).json());
+
+    // the crafted type: refused at the door, and nothing is written
+    const crafted = await name('text/plain;x=application/json', 'Forged');
+    expect(crafted.status).toBe(400);
+    expect(((await crafted.json()) as { error: string }).error)
+      .toBe('content-type must be application/json');
+    expect(await seen()).not.toContain('Forged');
+
+    // and what a real client sends is still a command: parameters are the
+    // caller's business, the essence is the gate
+    expect((await name('application/json; charset=utf-8', 'Honest')).status).toBe(200);
+    expect(await seen()).toContain('Honest');
+  });
+});
+
 describe('review #1 hardening', () => {
   it('revoked seats die, caps hold, and stateful responses are no-store', async () => {
     const { base, dataDir } = await boot();

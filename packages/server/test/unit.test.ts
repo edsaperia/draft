@@ -10,7 +10,8 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { FilePersistence, WriteChain } from '../src/persistence.js';
+import { FilePersistence, OUTBOX_MAX_ATTEMPTS, WriteChain } from '../src/persistence.js';
+import { MailOutbox } from '../src/outbox.js';
 import { Auth } from '../src/auth.js';
 import { Stash } from '../src/stash.js';
 import { DocStore, uniqueSlug } from '../src/store.js';
@@ -524,6 +525,93 @@ describe('mail to a reserved address is refused at the mailer (Q680)', () => {
     const lines = readFileSync(join(dir, 'outbox.jsonl'), 'utf8')
       .split('\n').filter((l) => l.length > 0).map((l) => JSON.parse(l) as { to: string });
     expect(lines.map((m) => m.to)).toEqual(['ada@example.org']);
+  });
+
+  /**
+   * **The provider gets a deadline** (issue #20). A send is awaited inside a
+   * sender pass, one row at a time, and the pass holds the shutdown drain
+   * open — so a Resend that accepts the connection and never answers held
+   * every mail behind it. The abort must read to the queue as any other
+   * refusal does: one failed attempt, then the backoff, six before a
+   * give-up — a stall must never spend the ladder in one go.
+   */
+  it('hands the provider a signal, and a stall is a retryable refusal (issue #20)', async () => {
+    const dir = tmp();
+    const mailer = makeMailer({ resendApiKey: 'rs-test', mailFrom: 't <t@example.org>', dataDir: dir });
+    const real = globalThis.fetch;
+    const calls: RequestInit[] = [];
+    try {
+      globalThis.fetch = ((_url: unknown, init: RequestInit) => {
+        calls.push(init);
+        return Promise.resolve(new Response('{"id":"ok"}', { status: 200 }));
+      }) as unknown as typeof fetch;
+      await mailer.send({ to: 'ada@example.org', subject: 'real', text: 'y' });
+      expect(calls).toHaveLength(1);
+      const signal = calls[0]!.signal;
+      expect(signal).toBeInstanceOf(AbortSignal);
+      expect(signal!.aborted).toBe(false); // live at the call, not spent
+
+      // what a fifteen-second silence actually throws, and what the queue
+      // must see: the same retryable message a refusal gives, never a
+      // DOMException with a provider's shape in it
+      globalThis.fetch = (() => Promise.reject(
+        new DOMException('The operation was aborted due to timeout', 'TimeoutError'),
+      )) as unknown as typeof fetch;
+      await expect(mailer.send({ to: 'ada@example.org', subject: 'real', text: 'y' }))
+        .rejects.toThrow('the mail could not be sent — try again shortly');
+    } finally {
+      globalThis.fetch = real;
+    }
+  });
+});
+
+/**
+ * **An address never reaches the process log** (issue #20). The console is
+ * the host provider's retained log stream: outside the data dir, outside
+ * Postgres, and beyond `draft-tools erase` — so a member who asked to be
+ * forgotten would still be in it because one of their invitations was slow.
+ * `error-log.ts` settled the principle for its own file (decision 1253);
+ * these two lines are the outbox's half of it. The domain stays, because one
+ * company's mail server refusing and a provider-wide incident are the same
+ * line once every failure says only `m-…`.
+ */
+describe('the outbox log names the row and the domain, never the member (issue #20)', () => {
+  it('redacts the local part on a retry and on a give-up alike', async () => {
+    const dir = tmp();
+    const persistence = new FilePersistence(dir);
+    let t = 1_700_000_000_000;
+    const outbox = new MailOutbox({
+      persistence,
+      mailer: { dev: false, send: () => Promise.reject(new Error('resend refused')) },
+      mailOff: () => false,
+      revoke: () => Promise.resolve(),
+      now: () => t,
+    });
+    await outbox.enqueue([{
+      documentId: 'd-1', to: 'ada@example.org',
+      subject: 'You are invited', text: 'come in', tokenHash: 'h',
+    }], t);
+    const said: string[] = [];
+    const real = console.error;
+    console.error = (...a: unknown[]) => { said.push(a.map(String).join(' ')); };
+    try {
+      // the whole ladder: five retries and then the give-up
+      for (let i = 0; i < OUTBOX_MAX_ATTEMPTS; i += 1) {
+        await outbox.run(t);
+        t += 3_600_001; // past the longest backoff, so the row is due again
+      }
+    } finally {
+      console.error = real;
+    }
+    const log = said.join('\n');
+    expect(said.filter((l) => l.includes('will retry'))).toHaveLength(OUTBOX_MAX_ATTEMPTS - 1);
+    expect(log).toContain('MAIL GIVEN UP');
+    // the member is not in it, the domain and the row are
+    expect(log).not.toContain('ada@example.org');
+    expect(log).not.toContain('ada');
+    expect(log).toContain('…@example.org');
+    const rows = await persistence.listOutboxFor('d-1', 'ada@example.org');
+    expect(log).toContain(rows[0]!.id); // the join back to the queue
   });
 });
 

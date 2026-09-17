@@ -48,6 +48,26 @@ export interface QueuedMail extends Mail {
  *  never becomes an archive of member-written mail. */
 const KEEP_SENT_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * **An address never reaches the process log** (issue #20). The console is
+ * the host provider's retained log stream — outside the data dir, outside
+ * Postgres, and beyond the reach of `draft-tools erase` — so a member who
+ * asked to be forgotten would still be in it, months later, because one of
+ * their invitations was slow. `error-log.ts` already settled the principle
+ * for its own file: the seat is the member id and never the address, and the
+ * people rows are the only place an address belongs (decision 1253).
+ *
+ * The domain stays, because it is what the operator is actually reading for:
+ * one refusal at one company's mail server and a provider-wide incident look
+ * identical once every line says only `m-…`. The local part goes, and with
+ * it the person. The row id beside it is the join back to the queue, which
+ * is where the address is if it is genuinely needed.
+ */
+const logAddress = (to: string): string => {
+  const at = to.lastIndexOf('@');
+  return at === -1 ? '…' : `…@${to.slice(at + 1)}`;
+};
+
 export interface OutboxPassReport {
   sent: number;
   /**
@@ -162,8 +182,8 @@ export class MailOutbox {
           gone.push(row);
         } else {
           await this.deps.persistence.markOutboxFailed(row.id, attempts, this.now, why);
-          console.error(`mail to ${row.to} failed (attempt ${attempts}/${OUTBOX_MAX_ATTEMPTS}), ` +
-            `will retry: ${why}`);
+          console.error(`mail ${row.id} to ${logAddress(row.to)} failed ` +
+            `(attempt ${attempts}/${OUTBOX_MAX_ATTEMPTS}), will retry: ${why}`);
         }
       }
     }
@@ -223,8 +243,8 @@ export class MailOutbox {
    *  the token goes with it. */
   private async give(row: OutboxRow, attempts: number, why: string): Promise<void> {
     await this.deps.persistence.markOutboxFailed(row.id, attempts, this.now, why);
-    console.error(`MAIL GIVEN UP: "${row.subject}" to ${row.to} after ${attempts} ` +
-      `attempts — ${why}`);
+    console.error(`MAIL GIVEN UP: "${row.subject}" (${row.id}) to ` +
+      `${logAddress(row.to)} after ${attempts} attempts — ${why}`);
     await this.dropToken(row);
   }
 

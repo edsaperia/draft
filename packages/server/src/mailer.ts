@@ -82,6 +82,10 @@ export const isBotAddress = (to: string): boolean => {
 export const BOT_OUTBOX_FILE = 'bots-outbox.jsonl';
 export const botOutboxPath = (dataDir: string): string => join(dataDir, BOT_OUTBOX_FILE);
 
+/** How long the provider has to answer before the send is one failed
+ *  attempt (issue #20). Its reasoning is at the call site. */
+export const RESEND_TIMEOUT_MS = 15_000;
+
 /**
  * The tail of an outbox file, newest first — the one reader behind both
  * `GET /api/dev/outbox` and `GET /api/bots/outbox`, so the two routes
@@ -145,6 +149,16 @@ export function makeMailer(opts: {
         console.log(`[mail dropped→${mail.to}] reserved address, never delivered`);
         return;
       }
+      // **The provider gets a deadline** (issue #20): a send is awaited
+      // inside a sender pass, one row at a time, and a pass holds the
+      // shutdown drain open — so a provider that accepts the connection and
+      // never answers would stall every mail queued behind it until the
+      // socket died of its own accord. Fifteen seconds is far longer than a
+      // healthy Resend call and far shorter than a deploy's drain.
+      //
+      // A timeout throws, and a throw is what the outbox's ladder is built
+      // on: one failed attempt, the backoff, and six of them before anything
+      // is given up on — so a stall costs a retry, never a lost invitation.
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
@@ -157,6 +171,13 @@ export function makeMailer(opts: {
           subject: mail.subject,
           text: mail.text,
         }),
+        signal: AbortSignal.timeout(RESEND_TIMEOUT_MS),
+      }).catch((e: unknown) => {
+        // the provider's silence reads like any other refusal to the queue,
+        // but the reason is worth the log line: a stall and a 500 are
+        // different incidents
+        console.error('resend did not answer:', e instanceof Error ? e.message : String(e));
+        throw new Error('the mail could not be sent — try again shortly');
       });
       if (!res.ok) {
         // the provider's body is for the log, never the requester

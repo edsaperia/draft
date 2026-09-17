@@ -234,8 +234,16 @@ export async function readTokenBody(req: IncomingMessage): Promise<string> {
 export async function readJson(req: IncomingMessage): Promise<Record<string, unknown>> {
   // a cross-origin form cannot send application/json without a preflight,
   // so this plus SameSite=Lax is the CSRF story until tokens are needed
+  // (PRODUCTION row 6, deliberately no tokens).
+  //
+  // **The gate is the MIME essence, never a substring** (issue #20): what
+  // decides whether a browser preflights is the type before the first
+  // semicolon, so `text/plain;x=application/json` is CORS-safelisted and
+  // sent with no preflight at all — and a substring match let it through,
+  // which is the whole of the defence gone. Parameters are the caller's
+  // business: `application/json; charset=utf-8` is what a real client sends.
   const ct = req.headers['content-type'] ?? '';
-  if (!ct.includes('application/json')) {
+  if (ct.split(';')[0]!.trim().toLowerCase() !== 'application/json') {
     throw new Error('content-type must be application/json');
   }
   const text = await readBody(req, 1_000_000);
