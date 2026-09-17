@@ -46,14 +46,25 @@
  *   I7  label          — the rail entry is titled by the nearest heading above
  *                        the site (live.js `labelFor`).
  *
+ * Four rulings of 2026-09-17 turned four of those cells from recorded into
+ * asserted, and each has its own letter:
+ *
+ *   I5-removed  C6 — a deletion's lane reads the removal sentence (Q1412).
+ *   N1–N7       p1n — a newcomer's gutter: no entry, no card, and a greyed
+ *                     tab per question held behind their OKs (Q1413).
+ *   Q1–Q6       p3 — a clause emptied **in the composer** sends `lines: []`
+ *                     (Q1415), and the author's own card says so (Q1412).
+ *   R0–R5       p1c — a record over a run stands at its first block and
+ *                     swallows the run when it opens (Q1418).
+ *
  * **No rule** — recorded, never failed, and marked `unruled` in the payload:
- * what a deletion's card draws (C6); what a gap at the very start is titled
- * (C3 — there is no heading above it); I2 at 390 (the drawer holds only what
- * asks you); what a record's field looks like (I5 on a sealed item); the
- * sections a two-site patch folds between its sites (I3-else); a draft's gap
- * sites keeping their anchors under the open card (I3-tabs, I3-gap); and A2,
- * where the brief asked for three distinct gap incumbents and the tree says
- * every gap race shares one — see the note at A2 itself.
+ * what a gap at the very start is titled (C3 — there is no heading above it);
+ * I2 at 390 (the drawer holds only what asks you); the shape of a record's
+ * field (I5 on a sealed item — its *tabs* are R2/R3 and its deletion reading
+ * R5); the sections a two-site patch folds between its sites (I3-else); a
+ * draft's gap sites keeping their anchors under the open card (I3-tabs,
+ * I3-gap); and A2, where the brief asked for three distinct gap incumbents
+ * and the tree says every gap race shares one — see the note at A2 itself.
  *
  * It changes no file and asserts nothing about the constitution: a finding
  * here is a finding about the page, and belongs to Ed, not to this script.
@@ -63,7 +74,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
-import { say, post as postTo, arg, openCard, press, browserFor } from './lib/walk.mjs';
+import { say, post as postTo, arg, openCard, press, pageGesture, browserFor } from './lib/walk.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8171');
@@ -504,6 +515,51 @@ function IN_PAGE() {
       window.SESSION.smoothScrollBy = (dy, done) => { window.scrollBy(0, dy); if (done) done(); }; },
     noText: () => (window.COPY && window.COPY.grammar && window.COPY.grammar.head
       ? window.COPY.grammar.head.noText : null),
+    /** the sentence a deletion's lane reads (Q1412) — the copy, never a literal */
+    removedCopy: () => (window.COPY && window.COPY.grammar && window.COPY.grammar.lane
+      ? window.COPY.grammar.lane.removed : null),
+    /** **what a newcomer sees before their OKs are in** (Q1413): the greyed
+     *  tabs in the gutter, the rail's own two populations, and whether any of
+     *  this is a control. `qitem[data-q]` is a charter entry; `[data-card]` is
+     *  a setup task — the OKs a newcomer is holding. */
+    newcomer: () => ({
+      items: (window.SESSION.SUGGS || []).length,
+      held: [...document.querySelectorAll('#charter .achip.held')].map((el) => {
+        const blk = el.closest('[data-key]');
+        const mk = el.querySelector('.mk');
+        return { key: blk ? blk.dataset.key : null,
+          kind: mk ? (mk.className.match(/mk-(\w+)/) || [])[1] : null,
+          anchor: el.getAttribute('data-anchor'), behind: el.classList.contains('behind'),
+          role: el.getAttribute('role'), tabindex: el.getAttribute('tabindex'),
+          grey: getComputedStyle(mk || el).filter };
+      }),
+      // a charter entry carries `data-q`; a setup task carries `data-card`
+      // **and a `data-q` of its own**, so the charter's are the ones with no
+      // card key — the OKs are counted separately below
+      railQ: [...document.querySelectorAll('#rail .qitem[data-q]')]
+        .filter((e) => !e.querySelector('[data-card]') && !e.closest('[data-card]') && !e.dataset.card)
+        .map((e) => e.dataset.q),
+      railCards: [...new Set([...document.querySelectorAll('#rail [data-card]')].map((e) => e.dataset.card))],
+      cards: document.querySelectorAll('#charter .sugg').length,
+      tocMarks: document.querySelectorAll('#toc .mk, .tocmarks .mk').length,
+    }),
+    /** press the first greyed tab and say whether anything opened (Q1413) */
+    pressHeld: () => {
+      const el = document.querySelector('#charter .achip.held');
+      if (!el) return null;
+      el.click();
+      return { cards: document.querySelectorAll('#charter .sugg').length,
+        openId: window.SESSION.openId === undefined ? null : window.SESSION.openId };
+    },
+    /** the draft the composer is holding (Q1415) — what it would send is the
+     *  page's own business (`hunksOf` is closed over inside session-view.html);
+     *  the wire is asserted off the server instead */
+    draft: () => {
+      const d = (window.SESSION.SUGGS || []).find((x) => x.unproposed && x.sites);
+      if (!d) return null;
+      return { sites: d.sites.map((s) => ({ keys: s.keys, text: s.text,
+        origin: (s.origin || []).map((o) => o.text) })) };
+    },
     doc: () => (window.SESSION.DOC || []).map((l) => ({ key: l.key || null, t: l.t || null,
       x: l.x || '', level: l.level || null, gap: !!l.gap })),
     items: () => (window.SESSION.SUGGS || []).map((s) => ({
@@ -654,6 +710,7 @@ function expectOf(item, lines) {
 async function walkItems(page, lines, { railAsserted }) {
   const items = await page.evaluate(() => window.__PS.items());
   const noText = await page.evaluate(() => window.__PS.noText());
+  const removed = await page.evaluate(() => window.__PS.removedCopy());
   for (const s of items) {
     const ex = expectOf(s, lines);
     const cell = ex.cell;
@@ -769,11 +826,20 @@ async function walkItems(page, lines, { railAsserted }) {
       }
       if (s.state === 'sealed') { note('I5', cell, s.id, card.lanes.length + ' lane(s)', 'a record’s field is its own shape'); continue; }
       if (!ex.lanes || !ex.lanes.length) continue;
+      // **A deletion's lane is a sentence** (Q1412, Ed 2026-09-17, ruling on
+      // this walk's own C6: *the lane reads "This clause would be removed." in
+      // the muted note style, so the block is a sentence and not a blank*).
+      // The cell was recorded and unruled until then. The lane that carries it
+      // is the deleting candidate's — on a quick card the one proposal block,
+      // on a challenger pair whichever side is the deletion — so the check is
+      // that one lane says it and no lane is blank. Read out of `COPY`, never
+      // written here twice.
       const isDeletion = cell === 'C6';
       if (isDeletion) {
-        note('I5', cell, s.id,
-          JSON.stringify({ lanes: card.lanes.map((l) => l.blocks && l.blocks.map((b) => b.text)) }),
-          'nothing states what a deletion’s card should draw');
+        const said = card.lanes.map((l) => NORM(l.text));
+        await check('I5-removed', cell, s.id,
+          !!removed && said.includes(NORM(removed)) && said.every((t) => t.length),
+          `one lane reads ${JSON.stringify(removed)} and none is blank (Q1412)`, said);
         continue;
       }
       const wantLanes = s.kind === 'draft' ? [ex.lanes[i] || ex.lanes[0]] : ex.lanes;
@@ -813,6 +879,68 @@ async function walkItems(page, lines, { railAsserted }) {
         extra: after.visKeys.filter((k) => !before.visKeys.includes(k)) });
   }
   return items;
+}
+
+/* ==========================================================================
+   Phase 1n — **what a newcomer sees before their OKs are in** (Q1413).
+
+   This walk's own surprise, 2026-09-17: cara and dan booted into a document
+   with eleven proposals standing and met zero of them, because no charter
+   item is served until ⚖️ Voting is acknowledged and ⚖️ stands behind every
+   constitutional OK a member is owed (C14, Q1365; `withheld` in session.js).
+   **Ed ruled 2026-09-17: keep the rule, but the charter's tabs draw greyed
+   behind the OKs** — so the first minute of a live document says there is a
+   document with life in it, without offering an act before the power.
+
+   Driven before `clearTasks` ever touches this seat, which is the only
+   window in which the state exists. Dan is the seat: he proposes nothing and
+   has judged nothing, so everything on his page is somebody else's question
+   and the rule's own exemptions (a draft of your own, a park, the crown)
+   cannot muddy the reading.
+   ========================================================================== */
+ctx.phase = 'p1n';
+say('\nPhase 1n — a newcomer’s gutter, behind their OKs');
+{
+  const who = 'dan';
+  const page = PAGES.get(who);
+  ctx.seat = who; ctx.width = 1600; ctx.page = page;
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await page.goto(`${PAGE_BASE}/d/${SLUG}`, { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => !!(window.SESSION && window.__PS), null, { timeout: 20_000 })
+    .catch(() => {});
+  await T(page, 900);
+  const n = await page.evaluate(() => window.__PS.newcomer());
+  // the rule, whole: nothing of the charter is served, in the array or the rail
+  await check('N1', null, who, n.railQ.length === 0 && n.cards === 0 &&
+    n.items === 0 && n.tocMarks === 0,
+    'no charter entry, no contents-rail mark and no card before ⚖️ is acknowledged (C14, Q1365)',
+    { items: n.items, railQ: n.railQ.length, cards: n.cards, tocMarks: n.tocMarks });
+  await check('N2', null, who, n.railCards.length > 0,
+    'the rail holds the OKs this member owes', n.railCards);
+  // …and the gutter says the document is alive: one greyed tab per question
+  // held back, on the clauses they stand at
+  const keys = [...new Set(n.held.filter((h) => !h.behind).map((h) => h.key))];
+  await check('N3', null, who, n.held.length > 0 && keys.length > 0,
+    'greyed tabs in the charter gutter (Q1413)',
+    { tabs: n.held.length, clauses: keys.length });
+  await check('N4', null, who, n.held.every((h) => h.kind === 'deciding'),
+    'each is a lifecycle mark — the deciding hourglass (SURFACE §6)',
+    [...new Set(n.held.map((h) => h.kind))]);
+  await check('N5', null, who, n.held.every((h) => /grayscale/.test(h.grey || '')),
+    'drained to grey — nothing is being asked of you (T19)',
+    [...new Set(n.held.map((h) => h.grey))]);
+  // …and none of it is a control: no anchor, no role, no tabindex, and a
+  // press opens nothing (C14 — no act before the power)
+  await check('N6', null, who, n.held.every((h) => !h.anchor && !h.role && !h.tabindex),
+    'no data-anchor, no role and no tabindex — it is not a control',
+    n.held.filter((h) => h.anchor || h.role || h.tabindex).length);
+  const pressed = await page.evaluate(() => window.__PS.pressHeld());
+  await T(page, 350);
+  const afterPress = await page.evaluate(() => window.__PS.newcomer());
+  await check('N7', null, who, !!pressed && afterPress.cards === 0,
+    'a press on a greyed tab opens nothing', { pressed, cards: afterPress.cards });
+  say(`  ${n.held.length} greyed tabs over ${keys.length} clauses, ${n.railCards.length} OKs owed, ${n.cards} cards`);
+  await page.goto('about:blank');
 }
 
 /* ---- the seats ----------------------------------------------------------- */
@@ -916,6 +1044,103 @@ await check('B3', 'C3', null, AFTER[0] === 'A preamble stands before the title.'
   await check('B4', 'C3', rec ? rec.id : null, !!rec && (rec.keys || [])[0] === 'L0',
     'the record for C3 stands on the new line 0 (Q1333)', rec ? rec.keys : 'no record item');
   await page.goto('about:blank');
+}
+
+/* ==========================================================================
+   Phase 1c — a record over a **run** of blocks (Q1418).
+
+   Q1407's swallow and Q1408's first-block tab were written for what is live,
+   and a decided question is not live: a record over several blocks wore a
+   filed tab in every one of those gutters and the run stood under its own
+   open card, the text twice. **Ed ruled 2026-09-17 that a record takes the
+   race's own rule** — one tab at its first block, the open card swallowing
+   the run — so the cell stops being recorded and starts being asserted.
+
+   C7 is the shape that makes one: a split, one line proposed as two, so the
+   adopted record's span is a two-block run. Adopted here rather than
+   seeded, because the record has to be the engine's own — its `at` carried
+   forward through C3's adoption above (Q1333) — not a fixture's.
+   ========================================================================== */
+ctx.phase = 'p1c'; ctx.seat = '-'; ctx.width = 0; ctx.page = null;
+say('\nPhase 1c — adopting C7, a split, so a record stands over two blocks');
+{
+  const cid = CAND.get('C7');
+  const recordFor = async () => ((await view('founder')).records || [])
+    .find((r) => (r.field || []).some((f) => (f.id || f.candidateId) === cid));
+  for (const who of ['bob', 'cara', 'dan', 'founder']) {
+    if (await recordFor()) break;
+    const p = pairFor(await view(who), cid);
+    if (!p?.card) { await check('R0', 'C7', who, false, 'a judgeable pair on C7', 'none'); continue; }
+    await cmd(who, 'judge-race', { a: p.card.a.id, b: p.card.b.id,
+      outcome: p.card.a.id === cid ? 'a' : 'b' });
+  }
+  let rec = null;
+  const t0 = Date.now();
+  while (Date.now() - t0 < 20_000) {
+    rec = await recordFor();
+    if (rec && rec.outcome === 'adopted') break;
+    rec = null;
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  await check('R0b', 'C7', cid, !!rec, 'C7 adopted within 20s on a cooldown-0 server', !!rec);
+  if (rec) {
+    const SPLIT = (await view('founder')).text.split('\n');
+    ctx.phase = 'p1c';
+    const page = await openSeat('dan', 1600, 1000, 6);
+    const items = await page.evaluate(() => window.__PS.items());
+    const run = items.filter((s) => s.state === 'sealed' && (s.keys || []).length > 1);
+    await check('R1-run', 'C7', rec.raceId || cid, run.length === 1,
+      'one sealed record standing over a run of blocks', run.map((s) => s.keys));
+    const r = run[0];
+    if (r) {
+      ctx.seat = 'dan'; ctx.width = 1600; ctx.page = page;
+      const before = await page.evaluate((id) => window.__PS.closed(id), r.id);
+      // **one tab, at the record's first block** (Q1418) — the live rule
+      await check('R2-tab', 'C7', r.id, before.tabs.length === 1 &&
+        before.tabs[0].key === r.keys[0],
+        `one filed tab, at ${r.keys[0]} (Q1418; Q1408's rule for a race)`,
+        before.tabs.map((t) => t.key));
+      await check('R2-rail', 'C7', r.id, before.rail.length === 1,
+        'one rail entry for the record', before.rail.length);
+      // …and the open card swallows the whole run, as a race's does (Q1407)
+      await page.evaluate((id) => window.__PS.toggle(id), r.id);
+      await T(page, 300);
+      const open = await page.evaluate((id) => window.__PS.open(id), r.id);
+      const stillOut = r.keys.filter((k) => open.visKeys.includes(k));
+      await check('R3-swallow', 'C7', r.id, stillOut.length === 0,
+        `the open record swallows every block of its run: ${JSON.stringify(r.keys)}`,
+        { stillOnThePage: stillOut });
+      await check('R3-cards', 'C7', r.id, open.cards.length === 1,
+        'one open record card', open.cards.length);
+      await check('R3-tabs', 'C7', r.id, open.tabs.filter((t) => !t.inCard).length === 0,
+        'no tab of the record outside its open card', open.tabs.filter((t) => !t.inCard).length);
+      await page.evaluate((id) => window.__PS.toggle(id), r.id);
+      await T(page, 300);
+      const after = await page.evaluate((id) => window.__PS.closed(id), r.id);
+      await check('R4-close', 'C7', r.id, eq(after.visKeys, before.visKeys) &&
+        after.tabs.length === before.tabs.length,
+        'the document is exactly as it was before the record opened (M17)',
+        { tabs: after.tabs.length,
+          missing: before.visKeys.filter((k) => !after.visKeys.includes(k)),
+          extra: after.visKeys.filter((k) => !before.visKeys.includes(k)) });
+      // the record's own field draws a deletion as a sentence too (Q1412):
+      // the field reads through `mdBlocksHtml`, the same renderer the lanes
+      // do, and a rejected deletion is a shape this walk cannot produce
+      // live — so the renderer is asked directly, and named as that.
+      const fieldSays = await page.evaluate(() => {
+        const d = document.createElement('div');
+        d.innerHTML = window.CARDS.mdBlocksHtml('A clause that stood here.', '');
+        return d.textContent.replace(/\s+/g, ' ').trim();
+      });
+      const removed = await page.evaluate(() => window.__PS.removedCopy());
+      await check('R5-field', 'C6', null, fieldSays === NORM(removed),
+        `a record's field renders an empty candidate as ${JSON.stringify(removed)} (Q1412)`,
+        fieldSays, { note: 'asked of the renderer: a rejected deletion is not a shape this walk can produce' });
+      // the split's own blocks, for the record
+      say(`  the split stands as ${JSON.stringify(r.keys.map((k) => SPLIT[+k.slice(1)]))}`);
+    }
+    await page.goto('about:blank');
+  }
 }
 
 /* ==========================================================================
@@ -1029,6 +1254,119 @@ for (const c of P2_CELLS) {
       await check('P2-race', 'P-all/P-one', it.id, (it.keys || [])[0] === 'L0' && (it.keys || []).length === nonBlank,
         'a challenger-vs-challenger card spans the union of the two (Q1407)',
         { first: (it.keys || [])[0], n: (it.keys || []).length });
+    }
+  }
+  await page.goto('about:blank');
+}
+
+/* ==========================================================================
+   Phase 3 — **an emptied site sends a true deletion** (Q1415).
+
+   Every other cell in this walk is proposed over the wire, which is a bot's
+   road; this one is driven through the **composer**, because the defect was
+   the composer's alone. A member who clears a clause and presses ✏️ sent
+   `lines: ['']` — one empty line — where a bot sends `lines: []`, so the
+   adopted record landed on a blank line with no block key, no tab and no
+   card. **Ed ruled 2026-09-17 that an emptied site sends a true deletion.**
+
+   The road is journey-walk's: 📝 is the door, a keystroke in a clause opens
+   the draft, and the proposal-row's ✏️ is the hold that sends it. What is
+   asserted is what the page *would* send (`LIVE_HOOKS.hunksOf`), what the
+   server then holds, and — Q1412's other half — that the author's own card
+   reads the removal sentence rather than a blank.
+   ========================================================================== */
+ctx.phase = 'p3'; ctx.seat = '-'; ctx.width = 0; ctx.page = null;
+say('\nPhase 3 — a clause emptied in the composer');
+{
+  const who = 'dan';
+  const page = await openSeat(who, 1600, 1000, 1);
+  ctx.seat = who; ctx.width = 1600; ctx.page = page;
+  const KEY = 'L' + P2_LINES.findIndex((l) => l.includes('secretary keeps the key'));
+  // 📝 is the door (K13): the riding tab in the constitution's own gutter,
+  // or the floating door where the tab has scrolled past
+  const entered = await page.evaluate(() => {
+    const t = document.querySelector('#ridetab .achip[data-tab="text"]') ||
+      document.querySelector('#editdoor [data-act="edit-door"]');
+    if (!t) return false;
+    t.click();
+    return true;
+  });
+  await T(page, 600);
+  const editing = await page.evaluate(() => document.getElementById('doc').classList.contains('editing'));
+  await check('Q1', 'D1', KEY, entered && editing, '📝 opens edit mode', { entered, editing });
+  if (editing) {
+    await page.evaluate((k) => {
+      const el = document.querySelector('#charter [data-key="' + k + '"]');
+      if (el) el.scrollIntoView({ block: 'center' });
+    }, KEY);
+    await T(page, 250);
+    await page.click(`#charter [data-key="${KEY}"]`, { position: { x: 40, y: 8 } }).catch(() => {});
+    await T(page, 200);
+    // the first keystroke opens the draft (K13), and then the lane is emptied
+    // the way a member empties it: select the whole lane and press Backspace
+    await page.keyboard.type('X');
+    await T(page, 500);
+    const opened = await page.evaluate(() => !!document.querySelector('.sugg.editcard [data-lane]'));
+    await check('Q2', 'D1', KEY, opened, 'a keystroke in the clause opens the editing card', opened);
+    if (opened) {
+      await page.evaluate(() => {
+        const lane = document.querySelector('.sugg.editcard [data-lane]');
+        lane.focus();
+        const r = document.createRange();
+        r.selectNodeContents(lane);
+        const s = getSelection();
+        s.removeAllRanges();
+        s.addRange(r);
+      });
+      await page.keyboard.press('Backspace');
+      await T(page, 500);
+      const d = await page.evaluate(() => window.__PS.draft());
+      const site = d && d.sites && d.sites[0];
+      await check('Q3', 'D1', KEY, !!site && site.text === '' && site.keys.length === 1 &&
+        site.keys[0] === KEY && (site.origin || []).join('').length > 0,
+        'the composer holds one emptied site over the clause that stood there',
+        d && d.sites);
+      // …and the author's own reading of it is a sentence (Q1412)
+      const removed = await page.evaluate(() => window.__PS.removedCopy());
+      // propose it: the row's ✏️, held, exactly as journey drives it
+      const bx = await page.evaluate(() => {
+        const b = document.querySelector('#charter [data-proposalrow] [data-act="row-commit"]:not([data-pen]):not([disabled])');
+        if (!b) return null;
+        b.scrollIntoView({ block: 'center' });
+        const r = b.getBoundingClientRect();
+        return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+      });
+      await check('Q4', 'D1', KEY, !!bx, 'the proposal row offers a live ✏️ over the emptied site', !!bx);
+      if (bx) {
+        await page.mouse.move(bx.x, bx.y);
+        if (await pageGesture(page) === 'click') { await page.mouse.click(bx.x, bx.y); await T(page, 1400); }
+        else { await page.mouse.down(); await T(page, 1400); await page.mouse.up(); }
+        await T(page, 1200);
+        const mine = (await view(who)).mine || [];
+        const live = mine.filter((m) => m.state === 'live');
+        const hunks = live.flatMap((m) => m.patch.hunks || []);
+        const del = hunks.find((x) => (x.lines || []).length === 0 && x.end > x.start);
+        await check('Q5', 'D1', KEY, !!del,
+          'the server holds a candidate whose hunk removes the line (Q1415)',
+          { proposals: live.length, hunks });
+        // the card the author now reads: one lane, and it is the sentence
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await page.waitForFunction(() => !!(window.SESSION && window.__PS), null, { timeout: 20_000 }).catch(() => {});
+        await T(page, 900);
+        const items = await page.evaluate(() => window.__PS.items());
+        const own = items.find((s) => s.kind === 'draft' && !s.unproposed);
+        if (!own) {
+          note('Q6', 'D1', KEY, 'no proposal of dan’s on the page', 'the reload did not bring the item back');
+        } else {
+          await page.evaluate((id) => window.__PS.toggle(id), own.id);
+          await T(page, 350);
+          const card = (await page.evaluate((id) => window.__PS.open(id), own.id)).cards[0];
+          const said = (card ? card.lanes : []).map((l) => NORM(l.text));
+          await check('Q6', 'D1', own.id, said.length === 1 && said[0] === NORM(removed),
+            `the author's own card reads ${JSON.stringify(removed)} (Q1412)`, said);
+          await page.evaluate((id) => window.__PS.toggle(id), own.id);
+        }
+      }
     }
   }
   await page.goto('about:blank');

@@ -3334,18 +3334,28 @@ if (caret) {
       motion: !!document.querySelector('#rail [data-q^="mo:"], #rail [data-card^="mo:"]'),
       suggs: (window.SESSION.SUGGS || []).map((g) => g.kind + ':' + g.state + (g.mine ? ':mine' : '')),
       tabs: document.querySelectorAll('#charter .achip').length,
+      // **the two populations of tab** (Q1413, Ed 2026-09-17): a live tab is a
+      // control and carries `data-anchor`; a **greyed** one stands for a
+      // question this member may not act on yet, drawn so the document does
+      // not read as empty behind their OKs — and it is not a control at all
+      live: document.querySelectorAll('#charter .achip[data-anchor]').length,
+      held: document.querySelectorAll('#charter .achip.held').length,
       judgeServed: !!document.querySelector('#rail [data-card="canjudge"]'),
     }));
     // a race's rail id is the race's (`r:<candidate>`), a sealed record's `rec:`;
     // a park is `park:` and the member's own proposal `mine:` — neither is a race entry
     const isRace = (q) => /^(r:|rec:)/.test(q);
     const g0 = await railOf();
-    const none = !g0.rail.some(isRace) && !g0.motion && g0.suggs.every((s) => /^(park|draft|crown):/.test(s));
+    const none = !g0.rail.some(isRace) && !g0.motion && g0.suggs.every((s) => /^(park|draft|crown):/.test(s)) &&
+      g0.held > 0;
     say('⚖️ waits   · ' + (none
-      ? 'before the OK the member’s rail holds no race and no ⏱️ motion · rail ' + JSON.stringify(g0.rail) +
+      ? 'before the OK the member’s rail holds no race and no ⏱️ motion, and the ' + g0.held +
+        ' question' + (g0.held === 1 ? '' : 's') +
+        ' held back stands greyed in the gutter (Q1413) · rail ' + JSON.stringify(g0.rail) +
         ' · suggs ' + JSON.stringify(g0.suggs) + ' · tabs ' + g0.tabs
-      : 'FAIL: a race is served before ⚖️ is acknowledged · rail ' + JSON.stringify(g0.rail) +
-        ' · suggs ' + JSON.stringify(g0.suggs)));
+      : 'FAIL: ' + (g0.held ? 'a race is served before ⚖️ is acknowledged'
+        : 'no greyed tab stands for the races held back (Q1413)') + ' · rail ' + JSON.stringify(g0.rail) +
+        ' · suggs ' + JSON.stringify(g0.suggs) + ' · held ' + g0.held));
     if (!none) stuck.push('a race served before the ⚖️ OK (Q1328)');
     // **A gate's entry is its name and its mark** (Q1374, Ed 2026-09-15:
     // *queue cards had body text*). The founder never meets 💡 ⚖️ as cards
@@ -3375,13 +3385,19 @@ if (caret) {
       });
       await T(2500);                             // the OK's own round trip and refresh
       const g1 = await railOf();
-      const arrived = pressed && g1.rail.some(isRace) && g1.motion && g1.tabs > g0.tabs &&
+      // **the grey turns live** (Q1413): the tab count no longer grows — the
+      // questions were already drawn in the gutter — so what the OK changes is
+      // *which kind* of tab stands there: every greyed one becomes a control
+      const arrived = pressed && g1.rail.some(isRace) && g1.motion &&
+        g1.live > g0.live && g1.held === 0 &&
         g1.suggs.some((s) => !/^(park|draft|crown):/.test(s));
       say('⚖️ OK      · ' + (arrived
-        ? 'the OK lands and the races arrive, the ⏱️ motion with them · rail ' + JSON.stringify(g1.rail) +
-          ' · suggs ' + JSON.stringify(g1.suggs) + ' · tabs ' + g0.tabs + '→' + g1.tabs
+        ? 'the OK lands and the races arrive, the ⏱️ motion with them; every greyed tab becomes a control (' +
+          g0.live + '→' + g1.live + ' live, ' + g0.held + '→' + g1.held + ' greyed) · rail ' + JSON.stringify(g1.rail) +
+          ' · suggs ' + JSON.stringify(g1.suggs)
         : 'FAIL: pressed ' + pressed + ' · rail ' + JSON.stringify(g1.rail) +
-          ' · suggs ' + JSON.stringify(g1.suggs) + ' · tabs ' + g0.tabs + '→' + g1.tabs));
+          ' · suggs ' + JSON.stringify(g1.suggs) + ' · live ' + g0.live + '→' + g1.live +
+          ' · greyed ' + g0.held + '→' + g1.held));
       if (!arrived) stuck.push('the races did not arrive on the ⚖️ OK (Q1328)');
     }
   }

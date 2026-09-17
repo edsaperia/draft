@@ -1421,8 +1421,22 @@ window.LIVE = (function () {
             return { start: n, end: n, lines: ls };
           }
           const start = Math.min(lineIdx(site.keys[0]), nLines);
-          return { start, end: Math.max(start, Math.min(lineIdx(site.keys[site.keys.length - 1]) + 1, nLines)),
-            lines: ls };
+          const end = Math.max(start, Math.min(lineIdx(site.keys[site.keys.length - 1]) + 1, nLines));
+          // **An emptied site is a deletion** (Q1415, Ed 2026-09-17, from the
+          // proposal-shapes pass PF5). A member who clears a clause and
+          // proposes meant to take it out, and the engine has a shape for
+          // that: a hunk with no lines. This sent `['']` — one empty line —
+          // so the candidate replaced the clause with a blank, and the
+          // adopted record landed on a line with no text, no block key, no
+          // tab and no card, where a bot's `lines: []` removes the line
+          // outright. Only where there is something to remove: a **gap** is
+          // the branch above (`start === end`, a pure insertion), and an
+          // empty document's one block (Q649 (a)) clamps to `start === end`
+          // here, so a first insertion into it cannot become a deletion
+          // either. A site emptied and then typed into again is not empty and
+          // never reaches this.
+          if (end > start && !site.text.trim()) return { start, end, lines: [] };
+          return { start, end, lines: ls };
         });
       };
       // what a draft would send, readable by a walk (`SESSION.LIVE_HOOKS.hunksOf`)
