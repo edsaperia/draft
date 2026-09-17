@@ -46,6 +46,8 @@ import { stableStringify } from './hash.js';
 import { CATALOGUE, entryOf, motionRouteOf } from './catalogue.js';
 import type { SettingId } from './catalogue.js';
 import type { ConstitutionSession } from './session.js';
+import { membershipRouteOf } from './motions.js';
+import type { MotionInput } from './motions.js';
 import { inE } from './populations.js';
 import { DEFAULT_TUNING, engineFieldsFor, toEngineConstitution,
   type EngineTuning } from './adapter.js';
@@ -129,6 +131,49 @@ export class EngineBridge {
       opts.t,
     );
     this.cursor = cs.logEntries().length;
+  }
+
+  /**
+   * **The door for every motion on a live document** (issue #26). A motion on
+   * the ordinary route *is* a race, and a race costs its mover one ✏️ (§7,
+   * §3.3a) — but the constitution layer holds no wallet, so `cs.openMotion`
+   * cannot price its own act, and until this existed the two membership
+   * motions were priced nowhere at all: the page has no wallet check, the
+   * module accepted the press, and the stake was not asked for until `sync`
+   * entered the race, where the refusal was no longer a refusal but a
+   * document that had stopped answering. A member who had spent their
+   * proposals could freeze a whole room with one press of ❌.
+   *
+   * So the wallet is asked here, **before** the module accepts anything: the
+   * same check, in the same sentence, that `openSetMotion` and `proposeText`
+   * already refuse an empty wallet with, and which the page prints under the
+   * card like any other command refusal (SURFACE Y25) — no new copy. Nothing
+   * is opened, so unlike the `sync` path there is nothing to compensate.
+   *
+   * Every kind comes through, and three of them are priced. `set` is
+   * `openSetMotion`'s, which does its own pricing because only it can say
+   * what a *value* routes as. `reserve` is always constitutional, and a
+   * constitutional motion is free — an empty wallet prices a race and not a
+   * decision — as is `text`, which is a folded record of the pen and never a
+   * press at all. `invite` is priced here although the invitation race is not
+   * built yet (#6 F1): its `motion-opened` already records `stake: 1`, so the
+   * log's own claim is what is being made true, and the guard is standing
+   * when the race lands.
+   */
+  openMotion(t: number, by: MemberId, input: MotionInput, why?: string): MotionId {
+    this.sync(t);
+    const kind = input.kind;
+    if (kind === 'invite' || kind === 'remove' || kind === 'admit') {
+      const price = this.cs.priceOf(kind === 'remove' ? 'removal' : 'admission');
+      if (membershipRouteOf(price, kind) === 'ordinary' &&
+        this.engine.balance(by, t) < this.engine.constitution.stake) {
+        throw new Error('insufficient ✏️ for the stake (§7)');
+      }
+    }
+    if (input.kind === 'set') {
+      return this.openSetMotion(t, by, input.setting, input.value, why).motion;
+    }
+    return this.cs.openMotion(t, by, input, why);
   }
 
   /**
@@ -573,8 +618,12 @@ export class EngineBridge {
         transientVoice = true;
       }
     }
-    this.enterMembershipRace(t, motion, `admit:${applicant}`,
-      { member: false }, { member: true }, author, why ?? a?.words ?? '');
+    // `const` rather than the `let` above, so the narrowing survives into the
+    // closure `enterOrAbandon` takes
+    const voice = author;
+    this.enterOrAbandon(t, motion, () => this.enterMembershipRace(t, motion,
+      `admit:${applicant}`, { member: false }, { member: true }, voice,
+      why ?? a?.words ?? ''));
     // …and only while they are still an applicant. Since backlog 253 the
     // submission itself sweeps, so `enterMembershipRace` can carry the admit
     // race in the very call above — and suspending somebody the same breath
@@ -597,8 +646,36 @@ export class EngineBridge {
     by: MemberId,
     why: string | undefined,
   ): void {
-    this.enterMembershipRace(t, motion, `remove:${member}`,
-      { member: true }, { member: false }, by, why ?? '');
+    this.enterOrAbandon(t, motion, () => this.enterMembershipRace(t, motion,
+      `remove:${member}`, { member: true }, { member: false }, by, why ?? ''));
+  }
+
+  /**
+   * **A membership race the engine will not take does not stop the walk**
+   * (issue #26). The two races above are entered from inside `sync`, which is
+   * the one place in this class where a throw is not a refusal somebody reads
+   * but a **document that stops answering**: `sync` runs at the head of every
+   * command, of every tick and of every login, and it walks the cs log from a
+   * cursor — so an entry that throws is re-read and re-thrown for ever, and
+   * since the server drives the bridge before it persists, nothing since is
+   * written either. A member with an empty wallet opening a removal at 🥾
+   * *members must vote* was enough to do it, and at a ⏱️ grant of 0 so was the
+   * first application to knock.
+   *
+   * The cure is `openSetMotion`'s own, moved to where it can be reached: not a
+   * rollback, which an append-only log does not have, but a **compensating
+   * event**. The motion is withdrawn, the log says so, and the walk goes on to
+   * the next entry. The difference from `openSetMotion` is only who makes it —
+   * there the caller compensates and rethrows, because a refusal is exactly
+   * what the mover should read; here nobody is calling, so nothing is rethrown
+   * and `abandonMotion` cannot throw in its turn.
+   */
+  private enterOrAbandon(t: number, motion: MotionId, enter: () => void): void {
+    try {
+      enter();
+    } catch {
+      this.cs.abandonMotion(t, motion);
+    }
   }
 
   /**

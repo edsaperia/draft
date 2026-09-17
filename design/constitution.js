@@ -861,6 +861,10 @@ var CONSTITUTION = (() => {
   var CONSTITUTIONAL = new Set(
     CATALOGUE.filter((e) => e.kind === "constitutional").map((e) => e.id)
   );
+  function membershipRouteOf(price, kind) {
+    if (kind === "remove") return price === "proposal" ? "ordinary" : "constitutional";
+    return price === "assembly" ? "constitutional" : "ordinary";
+  }
   function openMotion(s, t, by, input, why) {
     s.requireOpen("a motion");
     if (s.constitutedT === null) {
@@ -908,13 +912,13 @@ var CONSTITUTION = (() => {
     } else if (payload.kind === "invite") {
       const price = s.priceOf("admission");
       if (price === "pen") throw new Error("admission is at ✒️ — invite directly, nothing to propose (§9.7½)");
-      route = price === "assembly" ? "constitutional" : "ordinary";
+      route = membershipRouteOf(price, "invite");
     } else if (payload.kind === "remove") {
       const target = s.members.get(payload.member);
       if (!target || !inE(target)) throw new Error(`'${payload.member}' is not a member`);
-      route = s.priceOf("removal") === "proposal" ? "ordinary" : "constitutional";
+      route = membershipRouteOf(s.priceOf("removal"), "remove");
     } else {
-      route = s.priceOf("admission") === "assembly" ? "constitutional" : "ordinary";
+      route = membershipRouteOf(s.priceOf("admission"), "admit");
     }
     const twin = runningTwin(s, payload);
     if (twin !== null) {
@@ -963,6 +967,11 @@ var CONSTITUTION = (() => {
     const rec = s.motions.get(motion);
     if (!rec || rec.status !== "running") throw new Error("the motion is not running");
     if (rec.by !== member) throw new Error("only the mover withdraws a motion");
+    s.emit({ type: "motion-withdrawn", t, motion });
+  }
+  function abandonMotion(s, t, motion) {
+    const rec = s.motions.get(motion);
+    if (!rec || rec.status !== "running") return;
     s.emit({ type: "motion-withdrawn", t, motion });
   }
   function adjudicateOrdinaryMotion(s, t, motion, outcome) {
@@ -2527,7 +2536,8 @@ var CONSTITUTION = (() => {
       apply(this.fold, event, seq);
     }
     /** What an act on the membership costs, as the document stands — unset
-     *  reads as the most protective rung. */
+     *  reads as the most protective rung. Public since #26: the bridge asks it
+     *  to price a press before the motion is opened. */
     priceOf(id) {
       const st = this.settings.get(id);
       const v = st ? st.value : null;
@@ -3250,6 +3260,11 @@ var CONSTITUTION = (() => {
     }
     withdrawMotion(t, member, motion) {
       withdrawMotion(this.motionHost(), t, member, motion);
+    }
+    /** The host could not enter the race this motion needs (#26): the
+     *  compensating withdrawal, which is nobody's act and never throws. */
+    abandonMotion(t, motion) {
+      abandonMotion(this.motionHost(), t, motion);
     }
     adjudicateOrdinaryMotion(t, motion, outcome) {
       adjudicateOrdinaryMotion(this.motionHost(), t, motion, outcome);

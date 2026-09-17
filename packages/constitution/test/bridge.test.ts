@@ -228,6 +228,39 @@ describe('an admit motion is its own race (§9.7½ v0.56, Q397)', () => {
     const rec = s.applicantRecords().get(ap)!;
     expect(s.motionRecords().get(rec.motion!)!.route).toBe('constitutional');
   });
+
+  /**
+   * **#26's twin, and the worse half of it.** The removal at `proposal` needs
+   * a mover who has spent their ✏️; the admission at ✏️ needs nothing of
+   * anybody, because the applicant's own wallet is whatever ⏱️ grants a
+   * joiner — and a grant of 0 is a legal rate (`values.ts`, *grant must be an
+   * integer ≥ 0*). So the **first application** to such a document threw
+   * inside `sync` and froze it for ever, with no member having done anything
+   * at all. The mover here is `null`, so the compensation cannot be the
+   * mover's own withdrawal: it is the host's, which writes the same
+   * `motion-withdrawn` the log already carries.
+   */
+  it('an admission the applicant cannot stake is withdrawn, not wedged (#26)', () => {
+    const { s } = withPrice('proposal');
+    // the pen re-prices ⏱️, which is the founder's throughout: a room where
+    // nobody is granted a proposal at all
+    s.setSetting(3, 'rate', { grant: 0, cap: 8, dripMinutes: 240 });
+    const bridge = new EngineBridge(s, { t: 4, rngSeed: 'admit-broke' });
+    const ap = s.startApplication(10, 'dee@example.org');
+    s.verifyApplication(11, ap);
+    s.submitApplication(12, ap, { words: 'I keep minutes.' });
+    const motion = s.applicantRecords().get(ap)!.motion!;
+    expect(() => bridge.tick(13)).not.toThrow();
+    expect(s.motionRecords().get(motion)!.status).toBe('withdrawn');
+    expect(bridge.engine.races().some((r) => r.settingId === `admit:${ap}`)).toBe(false);
+    // the transient voice was suspended all the same, so a failed application
+    // leaves nobody standing in E who is not a member (§3.3)
+    expect(bridge.engine.log.map((e) => e.event).some((e) =>
+      e.type === 'participant-suspended' && e.participantId === ap)).toBe(true);
+    // and the document goes on answering, minute after minute
+    expect(() => bridge.tick(14)).not.toThrow();
+    expect(() => bridge.tick(15)).not.toThrow();
+  });
 });
 
 describe('a text proposal races in the engine (stage 8, Q418)', () => {

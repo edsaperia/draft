@@ -314,6 +314,66 @@ describe('🥾 proposal — the membership decides at the bar (Q401a)', () => {
   });
 });
 
+/**
+ * **A removal nobody can pay for froze the whole document** (issue #26). At
+ * `proposal` the motion is a race and the race costs its mover one ✏️ (§7,
+ * §3.3a) — but nothing asked the wallet before the act. The page has no
+ * check, `cs.openMotion` holds no wallet, and the stake is not charged until
+ * `EngineBridge.sync` walks the `motion-opened` entry and enters the race.
+ * By then the motion is in the log, and `submitCandidate`'s throw escaped
+ * `sync` — so every later command by anybody, and the minute tick, and the
+ * login that spends a token, answered 400 for ever; the server drives the
+ * bridge before it persists, so nothing since the freeze was ever written.
+ *
+ * Two halves and one `it` each: the walk cannot wedge whatever reaches it,
+ * and the door refuses the press before the module ever accepts it.
+ */
+describe('🥾 proposal — an empty wallet is refused at the door, and never wedges the walk (#26)', () => {
+  /** Propose until the wallet is empty, on a fresh line each time. */
+  const drain = (bridge: EngineBridge, by: string, t: number): void => {
+    while (bridge.engine.balance(by, t) >= bridge.engine.constitution.stake) {
+      bridge.proposeText(t, by, { baseVersion: bridge.engine.currentVersion(),
+        hunks: [{ start: 0, end: 1, lines: [`wording ${bridge.engine.log.length}`] }] }, '');
+    }
+  };
+
+  it('the bridge prices the press, in the sentence a text proposal is refused with', () => {
+    const { s, bo, cy } = buildConstituted({ removal: { price: 'proposal' } });
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'wedge-door' });
+    drain(bridge, bo, 10);
+    const motions = s.motionRecords().size;
+    expect(() => bridge.openMotion(10, bo, { kind: 'remove', member: cy }))
+      .toThrow('insufficient ✏️ for the stake (§7)');
+    // refused *before* the module accepts it: nothing was opened, so there is
+    // nothing to compensate and nothing for the room to read
+    expect(s.motionRecords().size).toBe(motions);
+    // the wallet is what was refused, never the act: ada still holds four
+    expect(bridge.openMotion(10, 'ada', { kind: 'remove', member: cy }))
+      .toMatch(/^mo-/);
+  });
+
+  it('a race the mover cannot stake is withdrawn, and the tick keeps ticking', () => {
+    const { s, bo, cy } = buildConstituted({ removal: { price: 'proposal' } });
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'wedge-walk' });
+    drain(bridge, bo, 10);
+    // around the door: the dev ladder, a replayed log and the sim all reach
+    // `sync` through the session, so the walk carries its own guarantee
+    const m = s.openMotion(11, bo, { kind: 'remove', member: cy });
+    expect(() => bridge.tick(12)).not.toThrow();
+    expect(s.motionRecords().get(m)!.status).toBe('withdrawn');
+    // the compensating event is in the log, so a replay reaches the same
+    // state without the bridge — and nothing is racing on the removal
+    expect(s.logEntries().some((e) => e.event.type === 'motion-withdrawn'
+      && (e.event as { motion: string }).motion === m)).toBe(true);
+    expect(bridge.engine.races().map((r) => r.settingId)).not.toContain(`remove:${cy}`);
+    // …for ever, not once: the walk has moved past the entry that threw
+    expect(() => bridge.tick(13)).not.toThrow();
+    expect(() => bridge.tick(14)).not.toThrow();
+    // and the document still answers: cy's own act lands after the freeze
+    expect(() => s.setIdentity(15, cy, { name: 'Cy Ravensworth' })).not.toThrow();
+  });
+});
+
 describe('🥾 re-priced mid-motion: the route is fixed, the electorate is not (X5, entry 97)', () => {
   it('a re-price to `consent` puts the subject back into a running motion’s electorate', () => {
     const { s, bo, cy } = buildConstituted({ removal: { price: 'assembly' } });

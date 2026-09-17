@@ -277,8 +277,9 @@ export class ConstitutionSession {
   }
 
   /** What an act on the membership costs, as the document stands — unset
-   *  reads as the most protective rung. */
-  private priceOf(id: 'admission' | 'removal'): Price {
+   *  reads as the most protective rung. Public since #26: the bridge asks it
+   *  to price a press before the motion is opened. */
+  priceOf(id: 'admission' | 'removal'): Price {
     const st = this.settings.get(id);
     const v = st ? (st.value as PriceValue | null) : null;
     return v?.price ?? (id === 'admission' ? 'assembly' : 'consent');
@@ -1190,6 +1191,12 @@ export class ConstitutionSession {
 
   withdrawMotion(t: number, member: MemberId, motion: MotionId): void {
     motions.withdrawMotion(this.motionHost(), t, member, motion);
+  }
+
+  /** The host could not enter the race this motion needs (#26): the
+   *  compensating withdrawal, which is nobody's act and never throws. */
+  abandonMotion(t: number, motion: MotionId): void {
+    motions.abandonMotion(this.motionHost(), t, motion);
   }
 
   adjudicateOrdinaryMotion(t: number, motion: MotionId,

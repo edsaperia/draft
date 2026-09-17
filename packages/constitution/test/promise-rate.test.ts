@@ -30,12 +30,16 @@
  * | `proposeText`                        | 1 ✏️  | the bridge's pre-check, then the engine's |
  * | `openSetMotion`, **ordinary** route  | 1 ✏️  | the bridge's pre-check, then the engine's |
  * | `openSetMotion`, **constitutional**  | free  | nothing — it is not raced, nothing is staked |
+ * | `bridge.openMotion`, **ordinary**    | 1 ✏️  | the bridge's pre-check, then the engine's (#26) |
+ * | `bridge.openMotion`, **constitutional** | free | nothing — it is not raced, nothing is staked |
  * | `openMotion` on the session directly | free  | nothing — the constitution layer holds no wallet |
  * | withdrawing either                   | −1 ✏️ | refunded whole (§3.3a, `bridge.test.ts`)  |
  *
- * The last two rows are the audit's real content: **a wallet prices a race,
+ * The last three rows are the audit's real content: **a wallet prices a race,
  * not a decision.** A member with an empty wallet may still open a
- * constitutional motion, answer one, judge, resign and give an OK.
+ * constitutional motion, answer one, judge, resign and give an OK. The
+ * session's own door stays free because it holds no wallet to ask about —
+ * which is why a live document's presses go through the bridge's (#26).
  *
  * ## Cited, not duplicated
  *

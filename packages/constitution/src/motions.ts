@@ -81,6 +81,28 @@ export interface MotionHost {
   answeredAtDoor(applicant: string): { nameSet?: true; pictureSet?: true };
 }
 
+/**
+ * **The route a membership motion takes is the price it is put at** (entry
+ * 94): 🪪's for the two ways in, 🥾's for the way out. The three arms of
+ * `openMotion` below read it, and so does `EngineBridge.openMotion`, which
+ * has to know whether the mover owes a stake **before** the module accepts
+ * the act (issue #26) — an ordinary route is a race, and a race costs one ✏️
+ * (§7, §3.3a). One function rather than the same conditional in two files,
+ * because the two disagreeing is exactly the bug: a press the door lets
+ * through on one reading and the bridge cannot stake on the other.
+ *
+ * `pen` is not decided here. At 🪪 ✒️ nobody proposes at all — the invite
+ * command admits outright — so the arm below refuses the motion before it
+ * asks for a route, and an application at that price is never a motion.
+ */
+export function membershipRouteOf(price: Price,
+  kind: 'invite' | 'admit' | 'remove'): MotionRoute {
+  // `assembly` and `consent` are both consent on the way out; the difference
+  // lives in the settle check, not the route (Q401, Ed 2026-08-19)
+  if (kind === 'remove') return price === 'proposal' ? 'ordinary' : 'constitutional';
+  return price === 'assembly' ? 'constitutional' : 'ordinary';
+}
+
 export function openMotion(s: MotionHost, t: number, by: MemberId,
   input: MotionInput, why?: string): MotionId {
   s.requireOpen('a motion');
@@ -135,19 +157,13 @@ export function openMotion(s: MotionHost, t: number, by: MemberId,
     // invite command admits outright — so a motion here is a mistake.
     const price = s.priceOf('admission');
     if (price === 'pen') throw new Error('admission is at ✒️ — invite directly, nothing to propose (§9.7½)');
-    route = price === 'assembly' ? 'constitutional' : 'ordinary';
+    route = membershipRouteOf(price, 'invite');
   } else if (payload.kind === 'remove') {
     const target = s.members.get(payload.member);
     if (!target || !inE(target)) throw new Error(`'${payload.member}' is not a member`);
-    // The route is 🥾's price (Q401, Ed 2026-08-19; entry 94): `proposal`
-    // races, and carries when the room prefers it with the quorum met;
-    // `assembly` and `consent` are consent — the difference lives in the
-    // settle check, not the route.
-    route = s.priceOf('removal') === 'proposal' ? 'ordinary' : 'constitutional';
+    route = membershipRouteOf(s.priceOf('removal'), 'remove');
   } else {
-    // admit rides submitApplication (§9.7½): an application is a stranger
-    // proposing their own invitation, so it pays 🪪's price like one.
-    route = s.priceOf('admission') === 'assembly' ? 'constitutional' : 'ordinary';
+    route = membershipRouteOf(s.priceOf('admission'), 'admit');
   }
   // **An identical motion is refused on either route** (Ed, 2026-09-12,
   // Q1348; SPEC §9.6, R-103): the same payload already running is one
@@ -203,6 +219,32 @@ export function withdrawMotion(s: MotionHost, t: number, member: MemberId,
   const rec = s.motions.get(motion);
   if (!rec || rec.status !== 'running') throw new Error('the motion is not running');
   if (rec.by !== member) throw new Error('only the mover withdraws a motion');
+  s.emit({ type: 'motion-withdrawn', t, motion });
+}
+
+/**
+ * **The host's own withdrawal** (issue #26): an ordinary motion the host
+ * could not put into a race — the mover's wallet is empty, the candidate is a
+ * duplicate, the race has closed — is withdrawn rather than left standing
+ * with nothing racing behind it. `openSetMotion` has compensated this way
+ * since review #1's finding 6a; what is new is that the two **membership**
+ * races enter inside `EngineBridge.sync`, where a throw is not a refusal
+ * anybody reads but a document that stops answering, so the compensation
+ * cannot be the caller's to make.
+ *
+ * It is not `withdrawMotion` with the mover filled in, for two reasons. An
+ * **admission has no mover** — `by` is null, the application being the
+ * applicant's own proposal (§9.7½) — and there is therefore nobody whose
+ * withdrawal it could be. And it must **never throw**: it runs on the path
+ * that was already failing, so a second refusal here would be the wedge over
+ * again. A motion that is not running is silently nothing, `ackRelease`'s
+ * posture. The event is the same `motion-withdrawn` the log already carries,
+ * so a replay reaches this state with no bridge at all (§3.3a: the stake, if
+ * one was ever taken, comes back whole).
+ */
+export function abandonMotion(s: MotionHost, t: number, motion: MotionId): void {
+  const rec = s.motions.get(motion);
+  if (!rec || rec.status !== 'running') return;
   s.emit({ type: 'motion-withdrawn', t, motion });
 }
 
