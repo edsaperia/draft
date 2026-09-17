@@ -30,7 +30,11 @@ export function motionElectorateOf<M extends MemberState>(members: Iterable<M>):
 }
 
 /**
- * The room's quorum as a count (§4.2): a fixed count, or ⌈share × E⌉.
+ * The room's quorum as a count (§4.2): a fixed count, or ⌈share × E⌉ — **the
+ * number the room asked for, before the half-the-room cap** (Q1439, R-126),
+ * which `adoptionFloor` below applies. The two are separate because the raw
+ * number is what the log records (`floor-recomputed`'s `quorumN`) and what a
+ * card's own control holds, while the capped one is what a race is held to.
  *
  * **The product before the quotient** (issue #24): `Math.ceil((n / 100) * E)`
  * is not ⌈n·E/100⌉, because `n / 100` is not representable in binary for most

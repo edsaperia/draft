@@ -158,8 +158,10 @@ describe('threshold anchors (§4.3, v0.48)', () => {
 describe('populations (§4.2, §8.2, v0.48: one E, three uses)', () => {
   it('quorum: a fixed count, or ⌈share × E⌉', () => {
     expect(quorumCount({ form: 'count', n: 5 }, 14)).toBe(5);
-    expect(quorumCount({ form: 'share', n: 60 }, 14)).toBe(9); // ⌈8.4⌉
-    expect(quorumCount({ form: 'share', n: 100 }, 7)).toBe(7);
+    // the shares are 40 and 50 rather than 60 and 100 since Q1439 (R-126):
+    // no quorum asks for more than half, and `values.ts` refuses one above it
+    expect(quorumCount({ form: 'share', n: 40 }, 14)).toBe(6); // ⌈5.6⌉
+    expect(quorumCount({ form: 'share', n: 50 }, 7)).toBe(4);  // ⌈3.5⌉
   });
 
   it('F = max(Q′, min(⌈E/3⌉, F_max)) — the room’s number rides the minimum', () => {

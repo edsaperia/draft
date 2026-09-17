@@ -329,7 +329,7 @@ export class Races {
   }
 
   /**
-   * **A judgment's ground is its own pair's** (Q1441, Ed 2026-09-18; SPEC §4.4
+   * **A judgment's ground is its own pair's** (Q1441, Ed 2026-09-17; SPEC §4.4
    * → why: R-129): the current text under the lines of the wordings it
    * compares — X's footprint where X is judged against the current text, and
    * footprint(A) ∪ footprint(B) where two challengers are compared. An

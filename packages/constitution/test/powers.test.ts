@@ -28,7 +28,7 @@ const readyToBegin = (): ConstitutionSession => {
   const values = {
     ending: { endsAtMs: 1_000_000 }, bar: { pct: 66 }, chamber: { rung: 'link' },
     rate: { grant: 4, cap: 8, dripMinutes: 240 }, pace: { shape: 'fixed' },
-    quorum: { form: 'share', n: 60 }, authorship: { rung: 'sealed' },
+    quorum: { form: 'share', n: 40 }, authorship: { rung: 'sealed' },
     judgments: { rung: 'after' }, applications: { apply: false },
     admission: { price: 'assembly' },
     removal: { price: 'consent' }, machines: { enabled: false, budget: 0 },

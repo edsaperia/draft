@@ -108,7 +108,8 @@ say('\n== founding-8: a staggered ceremony with a never holdout ==============')
 
   say('  t=9   quorum (share), the bar, lapse, machines, applications, rate');
   for (const m of everybody) {
-    s.answer(9, m, 'quorum', { form: 'share', n: m === fay ? 75 : 50 });
+    // 50 is the top of the scale since Q1439 (R-126), and 34 is under it
+    s.answer(9, m, 'quorum', { form: 'share', n: m === fay ? 50 : 34 });
     s.answer(9, m, 'bar', { pct: m === hex ? 82 : 66 });
     s.answer(9, m, 'lapse', { afterMs: m === gus ? null : 90 * 86_400_000 });
     s.answer(9, m, 'machines', { enabled: false, budget: 0 });
@@ -121,8 +122,8 @@ say('\n== founding-8: a staggered ceremony with a never holdout ==============')
     // and cap are fixed at 3 for new documents, and generosity is the drip
     s.answer(9, m, 'rate', { grant: 3, cap: 3, dripMinutes: m === bo ? 60 : 240 });
   }
-  eq(s.settingState('quorum').value, { form: 'share', n: 75 },
-    'quorum: the highest stated minimum binds (fay wanted 75%)');
+  eq(s.settingState('quorum').value, { form: 'share', n: 50 },
+    'quorum: the highest stated minimum binds (fay wanted half, the most any quorum may ask)');
   eq(s.settingState('bar').value, { pct: 82 },
     'the bar: hex needed 82, so 82 it is');
   eq(s.settingState('lapse').value, { afterMs: null },
@@ -293,7 +294,7 @@ say('\n== the crown, v0.49: assent ends either route; a lapsed crown assents by 
 {
   const { s, bo, cy } = threeRoom({ lapse: { afterMs: 10_000 } });
   const m = s.openMotion(3, bo, { kind: 'set', setting: 'quorum',
-    value: { form: 'share', n: 80 } });
+    value: { form: 'share', n: 50 } });
   say('  bo moves the reserved quorum — constitutional by kind, reservation adds assent');
   s.answerMotion(4, 'ada', m, 'accept');
   s.answerMotion(5, cy, m, 'accept');
@@ -301,7 +302,7 @@ say('\n== the crown, v0.49: assent ends either route; a lapsed crown assents by 
     'unanimity carries the change to the crown, not into the document');
   const q = view(s, 'ada').crownTasks[0]!;
   s.answerCrownQuestion(6, q.id, 'accept');
-  eq(s.settingState('quorum').value, { form: 'share', n: 80 }, 'assent applies it');
+  eq(s.settingState('quorum').value, { form: 'share', n: 50 }, 'assent applies it');
 
   say('  ada goes quiet; the members stay active; the §9.5a clock runs');
   const m2 = s.openMotion(7_000, bo, { kind: 'set', setting: 'rate',
@@ -373,7 +374,7 @@ function threeRoom(opts: { lapse?: { afterMs: number | null }; ending?: number }
   s.setSetting(2, 'rate', { grant: 4, cap: 8, dripMinutes: 240 });
   for (const [id, v] of Object.entries({
     pace: { shape: 'fixed' },
-    quorum: { form: 'share', n: 60 },
+    quorum: { form: 'share', n: 40 },
     authorship: { rung: 'sealed' },
     judgments: { rung: 'after' },
     applications: { apply: false },

@@ -81,7 +81,7 @@ function built(rung: Rung, endsAtMs: number | null = 1_000_000):
   s.confirmStartingText(2, 'The clubhouse shall be kept open.');
   for (const [id, v] of Object.entries({
     ending: { endsAtMs }, pace: { shape: 'fixed' }, bar: { pct: 60 },
-    quorum: { form: 'share', n: 60 }, authorship: { rung: 'sealed' },
+    quorum: { form: 'share', n: 40 }, authorship: { rung: 'sealed' },
     judgments: { rung }, chamber: { rung: 'public' },
     applications: { apply: false }, admission: { price: 'assembly' },
     removal: { price: 'consent' }, rate: { grant: 4, cap: 8, dripMinutes: 240 },

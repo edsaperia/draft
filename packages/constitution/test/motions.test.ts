@@ -40,7 +40,7 @@ const constituted = (opts: { reserveRate?: boolean } = {}) => {
   s.answer(1, cy, 'chamber', { rung: 'public' });
   const values = {
     pace: { shape: 'fixed' },
-    quorum: { form: 'share', n: 60 },
+    quorum: { form: 'share', n: 40 },
     authorship: { rung: 'sealed' },
     judgments: { rung: 'after' },
     applications: { apply: false },
@@ -205,10 +205,10 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
     const { s, bo } = constituted();
     const m = s.openMotion(3, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } });
     expect(() => s.openMotion(4, bo, { kind: 'set', setting: 'quorum',
-      value: { form: 'share', n: 80 } })).toThrow(/one 🏛️/);
+      value: { form: 'share', n: 50 } })).toThrow(/one 🏛️/);
     s.withdrawMotion(5, bo, m);
     s.openMotion(6, bo, { kind: 'set', setting: 'quorum',
-      value: { form: 'share', n: 80 } }); // the 🏛️ came back whole
+      value: { form: 'share', n: 50 } }); // the 🏛️ came back whole
   });
 
   it('an arrival mid-motion means their answer is now needed too', () => {
@@ -227,7 +227,7 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
     s.answer(1, bo, 'bar', { pct: 60 }); // resolves members-held: no crown in the way
     const values = {
       pace: { shape: 'fixed' },
-      quorum: { form: 'share', n: 60 }, authorship: { rung: 'sealed' },
+      quorum: { form: 'share', n: 40 }, authorship: { rung: 'sealed' },
       judgments: { rung: 'after' },
       chamber: { rung: 'link' },
       applications: { apply: false },
@@ -362,14 +362,14 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
     const { s, bo } = constituted();
     // quorum is founder-held here: the pen is ada's, and a motion on it runs
     const m = s.openMotion(3, bo, { kind: 'set', setting: 'quorum',
-      value: { form: 'share', n: 70 } });
+      value: { form: 'share', n: 45 } });
     s.answerMotion(4, 'ada', m, 'accept');
-    s.setSetting(5, 'quorum', { form: 'share', n: 80 });
+    s.setSetting(5, 'quorum', { form: 'share', n: 50 });
     expect(s.motionRecords().get(m)!.status).toBe('running');
     expect([...s.motionRecords().get(m)!.answers]).toEqual([[bo, 'accept']]);
     expect(shifts(s)).toEqual([[m, 'pen']]);
     // a pen that restates what stands moves no ground
-    s.setSetting(6, 'quorum', { form: 'share', n: 80 });
+    s.setSetting(6, 'quorum', { form: 'share', n: 50 });
     expect(shifts(s)).toEqual([[m, 'pen']]);
   });
 
@@ -398,7 +398,7 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
   it('a parked rival is cleared too: back to running, its 👑 question withdrawn (Q1348 (a))', () => {
     const { s, bo, cy } = constituted();
     const m = s.openMotion(3, bo, { kind: 'set', setting: 'quorum',
-      value: { form: 'share', n: 80 } });
+      value: { form: 'share', n: 50 } });
     s.answerMotion(4, 'ada', m, 'accept');
     s.answerMotion(5, cy, m, 'accept'); // bo stood at accept from the open
     expect(s.motionRecords().get(m)!.status).toBe('awaiting-crown');
@@ -407,7 +407,7 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
     expect(view(s, 'ada').crownTasks.map((c) => c.id)).toEqual([q.id]);
     // the ✒️ sets a different value: the unanimity behind the parked motion
     // was consent to move from 60, and 60 is not what stands any more
-    s.setSetting(6, 'quorum', { form: 'share', n: 70 });
+    s.setSetting(6, 'quorum', { form: 'share', n: 45 });
     const rival = s.motionRecords().get(m)!;
     expect(rival.status).toBe('running');
     expect(rival.settledAtT).toBeNull();
@@ -425,7 +425,7 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
       .find((x) => x.motion === m && x.status === 'pending')!;
     expect(q2.id).not.toBe(q.id);
     s.answerCrownQuestion(10, q2.id, 'accept');
-    expect(s.settingState('quorum').value).toEqual({ form: 'share', n: 80 });
+    expect(s.settingState('quorum').value).toEqual({ form: 'share', n: 50 });
     const r = ConstitutionSession.replay([...s.logEntries()]);
     expect(r.rollingHash()).toBe(s.rollingHash());
     expect(r.crownQuestionRecords().get(q.id)!.status).toBe('withdrawn');
@@ -443,9 +443,9 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
   it('a rival proposing what now stands carries, moot, applying nothing (Q1348 (b))', () => {
     const { s, bo } = constituted();
     const m = s.openMotion(3, bo, { kind: 'set', setting: 'quorum',
-      value: { form: 'share', n: 80 } });
+      value: { form: 'share', n: 50 } });
     expect(s.motionRecords().get(m)!.status).toBe('running');
-    s.setSetting(4, 'quorum', { form: 'share', n: 80 }, 'the floor was too low');
+    s.setSetting(4, 'quorum', { form: 'share', n: 50 }, 'the floor was too low');
     const rec = s.motionRecords().get(m)!;
     expect(rec.status).toBe('carried');
     expect(rec.moot).toBe('pen');
@@ -453,8 +453,8 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
     expect(shifts(s)).toEqual([]); // a moot rival is never wiped
     expect([...rec.answers]).toEqual([[bo, 'accept']]);
     // no second change record, and the provenance is the ✒️'s own
-    expect(s.settingState('quorum').value).toEqual({ form: 'share', n: 80 });
-    expect(s.settingState('quorum').previousValue).toEqual({ form: 'share', n: 60 });
+    expect(s.settingState('quorum').value).toEqual({ form: 'share', n: 50 });
+    expect(s.settingState('quorum').previousValue).toEqual({ form: 'share', n: 40 });
     expect(s.settingState('quorum').settledBy).toBe('crown'); // the post-start ✒️
     expect(s.settingState('quorum').setWhy).toBe('the floor was too low');
     expect(s.logEntries().filter((e) => e.event.type === 'setting-set' &&
@@ -473,8 +473,8 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
     // ada moves it herself: the ✒️'s own news skips the convenor, so hers is
     // the one OK the moot carry has to raise
     const m = s.openMotion(3, 'ada', { kind: 'set', setting: 'quorum',
-      value: { form: 'share', n: 80 } });
-    s.setSetting(4, 'quorum', { form: 'share', n: 80 });
+      value: { form: 'share', n: 50 } });
+    s.setSetting(4, 'quorum', { form: 'share', n: 50 });
     expect(s.motionRecords().get(m)!.moot).toBe('pen');
     // the whole of t=4: the ✒️'s set, the moot carry, and one OK — the
     // mover's. bo and cy stand owed 👥 from the founding set already, which
@@ -496,12 +496,12 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
   it('a parked rival proposing what now stands carries moot too (Q1348 (b))', () => {
     const { s, bo, cy } = constituted();
     const m = s.openMotion(3, bo, { kind: 'set', setting: 'quorum',
-      value: { form: 'share', n: 80 } });
+      value: { form: 'share', n: 50 } });
     s.answerMotion(4, 'ada', m, 'accept');
     s.answerMotion(5, cy, m, 'accept');
     expect(s.motionRecords().get(m)!.status).toBe('awaiting-crown');
     const q = [...s.crownQuestionRecords().values()].find((x) => x.motion === m)!;
-    s.setSetting(6, 'quorum', { form: 'share', n: 80 });
+    s.setSetting(6, 'quorum', { form: 'share', n: 50 });
     const rec = s.motionRecords().get(m)!;
     expect(rec.status).toBe('carried');
     expect(rec.moot).toBe('pen');
@@ -510,7 +510,7 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
     expect(s.crownQuestionRecords().get(q.id)!.status).toBe('withdrawn');
     expect(view(s, 'ada').crownTasks).toEqual([]);
     expect(s.settingState('quorum').settledBy).toBe('crown');
-    expect(s.settingState('quorum').previousValue).toEqual({ form: 'share', n: 60 });
+    expect(s.settingState('quorum').previousValue).toEqual({ form: 'share', n: 40 });
   });
 
   it('an amendment that predates a member is what the document says, not news', () => {
@@ -541,18 +541,18 @@ describe('the crown (§9.7 v0.49): reserved is assent, at the end of either rout
   it('unanimity on a reserved setting carries the change to the crown, not into the document', () => {
     const { s, bo, cy } = constituted(); // quorum is reserved (convenor-held)
     const m = s.openMotion(3, bo, { kind: 'set', setting: 'quorum',
-      value: { form: 'share', n: 80 } });
+      value: { form: 'share', n: 50 } });
     expect(s.motionRecords().get(m)!.route).toBe('constitutional');
     s.answerMotion(4, 'ada', m, 'accept');
     s.answerMotion(5, cy, m, 'accept'); // bo stood at accept from the open
     expect(s.motionRecords().get(m)!.status).toBe('awaiting-crown');
-    expect(s.settingState('quorum').value).toEqual({ form: 'share', n: 60 });
+    expect(s.settingState('quorum').value).toEqual({ form: 'share', n: 40 });
     // the 🏛️ stays out while the crown considers
     expect(() => s.openMotion(6, bo, { kind: 'set', setting: 'chamber',
       value: { rung: 'closed' } })).toThrow(/one 🏛️/);
     const q = [...s.crownQuestionRecords().values()].find((x) => x.motion === m)!;
     s.answerCrownQuestion(7, q.id, 'accept');
-    expect(s.settingState('quorum').value).toEqual({ form: 'share', n: 80 });
+    expect(s.settingState('quorum').value).toEqual({ form: 'share', n: 50 });
     expect(s.settingState('quorum').settledBy).toBe('crown');
     expect(s.motionRecords().get(m)!.status).toBe('carried');
     // and the carry itself owed nobody an OK — everyone had their say

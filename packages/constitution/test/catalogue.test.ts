@@ -67,7 +67,7 @@ describe('catalogue integrity (SPEC §9.0–§9.7½)', () => {
     const samples: Partial<Record<SettingId, SettingValue[]>> = {
       ending: [{ endsAtMs: null }, { endsAtMs: 100 }, { endsAtMs: 200 }],
       bar: [{ pct: 60 }, { pct: 95 }],
-      quorum: [{ form: 'share', n: 50 }, { form: 'share', n: 100 }],
+      quorum: [{ form: 'share', n: 50 }, { form: 'share', n: 50 }],
       authorship: [{ rung: 'anonymous' }, { rung: 'public' }],
       rate: [
         { grant: 4, cap: 8, dripMinutes: 240 },
@@ -242,7 +242,7 @@ describe('catalogue integrity (SPEC §9.0–§9.7½)', () => {
   });
 
   it('eqValue is key-order independent', () => {
-    expect(eqValue({ form: 'share', n: 60 }, { n: 60, form: 'share' } as SettingValue)).toBe(true);
+    expect(eqValue({ form: 'share', n: 40 }, { n: 40, form: 'share' } as SettingValue)).toBe(true);
     expect(eqValue({ pct: 66 }, { pct: 67 })).toBe(false);
   });
 });

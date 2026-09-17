@@ -3,7 +3,7 @@ import { Session, makeConstitution } from '../src/session.js';
 import { roster } from './helpers.js';
 
 /**
- * **A judgment's ground is its own pair's** (Q1441, Ed 2026-09-18: *a new
+ * **A judgment's ground is its own pair's** (Q1441, Ed 2026-09-17: *a new
  * rival joining a clause shouldn't change a preference between two other
  * rivals*; SPEC §4.4 → why: R-076, R-129).
  *

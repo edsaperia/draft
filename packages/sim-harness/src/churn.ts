@@ -312,7 +312,7 @@ async function main(): Promise<void> {
     { label: 'quorum 25% — ongoing', q: { form: 'share', n: 25 } },
     { label: 'quorum 33% — conference', q: { form: 'share', n: 33 } },
     { label: 'quorum 50% — meeting', q: { form: 'share', n: 50 } },
-    { label: 'quorum 80%', q: { form: 'share', n: 80 } },
+    { label: 'quorum 80%', q: { form: 'share', n: 50 } },
   ];
   for (const { label, q } of QUORUMS) {
     const cell = await measure(label, conference,

@@ -275,7 +275,7 @@ await cmd('founder', 'set-setting', { setting: 'rate', value: { grant: 8, cap: 8
 const refusedSettings = [];
 for (const [setting, value] of Object.entries({
   pace: { shape: 'fixed' },
-  quorum: { form: 'share', n: 60 },
+  quorum: { form: 'share', n: 40 },
   authorship: { rung: 'sealedElective' },
   judgments: { rung: 'after' },
   applications: { apply: true },
@@ -1165,7 +1165,7 @@ const P2_LINES = SEED_LINES.slice();
   for (const m of SEATS) await arrive(m, await outboxLinkTo(addr2(m)));
   await cmd('founder', 'set-setting', { setting: 'rate', value: { grant: 8, cap: 8, dripMinutes: 240 } });
   for (const [setting, value] of Object.entries({
-    quorum: { form: 'share', n: 60 }, authorship: { rung: 'sealedElective' },
+    quorum: { form: 'share', n: 40 }, authorship: { rung: 'sealedElective' },
     judgments: { rung: 'after' }, lapse: { afterMs: null },
     ending: { endsAtMs: Date.now() + 7 * 24 * 3600_000 }, chamber: { rung: 'link' },
   })) {

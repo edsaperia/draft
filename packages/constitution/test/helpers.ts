@@ -71,7 +71,7 @@ export function buildConstituted(opts: {
   // lapse and the document constitutes on it
   const values = {
     pace: { shape: 'fixed' },
-    quorum: opts.quorum ?? { form: 'share', n: 60 },
+    quorum: opts.quorum ?? { form: 'share', n: 40 },
     authorship: { rung: 'sealed' },
     judgments: { rung: 'after' },
     applications: opts.applications ?? { apply: false },

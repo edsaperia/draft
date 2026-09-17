@@ -899,7 +899,7 @@ describe('ground shifts lock judgments and re-serve pairs (SPEC §4.4, Q50)', ()
 
     // The survivors' race re-forms with a new **race-wide** incumbent id:
     // the field changed and the contested area with it. **And that is no
-    // longer what locks a judgment** (Q1441, Ed 2026-09-18, R-129): the
+    // longer what locks a judgment** (Q1441, Ed 2026-09-17, R-129): the
     // rival pair below compared the wording on line 1, which w's adoption
     // never touched, so the room's answer about it is still an answer about
     // the text that stands. Until Q1441 the race-wide fingerprint voided it —

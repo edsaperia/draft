@@ -199,7 +199,7 @@ describe('§10: *not a member* — it never judges and counts toward no quorum',
       constitution: makeConstitution({
         windowStartMs: 0,
         windowEndMs: 10 * HOUR,
-        quorum: { form: 'share', n: 60 },
+        quorum: { form: 'share', n: 40 },
         rngSeed: 'promise-machines',
       }),
     }, 0);

@@ -197,7 +197,7 @@ say(`  invited and arrived ${members.length} members`);
 await cmd('founder', 'set-setting', { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
 for (const [setting, value] of Object.entries({
   pace: { shape: 'fixed' },
-  quorum: { form: 'share', n: 60 },
+  quorum: { form: 'share', n: 40 },
   authorship: { rung: 'sealed' },
   judgments: { rung: 'after' },
   applications: { apply: true },

@@ -250,17 +250,16 @@ function differential(
 }
 
 /**
- * **The differential scripts get a timeout of their own** (Q1439). Each is 120
- * steps × two sessions, one of them deriving everything afresh, with the whole
- * published picture of both compared at every step — and the warm side runs
- * under `memo.audit`, which recomputes *and serialises* every cache hit. It is
- * seconds of real work by construction, and vitest's default five was never a
- * budget for it: the `moon` case already timed out under full-suite load on
- * this machine and passed when run alone. Q1439 added a fourth script and a
- * second memo entry per read, so the number is stated here rather than left to
- * the default. Nothing about the assertions is relaxed.
+ * **A load allowance, not a performance budget** (Q1439). These scripts run in
+ * about 1.4 s each alone and have twice timed out at vitest's default five
+ * under full-suite load on this machine, which reddens `ci` and so holds a
+ * push; the budget is the before/after measurement Q1441 asks for, not this
+ * number. Each script is 120 steps × two sessions, one of them deriving
+ * everything afresh, with the whole published picture of both compared at
+ * every step, and the warm side runs under `memo.audit`, which recomputes
+ * *and serialises* every cache hit. Nothing about the assertions is relaxed.
  */
-const SCRIPT_MS = 60_000;
+const SCRIPT_MS = 30_000;
 
 describe('the fold-live memo derives what no memo derives (Q1326)', () => {
   for (const seed of ['moon', 'oak', 'clerk']) {

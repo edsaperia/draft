@@ -163,7 +163,7 @@ function penEverything(s: ConstitutionSession, t: number, skip: SettingId[] = []
     ending: { endsAtMs: 1_000_000 },
     bar: { pct: 60 },
     pace: { shape: 'fixed' },
-    quorum: { form: 'share', n: 60 },
+    quorum: { form: 'share', n: 40 },
     authorship: { rung: 'sealed' },
     judgments: { rung: 'after' },
     chamber: { rung: 'public' },

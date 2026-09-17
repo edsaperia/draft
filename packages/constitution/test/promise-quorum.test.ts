@@ -186,8 +186,8 @@ describe('promise 1 — nothing carries until Q of us have weighed in (§4.2, §
   });
 
   it('and at E = 1 a share of 100 is the same one voice — ⌈1.00 × 1⌉ = 1', () => {
-    expect(quorumCount({ form: 'share', n: 100 }, 1)).toBe(1);
-    const s = buildSolo({ form: 'share', n: 100 });
+    expect(quorumCount({ form: 'share', n: 50 }, 1)).toBe(1);
+    const s = buildSolo({ form: 'share', n: 50 });
     const bridge = new EngineBridge(s, { t: 3, rngSeed: 'solo-share' });
     expect(bridge.engine.adoptionFloor()).toBe(1);
     const v0 = bridge.engine.currentVersion();
@@ -255,9 +255,9 @@ describe('promise 2 — the form never converts (§9.0a, Q341)', () => {
     const { s, bo } = founding();
     s.delegate(2, 'quorum');
     s.answer(3, bo, 'quorum', { form: 'count', n: 1 });
-    s.answer(4, 'ada', 'quorum', { form: 'share', n: 60 });
+    s.answer(4, 'ada', 'quorum', { form: 'share', n: 40 });
     const st = s.settingState('quorum');
-    expect(st.value).toEqual({ form: 'share', n: 60 });
+    expect(st.value).toEqual({ form: 'share', n: 40 });
     // …and the promise is *no looser than what I accepted, judged when it
     // settles*: a member who asked for a count can end up bound by a share
   });
@@ -280,7 +280,7 @@ describe('promise 2 — the form never converts (§9.0a, Q341)', () => {
   it('but a live motion carries the other form with nothing checking it — the frame moves on a value (FINDING: promise 2, live)', () => {
     const { s, bo, cy } = buildConstituted({ quorum: { form: 'count', n: 2 } });
     expect(s.quorumForm).toBe('count');
-    const m = s.openMotion(10, bo, { kind: 'set', setting: 'quorum', value: { form: 'share', n: 60 } });
+    const m = s.openMotion(10, bo, { kind: 'set', setting: 'quorum', value: { form: 'share', n: 40 } });
     expect(s.motionRecords().get(m)!.route).toBe('constitutional');
     s.answerMotion(11, 'ada', m, 'accept');
     s.answerMotion(12, cy, m, 'accept');
@@ -292,7 +292,7 @@ describe('promise 2 — the form never converts (§9.0a, Q341)', () => {
       .find((e) => e.type === 'crown-question-opened' && e.motion === m) as { question: string };
     s.answerCrownQuestion(13, q.question, 'accept');
     expect(s.motionRecords().get(m)!.status).toBe('carried');
-    expect(s.settingState('quorum').value).toEqual({ form: 'share', n: 60 });
+    expect(s.settingState('quorum').value).toEqual({ form: 'share', n: 40 });
     expect(s.quorumForm).toBe('share'); // re-framed, and no `quorum-form-set` in the log
     expect(s.logEntries().map((e) => e.event)
       .filter((e) => e.type === 'quorum-form-set').length).toBe(0);
@@ -303,7 +303,7 @@ describe('promise 2 — the form never converts (§9.0a, Q341)', () => {
     // 👥 is constitutional, so the founder needs it back first — the point
     // is that once they hold it, nothing between the pen and the value
     // asks whether the room was asked this question in this form.
-    s.setSetting(10, 'quorum', { form: 'share', n: 60 });
+    s.setSetting(10, 'quorum', { form: 'share', n: 40 });
     expect(s.quorumForm).toBe('share');
   });
 });
@@ -392,7 +392,7 @@ describe('promise 3 — a share is a share of who is here now (§9.3, §8.2)', (
 
   it('an invitation nobody has opened moves nothing: E counts arrivals, never invitees', () => {
     const { s } = buildConstituted({
-      quorum: { form: 'share', n: 60 },
+      quorum: { form: 'share', n: 40 },
       admission: { price: 'pen' },
     });
     const bridge = new EngineBridge(s, { t: 3, rngSeed: 'invited-only' });
@@ -566,9 +566,10 @@ describe('promise 6 — a constitutional motion has no quorum either (§9.6)', (
 
 describe('the arithmetic behind every one of them', () => {
   it('a share of the room is the share rounded up, at every value the surface can state', () => {
-    expect(quorumCount({ form: 'share', n: 60 }, 3)).toBe(2);
-    expect(quorumCount({ form: 'share', n: 60 }, 4)).toBe(3);
-    expect(quorumCount({ form: 'share', n: 100 }, 7)).toBe(7);
+    // 40 and 50, the top of the scale being half since Q1439 (R-126)
+    expect(quorumCount({ form: 'share', n: 40 }, 3)).toBe(2);
+    expect(quorumCount({ form: 'share', n: 40 }, 4)).toBe(2);
+    expect(quorumCount({ form: 'share', n: 50 }, 7)).toBe(4);
     expect(quorumCount({ form: 'share', n: 5 }, 40)).toBe(2);
     expect(quorumCount({ form: 'count', n: 3 }, 40)).toBe(3);
   });

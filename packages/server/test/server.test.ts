@@ -302,7 +302,7 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     await cmd(ada, 'set-setting',
       { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
     const values: Record<string, unknown> = {
-      quorum: { form: 'share', n: 60 },
+      quorum: { form: 'share', n: 40 },
       authorship: { rung: 'sealed' },
       judgments: { rung: 'after' },
       applications: { apply: true },

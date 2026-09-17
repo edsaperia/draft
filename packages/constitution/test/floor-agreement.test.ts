@@ -122,8 +122,8 @@ describe('the adoption floor: the engine and the constitution agree (§4.2)', ()
 
   it('a share quorum tracks E identically on both sides', () => {
     for (const E of [1, 3, 4, 7, 9, 10]) {
-      const q: QuorumValue = { form: 'share', n: 60 };
-      expect(quorumCount(q, E)).toBe(Math.ceil(0.6 * E));
+      const q: QuorumValue = { form: 'share', n: 40 };
+      expect(quorumCount(q, E)).toBe(Math.ceil((40 * E) / 100));
       expect(engineFloor(E, q, 12)).toBe(adoptionFloor(quorumCount(q, E), E, 12));
     }
   });

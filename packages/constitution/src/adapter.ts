@@ -108,6 +108,14 @@ export function engineFieldsFor(
     }
     case 'authorship':
       return { authorshipVisibility: authorshipBase((value as LadderValue).rung) };
+    case 'lapse':
+      // **💤's one period, doing both its jobs** (Q1439 ruling c, R-127): the
+      // engine has never heard of a lapse — that reaches it as
+      // `participant-suspended` — but it needs the *period*, because silence
+      // on one candidate for that long is an abstention on it (§8.2). `null`
+      // is *never*, and the engine reads an absent field the same way, so
+      // nothing is ever imputed on a document whose 💤 says never.
+      return { abstainAfterMs: (value as LapseValue).afterMs };
     default:
       return {};
   }
@@ -138,7 +146,10 @@ export function toEngineConstitution(
   const rate = s.settingState('rate').value as RateValue | null;
   const quorum = s.settingState('quorum').value as QuorumValue;
   const authorship = s.settingState('authorship').value as { rung: string };
-  void (s.settingState('lapse').value as LapseValue | null); // engine has no lapse yet
+  // 💤's period reaches the engine since Q1439 — not as a lapse, which is
+  // still relayed as `participant-suspended`, but as the span after which
+  // silence on one candidate is an abstention on it (§8.2, R-127)
+  const lapse = (s.settingState('lapse').value as LapseValue | null) ?? { afterMs: null };
 
   const windowStartMs = s.constitutedAtT;
   const endsAtMs = ending ? ending.endsAtMs : null;
@@ -160,6 +171,7 @@ export function toEngineConstitution(
     ...engineFieldsFor('quorum', quorum, windowStartMs),
     ...engineFieldsFor('rate', { grant, cap, dripMinutes }, windowStartMs),
     ...engineFieldsFor('authorship', authorship, windowStartMs),
+    ...engineFieldsFor('lapse', lapse, windowStartMs),
   } as Required<ConstitutionAmendment>;
 
   const constitution = {
@@ -186,6 +198,9 @@ export function toEngineConstitution(
     // now — the floor closure below survives for hosts that want the number
     // without a Session.
     quorum: fields.quorum,
+    // §8.2 (Q1439): 💤's period, after which silence on one candidate is an
+    // abstention on it. `null` — 💤 *never*, or unset — imputes nothing.
+    abstainAfterMs: fields.abstainAfterMs,
     rngSeed,
     rivalGateProb: tuning.rivalGateProb,
     rivalGateMinComparisons: tuning.rivalGateMinComparisons,

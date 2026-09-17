@@ -6,7 +6,7 @@ import { ConstitutionSession } from '../src/session.js';
 // judging needs the whole constitution (§9.0b).
 
 const FOUNDER_SET = {
-  pace: { shape: 'fixed' }, quorum: { form: 'share', n: 60 },
+  pace: { shape: 'fixed' }, quorum: { form: 'share', n: 40 },
   authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
   applications: { apply: false }, removal: { price: 'consent' },
   admission: { price: 'assembly' },
@@ -202,7 +202,7 @@ describe('🍾 begin — the founder starts the document (Q443)', () => {
     expect(s.settingState('link').holder).toBe('members');
     // …and the values the founder set all stand: a lay-down is not a reset
     expect(s.settingState('link').value).toEqual({ slug: 't2' });
-    expect(s.settingState('quorum').value).toEqual({ form: 'share', n: 60 });
+    expect(s.settingState('quorum').value).toEqual({ form: 'share', n: 40 });
     // the log carries the four events and replays to the same state
     const r = ConstitutionSession.replay(s.logEntries().slice());
     expect(r.rollingHash()).toBe(s.rollingHash());
