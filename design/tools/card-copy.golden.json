@@ -7357,13 +7357,8 @@
     "eyebrow": "",
     "head": "The Founder may refuse changes to the visibility rule that the membership pass.",
     "lock": "",
-    "body": "The Founder may refuse changes to the visibility rule that the membership pass.ChosenThe Founder may not refuse changes to the visibility rule that the membership pass.One way — it cannot be taken back.Choose this",
+    "body": "The Founder may not refuse changes to the visibility rule that the membership pass.One way — it cannot be taken back.Choose this",
     "options": [
-     {
-      "set": "pw:a:chamber",
-      "val": "held",
-      "label": "Chosen"
-     },
      {
       "set": "pw:a:chamber",
       "val": "given",
@@ -7398,13 +7393,8 @@
     "eyebrow": "",
     "head": "The Founder may refuse invitations and applications that the membership pass.",
     "lock": "",
-    "body": "The Founder may refuse invitations and applications that the membership pass.ChosenThe Founder may not refuse invitations and applications that the membership pass.One way — it cannot be taken back.Choose this",
+    "body": "The Founder may not refuse invitations and applications that the membership pass.One way — it cannot be taken back.Choose this",
     "options": [
-     {
-      "set": "pw:a:invite",
-      "val": "held",
-      "label": "Chosen"
-     },
      {
       "set": "pw:a:invite",
       "val": "given",
@@ -7437,13 +7427,8 @@
     "eyebrow": "",
     "head": "The Founder may refuse changes to the proposal rate that the membership pass.",
     "lock": "",
-    "body": "The Founder may refuse changes to the proposal rate that the membership pass.ChosenThe Founder may not refuse changes to the proposal rate that the membership pass.One way — it cannot be taken back.Choose this",
+    "body": "The Founder may not refuse changes to the proposal rate that the membership pass.One way — it cannot be taken back.Choose this",
     "options": [
-     {
-      "set": "pw:a:rate",
-      "val": "held",
-      "label": "Chosen"
-     },
      {
       "set": "pw:a:rate",
       "val": "given",
@@ -7478,13 +7463,8 @@
     "eyebrow": "",
     "head": "The Founder may refuse removals that the membership pass.",
     "lock": "",
-    "body": "The Founder may refuse removals that the membership pass.ChosenThe Founder may not refuse removals that the membership pass.One way — it cannot be taken back.Choose this",
+    "body": "The Founder may not refuse removals that the membership pass.One way — it cannot be taken back.Choose this",
     "options": [
-     {
-      "set": "pw:a:remove",
-      "val": "held",
-      "label": "Chosen"
-     },
      {
       "set": "pw:a:remove",
       "val": "given",
@@ -7517,13 +7497,8 @@
     "eyebrow": "",
     "head": "The Founder may refuse changes to the link that the membership pass.",
     "lock": "",
-    "body": "The Founder may refuse changes to the link that the membership pass.ChosenThe Founder may not refuse changes to the link that the membership pass.One way — it cannot be taken back.Choose this",
+    "body": "The Founder may not refuse changes to the link that the membership pass.One way — it cannot be taken back.Choose this",
     "options": [
-     {
-      "set": "pw:a:slug",
-      "val": "held",
-      "label": "Chosen"
-     },
      {
       "set": "pw:a:slug",
       "val": "given",
@@ -7556,13 +7531,8 @@
     "eyebrow": "",
     "head": "The Founder may refuse changes to the title that the membership pass.",
     "lock": "",
-    "body": "The Founder may refuse changes to the title that the membership pass.ChosenThe Founder may not refuse changes to the title that the membership pass.One way — it cannot be taken back.Choose this",
+    "body": "The Founder may not refuse changes to the title that the membership pass.One way — it cannot be taken back.Choose this",
     "options": [
-     {
-      "set": "pw:a:title",
-      "val": "held",
-      "label": "Chosen"
-     },
      {
       "set": "pw:a:title",
       "val": "given",
@@ -7595,13 +7565,8 @@
     "eyebrow": "",
     "head": "The Founder may amend the visibility rule at will.",
     "lock": "",
-    "body": "The Founder may amend the visibility rule at will.ChosenThe Founder may not amend the visibility rule at will.One way — it cannot be taken back.Choose this",
+    "body": "The Founder may not amend the visibility rule at will.One way — it cannot be taken back.Choose this",
     "options": [
-     {
-      "set": "pw:u:chamber",
-      "val": "held",
-      "label": "Chosen"
-     },
      {
       "set": "pw:u:chamber",
       "val": "given",
@@ -7636,13 +7601,8 @@
     "eyebrow": "",
     "head": "The Founder may invite people at will.",
     "lock": "",
-    "body": "The Founder may invite people at will.ChosenThe Founder may not invite people at will.One way — it cannot be taken back.Choose this",
+    "body": "The Founder may not invite people at will.One way — it cannot be taken back.Choose this",
     "options": [
-     {
-      "set": "pw:u:invite",
-      "val": "held",
-      "label": "Chosen"
-     },
      {
       "set": "pw:u:invite",
       "val": "given",
@@ -7675,13 +7635,8 @@
     "eyebrow": "",
     "head": "The Founder may amend the proposal rate at will.",
     "lock": "",
-    "body": "The Founder may amend the proposal rate at will.ChosenThe Founder may not amend the proposal rate at will.One way — it cannot be taken back.Choose this",
+    "body": "The Founder may not amend the proposal rate at will.One way — it cannot be taken back.Choose this",
     "options": [
-     {
-      "set": "pw:u:rate",
-      "val": "held",
-      "label": "Chosen"
-     },
      {
       "set": "pw:u:rate",
       "val": "given",
@@ -7716,13 +7671,8 @@
     "eyebrow": "",
     "head": "The Founder may remove members at will.",
     "lock": "",
-    "body": "The Founder may remove members at will.ChosenThe Founder may not remove members at will.One way — it cannot be taken back.Choose this",
+    "body": "The Founder may not remove members at will.One way — it cannot be taken back.Choose this",
     "options": [
-     {
-      "set": "pw:u:remove",
-      "val": "held",
-      "label": "Chosen"
-     },
      {
       "set": "pw:u:remove",
       "val": "given",
@@ -7755,13 +7705,8 @@
     "eyebrow": "",
     "head": "The Founder may amend the link at will.",
     "lock": "",
-    "body": "The Founder may amend the link at will.ChosenThe Founder may not amend the link at will.One way — it cannot be taken back.Choose this",
+    "body": "The Founder may not amend the link at will.One way — it cannot be taken back.Choose this",
     "options": [
-     {
-      "set": "pw:u:slug",
-      "val": "held",
-      "label": "Chosen"
-     },
      {
       "set": "pw:u:slug",
       "val": "given",
@@ -7794,13 +7739,8 @@
     "eyebrow": "",
     "head": "The Founder may amend the title at will.",
     "lock": "",
-    "body": "The Founder may amend the title at will.ChosenThe Founder may not amend the title at will.One way — it cannot be taken back.Choose this",
+    "body": "The Founder may not amend the title at will.One way — it cannot be taken back.Choose this",
     "options": [
-     {
-      "set": "pw:u:title",
-      "val": "held",
-      "label": "Chosen"
-     },
      {
       "set": "pw:u:title",
       "val": "given",
