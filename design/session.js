@@ -2086,8 +2086,16 @@
       // and the ✒️ that stood for it here — the one place on the surface where
       // the pen glyph did not mean the Founder's own hand — goes with it.
       '<div class="rechead" title="' +
-      esc(T.record.tooltip(d.judges ?? 0, ROSTER, FLOOR,
-        yours ? T.record.youSaid(yours) : T.record.youNever)) + '">' +
+      // **How many preferred it, where the record knows** (Q1439, ruling a):
+      // the quorum counts approvals now, so the tooltip carries that count
+      // beside the count of everybody who weighed in — `d.approvals` comes
+      // from the race record (`RaceView.approvals`, the engine's, through
+      // `itemsFromView`), and where it is absent the line reads as it always
+      // did. `FLOOR` is the view's own `floor` (set in `setData`), which is
+      // per race from the same change.
+      esc(T.record.tooltip(d.judges ?? 0, ROSTER, d.floor ?? FLOOR,
+        yours ? T.record.youSaid(yours) : T.record.youNever,
+        typeof d.approvals === 'number' ? d.approvals : null)) + '">' +
       '<span>' + (und ? T.record.undecided : T.record.decided) + ' · ' + (d.judges ?? 0) + '/' + ROSTER + PEOPLE +
       // an undecided race nobody read prints no reading: 0% is a number about
       // nothing

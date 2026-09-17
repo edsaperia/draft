@@ -209,7 +209,7 @@
    },
    "begin": {
     "eyebrow": "",
-    "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ is decided once the quorum has voted on it: the text becomes whichever wording the membership prefers, the current text included.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ is adopted once enough of the membership prefers it to the current text, and more prefer it than not.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.The document cannot begin while 🌍 Visibility is still being decided.🌍 Visibility is delegated to the membership, and you are its only member: a question answered by one voice has not been handed to anybody. Invite somebody at 🪪 Membership, or take it back on its own card and set it yourself.What the Founder keeps.Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.🪶 Title✒️🛡️📍 Link✒️🛡️🌍 Visibility✒️🛡️🪪 Admissions✒️🛡️🤝 Applications✒️🛡️💤 Lapsing✒️🛡️🥾 Removals✒️🛡️✉️ Invite a Member✒️🛡️❌ Remove a Member✒️🛡️⏱️ Proposal Rate✒️🛡️⏰ Ending✒️🛡️👥 Quorum✒️🛡️👤 Anonymous Proposals✒️🛡️👁️ Vote Reveal✒️🛡️📝 Text✒️🛡️The questions🌍 1 out of 1 of the membership has voted on whether the document can only be seen by members or by anyone with the link.The peopleAda Lovell · answered everythingIt comes back to you the moment somebody else can answer.",
     "options": [],
@@ -384,7 +384,7 @@
    },
    "grant-voice": {
     "eyebrow": "",
-    "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ is decided once the quorum has voted on it: the text becomes whichever wording the membership prefers, the current text included.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ is adopted once enough of the membership prefers it to the current text, and more prefer it than not.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "",
     "options": [],
@@ -521,12 +521,12 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "After days, inactive members lapse and automatically abstain from votes.Choose thisInactive members never lapse and are still counted towards votes.Choose thisThe membership will decide whether inactive members lapse or never lapse.Choose this",
+    "body": "After minuteshoursdays, inactive members lapse and automatically abstain from votes.Choose thisInactive members never lapse and are still counted towards votes.Choose thisThe membership will decide whether inactive members lapse or never lapse.Choose this",
     "options": [
      {
       "set": "lapse",
       "val": "days",
-      "label": "After days, inactive members lapse and automatically abstain from votes."
+      "label": "After minuteshoursdays, inactive members lapse and automatically abstain from votes."
      },
      {
       "set": "lapse",
@@ -683,22 +683,22 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Choose this members must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Choose thisThe membership will decide how many members must vote on a proposal ✏️ before anything changes.Choose this",
+    "body": "At least % of the membership must prefer a proposal ✏️ before it can be adopted.Choose thisAt least members must prefer a proposal ✏️ before it can be adopted.Choose thisThe membership will decide how many members must prefer a proposal ✏️ before it can be adopted.Choose this",
     "options": [
      {
       "set": "quorumForm",
       "val": "share",
-      "label": "% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer."
+      "label": "At least % of the membership must prefer a proposal ✏️ before it can be adopted."
      },
      {
       "set": "quorumForm",
       "val": "count",
-      "label": "members must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer."
+      "label": "At least members must prefer a proposal ✏️ before it can be adopted."
      },
      {
       "set": "quorumBy",
       "val": "roster",
-      "label": "The membership will decide how many members must vote on a proposal ✏️ before anything changes."
+      "label": "The membership will decide how many members must prefer a proposal ✏️ before it can be adopted."
      }
     ],
     "inputs": [
@@ -1462,7 +1462,7 @@
     "inputs": [],
     "foot": [],
     "hints": [
-     "n of m weighed in · quorum was 5 · you preferred the new wording",
+     "n of m weighed in · 6 preferred it · quorum was 5 · you preferred the new wording",
      "Guests — notice — open it",
      "Guests — open it",
      "Guests — numbers — open it",
@@ -2663,7 +2663,7 @@
     "inputs": [],
     "foot": [],
     "hints": [
-     "n of m weighed in · quorum was 5 · you preferred the new wording",
+     "n of m weighed in · 6 preferred it · quorum was 5 · you preferred the new wording",
      "Guests — notice — open it",
      "Guests — open it",
      "Guests — numbers — open it",
@@ -3539,12 +3539,12 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "After days, inactive members lapse and automatically abstain from votes.Choose thisInactive members never lapse and are still counted towards votes.Choose thisThe membership will decide whether inactive members lapse or never lapse.Chosen",
+    "body": "After minuteshoursdays, inactive members lapse and automatically abstain from votes.Choose thisInactive members never lapse and are still counted towards votes.Choose thisThe membership will decide whether inactive members lapse or never lapse.Chosen",
     "options": [
      {
       "set": "lapse",
       "val": "days",
-      "label": "After days, inactive members lapse and automatically abstain from votes."
+      "label": "After minuteshoursdays, inactive members lapse and automatically abstain from votes."
      },
      {
       "set": "lapse",
@@ -3616,22 +3616,22 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Choose this members must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Choose thisThe membership will decide how many members must vote on a proposal ✏️ before anything changes.Chosen",
+    "body": "At least % of the membership must prefer a proposal ✏️ before it can be adopted.Choose thisAt least members must prefer a proposal ✏️ before it can be adopted.Choose thisThe membership will decide how many members must prefer a proposal ✏️ before it can be adopted.Chosen",
     "options": [
      {
       "set": "quorumForm",
       "val": "share",
-      "label": "% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer."
+      "label": "At least % of the membership must prefer a proposal ✏️ before it can be adopted."
      },
      {
       "set": "quorumForm",
       "val": "count",
-      "label": "members must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer."
+      "label": "At least members must prefer a proposal ✏️ before it can be adopted."
      },
      {
       "set": "quorumBy",
       "val": "roster",
-      "label": "The membership will decide how many members must vote on a proposal ✏️ before anything changes."
+      "label": "The membership will decide how many members must prefer a proposal ✏️ before it can be adopted."
      }
     ],
     "inputs": [
@@ -3960,7 +3960,7 @@
    },
    "begin": {
     "eyebrow": "",
-    "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ is decided once the quorum has voted on it: the text becomes whichever wording the membership prefers, the current text included.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ is adopted once enough of the membership prefers it to the current text, and more prefer it than not.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.What the Founder keeps.Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.🪶 Title✒️🛡️📍 Link✒️🛡️🌍 Visibility✒️🛡️🪪 Admissions✒️🛡️🤝 Applications✒️🛡️💤 Lapsing✒️🛡️🥾 Removals✒️🛡️✉️ Invite a Member✒️🛡️❌ Remove a Member✒️🛡️⏱️ Proposal Rate✒️🛡️⏰ Ending✒️🛡️👥 Quorum✒️🛡️👤 Anonymous Proposals✒️🛡️👁️ Vote Reveal✒️🛡️📝 Text✒️🛡️The questionsThe peopleAda Lovell · nothing owedNobody is kept waiting by this: whoever has not answered can still answer after the start, and the document takes what was said.",
     "options": [],
@@ -4132,7 +4132,7 @@
    },
    "grant-voice": {
     "eyebrow": "",
-    "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ is decided once the quorum has voted on it: the text becomes whichever wording the membership prefers, the current text included.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ is adopted once enough of the membership prefers it to the current text, and more prefer it than not.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "",
     "options": [],
@@ -4267,12 +4267,12 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "After days, inactive members lapse and automatically abstain from votes.Choose thisInactive members never lapse and are still counted towards votes.Choose thisThe membership will decide whether inactive members lapse or never lapse.Choose this",
+    "body": "After minuteshoursdays, inactive members lapse and automatically abstain from votes.Choose thisInactive members never lapse and are still counted towards votes.Choose thisThe membership will decide whether inactive members lapse or never lapse.Choose this",
     "options": [
      {
       "set": "lapse",
       "val": "days",
-      "label": "After days, inactive members lapse and automatically abstain from votes."
+      "label": "After minuteshoursdays, inactive members lapse and automatically abstain from votes."
      },
      {
       "set": "lapse",
@@ -4429,22 +4429,22 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Choose this members must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Choose thisThe membership will decide how many members must vote on a proposal ✏️ before anything changes.Choose this",
+    "body": "At least % of the membership must prefer a proposal ✏️ before it can be adopted.Choose thisAt least members must prefer a proposal ✏️ before it can be adopted.Choose thisThe membership will decide how many members must prefer a proposal ✏️ before it can be adopted.Choose this",
     "options": [
      {
       "set": "quorumForm",
       "val": "share",
-      "label": "% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer."
+      "label": "At least % of the membership must prefer a proposal ✏️ before it can be adopted."
      },
      {
       "set": "quorumForm",
       "val": "count",
-      "label": "members must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer."
+      "label": "At least members must prefer a proposal ✏️ before it can be adopted."
      },
      {
       "set": "quorumBy",
       "val": "roster",
-      "label": "The membership will decide how many members must vote on a proposal ✏️ before anything changes."
+      "label": "The membership will decide how many members must prefer a proposal ✏️ before it can be adopted."
      }
     ],
     "inputs": [
@@ -4753,7 +4753,7 @@
    },
    "begin": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ is decided once the quorum has voted on it: the text becomes whichever wording the membership prefers, the current text included.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ is adopted once enough of the membership prefers it to the current text, and more prefer it than not.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "What beginning did.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.",
     "options": [],
@@ -4778,7 +4778,7 @@
    },
    "canjudge": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ is decided once the quorum has voted on it: the text becomes whichever wording the membership prefers, the current text included.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ is adopted once enough of the membership prefers it to the current text, and more prefer it than not.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "",
     "options": [],
@@ -4803,7 +4803,7 @@
    },
    "canpropose": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ is decided once the quorum has voted on it: the text becomes whichever wording the membership prefers, the current text included.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ is adopted once enough of the membership prefers it to the current text, and more prefer it than not.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "",
     "options": [],
@@ -4898,7 +4898,7 @@
    },
    "grant-voice": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ is decided once the quorum has voted on it: the text becomes whichever wording the membership prefers, the current text included.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ is adopted once enough of the membership prefers it to the current text, and more prefer it than not.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "The Founder invited you into the membership, and Constitutional Proposals came with it.",
     "options": [],
@@ -5017,7 +5017,7 @@
     "eyebrow": "",
     "head": "Inactive members never lapse and are still counted towards votes.Chosen by the membership",
     "lock": "",
-    "body": "A membership lapses after days without logging in.Propose this",
+    "body": "A membership lapses after minuteshoursdays without logging in.Propose this",
     "options": [],
     "inputs": [
      {
@@ -5606,9 +5606,9 @@
    },
    "quorum": {
     "eyebrow": "",
-    "head": "38% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Chosen by the membership",
+    "head": "At least 38% (n of m) of the membership must prefer a proposal ✏️ before it can be adopted.Chosen by the membership",
     "lock": "",
-    "body": "Quorum is % of the membership.Propose this",
+    "body": "At least % (n of m) of the membership must prefer a proposal ✏️ before it can be adopted.Propose this",
     "options": [],
     "inputs": [
      {
@@ -5629,7 +5629,7 @@
     "hints": [
      "We should change this because…",
      "Quorum — close it",
-     "Passed: 38% of the membership — settled",
+     "Passed: 38% (n of m) of the membership — settled",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
@@ -5707,9 +5707,9 @@
    },
    "rec:quorum:0": {
     "eyebrow": "",
-    "head": "38% of the membership",
+    "head": "38% (n of m) of the membership",
     "lock": "",
-    "body": "D Month YYYY · Passed38% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.The charter should not change until more of us have had our say.Chosen by the membership",
+    "body": "D Month YYYY · PassedAt least 38% (n of m) of the membership must prefer a proposal ✏️ before it can be adopted.The charter should not change until more of us have had our say.Chosen by the membership",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5724,7 +5724,7 @@
     ],
     "hints": [
      "Quorum — settled",
-     "Passed: 38% of the membership — close it",
+     "Passed: 38% (n of m) of the membership — close it",
      "A member wrote this. Who, is sealed until the closing record.",
      "Put it back as it stands"
     ],
@@ -6355,7 +6355,7 @@
    },
    "quorum": {
     "eyebrow": "",
-    "head": "38% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Chosen by the membership",
+    "head": "At least 38% (n of m) of the membership must prefer a proposal ✏️ before it can be adopted.Chosen by the membership",
     "lock": "",
     "body": "",
     "options": [],
@@ -6372,7 +6372,7 @@
     ],
     "hints": [
      "Quorum — close it",
-     "Passed: 38% of the membership — settled",
+     "Passed: 38% (n of m) of the membership — settled",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -6433,9 +6433,9 @@
    },
    "rec:quorum:0": {
     "eyebrow": "",
-    "head": "38% of the membership",
+    "head": "38% (n of m) of the membership",
     "lock": "",
-    "body": "D Month YYYY · Passed38% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.The charter should not change until more of us have had our say.Chosen by the membership",
+    "body": "D Month YYYY · PassedAt least 38% (n of m) of the membership must prefer a proposal ✏️ before it can be adopted.The charter should not change until more of us have had our say.Chosen by the membership",
     "options": [],
     "inputs": [],
     "foot": [
@@ -6450,7 +6450,7 @@
     ],
     "hints": [
      "Quorum — settled",
-     "Passed: 38% of the membership — close it",
+     "Passed: 38% (n of m) of the membership — close it",
      "A member wrote this. Who, is sealed until the closing record.",
      "Put it back as it stands"
     ],
@@ -6716,7 +6716,7 @@
    },
    "begin": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ is decided once the quorum has voted on it: the text becomes whichever wording the membership prefers, the current text included.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ is adopted once enough of the membership prefers it to the current text, and more prefer it than not.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "What beginning did.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.",
     "options": [],
@@ -6741,7 +6741,7 @@
    },
    "canjudge": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ is decided once the quorum has voted on it: the text becomes whichever wording the membership prefers, the current text included.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ is adopted once enough of the membership prefers it to the current text, and more prefer it than not.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "",
     "options": [],
@@ -6766,7 +6766,7 @@
    },
    "canpropose": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ is decided once the quorum has voted on it: the text becomes whichever wording the membership prefers, the current text included.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ is adopted once enough of the membership prefers it to the current text, and more prefer it than not.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "",
     "options": [],
@@ -6928,7 +6928,7 @@
    },
    "grant-voice": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ is decided once the quorum has voted on it: the text becomes whichever wording the membership prefers, the current text included.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ is adopted once enough of the membership prefers it to the current text, and more prefer it than not.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "",
     "options": [],
@@ -7049,7 +7049,7 @@
     "eyebrow": "",
     "head": "Inactive members never lapse and are still counted towards votes.Chosen by the membership",
     "lock": "",
-    "body": "A membership lapses after days without logging in.Propose this",
+    "body": "A membership lapses after minuteshoursdays without logging in.Propose this",
     "options": [],
     "inputs": [
      {
@@ -7771,9 +7771,9 @@
    },
    "quorum": {
     "eyebrow": "",
-    "head": "38% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.Chosen by the membership",
+    "head": "At least 38% (n of m) of the membership must prefer a proposal ✏️ before it can be adopted.Chosen by the membership",
     "lock": "",
-    "body": "Quorum is % of the membership.Propose this",
+    "body": "At least % (n of m) of the membership must prefer a proposal ✏️ before it can be adopted.Propose this",
     "options": [],
     "inputs": [
      {
@@ -7794,7 +7794,7 @@
     "hints": [
      "We should change this because…",
      "Quorum — close it",
-     "Passed: 38% of the membership — settled",
+     "Passed: 38% (n of m) of the membership — settled",
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
@@ -7882,9 +7882,9 @@
    },
    "rec:quorum:0": {
     "eyebrow": "",
-    "head": "38% of the membership",
+    "head": "38% (n of m) of the membership",
     "lock": "",
-    "body": "D Month YYYY · Passed38% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.The charter should not change until more of us have had our say.Chosen by the membership",
+    "body": "D Month YYYY · PassedAt least 38% (n of m) of the membership must prefer a proposal ✏️ before it can be adopted.The charter should not change until more of us have had our say.Chosen by the membership",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7899,7 +7899,7 @@
     ],
     "hints": [
      "Quorum — settled",
-     "Passed: 38% of the membership — close it",
+     "Passed: 38% (n of m) of the membership — close it",
      "A member wrote this. Who, is sealed until the closing record.",
      "Put it back as it stands"
     ],

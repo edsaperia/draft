@@ -1747,6 +1747,10 @@ const handedOver = [];
 const l1Set = [], l1Miss = [];
 let waitingAtBegin = false;
 let doorWalked = false;
+// **💤 is answered in minutes** (Q1439, ruling j), so this founding sets a
+// spell no count of days can hold: the unit is picked, the number typed, and
+// the pair is read back after the reload below. True once it is committed.
+let lapseSet = false;
 for (let i = 0; i < 60; i++) {
   const standing = await rail();
   // --proposals-first: the four tabs of the Proposals opening jump the queue
@@ -1840,6 +1844,36 @@ for (let i = 0; i < 60; i++) {
     stuck.push('unservableNews at ' + next + ': ' + unservedNews.join(','));
   }
   if (!(await open(next))) { stuck.push(next + ' (would not open)'); continue; }
+  // **💤's unit is picked before the number is typed** (Q1439). Driven here
+  // rather than left to `fillFields`, which fills a box with its own minimum
+  // in whatever unit the card opens on and so could never state a spell
+  // shorter than a day. The unit select fires `change`, which renders — the
+  // box's ends are the unit's — so the number goes in afterwards, and
+  // `fillFields` then leaves a filled box alone.
+  if (next === 'lapse' && !DELEGATE_ALL) {
+    const set = await page.evaluate(() => {
+      const c = document.querySelector('.setupcard');
+      const u = c && c.querySelector('[data-lapseunit]');
+      if (!u) return 'no unit picker';
+      u.value = 'minutes';
+      u.dispatchEvent(new Event('change', { bubbles: true }));
+      return null;
+    });
+    await T(320);
+    const typed = await page.evaluate(() => {
+      const c = document.querySelector('.setupcard');
+      const n = c && c.querySelector('[data-num="lapseN"]');
+      if (!n) return 'no number box';
+      n.value = '20';
+      for (const e of ['input', 'change']) n.dispatchEvent(new Event(e, { bubbles: true }));
+      return null;
+    });
+    await T(220);
+    if (set || typed) {
+      say('💤 minutes · FAIL: ' + (set || typed) + ' on the open 💤 card');
+      stuck.push('💤’s unit picker');
+    } else lapseSet = true;
+  }
   // **A heading-over-text card carries no title head, and its entry no
   // subtitle** (Q1373, Q1374 — Ed, 2026-09-15: *founder actions and founder
   // veto decision cards still had titles, and also queue cards had body
@@ -2058,6 +2092,43 @@ await beginRowsAfterStart();
     : 'FAIL: OK’d ' + JSON.stringify(okd) + ' · served again ' + JSON.stringify(l8.back) + ' · struck ' +
       JSON.stringify(struck) + ' · served ' + JSON.stringify(l8.served)));
   if (!l8Ok) stuck.push('L8: a grant served again, or a socket struck, after a reload');
+  // …and on the same reload: **💤 in minutes survives it** (Q1439, ruling j).
+  // The spell was a count of days on the page, so a founder who set twenty
+  // minutes would have come back to 0.0139 in the box. Asserted here because
+  // the reload is here: the card and the clause are read off the page the
+  // server rebuilt, not the one the founder typed into. `lapseSet` is what
+  // the founding actually committed — nothing under --delegate-all, where 💤
+  // is the room's.
+  if (lapseSet) {
+    const l = await page.evaluate(() => {
+      const p = document.querySelector('[data-para="lapse"]');
+      return { clause: p ? p.textContent.replace(/\s+/g, ' ').trim() : null };
+    });
+    let box = null;
+    if (await open('lapse')) {
+      box = await page.evaluate(() => {
+        const c = document.querySelector('.setupcard');
+        const n = c && c.querySelector('[data-num="lapseN"]');
+        const u = c && c.querySelector('[data-lapseunit]');
+        return { n: n ? n.value : null, unit: u ? u.value : null,
+          text: (c ? c.textContent : '').replace(/\s+/g, ' ').trim() };
+      });
+      await closeCard();
+    }
+    const clauseOk = !!l.clause && /After 20 minutes,/.test(l.clause);
+    // **What stands is not offered back** (Q1293), so the ladder's box is
+    // empty on a settled card and the standing rule is its first block: what
+    // is asserted is that the *rule* says twenty minutes and that the unit
+    // picker opens on the unit the spell was stated in — not days, which is
+    // what a page holding a fraction of a day would have come back with.
+    const cardOk = !!box && box.unit === 'minutes' && /After 20 minutes,/.test(box.text) &&
+      (box.n === '' || box.n === '20');
+    say('💤 minutes · ' + (clauseOk && cardOk
+      ? 'set to 20 minutes; after the reload the clause reads “After 20 minutes, …” and the card’s standing rule and unit agree'
+      : 'FAIL: clause ' + JSON.stringify(l.clause && l.clause.slice(0, 70)) +
+        ' · card ' + JSON.stringify(box && { n: box.n, unit: box.unit, text: box.text.slice(0, 80) })));
+    if (!(clauseOk && cardOk)) stuck.push('💤 in minutes did not survive the reload');
+  }
 }
 
 if (DELEGATE_ALL) {

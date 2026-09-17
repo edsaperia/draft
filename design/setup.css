@@ -244,8 +244,12 @@
   .pick .opttext .numin.datein { width: auto; max-width: 16rem; }
   /* ⏱️'s unit dropdown is a word in its sentence too (Ed's QA, 2026-09-02
      pm): a select inherits no font by default, so it is told to — the whole
-     `font`, not just the size — and takes only the box its word needs. */
-  select.dripunit, .pick .opttext .numin.dripunit { font: inherit; width: auto; }
+     `font`, not just the size — and takes only the box its word needs.
+     💤 takes the same control since Q1439 (minutes · hours · days), so the
+     class is the treatment's name rather than ⏱️'s: `.dripunit` was the one
+     picker's own word, and two pickers share one word only if nothing in it
+     names the first. */
+  select.unitsel, .pick .opttext .numin.unitsel { font: inherit; width: auto; }
   /* ❌'s member picker is a decision in its own right, not a form field, so
      it reads at clause size rather than the browser's own cramped control
      (Ed, card review round 3, 2026-09-05, A11). */

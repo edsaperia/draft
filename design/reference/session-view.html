@@ -39,7 +39,9 @@
    cuts the other way twice, on 2026-08-18: *when it ends* swallowed *whether it
    ends*, because **never** is one of the answers to *when*; and the stake stopped
    being a card at all, because it is a flat 1 in the mechanism and a card for it
-   was offering a decision nobody has. Then ✒️ split the other way on Ed’s Q341 rethink — the close bar is consent where the ramp is pacing, two kinds — so seventeen became eighteen — and 💤 *Do memberships lapse?* (Ed, closing Q345) made it nineteen.
+   was offering a decision nobody has. Then ✒️ split the other way on Ed’s Q341 rethink — the close bar is consent where the ramp is pacing, two kinds — so seventeen became eighteen — and 💤 *Do memberships lapse?* (Ed, closing Q345) made it nineteen,
+   which is the count as it stood in August 2026 and not today's. **The catalogue holds eighteen settings** (SPEC §9.7.1): 🌡️ and 🪜 left the surface
+   with the bar itself (Q1362 (b), R-117) and 🧭's presets left the birth (Q1363), each keeping whatever the engine needs to replay an older log.
 
    What is left in this file is its own fixture and the bodies of the cards a
    founder fills in. The piles, the strip, the cable, the rail entry, the card
@@ -455,7 +457,12 @@
   const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml: cardHtml0,
     nameBody, pictureBody, opt, num, numIn, ctlWord, someIn, ANSWER, stateOf, labelOf, nounOf,
     MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml, stripHtml, readBody,
-    routeFor, motionCommitHtml, BLINDNOTE, listOf, syncSlider } = window.SETUP;
+    routeFor, motionCommitHtml, BLINDNOTE, listOf, syncSlider,
+    // 👥's share bounds and its (x of y), and 💤's units (Q1439): one control
+    // each, drawn by setup.js, so the founder's card, the member's answer card
+    // and this script's composer cannot state three different ranges
+    SHARE, shareCount, shareTail, shareWords, shareSlot,
+    LAPSE_UNITS, LAPSE_BOUNDS, lapseParts, unitSel } = window.SETUP;
   // **Every card can carry a refusal** (Q1330, SURFACE Y25): the settings,
   // motion and door bodies draw `doorErrHtml` where the control that tried
   // stands, and every other kind — a gate, a grant, an answer, news — drew
@@ -787,11 +794,14 @@
   // the save (§9.7a: until the link exists, nothing does, anywhere).
   const M = window.CONSTITUTION;
   let cs = null;
-  // 💤's page number is a count of days, and the module's `spellWords` is
-  // the one writer of its words (Q1321): days where whole, else hours, else
-  // minutes — never *0 days* for a spell under a day
-  const spellOfDays = (d) => (d !== '' && d !== null && d !== undefined && isFinite(+d)
-    ? M.spellWords(+d * 86400000) : '');
+  // 💤's page number **is the spell itself**, in milliseconds, and the
+  // module's `spellWords` is the one writer of its words (Q1321): days where
+  // whole, else hours, else minutes — never *0 days* for a spell under a day.
+  // It was a count of days until Q1439 gave the card minutes and hours
+  // (ruling j); a fractional day carried *20 minutes* only by rounding at
+  // every reading, and put `0.0139` in the box the founder types into.
+  const spellOfMs = (ms) => (ms !== '' && ms !== null && ms !== undefined && isFinite(+ms)
+    ? M.spellWords(+ms) : '');
   // ---- the charter column (stage 8) --------------------------------------
   // The document's text renders as clauses through session.js; the founder's
   // editor (#prose) is for the text before there is anywhere else to put it.
@@ -868,6 +878,11 @@
     hydrateApplicant: (...a) => hydrateApplicant(...a),
     hydrateSeen: (...a) => hydrateSeen(...a),
     hydrateValues: (...a) => hydrateValues(...a),
+    // the deferred reload's own two readers (issue #12) — wrappers like the
+    // rest, so the predicate asks the page as it stands at the poll rather
+    // than as it stood when the wire was made
+    openCardDirty: (...a) => openCardDirty(...a),
+    pressInFlight: (...a) => pressInFlight(...a),
     proseText: (...a) => proseText(...a),
     refusalNoted: (...a) => refusalNoted(...a),
     render: (...a) => render(...a),
@@ -1125,7 +1140,7 @@
     judgments: () => ({ rung: S.judgments }),
     chamber: () => ({ rung: S.chamber }),
     rate: () => ({ grant: 3, cap: 3, dripMinutes: +S.dripMin }),   // Q1160: 3/3 fixed
-    lapse: () => (S.lapse === 'never' ? { afterMs: null } : { afterMs: Math.round(+S.lapseDays * 86400000) }),
+    lapse: () => (S.lapse === 'never' ? { afterMs: null } : { afterMs: Math.round(+S.lapseMs) }),
     removal: () => ({ price: S.removal }),
     admission: () => ({ price: S.admission }),
     applications: () => ({ apply: S.joinBy === 'apply' }),
@@ -1144,7 +1159,11 @@
     applications: (v) => ({ apply: v === 'apply' }),
     removal: (v) => ({ price: v }),
     admission: (v) => ({ price: v }),
-    lapse: (v) => (v === 'never' ? { afterMs: null } : { afterMs: +v * 86400000 }),
+    // 💤's answer is a spell in the member's own unit since Q1439 (ruling j),
+    // the same shape ⏱️'s has had since Q1160 — days where they have picked
+    // nothing, which is the unit the card opens on
+    lapse: (v) => (v === 'never' ? { afterMs: null }
+      : { afterMs: +v * (LAPSE_UNITS[S.myAns.lapseUnit] || LAPSE_UNITS.days) }),
     // the answer is the interval since Q1160, in the member's own unit
     rate: (v) => ({ grant: 3, cap: 3,
       dripMinutes: +v * (DRIP_UNITS[S.myAns.rateUnit] || 1) }),
@@ -1154,15 +1173,35 @@
     // rate's page scalar is the interval since Q1160
     quorum: (v) => v.n, rate: (v) => v.dripMinutes,
     ending: (v) => (v.endsAtMs === null ? 'never' : msToLocal(v.endsAtMs)),
-    // **the day count is exact, never rounded** (Q1321): a spell the room
-    // set under a day rounded to *0 days* on every reader; the fraction
-    // survives here and `spellOfDays` words it in the unit that divides it
-    lapse: (v) => (v.afterMs === null ? 'never' : v.afterMs / 86400000),
+    // **the spell is the page's scalar, exactly** (Q1321, and Q1439 for the
+    // unit): a spell the room set under a day rounded to *0 days* on every
+    // reader while this was a day count, and a fraction of a day is not a
+    // number anybody types — the milliseconds survive here and `spellOfMs`
+    // words them in the unit that divides them
+    lapse: (v) => (v.afterMs === null ? 'never' : v.afterMs),
     authorship: (v) => v.rung,
     judgments: (v) => v.rung, chamber: (v) => v.rung,
     removal: (v) => v.price,
     admission: (v) => v.price,
     applications: (v) => (mayApply(v) ? 'apply' : 'invite'),
+  };
+  // …and **the inverse of `ANSTYPED`**, for the two answers a member states
+  // in a unit of their own (Q1439). `PAGEVAL` is the room's scalar — what
+  // `takenOf` hands the clause — and a member's own committed answer is a
+  // different thing: the number they typed and the unit they typed it in. The
+  // two were one map until 💤 gained units, where the difference stops being
+  // cosmetic: 💤's room scalar is the spell in milliseconds, so a member who
+  // answered *20 minutes* would have found 1200000 in the box on their next
+  // load. ⏱️ takes the same treatment and gains by it — an answer of 180
+  // minutes comes back as *3 hours*, the unit that divides it, rather than as
+  // the minutes the wire carries. A setting with no entry here keeps
+  // `PAGEVAL`, which is every setting whose answer is a rung or a date.
+  const ANSBACK = {
+    lapse: (v) => { if (v.afterMs === null) return { lapse: 'never' };
+      const p = lapseParts(v.afterMs);
+      return { lapse: p ? p.n : '', lapseUnit: p ? p.unit : 'days' }; },
+    rate: (v) => { const p = dripParts(v.dripMinutes);
+      return { rate: p ? p.n : v.dripMinutes, rateUnit: p ? p.unit : 'minutes' }; },
   };
   // **One home for a value's rule sentence** (Q1109, Ed 2026-08-31: the
   // founder card's options are the constitution's own sentences), and since
@@ -1327,7 +1366,8 @@
   // whether the bin has anything to throw away.
   const REVERTKEYS = () => ['title', 'slug', 'ending', 'endsAt',
     'quorumForm', 'quorumPct', 'quorumN', 'joinBy', 'policyBy', 'titleBy', 'slugBy',
-    'lapse', 'lapseDays', 'removal', 'removeWho', 'admission', 'authorship', 'judgments',
+    // 💤's spell and its typed pair (Q1439), ⏱️'s three below it
+    'lapse', 'lapseMs', 'lapseN', 'lapseUnit', 'removal', 'removeWho', 'admission', 'authorship', 'judgments',
     // ⏱️'s number and unit fields (Q1161) — missing until Q1286 (e), so 🗑️ on
     // ⏱️ left the typed number on the card and a later ✒️ would have committed it
     'grant', 'dripMin', 'dripN', 'dripUnit', 'cap', 'chamber',
@@ -1380,6 +1420,10 @@
     // (Q1161), so a bin that put back `dripN` alone left the minutes standing
     // and the reopened card read them back as the number
     if (el.querySelector('[data-num="dripN"], [data-dripunit]')) { ks.add('dripMin'); ks.add('dripUnit'); ks.add('rateBy'); }
+    // …and 💤's the same way since Q1439: the typed number rescales the spell
+    // and claims the rung, so a bin that put back `lapseN` alone would leave
+    // the spell standing and the reopened card would read it back
+    if (el.querySelector('[data-num="lapseN"], [data-lapseunit]')) { ks.add('lapseMs'); ks.add('lapseUnit'); ks.add('lapse'); }
     // **The picture card names itself by its uploader, not by its grid.**
     // `[data-pic]` used to be the always-present row of grounds; since Q732
     // the only `[data-pic]` elements are the picker's own buttons and the
@@ -1413,6 +1457,26 @@
         if (s.__ans) S.myAns[a] = a in s.__ans ? s.__ans[a] : null; return; }
       if (k in s) S[k] = s[k];
     }); };
+  // **What the bin would put back, asked as a question** (issue #12): the one
+  // reader of "this card is holding something you have not sent", over the
+  // same snapshot and the same `cardKeys()` the bin restores from, so there is
+  // no second idea of unsent on the surface. Only the deferred reload asks it
+  // — 🗑️ itself is always live and never did (the dirty predicates the row
+  // kept in three places stay retired). A key the snapshot does not carry is
+  // not the card's provisional state, since the bin would not put it back
+  // either; an answer's "stands as" is `revertSnap`'s own `null` fallback.
+  const openCardDirty = () => {
+    if (!S.open) return false;
+    const s = snaps[S.open];
+    if (!s) return false;
+    return (cardKeys() || []).some((k) => {
+      if (k.startsWith('ans:')) { const a = k.slice(4);
+        const was = s.__ans && a in s.__ans ? s.__ans[a] : null;
+        const is = S.myAns[a];
+        return (was == null ? is != null : is !== was); }
+      return k in s && S[k] !== s[k];
+    });
+  };
   // **🗑️ is always live** (Ed, 2026-08-21: *the bin should still close the
   // card even if the fields are empty*). It used to grey out when there was
   // nothing to put back, which made the one control that leaves a card
@@ -1456,7 +1520,10 @@
     ending: '', endsAt: '',
     quorumBy: '', quorumForm: '', quorumPct: '', quorumN: '',
     joinBy: '', admission: '',
-    lapse: '', lapseDays: '',
+    // 💤: the rung, the spell in milliseconds, and the number and unit it is
+    // typed as (Q1439) — `lapseMs` is `dripMin`'s twin and the two typed
+    // fields are `dripN`/`dripUnit`'s
+    lapse: '', lapseMs: '', lapseN: '', lapseUnit: '',
     // ❌'s chosen subject (entry 96), provisional until the act
     removal: '', removeWho: '',
     authorship: '', judgments: '',
@@ -1869,11 +1936,17 @@
   // the founder's row (Q755) and labelled every reader the founder (Q754).
   const founderRow = () => S.roster.find((p) => p.founder);
   const iDraft = () => { const m = founderRow(); return !!m && m.role !== 'clerk'; };
+  // **How many members a share comes to**, in the module's own arithmetic —
+  // `⌈n·E/100⌉`, the product before the quotient (issue #24). The share
+  // branch rounded *down* at the half here while the engine rounded up, so a
+  // 50% quorum in a membership of 5 read 3 to the engine and 2 to the page
+  // (`shareCount` is setup.js's, and every share the surface prints goes
+  // through it since Q1439).
   const quorumCount = () => {
     const st = csState('quorum');
     if (st && st.value) return Math.min(M.quorumCount(st.value, E()), E());
     return (S.quorumForm === 'share'
-      ? Math.max(1, Math.round(E() * S.quorumPct / 100)) : Math.min(S.quorumN, E()));
+      ? (shareCount(S.quorumPct, E()) ?? NaN) : Math.min(S.quorumN, E()));
   };
   const endingVal = () => takenOf('ending') ||
     (S.ending === 'roster' ? null : S.ending === 'perpetual' ? 'never' : S.endsAt);
@@ -2140,7 +2213,11 @@
         html.replace(/<(br|\/p|\/div|\/li|\/h[1-6]|\/tr)[^>]*>/gi, '\n'), 'text/html');
       txt = parsed.body ? parsed.body.textContent || '' : '';
     }
-    let lines = txt.split(/\n{2,}|\n/).filter((l) => l.trim());
+    // **A Windows clipboard ends its lines with a return** (Q1432): Chrome on
+    // Windows hands over `\r\n`, and a `\r` left on a line defeats the heading
+    // re-mark below and rides into every block. The lane's own paste
+    // (session.js) already strips it; so does this one.
+    let lines = txt.replace(/\r/g, '').split(/\n{2,}|\n/).filter((l) => l.trim());
     const first = lines[0] && lines[0].match(/^#\s+(.+)$/);
     if (first && !S.title) { S.title = first[1]; lines = lines.slice(1);
       S.seen.add('title');
@@ -2702,6 +2779,35 @@
   // asked. Null in the fixture, which races nothing.
   const settingRaceOf = (sid) => ((cs && cs.isRemote && cs.v.settingRaces) || [])
     .find((r) => r.settingId === sid) || null;
+  // **A motion card says which race it judges by what it proposes, never by
+  // its key** (issue #6). Since Q1367 a motion is its own card keyed
+  // `mo:<id>`, and `midOf` maps page keys to *settings* — so nothing in the
+  // key names the race, and the ✓ on every ordinary motion looked one up
+  // called `mo:mo-3`, found none and sent nothing. The record says it: a set
+  // motion races on its own setting, and each membership motion on a
+  // synthetic setting of its own (§9.7½, Q397/Q401a) — **the person** for an
+  // invitation, never the address, which is the row's (decision 1253).
+  const motionRaceSettingOf = (rec) => {
+    const p = rec && rec.payload;
+    if (!p) return null;
+    if (p.kind === 'set') return p.setting;
+    if (p.kind === 'invite') return 'invite:' + p.person;
+    if (p.kind === 'remove') return 'remove:' + p.member;
+    if (p.kind === 'admit') return 'admit:' + p.applicant;
+    return null;
+  };
+  // **…and only a membership motion *is* its race.** The three synthetic
+  // settings hold one candidate by construction (`enterMembershipRace`), so
+  // the view's blind row about that race is a row about that motion and
+  // nothing else — which is what lets the two readouts below read *have I
+  // voted* and *how far has the room got* off it. A **set** motion shares its
+  // setting's race with every rival value still running on it (Q1348), so the
+  // same row would tell both cards the same story: one leader's progress read
+  // as each motion's own, and a judgment on one pair marking the other
+  // answered. Those two keep the page's own per-card marker; the judgment
+  // itself goes through the race either way, which is the defect above.
+  const soleCandidateRaceOf = (rec) => (rec && rec.payload && rec.payload.kind !== 'set'
+    ? settingRaceOf(motionRaceSettingOf(rec) || '') : null);
   // **Everything one act laid down is one card** (entry 162, Q1013). Built on
   // `admitCard`'s pattern, which exists for exactly this shape: a synthetic
   // card with a dynamic key that the module, not the page, is the truth about.
@@ -2874,7 +2980,21 @@
     remove: PAGE_COPY.pw.phrase.remove,
     text: PAGE_COPY.pw.phrase.text,
   };
-  const pwPhrase = (k, power) => (PW_PHRASE[k] || PW_PHRASE['*'])[power];
+  // **`named` is the decision card asking for its setting's noun** (Q1429, Ed
+  // 2026-09-17: *from looking at the card text you don't know what setting
+  // they're referring to*). The generic phrase says *this*, which has a
+  // referent only where the sentence stands under the setting's own
+  // paragraph — and the card replaces that paragraph. So every site that
+  // draws the sentence **on a card** passes `named` and gets the noun in the
+  // `text` setting's own shape; the document paragraph (`holderLine`,
+  // `ctx.decisionLine`) passes nothing and keeps *this*. A setting with its
+  // own phrase already names its object, so `named` never reaches it.
+  const pwPhrase = (k, power, named) => (PW_PHRASE[k] ? PW_PHRASE[k][power]
+    : named
+      ? (power === 'u' || power === 'unilateral'
+        ? PAGE_COPY.pw.amendNoun(pwNoun(k))
+        : PAGE_COPY.pw.refuseChangesTo(pwNoun(k)))
+      : PW_PHRASE['*'][power]);
   // the aside is the birth's title clause and nothing else (Ed, 2026-08-27,
   // backlog 140): it is *the sentence that first names one*, so it is where
   // the Founder learns the word means them — and *repeated, it would read as
@@ -2888,15 +3008,17 @@
   // one given up the moment the document begins
   const founderMayNotYet = (parts) => (parts.length
     ? PAGE_COPY.pw.mayNotYet(parts) : '');
-  const pwLine = (k, power, held, pending) => (pending
-    ? founderMayNotYet([pwPhrase(k, power)])
-    : held ? founderMay([pwPhrase(k, power)])
-      : PAGE_COPY.pw.mayNot(pwPhrase(k, power)));
-  const powerHeadLine = (c) => {
+  // the pending form takes the noun too (Q1429): *From the start, the Founder
+  // may not amend the quorum rule at will.* is the same sentence under a date
+  const pwLine = (k, power, held, pending, named) => (pending
+    ? founderMayNotYet([pwPhrase(k, power, named)])
+    : held ? founderMay([pwPhrase(k, power, named)])
+      : PAGE_COPY.pw.mayNot(pwPhrase(k, power, named)));
+  const powerHeadLine = (c, named) => {
     const p = pwPair(c.base);
     const pend = pwPend(c.base);
     return pwLine(c.base, c.power, c.power === 'u' ? p.u : p.a,
-      c.power === 'u' ? pend.u : pend.a);
+      c.power === 'u' ? pend.u : pend.a, named);
   };
   // **A power card carries no why** (T43, Ed 2026-09-01: item 6 — *the
   // constitution speaks for itself*). The head states the rule as it stands
@@ -2957,8 +3079,10 @@
   // table of paraphrases and helper lines went with it; `vetoLabel`'s
   // setting-naming sentence survives away from the tab (`pwSaid`), where no
   // head names the setting.
-  const pwOptText = (k, power, held) => (held ? pwLine(k, power, true, false)
-    : PAGE_COPY.pw.mayNot(pwPhrase(k, power)).replace(/\bmay not\b/, 'may <b>not</b>'));
+  // an option block is drawn on the card and nowhere else, so it always names
+  // its setting (Q1429) — `named` is not a parameter here, it is the site
+  const pwOptText = (k, power, held) => (held ? pwLine(k, power, true, false, true)
+    : PAGE_COPY.pw.mayNot(pwPhrase(k, power, true)).replace(/\bmay not\b/, 'may <b>not</b>'));
   // **A power option is a proposal block, not a radio label** (Ed,
   // 2026-08-22: *these are too long for radio button text; we should put
   // them above the radios as document text, and then have radio buttons
@@ -3034,8 +3158,17 @@
     // to them, and a laid-down one is not drawn at all — Q1404);
     // each is the clause sentence and nothing beneath it, except the *given*
     // block's one consequence — one way, delegates, or at the start (Q1378)
+    // **…except past the start, where the head has already said it** (Q1430,
+    // Ed 2026-09-17, on his screenshot of a doubled sentence): live, the only
+    // state this branch is reached in is *held*, so the held block is word for
+    // word the rule the head states — and a head is not offered back. It is
+    // the omission `rungOpt` already makes on a value card's standing rung,
+    // filtered by **what the block would set** rather than by its words
+    // (Q620). What is left is the one act the card is for, and 🗑️ puts the
+    // pick back here as it does on every other card.
     return '<div class="choice" role="radiogroup">' +
-      powerLane(key, 'held', pwOptText(k, c.power, true), '', cur === 'held', blockAHeld) +
+      (live ? ''
+        : powerLane(key, 'held', pwOptText(k, c.power, true), '', cur === 'held', blockAHeld)) +
       powerLane(key, 'given', pwOptText(k, c.power, false),
         (live ? PAGE_COPY.pw.notes.oneWayTail
           : givingDelegates
@@ -3047,6 +3180,25 @@
       (blockGive ? '<p class="setnote">' + PAGE_COPY.pw.notes.opensWithValue + '</p>' : '') +
       (!live ? '<p class="setnote">' + PAGE_COPY.pw.notes.revisable + '</p>' : '');
   };
+  // **Before the start a power card has no head** (Q1430, the other half of
+  // Ed's ruling): the head states the rule as it stands, and before 🍾 the
+  // rule as it stands *is* the held block, so the founder read *The Founder
+  // may amend the title at will.* twice, once with **Chosen** under it. A
+  // value card hides the doubling because its head and its rungs are worded
+  // differently; T6 (Q1378) made a power option the clause sentence itself,
+  // which is what brought the two into register. Nothing stands yet at the
+  // birth that the blocks do not state completely, so the blocks are the
+  // whole choice and the head keeps only its strip — the thirteen
+  // option-block settings cards' own arrangement (Q1151, F15).
+  //
+  // Exactly where the two blocks are drawn, and nowhere else: a member's or a
+  // stranger's power tab, and a closed document's, are their head sentence
+  // and nothing else (Ed's card review round 3, 52/53; Q1183), so those keep
+  // it — the predicate is `powerBody`'s own pre-start test, read back. A card
+  // under a motion draws `consentBody` rather than these blocks and keeps its
+  // head too.
+  const powerHeadless = (c) => !!c.power && !(cs && cs.constitutedAtT !== null) &&
+    amFounder() && docOpen() && !motionOn(c);
   /**
    * **What a settled motion says about itself** (Q942): passed or rejected and
    * when, what was proposed (the head), what changed, and the reason. The
@@ -3353,6 +3505,15 @@
       slot.textContent = isNum(t.value) && ANSTYPED[k]
         ? (M.meaningOf(k, ANSTYPED[k](t.value), roomNow()) || '') : '';
     }
+    // …and (x of y) inside the clause the box stands in (Q1439, ruling m),
+    // repainted the same way and for the same reason. It is the member's own
+    // number and their own block: a share typed into the count block is not
+    // a share, and shows nothing.
+    const sh = (t.closest('.setupcard') || document).querySelector('[data-share="' + k + '"]');
+    if (sh) {
+      sh.textContent = k === 'quorum' && S.myAns.quorumForm === 'share' && isNum(t.value)
+        ? shareTail(t.value, E()) : '';
+    }
   };
   // committed = the answer reached the module; provisional stays page-side
   const answered = (c) => { const st = csState(ansKey(c));
@@ -3371,7 +3532,7 @@
     admission: () => !!S.admission,
     authorship: () => !!S.authorship,
     judgments: () => !!S.judgments,
-    lapse: () => S.lapse === 'never' || (!!S.lapse && isNum(S.lapseDays)),
+    lapse: () => S.lapse === 'never' || (!!S.lapse && isNum(S.lapseMs)),
     ending: () => S.ending === 'perpetual' || (!!S.ending && !!S.endsAt),
     quorum: () => !!S.quorumForm && isNum(S.quorumForm === 'count' ? S.quorumN : S.quorumPct),
     // the cap cannot be below the grant: the module quietly raises it, so a
@@ -3386,9 +3547,24 @@
   // …and under a standing block a card that still equals what stands has
   // nothing to commit either (Q1293): the composer's own rule, read here for
   // the founder's ladder. `ready` itself is untouched — `settled` reads it.
+  // **A share outside the box's own ends is not a commit** (Q1439, ruling a:
+  // no quorum above half). The box says 5–50 and the browser refuses the
+  // spinner past it, but a typed 51 would otherwise arm the ✓ and be refused
+  // by the module at the far end of a ten-second 🏛️ hold. It is asked here
+  // and **not** in `ready`, deliberately: `ready` is what `settled` reads, and
+  // a live alpha document standing at 66% must go on reading as settled
+  // rather than re-opening every card below it (the 💤 hydration defect).
+  const shareOutOfRange = (c) => {
+    const k = c.ansFor || c.k;
+    if (k !== 'quorum') return false;
+    const form = c.ansFor ? S.myAns.quorumForm : S.quorumForm;
+    if (form !== 'share') return false;
+    const n = c.ansFor ? S.myAns.quorum : S.quorumPct;
+    return isNum(n) && (+n < SHARE.min || +n > SHARE.max);
+  };
   const commitReady = (c) => (c.k === 'title'
     ? (!!titlePending() && titlePending() !== cs_titleNow())
-    : ready(c) && !unchangedCard(c.k));
+    : ready(c) && !unchangedCard(c.k) && !shareOutOfRange(c));
   const settled = (c) => {
     // 🎩 used to be *always answered — member by default*, which is why it
     // never appeared as a task: the founder was made a member by a default
@@ -4327,7 +4503,7 @@
     // (🌍 and 🤝 are stated once, above, module-first like every neighbour:
     // a second entry here used to override them and read S alone)
     lapse: () => (S.lapse === 'never' ? 'Never — however long you are away'
-      : PAGE_COPY.val.lapseAfter(spellOfDays(S.lapseDays))),
+      : PAGE_COPY.val.lapseAfter(spellOfMs(S.lapseMs))),
     removal: () => REMOVAL_RULE[removalPrice()],
     // the three grants carry no subtitle (Ed's card review, 2026-09-02:
     // *remove body text "You hold Founder Actions" from the queue card*;
@@ -4352,7 +4528,10 @@
     judgments: (v) => said(JUDG_RULE[v] || v),
     chamber: (v) => said(clauseOf('chamber', v) || v),
     applications: (v) => said(APPL_RULE(v) || v),
-    lapse: (v) => said(LAPSE_RULE(v)),
+    // the member's own answer is a number in the unit they picked (Q1439), so
+    // it is put back into a spell before it is read back as a sentence
+    lapse: (v) => said(LAPSE_RULE(v === 'never' ? 'never'
+      : +v * (LAPSE_UNITS[S.myAns.lapseUnit] || LAPSE_UNITS.days))),
     // **🪪's readback was missing entirely** — `admission` is delegable and
     // has an `ANSWER` body, so it makes an `ans-` card like every other; with
     // no entry here `value()` called `undefined` and took the render with it
@@ -4387,7 +4566,9 @@
   // is the one `holderLine`'s own lookup already keeps.
   const value = (c) => (c.ansFor
     ? esc(filled(c) ? ANSVALUE[c.ansFor](S.myAns[c.ansFor]) : ANSASK[c.ansFor])
-    : c.power ? esc(powerHeadLine(c))
+    // `readBody`'s *Set to* line is inside the open card (Q1429), so the rule
+    // it prints names its setting
+    : c.power ? esc(powerHeadLine(c, true))
     // a record has no VALUE of its own either — its title *is* what it says
     : c.record ? esc(c.t)
     : esc(VALUE[c.k] ? VALUE[c.k]() : ''));
@@ -4714,6 +4895,15 @@
     if (host.power) delete mc.hide;
     mc.hostKey = host.k;
     mc.motionIn = rec.route === 'constitutional' ? rec.answers.size : undefined;
+    // …and an ordinary one is a race, so its entry wears the race's own meter
+    // (Q1371's rule, issue #6): the leader's judges over the floor, as a text
+    // race's has since Q1362 (c). Without it every ordinary motion's entry —
+    // an invitation the room is voting on included — read the founder's 100%
+    // from the moment it was put. Undefined where nothing races: the fixture,
+    // a constitutional motion, which counts answers instead, and a set motion
+    // whose race it would have to share with its rivals (`soleCandidateRaceOf`).
+    const msr = rec.route === 'ordinary' ? soleCandidateRaceOf(rec) : null;
+    if (msr) mc.racePct = Math.round((msr.closeness || 0) * 100); else delete mc.racePct;
     return mc;
   };
   // the card a motion card stands for: itself where it has no motion
@@ -4858,6 +5048,14 @@
       if (cs && cs.isRemote) return !((cs.v && cs.v.raceCards) || []).some((x) =>
         [x.a, x.b].some((s2) => s2 && s2.setting && s2.setting.settingId === 'admit:' + c.admit));
     }
+    // **And so is every other membership motion** (issue #6): the marker
+    // below is this visit's only, so a reload asked again for a vote already
+    // cast — which, once an invitation could be raced at all, meant the room
+    // being asked about the same person for as long as the race stood open.
+    // Q1371's reading, on the race the record names rather than on `admit:`
+    // alone — and only where that race is this motion's alone.
+    const sr = soleCandidateRaceOf(rec);
+    if (sr) return !!sr.judged && !sr.askable;
     return motionPicked(c) && myMAnsOk().has(c.k);
   };
   // **Two routes, two counts, spelled once** (entry 138). A constitutional
@@ -5028,7 +5226,7 @@
         case 'applications': return APPL_RULE(mayApply(v) ? 'apply' : 'invite');
         case 'admission': return ADM_RULE[v.price] || null;
         case 'removal': return REMOVAL_RULE[v.price] || null;
-        case 'lapse': return LAPSE_RULE(v.afterMs === null ? 'never' : v.afterMs / 86400000);
+        case 'lapse': return LAPSE_RULE(v.afterMs === null ? 'never' : v.afterMs);
         case 'rate': return RATE_RULE(v.dripMinutes);
         default: return wordsFor(k, v);
       }
@@ -5399,6 +5597,31 @@
         syncIdentity(row, rec);
       }
     }
+    // **A departure is an absence, and an absence cannot be iterated**
+    // (issue #11, F2). The loop above removes a row on `rec.removed`, which
+    // is the module's own flag and is what the fixture's records carry — but
+    // the wire has no such row to read: `view.members` simply leaves a
+    // departed member out (§9.5a), and `remoteCS` builds every record it is
+    // given with `removed: false`. So nothing in the loop could ever fire,
+    // and the founder's open page went on listing a member who had resigned
+    // — with their face, under *Members*, counted in the room — until
+    // somebody reloaded. Live, the served list is the whole membership, so a
+    // row whose record is no longer in it is a row whose member has gone.
+    // **The `!row.founder` guard is load-bearing**: a clerk founder has no
+    // member record at all (🎩 deletes it), so a test on `mid` alone would
+    // delete the clerk's own row from the register.
+    if (cs.isRemote) {
+      // the viewer is held by identity across the splice: `S.viewer` is an
+      // index into this array, and removing a row above it would move the
+      // reader into somebody else's seat
+      const me = S.roster[S.viewer];
+      const live = cs.memberRecords();
+      for (let i = S.roster.length - 1; i >= 0; i--) {
+        const r = S.roster[i];
+        if (!r.founder && r.mid && !live.has(r.mid)) S.roster.splice(i, 1);
+      }
+      if (me) S.viewer = S.roster.indexOf(me);
+    }
     // **A clerk is no member, and still has a name and a face** (§9.7 X15): a
     // founder with no powers and no membership keeps both. They are in no
     // `MemberRecord` at all — 🎩 deletes it — so the register's founder row
@@ -5417,7 +5640,7 @@
     applications: (v) => ({ invite: 'Invitation only', apply: 'Anyone may apply' })[v],
     authorship: (v) => ({'anonymous':'Nobody’s name, ever','anonymousElective':'Nobody’s name unless they choose','sealed':'Names at the close','sealedElective':'Names at the close, or earlier by choice','public':'Names from the start'})[v],
     judgments: (v) => ({ never: 'Never revealed', after: 'Revealed at the end' })[v],
-    lapse: (v) => (v === 'never' ? 'Never — however long you are away' : PAGE_COPY.val.lapseAfter(spellOfDays(v))),
+    lapse: (v) => (v === 'never' ? 'Never — however long you are away' : PAGE_COPY.val.lapseAfter(spellOfMs(v))),
     // `standsOf` feeds this `takenOf('removal')`, which is `PAGEVAL.removal`
     // — the price, `consent` · `assembly` · `proposal`. Keyed
     // `everyone`/`others`/`ordinary` it returned `undefined` for every value
@@ -5426,7 +5649,9 @@
     // …and since Q1112 (b) that vocabulary is the clause's own sentence, the
     // one 🥾's lanes now offer.
     removal: (v) => REMOVAL_RULE[v],
-    quorum: (v) => (S.quorumForm === 'count' ? v + ' of the membership' : v + '% of the membership'),
+    // the share carries its numbers here too (Q1439, ruling m)
+    quorum: (v) => (S.quorumForm === 'count' ? v + ' of the membership'
+      : shareWords(v, E()) + ' of the membership'),
     ending: (v) => (v === 'never' ? 'Never — it runs until too few members are active'
       : new Date(v).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false })),
     rate: () => { const tv = takenValOf('rate');
@@ -5502,13 +5727,20 @@
           'The drafting process has no set end — it runs until too few members are active.']], 'ending') +
         (never ? '<p class="setnote">' + PAGE_COPY.composeNote.neverNeedsAll + '</p>' : '');
     },
+    // **A lane offers a rule, so it says the rule** (Q1112 (b)) — and since
+    // Q1439 that rule is Ed's sentence with the share's own numbers after it
+    // (rulings m, p), the share box running 5 to 50 like every other 👥 box
     quorum: (d) => (S.quorumForm === 'count'
-      ? inputBlock('Quorum is <input class="num" type="number" min="1" max="99" data-mnum=" of the membership" value="' +
-        esc((d.to.match(/\d+/) || [])[0] || takenOf('quorum') || quorumCount()) + '"> of the membership.',
+      ? inputBlock(PAGE_COPY.quorumRule.count(
+        '<input class="num" type="number" min="1" max="99" data-mnum=" of the membership" value="' +
+        esc((d.to.match(/\d+/) || [])[0] || takenOf('quorum') || quorumCount()) + '">'),
         meanLine('quorum', d.val && d.val.form ? d.val : null), d, 'quorum')
-      : inputBlock('Quorum is <input class="num" type="number" min="1" max="100" data-mnum="% of the membership" value="' +
-        esc((d.to.match(/\d+/) || [])[0] || takenOf('quorum') || S.quorumPct) + '">% of the membership.',
-        meanLine('quorum', d.val && d.val.form ? d.val : null), d, 'quorum')),
+      : (() => { const n = (d.to.match(/\d+/) || [])[0] || takenOf('quorum') || S.quorumPct;
+        return inputBlock(PAGE_COPY.quorumRule.share(
+          '<input class="num" type="number" min="' + SHARE.min + '" max="' + SHARE.max +
+          '" data-mnum="% of the membership" value="' + esc(n) + '">%' +
+          shareSlot('quorum', n, E())),
+          meanLine('quorum', d.val && d.val.form ? d.val : null), d, 'quorum'); })()),
     // 🪪: the price of admission, its three rungs as lanes, labels MVAL's
     // verbatim. The register-era 🪪 had no value to compose and spec-check
     // exempted it from the composable set; entry 94 re-typed it into this
@@ -5522,14 +5754,26 @@
     removal: (d) => lanesFor(d, ruleLanes('removal'), 'removal'),
     lapse: (d) => lanesFor(d, [['Never — however long you are away',
         'A membership never lapses, however long somebody is away.']], 'lapse') +
-      inputBlock('A membership lapses after ' +
-        '<input class="num" type="number" min="7" max="720" data-mnum=" days without logging in" value="' +
-        esc((d.to.match(/\d+/) || [])[0] || S.lapseDays) + '"> days without logging in.',
+      // **the spell is composed in its own unit** (Q1439, ruling j): the
+      // number and the unit are read off the draft's own value where it has
+      // one, the way ⏰'s date is (Q1289), so the picked unit is never
+      // replaced by a re-derivation from the standing spell
+      (() => { const p = lapseParts(d.val && isNum(d.val.afterMs) ? d.val.afterMs : S.lapseMs);
+        const unit = d.lapseUnit || (p ? p.unit : 'days');
+        const b = LAPSE_BOUNDS[unit] || LAPSE_BOUNDS.days;
+        // the typed number rides beside the spell, as ⏱️'s does: *60 minutes*
+        // and *1 hour* are one spell, and only the number the composer typed
+        // says which of them it was
+        const shown = isNum(d.lapseN) ? d.lapseN : (p ? p.n : '');
+        return inputBlock('A membership lapses after ' +
+        '<input class="num" type="number" min="' + b[0] + '" max="' + b[1] +
+        '" data-mnum=" without logging in" value="' +
+        esc(shown) + '"> ' + unitSel(unit, 'data-mlapseunit="1"') + ' without logging in.',
         // presence, not truthiness: `afterMs: null` is 💤's *Never*, a real
         // value with a real sentence, and the other keys all test for the
         // field being there rather than for it being non-zero
         meanLine('lapse', d.val && d.val.afterMs !== undefined ? d.val : null),
-        d, 'lapse', !!d.to && !/^never/i.test(d.to)),
+        d, 'lapse', !!d.to && !/^never/i.test(d.to)); })(),
     authorship: (d) => lanesFor(d, [
       ['Nobody’s name, ever', 'A proposer is never named — not even in the closing record.'],
       ['Nobody’s name unless they choose', 'A proposer is never named unless they sign the proposal themselves.'],
@@ -5659,7 +5903,8 @@
     // a return still in flight from a log made before Q1404 closed the road
     // (or the ladder's stagehand): the power's rule as it stands against the
     // rule it would put back — `m.to` is `pwSaid`'s sentence
-    : c.power ? motionBlocks(c.k, powerHeadLine(c), m.to, m.why, route, mover)
+    // the motion's own card, so the standing rule names its setting (Q1429)
+    : c.power ? motionBlocks(c.k, powerHeadLine(c, true), m.to, m.why, route, mover)
     : (() => { const rec = liveMotionRec(c);
       const v = rec && rec.payload && rec.payload.kind === 'set' ? rec.payload.value : null;
       return motionBlocks(c.k, decisionLine(c), (v !== null && sentenceFor(hostKeyOf(c), v)) || m.to, m.why, route, mover); })());
@@ -5735,7 +5980,8 @@
       // the only place it survives.
       const SEED = { ending: 'roster', endsAt: '2026-08-20T18:00',
         quorumBy: 'roster', quorumForm: 'share', quorumPct: 33, quorumN: 5,
-        joinBy: 'invite', policyBy: 'roster', lapse: 'roster', lapseDays: 90,
+        // 💤's spell is milliseconds since Q1439 — 90 days, as it has been
+        joinBy: 'invite', policyBy: 'roster', lapse: 'roster', lapseMs: 90 * 86400000,
         removal: 'roster', admission: 'roster', authorship: 'roster', judgments: 'roster',
         rateBy: 'founder', grant: 3, dripMin: 180, cap: 3,   // 3/3 fixed, Q1160
         // **🌍 stays with the founder, and that is the tooling fix** (Ed,
@@ -5898,7 +6144,10 @@
     ending: 'when the drafting process will end',
     // *the membership* twice in one sentence: `WHAT` is read inside *The
     // membership changed …*, so this one takes **members** (entry 215)
-    quorum: 'how many members must weigh in before a question can pass',
+    // …and since Q1439 the quorum counts the members who **prefer** the
+    // proposal, so *weigh in* is the wrong count: a vote against no longer
+    // helps a proposal reach it (the clause says the same in Ed's own words)
+    quorum: 'how many members must prefer a proposal before it can be adopted',
     authorship: 'whether anonymous proposers are revealed',
     judgments: 'whether votes are revealed with the record',
     chamber: 'who may read the document',
@@ -5929,7 +6178,7 @@
     removal: 'The membership will decide how a member is removed',
     rate: 'The membership will decide how often members should be able to make proposals',
     ending: 'The membership will decide whether changes end on a set date or may be made perpetually',
-    quorum: 'The membership will decide how many members must vote on a proposal ✏️ before anything changes',
+    quorum: 'The membership will decide how many members must prefer a proposal ✏️ before it can be adopted',
     authorship: 'The membership will decide if anonymous proposals are allowed',
     judgments: 'The membership will decide whether votes are revealed at the end or never',
   };
@@ -5984,9 +6233,13 @@
   // `form` is the value's own since Q1162 — a delegated resolution can land
   // in either form whatever the founder's frame says, so a caller with a
   // typed value passes its form and only the founder's own field defaults
+  // …and since Q1439 (rulings a, m, p) the sentence is Ed's own, the quorum
+  // counts the members who prefer the proposal to the current text, and the
+  // share is followed by the numbers it comes to in the membership as it
+  // stands. Both sentences live in copy.js.
   const QUORUM_RULE = (n, form) => (((form || S.quorumForm) === 'count')
-    ? n + ' members'
-    : n + '% of the membership') + ' must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.';
+    ? PAGE_COPY.quorumRule.count(n)
+    : PAGE_COPY.quorumRule.share(shareWords(n, E())));
   // **The threshold clause went with the threshold** (Q1362, 2026-09-15).
   // `BAR_RULE` printed 🌡️'s rung sentence with 🪜's ramp sentence hung off
   // it, because the ramp was part of what the threshold said (Q512); the
@@ -5994,11 +6247,12 @@
   // Ed's sentences (card review 2026-09-02, Q1149 — the options swap so the
   // card leads with lapsing; Q1168 — *automatically abstain* is §9.5a's own
   // mechanism, stated accurately)
-  // `v` is the page's number of days, possibly fractional; the words are
-  // `spellWords`'s, in the unit that divides the spell (Q1321)
+  // `v` is the spell itself in milliseconds since Q1439 (it was a number of
+  // days, possibly fractional); the words are `spellWords`'s, in the unit
+  // that divides the spell (Q1321)
   const LAPSE_RULE = (v) => (v === 'never' || v === null
     ? 'Inactive members never lapse and are still counted towards votes.'
-    : 'After ' + spellOfDays(v) + ', inactive members lapse and automatically abstain from votes.');
+    : 'After ' + spellOfMs(v) + ', inactive members lapse and automatically abstain from votes.');
   // **⏱️ is one number** (Ed, 2026-09-02, Q1160/Q1161, R-083): the grant and
   // the maximum are the mechanism's fixed 3 (SPEC §7), the interval is the
   // setting, and **the unit is worked out from the stored minutes** — the
@@ -6041,7 +6295,7 @@
     lapse: () => { const tv = takenOf('lapse');
       const v = tv !== null ? tv : (S.lapse === 'roster' ? null : S.lapse);
       return LAPSE_RULE(v === 'never' ? 'never'
-        : (typeof v === 'number' ? v : S.lapseDays)); },
+        : (typeof v === 'number' ? v : S.lapseMs)); },
     rate: () => { const v = takenValOf('rate');
       return RATE_RULE(v ? v.dripMinutes : S.dripMin); },
     // 🤝 is one switch; what an application costs is 🪪's sentence (entry 94)
@@ -6250,7 +6504,12 @@
     // opened — never the word “Title” (Ed, 2026-08-18)
     inDocOpenSlot: false,
     headFor: (c) => {
-      if (c.power) return esc(powerHeadLine(c));
+      // the card head, which has replaced the paragraph that gave *this* its
+      // referent — so the sentence names its setting (Q1429)
+      // …and at the birth there is no head at all, the two blocks being the
+      // whole choice (Q1430); `noTitleHead` below carries the same test, so
+      // the name does not come back in the head's place
+      if (c.power) return powerHeadless(c) ? null : esc(powerHeadLine(c, true));
       // **A record's head is what was proposed** (Q942) — the way the top of
       // the ranking is a sealed text record's head (SURFACE §9). The outcome
       // and its date are the field's first line, not the clause.
@@ -6351,7 +6610,12 @@
     // and the record. Only ✒️ 🛡️ ever drew a title here (the other three
     // head with the Proposals clause through `headFor`), but the rule is the
     // card kind's, not the pair's.
-    noTitleHead: (c) => c.textcard || (!c.power && !c.isGate && !c.door &&
+    // …nor a power tab at the birth (Q1430): `headFor` has dropped its
+    // sentence, and without this the card would answer with its *question* —
+    // *Can the Founder Make Amendments at Will?* — which the two blocks below
+    // answer completely. The name stays on the entry, the tooltip and the
+    // record, exactly as it does for the thirteen.
+    noTitleHead: (c) => c.textcard || powerHeadless(c) || (!c.power && !c.isGate && !c.door &&
       (c.record || (c.k === 'slug' && !cs) ||
         OPTHEADLESS.has(c.k) || (c.ansFor && OPTHEADLESS.has(c.ansFor)) ||
         (c.k !== 'title' && !atTheDoor() && !!motionOn(c)))),
@@ -6430,6 +6694,9 @@
     // title and a power head carry no break, and wrapping them would turn a
     // newline in member-written text into markup after `esc` had made it safe
     decisionLine: (c) => (c.record ? linkify(esc(c.t))
+      // the **document paragraph**, which is the one place *this* has a
+      // referent: the sentence stands under the setting's own clause, so it
+      // takes no noun (Q1429)
       : c.power ? linkify(esc(powerHeadLine(c)))
       // the paragraph is the document speaking, holder line included
       // (Ed, 2026-09-03) — the card heads call decisionLine without it
@@ -7057,7 +7324,7 @@
     whyLane: (...a) => whyLane(...a),
     wordsFor: (...a) => wordsFor(...a),
   });
-  const { render, refreshCommit, roomNow, meanLine, syncMeaning, standingBlock, unchangedCard,
+  const { render, refreshCommit, roomNow, meanLine, syncMeaning, syncShare, standingBlock, unchangedCard,
     foundedAt, foundedClause, closedAtWords, resendTitle, APPLICANT, MEMBER_EMAILS, APPCARDS,
     appCtx, applyShutNews } = BND;
 
@@ -7111,9 +7378,39 @@
       S.dripUnit = ev.target.value;
       if (n !== '') { S.dripN = n; S.dripMin = n * (DRIP_UNITS[S.dripUnit] || 1); S.rateBy = 'founder'; }
       return render(); }
-    // …and the member's, on their ⏱️ answer card
+    // …and 💤's, since Q1439 (ruling j): the number keeps, the stored spell
+    // rescales, and picking a unit claims the rung the way typing does. The
+    // spell's own bounds move with the unit, so the box is re-drawn — which
+    // is a render, and legitimate: a select's `change` is the end of the
+    // gesture, not the middle of one.
+    if (ev.target.matches('[data-lapseunit]')) {
+      const p = lapseParts(S.lapseMs);
+      const n = isNum(S.lapseN) ? +S.lapseN : (p ? p.n : '');
+      S.lapseUnit = ev.target.value;
+      if (n !== '') {
+        S.lapseN = n;
+        S.lapseMs = n * (LAPSE_UNITS[S.lapseUnit] || LAPSE_UNITS.days);
+        S.lapse = 'days';
+      }
+      return render(); }
+    // …and the composer's, which keeps its number and unit on the draft
+    if (ev.target.matches('[data-mlapseunit]')) {
+      if (!S.draft || S.draft.k !== S.open) S.draft = { k: S.open, to: '', why: '' };
+      const pick = ev.target.closest('.pick');
+      const box = pick && pick.querySelector('[data-mnum]');
+      const unit = ev.target.value;
+      S.draft.lapseUnit = unit;
+      if (box && box.value !== '') {
+        S.draft.lapseN = +box.value;
+        S.draft.to = box.value + ' ' + unit + (box.dataset.mnum || '');
+        S.draft.val = { afterMs: +box.value * (LAPSE_UNITS[unit] || LAPSE_UNITS.days) };
+      }
+      return render(); }
+    // …and the member's, on their ⏱️ and 💤 answer cards. The key is the
+    // select's own (`rate` → `rateUnit`), so a second unit picker needed no
+    // second branch — it needed the one branch to stop naming ⏱️.
     if (ev.target.matches('[data-ansunit]')) {
-      S.myAns.rateUnit = ev.target.value; return render(); }
+      S.myAns[ev.target.dataset.ansunit + 'Unit'] = ev.target.value; return render(); }
     if (ev.target.matches('[data-mval-sel]')) {
       const v = ev.target.value;
       if (!v) { S.draft = null; return render(); }
@@ -7175,11 +7472,20 @@
       return;
     }
     if (ev.target.matches('[data-mnum]')) {
-      S.draft.to = ev.target.value + ev.target.dataset.mnum;
       const nv = +ev.target.value;
-      S.draft.val = (S.open === 'quorum') ? { form: S.quorumForm, n: nv }
-        : (S.open === 'lapse') ? { afterMs: nv * 86400000 }
-        : null;
+      // 💤 composes in its own unit since Q1439: the number and the unit ride
+      // on the draft, the spell is what is proposed
+      if (S.open === 'lapse') {
+        const unit = S.draft.lapseUnit || 'days';
+        S.draft.lapseN = ev.target.value === '' ? '' : nv;
+        S.draft.lapseUnit = unit;
+        S.draft.to = ev.target.value + ' ' + unit + ev.target.dataset.mnum;
+        S.draft.val = ev.target.value === ''
+          ? null : { afterMs: nv * (LAPSE_UNITS[unit] || LAPSE_UNITS.days) };
+        return render();
+      }
+      S.draft.to = ev.target.value + ev.target.dataset.mnum;
+      S.draft.val = (S.open === 'quorum') ? { form: S.quorumForm, n: nv } : null;
       return render();
     }
   });
@@ -8254,6 +8560,13 @@
         S.dripMin = t.value === '' ? '' : +t.value * (DRIP_UNITS[S.dripUnit] || 1);
         S.rateBy = 'founder';
       }
+      // …and 💤's the same way since Q1439: typed in the card's own unit, the
+      // spell itself stored (the abstention and the lapse run on it)
+      if (t.dataset.num === 'lapseN') {
+        S.lapseMs = t.value === '' ? ''
+          : +t.value * (LAPSE_UNITS[S.lapseUnit || 'days'] || LAPSE_UNITS.days);
+        if (t.value !== '') S.lapse = 'days';
+      }
       // **A number typed into ⏱️'s sentence claims the rung it stands in**
       // (Q1137). Everywhere else a `num` field is inside a `.pick > .inner`
       // and cannot be reached until its rung is chosen; ⏱️'s three are inline
@@ -8277,7 +8590,7 @@
           if (rung) rung.setAttribute('aria-pressed', 'true');
         }
       }
-      syncMeaning(t);
+      syncMeaning(t); syncShare(t);
       renderRail(); SESSION.refreshRail(); refreshCommit(); }
     // …and the same for a number typed into an **answer** (entry 165), which
     // 🌡️ now has: a keystroke wakes the ✓ and repaints the meaning under the
@@ -8358,8 +8671,8 @@
   // declaring it below this line.
   const { setProse, hydrateValues, fieldsOf, hydrateFromModule, hydrateSeen,
     liveJudge, liveJudgeAdmit, admitCardOf, allApplicants, applicantsAsking,
-    memApplicantRows, whenOf, unhead, liveBoot, birthBoot } = window.LIVE.make({
-    S, CARDS, DKEY, PAGEVAL, STANDS, FOUNDER, LIVESLUG, SESSION, api, prose,
+    memApplicantRows, whenOf, liveBoot, birthBoot } = window.LIVE.make({
+    S, CARDS, DKEY, PAGEVAL, ANSBACK, STANDS, FOUNDER, LIVESLUG, SESSION, api, prose,
     get cs() { return cs; }, set cs(v) { cs = v; },
     get LIVE_HOOKS() { return LIVE_HOOKS; },
     amFounder: (...a) => amFounder(...a),
@@ -8378,6 +8691,7 @@
     loadGrants: (...a) => loadGrants(...a),
     mayApply: (...a) => mayApply(...a),
     midOf: (...a) => midOf(...a),
+    motionRaceSettingOf: (...a) => motionRaceSettingOf(...a),
     msToLocal: (...a) => msToLocal(...a),
     now: (...a) => now(...a),
     pkeyOf: (...a) => pkeyOf(...a),
@@ -8549,6 +8863,34 @@
     const f = (o.field || []).slice().sort((x, y) => (y.p ?? -1) - (x.p ?? -1));
     return f[0] || null;
   };
+  // **A backlog paragraph is blocks** (Q1417, the static pass 2026-09-17):
+  // an undecided candidate of several lines was joined by a space with its
+  // markers stripped, so a proposal of two paragraphs read as one run-on
+  // sentence and a heading in it lost its rank — Q1406 in the one place its
+  // fix did not reach, the closed page's own document text. It is read here
+  // as `blocksOf` reads the charter: one block per line, the line's own kind
+  // off `mdBlock`, the marker consumed by the kind rather than stripped off
+  // the words, and a blank line nothing to anchor to. The first block keeps
+  // the record's own key, where its tab and its card stand (Q1408); the rest
+  // are numbered after it, because a document block needs a key of its own.
+  // A line is split on the newline as well as taken per hunk line: the
+  // fixture's own candidates hold two blocks in one string, and the card
+  // grammar splits them there too (`mdBlocksHtml`, Q1406) — the backlog
+  // paragraph and the record card must not disagree about what a block is.
+  const backlogBlocks = (o) => {
+    const best = bestOf(o);
+    const src = best ? best.hunks.flatMap((h) => h.lines) : (o.displaced || []);
+    const lines = src.flatMap((l) => String(l == null ? '' : l).split('\n'));
+    const id = 'U:' + (o.raceId || o.candidateId);
+    const out = lines.filter((l) => l.trim()).map((l, i) => {
+      const key = i ? id + ':' + i : id;
+      const m = window.CARDS.mdBlock(l);
+      return !m ? { t: 'p', x: l, key }
+        : m.t === 'b' ? { t: 'p', bullet: true, x: m.text, key }
+        : { t: 'h', level: m.level, x: m.text, key };
+    });
+    return out.length ? out : [{ t: 'p', x: '(the text stood)', key: id }];
+  };
   // **Amendments are reported the same way whoever made them** (Ed,
   // 2026-08-22). Every carried change to a rule, in order, in one section —
   // the founder's pen and the membership's motions in one list, because they
@@ -8609,11 +8951,7 @@
     const und = undecidedRecords();
     if (und.length) {
       out.push({ t: 'h', level: 1, x: 'Backlog', key: 'U:head' });
-      for (const o of und) {
-        const best = bestOf(o);
-        const text = best ? best.hunks.flatMap((h) => h.lines).map(unhead).join(' ') : (o.displaced || []).map(unhead).join(' ');
-        out.push({ t: 'p', x: text || '(the text stood)', key: 'U:' + (o.raceId || o.candidateId) });
-      }
+      for (const o of und) out.push(...backlogBlocks(o));
     }
     const sigs = closeSignatures();
     out.push({ t: 'h', level: 1, x: 'Signatures', key: 'S:head' });

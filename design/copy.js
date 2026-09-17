@@ -229,8 +229,17 @@ window.COPY = (function () {
       replaced: 'the text it replaced',
       ok: 'OK',
       okTitle: 'It leaves your margin and stays in the record',
-      tooltip: (judges, roster, floor, yoursLine) =>
-        judges + ' of ' + roster + ' weighed in · quorum was ' + floor + ' · ' + yoursLine,
+      // **The quorum counts who preferred it** (Q1439, ruling a): the middle
+      // clause is the count the floor was read against, and the first stays
+      // the count of everybody who voted, whichever way — the two are
+      // different numbers now, and the record says both. `approvals` is
+      // omitted where the view does not carry it, which is every document
+      // until the engine branch lands, and the line then reads as it always
+      // did.
+      tooltip: (judges, roster, floor, yoursLine, approvals) =>
+        judges + ' of ' + roster + ' weighed in · ' +
+        (approvals === null || approvals === undefined ? '' : approvals + ' preferred it · ') +
+        'quorum was ' + floor + ' · ' + yoursLine,
       youSaid: (verdict) => 'you ' + verdict,
       youNever: 'you never voted on this',
       undecided: 'Undecided at the close',
@@ -366,6 +375,14 @@ window.COPY = (function () {
   // page move (Ed, 2026-09-05, item 4: two passes): the untangled strings.
   // The big checker-read tables keep their key structure in the page; where
   // only their sentence values moved, the reference stands in the value slot.
+  // **What (x of y) looks like, once** (Q1439, ruling m) — the numbers that
+  // follow a share of the membership. It is a local const rather than a
+  // second entry under `val` so that `val.quorumPct` and `val.quorumTail`
+  // cannot drift: the bracket, the word and the spacing are written here and
+  // nowhere else. Missing numbers print nothing, which is what a blind card
+  // with no number typed yet has to show.
+  const quorumTail = (n, e) => (n === null || n === undefined || e === null || e === undefined
+    ? '' : ' (' + n + ' of ' + e + ')');
   const page = {
     // who removed you, and the register's departure lines
     departed: {
@@ -698,8 +715,23 @@ window.COPY = (function () {
       asArrive: 'as soon as they arrive',
       andVote: ', and may vote on proposals.',
       voteTail: '. They may begin voting on proposals when the whole constitution has been decided.',
-      passOrdinary: 'A proposal ✏️ is decided once the quorum has voted on it: the text becomes whichever wording the membership prefers, the current text included.',
+      passOrdinary: 'A proposal ✏️ is adopted once enough of the membership prefers it to the current text, and more prefer it than not.',
       passConstitutional: 'A constitutional proposal 🏛️ passes only when all members agree.',
+    },
+    // 👥's rule, in Ed's own words (Q1439, ruling p, 2026-09-17: *At least 50%
+    // (5 of 10) of the membership must prefer a proposal before it can be
+    // adopted*). The quorum counts the members who prefer the proposal to the
+    // current text, so the sentence says *prefer* rather than *vote on*: a
+    // vote against no longer helps a proposal reach its quorum.
+    //
+    // `share` takes the whole share — the percentage and the numbers it comes
+    // to — because a share of the membership is written in one place
+    // (`val.quorumPct`, ruling m); the founder's card, the member's answer
+    // card and the composer hand it the number's own box instead of a
+    // percentage, which is how the number stands inside the clause (Q1137).
+    quorumRule: {
+      share: (share) => 'At least ' + share + ' of the membership must prefer a proposal ✏️ before it can be adopted.',
+      count: (n) => 'At least ' + n + ' members must prefer a proposal ✏️ before it can be adopted.',
     },
     titledLead: 'The document is titled ',
     // the card value lines (VALUE) — the label-vocabulary strings that MVAL
@@ -717,7 +749,15 @@ window.COPY = (function () {
       fixedNoEnd: 'Fixed — no end date to rise towards',
       risingFrom: (n) => 'Rising from ' + n + '%',
       quorumOf: (n, e) => n + ' of ' + e,
-      quorumPct: (pct, n, e) => pct + '% — ' + n + ' of ' + e,
+      // **Every share of the membership is followed by the numbers** (Ed,
+      // 2026-09-17, Q1439 ruling m: *wherever we show a % of membership, we
+      // should have (x of y) after showing the actual numbers*). `quorumPct`
+      // is the one writer of a share, so the rule sentence, the clause, the
+      // strip's taken line and the composer's lane cannot spell it three
+      // ways; `quorumTail` is the same numbers alone, for the cards, whose
+      // own box repaints them in place while the number is being typed.
+      quorumTail,
+      quorumPct: (pct, n, e) => pct + '%' + quorumTail(n, e),
       oneEvery: (phrase) => 'One every ' + phrase,
       // the spell arrives worded — *7 days*, *36 hours*, *90 minutes* — by
       // the module's `spellWords`, never as a bare day count (Q1321)

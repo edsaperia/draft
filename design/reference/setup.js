@@ -59,6 +59,11 @@ window.SETUP = (function () {
   // sixth argument: the two settings whose sentence names a fact outside
   // itself — 🌍's clerk deviation, 🤝's price — read it, the rest ignore it.
   const RULE = (k, v, x) => esc(window.CARDS.clauseOf(k, v, x));
+  // 👥's two sentences are numeric, so they are not in `RULES`' ladder table:
+  // they take a number rather than a rung, and on a card that number is a box
+  // standing inside the clause (Q1137). One home all the same — copy.js's
+  // `quorumRule`, which the founder's card and the composer read too.
+  const RULE_QUORUM = window.COPY.page.quorumRule;
   /* ---- avatars ------------------------------------------------------------
      `initials`, `PERSON` and `avHtml` moved down to `cards.js` (backlog 255):
      the sealed speaker draws a face now, `cards.js` loads first, and a helper
@@ -921,7 +926,17 @@ window.SETUP = (function () {
           ? '<div class="picdrop" data-picinto="' + into + '"><div class="picact">' +
             '<label class="btn">' + (uploaded ? 'Choose another' : 'Choose a picture') +
             '<input type="file" accept="image/*" data-picfile="1"></label>' +
-            (uploaded ? avHtml({ n: me.n, pic: draft }, 'big') : '') + '</div></div>'
+            (uploaded ? avHtml({ n: me.n, pic: draft }, 'big') : '') + '</div>' +
+            // **A refusal needs somewhere to be said** (2026-09-17). `refuse`
+            // below writes into `.picnote`, and until this line nothing ever
+            // rendered one: `querySelector` returned null and all four
+            // refusals — not a picture, too big, unreadable, too heavy to
+            // store — closed the file dialog in silence. Born empty, so the
+            // box says nothing until a file is turned away; it is re-rendered
+            // empty by a picture that lands and by choosing another block,
+            // which is how it clears. A live region, because the message
+            // arrives without anything moving the focus.
+            '<span class="picnote" role="status"></span></div>'
           : '', oo.locked) +
       opt(pickState, pk, 'emoji', ctlWord('Pick an emoji'), '',
         oo.pick === 'emoji' && !oo.locked ? emojiPicker(draft || pic, me.n, at) : '', oo.locked) +
@@ -1189,6 +1204,9 @@ window.SETUP = (function () {
   const PIC_MAX_SOURCE = 20 * 1024 * 1024;
   // the server's own `LIMITS.picture`, over the stored string
   const PIC_MAX_STORED = 40_000;
+  // the four refusals, from the one copy file (copy.js loads before cards.js,
+  // which loads before this)
+  const PIC_COPY = window.COPY.page.picNote;
   const wirePicDrop = (onFile) => {
     const refuse = (zone, msg) => {
       const note = zone && zone.querySelector('.picnote');
@@ -1197,12 +1215,12 @@ window.SETUP = (function () {
     const take = async (file, zone) => {
       const into = (zone && zone.dataset.picinto) || 'me';
       if (!file) return;
-      if (!/^image\//.test(file.type)) return refuse(zone, 'That is not a picture.');
-      if (file.size > PIC_MAX_SOURCE) return refuse(zone, 'That picture is too big to open here.');
+      if (!/^image\//.test(file.type)) return refuse(zone, PIC_COPY.notImage);
+      if (file.size > PIC_MAX_SOURCE) return refuse(zone, PIC_COPY.tooBig);
       let bmp;
       try {
         bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
-      } catch (e) { return refuse(zone, 'That picture could not be opened.'); }
+      } catch (e) { return refuse(zone, PIC_COPY.unreadable); }
       const cv = document.createElement('canvas');
       cv.width = PIC_SIDE; cv.height = PIC_SIDE;
       const cx = cv.getContext('2d');
@@ -1230,7 +1248,7 @@ window.SETUP = (function () {
       // rather than assumed: handing over a string the Save will refuse is
       // the very defect above, arrived at by the other road.
       if (out.length > PIC_MAX_STORED) {
-        return refuse(zone, 'That picture will not compress small enough — try a simpler one.');
+        return refuse(zone, PIC_COPY.tooHeavy);
       }
       onFile(out, into);
     };
@@ -1335,12 +1353,19 @@ window.SETUP = (function () {
       // the blind note are gone from every answer body — the clause text is
       // the explanation, and the blindness story returns with the 🍾 redesign
       // (Q1169). The meaning lines stay: they are meaningOf's, not copy.
+      // **The share runs 5 to 50** (Q1439, ruling a): no quorum may ask for
+      // more than half the group a proposal is waiting on, and the box says
+      // so. **The numbers follow the share** (ruling m) in a slot the `input`
+      // handler repaints as the number is typed — empty until there is one,
+      // like the meaning line beneath it.
+      const share = (frm) => (f === frm && typeof A.quorum === 'number' ? A.quorum : '');
       return '<div class="choice" role="radiogroup">' +
       ansRow(f === 'share', 'quorumForm', 'share',
-        box('share', 5, 100) + '% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.',
+        RULE_QUORUM.share(box('share', SHARE.min, SHARE.max) + '%' +
+          shareSlot('quorum', share('share'), E)),
         f === 'share' ? mean('share', A.quorum) : '') +
       ansRow(f === 'count', 'quorumForm', 'count',
-        box('count', 1, Math.max(1, E)) + ' members must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.',
+        RULE_QUORUM.count(box('count', 1, Math.max(1, E))),
         f === 'count' ? mean('count', A.quorum) : '') +
       '</div>';
     },
@@ -1408,10 +1433,17 @@ window.SETUP = (function () {
       ansRow(A.lapse === 'never', 'lapse', 'never', ctlWord('Never'),
         esc(window.CONSTITUTION.meaningOf('lapse', { afterMs: null }, room || { e: E }) || '')) +
       '</div>' +
-      '<span class="fld"><label>The shortest period of inactivity you will accept</label>' +
-      '<span class="setrow2"><input class="num" type="number" min="7" max="365"' +
-      ' data-ansnum="lapse"' + (typeof A.lapse === 'number' ? ' value="' + A.lapse + '"' : '') + '>' +
-      '<span class="setnote" style="margin:0">days</span></span></span>' +
+      // **The period is stated in minutes, hours or days** (Q1439, ruling j):
+      // the unit picker takes the place of the *days* note beside the box, and
+      // the box's ends are that unit's own. The answer is still one number —
+      // `ANSTYPED.lapse` multiplies it by the unit the member picked, exactly
+      // as ⏱️'s has since Q1161.
+      (() => { const unit = A.lapseUnit || 'days';
+        const b = LAPSE_BOUNDS[unit] || LAPSE_BOUNDS.days;
+        return '<span class="fld"><label>The shortest period of inactivity you will accept</label>' +
+        '<span class="setrow2"><input class="num" type="number" min="' + b[0] + '" max="' + b[1] + '"' +
+        ' data-ansnum="lapse"' + (typeof A.lapse === 'number' ? ' value="' + A.lapse + '"' : '') + '>' +
+        unitSel(unit, 'data-ansunit="lapse"') + '</span></span>'; })() +
       meaningLine('lapse', ansValue(typed, 'lapse', A.lapse), room),
     rate: (A, E, _form, room, typed) => {
       // **The answer is the interval** (Ed, 2026-09-02, Q1160/Q1161, R-083):
@@ -1419,10 +1451,7 @@ window.SETUP = (function () {
       // states how often — the number in their own unit, minutes stored.
       // The whole typed value still comes from the caller's own `ANSTYPED`.
       const unit = A.rateUnit || 'minutes';
-      const sel = '<select class="num numin dripunit" data-ansunit="rate">' +
-        ['minutes', 'hours', 'days'].map((u) =>
-          '<option value="' + u + '"' + (u === unit ? ' selected' : '') + '>' + u + '</option>').join('') +
-        '</select>';
+      const sel = unitSel(unit, 'data-ansunit="rate"');
       return '<span class="opttext">Members may make a new proposal ✏️ every ' +
         '<input class="num numin" type="number" min="1" max="2880" data-ansnum="rate"' +
         (typeof A.rate === 'number' ? ' value="' + A.rate + '"' : '') + '> ' + sel + '.</span>' +
@@ -1525,6 +1554,64 @@ window.SETUP = (function () {
      is it: `.opttext` wears the clause font, and a label that never was a
      document sentence wears this. See `setup.css`'s `.pick .opttext.ctl`. */
   const ctlWord = (s) => '<span class="ctl">' + s + '</span>';
+
+  /* **A share of the membership, with the numbers after it** (Q1439, ruling m).
+     `SHARE` is the range 👥's share box offers — 5 is the lowest quorum worth
+     stating and 50 is the cap, no quorum being allowed to ask for more than
+     half (ruling a) — and the two writers below turn a percentage into the
+     count it comes to in a membership of `e`.
+
+     The count is the module's own (`⌈n·e/100⌉`, product before quotient), so
+     the sentence on the card and the number the engine reads a race against
+     cannot disagree by a rounding; where the module is not loaded the same
+     arithmetic stands here rather than a `Math.round` of its own.
+
+     `shareTail` is the bracket alone, which is what the cards repaint in
+     place as the number is typed; `shareWords` is the whole share, for every
+     site that prints a settled one. Both print nothing at all for a number
+     nobody has typed: a blind card must not show what it would come to. */
+  const SHARE = { min: 5, max: 50 };
+  const shareCount = (pct, e) => {
+    const n = +pct, E = Math.max(1, +e || 1);
+    if (!isFinite(n)) return null;
+    const M = window.CONSTITUTION;
+    return M && M.quorumCount ? Math.min(M.quorumCount({ form: 'share', n }, E), E)
+      : Math.min(Math.max(1, Math.ceil(n * E / 100)), E);
+  };
+  const shareTail = (pct, e) => (pct === '' || pct === null || pct === undefined || !isFinite(+pct)
+    ? '' : window.COPY.page.val.quorumTail(shareCount(pct, e), Math.max(1, +e || 1)));
+  const shareWords = (pct, e) => (pct === '' || pct === null || pct === undefined || !isFinite(+pct)
+    ? '' : window.COPY.page.val.quorumPct(+pct, shareCount(pct, e), Math.max(1, +e || 1)));
+  /* …and the slot the tail is repainted into, keyed by the setting so the
+     `input` handlers can find it without knowing which surface drew it —
+     the same trick `data-meaning` plays for the meaning line. */
+  const shareSlot = (key, pct, e) =>
+    '<span data-share="' + esc(key) + '">' + shareTail(pct, e) + '</span>';
+
+  /* **💤 is stated in minutes, hours or days** (Ed, 2026-09-17, Q1439 ruling
+     j, minimum five minutes). The period does two jobs from Q1439: silent on
+     everything for that long and a membership lapses, silent on one proposal
+     for that long and the member abstains on it — and a card offering 7 to
+     365 days could never turn silence into an abstention inside a room that
+     lasts an afternoon.
+
+     ⏱️'s picker is the pattern (Q1161): the unit is **input only**, the
+     stored value is the spell itself (`afterMs`, as the module wants it), and
+     the unit is worked out from the stored spell wherever the founder has not
+     picked one. The box's ends are the unit's own, so *five minutes* and *365
+     days* are both stated by the control rather than left to a checker: a
+     year is 8,760 hours and 525,600 minutes, which is the same ceiling said
+     three ways. */
+  const LAPSE_UNITS = { minutes: 60000, hours: 3600000, days: 86400000 };
+  const LAPSE_BOUNDS = { minutes: [5, 525600], hours: [1, 8760], days: [1, 365] };
+  const lapseParts = (ms) => (ms !== '' && ms !== null && ms !== undefined && isFinite(+ms) && +ms > 0
+    ? (+ms % 86400000 === 0 ? { n: +ms / 86400000, unit: 'days' }
+      : +ms % 3600000 === 0 ? { n: +ms / 3600000, unit: 'hours' }
+      : { n: Math.max(1, Math.round(+ms / 60000)), unit: 'minutes' })
+    : null);
+  const unitSel = (unit, attr) => '<select class="num numin unitsel" ' + attr + '>' +
+    Object.keys(LAPSE_UNITS).map((u) => '<option value="' + u + '"' +
+      (u === unit ? ' selected' : '') + '>' + u + '</option>').join('') + '</select>';
 
   const someIn = (n, E) => (n >= E ? 'everyone in' : n + ' of ' + E + ' in');
 
@@ -1647,6 +1734,7 @@ window.SETUP = (function () {
   return { esc, TICK, ARROW_OUT, initials, avHtml, hueOf, washOf, stateOf, labelOf, nounOf, markOf, railEntry,
     bandHtml, fitBand, pileHtml, stripHtml, cardHtml, readBody,
     nameBody, pictureBody, opt, setPickWords, num, numIn, ctlWord, faces, someIn, FACE_EMOJI,
+    SHARE, shareCount, shareTail, shareWords, shareSlot, LAPSE_UNITS, LAPSE_BOUNDS, lapseParts, unitSel,
     FACE_TONES, faceToneRow, faceToned, setFaceTone,
     setFaceTaken, faceTakenBy, faceBtn, emojiPicker,
     routeFor, motionCommitHtml,

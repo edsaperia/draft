@@ -68,7 +68,14 @@ window.BAND = (function () {
     // the shared module, the same names the page destructures from it
     const { esc, TICK, ARROW_OUT, avHtml, bandHtml, fitBand, nameBody, pictureBody, opt, num, numIn,
       ctlWord, ANSWER, stateOf, nounOf, MAILS, renderMailModal, gateBody, pileHtml, readBody,
-      routeFor, listOf } = window.SETUP;
+      routeFor, listOf,
+      // 👥's share and 💤's unit picker (Q1439): the bounds, the (x of y) slot
+      // and the select are setup.js's, so the founder's card, the member's
+      // answer card and the composer draw one control between them
+      SHARE, shareTail, shareSlot, LAPSE_BOUNDS, lapseParts, unitSel } = window.SETUP;
+    // 👥's two sentences, copy.js's (Q1439, ruling p) — one home for the
+    // founder's card, the member's answer card and the composer's lane
+    const RULE_QUORUM = window.COPY.page.quorumRule;
     // the drawn glyphs (Q1401): one picture per character wherever the band
     // emits a glyph as markup — a commit button, an application's hold row —
     // and `glyphify` for the glyphs inside the band's own sentences
@@ -220,6 +227,19 @@ window.BAND = (function () {
         card.querySelector('[data-meaning="' + k + '"]');
       if (!slot) return;
       slot.textContent = (!CHOSEN[k] || CHOSEN[k]()) ? meaning(k, TYPED[k]()) : '';
+    };
+    // **…and so does (x of y)** (Q1439, ruling m). The numbers a share comes
+    // to stand inside the clause the box is in, so they are repainted in
+    // place beside the meaning line rather than by a render — same keystroke,
+    // same rule, same reason.
+    const syncShare = (el) => {
+      if (!el.closest) return;
+      const card = el.closest('.setupcard') || document;
+      card.querySelectorAll('[data-share]').forEach((slot) => {
+        const k = slot.dataset.share;
+        slot.textContent = k === 'quorum' && S.quorumForm === 'share'
+          ? shareTail(S.quorumPct, E()) : '';
+      });
     };
     // ---- **What stands is not offered back** (Q1293, Ed 2026-09-09, reading
     // (a)) ------------------------------------------------------------------
@@ -566,14 +586,16 @@ window.BAND = (function () {
         (() => { const V = ladderView('quorum');
         return '<div class="choice" role="radiogroup">' +
         theyDecide('quorum') +
+        // …and since Q1439 the sentence is Ed's own (ruling p) with the
+        // numbers after the share (ruling m), the box running 5 to 50 — no
+        // quorum may ask for more than half the group a proposal waits on.
         opt(V, 'quorumForm', 'share',
-          numIn(V, 'quorumPct', 1, 100) +
-          '% of the membership must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.', '',
+          RULE_QUORUM.share(numIn(V, 'quorumPct', SHARE.min, SHARE.max) + '%' +
+            shareSlot('quorum', V.quorumPct, E())), '',
           (V.quorumForm === 'share'
             ? meanLine('quorum', CHOSEN.quorum() ? TYPED.quorum() : null) : '')) +
         opt(V, 'quorumForm', 'count',
-          numIn(V, 'quorumN', 1, 40) +
-          ' members must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.', '',
+          RULE_QUORUM.count(numIn(V, 'quorumN', 1, 40)), '',
           (V.quorumForm === 'count'
             ? meanLine('quorum', CHOSEN.quorum() ? TYPED.quorum() : null) : '')) +
         '</div>'; })(),
@@ -635,10 +657,24 @@ window.BAND = (function () {
         // aggregation order, so the consent direction is untouched). The day
         // count stands inside the clause (Q1137's pattern), and typing into it
         // still chooses the rung (F6).
-        opt(V, 'lapse', 'days',
-          'After ' + numIn(V, 'lapseDays', 7, 365) +
-          ' days, inactive members lapse and automatically abstain from votes.', '',
-          meanLine('lapse', isNum(V.lapseDays) ? { afterMs: +V.lapseDays * 86400000 } : null)) +
+        // …and since Q1439 the period is stated in minutes, hours or days
+        // (ruling j): the unit is a picker inside the sentence, ⏱️'s pattern,
+        // input only — the spell itself is what is stored (`lapseMs`).
+        (() => { const p = lapseParts(V.lapseMs);
+          // the founder's own pick, else the unit the spell in the box
+          // divides into, else the unit of what stands (the settled ladder
+          // blanks a field that equals it), else days
+          const unit = V.lapseUnit || (p ? p.unit : ((V.__stand && V.__stand.lapseUnit) || 'days'));
+          const b = LAPSE_BOUNDS[unit] || LAPSE_BOUNDS.days;
+          // the typed number rides only while the spell does (the picker
+          // rescales one from the other): a blank spell is a blank block
+          const shown = isNum(V.lapseN) && p ? V.lapseN : (p ? p.n : '');
+          return opt(V, 'lapse', 'days',
+            'After <input class="num numin" type="number" data-num="lapseN" min="' + b[0] +
+            '" max="' + b[1] + '"' + (shown === '' ? '' : ' value="' + shown + '"') + '> ' +
+            unitSel(unit, 'data-lapseunit="1"') +
+            ', inactive members lapse and automatically abstain from votes.', '',
+            meanLine('lapse', isNum(V.lapseMs) ? { afterMs: +V.lapseMs } : null)); })() +
         rungOpt(V, 'lapse', 'never', LAPSE_RULE('never'), '',
           meanLine('lapse', { afterMs: null })) +
         '</div>'; })(),
@@ -1805,7 +1841,7 @@ window.BAND = (function () {
     let birthsMuted = false;
 
     return {
-      render, refreshCommit, roomNow, meanLine, syncMeaning, standingBlock, unchangedCard,
+      render, refreshCommit, roomNow, meanLine, syncMeaning, syncShare, standingBlock, unchangedCard,
       foundedAt, foundedClause, closedAtWords, resendTitle, APPLICANT, MEMBER_EMAILS, APPCARDS,
       appCtx,
       // the rail asks this (SURFACE E33, Q901): a door that shut under a

@@ -457,7 +457,12 @@
   const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml: cardHtml0,
     nameBody, pictureBody, opt, num, numIn, ctlWord, someIn, ANSWER, stateOf, labelOf, nounOf,
     MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml, stripHtml, readBody,
-    routeFor, motionCommitHtml, BLINDNOTE, listOf, syncSlider } = window.SETUP;
+    routeFor, motionCommitHtml, BLINDNOTE, listOf, syncSlider,
+    // 👥's share bounds and its (x of y), and 💤's units (Q1439): one control
+    // each, drawn by setup.js, so the founder's card, the member's answer card
+    // and this script's composer cannot state three different ranges
+    SHARE, shareCount, shareTail, shareWords, shareSlot,
+    LAPSE_UNITS, LAPSE_BOUNDS, lapseParts, unitSel } = window.SETUP;
   // **Every card can carry a refusal** (Q1330, SURFACE Y25): the settings,
   // motion and door bodies draw `doorErrHtml` where the control that tried
   // stands, and every other kind — a gate, a grant, an answer, news — drew
@@ -789,11 +794,14 @@
   // the save (§9.7a: until the link exists, nothing does, anywhere).
   const M = window.CONSTITUTION;
   let cs = null;
-  // 💤's page number is a count of days, and the module's `spellWords` is
-  // the one writer of its words (Q1321): days where whole, else hours, else
-  // minutes — never *0 days* for a spell under a day
-  const spellOfDays = (d) => (d !== '' && d !== null && d !== undefined && isFinite(+d)
-    ? M.spellWords(+d * 86400000) : '');
+  // 💤's page number **is the spell itself**, in milliseconds, and the
+  // module's `spellWords` is the one writer of its words (Q1321): days where
+  // whole, else hours, else minutes — never *0 days* for a spell under a day.
+  // It was a count of days until Q1439 gave the card minutes and hours
+  // (ruling j); a fractional day carried *20 minutes* only by rounding at
+  // every reading, and put `0.0139` in the box the founder types into.
+  const spellOfMs = (ms) => (ms !== '' && ms !== null && ms !== undefined && isFinite(+ms)
+    ? M.spellWords(+ms) : '');
   // ---- the charter column (stage 8) --------------------------------------
   // The document's text renders as clauses through session.js; the founder's
   // editor (#prose) is for the text before there is anywhere else to put it.
@@ -1132,7 +1140,7 @@
     judgments: () => ({ rung: S.judgments }),
     chamber: () => ({ rung: S.chamber }),
     rate: () => ({ grant: 3, cap: 3, dripMinutes: +S.dripMin }),   // Q1160: 3/3 fixed
-    lapse: () => (S.lapse === 'never' ? { afterMs: null } : { afterMs: Math.round(+S.lapseDays * 86400000) }),
+    lapse: () => (S.lapse === 'never' ? { afterMs: null } : { afterMs: Math.round(+S.lapseMs) }),
     removal: () => ({ price: S.removal }),
     admission: () => ({ price: S.admission }),
     applications: () => ({ apply: S.joinBy === 'apply' }),
@@ -1151,7 +1159,11 @@
     applications: (v) => ({ apply: v === 'apply' }),
     removal: (v) => ({ price: v }),
     admission: (v) => ({ price: v }),
-    lapse: (v) => (v === 'never' ? { afterMs: null } : { afterMs: +v * 86400000 }),
+    // 💤's answer is a spell in the member's own unit since Q1439 (ruling j),
+    // the same shape ⏱️'s has had since Q1160 — days where they have picked
+    // nothing, which is the unit the card opens on
+    lapse: (v) => (v === 'never' ? { afterMs: null }
+      : { afterMs: +v * (LAPSE_UNITS[S.myAns.lapseUnit] || LAPSE_UNITS.days) }),
     // the answer is the interval since Q1160, in the member's own unit
     rate: (v) => ({ grant: 3, cap: 3,
       dripMinutes: +v * (DRIP_UNITS[S.myAns.rateUnit] || 1) }),
@@ -1161,15 +1173,35 @@
     // rate's page scalar is the interval since Q1160
     quorum: (v) => v.n, rate: (v) => v.dripMinutes,
     ending: (v) => (v.endsAtMs === null ? 'never' : msToLocal(v.endsAtMs)),
-    // **the day count is exact, never rounded** (Q1321): a spell the room
-    // set under a day rounded to *0 days* on every reader; the fraction
-    // survives here and `spellOfDays` words it in the unit that divides it
-    lapse: (v) => (v.afterMs === null ? 'never' : v.afterMs / 86400000),
+    // **the spell is the page's scalar, exactly** (Q1321, and Q1439 for the
+    // unit): a spell the room set under a day rounded to *0 days* on every
+    // reader while this was a day count, and a fraction of a day is not a
+    // number anybody types — the milliseconds survive here and `spellOfMs`
+    // words them in the unit that divides them
+    lapse: (v) => (v.afterMs === null ? 'never' : v.afterMs),
     authorship: (v) => v.rung,
     judgments: (v) => v.rung, chamber: (v) => v.rung,
     removal: (v) => v.price,
     admission: (v) => v.price,
     applications: (v) => (mayApply(v) ? 'apply' : 'invite'),
+  };
+  // …and **the inverse of `ANSTYPED`**, for the two answers a member states
+  // in a unit of their own (Q1439). `PAGEVAL` is the room's scalar — what
+  // `takenOf` hands the clause — and a member's own committed answer is a
+  // different thing: the number they typed and the unit they typed it in. The
+  // two were one map until 💤 gained units, where the difference stops being
+  // cosmetic: 💤's room scalar is the spell in milliseconds, so a member who
+  // answered *20 minutes* would have found 1200000 in the box on their next
+  // load. ⏱️ takes the same treatment and gains by it — an answer of 180
+  // minutes comes back as *3 hours*, the unit that divides it, rather than as
+  // the minutes the wire carries. A setting with no entry here keeps
+  // `PAGEVAL`, which is every setting whose answer is a rung or a date.
+  const ANSBACK = {
+    lapse: (v) => { if (v.afterMs === null) return { lapse: 'never' };
+      const p = lapseParts(v.afterMs);
+      return { lapse: p ? p.n : '', lapseUnit: p ? p.unit : 'days' }; },
+    rate: (v) => { const p = dripParts(v.dripMinutes);
+      return { rate: p ? p.n : v.dripMinutes, rateUnit: p ? p.unit : 'minutes' }; },
   };
   // **One home for a value's rule sentence** (Q1109, Ed 2026-08-31: the
   // founder card's options are the constitution's own sentences), and since
@@ -1334,7 +1366,8 @@
   // whether the bin has anything to throw away.
   const REVERTKEYS = () => ['title', 'slug', 'ending', 'endsAt',
     'quorumForm', 'quorumPct', 'quorumN', 'joinBy', 'policyBy', 'titleBy', 'slugBy',
-    'lapse', 'lapseDays', 'removal', 'removeWho', 'admission', 'authorship', 'judgments',
+    // 💤's spell and its typed pair (Q1439), ⏱️'s three below it
+    'lapse', 'lapseMs', 'lapseN', 'lapseUnit', 'removal', 'removeWho', 'admission', 'authorship', 'judgments',
     // ⏱️'s number and unit fields (Q1161) — missing until Q1286 (e), so 🗑️ on
     // ⏱️ left the typed number on the card and a later ✒️ would have committed it
     'grant', 'dripMin', 'dripN', 'dripUnit', 'cap', 'chamber',
@@ -1387,6 +1420,10 @@
     // (Q1161), so a bin that put back `dripN` alone left the minutes standing
     // and the reopened card read them back as the number
     if (el.querySelector('[data-num="dripN"], [data-dripunit]')) { ks.add('dripMin'); ks.add('dripUnit'); ks.add('rateBy'); }
+    // …and 💤's the same way since Q1439: the typed number rescales the spell
+    // and claims the rung, so a bin that put back `lapseN` alone would leave
+    // the spell standing and the reopened card would read it back
+    if (el.querySelector('[data-num="lapseN"], [data-lapseunit]')) { ks.add('lapseMs'); ks.add('lapseUnit'); ks.add('lapse'); }
     // **The picture card names itself by its uploader, not by its grid.**
     // `[data-pic]` used to be the always-present row of grounds; since Q732
     // the only `[data-pic]` elements are the picker's own buttons and the
@@ -1483,7 +1520,10 @@
     ending: '', endsAt: '',
     quorumBy: '', quorumForm: '', quorumPct: '', quorumN: '',
     joinBy: '', admission: '',
-    lapse: '', lapseDays: '',
+    // 💤: the rung, the spell in milliseconds, and the number and unit it is
+    // typed as (Q1439) — `lapseMs` is `dripMin`'s twin and the two typed
+    // fields are `dripN`/`dripUnit`'s
+    lapse: '', lapseMs: '', lapseN: '', lapseUnit: '',
     // ❌'s chosen subject (entry 96), provisional until the act
     removal: '', removeWho: '',
     authorship: '', judgments: '',
@@ -1896,11 +1936,17 @@
   // the founder's row (Q755) and labelled every reader the founder (Q754).
   const founderRow = () => S.roster.find((p) => p.founder);
   const iDraft = () => { const m = founderRow(); return !!m && m.role !== 'clerk'; };
+  // **How many members a share comes to**, in the module's own arithmetic —
+  // `⌈n·E/100⌉`, the product before the quotient (issue #24). The share
+  // branch rounded *down* at the half here while the engine rounded up, so a
+  // 50% quorum in a membership of 5 read 3 to the engine and 2 to the page
+  // (`shareCount` is setup.js's, and every share the surface prints goes
+  // through it since Q1439).
   const quorumCount = () => {
     const st = csState('quorum');
     if (st && st.value) return Math.min(M.quorumCount(st.value, E()), E());
     return (S.quorumForm === 'share'
-      ? Math.max(1, Math.round(E() * S.quorumPct / 100)) : Math.min(S.quorumN, E()));
+      ? (shareCount(S.quorumPct, E()) ?? NaN) : Math.min(S.quorumN, E()));
   };
   const endingVal = () => takenOf('ending') ||
     (S.ending === 'roster' ? null : S.ending === 'perpetual' ? 'never' : S.endsAt);
@@ -3459,6 +3505,15 @@
       slot.textContent = isNum(t.value) && ANSTYPED[k]
         ? (M.meaningOf(k, ANSTYPED[k](t.value), roomNow()) || '') : '';
     }
+    // …and (x of y) inside the clause the box stands in (Q1439, ruling m),
+    // repainted the same way and for the same reason. It is the member's own
+    // number and their own block: a share typed into the count block is not
+    // a share, and shows nothing.
+    const sh = (t.closest('.setupcard') || document).querySelector('[data-share="' + k + '"]');
+    if (sh) {
+      sh.textContent = k === 'quorum' && S.myAns.quorumForm === 'share' && isNum(t.value)
+        ? shareTail(t.value, E()) : '';
+    }
   };
   // committed = the answer reached the module; provisional stays page-side
   const answered = (c) => { const st = csState(ansKey(c));
@@ -3477,7 +3532,7 @@
     admission: () => !!S.admission,
     authorship: () => !!S.authorship,
     judgments: () => !!S.judgments,
-    lapse: () => S.lapse === 'never' || (!!S.lapse && isNum(S.lapseDays)),
+    lapse: () => S.lapse === 'never' || (!!S.lapse && isNum(S.lapseMs)),
     ending: () => S.ending === 'perpetual' || (!!S.ending && !!S.endsAt),
     quorum: () => !!S.quorumForm && isNum(S.quorumForm === 'count' ? S.quorumN : S.quorumPct),
     // the cap cannot be below the grant: the module quietly raises it, so a
@@ -3492,9 +3547,24 @@
   // …and under a standing block a card that still equals what stands has
   // nothing to commit either (Q1293): the composer's own rule, read here for
   // the founder's ladder. `ready` itself is untouched — `settled` reads it.
+  // **A share outside the box's own ends is not a commit** (Q1439, ruling a:
+  // no quorum above half). The box says 5–50 and the browser refuses the
+  // spinner past it, but a typed 51 would otherwise arm the ✓ and be refused
+  // by the module at the far end of a ten-second 🏛️ hold. It is asked here
+  // and **not** in `ready`, deliberately: `ready` is what `settled` reads, and
+  // a live alpha document standing at 66% must go on reading as settled
+  // rather than re-opening every card below it (the 💤 hydration defect).
+  const shareOutOfRange = (c) => {
+    const k = c.ansFor || c.k;
+    if (k !== 'quorum') return false;
+    const form = c.ansFor ? S.myAns.quorumForm : S.quorumForm;
+    if (form !== 'share') return false;
+    const n = c.ansFor ? S.myAns.quorum : S.quorumPct;
+    return isNum(n) && (+n < SHARE.min || +n > SHARE.max);
+  };
   const commitReady = (c) => (c.k === 'title'
     ? (!!titlePending() && titlePending() !== cs_titleNow())
-    : ready(c) && !unchangedCard(c.k));
+    : ready(c) && !unchangedCard(c.k) && !shareOutOfRange(c));
   const settled = (c) => {
     // 🎩 used to be *always answered — member by default*, which is why it
     // never appeared as a task: the founder was made a member by a default
@@ -4433,7 +4503,7 @@
     // (🌍 and 🤝 are stated once, above, module-first like every neighbour:
     // a second entry here used to override them and read S alone)
     lapse: () => (S.lapse === 'never' ? 'Never — however long you are away'
-      : PAGE_COPY.val.lapseAfter(spellOfDays(S.lapseDays))),
+      : PAGE_COPY.val.lapseAfter(spellOfMs(S.lapseMs))),
     removal: () => REMOVAL_RULE[removalPrice()],
     // the three grants carry no subtitle (Ed's card review, 2026-09-02:
     // *remove body text "You hold Founder Actions" from the queue card*;
@@ -4458,7 +4528,10 @@
     judgments: (v) => said(JUDG_RULE[v] || v),
     chamber: (v) => said(clauseOf('chamber', v) || v),
     applications: (v) => said(APPL_RULE(v) || v),
-    lapse: (v) => said(LAPSE_RULE(v)),
+    // the member's own answer is a number in the unit they picked (Q1439), so
+    // it is put back into a spell before it is read back as a sentence
+    lapse: (v) => said(LAPSE_RULE(v === 'never' ? 'never'
+      : +v * (LAPSE_UNITS[S.myAns.lapseUnit] || LAPSE_UNITS.days))),
     // **🪪's readback was missing entirely** — `admission` is delegable and
     // has an `ANSWER` body, so it makes an `ans-` card like every other; with
     // no entry here `value()` called `undefined` and took the render with it
@@ -5153,7 +5226,7 @@
         case 'applications': return APPL_RULE(mayApply(v) ? 'apply' : 'invite');
         case 'admission': return ADM_RULE[v.price] || null;
         case 'removal': return REMOVAL_RULE[v.price] || null;
-        case 'lapse': return LAPSE_RULE(v.afterMs === null ? 'never' : v.afterMs / 86400000);
+        case 'lapse': return LAPSE_RULE(v.afterMs === null ? 'never' : v.afterMs);
         case 'rate': return RATE_RULE(v.dripMinutes);
         default: return wordsFor(k, v);
       }
@@ -5567,7 +5640,7 @@
     applications: (v) => ({ invite: 'Invitation only', apply: 'Anyone may apply' })[v],
     authorship: (v) => ({'anonymous':'Nobody’s name, ever','anonymousElective':'Nobody’s name unless they choose','sealed':'Names at the close','sealedElective':'Names at the close, or earlier by choice','public':'Names from the start'})[v],
     judgments: (v) => ({ never: 'Never revealed', after: 'Revealed at the end' })[v],
-    lapse: (v) => (v === 'never' ? 'Never — however long you are away' : PAGE_COPY.val.lapseAfter(spellOfDays(v))),
+    lapse: (v) => (v === 'never' ? 'Never — however long you are away' : PAGE_COPY.val.lapseAfter(spellOfMs(v))),
     // `standsOf` feeds this `takenOf('removal')`, which is `PAGEVAL.removal`
     // — the price, `consent` · `assembly` · `proposal`. Keyed
     // `everyone`/`others`/`ordinary` it returned `undefined` for every value
@@ -5576,7 +5649,9 @@
     // …and since Q1112 (b) that vocabulary is the clause's own sentence, the
     // one 🥾's lanes now offer.
     removal: (v) => REMOVAL_RULE[v],
-    quorum: (v) => (S.quorumForm === 'count' ? v + ' of the membership' : v + '% of the membership'),
+    // the share carries its numbers here too (Q1439, ruling m)
+    quorum: (v) => (S.quorumForm === 'count' ? v + ' of the membership'
+      : shareWords(v, E()) + ' of the membership'),
     ending: (v) => (v === 'never' ? 'Never — it runs until too few members are active'
       : new Date(v).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false })),
     rate: () => { const tv = takenValOf('rate');
@@ -5652,13 +5727,20 @@
           'The drafting process has no set end — it runs until too few members are active.']], 'ending') +
         (never ? '<p class="setnote">' + PAGE_COPY.composeNote.neverNeedsAll + '</p>' : '');
     },
+    // **A lane offers a rule, so it says the rule** (Q1112 (b)) — and since
+    // Q1439 that rule is Ed's sentence with the share's own numbers after it
+    // (rulings m, p), the share box running 5 to 50 like every other 👥 box
     quorum: (d) => (S.quorumForm === 'count'
-      ? inputBlock('Quorum is <input class="num" type="number" min="1" max="99" data-mnum=" of the membership" value="' +
-        esc((d.to.match(/\d+/) || [])[0] || takenOf('quorum') || quorumCount()) + '"> of the membership.',
+      ? inputBlock(PAGE_COPY.quorumRule.count(
+        '<input class="num" type="number" min="1" max="99" data-mnum=" of the membership" value="' +
+        esc((d.to.match(/\d+/) || [])[0] || takenOf('quorum') || quorumCount()) + '">'),
         meanLine('quorum', d.val && d.val.form ? d.val : null), d, 'quorum')
-      : inputBlock('Quorum is <input class="num" type="number" min="1" max="100" data-mnum="% of the membership" value="' +
-        esc((d.to.match(/\d+/) || [])[0] || takenOf('quorum') || S.quorumPct) + '">% of the membership.',
-        meanLine('quorum', d.val && d.val.form ? d.val : null), d, 'quorum')),
+      : (() => { const n = (d.to.match(/\d+/) || [])[0] || takenOf('quorum') || S.quorumPct;
+        return inputBlock(PAGE_COPY.quorumRule.share(
+          '<input class="num" type="number" min="' + SHARE.min + '" max="' + SHARE.max +
+          '" data-mnum="% of the membership" value="' + esc(n) + '">%' +
+          shareSlot('quorum', n, E())),
+          meanLine('quorum', d.val && d.val.form ? d.val : null), d, 'quorum'); })()),
     // 🪪: the price of admission, its three rungs as lanes, labels MVAL's
     // verbatim. The register-era 🪪 had no value to compose and spec-check
     // exempted it from the composable set; entry 94 re-typed it into this
@@ -5672,14 +5754,26 @@
     removal: (d) => lanesFor(d, ruleLanes('removal'), 'removal'),
     lapse: (d) => lanesFor(d, [['Never — however long you are away',
         'A membership never lapses, however long somebody is away.']], 'lapse') +
-      inputBlock('A membership lapses after ' +
-        '<input class="num" type="number" min="7" max="720" data-mnum=" days without logging in" value="' +
-        esc((d.to.match(/\d+/) || [])[0] || S.lapseDays) + '"> days without logging in.',
+      // **the spell is composed in its own unit** (Q1439, ruling j): the
+      // number and the unit are read off the draft's own value where it has
+      // one, the way ⏰'s date is (Q1289), so the picked unit is never
+      // replaced by a re-derivation from the standing spell
+      (() => { const p = lapseParts(d.val && isNum(d.val.afterMs) ? d.val.afterMs : S.lapseMs);
+        const unit = d.lapseUnit || (p ? p.unit : 'days');
+        const b = LAPSE_BOUNDS[unit] || LAPSE_BOUNDS.days;
+        // the typed number rides beside the spell, as ⏱️'s does: *60 minutes*
+        // and *1 hour* are one spell, and only the number the composer typed
+        // says which of them it was
+        const shown = isNum(d.lapseN) ? d.lapseN : (p ? p.n : '');
+        return inputBlock('A membership lapses after ' +
+        '<input class="num" type="number" min="' + b[0] + '" max="' + b[1] +
+        '" data-mnum=" without logging in" value="' +
+        esc(shown) + '"> ' + unitSel(unit, 'data-mlapseunit="1"') + ' without logging in.',
         // presence, not truthiness: `afterMs: null` is 💤's *Never*, a real
         // value with a real sentence, and the other keys all test for the
         // field being there rather than for it being non-zero
         meanLine('lapse', d.val && d.val.afterMs !== undefined ? d.val : null),
-        d, 'lapse', !!d.to && !/^never/i.test(d.to)),
+        d, 'lapse', !!d.to && !/^never/i.test(d.to)); })(),
     authorship: (d) => lanesFor(d, [
       ['Nobody’s name, ever', 'A proposer is never named — not even in the closing record.'],
       ['Nobody’s name unless they choose', 'A proposer is never named unless they sign the proposal themselves.'],
@@ -5886,7 +5980,8 @@
       // the only place it survives.
       const SEED = { ending: 'roster', endsAt: '2026-08-20T18:00',
         quorumBy: 'roster', quorumForm: 'share', quorumPct: 33, quorumN: 5,
-        joinBy: 'invite', policyBy: 'roster', lapse: 'roster', lapseDays: 90,
+        // 💤's spell is milliseconds since Q1439 — 90 days, as it has been
+        joinBy: 'invite', policyBy: 'roster', lapse: 'roster', lapseMs: 90 * 86400000,
         removal: 'roster', admission: 'roster', authorship: 'roster', judgments: 'roster',
         rateBy: 'founder', grant: 3, dripMin: 180, cap: 3,   // 3/3 fixed, Q1160
         // **🌍 stays with the founder, and that is the tooling fix** (Ed,
@@ -6049,7 +6144,10 @@
     ending: 'when the drafting process will end',
     // *the membership* twice in one sentence: `WHAT` is read inside *The
     // membership changed …*, so this one takes **members** (entry 215)
-    quorum: 'how many members must weigh in before a question can pass',
+    // …and since Q1439 the quorum counts the members who **prefer** the
+    // proposal, so *weigh in* is the wrong count: a vote against no longer
+    // helps a proposal reach it (the clause says the same in Ed's own words)
+    quorum: 'how many members must prefer a proposal before it can be adopted',
     authorship: 'whether anonymous proposers are revealed',
     judgments: 'whether votes are revealed with the record',
     chamber: 'who may read the document',
@@ -6080,7 +6178,7 @@
     removal: 'The membership will decide how a member is removed',
     rate: 'The membership will decide how often members should be able to make proposals',
     ending: 'The membership will decide whether changes end on a set date or may be made perpetually',
-    quorum: 'The membership will decide how many members must vote on a proposal ✏️ before anything changes',
+    quorum: 'The membership will decide how many members must prefer a proposal ✏️ before it can be adopted',
     authorship: 'The membership will decide if anonymous proposals are allowed',
     judgments: 'The membership will decide whether votes are revealed at the end or never',
   };
@@ -6135,9 +6233,13 @@
   // `form` is the value's own since Q1162 — a delegated resolution can land
   // in either form whatever the founder's frame says, so a caller with a
   // typed value passes its form and only the founder's own field defaults
+  // …and since Q1439 (rulings a, m, p) the sentence is Ed's own, the quorum
+  // counts the members who prefer the proposal to the current text, and the
+  // share is followed by the numbers it comes to in the membership as it
+  // stands. Both sentences live in copy.js.
   const QUORUM_RULE = (n, form) => (((form || S.quorumForm) === 'count')
-    ? n + ' members'
-    : n + '% of the membership') + ' must vote on a proposal ✏️ before anything changes; then the text becomes whichever wording they prefer.';
+    ? PAGE_COPY.quorumRule.count(n)
+    : PAGE_COPY.quorumRule.share(shareWords(n, E())));
   // **The threshold clause went with the threshold** (Q1362, 2026-09-15).
   // `BAR_RULE` printed 🌡️'s rung sentence with 🪜's ramp sentence hung off
   // it, because the ramp was part of what the threshold said (Q512); the
@@ -6145,11 +6247,12 @@
   // Ed's sentences (card review 2026-09-02, Q1149 — the options swap so the
   // card leads with lapsing; Q1168 — *automatically abstain* is §9.5a's own
   // mechanism, stated accurately)
-  // `v` is the page's number of days, possibly fractional; the words are
-  // `spellWords`'s, in the unit that divides the spell (Q1321)
+  // `v` is the spell itself in milliseconds since Q1439 (it was a number of
+  // days, possibly fractional); the words are `spellWords`'s, in the unit
+  // that divides the spell (Q1321)
   const LAPSE_RULE = (v) => (v === 'never' || v === null
     ? 'Inactive members never lapse and are still counted towards votes.'
-    : 'After ' + spellOfDays(v) + ', inactive members lapse and automatically abstain from votes.');
+    : 'After ' + spellOfMs(v) + ', inactive members lapse and automatically abstain from votes.');
   // **⏱️ is one number** (Ed, 2026-09-02, Q1160/Q1161, R-083): the grant and
   // the maximum are the mechanism's fixed 3 (SPEC §7), the interval is the
   // setting, and **the unit is worked out from the stored minutes** — the
@@ -6192,7 +6295,7 @@
     lapse: () => { const tv = takenOf('lapse');
       const v = tv !== null ? tv : (S.lapse === 'roster' ? null : S.lapse);
       return LAPSE_RULE(v === 'never' ? 'never'
-        : (typeof v === 'number' ? v : S.lapseDays)); },
+        : (typeof v === 'number' ? v : S.lapseMs)); },
     rate: () => { const v = takenValOf('rate');
       return RATE_RULE(v ? v.dripMinutes : S.dripMin); },
     // 🤝 is one switch; what an application costs is 🪪's sentence (entry 94)
@@ -7221,7 +7324,7 @@
     whyLane: (...a) => whyLane(...a),
     wordsFor: (...a) => wordsFor(...a),
   });
-  const { render, refreshCommit, roomNow, meanLine, syncMeaning, standingBlock, unchangedCard,
+  const { render, refreshCommit, roomNow, meanLine, syncMeaning, syncShare, standingBlock, unchangedCard,
     foundedAt, foundedClause, closedAtWords, resendTitle, APPLICANT, MEMBER_EMAILS, APPCARDS,
     appCtx, applyShutNews } = BND;
 
@@ -7275,9 +7378,39 @@
       S.dripUnit = ev.target.value;
       if (n !== '') { S.dripN = n; S.dripMin = n * (DRIP_UNITS[S.dripUnit] || 1); S.rateBy = 'founder'; }
       return render(); }
-    // …and the member's, on their ⏱️ answer card
+    // …and 💤's, since Q1439 (ruling j): the number keeps, the stored spell
+    // rescales, and picking a unit claims the rung the way typing does. The
+    // spell's own bounds move with the unit, so the box is re-drawn — which
+    // is a render, and legitimate: a select's `change` is the end of the
+    // gesture, not the middle of one.
+    if (ev.target.matches('[data-lapseunit]')) {
+      const p = lapseParts(S.lapseMs);
+      const n = isNum(S.lapseN) ? +S.lapseN : (p ? p.n : '');
+      S.lapseUnit = ev.target.value;
+      if (n !== '') {
+        S.lapseN = n;
+        S.lapseMs = n * (LAPSE_UNITS[S.lapseUnit] || LAPSE_UNITS.days);
+        S.lapse = 'days';
+      }
+      return render(); }
+    // …and the composer's, which keeps its number and unit on the draft
+    if (ev.target.matches('[data-mlapseunit]')) {
+      if (!S.draft || S.draft.k !== S.open) S.draft = { k: S.open, to: '', why: '' };
+      const pick = ev.target.closest('.pick');
+      const box = pick && pick.querySelector('[data-mnum]');
+      const unit = ev.target.value;
+      S.draft.lapseUnit = unit;
+      if (box && box.value !== '') {
+        S.draft.lapseN = +box.value;
+        S.draft.to = box.value + ' ' + unit + (box.dataset.mnum || '');
+        S.draft.val = { afterMs: +box.value * (LAPSE_UNITS[unit] || LAPSE_UNITS.days) };
+      }
+      return render(); }
+    // …and the member's, on their ⏱️ and 💤 answer cards. The key is the
+    // select's own (`rate` → `rateUnit`), so a second unit picker needed no
+    // second branch — it needed the one branch to stop naming ⏱️.
     if (ev.target.matches('[data-ansunit]')) {
-      S.myAns.rateUnit = ev.target.value; return render(); }
+      S.myAns[ev.target.dataset.ansunit + 'Unit'] = ev.target.value; return render(); }
     if (ev.target.matches('[data-mval-sel]')) {
       const v = ev.target.value;
       if (!v) { S.draft = null; return render(); }
@@ -7339,11 +7472,20 @@
       return;
     }
     if (ev.target.matches('[data-mnum]')) {
-      S.draft.to = ev.target.value + ev.target.dataset.mnum;
       const nv = +ev.target.value;
-      S.draft.val = (S.open === 'quorum') ? { form: S.quorumForm, n: nv }
-        : (S.open === 'lapse') ? { afterMs: nv * 86400000 }
-        : null;
+      // 💤 composes in its own unit since Q1439: the number and the unit ride
+      // on the draft, the spell is what is proposed
+      if (S.open === 'lapse') {
+        const unit = S.draft.lapseUnit || 'days';
+        S.draft.lapseN = ev.target.value === '' ? '' : nv;
+        S.draft.lapseUnit = unit;
+        S.draft.to = ev.target.value + ' ' + unit + ev.target.dataset.mnum;
+        S.draft.val = ev.target.value === ''
+          ? null : { afterMs: nv * (LAPSE_UNITS[unit] || LAPSE_UNITS.days) };
+        return render();
+      }
+      S.draft.to = ev.target.value + ev.target.dataset.mnum;
+      S.draft.val = (S.open === 'quorum') ? { form: S.quorumForm, n: nv } : null;
       return render();
     }
   });
@@ -8418,6 +8560,13 @@
         S.dripMin = t.value === '' ? '' : +t.value * (DRIP_UNITS[S.dripUnit] || 1);
         S.rateBy = 'founder';
       }
+      // …and 💤's the same way since Q1439: typed in the card's own unit, the
+      // spell itself stored (the abstention and the lapse run on it)
+      if (t.dataset.num === 'lapseN') {
+        S.lapseMs = t.value === '' ? ''
+          : +t.value * (LAPSE_UNITS[S.lapseUnit || 'days'] || LAPSE_UNITS.days);
+        if (t.value !== '') S.lapse = 'days';
+      }
       // **A number typed into ⏱️'s sentence claims the rung it stands in**
       // (Q1137). Everywhere else a `num` field is inside a `.pick > .inner`
       // and cannot be reached until its rung is chosen; ⏱️'s three are inline
@@ -8441,7 +8590,7 @@
           if (rung) rung.setAttribute('aria-pressed', 'true');
         }
       }
-      syncMeaning(t);
+      syncMeaning(t); syncShare(t);
       renderRail(); SESSION.refreshRail(); refreshCommit(); }
     // …and the same for a number typed into an **answer** (entry 165), which
     // 🌡️ now has: a keystroke wakes the ✓ and repaints the meaning under the
@@ -8523,7 +8672,7 @@
   const { setProse, hydrateValues, fieldsOf, hydrateFromModule, hydrateSeen,
     liveJudge, liveJudgeAdmit, admitCardOf, allApplicants, applicantsAsking,
     memApplicantRows, whenOf, liveBoot, birthBoot } = window.LIVE.make({
-    S, CARDS, DKEY, PAGEVAL, STANDS, FOUNDER, LIVESLUG, SESSION, api, prose,
+    S, CARDS, DKEY, PAGEVAL, ANSBACK, STANDS, FOUNDER, LIVESLUG, SESSION, api, prose,
     get cs() { return cs; }, set cs(v) { cs = v; },
     get LIVE_HOOKS() { return LIVE_HOOKS; },
     amFounder: (...a) => amFounder(...a),

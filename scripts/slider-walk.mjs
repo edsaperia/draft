@@ -201,8 +201,13 @@ const walkTo = async (stop, delegate) => {
 // has one arrived member, and a box whose min and max are both 1 states the
 // only number there is. The count form's bounds are locked in the fold instead
 // (`packages/constitution/test/promise-quorum.test.ts`).
+//
+// **The top end moved to 50** (Q1439, ruling a, Ed 2026-09-17): no quorum may
+// ask for more than half the group a proposal is waiting on, so a share above
+// 50 is not a number the question has an answer for — the box says so, and the
+// ✓ stays dark on one typed past it (`shareOutOfRange` in session-view.html).
 const BOUNDS = {
-  quorum: { min: 5, max: 100, step: 5 },
+  quorum: { min: 5, max: 50, step: 5 },
 };
 
 /* ---- 👥: two blocks, the form part of the answer (Q1162) ----------------
@@ -247,8 +252,10 @@ for (const key of ['quorum']) {
   if (!born || !born.picks.length) { check(want + ' has the two blocks', false); continue; }
   check('two blocks, share first', born.picks.map((p) => p.val).join(',') === 'share,count',
     born.picks.map((p) => p.val).join(','));
+  // Ed's own sentence since Q1439 (ruling p): the quorum counts the members
+  // who prefer the proposal to the current text, so *must vote on* is gone
   check('each block is the rule with its number inline',
-    born.picks.every((p) => p.box && /must vote on a proposal ✏️ before anything changes/.test(p.label)),
+    born.picks.every((p) => p.box && /must prefer a proposal ✏️ before it can be adopted/.test(p.label)),
     born.picks.map((p) => p.label.slice(0, 50)).join(' | '));
   check('born untouched', !born.picks.some((p) => p.on) &&
     born.picks.every((p) => p.box.value === ''),
@@ -258,6 +265,30 @@ for (const key of ['quorum']) {
   check('the share box is the range the question offers',
     !!share && share.box.min === BOUNDS[key].min && share.box.max === BOUNDS[key].max,
     share ? share.box.min + '…' + share.box.max : '');
+
+  // **51 is refused** (Q1439, ruling a). Two halves, and the second is the one
+  // that bites: the box's own `max` (asserted above) stops the spinner, and a
+  // number typed past it leaves the ✓ dark — otherwise a share the module will
+  // reject arms the commit and the refusal arrives at the far end of the act.
+  await page.evaluate(() => {
+    const p = [...document.querySelectorAll('.setupcard .pick')]
+      .find((x) => (x.querySelector('[data-ans]') || { dataset: {} }).dataset.ansval === 'share');
+    const box = p && p.querySelector('[data-ansnum]');
+    if (box) { box.value = '51';
+      for (const e of ['input', 'change']) box.dispatchEvent(new Event(e, { bubbles: true })); }
+  });
+  await page.waitForTimeout(400);
+  const over = await page.evaluate(() => {
+    const c = document.querySelector('.setupcard');
+    const p = [...c.querySelectorAll('.pick')]
+      .find((x) => (x.querySelector('[data-ans]') || { dataset: {} }).dataset.ansval === 'share');
+    const box = p && p.querySelector('[data-ansnum]');
+    const commit = c.querySelector('[data-confirm]');
+    return { value: box ? box.value : null, overflow: !!(box && box.validity.rangeOverflow),
+      commitOff: !commit || commit.disabled };
+  });
+  check('51 is over the share box’s own end', over.overflow, 'value: ' + over.value);
+  check('the ✓ stays dark on a share above 50', over.commitOff);
 
   // typing into the share block's box chooses that block and wakes the ✓
   await page.evaluate(() => {
@@ -273,6 +304,13 @@ for (const key of ['quorum']) {
     typed.picks.filter((p) => p.on).map((p) => p.val).join(',') === 'share',
     typed.picks.filter((p) => p.on).map((p) => p.val).join(','));
   check('the ✓ wakes', !typed.commitOff);
+  // **(x of y) follows the share, and follows the keystroke** (Q1439, ruling
+  // m): the numbers are repainted in place, so they are there without the
+  // card having been rebuilt. This founding has one arrived member, so 40%
+  // of it is one of one.
+  const sh = typed.picks.find((p) => p.val === 'share');
+  check('the share says what it comes to in this membership',
+    !!sh && /\(1 of 1\)/.test(sh.label), sh ? sh.label.slice(0, 60) : '');
 
   await clickIn('.setupcard [data-confirm]');
   await page.waitForTimeout(400);

@@ -366,7 +366,7 @@
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Any member may propose to invite someone to join the members",
     "applications: New members may only join by invitation. The Founder may ame",
-    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "lapse: After 5 days, inactive members lapse and automatically absta",
     "removal: The Founder is deciding how a member is removed."
    ]
   },
@@ -382,7 +382,7 @@
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Any member may propose to invite someone to join the members",
     "applications: New members may only join by invitation. The Founder may ame",
-    "lapse: After 7 days, inactive members lapse and automatically absta"
+    "lapse: After 5 days, inactive members lapse and automatically absta"
    ]
   },
   {
@@ -398,7 +398,7 @@
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Any member may propose to invite someone to join the members",
     "applications: New members may only join by invitation. The Founder may ame",
-    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "lapse: After 5 days, inactive members lapse and automatically absta",
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "?: When the document begins, members may propose changes to rul",
     "rate: The Founder is deciding how often members may propose."
@@ -417,7 +417,7 @@
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Any member may propose to invite someone to join the members",
     "applications: New members may only join by invitation. The Founder may ame",
-    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "lapse: After 5 days, inactive members lapse and automatically absta",
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "?: When the document begins, members may propose changes to rul"
    ]
@@ -435,7 +435,7 @@
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Any member may propose to invite someone to join the members",
     "applications: New members may only join by invitation. The Founder may ame",
-    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "lapse: After 5 days, inactive members lapse and automatically absta",
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
@@ -455,7 +455,7 @@
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Any member may propose to invite someone to join the members",
     "applications: New members may only join by invitation. The Founder may ame",
-    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "lapse: After 5 days, inactive members lapse and automatically absta",
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou"
@@ -474,12 +474,12 @@
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Any member may propose to invite someone to join the members",
     "applications: New members may only join by invitation. The Founder may ame",
-    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "lapse: After 5 days, inactive members lapse and automatically absta",
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
     "ending: No more changes to the document may be made after Weekday at",
-    "quorum: The Founder is deciding how many members must weigh in befor"
+    "quorum: The Founder is deciding how many members must prefer a propo"
    ]
   },
   {
@@ -495,7 +495,7 @@
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Any member may propose to invite someone to join the members",
     "applications: New members may only join by invitation. The Founder may ame",
-    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "lapse: After 5 days, inactive members lapse and automatically absta",
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
@@ -515,12 +515,12 @@
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Any member may propose to invite someone to join the members",
     "applications: New members may only join by invitation. The Founder may ame",
-    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "lapse: After 5 days, inactive members lapse and automatically absta",
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
     "ending: No more changes to the document may be made after Weekday at",
-    "quorum: 5 members must vote on a proposal ✏️ before anything changes",
+    "quorum: At least 5 members must prefer a proposal ✏️ before it can b",
     "authorship: The Founder is deciding whether anonymous proposers are reve"
    ]
   },
@@ -537,7 +537,7 @@
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Any member may propose to invite someone to join the members",
     "applications: New members may only join by invitation. The Founder may ame",
-    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "lapse: After 5 days, inactive members lapse and automatically absta",
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
@@ -558,12 +558,12 @@
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Any member may propose to invite someone to join the members",
     "applications: New members may only join by invitation. The Founder may ame",
-    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "lapse: After 5 days, inactive members lapse and automatically absta",
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
     "ending: No more changes to the document may be made after Weekday at",
-    "quorum: 5 members must vote on a proposal ✏️ before anything changes",
+    "quorum: At least 5 members must prefer a proposal ✏️ before it can b",
     "authorship: The Founder is deciding whether anonymous proposers are reve"
    ]
   },
@@ -580,12 +580,12 @@
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Any member may propose to invite someone to join the members",
     "applications: New members may only join by invitation. The Founder may ame",
-    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "lapse: After 5 days, inactive members lapse and automatically absta",
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
     "ending: No more changes to the document may be made after Weekday at",
-    "quorum: 5 members must vote on a proposal ✏️ before anything changes"
+    "quorum: At least 5 members must prefer a proposal ✏️ before it can b"
    ]
   },
   {
@@ -601,12 +601,12 @@
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Any member may propose to invite someone to join the members",
     "applications: New members may only join by invitation. The Founder may ame",
-    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "lapse: After 5 days, inactive members lapse and automatically absta",
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
     "ending: No more changes to the document may be made after Weekday at",
-    "quorum: 5 members must vote on a proposal ✏️ before anything changes",
+    "quorum: At least 5 members must prefer a proposal ✏️ before it can b",
     "authorship: All proposals are made anonymously. The Founder may amend th",
     "judgments: The Founder is deciding whether votes are revealed with the "
    ]
@@ -624,12 +624,12 @@
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Any member may propose to invite someone to join the members",
     "applications: New members may only join by invitation. The Founder may ame",
-    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "lapse: After 5 days, inactive members lapse and automatically absta",
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
     "ending: No more changes to the document may be made after Weekday at",
-    "quorum: 5 members must vote on a proposal ✏️ before anything changes",
+    "quorum: At least 5 members must prefer a proposal ✏️ before it can b",
     "authorship: All proposals are made anonymously. The Founder may amend th"
    ]
   },
@@ -646,12 +646,12 @@
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Any member may propose to invite someone to join the members",
     "applications: New members may only join by invitation. The Founder may ame",
-    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "lapse: After 5 days, inactive members lapse and automatically absta",
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "begin: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
     "ending: No more changes to the document may be made after Weekday at",
-    "quorum: 5 members must vote on a proposal ✏️ before anything changes",
+    "quorum: At least 5 members must prefer a proposal ✏️ before it can b",
     "authorship: All proposals are made anonymously. The Founder may amend th",
     "judgments: Votes are never revealed. The Founder may amend this at will"
    ]
@@ -669,11 +669,11 @@
     "founded: Founded by AL Ada Lovell 👑.",
     "admission: Any member may propose to invite someone to join the members",
     "applications: New members may only join by invitation. The Founder may ame",
-    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "lapse: After 5 days, inactive members lapse and automatically absta",
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
     "ending: No more changes to the document may be made after Weekday at",
-    "quorum: 5 members must vote on a proposal ✏️ before anything changes",
+    "quorum: At least 5 members must prefer a proposal ✏️ before it can b",
     "authorship: All proposals are made anonymously. The Founder may amend th",
     "judgments: Votes are never revealed. The Founder may amend this at will"
    ]
@@ -688,12 +688,12 @@
     "founded: Founded by AL Ada Lovell 👑 at HH:MM on D Month YYYY.",
     "admission: Any member may propose to invite someone to join the members",
     "applications: New members may only join by invitation. The Founder may ame",
-    "lapse: After 7 days, inactive members lapse and automatically absta",
+    "lapse: After 5 days, inactive members lapse and automatically absta",
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "begin: Members may propose changes to rules as soon as they arrive,",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
     "ending: No more changes to the document may be made after Weekday at",
-    "quorum: 5 members must vote on a proposal ✏️ before anything changes",
+    "quorum: At least 5 members must prefer a proposal ✏️ before it can b",
     "authorship: All proposals are made anonymously. The Founder may amend th",
     "judgments: Votes are never revealed. The Founder may amend this at will"
    ]
