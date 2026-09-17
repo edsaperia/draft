@@ -6,7 +6,7 @@
  * asset route and states the new commit in `x-build` and `/healthz`; and a
  * stranger's POST is 404 without the key, 401 with a wrong one.
  */
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { AddressInfo } from 'node:net';
@@ -70,6 +70,40 @@ describe('the tar reader', () => {
       expect(() => readTarGz(gzipSync(packTar([{ name: 'design/session-view.html', data: Buffer.from(page) }, { name: bad, data: Buffer.from('x') }])))).toThrow(/not a page file/);
     }
     expect(() => readTarGz(gzipSync(packTar([{ name: 'design/system.css', data: Buffer.from('body{}') }])))).toThrow(/no session-view.html/);
+  });
+});
+
+/**
+ * **The lane's copy of the served set, against the host's own** (issue #8,
+ * F2). CI decides whether a push takes the surface lane by grepping the
+ * changed paths, and it grepped `^design/` — so design/DECISIONS.md and
+ * design/tools/ took the lane, uploading nothing the host serves and
+ * reloading every open page for it. The filter is `SURFACE_NAME` restated
+ * as an ERE in the workflow, and a restatement drifts unless something
+ * reads both: this asserts the two are the same pattern, character for
+ * character, and the comment above the workflow's line names this test.
+ */
+describe('the deploy lane\'s surface filter', () => {
+  it('is SURFACE_NAME, restated (issue #8)', () => {
+    const yml = readFileSync(join(import.meta.dirname, '..', '..', '..',
+      '.github', 'workflows', 'ci.yml'), 'utf8');
+    const lines = [...yml.matchAll(/^\s*SURFACE_ERE='(.*)'\s*$/gm)].map((m) => m[1]!);
+    expect(lines.length, 'the workflow states SURFACE_ERE exactly once').toBe(1);
+    // the one licensed difference: a literal in a regex escapes its slashes
+    // because a slash ends the literal, and an ERE in single quotes does not
+    expect(lines[0]).toBe(SURFACE_NAME.source.replace(/\\\//g, '/'));
+    // and the pattern is the one an upload is refused by, so what the lane
+    // selects is exactly what the host would take
+    for (const served of ['design/session-view.html', 'design/cards.js', 'design/system.css',
+                          'design/fluent-glyphs.svg', 'design/fonts/CharisSIL-Regular.woff2',
+                          'design/fonts/OFL.txt']) {
+      expect(new RegExp(lines[0]!).test(served), served).toBe(true);
+    }
+    for (const notServed of ['design/DECISIONS.md', 'design/STYLE.md', 'design/MOBILE.md',
+                             'design/tools/toc-travel.mjs', 'design/reference/session.js',
+                             'design/spec-pass/pass-6.md', 'docs/OPERATING.md', 'SPEC.md']) {
+      expect(new RegExp(lines[0]!).test(notServed), notServed).toBe(false);
+    }
   });
 });
 

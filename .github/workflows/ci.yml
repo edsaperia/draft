@@ -149,13 +149,26 @@ jobs:
           # engine, and comparing against the engine would re-upload the
           # same files — and every open page would reload — on a push that
           # changed no page at all.
+          #
+          # **And a served file is not any file under design/** (issue #8,
+          # F2). The filter was `^design/`, so DECISIONS.md, STYLE.md and
+          # everything under design/tools/ took the surface lane: files the
+          # host does not serve and the tar below does not carry, uploaded
+          # as a no-op whose only effect was to move x-build and make every
+          # open page reload itself (run 35033587227 changed one file,
+          # design/tools/toc-travel.mjs, and reloaded the room). The set is
+          # SURFACE_NAME in packages/server/src/surface.ts — the pattern the
+          # host itself refuses an upload by — restated here as an ERE.
+          # **packages/server/test/surface.test.ts asserts the two agree**,
+          # by reading this line, so the copy cannot drift from its source.
+          SURFACE_ERE='^design/(fonts/)?[A-Za-z0-9][A-Za-z0-9._-]*\.(js|css|html|svg|png|woff2?|txt)$'
           lane=full
           if changed=$(compare "$hostBase"); then
             host=$(printf '%s\n' "$changed" | grep -vE '^(design/|docs/|[^/]+\.md$|QUESTIONS\.md$)' || true)
             if [ -z "$host" ]; then
               lane=docs
               if pageChanged=$(compare "$pageBase"); then
-                served=$(printf '%s\n' "$pageChanged" | grep -E '^design/' || true)
+                served=$(printf '%s\n' "$pageChanged" | grep -E "$SURFACE_ERE" || true)
                 if [ -n "$served" ]; then lane=surface; fi
               else
                 # the page's own base is unreadable: upload rather than skip
