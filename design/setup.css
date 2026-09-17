@@ -156,7 +156,7 @@
      same quiet one-line look, honest name */
   .queue button.qwait { padding: var(--s1) 10px; color: var(--muted); }
   .queue button.qwait .ql { display: block; white-space: nowrap; overflow: hidden;
-    text-overflow: ellipsis; font-weight: 500; font-size: var(--t-small); }
+    text-overflow: ellipsis; font-weight: 500; }   /* the title's size is every entry's (Q1448) */
   .queue button.qwait .ql .qv { display: inline; margin: 0; font-weight: 400; }
 
 /* ---------------------------------------------------------------------------

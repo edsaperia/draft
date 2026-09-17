@@ -804,11 +804,17 @@
     display: inline; margin: 0; font-weight: 400;
   }
   .queue button.deciding { color: var(--muted); }
-  .queue button.deciding .ql { font-weight: 500; font-size: var(--t-small); }
+  /* **One title size on every entry, `--t-ui`** (Ed, 2026-09-18, Q1448 (b)).
+     A one-line entry used to drop to `--t-small`, so a rail mixing asks and
+     one-liners alternated two sizes down the column and read as a defect. What
+     tells *not asked of you* apart is the weight, the colour and the single
+     line — three signals already — and size was a fourth nobody needed. The
+     mark keeps its own size: it is a fixed box, not a title (`.qmark`). */
+  .queue button.deciding .ql { font-weight: 500; }
   .queue button.deciding.shifted .ql { color: var(--muted); }
   /* a decision you have not acknowledged is quiet, not unimportant, and stays
      pinned until you deal with it (Ed, 112) */
-  .queue button.unread .ql { font-weight: 600; font-size: var(--t-small); color: var(--fg); }
+  .queue button.unread .ql { font-weight: 600; color: var(--fg); }
   /* A filed line is the **same object, quieter** (Ed, 2026-08-17). It is not a
      different kind of entry from an unacknowledged one — it is the same entry
      after you have dealt with it — so it keeps the shape and gives up the
@@ -845,7 +851,7 @@
   .queue button.yours { padding: var(--s1) 10px; }
   .queue button.yours .ql {
     display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    font-weight: 600; font-size: var(--t-small);
+    font-weight: 600;
   }
   .queue button.yours .qv { display: inline; margin: 0; font-weight: 400; }
   .queue button.yours.drafting { padding: var(--s2) 10px; }
