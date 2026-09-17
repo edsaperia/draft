@@ -819,9 +819,15 @@
      flex rather than one truncating line: the title takes what is left and
      ellipses, and the time never gets eaten by a long one. It is also the only
      thing on a sealed entry the reader is scanning *down* a column for. */
-  .queue button.unread .ql { display: flex; align-items: baseline; gap: 6px; }
+  /* **No `gap` on a title row** (Ed's screenshot, 2026-09-17: the distance from
+     the mark to the title ran 0 · 4 · 6 · 10 · 12px by kind of entry). The
+     space after the mark is the mark's own margin (the ruling at `.qmark`
+     below), and a row `gap` lands between the mark and the title as well as
+     where it was wanted, so it stacked on that margin — here 6 + 6. What this
+     gap was *for* is the time, so the time carries it. */
+  .queue button.unread .ql { display: flex; align-items: baseline; }
   .queue button.unread .qt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .queue button.unread .qv.when { margin-left: auto; flex: none; }
+  .queue button.unread .qv.when { margin-left: auto; padding-left: 6px; flex: none; }
   .queue button.unread .qv { color: var(--muted); }
   /* a deadlocked race states its unusual ask in full, and its caption is an
      instruction rather than a progress note (Ed, 166) */

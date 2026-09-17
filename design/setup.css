@@ -132,11 +132,24 @@
      there is a different state of one kind of thing; a setup rail is the
      reverse — one state, many kinds — so it marks subject instead. The two sets
      never share a column. */
-  .queue.stack .ql { display: flex; align-items: baseline; gap: var(--s1); }
-  .queue.stack .ql .subj { font-size: 1.05em; line-height: 1; }
+  .queue.stack .ql { display: flex; align-items: baseline; }
+  /* **The subject glyph stands in the mark's own box** (Ed's screenshot,
+     2026-09-17): `.qmark`'s fixed width and its 6px margin (system.css, his
+     ruling of 2026-08-17 — *a margin belongs to the thing it follows and
+     travels with it into either layout*), which `.subj` never took. It had the
+     row's 4px `gap` where the row was a flex and nothing at all where a
+     one-line entry sets the row to `display: block` — so a waiting ⏳ touched
+     its title — while the charter's marks had margin *and* gap, 10px. One box,
+     one margin, no row gap: the titles start in one column on every entry. */
+  .queue.stack .ql .subj {
+    flex: none; font-size: var(--t-small); line-height: 1.35;
+    width: 1.15em; display: inline-flex; justify-content: center; align-items: baseline;
+    margin-right: 6px;
+  }
   /* the person's face on an entry about them (Q1375): the speaker line's own
-     18px disc, centred on the line rather than hung off a baseline it has none of */
-  .queue.stack .ql .qface { align-self: center; margin-top: 0; }
+     18px disc, centred on the line rather than hung off a baseline it has none of;
+     the space before the name is the face's own, the row having no gap */
+  .queue.stack .ql .qface { align-self: center; margin-top: 0; margin-right: 6px; }
   .queue.stack .ql > .qt { flex: 1; min-width: 0; }
   /* wait/yours/done entries used to wear session-view's .deciding, whose
      meaning there is *you already judged it* (drift fix, 2026-08-18):
