@@ -1192,6 +1192,12 @@ export class ConstitutionSession {
     motions.withdrawMotion(this.motionHost(), t, member, motion);
   }
 
+  /** The host could not enter the race this motion needs (#26): the
+   *  compensating withdrawal, which is nobody's act and never throws. */
+  abandonMotion(t: number, motion: MotionId): void {
+    motions.abandonMotion(this.motionHost(), t, motion);
+  }
+
   adjudicateOrdinaryMotion(t: number, motion: MotionId,
     outcome: 'carried' | 'held'): void {
     motions.adjudicateOrdinaryMotion(this.motionHost(), t, motion, outcome);

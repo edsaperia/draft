@@ -207,6 +207,32 @@ export function withdrawMotion(s: MotionHost, t: number, member: MemberId,
 }
 
 /**
+ * **The host's own withdrawal** (issue #26): an ordinary motion the host
+ * could not put into a race — the mover's wallet is empty, the candidate is a
+ * duplicate, the race has closed — is withdrawn rather than left standing
+ * with nothing racing behind it. `openSetMotion` has compensated this way
+ * since review #1's finding 6a; what is new is that the two **membership**
+ * races enter inside `EngineBridge.sync`, where a throw is not a refusal
+ * anybody reads but a document that stops answering, so the compensation
+ * cannot be the caller's to make.
+ *
+ * It is not `withdrawMotion` with the mover filled in, for two reasons. An
+ * **admission has no mover** — `by` is null, the application being the
+ * applicant's own proposal (§9.7½) — and there is therefore nobody whose
+ * withdrawal it could be. And it must **never throw**: it runs on the path
+ * that was already failing, so a second refusal here would be the wedge over
+ * again. A motion that is not running is silently nothing, `ackRelease`'s
+ * posture. The event is the same `motion-withdrawn` the log already carries,
+ * so a replay reaches this state with no bridge at all (§3.3a: the stake, if
+ * one was ever taken, comes back whole).
+ */
+export function abandonMotion(s: MotionHost, t: number, motion: MotionId): void {
+  const rec = s.motions.get(motion);
+  if (!rec || rec.status !== 'running') return;
+  s.emit({ type: 'motion-withdrawn', t, motion });
+}
+
+/**
  * The ordinary-route seam: this package never runs races. The host — the
  * engine, the sim, a mock — runs the race and reports the outcome here, a
  * motion carrying when the room prefers it to what stands and the quorum is

@@ -965,6 +965,11 @@ var CONSTITUTION = (() => {
     if (rec.by !== member) throw new Error("only the mover withdraws a motion");
     s.emit({ type: "motion-withdrawn", t, motion });
   }
+  function abandonMotion(s, t, motion) {
+    const rec = s.motions.get(motion);
+    if (!rec || rec.status !== "running") return;
+    s.emit({ type: "motion-withdrawn", t, motion });
+  }
   function adjudicateOrdinaryMotion(s, t, motion, outcome) {
     s.requireOpen("a motion");
     const rec = s.motions.get(motion);
@@ -3249,6 +3254,11 @@ var CONSTITUTION = (() => {
     }
     withdrawMotion(t, member, motion) {
       withdrawMotion(this.motionHost(), t, member, motion);
+    }
+    /** The host could not enter the race this motion needs (#26): the
+     *  compensating withdrawal, which is nobody's act and never throws. */
+    abandonMotion(t, motion) {
+      abandonMotion(this.motionHost(), t, motion);
     }
     adjudicateOrdinaryMotion(t, motion, outcome) {
       adjudicateOrdinaryMotion(this.motionHost(), t, motion, outcome);

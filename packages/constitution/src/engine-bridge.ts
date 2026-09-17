@@ -573,8 +573,12 @@ export class EngineBridge {
         transientVoice = true;
       }
     }
-    this.enterMembershipRace(t, motion, `admit:${applicant}`,
-      { member: false }, { member: true }, author, why ?? a?.words ?? '');
+    // `const` rather than the `let` above, so the narrowing survives into the
+    // closure `enterOrAbandon` takes
+    const voice = author;
+    this.enterOrAbandon(t, motion, () => this.enterMembershipRace(t, motion,
+      `admit:${applicant}`, { member: false }, { member: true }, voice,
+      why ?? a?.words ?? ''));
     // …and only while they are still an applicant. Since backlog 253 the
     // submission itself sweeps, so `enterMembershipRace` can carry the admit
     // race in the very call above — and suspending somebody the same breath
@@ -597,8 +601,36 @@ export class EngineBridge {
     by: MemberId,
     why: string | undefined,
   ): void {
-    this.enterMembershipRace(t, motion, `remove:${member}`,
-      { member: true }, { member: false }, by, why ?? '');
+    this.enterOrAbandon(t, motion, () => this.enterMembershipRace(t, motion,
+      `remove:${member}`, { member: true }, { member: false }, by, why ?? ''));
+  }
+
+  /**
+   * **A membership race the engine will not take does not stop the walk**
+   * (issue #26). The two races above are entered from inside `sync`, which is
+   * the one place in this class where a throw is not a refusal somebody reads
+   * but a **document that stops answering**: `sync` runs at the head of every
+   * command, of every tick and of every login, and it walks the cs log from a
+   * cursor — so an entry that throws is re-read and re-thrown for ever, and
+   * since the server drives the bridge before it persists, nothing since is
+   * written either. A member with an empty wallet opening a removal at 🥾
+   * *members must vote* was enough to do it, and at a ⏱️ grant of 0 so was the
+   * first application to knock.
+   *
+   * The cure is `openSetMotion`'s own, moved to where it can be reached: not a
+   * rollback, which an append-only log does not have, but a **compensating
+   * event**. The motion is withdrawn, the log says so, and the walk goes on to
+   * the next entry. The difference from `openSetMotion` is only who makes it —
+   * there the caller compensates and rethrows, because a refusal is exactly
+   * what the mover should read; here nobody is calling, so nothing is rethrown
+   * and `abandonMotion` cannot throw in its turn.
+   */
+  private enterOrAbandon(t: number, motion: MotionId, enter: () => void): void {
+    try {
+      enter();
+    } catch {
+      this.cs.abandonMotion(t, motion);
+    }
   }
 
   /**
