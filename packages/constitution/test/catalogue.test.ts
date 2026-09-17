@@ -220,6 +220,27 @@ describe('catalogue integrity (SPEC §9.0–§9.7½)', () => {
     expect(validateValue('ending', { endsAtMs: null })).toBeNull();
   });
 
+  // Issue #4: an interval below float precision at epoch milliseconds spun
+  // the engine's drip for ever, and replay re-validates, so a stored value
+  // took the host down at boot too. The floor is a whole real minute —
+  // the surface never offered less (min="1" × minutes, hours or days).
+  it('the drip is a whole real minute or more (issue #4)', () => {
+    expect(validateFor(entryOf('rate'), { grant: 3, cap: 3, dripMinutes: 1e-9 }))
+      .toMatch(/dripMinutes/);
+    expect(validateFor(entryOf('rate'), { grant: 3, cap: 3, dripMinutes: 0.5 }))
+      .toMatch(/dripMinutes/);
+    expect(validateFor(entryOf('rate'), { grant: 3, cap: 3, dripMinutes: 90.5 }))
+      .toMatch(/dripMinutes/);
+    expect(validateFor(entryOf('rate'), { grant: 3, cap: 3, dripMinutes: 0 }))
+      .toMatch(/dripMinutes/);
+    expect(validateFor(entryOf('rate'), { grant: 3, cap: 3, dripMinutes: -1 }))
+      .toMatch(/dripMinutes/);
+    expect(validateFor(entryOf('rate'), { grant: 3, cap: 3, dripMinutes: Infinity }))
+      .toMatch(/dripMinutes/);
+    expect(validateFor(entryOf('rate'), { grant: 3, cap: 3, dripMinutes: 1 })).toBeNull();
+    expect(validateFor(entryOf('rate'), { grant: 3, cap: 3, dripMinutes: 1440 })).toBeNull();
+  });
+
   it('eqValue is key-order independent', () => {
     expect(eqValue({ form: 'share', n: 60 }, { n: 60, form: 'share' } as SettingValue)).toBe(true);
     expect(eqValue({ pct: 66 }, { pct: 67 })).toBe(false);

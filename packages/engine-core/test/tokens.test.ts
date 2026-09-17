@@ -2,9 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   balanceAt,
   credit,
+  dripIntervalMs,
+  materialize,
   openLedger,
   performanceRefund,
   spend,
+  type Ledger,
 } from '../src/tokens.js';
 import { makeConstitution } from '../src/session.js';
 
@@ -92,5 +95,77 @@ describe('token economy (SPEC §7, §9.3)', () => {
     expect(performanceRefund(1, 0.75)).toBe(1.5);
     expect(performanceRefund(1, 0.99)).toBe(1.5);
     expect(performanceRefund(2, 0.25)).toBe(1);
+  });
+});
+
+/**
+ * Issue #4: the drip was a `while (nextDripT <= t) nextDripT += interval`
+ * loop, and at an interval below float precision at epoch milliseconds the
+ * increment is a no-op, so the loop never ends and the single Node thread
+ * stops serving every document, at boot as well. The constitution layer now
+ * floors the interval at a whole minute; the library counts instead of
+ * looping, so it cannot spin whatever it is handed.
+ */
+describe('the drip is counted, never looped (issue #4)', () => {
+  /** `materialize` exactly as it stood before issue #4: the reference. */
+  const looped = (ledger: Ledger, cap: number, interval: number, t: number): void => {
+    if (!Number.isFinite(interval) || interval <= 0) return;
+    while (ledger.nextDripT <= t) {
+      ledger.balance = Math.min(ledger.balance + 1, Math.max(ledger.balance, cap));
+      ledger.nextDripT += interval;
+    }
+  };
+
+  const at = (dripMinutes: number, cap: number) =>
+    makeConstitution({ windowStartMs: 0, windowEndMs: 10 * HOUR, rngSeed: 's',
+      tokenDripMinutes: dripMinutes, tokenCap: cap });
+
+  it('credits exactly what the loop credited, over a sweep', () => {
+    // Every interval a founder can now reach (whole minutes), the two the
+    // engine's own tests use at either end, and balances a refund can leave
+    // fractional or over the cap.
+    const minutes = [1, 2, 3, 5, 7, 13, 60, 90, 240, 1440, 10080, 1e9];
+    const starts = [0, 1, 59_999, 60_000, 1_726_000_000_000];
+    const balances = [0, 1, 4, 7.5, 9];
+    const caps = [1, 3, 8];
+    let rng = 1;
+    const next = () => (rng = (rng * 1103515245 + 12345) % 2147483648) / 2147483648;
+    let cases = 0;
+    for (const m of minutes)
+      for (const start of starts)
+        for (const balance of balances)
+          for (const cap of caps)
+            for (const span of [0, 1, m * 60_000 - 1, m * 60_000, m * 30_000,
+              Math.floor(next() * 40) * m * 60_000, 37 * m * 60_000]) {
+              const interval = m * 60_000;
+              const t = start + span;
+              const mine = { balance, nextDripT: start + interval };
+              const theirs = { balance, nextDripT: start + interval };
+              materialize(mine, at(m, cap), t);
+              looped(theirs, cap, interval, t);
+              expect(mine).toEqual(theirs);
+              cases += 1;
+            }
+    expect(cases).toBeGreaterThan(2000);
+  });
+
+  it('terminates on an interval below the clock\'s precision', () => {
+    // The attack of issue #4: 1e-9 minutes at a real epoch time, where
+    // `next + interval === next`. The loop hung here; the count returns.
+    const start = 1_726_000_000_000;
+    const c = at(1e-9, 3);
+    const l = { balance: 0, nextDripT: start + dripIntervalMs(c) };
+    const began = Date.now();
+    materialize(l, c, start + 24 * HOUR);
+    expect(Date.now() - began).toBeLessThan(1000);
+    expect(l.balance).toBe(3); // the cap, and never more
+    expect(Number.isNaN(l.nextDripT)).toBe(false);
+  });
+
+  it('a denormal interval cannot spin either', () => {
+    const c = at(Number.MIN_VALUE, 8);
+    const l = { balance: 0, nextDripT: 1 };
+    materialize(l, c, 2_000_000_000_000);
+    expect(l.balance).toBe(8);
   });
 });

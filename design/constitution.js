@@ -285,7 +285,7 @@ var CONSTITUTION = (() => {
         if (!isInt(v.grant) || v.grant < 0) return "rate: grant must be an integer ≥ 0";
         if (!isInt(v.cap) || v.cap < 1) return "rate: cap must be an integer ≥ 1";
         if (v.cap < v.grant) return "rate: cap must be ≥ grant";
-        return isFiniteNum(v.dripMinutes) && v.dripMinutes > 0 ? null : "rate: dripMinutes must be a positive number of real minutes (Q353)";
+        return isInt(v.dripMinutes) && v.dripMinutes >= 1 ? null : "rate: dripMinutes must be a whole number of real minutes, at least 1 (Q353)";
       case "lapse":
         if (v.afterMs === null) return null;
         return isFiniteNum(v.afterMs) && v.afterMs > 0 ? null : "lapse: afterMs must be null (never) or a positive duration";
