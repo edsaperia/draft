@@ -26,13 +26,28 @@ const booted: DraftServer[] = [];
 afterAll(async () => { for (const d of booted) await d.close(); });
 
 /** A file store whose document-log append can be told to fail the way
- *  Postgres does when another writer holds the log (Q1345): a 23505. */
+ *  Postgres does when another writer holds the log (Q1345): a 23505 — and,
+ *  for issue #9's second half, to hold one append open, so a second command
+ *  queues behind it on the WriteChain and meets a pause that landed while
+ *  it waited. */
 class SplitPersistence extends FilePersistence {
   failNext = false;
+  /** The next append waits here; `atGate` resolves when it arrives. */
+  gateNext = false;
+  private open: (() => void) | null = null;
+  private arrived: (() => void) | null = null;
+  readonly atGate = new Promise<void>((r) => { this.arrived = r; });
+  release(): void { this.open?.(); }
   override async appendDocLog(id: string, entries: readonly LogEntry[], people: readonly PersonRow[] = []): Promise<void> {
     if (this.failNext) {
       this.failNext = false;
       throw Object.assign(new Error('duplicate key value violates unique constraint "document_log_pkey"'), { code: '23505' });
+    }
+    if (this.gateNext) {
+      this.gateNext = false;
+      const held = new Promise<void>((r) => { this.open = r; });
+      this.arrived?.();
+      await held;
     }
     return super.appendDocLog(id, entries, people);
   }
@@ -83,11 +98,15 @@ async function found(base: string, title: string): Promise<{ slug: string; cooki
   return { slug: created.slug, cookie: await follow(created.devLink) };
 }
 
-type View = { seq: number; eseq: number; short?: true; paused: { at: number; expectedMs: number; elapsedMs: number } | null; stalled: boolean };
+type View = { seq: number; eseq: number; short?: true; paused: { at: number; expectedMs: number; elapsedMs: number } | null; stalled: boolean;
+  view?: { settings: { setting: string; value: unknown }[] } };
 const view = async (base: string, slug: string, cookie: string, since?: string): Promise<View> =>
   (await (await fetch(`${base}/api/d/${slug}/view${since ? '?since=' + since : ''}`, { headers: { cookie } })).json()) as View;
 const setChamber = (base: string, slug: string, cookie: string, rung: string) =>
   post(base, `/api/d/${slug}/cmd`, { cmd: 'set-setting', args: { setting: 'chamber', value: { rung } } }, { cookie });
+const chamberOf = (v: View): string | undefined =>
+  (v.view?.settings.find((s) => s.setting === 'chamber')?.value as { rung?: string } | null | undefined)?.rung;
+
 /** The interstitial's own POST: the form the magic-link GET serves, sent
  *  from a browser that is looking at it (issue #9). */
 const spend = (base: string, door: 'create' | 'login' | 'apply', token: string) =>
@@ -195,6 +214,39 @@ describe('the announced pause (Q1345)', () => {
     expect((await fetch(`${base}/api/d/${made.slug}/view`)).status).toBe(200);
   });
 
+  /**
+   * **A commit that meets the pause is not a 200** (issue #9). A command
+   * queued behind a slow write passes the route's own pause check, and the
+   * pause lands while it waits; `commit` then persists nothing — and handed
+   * back the length of the log in memory, which the route sent as a 200
+   * with a `seq`, against its contract that a 200 means the entries are
+   * durable. It answers `null` now, and the route says 503 with the pause.
+   */
+  it('a command whose commit meets the pause is answered 503, not 200', async () => {
+    const { base, store } = await boot('test-key');
+    const { slug, cookie } = await found(base, 'Queued');
+    const auth = { authorization: 'Bearer test-key' };
+
+    // A holds the store open; B passes the route's pause check and queues
+    // behind it on the WriteChain
+    store.gateNext = true;
+    const a = setChamber(base, slug, cookie, 'public');
+    await store.atGate;
+    const b = setChamber(base, slug, cookie, 'link');
+    await new Promise((r) => setTimeout(r, 100));
+
+    await post(base, '/api/admin/pause', {}, auth);
+    store.release();
+
+    expect((await a).status).toBe(200);
+    const refused = await b;
+    expect(refused.status).toBe(503);
+    expect(((await refused.json()) as { paused: unknown }).paused).not.toBeNull();
+    // B did pass the route's check: its command is applied in memory and
+    // waits behind the cursor for the resume, which is what the pause
+    // promises — so this is the commit's refusal, and not the route's
+    expect(chamberOf(await view(base, slug, cookie))).toBe('link');
+  });
 });
 
 describe('the red flag (Q1346)', () => {

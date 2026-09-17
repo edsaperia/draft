@@ -273,6 +273,14 @@ export const memberTable: Route[] = [
           await store.setProvisional(doc, null);
         }
         const seq = await writes.commit(doc, nowMs);
+        // the pause landed while this waited behind the chain (issue #9):
+        // nothing was persisted, so this is the same refusal the check
+        // above makes, answered in the same words — a 200 with a `seq`
+        // would be a promise of durability the store never made
+        if (seq === null) {
+          json(res, 503, { error: PauseState.MESSAGE, paused: pause.payload(nowMs) });
+          return true;
+        }
         json(res, 200, { ok: true, seq, ...(result !== undefined ? { result } : {}) });
         return true;
       }

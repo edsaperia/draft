@@ -273,7 +273,9 @@ const lastTOf = (cs: ConstitutionSession): number => {
 
 export interface LadderHost {
   store: DocStore;
-  commit: (doc: LoadedDoc, nowMs: number) => Promise<number>;
+  /** `WritePath.commit`, whose `null` is the announced pause (issue #9).
+   *  Every rung here ignores the value; the type only has to admit it. */
+  commit: (doc: LoadedDoc, nowMs: number) => Promise<number | null>;
 }
 
 export interface LadderResult {
