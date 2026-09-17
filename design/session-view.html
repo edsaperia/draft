@@ -868,6 +868,11 @@
     hydrateApplicant: (...a) => hydrateApplicant(...a),
     hydrateSeen: (...a) => hydrateSeen(...a),
     hydrateValues: (...a) => hydrateValues(...a),
+    // the deferred reload's own two readers (issue #12) — wrappers like the
+    // rest, so the predicate asks the page as it stands at the poll rather
+    // than as it stood when the wire was made
+    openCardDirty: (...a) => openCardDirty(...a),
+    pressInFlight: (...a) => pressInFlight(...a),
     proseText: (...a) => proseText(...a),
     refusalNoted: (...a) => refusalNoted(...a),
     render: (...a) => render(...a),
@@ -1413,6 +1418,26 @@
         if (s.__ans) S.myAns[a] = a in s.__ans ? s.__ans[a] : null; return; }
       if (k in s) S[k] = s[k];
     }); };
+  // **What the bin would put back, asked as a question** (issue #12): the one
+  // reader of "this card is holding something you have not sent", over the
+  // same snapshot and the same `cardKeys()` the bin restores from, so there is
+  // no second idea of unsent on the surface. Only the deferred reload asks it
+  // — 🗑️ itself is always live and never did (the dirty predicates the row
+  // kept in three places stay retired). A key the snapshot does not carry is
+  // not the card's provisional state, since the bin would not put it back
+  // either; an answer's "stands as" is `revertSnap`'s own `null` fallback.
+  const openCardDirty = () => {
+    if (!S.open) return false;
+    const s = snaps[S.open];
+    if (!s) return false;
+    return (cardKeys() || []).some((k) => {
+      if (k.startsWith('ans:')) { const a = k.slice(4);
+        const was = s.__ans && a in s.__ans ? s.__ans[a] : null;
+        const is = S.myAns[a];
+        return (was == null ? is != null : is !== was); }
+      return k in s && S[k] !== s[k];
+    });
+  };
   // **🗑️ is always live** (Ed, 2026-08-21: *the bin should still close the
   // card even if the fields are empty*). It used to grey out when there was
   // nothing to put back, which made the one control that leaves a card
