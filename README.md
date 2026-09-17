@@ -23,23 +23,23 @@ Without `RESEND_API_KEY` the server runs a **dev inbox**: every mail, magic link
 
 | Command | What it does |
 |---|---|
-| `npm run typecheck` · `npm run lint` · `npm run spec-check` · `npm run copy-check` | The checks CI runs at every push: types per package, eslint, the spec and surface tables against the code, the surface copy against its golden. |
+| `npm run typecheck` · `npm run lint` · `npm run spec-check` · `npm run copy-check` · `npm run clock-check` | Five of the seven gates CI runs at every push — `npm test` and `npm run build` are the other two: types per package, eslint, the spec and surface tables against the code, the surface copy against its golden, and the page's clocks evaluated in a VM. |
 | `npm run build` | The production artifacts, `dist/server.mjs` and `dist/draft-tools.mjs`, with the dev routes dropped from the bytes. `npm start` boots the artifact and refuses without `DRAFT_SECRET`, an `https://` `DRAFT_BASE_URL` and `RESEND_API_KEY`. |
-| `npm run verify <url>` | The live-environment checks (TLS, headers, no dev outbox). Read-only; safe against production. |
-| `npm run design` | Serves `design/` at `http://localhost:8137/` with the fixture documents: `/` a blank arrival, `/?fixture=session` a session mid-flight, `&closed=1` a closed one. Needs no server and no account. |
+| `npm run verify <url>` | The live-environment checks (TLS, headers, no dev outbox). It writes nothing: the POSTs it makes go to routes that must refuse them — the dropped dev routes, and the pause key against a stranger — and it asserts they do. Safe against production. |
+| `npm run design` | Serves `design/` at the address it prints (8137 by default, `DESIGN_PORT` or an argument otherwise), with the fixture documents: `/session-view.html` a blank arrival, `/session-view.html?fixture=session` a session mid-flight, `&closed=1` a closed one. **Every address names the page** — at `/` the page boots as the live birth, which has no API behind this server. Needs no server and no account. |
 | `npm run sim -w @draft/sim-harness -- --mode scripted --scenario clubhouse --seeds 5` | A deterministic simulated session, scored against the scenario's ground truth. No network. |
-| `npm run sweep -w @draft/sim-harness` | The calibration sweep: ~575 scripted runs over the constitution's knobs. LLM-free. |
-| `npm run test:pg` | The server suite against a real Postgres (a local `postgres:17` on `127.0.0.1:5433`); `npm test` skips those 17 tests without one. |
+| `npm run sweep -w @draft/sim-harness` | The calibration sweep: 425 scripted runs over the constitution's seven knobs (25 baseline seeds, plus 25 for each of the 16 variant values). LLM-free. |
+| `npm run test:pg` | The server suite against a real Postgres (a local `postgres:17` on `127.0.0.1:5433`); `npm test` skips those 18 tests without one. |
 
 ## Packages
 
-TypeScript end to end; `pg` is the only runtime dependency. Tests measured 2026-09-16 with `npm test`: **1,195 passing** (9 todo, 17 skipped without Postgres).
+TypeScript end to end; `pg` is the only runtime dependency. Tests measured 2026-09-17 with `npm test`: **1,225 passing** (9 todo, 18 skipped without Postgres).
 
 | Package | What it is | Tests |
 |---|---|---|
-| `packages/engine-core` | The mechanism as a pure, deterministic, dependency-free library: diffs and footprints, the races, Bradley–Terry ranking with ties, the session state machine, the hash-chained event log, the feed router, and the participant API — the one blind surface that people, simulated members and personal AIs all speak identically. Notes: [`NOTES.md`](packages/engine-core/NOTES.md). | 330 |
-| `packages/constitution` | The document's rules as a module, equally pure: the settings catalogue, the blind founding (each member states the least they will accept; the document takes the maximum), motions on both routes — ordinary ones race, constitutional ones need everybody — applications, lapse, its own hash-chained log. Runs in the browser too, as the committed bundle `design/constitution.js`. Notes: [`NOTES.md`](packages/constitution/NOTES.md). | 699 |
-| `packages/server` | The product host: `node:http` with no framework, one hash-chained log per document as the only persistence (JSONL on disk or one row per entry in Postgres), magic-link login, stateless HMAC cookies, the engine riding every commit. Notes: [`NOTES.md`](packages/server/NOTES.md). | 134 (+17 Postgres) |
+| `packages/engine-core` | The mechanism as a pure, deterministic, dependency-free library: diffs and footprints, the races, Bradley–Terry ranking with ties, the session state machine, the hash-chained event log, the feed router, and the participant API — the one blind surface that people, simulated members and personal AIs all speak identically. Notes: [`NOTES.md`](packages/engine-core/NOTES.md). | 337 |
+| `packages/constitution` | The document's rules as a module, equally pure: the settings catalogue, the blind founding (each member states the least they will accept; the document takes the maximum), motions on both routes — ordinary ones race, constitutional ones need everybody — applications, lapse, its own hash-chained log. Runs in the browser too, as the committed bundle `design/constitution.js`. Notes: [`NOTES.md`](packages/constitution/NOTES.md). | 711 |
+| `packages/server` | The product host: `node:http` with no framework, one hash-chained log per document plus the `people` rows written beside it — **identity never goes in the log** (decision 1253) — as JSONL on disk or a row per entry in Postgres, which is what docs.vote has served from since 2026-08-20; magic-link login, stateless HMAC cookies, the engine riding every commit. Notes: [`NOTES.md`](packages/server/NOTES.md). | 145 (+18 Postgres) |
 | `packages/sim-harness` | Simulated members driving whole sessions: deterministic scripted personas with ground-truth welfare scoring, LLM personas speaking the same participant API with no back door, a calibration sweep whose findings are folded into SPEC §4.2 and §8.3, and a live commentator. [`README.md`](packages/sim-harness/README.md). | 32 |
 | `design/` | The surface itself, served by the server off disk: `session-view.html` is the one page — arrival, founding and the live document — with its machinery in `session.js`, `setup.js` and `cards.js`, and every string a member can read in `copy.js`. | — |
 
@@ -56,7 +56,7 @@ Rule files hold rules; the reasoning behind them lives in `design/`. Where two d
 | [`design/DECISIONS.md`](design/DECISIONS.md) · [`design/SPEC-REASONING.md`](design/SPEC-REASONING.md) | The archives: why a thing is the way it is, what it replaced, what was rejected. The second is keyed to the spec's `R-nnn` rulings. | When a rule seems arbitrary. |
 | [`QUESTIONS.md`](QUESTIONS.md) | Open and deferred items, on one project-wide number sequence. | To see what is undecided. |
 | [`PRODUCTION.md`](PRODUCTION.md) | The roadmap: the staged rollout to docs.vote and what is left of it. | To see what is next. |
-| [`design/MOBILE.md`](design/MOBILE.md) | docs.vote on a phone — planned, not yet built. | Before touching layout for narrow screens. |
+| [`design/MOBILE.md`](design/MOBILE.md) | docs.vote on a phone: the plan, and its *Status* — a first cut is live since 2026-09-12 (one column, both rails as drawers, read and judge), with the two-tap, the tap targets and `mobile-walk` still to build. | Before touching layout for narrow screens. |
 | [`docs/OPERATING.md`](docs/OPERATING.md) | The operator's map: what runs where, every environment variable, how a deploy happens. Procedures in [`docs/runbooks/`](docs/runbooks/). | Before running an instance. |
 
 ## Checks, walks and deploys
@@ -67,8 +67,8 @@ The rest of `package.json`'s scripts are instruments, in two kinds:
 
 | Kind | Scripts | Needs |
 |---|---|---|
-| Headless over `design/` | `probe`, `probe-coverage`, `card-audit`, `toc-travel`, `slider-walk`, `founder-answers`, `founding-golden`, `copy-check -- --walk` | Playwright's Chromium (`npm run playwright:install`); each serves `design/` itself. `clock-check` needs only node. |
-| Against a running dev server | `journey`, `applicants-walk`, `after-begin-walk`, `member-questions-walk`, `slug-walk`, `powers-walk`, `ladder`, `room-walk`, `seat-matrix`, `room-bots -- <document url>` | `npm run server` in another terminal, with no `RESEND_API_KEY`. Each checks it is talking to a server built from your tree before it starts. `room-bots` alone also runs against docs.vote itself: invite bots at `*@bots.docs.vote`, whose mail the host catches, and pass `--key=<DRAFT_BOT_KEY>` (`docs/OPERATING.md` §10). |
+| Headless over `design/` | `probe`, `probe-coverage`, `card-audit`, `a11y-audit`, `toc-travel`, `drawer-walk`, `picture-walk`, `slider-walk`, `founder-answers`, `founding-golden`, `copy-check -- --walk` | Playwright's Chromium (`npm run playwright:install`); each serves `design/` itself. `clock-check` needs only node. |
+| Against a running dev server | `journey`, `applicants-walk`, `after-begin-walk`, `invite-walk`, `member-questions-walk`, `slug-walk`, `powers-walk`, `proposal-shapes`, `ladder`, `room-walk`, `seat-matrix`, `room-bots -- <document url>` | `npm run server` in another terminal, with no `RESEND_API_KEY`. Each checks it is talking to a server built from your tree before it starts. `room-bots` alone also runs against docs.vote itself: invite bots at `*@bots.docs.vote`, whose mail the host catches, and pass `--key=<DRAFT_BOT_KEY>` (`docs/OPERATING.md` §10). |
 
 What each asserts is in `CLAUDE.md`'s glossary under *Tooling*.
 
