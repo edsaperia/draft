@@ -61,7 +61,7 @@ Glyph names are stable (tabulated 2026-09-07, Q1208; the founding order's own gl
 - **T14 · No spec references**, `cards.js` included (Q608). §-numbers cite a
   document members never see. Say the rule, not its address.
 - **T16 · Raw values are not copy.** Never print an unformatted datetime, a float, a
-  ratio. A quorum share is `66%`; a time is *at 14:00 on 3 September*; a countdown
+  ratio. A quorum share is `50%`; a time is *at 14:00 on 3 September*; a countdown
   follows the `session-clock` ladder (days beyond a week, hours inside one,
   20-minute steps inside six hours, 10-minute steps inside the hour, never
   finer, never seconds).
