@@ -50,6 +50,44 @@ describe('✉️ — the invite door', () => {
     expect(() => held.invite(3, 'dee@example.org')).not.toThrow();
   });
 
+  /**
+   * **One address is one member** (issue #6, F2; §9.7½, decision 1253). Every
+   * road in checks the address when it *starts* — `requireEmailFree` at the
+   * invitation, at the motion and at the door — and nothing checked it again
+   * when a motion carried, which can be hours later. Two roads open at once
+   * on the same person is an ordinary thing in a live room: a motion running
+   * while the Founder's ✒️ invites the same address, a motion running while
+   * that person applies. The second arrival minted a second member row, and
+   * a second row is a second wallet, a second place in E and a second voice
+   * in every unanimity and every quorum from then on.
+   */
+  it('a carried invitation whose address was seated meanwhile seats nobody twice', () => {
+    const { s, bo, cy } = buildConstituted({
+      doors: { invite: { unilateral: true, assent: false } } });
+    const m = s.openMotion(3, bo, { kind: 'invite', email: 'dee@example.org' });
+    // …and while the room is answering, the Founder's own ✒️ invites her
+    const direct = s.invite(4, 'dee@example.org');
+    s.answerMotion(5, 'ada', m, 'accept');
+    s.answerMotion(6, cy, m, 'accept');
+    // the motion carried — the room said yes, and that is what the record says
+    expect(s.motionRecords().get(m)!.status).toBe('carried');
+    // …but it seats nobody, because she is already seated
+    const rows = [...s.memberRecords().values()].filter((r) => r.email === 'dee@example.org');
+    expect(rows.map((r) => r.id)).toEqual([direct]);
+    expect(s.E()).toBe(3); // an invitee counts toward nothing until they arrive
+  });
+
+  it('a submitted application whose address was seated meanwhile is refused at the door', () => {
+    const { s } = buildConstituted({
+      applications: { apply: true }, admission: { price: 'assembly' },
+      doors: { invite: { unilateral: true, assent: false } } });
+    const ap = s.startApplication(3, 'dee@example.org');
+    s.verifyApplication(4, ap);
+    s.invite(5, 'dee@example.org'); // the Founder's pen gets there first
+    expect(() => s.submitApplication(6, ap, { name: 'Dee' }))
+      .toThrow(/already on the membership/);
+  });
+
   it('the view serves both doors’ pairs', () => {
     const { s, bo } = buildConstituted({
       doors: { invite: { unilateral: true, assent: false } } });

@@ -71,6 +71,13 @@ export interface MotionHost {
   /** Does this motion's target sit behind the crown's assent (§9.7)? */
   reservedTarget(rec: MotionRecord): boolean;
   requireEmailFree(email: string): void;
+  /** **Is this person on the membership now?** — `requireEmailFree`'s own
+   *  question, which a carry has to ask again (issue #6, F2): a motion is a
+   *  permission that lands later, and the address it names can be seated by
+   *  another road while it runs. An invitee counts: the seat is theirs. */
+  personSeated(person: PersonId): boolean;
+  /** The person an application is by, for the question above (issue #6, F2). */
+  personOfApplicant(applicant: string): PersonId | null;
   personFor(email: string): PersonId;
   convenorSeatVacant(): boolean;
   afterRosterChange(t: number, cause: 'arrival' | 'departure', member: MemberId): void;
@@ -424,6 +431,13 @@ export function maybeSettleMotions(s: MotionHost, t: number): void {
 export function settleCarriedEffects(s: MotionHost, t: number, rec: MotionRecord,
   everyoneHadSay: boolean): void {
   if (rec.payload.kind === 'invite') {
+    // **One address is one member** (issue #6, F2; §9.7½, decision 1253). The
+    // address was free when the motion was put, and a motion is a permission
+    // that lands later: the Founder's ✒️ or an application can have seated
+    // that person in between, and a second row is a second wallet and a
+    // second place in E. The motion still **carried** — the room said yes,
+    // and the record says so — there is simply nothing left for it to do.
+    if (s.personSeated(rec.payload.person)) return;
     const id = `m-${s.nextMemberN}`;
     s.emit({ type: 'member-invited', t, member: id,
       person: rec.payload.person, viaMotion: rec.id });
@@ -462,6 +476,10 @@ export function settleCarriedEffects(s: MotionHost, t: number, rec: MotionRecord
     shiftRivals(s, t, rec.payload.setting, rec.id, rec.id);
   }
   if (rec.payload.kind === 'admit') {
+    // the invite arm's rule, at the other door in (issue #6, F2): the
+    // applicant may have been invited by the pen while the room decided
+    const already = s.personOfApplicant(rec.payload.applicant);
+    if (already !== null && s.personSeated(already)) return;
     const id = `m-${s.nextMemberN}`;
     // what they told the door arrives with them (Q1405): ✋ and 🖼️ are asked
     // of a member as *were you ever asked*, and the answers were given
