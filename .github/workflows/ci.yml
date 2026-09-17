@@ -75,7 +75,7 @@ jobs:
       - name: the server walk again, over Postgres (stage 6)
         run: DRAFT_TEST_STORE=pg npm test -w @draft/server
       - run: npm run build
-      - name: boot smoke — refuse half-configured, serve configured, no dev routes
+      - name: boot smoke — refuse half-configured, serve configured, no dev routes, come up on Postgres
         run: |
           # the prod artifact refuses to boot without its secrets (defect 9)
           ( node dist/server.mjs || true ) 2>&1 | grep -q 'refuses to boot'
@@ -94,6 +94,63 @@ jobs:
           kill -TERM "$SMOKE_PID"
           wait "$SMOKE_PID" || true
           grep -q "closed cleanly" smoke.log
+
+          # **And once over Postgres, which is what production runs** (issue
+          # #17, F3). Everything above is the artifact on the file store, and
+          # docs.vote has served from Postgres since 2026-08-20
+          # (docs/OPERATING.md §7) — so the one configuration this gate never
+          # booted was the live one. The suite covers `PgPersistence`
+          # thoroughly and through `tsx`; what it cannot cover is the
+          # *bundle* reaching it, and that seam has broken before and in
+          # exactly this way: `pg` is CommonJS and `require`s node builtins,
+          # which esbuild's ESM shim answers with a throw, and the cure in
+          # build-server.mjs's banner was "found by running the artifact, not
+          # the tests". A boot is the only thing that asks the question.
+          #
+          # The database is the job's own `postgres:17-alpine` service, the
+          # same one the pg suite above uses; `PgPersistence.open` migrates
+          # on connect, so an empty `public` schema is all it needs. A fresh
+          # data dir because nothing here should read the file smoke's disk —
+          # on Postgres the directory is for the secret and the outbox alone,
+          # and this run has neither.
+          #
+          # **Polled, never slept**: this step sits inside the deploy gate,
+          # where a fixed wait is either slow on every push or flaky on the
+          # one that matters.
+          DRAFT_STORE=pg DATABASE_URL="$DRAFT_TEST_DATABASE_URL" \
+            DRAFT_DATA_DIR="$RUNNER_TEMP/pgdata" PORT=8198 \
+            DRAFT_SECRET=ci-smoke DRAFT_BASE_URL=https://smoke.invalid \
+            RESEND_API_KEY=ci-smoke DRAFT_TRUST_PROXY=0 \
+            node dist/server.mjs > smoke-pg.log 2>&1 &
+          PG_PID=$!
+          # and a process that has already died is not waited on for thirty
+          # seconds: a store it cannot reach throws out of `PgPersistence.open`
+          # before anything listens, which is the likeliest way this fails
+          for i in $(seq 1 60); do
+            if curl -fsS -m 5 http://localhost:8198/healthz -o pg-health.json; then pgup=1; break; fi
+            if ! kill -0 "$PG_PID" 2>/dev/null; then break; fi
+            sleep 0.5
+          done
+          if [ -z "$pgup" ]; then
+            echo "the artifact never answered /healthz over Postgres — its log follows"
+            cat smoke-pg.log
+            exit 1
+          fi
+          # what `store` says, and that the store answered at all: `documents`
+          # is `[...store.all()].length`, so a number there is a boot that
+          # migrated, connected and replayed — an empty database included
+          node -e '
+            const h = JSON.parse(require("fs").readFileSync("pg-health.json", "utf8"));
+            const bad = [];
+            if (h.ok !== true) bad.push(`ok reads ${JSON.stringify(h.ok)}`);
+            if (h.store !== "pg") bad.push(`store reads ${JSON.stringify(h.store)}, not pg`);
+            if (typeof h.documents !== "number") bad.push(`documents reads ${JSON.stringify(h.documents)}, which is not a number`);
+            if (bad.length) { console.error("the Postgres boot: " + bad.join("; ")); process.exit(1); }
+            console.log(`the artifact is up on Postgres, ${h.documents} documents loaded`);
+          '
+          kill -TERM "$PG_PID"
+          wait "$PG_PID" || true
+          grep -q "closed cleanly" smoke-pg.log
 
       # Deploy on green (stage 4, decision 432): auto-deploy is off at the
       # platform, so this workflow is the single gate — nothing reaches the
@@ -400,9 +457,15 @@ jobs:
       # founding runs straight past an unacknowledged one. The hole is
       # structural, and it swallowed three cards in five days: 🖼️ (Q732, an
       # emoji face at 7px for four days with every check green), 🪪 (Q910,
-      # which took thirteen steps down with it) and 🛡️ (Q914). Coverage is
-      # 24 of 24 now, so a card added to ORDER without a probe step reddens
-      # the build here rather than surfacing weeks later as a bug.
+      # which took thirteen steps down with it) and 🛡️ (Q914). The rule it
+      # holds is **every card in ORDER is opened or exempt with a reason**,
+      # which today reads *23 cards opened … in ORDER (23)*: 22 opened and
+      # one exempt, 📝, which is a card with two modes and never a
+      # `data-setupcard` (backlog 204, K31). So a card added to ORDER
+      # without a probe step reddens the build here rather than surfacing
+      # weeks later as a bug. The count is the tool's own output, not a
+      # number kept by hand here — it read *24 of 24* until 2026-09-17
+      # (issue #17, F1), which is neither the cards nor the coverage.
       - run: npm run probe-coverage
         if: always()
       # the contents rail: every click lands clear of the topbar (M17), and since
@@ -423,6 +486,29 @@ jobs:
       # only claims to be, 25 MB, and a real one; the box has to say something
       # about the first three and nothing after the fourth.
       - run: npm run picture-walk
+        if: always()
+      # **The take-back** (Q1318, Ed 2026-09-11: *I should be able to choose
+      # a value to take it back with ✒️, but I wasn't able to do that here*):
+      # hand a setting to the membership, then reclaim it with the pen and a
+      # value in one act — the card's radios before the press, the module's
+      # holder after it, the clause no longer waiting, the founder's own
+      # answer card gone from the rail, and 🍾 beginning with nothing left
+      # delegated. Two shapes, because the defect had three causes and they
+      # do not show on one card: 🤝, whose value and holder are separate
+      # fields and is Ed's own case, and 🌍, where they are the same field.
+      #
+      # They are here rather than in `walks` because `founding-walk.mjs`
+      # **starts its own server** — it serves `design/` itself and takes no
+      # base URL, like `founder-answers` beside it, so it needs nothing this
+      # job has not already got. About 27 s each.
+      #
+      # Like `powers-walk` in the job below, these ran in **no CI job**
+      # until 2026-09-17 (issue #17, F2) while CLAUDE.md named them as
+      # Q1318's guard — *red on the pre-fix page* is worth nothing if
+      # nothing runs the page.
+      - run: node scripts/founding-walk.mjs --takeback=applications
+        if: always()
+      - run: node scripts/founding-walk.mjs --takeback=chamber
         if: always()
 
   # **Last green on `main`: 2026-09-16** (run 143, `fba9d3e` — every step, the
@@ -537,12 +623,21 @@ jobs:
             -H 'content-type: application/json' \
             -d '{"title":"Test Charter","slug":"test-charter","email":"a@b.com"}'
 
-      # room-walk gets a server of its own, with the adoption cooldown at 0:
-      # phase A adopts twice in one document, and the second adoption cannot
-      # wait a real cooldown out inside a CI walk. The shared server above
-      # keeps the default, because the ladder's seeded history was built
-      # under it and a different cooldown would re-time its whole past.
-      - name: boot a second dev server for room-walk, cooldown 0
+      # room-walk gets a server of its own for **isolation**: it is the one
+      # walk that builds a room rather than a document — phase A invites,
+      # arrives and drives fifteen members, phase B builds a whole ladder
+      # document with the twenty-strong cast (`CAST_NAMES`, dev-ladder.ts) —
+      # and that does not belong on the process the other nine walks and the
+      # seat matrix are founding their own documents on.
+      #
+      # **Not for the cooldown** (issue #17, F1): this comment said the
+      # shared server "keeps the default cooldown" and room-walk needed 0,
+      # which stopped being true at R-086 — `HOST_COOLDOWN_MS` is 0
+      # (config.ts), so both servers here run at 0 whatever this line says.
+      # `DRAFT_COOLDOWN_MS=0` stays anyway, because room-walk refuses a
+      # server whose `/healthz` reports any other value: stated, it cannot
+      # be taken down by a host default that moves.
+      - name: boot a second dev server for room-walk, isolated, cooldown 0
         run: |
           export PORT=8162
           export DRAFT_DATA_DIR="$RUNNER_TEMP/room-walk-data"
@@ -588,6 +683,7 @@ jobs:
       # servable, ✉️ composing at 🪪's price — on the polled page and on a
       # fresh load
       - run: npm run after-begin-walk -- "$WALK_BASE"
+        if: always()
       # a member's invitation motion on the surface (Q1370): the ✏️ commit at
       # 🪪 proposal, the mover's ✏️ entry, the *proposed* invitee, the twin
       # refusal naming no id
@@ -606,12 +702,33 @@ jobs:
       # then the 🛡️ park-and-crown path on a ladder document (Q1178)
       - run: npm run room-walk -- "$ROOM_BASE"
         if: always()
+      # **A laid-down pen is laid down** (entry 62, K2/K29, Ed's batch-B QA
+      # 2026-08-25: *please check that giving up powers actually gives them
+      # up, on all settings where they can be given up*) — every setting the
+      # founder's own card sets, under both hats, before 🍾, after it and on
+      # a closed document, plus ⏰ as the control that keeps its pen.
+      #
+      # It ran in **no CI job at all** until 2026-09-17 (issue #17, F2),
+      # while CLAUDE.md named it as the guard for the `may*`/`can*` rule and
+      # for `mayPenOn(k)`. That is what the eviction rule (Q736) trades a
+      # gotcha's post-mortem for: the red build. A guard nothing runs is not
+      # a guard, and the paragraph it replaced is gone.
+      #
+      # **The base is an argument, not a default**: its own fallback is
+      # 8199, so a bare run here would drive whatever answered there — or
+      # nothing. About two and a half minutes.
+      - run: npm run powers-walk -- "$WALK_BASE"
+        if: always()
       # **The seat matrix joins the walks** (Q1205, Ed 2026-09-14: *fix 1282,
       # then the harness joins CI*). Seven seats × three epochs, asserting
       # SURFACE §2's Audience column per seat per step — the only guard over
       # that column anywhere, and the instrument that found Q1280–Q1282. Both
-      # hats, because green means both: the clerk document stops at 🍾 (Q920)
-      # and its rows are asserted up to there. It is the long one — about ten
+      # hats, because green means both. The clerk document ran only as far as
+      # 🍾 until Q920 was built on 2026-09-07; it goes the whole way now, and
+      # four rows the harness still marks `ifHat: 'member'` for that old
+      # reason — E10, E11, E39 and the removal motion they hang off — are
+      # issue #17's F4 and are **not** asserted on the clerk hat yet. It is
+      # the long one — about ten
       # minutes, of which the `lapsed` seat's real one-minute lapse is a
       # couple — so it stands last of the walks.
       #
