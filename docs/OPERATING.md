@@ -59,7 +59,7 @@ in the repo).
 | `DRAFT_PROXY_HOPS` | How many proxies **append** to `x-forwarded-for`, i.e. how far from the right the client's own entry sits. Only consulted when the proxy states the client no other way | `1` | Not set. **Never raise it "to be safe"** — a count larger than the real chain reads an entry the client supplied, which is the spoof the count exists to prevent |
 | `DRAFT_COOLDOWN_MS` | The adoption metronome (SPEC §4.2) — how long after one adoption before the document can change again. Engine tuning, **never a room decision**: not a setting, not in the catalogue, not in the record. Above 5 min is a **boot refusal**, not a clamp | `0` — no cooldown; adoptions land as they clear (Ed, 2026-09-05, SPEC v0.97) | Not set. **Setting it switches pacing on**: `60000` gives a 15-minute room fifteen moments when the document can change. Before 2026-09-05 the unset default was the engine's `300000`, and docs.vote ran at it from the day it went live — the one-minute value in the earlier docs was never set anywhere. Read at boot, so changing it is a restart; every document the host serves is re-paced to the value at its next minute tick, by an amendment in its own engine log (R-086). `/healthz` states the value in force |
 | `DRAFT_DESIGN_DIR` | Where `design/` is | `./design`, else `../../design`, whichever exists | Not set |
-| `RENDER_GIT_COMMIT` | The commit the process was built from, served as the `x-build` header | — | Render sets it |
+| `RENDER_GIT_COMMIT` | The commit the process was built from, served as the `x-build` header and as `booted` in `/healthz` — a page upload moves the header, never the field (issue #8) | — | Render sets it |
 | `DRAFT_BUILD_SHA` | The same, anywhere that is not Render | unset | Not set |
 
 Two things in that neighbourhood that are **not** configuration:
@@ -99,9 +99,20 @@ freely; pushing is the decision.
    secrets; configured, it must serve `/`, serve `/setup.js`, answer
    `/healthz` with `"store":"file"`, send `x-content-type-options: nosniff`,
    and **404 on `/api/dev/outbox`**.
-4. On `main` only, CI first asks **what the push touched** (Q1347), through
-   the compare API between the previous head and this one, and takes one
-   of three lanes. **Documents only** (`*.md`, `docs/`): nothing is
+4. On `main` only, CI first asks **what the live host has not got** (Q1347;
+   issue #8), through the compare API between the host's own commit and
+   this one, and takes one of three lanes. The host is asked for it: a GET
+   of `$DRAFT_BASE_URL/healthz` before anything else, whose `booted` names
+   the commit the process was built from — the one field a surface upload
+   cannot move — and whose `surface` names the last page upload. The engine
+   lane compares against `booted`, the page lane against `surface ?? booted`,
+   and a host that will not answer leaves the previous push standing as the
+   base, which is the old behaviour and deploys more rather than less. **A
+   commit that never deployed stays in the range until it does** — the
+   whole of it, so a red server push followed by a design-only fix-up takes
+   the full lane rather than serving the new page over the old engine
+   (design/DECISIONS.md:6907). One of three lanes follows. **Documents
+   only** (`*.md`, `docs/`): nothing is
    deployed. **The surface only** (`design/` and documents): the served
    page files at the top of `design/` are packed as one ustar tar.gz and
    `POST`ed to `$DRAFT_BASE_URL/api/admin/surface?sha=<commit>` bearing
@@ -141,8 +152,12 @@ freely; pushing is the decision.
    "the service is up" would verify the bytes the deploy was replacing. If
    `x-build` never becomes the pushed SHA, CI fails rather than report a
    verification of bytes it did not deploy.
-6. CI runs `node scripts/verify-deploy.mjs $DRAFT_BASE_URL` against the live
-   host.
+6. CI runs `node scripts/verify-deploy.mjs $DRAFT_BASE_URL
+   --before=before.json` against the live host, with `--booted=<the pushed
+   commit>` after a full deploy and `--booted=same` after a surface upload:
+   the first says the pushed *engine* is the one answering, the second that
+   the page moved and the server did not (issue #8). `--before` is step 4's
+   pre-deploy `/healthz`, and what it buys is in §4.
 
 If a deploy's live verification fails: revert the commit, push the revert,
 confirm the live host is healthy, and write it up. Do not push a fix forward
@@ -193,8 +208,17 @@ the health route rather than that anything is wrong; check `x-build` against
 `git log` before treating it as an incident.
 
 `/healthz` is also the service's own health check path, and answers
-`{ ok, build, catalogue, store, documents, uptimeSeconds, mail, devMail,
-outbox, errors, cooldownMs }`. It is the one route excluded from the access
+`{ ok, build, surface, booted, catalogue, store, documents, uptimeSeconds,
+mail, devMail, outbox, errors, cooldownMs }`. **Three of those are commits
+and they are not the same question** (issue #8): `booted` is what the
+*process* was built from and nothing can move it; `surface` is the last page
+upload (Q1347), or null; `build` is whichever of the two is answering in
+`x-build`, which is `surface` once there has been one. A host whose `build`
+names today's commit and whose `booted` names last week's is serving a new
+page over an old engine — which is a real incident, not a curiosity
+(design/DECISIONS.md:6907). Adding `--booted=<commit>` to a verify run
+asserts the engine by name, and `--booted=same` (with `--before`) asserts it
+has not moved. It is the one route excluded from the access
 log, so a health check every few seconds does not drown it. `devMail` is
 whether the host runs without a Resend key — the birth page reads it to
 decide whether to ask for the stagehand's controls (Q1349), and it is `false`

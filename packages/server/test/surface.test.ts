@@ -17,6 +17,9 @@ import { createDraftServer } from '../src/server.js';
 import type { DraftServer } from '../src/server.js';
 import { SURFACE_NAME, packTar, readTarGz } from '../src/surface.js';
 
+/** The three commits `/healthz` reports (issue #8, F1). */
+interface Health { build: string | null; surface: string | null; booted: string | null }
+
 const tmp = () => mkdtempSync(join(tmpdir(), 'draft-surface-'));
 const booted: DraftServer[] = [];
 afterAll(async () => { for (const d of booted) await d.close(); });
@@ -83,6 +86,9 @@ describe('the surface route', () => {
     const before = await fetch(`${base}/`);
     expect(before.headers.get('x-build')).toBe('aaaaaaa');
     expect(await before.text()).not.toContain('a new surface');
+    const health = async (): Promise<Health> =>
+      (await (await fetch(`${base}/healthz`)).json()) as Health;
+    expect(await health()).toMatchObject({ build: 'aaaaaaa', surface: null, booted: 'aaaaaaa' });
 
     const bad = await upload(base, 'not a sha', gzipSync(packTar([])));
     expect(bad.status).toBe(400);
@@ -120,9 +126,15 @@ describe('the surface route', () => {
     }
     expect(await (await fetch(`${base}/`)).text()).toContain('a new surface');
     expect(await (await fetch(`${base}/system.css`)).text()).toBe('body{color:red}');
-    const h = (await (await fetch(`${base}/healthz`)).json()) as { build: string; surface: string | null };
+    // **and the booted commit stands still** (issue #8, F1): `build` is what
+    // `x-build` says and a page upload moves it, `surface` is the upload's
+    // own commit — `booted` is the process, which no upload touches. CI
+    // reads this field to tell a host running the pushed engine from a host
+    // merely serving the pushed page (design/DECISIONS.md:6907).
+    const h = await health();
     expect(h.build).toBe('bbbbbbb');
     expect(h.surface).toBe('bbbbbbb');
+    expect(h.booted).toBe('aaaaaaa');
     // a file the upload did not carry is gone with the old directory
     expect((await fetch(`${base}/setup.js`)).status).toBe(404);
   });
