@@ -147,8 +147,7 @@ describe('toEngineConstitution: every engine field against the value it came fro
     expect(quorumN).toBe(quorumCount(quorum, s.E()));
     // the closure re-derives the quorum per E, so a share tracks the roster
     for (const E of [1, 2, 5, 9, 20]) {
-      expect(floor(E), `floor(${E})`)
-        .toBe(adoptionFloor(quorumCount(quorum, E), E, DEFAULT_TUNING.adoptionFloorMax));
+      expect(floor(E), `floor(${E})`).toBe(adoptionFloor(quorumCount(quorum, E), E));
     }
   });
 
@@ -215,15 +214,16 @@ describe('toEngineConstitution: every engine field against the value it came fro
     expect(c.quorum).toEqual({ form: 'count', n: 4 });
     expect(quorumN).toBe(4);
     // **the count itself does not track E, but the cap does** (Q1439, R-126):
-    // a count of 4 asks for 4 from six people up and for half the room below
-    // that, since no quorum may ask for more than half
+    // a count of 4 asks for 4 from eight people up and for half the room below
+    // that, since no quorum may ask for more than half. **And nothing rides
+    // under it** since v0.133 (ruling s, R-131), so a room of twenty is held
+    // to the four it asked for and not to ⌈20/3⌉ = 7.
     for (const E of [1, 5, 20]) {
-      expect(floor(E), `E = ${E}`).toBe(
-        Math.max(Math.min(4, Math.ceil(E / 2)), Math.min(Math.ceil(E / 3), 12)));
+      expect(floor(E), `E = ${E}`).toBe(Math.max(1, Math.min(4, Math.ceil(E / 2))));
     }
     expect(floor(1)).toBe(1);
     expect(floor(5)).toBe(3);
-    expect(floor(20)).toBe(7);
+    expect(floor(20)).toBe(4);
   });
 
   it('the five elective and plain authorship rungs all reach an engine value', () => {

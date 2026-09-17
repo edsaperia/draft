@@ -210,8 +210,8 @@ export function toEngineConstitution(
   return {
     constitution,
     quorumN,
-    // §4.2: F = max(Q, min(⌈E/3⌉, F_max)) — quorum re-derived per E so a
-    // share-quorum tracks the roster.
-    floor: (E: number) => adoptionFloor(quorumCount(quorum, E), E, tuning.adoptionFloorMax),
+    // §4.2: F = max(1, Q′) since v0.133 (Q1439 ruling s, R-131) — the quorum
+    // re-derived per E so a share-quorum tracks the roster, capped at half.
+    floor: (E: number) => adoptionFloor(quorumCount(quorum, E), E),
   };
 }

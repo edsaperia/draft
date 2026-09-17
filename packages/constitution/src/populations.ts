@@ -47,19 +47,34 @@ export function quorumCount(quorum: QuorumValue, E: number): number {
   return quorum.form === 'count' ? quorum.n : Math.ceil((quorum.n * E) / 100);
 }
 
-/** The statistical half of the adoption floor (§4.2, §8.2). */
+/**
+ * The statistical minimum that **used** to be half of F (§4.2 before v0.133).
+ *
+ * **It enters no floor since Q1439 ruling s** (Ed, 2026-09-18, R-131,
+ * reversing R-073): the card's number is the only number. What keeps the
+ * function alive is the log — `floor-recomputed` carries a `floorTerm` on
+ * every roster change and has since v0.48, so the field is written for as long
+ * as old logs must fold beside new ones. Nothing reads it back.
+ */
 export function adoptionFloorTerm(E: number): number {
   return Math.ceil(E / 3);
 }
 
 /**
- * F = max(Q′, min(⌈E/3⌉, F_max)) — §4.2, the room's number riding the minimum,
- * and **since Q1439 no quorum may ask for more than half** (R-126): ✏️ is
- * *enough of the room* and 🏛️ is *everybody*, so an approval quorum of 100%
- * would make them one rung, and the consent rule taking the strictest answer
- * would let one founding answer hand every member a standing veto over the
- * text. The cap binds only the **count** form from the surface, a share being
- * refused above 50 at validation (`values.ts`).
+ * F = max(1, Q′) — §4.2. **The room's number, and nothing under it** (Q1439
+ * ruling s, Ed 2026-09-18 — *if the membership want a smaller quorum they
+ * should be able to choose it* → why: R-131): the built-in minimum of a third
+ * of the membership has gone, and the `max(1, …)` is arithmetic rather than a
+ * minimum anybody chose — a floor of zero is no floor, and §4.2's measured
+ * clause is what holds a race open until somebody who is not the author has
+ * spoken.
+ *
+ * **And no quorum may ask for more than half** (R-126): ✏️ is *enough of the
+ * room* and 🏛️ is *everybody*, so an approval quorum of 100% would make them
+ * one rung, and the consent rule taking the strictest answer would let one
+ * founding answer hand every member a standing veto over the text. The cap
+ * binds only the **count** form from the surface, a share being refused above
+ * 50 at validation (`values.ts`).
  *
  * `E` here is the population the quorum is read against. The engine reads it
  * against **the group a candidate is waiting on** (`races.ts`'s `floorFor`,
@@ -67,6 +82,6 @@ export function adoptionFloorTerm(E: number): number {
  * the whole of E, which is what the group is before anybody has abstained.
  * The two move together or not at all — `floor-agreement.test.ts`.
  */
-export function adoptionFloor(quorumN: number, E: number, fMax: number): number {
-  return Math.max(Math.min(quorumN, Math.ceil(E / 2)), Math.min(adoptionFloorTerm(E), fMax));
+export function adoptionFloor(quorumN: number, E: number): number {
+  return Math.max(1, Math.min(quorumN, Math.ceil(E / 2)));
 }

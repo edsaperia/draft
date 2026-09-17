@@ -175,7 +175,17 @@ describe('sim regression: dedup off is byte-identical to before the gate existed
   // produced this hash, a second no-gate run agreed and `Session.replay`
   // reproduces it — which is the invariant this test defends
   // (was 866c68f245fcf558ed9e179bc83f0c9ea586c7d6739ab748e4d98eac1ef26d63).
-  const PINNED = 'a5fa29c1a1b97ac7a99fb4dbbfa17f16c5fa4fab47eb0255dfaab4d84adb1827';
+  // Re-pinned 2026-09-18 (Q1439 ruling s, SPEC §4.2/§8.2 v0.133, R-131): the
+  // built-in minimum of ⌈E/3⌉ beneath the floor is gone — F is max(1, Q′), the
+  // room's own number and nothing under it (Ed: *if the membership want a
+  // smaller quorum they should be able to choose it*). The charter scenario
+  // settles no quorum, so every race in this run was held to ⌈E/3⌉ and is now
+  // held to one: adoption timings move from the first race on and the chain
+  // differs throughout. Both variants below produced this hash, a second
+  // no-gate run agreed and `Session.replay` reproduces it — which is the
+  // invariant this test defends
+  // (was a5fa29c1a1b97ac7a99fb4dbbfa17f16c5fa4fab47eb0255dfaab4d84adb1827).
+  const PINNED = '0ce7fe0352dfe2c604ae024aac04e61f7a954e5faa043a2dab9df111d9f82eb7';
 
   const run = (withGate: boolean) =>
     runSession({

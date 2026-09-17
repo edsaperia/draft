@@ -28,13 +28,18 @@ function openSession(overrides: Record<string, unknown> = {}, size = 5): Session
 }
 
 /**
- * A roster of twelve, so F = 4 rather than 2. For tests that need a race to
- * survive a judgment or two before adopting: at five, the floor is met by the
- * author's own derived preference (§3.3, §8.2) plus one other person, so
- * almost anything adopts on first contact.
+ * A roster of twelve **asking for four**, so F = 4. For tests that need a race
+ * to survive a judgment or two before adopting: at a floor of one or two the
+ * author's own derived preference (§3.3, §8.2) plus one other person meets it,
+ * and almost anything adopts on first contact.
+ *
+ * **The four has to be asked for since v0.133** (Q1439 ruling s, R-131): the
+ * built-in ⌈E/3⌉ supplied it here for free, and with the third gone a room
+ * that has settled no quorum is held to one. Four is the number twelve used to
+ * give, so every test downstream of this helper reads as it did.
  */
 function openWide(): Session {
-  return openSession({}, 12);
+  return openSession({ quorum: { form: 'count', n: 4 } }, 12);
 }
 
 /**
@@ -226,20 +231,24 @@ describe('session lifecycle', () => {
     expect(s.judge(t0 + 8000, 'p5', c1, c2, 'b')).toBeDefined();
   });
 
-  it('gates adoption on the floor of distinct movers, the author among them', () => {
-    // E = 5 → F = ceil(5/3) = 2. Since SPEC v0.16 the author is one of the
-    // movers (§8.2, "you are a voice" — Ed), so submitting is itself the first
-    // mover and one other person meets the floor. Written out plainly because
-    // it is a real loosening at this size: author + 1 adopts.
+  it('gates adoption on the floor, and on somebody who is not the author', () => {
+    // **E = 5 with no quorum settled → F = 1** since v0.133 (Q1439 ruling s,
+    // R-131): the built-in ⌈5/3⌉ = 2 has gone, and a room that asked for
+    // nothing is held to the arithmetic minimum of one. Since SPEC v0.16 the
+    // author is one of the movers (§8.2, "you are a voice" — Ed), so the floor
+    // is met at the submission — and what holds the race open is §4.2's
+    // measured clause: ready only once somebody who is not the author has
+    // judged it. Author + 1 adopts, exactly as it did at a floor of two.
     const s = openSession();
     const { id: c1 } = s.submitCandidate(1000, {
       author: 'p1',
       patch: rewrite(0, 1, 'A.'),
       rationale: 'r',
     });
-    expect(s.adoptionFloor()).toBe(2);
-    expect(s.raceOf(c1).distinctMovers).toBe(1); // the author, alone, is short
+    expect(s.adoptionFloor()).toBe(1);
+    expect(s.raceOf(c1).distinctMovers).toBe(1); // the author, alone
     expect(s.raceOf(c1).leaderJudges).toBe(1);   // and is one judge of their own text (Q1337)
+    expect(s.raceOf(c1).leaderMeasured).toBe(0); // which nobody has measured
     const inc = s.raceOf(c1).incumbentId;
     const events = s.judge(2000, 'p2', c1, inc, 'a');
     expect(events.some((e) => e.type === 'adopted')).toBe(true);
@@ -482,17 +491,22 @@ describe('session lifecycle', () => {
   });
 
   it('recomputes the floor when the roster changes, and blocks removed participants', () => {
-    const s = openSession();
-    expect(s.adoptionFloor()).toBe(2);
+    // **the share is the only thing left that tracks E** (Q1439 ruling s,
+    // R-131): the built-in ⌈E/3⌉ used to move the floor as the roster did
+    // whether or not the room had asked for anything, and a room with no
+    // quorum settled now reads 1 at every size. So the tracking under test is
+    // the quorum's own.
+    const s = openSession({ quorum: { form: 'share', n: 50 } });
+    expect(s.adoptionFloor()).toBe(3);  // ⌈50 × 5 / 100⌉
     s.addParticipant(1000, { id: 'p6', handle: 'P6' });
-    expect(s.adoptionFloor()).toBe(2); // ceil(6/3) = 2
+    expect(s.adoptionFloor()).toBe(3);  // ⌈50 × 6 / 100⌉
     s.addParticipant(1100, { id: 'p7', handle: 'P7' });
-    expect(s.adoptionFloor()).toBe(3); // ceil(7/3) = 3
+    expect(s.adoptionFloor()).toBe(4);  // ⌈50 × 7 / 100⌉
     s.removeParticipant(2000, 'p7');
     s.removeParticipant(2100, 'p6');
     s.removeParticipant(2200, 'p5');
     s.removeParticipant(2300, 'p4');
-    expect(s.adoptionFloor()).toBe(1); // ceil(3/3) = 1
+    expect(s.adoptionFloor()).toBe(2);  // ⌈50 × 3 / 100⌉
     expect(() =>
       s.submitCandidate(3000, { author: 'p4', patch: rewrite(0, 1, 'X.'), rationale: 'r' }),
     ).toThrow(/removed/);
@@ -641,7 +655,10 @@ describe('session lifecycle', () => {
    */
   it('deals races by value alone: closest to sealing first, never least-measured first', () => {
     const room = (hotSetSize: number) => {
-      const s = openSession({ hotSetSize, explorationEvery: 1_000_000 }, 12); // floor 4
+      // the count of four is what ⌈12/3⌉ gave until v0.133 (Q1439 ruling s):
+      // the floor has to be asked for now, and this room wants one of four
+      const s = openSession({ hotSetSize, explorationEvery: 1_000_000,
+        quorum: { form: 'count', n: 4 } }, 12); // floor 4
       const { id: cA } = s.submitCandidate(1000, {
         author: 'p1', patch: rewrite(0, 1, 'A.'), rationale: 'r' });
       const { id: cB } = s.submitCandidate(2000, {
@@ -1109,9 +1126,16 @@ describe('quorum in the adoption floor (SPEC §4.2, 367b)', () => {
     expect(s.adoptionFloor()).toBe(4); // ceil(50 × 7 / 100)
   });
 
-  it('a quorum below the statistical minimum never lowers the floor', () => {
+  it('a quorum below the old statistical minimum is now simply the floor', () => {
+    // **the built-in third has gone** (Ed, 2026-09-18, Q1439 ruling s: *if the
+    // membership want a smaller quorum they should be able to choose it* →
+    // why: R-131, reversing R-073). ⌈5/3⌉ = 2 used to sit under this and the
+    // room's own number could only raise it; the card's number is the only
+    // number now, and `adoptionFloorMax` enters nothing.
     const s = openSession({ quorum: { form: 'count', n: 1 } });
-    expect(s.adoptionFloor()).toBe(2); // min(ceil(5/3), F_max) still governs
+    expect(s.adoptionFloor()).toBe(1);
+    expect(openSession({ quorum: { form: 'count', n: 1 }, adoptionFloorMax: 99 }, 40)
+      .adoptionFloor()).toBe(1);
   });
 });
 
@@ -1534,11 +1558,12 @@ describe('a document of one (Q837, backlog 253)', () => {
   });
 
   it('closeness is the leader’s judges over the floor (Q1362 (c), R-118)', () => {
-    // a room of sixteen: F = 6. It was the lesser of two distances until
-    // v0.128 (R-101) — the bar's and the floor's — and the bar's half went
-    // with the bar. What is left is the half Ed's wash always wanted: the
-    // author's derived preference alone is one judge of six.
-    const s = openSession({}, 16);
+    // a room of sixteen asking for six: F = 6. It was the lesser of two
+    // distances until v0.128 (R-101) — the bar's and the floor's — and the
+    // bar's half went with the bar. What is left is the half Ed's wash always
+    // wanted: the author's derived preference alone is one judge of six.
+    // (The six was ⌈16/3⌉ until v0.133, Q1439 ruling s; it is asked for now.)
+    const s = openSession({ quorum: { form: 'count', n: 6 } }, 16);
     const { id } = s.submitCandidate(1000, {
       author: 'p1', patch: rewrite(0, 1, 'Membership needs a sponsor.'), rationale: 'r',
     });
@@ -1753,7 +1778,10 @@ describe('the text is the top of the ranking (Q1362, R-114)', () => {
     // not is an approval, and they leave the group the quorum is a share of,
     // which is the only reading under which indifference neither helps nor
     // hinders.
-    const s = openSession();
+    // the count of two is what ⌈5/3⌉ gave until v0.133 (Q1439 ruling s): the
+    // floor is asked for now, and the point below needs one above a single
+    // approval
+    const s = openSession({ quorum: { form: 'count', n: 2 } });
     const { id } = s.submitCandidate(1000, {
       author: 'p1', patch: rewrite(0, 1, 'A.'), rationale: 'r',
     });
@@ -1767,9 +1795,9 @@ describe('the text is the top of the ranking (Q1362, R-114)', () => {
     expect(race.leaderJudges).toBe(2);  // the meter counted it (ruling b)
     expect(race.approvals).toBe(1);     // and the floor did not
     expect(race.group).toBe(4);         // p2 is out of the group at once
-    // and the one voice left is one short of the minimum, which is where it
-    // should have been all along
-    expect(race.floor).toBe(2);
+    // and the one voice left is one short of the room's own number, which is
+    // where it should have been all along
+    expect(race.floor).toBe(2);         // min(2, ⌈4/2⌉)
   });
 
   it('the backlog ranks by the peak a candidate reached, not by its distance to a bar', () => {

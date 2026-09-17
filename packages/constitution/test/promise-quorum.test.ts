@@ -11,7 +11,7 @@
  *
  * | # | The promise, in the room's words | Epoch | Verdict |
  * |---|---|---|---|
- * | 1 | *Nothing changes the document until at least Q of us have voted for it* — on the change itself, never fewer than ⌈E/3⌉ and **never more than half of us** | live, close | **holds** — `engine-core` `floorFor`, `r.approvals >= r.floor` in `clearsFloor`, read by the batch and by the close alike (Q1337: the winner, never the race at large; Q1439: approvals, never judgments) |
+ * | 1 | *Nothing changes the document until at least Q of us have voted for it* — on the change itself, and **never more than half of us** | live, close | **holds** — `engine-core` `floorFor`, `r.approvals >= r.floor` in `clearsFloor`, read by the batch and by the close alike (Q1337: the winner, never the race at large; Q1439: approvals, never judgments; Q1439 ruling s: the room's number and no ⌈E/3⌉ under it) |
  * | 2 | *The question was asked as a count (or a share), and that is how it is answered and how it stands* | pre-Begin | **holds** — `setQuorumForm`'s two refusals, `answer`'s third |
  * | 2 | …and live | live | **gap (fold)** — nothing after 🍾 checks the form: a `set` motion or the founder's own pen re-frames `quorumFormValue` silently, and the composer cannot express the re-frame it permits |
  * | 3 | *If the quorum is a share, it is a share of who is here now* | live | **holds** — `adoptionFloor()` re-derives from `eCount()` on every call; `floor-recomputed` on every roster change |
@@ -141,24 +141,27 @@ describe('promise 1 — nothing carries until Q of us have weighed in (§4.2, §
     expect(bridge.engine.document()).toBe('The clubhouse shall be kept open every day.');
   });
 
-  it('the statistical floor ⌈E/3⌉ carries a room that asked for less: at share 34 of 3, Q = 2 wins over the term 1', () => {
-    // ⌈0.34 × 3⌉ = 2 against ⌈3/3⌉ = 1: the room's own number is the higher
-    // of the two, so it is the one that binds.
+  it('the room’s own number is the floor: at share 34 of 3, Q′ = 2', () => {
+    // ⌈0.34 × 3⌉ = 2 against ⌈3/3⌉ = 1: the room's number used to have to be
+    // the higher of the two to bind, and since v0.133 it is the only one
+    // (Q1439 ruling s, R-131).
     expect(quorumCount({ form: 'share', n: 34 }, 3)).toBe(2);
     expect(adoptionFloorTerm(3)).toBe(1);
-    expect(adoptionFloor(2, 3, 12)).toBe(2);
+    expect(adoptionFloor(2, 3)).toBe(2);
     const { s } = buildConstituted({ quorum: { form: 'share', n: 34 } });
     const bridge = new EngineBridge(s, { t: 3, rngSeed: 'floor-share-34' });
     expect(bridge.engine.adoptionFloor()).toBe(2);
   });
 
-  it('and the term carries a room that asked for nothing: quorum unset reads Q = 0 and ⌈E/3⌉ still binds', () => {
+  it('and a room that asked for nothing is held to one, not to ⌈E/3⌉', () => {
     const { s } = buildConstituted();
     const bridge = new EngineBridge(s, { t: 3, rngSeed: 'floor-term' });
     // the engine's own reading of a null quorum (its constitution's field is
-    // nullable even though §9.0a will not let a document begin without one)
-    expect(adoptionFloor(0, 3, 12)).toBe(1);
-    expect(adoptionFloor(0, 40, 12)).toBe(12); // F_max caps the term, never Q
+    // nullable even though §9.0a will not let a document begin without one).
+    // **The term has gone** (Q1439 ruling s, R-131, reversing R-073): what is
+    // left is arithmetic — a floor of zero would be no floor at all.
+    expect(adoptionFloor(0, 3)).toBe(1);
+    expect(adoptionFloor(0, 40)).toBe(1); // ⌈40/3⌉ clamped to 12 used to sit here
     expect(bridge.engine.adoptionFloor()).toBe(2); // share 60 of 3
   });
 

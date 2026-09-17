@@ -54,20 +54,26 @@ export function candidateNum(id: string): number {
 }
 
 /**
- * **F = max(Q′, min(⌈E/3⌉, F_max))** (SPEC §4.2; Q1439 → why: R-125, R-126).
+ * **F = max(1, Q′)** (SPEC §4.2; Q1439 → why: R-125, R-126, R-131).
  *
- * Two bases, deliberately different. **Q′ is read against the group** the
- * leader is waiting on — its approvers, its opposers and the members of E it
- * is still awaiting — because a quorum is what the room asks of the people who
- * are actually deciding this question, and a silence that has run its 💤
- * period is not one of them (§8.2). It is a share of that group, rounded up,
- * or a fixed count; and **in either form never more than half of it**, since
- * ✏️ is *enough of the room* and 🏛️ is *everybody*, and an approval quorum of
- * 100% would make them one rung. **The statistical minimum's third is read
- * against the whole of E**, where it has always been (R-073): it is a
- * sufficiency floor, not a consent rule, and reading it against a shrinking
- * group would let two people carry a room of a hundred — the moon room's
- * defect (R-102) returning by the back door.
+ * **One base, and it is the group** the leader is waiting on — its approvers,
+ * its opposers and the members of E it is still awaiting — because a quorum is
+ * what the room asks of the people who are actually deciding this question,
+ * and a silence that has run its 💤 period is not one of them (§8.2). Q′ is a
+ * share of that group, rounded up, or a fixed count; and **in either form
+ * never more than half of it**, since ✏️ is *enough of the room* and 🏛️ is
+ * *everybody*, and an approval quorum of 100% would make them one rung.
+ *
+ * **The built-in minimum of a third of E has gone** (Ed, 2026-09-18, Q1439
+ * ruling s: *if the membership want a smaller quorum they should be able to
+ * choose it* → why: R-131, reversing R-073). The card's number is the only
+ * number: a room of ten at 30% with seven silent carries a proposal 2 to 1
+ * once the period has run, the measured clause and the leader being on top
+ * standing as they were. The `max(1, …)` is not a minimum anybody chose — it
+ * is arithmetic, since a floor of zero is no floor at all and a race with
+ * nothing behind it would carry; the author's own derived preference (§3.3)
+ * already meets it, and §4.2's measured clause is what actually holds a race
+ * open until somebody who is not the author has spoken.
  *
  * The share's arithmetic is `⌈n·G/100⌉`, **the product before the quotient**
  * (issue #24): `(n / 100) * G` is not the same number, and 56 % of 25 landed a
@@ -75,11 +81,11 @@ export function candidateNum(id: string): number {
  * layer's copy of this line, and `floor-agreement.test.ts` holds the two
  * equal — they move together or not at all.
  */
-export function floorFor(c: Constitution, e: number, group: number): number {
+export function floorFor(c: Constitution, group: number): number {
   const q = c.quorum;
   const asked = q === null ? 0 : q.form === 'count' ? q.n : Math.ceil((q.n * group) / 100);
   const quorumN = Math.min(asked, Math.ceil(group / 2));
-  return Math.max(quorumN, Math.min(Math.ceil(e / 3), c.adoptionFloorMax));
+  return Math.max(1, quorumN);
 }
 
 /**
@@ -190,8 +196,7 @@ export class Races {
     const awaited = cores.map((c) => this.awaitedAt(c.approval, t));
     return this.host.derived(`races@${awaited.join(',')}`, () => {
       const parks = this.parkedFootprints();
-      const e = this.host.eMembers().length;
-      return cores.map((c, i) => this.viewAt(c.core, c.approval, awaited[i]!, e, parks));
+      return cores.map((c, i) => this.viewAt(c.core, c.approval, awaited[i]!, parks));
     }).slice();
   }
 
@@ -216,11 +221,10 @@ export class Races {
     core: RaceCore,
     approval: ApprovalCore,
     awaited: number,
-    e: number,
     parks: Span[][],
   ): RaceView {
     const group = approval.answered + awaited;
-    const floor = floorFor(this.host.constitution(), e, group);
+    const floor = floorFor(this.host.constitution(), group);
     const view: RaceView = {
       ...core,
       approvals: approval.approvals,

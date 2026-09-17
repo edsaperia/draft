@@ -22,6 +22,19 @@ import { roster } from './helpers.js';
  *  2. abstaining never raises F — silence can only delay, by one period;
  *  3. an approval always helps — approvals by one, F by at most a half;
  *  4. with 💤 *never* the rule is a plain approval quorum capped at half of E.
+ *
+ * **And since v0.133 the card's number is the only number** (Ed, 2026-09-18,
+ * Q1439 ruling s: *if the membership want a smaller quorum they should be able
+ * to choose it* → why: R-131, reversing R-073). `F = max(1, Q′)`: the built-in
+ * minimum of ⌈E/3⌉ has gone, so a room that asks for a small quorum gets one.
+ * The consequence Ed confirmed when he ruled it has a test of its own below —
+ * *a room of ten at 30% with seven silent carries a proposal 2 to 1 once the
+ * period has run*.
+ *
+ * One consequence runs through this whole file: **with no quorum settled F is
+ * 1**, so a race is held open only by §4.2's measured clause and by the leader
+ * being on top. Every test here whose subject is not adoption therefore names
+ * a quorum, where before the ⌈E/3⌉ term supplied one for free.
  */
 
 const HOUR = 3600_000;
@@ -106,7 +119,9 @@ describe('the floor counts approvals (Q1439, R-125)', () => {
   });
 
   it('Indifferent steps out of the group the share is taken of (ruling i)', () => {
-    const { s } = proposed();
+    // a count of two, so the race is still open with one approval on it: with
+    // no quorum at all F would be 1 and p2's tie would carry the proposal
+    const { s } = proposed({ quorum: { form: 'count', n: 2 } });
     const r0 = only(s, 2000);
     s.judge(2000, 'p2', r0.leaderId!, r0.incumbentId, 'tie');
     const r = only(s, 2001);
@@ -117,7 +132,9 @@ describe('the floor counts approvals (Q1439, R-125)', () => {
   });
 
   it('a rival-pair judgment approves neither candidate (strict approval, ruling k)', () => {
-    const { s, id } = proposed();
+    // a count of three: p3's rival judgment is a measured judgment of the
+    // leader, so at F = 1 the race would adopt out from under the subject
+    const { s, id } = proposed({ quorum: { form: 'count', n: 3 } });
     // a rival on the same line, so the two race each other
     const second = s.submitCandidate(1500, {
       author: 'p2',
@@ -134,7 +151,9 @@ describe('the floor counts approvals (Q1439, R-125)', () => {
   });
 
   it('the author counts once, and only for their own candidate', () => {
-    const { s, id } = proposed();
+    // a count of three again: p1's explicit judgment of their own text is a
+    // measured one, so nothing but the floor holds the race open here
+    const { s, id } = proposed({ quorum: { form: 'count', n: 3 } });
     const r0 = only(s, 2000);
     // an explicit judgment of their own text overrides the derived one (R-062)
     s.judge(2000, 'p1', id, r0.incumbentId, 'a');
@@ -172,7 +191,7 @@ describe('the floor counts approvals (Q1439, R-125)', () => {
 
 describe('the floor is read against the group X is waiting on (R-126)', () => {
   it('a count-form quorum above half the group is capped', () => {
-    // count 5 in a room of 5: the cap is ⌈5/2⌉ = 3, and the formula half 2
+    // count 5 in a room of 5: the cap is ⌈5/2⌉ = 3
     const { s } = proposed({ quorum: { form: 'count', n: 5 } });
     expect(only(s, 2000).floor).toBe(3);
     expect(s.adoptionFloor()).toBe(3);
@@ -184,15 +203,35 @@ describe('the floor is read against the group X is waiting on (R-126)', () => {
     expect(only(s, 2000).floor).toBe(3);
   });
 
-  it('the statistical minimum is on the whole of E and the group cannot lower it (ruling d)', () => {
-    // E = 12 → ⌈12/3⌉ = 4; a group of two cannot take the floor below it
-    const { s } = proposed({ abstainAfterMs: 10 * MINUTE }, 12);
-    const r0 = only(s, 2000);
-    s.judge(2000, 'p2', r0.leaderId!, r0.incumbentId, 'a');
-    const r = only(s, 2000 + 20 * MINUTE);
-    expect(r.group).toBe(2);   // everybody else has abstained
-    expect(r.floor).toBe(4);   // and the minimum still asks for four
-    expect(r.approvals).toBe(2);
+  it('no minimum sits under the room’s number any more (ruling s, R-131 reversing R-073)', () => {
+    // E = 12, where ⌈12/3⌉ = 4 was the floor whatever the room asked for: a
+    // count of one is one now, on the race and on the room's own reading
+    const { s } = proposed({ quorum: { form: 'count', n: 1 } }, 12);
+    expect(only(s, 2000).floor).toBe(1);
+    expect(s.adoptionFloor()).toBe(1);
+  });
+
+  it('a room that settled no quorum is held to one, which is arithmetic', () => {
+    // `max(1, Q′)` is not a minimum anybody chose — a floor of zero is no
+    // floor — and §4.2's measured clause is what actually keeps a race open
+    // until somebody who is not the author has spoken
+    const { s } = proposed({}, 12);
+    expect(s.adoptionFloor()).toBe(1);
+    const r = only(s, 2000);
+    expect(r.floor).toBe(1);
+    expect(r.approvals).toBe(1);   // the author's own preference, and it meets F
+    expect(r.leaderMeasured).toBe(0);
+    expect(s.tick(2000)).toEqual([]); // and nothing carries on it alone
+  });
+
+  it('`adoptionFloorMax` enters no formula (Q1439 ruling s)', () => {
+    // it stays on the `Constitution` for the logs that carry it, and a room of
+    // forty — where ⌈40/3⌉ = 14 once sat, clamped to 12 — reads its own number
+    for (const fMax of [0, 1, 12, 99]) {
+      const { s } = proposed({ quorum: { form: 'count', n: 3 }, adoptionFloorMax: fMax }, 40);
+      expect(s.adoptionFloor(), `fMax ${fMax}`).toBe(3);
+      expect(only(s, 2000).floor, `fMax ${fMax}`).toBe(3);
+    }
   });
 });
 
@@ -216,11 +255,46 @@ describe('silence on one candidate becomes an abstention (R-127)', () => {
     expect(s.tick(3000)).toEqual([]);
     expect(s.document()).toContain('Membership is open to anyone.');
 
-    // once the three periods have run: G = 2, Q′ = 1, M = 2, F = 2 — it adopts
+    // once the three periods have run: G = 2, Q′ = min(⌈50×2/100⌉, ⌈2/2⌉) = 1,
+    // F = 1 — it adopts. It was F = 2 under R-073's ⌈5/3⌉, and it adopted
+    // there too, on the nose; the third has gone (ruling s, R-131) and the
+    // margin is the room's own number alone.
     const after = 1000 + P + 1;
     const ready = only(s, after);
     expect(ready.group).toBe(2);
-    expect(ready.floor).toBe(2);
+    expect(ready.floor).toBe(1);
+    expect(ready.approvals).toBe(2);
+    expect(s.tick(after).map((e) => e.type)).toContain('adopted');
+    expect(s.document()).toContain('Membership is open to members.');
+  });
+
+  /**
+   * **Ed's own consequence, put to him and confirmed when he ruled** (2026-09-18,
+   * Q1439 ruling s): *in a room of ten at 30% with seven silent, a proposal
+   * adopts 2 to 1 once the period has run.* Under R-073 it never adopted at
+   * all — ⌈10/3⌉ = 4 sat above every number the room could reach, so two
+   * members backing a proposal against one opposing it waited for ever on
+   * seven who had said nothing.
+   */
+  it('a room of ten at 30% carries a proposal 2 to 1 once the period has run (ruling s)', () => {
+    const P = 30 * MINUTE;
+    const { s } = proposed({ quorum: { form: 'share', n: 30 }, abstainAfterMs: P }, 10);
+    const r0 = only(s, 2000);
+    s.judge(2000, 'p2', r0.leaderId!, r0.incumbentId, 'a'); // with the author, two for
+    s.judge(2100, 'p3', r0.leaderId!, r0.incumbentId, 'b'); // and one against
+
+    // G = 10, Q′ = min(⌈30×10/100⌉, ⌈10/2⌉) = 3, F = 3 > 2 — it waits
+    const waiting = only(s, 3000);
+    expect(waiting.group).toBe(10);
+    expect(waiting.floor).toBe(3);
+    expect(waiting.approvals).toBe(2);
+    expect(s.tick(3000)).toEqual([]);
+
+    // the seven periods run: G = 3, Q′ = min(⌈30×3/100⌉, ⌈3/2⌉) = 1, F = 1
+    const after = 1000 + P + 1;
+    const ready = only(s, after);
+    expect(ready.group).toBe(3);
+    expect(ready.floor).toBe(1);
     expect(ready.approvals).toBe(2);
     expect(s.tick(after).map((e) => e.type)).toContain('adopted');
     expect(s.document()).toContain('Membership is open to members.');
@@ -251,7 +325,7 @@ describe('silence on one candidate becomes an abstention (R-127)', () => {
     s.judge(2100, 'p3', r0.leaderId!, r0.incumbentId, 'b'); // p3 prefers what stands
     const after = 1000 + P + 1;
     const r = only(s, after);
-    // G = two approvers and one opposer; Q′ = min(2, 2) = 2, M = 2, F = 2
+    // G = two approvers and one opposer; Q′ = min(⌈50×3/100⌉, ⌈3/2⌉) = 2, F = 2
     expect(r.group).toBe(3);
     expect(r.floor).toBe(2);
     expect(r.approvals).toBe(2);
@@ -409,7 +483,8 @@ describe('the record carries the numbers the batch decided on', () => {
     const adopted = s.log.map((e) => e.event).find((e) => e.type === 'adopted');
     expect(adopted).toBeDefined();
     expect((adopted as { approvals?: number }).approvals).toBe(2);
-    expect((adopted as { floor?: number }).floor).toBe(2);
+    // no quorum settled, and the whole room still in the group: F = max(1, 0)
+    expect((adopted as { floor?: number }).floor).toBe(1);
   });
 
   it('a log written before the field existed folds unchanged', () => {
