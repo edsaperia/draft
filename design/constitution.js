@@ -4015,7 +4015,8 @@ var CONSTITUTION = (() => {
   function view(s, member) {
     const me = s.memberRecords().get(member) ?? null;
     const isConvenor = member === s.convenorRecord().id;
-    const electorateSize = s.motionElectorate().length;
+    const eIds = new Set(s.motionElectorate());
+    const electorateSize = eIds.size;
     const questions = [];
     const resolutions = [];
     const settings = [];
@@ -4061,7 +4062,6 @@ var CONSTITUTION = (() => {
       const retired = entry.retiredAnswer !== void 0;
       if (st.collecting && !retired) {
         const answerable = entry.deps.every((d) => s.settingState(d).settledBy !== null);
-        const eIds = new Set(s.motionElectorate());
         let answered = 0;
         for (const id of st.answers.keys()) if (eIds.has(id)) answered += 1;
         questions.push({
@@ -4102,7 +4102,13 @@ var CONSTITUTION = (() => {
         mine: rec.by === member,
         at: rec.settledAtT,
         from: s.amendedFrom(rec.id),
-        answeredCount: rec.route === "constitutional" ? rec.answers.size : 0,
+        // …and the same set here (issue #6, F4). An answer stays on the record
+        // after its author has gone, so the raw size counted people the settle
+        // check no longer waits for: a motion the room could not carry read
+        // *2 of 2 have answered* while a present member had not answered it.
+        // A blind question's count has been read this way since it was written;
+        // a motion's had not.
+        answeredCount: rec.route === "constitutional" ? [...rec.answers.keys()].filter((id) => eIds.has(id)).length : 0,
         electorateSize,
         myAnswer: rec.answers.get(member) ?? null
       });

@@ -158,6 +158,32 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
     expect(s.motionRecords().get(m)!.status).toBe('running');
   });
 
+  /**
+   * **A departed answerer leaves the count** (issue #6, F4). The settle check
+   * has read the electorate live since R-088 — it is what lets a resignation
+   * complete a motion nobody else has moved on — but the *readout* beside it
+   * counted the record's raw answers, and an answer stays on the record after
+   * its author has gone. So a motion the room could not yet carry read
+   * *2 of 2 have answered* on every page while a present member had not
+   * answered it: a number that says the question is settled under a rule that
+   * says it is not.
+   */
+  it('a departed answerer leaves the count, and the readout matches the settle', () => {
+    const { s, bo, cy } = constituted();
+    const m = s.openMotion(3, bo, { kind: 'set', setting: 'chamber',
+      value: { rung: 'closed' } });
+    s.answerMotion(4, cy, m, 'accept');
+    s.resign(5, cy);
+    // the electorate is ada and bo; bo's own accept is the only answer in it
+    expect(s.motionRecords().get(m)!.status).toBe('running'); // ada still owes
+    const v = view(s, bo).motions.find((mv) => mv.id === m)!;
+    expect(v.electorateSize).toBe(2);
+    expect(v.answeredCount).toBe(1);
+    // and when ada answers, the count and the settle agree at the same moment
+    s.answerMotion(6, 'ada', m, 'accept');
+    expect(s.motionRecords().get(m)!.status).toBe('carried');
+  });
+
   it('an identical motion is refused while one runs, without naming its twin (Q1348, R-103; Q1370)', () => {
     const { s, bo, cy } = constituted();
     const m = s.openMotion(3, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } });
