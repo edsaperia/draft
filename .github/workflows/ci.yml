@@ -228,13 +228,38 @@ jobs:
           # nothing and every page shows the modal until the new one
           # answers. Needs the DRAFT_BOT_KEY secret (the same key as on the
           # host); without it the deploy still runs, unpaused, and says so.
+          #
+          # **And a pause this step made is this step's to lift** (issue #8,
+          # F4). PAUSED goes into the job's environment, and the step below
+          # this one resumes on any failure from here on — a deploy that
+          # never lands used to leave the room paused until the host's own
+          # fifteen-minute lift, with the job long since red and nobody
+          # watching.
           if [ -n "$BASE" ] && [ -n "$BOT_KEY" ]; then
-            curl -fsS -X POST "$BASE/api/admin/pause" -H "authorization: Bearer $BOT_KEY" \
-              -H 'content-type: application/json' -d '{}' -o /dev/null \
-              && echo "live host paused" || echo "the live host did not accept the pause — deploying anyway"
+            if curl -fsS -X POST "$BASE/api/admin/pause" -H "authorization: Bearer $BOT_KEY" \
+                 -H 'content-type: application/json' -d '{}' -o /dev/null; then
+              echo "PAUSED=1" >> "$GITHUB_ENV"
+              # the poll's own budget, measured from the pause rather than
+              # counted in attempts: PauseState.MAX_MS is fifteen minutes
+              # (packages/server/src/write-path.ts), and the old poll ran
+              # 100 × 15 s = twenty-five, so it spent its last ten minutes
+              # watching an instance that had quietly lifted its own pause
+              # and gone back to writing. Thirteen minutes, on the clock
+              # rather than in attempts, so a slow curl cannot push the
+              # total past the lift — the deadline is read before the sleep,
+              # so the loop can overrun it by one attempt, and the slack
+              # covers that with minutes to spare. The full lane has landed
+              # at three to four and a half.
+              waitSeconds=$(( 13 * 60 ))
+              echo "live host paused"
+            else
+              echo "the live host did not accept the pause — deploying anyway"
+            fi
           else
             echo "no DRAFT_BOT_KEY secret or DRAFT_BASE_URL — deploying without a pause (Q1345)"
           fi
+          # unpaused, nothing is waiting on us and the old budget stands
+          if [ -z "$waitSeconds" ]; then waitSeconds=$(( 25 * 60 )); fi
           # **The hook is told which commit** (issue #8, F3). Bare, it
           # deploys whatever `main`'s head is when Render gets to it, so a
           # push landing during the build deployed a commit this run never
@@ -257,21 +282,51 @@ jobs:
           # old instance keeps answering 200 for the minutes a deploy takes
           # to build, so "it is up" would verify the build we just replaced.
           # The service states its commit in x-build (see config.buildSha).
-          for i in $(seq 1 100); do
+          #
+          # **Do not re-send the pause while waiting** (issue #8, F4): once
+          # traffic has moved it would pause the *new* instance, which is
+          # the room, not the deploy.
+          deadline=$(( $(date +%s) + waitSeconds ))
+          i=0
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            i=$(( i + 1 ))
             sleep 15
-            live=$(curl -s -D - -o /dev/null "$BASE/" | tr -d '\r' \
+            live=$(curl -s -m 10 -D - -o /dev/null "$BASE/" | tr -d '\r' \
               | awk 'tolower($1)=="x-build:"{print $2}')
             echo "  attempt $i: ${live:-none}"
             if [ "$live" = "$GITHUB_SHA" ]; then deployed=1; break; fi
           done
           if [ -z "$deployed" ]; then
-            echo "the deployed build never became $GITHUB_SHA — refusing to"
-            echo "report a verification of bytes we did not deploy"
+            echo "the deployed build never became $GITHUB_SHA in ${waitSeconds}s — refusing"
+            echo "to report a verification of bytes we did not deploy"
             exit 1
           fi
           # and x-build is not enough on its own (issue #8, F1): a surface
           # upload sets it too, so the engine is asserted by name
           node scripts/verify-deploy.mjs "$BASE" $VERIFY_BEFORE --booted="$GITHUB_SHA"
+
+      # **A pause this job made, this job lifts** (issue #8, F4). Everything
+      # above can fail after the pause has landed — the hook refused, the
+      # build never becoming this commit, the verification red — and the
+      # step that failed does not come back to tidy up. Until now the room
+      # then waited on the host's own fifteen-minute lift with a red job
+      # beside it, which is a room paused by nobody for as long as the
+      # deploy's own budget. PAUSED is written to the environment only by
+      # the pause that actually answered, so this runs exactly when there is
+      # something to lift. `resume` is idempotent (routes-admin.ts) and the
+      # new instance boots unpaused, so lifting a pause the deploy already
+      # ended costs nothing; and this step never fails the job, which is
+      # already red — it reports, so the log says whether the room is free.
+      - name: lift the pause if the deploy did not
+        if: failure() && env.PAUSED == '1'
+        env:
+          BASE: ${{ vars.DRAFT_BASE_URL }}
+          BOT_KEY: ${{ secrets.DRAFT_BOT_KEY }}
+        run: |
+          curl -fsS -X POST "$BASE/api/admin/resume" -H "authorization: Bearer $BOT_KEY" \
+            -H 'content-type: application/json' -d '{}' -o /dev/null \
+            && echo "the pause is lifted — the live host is writing again" \
+            || echo "the resume was refused: lift it by hand (docs/OPERATING.md §3) or wait out PauseState.MAX_MS"
 
   # The design probes, headless (Q504(b), 2026-08-21). A probe nobody runs
   # rots silently — the setup reference had drifted 200 diffs from HEAD

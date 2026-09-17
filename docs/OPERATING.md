@@ -154,8 +154,16 @@ freely; pushing is the decision.
    deploy that never lands cannot hold a room; `POST /api/admin/resume`
    lifts it by hand. **Do not deploy while a room is live if you can help
    it** — the pause makes it safe, not free: the room waits.
-5. CI polls `$DRAFT_BASE_URL/` every 15 seconds, up to 100 times, reading the
+5. CI polls `$DRAFT_BASE_URL/` every 15 seconds, reading the
    **`x-build`** response header, and waits for it to equal the pushed SHA.
+   The budget is **thirteen minutes** where the host was paused and
+   twenty-five where it was not (issue #8): a pause lifts itself after
+   fifteen, so a poll that ran longer would spend its last minutes watching
+   an instance that had gone back to writing. The pause is never re-sent
+   while polling — once traffic has moved that would pause the *new*
+   instance. If any of this fails after the pause landed, a step runs on the
+   way out and POSTs `resume`, so a red deploy does not leave the room
+   paused; the log says whether it took.
    This is the step that makes the verification mean something: the old
    instance keeps answering 200 for the whole minutes a build takes, so
    "the service is up" would verify the bytes the deploy was replacing. If
