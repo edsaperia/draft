@@ -184,9 +184,14 @@ describe('📍 — the invitation link never held a slug to break', () => {
     const d = await found(b, 'Hollow Oak Club Charter', 'hollow-oak');
     await d.cmd('invite', { email: 'bo@example.org' });
     const link = (await mailsTo(b, 'bo@example.org')).pop()!.link!;
-    // the link carries a token, not an address (`MAILS.invite` ← `loginLink`)
+    // **The routing is the token's, and only the token's** (`MAILS.invite` ←
+    // `loginLink`). Since 2026-09-17 the address rides beside it as `d`, a
+    // hint and never a route: `magicLink` puts it there so that a link which
+    // turns out to be spent can still name the document on its refusal page,
+    // where the token has been deleted and the server would otherwise know
+    // nothing. The promise is untouched, and the rename below is the proof.
     expect(link).toContain('/auth/login?token=');
-    expect(link).not.toContain('hollow-oak');
+    expect(new URL(link).searchParams.get('d')).toBe('hollow-oak');
 
     // the document moves *after* the mail is in Bo's inbox
     await d.cmd('set-setting', { setting: 'link', value: { slug: 'the-orchard' } });
@@ -206,6 +211,21 @@ describe('📍 — the invitation link never held a slug to break', () => {
     const viaOld = await fetch(`${b.base}/api/d/hollow-oak/view`, { headers: { cookie: bo } })
       .then((r) => r.json() as Promise<{ me?: string }>);
     expect(viaOld.me).toBe(seat.me);
+
+    // and a stale hint is still the right document: following the same link a
+    // second time — spent now, and naming an address the document has moved
+    // off — serves the refusal page, which resolves `d` through `bySlug` and
+    // so points at *the-orchard*. Every address the document ever had routes.
+    const u = new URL(link);
+    const again = await fetch(`${u.origin}${u.pathname}?d=hollow-oak`, {
+      method: 'POST', redirect: 'manual',
+      headers: { 'content-type': 'application/x-www-form-urlencoded', origin: u.origin },
+      body: new URLSearchParams({ token: u.searchParams.get('token') ?? '' }).toString(),
+    });
+    expect(again.status).toBe(410);
+    const page = await again.text();
+    expect(page).toContain('This link has already been used, or it has expired.');
+    expect(page).toContain('href="/d/the-orchard"');
   });
 });
 

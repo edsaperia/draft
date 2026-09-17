@@ -14,12 +14,13 @@
 import { randomBytes } from 'node:crypto';
 import { ConstitutionSession, mayApply, sha256Hex } from '../../constitution/src/index.js';
 import type { ApplicationsValue } from '../../constitution/src/index.js';
+import { magicLink } from './auth.js';
 import { LIMITS, cap, emailOk } from './commands.js';
 import { MAILS } from './mailer.js';
 import { slugify, uniqueSlug } from './store.js';
 import { admissionPrice } from './views.js';
 import { expectString, html, json, rateLimited, readJson, readTokenBody, redirect, setCookie } from './routes.js';
-import type { RouteContext, Route } from './routes.js';
+import type { Req, RouteContext, Route } from './routes.js';
 
 /** The address grammar the page shares (Q460): lower case, digits,
  *  hyphens, starting with a letter or digit. One character is enough
@@ -133,7 +134,7 @@ export const authTable: Route[] = [
       if (!renewed) await stash.open(stashKey, expMs, slug);
       const token = await auth.mintToken(
         { kind: 'create', email, pending: { title, slug, email, isMember, stashKey } }, nowMs);
-      const link = `${cfg.baseUrl}/auth/create?token=${token}`;
+      const link = magicLink(cfg.baseUrl, 'create', token, slug);
       await writes.sendNow({ to: email, ...MAILS.create(title, slug, link) }, null, token);
       json(res, 200, { ok: true, slug, pendingId,
         ...(mailer.dev ? { devLink: link } : {}) });
@@ -168,9 +169,15 @@ export const authTable: Route[] = [
     method: 'GET',
     match: ({ path }) =>
       path === '/auth/create' || path === '/auth/login' || path === '/auth/apply',
-    handler: (_ctx, { res, url, path }) => {
+    handler: (ctx, r) => {
+      const { res, url, path } = r;
       const token = url.searchParams.get('token') ?? '';
-      if (token === '') { json(res, 400, { error: 'missing token' }); return true; }
+      // a link a mail client wrapped across two lines arrives without its
+      // token, and that is the same dead end by another road (2026-09-17)
+      if (token === '') {
+        spentPage(ctx, r, PAGE.cut, path.slice(6) as 'create' | 'login' | 'apply');
+        return true;
+      }
       // same-origin, overriding the global no-referrer (found on staging,
       // 2026-08-20): the fetch spec serializes a POST's Origin as *null*
       // when the submitting page's referrer policy is no-referrer, so the
@@ -179,7 +186,11 @@ export const authTable: Route[] = [
       // token-bearing Referer inside this origin and gives the POST a
       // real Origin to verify.
       res.setHeader('referrer-policy', 'same-origin');
-      html(res, interstitial(path, token));
+      // the address travels with the form, so the POST can still name the
+      // document on a token that turns out to be spent
+      const d = url.searchParams.get('d') ?? '';
+      html(res, interstitial(
+        d === '' ? path : `${path}?d=${encodeURIComponent(d)}`, token));
       return true;
     },
   },
@@ -193,7 +204,7 @@ export const authTable: Route[] = [
       if (r.tooMany('auth', 60)) return true;
       const rec = await auth.useToken(await readTokenBody(req), nowMs);
       if (!rec || rec.kind !== 'create' || !rec.pending) {
-        json(res, 400, { error: 'that link has been used or has expired' });
+        spentPage(ctx, r, PAGE.used, 'create');
         return true;
       }
       const p = rec.pending;
@@ -288,7 +299,7 @@ export const authTable: Route[] = [
       }
       const token = await auth.mintToken(
         { kind: 'login', email, docId: doc.id, memberId }, nowMs);
-      const link = `${cfg.baseUrl}/auth/login?token=${token}`;
+      const link = magicLink(cfg.baseUrl, 'login', token, doc.cs.slug);
       await writes.sendNow({ to: email, ...MAILS.login(doc.cs.titleOf, link) }, doc.id, token);
       json(res, 200, { ok: true, ...(mailer.dev ? { devLink: link } : {}) });
       return true;
@@ -325,7 +336,7 @@ export const authTable: Route[] = [
       if (already !== null) {
         const token = await auth.mintToken(
           { kind: 'login', email, docId: doc.id, memberId: already }, nowMs);
-        const link = `${cfg.baseUrl}/auth/login?token=${token}`;
+        const link = magicLink(cfg.baseUrl, 'login', token, doc.cs.slug);
         await writes.sendNow({ to: email, ...MAILS.login(doc.cs.titleOf, link) }, doc.id, token);
         json(res, 200, { ok: true, ...(mailer.dev ? { devLink: link } : {}) });
         return true;
@@ -343,13 +354,13 @@ export const authTable: Route[] = [
       if (underway !== undefined) {
         const token = await auth.mintToken(
           { kind: 'apply', email, docId: doc.id, applicantId: underway.id }, nowMs);
-        const link = `${cfg.baseUrl}/auth/apply?token=${token}`;
+        const link = magicLink(cfg.baseUrl, 'apply', token, doc.cs.slug);
         await writes.sendNow({ to: email, ...MAILS.applyVerify(doc.cs.titleOf, link) }, doc.id, token);
         json(res, 200, { ok: true, ...(mailer.dev ? { devLink: link } : {}) });
         return true;
       }
       const token = await auth.mintToken({ kind: 'apply', email, docId: doc.id }, nowMs);
-      const link = `${cfg.baseUrl}/auth/apply?token=${token}`;
+      const link = magicLink(cfg.baseUrl, 'apply', token, doc.cs.slug);
       await writes.sendNow({ to: email,
         ...MAILS.applyVerify(doc.cs.titleOf, link) }, doc.id, token);
       json(res, 200, { ok: true, ...(mailer.dev ? { devLink: link } : {}) });
@@ -366,7 +377,7 @@ export const authTable: Route[] = [
       if (r.tooMany('auth', 60)) return true;
       const rec = await auth.useToken(await readTokenBody(req), nowMs);
       if (!rec || rec.kind !== 'apply' || rec.docId === undefined) {
-        json(res, 400, { error: 'that link has been used or has expired' });
+        spentPage(ctx, r, PAGE.used, 'apply');
         return true;
       }
       const doc = r.docOr404(store.byId(rec.docId));
@@ -419,7 +430,7 @@ export const authTable: Route[] = [
       const rec = await auth.useToken(await readTokenBody(req), nowMs);
       if (!rec || rec.kind !== 'login' || rec.docId === undefined ||
           rec.memberId === undefined) {
-        json(res, 400, { error: 'that link has been used or has expired' });
+        spentPage(ctx, r, PAGE.used, 'login');
         return true;
       }
       const doc = r.docOr404(store.byId(rec.docId));
@@ -437,17 +448,103 @@ export const authTable: Route[] = [
   },
 ];
 
-/** The magic-link interstitial (stage 3, defect 6) — deliberately off the
- *  design system, like the mail it came from: it exists for milliseconds. */
+const e = (v: string): string => v.replace(/&/g, '&amp;').replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/** In a string a script reads, not markup: the quote and the closer too. */
+const js = (v: string): string => JSON.stringify(v).replace(/</g, '\\u003c');
+
+/** The one page shell these two doors share — deliberately off the design
+ *  system, like the mail they came from. */
+const shell = (body: string): string =>
+  '<!doctype html><meta charset="utf-8"><title>docs.vote</title>' +
+  '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+  '<body style="font-family: system-ui, sans-serif; padding: 2rem; max-width: 34rem; line-height: 1.5">' +
+  body;
+
+/**
+ * Everything on these two doors that a person can read, in one object —
+ * the server's own copy convention, as `MAILS` is in `mailer.ts`.
+ * `design/copy.js` is the **page's** copy and the server never loads it, so
+ * a string the server itself renders lives beside the route that renders
+ * it; STYLE.md binds it all the same.
+ */
+const PAGE = {
+  continue: 'Continue',
+  /** The two ways a link can fail before it seats anybody. */
+  used: 'This link has already been used, or it has expired.',
+  cut: 'That link is not complete — it may have been cut short on its way to you.',
+  ask: 'Send yourself a new one:',
+  send: 'Send the link',
+  placeholder: 'you@example.com',
+  /** The door's own answer, and not an oracle either way (`design/door.js`). */
+  sentLogin: 'If that address is on the membership, a link is on its way.',
+  sentApply: 'A link is on its way — follow it to continue your application.',
+  failed: 'That could not be sent. Open the document and try again there.',
+  elsewhere: 'Open the document’s own address — it is in the mail that ' +
+    'brought you here — and use Log In to send yourself a new link.',
+  unmade: 'Nothing stands at that address yet. Name the document again to create it:',
+} as const;
+
+/** The magic-link interstitial (stage 3, defect 6) — it exists for
+ *  milliseconds. The action carries `d` so the POST it makes still knows
+ *  the document when the token it spends turns out to be spent already. */
 function interstitial(action: string, token: string): string {
-  const e = (v: string) => v.replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  return '<!doctype html><meta charset="utf-8"><title>docs.vote</title>' +
-    '<body style="font-family: system-ui, sans-serif; padding: 2rem">' +
+  return shell(
     '<form method="post" action="' + e(action) + '">' +
     '<input type="hidden" name="token" value="' + e(token) + '">' +
     '<noscript><button type="submit">Continue</button></noscript></form>' +
-    '<script>document.forms[0].submit()</script>';
+    '<script>document.forms[0].submit()</script>');
+}
+
+/**
+ * **A dead link is answered with a page, not with JSON** (the readiness
+ * pass, 2026-09-17). Every road here is ordinary — a double click, a mail
+ * forwarded to a colleague, a scanner that runs the interstitial's
+ * auto-submit before the human clicks, a link past its week — and a person
+ * who meets one has done nothing wrong and needs one thing: another link.
+ *
+ * So the page says what happened, and then offers the remedy where it can
+ * name it: the address the token carried as `d` (`magicLink`), the login
+ * door there that mints a fresh link, and the document itself, where the
+ * stranger's door stands with the same Log In card. The form posts JSON to
+ * the real door — `/api/d/:slug/login`, or `/apply` for an applicant's
+ * link — so it inherits that door's rate limits and its discipline of
+ * telling an unknown address nothing. Without script the anchor is the
+ * whole remedy, which is why it is there beside the form and not instead
+ * of it.
+ *
+ * **410, not 400.** The request is perfectly well formed; what it names is
+ * gone, and single-use means gone for good.
+ */
+function spentPage(ctx: RouteContext, r: Req, lead: string,
+  kind: 'create' | 'login' | 'apply'): void {
+  const asked = r.url.searchParams.get('d') ?? '';
+  const slug = SLUG_OK.test(asked) && asked.length <= LIMITS.slug ? asked : null;
+  const doc = slug === null ? null : ctx.store.bySlug(slug);
+  let body = '<p>' + e(lead) + '</p>';
+  if (doc !== null) {
+    const at = '/d/' + e(doc.cs.slug);
+    const endpoint = '/api/d/' + encodeURIComponent(doc.cs.slug) +
+      (kind === 'apply' ? '/apply' : '/login');
+    body += '<p>' + e(PAGE.ask) + '</p>' +
+      '<form><input type="email" name="email" required placeholder="' +
+      e(PAGE.placeholder) + '" style="padding: .4rem; min-width: 14rem">' +
+      ' <button type="submit" style="padding: .4rem .8rem">' + e(PAGE.send) + '</button></form>' +
+      '<p id="s"></p>' +
+      '<p>Or open <a href="' + at + '">' + e(doc.cs.titleOf) + '</a> and use Log In there.</p>' +
+      '<script>var f=document.forms[0],s=document.getElementById("s");' +
+      'f.onsubmit=function(ev){ev.preventDefault();s.textContent="";' +
+      'fetch(' + js(endpoint) + ',{method:"POST",headers:{"content-type":"application/json"},' +
+      'body:JSON.stringify({email:f.email.value})}).then(function(x){' +
+      's.textContent=x.ok?' + js(kind === 'apply' ? PAGE.sentApply : PAGE.sentLogin) +
+      ':' + js(PAGE.failed) + ';},function(){s.textContent=' + js(PAGE.failed) + ';});};</script>';
+  } else if (kind === 'create' && slug !== null) {
+    body += '<p>' + e(PAGE.unmade) + ' <a href="/">docs.vote</a></p>';
+  } else {
+    body += '<p>' + e(PAGE.elsewhere) + '</p>';
+  }
+  html(r.res, shell(body), 410);
 }
 
 export function memberIdByEmail(cs: ConstitutionSession, email: string): string | null {

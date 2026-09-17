@@ -292,8 +292,10 @@ export function json(res: ServerResponse, code: number, payload: unknown): void 
   res.end(JSON.stringify(payload));
 }
 
-export function html(res: ServerResponse, body: string): void {
-  res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+/** A page, at 200 unless the caller has a refusal to state — the spent-link
+ *  page answers 410, and a refusal a person reads is still a page. */
+export function html(res: ServerResponse, body: string, code = 200): void {
+  res.writeHead(code, { 'content-type': 'text/html; charset=utf-8' });
   res.end(body);
 }
 

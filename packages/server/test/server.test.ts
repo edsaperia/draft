@@ -244,8 +244,29 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     expect(saved.headers.get('location')).toBe(`/d/${created.slug}`);
     const ada = cookieOf(saved);
 
-    // the same creation link a second time is dead (single use)
-    expect((await consume(created.devLink)).status).toBe(400);
+    // the same creation link a second time is dead (single use) — and what a
+    // person meets is a page saying so at 410, never a raw JSON body
+    // (the readiness pass, 2026-09-17)
+    const spent = await consume(created.devLink);
+    expect(spent.status).toBe(410);
+    expect(spent.headers.get('content-type')).toContain('text/html');
+    expect(await spent.text())
+      .toContain('This link has already been used, or it has expired.');
+    // `consume` posts to the bare path, as the walks do; a browser posts to the
+    // interstitial's own action, which carries the address — and there the page
+    // names the document and offers the login door that mints a fresh link
+    const spentUrl = new URL(created.devLink);
+    const named = await fetch(
+      `${spentUrl.origin}${spentUrl.pathname}?d=${created.slug}`, {
+        method: 'POST', redirect: 'manual',
+        headers: { 'content-type': 'application/x-www-form-urlencoded',
+          origin: spentUrl.origin },
+        body: new URLSearchParams({ token: 'spent' }).toString(),
+      });
+    expect(named.status).toBe(410);
+    const namedPage = await named.text();
+    expect(namedPage).toContain(`/api/d/${created.slug}/login`);
+    expect(namedPage).toContain(`href="/d/${created.slug}"`);
 
     // -- the founder's hand ----------------------------------------------
     const cmd = async (cookie: string, name: string, args: unknown) => {
