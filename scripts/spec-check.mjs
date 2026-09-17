@@ -1773,6 +1773,17 @@ function checkCandidateStates() {
  * one; `const NAME = …` is looked for across the corpus, which is where the
  * host's two cooldown constants live. Values are compared numerically after
  * evaluating the source's own expression, so `90 * 1000` and `90000` agree.
+ *
+ * **And a second subject: the table every live document is actually born on**
+ * (issue #14 (A), Ed 2026-09-17). Appendix A names engine-core's constants,
+ * but the product builds no engine from them directly — it builds from the
+ * constitution adapter's `DEFAULT_TUNING` (`engine-host.ts`), which for three
+ * of them held numbers of its own, invisibly, because nothing read this file
+ * but the engine. A field is right if it *is* the engine's, spelled
+ * `DEFAULT_CONSTITUTION.<the same field>`; a field restated as a literal is
+ * compared against the engine's own value and is a finding when it differs,
+ * whatever Appendix A says, since what is being caught here is the adapter
+ * drifting from the engine rather than either drifting from the spec.
  */
 function checkTuning() {
   note('Appendix A — the code column against the engine and the host');
@@ -1807,6 +1818,29 @@ function checkTuning() {
     }
   }
   note(`  ${named} tuning constants named, each defined at the value Appendix A states`);
+  const ad = uncomment(read('packages/constitution/src/adapter.ts'));
+  const aAt = ad.indexOf('DEFAULT_TUNING: EngineTuning = {');
+  const aBlock = aAt < 0 ? '' : ad.slice(aAt, ad.indexOf('\n};', aAt));
+  if (!aBlock) {
+    find('tuning', 'constitution/src/adapter.ts has no DEFAULT_TUNING — the table every document is born on');
+  } else {
+    let derived = 0, restated = 0;
+    for (const m of aBlock.matchAll(/^\s+([A-Za-z_][A-Za-z0-9_]*):\s*([^,\n]+),/gm)) {
+      const [, name, expr] = m;
+      if (expr.trim() === `DEFAULT_CONSTITUTION.${name}`) { derived++; continue; }
+      restated++;
+      const def = block.match(new RegExp(`^\\s*${name}:\\s*([^,\\n]+)`, 'm'));
+      if (!def) {
+        find('tuning', `the adapter's DEFAULT_TUNING states \`${name}\`, which engine-core's DEFAULT_CONSTITUTION does not hold`);
+        continue;
+      }
+      const got = num(expr), said = num(def[1]);
+      if (!Number.isFinite(got) || !Number.isFinite(said) || got !== said)
+        find('tuning', `every document is born on the adapter's DEFAULT_TUNING, and it says ${name} = ${expr.trim()} where engine-core says ${def[1].trim()} — Appendix A publishes the engine's number, so the room runs on one the spec never stated`);
+    }
+    note(`  the adapter's DEFAULT_TUNING: ${derived} fields read straight from DEFAULT_CONSTITUTION` +
+      (restated ? `, ${restated} restated as literals and checked against it` : ', none restated'));
+  }
 }
 
 function checkMergeable() {
