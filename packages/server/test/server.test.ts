@@ -1453,10 +1453,23 @@ describe('a laid-down pen is laid down (entry 62)', () => {
     await cmd(ada, 'set-setting', { setting: 'ending', value: { endsAtMs: ends + 60_000 } });
 
     // -- closed: nothing moves, including on the setting whose pen is held --
-    const soon = Date.now() + 1_000;
+    // **An act in the gap meets the ending** (issue #3). The close is stamped
+    // at the *ending* and `emit` refuses an event earlier than the last one,
+    // so a member act landing between the ending and the next close run used
+    // to push the log past the ending and wedge the document open for ever:
+    // every later command 400, the tick throwing once a minute, no signing
+    // card and no record. `WritePath.tOf` runs the close before it hands the
+    // time out, so the act meets a closed document and is refused as one.
+    const soon = Date.now() + 300;
     await cmd(ada, 'set-setting', { setting: 'ending', value: { endsAtMs: soon } });
-    await draft.tick(soon + 1_000);
+    await new Promise((r) => { setTimeout(r, 400); });             // the ending passes, no tick yet
+    const late = await send(bo, 'set-identity', { name: 'Late' }); // the act in the gap
+    expect(late.status).toBe(400);
+    expect(late.body.error).toContain('the document has closed');
+    await draft.tick(Date.now() + 60_000);
     expect((await viewOf(ada)).view.closed).not.toBeNull();
+    // and at exactly the ending, not at the act that arrived after it
+    expect((await viewOf(ada)).view.closed!.at).toBe(soon);
 
     const shut = await send(ada, 'set-setting', { setting: 'ending', value: { endsAtMs: soon + 60_000 } });
     expect(shut.status).toBe(400);

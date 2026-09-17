@@ -250,4 +250,40 @@ describe('a refused event never reaches the log (Q679)', () => {
     expect(() => s.tick(40)).toThrow(/non-decreasing/);
     expect(s.logEntries()).toHaveLength(before);
   });
+
+  /**
+   * **An act in the gap wedges the module, and the log still boots** (issue
+   * #3). The same throw, reached the way the alpha's rooms actually reach
+   * it: the ending passes, a member acts before the next close run, and the
+   * act's own stamp is now later than the ending the close would write. The
+   * module cannot refuse that act by itself — it has no clock, and the
+   * close belongs to the engine first (`EngineBridge.close`), so a
+   * constitution that closed itself here would leave the final adoption
+   * batch unrun. The guard is the host's, in `WritePath.tOf`, which runs
+   * both halves before the act folds. What is pinned here is the module's
+   * half of the contract: the refusal writes nothing, and a log wedged
+   * before the guard existed replays bit-identically rather than
+   * quarantining the document at every boot.
+   */
+  it('an act after the ending wedges the close, and the log still replays bit-identically', () => {
+    const s = penHeld();
+    const bo = s.invite(11, 'bo@example.org');
+    s.arrive(11, bo);
+    // the ending is 1_000_000; the act lands half a second into the gap
+    s.setIdentity(1_000_500, bo, { name: 'Bo' });
+    const before = s.logEntries().map((e) => JSON.stringify(e));
+
+    // the minute tick that should close it, throwing for as long as the log
+    // stands past its own ending — permanent, not transient
+    expect(() => s.tick(1_060_000)).toThrow(/non-decreasing/);
+    expect(s.closed).toBe(false);
+    expect(s.logEntries()).toHaveLength(before.length);
+
+    // at boot such a log is read, not refused: every entry back byte for
+    // byte, the same rolling hash, and the document open where it was
+    const again = ConstitutionSession.replay([...s.logEntries()]);
+    expect(again.logEntries().map((e) => JSON.stringify(e))).toEqual(before);
+    expect(again.rollingHash()).toBe(s.rollingHash());
+    expect(again.closed).toBe(false);
+  });
 });

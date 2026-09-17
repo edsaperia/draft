@@ -129,12 +129,55 @@ export class WritePath {
     await mailer.send(mail);
   }
 
-  /** Non-decreasing time per document, taken at the fold (Q1332): the
-   *  clock now, or the last event of either of the document's logs if that
-   *  is later. `nowMs` from the request's receipt is not used here on
-   *  purpose — under load the two are seconds apart. */
+  /**
+   * Non-decreasing time per document, taken at the fold (Q1332): the
+   * clock now, or the last event of either of the document's logs if that
+   * is later. `nowMs` from the request's receipt is not used here on
+   * purpose — under load the two are seconds apart.
+   *
+   * **And the ending is met here, before anything is folded** (issue #3).
+   * The close stamps itself at the *ending* (SPEC §4.6) and `emit` refuses
+   * an event earlier than the last one — so a single member act landing
+   * between the ending and the next close run (a judgment, a name, a
+   * presence stamp, an arrival) pushed the log past the ending, and every
+   * close from then on threw *timestamps must be non-decreasing*: 400 on
+   * every command, the tick failing once a minute, and no signing card, no
+   * signatures, no record and no close mail, for ever and across restarts.
+   * A windowed room is busiest in the minutes before it ends, so the gap is
+   * where the traffic is. Every writing path takes its time from here, and
+   * here is the only place that holds both halves of the close and can run
+   * them in their fixed order before the act applies. The act then meets a
+   * closed document and is refused with the ordinary closed-document
+   * sentence, which is §4.6's *refused politely*.
+   *
+   * **Paused, it does nothing** (Q1345): the cmd route and `commit` both
+   * reach this before their own pause checks, and a paused instance
+   * persists nothing — closing in memory here would be the very split the
+   * announced pause exists to prevent, and `pause.test.ts` cannot catch it,
+   * its document ending far in the future.
+   *
+   * **The throw is swallowed** so that a close failing for some other
+   * reason cannot take every member's poll down with it. The tick calls
+   * both functions again outside this guard, so the error is still
+   * reported, once a minute, where the operator reads it.
+   */
   tOf(doc: LoadedDoc, nowMs: number = this.d.now()): number {
-    return foldTime(doc, nowMs);
+    const { cfg, pause } = this.d;
+    const t = foldTime(doc, nowMs);
+    const ending = doc.cs.constitutedAtT !== null && !doc.cs.closed
+      ? doc.cs.settingState('ending').value as { endsAtMs: number | null } | null
+      : null;
+    if (ending !== null && ending.endsAtMs !== null && t >= ending.endsAtMs
+        && pause.now(nowMs) === null) {
+      try {
+        // engine first, then the constitution (SPEC §4.6): the final
+        // adoption batch runs while the constitution is still open, and
+        // `driveBridge` finishes the constitution's own close behind it
+        driveBridge(doc, t, cfg.engineTuning);
+        doc.cs.tick(t);
+      } catch { /* the tick reports it; a poll must not die of it */ }
+    }
+    return t;
   }
 
   /**
@@ -327,8 +370,13 @@ export class WritePath {
       // real and reachable: both closes stamp themselves at the *ending*
       // rather than at t, so a document whose log runs past its own close
       // raises "timestamps must be non-decreasing" on every tick from then
-      // on. Logged rather than quarantined, because the failure may be
-      // transient and the once-a-minute repeat is itself the alarm.
+      // on — and that one is **permanent**, not transient (issue #3): the
+      // stamp never moves back under the log, so nothing but `tOf`'s guard,
+      // which keeps the log from passing the ending in the first place,
+      // stops it. Logged rather than quarantined all the same, because the
+      // other reasons a tick may throw are transient and the once-a-minute
+      // repeat is itself the alarm — `errors.tick` in `/healthz` climbs by
+      // one a minute for exactly this shape of wedge.
       try {
         // engine first (SPEC §4.6): the final adoption batch must run before
         // the constitution closes, or a carried motion has nowhere to land —
