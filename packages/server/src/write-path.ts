@@ -301,9 +301,8 @@ export class WritePath {
       // a crash after this and before the engine persist leaves a cursor
       // *behind* the log, which resume's sync simply catches up; the other
       // order leaves it ahead, and the entries in between are never fed
-      let fresh: LogEntry[];
       try {
-        fresh = await store.persist(doc);
+        await store.persist(doc);
         await persistEngine(persistence, doc);
       } catch (e) {
         // **a save the store rejected for good marks the document** (Q1346):
@@ -314,7 +313,22 @@ export class WritePath {
         throw e;
       }
       doc.stalled = null;
-      if (fresh.length > 0) await this.relay(doc, fresh, nowMs);
+      // **Mail is relayed off its own cursor** (issue #7). Relaying `fresh`
+      // meant relaying what *this* commit persisted, and `store.persist` had
+      // already advanced the cursor before handing it over — so a throw in
+      // the engine persist, in `auth.flush` or in the outbox write left those
+      // entries persisted and their mail sent by nobody: the next commit saw
+      // an empty `fresh` and no record that anything was owed. `relayed`
+      // trails `persisted` until the relay resolves, so a failed one is
+      // retried by the next commit or by the minute tick, whichever comes
+      // first. `end` is read before the await for Q1322's reason: a command
+      // landing meanwhile lengthens the log and may advance `persisted`
+      // through another path, and this pass must only claim what it relayed.
+      const end = doc.persisted;
+      if (doc.relayed < end) {
+        await this.relay(doc, doc.cs.logEntries().slice(doc.relayed, end), nowMs);
+        doc.relayed = end;
+      }
       return doc.cs.logEntries().length;
     });
   }
