@@ -59,6 +59,31 @@ function rewrite(base: number, line: number, text: string) {
 }
 
 describe('session lifecycle', () => {
+  /**
+   * Issue #2: the counter is state like any other, so the fold rebuilds it
+   * from the ids the log already names. Before this, `Session.replay` started
+   * at zero and the next submission or decree was minted `c1` again, over the
+   * top of the live candidate holding that id — its author, rationale, stake
+   * and race membership gone, and the duplicate replaying bit-identically.
+   * The live path resumes by replay at every host restart.
+   */
+  it('a proposal or a decree after replay takes a fresh id', () => {
+    const s = openHeld();
+    const a = s.submitCandidate(1, { author: 'p1', patch: rewrite(0, 1, 'A'), rationale: 'A.' }).id;
+    const r = Session.replay(s.log);
+    const d = r.decreeText(2, { author: 'p1', patch: rewrite(0, 2, 'D'), rationale: 'D.' }).id;
+    const last = Session.replay(r.log);
+    const b = last.submitCandidate(3, {
+      author: 'p2', patch: rewrite(1, 3, 'B'), rationale: 'B.',
+    }).id;
+    expect(new Set([a, d, b]).size).toBe(3);
+    // and the first candidate is still itself, not the third one wearing its id
+    const first = last.getCandidate(a);
+    expect(first.author).toBe('p1');
+    expect(first.rationale).toBe('A.');
+    expect(first.state).toBe('live');
+  });
+
   it('runs a full mini-session: rivalry, adoption, rebase fallout, replay', () => {
     const s = openSession();
 
