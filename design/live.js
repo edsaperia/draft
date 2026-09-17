@@ -301,7 +301,7 @@ window.LIVE = (function () {
   // and `api` are values; `cs` is set by the boot and `LIVE_HOOKS` is declared
   // below, so those two ride accessors.
   function make(env) {
-    const { S, CARDS, DKEY, PAGEVAL, STANDS, FOUNDER, LIVESLUG, SESSION, api, prose } = env;
+    const { S, CARDS, DKEY, PAGEVAL, ANSBACK, STANDS, FOUNDER, LIVESLUG, SESSION, api, prose } = env;
     const { amFounder, applicantAsView, authorBy, avHtml, constituted, csState, cs_titleNow,
       devInboxButton, effMAns, esc, founderInfo, hydrateApplicant, ladderBar, loadGrants,
       mayApply, midOf, motionRaceSettingOf, msToLocal, now, pkeyOf, pressInFlight,
@@ -548,10 +548,18 @@ window.LIVE = (function () {
         // ever founded until the ongoing shape set one — read as unanswered
         // (`CHOSEN.lapse` wants `'days'` and a numeric `lapseDays`) and was
         // served to the founder as a task on every reload
+        // **The spell itself, and the unit it is stated in** (Q1439, ruling
+        // j): the field was a count of days, so a settled *20 minutes* came
+        // back as 0.0139 — a number no founder typed and none could read. The
+        // spell lands in milliseconds, exactly, and the number and unit it is
+        // typed as are derived from it, so the card re-opens saying *20
+        // minutes* on the unit that divides the spell (`lapseParts`).
+        // (*Never* writes the rung alone, as it always has: the number fields
+        // are a hand nobody has sent, and hydration does not reach into one)
         case 'lapse': if (x.afterMs === null) T.lapse = 'never';
-          // exact, never rounded (Q1321): a spell under a day is a fraction
-          // of one, and rounding it made every reader of the field say *0 days*
-          else { T.lapse = 'days'; T.lapseDays = x.afterMs / 86400000; } return;
+          else { T.lapse = 'days'; T.lapseMs = x.afterMs;
+            const p = window.SETUP.lapseParts(x.afterMs);
+            T.lapseN = p ? p.n : ''; T.lapseUnit = p ? p.unit : 'days'; } return;
         case 'removal': T.removal = x.price; return;
         case 'admission': T.admission = x.price; return;
         case 'applications': T.joinBy = mayApply(x) ? 'apply' : 'invite'; return;
@@ -652,7 +660,12 @@ window.LIVE = (function () {
       for (const q of v.view.questions) {
         if (q.myAnswer === null) continue;
         const k = pkeyOf(q.setting);
-        S.myAns[k] = PAGEVAL[k] ? PAGEVAL[k](q.myAnswer) : q.myAnswer;
+        // 💤 and ⏱️ come back as the number and the unit they were stated in
+        // (`ANSBACK`, the inverse of `ANSTYPED` — Q1439); everything else is
+        // the room's own scalar, which for those two is not a box's value
+        const back = ANSBACK[k] ? ANSBACK[k](q.myAnswer) : null;
+        if (back) Object.assign(S.myAns, back);
+        else S.myAns[k] = PAGEVAL[k] ? PAGEVAL[k](q.myAnswer) : q.myAnswer;
       }
       hydrateSeen(true);
     }
@@ -1400,6 +1413,18 @@ window.LIVE = (function () {
             // pinned (R-117) — and nothing reads it: the eyebrow stopped
             // comparing the reading to a line with the line itself (Q1362)
             when: whenOf(o.when), p: o.p == null && best ? best.p : o.p, judges: o.judges,
+            // **how many preferred it** (Q1439, ruling a): the quorum counts
+            // approvals, so the record carries the winner's approvals beside
+            // its judge count — `o.approvals` on the closing record's row
+            // (the `adopted` event's optional field, SPEC §8.2). A record
+            // written before the rule changed carries none and the tooltip
+            // reads as it always did.
+            ...(typeof o.approvals === 'number' ? { approvals: o.approvals } : {}),
+            // …and its own floor, since the floor is per race and per moment
+            // from Q1439: the record states the floor **this** decision was
+            // taken against, not the one standing now. Absent, the card falls
+            // back to the document's own `v.floor` as it always did.
+            ...(typeof o.floor === 'number' ? { floor: o.floor } : {}),
             // the cap mark (R-051), reduced to a boolean on the way in: the
             // card says one sentence and none of the arithmetic (STYLE §2 —
             // raw values are not copy), and the two numbers stay in the event

@@ -137,6 +137,76 @@ say(`reload     · rail ${JSON.stringify(s.rail)} · paras ${s.paras.join(' ')}`
 check('the OK persists: no 🏛️ and 👥 served on a fresh load', !s.rail.includes('grant-voice') && s.rail.includes('ans-quorum'), 'rail ' + JSON.stringify(s.rail));
 check('the delegated paragraphs stand on a fresh load, 🎩 still unanswered', s.paras.includes('rate') && s.paras.includes('quorum') && !s.paras.includes('hat'), 'paras ' + s.paras.join(' '));
 
+/* ---- 4 — 💤 answered in minutes, and back (Q1439, ruling j) --------------
+ * The blind period is stated in minutes, hours or days from Q1439, because
+ * one period does two jobs: silent on everything for that long and a
+ * membership lapses, silent on one proposal for that long and the member
+ * abstains on it — and a card offering 7 to 365 days could never turn silence
+ * into an abstention inside a room that lasts an afternoon.
+ *
+ * Driven through the card rather than the wire, because what is under test is
+ * the round trip *the surface* makes: the member types a number in a unit,
+ * the module is handed a spell in milliseconds, and the card has to come back
+ * saying what they said. The page's own scalar for 💤 is the spell now, so a
+ * straight `PAGEVAL` read of the committed answer would put 1,200,000 in the
+ * box (`ANSBACK` is what stops it). 👥 is answered first because the member's
+ * questions cascade in the document's order.
+ */
+await cmd('m1', 'answer', { setting: 'quorum', value: { form: 'share', n: 40 } });
+await cmd('founder', 'delegate', { setting: 'lapse' });
+await T(POLL + 1500);
+s = await state();
+check('💤 is served once it is handed over', s.rail.includes('ans-lapse'), 'rail ' + JSON.stringify(s.rail));
+if (s.rail.includes('ans-lapse')) {
+  const drove = await page.evaluate(() => new Promise((res) => {
+    const entry = document.querySelector('#rail [data-card="ans-lapse"]') ||
+      [...document.querySelectorAll('#rail .qitem')].find((e) => e.dataset.q === 'ans-lapse');
+    if (!entry) return res('no rail entry');
+    (entry.querySelector('[data-card]') || entry).click();
+    setTimeout(() => {
+      const c = document.querySelector('.setupcard');
+      const u = c && c.querySelector('[data-ansunit="lapse"]');
+      if (!u) return res('no unit picker on the open card');
+      u.value = 'minutes';
+      u.dispatchEvent(new Event('change', { bubbles: true }));
+      setTimeout(() => {
+        const c2 = document.querySelector('.setupcard');
+        const n = c2 && c2.querySelector('[data-ansnum="lapse"]');
+        if (!n) return res('no number box');
+        n.value = '20';
+        for (const e of ['input', 'change']) n.dispatchEvent(new Event(e, { bubbles: true }));
+        setTimeout(() => {
+          const b = document.querySelector('.setupcard [data-confirm]');
+          if (!b) return res('no ✓ on the card');
+          if (b.disabled) return res('the ✓ is dark on 20 minutes');
+          b.click(); res('ok');
+        }, 500);
+      }, 500);
+    }, 700);
+  }));
+  check('the member answers 💤 as 20 minutes', drove === 'ok', drove);
+  await T(POLL + 1500);
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForTimeout(2800);
+  const back = await page.evaluate(() => new Promise((res) => {
+    const tab = document.querySelector('[data-tab="ans-lapse"]') ||
+      document.querySelector('[data-card="ans-lapse"]') ||
+      document.querySelector('[data-para="lapse"] [data-tab="lapse"]') ||
+      document.querySelector('[data-tab="lapse"]');
+    if (!tab) return res({ err: 'no 💤 tab to open' });
+    tab.click();
+    setTimeout(() => {
+      const c = document.querySelector('.setupcard');
+      const n = c && c.querySelector('[data-ansnum="lapse"]');
+      const u = c && c.querySelector('[data-ansunit="lapse"]');
+      res({ n: n ? n.value : null, unit: u ? u.value : null,
+        card: c ? c.dataset.setupcard : null });
+    }, 900);
+  }));
+  check('the answer comes back as 20 minutes, not as a spell in milliseconds',
+    back.n === '20' && back.unit === 'minutes', JSON.stringify(back));
+}
+
 say('errors     · ' + (errors.length ? errors.slice(0, 4).join(' / ') : 'none'));
 say('refused    · ' + (refused.length ? refused.join(' / ') : 'none'));
 say(stuck.length ? `member-questions-walk · ${stuck.length} FAIL` : 'member-questions-walk · ok');

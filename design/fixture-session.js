@@ -534,7 +534,12 @@ window.FIXTURE_SESSION = (function () {
       qLabel: '§ Guests — a member being in', urgency: 0,
       pct: 100, cap: 'sealed — adopted · the charter changed here',
       won: 'b',
-      decided: { outcome: 'adopted', when: 'Tuesday, 11:20', p: 0.81, judges: 9 },
+      // **the record says how many preferred it** (Q1439, ruling a): the
+      // quorum counts approvals, so nine weighing in and six preferring it is
+      // what carried this one over a floor of five. The other records here
+      // carry no `approvals` on purpose — that is the shape of a decision
+      // taken before the rule changed, and the line has to read without it.
+      decided: { outcome: 'adopted', when: 'Tuesday, 11:20', p: 0.81, judges: 9, approvals: 6 },
       optionA: 'Friends of the house are welcome.',
       optionB: 'Friends of the house are welcome whenever a member is in.',
       rationale: 'As it stood it invited people to a house with nobody in it. The guest is a member’s guest, and the member should be here.'

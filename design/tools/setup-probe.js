@@ -295,7 +295,10 @@
      */
     ['open-lapse', () => openTab('lapse')],
     ['choose-lapse', () => click('.setupcard [data-set="lapse"][data-val="days"]')],
-    ['type-lapse-days', () => typeInto('.setupcard input[data-num="lapseDays"]', '30')],
+    // the field is the spell's number and the unit beside it is a picker since
+    // Q1439 (minutes · hours · days): 30 of whatever the card opens on, which
+    // is days, so the value the probe founds is unchanged
+    ['type-lapse-days', () => typeInto('.setupcard input[data-num="lapseN"]', '30')],
     ['confirm-lapse', () => click('.setupcard [data-confirm]')],
     ['open-removal', () => openTab('removal')],
     ['choose-removal', () => click('.setupcard [data-set="removal"][data-val="proposal"]')],
