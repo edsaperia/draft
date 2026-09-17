@@ -873,8 +873,17 @@ window.COMPOSER = (function () {
         // the room's reading of it.
         // the run's source lines, one per block (Q1406): the head renders
         // blocks, so a heading among them keeps its rank rather than its hashes
-        clauseHeadHtml(d, { text: s.origin.map((o) => o.text).join('\n'), key: s.keys[0],
-                            chips: chipsFor(s.keys[0], d.id) }) +
+        // …and **a gap has no clause to show** (Q1410, the walk's C3, C5 and
+        // C11): a proposal of yours on a gap has an empty origin, so joining
+        // it gave the head a blank box where every other card standing in a
+        // gap says *(no text here)* under *The gap as it stands*. It takes
+        // the insert head too — the same test the editing card makes one
+        // screen up, and `headOpts`' own on the read side.
+        clauseHeadHtml(d, s.origin[0] && s.origin[0].gap
+          ? { text: null, label: T.insert.headLabel, key: s.keys[0],
+              chips: chipsFor(s.keys[0], d.id) }
+          : { text: s.origin.map((o) => o.text).join('\n'), key: s.keys[0],
+              chips: chipsFor(s.keys[0], d.id) }) +
         fieldHtml('<div class="propblock"><div class="rtext">' +
           laneBlocks(s.text, originText(s)) + '</div>' +
           speakerHtml(d.rationale, undefined, mineSpeaker(d)) + '</div>',

@@ -860,9 +860,25 @@ window.LIVE = (function () {
     // the nearest heading above; on a document with none, the document's own
     // title — the outermost heading (Q1303, Ed 2026-09-10) — and only with no
     // title either, the clause's first words
+    // …and **a gap takes the heading above the gap** (Q1411, the walk's C3
+    // 2026-09-17): a `G<n>` key matches no line in the document, so this walk
+    // met no `break`, ran to the end and kept the *last* heading it passed —
+    // the rail entry for a preamble before the first line read *Disputes*. A
+    // gap stops where it stands, at the last block whose line number is below
+    // its own, which is the rule `blockBeforeGap` reads on the page. With
+    // nothing above it — G0 — no heading is passed at all and the document's
+    // own title stands, which is what the fallback has always said. Asked of
+    // the key itself rather than left to the callers, which pass the block
+    // before the gap where they know it and the gap key where they do not.
+    const gapNum = (key) => { const m = /^G(\d+)$/.exec(String(key || '')); return m ? +m[1] : null; };
     const labelFor = (key) => {
       let h = '';
-      for (const l of SESSION.DOC) { if (l.t === 'h') h = l.x; if (l.key === key) break; }
+      const stop = gapNum(key);
+      for (const l of SESSION.DOC) {
+        if (stop !== null && lineIdx(l.key) >= stop) break;
+        if (l.t === 'h') h = l.x;
+        if (stop === null && l.key === key) break;
+      }
       return h || cs_titleNow() || ((SESSION.DOC.find((l) => l.key === key) || {}).x || '').split(/\s+/).slice(0, 5).join(' ');
     };
     // **Raw values are not copy**: a record's moment reads like a diary entry
@@ -1149,17 +1165,32 @@ window.LIVE = (function () {
         // everything else is already in the current text's own coordinates
         const hunks = m.patch.hunks;
         const spans = stranded && (m.at || []).length === hunks.length ? m.at : hunks;
-        const sp = spanOf(spans);
-        const keys = keysOfSpan(sp, lines);
+        // **Your own insertion is a gap site like anybody else's** (Q1410;
+        // M19, Q1308, Q1311). This branch alone keyed its sites with
+        // `keysOfSpan`, which reads an empty span as the line at `start` — so
+        // an insertion of yours stood on the clause *after* the gap, wore that
+        // clause's tab, showed its words as the origin and swallowed it when
+        // the card opened. `siteOfSpan` is what every other branch uses and
+        // what the composer's own unproposed draft already makes: the gap key,
+        // the block before it, the insert head. A gap has no block, so its
+        // origin is the empty one the composer writes (`originOf`), which is
+        // what makes the head read *(no text here)*.
         const sites = spans.map((x, i) => {
-          const ks = keysOfSpan(x, lines);
+          const st = siteOfSpan(x, lines);
           // the site's text and its origin are **source lines** (Q1403): the
           // hunk as proposed, the block as it stands, markers and all — the
           // card dims the marker, and a re-make sends the lines as they are
-          return { keys: ks, label: labelFor(ks[0]), text: hunks[i].lines.join('\n'),
-            origin: ks.map((k) => { const l = SESSION.DOC.find((x2) => x2.key === k) || {};
+          return { ...st, label: labelFor(st.insertAfterKey || st.keys[0]),
+            text: hunks[i].lines.join('\n'),
+            origin: st.keys.map((k) => {
+              if (st.isInsert) return { key: k, text: '', note: null, t: 'p', gap: true };
+              const l = SESSION.DOC.find((x2) => x2.key === k) || {};
               return { key: k, text: SESSION.sourceTextFor(k), note: null, t: l.t, level: l.level }; }) };
         });
+        // the draft's own keys are its sites' (`syncDraftKeys`), never the
+        // span between them — a two-site patch holding a gap would otherwise
+        // claim every block it jumps over
+        const keys = sites.flatMap((s) => s.keys);
         // once proposed the sign choice is part of its record (Q770): the line
         // says *signed* and offers no switch
         items.push({ id: localIdOf.get(m.id) || ('mine:' + m.id), kind: 'draft', mine: true, keys,

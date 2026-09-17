@@ -8388,7 +8388,7 @@
   // declaring it below this line.
   const { setProse, hydrateValues, fieldsOf, hydrateFromModule, hydrateSeen,
     liveJudge, liveJudgeAdmit, admitCardOf, allApplicants, applicantsAsking,
-    memApplicantRows, whenOf, unhead, liveBoot, birthBoot } = window.LIVE.make({
+    memApplicantRows, whenOf, liveBoot, birthBoot } = window.LIVE.make({
     S, CARDS, DKEY, PAGEVAL, STANDS, FOUNDER, LIVESLUG, SESSION, api, prose,
     get cs() { return cs; }, set cs(v) { cs = v; },
     get LIVE_HOOKS() { return LIVE_HOOKS; },
@@ -8579,6 +8579,34 @@
     const f = (o.field || []).slice().sort((x, y) => (y.p ?? -1) - (x.p ?? -1));
     return f[0] || null;
   };
+  // **A backlog paragraph is blocks** (Q1417, the static pass 2026-09-17):
+  // an undecided candidate of several lines was joined by a space with its
+  // markers stripped, so a proposal of two paragraphs read as one run-on
+  // sentence and a heading in it lost its rank — Q1406 in the one place its
+  // fix did not reach, the closed page's own document text. It is read here
+  // as `blocksOf` reads the charter: one block per line, the line's own kind
+  // off `mdBlock`, the marker consumed by the kind rather than stripped off
+  // the words, and a blank line nothing to anchor to. The first block keeps
+  // the record's own key, where its tab and its card stand (Q1408); the rest
+  // are numbered after it, because a document block needs a key of its own.
+  // A line is split on the newline as well as taken per hunk line: the
+  // fixture's own candidates hold two blocks in one string, and the card
+  // grammar splits them there too (`mdBlocksHtml`, Q1406) — the backlog
+  // paragraph and the record card must not disagree about what a block is.
+  const backlogBlocks = (o) => {
+    const best = bestOf(o);
+    const src = best ? best.hunks.flatMap((h) => h.lines) : (o.displaced || []);
+    const lines = src.flatMap((l) => String(l == null ? '' : l).split('\n'));
+    const id = 'U:' + (o.raceId || o.candidateId);
+    const out = lines.filter((l) => l.trim()).map((l, i) => {
+      const key = i ? id + ':' + i : id;
+      const m = window.CARDS.mdBlock(l);
+      return !m ? { t: 'p', x: l, key }
+        : m.t === 'b' ? { t: 'p', bullet: true, x: m.text, key }
+        : { t: 'h', level: m.level, x: m.text, key };
+    });
+    return out.length ? out : [{ t: 'p', x: '(the text stood)', key: id }];
+  };
   // **Amendments are reported the same way whoever made them** (Ed,
   // 2026-08-22). Every carried change to a rule, in order, in one section —
   // the founder's pen and the membership's motions in one list, because they
@@ -8639,11 +8667,7 @@
     const und = undecidedRecords();
     if (und.length) {
       out.push({ t: 'h', level: 1, x: 'Backlog', key: 'U:head' });
-      for (const o of und) {
-        const best = bestOf(o);
-        const text = best ? best.hunks.flatMap((h) => h.lines).map(unhead).join(' ') : (o.displaced || []).map(unhead).join(' ');
-        out.push({ t: 'p', x: text || '(the text stood)', key: 'U:' + (o.raceId || o.candidateId) });
-      }
+      for (const o of und) out.push(...backlogBlocks(o));
     }
     const sigs = closeSignatures();
     out.push({ t: 'h', level: 1, x: 'Signatures', key: 'S:head' });

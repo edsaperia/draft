@@ -2981,6 +2981,32 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       return card(openSugg, key);
     };
 
+    // **A run's later blocks are swallowed though they carry no tab** (Q1409,
+    // the proposal-shapes walk 2026-09-17). Q1408 put a run's tab at its first
+    // block alone, and `suggFor` reads exactly that list — so for every block
+    // of a run but the first the live set came back empty, `swallowOpen` was
+    // never called, and Q1407's branch above could not fire: the run stood on
+    // the page in full underneath the card that already held it, the text
+    // twice, one day after Q1407 took it off. The open item is therefore asked
+    // **directly** rather than through the tab list, and asked of every block,
+    // so a later block carrying some other item's tab is swallowed too. One
+    // tab, at the first block, is untouched: this decides what is *drawn*.
+    //
+    // A diagonal is the exception Q1407 named: its two keys are two clauses it
+    // stands beside, not a run it replaces. A patch draws a card at each of
+    // its sites (Ed, 181), so its blocks are the card's and not a run's.
+    const swallowedByOpen = (key) => {
+      if (!key || !openId) return false;
+      const g = SUGGS.find((x) => x.id === openId);
+      if (!g || g.kind === 'diagonal') return false;
+      if (g.sites) {
+        const site = g.sites.find((x) => (x.keys ?? []).includes(key));
+        return !!site && site.keys[0] !== key;
+      }
+      const keys = g.keys ?? [];
+      return keys.length > 1 && keys.includes(key) && keys[0] !== key;
+    };
+
     // **The tab stack** (Ed, 2026-08-17). A clause used to give every live
     // decision a tab at full height, which is fine at one and a lie at four:
     // § Bringing a Guest ran a 129px column down the side of a 36px clause, so
@@ -3101,6 +3127,15 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         html += gapsAfter(line.key);
         continue;
       }
+
+      // …and every other open card swallows the rest of its run the same way
+      // (Q1409). Asked here, above both branches, because it is one question
+      // about one block and the answer does not depend on which tabs the
+      // block carries — a heading inside a run is as swallowed as a
+      // paragraph, and a block inside the run that also carries some other
+      // decision's tab is swallowed with it. The anchors standing in the gap
+      // after it are still emitted: they belong to the gap, not the block.
+      if (swallowedByOpen(line.key)) { html += gapsAfter(line.key); continue; }
 
       if (line.t === 'h') {
         // A heading is an addressable block like any other (Q897), so a
