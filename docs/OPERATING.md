@@ -128,9 +128,18 @@ freely; pushing is the decision.
    For the full lane CI first **pauses the live host** (Q1345) — `POST
    $DRAFT_BASE_URL/api/admin/pause` bearing the `DRAFT_BOT_KEY` repository
    secret, the same key the host holds — and then POSTs the
-   `RENDER_DEPLOY_HOOK` repository secret. With no hook secret the step is
+   `RENDER_DEPLOY_HOOK` repository secret, with `ref=<the pushed commit>`
+   on it so Render builds the commit this run tested rather than whatever
+   `main`'s head is by the time it gets there (issue #8). With no hook
+   secret the step is
    inert — no hook, no deploy, no failure; with no key secret the deploy
-   runs **unpaused** and the log says so. **Why the pause** (the
+   runs **unpaused** and the log says so. **Deploys are serialised** (issue
+   #8): the `ci` job takes a `deploy-main` concurrency group on a push to
+   main, so two pushes deploy one after the other and never side by side; a
+   run in flight is never cancelled, since it has already paused the live
+   host, and a third quick push cancels the *pending* second, whose changes
+   then deploy with the third — which step 4's base handles, the range being
+   the host's rather than the push's. **Why the pause** (the
    notanotherpizza demo, 2026-09-12): Render boots the new instance beside
    the old and moves traffic over across some minutes, and a browser pinned
    to the old instance by keep-alive goes on writing to a document log the

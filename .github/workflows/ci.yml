@@ -20,6 +20,22 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    # **One deploy at a time** (issue #8, F3). The deploy is a step of this
+    # job, so two pushes in quick succession ran two of them side by side:
+    # on 2026-09-12 runs 34687139656 and 34687164564 overlapped, the first
+    # went red after 27 minutes at *never became 435bf8e*, and which commit
+    # was live afterwards was decided by which hook Render answered last.
+    # A push to main takes one named group and waits its turn; every other
+    # run (a pull request, a re-run) gets a group of its own and is not
+    # serialised. **`cancel-in-progress: false`**: a deploy in flight is
+    # never cancelled — it has already paused the live host, and killing it
+    # is how a room stays paused for fifteen minutes. GitHub's default queue
+    # holds one pending run, so a third quick push cancels the *pending*
+    # second; its changes then deploy with the third, which is exactly what
+    # F1's base handles, the range being the host's rather than the push's.
+    concurrency:
+      group: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'deploy-main' || format('ci-{0}', github.run_id) }}
+      cancel-in-progress: false
     # Stage 6: the Postgres backend is tested against the same major the
     # local container pins (17), or the migration is tested only on one
     # machine. The server's whole HTTP walk runs a second time over it.
@@ -219,8 +235,21 @@ jobs:
           else
             echo "no DRAFT_BOT_KEY secret or DRAFT_BASE_URL — deploying without a pause (Q1345)"
           fi
-          curl -fsS -X POST "$HOOK" -o /dev/null
-          echo "deploy triggered; waiting for $GITHUB_SHA to be the build that answers"
+          # **The hook is told which commit** (issue #8, F3). Bare, it
+          # deploys whatever `main`'s head is when Render gets to it, so a
+          # push landing during the build deployed a commit this run never
+          # tested — and the poll below, which waits for the pushed SHA,
+          # then fails on a deploy that worked. Render's deploy hook takes a
+          # `ref` query parameter, "either a full or short commit SHA"
+          # (render.com/docs/deploys, *Deploying a specific commit*); the
+          # hook URL already carries its own `?key=`, and the case below
+          # holds if it ever does not.
+          case "$HOOK" in
+            *\?*) HOOK_REF="$HOOK&ref=$GITHUB_SHA" ;;
+            *) HOOK_REF="$HOOK?ref=$GITHUB_SHA" ;;
+          esac
+          curl -fsS -X POST "$HOOK_REF" -o /dev/null
+          echo "deploy triggered for $GITHUB_SHA; waiting for it to be the build that answers"
           if [ -z "$BASE" ]; then
             echo "no DRAFT_BASE_URL variable — deployed, not verified"; exit 0
           fi
