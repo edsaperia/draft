@@ -1671,8 +1671,9 @@ const beginRowsAfterStart = async () => {
   const want = [
     ['invite', 'a', false, 'refuse invitations', '✉️’s 🛡️ went with the toggle'],
     ['invite', 'u', true, 'invite people at will', '…and ✉️’s ✒️ was kept'],
-    ['title', 'u', true, 'amend this at will', 'a row left alone kept its ✒️'],
-    ['rate', 'u', false, 'amend this at will', '⏱️’s own tab release was spent all the same'],
+    // the card names its setting since Q1429 (Ed, 2026-09-17); *this* is the document paragraph's
+    ['title', 'u', true, 'amend the title at will', 'a row left alone kept its ✒️'],
+    ['rate', 'u', false, 'amend the proposal rate at will', '⏱️’s own tab release was spent all the same'],
   ];
   for (const [base, pw, held, phrase, what] of want) {
     const line = await pwSays(base, pw);
