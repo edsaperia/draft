@@ -16,7 +16,8 @@ import type { AddressInfo } from 'node:net';
 import { afterAll, describe, expect, it } from 'vitest';
 import type { LogEntry } from '../../constitution/src/index.js';
 import { FilePersistence } from '../src/persistence.js';
-import type { PersonRow } from '../src/persistence.js';
+import type { OutboxRow, PersonRow } from '../src/persistence.js';
+import { MAILS } from '../src/mailer.js';
 import { createDraftServer } from '../src/server.js';
 import type { DraftServer } from '../src/server.js';
 
@@ -29,12 +30,24 @@ afterAll(async () => { for (const d of booted) await d.close(); });
  *  Postgres does when another writer holds the log (Q1345): a 23505. */
 class SplitPersistence extends FilePersistence {
   failNext = false;
+  /** …and whose outbox write can be told to fail once, which is the other
+   *  half of the same commit (issue #7): the entries are persisted, the mail
+   *  they imply is not. */
+  failOutboxNext = false;
   override async appendDocLog(id: string, entries: readonly LogEntry[], people: readonly PersonRow[] = []): Promise<void> {
     if (this.failNext) {
       this.failNext = false;
       throw Object.assign(new Error('duplicate key value violates unique constraint "document_log_pkey"'), { code: '23505' });
     }
     return super.appendDocLog(id, entries, people);
+  }
+
+  override async putOutbox(rows: readonly OutboxRow[]): Promise<void> {
+    if (this.failOutboxNext) {
+      this.failOutboxNext = false;
+      throw new Error('the outbox refused this write');
+    }
+    return super.putOutbox(rows);
   }
 }
 
@@ -161,5 +174,45 @@ describe('the red flag (Q1346)', () => {
     expect(landed.status, await landed.text()).toBe(200);
     expect((await view(base, slug, cookie)).stalled).toBe(false);
     expect(((await (await fetch(`${base}/healthz`)).json()) as { documentsStalled: number }).documentsStalled).toBe(0);
+  });
+});
+
+describe('mail behind a failed relay (issue #7)', () => {
+  // **Persisted entries carry their mail with them, however late.** The
+  // relay ran off what `store.persist` returned, and that cursor had already
+  // advanced — so a throw anywhere after the append (the engine persist, the
+  // token flush, the outbox write) meant the mail those entries implied was
+  // never sent by anybody: an invitee listed on the founder's card with no
+  // mail, no link and no way to resend. `relayed` is its own cursor now, and
+  // the next commit or tick relays what is persisted and not yet relayed.
+  it('mail for persisted entries survives a failed relay, and goes out exactly once', async () => {
+    const { base, draft, store } = await boot('test-key');
+    const { slug, cookie } = await found(base, 'Relayed');
+    const id = draft.store.bySlug(slug)!.id;
+    const invitee = 'invitee.relayed@example.org';
+
+    // the invitation is persisted and its mail is not: the command fails
+    store.failOutboxNext = true;
+    const failed = await post(base, `/api/d/${slug}/cmd`,
+      { cmd: 'invite', args: { email: invitee } }, { cookie });
+    // 400, not 500: the throw carries no system `code`, so the route reads it
+    // as a refusal — the invitation is in the log all the same
+    expect(failed.status).toBe(400);
+    // …but the member is in the document all the same
+    expect([...draft.store.bySlug(slug)!.cs.memberRecords().values()]
+      .some((m) => m.email === invitee)).toBe(true);
+
+    // any second command commits, and the mail behind the failed relay goes
+    const again = await setChamber(base, slug, cookie, 'public');
+    expect(again.status, await again.text()).toBe(200);
+    await draft.outbox.drain();
+    const rows = await store.listOutboxFor(id, invitee);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.subject).toBe(MAILS.invite('Relayed', 'x').subject);
+
+    // and a third commit does not send it again
+    expect((await setChamber(base, slug, cookie, 'link')).status).toBe(200);
+    await draft.outbox.drain();
+    expect(await store.listOutboxFor(id, invitee)).toHaveLength(1);
   });
 });
