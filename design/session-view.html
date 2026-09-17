@@ -1221,16 +1221,30 @@
     link: () => clauseOf('chamber', 'link'),
     public: () => clauseOf('chamber', 'public') };
   const APPL_RULE = (v) => clauseOf('applications', v);
-  // **A price rung is keyed by its own sentence** — the lane the composer
-  // draws, the key `MVAL` types it back from and the string a motion is
-  // reported in are one string from one table, so `checkComposer`'s both-ways
-  // assertion holds by construction rather than by two spellings agreeing.
-  const priceMval = (k) => Object.fromEntries(
-    window.CARDS.clauseRungs(k).map(([v, say]) => [say, { price: v }]));
+  // **What the surface offers is a subset of what the table reads back**, and
+  // the subset is named once. 🌍's `public` left every ladder on 2026-08-22
+  // (Q603) — offered nowhere, still stated by a document that took it — so a
+  // composer must not put it either; naming it here rather than in each
+  // caller is what keeps the lanes and the typed values below one list.
+  const OFFERED_RUNGS = { chamber: ['closed', 'link'] };
+  const offeredRungs = (k) => window.CARDS.clauseRungs(k, clauseCtx())
+    .filter(([v]) => !OFFERED_RUNGS[k] || OFFERED_RUNGS[k].includes(v));
+  // **A rung is keyed by its own sentence** — the lane the composer draws,
+  // the key `MVAL` types it back from and the string a motion is reported in
+  // are one string from one table, so `checkComposer`'s both-ways assertion
+  // holds by construction rather than by two spellings agreeing. `type` is
+  // the shape this setting's value takes: 🪪 and 🥾 a price, 👤 ⚖️ 🌍 a rung
+  // name, 🤝 a switch.
+  const ruleMval = (k, type) => Object.fromEntries(
+    offeredRungs(k).map(([v, say]) => [say, type(v)]));
+  const priceMval = (k) => ruleMval(k, (v) => ({ price: v }));
   // …and the lane says the rule it would set, so its text and its value are
   // the same sentence: there is nothing left for a per-lane explainer to add
   // (T43, and item 74's own precedent on the founder's card).
-  const ruleLanes = (k) => window.CARDS.clauseRungs(k).map(([, say]) => [say, say]);
+  // …and it carries the rung's own name as a third element, which nothing on
+  // the page routes on: it is what lets `card-audit`'s T5 lens see that this
+  // lane, the founder's radio and the member's ladder are one rung.
+  const ruleLanes = (k) => offeredRungs(k).map(([v, say]) => [say, say, v]);
   // what the document is called now, and what the lane is proposing
   const cs_titleNow = () => (cs ? cs.titleOf : S.title);
   const titlePending = () => (S.titleDraft !== null ? S.titleDraft : cs_titleNow());
@@ -4993,23 +5007,35 @@
     // `{ apply: boolean }` can express. `spec-check`'s `checkComposer` now
     // asserts the two lists agree in both directions — resolving these two
     // through the shared table — so a lane with no key here is red at the push.
-    removal: priceMval('removal'),
-    admission: priceMval('admission'),
-    applications: { 'Invitation only': { apply: false }, 'Anyone may apply': { apply: true } },
+    //
+    // **And since issue #19 the other four settings are here the same way.**
+    // 👤 ⚖️ 🌍 and 🤝 each kept a short label of their own beside a lane
+    // sentence written a third time — *Members only* over *Only members can
+    // read the document.* where the clause the document carries, and the rung
+    // the member's own ladder offers, both say *The document can only be seen
+    // by members.* — which is three wordings for one rung and exactly what
+    // STYLE T5 forbids. Each is `ruleMval` over the same table the lanes are
+    // now drawn from, so a rung has one wording wherever it is met.
+    //
+    // **Each is a thunk, and that is load-bearing**: 🌍's and 🤝's sentences
+    // name a fact about the room — whether the founder is a member, what 🪪
+    // charges — so the key has to be read at the render that draws the lane
+    // and not at the evaluation of this literal, when neither is known and
+    // `S` is not yet furnished. `mvalTyped` calls whatever it finds here.
+    removal: () => priceMval('removal'),
+    admission: () => priceMval('admission'),
+    // 🤝 is one switch, so its two rungs type the boolean rather than a name
+    applications: () => ruleMval('applications', (v) => ({ apply: v === 'apply' })),
     // **Public has left the ladder** (Ed, 2026-08-22). It is offered nowhere
     // — not here, not on the founder's card, not in a member's answer — but
     // every map that *reads* a rung back still knows it: the module's
     // catalogue still holds it, so a document that took it before today
     // still states its own rule truthfully rather than printing a raw value.
-    chamber: { 'Members only': { rung: 'closed' }, 'Anyone with the link': { rung: 'link' } },
-    authorship: {
-      'Nobody’s name, ever': { rung: 'anonymous' },
-      'Nobody’s name unless they choose': { rung: 'anonymousElective' },
-      'Names at the close': { rung: 'sealed' },
-      'Names at the close, or earlier by choice': { rung: 'sealedElective' },
-      'Names from the start': { rung: 'public' },
-    },
-    judgments: { 'Never revealed': { rung: 'never' }, 'Revealed at the end': { rung: 'after' } },
+    // `OFFERED_RUNGS` is where that exclusion is written down now, once for
+    // the lane and the key together.
+    chamber: () => ruleMval('chamber', (v) => ({ rung: v })),
+    authorship: () => ruleMval('authorship', (v) => ({ rung: v })),
+    judgments: () => ruleMval('judgments', (v) => ({ rung: v })),
   };
   // **A change carries a reason, and says who made it** (Q530, Ed
   // 2026-08-22). The pen is the only route that changes a rule without
@@ -5126,7 +5152,10 @@
   };
   const mvalTyped = (k, disp) => {
     if (card(k) && card(k).door) return null; // membership sentences parse at commit
-    return (MVAL[k] || {})[disp] || null;
+    // a setting whose sentences come off the clause table hands its own table
+    // back as a thunk, read at the render that draws the lane (MVAL, above)
+    const t = MVAL[k];
+    return ((typeof t === 'function' ? t() : t) || {})[disp] || null;
   };
   // **The settled card is the composer** (Ed, 2026-08-18) — for any member,
   // on any settled setting, once the document is live. The founder is the
@@ -5339,9 +5368,9 @@
     return { off: PAGE_COPY.pw.chooseOrPropose(g), on: PAGE_COPY.pw.chosenOrProposed(g) };
   };
   window.SETUP.setPickWords(pairWords);
-  const laneBlock = (d, val, text, k) =>
+  const laneBlock = (d, val, text, k, rung) =>
     '<div class="pick' + (d && d.to === val ? ' on' : '') + '"><span class="opttext">' + text + '</span>' +
-    PC.laneBarHtml(d, val, { edit: false, words: composeWords(k, val) }) + '</div>';
+    PC.laneBarHtml(d, val, { edit: false, words: composeWords(k, val), set: k, rung }) + '</div>';
   // **…and a block carrying a field has a radio too** (Ed's card review
   // round 3, A2 — 37 💤, 42 📧, 51 ⏰, 54 🌡️, 57 👥: *should have a radio
   // button "Prefer this", since it is an option*). Typing still chooses the
@@ -5505,18 +5534,16 @@
     return st && st.value !== null ? st.value : (TYPED[k] ? TYPED[k]() : null); };
   const offersStanding = (k, label) => { const v = mvalTyped(k, label), s = standsTyped(k);
     return v && s ? JSON.stringify(v) === JSON.stringify(s) : currentOf(k).startsWith(label); };
+  // a lane list is `[value, text]`, and `[value, text, rung]` where the value
+  // is a rung of a catalogue setting (`ruleLanes`) rather than a `never`
   const lanesFor = (d, pairs, k) => pairs.filter(([val]) => !offersStanding(k, val))
-    .map(([val, text]) => laneBlock(d, val, text, k)).join('');
+    .map(([val, text, rung]) => laneBlock(d, val, text, k, rung)).join('');
   const whyLane = (d) =>
     '<div class="lanebox whylane"><div class="speaker">' +
     '<span class="disc" aria-hidden="true" title="This is how your reason will reach everybody else: with your name off it."></span>' +
     '<div class="said edit-why" contenteditable="plaintext-only" spellcheck="false" data-motionlane="why"' +
     ' data-placeholder="We should change this because…">' + esc((d && d.why) || '') + '</div></div></div>';
 
-  const POLICY_TEXTS = [
-    ['Invitation only', 'Membership is by invitation only.'],
-    ['Anyone may apply', 'Anyone may apply to join.'],
-  ];
   // every composable setting has its control (Ed's QA, 2026-08-18) — a text
   // box asks somebody to guess a format the surface already knows
   const PROPOSE = {
@@ -5582,21 +5609,21 @@
         // field being there rather than for it being non-zero
         meanLine('lapse', d.val && d.val.afterMs !== undefined ? d.val : null),
         d, 'lapse', !!d.to && !/^never/i.test(d.to)),
-    authorship: (d) => lanesFor(d, [
-      ['Nobody’s name, ever', 'A proposer is never named — not even in the closing record.'],
-      ['Nobody’s name unless they choose', 'A proposer is never named unless they sign the proposal themselves.'],
-      ['Names at the close', 'Proposers are named in the closing record, never before.'],
-      ['Names at the close, or earlier by choice', 'Proposers are named in the closing record, and sooner if they sign.'],
-      ['Names from the start', 'Every proposal carries its proposer’s name from the moment it is made.']], 'authorship'),
-    judgments: (d) => lanesFor(d, [
-      ['Never revealed', 'Votes are never revealed — not even in the closing record.'],
-      ['Revealed at the end', 'Votes are published with the closing record, never before.']], 'judgments'),
-    chamber: (d) => lanesFor(d, [
-      ['Members only', 'Only members can read the document.'],
-      ['Anyone with the link', 'Anyone with the link can read it; it is not listed.']], 'chamber'),
+    // **A lane offers a rule, so it says the rule** — the same ruling 🪪 and
+    // 🥾 took at Q1112 (b), reaching the last four composers with issue #19.
+    // Each of these drew a sentence of its own beside a short label of its
+    // own, so one rung was written three ways: the clause the document
+    // carries, the rung the member's blind ladder offers, and the lane here.
+    // They are the clause table's now, which is what STYLE T5 asks for —
+    // one label per rung, everywhere — and what the lens added beside this
+    // change will hold them to.
+    authorship: (d) => lanesFor(d, ruleLanes('authorship'), 'authorship'),
+    judgments: (d) => lanesFor(d, ruleLanes('judgments'), 'judgments'),
+    // 🌍 offers two of its three rungs; `OFFERED_RUNGS` is the exclusion
+    chamber: (d) => lanesFor(d, ruleLanes('chamber'), 'chamber'),
     // the *one motion proposes one rule* note went with Ed's card review
     // round 3 (2026-09-05, 36 🤝)
-    applications: (d) => lanesFor(d, POLICY_TEXTS, 'applications'),
+    applications: (d) => lanesFor(d, ruleLanes('applications'), 'applications'),
     // ✉️: whom to bring in — the invite half of what was one roster
     // composer (Ed, 2026-08-19, 400a)
     // **The member's ✉️ is the same box** (Ed's card review round 3,

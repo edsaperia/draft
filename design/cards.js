@@ -1174,8 +1174,19 @@ window.CARDS = (function () {
       // default, the current text's included** (Q1362 (a)): the field has no
       // privileged member, so it can have no privileged register.
       const w = o.words || { off: G.lane.prefer, on: G.lane.preferred, title: G.lane.pickTitle };
+      // **A composer's lane names the rung it would set**, where the value it
+      // types is a rung of a setting rather than a piece of text. The lane's
+      // own value is the clause sentence (Q1112 (b), and issue #19 for the
+      // other four), which is the right key for `MVAL` and the wrong one for
+      // any reader asking *which rung is this* — the founder's radio and the
+      // member's ladder both say `chamber` / `closed`, and without the pair
+      // here nothing outside the page can tell that the three are one rung.
+      // `card-audit`'s T5 lens is the reader that needs it; the page itself
+      // routes on `data-mval` as it always has.
+      const rung = o.set && o.rung
+        ? ' data-mset="' + esc(String(o.set)) + '" data-mrung="' + esc(String(o.rung)) + '"' : '';
       return '<div class="lanebar">' +
-        '<button class="lanepick" type="button" ' + env.valAttr + '="' + esc(String(v)) + '"' +
+        '<button class="lanepick" type="button" ' + env.valAttr + '="' + esc(String(v)) + '"' + rung +
         ' aria-pressed="' + (env.pickOf(s) === v) + '"' + (env.lockedOf(s) ? ' disabled' : '') +
         ' title="' + esc(w.title) + '">' +
         '<i class="dot" aria-hidden="true"></i>' +

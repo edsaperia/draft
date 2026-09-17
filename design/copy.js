@@ -760,7 +760,10 @@ window.COPY = (function () {
     whyChangingPlaceholder: 'I am changing this because…',
     clerkNoPencil: 'You are not a member, so there is no ✏️ for you to spend — this one is yours to set.',
     nothingToPut: 'That could not be proposed: nothing is chosen on this card.',
-    // the composer's free sentences (the lane pairs stay with MVAL's cluster)
+    // the composer's free sentences. The lane pairs that are still the page's
+    // are ⏰'s and 💤's *never* rungs alone, beside MVAL's cluster: since
+    // issue #19 every lane whose rung the clause table already has a sentence
+    // for — 🪪 🥾 👤 ⚖️ 🌍 🤝 — draws it from RULES above.
     composeNote: {
       redirect: 'Every link the document has ever had keeps working — a change leaves a redirect behind.',
       neverNeedsAll: 'Taking the end date away needs all members to agree — every change made so far was made under a promise that the document would seal on a date and be signed.',
