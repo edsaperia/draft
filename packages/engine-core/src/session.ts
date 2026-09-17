@@ -31,6 +31,7 @@ import { Races, candidateNum, type RacesHost } from './races.js';
 import { smoothstep } from './adoption-threshold.js';
 import {
   balanceAt,
+  creditedAt,
   dripIntervalMs,
   credit,
   materialize,
@@ -970,12 +971,21 @@ export class Session {
    * F = max(Q, min(ceil(E/3), F_max)) — SPEC §4.2: the room's quorum
    * riding on the statistical minimum. A share-quorum is re-derived from
    * current E on every call, so it tracks the roster (§9.3).
+   *
+   * The share is ⌈n·E/100⌉, **the product before the quotient** (issue #24):
+   * `(n / 100) * E` is not the same number — `0.56` is not representable in
+   * binary and 56 % of 25 landed a hair above 14, holding that room to 15
+   * judges where the card promised 14. Twenty-seven (share, E) pairs read one
+   * too many that way, all at E ≥ 25. The constitution layer keeps its own
+   * copy of this line (`populations.ts`, `quorumCount`) because the engine
+   * derives F from the engine's roster and never asks it; the two move
+   * together or not at all.
    */
   adoptionFloor(): number {
     const e = this.eCount();
     const q = this.constitutionValue.quorum;
     const quorumN =
-      q === null ? 0 : q.form === 'count' ? q.n : Math.ceil((q.n / 100) * e);
+      q === null ? 0 : q.form === 'count' ? q.n : Math.ceil((q.n * e) / 100);
     return Math.max(quorumN, Math.min(Math.ceil(e / 3), this.constitutionValue.adoptionFloorMax));
   }
 
@@ -984,6 +994,11 @@ export class Session {
     return [...this.roster.values()].filter((r) => !r.removed && !r.suspended).length;
   }
 
+  /**
+   * A wallet read, and **a read is not a write** (issue #24): `creditedAt`
+   * materializes a copy, so looking at a balance at any clock leaves the
+   * stored ledger exactly where the log put it.
+   */
   balance(participantId: string, t: number): number {
     return balanceAt(this.rosterEntry(participantId).ledger, this.constitutionValue, t);
   }
@@ -992,15 +1007,18 @@ export class Session {
    * The wallet with its clock (stage 8, Q503a): the balance, when the next
    * drip lands (engine time), the interval, and the cap. `nextDripT` is
    * Infinity when the document does not drip.
+   *
+   * Both numbers come off the **same** credited copy: the balance from a copy
+   * and `nextDripT` from the stored ledger would have the tray counting down
+   * to a drip it had just been paid.
    */
   ledgerInfo(participantId: string, t: number): {
     balance: number; nextDripT: number; dripIntervalMs: number; cap: number;
   } {
-    const ledger = this.rosterEntry(participantId).ledger;
-    const balance = balanceAt(ledger, this.constitutionValue, t);
+    const at = creditedAt(this.rosterEntry(participantId).ledger, this.constitutionValue, t);
     const interval = dripIntervalMs(this.constitutionValue);
     const drips = Number.isFinite(interval) && interval > 0;
-    return { balance, nextDripT: drips ? ledger.nextDripT : Infinity,
+    return { balance: at.balance, nextDripT: drips ? at.nextDripT : Infinity,
       dripIntervalMs: drips ? interval : Infinity, cap: this.constitutionValue.tokenCap };
   }
 

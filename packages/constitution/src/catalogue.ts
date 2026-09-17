@@ -13,6 +13,7 @@ import type { ApplicationsValue, EndingValue, LapseValue, MachinesValue,
   PercentValue, PriceValue, QuorumValue, RateValue, SettingValue,
   ValueTypeName } from './values.js';
 import { validateValue } from './values.js';
+import { quorumCount } from './populations.js';
 
 export type SettingKind = 'ordinary' | 'constitutional' | 'personal';
 /**
@@ -198,8 +199,11 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
       ask: 'the lowest quorum you will accept — a share of the membership or a fixed count',
       order: (a, b, ctx) => {
         const e = Math.max(1, (ctx && ctx.e) || 1);
-        const demand = (v: QuorumValue) =>
-          (v.form === 'count' ? v.n : Math.ceil((v.n / 100) * e));
+        // The consent order asks the same question §4.2 does — how many
+        // voters does this answer demand of the room as it stands — so it
+        // asks `quorumCount` rather than keeping a second copy of it, which
+        // is how the two came to disagree by one at E ≥ 25 (issue #24).
+        const demand = (v: QuorumValue) => quorumCount(v, e);
         const d = demand(a as QuorumValue) - demand(b as QuorumValue);
         return d !== 0 ? d : (a as QuorumValue).n - (b as QuorumValue).n;
       },

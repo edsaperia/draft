@@ -127,11 +127,11 @@ describe('amendments and the anchor (SPEC §4.3, §9.6, 367b)', () => {
    * The engine keeps its **own** copy of §4.2's share arithmetic
    * (`adoptionFloor()`, over its own `eCount()`), so the rounding defect
    * `packages/constitution/test/promise-quorum.test.ts` files lives here
-   * too and has to be fixed in both places at once. Twenty-five
+   * too and had to be fixed in both places at once (issue #24). Twenty-five
    * participants, a quorum of 56 %: the promise is *the share, rounded up*
-   * — ⌈56 × 25 / 100⌉ = 14 — and `Math.ceil((56 / 100) * 25)` gives 15,
+   * — ⌈56 × 25 / 100⌉ = 14 — and `Math.ceil((56 / 100) * 25)` gave 15,
    * because 0.56 is not representable in binary and the product lands a
-   * hair above 14. Red by design until the shared fix lands.
+   * hair above 14. Multiplying before dividing keeps the promise.
    */
   const bigRoom = () =>
     Session.open(
@@ -143,34 +143,34 @@ describe('amendments and the anchor (SPEC §4.3, §9.6, 367b)', () => {
       0,
     );
 
-  it.fails('FINDING (promise-coverage 👥, the share arithmetic): a quorum of 56 % of 25 is 14, and the engine floor holds the room to 15', () => {
+  it('a quorum of 56 % of 25 is 14, and the engine floor holds the room to 14', () => {
     const s = bigRoom();
     s.amend(1 * HOUR, { quorum: { form: 'share', n: 56 } });
     expect(Math.ceil((56 * 25) / 100)).toBe(14); // the promise, in exact arithmetic
-    expect(s.adoptionFloor()).toBe(14);          // what it actually holds them to: 15
+    expect(s.adoptionFloor()).toBe(14);          // and what it holds them to
   });
 
-  it('at 28 % of 25 the same defect is masked by ⌈E/3⌉, which is why it can sit undetected', () => {
-    // Q is wrong by one there too — 8 where the promise is 7 — but the
+  it('at 28 % of 25 the same defect was masked by ⌈E/3⌉, which is why it could sit undetected', () => {
+    // Q was wrong by one there too — 8 where the promise is 7 — but the
     // statistical term ⌈25/3⌉ = 9 is above both readings, so F is 9 either
-    // way. The defect only reaches a race where Q clears the term, which is
-    // the 56 % case above.
+    // way. The defect only ever reached a race where Q cleared the term,
+    // which is the 56 % case above.
     const s = bigRoom();
     s.amend(1 * HOUR, { quorum: { form: 'share', n: 28 } });
-    expect(Math.ceil((28 / 100) * 25)).toBe(8);
-    expect(Math.ceil((28 * 25) / 100)).toBe(7);
+    expect(Math.ceil((28 / 100) * 25)).toBe(8); // the old expression
+    expect(Math.ceil((28 * 25) / 100)).toBe(7); // the promise
     expect(s.adoptionFloor()).toBe(9);
   });
 
-  it('the two copies of the formula agree with each other, wrong value and all — a fix has to move both', () => {
+  it('the two copies of the formula agree with each other, and now with the promise', () => {
     // `packages/constitution/src/populations.ts` `quorumCount` computes the
     // same expression over its own E, and `promise-quorum.test.ts` files it
     // there; the engine derives F from the engine's roster and never asks
-    // the constitution, so the two must be corrected in one commit.
+    // the constitution, so the two had to be corrected in one commit.
     const s = bigRoom();
     s.amend(1 * HOUR, { quorum: { form: 'share', n: 56 } });
     expect(s.adoptionFloor()).toBe(
-      Math.max(Math.ceil((56 / 100) * 25), Math.min(Math.ceil(25 / 3), 12)));
+      Math.max(Math.ceil((56 * 25) / 100), Math.min(Math.ceil(25 / 3), 12)));
   });
 
   it('an amended drip re-phases without retro-credit (SPEC §7)', () => {
