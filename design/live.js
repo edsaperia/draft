@@ -1149,17 +1149,32 @@ window.LIVE = (function () {
         // everything else is already in the current text's own coordinates
         const hunks = m.patch.hunks;
         const spans = stranded && (m.at || []).length === hunks.length ? m.at : hunks;
-        const sp = spanOf(spans);
-        const keys = keysOfSpan(sp, lines);
+        // **Your own insertion is a gap site like anybody else's** (Q1410;
+        // M19, Q1308, Q1311). This branch alone keyed its sites with
+        // `keysOfSpan`, which reads an empty span as the line at `start` — so
+        // an insertion of yours stood on the clause *after* the gap, wore that
+        // clause's tab, showed its words as the origin and swallowed it when
+        // the card opened. `siteOfSpan` is what every other branch uses and
+        // what the composer's own unproposed draft already makes: the gap key,
+        // the block before it, the insert head. A gap has no block, so its
+        // origin is the empty one the composer writes (`originOf`), which is
+        // what makes the head read *(no text here)*.
         const sites = spans.map((x, i) => {
-          const ks = keysOfSpan(x, lines);
+          const st = siteOfSpan(x, lines);
           // the site's text and its origin are **source lines** (Q1403): the
           // hunk as proposed, the block as it stands, markers and all — the
           // card dims the marker, and a re-make sends the lines as they are
-          return { keys: ks, label: labelFor(ks[0]), text: hunks[i].lines.join('\n'),
-            origin: ks.map((k) => { const l = SESSION.DOC.find((x2) => x2.key === k) || {};
+          return { ...st, label: labelFor(st.insertAfterKey || st.keys[0]),
+            text: hunks[i].lines.join('\n'),
+            origin: st.keys.map((k) => {
+              if (st.isInsert) return { key: k, text: '', note: null, t: 'p', gap: true };
+              const l = SESSION.DOC.find((x2) => x2.key === k) || {};
               return { key: k, text: SESSION.sourceTextFor(k), note: null, t: l.t, level: l.level }; }) };
         });
+        // the draft's own keys are its sites' (`syncDraftKeys`), never the
+        // span between them — a two-site patch holding a gap would otherwise
+        // claim every block it jumps over
+        const keys = sites.flatMap((s) => s.keys);
         // once proposed the sign choice is part of its record (Q770): the line
         // says *signed* and offers no switch
         items.push({ id: localIdOf.get(m.id) || ('mine:' + m.id), kind: 'draft', mine: true, keys,
