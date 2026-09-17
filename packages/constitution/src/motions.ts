@@ -37,14 +37,35 @@ export const CONSTITUTIONAL: ReadonlySet<SettingId> = new Set(
 );
 
 /**
- * What `openMotion` is handed. The one difference from `MotionPayload` is the
+ * What `openMotion` is handed. Two differences from `MotionPayload`. The
  * invitation: the caller names an **address**, and the session turns it into
  * the person row the event carries (decision 1253) — the email must never
- * reach the log, and the caller has no business minting person ids.
+ * reach the log, and the caller has no business minting person ids. And
+ * `text` is not here at all (Q1433): it is the fold's own record of a pen
+ * amendment (§9.7 rule 8, R-058), written into the record by `text-amended`
+ * rather than opened, so nothing puts one.
  */
 export type MotionInput =
-  | Exclude<MotionPayload, { kind: 'invite' }>
+  | Exclude<MotionPayload, { kind: 'invite' } | { kind: 'text' }>
   | { kind: 'invite'; email: string };
+
+/**
+ * **The five payloads anybody puts** (Q1433), and the refusal for everything
+ * else. `MotionPayload`'s sixth kind, `text`, is the fold's record of the
+ * Founder's pen amendment and reaches `openMotion` by no road inside this
+ * package — so a `text` payload arriving here came off the wire, where it
+ * used to fall through the last `else` below and be opened as an
+ * **admission**: priced at 🪪, routed, and carried toward a `member-admitted`
+ * for an applicant that does not exist. The same `else` took any unknown kind
+ * and any payload that is not a shape at all.
+ *
+ * Asked here rather than in the server's command whitelist because this is
+ * the only door every caller comes through — the sim harness, the fixture and
+ * a replay-free test as well as the wire.
+ */
+const PUT: ReadonlySet<string> = new Set(['set', 'reserve', 'invite', 'remove', 'admit']);
+const notPut = (kind: unknown): Error =>
+  new Error(`'${String(kind)}' is not a motion anybody puts (§9.6)`);
 
 /**
  * The session as the motions see it. Every field is read at the moment it is
@@ -112,6 +133,11 @@ export function membershipRouteOf(price: Price,
 
 export function openMotion(s: MotionHost, t: number, by: MemberId,
   input: MotionInput, why?: string): MotionId {
+  // the shape before the state (Q1433): a payload nothing puts is refused
+  // whatever the document is doing, and this is also what keeps the reads
+  // below off a payload that is not an object
+  const asked: unknown = (input as { kind?: unknown } | null)?.kind;
+  if (typeof asked !== 'string' || !PUT.has(asked)) throw notPut(asked);
   s.requireOpen('a motion');
   if (s.constitutedT === null) {
     throw new Error('before the start nothing is amended — only set (§9.6a)');
@@ -169,8 +195,14 @@ export function openMotion(s: MotionHost, t: number, by: MemberId,
     const target = s.members.get(payload.member);
     if (!target || !inE(target)) throw new Error(`'${payload.member}' is not a member`);
     route = membershipRouteOf(s.priceOf('removal'), 'remove');
-  } else {
+  } else if (payload.kind === 'admit') {
     route = membershipRouteOf(s.priceOf('admission'), 'admit');
+  } else {
+    // unreachable through `PUT` above — `payload` is `never` here, which is
+    // the compiler agreeing — and stated rather than assumed: a seventh kind
+    // added to `MotionPayload` and to `PUT` must not become an admission by
+    // falling off the end of this chain (Q1433)
+    throw notPut((payload as MotionPayload).kind);
   }
   // **An identical motion is refused on either route** (Ed, 2026-09-12,
   // Q1348; SPEC §9.6, R-103): the same payload already running is one

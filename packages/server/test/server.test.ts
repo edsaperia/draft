@@ -3547,6 +3547,25 @@ describe('🥾 at ✏️: a mover with no ✏️ is refused, and the document go
     expect(after.seq).toBe(seqBefore);
     expect(after.view.motions.filter((m) => m.status === 'running')).toEqual([]);
 
+    // -- the other payload the door used to let through (Q1433) -----------
+    // `text` is `MotionPayload`'s record of a pen amendment and nothing a
+    // member puts, so the wire is the only place it can come from — and it
+    // fell through `openMotion`'s last `else` and was opened as an
+    // **admission**, at 🪪's price, for an applicant that does not exist. The
+    // refusal is the module's rather than this whitelist's, so the harness
+    // and every other caller meet it too. Any unknown kind takes the same
+    // sentence, since the same `else` took them all.
+    for (const payload of [{ kind: 'text', candidateId: 'c1', summary: 'x' },
+      { kind: 'banana' }]) {
+      const no = await send(ada, 'open-motion', { payload });
+      expect(no.status).toBe(400);
+      expect((await no.json() as { error: string }).error)
+        .toBe(`'${payload.kind}' is not a motion anybody puts (§9.6)`);
+    }
+    const stillNothing = await viewOf(ada);
+    expect(stillNothing.seq).toBe(seqBefore);
+    expect(stillNothing.view.motions).toEqual([]);
+
     // -- and the document is not frozen -----------------------------------
     // every one of these answered 400 before the fix, the log stalled behind
     // a bridge that threw on the way to the store
