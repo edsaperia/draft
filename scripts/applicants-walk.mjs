@@ -851,11 +851,18 @@ if (admEntry) {
         await T(1500);
       }
       // the seat mail lands on the outbox's next sender pass, not on the
-      // commit that raised it, so it is polled for rather than read once
+      // commit that raised it, so it is polled for rather than read once.
+      // **The outbox answers newest first** (`outboxTail`), and this took
+      // `.pop()` — the *oldest* match: a second run against the same
+      // `DRAFT_DATA_DIR` therefore followed the previous run's link, which
+      // that run had already consumed, and the walk failed at *the seat mail
+      // did not seat the admitted applicant* with nothing wrong with the
+      // product at all. The address is the same every run, so the filter
+      // cannot tell the two mails apart; the end of the list can.
       let seatLink = null;
       for (let i = 0; i < 40 && !seatLink; i++) {
         const seatMail = (await devOutbox(BASE))
-          .filter((m) => m.to === APPLICANT && /\/auth\/login/.test(linkIn(m) || '')).pop();
+          .filter((m) => m.to === APPLICANT && /\/auth\/login/.test(linkIn(m) || ''))[0];
         seatLink = seatMail ? linkIn(seatMail) : null;
         if (!seatLink) await T(500);
       }
@@ -915,7 +922,10 @@ if (admEntry) {
 if (PRICE !== 'pen') {
   const RETURNING = 'returning-' + Date.now().toString(36) + '@example.org'; // one address per run: the outbox is shared
   const inv = await cmd('invite', { email: RETURNING });
-  const invMail = (await devOutbox(BASE)).filter((m) => m.to === RETURNING).pop();
+  // newest first, like the seat mail above: this address is this run's own,
+  // so only one mail can match today — but the end the read takes is the one
+  // that stays right when it is not
+  const invMail = (await devOutbox(BASE)).filter((m) => m.to === RETURNING)[0];
   const invLink = invMail && linkIn(invMail);
   if (inv.status !== 200 || !invLink) {
     say('FAIL: no invitation reached ' + RETURNING + ' → ' + inv.status);

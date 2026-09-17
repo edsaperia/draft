@@ -648,6 +648,34 @@ describe('guards', () => {
       value: { text: 'x' } })).toThrow(/not moved this way/);
   });
 
+  /**
+   * **`text` is the fold's own record, never a motion anybody puts** (Q1433).
+   * `MotionPayload` carries a sixth kind for the Founder's pen amendment
+   * (R-058), written straight into the record by `text-amended`'s fold — so
+   * nothing reaches `openMotion` by that road, and a `text` payload arriving
+   * here came off the wire. It used to fall through the last `else` and be
+   * opened as an **admission**: priced at 🪪, routed, and carried toward a
+   * `member-admitted` for an applicant that does not exist. The same hole
+   * took any unknown kind, and a payload that is no shape at all.
+   */
+  it('refuses a text payload, an unknown kind and a payload that is no shape (Q1433)', () => {
+    const { s, bo } = constituted();
+    const before = s.motionRecords().size;
+    expect(() => s.openMotion(3, bo,
+      { kind: 'text', candidateId: 'c1', summary: 'Open every day.' } as never))
+      .toThrow(/'text' is not a motion anybody puts/);
+    expect(() => s.openMotion(3, bo, { kind: 'banana' } as never))
+      .toThrow(/'banana' is not a motion anybody puts/);
+    expect(() => s.openMotion(3, bo, null as never))
+      .toThrow(/is not a motion anybody puts/);
+    expect(() => s.openMotion(3, bo, 'text' as never))
+      .toThrow(/is not a motion anybody puts/);
+    // nothing was opened: no record, and the id counter never moved
+    expect(s.motionRecords().size).toBe(before);
+    expect(s.openMotion(3, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } }))
+      .toBe(`mo-${before + 1}`);
+  });
+
   it('replay reproduces a full motion walk bit-identically', () => {
     const { s, bo, cy } = constituted();
     const m = s.openMotion(3, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } });

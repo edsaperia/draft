@@ -3027,15 +3027,24 @@ if (caret) {
     const VIEWS = '**/api/d/*/view*';
     // the poll's own answer, with one header moved: the body is re-sent as
     // text and the two transfer headers are dropped rather than replayed,
-    // since what is fulfilled is the decoded body
-    const fakeBuild = (p) => p.route(VIEWS, async (route) => {
-      try {
-        const res = await route.fetch();
-        const headers = { ...res.headers(), 'x-build': FAKE_BUILD };
-        delete headers['content-encoding']; delete headers['content-length'];
-        await route.fulfill({ status: res.status(), headers, body: await res.text() });
-      } catch { await route.fallback(); }
-    });
+    // since what is fulfilled is the decoded body.
+    // `gate(seen)` says which answers are faked, `seen` counting from zero —
+    // the halves below want *every* answer, *every answer after the boot's*
+    // (Q1438), and *every answer once the walk says so*, and a gate decided
+    // in the route rather than by a timer is the only way the last two are
+    // not a race against the 4s poll
+    const fakeBuild = (p, gate = () => true) => {
+      let seen = 0;
+      return p.route(VIEWS, async (route) => {
+        if (!gate(seen++)) { await route.fallback(); return; }
+        try {
+          const res = await route.fetch();
+          const headers = { ...res.headers(), 'x-build': FAKE_BUILD };
+          delete headers['content-encoding']; delete headers['content-length'];
+          await route.fulfill({ status: res.status(), headers, body: await res.text() });
+        } catch { await route.fallback(); }
+      });
+    };
     let navs = 0;
     const onNav = (f) => { if (f === page.mainFrame()) navs++; };
     page.on('framenavigated', onNav);
@@ -3069,18 +3078,25 @@ if (caret) {
       const ctxB = await browser.newContext({ storageState: await page.context().storageState() });
       const p2 = await ctxB.newPage();
       try {
-        // **the build a page holds comes from a poll, not from its boot**: the
-        // boot's own view fetch never reaches `noteBuild`, so a page whose
-        // first *poll* carried the fake build would simply take it as its own
-        // and sit still for ever. Two answers, then the override.
-        let views = 0;
-        p2.on('response', (r) => { if (/\/view(\?|$)/.test(r.url())) views++; });
-        await p2.goto(page.url());
-        await p2.waitForFunction(() => !!window.SESSION, null, { timeout: 30_000 });
-        for (let i = 0; i < 40 && views < 2; i++) await p2.waitForTimeout(500);
+        // **the build a page holds comes from its boot** (Q1438): the boot's
+        // own view fetch goes through `noteBuild` like every other answer, so
+        // the real build is the page's own from the first answer it gets and
+        // the very next poll can move it. The route is installed *before* the
+        // load and lets exactly one answer — the boot's — through untouched,
+        // so nothing here races the 4s timer.
+        //
+        // This is the shape the hole used to force: until the fix the boot
+        // told `noteBuild` nothing, `HOST.build` was first set by the poll,
+        // and a page whose first poll carried a build other than its own
+        // bytes' simply adopted it and sat still for ever — a hole in
+        // Q1347's `surface-reload`, and pre-fix this half waits out its
+        // twenty half-seconds and reports no navigation at all.
         let n = 0;
         p2.on('framenavigated', (f) => { if (f === p2.mainFrame()) n++; });
-        await fakeBuild(p2);
+        await fakeBuild(p2, (seen) => seen >= 1);
+        await p2.goto(page.url());
+        await p2.waitForFunction(() => !!window.SESSION, null, { timeout: 30_000 });
+        n = 0;                          // the load itself is a navigation
         for (let i = 0; i < 20 && !n; i++) await p2.waitForTimeout(500);
         return n;
       } finally { await p2.close(); await ctxB.close(); }
@@ -3089,6 +3105,124 @@ if (caret) {
       ? 'a second page with nothing unsent takes the same change within a poll'
       : 'FAIL: a page holding nothing unsent never reloaded on a new x-build'));
     if (!clean) stuck.push('the reload on a clean page');
+    /* ---- **…and a value typed into a card that was then closed** (issue
+     * #12's last hole, issue #11's F4 half; Ed, 2026-09-17: *as you
+     * recommend*). `unsent()` asked `openCardDirty`, which reads the open
+     * card alone — and closing a card is not discarding, so a number typed
+     * into a settings card and left there while the member looked elsewhere
+     * is work that exists nowhere but in `S`. The poll has known that since
+     * F4, which leaves such a setting alone until the hand is committed or
+     * binned; the reload did not, and threw it away.
+     *
+     * Driven on a third page in the same seat, so the only unsent thing on it
+     * is the closed card: a number bumped in one of the founder's own settled
+     * cards, the card closed by its own tab, then the build moved — nothing
+     * may navigate. Then the same value **binned**, which is the F4 rule's
+     * other end and the trap the predicate must not fall into: a deferral
+     * that cannot end is a page that never reloads at all. 🗑️ rather than ✓
+     * on purpose — a commit here would move a real setting under the rest of
+     * the walk, where the bin changes nothing on the server.
+     *
+     * ⏱️ is not the card: this walk lays its ✒️ down on its own tab before
+     * 🍾 (`beginRowsBeforeStart`), so past the start it draws the composer
+     * rather than the founder's field. The three tried below are settings
+     * whose pen the founder keeps, and the step names the one it used. */
+    const hand = await (async () => {
+      const ctxC = await browser.newContext({ storageState: await page.context().storageState() });
+      const p3 = await ctxC.newPage();
+      const H = onPage(p3, { open: { settleMs: 520 } });
+      let faking = false;
+      try {
+        let n = 0;
+        p3.on('framenavigated', (f) => { if (f === p3.mainFrame()) n++; });
+        await fakeBuild(p3, () => faking);
+        await p3.goto(page.url());
+        await p3.waitForFunction(() => !!window.SESSION, null, { timeout: 30_000 });
+        n = 0;
+        // **Every box on the card, not one** — through the page's own
+        // listeners (`[data-num]` writes `S[key]` on input, and the page
+        // listens for both events, `fillFields`' own note). Which box holds
+        // the value cannot be read off the card here: a settled card draws
+        // the founder's ladder with what stands **blank** (Q1293, so the
+        // standing rule is not offered back to them lit), and 👥 draws a box
+        // per form of which only one is the form that stands (Q1162). So the
+        // step moves them all, one of which is certainly the key hydration
+        // writes — and 🗑️ puts every one of them back, `cardKeys()` naming
+        // each from the card's own DOM.
+        //
+        // **And the number has to differ from the one that stands**, which
+        // the card cannot be asked: a box drawn blank says nothing about the
+        // rule behind it. So the standing values come off the wire and every
+        // number they contain is avoided — a typed value that happens to
+        // equal what stands is not a hand at all, and is exactly the case
+        // F4's *a room that moves to what you typed* clause allows through.
+        const slug = new URL(page.url()).pathname.split('/')[2];
+        const standing = await p3.evaluate(async (s) => {
+          const v = await (await fetch('/api/d/' + s + '/view')).json();
+          const out = {};
+          for (const row of (v.view && v.view.settings) || []) out[row.setting] = row.value;
+          return out;
+        }, slug);
+        let used = null, moved = null;
+        for (const k of ['quorum', 'lapse', 'ending']) {
+          if (!(await H.open(k))) continue;
+          const avoid = Object.values(standing[k] || {}).filter((x) => typeof x === 'number');
+          const r = await p3.evaluate((nos) => {
+            const out = [];
+            for (const f of [...document.querySelectorAll('.setupcard input')]) {
+              if (f.offsetParent === null) continue;
+              if (f.type !== 'number' && f.type !== 'datetime-local') continue;
+              const before = f.value;
+              if (f.type === 'number') {
+                const lo = +f.min || 0, hi = +f.max || 1e9, st = +f.step || 1;
+                let nx = null;
+                for (let c = lo; c <= hi && nx === null; c += st) if (!nos.includes(c)) nx = c;
+                if (nx === null) continue;
+                f.value = String(nx);
+              } else f.value = '2026-10-19T19:00';
+              for (const e of ['input', 'change']) f.dispatchEvent(new Event(e, { bubbles: true }));
+              if (f.value !== before) out.push((f.dataset.num || f.dataset.txt || '?') + ' ' +
+                JSON.stringify(before) + '→' + JSON.stringify(f.value));
+            }
+            return out;
+          }, avoid);
+          if (r && r.length) { used = k; moved = r; break; }
+          await p3.evaluate(() => { const a = document.querySelector('.setupcard .chipcol .achip'); if (a) a.click(); });
+          await H.T(420);
+        }
+        if (!used) return { why: 'no founder-held card on this page took a typed number' };
+        await H.T(320);
+        // closed by its own tab, which is the one close that needs no dead
+        // spot to aim at — and never 🗑️, which is the whole point
+        await p3.evaluate(() => { const a = document.querySelector('.setupcard .chipcol .achip'); if (a) a.click(); });
+        await H.T(520);
+        const shut = await p3.evaluate(() => !document.querySelector('.setupcard'));
+        if (!shut) return { why: 'the card would not close on its own tab' };
+        faking = true;
+        for (let i = 0; i < 18 && !n; i++) await p3.waitForTimeout(500);  // two whole polls
+        const stayed = n === 0;
+        // …and the bin ends it: the value goes back to the room's own, the
+        // page holds nothing unsent, and the pending reload lands
+        if (!(await H.open(used))) return { why: 'the card would not reopen to be binned', used, stayed };
+        const binned = await p3.evaluate(() => {
+          const b = [...document.querySelectorAll('.setupcard .commitrow button')]
+            .find((x) => /🗑/.test(x.textContent) || x.querySelector('[data-gl="bin"]'));
+          if (!b) return false;
+          b.click();
+          return true;
+        });
+        if (!binned) return { why: 'the card offered no 🗑️', used, stayed };
+        await H.T(420);
+        await p3.evaluate(() => { const a = document.querySelector('.setupcard .chipcol .achip'); if (a) a.click(); });
+        for (let i = 0; i < 20 && !n; i++) await p3.waitForTimeout(500);
+        return { used, moved, stayed, then: n };
+      } finally { await p3.close(); await ctxC.close(); }
+    })();
+    const handOk = !hand.why && hand.stayed && hand.then > 0;
+    say('build hand · ' + (handOk
+      ? 'a value typed into ' + hand.used + ' and left on a closed card held the reload for two polls, and 🗑️ let it land'
+      : 'FAIL: ' + JSON.stringify(hand)));
+    if (!handOk) stuck.push('the deferred reload under a closed card’s unsent value');
   }
   /* …and back in: the draft is still on the page, reachable from its own chip,
    * with the text it had. A leave that quietly dropped the draft would pass

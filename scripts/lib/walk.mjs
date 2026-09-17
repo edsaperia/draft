@@ -63,7 +63,15 @@ export const arg = (name, dflt = null) => {
 
 /** The first http link in a mail, whatever field it stands in. */
 export const linkIn = (mail) => (JSON.stringify(mail).match(/http:[A-Za-z0-9_?=/:.-]+/) || [])[0];
-/** The dev outbox's mails — the tail as an array, whichever shape the route answers. */
+/**
+ * The dev outbox's mails — the tail as an array, whichever shape the route
+ * answers. **Newest first**, which is `outboxTail`'s own order and is worth
+ * saying here because every caller filters and then picks an end: the first
+ * match is the mail that has just been sent, and the *last* is the oldest one
+ * the tail still holds. A walk that takes the last therefore follows a link a
+ * previous run against the same `DRAFT_DATA_DIR` has already consumed, which
+ * is a walk failing on its own history — applicants-walk lost a run to it.
+ */
 export const outbox = async (base) => {
   const ob = await (await fetch(base + '/api/dev/outbox')).json();
   return ob.mails || ob;

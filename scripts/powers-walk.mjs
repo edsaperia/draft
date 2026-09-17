@@ -283,7 +283,11 @@ const runDocument = async (hat) => {
     // what consumes it (stage 3, defect 6), and consuming it is the arrival.
     // A plain fetch here left the roster empty and 🍾 refused *roster must
     // not be empty*, which reads as a product defect and is this walk's own.
-    const u = new URL((inv[inv.length - 1].link) || linkIn(inv[inv.length - 1]));
+    // **Newest first** (`outboxTail`): this read took the last entry, which
+    // is the *oldest* match — the shape that cost applicants-walk a run
+    // against a used data dir. This run's title is its own, so only one mail
+    // matches here; a re-send would have made two.
+    const u = new URL((inv[0].link) || linkIn(inv[0]));
     await fetch(u.href);
     await fetch(u.origin + u.pathname, {
       method: 'POST',

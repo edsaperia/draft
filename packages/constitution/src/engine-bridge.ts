@@ -154,14 +154,15 @@ export class EngineBridge {
    * card like any other command refusal (SURFACE Y25) — no new copy. Nothing
    * is opened, so unlike the `sync` path there is nothing to compensate.
    *
-   * Every kind comes through, and three of them are priced. `set` is
-   * `openSetMotion`'s, which does its own pricing because only it can say
-   * what a *value* routes as. `reserve` is always constitutional, and a
-   * constitutional motion is free — an empty wallet prices a race and not a
-   * decision — as is `text`, which is a folded record of the pen and never a
-   * press at all. `invite` is priced here for the same reason as the other
-   * two: at 🪪 *members must vote* it is a race (`enterInviteRace`, issue #6
-   * F1) and its `motion-opened` has always recorded `stake: 1`.
+   * Every kind anybody puts comes through, and three of them are priced.
+   * `set` is `openSetMotion`'s, which does its own pricing because only it
+   * can say what a *value* routes as. `reserve` is always constitutional, and
+   * a constitutional motion is free — an empty wallet prices a race and not a
+   * decision. `invite` is priced here for the same reason as the other two:
+   * at 🪪 *members must vote* it is a race (`enterInviteRace`, issue #6 F1)
+   * and its `motion-opened` has always recorded `stake: 1`. **`text` is not a
+   * kind anybody puts** (Q1433): the pen's amendment is folded, never opened,
+   * and the module refuses the payload before this door has priced anything.
    */
   openMotion(t: number, by: MemberId, input: MotionInput, why?: string): MotionId {
     this.sync(t);

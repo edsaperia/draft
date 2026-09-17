@@ -65,9 +65,18 @@ window.LIVE = (function () {
     //    from rather than inventing a second idea of unsent. **Not the
     //    snapshot's existence**: one is taken at every opening and dropped
     //    only at the commit, so a page that had ever opened a card would
-    //    never reload again.
+    //    never reload again;
+    //  · …and a value typed into a card that was then **closed** (Ed,
+    //    2026-09-17, closing this list's last hole): closing a card is not
+    //    discarding, so the number is still the member's to send and lives
+    //    nowhere but in `S`. `openCardDirty` reads the open card alone, and
+    //    the poll has protected the closed ones since issue #11's F4 — so
+    //    this asks F4's own question (`handUnsent`, below `make`'s
+    //    hydration) rather than a second one, and a value committed, binned
+    //    or overtaken by the room stops counting by F4's own two clauses.
     const unsent = () => pressInFlight() || !!env.S.editMode || openCardDirty() ||
-      (SESSION.SUGGS || []).some((x) => x.unproposed && (x.mine || x.id === SESSION.DRAFT_ID));
+      (SESSION.SUGGS || []).some((x) => x.unproposed && (x.mine || x.id === SESSION.DRAFT_ID)) ||
+      (!!api.handUnsent && api.handUnsent());
     function noteBuild(build) {
       if (!build) return;
       if (HOST.build === null) { HOST.build = build; return; }
@@ -131,6 +140,16 @@ window.LIVE = (function () {
     const api = {
       chain: Promise.resolve(),
       birth: null, // {pendingId, devLink, slug} once the creation mail is sent
+      // **The boot's own answer says which build it is too** (Q1438; Ed,
+      // 2026-09-17: *ok*). `noteBuild` is made here, where `HOST` is, but the
+      // three boots are `LIVE.make`'s and reach it through `api` — which they
+      // already hold for `api.refresh`. Until this crossed, `HOST.build` was
+      // first set by the 4s poll, so a page whose HTML came off the old build
+      // and whose first poll answered from the new one adopted the new build
+      // as its own and never reloaded: a hole in Q1347's `surface-reload`,
+      // widest for the page loaded during a deploy, which is the one that
+      // most needs the reload.
+      noteBuild,
       post(path, body) {
         return fetch(path, { method: 'POST',
           headers: { 'content-type': 'application/json' },
@@ -581,19 +600,61 @@ window.LIVE = (function () {
     // cards following the server at all and let a later ✓ put back somebody
     // else's change.
     const wrote = {};
+    // what a setting's standing value would write into the page's own
+    // fields, or null where there is no settled value to write — a non-null
+    // value implies settled, every module fold setting or nulling the pair
+    // together, so that is the whole of the guard
+    const wouldWrite = (mid) => {
+      const st = env.cs.settingState(mid);
+      if (!st || !st.value) return null;
+      const t = {};
+      fieldsOf(mid, st.value, t);
+      return t;
+    };
+    /**
+     * **Is a member's own unsent hand on this setting?** — F4's question,
+     * asked in the one place both its readers come to (Ed, 2026-09-17,
+     * closing issue #12's last hole). Hydration asks it to decide what to
+     * leave alone; the **deferred reload** asks it to decide what a push
+     * would throw away, and the two answering differently is the defect: a
+     * second idea of *unsent* is how the reload came to keep a draft and
+     * drop a number.
+     *
+     * A field that still matches what hydration last wrote is a field nobody
+     * has touched. A field matching neither that nor what is arriving is a
+     * hand, and that whole setting is left alone — and reloaded around —
+     * until the hand is committed or binned. **Both halves are what stops a
+     * deferral becoming a never**: a value the member commits or bins comes
+     * back to what hydration wrote, and a value the room moves *to* equals
+     * what is arriving, so each lands on one side of the comparison and
+     * stops counting. `wrote[mid]` is asked first, so a page hydration has
+     * never run on — the door's, the applicant's — answers no without
+     * reading a view at all.
+     */
+    const handOn = (mid, t) => {
+      if (!wrote[mid]) return false;
+      const would = t || wouldWrite(mid);
+      return !!would && Object.keys(would).some((f) =>
+        String(S[f]) !== String(wrote[mid][f]) && String(S[f]) !== String(would[f]));
+    };
+    /** …over every setting but the one whose card is open, which is
+     *  `openCardDirty`'s own question and is asked there. So this is exactly
+     *  the set hydration is leaving alone, which is the invariant worth
+     *  having: what the poll will not overwrite, the reload will not throw
+     *  away. */
+    function handUnsent() {
+      return FIELDED_MIDS.some((mid) => pkeyOf(mid) !== S.open && handOn(mid));
+    }
+    // the reload's half of it lives in the wire above (`unsent`), so it
+    // crosses on `api` as `noteBuild` crosses the other way — both polls hold
+    // `api`, and a value copied at make time would stop asking
+    api.handUnsent = handUnsent;
     function hydrateFromModule(skipKey) {
-      const val2 = (mid) => { const st = env.cs.settingState(mid); return st && st.value; };
       for (const mid of FIELDED_MIDS) {
         if (pkeyOf(mid) === skipKey) continue;
-        const x = val2(mid);
-        // value non-null implies settled (every module fold sets or nulls
-        // the pair together), so this guard is the whole condition
-        if (!x) continue;
-        const t = {};
-        fieldsOf(mid, x, t);
-        const touched = wrote[mid] && Object.keys(t).some((f) =>
-          String(S[f]) !== String(wrote[mid][f]) && String(S[f]) !== String(t[f]));
-        if (touched) continue;
+        const t = wouldWrite(mid);
+        if (!t) continue;
+        if (handOn(mid, t)) continue;
         Object.assign(S, t);
         wrote[mid] = t;
       }
@@ -756,6 +817,16 @@ window.LIVE = (function () {
       const dev = document.querySelector('.devswitch');
       if (dev) dev.style.display = 'none';
       fetch('/api/d/' + LIVESLUG + '/view').then((r) => {
+        // **which build this page is** (Q1438), read off the boot's own
+        // answer and before anything is done with it, so the page's build is
+        // its own from its first answer rather than from its first poll. All
+        // three boots below are this one fetch — the member's, the door's and
+        // the applicant's are branches of its payload, not fetches of their
+        // own — so this is the whole of it. It cannot reload here: the first
+        // build `noteBuild` is ever told is simply taken (`HOST.build ===
+        // null`), and a retry that lands on a *different* build is a page
+        // whose bytes are already stale, which is the reload's own case.
+        api.noteBuild(r.headers.get('x-build'));
         if (r.status === 401) { console.warn('[live] no seat and no door'); return null; }
         // **The first view is the only one there is until it lands** (issue
         // #11, F3). The 4s poll starts at the foot of a successful boot, so

@@ -861,11 +861,15 @@ var CONSTITUTION = (() => {
   var CONSTITUTIONAL = new Set(
     CATALOGUE.filter((e) => e.kind === "constitutional").map((e) => e.id)
   );
+  var PUT = /* @__PURE__ */ new Set(["set", "reserve", "invite", "remove", "admit"]);
+  var notPut = (kind) => new Error(`'${String(kind)}' is not a motion anybody puts (§9.6)`);
   function membershipRouteOf(price, kind) {
     if (kind === "remove") return price === "proposal" ? "ordinary" : "constitutional";
     return price === "assembly" ? "constitutional" : "ordinary";
   }
   function openMotion(s, t, by, input, why) {
+    const asked = input?.kind;
+    if (typeof asked !== "string" || !PUT.has(asked)) throw notPut(asked);
     s.requireOpen("a motion");
     if (s.constitutedT === null) {
       throw new Error("before the start nothing is amended — only set (§9.6a)");
@@ -874,10 +878,11 @@ var CONSTITUTION = (() => {
     if (!mover || !inE(mover)) throw new Error(`'${by}' is not an arrived member`);
     let route;
     let payload;
+    let row = null;
     if (input.kind === "invite") {
       s.requireEmailFree(input.email);
       const person = s.personFor(input.email);
-      s.people.set(person, { email: input.email });
+      row = { person, email: input.email };
       payload = { kind: "invite", person };
     } else payload = input;
     if (payload.kind === "set") {
@@ -917,8 +922,10 @@ var CONSTITUTION = (() => {
       const target = s.members.get(payload.member);
       if (!target || !inE(target)) throw new Error(`'${payload.member}' is not a member`);
       route = membershipRouteOf(s.priceOf("removal"), "remove");
-    } else {
+    } else if (payload.kind === "admit") {
       route = membershipRouteOf(s.priceOf("admission"), "admit");
+    } else {
+      throw notPut(payload.kind);
     }
     const twin = runningTwin(s, payload);
     if (twin !== null) {
@@ -928,6 +935,7 @@ var CONSTITUTION = (() => {
       throw new Error("one 🏛️ out per member at a time (§9.6)");
     }
     const id = `mo-${s.nextMotionN}`;
+    if (row !== null) s.people.set(row.person, { email: row.email });
     const e = {
       type: "motion-opened",
       t,

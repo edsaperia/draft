@@ -618,6 +618,12 @@ describe('✒️ on the Text: the Founder amends at will (R-058)', () => {
     expect(rec.openedAtT).toBe(10);
     expect(rec.settledAtT).toBe(10);
     expect(rec.payload).toEqual({ kind: 'text', candidateId: id, summary: 'Open every day.' });
+    // …and the fold is the **only** road to that record (Q1433): the same
+    // payload put as a motion is refused, so the kind the fold writes here is
+    // one nothing on the wire can ask for
+    expect(() => s.openMotion(11, bo,
+      { kind: 'text', candidateId: id, summary: 'Open every day.' } as never))
+      .toThrow(/'text' is not a motion anybody puts/);
     // no 👑 question: asking the Founder to assent to their own act asks twice
     expect(view(s, 'ada').crownTasks).toHaveLength(0);
     // every arrived member but the Founder is owed the news, **beside the
