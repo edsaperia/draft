@@ -248,12 +248,50 @@ if (knock.status !== 200 || !knock.body || !knock.body.devLink) {
   const guestCtx = await browser.newContext({ viewport: { width: 1200, height: 900 } });
   const guest = await guestCtx.newPage();
   guest.on('pageerror', (e) => errors.push('applicant: ' + String(e)));
+  /* **A door tab whose cookie becomes a member's is a different page**
+   * (issue #11, F1). The second tab is the ordinary one: a phone at the
+   * document's address while the magic link is opened from the mail beside
+   * it — one cookie jar, two pages, and only the one that followed the link
+   * knows anything happened. The other is at the door, and its poll is
+   * answered with a member's payload. It used to seat itself at roster
+   * index 0, which is the founder: the tab reported `amFounder` on somebody
+   * else's cookie. Opened before the link is followed so the door page is
+   * genuinely a stranger's first, and read after the link so what is under
+   * test is the handover rather than the boot. */
+  const doorPage = await guestCtx.newPage();
+  doorPage.on('pageerror', (e) => errors.push('door tab: ' + String(e)));
+  await doorPage.goto(DOCBASE + '/d/' + SLUG);
+  await T(2500);
   await guest.goto(knock.body.devLink);
   await T(2200);
   // **At ✒️ the link is the joining** (Q894–Q896): `/auth/apply` admits the
   // visitor on arrival, so there is no application left to submit and the
   // command is rightly refused. They have given no name either, which is why
   // the news card names them by the address they knocked with.
+  // the door tab, two polls later: whatever the cookie became, it is not the
+  // founder, and at ✒️ — where the link is the joining — it is the new
+  // member's own seat (issue #11, F1)
+  await T(7000);
+  const doorAfter = await doorPage.evaluate(() => (window.__founding ? window.__founding() : null))
+    .catch((e) => ({ threw: String(e && e.message).split('\n')[0] }));
+  say('door tab   · ' + JSON.stringify(doorAfter && { viewer: doorAfter.viewer, amFounder: doorAfter.amFounder }));
+  if (!doorAfter || doorAfter.threw) {
+    say('FAIL: the door tab\'s readout threw — ' + JSON.stringify(doorAfter && doorAfter.threw));
+    stuck.push('the door tab');
+  } else if (doorAfter.amFounder) {
+    say('FAIL: a door tab whose cookie became somebody else\'s reports the founder\'s seat — viewer ' +
+      JSON.stringify(doorAfter.viewer) + ' (issue #11, F1)');
+    stuck.push('the door tab\'s seat');
+  } else if (PRICE === 'pen' && !(typeof doorAfter.viewer === 'number' && doorAfter.viewer !== 0)) {
+    say('FAIL: at ✒️ the door tab should be the new member\'s own seat, saw viewer ' +
+      JSON.stringify(doorAfter.viewer) + ' (issue #11, F1)');
+    stuck.push('the door tab\'s member seat');
+  } else if (PRICE !== 'pen' && doorAfter.viewer !== 'applicant') {
+    say('FAIL: at 🪪 ' + PRICE + ' the door tab should follow its cookie to the applicant seat, saw viewer ' +
+      JSON.stringify(doorAfter.viewer) + ' (issue #11, F1)');
+    stuck.push('the door tab\'s applicant seat');
+  }
+  await doorPage.close();
   if (PRICE === 'pen') {
     say('applicant  · ' + APPLICANT + ' opened the link and was admitted on arrival');
   } else {

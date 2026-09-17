@@ -207,7 +207,21 @@ window.LIVE = (function () {
             // the applicant's payload is the door's plus their application
             // (Q1281): reshaped the same way, the application re-read into S
             else if (data.applicant) { setStranger(data); data = applicantAsView(data); env.S.viewer = 'applicant'; hydrateApplicant(data.applicant); }
-            else if (atTheDoor()) { setStranger(null); env.S.viewer = 0; }
+            // …and the other way, which is not a seat moving but a page
+            // becoming a different page (issue #11, F1): a door or applicant
+            // tab whose cookie has become a member's — a magic link followed
+            // in a second tab, an admission at ✒️ — is answered with a
+            // member's payload, and there is no in-place handover for it.
+            // `S.viewer = 0` is the founder's own row, so the page reported
+            // the founder's seat on somebody else's cookie: every predicate
+            // that asks *am I the founder* said yes and the surface offered
+            // acts the server rightly refused. The whole page is rebuilt
+            // instead, which is what the member path's boot does anyway.
+            // There is no loop: the payload after the reload is a member's,
+            // so this branch is not reached again. The only thing lost is an
+            // applicant's unsubmitted words, which membership has just made
+            // moot — there is no application left to submit.
+            else if (atTheDoor()) { location.reload(); return; }
             // the engine's seq moves on every judgment, proposal and adoption,
             // so it is the cheap fingerprint for the charter's side of the view
             const moved = data.seq !== env.cs.v.seq || (data.eseq || 0) !== (env.cs.v.eseq || 0) ||
