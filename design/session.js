@@ -836,7 +836,7 @@
           ' title="' + esc(d.outcome || 'sealed') +
           (isUnread(g) ? ' — you haven’t opened this one yet' : '') + '">' +
           '<span class="ql">' + markHtml(markKindOf(g)) +
-          '<span class="qt">' + plainLabel(e.label || g.qLabel) + '</span>' +
+          '<span class="qt">' + esc(plainLabel(e.label || g.qLabel)) + '</span>' +
           '<span class="qv when">' + esc(d.when || '') + '</span></span>' +
           '</button></li>';
         continue;
@@ -948,7 +948,7 @@
           // it looks like something you are failing to read. The mark already says you
           // have judged; the card says what you said, in full, when you open it.
           ? '<span class="ql">' + markHtml(g.shifted ? 'shifted' : 'deciding') +
-            plainLabel(e.label || g.qLabel) + '</span>'
+            esc(plainLabel(e.label || g.qLabel)) + '</span>'
           : '<span class="ql">' +
             markHtml(markKindOf(g)) +
             (e.prio
@@ -956,7 +956,7 @@
               // rather than colliding and truncating on one (Ed, 284)
               ? '<span class="qprio">Prioritise:<b>' + esc(plainLabel(e.prio[0])) +
                 '</b><i>vs</i><b>' + esc(plainLabel(e.prio[1])) + '</b></span>'
-              : '<span>' + plainLabel(e.label || g.qLabel) + '</span>') + '</span>' +
+              : '<span>' + esc(plainLabel(e.label || g.qLabel)) + '</span>') + '</span>' +
             // No kind chip and no "copy edit"/"3 proposals racing" line (Ed,
             // 184): both restated in words what the card's own shape already
             // shows — one teaser is a suggestion, two divided teasers are a
