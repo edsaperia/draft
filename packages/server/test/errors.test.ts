@@ -143,4 +143,40 @@ describe('a refused command lands in the error log (Q1330)', () => {
       [`/api/d/${created.slug}/cmd`, 'no-such-command', 'answer']);
     expect(errorTail(dataDir, 1)).toHaveLength(1);
   });
+
+  /**
+   * **The whitelist is the table's own keys** (issue #5). `HANDLERS[cmd]`
+   * reached Object.prototype, so a seated member posting `constructor` got
+   * `Object`, whose call on the session hands back the live session — and
+   * the route serialised it into the reply, log and all, every other
+   * member's blind answers included (SPEC §3.5). An inherited name is now
+   * refused exactly as a misspelt one is: the same status, the same
+   * sentence, no hint that the name means anything.
+   */
+  it('an inherited key is not a command', async () => {
+    const { base, dataDir, draft } = await boot();
+    const created = await (await post(base, '/api/docs', { title: 'Keys', email: 'ada.keys@example.org' }))
+      .json() as { slug: string; devLink: string };
+    const ada = await follow(created.devLink);
+    // a plain member, not the founder: the hole was open to any seat
+    expect((await post(base, `/api/d/${created.slug}/cmd`,
+      { cmd: 'invite', args: { email: 'bo.keys@example.org' } }, ada)).status).toBe(200);
+    await draft.outbox.drain();
+    const invite = readFileSync(join(dataDir, 'outbox.jsonl'), 'utf8').split('\n').filter(Boolean)
+      .map((l) => JSON.parse(l) as { to: string; link?: string })
+      .filter((m) => m.to === 'bo.keys@example.org').pop();
+    const bo = await follow(invite!.link!);
+
+    for (const cmd of ['constructor', 'toString', '__proto__', 'hasOwnProperty', 'valueOf']) {
+      const r = await post(base, `/api/d/${created.slug}/cmd`, { cmd, args: {} }, bo);
+      expect(r.status, cmd).toBe(400);
+      expect(await r.json(), cmd).toEqual({ error: `unknown command '${cmd}'` });
+    }
+
+    // and a real command from the same seat still works
+    const named = await post(base, `/api/d/${created.slug}/cmd`,
+      { cmd: 'set-identity', args: { name: 'Bo' } }, bo);
+    expect(named.status).toBe(200);
+    expect(await named.json()).toMatchObject({ ok: true });
+  });
 });

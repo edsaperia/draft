@@ -13,6 +13,29 @@ import { faceTakenBy, runCommand, validPicture } from '../src/commands.js';
 import { ConstitutionSession } from '../../constitution/src/index.js';
 
 const SETUP_JS = join(import.meta.dirname, '..', '..', '..', 'design', 'setup.js');
+const SESSION_JS = join(import.meta.dirname, '..', '..', '..', 'design', 'session.js');
+
+/**
+ * **The payload is text and the page escapes** (issue #5). A rail entry's
+ * label is `labelFor()`'s return — a heading, the document title, a
+ * clause's first words — all of it member-written, and three of the
+ * thirteen `plainLabel(` sites went into `queueEl.innerHTML` bare, so a
+ * title of `Doc <img src=x onerror=…>` ran script in every member's page.
+ * A text rule, because escaping is a property of the call site and no
+ * fixture carries a tag: if a later safe refactor trips it, fix the site or
+ * widen the reader — do not delete the guard.
+ */
+describe('the rail escapes what members wrote', () => {
+  it('every plainLabel( in design/session.js is wrapped in esc(', () => {
+    const src = readFileSync(SESSION_JS, 'utf8');
+    const bare: number[] = [];
+    for (let i = src.indexOf('plainLabel('); i !== -1; i = src.indexOf('plainLabel(', i + 1)) {
+      if (src.slice(i - 4, i) === 'esc(') continue;
+      bare.push(src.slice(0, i).split('\n').length); // the line it sits on
+    }
+    expect(bare).toEqual([]);
+  });
+});
 
 describe('the lists are the page\'s', () => {
   it('FACE_EMOJI and SURFACE_EMOJI equal design/setup.js byte for byte', () => {
