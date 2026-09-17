@@ -400,9 +400,15 @@ jobs:
       # founding runs straight past an unacknowledged one. The hole is
       # structural, and it swallowed three cards in five days: 🖼️ (Q732, an
       # emoji face at 7px for four days with every check green), 🪪 (Q910,
-      # which took thirteen steps down with it) and 🛡️ (Q914). Coverage is
-      # 24 of 24 now, so a card added to ORDER without a probe step reddens
-      # the build here rather than surfacing weeks later as a bug.
+      # which took thirteen steps down with it) and 🛡️ (Q914). The rule it
+      # holds is **every card in ORDER is opened or exempt with a reason**,
+      # which today reads *23 cards opened … in ORDER (23)*: 22 opened and
+      # one exempt, 📝, which is a card with two modes and never a
+      # `data-setupcard` (backlog 204, K31). So a card added to ORDER
+      # without a probe step reddens the build here rather than surfacing
+      # weeks later as a bug. The count is the tool's own output, not a
+      # number kept by hand here — it read *24 of 24* until 2026-09-17
+      # (issue #17, F1), which is neither the cards nor the coverage.
       - run: npm run probe-coverage
         if: always()
       # the contents rail: every click lands clear of the topbar (M17), and since
@@ -537,12 +543,21 @@ jobs:
             -H 'content-type: application/json' \
             -d '{"title":"Test Charter","slug":"test-charter","email":"a@b.com"}'
 
-      # room-walk gets a server of its own, with the adoption cooldown at 0:
-      # phase A adopts twice in one document, and the second adoption cannot
-      # wait a real cooldown out inside a CI walk. The shared server above
-      # keeps the default, because the ladder's seeded history was built
-      # under it and a different cooldown would re-time its whole past.
-      - name: boot a second dev server for room-walk, cooldown 0
+      # room-walk gets a server of its own for **isolation**: it is the one
+      # walk that builds a room rather than a document — phase A invites,
+      # arrives and drives fifteen members, phase B builds a whole ladder
+      # document with the twenty-strong cast (`CAST_NAMES`, dev-ladder.ts) —
+      # and that does not belong on the process the other nine walks and the
+      # seat matrix are founding their own documents on.
+      #
+      # **Not for the cooldown** (issue #17, F1): this comment said the
+      # shared server "keeps the default cooldown" and room-walk needed 0,
+      # which stopped being true at R-086 — `HOST_COOLDOWN_MS` is 0
+      # (config.ts), so both servers here run at 0 whatever this line says.
+      # `DRAFT_COOLDOWN_MS=0` stays anyway, because room-walk refuses a
+      # server whose `/healthz` reports any other value: stated, it cannot
+      # be taken down by a host default that moves.
+      - name: boot a second dev server for room-walk, isolated, cooldown 0
         run: |
           export PORT=8162
           export DRAFT_DATA_DIR="$RUNNER_TEMP/room-walk-data"
@@ -588,6 +603,7 @@ jobs:
       # servable, ✉️ composing at 🪪's price — on the polled page and on a
       # fresh load
       - run: npm run after-begin-walk -- "$WALK_BASE"
+        if: always()
       # a member's invitation motion on the surface (Q1370): the ✏️ commit at
       # 🪪 proposal, the mover's ✏️ entry, the *proposed* invitee, the twin
       # refusal naming no id
@@ -610,8 +626,12 @@ jobs:
       # then the harness joins CI*). Seven seats × three epochs, asserting
       # SURFACE §2's Audience column per seat per step — the only guard over
       # that column anywhere, and the instrument that found Q1280–Q1282. Both
-      # hats, because green means both: the clerk document stops at 🍾 (Q920)
-      # and its rows are asserted up to there. It is the long one — about ten
+      # hats, because green means both. The clerk document ran only as far as
+      # 🍾 until Q920 was built on 2026-09-07; it goes the whole way now, and
+      # four rows the harness still marks `ifHat: 'member'` for that old
+      # reason — E10, E11, E39 and the removal motion they hang off — are
+      # issue #17's F4 and are **not** asserted on the clerk hat yet. It is
+      # the long one — about ten
       # minutes, of which the `lapsed` seat's real one-minute lapse is a
       # couple — so it stands last of the walks.
       #

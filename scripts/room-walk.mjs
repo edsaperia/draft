@@ -35,10 +35,17 @@
  *
  * **The cooldown must be 0** and the walk refuses a server where it is not:
  * the second adoption of phase A would otherwise wait out a real cooldown
- * (§4.2 allows up to 5 minutes), which no CI walk can sit through. CI boots
- * this walk its own server for exactly that reason — the shared walk server
- * keeps the default cooldown because the ladder's seeded history was built
- * under it.
+ * (§4.2 allows up to 5 minutes), which no CI walk can sit through. The host
+ * default *is* 0 (`HOST_COOLDOWN_MS`, config.ts, R-086), so the line above
+ * states what a bare `npm run server` already does; it is written out
+ * because the refusal is on the value `/healthz` reports, not on the
+ * variable, and a default that moves must not take this walk with it.
+ *
+ * CI boots this walk its own server, and **not for the cooldown** (issue
+ * #17, F1: this sentence claimed otherwise until 2026-09-17). It is for
+ * isolation: phase A drives a fifteen-member room and phase B a whole
+ * ladder document with its twenty-strong cast, which is not a thing to
+ * build on the process nine other walks are founding documents on.
  *
  * The sweep runs at every judgment on a cooldown-0 server, so the race
  * resolves the moment floor and bar are both crossed — usually before the
