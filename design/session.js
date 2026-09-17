@@ -3056,6 +3056,33 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         '" contenteditable="false">' + chips + '</span>';
     };
 
+    // **The pile a newcomer sees** (Q1413, Ed 2026-09-17: *keep the rule, but
+    // the charter's tabs draw greyed behind the OKs*). The same object in the
+    // same gutter, in the one posture this surface has always used for *this
+    // wants nothing from you*: the hourglass, drained to grey, in the closed
+    // hue — **grey means nothing is being asked of you** (SURFACE §6). It is
+    // not a control: no `data-anchor`, so no handler binds to it and a press
+    // opens nothing, which is C14 whole — no act before the power. And it is
+    // no entry: the rail and the contents rail never see these items, because
+    // a margin index is a list of what asks you.
+    //
+    // One tab per question, in the live pile's own order and geometry, so
+    // `fitStacks` fits it like any other and the gutter says *how many* without
+    // saying what or how urgent — neither of which is a newcomer's business
+    // until the power is theirs.
+    const heldStackHtml = (held) => {
+      const stack = stackOrder(held);
+      const chips = stack.map((g, i) => {
+        const behind = i > 0;
+        return '<span class="achip held' + (behind ? ' behind' : '') + '"' +
+          (behind ? ' aria-hidden="true"' : ' title="' + T.chip.held + '"') +
+          ' style="--chiphue: var(--lc-closed); z-index:' + (stack.length - i) + '">' +
+          mkHtml('deciding') + '</span>';
+      }).join('');
+      return '<span class="chipcol' + (stack.length > 1 ? ' stack' : '') +
+        '" contenteditable="false">' + chips + '</span>';
+    };
+
     // **A gap at the very start has no block before it** (backlog 204, Q261:
     // *at the very start on the gap before it*). `G0`'s `insertAfterKey` is
     // null, so the anchor the gap card hangs on cannot be emitted after a
@@ -3193,6 +3220,12 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
             chipStyle(hDecided) + ' data-anchor="' + hDecided.id + '" title="' +
             esc(plainLabel(hDecided.qLabel)) + T.chip.decided + '">' + mkHtml(markKindOf(hDecided)) + '</span></span>';
         }
+        // a heading is an addressable block like any other (Q897), so a
+        // question held back from this reader greys in its gutter too (Q1413)
+        if (!marks) {
+          const heldHead = heldFor(line.key);
+          if (heldHead.length) marks = heldStackHtml(heldHead);
+        }
         const inside = collapsed.has(secN) ? suggestionsInSection(secN) : 0;
         html += '<h2 class="docline editable' + (marks ? ' marked' : '') +
           ' lvl' + (line.level ?? 1) + '" id="sec-' + secN + '"' +
@@ -3240,9 +3273,15 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
           // text flow so the caret lands at offset 0. The sentence promises
           // typing only to somebody who may propose.
           const blank = line.key && !line.x && !wasResolved;
+          // **and a question this reader may not act on yet stands greyed in
+          // the gutter** (Q1413): only where nothing else claims the column,
+          // which is every clause of a busy document for somebody who has not
+          // accepted Voting — the gutter is one column wide and the live or
+          // filed tab already says there is something here.
+          const heldHere = wasResolved ? [] : heldFor(line.key);
           // …and the gap block takes the same treatment with its own sentence
           // (Q1090: one rule, two sentences — the rule is the geometry)
-          html += '<p class="editable' + (wasResolved ? ' anch resolved' : '') + (blank ? ' blank' : '') + (line.gap ? ' gap' : '') + bulletCls(line) + '"' +
+          html += '<p class="editable' + (wasResolved ? ' anch resolved' : '') + (heldHere.length ? ' anch held' : '') + (blank ? ' blank' : '') + (line.gap ? ' gap' : '') + bulletCls(line) + '"' +
             (wasResolved ? ' data-anchor="' + wasResolved.id + '"' +
               anchWash(wasResolved, openId === wasResolved.id, line.key) : '') +
             (line.key ? ' data-key="' + line.key + '"' : '') +
@@ -3251,6 +3290,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
               : T.blank.plain) + '"' : '') + '>' +
             (wasResolved ? '<span class="chipcol" contenteditable="false"><span class="achip" tabindex="0"' + chipStyle(wasResolved) + ' data-anchor="' + wasResolved.id +
               '" title="' + esc(plainLabel(wasResolved.qLabel)) + T.chip.decided + '">' + mkHtml(markKindOf(wasResolved)) + '</span></span>' : '') +
+            (heldHere.length ? heldStackHtml(heldHere) : '') +
             blockHtml(line) + '</p>';
         }
       }
@@ -4839,9 +4879,24 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   const KEPT_UNJUDGED = new Set(['park', 'draft', 'crown']);
   const withheld = (g) => !KEPT_UNJUDGED.has(g.kind) && !g.mine && !MAY_JUDGE();
 
+  // **…but the document does not read as empty while they wait** (Q1413, Ed
+  // 2026-09-17, from the proposal-shapes walk's surprise: a new member of a
+  // busy document boots to zero proposals and a rail of OKs). The rule above
+  // stands whole — no rail entry, no card, no act before the power — and the
+  // **gutter** alone says the document has life in it: every question held
+  // back draws a greyed tab beside its clause, opening nothing. So what a
+  // newcomer meets is a document with questions standing in the margin and a
+  // queue of OKs that leads to them, rather than prose and a rail of
+  // paperwork. They are kept here rather than in `SUGGS` so that the seven
+  // readers of that array are untouched — the whole point of filtering at
+  // ingest — and one render site reads this one.
+  let HELD = [];
+  const heldFor = (key) => (key ? HELD.filter((g) => tabAt(g, key)) : []);
+
   // The data, keyed and seeded exactly as the page did it at load.
   function bindData(d, s) {
     DOC = d; SUGGS = s.filter((g) => !withheld(g));
+    HELD = s.filter((g) => withheld(g));
     // a card that has just been withheld cannot stay open behind it
     if (openId != null && !SUGGS.some((g) => g.id === openId)) openId = null;
     // Always-on typing means *every* clause can be edited, so every clause needs

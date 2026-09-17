@@ -46,14 +46,25 @@
  *   I7  label          — the rail entry is titled by the nearest heading above
  *                        the site (live.js `labelFor`).
  *
+ * Four rulings of 2026-09-17 turned four of those cells from recorded into
+ * asserted, and each has its own letter:
+ *
+ *   I5-removed  C6 — a deletion's lane reads the removal sentence (Q1412).
+ *   N1–N7       p1n — a newcomer's gutter: no entry, no card, and a greyed
+ *                     tab per question held behind their OKs (Q1413).
+ *   Q1–Q6       p3 — a clause emptied **in the composer** sends `lines: []`
+ *                     (Q1415), and the author's own card says so (Q1412).
+ *   R0–R5       p1c — a record over a run stands at its first block and
+ *                     swallows the run when it opens (Q1418).
+ *
  * **No rule** — recorded, never failed, and marked `unruled` in the payload:
- * what a deletion's card draws (C6); what a gap at the very start is titled
- * (C3 — there is no heading above it); I2 at 390 (the drawer holds only what
- * asks you); what a record's field looks like (I5 on a sealed item); the
- * sections a two-site patch folds between its sites (I3-else); a draft's gap
- * sites keeping their anchors under the open card (I3-tabs, I3-gap); and A2,
- * where the brief asked for three distinct gap incumbents and the tree says
- * every gap race shares one — see the note at A2 itself.
+ * what a gap at the very start is titled (C3 — there is no heading above it);
+ * I2 at 390 (the drawer holds only what asks you); the shape of a record's
+ * field (I5 on a sealed item — its *tabs* are R2/R3 and its deletion reading
+ * R5); the sections a two-site patch folds between its sites (I3-else); a
+ * draft's gap sites keeping their anchors under the open card (I3-tabs,
+ * I3-gap); and A2, where the brief asked for three distinct gap incumbents
+ * and the tree says every gap race shares one — see the note at A2 itself.
  *
  * It changes no file and asserts nothing about the constitution: a finding
  * here is a finding about the page, and belongs to Ed, not to this script.
@@ -868,6 +879,68 @@ async function walkItems(page, lines, { railAsserted }) {
         extra: after.visKeys.filter((k) => !before.visKeys.includes(k)) });
   }
   return items;
+}
+
+/* ==========================================================================
+   Phase 1n — **what a newcomer sees before their OKs are in** (Q1413).
+
+   This walk's own surprise, 2026-09-17: cara and dan booted into a document
+   with eleven proposals standing and met zero of them, because no charter
+   item is served until ⚖️ Voting is acknowledged and ⚖️ stands behind every
+   constitutional OK a member is owed (C14, Q1365; `withheld` in session.js).
+   **Ed ruled 2026-09-17: keep the rule, but the charter's tabs draw greyed
+   behind the OKs** — so the first minute of a live document says there is a
+   document with life in it, without offering an act before the power.
+
+   Driven before `clearTasks` ever touches this seat, which is the only
+   window in which the state exists. Dan is the seat: he proposes nothing and
+   has judged nothing, so everything on his page is somebody else's question
+   and the rule's own exemptions (a draft of your own, a park, the crown)
+   cannot muddy the reading.
+   ========================================================================== */
+ctx.phase = 'p1n';
+say('\nPhase 1n — a newcomer’s gutter, behind their OKs');
+{
+  const who = 'dan';
+  const page = PAGES.get(who);
+  ctx.seat = who; ctx.width = 1600; ctx.page = page;
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await page.goto(`${PAGE_BASE}/d/${SLUG}`, { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => !!(window.SESSION && window.__PS), null, { timeout: 20_000 })
+    .catch(() => {});
+  await T(page, 900);
+  const n = await page.evaluate(() => window.__PS.newcomer());
+  // the rule, whole: nothing of the charter is served, in the array or the rail
+  await check('N1', null, who, n.railQ.length === 0 && n.cards === 0 &&
+    n.items === 0 && n.tocMarks === 0,
+    'no charter entry, no contents-rail mark and no card before ⚖️ is acknowledged (C14, Q1365)',
+    { items: n.items, railQ: n.railQ.length, cards: n.cards, tocMarks: n.tocMarks });
+  await check('N2', null, who, n.railCards.length > 0,
+    'the rail holds the OKs this member owes', n.railCards);
+  // …and the gutter says the document is alive: one greyed tab per question
+  // held back, on the clauses they stand at
+  const keys = [...new Set(n.held.filter((h) => !h.behind).map((h) => h.key))];
+  await check('N3', null, who, n.held.length > 0 && keys.length > 0,
+    'greyed tabs in the charter gutter (Q1413)',
+    { tabs: n.held.length, clauses: keys.length });
+  await check('N4', null, who, n.held.every((h) => h.kind === 'deciding'),
+    'each is a lifecycle mark — the deciding hourglass (SURFACE §6)',
+    [...new Set(n.held.map((h) => h.kind))]);
+  await check('N5', null, who, n.held.every((h) => /grayscale/.test(h.grey || '')),
+    'drained to grey — nothing is being asked of you (T19)',
+    [...new Set(n.held.map((h) => h.grey))]);
+  // …and none of it is a control: no anchor, no role, no tabindex, and a
+  // press opens nothing (C14 — no act before the power)
+  await check('N6', null, who, n.held.every((h) => !h.anchor && !h.role && !h.tabindex),
+    'no data-anchor, no role and no tabindex — it is not a control',
+    n.held.filter((h) => h.anchor || h.role || h.tabindex).length);
+  const pressed = await page.evaluate(() => window.__PS.pressHeld());
+  await T(page, 350);
+  const afterPress = await page.evaluate(() => window.__PS.newcomer());
+  await check('N7', null, who, !!pressed && afterPress.cards === 0,
+    'a press on a greyed tab opens nothing', { pressed, cards: afterPress.cards });
+  say(`  ${n.held.length} greyed tabs over ${keys.length} clauses, ${n.railCards.length} OKs owed, ${n.cards} cards`);
+  await page.goto('about:blank');
 }
 
 /* ---- the seats ----------------------------------------------------------- */

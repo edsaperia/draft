@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 441
+  "entries": 443
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -50,6 +50,7 @@
   "grammar.lane.propose": "Propose this",
   "grammar.lane.proposeTitle": "Propose this — nothing leaves the card until you submit",
   "grammar.lane.proposed": "Proposed",
+  "grammar.lane.removed": "This clause would be removed.",
   "grammar.proposeEdit.label": "✏️ propose edit",
   "grammar.proposeEdit.title": "Write your own version of this proposal. Free to open — proposing costs one edit.",
   "grammar.revise.shiftedTail": " You cannot change it, because it was not a vote about this text.",
@@ -337,6 +338,7 @@
   "session.chip.decided": " — decided",
   "session.chip.filedPile": "ƒ (n) => n + ' decided and filed at this clause — open them'",
   "session.chip.gapSection": " — a section proposed for this gap",
+  "session.chip.held": "The membership is deciding this — it is yours to vote on once you accept Voting",
   "session.chip.openIt": " — open it",
   "session.chip.theRecord": " — the record",
   "session.clock.closed": "ƒ (dateWords) => 'Closed ' + dateWords",

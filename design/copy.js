@@ -293,6 +293,12 @@ window.COPY = (function () {
       decided: ' — decided',
       gapSection: ' — a section proposed for this gap',
       filedPile: (n) => n + ' decided and filed at this clause — open them',
+      // **the grey tab a newcomer sees** (Q1413, Ed 2026-09-17): the questions
+      // standing at this clause are not theirs until they have accepted
+      // Voting, so the gutter says the document has life in it and asks for
+      // nothing. One sentence, in the third person: none of this is about you
+      // yet.
+      held: 'The membership is deciding this — it is yours to vote on once you accept Voting',
     },
     // the deadlock card: the reading room and the desk
     dead: {
