@@ -511,6 +511,27 @@ window.LIVE = (function () {
     }
     const FIELDED_MIDS = ['ending', 'quorum', 'authorship', 'judgments',
       'chamber', 'rate', 'lapse', 'removal', 'admission', 'applications'];
+    // **Closing a card is not discarding** (SURFACE C3, issue #11, F4), and
+    // the poll did not know it. Hydration skipped the card that is open and
+    // wrote every other setting's value back into `S` four seconds at a
+    // time — so a number typed into ⏱️ and left there while the founder
+    // looked at another card was reverted to the document's own value by the
+    // next poll, silently, and the card reopened reading what it always
+    // read. 🗑️ is the way back from an uncommitted answer, and nothing else
+    // may take it.
+    //
+    // **What is remembered is what hydration itself last wrote**, per
+    // setting. A field that still matches that is a field nobody has
+    // touched, and it follows the server as before; a field that matches
+    // neither what hydration left nor what is arriving is a member's own
+    // unsent hand, and that whole setting is left alone until the hand is
+    // committed or binned. A field that already equals the incoming value is
+    // not a disagreement, so a room that moves *to* what you typed does not
+    // freeze your card. **Not a snapshot test**: a snapshot lives from a
+    // card's first opening until ✓, so skipping on one would stop those
+    // cards following the server at all and let a later ✓ put back somebody
+    // else's change.
+    const wrote = {};
     function hydrateFromModule(skipKey) {
       const val2 = (mid) => { const st = env.cs.settingState(mid); return st && st.value; };
       for (const mid of FIELDED_MIDS) {
@@ -518,7 +539,14 @@ window.LIVE = (function () {
         const x = val2(mid);
         // value non-null implies settled (every module fold sets or nulls
         // the pair together), so this guard is the whole condition
-        if (x) fieldsOf(mid, x, S);
+        if (!x) continue;
+        const t = {};
+        fieldsOf(mid, x, t);
+        const touched = wrote[mid] && Object.keys(t).some((f) =>
+          String(S[f]) !== String(wrote[mid][f]) && String(S[f]) !== String(t[f]));
+        if (touched) continue;
+        Object.assign(S, t);
+        wrote[mid] = t;
       }
     }
 
