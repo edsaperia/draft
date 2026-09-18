@@ -284,3 +284,57 @@ Continuing the numbering above; these want project numbers and it is the merging
 - `src/metrics.ts` — `StrandedRace` and `strandedAtClose(session, t)` (the deadlock measure, a pure read); `Metrics.stranded`; `Metrics.approvalsAtAdoption` and `approvals`/`floor` carried onto `SiteAdoption`, read from the `adopted` event's new optional fields.
 - `src/runner.ts` — the stranded snapshot taken one instant before `session.close`, and handed to `computeMetrics`. No event, no state change: the log is byte-identical to a run without it.
 - `src/churn.ts` — sections 4 and 5; `sites`, time-to-first-adoption, time-until-every-site-moved and the thin-adoption columns; the `quorum 80%` mislabel corrected (finding 23); two new assertions — that 💤 is inert where no quorum was asked, and that a 30%-no-third floor adopts on fewer approvals than a third-held floor of the same nominal size.
+
+---
+
+## 8. Domination — Q1440, measured 2026-09-18
+
+**Date:** 2026-09-18 · **Engine:** SPEC **v0.134** as built by Q1440 on the `q1440-dominated` worktree, cut from `87bcf63` · **Mode:** scripted personas, deterministic, no network · **Seeds: 2, not 20** — a single ongoing-window run is now some seventy times longer than it was this morning (3,300 adoptions where there were 46), and twenty seeds of the whole file would take more than a day. The spread columns are therefore ±½ a range rather than a standard deviation worth reading; **the orders of magnitude are the finding and they are not close.**
+
+**Reproduce:** `npm run churn -w @draft/sim-harness -- --seeds 2`. Section 5 of the run is this table; sections 1–4 are the study above re-run under the new rule.
+
+**The control is section 7 above**, taken the same morning on the engine before this rule: the same room, the same twenty seeds, the same alpha preset, and the same floors. Four of its five quorums reproduce exactly here — a share is read on the group and capped at half of it either way, so 10% → 2, 20% → 3, 30% → 5, 50% → 8 — and only its *no quorum* row, which ran at a floor of one, is unreachable now. So every row below but that one is **a clean A/B on Q1440 alone**.
+
+*adoptions / flips / reversions*, mean per run, 💤 *never*. `put` is every wording anybody proposed and `closed` is how many the room shut before the clock did.
+
+| window | floor | §7: no domination | **§8: domination** | put | closed |
+|---|---|---|---|---|---|
+| meeting (4 h) | 2 | 24.4 / 14.3 / 11.0 | **29.0 / 19.0 / 15.5** | 44 | 10 |
+| meeting | 3 | 19.0 / 9.0 / 6.3 | **19.0 / 9.0 / 6.0** | 39 | 16 |
+| meeting | 5 | 14.2 / 4.2 / 2.1 | **14.5 / 4.5 / 2.5** | 34 | 14 |
+| meeting | 8 | 12.0 / 2.3 / 0.3 | **12.5 / 2.5 / 0.5** | 33 | 12 |
+| conference (72 h) | 2 | 46.1 / 36.1 / 32.6 | **368.0 / 358.0 / 350.5** | 697 | 276 |
+| conference | 3 | 26.3 / 16.3 / 13.5 | **172.0 / 162.0 / 157.5** | 570 | 359 |
+| conference | 5 | 15.6 / 5.7 / 3.6 | **87.0 / 77.0 / 75.0** | 481 | 362 |
+| conference | 8 | 12.9 / 3.1 / 1.1 | **48.5 / 38.5 / 36.5** | 444 | 371 |
+| ongoing (1 month) | 2 | 46.1 / 36.1 / 32.6 | **3313.5 / 3303.5 / 3295.0** | 6764 | 2962 |
+| ongoing | 3 | 26.3 / 16.3 / 13.5 | **1698.0 / 1688.0 / 1682.0** | 5554 | 3500 |
+| ongoing | 5 | 15.6 / 5.7 / 3.6 | **880.0 / 870.0 / 868.0** | 4863 | 3692 |
+| ongoing | 8 | 12.9 / 3.1 / 1.1 | **393.5 / 383.5 / 381.5** | 4354 | 3826 |
+
+*(§7's ongoing rows are its conference rows: the month was the three days, seed for seed. `sites` is 10.0 in every cell of both sections, and welfare is 0.93–1.00 throughout — finding 18 again.)*
+
+**Reading.**
+
+25. **The rule costs a short room nothing, and it costs a long one everything.** At the meeting window — four hours, the shape Ed's live rooms are founded at — the two columns are the same numbers: 19.0/9.0/6.0 against 19.0/9.0/6.3 at a floor of three, 14.5/4.5/2.5 against 14.2/4.2/2.1 at five. The room closes ten to sixteen wordings per run and nothing else moves. At the conference window the same floors run **six to eight times** the adoptions and **eleven times** the reversions. The difference between the two is time to re-propose: in four hours a room that loses a wording does not get round to writing another one, and in three days it writes forty.
+
+26. **And a perpetual document no longer stops.** §1's finding 3 and this file's own assertion were that the month-long window ran the same session as the three-day one, adoption for adoption — the room reached a fixed point inside three days. **That is over at every floor**, not only at the bottom of the curve: 368 → 3,314 at a floor of two, 87 → 880 at five, 48.5 → 393.5 at eight, still climbing when the window closed. The assertion has been replaced by a printed line, because it is now a finding rather than an invariant.
+
+27. **Two mechanisms, and only one of them is the ruling.** The first is the ruling: a wording the room refused leaves, and its author writes another — 697 wordings put over three days where the field used to hold a few dozen. The second is not, and is the more serious of the two: **a retirement takes its judgments out of the fit with it.** A comparison naming a candidate that is no longer live is dropped from its race's usable set, so closing a rival raises the fitted strength of everything that lost to it, and the survivor can cross the current text on evidence that has simply disappeared. That is exactly the defect **R-122** named in withdrawal — *the leader withdrawn, the race dropping to three comparisons and a new leader with nothing locked and no fresh pairs served* — which Ed deferred to §13's ledger on 2026-09-17 as several days' work, on the reasoning that real withdrawals are rare. **Q1440 makes retirement the ordinary end of a losing proposal**, so the deferred work is now on this rule's critical path. Unmeasured here, and the first thing to measure next: the same table with a closed candidate's comparisons frozen into its race's fit rather than deleted from it.
+
+28. **Re-proposing is free, which is the third of the pressure.** §7's performance refund pays a stake back whole or better wherever the room ever rated the wording above the current text (`stake × min(w/0.5, 1.5)`), and the dedup gate (§5) compares a new draft against **live** candidates only — so a wording closed by domination may be put again at once, by anybody, at no cost. In the charter scenario (a different room, 72 hours) the whole of a run's 413 stakes came back: 412.11 tokens refunded on 413 staked. Ed's *the author re-proposes* is that, taken literally by personas that never get bored; a human room would do less of it, so **these numbers are an upper bound on the ordering rather than a prediction of the count**. The ordering across arms is what to trust, and it is unambiguous.
+
+29. **The cooldown is a brake now, where it was not before.** §3's finding — quoted into SPEC §4.2 as *cooldowns of one, five and fifteen minutes are indistinguishable* — is false on this engine: at the conference window the same seeds run 368 · 318 · 230 · 144 adoptions at 1 · 5 · 15 · 30 minutes. It brakes because a longer cooldown gives the domination pass, which rides the batch, fewer chances to fire, and gives a closed wording's author less of the window to re-propose in. **A room that wants this rule and not its churn has a dial it did not have yesterday**, and it is the operator's (`DRAFT_COOLDOWN_MS`), not the document's.
+
+30. **`stranded` is unmoved, and was never going to move.** 0.0–1.5 races per run in every arm, against 0.0–0.5 in §7. A leader short of its floor with members who have never answered it is *not* dominated — those members could still approve — so the rule cannot close the races Q1439 built `stranded` to watch. It closes the ones the room has answered and refused, which were never stranded in the first place.
+
+## What this says
+
+**The rule is right for a meeting and wrong for a month, as built.** Nothing here argues against Ed's sentence — a proposal the room has refused should not sit in the rail until T=0, and at the shape his rooms actually run at that is all this rule does. What the long windows expose is that the engine is not ready for retirement to be a common event, and the reason is R-122, which was already known and already deferred.
+
+The order this report would take them in:
+
+1. **Freeze a closed candidate's comparisons into its race's fit** rather than dropping them (R-122's deferred design, narrowed to retirement). It is the cause of the largest term and it is the one fix that is about correctness rather than about pace.
+2. **Refuse a re-proposal of a wording the room closed** — the dedup gate already knows how to recognise it and currently looks only at live candidates.
+3. **Refund nothing on a domination**, as R-056 already does for the Founder's refusal, on the same argument: a stake that comes back prices the room's refusal as a withdrawal.
+4. **Or, if none of those before Sunday: raise `DRAFT_COOLDOWN_MS`.** Finding 29 is the cheapest lever in the list and costs one environment variable.

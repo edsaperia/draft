@@ -288,6 +288,86 @@ say('Invitees   · ' + JSON.stringify(sub2));
 if (!sub2 || !/newbie/.test(sub2)) fail('the subsection', '*Invitees* lost the carried invitee: ' + JSON.stringify(sub2));
 else if (/proposed/.test(sub2)) fail('the subsection', '*Invitees* still calls the carried invitation proposed');
 
+/* ---- an invitation the room can no longer pass lets its address go ------
+ * (Q1440, Ed 2026-09-18; SPEC §4.4 → why: R-132.)
+ *
+ * The twin rule (R-103) holds an address against a motion that is **running**,
+ * and until now an invitation the room did not want ran until T=0 — so a room
+ * that voted one down could not invite that person again for the life of the
+ * document, and the mover was never told it had failed either, an OK being
+ * refused on a shut document (R-130's own note). Both end here: the motion is
+ * held at the sweep that discovers it, the mover is owed E41's card, and the
+ * address is free.
+ *
+ * The room is three and the quorum is half, so F is two: the founder's refusal
+ * leaves it standing — m2 could still make it two against one — and m2's
+ * closes it. Driven over the wire, because what is asserted is the module's
+ * state and the door's answer, not a control. */
+const viewFor = async (who) => (await (await fetch(`${BASE}/api/d/${SLUG}/view`,
+  { headers: { cookie: jars.get(who) } })).json());
+const refuse = async (who, person) => {
+  const v = await viewFor(who);
+  const race = (v.settingRaces || []).find((r) => r.settingId === `invite:${person}`);
+  const card = (v.raceCards || []).find((c) =>
+    (c.a.setting || {}).settingId === `invite:${person}` ||
+    (c.b.setting || {}).settingId === `invite:${person}`)
+    || (race && race.ask) || null;
+  if (!card) return { err: 'no pair on the invitation for ' + who };
+  // the incumbent endpoint is *they are not a member*, which is what a
+  // refusal prefers
+  const keep = card.a.id.startsWith('inc:') ? 'a' : 'b';
+  return cmd(who, 'judge-race', { a: card.a.id, b: card.b.id, outcome: keep });
+};
+const SECOND = `second-${run}@example.org`;
+const opened = await cmd('m1', 'open-motion',
+  { payload: { kind: 'invite', email: SECOND }, why: 'they keep the rota' });
+say('second     · ' + JSON.stringify(opened.error || opened.result));
+if (!opened.ok) fail('the second invitation', 'the mover could not put it: ' + JSON.stringify(opened.error));
+else {
+  const motion = opened.result;
+  const personOf = (v) => {
+    const m = ((v.view && v.view.motions) || []).find((x) => x.id === motion);
+    return m && m.payload ? m.payload.person : null;
+  };
+  const person = personOf(await viewFor('founder'));
+  const one = await refuse('founder', person);
+  if (one.err || one.ok === false) fail('the first refusal', JSON.stringify(one.err || one.error));
+  await T(1500);
+  const mid = ((await viewFor('m1')).view.motions || []).find((m) => m.id === motion);
+  say('refused ×1 · ' + JSON.stringify(mid && mid.status));
+  if (!mid || mid.status !== 'running') {
+    fail('the first refusal', 'one refusal of three closed it — m2 could still have carried it');
+  }
+  const two = await refuse('m2', person);
+  if (two.err || two.ok === false) fail('the second refusal', JSON.stringify(two.err || two.error));
+  await T(2000);
+  const v2 = await viewFor('m1');
+  const held = (v2.view.motions || []).find((m) => m.id === motion);
+  say('refused ×2 · ' + JSON.stringify(held && { status: held.status, owed: v2.view.owedHeld }));
+  if (!held || held.status !== 'held') {
+    fail('the domination', 'the invitation should be held by the membership, saw '
+      + JSON.stringify(held && held.status));
+  }
+  // E41: the mover, and nobody else
+  if (!(v2.view.owedHeld || []).includes(motion)) {
+    fail('E41 for the mover', 'the mover is not owed the card: ' + JSON.stringify(v2.view.owedHeld));
+  }
+  for (const who of ['founder', 'm2']) {
+    const owed = ((await viewFor(who)).view.owedHeld) || [];
+    if (owed.includes(motion)) fail('E41’s audience', who + ' was owed a card about somebody else’s motion');
+  }
+  // nobody was invited…
+  const seated = ((v2.view.members) || []).some((m) => m.email === SECOND);
+  if (seated) fail('the invitation', 'a held invitation seated its invitee');
+  // …and the address is free again: the twin rule holds only against a
+  // motion that is running (R-103)
+  const again = await cmd('m2', 'open-motion',
+    { payload: { kind: 'invite', email: SECOND }, why: 'let us ask again' });
+  say('address    · ' + (again.ok ? 'free — ' + again.result : 'FAIL ' + JSON.stringify(again.error)));
+  if (!again.ok) fail('the released address', 'the same address was refused after the motion failed: '
+    + JSON.stringify(again.error));
+}
+
 if (errors.length) fail('page errors', JSON.stringify(errors));
 say(stuck.length ? '\nFAILED: ' + stuck.join(' · ') : '\nok — a member\'s invitation stands on the page from the press, and the room votes it in');
 await browser.close();

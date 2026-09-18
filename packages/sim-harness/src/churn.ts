@@ -178,6 +178,17 @@ interface Run {
   stranded: StrandedRace[];
   /** The approvals each adoption in this run actually carried on (Q1439). */
   approvalsAtAdoption: number[];
+  /**
+   * **What the room proposed, and what it closed** (Q1440). `candidates` is
+   * every wording anybody put up; `dominated` is how many of them the room
+   * closed before the window did — a proposal no answer still to come could
+   * carry (SPEC §4.4). The two are here because the rule's whole effect on a
+   * simulated room is that a losing wording leaves and its author writes
+   * another, and neither `adoptions` nor `flips` can say how much of that
+   * happened.
+   */
+  candidates: number;
+  dominated: number;
   actions: number;
   hash: string;
   /**
@@ -221,6 +232,9 @@ async function measure(arm: string, win: (typeof WINDOWS)[number],
       firstAdoptionMs: m.firstAdoptionMs,
       stranded: m.stranded,
       approvalsAtAdoption: m.approvalsAtAdoption,
+      candidates: m.candidates,
+      dominated: r.session.log.filter((e) => e.event.type === 'candidate-retired'
+        && (e.event as { reason?: string }).reason === 'dominated').length,
       actions: r.actions,
       hash: r.session.rollingHash(),
       sig: JSON.stringify([m.adoptions, m.edgeComparisons, m.diagonalComparisons,
@@ -275,6 +289,9 @@ function cellStats(c: Cell) {
       0, ...r.churn.map((s) => (s.adopted[0]?.t ?? 0) / MIN)))),
     /** Races left short of their floor at the close, per run (Q1439). */
     stranded: stat(c.runs.map((r) => r.stranded.length)),
+    /** Wordings put up, and wordings the room closed before the clock did. */
+    candidates: stat(c.runs.map((r) => r.candidates)),
+    dominated: stat(c.runs.map((r) => r.dominated)),
     /**
      * **What the room was actually holding when it acted** (Ed, 2026-09-18):
      * the smallest approval count any adoption in the cell carried on, and how
@@ -313,6 +330,8 @@ function row(label: string, c: Cell): string {
     + ` · flips ${spread(s.flips).padEnd(19)}`
     + ` · reversions ${spread(s.reversions).padEnd(19)}`
     + ` · stranded ${spread(s.stranded).padEnd(17)}`
+    + ` · put ${s.candidates.mean.toFixed(0).padStart(5)}`
+    + ` closed ${s.dominated.mean.toFixed(0).padStart(5)}`
     + ` · approvals ${s.approvals === null ? 'none'
       : `min ${String(s.approvals.min).padStart(2)}`
         + ` mean ${s.approvals.mean.toFixed(1)}`
@@ -446,18 +465,19 @@ async function main(): Promise<void> {
     say(row(`cooldown ${minutes} min`, cell));
   }
   say('');
-  // **The floor as the label states it is the floor at a full group** (Q1439):
-  // `max(Q′, min(⌈E/3⌉, 12))` with `Q′ = min(asked, ⌈G/2⌉)` — SPEC §4.2 and
-  // `races.ts`'s `floorFor`, which is the line this one shadows. G is the group
-  // the leader waits on, and it is E only while nobody has abstained and
-  // nobody is indifferent; with 💤 set it shrinks, and so can the floor. So
-  // the number in the label is the floor **at the start**, and the printed
-  // `stranded` column is what the floor actually came to.
+  // **The floor as the label states it is the floor at a full group** (Q1439,
+  // and Q1439 ruling u since v0.133): `max(Q′, min(2, E))` with
+  // `Q′ = min(asked, ⌈G/2⌉)` — SPEC §4.2 and `races.ts`'s `floorFor`, which is
+  // the line this one shadows and which no longer carries a ⌈E/3⌉ term at all
+  // (R-131). G is the group the leader waits on, and it is E only while nobody
+  // has abstained and nobody is indifferent; with 💤 set it shrinks, and so can
+  // the floor. So the number in the label is the floor **at the start**, and
+  // the printed `stranded` column is what the floor actually came to.
   // The share is ⌈n·G/100⌉, the product before the quotient (issue #24).
-  const floorAt = (q: Constitution['quorum'], floorMax = 12): number => {
+  const floorAt = (q: Constitution['quorum']): number => {
     const e = ROOM.personas.length;
     const asked = q === null ? 0 : q.form === 'count' ? q.n : Math.ceil((q.n * e) / 100);
-    return Math.max(Math.min(asked, Math.ceil(e / 2)), Math.min(Math.ceil(e / 3), floorMax));
+    return Math.max(Math.min(asked, Math.ceil(e / 2)), Math.min(2, e));
   };
   // **The 80 % arm is gone, and it cannot come back** (Q1439, ruling a, R-126):
   // `validateValue` refuses a share above 50, and the engine caps *either* form
@@ -479,26 +499,34 @@ async function main(): Promise<void> {
     say(row(`${label} · floor ${floorAt(q)}`, cell));
   }
 
-  // **A perpetual document is not a document that churns for ever.** If the
-  // month-long window produces the same session as the three-day one on every
-  // seed, the room reached a fixed point inside three days and the extra
-  // twenty-seven days are idle turns. Asserted rather than eyeballed, because
-  // it is the answer to *does this ever stop*.
+  // **Does a perpetual document ever stop?** Until Q1440 it did: the
+  // month-long window ran the same session as the three-day one on every seed,
+  // adoption for adoption, so the room reached a fixed point inside three days
+  // and the extra twenty-seven were idle turns. **It does not stop now**, and
+  // that is this file's largest finding rather than a failure of it: closing a
+  // wording the room has refused takes its judgments out of the fit with it
+  // (R-122's defect, which was rare while retirement was rare) and §7's
+  // performance refund hands the stake back, so the room re-proposes and
+  // re-decides for as long as the clock runs. The comparison is reported
+  // rather than asserted, and the number beside it is what to read.
   {
     const c = barCells.get('0.5/conference')!;
     const o = barCells.get('0.5/ongoing')!;
-    check(o.runs.every((r, i) => r.sig === c.runs[i]!.sig),
-      'the month-long window runs the same session as the three-day one on '
-      + 'every seed: the room reaches a fixed point and stops, it does not '
-      + 'churn on');
+    const fixed = o.runs.every((r, i) => r.sig === c.runs[i]!.sig);
+    const cs = cellStats(c), os = cellStats(o);
+    say(`\n  fixed point: ${fixed ? 'yes — the month is the three days, seed for seed'
+      : `NO — ${cs.adoptions.mean.toFixed(0)} adoptions over three days become `
+        + `${os.adoptions.mean.toFixed(0)} over a month, still climbing at the close`}`);
   }
 
-  say('\n== 4. the approval floor with the third, as Q1439 built it =============');
-  say('  F counts **approvals** now — a member\'s latest judgment of the leader');
+  say('\n== 4. the approval floor, as Q1439 left it =============================');
+  say('  F counts **approvals** — a member\'s latest judgment of the leader');
   say('  against the text that stands, preferring it — read against the group');
-  say('  the leader is waiting on and capped at half of it; ⌈E/3⌉ = 5 is the');
-  say('  minimum and it is read on the whole room. 💤 turns a silence on one');
-  say('  candidate into an abstention, which leaves that group. Same seeds.');
+  say('  the leader is waiting on and capped at half of it, and never below');
+  say('  a seconder: `max(Q′, min(2, E))` since v0.133 (Ed, ruling u; R-131).');
+  say('  **The built-in minimum of ⌈E/3⌉ is gone**, so *no quorum* is a floor');
+  say('  of two here where this section once read five. 💤 turns a silence on');
+  say('  one candidate into an abstention, which leaves that group. Same seeds.');
   const floorCells = new Map<string, Cell>();
   for (const win of WINDOWS) {
     say(`\n  -- ${win.name}: ${win.note}`);
@@ -514,9 +542,10 @@ async function main(): Promise<void> {
     }
   }
   // **With no quorum, 💤 cannot matter**, and that is the mechanism rather than
-  // a measurement: the floor is `max(Q′, ⌈E/3⌉)`, abstention moves only the
+  // a measurement: the floor is `max(Q′, min(2, E))`, abstention moves only the
   // group `Q′` is read against, and where no quorum was asked `Q′` is zero at
-  // any group size. Asserted, because it is the first thing a reader of the
+  // any group size — so the seconder is the floor and there is nothing for the
+  // period to move. Asserted, because it is the first thing a reader of the
   // table below will suspect is a bug — and because if it ever stops holding,
   // something has started reading the group somewhere it should not.
   for (const win of WINDOWS) {
@@ -526,8 +555,8 @@ async function main(): Promise<void> {
       const other = floorCells.get(`${win.name}/${Q_ARMS[0]!.label}/${al}`)!;
       check(other.runs.every((r, i) => r.sig === never.runs[i]!.sig),
         `with no quorum, 💤 changes nothing at ${win.name} (${al}): the floor `
-        + 'is ⌈E/3⌉, and abstention moves only the group a quorum is read '
-        + 'against — there being no quorum, it has nothing to move');
+        + 'is the seconder, and abstention moves only the group a quorum is '
+        + 'read against — there being no quorum, it has nothing to move');
     }
   }
 
@@ -545,53 +574,61 @@ async function main(): Promise<void> {
     }
   }
 
-  say('\n== 5. the floor without the third (Ed, 2026-09-18) =====================');
-  say('  *if the membership want a smaller quorum they should be able to');
-  say("  choose it.* The built-in minimum of ⌈E/3⌉ goes, and F is the settled");
-  say('  quorum alone, read against the group and capped at half of it, never');
-  say('  below one. **These arms are the rule as ruled; section 4 is context.**');
+  say('\n== 5. domination: a proposal that can never win is closed (Q1440) ======');
+  say('  Ed, 2026-09-18: *as soon as it\'s dominated by another option (e.g. it');
+  say('  can never win unless people change votes they already cast) then it');
+  say('  should be counted as closed.* Nothing closed before this; a wording');
+  say('  the room had refused sat in the field until T=0.');
   say('');
-  say('  It is measured here with `adoptionFloorMax: 1`, which makes the');
-  say('  engine\'s own `min(⌈E/3⌉, adoptionFloorMax)` term the constant 1 for');
-  say('  every E — so `floorFor` computes exactly `max(Q′, 1)` with no engine');
-  say('  change, and the *never below one* half of the ruling is modelled');
-  say('  rather than assumed. (`adoptionFloorMax: 0` would drop that half and');
-  say('  let a room with no quorum at all adopt on nobody\'s approval.)');
-  say('  At fifteen the shares below are floors of 1 · 2 · 3 · 5 · 8 — and 30%');
-  say('  lands on 5, which is what ⌈E/3⌉ used to impose on all of them.');
+  say('  **The control is the 2026-09-18 addendum\'s section 7**, whose rows');
+  say('  were taken on the engine of that morning — the same floors, the same');
+  say('  seeds, the same room, and no domination. Four of its five quorums');
+  say('  reproduce exactly here (10% → 2, 20% → 3, 30% → 5, 50% → 8, since a');
+  say('  share is read on the group and capped at half of it either way); its');
+  say('  *no quorum* row ran at a floor of one, which no engine can produce');
+  say('  now, and *no quorum* below is a floor of two. So every row but that');
+  say('  one is a clean A/B on this rule alone, and the report is where the');
+  say('  two columns stand side by side.');
+  say('');
+  say('  `put` is every wording anybody proposed and `closed` is how many the');
+  say('  room shut before the clock did — the two numbers that say how much of');
+  say('  a change in `adoptions` is the room deciding again rather than the');
+  say('  room deciding more.');
   const noMinCells = new Map<string, Cell>();
   for (const win of WINDOWS) {
     say(`\n  -- ${win.name}: ${win.note}`);
     for (const { label: ql, q } of Q5_ARMS) {
       for (const { label: al, ms } of abstainArmsFor(win)) {
-        const cell = await measure(`no third · ${ql} · ${al}`, win, {
-          ...ALPHA_PRESET_OVERRIDES, quorum: q, abstainAfterMs: ms, adoptionFloorMax: 1,
+        const cell = await measure(`dominated · ${ql} · ${al}`, win, {
+          ...ALPHA_PRESET_OVERRIDES, quorum: q, abstainAfterMs: ms,
         }, seeds);
         noMinCells.set(`${win.name}/${ql}/${al}`, cell);
         all.push(cell);
-        say(row(`${ql} · ${al} · floor ${floorAt(q, 1)}`, cell));
+        say(row(`${ql} · ${al} · floor ${floorAt(q)}`, cell));
       }
     }
   }
-  // **The two floors of five are not the same floor**, and this is the whole
-  // difference the ruling makes. At fifteen a share of 30 is ⌈E/3⌉ exactly, so
-  // *no third · quorum 30%* and section 4's *no quorum* both start at 5 — but
-  // the third is read on **E**, which does not move, while Q′ is read on **the
-  // group**, which shrinks whenever a member answers *Indifferent*, leaves the
-  // room, or abstains. So the no-third arm adopts on fewer approvals than the
-  // with-third arm ever can, on the same seeds and the same nominal number.
-  // Asserted on the thinnest adoption in each cell, which is where a floor
-  // that decays shows and a floor that does not cannot.
+  // **Does the rule close anything, and does it end the deadlock it could?**
+  // Two readings, printed rather than asserted: a rule that closed nothing
+  // would be a rule that never fired, and `stranded` — races the window ran
+  // out on with the leader on top and short of F — is the number Q1439 built
+  // to watch and the one this rule could plausibly drive to zero. It cannot
+  // drive it to zero by construction: a leader short of its floor with
+  // members who have never answered is not dominated, because those members
+  // could still approve it. What it does to the number is the finding.
   for (const win of WINDOWS) {
-    const withThird = pooledApprovals(floorCells.get(`${win.name}/${Q_ARMS[0]!.label}/${NEVER}`)!)!;
-    const without = pooledApprovals(noMinCells.get(`${win.name}/quorum 30%/${NEVER}`)!)!;
-    check(without.min < withThird.min,
-      `at ${win.name}, a 30% quorum with no third asks the same 5 of a full `
-      + `room and adopts on fewer: thinnest adoption ${without.min} approvals `
-      + `against ${withThird.min} where the third holds the floor on E`);
+    const cell = noMinCells.get(`${win.name}/no quorum/${NEVER}`)!;
+    const s = cellStats(cell);
+    say(`\n  ${win.name} · no quorum · ${NEVER}: `
+      + `${s.candidates.mean.toFixed(0)} wordings put, ${s.dominated.mean.toFixed(0)} closed, `
+      + `${s.adoptions.mean.toFixed(0)} adoptions, ${s.reversions.mean.toFixed(1)} reversions, `
+      + `${s.stranded.mean.toFixed(1)} stranded`);
   }
+  check(WINDOWS.some((w) => cellStats(noMinCells.get(`${w.name}/no quorum/${NEVER}`)!)
+    .dominated.mean > 0), 'the rule fires: the room closes wordings it can no '
+    + 'longer pass, rather than carrying them to the close');
 
-  say('\n  what the stranded races ran out on, without the third:');
+  say('\n  what the stranded races ran out on, with domination:');
   for (const win of WINDOWS) {
     for (const { label: ql } of Q5_ARMS) {
       for (const { label: al } of abstainArmsFor(win)) {
