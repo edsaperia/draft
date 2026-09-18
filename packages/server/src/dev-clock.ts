@@ -152,7 +152,10 @@ export async function advanceClock(host: ClockHost, doc: LoadedDoc,
   // …and whether the jump is long enough for presence to record it. The
   // check is arithmetic on the time the jump *would* reach, so a refusal
   // costs nothing: no offset is installed and no event is emitted.
-  const wouldBe = foldTime(doc, nowMs + advanceMs);
+  // (the skew already standing is added by hand rather than left to
+  // `foldTime`, which takes a maximum and would read a second jump as
+  // reaching only as far as the first)
+  const wouldBe = foldTime(doc, nowMs + (OFFSETS.get(doc.id) ?? 0) + advanceMs);
   const lapse = doc.cs.settingState('lapse').value as { afterMs: number | null } | null;
   const spell = lapse === null ? null : lapse.afterMs;
   if (spell !== null) {
