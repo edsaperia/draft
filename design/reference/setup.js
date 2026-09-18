@@ -231,6 +231,11 @@ window.SETUP = (function () {
      reason: one function draws it, so the columns cannot drift. */
   const markOf = (c, ctx, tab, host) => {
     const st = stateOf(c, ctx);
+    // **A filed record wears its outcome** (Q1459): its subject *is* how the
+    // motion ended, so the tab is the drawn ✔ for one that carried and the ✖
+    // for one that did not, in every state — never a character for
+    // `glyphHtml`, which a record has not got.
+    if (c.record) return c.carried ? DONE : RETIRED;
     // **A retired tab keeps its subject glyph** (Ed, 2026-08-18): the piles
     // stand in one place, hold the whole constitution, and most of what is
     // in them can still be acted on — they are a menu, and a menu of ✔s

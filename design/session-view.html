@@ -491,7 +491,7 @@
 <script src="band.js"></script>
 <script>
 (function () {
-  const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml: cardHtml0,
+  const { esc, avHtml, bandHtml, fitBand, railEntry, cardHtml: cardHtml0,
     nameBody, pictureBody, opt, num, numIn, ctlWord, someIn, ANSWER, stateOf, labelOf, nounOf,
     MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml, stripHtml, readBody,
     routeFor, motionCommitHtml, BLINDNOTE, listOf, syncSlider,
@@ -3063,7 +3063,15 @@
     // recomputed rather than frozen, for `admitCard`'s reason: the words a
     // motion is described in are the page's, and the page's copy moves
     RECCACHE[k].record = rec.id;
-    RECCACHE[k].g = rec.status === 'carried' ? TICK : window.CARDS.CROSS;
+    // **A record says how it ended; `markOf` draws it** (Q1459, Ed's *grey text*
+    // screenshot from the residency room, 2026-09-18). `g` held markup — the
+    // drawn ✔ for a carried motion, and for a rejected one `CARDS.CROSS`, which
+    // Q1360 deleted — and since Q1401 every tab's glyph goes through
+    // `glyphHtml`, one character in, which escaped it: the ✔'s own source was
+    // printed as text across the card. The glyph is a character again, for
+    // whatever reads one, and the mark is the outcome's.
+    RECCACHE[k].carried = rec.status === 'carried';
+    RECCACHE[k].g = RECCACHE[k].carried ? '✔' : '✖';
     RECCACHE[k].t = (rec.status === 'carried' ? PAGE_COPY.synth.passedLead : PAGE_COPY.synth.rejectedLead) + motionDisplay(rec);
     return RECCACHE[k];
   };
@@ -6337,7 +6345,16 @@
     // ⚖️ OK not yet given, or the page's judgment marker never written). An
     // admission is a door standing by its result: a task at *proposal* and
     // *assembly*, news only at *pen*, which the chain above already says.
-    || (constituted() && !amFounder() && !c.ansFor && !c.isGate && !c.door && !c.admit && !isRoom(c) && c.own !== 'you' &&
+    // **…and never a motion's own card** (Ed's screenshot from the residency
+    // room, 2026-09-18: *if this is green it should be decided and I shouldn't
+    // be able to change my vote, if waiting for votes it should be grey ⏳*).
+    // Q1371's hole again, one card kind along: a `mo:` card wears its host's
+    // kind (⏰ is constitutional), and once it has been opened and answered it
+    // reads *settled* with no `set-` OK anybody could give — so a motion the
+    // room was still voting on turned the decided green, ✔ and all, at the
+    // moment its voter should have met the grey ⏳. A running motion is a
+    // question, not a rule; the rule it becomes is its host's news.
+    || (constituted() && !amFounder() && !c.ansFor && !c.isGate && !c.door && !c.admit && !c.motion && !isRoom(c) && c.own !== 'you' &&
       // **and an ordinary setting the founder *changed*** (Q530, Ed
       // 2026-08-22). An ordinary rule the founder simply made is not news —
       // nothing was asked and anybody may motion it whenever they like — but
