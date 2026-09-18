@@ -35,6 +35,7 @@ import { ConstitutionSession, LAPSE_MIN_MS } from '../../constitution/src/index.
 import type { LogEntry } from '../../constitution/src/index.js';
 import { createDraftServer } from '../src/server.js';
 import type { DraftServer } from '../src/server.js';
+import { foldTime } from '../src/engine-host.js';
 import { FilePersistence } from '../src/persistence.js';
 import { DocStore, StorePeople } from '../src/store.js';
 
@@ -186,6 +187,17 @@ describe('the dev clock (Q1455): one document moved forward, the host still doin
     // …and the advanced one stamps its next act at the new time
     await one.cmd(one.ada, 'set-identity', { name: 'Ada Again' });
     expect(lastTOf(one.slug)).toBeGreaterThanOrEqual(realBefore + 2 * 3600_000);
+
+    // **The skew is applied once, however many times a time goes round.** Not
+    // every caller hands `foldTime` a wall clock — the phase ladder commits at
+    // its own pen's time, which is already a document time — and adding the
+    // skew again would move the document twice as far on every hop. A ladder
+    // document did exactly that within minutes of the first cut: two hours
+    // ahead after a one-hour jump, its engine log with it, and the next rung
+    // writing behind its own past.
+    const doc = b.draft.store.bySlug(one.slug)!;
+    expect(foldTime(doc, foldTime(doc))).toBe(foldTime(doc));
+    expect(foldTime(doc, Date.now())).toBeLessThan(realBefore + 3 * 3600_000);
   });
 
   it('lapses a quiet member by the ordinary tick after the advance, and not before', async () => {

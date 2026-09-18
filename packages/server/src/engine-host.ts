@@ -88,7 +88,25 @@ export function foldTime(doc: LoadedDoc, nowMs: number = Date.now()): number {
   const bridge = asEngineDoc(doc).bridge;
   const eLog: ReadonlyArray<{ event: { t: number } }> = bridge ? bridge.engine.log : [];
   const eLast = eLog.length > 0 ? eLog[eLog.length - 1]!.event.t : 0;
-  return Math.max(nowMs + devSkewMs(doc.id), csLast, eLast);
+  return Math.max(now(doc, nowMs), csLast, eLast);
+}
+
+/**
+ * **The skew is applied once, however many times a time goes round** (Q1455).
+ * Not every caller hands `foldTime` a wall clock: the phase ladder commits at
+ * `pen.now`, which is already a document time, and `tellGaveUp` passes a time
+ * it took from here. Adding the skew to those would move the document twice
+ * as far on every hop — and it showed, within minutes: a ladder document one
+ * hour ahead was committed two hours ahead, its engine log with it, and the
+ * next rung wrote behind its own past. So a skewed document's clock is *at
+ * least* its own now, and a caller that already knows that lands on the same
+ * instant rather than past it. Unskewed — every document in anything that
+ * ships — this is `nowMs` untouched, including the explicit past times the
+ * unit tests hand it.
+ */
+function now(doc: LoadedDoc, nowMs: number): number {
+  const skew = devSkewMs(doc.id);
+  return skew === 0 ? nowMs : Math.max(nowMs, Date.now() + skew);
 }
 
 /** Resume a persisted bridge; called once per document at load. The host's
