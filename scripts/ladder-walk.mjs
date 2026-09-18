@@ -148,6 +148,44 @@ async function okThe(key) {
 }
 
 /**
+ * **What the 🥂 card says, and what the rail is not holding beside it**
+ * (Q1450, Ed 2026-09-18). The closed rung is the only place in any walk
+ * where a document shuts with motions still running on both routes — the
+ * session rung leaves an ordinary race on ⏱️, a constitutional question
+ * collecting on 👁️, and two membership motions — so it is the only place
+ * the new line can be read at all.
+ *
+ * Opens the card and presses **nothing**: 🥂's OK is the signature, and a
+ * walk that signed the document would be asserting a different page from
+ * the one every other seat meets.
+ */
+async function closingCard() {
+  await page.evaluate(() => {
+    document.querySelector('#rail [data-card="closing"], #rail li[data-q="closing"], '
+      + '#band [data-tab="closing"]')?.click();
+  });
+  await T(600);
+  return page.evaluate(async () => {
+    const keyOf = (li) => li.dataset.q ||
+      (li.querySelector('[data-card]') ?? { dataset: {} }).dataset.card || '?';
+    // the wire's own answer beside the drawn one: `heldBy: 'close'` is a new
+    // value on a field that was already crossing, so nothing on the live
+    // path was changed to carry it and nothing would have said if it stopped
+    const v = await fetch(location.pathname.replace('/d/', '/api/d/') + '/view')
+      .then((r) => r.json()).catch(() => null);
+    const ms = ((v || {}).view || {}).motions || [];
+    return {
+      batch: (document.querySelector('.batch')?.textContent ?? '').replace(/\s+/g, ' ').trim(),
+      railKeys: [...document.querySelectorAll('#rail li')].map(keyOf),
+      keptAtClose: ms.filter((m) => m.status === 'kept-at-close').length,
+      heldByClose: ms.filter((m) => m.status === 'held' && m.heldBy === 'close').length,
+      heldByRoom: ms.filter((m) => m.status === 'held' && m.heldBy === 'members').length,
+      closeIds: ms.filter((m) => m.heldBy === 'close').map((m) => m.id),
+    };
+  });
+}
+
+/**
  * What is *in* the document at this rung, printed beside the assertions.
  *
  * Nothing here is asserted and nothing here can fail the walk: the counts are
@@ -281,5 +319,32 @@ async function assertSurface(rung) {
   if (rung === 'closed') {
     check(rung, 'the page is the closed one', m.closedPage > 0);
     check(rung, 'the signatures are on it', m.signatures > 0);
+    // **Q1450**: the ladder's session rung leaves motions running on both
+    // routes, so the close finds them — and the only place that is said is
+    // the 🥂 card's own line. Beside it, the card the close used to raise:
+    // an OK is refused on a shut document, so a `held:` entry in this rail
+    // would be a task nobody can ever answer.
+    const close = await closingCard();
+    const said = /(\d+) motions? (?:was|were) still open and did not pass/.exec(close.batch);
+    check(rung, '🥂 counts the motions the clock found still running', said !== null,
+      close.batch || 'the closing card drew no batch');
+    // the drawn number against the wire's own: a constitutional motion the
+    // close kept and an ordinary one it held are one count on the card and
+    // two shapes on the view, and `heldBy: 'close'` is a new value on a field
+    // that was already crossing — nothing would have said if it stopped
+    check(rung, 'and it is the wire’s own count, both routes',
+      said !== null && Number(said[1]) === close.keptAtClose + close.heldByClose,
+      `the card said ${said ? said[1] : '(nothing)'} · the wire has `
+        + `${close.keptAtClose} kept and ${close.heldByClose} held by the close, `
+        + `beside ${close.heldByRoom} the room held while it was open`);
+    // **Only the close's own**: a motion the room held while the document was
+    // open owes its mover a card by E41 and may still be unacknowledged when
+    // the clock runs out (Q1440's road, which this ruling did not touch), so
+    // a bare `held:` in the rail is not the defect. The defect is a card for
+    // a motion the *close* held, which nobody could ever press.
+    check(rung, 'and the close raises no *did not pass* card',
+      !close.railKeys.some((k) => close.closeIds.includes(k.replace(/^held:/, ''))
+        && /^held:/.test(k)),
+      `${JSON.stringify(close.closeIds)} in ${JSON.stringify(close.railKeys)}`);
   }
 }

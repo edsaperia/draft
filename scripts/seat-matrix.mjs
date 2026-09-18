@@ -841,12 +841,15 @@ const STEPS = [
   // **A motion that failed** (SURFACE E41; Q1447, Ed 2026-09-17). The room
   // carries `judgments-motion` — 🏛️ on 👁️, put by `early` twelve rows up and
   // left running there — and the Founder refuses it at the crown, which is
-  // the one road to a failure a live document has. The other two are out of
-  // reach from here and are asserted in the module instead: an **ordinary**
-  // motion is only ever adjudicated *held* at the close (`engine-bridge.ts`'s
-  // `finishClose`; a live document's bridge reports nothing but *carried*),
-  // and the system's own withdrawal (`abandonMotion`, #26) is raised inside
-  // `sync` on a path the wire refuses at the door instead.
+  // the road this table takes. The other two are out of reach from here and
+  // are asserted elsewhere: an **ordinary** motion is held the moment no
+  // answer still to come could carry it (Q1440, `engine-bridge.ts`'s `sync`,
+  // walked by `invite-walk`), and the system's own withdrawal
+  // (`abandonMotion`, #26) is raised inside `sync` on a path the wire refuses
+  // at the door instead. **The close is not a road** (Q1450, Ed 2026-09-18):
+  // it holds what it finds running and raises no card, on either route, the
+  // 🥂 card counting them instead — so `ladder-closed` below asserts nothing
+  // of E41's, and `ladder-walk` reads the 🥂 line.
   //
   // **Before `carry-removal`**, which is the last live row because it takes a
   // seat out: this needs every member seat alive to reach unanimity. 🛡️ on
