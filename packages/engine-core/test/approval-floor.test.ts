@@ -514,6 +514,45 @@ describe('the record carries the numbers the batch decided on', () => {
     expect((adopted as { floor?: number }).floor).toBe(2);
   });
 
+  // **And how many never answered** (Q1452, Ed 2026-09-18): the 👥 clause goes
+  // on saying *(5 of 10)* while a proposal carries on two approvals, so the
+  // outcome card says how many people did not answer in time. The number is
+  // the members of E awaited on the winner-against-the-current-text pair
+  // whose 💤 period had run at the batch's own `t` — read in the same
+  // snapshot as the approvals and the floor, never re-derived later.
+  it('the adopted event states how many did not answer in time', () => {
+    const P = 10 * MINUTE;
+    // a quorum of everybody holds the race open at two approvals: F is 3 —
+    // the cap at half of a group of five — until the three silent members
+    // abstain, when the group is two, the floor drops to the seconder's two
+    // and the proposal carries
+    const { s } = proposed({ abstainAfterMs: P, quorum: { form: 'share', n: 100 } });
+    const r0 = only(s, 2000);
+    s.judge(2000, 'p2', r0.leaderId!, r0.incumbentId, 'a');
+    expect(s.tick(2001)).toEqual([]);
+    expect(only(s, 2001).abstained).toBe(0); // nobody's period has run yet
+    const after = 1000 + P + 1;
+    expect(only(s, after).abstained).toBe(3);
+    expect(s.tick(after).map((e) => e.type)).toContain('adopted');
+    const adopted = s.log.map((e) => e.event).find((e) => e.type === 'adopted');
+    expect((adopted as { approvals?: number }).approvals).toBe(2);
+    expect((adopted as { floor?: number }).floor).toBe(2);
+    expect((adopted as { abstained?: number }).abstained).toBe(3);
+  });
+
+  it('nobody silent writes the count as zero, not as no key at all', () => {
+    // the same rule as `approvals` and `floor`: every adoption written since
+    // the field existed carries it, so **absent** means an older log and
+    // nothing else. Zero is what the card reads as *say nothing*.
+    const { s } = proposed();
+    const r0 = only(s, 2000);
+    s.judge(2000, 'p2', r0.leaderId!, r0.incumbentId, 'a');
+    const adopted = s.log.map((e) => e.event).find((e) => e.type === 'adopted');
+    expect(adopted).toBeDefined();
+    expect('abstained' in (adopted as object)).toBe(true);
+    expect((adopted as { abstained?: number }).abstained).toBe(0);
+  });
+
   it('a log written before the field existed folds unchanged', () => {
     const { s } = proposed();
     const r0 = only(s, 2000);

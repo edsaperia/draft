@@ -1712,15 +1712,20 @@ export class Session {
       // running out with the gradient still above tolerance — which is why
       // the record's word is *cap* and not *gradient*.
       .map((r): { leaderId: string; p: number; approvals: number; floor: number;
+        abstained: number;
         cappedFit?: { iterations: number; gradMax: number } } => {
         const fit = this.raceRules.fitRaceMembers(r.members, r.incumbentId);
         return {
           leaderId: r.leaderId as string,
           p: r.leaderP as number,
-          // the two numbers the batch decided on, snapshotted with the fit
-          // and carried to the record (Q1439; SPEC §8.2)
+          // the three numbers the batch decided on, snapshotted with the fit
+          // and carried to the record (Q1439; Q1452; SPEC §8.2) — all three
+          // move with the clock, so the snapshot is the only honest moment to
+          // read them: by the time anybody opens the record the room has gone
+          // on, and *n did not answer in time* is a fact about the decision
           approvals: r.approvals,
           floor: r.floor,
+          abstained: r.abstained,
           // absent means converged, all the way out to the log (R-051)
           ...(fit.converged
             ? {}
@@ -1750,10 +1755,10 @@ export class Session {
     // it `blockedByPark`, and it is looked at again next batch. Everything
     // else parks beside the standing parks, each its own 👑 question, oldest
     // race first as always.
-    for (const { leaderId, p, approvals, floor, cappedFit } of ready) {
+    for (const { leaderId, p, approvals, floor, abstained, cappedFit } of ready) {
       const c = this.candidate(leaderId);
       if (c.state !== 'live') continue;
-      const decided = { approvals, floor };
+      const decided = { approvals, floor, abstained };
       // a setting race is untouched by any of this (Q390): it carries no
       // patch, changes no text, and adopts in the same batch as before —
       // but it was decided by the same fit and takes the same mark (R-051)
@@ -1844,11 +1849,11 @@ export class Session {
    */
   private adopt(t: number, candidateId: string, p: number, threshold: number,
     raceIdIn?: string, cappedFit?: { iterations: number; gradMax: number },
-    decided?: { approvals: number; floor: number }): void {
+    decided?: { approvals: number; floor: number; abstained: number }): void {
     const winner = this.candidate(candidateId);
     const raceId = raceIdIn ?? this.raceIdOf(candidateId);
-    // the cap mark and the two numbers the batch decided on (R-051; Q1439),
-    // both absent rather than `undefined` where the caller has none
+    // the cap mark and the three numbers the batch decided on (R-051; Q1439;
+    // Q1452), both absent rather than `undefined` where the caller has none
     const mark = { ...(cappedFit ? { cappedFit } : {}), ...(decided ?? {}) };
     if (!winner.patch) {
       // A setting race carried (Q390): the verdict is recorded and the

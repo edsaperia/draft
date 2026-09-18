@@ -2093,9 +2093,16 @@
       // `itemsFromView`), and where it is absent the line reads as it always
       // did. `FLOOR` is the view's own `floor` (set in `setData`), which is
       // per race from the same change.
+      // **And how many did not answer in time** (Q1452, Ed 2026-09-18):
+      // `d.abstained`, the same road — the decision's own count of the
+      // members 💤's period had already taken out of the group, so a
+      // proposal that carried on two approvals says so beside a 👥 clause
+      // that goes on naming the whole membership. Null where the record
+      // carries no number; the copy omits the clause at zero too.
       esc(T.record.tooltip(d.judges ?? 0, ROSTER, d.floor ?? FLOOR,
         yours ? T.record.youSaid(yours) : T.record.youNever,
-        typeof d.approvals === 'number' ? d.approvals : null)) + '">' +
+        typeof d.approvals === 'number' ? d.approvals : null,
+        typeof d.abstained === 'number' ? d.abstained : null)) + '">' +
       '<span>' + (und ? T.record.undecided : T.record.decided) + ' · ' + (d.judges ?? 0) + '/' + ROSTER + PEOPLE +
       // an undecided race nobody read prints no reading: 0% is a number about
       // nothing

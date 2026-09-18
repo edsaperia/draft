@@ -326,6 +326,10 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
     /** How many preferred the winner, and the floor it met (Q1439) — the
      *  adoption's own pair off the event; absent on a record older than the rule. */
     approvals?: number; floor?: number;
+    /** And how many of the membership never answered in time (Q1452): the
+     *  silences 💤's period had already taken out of the group when the batch
+     *  decided. Absent on a record older than the rule; zero is a number. */
+    abstained?: number;
     /**
      * **Where the record stands now** (Q1333): the field's span, decided in
      * `version`'s coordinates, carried through every adoption and decree
@@ -411,10 +415,11 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
       // absent means converged, so the key is deleted rather than set to
       // `undefined` (R-051) — this is the record's one honest silence
       if (o.cappedFit) rec.cappedFit = o.cappedFit; else delete rec.cappedFit;
-      // the same rule for the decision's two numbers (Q1439): the latest
-      // adoption's own, or no key at all
+      // the same rule for the decision's own numbers (Q1439, Q1452): the
+      // latest adoption's own, or no key at all
       if (typeof o.approvals === 'number') rec.approvals = o.approvals; else delete rec.approvals;
       if (typeof o.floor === 'number') rec.floor = o.floor; else delete rec.floor;
+      if (typeof o.abstained === 'number') rec.abstained = o.abstained; else delete rec.abstained;
     }
   }
   // **A record's span, carried to the current text** (Q1333): once per

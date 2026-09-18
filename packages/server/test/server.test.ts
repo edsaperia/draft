@@ -535,10 +535,15 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     // the floor that decision was taken against — the two numbers the engine
     // stamps on `adopted`, carried to the record so the page's *n preferred it ·
     // quorum was m* line states the decision's own numbers and not today's
-    const recQ = rec as unknown as { approvals?: number; floor?: number };
+    // …and, since Q1452, how many never answered in time: the third of the
+    // batch's own numbers, which the card prints as *n did not answer in
+    // time*. Nobody's 💤 period runs inside this walk, so it is zero — and
+    // the key is there saying so, absent meaning an older log and nothing else
+    const recQ = rec as unknown as { approvals?: number; floor?: number; abstained?: number };
     expect(typeof recQ.approvals).toBe('number');
     expect(typeof recQ.floor).toBe('number');
     expect(recQ.approvals!).toBeGreaterThanOrEqual(recQ.floor!);
+    expect(recQ.abstained).toBe(0);
     // one record per race: the adopted rival and the retired one do not file twice
     expect(done.records.filter((r) => r.raceId === r1.raceId)).toHaveLength(1);
 
