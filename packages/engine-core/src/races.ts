@@ -96,12 +96,13 @@ export function floorFor(c: Constitution, e: number, group: number): number {
 /**
  * **The time-free half of a race** (Q1439): everything the state alone
  * decides, which is what the session's per-state-version memo may hold.
- * `approvals`, `group`, `floor`, `closeness` and `blockedByPark` are not here
- * — they move with the clock, because a silence becomes an abstention with no
- * event to mark it, and the memo would hand back an answer from before the
- * period ran.
+ * `approvals`, `group`, `abstained`, `floor`, `closeness` and `blockedByPark`
+ * are not here — they move with the clock, because a silence becomes an
+ * abstention with no event to mark it, and the memo would hand back an answer
+ * from before the period ran.
  */
-type RaceCore = Omit<RaceView, 'approvals' | 'group' | 'floor' | 'closeness' | 'blockedByPark'>;
+type RaceCore = Omit<RaceView,
+  'approvals' | 'group' | 'abstained' | 'floor' | 'closeness' | 'blockedByPark'>;
 
 /**
  * The approval count and the group, held in the one shape that does not
@@ -236,6 +237,11 @@ export class Races {
       ...core,
       approvals: approval.approvals,
       group,
+      // **The silences the group has already lost** (Q1452): everyone awaited
+      // on the pair, less those still awaited at `t`. Read here and nowhere
+      // else, so the number the batch stamps on its record and the number the
+      // page prints are the same arithmetic on the same moment.
+      abstained: approval.awaitedFrom.length - awaited,
       floor,
       // **Progress toward the quorum** (Q1362 (c), R-118): the leader's
       // *judges* over the floor, and judges is deliberately still the word —

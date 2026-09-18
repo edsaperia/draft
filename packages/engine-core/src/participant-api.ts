@@ -143,6 +143,14 @@ export interface OutcomeEntry {
    */
   approvals?: number;
   floor?: number;
+  /**
+   * **And how many never answered** (Q1452): the members of E whose 💤 period
+   * on the winner's pair had run at the moment the batch decided — the third
+   * of the decision's own numbers, off the same event and absent on the same
+   * older logs. The card prints it as *n did not answer in time*, and says
+   * nothing where it is zero.
+   */
+  abstained?: number;
 }
 
 /** The largest routing value in a hand — what every `urgency` is a fraction of. */
@@ -355,9 +363,10 @@ export class ParticipantApi {
           // spread conditionally, as `reason` is: the key is absent, never
           // `undefined`, because absent is what means converged (R-051)
           ...(ev.cappedFit ? { cappedFit: ev.cappedFit } : {}),
-          // the decision's own two numbers (Q1439), absent on an older log
+          // the decision's own numbers (Q1439, Q1452), absent on an older log
           ...(typeof ev.approvals === 'number' ? { approvals: ev.approvals } : {}),
-          ...(typeof ev.floor === 'number' ? { floor: ev.floor } : {}) });
+          ...(typeof ev.floor === 'number' ? { floor: ev.floor } : {}),
+          ...(typeof ev.abstained === 'number' ? { abstained: ev.abstained } : {}) });
       } else if (ev.type === 'candidate-retired') {
         const c = this.session.getCandidate(ev.id);
         out.push({ t: ev.t, candidateId: ev.id, outcome: 'retired',

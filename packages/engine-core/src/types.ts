@@ -318,6 +318,17 @@ export interface RaceView {
    */
   group: number;
   /**
+   * **Who did not answer in time** (Q1452, Ed 2026-09-18; SPEC §8.2), at the
+   * time the view was taken: the members of E awaited on the leader-against-
+   * the-current-text pair whose 💤 period **has** run — the complement, out of
+   * the awaited set, of the silences still counted in `group`. Zero where 💤
+   * is *never*, nothing being imputed from silence then (R-089's letter).
+   * The 👥 clause goes on naming the whole membership, so this is the number
+   * that makes a proposal carried by two of ten legible: the outcome card
+   * prints it as *n did not answer in time*.
+   */
+  abstained: number;
+  /**
    * **F, at the time the view was taken** (SPEC §4.2): `max(Q′, min(⌈E/3⌉,
    * F_max))`, the quorum read against `group` and capped at half of it, the
    * statistical minimum read against the whole of E. It moves with the clock
@@ -591,6 +602,18 @@ export type Event =
        */
       approvals?: number;
       floor?: number;
+      /**
+       * **And how many never answered** (Q1452, Ed 2026-09-18): the members
+       * of E awaited on the winner-against-the-current-text pair whose 💤
+       * period had run at the batch's `t` — the silences the group had
+       * already lost, snapshotted with the other two because it moves with
+       * the clock exactly as they do. Optional on the same terms and for the
+       * same reason: absent on every log written before the field existed,
+       * never written as `undefined`, and **written as `0`** on every
+       * adoption since — so absent means an older log and nothing else,
+       * where zero means a room in which nobody ran out of time.
+       */
+      abstained?: number;
     }
   | {
       /**
