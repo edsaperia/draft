@@ -1772,6 +1772,51 @@ export class Session {
       }
       this.adopt(t, leaderId, p, threshold, undefined, cappedFit, decided);
     }
+    this.retireDominated(t);
+  }
+
+  /**
+   * **A proposal that can never win is closed** (Q1440, Ed 2026-09-18; SPEC
+   * §4.4 → why: R-132). The test is `races.ts`'s and is time-free; this is
+   * the moment it is acted on — **the adoption batch**, so that what carried
+   * and what closed are decided together and a reader sees one movement of
+   * the document rather than two.
+   *
+   * **After the adoptions, and on the state they left**, not off the snapshot
+   * the batch was decided on. An adoption changes the text under its own
+   * lines, which locks every judgment cast against the old wording (§4.4) —
+   * so a rival on those lines has a = o = 0 and the whole of E still to
+   * answer the moment the batch lands, and is by construction not dominated.
+   * Reading the dominations before the batch would retire it on counts the
+   * adoption had just voided, which is the one way this rule could take away
+   * a proposal nobody had refused.
+   *
+   * Oldest first, one event each, off one reading: a retirement shrinks its
+   * race and could in principle change what is dominated behind it, and the
+   * next sweep is where that is looked at. `state !== 'live'` is the only
+   * re-check, for a candidate an earlier event in this same pass took out.
+   */
+  private retireDominated(t: number): void {
+    if (this.closedFlag) return;
+    const doomed: string[] = [];
+    for (const r of this.races(t)) for (const d of r.dominated) doomed.push(d.id);
+    if (doomed.length === 0) return;
+    doomed.sort((a, b) => candidateNum(a) - candidateNum(b));
+    for (const id of doomed) {
+      const c = this.candidate(id);
+      if (c.state !== 'live') continue;
+      this.emit({
+        type: 'candidate-retired',
+        t,
+        id,
+        raceId: this.raceIdOf(id),
+        // §7's performance refund, as at any retirement: a wording the room
+        // never preferred pays back less than its stake, and one it liked
+        // before it lost pays back what its peak earned.
+        refund: performanceRefund(c.stakePaid, c.peakW),
+        reason: 'dominated',
+      });
+    }
   }
 
   /**

@@ -186,7 +186,17 @@ describe('sim regression: dedup off is byte-identical to before the gate existed
   // produced this hash, a second no-gate run agreed and `Session.replay`
   // reproduces it — which is the invariant this test defends
   // (was a5fa29c1a1b97ac7a99fb4dbbfa17f16c5fa4fab47eb0255dfaab4d84adb1827).
-  const PINNED = '31ed038ba2f05a88afb1072d981675881399d7951bd9ffdb3246041ff5f97f15';
+  // Re-pinned 2026-09-18 (Q1440, SPEC §4.4 v0.134, R-132): a proposal that can
+  // never win is closed at the sweep that discovers it, so a losing candidate
+  // leaves the field during the document's life instead of at T=0 — the
+  // retirement is an event in the chain, the field it leaves is smaller for
+  // every fit after it, and the stake comes back to its author's ledger early.
+  // Every race in this run that the room refused now ends when the room has
+  // refused it. Both variants below produced this hash, a second no-gate run
+  // agreed and `Session.replay` reproduces it — which is the invariant this
+  // test defends
+  // (was 31ed038ba2f05a88afb1072d981675881399d7951bd9ffdb3246041ff5f97f15).
+  const PINNED = '60f8828ba5ac36b06ef972a353123439f51fed81e212e7f074cca9aa810fe20e';
 
   const run = (withGate: boolean) =>
     runSession({
@@ -312,21 +322,31 @@ describe('dedup-gate in a full scripted run', () => {
       onProgress: (line) => lines.push(line),
     });
 
-    // Only one candidate ever entered play; its twin was caught.
-    expect(session.allCandidates()).toHaveLength(1);
+    // **The original no longer survives the window** (Q1440): three of the
+    // five prefer the clause as it stands, so the moment all three have said
+    // so the proposal can never be preferred and is closed (SPEC §4.4) — and
+    // a persona with `draftiness: 1` proposes the same wording again, which
+    // the gate lets through because the original it duplicated is no longer
+    // live. Nineteen originals over twelve hours, each one duplicated once.
+    // **That is the dedup gate's answer to the question Q1440 raised**: a
+    // retired candidate blocks nothing, so re-proposing after a domination is
+    // a fresh candidate with a fresh floor — Ed's *the author re-proposes*,
+    // taken literally by a persona that never gets bored. The assertions
+    // below are therefore over the run rather than over one candidate, and
+    // they say exactly what they said before: one merge per live original,
+    // and a repeat of one already merged is skipped.
+    const dupes = lines.filter((l) => l.includes('drafts a duplicate of'));
+    expect(dupes.length).toBeGreaterThan(1);
+    expect(dupes.every((l) =>
+      l.endsWith('support merged') || l.endsWith('skipped'))).toBe(true);
+    const mergedOf = (id: string) => dupes.filter((l) =>
+      l.includes(`duplicate of ${id} (edit-distance): support merged`)).length;
+    for (const c of session.allCandidates()) expect(mergedOf(c.id)).toBeLessThanOrEqual(1);
+    expect(dupes.filter((l) => l.endsWith('skipped')).length).toBeGreaterThan(0);
+
     const c1 = session.allCandidates()[0]!;
-
-    // First catch merges support (co-sign), later retries are skipped.
-    const merged = lines.filter((l) =>
-      l.includes(`drafts a duplicate of ${c1.id} (edit-distance): support merged`),
-    );
-    const skipped = lines.filter((l) =>
-      l.includes(`drafts a duplicate of ${c1.id} (edit-distance): skipped`),
-    );
-    expect(merged).toHaveLength(1);
-    expect(skipped.length).toBeGreaterThan(0);
-
-    // Both personas now support the surviving candidate (SPEC §5.1).
+    expect(mergedOf(c1.id)).toBe(1);
+    // Both personas support the candidate whose twin was merged (SPEC §5.1).
     expect([...session.supportersOf(c1.id)].sort()).toEqual(['d1', 'd2']);
 
     // The gate is advisory: the log stays intact and replayable.

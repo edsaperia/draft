@@ -572,14 +572,18 @@ describe('session lifecycle', () => {
     expect(s.balance('p1', 1500)).toBe(2);
     s.withdraw(2000, c1);
     expect(s.balance('p1', 2000)).toBe(3); // full stake back
-    // c2 loses to the incumbent, then retires: refund < stake. Three losses
+    // c2 loses to the incumbent and retires: refund < stake. Three losses
     // rather than two since v0.16 — the author's own preference is in the
-    // ranking and offsets the first of them.
+    // ranking and offsets the first of them. **And since Q1440 it retires
+    // itself**: the third loss is the answer after which no answer still to
+    // come could carry it, so the domination pass takes it at that same sweep
+    // and the explicit `retire` this test used to make would throw.
     const inc = s.raceOf(c2).incumbentId;
     s.judge(3000, 'p2', c2, inc, 'b');
     s.judge(4000, 'p3', c2, inc, 'b');
     s.judge(4500, 'p4', c2, inc, 'b');
-    s.retire(5000, c2);
+    expect(s.getCandidate(c2).state).toBe('retired');
+    expect(s.getCandidate(c2).exit!.cause).toBe('dominated');
     const refund = s.getCandidate(c2).exit!.refund;
     expect(refund).toBeGreaterThanOrEqual(0);
     expect(refund).toBeLessThan(1);

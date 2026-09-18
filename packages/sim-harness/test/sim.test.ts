@@ -79,13 +79,31 @@ describe('scripted simulation', () => {
     expect(metrics.diagonalComparisons).toBe(0);
   }, 30_000);
 
-  it('respects the token economy: drafting is bounded by grants', async () => {
-    const { metrics } = await run('economy');
+  it('respects the token economy: nobody mints tokens', async () => {
+    const { session, metrics } = await run('economy');
     for (const [, p] of Object.entries(metrics.participation)) {
-      // grant 4 + up to 10 drip - stakes + refunds; nobody mints tokens.
       expect(p.tokensLeft).toBeGreaterThanOrEqual(0);
-      expect(p.drafts).toBeLessThanOrEqual(14);
     }
+    // **The bound on drafts is not the grant, and since Q1440 it is nowhere
+    // near one** (2026-09-18). This test asserted `drafts <= 14` — grant 4
+    // plus up to ten drips — on the reasoning that a stake leaves the wallet
+    // and only some of it comes back. §7's refund is a *performance* refund,
+    // `stake × min(w/0.5, 1.5)`, so a candidate the room ever rated above the
+    // current text pays its stake back whole or better; before Q1440 that
+    // hardly mattered, because a losing candidate stayed in the field until
+    // T=0 and its author's token stayed in it. Now it is closed the moment
+    // the room has refused it, the stake comes back and the same persona
+    // proposes again: this run goes from 14 candidates to 413, of which 262
+    // adopt, and 412.11 of the 413 staked tokens are refunded. **Nobody mints
+    // tokens and no ledger goes negative — §7's own invariant is intact — but
+    // drafting is no longer bounded by the grant at all.** That is a finding
+    // for the record rather than a number to re-pin, so what is asserted here
+    // is the invariant itself plus the shape of the run, and a change back to
+    // a bounded regime shows up as a red test rather than as silence.
+    expect(session.allCandidates().length).toBeGreaterThan(14);
+    const refunded = session.allCandidates()
+      .reduce((a, c) => a + (c.exit?.refund ?? 0), 0);
+    expect(refunded).toBeLessThanOrEqual(session.allCandidates().length * 1.5);
   }, 30_000);
 });
 

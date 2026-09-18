@@ -252,6 +252,18 @@ export interface Candidate {
 }
 
 /**
+ * **A live candidate that can no longer win** (SPEC §4.4, Q1440 → why:
+ * R-132), and which of the two clauses closed it: `incumbent` — no answer
+ * still to come could put it above the text that stands, or carry it to its
+ * floor; `rival` — no answer still to come could put it above another wording
+ * in its own race. Retired at the next adoption batch.
+ */
+export interface Domination {
+  id: string;
+  by: 'incumbent' | 'rival';
+}
+
+/**
  * A race is DERIVED state: a connected component of mutually conflicting
  * live candidates on the current document version, plus the incumbent
  * text of the contested spans (SPEC §2.3). Race identity is the smallest
@@ -365,6 +377,14 @@ export interface RaceView {
    */
   rivalGateOpen: boolean;
   /**
+   * **The members of this race that can no longer win** (SPEC §4.4, Q1440 →
+   * why: R-132), oldest first, empty on almost every race. Time-free, like
+   * the counts it is read off — a domination needs no clock and no event, and
+   * one arrives only when a judgment does. The sweep retires them with the
+   * adoption batch; nothing else in the engine gates on it.
+   */
+  dominated: Domination[];
+  /**
    * **Waiting behind a park** (SPEC §4.2, R-100; Q1179): the leader is ready
    * to carry — the sweep's own readiness test, one function for both — and
    * its footprint overlaps a candidate parked `awaiting-assent`, so the
@@ -468,6 +488,13 @@ export type Event =
        * refusal under 🛡️ on the Text is what its author reads on their
        * sealed record. Absent on an ordinary retirement, which has no
        * reason beyond the incumbent holding.
+       *
+       * **One reserved value** (Q1440): `'dominated'`, the engine's own — the
+       * proposal could no longer win (§4.4). Everything else here is the
+       * host's prose, and the surface prints it as it stands; the reserved
+       * token is mapped to a sentence at the page's edge, the engine having
+       * never heard of a language. Optional, as it always was, so every log
+       * written before the rule folds unedited.
        */
       reason?: string;
     }
