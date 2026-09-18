@@ -18,7 +18,7 @@ import {
 } from '../../engine-core/src/index.js';
 import type { Persona } from './persona.js';
 import type { PersonaProfile, Scenario } from './scenario.js';
-import { computeMetrics, type Metrics } from './metrics.js';
+import { computeMetrics, strandedAtClose, type Metrics } from './metrics.js';
 
 /**
  * A convenor act on the roster (SPEC §9.3, QUESTIONS #10): a mid-session
@@ -329,6 +329,11 @@ export async function runSession(config: RunConfig): Promise<RunResult> {
     }
   }
 
+  // **Read the live races one instant before the close** (Q1439): the close
+  // runs a final batch at this very `t`, and after it `races()` is empty, so
+  // this is the only moment at which *what the window ran out on* can be
+  // asked. A pure read — no event, no state change, the same log either way.
+  const stranded = strandedAtClose(session, windowMs);
   session.close(windowMs);
   const participation = new Map(
     states.map((s) => [
@@ -336,7 +341,7 @@ export async function runSession(config: RunConfig): Promise<RunResult> {
       { judgments: s.judgments, drafts: s.drafts, turns: s.turns, idleTurns: s.idleTurns },
     ]),
   );
-  const metrics = computeMetrics(session, scenario, participation);
+  const metrics = computeMetrics(session, scenario, participation, stranded);
   return { session, metrics, actions };
 }
 

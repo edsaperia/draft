@@ -68,6 +68,53 @@ export interface SiteAdoption {
   text: string;
   /** Set when that wording had stood on this site before: it came back. */
   reversion: boolean;
+  /**
+   * **What the batch decided on** (Q1439): the approvals the winner held and
+   * the floor it met. Both are optional on the event — absent on any log
+   * written before the fields existed — and are carried through as-is rather
+   * than defaulted, so a study cannot silently read a zero for *not recorded*.
+   */
+  approvals?: number;
+  floor?: number;
+}
+
+/**
+ * **A race that ran out of window short of its floor** (Q1439): the leader is
+ * on top of the field — the room prefers it to the text that stands — and it
+ * has not gathered F approvals. This is *the* deadlock measure under the
+ * approval floor, and it is read off the engine's own `RaceView` one instant
+ * before the close, because the close's final batch is the last thing that
+ * could have carried it and `races()` is empty after it.
+ *
+ * The four numbers beside it are the diagnosis, and they are here rather than
+ * summed away because they separate two very different failures. If
+ * `leaderJudges` has reached the floor and `approvals` has not, the room was
+ * asked and said no — a refusal, which is the rule working. If `leaderJudges`
+ * is short too, the pair never reached enough people — which would be a
+ * **router** finding (the leader-against-the-current-text pair failing to be
+ * served), and the thing stage 5 exists to catch.
+ */
+export interface StrandedRace {
+  raceId: string;
+  /** Approvals of the leader: latest judgment against the current text, preferring it. */
+  approvals: number;
+  /** F at the close, read against the group. */
+  floor: number;
+  /** The group the leader was waiting on: approvers, opposers, and the still-awaited. */
+  group: number;
+  /** Distinct members whose judgment touched the leader at all — the meter's number. */
+  leaderJudges: number;
+  /** Of those, the ones the room actually made (a derived author preference is not one). */
+  leaderMeasured: number;
+  /**
+   * How long the leader had been standing when the window ran out. A candidate
+   * submitted in the last minutes of a session is *not* a deadlock — it is a
+   * proposal at the buzzer, and counting it as one would say the rule jammed
+   * where in fact the clock simply stopped.
+   */
+  leaderAgeMs: number;
+  /** A setting race rather than a text race. */
+  setting: boolean;
 }
 
 export interface Metrics {
@@ -90,6 +137,22 @@ export interface Metrics {
   reversions: number;
   /** Per-site detail behind the two counts above; sites with an adoption only. */
   churn: SiteChurn[];
+  /**
+   * **Races left short of their floor when the window ran out** (Q1439), read
+   * from `races()` at the close's own moment and handed in by the runner —
+   * `computeMetrics` runs after the close, where there are no live races left
+   * to ask. Empty on a run that was never given the snapshot.
+   */
+  stranded: StrandedRace[];
+  /**
+   * **The approvals every adoption actually carried on** (Q1439), one entry
+   * per `adopted` event that recorded the number — a setting race's included,
+   * since it rides the same floor. The smallest of them, and how many sat at
+   * two or fewer, is how a loosening of the floor is made visible: the rule
+   * can only be judged by what the room was holding when it acted, not by
+   * what the rule would have permitted.
+   */
+  approvalsAtAdoption: number[];
   issues: IssueOutcome[];
   issuesResolvedOptimally: number;
   welfareAchieved: number;
@@ -119,6 +182,7 @@ export function computeMetrics(
   session: Session,
   scenario: Scenario,
   participation: Map<string, { judgments: number; drafts: number; turns: number; idleTurns: number }>,
+  stranded: StrandedRace[] = [],
 ): Metrics {
   const finalText = session.finalRender().text;
   const finalLines = finalText.split('\n');
@@ -129,6 +193,7 @@ export function computeMetrics(
   const adoptionsPerIssue = new Map<string, number>();
   let adoptions = 0;
   let firstAdoptionMs: number | null = null;
+  const approvalsAtAdoption: number[] = [];
   // text candidates by author, and the ones somebody else's judgment named:
   // a submission precedes any comparison naming it, so one pass suffices
   const authorOf = new Map<string, string>();
@@ -153,6 +218,7 @@ export function computeMetrics(
       if (e.patch) authorOf.set(e.id, e.author);
     } else if (e.type === 'adopted') {
       adoptions++;
+      if (e.approvals !== undefined) approvalsAtAdoption.push(e.approvals);
       if (firstAdoptionMs === null) firstAdoptionMs = e.t;
       // Attribute by line number, not by matching text against the alternatives
       // menu — LLM drafts are almost always off-menu, which left adoptions
@@ -185,7 +251,11 @@ export function computeMetrics(
         }
         const stood = [site.opened, ...site.adopted.map((a) => a.text)];
         const reversion = stood.includes(text);
-        site.adopted.push({ t: e.t, p: e.p, text, reversion });
+        site.adopted.push({
+          t: e.t, p: e.p, text, reversion,
+          ...(e.approvals === undefined ? {} : { approvals: e.approvals }),
+          ...(e.floor === undefined ? {} : { floor: e.floor }),
+        });
         site.flips = site.adopted.length - 1;
         if (reversion) site.reversions++;
       }
@@ -240,6 +310,8 @@ export function computeMetrics(
     flips: churn.reduce((a, c) => a + c.flips, 0),
     reversions: churn.reduce((a, c) => a + c.reversions, 0),
     churn,
+    stranded,
+    approvalsAtAdoption,
     issues,
     issuesResolvedOptimally: optimalCount,
     welfareAchieved,
@@ -256,6 +328,33 @@ export function computeMetrics(
     finalText,
     rollingHash: session.rollingHash(),
   };
+}
+
+/**
+ * **The deadlock snapshot** (Q1439), taken at the close's own `t` and *before*
+ * `session.close(t)` runs its final batch — so what it returns is exactly the
+ * set of races that batch is about to refuse. A pure read: `races(t)` derives
+ * into the per-state-version memo and emits nothing, so a run that takes this
+ * snapshot writes the same log, byte for byte, as one that does not.
+ *
+ * `leaderOnTop` is the filter beside the floor because a leader *below* the
+ * current text is not stranded — the room looked at it and preferred what it
+ * has, which is the mechanism working rather than jamming.
+ */
+export function strandedAtClose(session: Session, t: number): StrandedRace[] {
+  return session
+    .races(t)
+    .filter((r) => r.leaderId !== null && r.leaderOnTop && r.approvals < r.floor)
+    .map((r) => ({
+      raceId: r.id,
+      approvals: r.approvals,
+      floor: r.floor,
+      group: r.group,
+      leaderJudges: r.leaderJudges,
+      leaderMeasured: r.leaderMeasured,
+      leaderAgeMs: t - session.getCandidate(r.leaderId as string).submittedT,
+      setting: r.settingId !== undefined,
+    }));
 }
 
 export function formatMetrics(m: Metrics): string {
