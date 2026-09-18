@@ -110,8 +110,15 @@ export interface MotionView {
    * room deciding against it, and `system` **any** withdrawal — the module
    * emits one event for the mover's own and for the host's alike (`motions.ts`),
    * so the two are told apart by `owedHeld`, which carries only the host's.
+   *
+   * **`close` is the fourth, and the one nobody is told about** (Q1450, Ed
+   * 2026-09-18): the clock ran out while the motion was still running. It
+   * reaches no news card, E41 having no card at the close — it is here so
+   * that the 🥂 card can count a motion of either route the close found
+   * running, which on the ordinary side is a `held` record and on the
+   * constitutional one is `status: 'kept-at-close'`.
    */
-  heldBy: 'members' | 'crown' | 'system' | null;
+  heldBy: 'members' | 'crown' | 'system' | 'close' | null;
   mine: boolean;
   /** When it settled — what the record and the clause's history line date. */
   at: number | null;
@@ -376,6 +383,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
       moot: rec.moot,
       heldBy: rec.status === 'withdrawn' ? 'system'
         : rec.status !== 'held' ? null
+        : rec.heldAtClose ? 'close'
         : crownRefused.has(rec.id) ? 'crown' : 'members',
       mine: rec.by === member,
       at: rec.settledAtT,

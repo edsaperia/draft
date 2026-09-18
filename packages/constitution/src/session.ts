@@ -1210,7 +1210,7 @@ export class ConstitutionSession {
   }
 
   adjudicateOrdinaryMotion(t: number, motion: MotionId,
-    outcome: 'carried' | 'held'): void {
+    outcome: 'carried' | 'held' | 'held-at-close'): void {
     motions.adjudicateOrdinaryMotion(this.motionHost(), t, motion, outcome);
   }
 

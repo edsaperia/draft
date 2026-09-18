@@ -315,9 +315,14 @@ export type ConstitutionEvent =
    */
   | { type: 'motion-carried-moot'; t: number; motion: MotionId;
       cause: MotionId | 'pen' }
-  /** Ordinary-route seam: the host/engine ran the race and reports the outcome. */
+  /** Ordinary-route seam: the host/engine ran the race and reports the outcome.
+   *  `held-at-close` is *held*, at T=0 and by the clock rather than by the
+   *  room (Q1450, Ed 2026-09-18): the record is the same grey ✖, and the one
+   *  thing that differs is that nobody is told — the 🥂 card speaks for every
+   *  motion the close found running, either route, and it is the only card a
+   *  shut document asks anybody to press. */
   | { type: 'motion-adjudicated'; t: number; motion: MotionId;
-      outcome: 'carried' | 'held' }
+      outcome: 'carried' | 'held' | 'held-at-close' }
   /* -- the crown (§9.7) --------------------------------------------------- */
   /** A 👑 question: on a parked motion, or (Q440, 2026-08-21) on a text
    *  adoption the engine has already made while the founder holds 🛡️ on
@@ -698,6 +703,15 @@ export interface MotionRecord {
    * carried ones included.
    */
   moot: MotionId | 'pen' | null;
+  /**
+   * **Whether the clock is what held it** (Q1450, Ed 2026-09-18): true only
+   * on an ordinary motion the close found running, false on every held motion
+   * the room, the 🛡️ or a withdrawal settled while the document was open.
+   * The status stays `held` either way, so the record files its grey ✖ as it
+   * always did; this is what tells the 🥂 card's count from E41's silence,
+   * and the view spends it as `heldBy: 'close'`.
+   */
+  heldAtClose: boolean;
 }
 
 export interface CrownQuestionRecord {

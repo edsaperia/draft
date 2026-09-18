@@ -1401,11 +1401,13 @@ const motionFillOnAmended = async () => {
  * for and which cannot fail a motion: §9.6's settle check skips any motion
  * with a standing keep (`maybeSettleMotions`, *a standing keep blocks but does
  * not kill*), so the motion above simply stands running — which is what the
- * rows above it assert. The crown's refusal is the one road to a failure a
- * live document has: an **ordinary** motion is adjudicated *held* only at the
- * close (`engine-bridge`'s `finishClose`; a live bridge reports nothing but
- * *carried*), and the system's own withdrawal is raised inside `sync` on a
- * path the wire refuses at the door instead.
+ * rows above it assert. The crown's refusal is the road this walk takes; an
+ * **ordinary** motion is held the moment no answer still to come could carry
+ * it (Q1440, `engine-bridge`'s `sync`), which `invite-walk` asserts, and the
+ * system's own withdrawal is raised inside `sync` on a path the wire refuses
+ * at the door instead. **The close is no longer a road at all** (Q1450, Ed
+ * 2026-09-18): it holds its motions with a word of its own and tells nobody,
+ * the 🥂 card's batch counting them — `ladder-walk`'s closed rung reads it.
  *
  * Runs immediately after `motionFillOnAmended`, where the room is still two
  * and the mover has just withdrawn their first motion, so the one-🏛️-out

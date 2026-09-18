@@ -304,6 +304,7 @@ export function apply(s: FoldState, event: ConstitutionEvent, _seq: number): voi
           answers: new Map(),
           settledAtT: event.t,
           moot: null,
+          heldAtClose: false,
         });
         s.penFrom.set(id, wasValue);
       }
@@ -374,6 +375,7 @@ export function apply(s: FoldState, event: ConstitutionEvent, _seq: number): voi
         answers: new Map(),
         settledAtT: event.t,
         moot: null,
+        heldAtClose: false,
       });
       // **The owing is not done here** (Q1034, and see `oweAmendment`).
       // `replay` calls `apply` directly while `emit` pushes to the log, so
@@ -682,6 +684,7 @@ function applyLifecycle(s: FoldState, event: ConstitutionEvent): void {
         answers: new Map(),
         settledAtT: null,
         moot: null,
+        heldAtClose: false,
       });
       s.nextMotionN += 1;
       // **An invitation motion mints a person id when it opens** (issue #2),
@@ -794,8 +797,13 @@ function applyLifecycle(s: FoldState, event: ConstitutionEvent): void {
     case 'motion-adjudicated': {
       const rec = s.motions.get(event.motion)!;
       rec.settledAtT = event.t;
-      if (event.outcome === 'held') {
+      if (event.outcome === 'held' || event.outcome === 'held-at-close') {
+        // One status for both (Q1450): the record is the same grey ✖ wherever
+        // the hold came from, and `heldAtClose` is the only thing that says
+        // the clock did it — which is what the 🥂 card counts and what E41
+        // reads to stay silent.
         rec.status = 'held';
+        rec.heldAtClose = event.outcome === 'held-at-close';
       } else if (reservedTarget(s, rec)) {
         // Reserved is assent, not silence (§9.7): the carried change goes
         // to the convenor as a 👑 question rather than applying.

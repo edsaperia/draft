@@ -522,6 +522,13 @@ export class EngineBridge {
    * With the engine already closed: hold every ordinary motion whose
    * candidate did not carry in the final batch (the value stood), relay
    * the ground, and close the constitution at the engine's own T=0.
+   *
+   * **The hold here is the close's, and says so** (Q1450, Ed 2026-09-18).
+   * This is the one caller that holds a motion at T=0, and the word it uses
+   * — `held-at-close` rather than `held` — is what keeps E41's card off a
+   * document where no OK can be pressed. Everything else is unchanged: the
+   * record files its grey ✖, a refused application is still told, and the
+   * count these motions make is the 🥂 card's one new line.
    */
   private finishClose(): void {
     const at = this.engine.closedAt!;
@@ -529,7 +536,8 @@ export class EngineBridge {
     for (const [cand, motion] of this.motionOfCandidate) {
       const rec = this.cs.motionRecords().get(motion);
       if (!rec || rec.status !== 'running') continue;
-      this.cs.adjudicateOrdinaryMotion(at, motion, carried.has(cand) ? 'carried' : 'held');
+      this.cs.adjudicateOrdinaryMotion(at, motion,
+        carried.has(cand) ? 'carried' : 'held-at-close');
     }
     this.sync(at);
     if (!this.cs.closed) this.cs.close(at);
