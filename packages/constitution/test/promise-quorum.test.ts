@@ -153,15 +153,15 @@ describe('promise 1 — nothing carries until Q of us have weighed in (§4.2, §
     expect(bridge.engine.adoptionFloor()).toBe(2);
   });
 
-  it('and a room that asked for nothing is held to one, not to ⌈E/3⌉', () => {
+  it('and a room that asked for nothing is held to a seconder, not to ⌈E/3⌉', () => {
     const { s } = buildConstituted();
     const bridge = new EngineBridge(s, { t: 3, rngSeed: 'floor-term' });
     // the engine's own reading of a null quorum (its constitution's field is
     // nullable even though §9.0a will not let a document begin without one).
-    // **The term has gone** (Q1439 ruling s, R-131, reversing R-073): what is
-    // left is arithmetic — a floor of zero would be no floor at all.
-    expect(adoptionFloor(0, 3)).toBe(1);
-    expect(adoptionFloor(0, 40)).toBe(1); // ⌈40/3⌉ clamped to 12 used to sit here
+    // **The term has gone** (Q1439 ruling s, R-131, reversing R-073) and what
+    // is left under the room's own number is two approvals (ruling u).
+    expect(adoptionFloor(0, 3)).toBe(2);
+    expect(adoptionFloor(0, 40)).toBe(2); // ⌈40/3⌉ clamped to 12 used to sit here
     expect(bridge.engine.adoptionFloor()).toBe(2); // share 60 of 3
   });
 
@@ -371,11 +371,11 @@ describe('promise 3 — a share is a share of who is here now (§9.3, §8.2)', (
     bridge.sync(LAPSE_TICK);
     expect(s.memberRecords().get(bo)!.lapsed).toBe(true);
     expect(s.E()).toBe(2);
-    // ⌈50 × 2 / 100⌉ = 1, and ⌈2/3⌉ = 1: the room of two asks for one either
-    // way, which is also the cap (Q1439, R-126). The event records the raw
-    // count the room's own number gives; what is capped is what the floor
-    // *asks* for.
-    expect(bridge.engine.adoptionFloor()).toBe(1);
+    // ⌈50 × 2 / 100⌉ = 1, which is also the cap ⌈2/2⌉ (Q1439, R-126) — and the
+    // seconder is min(2, 2), so a room of two is held to unanimity (ruling u).
+    // The event records the raw count the room's own number gives; what is
+    // capped is what the floor *asks* for.
+    expect(bridge.engine.adoptionFloor()).toBe(2);
     expect(floorEvents().at(-1)).toMatchObject({ E: 2, quorumN: 1 });
   });
 
@@ -462,15 +462,17 @@ describe('promise 4 — the quorum never outgrows the room, and nothing stops (�
     s.tick(12);                                     // the host's tick changes nothing either
     expect(s.canJudge()).toBe(true);
     bridge.tick(12);
-    // a count of 3 in a room of two is read as ⌈2/2⌉ = 1 (Q1439, R-126)
-    expect(bridge.engine.adoptionFloor()).toBe(1);
-    // bo is still here and their own preference is one approval, which meets
-    // that floor — and the race still waits, because **the room has not
-    // measured it** (R-063): nobody but the author has judged it, and at E = 2
-    // the author is not the room
+    // a count of 3 in a room of two is read as ⌈2/2⌉ = 1 (Q1439, R-126), and
+    // the seconder holds it at min(2, 2) = 2 — unanimity in a room of two
+    // (ruling u)
+    expect(bridge.engine.adoptionFloor()).toBe(2);
+    // bo is still here and their own preference is one approval, one short of
+    // the seconder — and the race would wait even at a floor of one, because
+    // **the room has not measured it** (R-063): nobody but the author has
+    // judged it, and at E = 2 the author is not the room
     const race = bridge.engine.races().find((r) => r.members.includes(id))!;
     expect(race.approvals).toBe(1);
-    expect(race.floor).toBe(1);
+    expect(race.floor).toBe(2);
     expect(race.leaderMeasured).toBe(0);
     expect(bridge.engine.getCandidate(id).state).not.toBe('adopted');
     expect(bridge.engine.document()).toBe('The clubhouse shall be kept open.');

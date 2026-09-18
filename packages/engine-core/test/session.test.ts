@@ -232,21 +232,21 @@ describe('session lifecycle', () => {
   });
 
   it('gates adoption on the floor, and on somebody who is not the author', () => {
-    // **E = 5 with no quorum settled → F = 1** since v0.133 (Q1439 ruling s,
-    // R-131): the built-in ⌈5/3⌉ = 2 has gone, and a room that asked for
-    // nothing is held to the arithmetic minimum of one. Since SPEC v0.16 the
-    // author is one of the movers (§8.2, "you are a voice" — Ed), so the floor
-    // is met at the submission — and what holds the race open is §4.2's
-    // measured clause: ready only once somebody who is not the author has
-    // judged it. Author + 1 adopts, exactly as it did at a floor of two.
+    // **E = 5 with no quorum settled → F = 2** since v0.133 (Q1439 rulings s
+    // and u, R-131): the built-in ⌈5/3⌉ = 2 has gone, and what is left under
+    // the room's own number is the seconder — two approvals, the author and
+    // one other member. Since SPEC v0.16 the author is one of the movers
+    // (§8.2, "you are a voice" — Ed), so submitting is the first approval and
+    // one other person meets the floor; §4.2's measured clause says the same
+    // thing from the other side. Author + 1 adopts, as it always did here.
     const s = openSession();
     const { id: c1 } = s.submitCandidate(1000, {
       author: 'p1',
       patch: rewrite(0, 1, 'A.'),
       rationale: 'r',
     });
-    expect(s.adoptionFloor()).toBe(1);
-    expect(s.raceOf(c1).distinctMovers).toBe(1); // the author, alone
+    expect(s.adoptionFloor()).toBe(2);
+    expect(s.raceOf(c1).distinctMovers).toBe(1); // the author, alone, is short
     expect(s.raceOf(c1).leaderJudges).toBe(1);   // and is one judge of their own text (Q1337)
     expect(s.raceOf(c1).leaderMeasured).toBe(0); // which nobody has measured
     const inc = s.raceOf(c1).incumbentId;
@@ -1126,16 +1126,20 @@ describe('quorum in the adoption floor (SPEC §4.2, 367b)', () => {
     expect(s.adoptionFloor()).toBe(4); // ceil(50 × 7 / 100)
   });
 
-  it('a quorum below the old statistical minimum is now simply the floor', () => {
+  it('a quorum below the old statistical minimum meets the seconder, never ⌈E/3⌉', () => {
     // **the built-in third has gone** (Ed, 2026-09-18, Q1439 ruling s: *if the
     // membership want a smaller quorum they should be able to choose it* →
     // why: R-131, reversing R-073). ⌈5/3⌉ = 2 used to sit under this and the
-    // room's own number could only raise it; the card's number is the only
-    // number now, and `adoptionFloorMax` enters nothing.
+    // room's own number could only raise it; what sits there now is the
+    // seconder's two (ruling u), which is a flat number at every roster size
+    // rather than a share of it — a room of forty reads 2, not ⌈40/3⌉.
     const s = openSession({ quorum: { form: 'count', n: 1 } });
-    expect(s.adoptionFloor()).toBe(1);
+    expect(s.adoptionFloor()).toBe(2);
     expect(openSession({ quorum: { form: 'count', n: 1 }, adoptionFloorMax: 99 }, 40)
-      .adoptionFloor()).toBe(1);
+      .adoptionFloor()).toBe(2);
+    // and a room that asked for three gets three, wherever the third would
+    // have put it
+    expect(openSession({ quorum: { form: 'count', n: 3 } }, 40).adoptionFloor()).toBe(3);
   });
 });
 

@@ -1048,12 +1048,13 @@ export class Session {
 
   /**
    * **The floor over the whole of E** — F as it stands for a race nobody has
-   * left waiting: `max(1, Q′)` with the group equal to E, which is what it is
-   * at the moment a candidate is submitted and everybody is still awaited. The
-   * arithmetic and the cap are `floorFor` in `races.ts` (SPEC §4.2; Q1439 →
-   * why: R-125, R-126, R-131), and the constitution layer keeps its own copy
-   * of the same line (`populations.ts`) because it derives F without a
-   * Session; `floor-agreement.test.ts` holds the two equal.
+   * left waiting: `max(Q′, min(2, E))` with the group equal to E, which is
+   * what it is at the moment a candidate is submitted and everybody is still
+   * awaited. The arithmetic, the cap and the seconder are `floorFor` in
+   * `races.ts` (SPEC §4.2; Q1439 → why: R-125, R-126, R-131), and the
+   * constitution layer keeps its own copy of the same line (`populations.ts`)
+   * because it derives F without a Session; `floor-agreement.test.ts` holds
+   * the two equal.
    *
    * **The number that decides an adoption is the race's own** (`RaceView.floor`),
    * not this one: Q1439's quorum is read against the group, and the group
@@ -1062,7 +1063,8 @@ export class Session {
    * sim's evidence, the record's *quorum was n* line.
    */
   adoptionFloor(): number {
-    return floorFor(this.constitutionValue, this.eCount());
+    const e = this.eCount();
+    return floorFor(this.constitutionValue, e, e);
   }
 
   /** E (SPEC §8.2): arrived, non-removed, non-lapsed — engine-side. */

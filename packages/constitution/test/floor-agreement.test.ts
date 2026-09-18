@@ -2,8 +2,8 @@
  * **One floor formula, implemented twice, with nothing asserting they agree**
  * (entry 77, the alpha-readiness pass; SPEC §4.2, §8.2).
  *
- * `F = max(1, Q′)` — `max(Q, min(⌈E/3⌉, F_max))` until v0.133 (Q1439 ruling s,
- * R-131) — lives in two places on purpose:
+ * `F = max(Q′, min(2, E))` — `max(Q, min(⌈E/3⌉, F_max))` until v0.133 (Q1439
+ * rulings s and u, R-131) — lives in two places on purpose:
  * `packages/engine-core/src/session.ts`'s `adoptionFloor()`, because the
  * engine must stay dependency-free, and `packages/constitution/src/
  * populations.ts`'s `adoptionFloor` / `quorumCount`, because the room needs
@@ -89,26 +89,27 @@ describe('the adoption floor: the engine and the constitution agree (§4.2)', ()
   });
 
   it('E = 0 is the constitution\'s alone: the engine has no such session', () => {
-    // one, not zero, since v0.133: `max(1, Q′)` is arithmetic, and a floor of
-    // zero would let a race with nothing behind it carry
-    expect(adoptionFloor(0, 0)).toBe(1);
+    // `min(2, 0)` is zero, and so is the quorum: an empty room has no floor to
+    // read, which is a difference of domain rather than a disagreement
+    expect(adoptionFloor(0, 0)).toBe(0);
     expect(() => engineFloor(0, null, 12)).toThrow(/roster must not be empty/);
   });
 
   it('the clamp is dead on both sides: F_max caps nothing (Q1439 ruling s)', () => {
     // E = 40 put ⌈E/3⌉ at 14, above the shipped 12, and the two answers used
     // to differ by the clamp alone. The term has gone (R-131, reversing
-    // R-073), so a room of forty that asked for nothing reads 1 whatever
-    // `adoptionFloorMax` says, on both sides — and `adoptionFloorTerm` itself
-    // survives only because `floor-recomputed` records it.
+    // R-073), so a room of forty that asked for nothing reads the seconder's
+    // two whatever `adoptionFloorMax` says, on both sides — and
+    // `adoptionFloorTerm` itself survives because `floor-recomputed` records
+    // it and for no other reason.
     expect(adoptionFloorTerm(40)).toBe(14);
     for (const fMax of [0, 1, 12, 99]) {
-      expect(engineFloor(40, null, fMax), `fMax ${fMax}`).toBe(1);
+      expect(engineFloor(40, null, fMax), `fMax ${fMax}`).toBe(2);
     }
-    expect(adoptionFloor(0, 40)).toBe(1);
+    expect(adoptionFloor(0, 40)).toBe(2);
   });
 
-  it('the room’s number is the whole floor, and the cap is the only thing over it', () => {
+  it('the room’s number is the whole floor, between the cap and the seconder', () => {
     // **Up to half** (Q1439, R-126): a count of 8 in a room of 9 is read as
     // ⌈9/2⌉ = 5. F_max of 1 no longer enters anywhere, which is the point.
     expect(engineFloor(9, { form: 'count', n: 8 }, 1)).toBe(5);
@@ -116,17 +117,20 @@ describe('the adoption floor: the engine and the constitution agree (§4.2)', ()
     // and under the cap nothing moved: a count of 4 in a room of 9 is 4
     expect(engineFloor(9, { form: 'count', n: 4 }, 1)).toBe(4);
     expect(adoptionFloor(4, 9)).toBe(4);
-    // a count of 1 is 1, where ⌈9/3⌉ = 3 used to hold it up
-    expect(engineFloor(9, { form: 'count', n: 1 }, 12)).toBe(1);
-    expect(adoptionFloor(1, 9)).toBe(1);
+    // a count of 1 is the seconder's 2, where ⌈9/3⌉ = 3 used to hold it up
+    expect(engineFloor(9, { form: 'count', n: 1 }, 12)).toBe(2);
+    expect(adoptionFloor(1, 9)).toBe(2);
+    // a count of 3 is three: the seconder is a minimum, not a rounding
+    expect(adoptionFloor(3, 9)).toBe(3);
   });
 
   it('no quorum may ask for more than half, on either side (Q1439, R-126)', () => {
     // the count form is the only one that can reach the cap from the surface:
-    // a share above 50 is refused at validation (`values.ts`)
+    // a share above 50 is refused at validation (`values.ts`). At E = 2 and
+    // E = 3 the seconder is above half, so the two meet there (ruling u).
     for (const E of [1, 2, 5, 8, 25]) {
-      const half = Math.ceil(E / 2);
-      expect(adoptionFloor(999, E)).toBe(half);
+      const want = Math.max(Math.ceil(E / 2), Math.min(2, E));
+      expect(adoptionFloor(999, E), `E ${E}`).toBe(want);
       expect(engineFloor(E, { form: 'count', n: 999 }, 12)).toBe(adoptionFloor(999, E));
     }
   });
@@ -139,14 +143,14 @@ describe('the adoption floor: the engine and the constitution agree (§4.2)', ()
     }
   });
 
-  it('no quorum at all reads as 1 on both sides, and no longer as ⌈E/3⌉', () => {
+  it('no quorum at all reads as the seconder on both sides, never as ⌈E/3⌉', () => {
     // the engine takes `quorum: null` as Q′ = 0; the constitution has no null
     // to take, so the caller passes 0 — and with the statistical term gone
-    // (Q1439 ruling s, R-131) an absent quorum leaves the arithmetic minimum
-    // and nothing else. §9.0a will not let a document begin without one.
+    // (Q1439 ruling s, R-131) an absent quorum leaves the seconder and nothing
+    // else. §9.0a will not let a document begin without one.
     for (const E of [3, 6, 9]) {
-      expect(engineFloor(E, null, 12)).toBe(1);
-      expect(adoptionFloor(0, E)).toBe(1);
+      expect(engineFloor(E, null, 12)).toBe(2);
+      expect(adoptionFloor(0, E)).toBe(2);
     }
   });
 });

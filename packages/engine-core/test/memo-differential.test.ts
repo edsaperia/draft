@@ -281,7 +281,11 @@ describe('the fold-live memo derives what no memo derives (Q1326)', () => {
    */
   it('a session whose silences abstain as the clock moves agrees at every step', () => {
     const out = differential('abstain', 120, { abstainAfterMs: 4 * 60_000 });
-    expect(out.acts).toBeGreaterThan(70);
+    // the bound only guards that the script did something. It ran above 70
+    // until v0.133's seconder (Q1439 ruling u) held more races open, which
+    // changes which scripted acts are legal and lands this run at 68. The
+    // step-by-step differential is the assertion; this is its floor.
+    expect(out.acts).toBeGreaterThan(60);
   }, SCRIPT_MS);
 
   it('the races read at two clocks on one state differ only in the floor they were read at', () => {

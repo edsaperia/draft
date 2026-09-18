@@ -61,13 +61,16 @@ export function adoptionFloorTerm(E: number): number {
 }
 
 /**
- * F = max(1, Q′) — §4.2. **The room's number, and nothing under it** (Q1439
- * ruling s, Ed 2026-09-18 — *if the membership want a smaller quorum they
- * should be able to choose it* → why: R-131): the built-in minimum of a third
- * of the membership has gone, and the `max(1, …)` is arithmetic rather than a
- * minimum anybody chose — a floor of zero is no floor, and §4.2's measured
- * clause is what holds a race open until somebody who is not the author has
- * spoken.
+ * F = max(Q′, min(2, E)) — §4.2. **The room's number, and a seconder under it**
+ * (Q1439, Ed 2026-09-18 → why: R-131). Ruling s took the built-in third away —
+ * *if the membership want a smaller quorum they should be able to choose it* —
+ * so the card's number is what the room is held to at every size; ruling u,
+ * out of the churn re-run the same day, put **two approvals** under it, which
+ * is the author and one other member. One is no floor at all, the author's own
+ * derived preference being the one, and the sims measured a room of fifteen
+ * making 904 adoptions in a month at a floor of 1, 888 of them reversions.
+ * `min(2, E)` because at E = 1 the sole member is the room and at E = 2 it is
+ * unanimity.
  *
  * **And no quorum may ask for more than half** (R-126): ✏️ is *enough of the
  * room* and 🏛️ is *everybody*, so an approval quorum of 100% would make them
@@ -83,5 +86,5 @@ export function adoptionFloorTerm(E: number): number {
  * The two move together or not at all — `floor-agreement.test.ts`.
  */
 export function adoptionFloor(quorumN: number, E: number): number {
-  return Math.max(1, Math.min(quorumN, Math.ceil(E / 2)));
+  return Math.max(Math.min(quorumN, Math.ceil(E / 2)), Math.min(2, E));
 }

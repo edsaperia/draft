@@ -118,12 +118,13 @@ describe('amendments and the anchor (SPEC §4.3, §9.6, 367b)', () => {
 
   it('an amended quorum re-derives the floor from current E (SPEC §4.2)', () => {
     const s = openS();
-    expect(s.adoptionFloor()).toBe(1); // no quorum settled: max(1, 0)
+    expect(s.adoptionFloor()).toBe(2); // no quorum settled: the seconder, min(2, E)
     // **and no quorum asks for more than half** (Q1439, R-126): a count of 2
     // in a room of 2 is everybody, which is 🏛️'s rung and not ✏️'s, so it
-    // reads as ⌈2/2⌉ = 1 and the floor does not move
+    // reads as ⌈2/2⌉ = 1 — and the seconder (ruling u) puts a room of two back
+    // at unanimity anyway, so the floor does not move
     s.amend(1 * HOUR, { quorum: { form: 'count', n: 2 } });
-    expect(s.adoptionFloor()).toBe(1);
+    expect(s.adoptionFloor()).toBe(2);
   });
 
   /**
@@ -182,7 +183,7 @@ describe('amendments and the anchor (SPEC §4.3, §9.6, 367b)', () => {
     const s = bigRoom();
     s.amend(1 * HOUR, { quorum: { form: 'share', n: 28 } });
     expect(s.adoptionFloor()).toBe(
-      Math.max(1, Math.min(Math.ceil((28 * 50) / 100), Math.ceil(50 / 2))));
+      Math.max(Math.min(Math.ceil((28 * 50) / 100), Math.ceil(50 / 2)), Math.min(2, 50)));
   });
 
   it('an amended drip re-phases without retro-credit (SPEC §7)', () => {

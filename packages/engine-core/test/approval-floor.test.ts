@@ -203,23 +203,49 @@ describe('the floor is read against the group X is waiting on (R-126)', () => {
     expect(only(s, 2000).floor).toBe(3);
   });
 
-  it('no minimum sits under the room’s number any more (ruling s, R-131 reversing R-073)', () => {
+  it('no third sits under the room’s number any more (ruling s, R-131 reversing R-073)', () => {
     // E = 12, where ⌈12/3⌉ = 4 was the floor whatever the room asked for: a
-    // count of one is one now, on the race and on the room's own reading
-    const { s } = proposed({ quorum: { form: 'count', n: 1 } }, 12);
-    expect(only(s, 2000).floor).toBe(1);
-    expect(s.adoptionFloor()).toBe(1);
+    // count of three is three now, on the race and on the room's own reading
+    const { s } = proposed({ quorum: { form: 'count', n: 3 } }, 12);
+    expect(only(s, 2000).floor).toBe(3);
+    expect(s.adoptionFloor()).toBe(3);
   });
 
-  it('a room that settled no quorum is held to one, which is arithmetic', () => {
-    // `max(1, Q′)` is not a minimum anybody chose — a floor of zero is no
-    // floor — and §4.2's measured clause is what actually keeps a race open
-    // until somebody who is not the author has spoken
+  /**
+   * **A proposal needs a seconder** (Ed, 2026-09-18, Q1439 ruling u, out of
+   * the churn re-run). The floor is never fewer than two approvals — the
+   * author and one other member — because one approval is the author's own
+   * derived preference and so no floor at all: at `max(Q′, 1)` a room of
+   * fifteen made 904 adoptions in a month, 888 of them reversions.
+   */
+  it('the floor is never fewer than two approvals (ruling u)', () => {
+    // E = 5 at a share of 5 %: Q′ = ⌈5×5/100⌉ = 1, and F is 2
+    const { s } = proposed({ quorum: { form: 'share', n: 5 } });
+    const r0 = only(s, 2000);
+    expect(r0.floor).toBe(2);
+    expect(r0.approvals).toBe(1);        // the author, alone
+    expect(s.tick(2000)).toEqual([]);    // and waiting
+    s.judge(2000, 'p2', r0.leaderId!, r0.incumbentId, 'a');
+    // the seconder carries it
+    expect(s.log.map((e) => e.event).some((e) => e.type === 'adopted')).toBe(true);
+    expect(s.document()).toContain('Membership is open to members.');
+  });
+
+  it('the seconder is min(2, E): unanimity at E = 2, one at E = 1', () => {
+    // E = 2: ⌈2/2⌉ caps every quorum at 1, so the seconder is the whole floor
+    const two = proposed({}, 2);
+    expect(two.s.adoptionFloor()).toBe(2);
+    expect(only(two.s, 2000).floor).toBe(2);
+    // E = 1 is R-063's room of one, where the sole member is author and room
+    expect(open({ quorum: { form: 'count', n: 99 } }, 1).adoptionFloor()).toBe(1);
+  });
+
+  it('a room that settled no quorum is held to the seconder and nothing more', () => {
     const { s } = proposed({}, 12);
-    expect(s.adoptionFloor()).toBe(1);
+    expect(s.adoptionFloor()).toBe(2);
     const r = only(s, 2000);
-    expect(r.floor).toBe(1);
-    expect(r.approvals).toBe(1);   // the author's own preference, and it meets F
+    expect(r.floor).toBe(2);
+    expect(r.approvals).toBe(1);   // the author's own preference, one short
     expect(r.leaderMeasured).toBe(0);
     expect(s.tick(2000)).toEqual([]); // and nothing carries on it alone
   });
@@ -256,13 +282,13 @@ describe('silence on one candidate becomes an abstention (R-127)', () => {
     expect(s.document()).toContain('Membership is open to anyone.');
 
     // once the three periods have run: G = 2, Q′ = min(⌈50×2/100⌉, ⌈2/2⌉) = 1,
-    // F = 1 — it adopts. It was F = 2 under R-073's ⌈5/3⌉, and it adopted
-    // there too, on the nose; the third has gone (ruling s, R-131) and the
-    // margin is the room's own number alone.
+    // and the seconder holds F at 2 (ruling u) — it adopts on the nose. It was
+    // F = 2 under R-073's ⌈5/3⌉ too: the third has gone (ruling s, R-131) and
+    // two approvals is what a proposal needs from a room of five either way.
     const after = 1000 + P + 1;
     const ready = only(s, after);
     expect(ready.group).toBe(2);
-    expect(ready.floor).toBe(1);
+    expect(ready.floor).toBe(2);
     expect(ready.approvals).toBe(2);
     expect(s.tick(after).map((e) => e.type)).toContain('adopted');
     expect(s.document()).toContain('Membership is open to members.');
@@ -290,11 +316,12 @@ describe('silence on one candidate becomes an abstention (R-127)', () => {
     expect(waiting.approvals).toBe(2);
     expect(s.tick(3000)).toEqual([]);
 
-    // the seven periods run: G = 3, Q′ = min(⌈30×3/100⌉, ⌈3/2⌉) = 1, F = 1
+    // the seven periods run: G = 3, Q′ = min(⌈30×3/100⌉, ⌈3/2⌉) = 1, and the
+    // seconder holds F at 2 (ruling u) — which the two approvals meet exactly
     const after = 1000 + P + 1;
     const ready = only(s, after);
     expect(ready.group).toBe(3);
-    expect(ready.floor).toBe(1);
+    expect(ready.floor).toBe(2);
     expect(ready.approvals).toBe(2);
     expect(s.tick(after).map((e) => e.type)).toContain('adopted');
     expect(s.document()).toContain('Membership is open to members.');
@@ -446,11 +473,11 @@ describe('the edges of E', () => {
     expect((adopted as { approvals?: number; floor?: number }).floor).toBe(1);
   });
 
-  it('at E = 2 the measured clause still binds', () => {
+  it('at E = 2 the seconder is unanimity, and the measured clause still binds', () => {
     const { s } = proposed({}, 2);
     const r = only(s, 2000);
     expect(r.approvals).toBe(1);
-    expect(r.floor).toBe(1);
+    expect(r.floor).toBe(2);          // min(2, E), which at E = 2 is everybody
     expect(r.leaderMeasured).toBe(0);
     expect(s.tick(2000)).toEqual([]); // nobody but the author has spoken
   });
@@ -483,8 +510,8 @@ describe('the record carries the numbers the batch decided on', () => {
     const adopted = s.log.map((e) => e.event).find((e) => e.type === 'adopted');
     expect(adopted).toBeDefined();
     expect((adopted as { approvals?: number }).approvals).toBe(2);
-    // no quorum settled, and the whole room still in the group: F = max(1, 0)
-    expect((adopted as { floor?: number }).floor).toBe(1);
+    // no quorum settled, so the floor is the seconder's two, met exactly
+    expect((adopted as { floor?: number }).floor).toBe(2);
   });
 
   it('a log written before the field existed folds unchanged', () => {

@@ -54,9 +54,9 @@ export function candidateNum(id: string): number {
 }
 
 /**
- * **F = max(1, Q′)** (SPEC §4.2; Q1439 → why: R-125, R-126, R-131).
+ * **F = max(Q′, min(2, E))** (SPEC §4.2; Q1439 → why: R-125, R-126, R-131).
  *
- * **One base, and it is the group** the leader is waiting on — its approvers,
+ * **Q′ is read against the group** the leader is waiting on — its approvers,
  * its opposers and the members of E it is still awaiting — because a quorum is
  * what the room asks of the people who are actually deciding this question,
  * and a silence that has run its 💤 period is not one of them (§8.2). Q′ is a
@@ -66,14 +66,19 @@ export function candidateNum(id: string): number {
  *
  * **The built-in minimum of a third of E has gone** (Ed, 2026-09-18, Q1439
  * ruling s: *if the membership want a smaller quorum they should be able to
- * choose it* → why: R-131, reversing R-073). The card's number is the only
- * number: a room of ten at 30% with seven silent carries a proposal 2 to 1
- * once the period has run, the measured clause and the leader being on top
- * standing as they were. The `max(1, …)` is not a minimum anybody chose — it
- * is arithmetic, since a floor of zero is no floor at all and a race with
- * nothing behind it would carry; the author's own derived preference (§3.3)
- * already meets it, and §4.2's measured clause is what actually holds a race
- * open until somebody who is not the author has spoken.
+ * choose it* → why: R-131, reversing R-073): the card's number is the number
+ * the room is held to, at every size.
+ *
+ * **What is left under it is a seconder** (ruling u, the same day, out of the
+ * churn re-run): **never fewer than two approvals**, the author and one other
+ * member preferring the candidate to the current text. One is no floor at all
+ * — the author's own derived preference (§3.3) is the one — and the sims
+ * measured what that costs: a room of fifteen made 904 adoptions in a month at
+ * a floor of 1, 888 of them reversions, the text never settling.
+ * `min(2, E)` rather than a flat 2, because at E = 1 the sole member is the
+ * room (R-063, unchanged) and at E = 2 it is unanimity. **The seconder is
+ * counted on E and not on the group**: it is a sufficiency rule about the
+ * room, not a consent rule about the people still deciding.
  *
  * The share's arithmetic is `⌈n·G/100⌉`, **the product before the quotient**
  * (issue #24): `(n / 100) * G` is not the same number, and 56 % of 25 landed a
@@ -81,11 +86,11 @@ export function candidateNum(id: string): number {
  * layer's copy of this line, and `floor-agreement.test.ts` holds the two
  * equal — they move together or not at all.
  */
-export function floorFor(c: Constitution, group: number): number {
+export function floorFor(c: Constitution, e: number, group: number): number {
   const q = c.quorum;
   const asked = q === null ? 0 : q.form === 'count' ? q.n : Math.ceil((q.n * group) / 100);
   const quorumN = Math.min(asked, Math.ceil(group / 2));
-  return Math.max(1, quorumN);
+  return Math.max(quorumN, Math.min(2, e));
 }
 
 /**
@@ -196,7 +201,8 @@ export class Races {
     const awaited = cores.map((c) => this.awaitedAt(c.approval, t));
     return this.host.derived(`races@${awaited.join(',')}`, () => {
       const parks = this.parkedFootprints();
-      return cores.map((c, i) => this.viewAt(c.core, c.approval, awaited[i]!, parks));
+      const e = this.host.eMembers().length;
+      return cores.map((c, i) => this.viewAt(c.core, c.approval, awaited[i]!, e, parks));
     }).slice();
   }
 
@@ -221,10 +227,11 @@ export class Races {
     core: RaceCore,
     approval: ApprovalCore,
     awaited: number,
+    e: number,
     parks: Span[][],
   ): RaceView {
     const group = approval.answered + awaited;
-    const floor = floorFor(this.host.constitution(), group);
+    const floor = floorFor(this.host.constitution(), e, group);
     const view: RaceView = {
       ...core,
       approvals: approval.approvals,
