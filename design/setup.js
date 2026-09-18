@@ -47,6 +47,11 @@ window.SETUP = (function () {
   const WAITING = window.CARDS.mkHtml('deciding');
   const YOURS = window.CARDS.mkHtml('propose');
   const DONE = window.CARDS.mkHtml('adopted');
+  // **And the ✖ its matched partner** (Q1451, Ed 2026-09-18): the one news card
+  // in this alphabet whose news is a *rejection* wears the charter's own
+  // `retired` mark rather than the ✔, from the same helper for the same reason
+  // — the band and the gutter must not draw two different crosses.
+  const RETIRED = window.CARDS.mkHtml('retired');
   const glyphHtml = window.CARDS.glyphHtml;
   const glyphify = window.CARDS.glyphify;
   // **The answer ladders speak the clause** (Q1112 (b)): a rung says the
@@ -269,6 +274,22 @@ window.SETUP = (function () {
     // wears the subject glyph (💡 while blocked shows 💡) and `done` is
     // untouched, so an acknowledged grant settles exactly as before.
     if (st === 'news' && c.grants) return glyphHtml(c.grants);
+    // **A motion of yours that did not pass wears the drawn ✖** (Q1451, Ed
+    // 2026-09-18: *X symbol should be for any kind of proposal you made that
+    // was rejected or refused, ordinary or constitutional — you should know
+    // the outcome of things you propose*). E41's card is news like any other
+    // and wore the ✔ that every news card wears, because a news mark had been
+    // a fact about the card's kind rather than about its content — so the one
+    // entry in the rail saying *your proposal did not pass* was drawn with the
+    // mark this alphabet uses for *something carried*. It is the ✖ the settled
+    // record's own chip already wears, in colour rather than drained: the wash
+    // stays the news wash and the OK is still owed, and `retired` is exactly
+    // the kind that means *the incumbent held, and you are owed the reading*
+    // (SURFACE §6). Both columns, because the tab behind the rule's own tab is
+    // the same news — and a held card is never the front of a setting's pile
+    // (its key is `held:<motion>`, never the setting's), so Q1320's rule that
+    // the front tab keeps its subject glyph is untouched.
+    if (st === 'news' && c.held) return RETIRED;
     return st === 'ask' ? glyphHtml(c.g) : st === 'wait' ? WAITING : st === 'yours' ? YOURS : DONE;
   };
 
