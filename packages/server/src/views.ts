@@ -385,10 +385,25 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
     return liveSpans.some((s) => (f.start < s.end && s.start < f.end)
       || (f.start === f.end && s.start <= f.start && f.start <= s.end));
   });
+  // **…and the author alone is told at once** (Q1451, Ed 2026-09-18: *you
+  // should know the outcome of things you propose*). The hold-back above is
+  // right for every other reader and wrong for the one person it silences: the
+  // author's green *yours* line goes the moment the wording retires, and until
+  // the whole clause finishes nothing says why it went. What a rejection tells
+  // them is only that enough members preferred the text that stands to that one
+  // wording, which is what the mover of a motion is already told at the moment
+  // it fails (E41) — so the row is built here, reduced, rather than the page
+  // being trusted to draw less than it is given: their own candidate, the
+  // clause it was written for, and the reason, and none of what the hold-back
+  // exists to withhold — no rival, no reading, no judge count, no floor.
+  const earlyMine: Array<{ o: ReturnType<typeof api.outcomes>[number]; c: Candidate }> = [];
   for (const o of opts.records === false ? [] : api.outcomes()) {
     const c = engine.getCandidate(o.candidateId);
     if (c.patch === undefined) continue;
-    if (o.outcome === 'retired' && stillRacing(c, o.version)) continue;
+    if (o.outcome === 'retired' && stillRacing(c, o.version)) {
+      if (c.author === memberId) earlyMine.push({ o, c });
+      continue;
+    }
     const mineJ = myJ.some((j) => j.aId === o.candidateId || j.bId === o.candidateId);
     const author = namedAuthor(c);
     const entry = { candidateId: o.candidateId, outcome: o.outcome, p: o.p ?? null,
@@ -465,7 +480,48 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
       rec.judges = movers.size;
     }
   }
-  const records = [...byRace.values()].sort((a, b) => a.when - b.when).slice(-50);
+  /**
+   * The author's early row (Q1451): everything the full record's shape needs
+   * to stand beside its clause — `at`, `displaced`, `when` — and nothing that
+   * says which way the room is going. `early` is the page's word for *draw the
+   * reduced card, never the ranked field*.
+   *
+   * Deliberately **not** put through `byRace`, for two reasons. A race whose
+   * other member has already adopted holds a full record under the same id,
+   * and this must never merge into one; and `recordSpans` is the engine's own
+   * per-state memo, shared across every seat, so a span computed from one
+   * seat's single candidate must not be cached under a race id another seat
+   * will read the full record's span from.
+   */
+  type EarlyRec = { raceId: string; candidateId: string; outcome: 'retired'; when: number;
+    p: null; threshold: null; version: number; footprint: unknown; displaced: string[];
+    at: Span; early: true;
+    field: Array<{ candidateId: string; outcome: 'retired'; p: null; threshold: null;
+      hunks: Array<{ start: number; end: number; lines: string[] }>;
+      rationale: string; judgedByMe: false; reason?: string }> };
+  const earlyRows = new Map<string, EarlyRec>();
+  for (const { o, c } of earlyMine) {
+    // a race that already has a record of its own says everything this row
+    // would, and the page keys both by the race
+    if (byRace.has(o.raceId)) continue;
+    const hunks = c.patch!.hunks;
+    const entry = { candidateId: o.candidateId, outcome: 'retired' as const, p: null,
+      threshold: null, hunks, rationale: c.rationale, judgedByMe: false as const,
+      ...(o.reason ? { reason: o.reason } : {}) };
+    const had = earlyRows.get(o.raceId);
+    // two wordings of mine closed on one clause are one card and one OK
+    if (had) { had.field.push(entry); had.when = Math.max(had.when, o.t); continue; }
+    const span = { start: Math.min(...hunks.map((h) => h.start)),
+      end: Math.max(...hunks.map((h) => h.end)) };
+    let prev: string[] = [];
+    try { prev = linesAt(o.version); } catch { prev = []; }
+    earlyRows.set(o.raceId, { raceId: o.raceId, candidateId: o.candidateId,
+      outcome: 'retired', when: o.t, p: null, threshold: null, version: o.version,
+      footprint: c.footprint, displaced: prev.slice(span.start, span.end),
+      at: spanNow(span, o.version, steps), early: true, field: [entry] });
+  }
+  const records = [...byRace.values(), ...earlyRows.values()]
+    .sort((a, b) => a.when - b.when).slice(-50);
   // **The record** (SPEC §4.6, the shape record-builder renders), once closed:
   // the final text, what adopted, the backlog of undecided races each with
   // its field and the text that stood, the changes carried-but-unassented,

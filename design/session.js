@@ -2090,6 +2090,17 @@
     return (
       '<div class="sugg sealed-open" data-card="' + s.id + '"' +
       (skey ? ' data-site="' + skey + '"' : '') + '>' +
+      // **A wording closed early carries no eyebrow at all** (Q1451, Ed
+      // 2026-09-18). Its author is told at once, while the clause is still
+      // racing, and what they may be told is only that their own wording can
+      // no longer pass — never how many weighed in, never how far anything
+      // got, because the race has not sealed and a live race may not say which
+      // way the room is going (SPEC §3.5, SURFACE C12). The server withholds
+      // every one of those numbers from the row; the eyebrow goes here so the
+      // card cannot print a nought and call it a reading. What is left is the
+      // clause at the head, their own wording under it with its rationale and
+      // *Rejected — it could no longer pass*, and the OK.
+      (s.early ? '' :
       // **The whole record in one line** (Ed, 2026-08-17). It was three places —
       // an eyebrow, a rank label under it, and a record band at the foot — for
       // numbers that belong together: how many weighed in and what they came to.
@@ -2124,7 +2135,7 @@
       // an undecided race nobody read prints no reading: 0% is a number about
       // nothing
       (und && !(best > 0) ? '' : ' · ' + pct(best) + JUDG) + '</span>' +
-      '<span class="sub">' + esc(d.when || '') + '</span></div>' +
+      '<span class="sub">' + esc(d.when || '') + '</span></div>') +
       // **The cap line** (SPEC §4.2, R-051; Q945, Ed 2026-08-27). Where the
       // ranking fit this decision was taken on ran out of its iteration cap,
       // the record says so — one line, in the same `rsub` vocabulary as *the

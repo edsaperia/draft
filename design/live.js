@@ -1503,11 +1503,24 @@ window.LIVE = (function () {
         const nowText = undecided ? null : plain(lines, sp);
         const gone = !undecided && sp.start === sp.end;
         const changedSince = standsNow !== null && (gone || nowText !== standsNow);
-        items.push({ id: 'rec:' + (o.raceId || o.candidateId), kind: 'quick', keys, state: 'sealed',
+        // **A wording closed early is its author's own news** (Q1451, part 3).
+        // The server serves the author — and nobody else — a reduced row while
+        // the clause is still racing: their candidate, no rivals, no reading,
+        // no judge count. It is keyed apart from the record the race will file
+        // when it finally ends, `rec:early:<candidate>`, because that press is
+        // the acknowledgement of *this proposal* and the full record must not
+        // ask the same person for it twice (`isUnread`'s `minePending`). The
+        // card that draws it is the sealed one with its eyebrow of numbers
+        // taken off — session.js, on this same flag.
+        const early = !!o.early;
+        items.push({ id: early ? 'rec:early:' + o.candidateId
+          : 'rec:' + (o.raceId || o.candidateId), kind: 'quick', keys, state: 'sealed',
           ...gapSite, ...(changedSince ? { changedSince: true, gone } : {}),
+          ...(early ? { early: true } : {}),
           // a gap record is titled by the block before its gap, as a gap draft is
           qLabel: labelFor(site.insertAfterKey || keys[0]), urgency: 0, pct: 100,
-          cap: adopted ? 'decided — adopted' : undecided ? 'undecided at the close — the text stood' : 'decided — the current text stood',
+          cap: early ? window.COPY.session.record.dominated
+            : adopted ? 'decided — adopted' : undecided ? 'undecided at the close — the text stood' : 'decided — the current text stood',
           decided: { outcome: adopted ? 'adopted' : undecided ? 'undecided' : 'retired — the current text stood',
             // `o.threshold` is still on the record row — the engine's own,
             // pinned (R-117) — and nothing reads it: the eyebrow stopped
