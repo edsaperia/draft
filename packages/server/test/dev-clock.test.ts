@@ -38,6 +38,7 @@ import type { DraftServer } from '../src/server.js';
 import { foldTime } from '../src/engine-host.js';
 import { FilePersistence, WriteChain } from '../src/persistence.js';
 import { DocStore, StorePeople } from '../src/store.js';
+import type { LoadedDoc } from '../src/store.js';
 import { PauseState, WritePath } from '../src/write-path.js';
 import type { ServerConfig } from '../src/config.js';
 
@@ -337,6 +338,86 @@ describe('the dev clock (Q1455): one document moved forward, the host still doin
     // …and the wall clock, which is ten minutes behind it, wrote nothing
     expect(lapse!.event.t).toBeGreaterThan(Date.now() + 60_000);
   });
+
+  /**
+   * **The dev clock and the phase ladder, on one document** (Q1455 review,
+   * item 2). This is the interaction that found the wedge and then lost its
+   * witness: the seat matrix hands the clock back before the first rung, so
+   * nothing exercised it any more.
+   *
+   * What went wrong, twice. The ladder's last two rungs move a document's
+   * ending *backwards* by design — `toClosed` sets it to the very instant it
+   * is writing at, which is legal because equal timestamps are — and it
+   * commits at its own pen's time. While `foldTime` pushed an explicit time
+   * forward to the document's own now, that commit landed a millisecond past
+   * the instant the rung had named: the engine then ran its close at a window
+   * behind its own log and threw *timestamps must be non-decreasing*, once a
+   * minute, for ever. It bit about one run in two.
+   *
+   * So the assertions are the symptoms in order: the rungs climb to `closed`,
+   * the chain still verifies, a fresh replay reproduces the log entry for
+   * entry, and — the one that was permanent — a tick afterwards reports no
+   * error. `noteError` is how a tick failure is visible at all, since `tick`
+   * swallows each document's throw to keep one document from stopping the
+   * clock for the others (Q679).
+   */
+  it('lets the phase ladder close a document whose clock has been moved', async () => {
+    const { runLadder } = await import('../src/dev-ladder.js');
+    const { advanceClock } = await import('../src/dev-clock.js');
+    const b = await boot();
+    const errors: unknown[] = [];
+    const writes = new WritePath({
+      cfg: b.cfg,
+      persistence: new FilePersistence(b.dataDir),
+      store: b.draft.store,
+      commits: new WriteChain(),
+      pause: new PauseState(),
+      auth: b.draft.auth,
+      mailer: b.draft.mailer,
+      outbox: b.draft.outbox,
+      noteError: (_where, e) => { errors.push(e); },
+      closing: () => false,
+      now: () => Date.now(),
+    });
+    const host = { store: b.draft.store, commit: (d: LoadedDoc, t: number) => writes.commit(d, t) };
+
+    // a real ladder document, mid-life: twenty members, live races, a window
+    const built = await runLadder(host, null, { to: 'session', seed: 7 });
+    const doc = b.draft.store.bySlug(built.slug)!;
+    expect(built.phase).toBe('session');
+
+    // …its clock moved an hour on, everybody present so nobody lapses
+    const seats = built.seats.map((s) => s.id);
+    const jump = await advanceClock({ tOf: (d) => writes.tOf(d), commit: host.commit },
+      doc, { slug: built.slug, advanceMs: 65 * 60_000, present: seats }, Date.now());
+    expect(jump.status, JSON.stringify(jump.body)).toBe(200);
+
+    // …and then the rungs, driven the way `routes-dev` drives them: the
+    // document's own clock, honoured as given
+    const closed = await runLadder(host, doc,
+      { to: 'closed', nowMs: foldTime(doc, Date.now()) });
+    expect(closed.skipped, closed.skipped.join(' · ')).toEqual([]);
+    expect(closed.phase).toBe('closed');
+    expect(doc.cs.closed).toBe(true);
+    expect(doc.cs.verifyChain()).toBe(true);
+
+    // the wedge was permanent, so the tick afterwards is the real assertion
+    await writes.tick();
+    await writes.tick();
+    expect(errors.map((e) => (e as Error).message), 'the tick threw after the close').toEqual([]);
+
+    // and the log a jumped, ladder-closed document leaves is an ordinary one
+    const before = JSON.stringify(doc.cs.logEntries());
+    const id = doc.id;
+    await b.draft.close();
+    booted.splice(booted.indexOf(b), 1);
+    const p = new FilePersistence(b.dataDir);
+    const store = new DocStore(p);
+    await store.loadAll();
+    expect(store.quarantined()).toEqual([]);
+    expect(JSON.stringify(store.byId(id)!.cs.logEntries())).toBe(before);
+    expect(store.byId(id)!.cs.verifyChain()).toBe(true);
+  }, 60_000);
 
   it('is not there at all on a host that is not a dev host', async () => {
     const b = await boot({ resendApiKey: 'not-a-real-key' });
