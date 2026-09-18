@@ -252,6 +252,14 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
     // the ordinary route is a race in the engine at all — a 🏛️ motion is put
     // to the assembly and never enters here — so a setting row carries the
     // same clock by construction, and no constitutional card can wear one.
+    // **Nothing draws it yet**, and the reason is the row's own: a *set*
+    // motion shares its setting's race with every rival value still running
+    // (Q1348), so this deadline is the race's leading pair's and not that
+    // card's, while a membership motion *is* its race and it would be exact.
+    // Drawing it on one kind and not the other would make two cards that
+    // look identical say different things, so it waits on Ed's ruling —
+    // Q1460's open (c). The number is served because it is the honest one
+    // about the race, whoever comes to read it.
     return { id: r.id, settingId: r.settingId, closeness: r.closeness, judges: r.leaderJudges,
       floor: r.floor, ...abstainAt(r.id),
       judged: here.some((j) => !j.superseded && !j.locked), askable: dealt || ask !== null, ask };
