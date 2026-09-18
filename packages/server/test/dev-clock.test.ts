@@ -36,8 +36,10 @@ import type { LogEntry } from '../../constitution/src/index.js';
 import { createDraftServer } from '../src/server.js';
 import type { DraftServer } from '../src/server.js';
 import { foldTime } from '../src/engine-host.js';
-import { FilePersistence } from '../src/persistence.js';
+import { FilePersistence, WriteChain } from '../src/persistence.js';
 import { DocStore, StorePeople } from '../src/store.js';
+import { PauseState, WritePath } from '../src/write-path.js';
+import type { WritePathDeps } from '../src/write-path.js';
 
 const DESIGN_DIR = join(import.meta.dirname, '..', '..', '..', 'design');
 const DAY = 24 * 3600_000;
@@ -286,6 +288,54 @@ describe('the dev clock (Q1455): one document moved forward, the host still doin
     expect(lastT()).toBeGreaterThanOrEqual(ahead);
     // idempotent: a second release is a no-op, not a refusal
     expect((await clock(b, { slug: d.slug, release: true })).status).toBe(200);
+  });
+
+  /**
+   * **The host's own clock is the one the fold reads** — a write path made
+   * with an injected `now` must tick and commit on *that*, not on `Date`.
+   * It is the one seam a test has on the path every commit rides, and the
+   * dev clock's first cut dropped it: `tOf`'s no-argument case fell through
+   * to `foldTime`'s default, so one call read the pause on the injected clock
+   * and the fold on the wall clock. In production the two are the same
+   * function and nothing moved, which is exactly why it needed asserting.
+   *
+   * The assertion is a lapse, because a lapse is a clock fact with a
+   * timestamp on it: a host whose clock says *ten minutes from now* must find
+   * the quiet member and stamp them at that instant. Read against `Date`
+   * nothing is due at all, so the pre-fix path fails on the first assertion
+   * rather than on the last.
+   */
+  it("ticks and commits on the host's injected clock, not on Date.now()", async () => {
+    const b = await boot();
+    const d = await found(b, { title: 'Injected', members: ['bo@example.org'] });
+    const doc = b.draft.store.bySlug(d.slug)!;
+    const fixed = Date.now() + 10 * 60_000;   // ten minutes on, past 💤's spell
+
+    // a second write path over the same store, differing only in its clock
+    const writes = new WritePath({
+      cfg: { engineTuning: { cooldownMs: 0 } },
+      persistence: new FilePersistence(b.dataDir),
+      store: b.draft.store,
+      commits: new WriteChain(),
+      pause: new PauseState(),
+      // a lapse relays mail, and the outbox is the only one of these three
+      // this path reaches on the way; the other two are never called
+      auth: b.draft.auth,
+      mailer: b.draft.mailer,
+      outbox: b.draft.outbox,
+      noteError: () => {},
+      closing: () => false,
+      now: () => fixed,
+    } as WritePathDeps);
+
+    expect(writes.tOf(doc)).toBeGreaterThanOrEqual(fixed);
+    await writes.tick();
+
+    const lapse = doc.cs.logEntries().find((e) => e.event.type === 'member-lapsed');
+    expect(lapse, 'the injected clock did not reach the fold — nothing lapsed').toBeTruthy();
+    expect(lapse!.event.t).toBeGreaterThanOrEqual(fixed);
+    // …and the wall clock, which is ten minutes behind it, wrote nothing
+    expect(lapse!.event.t).toBeGreaterThan(Date.now() + 60_000);
   });
 
   it('is not there at all on a host that is not a dev host', async () => {

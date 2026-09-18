@@ -32,7 +32,7 @@ import type { OutboxRow, Persistence } from './persistence.js';
 import type { MailOutbox, QueuedMail } from './outbox.js';
 import { MAILS } from './mailer.js';
 import type { Mail, Mailer } from './mailer.js';
-import { driveBridge, foldTime, persistEngine } from './engine-host.js';
+import { devNow, driveBridge, foldTime, persistEngine } from './engine-host.js';
 
 /**
  * **A pause is announced, never guessed** (Q1345, Ed 2026-09-12: *explicitly
@@ -178,11 +178,19 @@ export class WritePath {
    * given, which is what the phase ladder's own pen needs: a commit behind a
    * write must land on the instant that write named, not a millisecond later.
    * The pause is a fact about the host, so it reads the wall clock either way.
+   *
+   * **And *what time is it* is asked of the host, not of `Date`.** `d.now` is
+   * the clock this write path was made with, and it is the one seam a test has
+   * on the path every commit rides; a first cut let the no-argument case fall
+   * through to `foldTime`'s own default, which reads `Date.now()` — so the
+   * injected clock was silently dropped, and one call read two clocks (the
+   * pause on `d.now`, the fold on `Date`). `devNow` adds the document's skew
+   * to whichever clock it is handed, so both halves of that rule hold at once.
    */
   tOf(doc: LoadedDoc, nowMs?: number): number {
     const { cfg, pause } = this.d;
     const realMs = nowMs ?? this.d.now();
-    const t = foldTime(doc, nowMs);
+    const t = foldTime(doc, nowMs ?? devNow(doc.id, realMs));
     const ending = doc.cs.constitutedAtT !== null && !doc.cs.closed
       ? doc.cs.settingState('ending').value as { endsAtMs: number | null } | null
       : null;
