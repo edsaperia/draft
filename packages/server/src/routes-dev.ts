@@ -185,6 +185,37 @@ DEV: devLadderTable.push(
     },
   },
   {
+    /* **The dev clock** (Q1455, Ed 2026-09-18). Move one document's clock
+       forward, so a walk that needs a member to lapse is not paying five
+       real minutes a hat for it. The route is a door and nothing more: the
+       module behind it holds the offsets, the refusals and the reasoning,
+       and the `import()` is **dynamic and inside the label** for the
+       ladder's own reason — a static one would survive the drop.
+
+       It moves the clock and stops. The lapse is the host's ordinary minute
+       tick, which is the one thing the seat matrix still exercises for real
+       once the waiting is gone. */
+    name: 'POST the dev clock',
+    method: 'POST',
+    match: '/api/dev/clock',
+    handler: async (ctx, r) => {
+      const { req, res, nowMs, baseOrigin } = r;
+      if (r.devOff()) return true;
+      if (devCrossSite(req, res, baseOrigin)) return true;
+      const body = await readJson(req) as { slug?: unknown };
+      const doc = r.docOr404(typeof body.slug === 'string' ? ctx.store.bySlug(body.slug) : null);
+      if (!doc) return true;
+      const { advanceClock } = await import('./dev-clock.js');
+      const out = await advanceClock({
+        store: ctx.store,
+        tOf: (d) => ctx.writes.tOf(d),
+        commit: (d, t) => ctx.writes.commit(d, t),
+      }, doc, body, nowMs);
+      json(res, out.status, out.body);
+      return true;
+    },
+  },
+  {
     /* Sit in any seat. `cookieFor` checks nothing at all, so this mirrors
        /auth/login's own arrival and revival — a cookie for somebody who
        has not arrived renders a seat whose every command then throws. The
