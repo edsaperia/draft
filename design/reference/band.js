@@ -52,7 +52,8 @@ window.BAND = (function () {
       dripParts, endsAtMsOf, fieldsOf, focusOpened, founderCommit, founderDirect,
       founderHandOff, founderInfo, founderMark, founderPairNote, founderPairOn, founderSpeaker,
       founderSpeakerLane, grantProv, groups, iDraft, isChange, isNum, isRoom, isStranger,
-      hostKeyOf, judgedOn, launchFarewell, launchGrant, liveMotionRec, mailGiveUpBatch, mailGiveUpBody,
+      heldBody, hostKeyOf, judgedOn, launchFarewell, launchGrant, liveMotionRec,
+      mailGiveUpBatch, mailGiveUpBody,
       mayPen, mayPenOn, me, membersHold, midOf, motionBlocks, motionOn, motionPicked,
       motionTargets, nameOfMember, namePickNow, oneVoiceAsk, ordinaryBody, owedDeparture,
       pairWords, penOkFor,
@@ -62,7 +63,8 @@ window.BAND = (function () {
       renderPowerWallets, renderRail, renderTitle, resolveCounts, routeOfM, sentenceFor,
       serverNow, settled, signedClose, slugNoteHtml, slugRefused, standsTyped,
       strangerCardHtml, strangerReadCard, syncCharter, syncFromCs, syncGrantAcks,
-      syncOwedDepartures, syncOwedMailGiveUps, syncOwedOks, syncOwedReleases, takeSnap, takenOf, takenValOf,
+      syncOwedDepartures, syncOwedHeld, syncOwedMailGiveUps, syncOwedOks, syncOwedReleases,
+      takeSnap, takenOf, takenValOf,
       takingBack, textDivs, titlePending, titleStands, viewerId, viewerIsClerk, viewerIsMember,
       wantsDelegate, whyLane, wordsFor } = env;
     // the shared module, the same names the page destructures from it
@@ -1036,6 +1038,20 @@ window.BAND = (function () {
             binBtn() + '<button class="btn btn-approve okbtn" data-ok="' + esc(c.k) + '">OK</button>',
             g.cards);
         }
+        // **A motion of yours that failed** (SURFACE E41; Q1447), and the one
+        // card in the family whose body is another card's: where the motion
+        // filed a record this **is** that record, so it draws `recordBody` —
+        // the dateline, *Rejected*, the rule that stands marked as standing
+        // and the wording that did not, with the reason — and the only thing
+        // that differs from the grey chip's own card is that its OK is owed
+        // rather than a close. A door's motion files no record, so there the
+        // body is the one sentence saying what happened, `departureLine`'s
+        // shape and for its reason.
+        if (c.held) {
+          return cardHtml(c, ctx, heldBody(c),
+            binBtn() + '<button class="btn btn-approve okbtn" data-ok="' + esc(c.k) + '">OK</button>',
+            g.cards);
+        }
         if (c.isClosing) {
           const signed = signedClose();
           return cardHtml(c, ctx, closingBody(c),
@@ -1771,6 +1787,7 @@ window.BAND = (function () {
       syncOwedReleases();
       syncOwedMailGiveUps();
       syncOwedDepartures();
+      syncOwedHeld();
       // the address is checked because it is the address (see `checkSlug`): a
       // pre-filled 📍 nobody edited would otherwise reach the send unasked.
       // Idempotent — a repeat ask about an address already answered is a

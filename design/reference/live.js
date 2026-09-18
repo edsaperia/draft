@@ -419,7 +419,10 @@ window.LIVE = (function () {
             // `moot` rides the view (Q1348 (b)): a proposal that passed
             // without changing anything, and the hand that had already set
             // what it asked for — the record card's whole extra sentence
-            status: rec.status, moot: rec.moot || null,
+            // …and `heldBy` with it (Q1447): E41's card says *the Founder
+            // refused* or *the membership rejected* (STYLE T8), and `status`
+            // alone cannot tell a 🛡️ apart from the room's own answer
+            status: rec.status, moot: rec.moot || null, heldBy: rec.heldBy || null,
             by: rec.mine ? self.v.me : '(sealed)',
             at: rec.at, from: rec.from,
             answers: { has: (id) => id === self.v.me && rec.myAnswer !== null,
@@ -456,6 +459,10 @@ window.LIVE = (function () {
         // one card per departure (SURFACE E31, E32, E40), so the body names
         // who left — the whitelist injects whose OK it is
         ackDeparture: (t, member, departed) => api.cmd('ack-departure', { member: departed }),
+        // one card per failed motion (SURFACE E41; Q1447), so the body names
+        // the motion — the whitelist injects whose OK it is, and the module
+        // owes it to the mover alone, so another seat's press is nothing
+        ackHeld: (t, member, motion) => api.cmd('ack-held', { motion }),
         // the applicant's second act (SURFACE E33): the OK on a door that
         // shut under them — their own seat, so the body names nothing
         ackApplyShut: () => api.cmd('ack-apply-shut', {}),
@@ -1425,6 +1432,14 @@ window.LIVE = (function () {
         const w = STANDS.authorship(u);
         return w ? 'made under ' + w + ', before the rule changed' : undefined;
       };
+      // **The engine's one reserved reason, put into words here** (Q1440).
+      // `candidate-retired.reason` is host prose everywhere else — the
+      // Founder's *Proposal refused by ‹name› 🛡️*, composed by the bridge,
+      // which has a name to use — and the engine has never heard of a
+      // language, so its own token becomes a sentence at the page's edge and
+      // anything else is passed through exactly as it arrives.
+      const reasonOf = (f) => (!f || !f.reason ? null
+        : f.reason === 'dominated' ? window.COPY.session.record.dominated : f.reason);
       for (const o of v.records || []) {
         const field = o.field || [];
         const hs = field.flatMap((f) => f.hunks);
@@ -1461,7 +1476,7 @@ window.LIVE = (function () {
         const slate = field.length > 1
           ? { slate: field.map((f) => ({ text: textOfF(f), src: f.hunks.flatMap((h) => h.lines).join('\n'),
               rationale: f.rationale, by: byName(f),
-              underNote: underNoteOf(f), refusal: f.reason || null,
+              underNote: underNoteOf(f), refusal: reasonOf(f),
               p: f.p == null ? undefined : f.p, won: f === winner && (adopted || undecided) })) } : {};
         // **The card says which text it changed** where the clause under it has
         // changed again since (Q1333): the head is the clause as it stands, so
@@ -1507,7 +1522,7 @@ window.LIVE = (function () {
           rationale: winner.rationale, by: byName(winner), underNote: underNoteOf(winner),
           // *Proposal refused by ‹name› 🛡️* (R-056): where the resolution had a
           // reason, the record is where its author reads it
-          refusal: winner.reason || null,
+          refusal: reasonOf(winner),
           verdict: o.judgedByMe ? 'voted on this' : undefined,
           unread: !undecided, ...slate });
       }

@@ -683,7 +683,7 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "A proposal ✏️ cannot pass until it is preferred by at least % of the membership.Choose thisA proposal ✏️ cannot pass until it is preferred by at least members.Choose thisThe membership will decide how many members must prefer a proposal ✏️ before it can be adopted.Choose this",
+    "body": "A proposal ✏️ cannot pass until it is preferred by at least % of the membership.Choose thisA proposal ✏️ cannot pass until it is preferred by at least members.Choose thisThe membership will decide how many members must prefer a proposal ✏️ before it can pass.Choose this",
     "options": [
      {
       "set": "quorumForm",
@@ -698,7 +698,7 @@
      {
       "set": "quorumBy",
       "val": "roster",
-      "label": "The membership will decide how many members must prefer a proposal ✏️ before it can be adopted."
+      "label": "The membership will decide how many members must prefer a proposal ✏️ before it can pass."
      }
     ],
     "inputs": [
@@ -3616,7 +3616,7 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "A proposal ✏️ cannot pass until it is preferred by at least % of the membership.Choose thisA proposal ✏️ cannot pass until it is preferred by at least members.Choose thisThe membership will decide how many members must prefer a proposal ✏️ before it can be adopted.Chosen",
+    "body": "A proposal ✏️ cannot pass until it is preferred by at least % of the membership.Choose thisA proposal ✏️ cannot pass until it is preferred by at least members.Choose thisThe membership will decide how many members must prefer a proposal ✏️ before it can pass.Chosen",
     "options": [
      {
       "set": "quorumForm",
@@ -3631,7 +3631,7 @@
      {
       "set": "quorumBy",
       "val": "roster",
-      "label": "The membership will decide how many members must prefer a proposal ✏️ before it can be adopted."
+      "label": "The membership will decide how many members must prefer a proposal ✏️ before it can pass."
      }
     ],
     "inputs": [
@@ -4429,7 +4429,7 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "A proposal ✏️ cannot pass until it is preferred by at least % of the membership.Choose thisA proposal ✏️ cannot pass until it is preferred by at least members.Choose thisThe membership will decide how many members must prefer a proposal ✏️ before it can be adopted.Choose this",
+    "body": "A proposal ✏️ cannot pass until it is preferred by at least % of the membership.Choose thisA proposal ✏️ cannot pass until it is preferred by at least members.Choose thisThe membership will decide how many members must prefer a proposal ✏️ before it can pass.Choose this",
     "options": [
      {
       "set": "quorumForm",
@@ -4444,7 +4444,7 @@
      {
       "set": "quorumBy",
       "val": "roster",
-      "label": "The membership will decide how many members must prefer a proposal ✏️ before it can be adopted."
+      "label": "The membership will decide how many members must prefer a proposal ✏️ before it can pass."
      }
     ],
     "inputs": [
