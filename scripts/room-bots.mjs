@@ -70,6 +70,7 @@ const usage = () => {
     `  the url is the document's own, e.g. https://docs.vote/d/hollow-oak\n` +
     `  --theme swaps what the bots write (provisos, new clauses, verb swaps, reasons) — e.g. scripts/repro/birthday-theme.json\n` +
     `  --clause <n> sends four proposals in five at the n-th body paragraph (1-based, headings skipped): the crowded race\n` +
+    `  --pile <0–1> how often a proposal lands on a clause the theme holds rival wordings for (its \`rivals\` groups; default 0.8)\n` +
     `  --members seats members already on the roster by login link, after a host restart wiped the outbox\n` +
     `  --key (or DRAFT_BOT_KEY in the environment) reads the host's bot outbox, which is how a room ` +
     `runs on docs.vote; without it the dev outbox is read, which needs a dev server`);
@@ -282,6 +283,25 @@ const WHY = Object.assign({
   generic: ['Reads better.', 'Clearer.', 'I would rather this.', ''],
 }, THEME.why && typeof THEME.why === 'object' ? THEME.why : {});
 
+/**
+ * **Rivals: the crowded race as real alternatives** (Ed, 2026-09-18: *a room
+ * where bots will make a lot of rivals on the same clauses … something I'll
+ * have lots of opinions on*). A theme's `rivals` is a list of groups, each
+ * `{ match, wordings: [{ text, why }] }`. A body line belongs to a group when
+ * it matches the group's regex **or is one of its wordings** — so the pile
+ * follows its clause through an adoption and through lines moving about it,
+ * which a line number (`--clause`) cannot. `--pile` is how often a proposal
+ * lands on such a line, offering a wording that neither stands there nor is
+ * among the live candidates; a group with nothing fresh left takes the
+ * ordinary shapes on top, which crowds it further. Example:
+ * `scripts/repro/residency-theme.json`.
+ */
+const RIVALS = (Array.isArray(THEME.rivals) ? THEME.rivals : [])
+  .filter((g) => g && typeof g.match === 'string' && Array.isArray(g.wordings))
+  .map((g) => ({ re: new RegExp(g.match), wordings: g.wordings.filter((w) => w && typeof w.text === 'string') }));
+const PILE = Math.min(1, Math.max(0, Number(flag('pile', '0.8'))));
+const rivalGroupOf = (line) => RIVALS.find((g) => g.re.test(line) || g.wordings.some((w) => w.text === line.trim()));
+
 const isHeading = (line) => /^#+\s/.test(line);
 const sentences = (s) => s.match(/[^.!?]+[.!?]+(\s|$)/g)?.map((x) => x.trim()) ?? [s];
 
@@ -385,8 +405,9 @@ const answerFor = (seat, q, m) => {
   switch (q.setting) {
     case 'ending': return { endsAtMs: now + Math.round(between(r, 90, 240)) * 60_000 };
     case 'quorum': return r() < 0.7
-      ? { form: 'share', n: Math.round(between(r, 30, 60)) }
-      : { form: 'count', n: Math.max(1, Math.round(m.members.length * between(r, 0.3, 0.6))) };
+      // no quorum asks for more than half (Q1439): the share is refused above 50 at the value
+      ? { form: 'share', n: Math.round(between(r, 20, 50)) }
+      : { form: 'count', n: Math.max(1, Math.floor(m.members.length * between(r, 0.2, 0.5))) };
     case 'rate': return { grant: 5, cap: 8, dripMinutes: pick(r, [3, 5, 10]) };
     case 'lapse': return r() < 0.6 ? { afterMs: null } : { afterMs: pick(r, [7, 14, 30]) * 86_400_000 };
     case 'machines': return { enabled: false, budget: 0 };
@@ -488,8 +509,24 @@ const propose = async (seat, p, m) => {
   const pool = (r() < HEAT && hotBody.length) ? hotBody : (coldBody.length ? coldBody : body);
   // `--clause n`: the named paragraph four times in five, the ordinary pick otherwise
   const target = CLAUSE > 0 && CLAUSE <= body.length ? body[CLAUSE - 1] : null;
-  const i = (target !== null && r() < 0.8) ? target : pick(r, pool);
+  // a theme's rival groups: a clause that has one is where `--pile` sends the proposal,
+  // with a wording nobody has put — neither what stands nor any live candidate's line
+  const rivalLines = body.filter((k) => rivalGroupOf(lines[k]));
+  const piled = rivalLines.length && r() < PILE ? pick(r, rivalLines) : null;
+  const i = piled !== null ? piled : (target !== null && r() < 0.8) ? target : pick(r, pool);
   let edit = null;
+  if (piled !== null) {
+    const taken = new Set([lines[i].trim()]);
+    for (const c of p.clauses ?? []) {
+      for (const cand of c.candidates ?? []) for (const h of cand.hunks ?? []) for (const l of h.lines ?? []) taken.add(l.trim());
+    }
+    const fresh = rivalGroupOf(lines[i]).wordings.filter((w) => !taken.has(w.text));
+    if (fresh.length) {
+      const w = pick(r, fresh);
+      edit = { rival: true, hunks: [{ start: i, end: i + 1, lines: [w.text] }], why: w.why ?? '',
+        label: `offered a rival wording — “${w.text.slice(0, 48)}…”` };
+    }
+  }
   for (let tries = 0; tries < 6 && !edit; tries++) {
     const shape = weighted(r, SHAPE_WEIGHTS);
     if (shape === 'delete' && body.length < 4) continue;
@@ -498,7 +535,7 @@ const propose = async (seat, p, m) => {
   if (!edit) return false;
   const rung = (m.settings ?? []).find((s) => s.setting === 'authorship')?.value?.rung ?? '';
   const signed = /Elective$/.test(rung) && r() < 0.4;
-  const why = r() < 0.15 ? pick(r, WHY.generic) : edit.why;
+  const why = !edit.rival && r() < 0.15 ? pick(r, WHY.generic) : edit.why;
   await cmd(seat, 'propose-text', { baseVersion: p.textVersion, hunks: edit.hunks, why,
     ...(signed ? { signed: true } : {}) });
   tally.proposals += 1;
@@ -514,7 +551,7 @@ const motionValue = (seat, s) => {
   if (v === null || v === undefined) return null;
   switch (s.setting) {
     case 'quorum': {
-      const n = v.form === 'share' ? Math.min(100, Math.max(0, v.n + pick(r, [-10, 10])))
+      const n = v.form === 'share' ? Math.min(50, Math.max(0, v.n + pick(r, [-10, 10]))) // never above half (Q1439)
         : Math.max(0, v.n + pick(r, [-1, 1]));
       return n === v.n ? null : { form: v.form, n };
     }
@@ -715,7 +752,7 @@ const main = async () => {
   const title = door.ok ? (await door.json().catch(() => ({}))).title : null;
   TITLE = title ?? null;
   console.log(`room-bots on ${BASE}/d/${SLUG}${title ? ` — “${title}”` : ''} · build ${(health.build ?? '').slice(0, 7) || 'unreported'}`);
-  console.log(`  each bot acts every ${MIN / 1000}–${Math.round(MAX / 1000)}s · heat ${HEAT} · motions ${MOTIONS}${CLAUSE ? ` · clause ${CLAUSE}` : ''} · seed “${SEED}”`);
+  console.log(`  each bot acts every ${MIN / 1000}–${Math.round(MAX / 1000)}s · heat ${HEAT} · motions ${MOTIONS}${CLAUSE ? ` · clause ${CLAUSE}` : ''}${RIVALS.length ? ` · pile ${PILE} over ${RIVALS.length} rival groups` : ''} · seed “${SEED}”`);
   console.log(`  reading ${OUTBOX.path}${KEY ? ' with the key' : ' (no key — the dev outbox)'}`);
   console.log(`  invite bots through ✉️ at any address at ${BOT_DOMAIN} — e.g. ada.lovelace@${BOT_DOMAIN} — and they arrive here.\n`);
   const ticker = setInterval(summary, REPORT_EVERY);

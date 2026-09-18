@@ -38,3 +38,23 @@ DRAFT_DATA_DIR=<fresh> npm run server`) unless it says docs.vote.
   node scripts/repro/found-tim.mjs
   node scripts/room-bots.mjs https://docs.vote/d/tims-birthday --key=<DRAFT_BOT_KEY> --theme=scripts/repro/birthday-theme.json
   ```
+
+## 2026-09-18 — the residency room: crowded races
+
+- `found-residency.mjs` — `found-tim.mjs` with the constants changed: a bot founds *The
+  Residency Charter* at `/d/residency-charter` from `residency-text.md`, invites fourteen more
+  bots and Ed **before 🍾**, delegates 👥 ⏱️ 👤 🌍 for the blind founding, holds 💤 at fifteen
+  minutes, closes Saturday 19 September 23:59 London, and presses 🍾 once every answer is in.
+  The document must exist before room-bots will start, so found first. A trial runs against a
+  dev server started with a `DRAFT_BOT_KEY` of its own: `DRAFT_BASE_URL` and `DRAFT_BOT_KEY`
+  in the environment, and `--no-people` so nobody real is invited.
+- `residency-theme.json` — a theme with **`rivals`**: three groups of hand-written rival
+  wordings (open licence · AI tools · whose money), each wording with its own rationale, keyed
+  to its clause by a regex *or by being one of the group's wordings*, so the pile follows the
+  clause through an adoption. `--pile` (default 0.8) is how often a proposal lands on one.
+  The trial at a 3–10 s pace put 25 candidates in one race inside two minutes.
+
+  ```
+  node scripts/repro/found-residency.mjs
+  node scripts/room-bots.mjs https://docs.vote/d/residency-charter --key=<DRAFT_BOT_KEY> --theme=scripts/repro/residency-theme.json --seed=residency --min 20s --max 2m --heat 0.7
+  ```

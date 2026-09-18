@@ -1,0 +1,90 @@
+{
+  "name": "residency",
+  "rewritePrefix": "Unless the residents decide otherwise,",
+  "provisos": [
+    "This does not apply to work begun before the residency.",
+    "The director may grant an exception, and says so on the wiki.",
+    "A majority of residents may suspend this for one term.",
+    "Alumni are exempt.",
+    "This is reviewed at the end of every cohort.",
+    "Anything unclear here is settled at Tuesday dinner.",
+    "Guests of the house are bound by this while they are in it.",
+    "Where this conflicts with a resident's employment contract, the contract prevails.",
+    "Nothing here stops a resident leaving whenever they wish.",
+    "This takes effect from the next cohort."
+  ],
+  "newClauses": [
+    "Every resident gives one talk to the house during their stay.",
+    "The wiki is the record; if it is not on the wiki, it did not happen.",
+    "Residents keep a public weeknote.",
+    "The house keeps no secrets from its residents.",
+    "Anyone may bring a guest to dinner by telling the cook by noon.",
+    "A resident who is asked to leave is told why, in writing.",
+    "The residency admits at most twelve residents at a time.",
+    "Alumni may use the house on Fridays.",
+    "Decisions about the house are taken by the residents, not the director.",
+    "The kitchen is cleaned by whoever used it last.",
+    "No resident works for a political party while resident.",
+    "Every project has a page on the wiki from the day it starts."
+  ],
+  "why": {
+    "proviso": ["The rule is right but it will catch somebody it was never meant for.", "A small exception now saves a house meeting later.", "Otherwise the first hard case breaks it."],
+    "insert": ["We do this already; write it down.", "The charter assumes this and never says it.", "Every cohort argues about this because nothing here settles it."],
+    "delete": ["This is a house habit, not a charter matter.", "Nobody will enforce this, so it should not be here."],
+    "rewrite": ["The residents should be able to set this aside without amending the charter."]
+  },
+  "rivals": [
+    {
+      "name": "open licence",
+      "match": "released under an open licence, without exception",
+      "wordings": [
+        { "text": "Everything made in the residency is released under an open licence, unless a majority of residents agree an exception.", "why": "Without exception is a promise we will break the first time somebody builds something for a vulnerable user group." },
+        { "text": "Code is open by default; everything else is the maker's own.", "why": "Open source is a software norm. Forcing it onto essays, research and designs is a category error." },
+        { "text": "Nothing made here need be released at all. The residency is a place to work, not a licence.", "why": "People do their best work when nobody owns the output but them." },
+        { "text": "Everything made in the residency is released under a copyleft licence, so that what is built on it stays open too.", "why": "A permissive licence is a gift to whoever encloses it next." },
+        { "text": "Work is released openly once the resident leaves, and not before.", "why": "Half-made things released early get judged as finished things." },
+        { "text": "Anything paid for with the residency's money is open; anything paid for by the resident is theirs.", "why": "The obligation should follow the money, not the postcode." },
+        { "text": "Everything made in the residency is published, in whatever state it is in, on the day the residency ends.", "why": "A deadline is the only thing that makes people publish." },
+        { "text": "Residents decide for themselves what to release, and say in public what they have chosen not to.", "why": "Transparency about the choice matters more than the choice." },
+        { "text": "Everything made in the residency is released under an open licence, and the residency may also license it commercially to fund itself.", "why": "Dual licensing is how open projects pay their rent." },
+        { "text": "Open is the default; a resident may keep a project closed by telling the house why, in writing, and the reason is published.", "why": "A default with a public opt-out gets nearly everything open without making liars of us." },
+        { "text": "Everything made in the residency belongs to the residency, which releases it openly.", "why": "If the house is the owner, nobody can quietly close it later." },
+        { "text": "Everything made in the residency is released into the public domain, without exception.", "why": "A licence is still a claim. Give it away properly." }
+      ]
+    },
+    {
+      "name": "AI tools",
+      "match": "Residents may use AI tools to draft, research and code, but every published word is read by a person",
+      "wordings": [
+        { "text": "Residents may use AI tools however they like; what matters is what they ship.", "why": "We do not regulate which text editor people use either." },
+        { "text": "No text or code produced by an AI is published under the residency's name.", "why": "The residency's name should mean a person thought this." },
+        { "text": "Residents may use AI tools to draft, research and code, and must say so wherever they have.", "why": "Disclosure, not prohibition. Readers can decide what it is worth." },
+        { "text": "AI tools may draft, but may not be given the residency's data, its members' names, or anything said in the house.", "why": "The risk is not what comes out of the model, it is what goes in." },
+        { "text": "Residents are expected to use AI tools; the residency exists to find out what political technology looks like when they are.", "why": "A political technology institution that is cautious about the defining technology of the decade has missed its own point." },
+        { "text": "Residents may use AI to write code, and not prose.", "why": "Code is tested by running it. Prose is tested by trusting the author." },
+        { "text": "Whatever an AI writes is the resident's own responsibility, exactly as if they had written it by hand.", "why": "One rule: you sign it, you own it. Everything else follows." },
+        { "text": "AI tools may draft, research and code; they may not vote, decide, or speak for a resident in any decision of the house.", "why": "Drafting is labour. Deciding is membership." },
+        { "text": "Residents may use AI tools to research and code, but every published word is written by a person.", "why": "Read by a person is a rubber stamp. Written by a person is a standard." },
+        { "text": "Residents keep a public log of every AI tool they use and what they use it for.", "why": "We should be the place that has the data on how this work is really done." },
+        { "text": "The residency runs its own models on its own machines; nothing goes to a vendor.", "why": "An institution about power should not rent its thinking from five companies." }
+      ]
+    },
+    {
+      "name": "money",
+      "match": "takes no money from political parties, and none from any government\\.",
+      "wordings": [
+        { "text": "The residency takes money from anyone, and publishes every donor's name and amount.", "why": "Purity is a luxury; disclosure is the actual safeguard." },
+        { "text": "The residency takes no money from political parties; government grants are accepted and published.", "why": "Most civic technology is government-funded. Refusing it means refusing to exist." },
+        { "text": "The residency takes no money from political parties, from governments, or from any company whose business is politics.", "why": "The lobbyists and the consultancies are the gap in the current wording." },
+        { "text": "The residency is funded by its residents' fees and nothing else.", "why": "Whoever pays, owns. It should be us." },
+        { "text": "The residency takes no money from political parties, and no gift from any one source above a tenth of its income.", "why": "Dependence is the danger, not the donor's identity." },
+        { "text": "The residency takes no money from anybody who asks for anything in return.", "why": "The test is the string, not the source." },
+        { "text": "The residency takes money from anyone, but no funder may name a resident, set a project, or see anything before it is published.", "why": "Wall the money off from the work and it does not matter whose it is." },
+        { "text": "The residency takes no money from political parties or governments, nor any gift the residents have not voted to accept.", "why": "The people whose reputations are spent should be the ones who decide." },
+        { "text": "The residency takes no money from political parties, or from any government but our own.", "why": "Foreign state money in political technology is a different thing from an Arts Council grant." },
+        { "text": "Funding decisions are the director's alone, and the residents are told afterwards.", "why": "A committee has never once raised money." },
+        { "text": "The residency takes no money from political parties, none from any government, and none from any company.", "why": "If a party's money compromises us, a platform company's certainly does." }
+      ]
+    }
+  ]
+}
