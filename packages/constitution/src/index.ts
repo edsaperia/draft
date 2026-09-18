@@ -20,7 +20,7 @@ export type { ConsentResolution } from './consent.js';
 export * from './types.js';
 export { ERASED, InMemoryPeople, resolvePerson } from './people.js';
 export type { People, PersonFields, PersonId, ResolvedPerson } from './people.js';
-export { ConstitutionSession } from './session.js';
+export { ConstitutionSession, SEEN_EVERY_MS } from './session.js';
 export type { MotionInput, OpenInput, WaitingHold, WaitingWhy } from './session.js';
 export { eOf, inE, motionElectorateOf, quorumCount,
   adoptionFloorTerm, adoptionFloor } from './populations.js';

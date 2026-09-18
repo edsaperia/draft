@@ -72,6 +72,7 @@
  * the same label — so the artifact holds the read in `foldTime` and no way
  * at all to write it. `scripts/build-server.mjs` greps its own output.
  */
+import { SEEN_EVERY_MS } from '../../constitution/src/index.js';
 import type { LoadedDoc } from './store.js';
 import { foldTime, installDevClock } from './engine-host.js';
 
@@ -85,11 +86,13 @@ installDevClock((docId: string): number => OFFSETS.get(docId) ?? 0);
  *  a fat-fingered zero is how a document ends up past its own close. */
 const MAX_ADVANCE_MS = 365 * 24 * 3600_000;
 
-/** `SEEN_EVERY_MS` in `packages/constitution/src/session.ts`, which does not
- *  export it: at most one presence event an hour per member. A jump shorter
- *  than this cannot refresh anybody, and this module refuses rather than
+/** At most one presence event an hour per member — the module's own
+ *  `SEEN_EVERY_MS`, **imported rather than mirrored** (Q1455 review): a copy
+ *  of that number here would rot silently the day the throttle moves, and
+ *  this module would go on refusing, or permitting, the wrong jumps. A jump
+ *  shorter than it cannot refresh anybody, and this refuses rather than
  *  pretend it did. */
-const SEEN_THROTTLE_MS = 60 * 60_000;
+const SEEN_THROTTLE_MS = SEEN_EVERY_MS;
 
 export interface ClockHost {
   /** `WritePath.tOf` — the document's fold clock, the close met on the way. */
