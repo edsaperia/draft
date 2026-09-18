@@ -1,5 +1,18 @@
+<html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- **The root element above, for its `lang` alone** (Q1394 (a), Ed
+     2026-09-18). WCAG 3.1.1 is Level A and this page had nothing to hang it
+     on: the file opened at `<meta charset>` and the parser synthesised
+     html/head/body, so a screen reader was handed English copy with no voice
+     to read it in. **No doctype, deliberately** — there has never been one,
+     the page has always rendered in quirks mode (`document.compatMode` is
+     `BackCompat`), and adding one would re-measure every box on the surface.
+     A bare `<html>` start tag changes no rendered byte: head and body are
+     still synthesised around exactly the same children, which is why the tag
+     stands first and this note stands under it — the charset declaration has
+     to stay inside the document's first 1024 bytes. -->
+
 <title>docs.vote</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪶</text></svg>">
 <link rel="stylesheet" href="system.css">
@@ -9400,3 +9413,4 @@
   }
 })();
 </script>
+</html>
