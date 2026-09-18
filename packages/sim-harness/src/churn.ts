@@ -59,7 +59,7 @@ import { ALPHA_PRESET_OVERRIDES } from './alpha-preset-values.js';
 import { clubhouseScenario } from './clubhouse.js';
 import { ScriptedPersona } from './persona.js';
 import { runSession } from './runner.js';
-import type { SiteChurn } from './metrics.js';
+import type { SiteChurn, StrandedRace } from './metrics.js';
 import type { Scenario } from './scenario.js';
 import { check, finish, say } from './evidence-log.js';
 
@@ -103,6 +103,66 @@ const WINDOWS = [
 /** The pinned value first; the other two are the arms Decision D3 asked for. */
 const BARS = [0.5, 0.6, 0.8];
 
+/**
+ * **The quorums section 4 is read at** (Q1439). Only three are worth a column
+ * now: none at all, which is what every earlier table in this file ran at and
+ * what a founder who answers 👥 with nothing gets; the *conference* shape's
+ * third, which at fifteen still vanishes into ⌈E/3⌉; and a half, which since
+ * R-126 is **the strictest quorum any room may ask for**, in either form. The
+ * 25 % row of table 3 is left out here because it is ⌈E/3⌉'s row under another
+ * name, and section 4 already has three arms per cell.
+ */
+const Q_ARMS: { label: string; q: Constitution['quorum'] }[] = [
+  { label: 'no quorum', q: null },
+  { label: 'quorum 33%', q: { form: 'share', n: 33 } },
+  { label: 'quorum 50%', q: { form: 'share', n: 50 } },
+];
+
+/**
+ * **The quorums section 5 is read at** (Ed, 2026-09-18). With ⌈E/3⌉ gone the
+ * shares below a third stop vanishing into it and become real settings for the
+ * first time: at fifteen these are floors of **1 · 2 · 3 · 5 · 8**. The 30 %
+ * row is the control — it is ⌈15/3⌉ exactly, so it must reproduce section 4's
+ * *no quorum* arm session for session.
+ */
+const Q5_ARMS: { label: string; q: Constitution['quorum'] }[] = [
+  { label: 'no quorum', q: null },
+  { label: 'quorum 10%', q: { form: 'share', n: 10 } },
+  { label: 'quorum 20%', q: { form: 'share', n: 20 } },
+  { label: 'quorum 30%', q: { form: 'share', n: 30 } },
+  { label: 'quorum 50%', q: { form: 'share', n: 50 } },
+];
+
+/** 💤 unset: nothing is ever imputed from silence (R-089's letter, R-127). */
+const NEVER = '💤 never';
+
+/**
+ * **The two — at the meeting window, three — periods each cell is run at.**
+ * *Never* is the arm in which the rule is a plain approval quorum capped at
+ * half of E. **A sixth of the window** is the plan's own arm: long enough that
+ * nobody is abstained for stepping out, short enough to run several times
+ * inside the document's life. And the meeting window carries **15 minutes** as
+ * well, because that is the period Ed will set in the live room, and a study
+ * that did not measure the number the room will actually run at would be
+ * measuring the wrong thing.
+ */
+function abstainArmsFor(win: (typeof WINDOWS)[number]): { label: string; ms: number | null }[] {
+  const sixth = (win.hours * HOUR) / 6;
+  const arms: { label: string; ms: number | null }[] = [
+    { label: NEVER, ms: null },
+    { label: `💤 ${span(sixth)}`, ms: sixth },
+  ];
+  if (win.name === 'meeting') arms.push({ label: '💤 15 min', ms: 15 * MIN });
+  return arms;
+}
+
+/** A period in the largest unit that states it whole, as 💤's own control does. */
+function span(ms: number): string {
+  if (ms % (24 * HOUR) === 0) return `${ms / (24 * HOUR)} days`;
+  if (ms % HOUR === 0) return `${ms / HOUR} h`;
+  return `${Math.round(ms / MIN)} min`;
+}
+
 interface Run {
   seed: string;
   alive: boolean;
@@ -112,6 +172,12 @@ interface Run {
   welfareRatio: number;
   judgments: number;
   churn: SiteChurn[];
+  /** Simulated ms of the first adoption; null when the document never moved. */
+  firstAdoptionMs: number | null;
+  /** Races the window ran out on, leader on top and short of F (Q1439). */
+  stranded: StrandedRace[];
+  /** The approvals each adoption in this run actually carried on (Q1439). */
+  approvalsAtAdoption: number[];
   actions: number;
   hash: string;
   /**
@@ -152,6 +218,9 @@ async function measure(arm: string, win: (typeof WINDOWS)[number],
       welfareRatio: m.welfareRatio,
       judgments: m.edgeComparisons + m.diagonalComparisons,
       churn: m.churn,
+      firstAdoptionMs: m.firstAdoptionMs,
+      stranded: m.stranded,
+      approvalsAtAdoption: m.approvalsAtAdoption,
       actions: r.actions,
       hash: r.session.rollingHash(),
       sig: JSON.stringify([m.adoptions, m.edgeComparisons, m.diagonalComparisons,
@@ -173,24 +242,105 @@ const spread = (s: Stat, dp = 1): string =>
   `${s.mean.toFixed(dp)} ±${s.sd.toFixed(dp)} (${s.min}–${s.max})`;
 
 function cellStats(c: Cell) {
+  // **Time to first adoption is over the runs that had one** (Q1439): a run
+  // that never moved contributes `alive 0%`, and averaging its absence in as a
+  // zero — or as the window length — would say something false either way. The
+  // count it was taken over is printed beside it wherever it is not every run.
+  const firsts = c.runs.map((r) => r.firstAdoptionMs).filter((x): x is number => x !== null);
   return {
     alive: c.runs.filter((r) => r.alive).length / c.runs.length,
     adoptions: stat(c.runs.map((r) => r.adoptions)),
+    /**
+     * **How much of the document moved at all** — one per site that ever
+     * adopted, which is `adoptions − flips`. It is the number that answers
+     * *did the room get anywhere*, where `adoptions` answers *how many times
+     * did it act*, and the two come apart exactly as churn rises.
+     */
+    sites: stat(c.runs.map((r) => r.churn.length)),
     flips: stat(c.runs.map((r) => r.flips)),
     reversions: stat(c.runs.map((r) => r.reversions)),
     welfare: stat(c.runs.map((r) => r.welfareRatio)),
     judgments: stat(c.runs.map((r) => r.judgments)),
+    /** Minutes of simulated time, over the runs that adopted at all. */
+    firstAdoptionMin: firsts.length > 0 ? stat(firsts.map((x) => x / MIN)) : null,
+    firstAdoptionN: firsts.length,
+    /**
+     * **When the document had finished moving**: the latest *first* adoption
+     * over the run's sites, in minutes. `sites` saturates in this scenario —
+     * all ten contested clauses move in every arm of every seed — so it cannot
+     * say which arm got the room further. This can: it says how long the room
+     * took to get there, and it is the pace measure the saturated one is not.
+     */
+    allSitesMin: stat(c.runs.map((r) => Math.max(
+      0, ...r.churn.map((s) => (s.adopted[0]?.t ?? 0) / MIN)))),
+    /** Races left short of their floor at the close, per run (Q1439). */
+    stranded: stat(c.runs.map((r) => r.stranded.length)),
+    /**
+     * **What the room was actually holding when it acted** (Ed, 2026-09-18):
+     * the smallest approval count any adoption in the cell carried on, and how
+     * many carried on two or fewer. Pooled over the cell's seeds rather than
+     * averaged per run, because the question is *how thin did it ever get*,
+     * and a mean over runs would hide the one adoption that answers it.
+     */
+    approvals: pooledApprovals(c),
+  };
+}
+
+/** The thin end of the cell's adoptions: the minimum, and the count at ≤ 2. */
+function pooledApprovals(c: Cell): { n: number; min: number; thin: number; mean: number } | null {
+  const xs = c.runs.flatMap((r) => r.approvalsAtAdoption);
+  if (xs.length === 0) return null;
+  return {
+    n: xs.length,
+    min: Math.min(...xs),
+    thin: xs.filter((x) => x <= 2).length,
+    mean: xs.reduce((a, x) => a + x, 0) / xs.length,
   };
 }
 
 function row(label: string, c: Cell): string {
   const s = cellStats(c);
+  const first = s.firstAdoptionMin === null
+    ? '     —        '
+    : `${s.firstAdoptionMin.mean.toFixed(0).padStart(5)} ±${s.firstAdoptionMin.sd.toFixed(0)} min`
+      + (s.firstAdoptionN < c.runs.length ? `/${s.firstAdoptionN}` : '');
   return `  ${label.padEnd(34)}`
     + ` alive ${(s.alive * 100).toFixed(0).padStart(3)}%`
-    + ` · adoptions ${spread(s.adoptions).padEnd(20)}`
-    + ` · flips ${spread(s.flips).padEnd(20)}`
-    + ` · reversions ${spread(s.reversions).padEnd(20)}`
+    + ` · adoptions ${spread(s.adoptions).padEnd(19)}`
+    + ` · sites ${s.sites.mean.toFixed(1).padStart(4)}`
+    + ` · 1st ${first.padEnd(15)}`
+    + ` · all ${s.allSitesMin.mean.toFixed(0).padStart(4)} ±${s.allSitesMin.sd.toFixed(0).padEnd(3)} min`
+    + ` · flips ${spread(s.flips).padEnd(19)}`
+    + ` · reversions ${spread(s.reversions).padEnd(19)}`
+    + ` · stranded ${spread(s.stranded).padEnd(17)}`
+    + ` · approvals ${s.approvals === null ? 'none'
+      : `min ${String(s.approvals.min).padStart(2)}`
+        + ` mean ${s.approvals.mean.toFixed(1)}`
+        + ` ≤2 ${String(s.approvals.thin).padStart(3)}/${String(s.approvals.n).padEnd(4)}`}`
     + ` · welfare ${s.welfare.mean.toFixed(3)}`;
+}
+
+/**
+ * **The diagnosis on a cell's stranded races** (Q1439), pooled over its seeds.
+ * The split is the finding stage 5 exists to make: a race whose leader the
+ * meter says the room has judged as often as the floor asks, and which still
+ * has too few approvals, is a room that was **asked and refused** — the rule
+ * doing exactly its job. A race short on *judges* as well is one where the
+ * leader-against-the-current-text pair never reached enough people, which
+ * would be a **router** finding and not a rule finding.
+ */
+function strandedSplit(c: Cell): string {
+  const rs = c.runs.flatMap((r) => r.stranded);
+  if (rs.length === 0) return 'none — every race the room preferred carried';
+  const mean = (f: (s: StrandedRace) => number): string =>
+    (rs.reduce((a, s) => a + f(s), 0) / rs.length).toFixed(1);
+  const refused = rs.filter((s) => s.leaderJudges >= s.floor).length;
+  return `${String(rs.length).padStart(3)} race(s)`
+    + ` · approvals ${mean((s) => s.approvals)} of floor ${mean((s) => s.floor)}`
+    + ` · judges ${mean((s) => s.leaderJudges)}`
+    + ` · group ${mean((s) => s.group)}`
+    + ` · leader ${mean((s) => s.leaderAgeMs / MIN)} min old`
+    + ` · asked-and-refused ${refused}/${rs.length}`;
 }
 
 /** A cell's identity across runs of this file: the seeds' rolling hashes. */
@@ -296,23 +446,31 @@ async function main(): Promise<void> {
     say(row(`cooldown ${minutes} min`, cell));
   }
   say('');
-  // The floor is `max(Q, min(⌈E/3⌉, 12))` (SPEC §4.2), so at fifteen the
-  // statistical minimum is 5 and a quorum below a third of the room buys
-  // nothing — which is why the label carries the floor rather than the share.
-  // The share is ⌈n·E/100⌉, the product before the quotient, exactly as
-  // `adoptionFloor` computes it (issue #24) — a label that read one apart
-  // from the floor the run actually used would be worse than no label.
-  const floorAt = (q: Constitution['quorum']): number => {
+  // **The floor as the label states it is the floor at a full group** (Q1439):
+  // `max(Q′, min(⌈E/3⌉, 12))` with `Q′ = min(asked, ⌈G/2⌉)` — SPEC §4.2 and
+  // `races.ts`'s `floorFor`, which is the line this one shadows. G is the group
+  // the leader waits on, and it is E only while nobody has abstained and
+  // nobody is indifferent; with 💤 set it shrinks, and so can the floor. So
+  // the number in the label is the floor **at the start**, and the printed
+  // `stranded` column is what the floor actually came to.
+  // The share is ⌈n·G/100⌉, the product before the quotient (issue #24).
+  const floorAt = (q: Constitution['quorum'], floorMax = 12): number => {
     const e = ROOM.personas.length;
-    const n = q === null ? 0 : q.form === 'count' ? q.n : Math.ceil((q.n * e) / 100);
-    return Math.max(n, Math.min(Math.ceil(e / 3), 12));
+    const asked = q === null ? 0 : q.form === 'count' ? q.n : Math.ceil((q.n * e) / 100);
+    return Math.max(Math.min(asked, Math.ceil(e / 2)), Math.min(Math.ceil(e / 3), floorMax));
   };
+  // **The 80 % arm is gone, and it cannot come back** (Q1439, ruling a, R-126):
+  // `validateValue` refuses a share above 50, and the engine caps *either* form
+  // at half the group it is read against — so at fifteen the strictest floor a
+  // room can ask for is 8, where this study once measured 12. The row is a
+  // **count** of twelve instead: the same number the old arm reached, asked the
+  // only way the surface still allows, and it prints the cap doing its work.
   const QUORUMS: { label: string; q: Constitution['quorum'] }[] = [
     { label: 'no quorum', q: null },
     { label: 'quorum 25% — ongoing', q: { form: 'share', n: 25 } },
     { label: 'quorum 33% — conference', q: { form: 'share', n: 33 } },
     { label: 'quorum 50% — meeting', q: { form: 'share', n: 50 } },
-    { label: 'quorum 80%', q: { form: 'share', n: 50 } },
+    { label: 'quorum count 12 — capped', q: { form: 'count', n: 12 } },
   ];
   for (const { label, q } of QUORUMS) {
     const cell = await measure(label, conference,
@@ -333,6 +491,114 @@ async function main(): Promise<void> {
       'the month-long window runs the same session as the three-day one on '
       + 'every seed: the room reaches a fixed point and stops, it does not '
       + 'churn on');
+  }
+
+  say('\n== 4. the approval floor with the third, as Q1439 built it =============');
+  say('  F counts **approvals** now — a member\'s latest judgment of the leader');
+  say('  against the text that stands, preferring it — read against the group');
+  say('  the leader is waiting on and capped at half of it; ⌈E/3⌉ = 5 is the');
+  say('  minimum and it is read on the whole room. 💤 turns a silence on one');
+  say('  candidate into an abstention, which leaves that group. Same seeds.');
+  const floorCells = new Map<string, Cell>();
+  for (const win of WINDOWS) {
+    say(`\n  -- ${win.name}: ${win.note}`);
+    for (const { label: ql, q } of Q_ARMS) {
+      for (const { label: al, ms } of abstainArmsFor(win)) {
+        const cell = await measure(`${ql} · ${al}`, win, {
+          ...ALPHA_PRESET_OVERRIDES, quorum: q, abstainAfterMs: ms,
+        }, seeds);
+        floorCells.set(`${win.name}/${ql}/${al}`, cell);
+        all.push(cell);
+        say(row(`${ql} · ${al} · floor ${floorAt(q)}`, cell));
+      }
+    }
+  }
+  // **With no quorum, 💤 cannot matter**, and that is the mechanism rather than
+  // a measurement: the floor is `max(Q′, ⌈E/3⌉)`, abstention moves only the
+  // group `Q′` is read against, and where no quorum was asked `Q′` is zero at
+  // any group size. Asserted, because it is the first thing a reader of the
+  // table below will suspect is a bug — and because if it ever stops holding,
+  // something has started reading the group somewhere it should not.
+  for (const win of WINDOWS) {
+    const never = floorCells.get(`${win.name}/${Q_ARMS[0]!.label}/${NEVER}`)!;
+    for (const { label: al } of abstainArmsFor(win)) {
+      if (al === NEVER) continue;
+      const other = floorCells.get(`${win.name}/${Q_ARMS[0]!.label}/${al}`)!;
+      check(other.runs.every((r, i) => r.sig === never.runs[i]!.sig),
+        `with no quorum, 💤 changes nothing at ${win.name} (${al}): the floor `
+        + 'is ⌈E/3⌉, and abstention moves only the group a quorum is read '
+        + 'against — there being no quorum, it has nothing to move');
+    }
+  }
+
+  say('\n  what the stranded races ran out on — asked and refused, or not asked?');
+  say('  (a stranded race is one whose leader the room prefers to the standing');
+  say('  text and which never reached F approvals; `judges` is the meter\'s own');
+  say('  number, so judges ≥ floor with approvals < floor is a room that was');
+  say('  asked and said no, and judges < floor is a pair that never arrived)');
+  for (const win of WINDOWS) {
+    for (const { label: ql } of Q_ARMS) {
+      for (const { label: al } of abstainArmsFor(win)) {
+        const cell = floorCells.get(`${win.name}/${ql}/${al}`)!;
+        say(`    ${`${win.name} · ${ql} · ${al}`.padEnd(42)} ${strandedSplit(cell)}`);
+      }
+    }
+  }
+
+  say('\n== 5. the floor without the third (Ed, 2026-09-18) =====================');
+  say('  *if the membership want a smaller quorum they should be able to');
+  say("  choose it.* The built-in minimum of ⌈E/3⌉ goes, and F is the settled");
+  say('  quorum alone, read against the group and capped at half of it, never');
+  say('  below one. **These arms are the rule as ruled; section 4 is context.**');
+  say('');
+  say('  It is measured here with `adoptionFloorMax: 1`, which makes the');
+  say('  engine\'s own `min(⌈E/3⌉, adoptionFloorMax)` term the constant 1 for');
+  say('  every E — so `floorFor` computes exactly `max(Q′, 1)` with no engine');
+  say('  change, and the *never below one* half of the ruling is modelled');
+  say('  rather than assumed. (`adoptionFloorMax: 0` would drop that half and');
+  say('  let a room with no quorum at all adopt on nobody\'s approval.)');
+  say('  At fifteen the shares below are floors of 1 · 2 · 3 · 5 · 8 — and 30%');
+  say('  lands on 5, which is what ⌈E/3⌉ used to impose on all of them.');
+  const noMinCells = new Map<string, Cell>();
+  for (const win of WINDOWS) {
+    say(`\n  -- ${win.name}: ${win.note}`);
+    for (const { label: ql, q } of Q5_ARMS) {
+      for (const { label: al, ms } of abstainArmsFor(win)) {
+        const cell = await measure(`no third · ${ql} · ${al}`, win, {
+          ...ALPHA_PRESET_OVERRIDES, quorum: q, abstainAfterMs: ms, adoptionFloorMax: 1,
+        }, seeds);
+        noMinCells.set(`${win.name}/${ql}/${al}`, cell);
+        all.push(cell);
+        say(row(`${ql} · ${al} · floor ${floorAt(q, 1)}`, cell));
+      }
+    }
+  }
+  // **The two floors of five are not the same floor**, and this is the whole
+  // difference the ruling makes. At fifteen a share of 30 is ⌈E/3⌉ exactly, so
+  // *no third · quorum 30%* and section 4's *no quorum* both start at 5 — but
+  // the third is read on **E**, which does not move, while Q′ is read on **the
+  // group**, which shrinks whenever a member answers *Indifferent*, leaves the
+  // room, or abstains. So the no-third arm adopts on fewer approvals than the
+  // with-third arm ever can, on the same seeds and the same nominal number.
+  // Asserted on the thinnest adoption in each cell, which is where a floor
+  // that decays shows and a floor that does not cannot.
+  for (const win of WINDOWS) {
+    const withThird = pooledApprovals(floorCells.get(`${win.name}/${Q_ARMS[0]!.label}/${NEVER}`)!)!;
+    const without = pooledApprovals(noMinCells.get(`${win.name}/quorum 30%/${NEVER}`)!)!;
+    check(without.min < withThird.min,
+      `at ${win.name}, a 30% quorum with no third asks the same 5 of a full `
+      + `room and adopts on fewer: thinnest adoption ${without.min} approvals `
+      + `against ${withThird.min} where the third holds the floor on E`);
+  }
+
+  say('\n  what the stranded races ran out on, without the third:');
+  for (const win of WINDOWS) {
+    for (const { label: ql } of Q5_ARMS) {
+      for (const { label: al } of abstainArmsFor(win)) {
+        const cell = noMinCells.get(`${win.name}/${ql}/${al}`)!;
+        say(`    ${`${win.name} · ${ql} · ${al}`.padEnd(42)} ${strandedSplit(cell)}`);
+      }
+    }
   }
 
   say('\n== the worst seed for reversions, at the pinned bar =====================');
@@ -373,10 +639,13 @@ async function main(): Promise<void> {
     const here = path.dirname(fileURLToPath(import.meta.url));
     const file = path.resolve(here, '..', out);
     fs.mkdirSync(path.dirname(file), { recursive: true });
-    const head = 'arm,window,seed,alive,adoptions,flips,reversions,welfareRatio,judgments\n';
+    const head = 'arm,window,seed,alive,adoptions,flips,reversions,welfareRatio,'
+      + 'judgments,firstAdoptionMin,stranded\n';
     fs.writeFileSync(file, head + all.flatMap((c) => c.runs.map((r) =>
       `"${c.arm}",${c.window},${r.seed},${r.alive ? 1 : 0},${r.adoptions},`
-      + `${r.flips},${r.reversions},${r.welfareRatio.toFixed(4)},${r.judgments}`))
+      + `${r.flips},${r.reversions},${r.welfareRatio.toFixed(4)},${r.judgments},`
+      + `${r.firstAdoptionMs === null ? '' : (r.firstAdoptionMs / MIN).toFixed(1)},`
+      + `${r.stranded.length}`))
       .join('\n') + '\n', 'utf8');
     say(`\n  CSV: ${file}`);
   }
