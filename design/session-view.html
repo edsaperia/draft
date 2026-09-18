@@ -230,7 +230,18 @@
     <!-- the two drawer doors, narrow only (Ed, 2026-09-12): the contents rail
          slides in from the left, the task rail from the right -->
     <button class="drawerbtn" id="drawerleft" type="button" aria-expanded="false" aria-controls="toc" title="Contents">☰</button>
-    <p class="brand ph" id="title"><a class="quill" id="quill" href="/" title="docs.vote — make a new document"></a><span id="titletext">Untitled</span></p>
+    <!-- **The document's name is the page's first-level heading** (Q1394 (b),
+         Ed 2026-09-18). `h1#doctitle` sits at the top of the document and is
+         the h1 wherever it shows — but the fixture's session and closed
+         epochs hide the whole title row (`.doc.fixsession .titlerow`), so on
+         those a reader found no level-one heading at all and the first
+         heading was a section's `h2`. This span is the one place the title
+         stands in **every** epoch, live path included, and it is first in
+         reading order. It takes the heading semantics as attributes rather
+         than as a tag: an `<h1>` inside this `<p>` would close the paragraph
+         at the parser, and the name has to be the title alone — the 🪶 beside
+         it is a link to a new document, not part of what this heading says. -->
+    <p class="brand ph" id="title"><a class="quill" id="quill" href="/" title="docs.vote — make a new document"></a><span id="titletext" role="heading" aria-level="1">Untitled</span></p>
     <div class="stats">
       <!-- room-pulse: one content-free beat per action by anybody (session-view's) -->
       <span class="pulse" id="pulse" aria-hidden="true"
