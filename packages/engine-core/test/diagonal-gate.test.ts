@@ -106,11 +106,18 @@ describe('the audience gate (E to 2E: only to an empty queue)', () => {
 
 describe('the saturation stream (at 2E the old rate returns for everybody)', () => {
   it('a participant with work to do still meets diagonals in the stream', () => {
-    // E = 2, four live questions = 2E; salienceEvery 2 makes the roll loud.
-    const s = openWithRaces(2, 4, {
-      quorum: { form: 'count', n: 2 }, salienceEvery: 2,
+    // E = 3, six live questions = 2E; salienceEvery 2 makes the roll loud.
+    //
+    // **A room of two cannot hold this open since Q1440**: at E = 2 the floor
+    // is unanimity, so the one judgment `populate` makes against each value
+    // closes that value at the same sweep (§4.4) and there are no live
+    // questions left to prioritise. Three members and six questions is the
+    // smallest room that reaches 2E with every race still running — a = 1,
+    // o = 1 and one member still to answer, which is no domination.
+    const s = openWithRaces(3, 6, {
+      quorum: { form: 'count', n: 3 }, salienceEvery: 2,
     });
-    populate(s, 4, 'p1');
+    populate(s, 6, 'p1');
     // p2 has pairs left to judge (p1 did the judging) — and still sees
     // diagonals, because ordering the work is itself the valuable act.
     const cards = s.feed('p2', 12, 3 * HOUR);

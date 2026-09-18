@@ -248,6 +248,15 @@ window.COPY = (function () {
       // under the head, where the clause no longer reads as the record left it (Q1333)
       changedSince: 'This clause has changed again since.',
       gone: 'This clause has since been removed.',
+      // **Why a proposal ended** (Q1440, Ed 2026-09-18): the sentence beside
+      // a wording the room closed before the document did — no answer still
+      // to come could have carried it. It stands where the Founder's
+      // *Proposal refused by ‹name› 🛡️* stands, the two being the only two
+      // places an author is told *why* rather than only that the text stood.
+      // *Rejected* is the membership's word for it and *refused* is the
+      // Founder's (STYLE T8); the verb is *pass*, never *carry* and never
+      // *adopted*.
+      dominated: 'Rejected — it could no longer pass',
     },
     // the proposal row and the commit titles either side of the ✏️ hold
     row: {

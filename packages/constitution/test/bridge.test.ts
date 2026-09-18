@@ -635,3 +635,53 @@ describe("the host's pacing is ground (R-086, Ed 2026-09-05)", () => {
     expect(Object.keys(fresh[0]!.changes)).toEqual(['cooldownMs']);
   });
 });
+
+/**
+ * **A motion the room can no longer carry is held during the document's life**
+ * (Q1440, Ed 2026-09-18; SPEC §4.4 → why: R-132).
+ *
+ * Before this an ordinary motion could only fail at T=0, through
+ * `finishClose` — so Q1447's card for its mover was raised on a document that
+ * had just shut, where an OK is refused and the card sits unanswerable for
+ * ever (R-130's own note). The engine closes the candidate now, and this is
+ * the seam that turns that into the constitution's word for it.
+ */
+describe('an ordinary motion the engine closes (Q1440)', () => {
+  it('is held, and owes its mover the card, while the document still runs', () => {
+    const { s, bo, cy } = buildConstituted();
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'dominated-motion' });
+    const { motion, candidate } = bridge.openSetMotion(
+      10, bo, 'ending', { endsAtMs: 2_000_000 }, 'a week is not enough');
+    const race = bridge.engine.races().find((r) => r.settingId === 'ending')!;
+    expect(s.motionRecords().get(motion)!.status).toBe('running');
+    // both of the others prefer the ending as it stands: a = 1, o = 2, w = 0,
+    // and no answer still to come could put it above what stands
+    bridge.judge(20, cy, candidate!, race.incumbentId, 'b');
+    bridge.judge(21, 'ada', candidate!, race.incumbentId, 'b');
+    expect(bridge.engine.getCandidate(candidate!).state).toBe('retired');
+    expect(bridge.engine.getCandidate(candidate!).exit?.cause).toBe('dominated');
+    // the constitution's side: held by the membership, the value untouched,
+    // and the mover — and nobody else — owed the card (SURFACE E41)
+    expect(s.motionRecords().get(motion)!.status).toBe('held');
+    expect(s.settingState('ending').value).toEqual({ endsAtMs: 1_000_000 });
+    expect(s.memberRecords().get(bo)!.heldOwed).toEqual(new Set([motion]));
+    expect(s.memberRecords().get(cy)!.heldOwed.size).toBe(0);
+    // and the stake comes back on performance, as at any retirement (§7)
+    expect(bridge.engine.balance(bo, 30)).toBeGreaterThanOrEqual(3);
+  });
+
+  it('releases the twin rule, so the same thing can be put again (R-103)', () => {
+    const { s, bo, cy } = buildConstituted();
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'dominated-twin' });
+    const first = bridge.openSetMotion(10, bo, 'ending', { endsAtMs: 2_000_000 });
+    const race = bridge.engine.races().find((r) => r.settingId === 'ending')!;
+    bridge.judge(20, cy, first.candidate!, race.incumbentId, 'b');
+    bridge.judge(21, 'ada', first.candidate!, race.incumbentId, 'b');
+    expect(s.motionRecords().get(first.motion)!.status).toBe('held');
+    // the twin rule holds only against a motion that is *running*, so the
+    // same value is proposable again the moment the first one is decided
+    const again = bridge.openSetMotion(30, cy, 'ending', { endsAtMs: 2_000_000 });
+    expect(s.motionRecords().get(again.motion)!.status).toBe('running');
+    expect(again.candidate).not.toBe(first.candidate);
+  });
+});

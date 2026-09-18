@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 450
+  "entries": 451
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -407,6 +407,7 @@
   "session.record.capped": "the ranking maths stopped short on this one; the decision stands",
   "session.record.changedSince": "This clause has changed again since.",
   "session.record.decided": "Decided",
+  "session.record.dominated": "Rejected — it could no longer pass",
   "session.record.founder": "The Founder",
   "session.record.gone": "This clause has since been removed.",
   "session.record.ok": "OK",

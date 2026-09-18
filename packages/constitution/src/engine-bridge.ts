@@ -330,6 +330,25 @@ export class EngineBridge {
         }
         continue;
       }
+      if (e.type === 'candidate-retired' && e.reason === 'dominated') {
+        // **A motion the room can no longer carry is held now** (Q1440; SPEC
+        // §4.4 → why: R-132). The engine has closed the candidate; this is
+        // the only place that turns that into the constitution's word for
+        // it, and it is the same word `finishClose` uses at T=0 — *held*,
+        // the value standing — so Q1447's card reaches the mover on a
+        // document that is still open and its OK can actually be pressed.
+        //
+        // A text retirement has no motion and falls through, as an adopting
+        // text race does. `running` is re-checked because a shield refusal
+        // and the close reach `candidate-retired` by their own roads, and
+        // `adjudicateOrdinaryMotion` throws on anything else.
+        if (this.cs.closed) continue;
+        const held = this.motionOfCandidate.get(e.id);
+        if (held === undefined) continue;
+        if (this.cs.motionRecords().get(held)?.status !== 'running') continue;
+        this.cs.adjudicateOrdinaryMotion(t, held, 'held');
+        continue;
+      }
       if (e.type !== 'adopted') continue;
       const motion = this.motionOfCandidate.get(e.candidateId);
       if (motion === undefined) continue; // a text race adopting

@@ -31,6 +31,8 @@ type Hunk = { start: number; end: number; lines: string[] };
 type CandidateOutcome = { candidateId: string; outcome: string; p: number | null;
   threshold: number | null; hunks: Hunk[]; rationale: string; judgedByMe: boolean;
   author?: { id: string; name: string | null; picture: string | null };
+  /** why it ended, where anybody said: the Founder's 🛡️, or `dominated` (Q1440) */
+  reason?: string;
   madeUnder?: string; signed?: boolean };
 type RaceRecord = { raceId: string; candidateId: string; outcome: string; when: number;
   p: number | null; threshold: number | null; version: number; footprint: unknown;
@@ -3798,5 +3800,172 @@ describe('🪪 at ✏️: an invitation is raced, judged and mailed (#6)', () =>
     expect(after.electorateSize).toBe(3);
     // and it ends where a direct ✉️ ends: a login link in their inbox
     expect((await lastMailTo(dataDir, 'dee@example.org')).link).toContain('/auth/login');
+  });
+});
+
+/**
+ * **A proposal that can never win is closed** (Q1440, Ed 2026-09-18; SPEC
+ * §4.4 → why: R-132), over the wire: the record's own word for it, the card
+ * its mover is owed, and the address it lets go of.
+ */
+describe('a proposal the room can no longer pass is closed (Q1440)', () => {
+  it('the record names the reason, and no record stands while the race runs', async () => {
+    const { base, dataDir } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Dominated Charter', email: 'ada@example.org',
+    })).json() as { slug: string; devLink: string };
+    const slug = created.slug;
+    const ada = cookieOf(await consume(created.devLink));
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const body = await (await post(base, `/api/d/${slug}/cmd`,
+        { cmd: name, args }, cookie)).json() as { error?: string; result?: unknown };
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+      return body.result;
+    };
+    const viewOf = async (cookie: string) => (await (await fetch(
+      `${base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as MemberViewPayload;
+    const follow = async (email: string): Promise<string> =>
+      cookieOf(await consume((await lastMailTo(dataDir, email)).link!));
+
+    await cmd(ada, 'confirm-starting-text',
+      { text: 'The clubhouse is open.\nThe rota is weekly.' });
+    await cmd(ada, 'invite', { email: 'bo@example.org' });
+    await cmd(ada, 'invite', { email: 'cy@example.org' });
+    const bo = await follow('bo@example.org');
+    const cy = await follow('cy@example.org');
+    const values: Record<string, unknown> = {
+      rate: { grant: 4, cap: 8, dripMinutes: 240 },
+      quorum: { form: 'count', n: 1 }, chamber: { rung: 'closed' },
+      authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
+      applications: { apply: false }, admission: { price: 'assembly' },
+      removal: { price: 'consent' },
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+      ending: { endsAtMs: null },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await cmd(ada, 'reclaim', { setting });
+      await cmd(ada, 'set-setting', { setting, value });
+    }
+    await cmd(ada, 'begin', {});
+
+    // -- bo proposes a wording, and a rival stands beside it ---------------
+    const mine = await cmd(bo, 'propose-text', { baseVersion: 0, hunks: [
+      { start: 1, end: 2, lines: ['The rota is daily.'] }], why: 'daily is better',
+    }) as { id: string };
+    const rival = await cmd(cy, 'propose-text', { baseVersion: 0, hunks: [
+      { start: 1, end: 2, lines: ['The rota is monthly.'] }], why: 'monthly is enough',
+    }) as { id: string };
+
+    // -- ada and cy both prefer the rota as it stands ----------------------
+    // a = 1 (bo's own preference), o = 2, w = 0: no answer still to come
+    // could put it above the line it rewrites, so it is closed
+    const inc = (await viewOf(ada)).clauses
+      .find((r) => r.candidates.some((c) => c.id === mine.id))!.incumbentId;
+    await cmd(cy, 'judge-race', { a: mine.id, b: inc, outcome: 'b' });
+    expect((await viewOf(bo)).mine.find((m) => m.id === mine.id)!.state).toBe('live');
+    await cmd(ada, 'judge-race', { a: mine.id, b: inc, outcome: 'b' });
+    // the engine holds it as retired, and the page's own filter is what takes
+    // the *yours* line away (`state !== 'live'`, live.js)
+    expect((await viewOf(bo)).mine.find((m) => m.id === mine.id)!.state)
+      .toBe('retired');
+
+    // -- and no record is served while the rival is still racing -----------
+    // (SURFACE C12: a live race may not say which way the room has gone)
+    const running = await viewOf(ada);
+    expect(running.records).toEqual([]);
+    expect(running.clauses.some((r) => r.candidates.some((c) => c.id === rival.id)))
+      .toBe(true);
+
+    // -- the rival goes the same way, and the record says why --------------
+    const inc2 = (await viewOf(ada)).clauses
+      .find((r) => r.candidates.some((c) => c.id === rival.id))!.incumbentId;
+    await cmd(bo, 'judge-race', { a: rival.id, b: inc2, outcome: 'b' });
+    await cmd(ada, 'judge-race', { a: rival.id, b: inc2, outcome: 'b' });
+    const done = await viewOf(bo);
+    expect(done.clauses).toEqual([]);
+    const closed = done.records.flatMap((r) => r.field)
+      .find((f) => f.candidateId === mine.id)!;
+    expect(closed.outcome).toBe('retired');
+    expect(closed.reason).toBe('dominated');
+  });
+
+  it('holds the motion, owes its mover the card, and lets the address go', async () => {
+    const { base, dataDir } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Dominated Invitation', email: 'ada@example.org',
+    })).json() as { slug: string; devLink: string };
+    const slug = created.slug;
+    const ada = cookieOf(await consume(created.devLink));
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const body = await (await post(base, `/api/d/${slug}/cmd`,
+        { cmd: name, args }, cookie)).json() as { error?: string; result?: unknown };
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+      return body.result;
+    };
+    const viewOf = async (cookie: string) => (await (await fetch(
+      `${base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as
+      MemberViewPayload & { view: { owedHeld: string[] } };
+    const follow = async (email: string): Promise<string> =>
+      cookieOf(await consume((await lastMailTo(dataDir, email)).link!));
+
+    await cmd(ada, 'confirm-starting-text', { text: 'The clubhouse shall be kept open.' });
+    await cmd(ada, 'invite', { email: 'bo@example.org' });
+    await cmd(ada, 'invite', { email: 'cy@example.org' });
+    const bo = await follow('bo@example.org');
+    const cy = await follow('cy@example.org');
+    const values: Record<string, unknown> = {
+      rate: { grant: 4, cap: 8, dripMinutes: 240 },
+      quorum: { form: 'count', n: 1 }, chamber: { rung: 'closed' },
+      authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
+      applications: { apply: false },
+      admission: { price: 'proposal' }, // 🪪 — members must vote on every joiner
+      removal: { price: 'consent' },
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+      ending: { endsAtMs: null },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await cmd(ada, 'reclaim', { setting });
+      await cmd(ada, 'set-setting', { setting, value });
+    }
+    for (const power of ['unilateral', 'assent']) {
+      await cmd(ada, 'relinquish', { setting: 'door:invite', power });
+    }
+    await cmd(ada, 'begin', {});
+
+    const motion = await cmd(bo, 'open-motion', {
+      payload: { kind: 'invite', email: 'dee@example.org' }, why: 'she keeps the rota',
+    }) as string;
+    const judgeNo = async (cookie: string) => {
+      const v = await viewOf(cookie);
+      const r = v.settingRaces.find((x) => x.settingId.startsWith('invite:'))!;
+      // dealt into the hand, or handed over as `ask` (Q1202) — the same blind
+      // pair either way, and a seat may already be holding it
+      const card = v.raceCards.find((c) =>
+        (c.a.setting?.settingId ?? '').startsWith('invite:') ||
+        (c.b.setting?.settingId ?? '').startsWith('invite:'))
+        ?? (r.ask as { a: CardOption; b: CardOption } | null)!;
+      const no = card.a.id.startsWith('inc:') ? 'a' : 'b';
+      await cmd(cookie, 'judge-race', { a: card.a.id, b: card.b.id, outcome: no });
+    };
+    await judgeNo(cy);
+    expect((await viewOf(ada)).view.motions.find((m) => m.id === motion)!.status)
+      .toBe('running');
+    await judgeNo(ada);
+
+    // held by the membership, nobody invited, and the mover alone is owed
+    const after = await viewOf(bo);
+    expect(after.view.motions.find((m) => m.id === motion)!.status).toBe('held');
+    expect(after.view.members.some((m) => m.email === 'dee@example.org')).toBe(false);
+    expect(after.view.owedHeld).toEqual([motion]);
+    expect((await viewOf(cy)).view.owedHeld).toEqual([]);
+    expect((await viewOf(ada)).view.owedHeld).toEqual([]);
+
+    // and the address is free again: the twin rule holds only against a
+    // motion that is running (R-103), so the room may put it a second time
+    const again = await cmd(cy, 'open-motion', {
+      payload: { kind: 'invite', email: 'dee@example.org' }, why: 'ask again',
+    }) as string;
+    expect((await viewOf(cy)).view.motions.find((m) => m.id === again)!.status)
+      .toBe('running');
   });
 });

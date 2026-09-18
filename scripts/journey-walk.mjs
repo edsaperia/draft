@@ -2280,7 +2280,8 @@ if (DELEGATE_ALL) {
   say('ends at 🍾 · ' + (waitingAtBegin ? 'served, waiting on the room'
     : 'FAIL: the founding did not end at a served 🍾'));
   if (!waitingAtBegin) stuck.push('a delegating founding did not end at 🍾');
-  say('errors     · ' + (errors.length ? errors.slice(0, 4).join(' / ') : 'none'));
+
+say('errors     · ' + (errors.length ? errors.slice(0, 4).join(' / ') : 'none'));
   say('refused    · ' + (refused.length ? refused.join(' / ') : 'none'));
   await browser.close();
   process.exit(stuck.length || errors.length || refused.length ? 1 : 0);
@@ -4404,6 +4405,186 @@ const noRoadBack = async () => {
   await closeCard();
 };
 await noRoadBack();
+  /* ---- a proposal that can never win is closed (Q1440, Ed 2026-09-18) ------
+ * *As soon as it's dominated by another option (e.g. it can never win unless
+ * people change votes they already cast) then it should be counted as
+ * closed.* Nothing closed before this: a wording the room had plainly refused
+ * kept its rail entry, its tabs and its pairs until T=0.
+ *
+ * The room here is three (the pairs step seated cy), and the quorum is a
+ * count of three, which at a group of three reads ⌈3/2⌉ = 2. bo proposes on a
+ * line nothing is racing on; the founder prefers the text that stands, and
+ * the proposal is still live — a = 1, o = 1, w = 1, and cy could still make
+ * it two against one. cy prefers the text as well, and now no answer still to
+ * come could carry it: a + w = 1 against o = 2. It retires at that same
+ * sweep, its race seals with the current text standing, and three things
+ * follow on the page — bo's *yours* line goes, the clause's record stands in
+ * its place, and the record says **why**.
+ *
+ * It fails on the pre-Q1440 page at *dominated · FAIL: … state live*. */
+const dominatedProposal = async () => {
+  if (!guestPage) return; // its own failure, already reported
+  const slug = new URL(page.url()).pathname.replace(/^\/d\//, '');
+  const wire = (pg, cmd, args) => pg.evaluate(([c, a]) => fetch(location.pathname.replace('/d/', '/api/d/') + '/cmd', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ cmd: c, args: a }),
+  }).then((r) => r.json()).catch((e) => ({ error: String(e && e.message) })), [cmd, args]);
+  const viewOf = (pg) => pg.evaluate(() => fetch(location.pathname.replace('/d/', '/api/d/') + '/view')
+    .then((r) => r.json()).catch(() => null));
+
+  // a third seat, minted fresh: cy's invitation is long spent, and reaching
+  // for *the* mail matching the address would find either of two
+  const lj = await fetch(BASE + '/api/d/' + slug + '/login', { method: 'POST',
+    headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: GUEST2 }) })
+    .then((r) => r.json()).catch(() => null);
+  const link = (lj && lj.devLink) || await invitationLink(GUEST2);
+  if (!link) {
+    say('dominated  · FAIL: no way in for ' + GUEST2 + ' — the second refusal cannot be cast');
+    stuck.push('the third seat this line stands on'); return;
+  }
+  const ctx = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+  const cyPage = await ctx.newPage();
+  cyPage.on('pageerror', (e) => errors.push('[cy] ' + String(e)));
+  await cyPage.goto(link);
+  for (let i = 0; i < 40 && !cyPage.url().includes('/d/'); i++) await cyPage.waitForTimeout(500);
+  await cyPage.waitForTimeout(2600);
+
+  // **a line nothing is racing on**, read off the wire: the steps above leave
+  // races on several clauses, and a proposal that joined one of them would be
+  // asking a different question
+  const v0 = await viewOf(page);
+  const lines = String((v0 || {}).text || '').split('\n');
+  const taken = new Set();
+  for (const c of ((v0 || {}).clauses || [])) {
+    for (const sp of (c.contested || [])) for (let i = sp.start; i <= sp.end; i++) taken.add(i);
+  }
+  let at = -1;
+  for (let i = 0; i < lines.length; i++) if (!taken.has(i) && lines[i].trim()) { at = i; break; }
+  if (at < 0) {
+    say('dominated  · FAIL: every line is already racing · ' + JSON.stringify([...taken]));
+    stuck.push('a free clause for the domination'); await ctx.close(); return;
+  }
+  const WORDING = 'The clubhouse keeps a visitors’ book.';
+  const put = await guestPage.evaluate(([n, text, base]) => fetch(
+    location.pathname.replace('/d/', '/api/d/') + '/cmd', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ cmd: 'propose-text', args: { baseVersion: base,
+        hunks: [{ start: n, end: n + 1, lines: [text] }], why: 'we should know who came' } }),
+    }).then((r) => r.json()).catch((e) => ({ error: String(e && e.message) })),
+  [at, WORDING, (v0 || {}).textVersion]);
+  const cand = put && put.result && put.result.id;
+  if (!cand || put.error) {
+    say('dominated  · FAIL: the member could not propose · ' + JSON.stringify(put));
+    stuck.push('the proposal this line closes'); await ctx.close(); return;
+  }
+  await T(5200); // a poll in each seat
+
+  const raceOf = async () => {
+    const v = await viewOf(page);
+    const r = ((v || {}).clauses || []).find((c) => (c.candidates || []).some((x) => x.id === cand));
+    return r || null;
+  };
+  const r0 = await raceOf();
+  if (!r0) {
+    say('dominated  · FAIL: the proposal reached no race');
+    stuck.push('the proposal’s race'); await ctx.close(); return;
+  }
+  const alone = r0.candidates.length === 1;
+  // -- the founder prefers the clause as it stands; it is not closed yet ----
+  const no1 = await wire(page, 'judge-race', { a: cand, b: r0.incumbentId, outcome: 'b' });
+  if (no1 && no1.error) {
+    say('dominated  · FAIL: the founder could not judge · ' + JSON.stringify(no1));
+    stuck.push('the first refusal'); await ctx.close(); return;
+  }
+  const mid = await viewOf(guestPage);
+  const midState = ((mid || {}).mine || []).find((m) => m.id === cand);
+  const stillLive = midState && midState.state === 'live';
+  say('dominated 1· ' + (stillLive
+    ? 'one refusal of three, and the proposal stands: the third seat could still make it two against one'
+    : 'FAIL: it went on the first refusal · ' + JSON.stringify(midState)));
+  if (!stillLive) stuck.push('a proposal closed while somebody could still carry it');
+
+  // -- and the third seat refuses it too -----------------------------------
+  const no2 = await wire(cyPage, 'judge-race', { a: cand, b: r0.incumbentId, outcome: 'b' });
+  if (no2 && no2.error) {
+    say('dominated  · FAIL: the third seat could not judge · ' + JSON.stringify(no2));
+    stuck.push('the second refusal'); await ctx.close(); return;
+  }
+  await T(5200);
+  const after = await viewOf(guestPage);
+  const state = ((after || {}).mine || []).find((m) => m.id === cand);
+  const closed = state && state.state === 'retired';
+  const raceGone = !((after || {}).clauses || []).some((c) => (c.candidates || []).some((x) => x.id === cand));
+  say('dominated 2· ' + (closed && raceGone
+    ? 'no answer still to come could carry it, so it is closed and its race sealed with the clause standing'
+    : 'FAIL: state ' + JSON.stringify(state && state.state) + ' · race gone ' + raceGone));
+  if (!closed || !raceGone) stuck.push('the domination');
+
+  // -- the author's own line leaves the rail -------------------------------
+  const yours = await guestPage.evaluate((id) =>
+    [...document.querySelectorAll('#rail li')].map((li) => li.dataset.q
+      || ((li.querySelector('[data-card]') || { dataset: {} }).dataset.card) || '')
+      // the record's own key holds the candidate id too (a one-member race is
+      // named for its member), and the record is the thing that replaces the
+      // line — what must be gone is the *yours* entry
+      .filter((k) => k.includes(id) && !k.startsWith('rec:')), cand);
+  say('dominated 3· ' + (yours.length === 0
+    ? 'the author’s *yours* line is gone from their rail'
+    : 'FAIL: it is still there · ' + JSON.stringify(yours)));
+  if (yours.length > 0) stuck.push('the closed proposal’s *yours* entry');
+
+  // -- and the record says why ---------------------------------------------
+  // only where the race was this proposal's alone: a record waits for its
+  // race to finish, so a clause with a rival still on it has none yet
+  if (alone) {
+    // the wire first: the record's own field carries the engine's reason
+    const onWire = ((after || {}).records || []).flatMap((r) => r.field || [])
+      .find((f) => f.candidateId === cand);
+    const wireOk = onWire && onWire.outcome === 'retired' && onWire.reason === 'dominated';
+    say('dominated 4· ' + (wireOk
+      ? 'the record’s own field carries the reason the engine gave it'
+      : 'FAIL: ' + JSON.stringify(onWire) + ' · records '
+        + JSON.stringify(((after || {}).records || []).map((r) => r.raceId))));
+    if (!wireOk) stuck.push('the record’s reason on the wire');
+    // then the page: the record's rail entry, and the sentence under it
+    // a rail entry's key is its own `data-q`, or the `data-card` of the
+    // element inside it — the shape `guestState` reads
+    const keys = await guestPage.evaluate(() =>
+      [...document.querySelectorAll('#rail li')].map((li) => li.dataset.q
+        || ((li.querySelector('[data-card]') || { dataset: {} }).dataset.card) || ''));
+    const key = keys.find((k) => k.startsWith('rec:')) || ('rec:' + r0.id);
+    const opened = await guestPage.evaluate((k) => {
+      const q = String(k).replace(/["\\]/g, '\\$&');
+      const li = document.querySelector('#rail li[data-q="' + q + '"]');
+      const b = li && li.querySelector('button');
+      if (!b) return false;
+      b.click();
+      return true;
+    }, key);
+    await T(1600);
+    const note = opened ? await guestPage.evaluate((k) => {
+      const q = String(k).replace(/["\\]/g, '\\$&');
+      const card = document.querySelector('.sugg[data-card="' + q + '"]');
+      return card ? [...card.querySelectorAll('.rsub')].map((e) => e.textContent.trim()) : [];
+    }, key) : [];
+    const readsIt = note.some((t) => /could no longer pass/.test(t));
+    const card = readsIt ? null : await guestPage.evaluate((k) => {
+      const q = String(k).replace(/["\\]/g, '\\$&');
+      const c = document.querySelector('.sugg[data-card="' + q + '"]');
+      return c ? c.textContent.replace(/\s+/g, ' ').trim().slice(0, 300) : null;
+    }, key);
+    say('dominated 5· ' + (readsIt
+      ? 'the record stands in its place and says why: “' + note.find((t) => /could no longer pass/.test(t)) + '”'
+      : 'FAIL: key ' + JSON.stringify(key) + ' · opened ' + opened
+        + ' · notes ' + JSON.stringify(note) + ' · card ' + JSON.stringify(card)));
+    if (!readsIt) stuck.push('the record’s *why* on a closed proposal');
+  } else {
+    say('dominated 4· the clause held a rival too, so the record waits for it — not read here');
+  }
+  await ctx.close();
+};
+await dominatedProposal();
+
 say('errors     · ' + (errors.length ? errors.slice(0, 4).join(' / ') : 'none'));
 say('refused    · ' + (refused.length ? refused.join(' / ') : 'none'));
 await browser.close();

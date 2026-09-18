@@ -30,7 +30,7 @@
  * session touches for it.
  */
 
-import type { Candidate, Constitution, PairKind, RaceView } from './types.js';
+import type { Candidate, Constitution, Domination, PairKind, RaceView } from './types.js';
 import { INC_PREFIX } from './types.js';
 import type { Span } from './text/types.js';
 import type { Comparison, Fit } from './ranking/types.js';
@@ -466,6 +466,10 @@ export class Races {
         certification,
         deadlocked,
         rivalGateOpen,
+        // **What can no longer win** (Q1440): time-free, so it rides the
+        // state's own memo with the counts it is read off, and the sweep and
+        // the record can ask the same question of the same numbers.
+        dominated: this.dominations(members, incumbentId, usable, fit),
         ...(setting ? { settingId: setting.settingId } : {}),
       },
       approval: this.approvalCore(leaderId, incumbentId, usable),
@@ -494,6 +498,11 @@ export class Races {
    * approvers and opposers are counted wherever they now are; only the
    * *awaited* set is restricted to E, because only somebody still in the room
    * can be waited on.
+   *
+   * **It is asked of any live candidate, not only of the leader** (Q1440): the
+   * view publishes the leader's, and `dominations` asks it of every member of
+   * the race in turn, because *can this one still win* is the same three
+   * counts read about a different candidate.
    */
   private approvalCore(
     leaderId: string | null,
@@ -523,6 +532,133 @@ export class Races {
       awaitedFrom.push(Math.max(from, this.host.arrivalT(m)));
     }
     return { approvals, answered, awaitedFrom };
+  }
+
+  /**
+   * **A proposal that can never win is closed** (Q1440, Ed 2026-09-18; SPEC
+   * §4.4 → why: R-132): *as soon as it's dominated by another option (e.g. it
+   * can never win unless people change votes they already cast) then it should
+   * be counted as closed.*
+   *
+   * Over the members of E, for a live candidate X:
+   *
+   *   **a** — whose latest judgment of X against the current text prefers X,
+   *   its author among them by their derived preference (§3.3);
+   *   **o** — whose latest such judgment prefers the current text;
+   *   **w** — who have not answered that pair at all.
+   *
+   * *Indifferent* is in none of the three: it is an answer, and answering
+   * again is revising a cast vote, which is the one rescue Ed's sentence
+   * declines to wait for. **w counts the abstained** — 💤's period takes a
+   * silent member out of the group a quorum is read against (§8.2) and takes
+   * nothing away from their right to answer — which is what makes the whole
+   * test **time-free** and lets it live in the state's own memo beside the
+   * counts it reads, rather than in `viewAt` with the clock.
+   *
+   * **Dominated by the current text** when X's best possible future fails
+   * either half of §4.2's test: `a + w <= o` — a tie leaves the current text
+   * standing — or `a + w < F(a + o + w)`. That the best future is *every one
+   * of the w approves* is R-125's properties 2 and 3 read together: an
+   * approval raises approvals by one and cannot raise the floor, the approver
+   * having already been inside the group; an abstention lowers the floor by at
+   * most one and raises approvals by nothing. `dominated.test.ts` brute-forces
+   * it rather than trusting the argument.
+   *
+   * **Dominated by a rival Y** when, on the X-vs-Y pair, the members
+   * preferring Y outnumber those preferring X plus every member of E who has
+   * not answered that pair: no answer still to come could put X above Y.
+   *
+   * **The floor clause is exact; the other two are counts approximating a
+   * ranking.** `a + w < F` is arithmetic about a number §4.2 tests directly,
+   * so nothing can rescue it and it needs no guard. The majority clause and
+   * the rival clause are about being *on top of the field*, and §4.2 adopts
+   * the top of the **fitted** ranking and accepts that a cyclic field can put
+   * on top a wording a direct majority preferred the current text to. So a
+   * count can say *dominated* about a candidate the fit still rates above the
+   * text that stands, and where the two disagree the count is the one that is
+   * wrong about the rule. Hence a guard on each of them, and each against the
+   * thing its own clause is about: the majority clause does not close a
+   * candidate **the ranking puts above the current text**, and the rival
+   * clause does not close one the ranking puts above **that rival**. Between
+   * them they make it impossible for a race to close its own leader, which is
+   * the absurdity a pure count would eventually produce. What remains of the
+   * approximation, stated so it can be reversed by one line: a judgment still
+   * to come on a *rival* pair can move X's fitted strength without moving a
+   * or o, so a candidate closed by the majority clause in a crowded race is
+   * closed on the room's direct preference and not on a proof about the fit.
+   *
+   * And a dominated candidate dominates nobody: a rival that is itself on its
+   * way out of the race is no reason to close anything behind it.
+   */
+  private dominations(
+    members: string[],
+    incumbentId: string,
+    usable: readonly StoredComparison[],
+    fit: Fit,
+  ): Domination[] {
+    if (members.length === 0) return [];
+    const c = this.host.constitution();
+    const e = this.host.eMembers();
+    const incStrength = fit.strengths.get(incumbentId) ?? 0;
+    const above = (id: string): boolean =>
+      (fit.strengths.get(id) ?? 0) > incStrength + TIE_EPS;
+    const byIncumbent = new Set<string>();
+    for (const m of members) {
+      const core = this.approvalCore(m, incumbentId, usable);
+      const a = core.approvals;
+      const o = core.answered - core.approvals;
+      const w = core.awaitedFrom.length;
+      const floored = a + w < floorFor(c, e.length, a + o + w);
+      if (floored || (a + w <= o && !above(m))) byIncumbent.add(m);
+    }
+    // the rival clause, over the candidates the incumbent clause left
+    // standing; the guard here is against **the rival**, not against the
+    // current text — X may well be better than what stands and still never be
+    // the wording the room takes, which is the whole of what this clause is
+    // about — and it is what makes it impossible to close a race's leader,
+    // the leader being above every rival by definition
+    const byRival = new Map<string, string>();
+    for (const m of members) {
+      if (byIncumbent.has(m)) continue;
+      const ms = fit.strengths.get(m) ?? 0;
+      for (const y of members) {
+        if (y === m || byIncumbent.has(y)) continue;
+        if (ms > (fit.strengths.get(y) ?? 0) + TIE_EPS) continue;
+        if (this.rivalDominates(m, y, usable, e)) { byRival.set(m, y); break; }
+      }
+    }
+    // one pass of conservatism, which can only shrink the set: a candidate
+    // closed by a rival that is itself closing stays open
+    for (const [m, y] of [...byRival]) if (byRival.has(y)) byRival.delete(m);
+    const out: Domination[] = [];
+    for (const m of members) {
+      if (byIncumbent.has(m)) out.push({ id: m, by: 'incumbent' });
+      else if (byRival.has(m)) out.push({ id: m, by: 'rival' });
+    }
+    return out;
+  }
+
+  /** Y beats X by more than every member of E who could still answer the pair. */
+  private rivalDominates(
+    x: string,
+    y: string,
+    usable: readonly StoredComparison[],
+    eMembers: readonly string[],
+  ): boolean {
+    const answered = new Set<string>();
+    let forX = 0;
+    let forY = 0;
+    for (const cmp of usable) {
+      const onPair = (cmp.aId === x && cmp.bId === y) || (cmp.aId === y && cmp.bId === x);
+      if (!onPair) continue;
+      answered.add(cmp.participantId);
+      if (cmp.outcome === 'tie') continue;
+      const chose = cmp.outcome === 'a' ? cmp.aId : cmp.bId;
+      if (chose === x) forX++; else forY++;
+    }
+    let unanswered = 0;
+    for (const m of eMembers) if (!answered.has(m)) unanswered++;
+    return forY > forX + unanswered;
   }
 
   /**
