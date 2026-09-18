@@ -9246,10 +9246,14 @@
   // behaviour (session.js's default path).
   const LIVE_HOOKS = { items: null, judge: null, propose: null, pen: null, withdraw: null,
     seen: null, chill: null, textChanged: null, crownAnswer: null,
+    // …and the one hook that answers rather than acts (Q1463): is this draft
+    // still aimed at the wording it was written against? Null on the fixture,
+    // which has no server to go stale against.
+    misaimed: null,
     // the riding tab's count follows every charter render (backlog 204)
     rendered: () => renderRideTab() };
   const hookProxy = Object.fromEntries(['judge', 'propose', 'pen', 'withdraw', 'seen', 'chill',
-    'textChanged', 'crownAnswer', 'rendered']
+    'textChanged', 'crownAnswer', 'misaimed', 'rendered']
     .map((n) => [n, (...a) => (LIVE_HOOKS[n] ? LIVE_HOOKS[n](...a) : undefined)]));
   // ---- the wallet family, the bubble and the hold ladder -----------------
   // design/wallets.js since refactor Q1352 (c): made here, where the first of
