@@ -4035,6 +4035,11 @@ if (caret) {
             cast: (card.querySelector('[data-act="submit"]') || {}).getAttribute
               ? card.querySelector('[data-act="submit"]').getAttribute('aria-pressed') : null,
             ledger: card.querySelectorAll('.ledger, .ledgerpair').length,
+            // **💤's countdown on the Indifferent row** (Q1460): the hh:mm as
+            // drawn, or null where the row carries none — an unjudged pair
+            // this seat is awaited on wears one, a pair it has answered does not
+            abstain: ((n) => (n ? n.querySelector('.abst').textContent : null))(
+              card.querySelector('.vinblock .absnote')),
             // a template printing a field nobody set (Q1385, Ed's screenshot
             // of 2026-09-11: the word *undefined* under a proposed block on a
             // live race card): the stretch of card text around the word, or null
@@ -4087,6 +4092,17 @@ if (caret) {
           const ok2 = c1.card && /quick-open/.test(c1.cls) && c1.keepLane && c1.whys.length === 1 && c1.whys[0] === first && c1.ledger === 0;
           say('pairs 2    · ' + (ok2 ? 'its card is that pair, quick, its reason “' + first + '”, no ledger' : 'FAIL: ' + JSON.stringify(c1)));
           if (!ok2) stuck.push('the first pair’s card');
+          // **Q1460 — 💤's countdown, on a pair still asking you.** This
+          // founding sets 💤 to twenty minutes (`lapseSet`), and the proposal
+          // was made moments ago, so the row reads 00:20 or 00:19 and never
+          // 00:00. Under `--delegate-all` nothing sets 💤 and there is no
+          // clock to draw, which is the *never* case and not a failure.
+          if (lapseSet) {
+            const okA = ok2 && /^00:(19|20)$/.test(c1.abstain || '');
+            say('abstain 1  · ' + (okA ? 'the Indifferent row carries its own countdown, ' + c1.abstain + ' of 💤’s twenty minutes'
+              : 'FAIL: ' + JSON.stringify(c1.abstain)));
+            if (!okA) stuck.push('the abstention countdown on an unjudged pair (Q1460)');
+          }
           // **Keep, deliberately** — *the current text*, on both pairs. A room
           // of two has a floor of one, so one approving vote adopts the
           // challenger on the spot and the race seals into a record (the first
@@ -4163,6 +4179,16 @@ if (caret) {
           say('bare word  · ' + (l1.card && !l1.bare ? 'the judged pair’s card after a reload prints no bare undefined or NaN'
             : 'FAIL: ' + JSON.stringify(l1.bare)));
           if (l1.card && l1.bare) stuck.push('a bare word on the reloaded judged card (Q1385)');
+          // **Q1460 — and a pair you have answered wears none.** The card is
+          // not asking you anything, so there is nothing for a countdown to
+          // be about; the same read as `abstain 1`, on the other side of a
+          // judgment and a reload.
+          if (lapseSet) {
+            const okB = l1.card && l1.abstain === null;
+            say('abstain 2  · ' + (okB ? 'the judged pair’s card carries no countdown'
+              : 'FAIL: ' + JSON.stringify(l1.abstain)));
+            if (!okB) stuck.push('the countdown on a judged pair (Q1460)');
+          }
           // 7 — choose the other lane, ✓: the revision goes on the same pair.
           //
           // **On the rival pair since Q1439**, where it was the first quick

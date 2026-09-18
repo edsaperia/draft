@@ -910,6 +910,63 @@ window.CARDS = (function () {
     // one thing this surface never lets you do to the charter directly.
     glyphify(G.proposeEdit.label) + '</button>';
 
+  /* ---- the abstention clock (Q1460, Ed 2026-09-18) ------------------------
+     *We should have small indicator on the right side of decision cards in
+     the indifferent row giving a countdown for when not voting will count as
+     a lapse* — 💤's period on this pair (SPEC §8.2, R-127), as hours and
+     minutes.
+
+     **Rounded up, never down**, which is the opposite of the session-clock's
+     rule and for the same reason: that clock must never promise time the
+     document does not have, and this one must never say 00:00 while a vote
+     would still be counted. Null once the moment has passed — what a run-out
+     period should read is Ed's to say, and until he says it the line goes.
+
+     **The number is its own element.** The sentence is one string in copy.js,
+     so the site of the time inside it is found by rendering the string around
+     a sentinel the copy cannot contain, and only that element's text is
+     patched as it counts (`tickAbstain`). Nothing around it is rebuilt, which
+     is what lets the line tick under a press and between polls alike. The
+     sentinel is ␟ and deliberately **not** a NUL, which is the separator the
+     charter key uses: a NUL in a source file makes git call it binary and
+     every diff of this file a whole-file diff. */
+  function abstainHhmm(msLeft) {
+    if (!(msLeft > 0)) return null;
+    const mins = Math.ceil(msLeft / 60000);
+    return String(Math.floor(mins / 60)).padStart(2, '0') + ':' + String(mins % 60).padStart(2, '0');
+  }
+  const ABS_PARTS = (() => {
+    const p = String(G.commit.abstainIn('␟')).split('␟');
+    return [p[0] || '', p[1] || ''];
+  })();
+  /** The line, or nothing at all: no deadline, or one already behind us. */
+  function abstainNoteHtml(atMs) {
+    const at = Number(atMs);
+    if (!Number.isFinite(at)) return '';
+    const hhmm = abstainHhmm(at - Date.now());
+    if (hhmm === null) return '';
+    return '<span class="absnote" data-abstain-at="' + at + '">' +
+      glyphify(esc(ABS_PARTS[0])) + '<span class="abst">' + hhmm + '</span>' +
+      glyphify(esc(ABS_PARTS[1])) + '</span>';
+  }
+  /**
+   * One pass over every countdown on the page: the minutes patched where they
+   * changed, the whole line removed where its moment has passed. Called on a
+   * timer, never from a render — a countdown that waited for the 4s poll
+   * would jump four seconds at a time, and one that forced a render would
+   * rebuild the control under the reader's pointer.
+   */
+  function tickAbstain(root) {
+    const scope = root || (typeof document === 'undefined' ? null : document);
+    if (!scope || !scope.querySelectorAll) return;
+    scope.querySelectorAll('.absnote[data-abstain-at]').forEach((el) => {
+      const hhmm = abstainHhmm(Number(el.getAttribute('data-abstain-at')) - Date.now());
+      if (hhmm === null) { el.remove(); return; }
+      const n = el.querySelector('.abst');
+      if (n && n.textContent !== hhmm) n.textContent = hhmm;
+    });
+  }
+
   const initials = (n) => String(n).trim().split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 
   /* ---- avatars ------------------------------------------------------------
@@ -1364,7 +1421,15 @@ window.CARDS = (function () {
         (env.lockedOf(s) ? ' disabled' : '') +
         ' title="' + (s.kind === 'diagonal' ? G.commit.vinDiagonal : G.commit.vinPair) + '">' +
         '<i class="dot" aria-hidden="true"></i>' +
-        '<span class="off">' + G.commit.indifferent + '</span><span class="on">' + G.commit.indifferent + '</span></button></div>';
+        '<span class="off">' + G.commit.indifferent + '</span><span class="on">' + G.commit.indifferent + '</span></button>' +
+        // **And what silence here will come to mean** (Q1460, Ed 2026-09-18):
+        // the seat's own abstention clock, at the right of the same row, in
+        // the size, face and colour of the *propose edit* text — his own
+        // placing. The card carries the deadline only while there is one to
+        // carry: an unjudged pair, a 💤 that is not *never*, a moment still
+        // ahead. The block becomes the row that holds them both.
+        abstainNoteHtml(s.abstainAt) +
+        '</div>';
     }
     function commitBarHtml(s, extra, cls) {
       const pick = env.pickOf(s);
@@ -1708,6 +1773,7 @@ window.CARDS = (function () {
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks, mdDiffPieces, mdPiecesHtml, mdDiffHtml, mdBlocksHtml,
     originText, MD_RX, mdToHtml, htmlToMd, mdStrip, mdBlock, linkify, linkifyHtml, mdLine,
     MD_ONE, mdLead, mdInner, mdParts, richToSource, sourceToRich, readLane,
+    abstainHhmm, abstainNoteHtml, tickAbstain,
     laneSeed, laneProposeHtml, laneCtlHtml, laneNameId, laneGroupAttrs, speakerHtml, railSpeakerHtml, secToggleHtml, fieldHtml, fieldOf, groundNote,
     initials, PERSON, avHtml,
     headOnlyHeight, cardBody, COLLAPSE_MS, EXPAND_MS,

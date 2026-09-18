@@ -1087,8 +1087,12 @@ function checkAuthorNeverAsked() {
   // `itemsFromView` is live.js's since Q1352 (e) lifted the live layer out
   const page = js('design/live.js');
   const pat = page.indexOf('function itemsFromView(');
-  // the window reaches past the deck and ledger building above the skip (Q1200)
-  const items = pat < 0 ? '' : page.slice(pat, pat + 8000);
+  // The window reaches past the deck and ledger building above the skip
+  // (Q1200) — and grows with them: 8,000 until the abstention clock's own
+  // lines (Q1460) pushed the skip past it. A window that misses the skip
+  // reports the skip as *conditional again*, which is a false finding, so
+  // the number is kept comfortably ahead of the code it has to clear.
+  const items = pat < 0 ? '' : page.slice(pat, pat + 10_000);
   if (!/r\.candidates\.every\(\(c\) => c\.mine\)\) continue;/.test(items))
     find('events', 'the all-mine skip in `itemsFromView` carries a condition again — the engine serves no pair for an all-mine race at any E, so E19 exempts nothing (backlog 253 overturns Q835)');
   else note('  the `mine` skip is unconditional');

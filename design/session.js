@@ -114,6 +114,9 @@
     richToSource, sourceToRich, readLane,
     laneSeed, laneProposeHtml, laneCtlHtml, laneNameId, laneGroupAttrs, speakerHtml, fieldHtml, fieldOf, groundNote,
     headOnlyHeight, cardBody, COLLAPSE_MS, EXPAND_MS,
+    // the abstention clock's one pass over the page (Q1460), run from a timer
+    // of its own in `init` and never from a render
+    tickAbstain,
   } = window.CARDS;
   // **A power is not held until it has been acknowledged** (Ed, 2026-08-21).
   // The host says whether this reader may propose and may judge; both default
@@ -4881,6 +4884,14 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       if (editsToNext >= 1) { editsToNext = 0; editsHeld = Math.min(EDIT_RULES.cap, editsHeld + 1); }
       renderWallet();
     }, 1000);
+
+    // **The abstention clock is a timer, not a render** (Q1460): one pass a
+    // second over every countdown on the page, patching the minutes where
+    // they moved and taking the line away once its moment has passed.
+    // Deliberately neither the 4s poll — which would step the number four
+    // seconds at a time — nor a render, which under a press is the one thing
+    // this surface must not do.
+    setInterval(() => tickAbstain(document), 1000);
 
     doc.addEventListener('beforeinput', (ev) => {
       const t = ev.target && ev.target.closest ? ev.target : null;

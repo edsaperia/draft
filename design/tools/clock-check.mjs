@@ -72,5 +72,30 @@ for (const [got, want] of cases) {
 for (let ms = 1; ms < 9 * DAY; ms += 7 * MIN + 13_000) {
   assert.doesNotMatch(left(ms), /second|\d+s\b/, `seconds leaked at ${ms}`);
 }
+
+// **The abstention countdown's own ladder** (Q1460) — hh:mm, and the
+// opposite rounding rule to the clock above: every figure rounds **up**, so
+// the line never reads 00:00 while a vote of yours would still be counted.
+// Null once the moment is behind us; what the row should say then is Ed's
+// to rule, and until he rules it the line is not drawn at all.
+const { abstainHhmm } = ctx.window.CARDS;
+const hhmm = [
+  [abstainHhmm(0), null],
+  [abstainHhmm(-5 * MIN), null],
+  [abstainHhmm(1), '00:01'],                 // a millisecond left is still a minute
+  [abstainHhmm(MIN), '00:01'],
+  [abstainHhmm(MIN + 1), '00:02'],
+  [abstainHhmm(59 * MIN), '00:59'],
+  [abstainHhmm(HOUR), '01:00'],
+  [abstainHhmm(HOUR + 30 * MIN + 1), '01:31'],
+  [abstainHhmm(7 * DAY), '168:00'],          // past two figures it goes on counting
+];
+for (const [got, want] of hhmm) {
+  if (got !== want) {
+    failed++;
+    console.error(`✗ abstainHhmm: got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`);
+  }
+}
+cases.push(...hhmm);
 console.log(failed ? `clock-check: ${failed} of ${cases.length} failed` : `clock-check: ${cases.length} cases ok`);
 process.exit(failed ? 1 : 0);
