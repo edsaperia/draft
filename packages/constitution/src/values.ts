@@ -86,6 +86,19 @@ const isFiniteNum = (v: unknown): v is number => typeof v === 'number' && Number
 const isInt = (v: unknown): v is number => Number.isInteger(v);
 
 /**
+ * **💤's floor is five minutes** (Q1453, Ed 2026-09-18). The card has offered
+ * five minutes as its shortest spell since 💤 took ⏱️'s unit picker, and this
+ * validator took *null or any positive duration* — so the floor was the
+ * page's alone, and a delegated answer, a carried motion's payload, the
+ * founder's own pen and a replayed log each went round it. A spell of
+ * milliseconds is nothing a room could want and everything a room could be
+ * wrecked by: every member is inactive on the next tick, so the first tick
+ * after the set lapses the whole membership at once. The refusal lives here
+ * because this is the one door all four roads pass through.
+ */
+export const LAPSE_MIN_MS = 5 * 60_000;
+
+/**
  * Structural validation for one value of one type. Ladder rung membership
  * needs the catalogue entry's rung list, so it is checked in catalogue.ts
  * (validateFor); this layer checks shape. Returns an error string or null.
@@ -151,9 +164,9 @@ export function validateValue(type: ValueTypeName, v: unknown): string | null {
         : 'rate: dripMinutes must be a whole number of real minutes, at least 1 (Q353)';
     case 'lapse':
       if (v.afterMs === null) return null;
-      return isFiniteNum(v.afterMs) && v.afterMs > 0
+      return isFiniteNum(v.afterMs) && v.afterMs >= LAPSE_MIN_MS
         ? null
-        : 'lapse: afterMs must be null (never) or a positive duration';
+        : 'lapse: afterMs must be null (never) or at least five minutes (Q1453)';
     case 'machines':
       if (typeof v.enabled !== 'boolean') return 'machines: enabled must be a boolean';
       return isInt(v.budget) && (v.budget as number) >= 0

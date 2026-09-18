@@ -96,7 +96,10 @@
  *   member: `seat-matrix: findings=15 noRule=0 shape=0 errors=0 refused=0 unstood=0 exit=1`
  *   clerk:  `seat-matrix: findings=25 noRule=0 shape=0 errors=0 refused=0 unstood=4 exit=1`
  * (quoted as they were printed; the line gained `filed=` afterwards).
- * Wall time about 8 minutes per hat (the lapse wait is 80–115 s of it); a
+ * Wall time was about 8 minutes per hat when the spell was a minute (the
+ * lapse wait was 80–115 s of it); since Q1453 the shortest spell a document
+ * may state is five minutes, so the `wait-lapsed` step waits that out and the
+ * hat costs about five minutes more. A
  * second member run `--baseline`d against the first reported *no rail
  * differences*, so `mask` folds every volatile field. Seats
  * stood per document: founder, early, lapsed, stranger before 🍾; late and the
@@ -197,11 +200,15 @@ if (TO !== null && !EPOCHS.includes(TO)) {
   console.log('FAIL: --to must be one of ' + EPOCHS.join(', ')); process.exit(1);
 }
 const SETTLE_MS = 5000;        // one 4s poll and air — journey's figure
-const LAPSE_WAIT_MS = 240_000; // the bound on waiting for the clock to lapse a seat
-// 💤's spell on this document, in one place: the `lapse-minute` step sets it
+const LAPSE_WAIT_MS = 420_000; // the bound on waiting for the clock to lapse a seat
+// 💤's spell on this document, in one place: the `lapse-floor` step sets it
 // and E22's mail assertion prices the warnings against it (R-097 sends every
-// `WARN_LEADS` lead that fits *inside* the spell, and at a minute none does).
-const LAPSE_AFTER_MS = 60_000;
+// `WARN_LEADS` lead that fits *inside* the spell, and at five minutes none
+// does). **Five minutes is the floor the validator holds** (Q1453, Ed
+// 2026-09-18) — this walk set a minute over the wire until then, which is
+// the very road that ruling shut, so the shortest real spell is what the
+// quiet seat now waits out, and `LAPSE_WAIT_MS` waits the longer for it.
+const LAPSE_AFTER_MS = 5 * 60_000;
 // the bound on waiting for the outbox's sender pass to file a row's mail: it
 // runs on a kick after the commit, so a few hundred ms behind the fold
 const MAIL_WAIT_MS = 20_000;
@@ -463,18 +470,20 @@ const STEPS = [
   // writes the day count into `S.lapse` (the rung field) and never `S.lapseDays`,
   // so a reloaded founder is asked 💤 again and everything below it in `ORDER`
   // waits (first run, 2026-08-27: `no begin card to hold … rail ["lapse"]`;
-  // a page finding, Q919 — not fixed here). And the one-minute lapse the
-  // `lapsed` seat needs is not expressible on the card: it took days alone
-  // until Q1439 and takes minutes now, but no less than five of them. So 💤 is
-  // answered **on the card, after the reload**, which is what the page counts
-  // as seen, and the minute is then set over the wire without a reload. These
+  // a page finding, Q919 — not fixed here). And the short lapse the `lapsed`
+  // seat needs is not expressible on the card the way this walk wants it: the
+  // card took days alone until Q1439 and takes minutes now, but opens on days.
+  // So 💤 is answered **on the card, after the reload**, which is what the page
+  // counts as seen, and the floor is then set over the wire without a reload.
+  // Until Q1453 that wire set a minute, which is what the ruling shut; it is
+  // the five-minute floor now, and the `wait-lapsed` step waits it out. These
   // two rows stand after `ok-shield`: 💤 is below the grants in `ORDER`, so its
   // card is not in the rail until both are acknowledged.
   // The field is `lapseN` since Q1439 — the number, in the unit the card opens
   // on, which is days — where it was `lapseDays`, the day count itself.
   { id: 'lapse-card', epoch: 'before', kind: 'card', seat: 'founder', key: 'lapse', setting: 'lapse',
     pick: { set: 'lapse', val: 'days' }, fields: { lapseN: '7' }, events: [] },
-  { id: 'lapse-minute', epoch: 'before', kind: 'cmd', seat: 'founder', cmd: 'set-setting',
+  { id: 'lapse-floor', epoch: 'before', kind: 'cmd', seat: 'founder', cmd: 'set-setting',
     args: () => ({ setting: 'lapse', value: { afterMs: LAPSE_AFTER_MS } }), events: [] },
   // 🏛️ is served to a member founder as news once the constitution is settled,
   // and `beginOffered` holds 🍾 until it is acknowledged (first run, 2026-08-27:
@@ -1051,7 +1060,8 @@ const SETTINGS = [
   ['judgments', { rung: 'after' }],
   ['chamber', { rung: 'closed' }],          // the setting the amendment moves
   // 💤 is not here: it is answered on the card (`lapse-card`) and then set to
-  // one minute over the wire (`lapse-minute`), so the lapsed seat lapses for real
+  // the five-minute floor over the wire (`lapse-floor`), so the lapsed seat
+  // lapses for real
   ['removal', { price: 'proposal' }],
   ['rate', { grant: 4, cap: 8, dripMinutes: 240 }],
   ['machines', { enabled: false, budget: 0 }],
@@ -1627,7 +1637,7 @@ async function mailsFor(D, evs, ms = MAIL_WAIT_MS) {
  *  · **The mail.** Inside the audience a seat is owed every warning that fits
  *    inside the spell, then the package (SPEC §9.5a, R-097). The leads are
  *    the module's own and the spell is this table's `LAPSE_AFTER_MS`, so the
- *    count is derived rather than written down: at one minute none of the
+ *    count is derived rather than written down: at five minutes none of the
  *    three (a week, a day, an hour) fits, and E22 here is the package alone.
  *    Outside the audience a seat must have been sent neither.
  *  · **The page.** A keyless row cannot assert an absent entry by looking for

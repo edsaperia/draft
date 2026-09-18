@@ -8,7 +8,11 @@
 import { describe, expect, it } from 'vitest';
 import { ConstitutionSession } from '../src/session.js';
 import { view } from '../src/view.js';
+import { LAPSE_MIN_MS } from '../src/values.js';
 import { buildConstituted } from './helpers.js';
+
+/** The shortest spell a room can state (Q1453): five minutes. */
+const SPELL = LAPSE_MIN_MS;
 
 const crownQuestionFor = (s: ReturnType<typeof buildConstituted>['s'], motion: string) =>
   [...s.crownQuestionRecords().values()]
@@ -401,17 +405,17 @@ describe('a vacated seat auto-passes a motion-backed 👑 question too (Q1033)',
 
 describe('lapse counts as abstaining (ruling 5)', () => {
   it('a running 🏛️ does not wait on a lapsed member, and logging in puts them back', () => {
-    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 } });
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: SPELL } });
     const m = s.openMotion(3, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } });
-    s.setIdentity(9_000, 'ada', { name: 'Ada' });
-    s.setIdentity(9_000, bo, { name: 'Bo' });
-    s.answerMotion(9_100, 'ada', m, 'accept');
-    s.answerMotion(9_200, bo, m, 'accept');
+    s.setIdentity(SPELL - 1_000, 'ada', { name: 'Ada' });
+    s.setIdentity(SPELL - 1_000, bo, { name: 'Bo' });
+    s.answerMotion(SPELL - 900, 'ada', m, 'accept');
+    s.answerMotion(SPELL - 800, bo, m, 'accept');
     expect(s.motionRecords().get(m)!.status).toBe('running'); // cy owes
-    s.tick(10_500); // cy lapses — and the motion no longer waits on them
+    s.tick(SPELL + 500); // cy lapses — and the motion no longer waits on them
     expect(s.memberRecords().get(cy)!.lapsed).toBe(true);
     expect(s.motionRecords().get(m)!.status).toBe('carried');
-    s.memberReturn(11_000, cy);
+    s.memberReturn(SPELL + 1_000, cy);
     expect(s.memberRecords().get(cy)!.lapsed).toBe(false);
     expect(s.E()).toBe(3);
   });

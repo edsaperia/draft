@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ConstitutionSession } from '../src/session.js';
 import type { ConstitutionEvent } from '../src/types.js';
+import { LAPSE_MIN_MS } from '../src/values.js';
 
 /**
  * The founding (SPEC §9.0a–§9.6a, v0.48): the pre-start free hand, blind
@@ -186,7 +187,7 @@ describe('blind collection and the consent rule live (§9.0a)', () => {
     s.answer(2, 'ada', 'ending', { endsAtMs: 500_000 });
     s.answer(3, bo, 'ending', { endsAtMs: null });
     expect(s.settingState('ending').value).toEqual({ endsAtMs: null });
-    s.answer(4, 'ada', 'lapse', { afterMs: 1_000 });
+    s.answer(4, 'ada', 'lapse', { afterMs: LAPSE_MIN_MS });
     s.answer(5, bo, 'lapse', { afterMs: null });
     expect(s.settingState('lapse').value).toEqual({ afterMs: null });
   });

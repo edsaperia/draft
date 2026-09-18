@@ -32,6 +32,7 @@ var CONSTITUTION = (() => {
     ERASED: () => ERASED,
     InMemoryPeople: () => InMemoryPeople,
     JUDGE_GATES: () => JUDGE_GATES,
+    LAPSE_MIN_MS: () => LAPSE_MIN_MS,
     MEANING_MAX: () => MEANING_MAX,
     PEOPLE_SCHEMA_VERSION: () => PEOPLE_SCHEMA_VERSION,
     SCHEMA_VERSION: () => SCHEMA_VERSION,
@@ -256,6 +257,7 @@ var CONSTITUTION = (() => {
   var isObj = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
   var isFiniteNum = (v) => typeof v === "number" && Number.isFinite(v);
   var isInt = (v) => Number.isInteger(v);
+  var LAPSE_MIN_MS = 5 * 6e4;
   function validateValue(type, v) {
     if (!isObj(v)) return `${type}: value must be an object`;
     switch (type) {
@@ -288,7 +290,7 @@ var CONSTITUTION = (() => {
         return isInt(v.dripMinutes) && v.dripMinutes >= 1 ? null : "rate: dripMinutes must be a whole number of real minutes, at least 1 (Q353)";
       case "lapse":
         if (v.afterMs === null) return null;
-        return isFiniteNum(v.afterMs) && v.afterMs > 0 ? null : "lapse: afterMs must be null (never) or a positive duration";
+        return isFiniteNum(v.afterMs) && v.afterMs >= LAPSE_MIN_MS ? null : "lapse: afterMs must be null (never) or at least five minutes (Q1453)";
       case "machines":
         if (typeof v.enabled !== "boolean") return "machines: enabled must be a boolean";
         return isInt(v.budget) && v.budget >= 0 ? null : "machines: budget must be an integer ≥ 0";

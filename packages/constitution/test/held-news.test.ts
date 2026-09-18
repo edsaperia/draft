@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { ConstitutionSession } from '../src/session.js';
 import type { ConstitutionEvent } from '../src/types.js';
 import { view } from '../src/view.js';
+import { LAPSE_MIN_MS } from '../src/values.js';
 import { buildConstituted } from './helpers.js';
+
+/** The shortest spell a room can state (Q1453): five minutes. */
+const SPELL = LAPSE_MIN_MS;
 
 /**
  * **A failed motion tells its mover** (Ed, 2026-09-17 23:45, Q1447: *someone
@@ -161,12 +165,12 @@ describe('who the mover has to be', () => {
   });
 
   it('a lapsed mover is owed it — lapse is a stall, not a departure', () => {
-    const { s, bo } = buildConstituted({ lapse: { afterMs: 10_000 } });
+    const { s, bo } = buildConstituted({ lapse: { afterMs: SPELL } });
     const m = s.openMotion(3, bo, { kind: 'set', setting: 'ending',
       value: { endsAtMs: 2_000_000 } });
-    s.tick(100_000);
+    s.tick(2 * SPELL);
     expect(s.memberRecords().get(bo)!.lapsed).toBe(true);
-    s.adjudicateOrdinaryMotion(100_001, m, 'held');
+    s.adjudicateOrdinaryMotion(2 * SPELL + 1, m, 'held');
     expect(owings(s)).toEqual([[m, bo]]);
     expect(view(s, bo).owedHeld).toEqual([m]);
   });
