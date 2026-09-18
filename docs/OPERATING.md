@@ -692,6 +692,29 @@ and `verify-deploy` are all untouched by its existence.
 | DNS | `dev.docs.vote` CNAME → the service's onrender hostname (Namecheap) | Same shape as the apex. Add the custom domain on the service too, so Render provisions TLS |
 | `DRAFT_BASE_URL` | `https://dev.docs.vote`, dashboard | The same-origin check keys on it: visited by any other name (the onrender address included) the host serves pages but refuses logins — §8 trap 3 |
 
+**The dev clock** (Q1455, 2026-09-18) rides the same label as the ladder and
+the seat switch: `POST /api/dev/clock` with `{ slug, advanceMs, present? }`
+runs **one** document ahead of the wall clock by that many milliseconds, so a
+walk that needs a member to lapse under 💤's five-minute floor (Q1453) does
+not have to sit through five minutes. It advances and never rewinds, refuses
+a closed document and anything past a year, and **writes no lapse of its
+own** — it moves the clock and stops, and the host's ordinary minute tick
+does the lapsing, the warnings, the drips and the close exactly as it would
+have. `present` names the seats whose pages are open when the clock moves,
+each stamped through the ordinary presence door inside the same call;
+everyone else is quiet, and quiet past the spell is what the next tick finds.
+Because presence records at most one event an hour per member, a jump shorter
+than an hour cannot keep a named seat alive, and such a call is refused
+rather than losing the seat silently. The offset lives in memory only: a
+restart forgets it and the document's clock falls back to real now, which
+cannot move it backwards, and nothing of the skew is ever written down —
+what reaches the log is the time. The seat matrix is its only caller. Absent
+from the production artifact like the ladder, and one step further: the
+module behind the route is reached by a dynamic import inside the `DEV:`
+label, and `scripts/build-server.mjs` also asserts that the one seam in
+shipped code — `foldTime`'s per-document skew — has no writer left in the
+bytes, `verify-deploy` asking the live host for the route besides.
+
 **The one thing to hold in mind:** the outbox is publicly readable — that
 is what makes the ladder and passwordless dev login work — so anybody who
 finds the URL can read every magic link and **log in as anyone, on any
