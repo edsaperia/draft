@@ -252,10 +252,16 @@ for (const key of ['quorum']) {
   if (!born || !born.picks.length) { check(want + ' has the two blocks', false); continue; }
   check('two blocks, share first', born.picks.map((p) => p.val).join(',') === 'share,count',
     born.picks.map((p) => p.val).join(','));
-  // Ed's own sentence since Q1439 (ruling p): the quorum counts the members
-  // who prefer the proposal to the current text, so *must vote on* is gone
+  // Ed's own sentence since Q1439 (ruling t, 2026-09-18, re-wording ruling
+  // p): the quorum counts the members who *prefer* the proposal to the
+  // current text, so *must vote on* is gone — and the verb is **pass**,
+  // STYLE T8's, with the emphasis on the bar. The share block ends in *of the
+  // membership*, the count block in *members*, so the assertion is the shared
+  // opening and then each block's own ending.
   check('each block is the rule with its number inline',
-    born.picks.every((p) => p.box && /must prefer a proposal ✏️ before it can be adopted/.test(p.label)),
+    born.picks.every((p) => p.box &&
+      /^A proposal ✏️ cannot pass until it is preferred by at least/.test(p.label) &&
+      (p.val === 'share' ? /of the membership\.$/ : /members\.$/).test(p.label)),
     born.picks.map((p) => p.label.slice(0, 50)).join(' | '));
   check('born untouched', !born.picks.some((p) => p.on) &&
     born.picks.every((p) => p.box.value === ''),

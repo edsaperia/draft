@@ -520,7 +520,7 @@
     "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
     "ending: No more changes to the document may be made after Weekday at",
-    "quorum: At least 5 members must prefer a proposal ✏️ before it can b",
+    "quorum: A proposal ✏️ cannot pass until it is preferred by at least ",
     "authorship: The Founder is deciding whether anonymous proposers are reve"
    ]
   },
@@ -563,7 +563,7 @@
     "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
     "ending: No more changes to the document may be made after Weekday at",
-    "quorum: At least 5 members must prefer a proposal ✏️ before it can b",
+    "quorum: A proposal ✏️ cannot pass until it is preferred by at least ",
     "authorship: The Founder is deciding whether anonymous proposers are reve"
    ]
   },
@@ -585,7 +585,7 @@
     "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
     "ending: No more changes to the document may be made after Weekday at",
-    "quorum: At least 5 members must prefer a proposal ✏️ before it can b"
+    "quorum: A proposal ✏️ cannot pass until it is preferred by at least "
    ]
   },
   {
@@ -606,7 +606,7 @@
     "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
     "ending: No more changes to the document may be made after Weekday at",
-    "quorum: At least 5 members must prefer a proposal ✏️ before it can b",
+    "quorum: A proposal ✏️ cannot pass until it is preferred by at least ",
     "authorship: All proposals are made anonymously. The Founder may amend th",
     "judgments: The Founder is deciding whether votes are revealed with the "
    ]
@@ -629,7 +629,7 @@
     "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
     "ending: No more changes to the document may be made after Weekday at",
-    "quorum: At least 5 members must prefer a proposal ✏️ before it can b",
+    "quorum: A proposal ✏️ cannot pass until it is preferred by at least ",
     "authorship: All proposals are made anonymously. The Founder may amend th"
    ]
   },
@@ -651,7 +651,7 @@
     "begin: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
     "ending: No more changes to the document may be made after Weekday at",
-    "quorum: At least 5 members must prefer a proposal ✏️ before it can b",
+    "quorum: A proposal ✏️ cannot pass until it is preferred by at least ",
     "authorship: All proposals are made anonymously. The Founder may amend th",
     "judgments: Votes are never revealed. The Founder may amend this at will"
    ]
@@ -673,7 +673,7 @@
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
     "ending: No more changes to the document may be made after Weekday at",
-    "quorum: At least 5 members must prefer a proposal ✏️ before it can b",
+    "quorum: A proposal ✏️ cannot pass until it is preferred by at least ",
     "authorship: All proposals are made anonymously. The Founder may amend th",
     "judgments: Votes are never revealed. The Founder may amend this at will"
    ]
@@ -693,7 +693,7 @@
     "begin: Members may propose changes to rules as soon as they arrive,",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
     "ending: No more changes to the document may be made after Weekday at",
-    "quorum: At least 5 members must prefer a proposal ✏️ before it can b",
+    "quorum: A proposal ✏️ cannot pass until it is preferred by at least ",
     "authorship: All proposals are made anonymously. The Founder may amend th",
     "judgments: Votes are never revealed. The Founder may amend this at will"
    ]

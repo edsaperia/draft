@@ -209,10 +209,11 @@ describe('roster truth flows cs → engine', () => {
     // different mechanism, so here we assert the relay path with the
     // engine's own commands instead.
     bridge.engine.suspendParticipant(10, bo);
-    // **A room of two asks for one** (Q1439, R-126): ⌈0.6 × 2⌉ = 2 is
-    // everybody, and no quorum may ask for more than half, so it is read as
-    // ⌈2/2⌉ = 1 — which is also ⌈2/3⌉, the minimum, either way
-    expect(bridge.engine.adoptionFloor()).toBe(1);
+    // **A room of two is held to unanimity** (Q1439): ⌈0.6 × 2⌉ = 2 is
+    // everybody and no quorum may ask for more than half (R-126), so the
+    // quorum reads ⌈2/2⌉ = 1 — and the seconder, min(2, E), puts it back to
+    // two, which in a room of two is both of them (ruling u)
+    expect(bridge.engine.adoptionFloor()).toBe(2);
     bridge.engine.resumeParticipant(11, bo);
     expect(bridge.engine.adoptionFloor()).toBe(2);
   });

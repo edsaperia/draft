@@ -54,20 +54,31 @@ export function candidateNum(id: string): number {
 }
 
 /**
- * **F = max(Q′, min(⌈E/3⌉, F_max))** (SPEC §4.2; Q1439 → why: R-125, R-126).
+ * **F = max(Q′, min(2, E))** (SPEC §4.2; Q1439 → why: R-125, R-126, R-131).
  *
- * Two bases, deliberately different. **Q′ is read against the group** the
- * leader is waiting on — its approvers, its opposers and the members of E it
- * is still awaiting — because a quorum is what the room asks of the people who
- * are actually deciding this question, and a silence that has run its 💤
- * period is not one of them (§8.2). It is a share of that group, rounded up,
- * or a fixed count; and **in either form never more than half of it**, since
- * ✏️ is *enough of the room* and 🏛️ is *everybody*, and an approval quorum of
- * 100% would make them one rung. **The statistical minimum's third is read
- * against the whole of E**, where it has always been (R-073): it is a
- * sufficiency floor, not a consent rule, and reading it against a shrinking
- * group would let two people carry a room of a hundred — the moon room's
- * defect (R-102) returning by the back door.
+ * **Q′ is read against the group** the leader is waiting on — its approvers,
+ * its opposers and the members of E it is still awaiting — because a quorum is
+ * what the room asks of the people who are actually deciding this question,
+ * and a silence that has run its 💤 period is not one of them (§8.2). Q′ is a
+ * share of that group, rounded up, or a fixed count; and **in either form
+ * never more than half of it**, since ✏️ is *enough of the room* and 🏛️ is
+ * *everybody*, and an approval quorum of 100% would make them one rung.
+ *
+ * **The built-in minimum of a third of E has gone** (Ed, 2026-09-18, Q1439
+ * ruling s: *if the membership want a smaller quorum they should be able to
+ * choose it* → why: R-131, reversing R-073): the card's number is the number
+ * the room is held to, at every size.
+ *
+ * **What is left under it is a seconder** (ruling u, the same day, out of the
+ * churn re-run): **never fewer than two approvals**, the author and one other
+ * member preferring the candidate to the current text. One is no floor at all
+ * — the author's own derived preference (§3.3) is the one — and the sims
+ * measured what that costs: a room of fifteen made 904 adoptions in a month at
+ * a floor of 1, 888 of them reversions, the text never settling.
+ * `min(2, E)` rather than a flat 2, because at E = 1 the sole member is the
+ * room (R-063, unchanged) and at E = 2 it is unanimity. **The seconder is
+ * counted on E and not on the group**: it is a sufficiency rule about the
+ * room, not a consent rule about the people still deciding.
  *
  * The share's arithmetic is `⌈n·G/100⌉`, **the product before the quotient**
  * (issue #24): `(n / 100) * G` is not the same number, and 56 % of 25 landed a
@@ -79,7 +90,7 @@ export function floorFor(c: Constitution, e: number, group: number): number {
   const q = c.quorum;
   const asked = q === null ? 0 : q.form === 'count' ? q.n : Math.ceil((q.n * group) / 100);
   const quorumN = Math.min(asked, Math.ceil(group / 2));
-  return Math.max(quorumN, Math.min(Math.ceil(e / 3), c.adoptionFloorMax));
+  return Math.max(quorumN, Math.min(2, e));
 }
 
 /**

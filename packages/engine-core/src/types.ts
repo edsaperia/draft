@@ -29,10 +29,15 @@ export interface Constitution {
   adoptionThresholdStart: number;
   adoptionThresholdEnd: number;
   /**
-   * F = max(Q′, min(ceil(E/3), adoptionFloorMax)) **approvals** of the leader
-   * (SPEC §4.2; Q1439, R-125, R-126): the statistical minimum, which the
-   * room's quorum can raise but never lower. The minimum's third is counted on
-   * the whole of E; the quorum against the group the leader is waiting on.
+   * The cap the statistical minimum ⌈E/3⌉ was held under while there was one.
+   *
+   * **Read by nothing since v0.133** (Q1439 ruling s, Ed 2026-09-18 → why:
+   * R-131, reversing R-073): the built-in minimum has gone and F is
+   * `max(1, Q′)` **approvals** of the leader (SPEC §4.2), so this number
+   * enters no formula. It stays for one release exactly as the pinned
+   * threshold's two fields above do — every live log carries it in
+   * `session-created`, and the golden logs must fold unedited — and the
+   * deletion pass takes it.
    */
   adoptionFloorMax: number;
   /**

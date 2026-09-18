@@ -210,30 +210,16 @@ window.BAND = (function () {
       endsAtMs: endingKnown() ? endsAtMsOf() : undefined,
       nowMs: serverNow(),
     });
-    // what a value would mean for the room as it stands, or nothing
-    const meaning = (k, v) => M.meaningOf(k, v, roomNow()) || '';
-    // …and the line it is printed on, which is `setup.js`'s (`.meaning`, one
-    // class, one home). This surface only has to hand it the room.
-    const meanLine = (k, v) => window.SETUP.meaningLine(k, v, roomNow());
-    // **…and it follows the keystroke in place** (entry 167). The founder's
-    // number fields store straight into `S`, and `TYPED[k]()` reads `S`, so
-    // this asks the same question the render would have asked and writes only
-    // the one line — because **nothing rebuilds under a press**, and a card
-    // rebuilt under the caret is the drag bug's cousin. The full render still
-    // waits for `change`, as the slider's does.
-    const syncMeaning = (el) => {
-      const k = S.open;
-      if (!k || !TYPED[k] || !el.closest) return;
-      const card = el.closest('.setupcard') || document;
-      const slot = (el.closest('.pick') || card).querySelector('[data-meaning="' + k + '"]') ||
-        card.querySelector('[data-meaning="' + k + '"]');
-      if (!slot) return;
-      slot.textContent = (!CHOSEN[k] || CHOSEN[k]()) ? meaning(k, TYPED[k]()) : '';
-    };
-    // **…and so does (x of y)** (Q1439, ruling m). The numbers a share comes
-    // to stand inside the clause the box is in, so they are repainted in
-    // place beside the meaning line rather than by a render — same keystroke,
-    // same rule, same reason.
+    // **The meaning lines went, all three** (Ed, 2026-09-18, Q1439). `meaning`,
+    // `meanLine` and `syncMeaning` stood here: the module's sentence about
+    // what a value would do to this room, printed under every number box and
+    // repainted in place at each keystroke. Each rule sentence stands alone
+    // now. `roomNow` survives because the setup context still publishes it.
+    // **But (x of y) still follows the keystroke** (Q1439, ruling m). The
+    // numbers a share comes to stand inside the clause the box is in, so they
+    // are repainted in place rather than by a render — **nothing rebuilds
+    // under a press**, and a card rebuilt under the caret is the drag bug's
+    // cousin. The full render still waits for `change`, as the slider's does.
     const syncShare = (el) => {
       if (!el.closest) return;
       const card = el.closest('.setupcard') || document;
@@ -592,14 +578,10 @@ window.BAND = (function () {
         // numbers after the share (ruling m), the box running 5 to 50 — no
         // quorum may ask for more than half the group a proposal waits on.
         opt(V, 'quorumForm', 'share',
-          RULE_QUORUM.share(numIn(V, 'quorumPct', SHARE.min, SHARE.max) + '%' +
-            shareSlot('quorum', V.quorumPct, E())), '',
-          (V.quorumForm === 'share'
-            ? meanLine('quorum', CHOSEN.quorum() ? TYPED.quorum() : null) : '')) +
+          RULE_QUORUM.share(numIn(V, 'quorumPct', SHARE.min, SHARE.max) + '%',
+            shareSlot('quorum', V.quorumPct, E())), '') +
         opt(V, 'quorumForm', 'count',
-          RULE_QUORUM.count(numIn(V, 'quorumN', 1, 40)), '',
-          (V.quorumForm === 'count'
-            ? meanLine('quorum', CHOSEN.quorum() ? TYPED.quorum() : null) : '')) +
+          RULE_QUORUM.count(numIn(V, 'quorumN', 1, 40)), '') +
         '</div>'; })(),
       authorship: () =>
         (() => { const V = ladderView('authorship');
@@ -640,8 +622,7 @@ window.BAND = (function () {
           return opt(V, 'rateBy', 'founder',
             'Members may make a new proposal ✏️ every ' +
             '<input class="num numin" type="number" data-num="dripN" min="1" max="2880"' +
-            (shown === '' ? '' : ' value="' + shown + '"') + '> ' + sel + '.', '',
-            meanLine('rate', CHOSEN.rate() ? TYPED.rate() : null)); })() +
+            (shown === '' ? '' : ' value="' + shown + '"') + '> ' + sel + '.', ''); })() +
         '</div>',
       chamber: () =>
         (() => { const V = ladderView('chamber');
@@ -675,10 +656,8 @@ window.BAND = (function () {
             'After <input class="num numin" type="number" data-num="lapseN" min="' + b[0] +
             '" max="' + b[1] + '"' + (shown === '' ? '' : ' value="' + shown + '"') + '> ' +
             unitSel(unit, 'data-lapseunit="1"') +
-            ', inactive members lapse and automatically abstain from votes.', '',
-            meanLine('lapse', isNum(V.lapseMs) ? { afterMs: +V.lapseMs } : null)); })() +
-        rungOpt(V, 'lapse', 'never', LAPSE_RULE('never'), '',
-          meanLine('lapse', { afterMs: null })) +
+            ', inactive members lapse and automatically abstain from votes.', ''); })() +
+        rungOpt(V, 'lapse', 'never', LAPSE_RULE('never'), '') +
         '</div>'; })(),
       removal: () =>
         (() => { const V = ladderView('removal');
@@ -1858,7 +1837,7 @@ window.BAND = (function () {
     let birthsMuted = false;
 
     return {
-      render, refreshCommit, roomNow, meanLine, syncMeaning, syncShare, standingBlock, unchangedCard,
+      render, refreshCommit, roomNow, syncShare, standingBlock, unchangedCard,
       foundedAt, foundedClause, closedAtWords, resendTitle, APPLICANT, MEMBER_EMAILS, APPCARDS,
       appCtx,
       // the rail asks this (SURFACE E33, Q901): a door that shut under a

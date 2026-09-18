@@ -326,8 +326,8 @@ var CONSTITUTION = (() => {
   function adoptionFloorTerm(E) {
     return Math.ceil(E / 3);
   }
-  function adoptionFloor(quorumN, E, fMax) {
-    return Math.max(Math.min(quorumN, Math.ceil(E / 2)), Math.min(adoptionFloorTerm(E), fMax));
+  function adoptionFloor(quorumN, E) {
+    return Math.max(Math.min(quorumN, Math.ceil(E / 2)), Math.min(2, E));
   }
 
   // src/catalogue.ts
@@ -3968,8 +3968,7 @@ var CONSTITUTION = (() => {
   var HALF_NOTE = " No quorum can ask for more than half.";
   function quorumBody(q, n, form, pct) {
     if (n === 1) return "In a membership of one, your own vote is the whole quorum.";
-    const of = q + " of " + n;
-    return form === "share" ? "At least " + pct + "% (" + of + ") of the membership must prefer a proposal before it can be adopted." : "At least " + of + " members must prefer a proposal before it can be adopted.";
+    return form === "share" ? "A proposal cannot pass until it is preferred by at least " + pct + "% of the membership (" + q + " of " + n + ")." : "A proposal cannot pass until it is preferred by at least " + q + " members.";
   }
   function quorumMeaning(v, room) {
     if (typeof v.n !== "number" || !Number.isFinite(v.n)) return null;

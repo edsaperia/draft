@@ -1299,41 +1299,23 @@ window.SETUP = (function () {
      together. Q840's mechanism finding is untouched: `barCeilingPct` and
      `threshold.test.ts` stand, unable to bite at a pinned bar. */
 
-  /* **What choosing this would do, in this room** (entry 167). One line, one
-     class, one home for the sentence: the module writes it and every surface
-     that offers a value prints it — the founder's card, the member's answer
-     card, the composer's lane and the settled strip — so none of them writes
-     one of its own.
+  /* **The meaning lines went, all three** (Ed, 2026-09-18, Q1439: *the grey
+     line under the number box on 👥, ⏱️ and 💤 is removed from the surface*;
+     each rule sentence stands alone).
 
-     `.meaning`, deliberately **not** `.why`: `.why` is the card's body, which
-     `card-audit`'s H4 measures at 200 characters, and this is a note under a
-     control. Under a *rung* the sentence is the rung's own `.exp` instead,
-     which is the slot a rung explanation has always used; `.meaning` is for
-     the bare number fields, which have no rung to hang off. Its own budget is
-     the module's `fit()` and `meaning.test.ts`.
+     What stood here was `meaningLine` — one line, one class, one home for a
+     sentence the module wrote and every surface offering a value printed: the
+     founder's card, the member's answer card, the composer's lane and the
+     settled strip. `meaningOf` itself stays in `@draft/constitution` for its
+     own callers; nothing on the page calls it any more, so `.meaning`,
+     `data-meaning` and the `input` handlers that repainted the line in place
+     are gone with it.
 
-     Empty until there is a value: a sentence about a number nobody has typed
-     is a suggested answer, and painting one is what these cards exist not to
-     do. The `data-meaning` hook is how the `input` handlers repaint it in
-     place — **nothing rebuilds under a press**. */
-  /* A member's answer is stated in the page's vocabulary — a number of days,
-     a count, a grant — and what the module wants is the typed value. That
-     mapping is the caller's (`ANSTYPED` in session-view.html, the one place
-     it is spelled either way), so it is handed in rather than copied here: a
-     ⏱️ answer states the grant alone and the cap and drip come from
-     elsewhere, which is exactly the kind of thing setup.js must not learn.
-     An unanswered question is `null` and gets no sentence. */
-  const ansValue = (typed, key, v) =>
-    ((typeof v === 'number' && typed && typed[key]) ? typed[key](v) : null);
-
-  const meaningLine = (key, value, room) =>
-    '<p class="meaning" data-meaning="' + esc(key) + '">' +
-    esc((value && window.CONSTITUTION.meaningOf(key, value, room || { e: 1 })) || '') + '</p>';
-
+     `room` stays an argument of the `ANSWER` bodies below only where a body
+     still reads it; what the share's own `(x of y)` needs is `E`, which is
+     copy and not a meaning. */
   /* One body per delegable question — the copy a member answers against,
-     identical on both surfaces because it is the same question.
-     `room` is the fourth argument since entry 167: what a value would mean is
-     the module's to say, and it needs the room to say it. */
+     identical on both surfaces because it is the same question. */
   const ANSWER = {
     quorum: (A, E, _form, room) => {
       // **The member states a form as well as a number** (Ed, 2026-09-02,
@@ -1343,30 +1325,25 @@ window.SETUP = (function () {
       // its last user. Mixed answers resolve strictest against E at the
       // settle (Q1172), which is what the blind note now promises.
       const f = A.quorumForm || null;
-      const mean = (frm, v) => (typeof v === 'number'
-        ? window.CONSTITUTION.meaningOf('quorum', { form: frm, n: +v }, room || { e: E }) || ''
-        : '');
       const box = (frm, min, max) =>
         '<input class="num numin" type="number" data-ansnum="quorum" min="' + min + '" max="' + max + '"' +
         (f === frm && typeof A.quorum === 'number' ? ' value="' + A.quorum + '"' : '') + '>';
       // **Bare blocks** (Q1175, Ed 2026-09-02 pm): the question paragraph and
       // the blind note are gone from every answer body — the clause text is
       // the explanation, and the blindness story returns with the 🍾 redesign
-      // (Q1169). The meaning lines stay: they are meaningOf's, not copy.
+      // (Q1169). **And the meaning line went with them** (Q1439, 2026-09-18):
+      // the rule sentence stands alone under each block.
       // **The share runs 5 to 50** (Q1439, ruling a): no quorum may ask for
       // more than half the group a proposal is waiting on, and the box says
       // so. **The numbers follow the share** (ruling m) in a slot the `input`
-      // handler repaints as the number is typed — empty until there is one,
-      // like the meaning line beneath it.
+      // handler repaints as the number is typed — empty until there is one.
       const share = (frm) => (f === frm && typeof A.quorum === 'number' ? A.quorum : '');
       return '<div class="choice" role="radiogroup">' +
       ansRow(f === 'share', 'quorumForm', 'share',
-        RULE_QUORUM.share(box('share', SHARE.min, SHARE.max) + '%' +
-          shareSlot('quorum', share('share'), E)),
-        f === 'share' ? mean('share', A.quorum) : '') +
+        RULE_QUORUM.share(box('share', SHARE.min, SHARE.max) + '%',
+          shareSlot('quorum', share('share'), E)), '') +
       ansRow(f === 'count', 'quorumForm', 'count',
-        RULE_QUORUM.count(box('count', 1, Math.max(1, E))),
-        f === 'count' ? mean('count', A.quorum) : '') +
+        RULE_QUORUM.count(box('count', 1, Math.max(1, E))), '') +
       '</div>';
     },
     authorship: (A) =>
@@ -1425,13 +1402,13 @@ window.SETUP = (function () {
       '</div>',
     // **Never first** (entry 167, rule 4): the document takes the *longest*
     // asked for and *never* is the longest of all, so it heads the ladder as
-    // the most-protective answer does everywhere else — the rung's own
-    // sentence is the family's now, and the field below carries a `.meaning`
-    // that repaints as the number is typed.
-    lapse: (A, E, _form, room, typed) =>
+    // the most-protective answer does everywhere else. Its rung carried the
+    // module's *never* sentence as its explainer until Q1439's 2026-09-18
+    // ruling took every meaning line off the surface; the rung's own word is
+    // what is left.
+    lapse: (A) =>
       '<div class="choice" role="radiogroup">' +
-      ansRow(A.lapse === 'never', 'lapse', 'never', ctlWord('Never'),
-        esc(window.CONSTITUTION.meaningOf('lapse', { afterMs: null }, room || { e: E }) || '')) +
+      ansRow(A.lapse === 'never', 'lapse', 'never', ctlWord('Never'), '') +
       '</div>' +
       // **The period is stated in minutes, hours or days** (Q1439, ruling j):
       // the unit picker takes the place of the *days* note beside the box, and
@@ -1443,9 +1420,8 @@ window.SETUP = (function () {
         return '<span class="fld"><label>The shortest period of inactivity you will accept</label>' +
         '<span class="setrow2"><input class="num" type="number" min="' + b[0] + '" max="' + b[1] + '"' +
         ' data-ansnum="lapse"' + (typeof A.lapse === 'number' ? ' value="' + A.lapse + '"' : '') + '>' +
-        unitSel(unit, 'data-ansunit="lapse"') + '</span></span>'; })() +
-      meaningLine('lapse', ansValue(typed, 'lapse', A.lapse), room),
-    rate: (A, E, _form, room, typed) => {
+        unitSel(unit, 'data-ansunit="lapse"') + '</span></span>'; })(),
+    rate: (A) => {
       // **The answer is the interval** (Ed, 2026-09-02, Q1160/Q1161, R-083):
       // the grant and maximum are the mechanism's fixed 3, so a member
       // states how often — the number in their own unit, minutes stored.
@@ -1454,8 +1430,7 @@ window.SETUP = (function () {
       const sel = unitSel(unit, 'data-ansunit="rate"');
       return '<span class="opttext">Members may make a new proposal ✏️ every ' +
         '<input class="num numin" type="number" min="1" max="2880" data-ansnum="rate"' +
-        (typeof A.rate === 'number' ? ' value="' + A.rate + '"' : '') + '> ' + sel + '.</span>' +
-        meaningLine('rate', ansValue(typed, 'rate', A.rate), room);
+        (typeof A.rate === 'number' ? ' value="' + A.rate + '"' : '') + '> ' + sel + '.</span>';
     },
   };
 
@@ -1584,7 +1559,8 @@ window.SETUP = (function () {
     ? '' : window.COPY.page.val.quorumPct(+pct, shareCount(pct, e), Math.max(1, +e || 1)));
   /* …and the slot the tail is repainted into, keyed by the setting so the
      `input` handlers can find it without knowing which surface drew it —
-     the same trick `data-meaning` plays for the meaning line. */
+     the trick `data-meaning` played for the meaning line until that line
+     left the surface (Q1439, 2026-09-18). */
   const shareSlot = (key, pct, e) =>
     '<span data-share="' + esc(key) + '">' + shareTail(pct, e) + '</span>';
 
@@ -1738,5 +1714,5 @@ window.SETUP = (function () {
     FACE_TONES, faceToneRow, faceToned, setFaceTone,
     setFaceTaken, faceTakenBy, faceBtn, emojiPicker,
     routeFor, motionCommitHtml,
-    slider, syncSlider, ladder, ANSWER, BLINDNOTE, meaningLine, listOf, gateBody, wirePicDrop, MAILS, renderMailModal, birthPass };
+    slider, syncSlider, ladder, ANSWER, BLINDNOTE, listOf, gateBody, wirePicDrop, MAILS, renderMailModal, birthPass };
 })();

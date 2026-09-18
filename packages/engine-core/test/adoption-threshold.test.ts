@@ -118,12 +118,13 @@ describe('amendments and the anchor (SPEC §4.3, §9.6, 367b)', () => {
 
   it('an amended quorum re-derives the floor from current E (SPEC §4.2)', () => {
     const s = openS();
-    expect(s.adoptionFloor()).toBe(1); // ceil(2/3)
+    expect(s.adoptionFloor()).toBe(2); // no quorum settled: the seconder, min(2, E)
     // **and no quorum asks for more than half** (Q1439, R-126): a count of 2
     // in a room of 2 is everybody, which is 🏛️'s rung and not ✏️'s, so it
-    // reads as ⌈2/2⌉ = 1 and the floor does not move
+    // reads as ⌈2/2⌉ = 1 — and the seconder (ruling u) puts a room of two back
+    // at unanimity anyway, so the floor does not move
     s.amend(1 * HOUR, { quorum: { form: 'count', n: 2 } });
-    expect(s.adoptionFloor()).toBe(1);
+    expect(s.adoptionFloor()).toBe(2);
   });
 
   /**
@@ -139,8 +140,9 @@ describe('amendments and the anchor (SPEC §4.3, §9.6, 367b)', () => {
    * and no quorum may ask for more than half now, so a share above 50 is
    * refused at validation and the engine would cap it anyway. 28 % of **50**
    * is the case that still bites — 14 by the promise, 15 by the old
-   * expression, with ⌈50/3⌉ = 17 clamped to F_max 12 below both and the half
-   * of 25 above both, so nothing else in the formula masks it.
+   * expression, with the half of 25 above both, so nothing else in the formula
+   * masks it. Since v0.133 nothing could: the statistical term that did the
+   * masking has gone (Q1439 ruling s, R-131).
    */
   const bigRoom = (size = 50) =>
     Session.open(
@@ -160,15 +162,17 @@ describe('amendments and the anchor (SPEC §4.3, §9.6, 367b)', () => {
     expect(s.adoptionFloor()).toBe(14);          // and what it holds them to
   });
 
-  it('at 28 % of 25 the same defect was masked by ⌈E/3⌉, which is why it could sit undetected', () => {
-    // Q was wrong by one there too — 8 where the promise is 7 — but the
-    // statistical term ⌈25/3⌉ = 9 is above both readings, so F is 9 either
-    // way. The defect only ever reached a race where Q cleared the term.
+  it('at 28 % of 25 the same defect used to be masked by ⌈E/3⌉ — and is not now', () => {
+    // Q was wrong by one there too — 8 where the promise is 7 — and the
+    // statistical term ⌈25/3⌉ = 9 sat above both readings, so F was 9 either
+    // way and the defect only ever reached a race where Q cleared the term.
+    // **With the term gone** (v0.133, Q1439 ruling s, R-131) the room's own
+    // number is the floor at every size, so the promise is read straight.
     const s = bigRoom(25);
     s.amend(1 * HOUR, { quorum: { form: 'share', n: 28 } });
     expect(Math.ceil((28 / 100) * 25)).toBe(8); // the old expression
     expect(Math.ceil((28 * 25) / 100)).toBe(7); // the promise
-    expect(s.adoptionFloor()).toBe(9);
+    expect(s.adoptionFloor()).toBe(7);
   });
 
   it('the two copies of the formula agree with each other, and now with the promise', () => {
@@ -179,8 +183,7 @@ describe('amendments and the anchor (SPEC §4.3, §9.6, 367b)', () => {
     const s = bigRoom();
     s.amend(1 * HOUR, { quorum: { form: 'share', n: 28 } });
     expect(s.adoptionFloor()).toBe(
-      Math.max(Math.min(Math.ceil((28 * 50) / 100), Math.ceil(50 / 2)),
-        Math.min(Math.ceil(50 / 3), 12)));
+      Math.max(Math.min(Math.ceil((28 * 50) / 100), Math.ceil(50 / 2)), Math.min(2, 50)));
   });
 
   it('an amended drip re-phases without retro-credit (SPEC §7)', () => {

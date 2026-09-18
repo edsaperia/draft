@@ -104,9 +104,17 @@ describe('the meaning family', () => {
         // membership, we should have (x of y) after showing the actual
         // numbers*). It read *in a membership of n* until then; a room of one
         // still says so in words, there being no *x of y* worth printing.
+        //
+        // **The count form names no room**, and that is Ed's own sentence
+        // (ruling t, 2026-09-18): *…preferred by at least 5 members* is not a
+        // share of anything, so there is no share for the numbers to follow.
         const said = meaningOf('quorum', v, room)!;
-        expect(said, `quorum ${JSON.stringify(v)} e=${e}`)
-          .toMatch(e === 1 ? /membership of one/ : new RegExp(` of ${e}\\b`));
+        if (e === 1) expect(said, `quorum ${JSON.stringify(v)} e=1`).toMatch(/membership of one/);
+        else if (v.form === 'share') {
+          expect(said, `quorum ${JSON.stringify(v)} e=${e}`).toMatch(new RegExp(` of ${e}\\)`));
+        } else {
+          expect(said, `quorum ${JSON.stringify(v)} e=${e}`).toMatch(/ members\./);
+        }
       }
       // ⏱️ names the window it is measured over…
       for (const v of RATES) {
@@ -122,34 +130,40 @@ describe('the meaning family', () => {
   });
 
   /**
-   * **Ed's own sentence** (Q1439, rulings (p) and (m), 2026-09-17): *At least
-   * 50% (5 of 10) of the membership must prefer a proposal before it can be
-   * adopted.* It said *must have voted on a change before it can pass* until
-   * then, which is no longer what the number means: the quorum counts
-   * approvals (R-125), and a member who voted against the proposal has voted
-   * without counting toward it.
+   * **Ed's own sentence** (Q1439, ruling t, 2026-09-18): *A proposal cannot
+   * pass until it is preferred by at least 50% of the membership (5 of 10).*
+   * It read *At least 50% (5 of 10) of the membership must prefer a proposal
+   * before it can be adopted* for a day (ruling p), and before that *must have
+   * voted on a change before it can pass*. Two rulings are in the shape: the
+   * quorum counts approvals (R-125), so it says *preferred by* and not *voted
+   * on by*; and the verb is **pass**, which is STYLE T8's, with the emphasis
+   * on the bar rather than on the membership.
+   *
+   * **Nothing on the surface prints these** since Ed's 01:40 ruling the same
+   * day — the meaning lines went, all three — so this is the module's own
+   * sentence, and `design/copy.js`'s `quorumRule` is the page's.
    */
   it('👥 says what Ed’s sentence says, with the true share and (x of y) (Q1439)', () => {
     const room: Room = { e: 9, endsAtMs: null, nowMs: NOW };
     const share: QuorumValue = { form: 'share', n: 34 };
     expect(quorumCount(share, 9)).toBe(4);
     expect(meaningOf('quorum', share, room))
-      .toBe('At least 34% (4 of 9) of the membership must prefer a proposal before it can be adopted.');
+      .toBe('A proposal cannot pass until it is preferred by at least 34% of the membership (4 of 9).');
     const count: QuorumValue = { form: 'count', n: 4 };
     expect(meaningOf('quorum', count, room))
-      .toBe('At least 4 of 9 members must prefer a proposal before it can be adopted.');
+      .toBe('A proposal cannot pass until it is preferred by at least 4 members.');
     // the shape holds at the shipped preset, which is the sentence Ed wrote
     expect(meaningOf('quorum', { form: 'share', n: 50 }, { e: 10, nowMs: NOW }))
-      .toBe('At least 50% (5 of 10) of the membership must prefer a proposal before it can be adopted.');
+      .toBe('A proposal cannot pass until it is preferred by at least 50% of the membership (5 of 10).');
     // **the share shown is the true one, never above half** (ruling a, R-126):
     // a count of 9 in a room of 9 is read as 5, and the sentence says why
     expect(meaningOf('quorum', { form: 'count', n: 9 }, room))
-      .toBe('At least 5 of 9 members must prefer a proposal before it can be adopted.' +
+      .toBe('A proposal cannot pass until it is preferred by at least 5 members.' +
         ' No quorum can ask for more than half.');
     // …and a count larger than the room is the same reading, not a promise
     // that nothing can pass until more members arrive (R-088 as amended)
     expect(meaningOf('quorum', { form: 'count', n: 12 }, room))
-      .toMatch(/^At least 5 of 9 members /);
+      .toMatch(/at least 5 members\./);
     expect(meaningOf('quorum', { form: 'count', n: 12 }, room))
       .not.toMatch(/more members arrive/);
     // a membership of one is its own reading: there is no *x of y* to print
@@ -158,6 +172,11 @@ describe('the meaning family', () => {
     // there is no freeze (R-088), and no branch of the sentence names one
     for (const n of [1, 2, 4, 9, 12]) {
       expect(meaningOf('quorum', { form: 'count', n }, room)).not.toMatch(/freez|still here/);
+    }
+    // and the seconder under the number (ruling u) is the mechanism's, not
+    // this setting's: no branch of the sentence mentions it
+    for (const n of [1, 2, 4]) {
+      expect(meaningOf('quorum', { form: 'count', n }, room)).not.toMatch(/second|two approvals/);
     }
   });
 
