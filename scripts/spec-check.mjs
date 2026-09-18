@@ -1746,7 +1746,7 @@ function checkLedger() {
  * **The floor counts approvals, and 💤's period reaches the engine** (Q1439's
  * own extension of this checker, the spec pass's step 7).
  *
- * Four claims, each the kind that would otherwise go stale silently — a rule
+ * Five claims, each the kind that would otherwise go stale silently — a rule
  * file saying *approvals* over an engine that counts judgments reads exactly
  * like a rule file that is true.
  *
@@ -1766,6 +1766,15 @@ function checkLedger() {
  *     and the adapter maps 💤 to it. That arm returned `{}` until Q1439, and
  *     an arm that goes back to returning `{}` leaves a document whose members
  *     can never abstain, with nothing else red.
+ *  5. **Neither copy carries a minimum under the room's number**, and Appendix
+ *     A's row says so (Q1439 ruling s, v0.133 → why: R-131, reversing R-073).
+ *     This is the one claim here that is about something *not* being present,
+ *     and it is worth a checker for that reason: a ⌈E/3⌉ term put back into
+ *     either arithmetic would leave the whole suite green while the card's
+ *     number stopped being the number the room is held to, which is exactly
+ *     the disagreement Q1449 named. `adoptionFloorMax` is allowed to stay
+ *     *declared* — logs carry it — so what is asserted is that neither
+ *     function's body mentions it or a third of anything.
  */
 function checkApprovalFloor() {
   note('SPEC §4.2 / §8.2 — the floor counts approvals (Q1439)');
@@ -1793,11 +1802,25 @@ function checkApprovalFloor() {
     const fn = i < 0 ? '' : src.slice(i, src.indexOf('\n}', i));
     if (!fn) {
       find('floor', `${file} has no \`${name}\` — the floor's arithmetic lives in two places and both must cap the quorum at half (Q1439, R-126)`);
-    } else if (!pat.test(fn)) {
+      continue;
+    }
+    if (!pat.test(fn)) {
       find('floor', `${file}'s \`${name}\` no longer caps the quorum at half the population it is read against (Q1439, R-126) — the two copies move together or not at all`);
     }
+    // the built-in third, gone at v0.133 (Q1439 ruling s, R-131): a term put
+    // back into either copy would leave the whole suite green while the card's
+    // number stopped being the number the room is held to (Q1449)
+    if (/\/ 3\)|adoptionFloorMax|adoptionFloorTerm/.test(fn)) {
+      find('floor', `${file}'s \`${name}\` reads a minimum under the room's own number — F is max(1, Q′) since v0.133 and nothing rides under the quorum the room chose (Q1439 ruling s, R-131, reversing R-073)`);
+    }
+    if (!/Math\.max\(1, /.test(fn)) {
+      find('floor', `${file}'s \`${name}\` no longer reads \`Math.max(1, …)\` — F is max(1, Q′) (Q1439 ruling s, R-131), the 1 being arithmetic rather than a floor anybody consented to`);
+    }
   }
-  note('  both copies of the formula cap the quorum at half');
+  note('  both copies cap the quorum at half, and neither holds a minimum under it');
+  if (floorRow && !/max\(1, Q′\)/.test(floorRow.Value || '')) {
+    find('floor', `Appendix A's floor row no longer states F as max(1, Q′): "${(floorRow.Value || '').slice(0, 80)}" — the built-in ⌈E/3⌉ minimum went at v0.133 (Q1439 ruling s, R-131)`);
+  } else note('  Appendix A states F as max(1, Q′)');
 
   const types = read('packages/engine-core/src/types.ts');
   if (!/abstainAfterMs\?: number \| null;/.test(types)) {
