@@ -210,6 +210,13 @@ interface RunOut {
   entries: number;
   acts: number;
   refusals: number;
+  /**
+   * **Proposals the room closed inside the script** (Q1440). The domination
+   * test is derived state read inside the sweep and acted on with an event,
+   * which is exactly the shape a memo can get wrong, so the scripts below
+   * assert that they contain some rather than hoping they do.
+   */
+  dominations: number;
 }
 
 /**
@@ -246,7 +253,9 @@ function differential(
   expect(replayWarm.rollingHash()).toBe(a.rollingHash());
   expect(replayWarm.races(t)).toEqual(cold(() => replayCold.races(t)));
   expect(replayWarm.allCandidates()).toEqual(cold(() => replayCold.allCandidates()));
-  return { hash: a.rollingHash(), entries: a.log.length, acts, refusals };
+  return { hash: a.rollingHash(), entries: a.log.length, acts, refusals,
+    dominations: a.log.filter((e) => e.event.type === 'candidate-retired'
+      && (e.event as { reason?: string }).reason === 'dominated').length };
 }
 
 /**
@@ -261,6 +270,16 @@ function differential(
  */
 const SCRIPT_MS = 30_000;
 
+/**
+ * **How many proposals the scripts closed** (Q1440), filled as they run and
+ * read at the end. The domination test is derived state consulted inside the
+ * sweep and acted on with an event — the shape a memo is likeliest to get
+ * wrong — so the coverage is asserted rather than assumed. It is a total over
+ * the scripts and not a per-seed floor, because whether a given seed's random
+ * room ever refuses a wording hard enough is the seed's business.
+ */
+const closings: number[] = [];
+
 describe('the fold-live memo derives what no memo derives (Q1326)', () => {
   for (const seed of ['moon', 'oak', 'clerk']) {
     it(`a long random session agrees at every step: ${seed}`, () => {
@@ -268,6 +287,7 @@ describe('the fold-live memo derives what no memo derives (Q1326)', () => {
       // the script has to actually exercise the engine, or agreement is cheap
       expect(out.acts).toBeGreaterThan(70);
       expect(out.entries).toBeGreaterThan(90);
+      closings.push(out.dominations);
     }, SCRIPT_MS);
   }
 
@@ -286,6 +306,7 @@ describe('the fold-live memo derives what no memo derives (Q1326)', () => {
     // changes which scripted acts are legal and lands this run at 68. The
     // step-by-step differential is the assertion; this is its floor.
     expect(out.acts).toBeGreaterThan(60);
+    closings.push(out.dominations);
   }, SCRIPT_MS);
 
   it('the races read at two clocks on one state differ only in the floor they were read at', () => {
@@ -323,6 +344,11 @@ describe('the fold-live memo derives what no memo derives (Q1326)', () => {
     expect(audited(() => picture(b, closeT))).toEqual(cold(() => picture(a, closeT)));
     expect(audited(() => b.finalRender())).toEqual(cold(() => a.finalRender()));
   }, SCRIPT_MS);
+
+  it('the scripts above closed proposals the room could no longer pass (Q1440)', () => {
+    expect(closings.length).toBe(4);
+    expect(closings.reduce((a, x) => a + x, 0)).toBeGreaterThan(0);
+  });
 
   it('both switches are off once the tests have had them', () => {
     expect(Session.memo.off).toBe(false);
