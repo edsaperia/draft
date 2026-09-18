@@ -947,5 +947,42 @@ window.COPY = (function () {
     },
   };
 
-  return { RULES, grammar, session, page };
+  // ---- the spectator feed (feed.html, Q1466) --------------------------------
+  // **A second page, for somebody watching** (Ed, 2026-09-19: *a feed of new
+  // proposals and proposals that pass, with enough context that you can
+  // understand what's happening*). Every entry is a change and the place it
+  // bites; nothing here counts, ranks or says which way anything is going
+  // (SPEC §3.5). The verb is **pass** (STYLE T8), the office is **the
+  // Founder**, and an unnamed author is *Anonymous*, the door's own word.
+  const feed = {
+    name: 'Feed',
+    tabTitle: (title) => title + ' — feed',
+    toDocument: 'Open the document',
+    // an entry's eyebrow, by kind
+    proposed: 'New proposal',
+    passed: 'Passed',
+    decreed: 'The Founder amended this',
+    // where a change is, under the eyebrow: the section, or the top
+    top: 'At the top of the document',
+    // a change's two readings
+    stood: 'The clause as it stood',
+    put: 'The proposal',
+    nowStands: 'The clause as it stands',
+    after: 'A new clause, after',
+    first: 'A new clause, first in its section',
+    // a deletion that passed: the card's own sentence (`lane.removed`) is in the
+    // conditional, which is right for a proposal and wrong once it has happened
+    removed: 'This clause was removed.',
+    anonymous: 'Anonymous',
+    redacted: '[redacted]',
+    // the page's states
+    loading: 'Loading…',
+    notBegun: 'The document has not begun. Proposals will appear here once it has.',
+    empty: 'Nothing has been proposed yet.',
+    closed: (dateWords) => 'Closed ' + dateWords,
+    unreachable: 'The feed could not be reached. It will try again.',
+    missing: 'There is no document at this address.',
+  };
+
+  return { RULES, grammar, session, page, feed };
 })();

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- **The spectator feed** (Q1466, Ed 2026-09-19): a second page, at
+     /d/:slug/feed, for somebody watching a document rather than drafting it —
+     new proposals and proposals that pass, each with the place it bites, and
+     never the whole document. It reads `GET /api/d/:slug/feed` and nothing
+     else, which reads engine-core's `SpectatorApi` and nothing else (backlog
+     42), so what a spectator may not see never reaches this file.
+
+     Its assets are named from the root (`/system.css`), not relatively as
+     session-view.html's are: this page stands one segment deeper than the
+     host's asset row looks (`routes-surface.ts`), and the root form is served
+     by that row as it stands — and by `npm run design`, where the page at
+     `/feed.html` has no document behind it and shows a small fixture.
+
+     A doctype, unlike session-view.html: that page's quirks mode is a fact
+     about boxes measured since its first day, and this one has none to keep. -->
+<title>docs.vote</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪶</text></svg>">
+<link rel="stylesheet" href="/system.css">
+<!-- the faces: the avatar's own rules live in setup.css, and a face here is the
+     face the membership sees, so the page takes them rather than restating them -->
+<link rel="stylesheet" href="/setup.css">
+<style>
+  /* the feed is one column of reading: the charter column's own measure */
+  .feedwrap { max-width: 760px; margin: 0 auto; padding: var(--s4) var(--s4) var(--s5); }
+  .navbar .wrap.feednav { max-width: 760px; align-items: center; }
+  .feednav .brand { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .feednav .brand .sess { margin-left: var(--s2); }
+  .feednav a { font-size: var(--t-ui); white-space: nowrap; color: var(--primary); text-decoration: none; }
+  .feednav a:hover { text-decoration: underline; }
+  .feedstate { color: var(--muted); font-size: var(--t-ui); margin: var(--s5) 0; text-align: center; }
+  .feedday { margin: var(--s5) 0 var(--s3); color: var(--muted); }
+  .feedday:first-child { margin-top: var(--s3); }
+  /* an entry is a card at rest: a hairline box, no shadow — nothing here is
+     open, and open is said by depth (the design system's own rule) */
+  .fentry { border: 1px solid var(--border); border-radius: var(--r-md); background: var(--bg);
+    padding: var(--s4); margin: 0 0 var(--s3); }
+  /* a passed entry wears the decided green on its leading edge and nowhere
+     else: green means decided, and only that */
+  .fentry.passed, .fentry.decreed { border-left: 3px solid var(--ok); padding-left: calc(var(--s4) - 2px); }
+  .fhead { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3);
+    margin: 0 0 var(--s2); }
+  .fhead .eyebrow { margin: 0; }
+  .fentry.passed .fhead .eyebrow, .fentry.decreed .fhead .eyebrow { color: var(--ok); }
+  .fwhen { color: var(--muted); font-size: var(--t-small); white-space: nowrap; }
+  .fwhere { font-family: var(--font-text); font-size: var(--t-ui); color: var(--muted); margin: 0 0 var(--s3); }
+  .fchange + .fchange { margin-top: var(--s4); padding-top: var(--s4); border-top: 1px solid var(--border); }
+  .fpart { margin: 0 0 var(--s3); }
+  .fpart:last-child { margin-bottom: 0; }
+  .fpart .eyebrow { margin: 0 0 var(--s1); }
+  .ftext { font-family: var(--font-text); font-size: var(--t-body); line-height: var(--lh-text); }
+  .ftext .lp { margin: 0 0 var(--s2); }
+  .ftext .lp:last-child { margin-bottom: 0; }
+  /* what stood is reference, not the subject: cold, by the palette's rule */
+  .ftext.stood { color: var(--muted); }
+  .fwhy { display: flex; gap: var(--s2); align-items: flex-start; margin: var(--s3) 0 0;
+    padding-top: var(--s3); border-top: 1px solid var(--border); }
+  .fwhy .who { flex: none; font-size: var(--t-lead); line-height: 1; }
+  .fwhy .body { min-width: 0; }
+  .fwhy .name { font-size: var(--t-small); color: var(--muted); display: block; }
+  .fwhy .why { font-family: var(--font-text); font-size: var(--t-ui); line-height: var(--lh-text);
+    white-space: pre-wrap; overflow-wrap: anywhere; }
+  .fentry.arrive { animation: farrive var(--wash-ms, 700ms) ease; }
+  @keyframes farrive { from { background: var(--primary-subtle); } to { background: var(--bg); } }
+  @media (prefers-reduced-motion: reduce) { .fentry.arrive { animation: none; } }
+  .alphaflag { position: fixed; bottom: 10px; left: 10px; z-index: 55;
+    font-size: var(--t-small); color: var(--muted); background: var(--bg);
+    border: 1px solid var(--border); border-radius: var(--r-sm);
+    padding: 3px 8px; pointer-events: none; }
+  .alphaflag b { font-weight: 600; color: var(--fg); }
+  @media (max-width: 900px) {
+    .alphaflag { position: static; display: block; width: fit-content; margin: 8px auto 0; }
+    .feedwrap { padding: var(--s3) var(--s3) var(--s5); }
+    .fentry { padding: var(--s3); }
+    .fentry.passed, .fentry.decreed { padding-left: calc(var(--s3) - 2px); }
+  }
+</style>
+
+<header class="navbar">
+  <div class="wrap feednav">
+    <span class="brand" id="feedtitle" role="heading" aria-level="1">🪶 <span id="feedname"></span><span class="sess" id="feedword"></span></span>
+    <a id="todoc" href="#"></a>
+  </div>
+</header>
+<div class="alphaflag"><b>Warning:</b> docs.vote is in alpha!</div>
+<main class="feedwrap">
+  <p class="feedstate" id="feedstate" role="status"></p>
+  <div id="feed" aria-live="polite"></div>
+</main>
+
+<script src="/copy.js"></script>
+<script src="/cards.js"></script>
+<script src="/feed.js"></script>
