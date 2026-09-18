@@ -5016,9 +5016,64 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       const mine = SUGGS.find((x) => x.id === DRAFT_ID && x.unproposed);
       if (mine && !suggs.some((x) => x.id === DRAFT_ID)) suggs = suggs.concat([mine]);
     }
+    const held = heldCaret();
     bindData((next && next.DOC) || DOC, suggs);
     renderAll();
+    if (held) restoreCaret(held);
     if (textChanged && hooks.textChanged) hooks.textChanged();
+  }
+
+  // **A data swap keeps the caret** (Ed, from the residency room, 2026-09-18:
+  // *when typing in a rationale … my focus is pulled away from the box by some
+  // other common event (perhaps someone voting?)*). The host's typing guard
+  // spares the column a rebuild while the draft card is open — but only where
+  // the charter's key has not moved, and an adoption anywhere moves it: the
+  // text changed, so the whole column is rebuilt under the hand, and the box
+  // being typed in is replaced by a new one holding the same words and no
+  // caret (measured: seven times in a minute in a fast room, each 24–88 ms
+  // after a full `setData`, the draft card open throughout). The words were
+  // never lost — the draft model has them — so what is owed is the caret: it
+  // is taken out by position before the rebuild and put back after, the same
+  // hold-by-position rule the lane's own re-marking works by. A box is found
+  // again by its place among its kind, which an adoption elsewhere does not
+  // change. **And the rationale's raw text comes back with it**: the model
+  // keeps it trimmed, so a space typed just before the swap would be dropped
+  // and the next word run into the last.
+  function heldCaret() {
+    const sel = getSelection();
+    if (!doc || !sel || !sel.rangeCount) return null;
+    const node = sel.getRangeAt(0).endContainer;
+    const at = node && (node.nodeType === 1 ? node : node.parentElement);
+    const box = at && (at.closest('.edit-why') || at.closest('[data-lane]'));
+    const el = document.activeElement;
+    if (!box || !doc.contains(box) || !el || !(el === box || box.contains(el) || el.contains(box))) return null;
+    const why = box.classList.contains('edit-why');
+    const kind = why ? '.edit-why' : '[data-lane]';
+    let off = null;
+    if (why) {
+      const r = document.createRange();
+      r.selectNodeContents(box);
+      r.setEnd(sel.getRangeAt(0).endContainer, sel.getRangeAt(0).endOffset);
+      off = r.toString().length;
+    } else off = laneCaret(box);
+    return { kind, why, i: [...doc.querySelectorAll(kind)].indexOf(box), off, raw: why ? box.textContent : null };
+  }
+  function restoreCaret(held) {
+    const box = [...doc.querySelectorAll(held.kind)][held.i];
+    if (!box) return;
+    if (!held.why) { box.focus({ preventScroll: true }); placeCaret(box, held.off); return; }
+    if (held.raw !== null && held.raw.replace(/\n+/g, ' ').trim() === box.textContent) {
+      box.textContent = held.raw;
+      box.classList.toggle('blank', !held.raw.trim());
+    }
+    box.focus({ preventScroll: true });
+    const r = document.createRange();
+    const text = box.firstChild && box.firstChild.nodeType === 3 ? box.firstChild : null;
+    if (text) r.setStart(text, Math.min(held.off == null ? text.length : held.off, text.length));
+    else r.selectNodeContents(box);
+    r.collapse(!!text);
+    const s = getSelection();
+    s.removeAllRanges(); s.addRange(r);
   }
 
   // everything renderAll does except the charter itself — a host whose band
