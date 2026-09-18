@@ -413,7 +413,7 @@
   "session.record.ok": "OK",
   "session.record.okTitle": "It leaves your margin and stays in the record",
   "session.record.replaced": "the text it replaced",
-  "session.record.tooltip": "ƒ (judges, roster, floor, yoursLine, approvals) =>\n        judges + ' of ' + roster + ' weighed in · ' +\n        (approvals === null || approvals === undefined ? '' : approvals + ' preferred it · ') +\n        'quorum was ' + floor + ' · ' + yoursLine",
+  "session.record.tooltip": "ƒ (judges, roster, floor, yoursLine, approvals, abstained) =>\n        judges + ' of ' + roster + ' weighed in · ' +\n        (approvals === null || approvals === undefined ? '' : approvals + ' preferred it · ') +\n        (abstained ? abstained + ' did not answer in time · ' : '') +\n        'quorum was ' + floor + ' · ' + yoursLine",
   "session.record.undecided": "Undecided at the close",
   "session.record.youNever": "you never voted on this",
   "session.record.youSaid": "ƒ (verdict) => 'you ' + verdict",

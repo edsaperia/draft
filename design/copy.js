@@ -236,9 +236,18 @@ window.COPY = (function () {
       // omitted where the view does not carry it, which is every document
       // until the engine branch lands, and the line then reads as it always
       // did.
-      tooltip: (judges, roster, floor, yoursLine, approvals) =>
+      // **And how many never answered** (Q1452, Ed 2026-09-18): the 👥 clause
+      // goes on naming the whole membership — *(5 of 10)* — while a proposal
+      // carries on two approvals, because 💤's period takes a silent member
+      // out of the group the quorum is read against. The clause stays as it
+      // is and the outcome card says the rest: how many people did not answer
+      // in time. Omitted at zero and where the record does not carry the
+      // number at all — a decision nobody ran out of time on has nothing to
+      // report, and neither has one taken before the rule existed.
+      tooltip: (judges, roster, floor, yoursLine, approvals, abstained) =>
         judges + ' of ' + roster + ' weighed in · ' +
         (approvals === null || approvals === undefined ? '' : approvals + ' preferred it · ') +
+        (abstained ? abstained + ' did not answer in time · ' : '') +
         'quorum was ' + floor + ' · ' + yoursLine,
       youSaid: (verdict) => 'you ' + verdict,
       youNever: 'you never voted on this',

@@ -1511,6 +1511,13 @@ window.LIVE = (function () {
             // taken against, not the one standing now. Absent, the card falls
             // back to the document's own `v.floor` as it always did.
             ...(typeof o.floor === 'number' ? { floor: o.floor } : {}),
+            // …and how many never answered in time (Q1452): the silences 💤's
+            // period had already taken out of the group when the batch
+            // decided, which is what makes a proposal carried by two of ten
+            // legible beside a 👥 clause that still names ten. Carried as the
+            // record states it, zero included — the card is what decides to
+            // say nothing about a decision nobody ran out of time on.
+            ...(typeof o.abstained === 'number' ? { abstained: o.abstained } : {}),
             // the cap mark (R-051), reduced to a boolean on the way in: the
             // card says one sentence and none of the arithmetic (STYLE §2 —
             // raw values are not copy), and the two numbers stay in the event
