@@ -620,7 +620,19 @@ const pickOption = (label) => page.evaluate((l) => {
   const r = o.getBoundingClientRect();
   return { x: r.x + 14, y: r.y + r.height / 2 };
 }, label);
-const fillFields = () => page.evaluate(() => {
+/* **A date the walk types is counted from the run, never written down** (found
+ * 2026-09-18 18:00, when the literal below — `2026-09-18T18:00` — became the
+ * past and every document the walk founded closed the moment it began: forty
+ * FAIL lines from `amendment` onwards, all of them *the document has closed*,
+ * and the same on main. A wall-clock literal in a walk is a time bomb with the
+ * fuse written on it. `datetime-local` takes local time with no zone, which is
+ * what the page's own field holds. */
+const dateIn = (days) => {
+  const d = new Date(Date.now() + days * 86_400_000);
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:00`;
+};
+const fillFields = () => page.evaluate((when) => {
   // **One number per choice group** (Q1162): 👥 draws two blocks each with
   // its own box, and filling both would answer in two forms at once — the
   // last claim winning, which committed a count of 5 in a room of 2. The
@@ -656,11 +668,11 @@ const fillFields = () => page.evaluate(() => {
       if (ch) takenChoice.add(ch);
       n.value = String(Math.max(+n.min || 1, 5));
     }
-    else if (n.type === 'datetime-local') n.value = '2026-09-18T18:00';
+    else if (n.type === 'datetime-local') n.value = when;
     else n.value = 'The club shall meet on the first Tuesday.';
     fire();
   });
-});
+}, dateIn(30));
 const committable = () => page.evaluate(() =>
   [...document.querySelectorAll('.setupcard .commitrow button')]
     .some((x) => !x.disabled && !/🗑/.test(x.textContent) && !x.querySelector('[data-gl="bin"]')));
@@ -3366,7 +3378,7 @@ if (caret) {
         for (const k of ['quorum', 'lapse', 'ending']) {
           if (!(await H.open(k))) continue;
           const avoid = Object.values(standing[k] || {}).filter((x) => typeof x === 'number');
-          const r = await p3.evaluate((nos) => {
+          const r = await p3.evaluate(({ nos, when }) => {
             const out = [];
             for (const f of [...document.querySelectorAll('.setupcard input')]) {
               if (f.offsetParent === null) continue;
@@ -3378,13 +3390,13 @@ if (caret) {
                 for (let c = lo; c <= hi && nx === null; c += st) if (!nos.includes(c)) nx = c;
                 if (nx === null) continue;
                 f.value = String(nx);
-              } else f.value = '2026-10-19T19:00';
+              } else f.value = when;              // counted from the run, never written down
               for (const e of ['input', 'change']) f.dispatchEvent(new Event(e, { bubbles: true }));
               if (f.value !== before) out.push((f.dataset.num || f.dataset.txt || '?') + ' ' +
                 JSON.stringify(before) + '→' + JSON.stringify(f.value));
             }
             return out;
-          }, avoid);
+          }, { nos: avoid, when: dateIn(61) });
           if (r && r.length) { used = k; moved = r; break; }
           await p3.evaluate(() => { const a = document.querySelector('.setupcard .chipcol .achip'); if (a) a.click(); });
           await H.T(420);
