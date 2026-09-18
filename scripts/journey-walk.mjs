@@ -4739,6 +4739,145 @@ const dominatedProposal = async () => {
 };
 await dominatedProposal();
 
+/* ---- a draft follows its paragraph (Q1463, Ed 2026-09-18: *follow the
+ * paragraph, and refuse if lost*) -----------------------------------------
+ * A draft's sites are keyed by engine line and the hunks it sends are read
+ * off those keys, while the version is read fresh at the press — so a line
+ * adopted *above* an unproposed draft used to leave the key naming somebody
+ * else's clause, and the proposal went out against that one and was taken,
+ * the version being current. In a busy room that is the ordinary case for
+ * anybody who drafts for longer than it takes something above them to pass.
+ *
+ * The founder puts a draft on the last free clause, then proposes a new clause
+ * near the top and bo prefers it: E is three here, so the quorum is two, and
+ * the author's own preference is the first of them. Then the founder's site
+ * must read one line further down, with the wording it was written against
+ * untouched. It is the first of `stale-key`'s three cases, on the live path,
+ * and it fails on the pre-fix page at *follow · FAIL: … L8 → L8*. Binned
+ * afterwards through the row's own 🗑️.
+ *
+ * **Last, deliberately**: it adopts, and an adoption leaves a record in every
+ * rail — which is one more record than the steps above are counting. */
+const draftFollowsClause = async () => {
+  if (!guestPage) return;                       // its own failure, already reported
+  const wire = (pg, cmd, args) => pg.evaluate(([c, a]) => fetch(location.pathname.replace('/d/', '/api/d/') + '/cmd', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ cmd: c, args: a }),
+  }).then((r) => r.json()).catch((e) => ({ error: String(e && e.message) })), [cmd, args]);
+  const viewOf = (pg) => pg.evaluate(() => fetch(location.pathname.replace('/d/', '/api/d/') + '/view')
+    .then((r) => r.json()).catch(() => null));
+
+  // **the last line nothing is racing on**, read off the wire: a contested
+  // clause opens its race rather than a caret, and this step is about the
+  // caret
+  const v0 = await viewOf(page);
+  const lines = String((v0 || {}).text || '').split('\n');
+  const taken = new Set();
+  for (const c of ((v0 || {}).clauses || [])) {
+    for (const sp of (c.contested || [])) for (let i = sp.start; i <= sp.end; i++) taken.add(i);
+  }
+  let dk = -1;
+  for (let i = lines.length - 1; i > 1; i--) if (!taken.has(i) && lines[i].trim()) { dk = i; break; }
+  if (dk < 2) {
+    say('follow     · FAIL: no free clause low in the document to draft on · ' + JSON.stringify([...taken]));
+    stuck.push('a free clause for the follow'); return;
+  }
+  // …and the caret at its end, one character typed, which is the draft
+  const started = await page.evaluate((k) => {
+    const t = document.querySelector('#ridetab .achip[data-tab="text"]') ||
+      document.querySelector('#editdoor [data-act="edit-door"]');
+    if (t && !document.getElementById('doc').classList.contains('editing')) t.click();
+    const p = [...document.querySelectorAll('#charter .prose p.editable[data-key]')]
+      .find((x) => x.dataset.key === k && !x.closest('.sugg'));
+    if (!p) return null;
+    p.scrollIntoView({ block: 'center' });
+    const r = document.createRange(); r.selectNodeContents(p); r.collapse(false);
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    return k;
+  }, 'L' + dk);
+  if (!started) {
+    say('follow     · FAIL: no paragraph L' + dk + ' to put a caret in');
+    stuck.push('the caret for the follow'); return;
+  }
+  await T(400);
+  await page.keyboard.type('Z');
+  await T(700);
+  const site = () => page.evaluate(() => {
+    const d = (window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours');
+    return d && d.sites.length === 1
+      ? { keys: d.sites[0].keys.join('+'), origin: d.sites[0].origin.map((o) => o.text).join(' | '),
+        text: d.sites[0].text, lost: !!d.sites[0].lost, stranded: !!d.stranded } : null;
+  });
+  const was = await site();
+  if (!was || was.keys !== 'L' + dk) {
+    say('follow     · FAIL: the draft did not land on L' + dk + ' · ' + JSON.stringify(was));
+    stuck.push('the draft the follow is about'); return;
+  }
+
+  // **a seat with an edit left to spend.** By the end of this walk the
+  // founder's wallet and bo's are both empty; cy has judged and never
+  // proposed, so the new clause is cy's — seated again over the login route,
+  // `dominatedProposal` having closed the page it used.
+  const slug = new URL(page.url()).pathname.replace(/^\/d\//, '');
+  const lj = await fetch(BASE + '/api/d/' + slug + '/login', { method: 'POST',
+    headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: GUEST2 }) })
+    .then((r) => r.json()).catch(() => null);
+  const link = (lj && lj.devLink) || await invitationLink(GUEST2);
+  if (!link) {
+    say('follow     · FAIL: no way back in for ' + GUEST2 + ' — nobody left to propose the new clause');
+    stuck.push('the seat the follow rides on'); return;
+  }
+  const cyCtx = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+  const cyPage = await cyCtx.newPage();
+  cyPage.on('pageerror', (e) => errors.push('[cy] ' + String(e)));
+  await cyPage.goto(link);
+  for (let i = 0; i < 40 && !cyPage.url().includes('/d/'); i++) await cyPage.waitForTimeout(500);
+  await cyPage.waitForTimeout(2600);
+
+  const AT = 2;
+  const put = await wire(cyPage, 'propose-text', { baseVersion: (v0 || {}).textVersion,
+    hunks: [{ start: AT, end: AT, lines: ['Nothing in this charter excuses unkindness.'] }],
+    why: 'it belongs near the front' });
+  const cand = put && put.result && put.result.id;
+  if (!cand || put.error) {
+    say('follow     · FAIL: the new clause could not be proposed · ' + JSON.stringify(put));
+    stuck.push('the insertion the follow rides on'); await cyCtx.close(); return;
+  }
+  await T(5200);
+  const vr = await viewOf(guestPage);
+  const race = ((vr || {}).clauses || []).find((c) => (c.candidates || []).some((x) => x.id === cand));
+  if (!race) {
+    say('follow     · FAIL: the new clause reached no race');
+    stuck.push('the insertion’s race'); await cyCtx.close(); return;
+  }
+  // **the author's own preference is one of the two** (Q1440's arithmetic on
+  // this same room): cy wrote it, so a = 1 already, and the founder preferring
+  // it makes a = 2 — the quorum at a group of three
+  const yes = await wire(page, 'judge-race', { a: cand, b: race.incumbentId, outcome: 'a' });
+  if (yes && yes.error) {
+    say('follow     · FAIL: the room could not carry it · ' + JSON.stringify(yes));
+    stuck.push('carrying the insertion'); await cyCtx.close(); return;
+  }
+  await T(6000);                                 // the adoption batch, then a poll in each seat
+  const v1 = await viewOf(page);
+  const grew = String((v1 || {}).text || '').split('\n').length - lines.length;
+  const now = await site();
+  const followed = grew === 1 && now && now.keys === 'L' + (dk + 1) && now.origin === was.origin &&
+    now.text === was.text && !now.lost && !now.stranded;
+  say('follow     · ' + (followed
+    ? 'a clause adopted above the draft: the site moved L' + dk + ' → ' + now.keys +
+      ', its wording and its origin untouched'
+    : 'FAIL: the text grew by ' + grew + ' · ' + JSON.stringify(was) + ' → ' + JSON.stringify(now)));
+  if (!followed) stuck.push('a draft following its paragraph (Q1463)');
+  await page.evaluate(() => {
+    const b = document.querySelector('#charter [data-proposalrow] [data-act="row-discard"]');
+    if (b && !b.disabled) b.click();
+  });
+  await T(500);
+  await cyCtx.close();
+};
+await draftFollowsClause();
+
 say('errors     · ' + (errors.length ? errors.slice(0, 4).join(' / ') : 'none'));
 say('refused    · ' + (refused.length ? refused.join(' / ') : 'none'));
 await browser.close();

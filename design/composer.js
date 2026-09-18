@@ -807,6 +807,14 @@ window.COMPOSER = (function () {
         // …and, under an elective 👤 rung, whether your name goes on it (Q770):
         // part of the rationale composer area, above the row that commits it
         signControlHtml(d) + '</div>' +
+        // **A site the text moved out from under says so where the words are**
+        // (Q1463, Ed 2026-09-18). The follow carries a site to its paragraph's
+        // new line; where the paragraph itself was replaced there is nothing
+        // to follow, and what is left is the member's own wording with no
+        // place to stand. The same slot a stranded proposal's sentence takes
+        // (Q170) — above the row, under the words it is about — and nothing
+        // typed is discarded: the lane keeps it, to be re-aimed.
+        (site.lost ? '<p class="setnote">' + esc(T.stranded.drafted) + '</p>' : '') +
         // **The proposal's lifecycle is one row** (Ed, 2026-08-17). Discard on the
         // very left, commit on the very right, and the row does not move when the
         // draft becomes a proposal — only the right-hand control changes from the

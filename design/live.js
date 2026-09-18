@@ -1723,6 +1723,68 @@ window.LIVE = (function () {
       };
       // what a draft would send, readable by a walk (`SESSION.LIVE_HOOKS.hunksOf`)
       env.LIVE_HOOKS.hunksOf = hunksOf;
+
+      // **Refuse if lost** (Q1463, Ed 2026-09-18), the second half of *follow
+      // the paragraph, and refuse if lost*. The page carries a draft's sites
+      // to their paragraphs' new lines as the text moves; this is the guard
+      // behind that, and it is deliberately written to know nothing about it.
+      // It asks one question of the text the command is about to name a
+      // version of: does every line the hunk would replace still hold exactly
+      // the wording the site was written against — and, for a gap, is the
+      // clause it was made after still the line immediately before it. Where
+      // the answer is no the press sends nothing.
+      //
+      // The engine's own guard cannot see this. A hunk carries line numbers
+      // and a version, and the version *is* current — the member has been
+      // typing, not sleeping — so a stale line number is accepted and the
+      // wrong clause is rewritten. Nothing but the origin wording can tell
+      // the two apart.
+      //
+      // The sentence is the one a stale version already gets, and it is true
+      // in exactly the same way: the text moved while you were writing.
+      const MOVED_ON = 'The text moved while you were writing — your draft is kept; read the new wording and propose again.';
+      const sameLine = (a, b) => String(a == null ? '' : a).replace(/^(#{1,3}|-)\s+/, '$1 ').replace(/\s+$/, '')
+        === String(b == null ? '' : b).replace(/^(#{1,3}|-)\s+/, '$1 ').replace(/\s+$/, '');
+      env.LIVE_HOOKS.misaimed = (d) => {
+        const text = env.cs && env.cs.text != null ? String(env.cs.text) : '';
+        const lines = text === '' ? [] : text.split('\n');
+        // an empty document is one empty clause and nothing to be stale about
+        // (Q649 (a)): the engine holds zero lines, so there is no wording to
+        // compare and the first insertion into it is always aimed right
+        if (!lines.length) return null;
+        // a blank line is a line the engine counts and the page does not draw
+        // (`blocksOf`), so *before* means the nearest line with words in it,
+        // never the number one lower
+        const blanksOnly = (a, b) => lines.slice(a, b).every((l) => !String(l).trim());
+        for (const site of (d && d.sites) || []) {
+          const first = site.keys[0];
+          if (/^G\d+$/.test(first)) {
+            const n = lineIdx(first);
+            // the top of the document has no clause before it and never moves
+            if (site.insertAfterKey == null) { if (n !== 0) return MOVED_ON; continue; }
+            const a = lineIdx(site.insertAfterKey);
+            if (!(a < n && blanksOnly(a + 1, n))) return MOVED_ON;
+            // a site the page never gave a remembered wording (an older draft
+            // in flight) is left to the version guard, as it always was
+            if (site.afterText == null) continue;
+            if (!sameLine(lines[a], site.afterText)) return MOVED_ON;
+            continue;
+          }
+          const origin = site.origin || [];
+          if (!origin.length) continue;
+          for (let i = 0; i < site.keys.length; i++) {
+            const at = lineIdx(site.keys[i]);
+            const want = origin[i] ? origin[i].text : null;
+            if (want == null) continue;
+            if (at >= lines.length || !sameLine(lines[at], want)) return MOVED_ON;
+          }
+          // a run is a run: the blocks it replaces must still be consecutive
+          for (let i = 1; i < site.keys.length; i++) {
+            if (lineIdx(site.keys[i]) <= lineIdx(site.keys[i - 1])) return MOVED_ON;
+          }
+        }
+        return null;
+      };
       // ✒️ on the Text (R-058, entry 160): the Founder's amendment passes the
       // instant it is submitted, so there is nothing to keep a local id for and
       // no wallet to re-read — the command's own refresh brings back a document

@@ -222,6 +222,13 @@ window.COPY = (function () {
       // one being written: it re-makes the proposal you already have, so there
       // is nothing left to pay and an empty wallet cannot stop it
       keepsCost: ' — it keeps its place and the edit it already cost',
+      // …and the same fact one step earlier (Q1463, Ed 2026-09-18: *follow the
+      // paragraph, and refuse if lost*): a draft you have **not** proposed
+      // yet, whose clause an adoption replaced while you were writing. Your
+      // words stay in the lane — nothing typed is ever discarded — but the
+      // site has no paragraph left to stand against, so it cannot go out until
+      // it is written against what now stands.
+      drafted: 'The document changed here, and your draft could not be carried across to the new wording — write it against the clause as it now stands.',
     },
     // the gap a draft stands in, named for the rail and the editing head
     gap: {
