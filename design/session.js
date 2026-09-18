@@ -959,8 +959,25 @@
       const oneLine = st === 'deciding' && !stuck(g);
       const top = !oneLine && !stuck(g) && g.id === topUrgentId && !seenTop;
       if (top) seenTop = true;
+      // **The pile: the rivals still to come on this clause** (`queue-card-stack`,
+      // Q1462, Ed 2026-09-18). The engine deals one pair per race at a time
+      // (SPEC §8.3, Q1312), so a crowded clause arrives as one entry and says
+      // nothing about the queue behind it; the entry is drawn as a pile of
+      // cards, **depth alone and capped at three** — one edge for one more,
+      // two for two, three for three or more, no number and no words. It is
+      // the tab stack's own convention one column over (M12): edges that peek,
+      // inert, carrying the hue and nothing else. **Drawn entirely outside the
+      // entry's box** — the edges are box-shadow layers, so the entry keeps
+      // the height `layoutQueue` measured and the wire keeps its anchor — and
+      // in the entry's own lifecycle hue at the sliver strength a 2px band
+      // needs, the same reasoning `.achip.behind` is mixed at 42% for.
+      // the hue is read only where there is a pile to colour: a one-line
+      // entry's wash has never asked `anchHue` and must not start now
+      const pile = (!oneLine && st !== 'sealed') ? Math.min(3, Math.max(0, g.beneath | 0)) : 0;
+      const pileHue = pile ? (anchHue(g) || 'open') : null;
       html +=
-        '<li class="qitem' + (top ? ' mosturgent' : '') + '" data-q="' + g.id + '" data-site="' + (e.site ?? '') + '">' +
+        '<li class="qitem' + (top ? ' mosturgent' : '') + '" data-q="' + g.id + '" data-site="' + (e.site ?? '') + '"' +
+        (pile ? ' data-pile="' + pile + '" style="--pilecol: ' + tint(pileHue, 0.42) + '"' : '') + '>' +
         '<button class="' + [stateCls, sib.trim(), top ? 'mosturgent' : '',
           oneLine && g.shifted ? 'shifted' : '', justArrived === frontKeyOf(g) ? 'arriving' : '']
           .filter(Boolean).join(' ') +

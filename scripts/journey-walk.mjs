@@ -4101,7 +4101,10 @@ if (caret) {
           const b = li.querySelector('button');
           const mk = li.querySelector('.qmark .mk');
           return { id: li.dataset.q, mark: mk ? ([...mk.classList].find((c) => c.startsWith('mk-')) || '').slice(3) : '',
-            cap: b ? b.title : '', teasers: [...li.querySelectorAll('.qwhy')].map((e) => e.textContent.trim()) };
+            cap: b ? b.title : '', teasers: [...li.querySelectorAll('.qwhy')].map((e) => e.textContent.trim()),
+            // the queue card stack's depth (Q1462): how many rivals are still
+            // to come on this race, capped at three, 0 where there is no pile
+            pile: +(li.dataset.pile || 0) };
         });
       }, id);
       // the race's one lit entry, as the older steps read it: by the race id,
@@ -4187,6 +4190,24 @@ if (caret) {
           (rivalOf(e1) ? ' · and the rival pair, two teasers' : '')
           : 'FAIL: ' + JSON.stringify(e1)));
         if (!ok1) stuck.push('the entries before any judgment');
+        // **The queue card stack** (Q1462, Ed 2026-09-18). Two challengers
+        // stand on this clause and the router deals them one pair at a time,
+        // so what is not dealt is beneath: lit incumbent pairs plus the pile
+        // on the front one must come to two, however the hand fell. Where
+        // both pairs are dealt at once there is genuinely nothing hidden and
+        // the pile is rightly absent — the branch is named in the line, since
+        // a step that cannot say which case it ran is a step that can go
+        // quietly green (the gap-keys lesson). A rival-against-rival pair
+        // asks something else and never wears one.
+        const stand1 = e1.filter((e) => e.teasers.length === 1);
+        const deep1 = Math.max(0, ...stand1.map((e) => e.pile));
+        const okP1 = ok1 && stand1.length + deep1 === 2 &&
+          stand1.filter((e) => e.pile > 0).length <= 1 && (rivalOf(e1) || { pile: 0 }).pile === 0;
+        say('pile 1     · ' + (okP1
+          ? (deep1 ? 'one pair dealt, the other beneath it — the entry wears ' + deep1 + ' edge'
+            : 'both pairs dealt as their own entries, nothing beneath — no pile, and none on the rival pair')
+          : 'FAIL: ' + JSON.stringify(e1.map((e) => [e.id, e.teasers.length, e.pile]))));
+        if (!okP1) stuck.push('the queue card stack before any judgment (Q1462)');
         if (ok1) {
           const first = q1.teasers[0], other = first === WHY1 ? WHY2 : WHY1;
           // 2 — open the first pair's own entry: a quick card, that pair alone,
@@ -4229,6 +4250,13 @@ if (caret) {
           say('pairs 3    · ' + (ok3 ? 'judged · its entry files as ⏳ “' + byId(e2, q1.id).cap + '” · the other pair’s own entry is ' + q2.mark + ' “' + other + '”'
             : 'FAIL: judged ' + j1 + ' · ' + JSON.stringify(e2)));
           if (!ok3) stuck.push('the entries after the first judgment');
+          // the pile is one shallower for it (Q1462): the second challenger
+          // is its own lit entry now, so there is nothing left beneath and no
+          // entry on the race wears an edge — a judged pair's ⏳ never does
+          const okP2 = ok3 && e2.every((e) => e.pile === 0);
+          say('pile 2     · ' + (okP2 ? 'judged · the other pair is its own entry now, nothing beneath it, no pile anywhere on the race'
+            : 'FAIL: ' + JSON.stringify(e2.map((e) => [e.id, e.mark, e.pile]))));
+          if (!okP2) stuck.push('the queue card stack after the first judgment (Q1462)');
           // 4 — the other pair by its own entry, never by a second press on
           // the first; judge it
           const c2 = ok3 ? await openEntry(q2.id) : { card: false };

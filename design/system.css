@@ -764,6 +764,55 @@
      rule as its card, and the rail and the card now say "open" the same way */
   .queue button[aria-current="true"] { box-shadow: var(--shadow-xl); }
 
+  /* **The queue card stack** (Q1462, Ed 2026-09-18: *a "queue card stack" …
+     that hints that there are other rivals beneath the current one*). The
+     engine deals one pair per race at a time (SPEC §8.3, Q1312), so a clause
+     carrying twenty rival wordings reaches the rail as one entry. The entry is
+     drawn as a pile: up to three card edges peeking out below it, **depth
+     only — no number and no words** — which is the closed tab strip's own
+     device one column over (M12), where a sliver says *there is more here*
+     without counting anything.
+
+     **Box-shadow, not boxes.** `layoutQueue` stacks entries by measuring the
+     `li`, the wire lands on the entry's box and the drawer spaces them by
+     `gap`, so an edge that took any layout at all would push every entry
+     beneath it down the rail. An outer box-shadow takes none, cannot be
+     clicked, cannot be reached by the keyboard and is not clipped by the
+     button's own `overflow: hidden` — and depth is how this surface says
+     *there is more of this*, so the pile is the same thing the lift already
+     is rather than an outline, which no card here wears.
+
+     The geometry is `peek + inset` down and `-inset` of spread: a negative
+     spread shrinks the shadow vertically as well as horizontally, so the
+     offset has to pay the inset back before the edge shows at all. Each edge
+     is 10px narrower a side and peeks 2px further down, so the deepest reaches
+     6px — inside `QGAP`, the 8px the rail and the drawer both leave between
+     entries, which is why a pile never touches the entry under it. The colour
+     is the entry's own lifecycle hue at sliver strength (`--pilecol`, set per
+     entry by `renderQueue`): 2px of a 0.16 wash is a smudge, which is the
+     lesson `.achip.behind` is mixed at 42% for.
+
+     The colour falls back to transparent, because `--pilecol` and the
+     attribute are set together by one line of `renderQueue` and an unset
+     custom property inside a shorthand invalidates the **whole**
+     declaration — a pile with no hue would take the entry's own lift with it
+     rather than simply not drawing. */
+  .qitem[data-pile="1"] { --pile: 0 12px 0 -10px var(--pilecol, transparent); }
+  .qitem[data-pile="2"] {
+    --pile: 0 12px 0 -10px var(--pilecol, transparent), 0 24px 0 -20px var(--pilecol, transparent);
+  }
+  .qitem[data-pile="3"] {
+    --pile: 0 12px 0 -10px var(--pilecol, transparent), 0 24px 0 -20px var(--pilecol, transparent),
+            0 36px 0 -30px var(--pilecol, transparent);
+  }
+  /* the lift stays in front of the pile, as the front card's own shadow falls
+     across the ones behind it; each rule repeats its own lift rather than the
+     three above being refactored, so an entry with no pile keeps the exact
+     declaration it has always had */
+  .qitem[data-pile] > button { box-shadow: var(--shadow-sm), var(--pile); }
+  .qitem[data-pile] > button:hover { box-shadow: var(--shadow-md), var(--pile); }
+  .qitem[data-pile] > button[aria-current="true"] { box-shadow: var(--shadow-xl), var(--pile); }
+
   /* The wash is the progress bar (Ed, 105/116): how far the fill reaches is
      closeness to resolution — since Q1362 (c), how far the room has got
      toward the quorum — how strong the colour is is urgency, and the hue is
