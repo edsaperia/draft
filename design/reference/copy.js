@@ -236,13 +236,24 @@ window.COPY = (function () {
       // omitted where the view does not carry it, which is every document
       // until the engine branch lands, and the line then reads as it always
       // did.
-      tooltip: (judges, roster, floor, yoursLine, approvals) =>
+      // **And how many never answered** (Q1452, Ed 2026-09-18): the 👥 clause
+      // goes on naming the whole membership — *(5 of 10)* — while a proposal
+      // carries on two approvals, because 💤's period takes a silent member
+      // out of the group the quorum is read against. The clause stays as it
+      // is and the outcome card says the rest: how many people did not answer
+      // in time. Omitted at zero and where the record does not carry the
+      // number at all — a decision nobody ran out of time on has nothing to
+      // report, and neither has one taken before the rule existed.
+      counts: (judges, roster, floor, yoursLine, approvals, abstained) =>
         judges + ' of ' + roster + ' weighed in · ' +
         (approvals === null || approvals === undefined ? '' : approvals + ' preferred it · ') +
+        (abstained ? abstained + ' did not answer in time · ' : '') +
         'quorum was ' + floor + ' · ' + yoursLine,
       youSaid: (verdict) => 'you ' + verdict,
       youNever: 'you never voted on this',
-      undecided: 'Undecided at the close',
+      // Ed's words (Q1456, 2026-09-18), one phrase for a proposal the clock
+      // cut off, a wording and a motion alike
+      undecided: 'Proposal ran out of time',
       decided: 'Decided',
       capped: 'the ranking maths stopped short on this one; the decision stands',
       // under the head, where the clause no longer reads as the record left it (Q1333)
@@ -871,6 +882,23 @@ window.COPY = (function () {
       keptTip: 'Kept — press to lay it down at the start',
       downTip: 'Laid down at the start — press to keep it',
       givenTip: 'Already given up on its own card — it comes back only there',
+    },
+    // 🥂's batch (SURFACE E24, §9's 🥂 row). The rest of the list is still
+    // literal in `begin.js` and moves here with issue #19; this one sentence
+    // was written after the rule that the words live in this file, so it
+    // starts here.
+    //
+    // **The line for what the clock found running** (Q1450, Ed 2026-09-18).
+    // A motion still open when the document closes fails at that moment, on
+    // either route, and nothing on the surface said so: the ordinary one
+    // raised its mover a card no shut document lets them press, and the
+    // constitutional one — which SURFACE E41 already said 🥂 spoke for —
+    // was spoken for by nothing. The verb is **pass** (STYLE T8), and the
+    // line is omitted at zero rather than reading *0 motions*, unlike the
+    // lines around it: it appears when there is something to say.
+    closeBatch: {
+      stillOpenOne: 'motion was still open and did not pass',
+      stillOpenMany: 'motions were still open and did not pass',
     },
     // the gates and grants (GATES): titles, bodies, locklines
     gate: {

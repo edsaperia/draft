@@ -1,5 +1,18 @@
+<html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- **The root element above, for its `lang` alone** (Q1394 (a), Ed
+     2026-09-18). WCAG 3.1.1 is Level A and this page had nothing to hang it
+     on: the file opened at `<meta charset>` and the parser synthesised
+     html/head/body, so a screen reader was handed English copy with no voice
+     to read it in. **No doctype, deliberately** — there has never been one,
+     the page has always rendered in quirks mode (`document.compatMode` is
+     `BackCompat`), and adding one would re-measure every box on the surface.
+     A bare `<html>` start tag changes no rendered byte: head and body are
+     still synthesised around exactly the same children, which is why the tag
+     stands first and this note stands under it — the charset declaration has
+     to stay inside the document's first 1024 bytes. -->
+
 <title>docs.vote</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪶</text></svg>">
 <link rel="stylesheet" href="system.css">
@@ -217,7 +230,18 @@
     <!-- the two drawer doors, narrow only (Ed, 2026-09-12): the contents rail
          slides in from the left, the task rail from the right -->
     <button class="drawerbtn" id="drawerleft" type="button" aria-expanded="false" aria-controls="toc" title="Contents">☰</button>
-    <p class="brand ph" id="title"><a class="quill" id="quill" href="/" title="docs.vote — make a new document"></a><span id="titletext">Untitled</span></p>
+    <!-- **The document's name is the page's first-level heading** (Q1394 (b),
+         Ed 2026-09-18). `h1#doctitle` sits at the top of the document and is
+         the h1 wherever it shows — but the fixture's session and closed
+         epochs hide the whole title row (`.doc.fixsession .titlerow`), so on
+         those a reader found no level-one heading at all and the first
+         heading was a section's `h2`. This span is the one place the title
+         stands in **every** epoch, live path included, and it is first in
+         reading order. It takes the heading semantics as attributes rather
+         than as a tag: an `<h1>` inside this `<p>` would close the paragraph
+         at the parser, and the name has to be the title alone — the 🪶 beside
+         it is a link to a new document, not part of what this heading says. -->
+    <p class="brand ph" id="title"><a class="quill" id="quill" href="/" title="docs.vote — make a new document"></a><span id="titletext" role="heading" aria-level="1">Untitled</span></p>
     <div class="stats">
       <!-- room-pulse: one content-free beat per action by anybody (session-view's) -->
       <span class="pulse" id="pulse" aria-hidden="true"
@@ -351,7 +375,20 @@
 <div class="alphaflag"><b>Warning:</b> docs.vote is in alpha!</div>
 <div class="wrap">
   <div class="layout">
-    <nav class="toc"><ul id="toc"></ul></nav>
+    <!-- **The three columns and the topbar are landmarks, and now they have
+         names** (Q1394 (c), Ed 2026-09-18). The elements were here already —
+         `header.navbar` is a child of `<body>` and so is the banner, `<main>`
+         is the document column, this `<nav>` is the contents rail and the
+         `<aside>` below is the task rail — and the 2026-09-16 audit's claim
+         that no landmark reaches the page on any epoch does not hold against
+         the tree: all four are in its own payload, and axe's `region` leaves
+         everything inside them alone. What was missing is that two landmarks
+         of different jobs both answered to nothing, so a reader navigating by
+         landmark met *navigation* and *complementary* with no way to tell
+         which rail either was. They take the words their own drawer doors
+         already wear at narrow — the doors that open these very elements —
+         so the name a reader hears and the name a phone reader taps match. -->
+    <nav class="toc" aria-label="Contents"><ul id="toc"></ul></nav>
     <main>
       <div class="doc" id="doc">
         <!-- the tab beside the title is the way in (Ed, 2026-08-18: the
@@ -390,7 +427,7 @@
         <div id="patchrow"></div>
       </div>
     </main>
-    <aside class="queue stack"><ul id="rail"></ul></aside>
+    <aside class="queue stack" aria-label="What needs you"><ul id="rail"></ul></aside>
   </div>
 </div>
 <svg id="wires" aria-hidden="true"></svg>
@@ -9400,3 +9437,4 @@
   }
 })();
 </script>
+</html>

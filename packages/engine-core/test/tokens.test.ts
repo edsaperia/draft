@@ -5,7 +5,7 @@ import {
   dripIntervalMs,
   materialize,
   openLedger,
-  performanceRefund,
+  exitRefund,
   spend,
   type Ledger,
 } from '../src/tokens.js';
@@ -88,13 +88,20 @@ describe('token economy (SPEC §7, §9.3)', () => {
     expect(balanceAt(l, still, 9 * HOUR)).toBe(4);
   });
 
-  it('performance refund follows stake × min(w/0.5, 1.5)', () => {
-    expect(performanceRefund(1, 0)).toBe(0);
-    expect(performanceRefund(1, 0.25)).toBe(0.5);
-    expect(performanceRefund(1, 0.5)).toBe(1);
-    expect(performanceRefund(1, 0.75)).toBe(1.5);
-    expect(performanceRefund(1, 0.99)).toBe(1.5);
-    expect(performanceRefund(2, 0.25)).toBe(1);
+  it('only a proposal that passes is refunded, and only its stake (Q1454)', () => {
+    // Until Q1454 this was `stake × min(peakW / 0.5, 1.5)`: every ending paid
+    // something, a rejected wording could pay 1.5× the stake, and a failure
+    // therefore cost nothing. The rule now knows three endings and two prices.
+    expect(exitRefund(1, 'passed')).toBe(1);
+    expect(exitRefund(1, 'handed-back')).toBe(1);
+    expect(exitRefund(1, 'failed')).toBe(0);
+    // the stake itself, never a multiple of it, whatever the stake is
+    expect(exitRefund(2, 'passed')).toBe(2);
+    expect(exitRefund(2, 'handed-back')).toBe(2);
+    expect(exitRefund(2, 'failed')).toBe(0);
+    // and a candidate that staked nothing — the Founder's decree — gets
+    // nothing back through any door
+    expect(exitRefund(0, 'passed')).toBe(0);
   });
 });
 

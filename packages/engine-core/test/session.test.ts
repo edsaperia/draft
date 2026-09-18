@@ -136,15 +136,11 @@ describe('session lifecycle', () => {
     expect(s.getCandidate(c2).state).toBe('rebase-pending');
     expect(s.getCandidate(c3).state).toBe('live');
 
-    // Winner refunded above its stake, capped at 1.5× (SPEC §7). A property
-    // rather than a number since v0.16: the author's own vote is a mover, so
-    // this race reaches its floor and adopts a judge earlier than it used to,
-    // on thinner outside evidence — and the refund pays on how the *room*
-    // received it, so it lands near 1.25 where it used to hit the cap. Both
-    // movements are the mechanism working.
-    const won = s.getCandidate(c1).exit!.refund;
-    expect(won).toBeGreaterThan(1);
-    expect(won).toBeLessThanOrEqual(1.5);
+    // The winner has its stake back, and exactly that (SPEC §7, Q1454). It
+    // used to be refunded *above* the stake — `stake × min(w/0.5, 1.5)`, so a
+    // well-received wording turned a profit on winning and a rejected one was
+    // paid too. Proposing well is free now, and never better than free.
+    expect(s.getCandidate(c1).exit!.refund).toBe(s.constitution.stake);
 
     // The loser confirms against the new text; evidence resets.
     s.confirmRebase(t + 1000, c2, rewrite(1, 1, 'Membership is granted by majority vote.'));
@@ -540,11 +536,13 @@ describe('session lifecycle', () => {
     ).toBeTruthy();
   });
 
-  it('an author cannot open their own performance account (SPEC §3.3, §7)', () => {
-    // The refund is stake × min(w/0.5, 1.5), and one favourable comparison is
-    // already enough to reach the cap — so if an author's own recorded
-    // preference counted as performance, submit-then-retire would pay 1.5× the
-    // stake with nobody else involved. Somebody else has to open the account.
+  it('an author cannot open their own performance account (SPEC §3.3, §8)', () => {
+    // A candidate has no performance until somebody other than its author has
+    // judged it: the author's own recorded preference is a voice, not
+    // evidence. Since Q1454 nothing is paid for a performance at all — a
+    // retirement returns nothing whatever the room thought — so what the rule
+    // now protects is the peak that ranks the graveyard and the backlog (§8),
+    // asserted here beside the wallet it used to protect.
     const s = openSession();
     const { id } = s.submitCandidate(1000, {
       author: 'p1',
@@ -553,11 +551,12 @@ describe('session lifecycle', () => {
     });
     const before = s.balance('p1', 1000);
     s.retire(2000, id);
+    expect(s.getCandidate(id).peakW).toBe(0);
     expect(s.getCandidate(id).exit!.refund).toBe(0);
     expect(s.balance('p1', 2000)).toBe(before); // strictly no better off
   });
 
-  it('refunds by the book: withdrawal full, retirement per performance', () => {
+  it('refunds by the book: withdrawal full, a proposal that did not pass nothing', () => {
     const s = openSession();
     const { id: c1 } = s.submitCandidate(1000, {
       author: 'p1',
@@ -572,21 +571,21 @@ describe('session lifecycle', () => {
     expect(s.balance('p1', 1500)).toBe(2);
     s.withdraw(2000, c1);
     expect(s.balance('p1', 2000)).toBe(3); // full stake back
-    // c2 loses to the incumbent and retires: refund < stake. Three losses
-    // rather than two since v0.16 — the author's own preference is in the
-    // ranking and offsets the first of them. **And since Q1440 it retires
-    // itself**: the third loss is the answer after which no answer still to
-    // come could carry it, so the domination pass takes it at that same sweep
-    // and the explicit `retire` this test used to make would throw.
+    // c2 loses to the incumbent and retires: nothing comes back (Q1454, where
+    // this used to pay by performance). Three losses rather than two since
+    // v0.16 — the author's own preference is in the ranking and offsets the
+    // first of them. **And since Q1440 it retires itself**: the third loss is
+    // the answer after which no answer still to come could carry it, so the
+    // domination pass takes it at that same sweep and the explicit `retire`
+    // this test used to make would throw.
     const inc = s.raceOf(c2).incumbentId;
     s.judge(3000, 'p2', c2, inc, 'b');
     s.judge(4000, 'p3', c2, inc, 'b');
     s.judge(4500, 'p4', c2, inc, 'b');
     expect(s.getCandidate(c2).state).toBe('retired');
     expect(s.getCandidate(c2).exit!.cause).toBe('dominated');
-    const refund = s.getCandidate(c2).exit!.refund;
-    expect(refund).toBeGreaterThanOrEqual(0);
-    expect(refund).toBeLessThan(1);
+    expect(s.getCandidate(c2).exit!.refund).toBe(0);
+    expect(s.balance('p1', 5000)).toBe(3); // the withdrawal's ✏️ and no other
   });
 
   it('serves feeds: deterministic, magnitude-only, no repeats of judged pairs', () => {

@@ -38,7 +38,8 @@ export {
   relativeEditDistance,
 } from './dedup-gate.js';
 export type { DedupGateOptions, DedupVerdict } from './dedup-gate.js';
-export { performanceRefund } from './tokens.js';
+export { exitRefund } from './tokens.js';
+export type { CandidateExit } from './tokens.js';
 export { diffLines, splitLines, joinLines } from './text/diff.js';
 export {
   applyPatch,

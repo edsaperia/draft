@@ -187,7 +187,7 @@ describe('domination by the current text (Q1440)', () => {
     expect(s.getCandidate(id).exit?.cause).toBe('dominated');
   });
 
-  it('the stake comes back on the candidate performance the room gave it', () => {
+  it('and the stake stays spent: a proposal closed early did not pass', () => {
     const { s, id } = proposed({ quorum: { form: 'share', n: 50 } });
     const before = s.balance('p1', 2000);
     const r0 = raceOrNone(s, 2000)!;
@@ -195,11 +195,11 @@ describe('domination by the current text (Q1440)', () => {
       s.judge(2000 + i, m, id, r0.incumbentId, 'b');
     }
     expect(s.getCandidate(id).state).toBe('retired');
-    // the refund is §7's performance refund, as it is at any retirement; a
-    // candidate nobody preferred pays back less than its stake
-    const exit = s.getCandidate(id).exit!;
-    expect(exit.refund).toBeLessThan(s.constitution.stake);
-    expect(s.balance('p1', 3000)).toBeCloseTo(before + exit.refund, 9);
+    // §7 refunds a proposal that passes and nothing else (Q1454), and closing
+    // one early is not a way of handing it back: this used to pay on the peak
+    // the wording reached, which a domination closes above rather than below.
+    expect(s.getCandidate(id).exit!.refund).toBe(0);
+    expect(s.balance('p1', 3000)).toBe(before);
   });
 });
 

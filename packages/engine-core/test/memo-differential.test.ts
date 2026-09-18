@@ -173,7 +173,7 @@ function picture(s: Session, t: number): unknown {
     // which is what puts the time-free half of the memo under test.
     races: s.races(t),
     judgments: s.judgments(),
-    // peakW rides here, and it is what a refund is computed from
+    // peakW rides here, and it is what the graveyard's ranking is taken from
     candidates: s.allCandidates(),
     floor: s.adoptionFloor(),
     edges: s.totalEdgeComparisons,

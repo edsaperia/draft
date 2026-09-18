@@ -91,8 +91,8 @@ describe('a motion carries when it is on top, and the verdict is not the applica
     expect(s.document()).toBe(TEXT);
     expect(s.currentVersion()).toBe(0);
     expect(s.standing('ending')).toEqual({ endsAtMs: 10 * HOUR });
-    // Stake refunded on performance like any adoption (§7).
-    expect(s.balance('p1', 2000)).toBeGreaterThan(3);
+    // The stake back, and exactly it, like any adoption (§7, Q1454).
+    expect(s.balance('p1', 2000)).toBe(4);
   });
 
   it('withdrawal hands the stake back whole (§3.3a)', () => {

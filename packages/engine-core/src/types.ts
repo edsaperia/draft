@@ -217,7 +217,7 @@ export interface Candidate {
   submittedT: number;
   state: CandidateState;
   stakePaid: number;
-  /** Peak modeled P(beats incumbent) — refund basis (SPEC §7). */
+  /** Peak modeled P(beats incumbent) — the graveyard's ranking (SPEC §8). */
   peakW: number;
   /** Informed redrafts consumed by this position (SPEC §6.2). */
   redrafts: number;

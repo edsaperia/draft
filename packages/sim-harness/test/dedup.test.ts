@@ -210,7 +210,23 @@ describe('sim regression: dedup off is byte-identical to before the gate existed
   // below produced this hash and `Session.replay` reproduces it — which is
   // the invariant this test defends
   // (was 60f8828ba5ac36b06ef972a353123439f51fed81e212e7f074cca9aa810fe20e).
-  const PINNED = '73e1f486364e05b34ba7ede3339f31cb15ca2ea595501ea76d39af7f6ede7bd0';
+  // (…that pin was 73e1f486364e05b34ba7ede3339f31cb15ca2ea595501ea76d39af7f6ede7bd0, and the two re-pins met at the merge:)
+  // Re-pinned 2026-09-18 (Q1454, SPEC §7 v0.135, R-133): only a proposal that
+  // passes is refunded, and it is refunded exactly its stake. Two things move
+  // the chain, and nothing else did: every `candidate-retired` and every
+  // `adopted` event carries a `refund` field, so the first exit in this run
+  // hashes differently and the chain after it with it; and wallets are tighter
+  // — a rejected wording used to pay something back, so personas here propose
+  // fewer times and later, which moves what is served and when races reach
+  // their floor. Both variants below produced this hash, a second no-gate run
+  // agreed and `Session.replay` reproduces it — which is the invariant this
+  // test defends
+  // (was 60f8828ba5ac36b06ef972a353123439f51fed81e212e7f074cca9aa810fe20e).
+  // **And pinned a third time the same morning, at the merge of those two**:
+  // Q1452's pin (73e1f486…) and Q1454's (2aee2d31…) were each taken on a branch
+  // that lacked the other's change, so neither is the hash of a tree holding
+  // both. This one is — both variants below produced it, twice over.
+  const PINNED = '66e2eebe398fb8ab8bc068cce1c971b9d7268c3c886305e84d612bb7a2092a31';
 
   const run = (withGate: boolean) =>
     runSession({
@@ -325,7 +341,7 @@ describe('dedup-gate in a full scripted run', () => {
     const lines: string[] = [];
     const { session } = await runSession({
       scenario: dupeScenario,
-      windowMs: 12 * HOURS,
+      windowMs: 24 * HOURS,
       seed: 'dupes',
       makePersona: (profile, rng) => new ScriptedPersona(profile, dupeScenario, rng),
       // Hold the floor above reach so candidates stay live and the second
@@ -349,6 +365,15 @@ describe('dedup-gate in a full scripted run', () => {
     // below are therefore over the run rather than over one candidate, and
     // they say exactly what they said before: one merge per live original,
     // and a repeat of one already merged is skipped.
+    //
+    // **Twelve hours became twenty-four at Q1454**, and nothing else here
+    // moved. A rejected proposal is no longer refunded (SPEC §7), so these two
+    // drafters are wallet-bound rather than time-bound: twelve hours bought
+    // nineteen originals when every retirement paid something back and buys
+    // twelve now, too few for any drafter to meet a live original it already
+    // supports — the one case the *skipped* line is about. The window is the
+    // room the run needs to reach that case, not a loosened assertion: every
+    // expectation below is the one it was, and each still has a witness.
     const dupes = lines.filter((l) => l.includes('drafts a duplicate of'));
     expect(dupes.length).toBeGreaterThan(1);
     expect(dupes.every((l) =>

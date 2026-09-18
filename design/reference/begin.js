@@ -428,12 +428,22 @@ window.BEGIN = (function () {
           : 'It comes back to you the moment the questions stand.') + '</p>';
     };
     // what the close did, in one card: final as of when, what adopted, what
-    // carried, what was left undecided, whose names the record reveals
+    // carried, what the clock found still running, what was left undecided,
+    // whose names the record reveals
     const closingBody = (c) => {
       const rec = env.cs && env.cs.isRemote ? env.cs.record : null;
       const adopted = rec ? rec.adopted.length : (env.FIX ? SESSION.SUGGS.filter((g) => g.state === 'sealed' && g.won).length : 0);
       const undecided = rec ? rec.undecided.length : SESSION.SUGGS.filter((g) => g.undecided).length;
-      const carried = env.cs ? [...env.cs.motionRecords().values()].filter((m) => m.status === 'carried').length : 0;
+      const motionRecs = env.cs ? [...env.cs.motionRecords().values()] : [];
+      const carried = motionRecs.filter((m) => m.status === 'carried').length;
+      // **What the clock found running** (Q1450, Ed 2026-09-18), both routes
+      // and one count: a constitutional motion the close kept wears its own
+      // status, and an ordinary one the close held is a `held` record the
+      // module marked — `heldBy: 'close'` over the wire, `heldAtClose` on the
+      // module's own record, which is the same two shapes `recAt` and
+      // `heldByOf` normalise. Neither says *rejected*: nobody decided them.
+      const stillOpen = motionRecs.filter((m) => m.status === 'kept-at-close' ||
+        (m.status === 'held' && (m.heldBy === 'close' || m.heldAtClose))).length;
       const unassented = rec ? rec.carriedButUnassented.length : 0;
       const n = (k, one, many) => k + ' ' + (k === 1 ? one : many);
       // **The record says who is named; the card reads the record** (Q770,
@@ -475,6 +485,10 @@ window.BEGIN = (function () {
         '<ul class="batch">' +
         '<li>' + n(adopted, 'proposal was adopted', 'proposals were adopted') + ' into the text.</li>' +
         '<li>' + n(carried, 'motion passed', 'motions passed') + (unassented ? '; ' + n(unassented, 'passed change waited', 'passed changes waited') + ' on an assent that never came, and goes to the backlog' : '') + '.</li>' +
+        // omitted at zero, unlike the lines around it: it is a line that
+        // appears when there is something to say (Q1450)
+        (stillOpen ? '<li>' + n(stillOpen, PAGE_COPY.closeBatch.stillOpenOne,
+          PAGE_COPY.closeBatch.stillOpenMany) + '.</li>' : '') +
         '<li>' + n(undecided, 'question was', 'questions were') + ' left undecided — the text stands, and ' +
           (undecided === 1 ? 'it is' : 'they are') + ' filed below the charter as its backlog.</li>' +
         '<li>' + names + '</li>' +

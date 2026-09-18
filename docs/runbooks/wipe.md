@@ -6,6 +6,12 @@ written before it is the pre-people shape and is skipped at boot (`/healthz` cou
 the next document is born into the split. It is not a routine operation: after this one run, the
 store never holds the old shape again and there is nothing left for `wipe` to do.
 
+**It ran a second time on 2026-09-18**, for a different reason: while the alpha's documents
+are disposable (Ed, 2026-09-17), a batch that tightens the rules with no path for older logs
+is preceded by a wipe rather than a migration. **Wipe first, then push** — `verify-deploy`
+compares `/healthz` from before the deploy with the counts after it. Skip step 6's founding
+of a test document then: it would be born on the old code minutes before the new rules land.
+
 **Where:** the `draft` service's shell in the Render dashboard, where `DATABASE_URL` is the
 frankfurt database's internal connection string and `dist/draft-tools.mjs` is the built artifact.
 Nothing here runs from a laptop: the internal string does not resolve outside Render.
@@ -35,7 +41,10 @@ Nothing here runs from a laptop: the internal string does not resolve outside Re
 
        node dist/draft-tools.mjs wipe "$DATABASE_URL"
 
-   Read the count. It should equal `/healthz`'s `documents` + `documentsSkipped`.
+   Read the count. It should equal `/healthz`'s `documents` + `documentsSkipped`
+   + `documentsQuarantined` — the host's `documents` is what it loaded, and a
+   quarantined log is in the store without being loaded (2026-09-18: 11 and 3,
+   and the refusal printed 14).
 
 4. **The wipe.** The flag takes the database's own name — the last path segment of the URL —
    typed in full; the tool refuses any other name and never echoes the expected one:

@@ -6,11 +6,14 @@ needing Ed's sign-off is in QUESTIONS.md; the rest is engineering record.
 ## Mechanism decisions
 
 - **peakW starts at 0 and only moves on evidence.** The bare prior puts any
-  untested candidate at P ≈ 0.5, so the spec's refund formula taken literally
-  would refund junk in full before a single judgment — an anti-flooding hole.
-  A candidate's peakW updates only from fits in which it has at least one
-  comparison. Corollary: a never-judged candidate that retires refunds 0
-  (withdrawal still refunds fully).
+  untested candidate at P ≈ 0.5, so the refund formula §7 carried until Q1454,
+  taken literally, would have refunded junk in full before a single judgment —
+  an anti-flooding hole. A candidate's peakW updates only from fits in which it
+  has at least one comparison. **The refund no longer reads it** (Q1454, SPEC
+  v0.135, R-133: a proposal that passes returns its stake, and nothing else
+  returns anything), and the rule stands unchanged for the peak's remaining
+  job — ranking the graveyard and the backlog (§8), where an author's own
+  preference must not open an account either.
 - **Incumbent identity is the hash of the contested spans' current text.**
   Incumbency is positional (SPEC §4.4); evidence against the incumbent goes
   stale exactly when the text it judged stops being the status quo. Slightly

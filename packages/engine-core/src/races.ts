@@ -978,13 +978,13 @@ export class Races {
 
   updatePeaks(race: RaceView): void {
     // Performance is how the **room** received a candidate, and an author is
-    // not the room — so the refund (§7) pays on a fit without any derived
-    // preference in it, and a candidate has no performance at all until
-    // somebody else has judged it. Without the second half, submitting would
-    // open an account out of nothing, and since the refund is
-    // stake × min(w/0.5, 1.5) — where one favourable comparison already
-    // reaches the cap — submit-then-retire would pay 1.5× the stake with
-    // nobody else involved.
+    // not the room — so the peak is taken on a fit with no derived preference
+    // in it, and a candidate has no performance at all until somebody else
+    // has judged it. Without the second half, submitting would open an
+    // account out of nothing. The peak stopped pricing the refund at Q1454 —
+    // §7 hands the stake back on a pass and nothing on a failure — and goes
+    // on ranking the graveyard and the backlog (§8), which is the reading
+    // that must not take a wording's own author for evidence.
     const room = this.usableComparisons(race.members, race.incumbentId)
       .filter((c) => !c.derived);
     const fit = fitDavidson(

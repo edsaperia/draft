@@ -871,6 +871,37 @@ window.CARDS = (function () {
     }
     return seed(s.src, stripTags(resultOnly(s.marked)), s.keys);
   }
+  /* **A lane's name is the wording beside it** (Q1395 (a), Ed 2026-09-18).
+     CP1 puts the option's name on the block and leaves the button saying only
+     *Prefer this*, which is right for the eye and leaves a screen reader
+     hearing the same four words for both rival wordings. The block cannot
+     move onto the button without undoing CP1, so the button borrows it:
+     `aria-labelledby` naming the block's own text **and the button itself**.
+     The self-reference is what carries the state word correctly — the name
+     computation skips whichever of `.off`/`.on` CSS is hiding, so the name
+     reads *‹wording› Prefer this* while the lane rests and *‹wording›
+     Preferred* once it is chosen, instead of carrying both at once as the
+     bare text content does. It also keeps WCAG 2.5.3 Label in Name, which
+     naming the block alone fails: axe reports `label-content-name-mismatch`,
+     serious, the moment a control's visible word is not in its name.
+
+     The ids have to be unique on a page where two of a patch's cards are open
+     at once, and identical on every re-render, or the probes' html hashes go
+     non-deterministic — so they are derived from the card, its site and the
+     lane's own value, never minted from a counter. The value can be a
+     member-typed setting on a motion lane, so it is reduced to id-safe
+     characters rather than trusted. */
+  const idPart = (v) => String(v == null ? '' : v).replace(/[^A-Za-z0-9_-]+/g, '-');
+  const laneStem = (s, key, v) => idPart(s && s.id) + '-' + idPart(key) + '-' + idPart(v);
+  /** the element holding a lane's wording — a `.rtext`, or a composer block's `.opttext` */
+  const laneNameId = (s, key, v) => 'lw-' + laneStem(s, key, v);
+  /** the lane radio itself, so its own visible word joins its name */
+  const laneBtnId = (s, key, v) => 'lb-' + laneStem(s, key, v);
+  /** the clause at the head: the head lane's wording, and the group's name */
+  const laneHeadId = (s, key) => 'lh-' + idPart(s && s.id) + '-' + idPart(key);
+  /** what a card carrying lanes wears, so its options are one group rather than three loose radios */
+  const laneGroupAttrs = (s, key) =>
+    ' role="radiogroup" aria-labelledby="' + laneHeadId(s, key) + '"';
   const laneProposeHtml = (s, lane, key) =>
     '<button class="lanepropose" data-propose-from="' + s.id + '|' + lane + '|' + (key || '') +
     '" title="' + G.proposeEdit.title + '">' +
@@ -1163,8 +1194,14 @@ window.CARDS = (function () {
     }, env0 || {});
 
     // The pick control. Two labels rather than one rewritten in JS, so the
-    // existing `choose()` — which only ever flips aria-pressed — keeps working
-    // untouched across every card a patch is showing on.
+    // existing `choose()` — which only ever flips the chosen attribute — keeps
+    // working untouched across every card a patch is showing on.
+    //
+    // **It is a radio, and it says which** (Q1395 (a)): `role="radio"` with
+    // `aria-checked`, and the name borrowed from the block beside it through
+    // `o.nameId`. `aria-pressed` goes with the role — `aria-pressed` on a
+    // `radio` is `aria-allowed-attr`, critical — so the chosen state lives in
+    // `aria-checked` on these lanes, and the stylesheet answers to both.
     function laneBarHtml(s, v, opts) {
       const o = opts || {};
       // the register is the caller's (CP2): a judgment's lane prefers; a
@@ -1174,9 +1211,13 @@ window.CARDS = (function () {
       // default, the current text's included** (Q1362 (a)): the field has no
       // privileged member, so it can have no privileged register.
       const w = o.words || { off: G.lane.prefer, on: G.lane.preferred, title: G.lane.pickTitle };
+      const bid = laneBtnId(s, o.key, v);
       return '<div class="lanebar">' +
         '<button class="lanepick" type="button" ' + env.valAttr + '="' + esc(String(v)) + '"' +
-        ' aria-pressed="' + (env.pickOf(s) === v) + '"' + (env.lockedOf(s) ? ' disabled' : '') +
+        ' id="' + bid + '" role="radio"' +
+        ' aria-checked="' + (env.pickOf(s) === v) + '"' +
+        (o.nameId ? ' aria-labelledby="' + o.nameId + ' ' + bid + '"' : '') +
+        (env.lockedOf(s) ? ' disabled' : '') +
         ' title="' + esc(w.title) + '">' +
         '<i class="dot" aria-hidden="true"></i>' +
         '<span class="off">' + esc(w.off) + '</span><span class="on">' + esc(w.on) + '</span></button>' +
@@ -1198,6 +1239,7 @@ window.CARDS = (function () {
     // the card feel like the clause opening rather than something replacing it.
     function clauseHeadHtml(s, o) {
       const opt = !!o.v;
+      const headId = laneHeadId(s, o.key);
       // **The strip does not reorder** (Ed, 2026-08-17: *when I click between tabs
       // on a card, they shouldn't move around*). The card's own tab used to be
       // prepended, so every switch dealt the column again and the tab you were
@@ -1237,13 +1279,19 @@ window.CARDS = (function () {
           : o.wash === false ? '' : env.washFor(s, o.key)) + '>' + marks +
         // `html` for the one head built of several paragraphs: a composer site is
         // a run of clauses joined into one piece of text (225)
+        //
+        // **The head's text is named twice over** (Q1395 (a)): it is what the
+        // head's own lane is about, and it is what the whole card is about, so
+        // the card's `radiogroup` borrows the same id. One id, so a reader who
+        // enters the group hears the clause once and then each option by its
+        // own wording.
         (o.html !== undefined
-          ? '<div class="rtext">' + o.html + '</div>'
+          ? '<div class="rtext" id="' + headId + '">' + o.html + '</div>'
           : o.text === null
-          ? '<div class="rtext none">' + esc(o.nothing != null ? o.nothing : G.head.noText) + '</div>'
+          ? '<div class="rtext none" id="' + headId + '">' + esc(o.nothing != null ? o.nothing : G.head.noText) + '</div>'
           // the clause in blocks (Q1406): a run of paragraphs keeps its
           // breaks, a heading in it its rank — `o.text` is the source
-          : '<div class="rtext">' + (String(o.text).trim() ? mdBlocksHtml(null, o.text) : esc(o.text)) + '</div>') +
+          : '<div class="rtext" id="' + headId + '">' + (String(o.text).trim() ? mdBlocksHtml(null, o.text) : esc(o.text)) + '</div>') +
         '</div>' +
         // **The head's lane is a lane like any other** (Q1362 (a), 2026-09-15):
         // the current text is a candidate in the field, authored by nobody and
@@ -1252,7 +1300,7 @@ window.CARDS = (function () {
         // What says it is the current text is the head's label above it. The
         // lane **id** stays `keep`: that is the value `judge()` sends and the
         // server reads, and only the words were ever the asymmetry.
-        (opt ? laneBarHtml(s, o.v, { lane: 'keep', key: o.key, edit: o.edit }) : '') +
+        (opt ? laneBarHtml(s, o.v, { lane: 'keep', key: o.key, edit: o.edit, nameId: headId }) : '') +
         '</div>';
     }
 
@@ -1261,13 +1309,18 @@ window.CARDS = (function () {
     // `by` is a name the reveal rule has already allowed (a signed proposal,
     // or one made under `public` — Q770): the speaker is revealed, and the
     // sealed title does not apply to it.
-    const proposalHtml = (s, o) =>
-      '<div class="propblock">' +
-      (o.tag ? '<div class="rtag">' + o.tag + '</div>' : '') +
-      '<div class="rtext">' + o.html + '</div>' +
-      speakerHtml(o.why, o.by ? undefined : env.speakerTitle, o.by || undefined) +
-      (o.v ? laneBarHtml(s, o.v, { lane: o.lane || o.v, key: o.key, edit: o.edit }) : '') +
-      '</div>';
+    // **A block with a lane names it** (Q1395 (a)): the wording is the option,
+    // so `.rtext` takes an id and the lane beneath borrows it. A block with no
+    // lane — the 👑 card's, a record's — takes none, because nothing points at it.
+    const proposalHtml = (s, o) => {
+      const nameId = o.v ? laneNameId(s, o.key, o.v) : '';
+      return '<div class="propblock">' +
+        (o.tag ? '<div class="rtag">' + o.tag + '</div>' : '') +
+        '<div class="rtext"' + (nameId ? ' id="' + nameId + '"' : '') + '>' + o.html + '</div>' +
+        speakerHtml(o.why, o.by ? undefined : env.speakerTitle, o.by || undefined) +
+        (o.v ? laneBarHtml(s, o.v, { lane: o.lane || o.v, key: o.key, edit: o.edit, nameId }) : '') +
+        '</div>';
+    };
 
     function commitRowHtml(s, extra) {
       // **Indifference is a full option block** (CP4, Q1099, 2026-08-31 —
@@ -1302,9 +1355,13 @@ window.CARDS = (function () {
     // the bar takes a class of its own to wear there.
     function vinBlockHtml(s) {
       const pick = env.pickOf(s);
+      // **The third option is a radio like the two above it** (Q1395 (a)), and
+      // the one whose name needs no borrowing: a textless block's radio already
+      // names the act, so *Indifferent* is both what it shows and what it says.
       return '<div class="pick vinblock">' +
         '<button class="lanepick vin" type="button" ' + env.valAttr + '="indifferent"' +
-        ' aria-pressed="' + (pick === 'indifferent') + '"' + (env.lockedOf(s) ? ' disabled' : '') +
+        ' role="radio" aria-checked="' + (pick === 'indifferent') + '"' +
+        (env.lockedOf(s) ? ' disabled' : '') +
         ' title="' + (s.kind === 'diagonal' ? G.commit.vinDiagonal : G.commit.vinPair) + '">' +
         '<i class="dot" aria-hidden="true"></i>' +
         '<span class="off">' + G.commit.indifferent + '</span><span class="on">' + G.commit.indifferent + '</span></button></div>';
@@ -1651,7 +1708,7 @@ window.CARDS = (function () {
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks, mdDiffPieces, mdPiecesHtml, mdDiffHtml, mdBlocksHtml,
     originText, MD_RX, mdToHtml, htmlToMd, mdStrip, mdBlock, linkify, linkifyHtml, mdLine,
     MD_ONE, mdLead, mdInner, mdParts, richToSource, sourceToRich, readLane,
-    laneSeed, laneProposeHtml, laneCtlHtml, speakerHtml, railSpeakerHtml, secToggleHtml, fieldHtml, fieldOf, groundNote,
+    laneSeed, laneProposeHtml, laneCtlHtml, laneNameId, laneGroupAttrs, speakerHtml, railSpeakerHtml, secToggleHtml, fieldHtml, fieldOf, groundNote,
     initials, PERSON, avHtml,
     headOnlyHeight, cardBody, COLLAPSE_MS, EXPAND_MS,
     make,

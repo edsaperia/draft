@@ -356,6 +356,26 @@ else {
     const owed = ((await viewFor(who)).view.owedHeld) || [];
     if (owed.includes(motion)) fail('E41’s audience', who + ' was owed a card about somebody else’s motion');
   }
+  // **and the card the mover is owed wears the ✖** (Q1451, Ed 2026-09-18: *X
+  // symbol should be for any kind of proposal you made that was rejected or
+  // refused*). E41 is news whose news is a rejection, and it wore the ✔ every
+  // news card wears — so the one line in the rail saying *your proposal did
+  // not pass* was drawn with the mark this alphabet uses for *something
+  // carried*. Read off the class and never off the character (Q288). A door's
+  // rejection has no tab — it is the rail entry and the sentence beside
+  // *Members* (E41's channel), the pile being the rule's and a door having
+  // none — so the rail is the whole of what this walk can assert. Red on the
+  // pre-Q1451 page at *mk-adopted*.
+  await mover.reload();
+  await T(2500);
+  const heldMark = await mover.evaluate((k) => {
+    const q = document.querySelector('#rail .qitem[data-q="' + k + '"] .mk');
+    return q ? [...q.classList].find((c) => c.startsWith('mk-')) || null : null;
+  }, 'held:' + motion);
+  say('held ✖     · ' + JSON.stringify(heldMark));
+  if (heldMark !== 'mk-retired') {
+    fail('E41’s mark', 'the mover’s entry should wear the drawn ✖, saw ' + heldMark);
+  }
   // nobody was invited…
   const seated = ((v2.view.members) || []).some((m) => m.email === SECOND);
   if (seated) fail('the invitation', 'a held invitation seated its invitee');
