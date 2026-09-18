@@ -235,7 +235,7 @@ if (GAP) {
   await browser.close();
   // **a new clause is a pure insertion at its own line, and the clause above is untouched**
   const sent = cmds.filter((c) => /propose-text/.test(c.sent) && c.status === 200)
-    .map((c) => { try { return JSON.parse(c.sent).args; } catch (e) { return null; } }).filter(Boolean);
+    .map((c) => { try { return JSON.parse(c.sent).args; } catch { return null; } }).filter(Boolean);
   const pure = sent.some((a) => (a.hunks ?? []).length === 1 && a.hunks[0].start === a.hunks[0].end &&
     a.hunks[0].start === CLAUSE + 1 && (a.hunks[0].lines ?? []).join('\n') === 'This is a pluralist, pan-political space.');
   if (!sent.length) say('no propose-text was accepted');

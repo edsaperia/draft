@@ -366,7 +366,22 @@ window.COMPOSER = (function () {
         layoutQueue(); drawWires();
         return;
       }
-      toggle(d.id, true, land);
+      // **A keystroke never travels** (Q1461 (iii), Ed's residency room
+      // 2026-09-18: a new clause typed into a gap came out appended to the
+      // clause above). `toggle`'s travel is a 260–700ms animated scroll and
+      // the caret only lands in the lane on its far side (`after`), so
+      // everything typed in between went on hitting the *column* — and each
+      // of those keystrokes opened a draft of its own, bumping `seqToken`
+      // and cancelling the open that was in flight. Measured in a busy room:
+      // 799px of travel, the card opening 567ms after the Enter, the
+      // sentence's first 26 characters each overwriting the last in a site on
+      // the clause above and only the tail reaching the lane. Nothing is owed
+      // here anyway — the caret is in the block, so the block is on screen,
+      // and the card grows from it without it moving (`keepStill`). Travel
+      // belongs to the two click routes that open a draft somewhere the
+      // reader is not looking: ✏️ on another wording, and *Propose something
+      // else* on a deadlock.
+      toggle(d.id, !initial, land);
     }
 
     // The first keystroke in a clause. Every input is intercepted: the charter
@@ -463,7 +478,7 @@ window.COMPOSER = (function () {
         keepStill(() => renderAll(), '[data-key="' + k1 + '"]');
         land(); layoutQueue(); drawWires(); return;
       }
-      toggle(d.id, true, land);
+      toggle(d.id, false, land);          // a keystroke never travels (above)
     }
 
     // What the same keystroke means when the selection spans more than one block
@@ -518,7 +533,7 @@ window.COMPOSER = (function () {
         keepStill(() => renderAll(), '[data-key="' + keys[0] + '"]');
         land(); layoutQueue(); drawWires(); return;
       }
-      toggle(d.id, true, land);
+      toggle(d.id, false, land);         // a keystroke never travels (above)
     }
 
     // The right-hand lane marks what is new, exactly as every other pair does
