@@ -39,12 +39,12 @@ import { foldTime } from '../src/engine-host.js';
 import { FilePersistence, WriteChain } from '../src/persistence.js';
 import { DocStore, StorePeople } from '../src/store.js';
 import { PauseState, WritePath } from '../src/write-path.js';
-import type { WritePathDeps } from '../src/write-path.js';
+import type { ServerConfig } from '../src/config.js';
 
 const DESIGN_DIR = join(import.meta.dirname, '..', '..', '..', 'design');
 const DAY = 24 * 3600_000;
 
-interface Booted { base: string; draft: DraftServer; dataDir: string }
+interface Booted { base: string; draft: DraftServer; dataDir: string; cfg: ServerConfig }
 const booted: Booted[] = [];
 afterAll(async () => { for (const b of booted) await b.draft.close(); });
 
@@ -61,7 +61,7 @@ async function boot(over: { resendApiKey?: string | null } = {}): Promise<Booted
   const draft = await createDraftServer(cfg, new FilePersistence(dataDir));
   await new Promise<void>((r) => draft.server.listen(0, '127.0.0.1', r));
   cfg.baseUrl = `http://127.0.0.1:${(draft.server.address() as AddressInfo).port}`;
-  const b = { base: cfg.baseUrl, draft, dataDir };
+  const b = { base: cfg.baseUrl, draft, dataDir, cfg };
   booted.push(b);
   return b;
 }
@@ -313,7 +313,7 @@ describe('the dev clock (Q1455): one document moved forward, the host still doin
 
     // a second write path over the same store, differing only in its clock
     const writes = new WritePath({
-      cfg: { engineTuning: { cooldownMs: 0 } },
+      cfg: b.cfg,
       persistence: new FilePersistence(b.dataDir),
       store: b.draft.store,
       commits: new WriteChain(),
@@ -326,7 +326,7 @@ describe('the dev clock (Q1455): one document moved forward, the host still doin
       noteError: () => {},
       closing: () => false,
       now: () => fixed,
-    } as WritePathDeps);
+    });
 
     expect(writes.tOf(doc)).toBeGreaterThanOrEqual(fixed);
     await writes.tick();
