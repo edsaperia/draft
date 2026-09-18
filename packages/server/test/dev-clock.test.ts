@@ -262,6 +262,32 @@ describe('the dev clock (Q1455): one document moved forward, the host still doin
     expect(after.body.error).toMatch(/closed/);
   });
 
+  it('hands the clock back without rewinding it', async () => {
+    const b = await boot();
+    const d = await found(b, { title: 'Handback', members: ['bo@example.org'] });
+    await clock(b, { slug: d.slug, advanceMs: 2 * 3600_000, present: [d.founder] });
+    const doc = b.draft.store.bySlug(d.slug)!;
+    const lastT = (): number => {
+      const l = doc.cs.logEntries();
+      return l[l.length - 1]!.event.t;
+    };
+    const ahead = lastT();
+    expect(foldTime(doc)).toBeGreaterThan(Date.now() + 3600_000);
+
+    const r = await clock(b, { slug: d.slug, release: true });
+    expect(r.status, JSON.stringify(r.body)).toBe(200);
+    expect(r.body.offsetMs).toBe(0);
+    // **not a rewind**: the clock stands where its own log left it and stops
+    // gaining on the wall clock — it never goes behind the document's past
+    expect(foldTime(doc)).toBeGreaterThanOrEqual(ahead);
+    expect(foldTime(doc)).toBeLessThan(ahead + 60_000);
+    // …and an act from here lands at that standstill, not in the past
+    await d.cmd(d.ada, 'set-identity', { name: 'Ada Still' });
+    expect(lastT()).toBeGreaterThanOrEqual(ahead);
+    // idempotent: a second release is a no-op, not a refusal
+    expect((await clock(b, { slug: d.slug, release: true })).status).toBe(200);
+  });
+
   it('is not there at all on a host that is not a dev host', async () => {
     const b = await boot({ resendApiKey: 'not-a-real-key' });
     const r = await post(b.base, '/api/dev/clock', { slug: 'anything', advanceMs: 1000 });

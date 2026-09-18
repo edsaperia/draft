@@ -1540,6 +1540,19 @@ const RUN = {
   /** Press ⏭ on the founder's ladder bar and wait for the page it lands on. */
   ladder: async (step, D) => {
     const page = D.seats.founder.page;
+    // **The dev clock is handed back before the first rung** (Q1455). The
+    // ladder's last two rungs move a document's ending *backwards* by design
+    // — `toClosed` sets it to the very instant it is writing at — and doing
+    // that to a document whose clock is still gaining on the wall clock
+    // wedged the close: the engine ran its own close at a window behind its
+    // own log, threw *timestamps must be non-decreasing*, and threw again
+    // every minute after (Q679's permanent wedge). It bit about one run in
+    // two, and it is what the first `--hat=both` run of this build died of.
+    // The jump has done its whole job by `wait-lapsed`, so the skew goes
+    // here, and the rungs run on the arrangement they were written for.
+    // Releasing is not a rewind: the document's clock stands where it stands
+    // and stops gaining. Idempotent, so both ladder steps may call it.
+    await post(D.docbase, '/api/dev/clock', { slug: D.slug, release: true });
     // the bar posts the `to` it was **rendered** with (`d.next` from its own
     // load-time fetch), and the founder's page was last loaded before 🍾 —
     // so the first ⏭ asked for `session`, already the rung, and did nothing

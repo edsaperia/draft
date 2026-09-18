@@ -53,6 +53,19 @@
  * and the named seats would lapse anyway — silently, on a later tick, a long
  * way from here. Better a refusal that says so.
  *
+ * **Handing it back.** `{ slug, release: true }` drops the skew, and a walk
+ * that is done with it should. Not a rewind: `foldTime` is a maximum over the
+ * document's own logs, so the clock does not go back an instant — it stands
+ * where it stands and stops gaining on the wall clock. The reason a walk
+ * wants that is the **phase ladder**, whose last two rungs move a document's
+ * ending *backwards* by design (`toClosed`: the ending set to the very
+ * instant being written at). Doing that to a document whose clock is still
+ * gaining wedged the close — the engine ran its own close at a window behind
+ * its own log, threw *timestamps must be non-decreasing*, and threw again
+ * every minute afterwards (Q679's permanent wedge). It bit about one run in
+ * two. Released first, the rungs run on exactly the arrangement they were
+ * written for, which is the one `npm run ladder` guards.
+ *
  * Dev only, and absent from the production artifact: this module is reached
  * solely through a dynamic `import()` inside a `DEV:`-labelled block, which
  * esbuild's `dropLabels` removes bodily, and `installDevClock`'s body wears
@@ -88,6 +101,11 @@ export interface ClockHost {
 export interface ClockRequest {
   slug?: unknown;
   advanceMs?: unknown;
+  /** Stop running this document ahead. **Not a rewind**: `foldTime` is a
+   *  maximum over the document's own logs, so its clock does not go back an
+   *  instant — it stands where it stands and stops gaining on the wall clock
+   *  until real time catches up. Why a walk wants it: *Handing it back*. */
+  release?: unknown;
   /** The seats that were at their desks when the clock moved, by email or by
    *  member id; the convenor answers to either too. Everyone else is quiet,
    *  and quiet past 💤's spell is what the next tick lapses. */
@@ -105,6 +123,8 @@ export interface ClockAnswer {
   realNowMs: number;
   /** the names, as given, that were stamped present at the new time */
   present: string[];
+  /** on a release, the skew that was dropped */
+  released?: number;
 }
 
 /** Whatever the route should answer: a status and a body, nothing else. */
@@ -118,6 +138,14 @@ export type ClockResult =
  */
 export async function advanceClock(host: ClockHost, doc: LoadedDoc,
   body: ClockRequest, nowMs: number): Promise<ClockResult> {
+  if (body.release === true) {
+    const was = OFFSETS.get(doc.id) ?? 0;
+    OFFSETS.delete(doc.id);
+    return { status: 200,
+      body: { ok: true, slug: doc.cs.slug, advanceMs: 0, offsetMs: 0,
+        documentNowMs: foldTime(doc, nowMs), realNowMs: nowMs, present: [],
+        released: was } };
+  }
   const advanceMs = body.advanceMs;
   if (typeof advanceMs !== 'number' || !Number.isFinite(advanceMs) || advanceMs <= 0) {
     return { status: 400,

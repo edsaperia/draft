@@ -708,7 +708,12 @@ than an hour cannot keep a named seat alive, and such a call is refused
 rather than losing the seat silently. The offset lives in memory only: a
 restart forgets it and the document's clock falls back to real now, which
 cannot move it backwards, and nothing of the skew is ever written down —
-what reaches the log is the time. The seat matrix is its only caller. Absent
+what reaches the log is the time. `{ slug, release: true }` hands the clock
+back, which is not a rewind either: the document stands where its own log
+left it and stops gaining. A walk that is done with the jump should release
+it, because the **phase ladder** moves a document's ending backwards on its
+last two rungs and doing that to a clock still gaining wedged the close, once
+in about every two runs. The seat matrix is its only caller. Absent
 from the production artifact like the ladder, and one step further: the
 module behind the route is reached by a dynamic import inside the `DEV:`
 label, and `scripts/build-server.mjs` also asserts that the one seam in
