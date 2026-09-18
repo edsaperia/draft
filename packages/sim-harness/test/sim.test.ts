@@ -87,23 +87,29 @@ describe('scripted simulation', () => {
     // **The bound on drafts is not the grant, and since Q1440 it is nowhere
     // near one** (2026-09-18). This test asserted `drafts <= 14` — grant 4
     // plus up to ten drips — on the reasoning that a stake leaves the wallet
-    // and only some of it comes back. §7's refund is a *performance* refund,
-    // `stake × min(w/0.5, 1.5)`, so a candidate the room ever rated above the
-    // current text pays its stake back whole or better; before Q1440 that
+    // and only some of it comes back. It came back on performance until Q1454
+    // (`stake × min(w/0.5, 1.5)`, paid at every exit), and before Q1440 that
     // hardly mattered, because a losing candidate stayed in the field until
-    // T=0 and its author's token stayed in it. Now it is closed the moment
-    // the room has refused it, the stake comes back and the same persona
-    // proposes again: this run goes from 14 candidates to 413, of which 262
-    // adopt, and 412.11 of the 413 staked tokens are refunded. **Nobody mints
-    // tokens and no ledger goes negative — §7's own invariant is intact — but
-    // drafting is no longer bounded by the grant at all.** That is a finding
-    // for the record rather than a number to re-pin, so what is asserted here
-    // is the invariant itself plus the shape of the run, and a change back to
-    // a bounded regime shows up as a red test rather than as silence.
-    expect(session.allCandidates().length).toBeGreaterThan(14);
-    const refunded = session.allCandidates()
-      .reduce((a, c) => a + (c.exit?.refund ?? 0), 0);
-    expect(refunded).toBeLessThanOrEqual(session.allCandidates().length * 1.5);
+    // T=0 and its author's token stayed in it; closed the moment the room has
+    // refused it, the stake came back and the same persona proposed again.
+    // 413 candidates on this run, 412.11 of the 413 staked ✏️ refunded.
+    //
+    // **Q1454 answers half of that and not the other half** (same day): only a
+    // pass is refunded now, and 342 candidates come out of this run, of which
+    // 234 adopt — every refund is an adoption, and 108 stakes stay spent.
+    // Nobody mints tokens and no ledger goes negative, which is §7's own
+    // invariant; but this room adopts most of what it proposes, so the drip
+    // and the passes together still pay for far more drafting than the grant
+    // would. The finding stands for the record and the numbers are not pinned;
+    // what is asserted is the invariant, and — since Q1454 — that every ✏️
+    // handed back belongs to a candidate that left by a door §7 pays for.
+    const all = session.allCandidates();
+    expect(all.length).toBeGreaterThan(14);
+    const refunded = all.reduce((a, c) => a + (c.exit?.refund ?? 0), 0);
+    const paidFor = all.filter((c) =>
+      c.state === 'adopted' || c.state === 'withdrawn' || c.state === 'merged');
+    expect(refunded).toBe(paidFor.reduce((a, c) => a + c.stakePaid, 0));
+    expect(refunded).toBeLessThan(all.length); // and something did not pass
   }, 30_000);
 });
 

@@ -330,7 +330,9 @@ describe('⏱️ promise 3 — the cap holds', () => {
     // audit does not rest on a helper-level test alone.
     const s = open({ grant: 1, cap: 1, dripMinutes: 60 });
     const l = openLedger(s.constitution, 0);
-    l.balance = 4; // as a full refund at 1.5× the stake could leave it
+    // as a cap cut leaves one (the test above); until Q1454 a refund of
+    // 1.5× the stake could put a wallet here on its own
+    l.balance = 4;
     materialize(l, s.constitution, 5 * HOUR);
     expect(l.balance).toBe(4);
   });

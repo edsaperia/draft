@@ -130,7 +130,7 @@ describe('derived state is computed once per state version (Q1324)', () => {
     // own push: the ground before it (the incumbent the judgment was cast
     // against), the fit after it (`updatePeaks`). Before the push nobody but
     // the author has spoken for this candidate, and an author is not the
-    // room — so the peak a refund is paid on is still nothing.
+    // room — so the peak the graveyard is ranked on is still nothing.
     expect(s.getCandidate(cand).peakW).toBe(0);
     s.judge(2000, 'p4', card.a.id, card.b.id, card.a.id === cand ? 'a' : 'b');
     // and it moved, which only a read taken after the push could have done
