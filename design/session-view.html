@@ -375,7 +375,20 @@
 <div class="alphaflag"><b>Warning:</b> docs.vote is in alpha!</div>
 <div class="wrap">
   <div class="layout">
-    <nav class="toc"><ul id="toc"></ul></nav>
+    <!-- **The three columns and the topbar are landmarks, and now they have
+         names** (Q1394 (c), Ed 2026-09-18). The elements were here already —
+         `header.navbar` is a child of `<body>` and so is the banner, `<main>`
+         is the document column, this `<nav>` is the contents rail and the
+         `<aside>` below is the task rail — and the 2026-09-16 audit's claim
+         that no landmark reaches the page on any epoch does not hold against
+         the tree: all four are in its own payload, and axe's `region` leaves
+         everything inside them alone. What was missing is that two landmarks
+         of different jobs both answered to nothing, so a reader navigating by
+         landmark met *navigation* and *complementary* with no way to tell
+         which rail either was. They take the words their own drawer doors
+         already wear at narrow — the doors that open these very elements —
+         so the name a reader hears and the name a phone reader taps match. -->
+    <nav class="toc" aria-label="Contents"><ul id="toc"></ul></nav>
     <main>
       <div class="doc" id="doc">
         <!-- the tab beside the title is the way in (Ed, 2026-08-18: the
@@ -414,7 +427,7 @@
         <div id="patchrow"></div>
       </div>
     </main>
-    <aside class="queue stack"><ul id="rail"></ul></aside>
+    <aside class="queue stack" aria-label="What needs you"><ul id="rail"></ul></aside>
   </div>
 </div>
 <svg id="wires" aria-hidden="true"></svg>
