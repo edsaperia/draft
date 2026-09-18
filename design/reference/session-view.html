@@ -3495,16 +3495,8 @@
       const sibs = pick.parentElement ? pick.parentElement.querySelectorAll('.pick') : [];
       sibs.forEach((p) => { if (p !== pick) p.classList.remove('on'); });
     }
-    // …and the sentence under the box follows the keystroke. Since entry 167
-    // the box is not always inside a rung — 💤's and ⏱️'s answers are a bare
-    // field — so the slot is looked for in the rung first and then on the
-    // card, which is the whole difference between the two shapes.
-    const slot = (pick && pick.querySelector('[data-meaning="' + k + '"]')) ||
-      (t.closest('.setupcard') || document).querySelector('[data-meaning="' + k + '"]');
-    if (slot) {
-      slot.textContent = isNum(t.value) && ANSTYPED[k]
-        ? (M.meaningOf(k, ANSTYPED[k](t.value), roomNow()) || '') : '';
-    }
+    // (the sentence under the box used to follow the keystroke here too; the
+    // meaning lines left the surface on 2026-09-18, Q1439)
     // …and (x of y) inside the clause the box stands in (Q1439, ruling m),
     // repainted the same way and for the same reason. It is the member's own
     // number and their own block: a share typed into the count block is not
@@ -5711,7 +5703,7 @@
       const n = d.to.match(/\d+/g) || [];
       return inputBlock('Members may make a new proposal ✏️ every ' +
         '<input class="num" type="number" min="1" max="2880" data-mrate="z" value="' + esc(n[0] || S.dripMin) + '"> minutes.',
-        meanLine('rate', d.val && d.val.grant !== undefined ? d.val : null), d, 'rate');
+        '', d, 'rate');
     },
     ending: (d) => {
       const never = /never/i.test(d.to);
@@ -5728,19 +5720,20 @@
         (never ? '<p class="setnote">' + PAGE_COPY.composeNote.neverNeedsAll + '</p>' : '');
     },
     // **A lane offers a rule, so it says the rule** (Q1112 (b)) — and since
-    // Q1439 that rule is Ed's sentence with the share's own numbers after it
-    // (rulings m, p), the share box running 5 to 50 like every other 👥 box
+    // Q1439 that rule is Ed's sentence with the share's own numbers after
+    // *of the membership* (rulings m, t), the share box running 5 to 50 like
+    // every other 👥 box
     quorum: (d) => (S.quorumForm === 'count'
       ? inputBlock(PAGE_COPY.quorumRule.count(
         '<input class="num" type="number" min="1" max="99" data-mnum=" of the membership" value="' +
         esc((d.to.match(/\d+/) || [])[0] || takenOf('quorum') || quorumCount()) + '">'),
-        meanLine('quorum', d.val && d.val.form ? d.val : null), d, 'quorum')
+        '', d, 'quorum')
       : (() => { const n = (d.to.match(/\d+/) || [])[0] || takenOf('quorum') || S.quorumPct;
         return inputBlock(PAGE_COPY.quorumRule.share(
           '<input class="num" type="number" min="' + SHARE.min + '" max="' + SHARE.max +
-          '" data-mnum="% of the membership" value="' + esc(n) + '">%' +
+          '" data-mnum="% of the membership" value="' + esc(n) + '">%',
           shareSlot('quorum', n, E())),
-          meanLine('quorum', d.val && d.val.form ? d.val : null), d, 'quorum'); })()),
+          '', d, 'quorum'); })()),
     // 🪪: the price of admission, its three rungs as lanes, labels MVAL's
     // verbatim. The register-era 🪪 had no value to compose and spec-check
     // exempted it from the composable set; entry 94 re-typed it into this
@@ -5769,11 +5762,7 @@
         '<input class="num" type="number" min="' + b[0] + '" max="' + b[1] +
         '" data-mnum=" without logging in" value="' +
         esc(shown) + '"> ' + unitSel(unit, 'data-mlapseunit="1"') + ' without logging in.',
-        // presence, not truthiness: `afterMs: null` is 💤's *Never*, a real
-        // value with a real sentence, and the other keys all test for the
-        // field being there rather than for it being non-zero
-        meanLine('lapse', d.val && d.val.afterMs !== undefined ? d.val : null),
-        d, 'lapse', !!d.to && !/^never/i.test(d.to)); })(),
+        '', d, 'lapse', !!d.to && !/^never/i.test(d.to)); })(),
     authorship: (d) => lanesFor(d, [
       ['Nobody’s name, ever', 'A proposer is never named — not even in the closing record.'],
       ['Nobody’s name unless they choose', 'A proposer is never named unless they sign the proposal themselves.'],
@@ -6226,20 +6215,22 @@
   // clauses are named here, taking the value rather than reading the
   // document's, so the clause and the *You said* readback are the one
   // function and a member's answer is read back in the words it would put
-  // into the document. What a value would *mean* is still `meaningOf`'s
-  // alone (T39) — none of these writes a second consequence sentence.
+  // into the document. What a value would *mean* was `meaningOf`'s alone
+  // (T39) until the meaning lines left the surface (Q1439, 2026-09-18) — and
+  // none of these writes a second consequence sentence, which is the half of
+  // that rule the surface still keeps.
   const ENDING_RULE = (v) => (v === 'never' || !v ? ENDING_NEVER
     : 'No more changes to the document may be made after ' + endFmtOf(v) + '.');
   // `form` is the value's own since Q1162 — a delegated resolution can land
   // in either form whatever the founder's frame says, so a caller with a
   // typed value passes its form and only the founder's own field defaults
-  // …and since Q1439 (rulings a, m, p) the sentence is Ed's own, the quorum
+  // …and since Q1439 (rulings a, m, t) the sentence is Ed's own, the quorum
   // counts the members who prefer the proposal to the current text, and the
-  // share is followed by the numbers it comes to in the membership as it
-  // stands. Both sentences live in copy.js.
+  // share is followed — after *of the membership* — by the numbers it comes to
+  // in the membership as it stands. Both sentences live in copy.js.
   const QUORUM_RULE = (n, form) => (((form || S.quorumForm) === 'count')
     ? PAGE_COPY.quorumRule.count(n)
-    : PAGE_COPY.quorumRule.share(shareWords(n, E())));
+    : PAGE_COPY.quorumRule.share(n + '%', shareTail(n, E())));
   // **The threshold clause went with the threshold** (Q1362, 2026-09-15).
   // `BAR_RULE` printed 🌡️'s rung sentence with 🪜's ramp sentence hung off
   // it, because the ramp was part of what the threshold said (Q512); the
@@ -7324,7 +7315,7 @@
     whyLane: (...a) => whyLane(...a),
     wordsFor: (...a) => wordsFor(...a),
   });
-  const { render, refreshCommit, roomNow, meanLine, syncMeaning, syncShare, standingBlock, unchangedCard,
+  const { render, refreshCommit, roomNow, syncShare, standingBlock, unchangedCard,
     foundedAt, foundedClause, closedAtWords, resendTitle, APPLICANT, MEMBER_EMAILS, APPCARDS,
     appCtx, applyShutNews } = BND;
 
@@ -8579,7 +8570,7 @@
       // rebuild the field under the caret, so the block it stands in takes
       // the chosen treatment itself. Without this the sentence is typed into
       // a rung still reading *Choose this*, and `.pick > .inner` — where the
-      // meaning `syncMeaning` is about to write lives — stays display:none.
+      // share's own numbers are repainted — stays display:none.
       if (t.dataset.num === 'dripN' ||
           Object.prototype.hasOwnProperty.call(RATE_START, t.dataset.num)) {
         S.rateBy = 'founder';
@@ -8590,7 +8581,7 @@
           if (rung) rung.setAttribute('aria-pressed', 'true');
         }
       }
-      syncMeaning(t); syncShare(t);
+      syncShare(t);
       renderRail(); SESSION.refreshRail(); refreshCommit(); }
     // …and the same for a number typed into an **answer** (entry 165), which
     // 🌡️ now has: a keystroke wakes the ✓ and repaints the meaning under the

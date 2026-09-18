@@ -715,23 +715,29 @@ window.COPY = (function () {
       asArrive: 'as soon as they arrive',
       andVote: ', and may vote on proposals.',
       voteTail: '. They may begin voting on proposals when the whole constitution has been decided.',
-      passOrdinary: 'A proposal ✏️ is adopted once enough of the membership prefers it to the current text, and more prefer it than not.',
+      passOrdinary: 'A proposal ✏️ passes once it is preferred by enough of the membership, and by more than prefer the current text.',
       passConstitutional: 'A constitutional proposal 🏛️ passes only when all members agree.',
     },
-    // 👥's rule, in Ed's own words (Q1439, ruling p, 2026-09-17: *At least 50%
-    // (5 of 10) of the membership must prefer a proposal before it can be
-    // adopted*). The quorum counts the members who prefer the proposal to the
-    // current text, so the sentence says *prefer* rather than *vote on*: a
-    // vote against no longer helps a proposal reach its quorum.
+    // 👥's rule, in Ed's own words (Q1439, ruling t, 2026-09-18: *A proposal
+    // cannot pass until it is preferred by at least 50% of the membership
+    // (5 of 10).*). It read *At least 50% (5 of 10) of the membership must
+    // prefer a proposal before it can be adopted* for a day (ruling p): the
+    // verb is **pass**, STYLE T8's word and not *adopted*, and the emphasis
+    // sits on the bar rather than on the membership. The quorum counts the
+    // members who prefer the proposal to the current text, so the sentence
+    // says *preferred by* rather than *voted on by*: a vote against no longer
+    // helps a proposal reach its quorum.
     //
-    // `share` takes the whole share — the percentage and the numbers it comes
-    // to — because a share of the membership is written in one place
-    // (`val.quorumPct`, ruling m); the founder's card, the member's answer
-    // card and the composer hand it the number's own box instead of a
-    // percentage, which is how the number stands inside the clause (Q1137).
+    // **The numbers follow the whole share** (ruling m), which is why `share`
+    // takes two pieces rather than one: the percentage — or the number's own
+    // box, which is how it stands inside the clause on the founder's card, the
+    // member's answer card and the composer's lane (Q1137) — and then the
+    // `(x of y)` that follows *of the membership*. `val.quorumPct` is still
+    // the one writer of a share where a share is printed whole.
     quorumRule: {
-      share: (share) => 'At least ' + share + ' of the membership must prefer a proposal ✏️ before it can be adopted.',
-      count: (n) => 'At least ' + n + ' members must prefer a proposal ✏️ before it can be adopted.',
+      share: (share, tail) => 'A proposal ✏️ cannot pass until it is preferred by at least ' +
+        share + ' of the membership' + (tail || '') + '.',
+      count: (n) => 'A proposal ✏️ cannot pass until it is preferred by at least ' + n + ' members.',
     },
     titledLead: 'The document is titled ',
     // the card value lines (VALUE) — the label-vocabulary strings that MVAL

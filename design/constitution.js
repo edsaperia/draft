@@ -3966,14 +3966,9 @@ var CONSTITUTION = (() => {
     return spellWords(ms);
   }
   var HALF_NOTE = " No quorum can ask for more than half.";
-  function quorumBody(q, n, form, pct, after) {
+  function quorumBody(q, n, form, pct) {
     if (n === 1) return "In a membership of one, your own vote is the whole quorum.";
-    const of = q + " of " + n;
-    return form === "share" ? "At least " + pct + "% (" + of + ") of the membership must prefer a proposal before it can be adopted" + after + "." : "At least " + of + " members must prefer a proposal before it can be adopted.";
-  }
-  function afterClause(lapseMs) {
-    if (typeof lapseMs !== "number" || !Number.isFinite(lapseMs) || lapseMs <= 0) return "";
-    return " — after " + spellPhrase(lapseMs) + ", of those who have voted on it";
+    return form === "share" ? "A proposal cannot pass until it is preferred by at least " + pct + "% of the membership (" + q + " of " + n + ")." : "A proposal cannot pass until it is preferred by at least " + q + " members.";
   }
   function quorumMeaning(v, room) {
     if (typeof v.n !== "number" || !Number.isFinite(v.n)) return null;
@@ -3982,10 +3977,9 @@ var CONSTITUTION = (() => {
     if (!Number.isFinite(asked)) return null;
     const q = Math.min(asked, Math.ceil(n / 2));
     const pct = Math.min(Math.round(v.n), 50);
-    const after = v.form === "share" ? afterClause(room.lapseMs) : "";
-    const body = quorumBody(q, n, v.form, pct, after);
+    const body = quorumBody(q, n, v.form, pct);
     const capped = q < asked ? HALF_NOTE : "";
-    return fit(body + capped) ?? fit(body) ?? fit(quorumBody(q, n, v.form, pct, "") + capped) ?? fit(quorumBody(q, n, v.form, pct, ""));
+    return fit(body + capped) ?? fit(body);
   }
   function rateMeaning(v, room) {
     const { grant, cap, dripMinutes } = v;
