@@ -370,13 +370,21 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
   const liveSpans = engine.races(nowMs)
     .filter((r) => r.settingId === undefined)
     .flatMap((r) => r.contested);
-  const stillRacing = (cand: Candidate): boolean => cand.footprint.some((f) =>
-    liveSpans.some((s) => (f.start < s.end && s.start < f.end)
-      || (f.start === f.end && s.start <= f.start && f.start <= s.end)));
+  // **…carried to the current text first**: a closed candidate's footprint is
+  // frozen in the lines of the version it retired on, and the live spans are
+  // in today's — an adoption above it moves one and not the other, and the
+  // record would then be let out beside the race it is waiting for. `spanNow`
+  // is the walk the record's own `at` takes below (Q1333).
+  const stepsNow = engine.derived('host:versionSteps', () => versionSteps(engine));
+  const stillRacing = (cand: Candidate, version: number): boolean => cand.footprint.some((fp) => {
+    const f = spanNow({ start: fp.start, end: fp.end }, version, stepsNow);
+    return liveSpans.some((s) => (f.start < s.end && s.start < f.end)
+      || (f.start === f.end && s.start <= f.start && f.start <= s.end));
+  });
   for (const o of opts.records === false ? [] : api.outcomes()) {
     const c = engine.getCandidate(o.candidateId);
     if (c.patch === undefined) continue;
-    if (o.outcome === 'retired' && stillRacing(c)) continue;
+    if (o.outcome === 'retired' && stillRacing(c, o.version)) continue;
     const mineJ = myJ.some((j) => j.aId === o.candidateId || j.bId === o.candidateId);
     const author = namedAuthor(c);
     const entry = { candidateId: o.candidateId, outcome: o.outcome, p: o.p ?? null,

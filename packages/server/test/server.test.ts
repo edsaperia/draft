@@ -3889,6 +3889,81 @@ describe('a proposal the room can no longer pass is closed (Q1440)', () => {
     expect(closed.reason).toBe('dominated');
   });
 
+  it('the record still waits after an adoption above it has moved the clause', async () => {
+    // A closed candidate's footprint is frozen in the lines of the version it
+    // retired on; the live race's spans are in today's. Two lines adopted
+    // above the clause move one and not the other, and a hold-back that
+    // compared them raw let the record out beside the race it was waiting for.
+    const { base, dataDir } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Dominated And Moved', email: 'ada@example.org',
+    })).json() as { slug: string; devLink: string };
+    const slug = created.slug;
+    const ada = cookieOf(await consume(created.devLink));
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const body = await (await post(base, `/api/d/${slug}/cmd`,
+        { cmd: name, args }, cookie)).json() as { error?: string; result?: unknown };
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+      return body.result;
+    };
+    const viewOf = async (cookie: string) => (await (await fetch(
+      `${base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as MemberViewPayload;
+    const follow = async (email: string): Promise<string> =>
+      cookieOf(await consume((await lastMailTo(dataDir, email)).link!));
+
+    await cmd(ada, 'confirm-starting-text',
+      { text: 'The clubhouse is open.\nThe rota is weekly.' });
+    await cmd(ada, 'invite', { email: 'bo@example.org' });
+    await cmd(ada, 'invite', { email: 'cy@example.org' });
+    const bo = await follow('bo@example.org');
+    const cy = await follow('cy@example.org');
+    const values: Record<string, unknown> = {
+      rate: { grant: 4, cap: 8, dripMinutes: 240 },
+      quorum: { form: 'count', n: 1 }, chamber: { rung: 'closed' },
+      authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
+      applications: { apply: false }, admission: { price: 'assembly' },
+      removal: { price: 'consent' },
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+      ending: { endsAtMs: null },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await cmd(ada, 'reclaim', { setting });
+      await cmd(ada, 'set-setting', { setting, value });
+    }
+    await cmd(ada, 'begin', {});
+
+    const mine = await cmd(bo, 'propose-text', { baseVersion: 0, hunks: [
+      { start: 1, end: 2, lines: ['The rota is daily.'] }], why: 'daily is better',
+    }) as { id: string };
+    const rival = await cmd(cy, 'propose-text', { baseVersion: 0, hunks: [
+      { start: 1, end: 2, lines: ['The rota is monthly.'] }], why: 'monthly is enough',
+    }) as { id: string };
+    const above = await cmd(ada, 'propose-text', { baseVersion: 0, hunks: [
+      { start: 0, end: 1, lines: ['Preamble.', 'Who we are.', 'The clubhouse is open.'] }],
+      why: 'a preamble',
+    }) as { id: string };
+    const incOf = async (id: string) => (await viewOf(ada)).clauses
+      .find((r) => r.candidates.some((c) => c.id === id))!.incumbentId;
+
+    // bo's wording is closed on the rota line, as in the test above
+    const inc = await incOf(mine.id);
+    await cmd(cy, 'judge-race', { a: mine.id, b: inc, outcome: 'b' });
+    await cmd(ada, 'judge-race', { a: mine.id, b: inc, outcome: 'b' });
+    expect((await viewOf(bo)).mine.find((m) => m.id === mine.id)!.state).toBe('retired');
+
+    // the preamble is seconded and adopted: the rota line is now line 3
+    await cmd(bo, 'judge-race', { a: above.id, b: await incOf(above.id), outcome: 'a' });
+    const moved = await viewOf(ada);
+    expect(moved.text.split('\n')).toEqual(
+      ['Preamble.', 'Who we are.', 'The clubhouse is open.', 'The rota is weekly.']);
+
+    // the rival still races there, and bo's closed wording still says nothing
+    const racing = moved.clauses.find((r) => r.candidates.some((c) => c.id === rival.id))!;
+    expect(racing.contested).toEqual([{ start: 3, end: 4 }]);
+    expect(moved.records.flatMap((r) => r.field).map((f) => f.candidateId))
+      .not.toContain(mine.id);
+  });
+
   it('holds the motion, owes its mover the card, and lets the address go', async () => {
     const { base, dataDir } = await boot();
     const created = await (await post(base, '/api/docs', {
