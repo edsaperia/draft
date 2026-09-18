@@ -230,7 +230,8 @@ Use these names in all discussion, commits, and code. Literal and stable beats e
 - `gazette` [concept] — public feed of resolved outcomes; the chamber view is its ambient rendering.
 - `bounty score` [concept] — resolvable disagreement × salience: the leverage a good draft would have on a deadlocked race. It does its ranking inside the `needs-you-queue` (M7).
 - `record-builder` [concept] — closing publication: final text plus the record (rankings, camps, graveyard, care map, minority map, backlog, audit log). The record's Amendments section (`amendmentBlocks`) names the **office** rather than the person, and dates absolutely.
-- `spectator-api` [concept] — strictly-public engine-core projection (gazette, live candidates, deadlocked races, document): the only surface spectator views may consume (Q42, backlog).
+- `packages/engine-core/src/spectator-api.ts` [file] — the `spectator-api`: the strictly-public engine-core projection, the only surface a spectator view may consume (Q42); `SpectatorApi.feed()` is its first reader, no count or standing ever in an entry (SPEC §3.5). Guard `spectator-api.test.ts`.
+- `spectator-feed` [concept] — `/d/:slug/feed` (Q1466, Ed 2026-09-19): new proposals and proposals that pass, each with the clause as it stood and its section, never the document; a second page, `design/feed.html` + `feed.js`, over `GET /api/d/:slug/feed` (`routes-feed.ts`); 🌍 decides a stranger's reading, a member's seat always reads. Guard `feed.test.ts`.
 - `spectator-commentary` [concept] — optional LLM commentating view for convention spectators, fed exclusively by the spectator-api; unlike the sim's omniscient `commentator`, it sees no private data (Q42, backlog).
 
 **Tooling:**
