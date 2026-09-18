@@ -42,6 +42,36 @@ export function asEngineDoc(doc: LoadedDoc): EngineDoc {
 }
 
 /**
+ * **The dev clock's one foothold in code that ships** (Q1455, Ed 2026-09-18).
+ * A document's own clock is `foldTime` and nothing else, so one document can
+ * be moved forward by adding a skew there — and the whole of the mechanism in
+ * the production artifact is the two functions below, which answer 0 for
+ * every document for ever. `installDevClock`'s **body is inside the `DEV:`
+ * label**, so the build drops it and what is left is a function that takes an
+ * argument and does nothing: the artifact holds the read and no way at all to
+ * write it, and the only caller of the setter — `dev-clock.ts` — is reached
+ * solely by a dynamic import inside the same label and so is never resolved
+ * into the bundle. `scripts/build-server.mjs` greps its own output for both.
+ *
+ * Nothing about the skew is ever written down, and nothing needs to be: what
+ * reaches the log is the *time*, and the time is in the log. A host that
+ * restarts forgets the skew and the document's clock falls back to real now
+ * — which cannot move it backwards, because `foldTime` is a maximum over the
+ * logs it already has.
+ */
+let devSkew: ((docId: string) => number) | null = null;
+
+export function installDevClock(skew: (docId: string) => number): void {
+  DEV: { devSkew = skew; }
+}
+
+/** How far ahead of the wall clock this document is being run. Always 0 in
+ *  anything that ships, and 0 on every document but the one a dev walk moved. */
+export function devSkewMs(docId: string): number {
+  return devSkew === null ? 0 : devSkew(docId);
+}
+
+/**
  * **A command is stamped at the fold** (Q1332, Ed 2026-09-11: *stamp at the
  * fold* — the log records when the document changed). The time is taken
  * when the command is about to fold, never at the request's receipt, and is
@@ -58,7 +88,7 @@ export function foldTime(doc: LoadedDoc, nowMs: number = Date.now()): number {
   const bridge = asEngineDoc(doc).bridge;
   const eLog: ReadonlyArray<{ event: { t: number } }> = bridge ? bridge.engine.log : [];
   const eLast = eLog.length > 0 ? eLog[eLog.length - 1]!.event.t : 0;
-  return Math.max(nowMs, csLast, eLast);
+  return Math.max(nowMs + devSkewMs(doc.id), csLast, eLast);
 }
 
 /** Resume a persisted bridge; called once per document at load. The host's
