@@ -196,7 +196,21 @@ describe('sim regression: dedup off is byte-identical to before the gate existed
   // agreed and `Session.replay` reproduces it — which is the invariant this
   // test defends
   // (was 31ed038ba2f05a88afb1072d981675881399d7951bd9ffdb3246041ff5f97f15).
-  const PINNED = '60f8828ba5ac36b06ef972a353123439f51fed81e212e7f074cca9aa810fe20e';
+  // Re-pinned 2026-09-18 (Q1452, Ed's addition: *the outcome card says how
+  // many people did not answer in time*): the `adopted` event gains one more
+  // optional number beside the approvals and the floor Q1439 put on it — the
+  // members whose 💤 period had run when the batch decided. **Nothing in this
+  // run moves but that key**, and the evidence is not an argument:
+  // recomputing this very chain with `abstained` deleted from all 77
+  // `adopted` events reproduces the previous pin exactly, so no event was
+  // added, removed, reordered or otherwise changed. The charter scenario
+  // settles no 💤 period, so every one of the 77 carries zero — which is the
+  // field's own rule showing its face: it is written whatever its value, so
+  // **absent** goes on meaning a log from before it existed. Both variants
+  // below produced this hash and `Session.replay` reproduces it — which is
+  // the invariant this test defends
+  // (was 60f8828ba5ac36b06ef972a353123439f51fed81e212e7f074cca9aa810fe20e).
+  const PINNED = '73e1f486364e05b34ba7ede3339f31cb15ca2ea595501ea76d39af7f6ede7bd0';
 
   const run = (withGate: boolean) =>
     runSession({
