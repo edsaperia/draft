@@ -2166,7 +2166,43 @@
     b.innerHTML = remarkScratch.innerHTML;
     if (at != null) caretAtSource(b, at);
   }
+  // **A first line typed into an empty column is a block like any other**
+  // (Ed's first test on the wiped host, 2026-09-18: *the founder is putting
+  // text into the text area, but can't ✒️ it*). An empty column holds no block,
+  // so the browser puts the first keystrokes straight into `#prose` as a bare
+  // text node and only wraps what follows an Enter. Every reader of the column
+  // — `proseText`, `proseCounts`, the folds, the contents rail — walks
+  // `prose.children`, so that first line did not exist: a one-line text
+  // confirmed as *empty*, the row then read *Saved* and went dark, and a longer
+  // text lost its opening line. Bare runs are wrapped here, where every `input`
+  // already passes, the nodes moved rather than copied so the caret can be put
+  // back exactly where it stood.
+  const PROSE_BLOCK = /^(DIV|P|H[1-6]|UL|OL|LI|BLOCKQUOTE|PRE)$/;
+  function wrapBareProse() {
+    const sel = getSelection();
+    const r0 = sel.rangeCount ? sel.getRangeAt(0) : null;
+    const sc = r0 ? r0.startContainer : null; const so = r0 ? r0.startOffset : 0;
+    let run = [];
+    const flush = () => {
+      const nodes = run; run = [];
+      if (!nodes.some((n) => n.textContent.trim())) return;
+      const d = document.createElement('div');
+      nodes[0].before(d);
+      nodes.forEach((n) => d.appendChild(n));
+      if (sc && d.contains(sc)) {
+        const r = document.createRange();
+        r.setStart(sc, Math.min(so, sc.nodeType === 3 ? sc.length : sc.childNodes.length));
+        r.collapse(true);
+        sel.removeAllRanges(); sel.addRange(r);
+      }
+    };
+    for (const n of [...prose.childNodes]) {
+      if (n.nodeType === 1 && PROSE_BLOCK.test(n.tagName)) flush(); else run.push(n);
+    }
+    flush();
+  }
   function relabel() {
+    wrapBareProse();
     const sel = getSelection();
     const at = sel.rangeCount ? sel.getRangeAt(0).startContainer : null;
     for (const b of [...prose.children]) {
@@ -2189,9 +2225,16 @@
         b.textContent = m.text;
         b.className = m.t === 'b' ? 'bullet' : 'docline lvl' + m.level;
         if (m.t === 'b') delete b.dataset.h; else b.dataset.h = b.textContent;
-        if (liveHere && b.firstChild) {
+        // …and where the marker was all the block held — `# ` typed on a
+        // fresh line — the block is empty now and has no text node to stand
+        // in: without a place of its own the caret fell back into the line
+        // above, and the heading's words were typed there (found with the
+        // bare-first-line fix, 2026-09-18). A `<br>` keeps the empty block a
+        // line the browser will put a caret in; it leaves with the first key.
+        if (liveHere) {
+          if (!b.firstChild) b.appendChild(document.createElement('br'));
           const r = document.createRange();
-          r.setStart(b.firstChild, 0); r.collapse(true);
+          r.setStart(b.firstChild.nodeType === 3 ? b.firstChild : b, 0); r.collapse(true);
           sel.removeAllRanges(); sel.addRange(r);
         }
       } else if (/lvl\d/.test(b.className)) { b.dataset.h = t; } else { delete b.dataset.h; }
@@ -2310,7 +2353,24 @@
     }
     setTimeout(relabel, 0);
   });
-  prose.addEventListener('input', relabel);
+  // **Enter at the end of a heading starts a paragraph** (2026-09-18, with the
+  // two fixes in `relabel`): the browser makes the new line by splitting the
+  // block, class and all, so the line after a typed heading was a heading too
+  // and so was every line after that. Only the empty half is un-headed — Enter
+  // in the middle of a heading still makes two of them, which is what was
+  // asked for — and a bullet keeps its class, a list going on being the point.
+  prose.addEventListener('input', (ev) => {
+    if (ev && ev.inputType === 'insertParagraph' && !prose.classList.contains('mdsrc')) {
+      const sel = getSelection();
+      let b = sel.rangeCount ? sel.getRangeAt(0).startContainer : null;
+      if (b && b.nodeType !== 1) b = b.parentElement;
+      while (b && b !== prose && b.parentElement !== prose) b = b.parentElement;
+      if (b && b !== prose && /lvl\d/.test(b.className) && !b.textContent.trim()) {
+        b.className = ''; b.removeAttribute('id'); delete b.dataset.h; delete b.dataset.lvl;
+      }
+    }
+    relabel();
+  });
 
   // ---- the nineteen decisions ----------------------------------------------
   // **One card per decision, and the test is whether somebody could answer it

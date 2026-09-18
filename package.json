@@ -32,6 +32,7 @@
     "applicants-walk": "node scripts/applicants-walk.mjs",
     "after-begin-walk": "node scripts/after-begin-walk.mjs",
     "invite-walk": "node scripts/invite-walk.mjs",
+    "first-keys-walk": "node scripts/first-keys-walk.mjs",
     "member-questions-walk": "node scripts/member-questions-walk.mjs",
     "powers-walk": "node scripts/powers-walk.mjs",
     "proposal-shapes": "node scripts/proposal-shapes.mjs",

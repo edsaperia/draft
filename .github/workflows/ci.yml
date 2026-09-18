@@ -689,6 +689,13 @@ jobs:
       # refusal naming no id
       - run: npm run invite-walk -- "$WALK_BASE"
         if: always()
+      # **The first keys into an empty column** (Ed's first test on the wiped
+      # host, 2026-09-18): every other walk puts the founder's text in by a
+      # synthetic paste, so nothing had ever typed a first character into an
+      # empty column — which confirmed as an empty text and left ✒️ dark. Real
+      # key presses, and the server compared with the literal strings typed.
+      - run: npm run first-keys-walk -- "$WALK_BASE"
+        if: always()
       # a member arrives while the founder has left 🎩 unanswered and delegated ⏱️ 👥
       # (Q1365, Q1372): 🏛️ served at arrival on the Founded line, no question until
       # its OK, then the questions in order whatever the founder has not reached
