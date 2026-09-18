@@ -148,6 +148,13 @@ window.COPY = (function () {
       cast: 'Recorded — choose again to change it',
       submit: 'Submit this vote',
       choose: 'Choose one of the three first',
+      // **What silence here will come to mean** (Q1460, Ed 2026-09-18, in the
+      // residency room: *a countdown for when not voting will count as a
+      // lapse* · *same size and font and place as the "propose edit" text* ·
+      // *actually "💤 abstain in hh:mm"*). His words, whole: the glyph names
+      // the rule 💤 stands for, and `hhmm` is the hours and minutes left,
+      // rounded up, so it never reads 00:00 while there is time to vote.
+      abstainIn: (hhmm) => '💤 abstain in ' + hhmm,
     },
     // reviseNote: what a locked judgment says for itself
     revise: {
