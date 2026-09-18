@@ -872,6 +872,23 @@ window.COPY = (function () {
       downTip: 'Laid down at the start — press to keep it',
       givenTip: 'Already given up on its own card — it comes back only there',
     },
+    // 🥂's batch (SURFACE E24, §9's 🥂 row). The rest of the list is still
+    // literal in `begin.js` and moves here with issue #19; this one sentence
+    // was written after the rule that the words live in this file, so it
+    // starts here.
+    //
+    // **The line for what the clock found running** (Q1450, Ed 2026-09-18).
+    // A motion still open when the document closes fails at that moment, on
+    // either route, and nothing on the surface said so: the ordinary one
+    // raised its mover a card no shut document lets them press, and the
+    // constitutional one — which SURFACE E41 already said 🥂 spoke for —
+    // was spoken for by nothing. The verb is **pass** (STYLE T8), and the
+    // line is omitted at zero rather than reading *0 motions*, unlike the
+    // lines around it: it appears when there is something to say.
+    closeBatch: {
+      stillOpenOne: 'motion was still open and did not pass',
+      stillOpenMany: 'motions were still open and did not pass',
+    },
     // the gates and grants (GATES): titles, bodies, locklines
     gate: {
       canpropose: {

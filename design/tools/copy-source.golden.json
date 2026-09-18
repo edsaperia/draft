@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 451
+  "entries": 453
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -148,6 +148,8 @@
   "page.cards.title.n": "Title",
   "page.cards.title.t": "Name the Document",
   "page.clerkNoPencil": "You are not a member, so there is no ✏️ for you to spend — this one is yours to set.",
+  "page.closeBatch.stillOpenMany": "motions were still open and did not pass",
+  "page.closeBatch.stillOpenOne": "motion was still open and did not pass",
   "page.composeNote.neverNeedsAll": "Taking the end date away needs all members to agree — every change made so far was made under a promise that the document would seal on a date and be signed.",
   "page.composeNote.redirect": "Every link the document has ever had keeps working — a change leaves a redirect behind.",
   "page.composeNote.removalSeen": "Whoever it is will see the proposal — nobody is removed in secret.",

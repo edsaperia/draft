@@ -1021,7 +1021,13 @@ var CONSTITUTION = (() => {
         false
       );
     } else if (after === "held") {
-      settleHeldEffects(s, t, rec);
+      settleHeldEffects(
+        s,
+        t,
+        rec,
+        /* tellTheMover */
+        outcome !== "held-at-close"
+      );
     }
   }
   function answerCrownQuestion(s, t, question, outcome) {
@@ -1164,11 +1170,11 @@ var CONSTITUTION = (() => {
       }
     }
   }
-  function settleHeldEffects(s, t, rec) {
+  function settleHeldEffects(s, t, rec, tellTheMover = true) {
     if (rec.payload.kind === "admit") {
       s.emit({ type: "application-refused", t, applicant: rec.payload.applicant });
     }
-    oweHeld(s, t, rec.id, rec.by, rec.payload.kind);
+    if (tellTheMover) oweHeld(s, t, rec.id, rec.by, rec.payload.kind);
   }
   function samePayload(a, b) {
     if (a.kind !== b.kind) return false;
@@ -1530,7 +1536,8 @@ var CONSTITUTION = (() => {
             status: "carried",
             answers: /* @__PURE__ */ new Map(),
             settledAtT: event.t,
-            moot: null
+            moot: null,
+            heldAtClose: false
           });
           s.penFrom.set(id, wasValue);
         }
@@ -1590,7 +1597,8 @@ var CONSTITUTION = (() => {
           status: "carried",
           answers: /* @__PURE__ */ new Map(),
           settledAtT: event.t,
-          moot: null
+          moot: null,
+          heldAtClose: false
         });
         break;
       }
@@ -1819,7 +1827,8 @@ var CONSTITUTION = (() => {
           status: "running",
           answers: /* @__PURE__ */ new Map(),
           settledAtT: null,
-          moot: null
+          moot: null,
+          heldAtClose: false
         });
         s.nextMotionN += 1;
         if (event.payload.kind === "invite") notePerson(s, event.payload.person);
@@ -1891,8 +1900,9 @@ var CONSTITUTION = (() => {
       case "motion-adjudicated": {
         const rec = s.motions.get(event.motion);
         rec.settledAtT = event.t;
-        if (event.outcome === "held") {
+        if (event.outcome === "held" || event.outcome === "held-at-close") {
           rec.status = "held";
+          rec.heldAtClose = event.outcome === "held-at-close";
         } else if (reservedTarget(s, rec)) {
           rec.status = "awaiting-crown";
           rec.settledAtT = null;
@@ -4150,7 +4160,7 @@ var CONSTITUTION = (() => {
         why: rec.why,
         status: rec.status,
         moot: rec.moot,
-        heldBy: rec.status === "withdrawn" ? "system" : rec.status !== "held" ? null : crownRefused.has(rec.id) ? "crown" : "members",
+        heldBy: rec.status === "withdrawn" ? "system" : rec.status !== "held" ? null : rec.heldAtClose ? "close" : crownRefused.has(rec.id) ? "crown" : "members",
         mine: rec.by === member,
         at: rec.settledAtT,
         from: s.amendedFrom(rec.id),
