@@ -71,7 +71,10 @@
     /* --- ink and ground ------------------------------------------- */
     --bg: #FFFFFF;
     --fg: #212529;
-    --muted: #6C757D;
+    /* one step a channel under Bootstrap's #6C757D, which read 4.45:1 on
+       --light against WCAG AA's 4.5; this is the lightest that clears it,
+       4.51:1 (Q1398 (a), Ed 2026-09-18) */
+    --muted: #6B747C;
     --border: #DEE2E6;
     --light: #F8F9FA;
 
