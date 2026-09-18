@@ -4580,6 +4580,26 @@ const dominatedProposal = async () => {
       : 'FAIL: key ' + JSON.stringify(key) + ' · opened ' + opened
         + ' · notes ' + JSON.stringify(note) + ' · card ' + JSON.stringify(card)));
     if (!readsIt) stuck.push('the record’s *why* on a closed proposal');
+    // **and the author is told, though they judged nothing** (Q1451, Ed
+    // 2026-09-18: *you should know the outcome of things you propose*). bo is
+    // the author here and never judged — an author is never asked to judge
+    // their own lone proposal — so before this the record filed for them as a
+    // drained grey ✖ that asked nothing. It pins now: the entry wears the ✖
+    // that wants a reading (`mk-retired`, never the character — Q288) and the
+    // card offers the OK. It fails on the pre-fix page at *mark mk-filedNo*.
+    const own = await guestPage.evaluate((k) => {
+      const q = String(k).replace(/["\\]/g, '\\$&');
+      const li = document.querySelector('#rail li[data-q="' + q + '"]');
+      const mk = li && li.querySelector('.mk');
+      const card = document.querySelector('.sugg[data-card="' + q + '"]');
+      return { mark: mk ? [...mk.classList].find((c) => c.startsWith('mk-')) : null,
+        ok: !!(card && card.querySelector('.okbtn')) };
+    }, key);
+    const ownOk = own.mark === 'mk-retired' && own.ok;
+    say('dominated 6· ' + (ownOk
+      ? 'the author judged nothing and is told anyway: the ✖ wants a reading and the card offers the OK'
+      : 'FAIL: mark ' + JSON.stringify(own.mark) + ' · OK ' + own.ok));
+    if (!ownOk) stuck.push('the author’s ✖ on a record holding a wording of theirs');
   } else {
     say('dominated 4· the clause held a rival too, so the record waits for it — not read here');
   }

@@ -1440,8 +1440,22 @@ window.LIVE = (function () {
       // anything else is passed through exactly as it arrives.
       const reasonOf = (f) => (!f || !f.reason ? null
         : f.reason === 'dominated' ? window.COPY.session.record.dominated : f.reason);
+      // **A wording of your own in the field is a reason the record announces
+      // itself** (Q1451, Ed 2026-09-18: *you should know the outcome of things
+      // you propose*). A sealed record pinned only where it changed the
+      // document or where you judged in it — *you are part of why it did not*
+      // — and an author is never asked to judge their own lone proposal (E13,
+      // Q1340), so the one member with a stake in a rejected wording got the
+      // silent grey chip everybody else got. The author is part of why. The
+      // join is the viewer's own candidate ids against the field's, both of
+      // which the view already carries, so nothing new is disclosed: it is
+      // their own proposal. Carried as the ids rather than a flag, because an
+      // early ✖ taken on one of them (Q1451 part 3) is the acknowledgement of
+      // that proposal and `isUnread` has to know which.
+      const mineIds = new Set((v.mine || []).map((m) => m.id));
       for (const o of v.records || []) {
         const field = o.field || [];
+        const mineIn = field.map((f) => f.candidateId).filter((id) => mineIds.has(id));
         const hs = field.flatMap((f) => f.hunks);
         // **A record stands beside the lines that descend from what it decided**
         // (Q1333, Ed 2026-09-11, the moon room: a ✔ on the Food heading). The
@@ -1531,6 +1545,7 @@ window.LIVE = (function () {
           // reason, the record is where its author reads it
           refusal: reasonOf(winner),
           verdict: o.judgedByMe ? 'voted on this' : undefined,
+          ...(mineIn.length ? { mineIn } : {}),
           unread: !undecided, ...slate });
       }
       // ✒️ on the Text (R-058, SURFACE E35, Q1034; Ed 2026-08-29, decision
