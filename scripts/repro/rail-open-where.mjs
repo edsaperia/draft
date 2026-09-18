@@ -30,7 +30,7 @@ for (const id of ids.slice(0, MAX)) {
   const pre = await page.evaluate((q) => { const b = [...document.querySelectorAll('#rail button[data-q]')].find((x) => x.dataset.q === q);
     if (!b) return null; const y0 = scrollY; b.click(); return { y0 }; }, id);
   if (!pre) continue;
-  await page.waitForTimeout(2600);
+  await page.waitForTimeout(3200);
   const m = await page.evaluate((q) => {
     const S = window.SESSION;
     const cards = [...document.querySelectorAll('#charter .sugg')].filter((c) => c.dataset.card === q);
@@ -38,7 +38,7 @@ for (const id of ids.slice(0, MAX)) {
     const head = open && (open.querySelector('.clausehead, .headclause') || open);
     const r = open ? open.getBoundingClientRect() : null;
     const others = [...document.querySelectorAll('#charter .sugg')].filter((c) => c.dataset.card !== q && c.getBoundingClientRect().height > 60).length;
-    return { openId: (S.openId || '').slice(0, 24), found: cards.length, cardTop: r && Math.round(r.top), cardH: r && Math.round(r.height),
+    return { openId: (S.openId || '').slice(0, 24), found: cards.length, cardTop: r && Math.round(r.top), cardH: r && Math.round(r.height), cardBottom: r && Math.round(r.bottom), winH: innerHeight,
       headTop: head && Math.round(head.getBoundingClientRect().top), tabs: open ? open.querySelectorAll('.achip').length : null,
       otherCardsOpen: others, gap: /e3b0c44298fc/.test(q), y: Math.round(scrollY) };
   }, id);

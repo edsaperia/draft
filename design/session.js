@@ -3970,6 +3970,21 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   // asked to be taken. The rail already says as much where it does the piling:
   // an angled wire is the price of a full rail. Dragging the document to hide
   // that price moved the one thing the reader was actually looking at.
+  // how much of a card's head must show for the head to count as on screen
+  const HEAD_SHOWS = 56;
+  // **Only as far as needed to fit** (Q1465): an opened card that runs off the
+  // foot of the window rises until its commit row is in reach — and never so
+  // far that its head leaves the top, so a card taller than the window keeps
+  // its head and gives up its foot. After the unroll, never during it: the
+  // three steps of an open do not overlap.
+  function fitOpened(id) {
+    const el = [...doc.querySelectorAll('.sugg')].find((c) => c.dataset.card === id);
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const by = Math.min(r.bottom - (innerHeight - HEAD_GAP), r.top - headLine());
+    if (by > 1) smoothScrollBy(by, () => { layoutQueue(); drawWires(); });
+  }
+
   function bringIntoView(id, done) {
     let targets = wireTargets(id);
     // **Every entry travels, whether or not its tab is drawn** (Ed, 2026-09-11:
@@ -3984,8 +3999,16 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     if (!targets.length) { drawWires(); return done(); }
     const y = topTarget(targets).getBoundingClientRect().top;
     const arrive = () => { layoutQueue(); drawWires(); done(); };
-    // already sitting comfortably: don't nudge the page for nothing
-    if (y >= 100 && y <= 300) return arrive();
+    // **A card whose head is already on screen does not move the view** (Q1465,
+    // Ed 2026-09-19: *a decision card whose top part is already on the screen
+    // shouldn't move the view*; ruled *move only as far as needed to fit*). The
+    // band that stood here left the page alone only between 100 and 300px and
+    // carried everything else to the reading line — so pressing an entry whose
+    // clause you were already looking at still slid the document under you.
+    // Anywhere under the bar with its head showing, it stays; what a card low
+    // in the window then owes — its ✓ row in reach — is `fitOpened`'s, after it
+    // has unrolled, and by no more than it takes. `stayed` tells the open so.
+    if (y >= headLine() && y <= innerHeight - HEAD_SHOWS) { layoutQueue(); drawWires(); return done(true); }
     smoothScrollBy(y - READ_LINE, arrive);
   }
 
@@ -4102,7 +4125,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       // several hundred pixels out of the charter above here, so the scroll is
       // corrected by that much in the same frame — a move that cancels itself
       // and is therefore never seen.
-      const open = () => {
+      const open = (stayed) => {
         if (!alive()) return;
         const hold = holdSel(next);
         // **Where the held thing stood, in case its own card swallows it** (Ed's
@@ -4130,6 +4153,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         expandCards(next, () => {
           if (!alive()) return;
           layoutQueue();
+          if (stayed === true) fitOpened(next);
           settle();
         });
       };
