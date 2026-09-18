@@ -265,6 +265,27 @@ export type ConstitutionEvent =
    */
   | { type: 'departure-owed'; t: number; member: MemberId; departed: MemberId }
   | { type: 'departure-ok'; t: number; member: MemberId; departed: MemberId }
+  /* -- a motion that failed (SURFACE E41; Q1447, Ed 2026-09-17) ------------ */
+  /**
+   * **A failed motion tells its mover** (Ed, 2026-09-17 23:45, Q1447:
+   * *someone that proposes a motion should get an acknowledgement task if it
+   * fails*; SURFACE E41, R-130). A motion that carries is news to everybody
+   * who had no say (E5); a motion that is held told nobody at all — its card
+   * and its rail entry simply went, a grey ✖ record filed behind the rule,
+   * and the mover's 🏛️ or ✏️ came back to the wallet with no word said.
+   *
+   * `departure-owed`'s shape exactly — one event, one person, nothing batched
+   * and nothing minted — and for its reason: one act about one thing, and the
+   * card *is* that thing. **The audience is one person**, which is the
+   * difference from every other owing in the family: the mover alone, because
+   * a rejection is not a change in the rule anybody else lives under.
+   *
+   * The motion id is the whole of what is remembered: the record already
+   * holds the payload, the route, the reason and the moment it settled, so
+   * the card reads all of it from there.
+   */
+  | { type: 'held-owed'; t: number; motion: MotionId; member: MemberId }
+  | { type: 'held-ok'; t: number; motion: MotionId; member: MemberId }
   /* -- motions (§9.6, v0.48) ---------------------------------------------- */
   | { type: 'motion-opened'; t: number; motion: MotionId; by: MemberId | null;
       payload: MotionPayload; route: MotionRoute; stake: number; why?: string }
@@ -543,6 +564,17 @@ export interface MemberState {
    */
   departuresOwed: Set<MemberId>;
   departuresGiven: Set<MemberId>;
+  /**
+   * Motions this member **moved** that failed, minus the ones they have
+   * acknowledged (SURFACE E41; Q1447), by motion id. **Separate from `okOwed`
+   * for `releasesOwed`'s own reason**: this is news about a proposal of
+   * theirs, not about a setting's value, and landing it in `okOwed` would
+   * fire a setting's value-news card with the wrong copy — and on a setting
+   * whose value did not move at all. Nothing of the motion is copied here:
+   * the motion record holds the payload, the reason and when it settled.
+   */
+  heldOwed: Set<MotionId>;
+  heldGiven: Set<MotionId>;
   /** An invitation that expired unopened at the close (SPEC §4.6). */
   invitationExpired: boolean;
   /** The member's closing acknowledgment — signature and comment (SPEC §4.6). */

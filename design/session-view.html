@@ -1688,6 +1688,20 @@
     return departuresOf().filter((d) => owed.has(d.id));
   };
   const owedDeparture = (id) => owedDepartures().find((d) => d.id === id) || null;
+  // **And the same for a motion of yours that failed** (SURFACE E41; Q1447,
+  // Ed 2026-09-17: *someone that proposes a motion should get an
+  // acknowledgement task if it fails*). The module owes it to the mover and
+  // to nobody else, so the page asks the module rather than working out whose
+  // the proposal was — and the module is the truth in both directions here as
+  // it is for a departure: nothing about a rejection is kept per device.
+  const owedHeldIds = () => {
+    if (!cs) return new Set();
+    if (cs.isRemote) return new Set((cs.v && cs.v.view && cs.v.view.owedHeld) || []);
+    const id = viewerId(); if (!id) return new Set();
+    let rec = null;
+    try { rec = cs.memberRecords().get(id) || null; } catch (e) { return new Set(); }
+    return rec && rec.heldOwed ? new Set(rec.heldOwed) : new Set();
+  };
   // **One press dismisses the task** (Q846, Ed: *I click a queue-card, click
   // OK, then click the queue-card again, then click OK, then the queue card
   // goes*). The press adds the key and sends `give-ok` in the same act, and
@@ -1753,6 +1767,13 @@
   const syncOwedDepartures = () => {
     for (const d of owedDepartures()) {
       const k = 'dep:' + d.id;
+      if (!okInFlight.has(k)) S.okd.delete(k);
+    }
+  };
+  /** And for a motion of yours that failed (SURFACE E41; Q1447), the same. */
+  const syncOwedHeld = () => {
+    for (const id of owedHeldIds()) {
+      const k = 'held:' + id;
       if (!okInFlight.has(k)) S.okd.delete(k);
     }
   };
@@ -2681,7 +2702,8 @@
   ];
   const card = (k) => CARDS.find((c) => c.k === k) || ANS.find((c) => c.k === k) ||
     GATES.find((c) => c.k === k) || powerCard(k) || admitCard(k) || recordCard(k) ||
-    motionCard(k) || releaseCard(k) || mailGiveUpCard(k) || departureCard(k);
+    motionCard(k) || releaseCard(k) || mailGiveUpCard(k) || departureCard(k) ||
+    heldCard(k);
   // **The governance tab group** (403/405, Ed 2026-08-19): every held-able
   // setting is three questions — the value, ✒️ who-has-the-pen, 🛡️ do-carried-changes-need-the-Founder’s-OK — drawn as a
   // pile: the value’s tab in front, the two power tabs beneath. The tabs
@@ -2876,6 +2898,45 @@
   };
   const departureKeys = () => owedDepartures()
     .filter((d) => !S.okd.has('dep:' + d.id)).map((d) => 'dep:' + d.id);
+  // **A motion of yours that failed is news to you** (SURFACE E41; Q1447, Ed
+  // 2026-09-17). `departureCard`'s shape, with one difference that is the
+  // whole ruling: it is served to one person. Where the motion filed a record
+  // — a `set` or a `reserve` — **this card is that record**, standing in the
+  // rule's own pile in the record's place and wearing ✖ there, so the mover
+  // has one tab about one rejection rather than a news entry beside a grey
+  // chip saying the same thing; once the OK is given it hides and the grey
+  // `rec:` chip takes the place back. A door's motion (✉️ ❌) files no record
+  // at all (`settledRecord`), so there the card is the sentence alone.
+  //
+  // Keyed by the **motion id**, not by a pile index: `recordCard`'s index key
+  // exists to keep the copy golden still across ✒️ amendments, and this card
+  // has to survive a poll under an open card and a `birthPass` that remembers
+  // keys — an index that shifts when a later record files would re-animate it
+  // and could move `S.open` onto another rejection.
+  const HELDCACHE = {};
+  const heldMotionRec = (id) => {
+    if (!cs) return null;
+    try { return cs.motionRecords().get(id) || null; } catch (e) { return null; }
+  };
+  const heldCard = (k) => {
+    const mm = /^held:(.+)$/.exec(k);
+    if (!mm) return undefined;
+    const id = mm[1];
+    const rec = heldMotionRec(id);
+    if (!rec || !rec.payload) return undefined;
+    if (!HELDCACHE[k]) HELDCACHE[k] = { k, held: id, kind: 'constitutional',
+      early: () => true, hide: () => !owedHeldIds().has(id) };
+    const hc = HELDCACHE[k];
+    // recomputed rather than frozen, for `recordCard`'s reason: the words a
+    // motion is described in are the page's, and the page's copy moves
+    hc.g = window.CARDS.CROSS;
+    hc.base = pileKeyOf(rec);
+    hc.t = PAGE_COPY.synth.heldLead + motionDisplay(rec);
+    return hc;
+  };
+  const heldKeys = () => [...owedHeldIds()]
+    .filter((id) => !S.okd.has('held:' + id) && !!heldMotionRec(id))
+    .map((id) => 'held:' + id);
   // **A settled motion files behind the rule it was about** (Q942, entry 72,
   // Ed 2026-08-25: *when a proposal for a change in a setting passes or is
   // rejected, it should leave a tab, the same as with a text amendment*). The
@@ -3272,6 +3333,45 @@
     }
     return '<div class="body changed">' + eyebrow + said + speaker + '</div>';
   };
+  /**
+   * **What a failed motion's news card says** (SURFACE E41; Q1447). Where the
+   * motion filed a record — a `set` or a `reserve` — the card *is* that
+   * record, so the body is `recordBody`'s and the mover reads exactly what
+   * every other member will read as a grey chip: the dateline, *Rejected*,
+   * the rule that stands marked as standing and the wording that did not.
+   * A door's motion (✉️ ❌) files no record at all (`settledRecord`), so its
+   * body is one sentence, `departureLine`'s shape and for its reason.
+   *
+   * **The verb is the actor's** (STYLE T8: *refuse* is the Founder's word,
+   * *reject* the membership's), which is what `heldBy` rides the view for —
+   * `status: 'held'` alone cannot tell a 🛡️ apart from the room's own answer.
+   * And a motion the host withdrew because the race would not take it did not
+   * fail on its merits at all: nobody decided anything, and the sentence says
+   * so and says where the proposal went.
+   */
+  const heldBody = (c) => {
+    const rec = recOf(c);
+    if (!rec) return '<p class="why">' + PAGE_COPY.motionRec.gone + '</p>';
+    if (rec.payload.kind === 'set' || rec.payload.kind === 'reserve') return recordBody(c);
+    const what = motionDisplay(rec);
+    const R = PAGE_COPY.heldNews;
+    const by = heldByOf(rec);
+    const said = by === 'system' ? R.couldNotBePut
+      : by === 'crown' ? R.founderRefused(what) : R.membershipRejected(what);
+    return '<p class="why">' + esc(said) + '</p>';
+  };
+  /** Who failed it: the view's own answer live, the questions themselves on
+   *  the fixture, where the records are the module's and carry no `heldBy`. */
+  const heldByOf = (rec) => {
+    if (rec.heldBy) return rec.heldBy;
+    if (rec.status === 'withdrawn') return 'system';
+    try {
+      for (const q of cs.crownQuestionRecords().values()) {
+        if (q.motion === rec.id && q.status === 'rejected') return 'crown';
+      }
+    } catch (e) { /* no questions to read */ }
+    return 'members';
+  };
   function commitPower(key) {
     const mm = /^pw:(u|a):(.+)$/.exec(key);
     if (!mm || !cs) return;
@@ -3617,6 +3717,8 @@
     if (c.mailgiveup) return S.okd.has(c.k);
     // and a departure, which asks only to have been read (E31, E32, E40)
     if (c.departure) return S.okd.has(c.k);
+    // and a motion of yours that failed, the same (E41, Q1447)
+    if (c.held) return S.okd.has(c.k);
     if (c.door) return true;                                   // doors, not decisions
     if (c.isBegin) return constituted();                       // 🍾: settled by the press
     if (c.isClosing) return signedClose();                     // 🥂: settled by your signature
@@ -4309,10 +4411,25 @@
   // — the admit cards, one per applicant (entry 96). It has to be here rather
   // than only in the band, because this is what the rail reads: a card the
   // section does not enumerate is a card nothing can ever serve (Q775).
-  const secLive = () => SEC.map((s2) => ({ ...s2,
-    cards: s2.keys.concat(s2.extraKeys ? s2.extraKeys() : [])
-      .map(card).filter((c) => c && visible(c)) }))
-    .filter((s2) => s2.cards.length);
+  // **And a failed motion of yours is enumerated by the section its rule sits
+  // in** (E41, Q1447), which is the same rule one level up: a `set` on 👥 is
+  // the Decisions section's, a `reserve` on ⏱️ the Proposals section's, ✉️ and
+  // ❌ the Membership section's. Written here rather than as five `extraKeys`
+  // because the mapping is one line — the card's own `base` is the host's key
+  // — and five copies of it would be five places to forget. A key no section
+  // claims falls to the section holding 🍾, where the other homeless news
+  // (a release batch) already stands, so nothing can be owed and unservable.
+  const heldKeysIn = (s2, claimed) => heldKeys().filter((k) => {
+    const c = card(k); if (!c) return false;
+    return s2.keys.includes(c.base) || (!claimed.has(c.base) && s2.keys.includes('begin'));
+  });
+  const secLive = () => {
+    const claimed = new Set(SEC.flatMap((s2) => s2.keys));
+    return SEC.map((s2) => ({ ...s2,
+      cards: s2.keys.concat(s2.extraKeys ? s2.extraKeys() : [], heldKeysIn(s2, claimed))
+        .map(card).filter((c) => c && visible(c)) }))
+      .filter((s2) => s2.cards.length);
+  };
   // **The founder's own answer is a tab on the setting's clause** (Q786–Q788,
   // Ed 2026-08-25: *whether the founder specifically has answered their member
   // question doesn't matter enough to have a whole clause, it's just part of
@@ -4343,6 +4460,7 @@
   const railable = (c) => !!c && (!!c.ansFor || !!c.admit || !!c.release || !!c.mailgiveup ||
     !!c.motion ||
     !!c.departure ||
+    !!c.held ||
     SEC.some((s2) => s2.keys.includes(c.k)) ||
     c.k === 'grant-pen' || c.k === 'grant-shield' || c.k === 'grant-voice');
   /* **Every running motion is its own card** (Q1367, Ed 2026-09-15: *other
@@ -4944,8 +5062,12 @@
     : (rec.settledAtT || 0));
   // the record a record card stands for, by id
   const recOf = (c) => {
-    if (!c || !c.record || !cs) return null;
-    try { return cs.motionRecords().get(c.record) || null; } catch (e) { return null; }
+    // `held` as well as `record` (Q1447): a failed motion's news card stands
+    // in the record's own place and draws the record's own body, so it reads
+    // the record the same way rather than keeping a second field for it
+    const id = c && (c.record || c.held);
+    if (!id || !cs) return null;
+    try { return cs.motionRecords().get(id) || null; } catch (e) { return null; }
   };
   // what the module folded beside a ✒️ amendment as the value it replaced;
   // a raised motion never has one (`amendedFrom` is the pen's own projection)
@@ -6093,6 +6215,7 @@
     : cs.isRemote ? ((cs.v.view.closed && cs.v.view.closed.signatures) || []) : cs.closingSignatures());
   const news = (c) => (c.mailgiveup ? !S.okd.has(c.k) // E34: owed is the whole of it
     : c.departure ? !S.okd.has(c.k) // E31/E32/E40: owed is the whole of it
+    : c.held ? !S.okd.has(c.k)      // E41: owed is the whole of it (Q1447)
     : c.release ? !S.okd.has(c.k)   // owed is the whole of it
     : c.admit ? admissionPrice() === 'pen' && !S.okd.has(c.k)
     : motionOn(c) ? false
@@ -6708,7 +6831,10 @@
       // and deliberately not `releaseCard`'s, a release belonging to no clause
       // …and 🥾's departure news stands in the *Members* pile for the same
       // reason (E31, E32, E40): the person who left was listed there
-      if (c.power || c.ansFor || c.record || c.mailgiveup || c.departure) return [c];
+      // …and E41's rejection news with them (Q1447): it stands in the rule's
+      // pile in the record's place, and opens alone as a record does
+      if (c.power || c.ansFor || c.record || c.mailgiveup || c.departure ||
+        c.held) return [c];
       // the Proposals opening is one clause carrying four tabs (Q748): the
       // group is the same whichever of the four you come in by, and `para`
       // opens the card at 🍾's paragraph for any of them
@@ -6733,8 +6859,14 @@
       // sort.
       // …every motion running here is its own tab (Q1367), between the
       // rule's own tabs and the records
+      // …and a record this seat is still owed the news of stands **in its own
+      // place** as the news card, not beside it (E41, Q1447): one rejection is
+      // one tab, wearing ✖ here as the grey chip does and going back to being
+      // the grey chip the moment the OK is given
+      const owedHeld = owedHeldIds();
       return withPw.concat(motionCardsFor(card(k))).concat(settledMotionsFor(k)
-        .map((_rec, i) => card('rec:' + k + ':' + i)).filter(Boolean));
+        .map((rec, i) => card(owedHeld.has(rec.id) && !S.okd.has('held:' + rec.id)
+          ? 'held:' + rec.id : 'rec:' + k + ':' + i)).filter(Boolean));
     },
     // **The lockline tells the truth about who set it** (Q510(a), Ed
     // 2026-08-21). It had said *Set by the founder when the document was
@@ -7256,6 +7388,7 @@
     launchFarewell: (...a) => launchFarewell(...a),
     launchGrant: (...a) => launchGrant(...a),
     liveMotionRec: (...a) => liveMotionRec(...a),
+    heldBody: (...a) => heldBody(...a),
     hostKeyOf: (...a) => hostKeyOf(...a),
     mailGiveUpBatch: (...a) => mailGiveUpBatch(...a),
     mailGiveUpBody: (...a) => mailGiveUpBody(...a),
@@ -7307,6 +7440,7 @@
     syncFromCs: (...a) => syncFromCs(...a),
     syncGrantAcks: (...a) => syncGrantAcks(...a),
     syncOwedDepartures: (...a) => syncOwedDepartures(...a),
+    syncOwedHeld: (...a) => syncOwedHeld(...a),
     syncOwedMailGiveUps: (...a) => syncOwedMailGiveUps(...a),
     syncOwedOks: (...a) => syncOwedOks(...a),
     syncOwedReleases: (...a) => syncOwedReleases(...a),
@@ -7709,6 +7843,11 @@
       // and the OK on one departure (SURFACE E31, E32, E40), the same way
       if (cs && kk.startsWith('dep:') && viewerId()) {
         try { holdOkInFlight(kk, cs.ackDeparture(now(), viewerId(), kk.slice(4))); } catch (e) {}
+      }
+      // and the OK on one failed motion of yours (SURFACE E41; Q1447), the
+      // same way — `holdOkInFlight` is what makes it one press (Q846)
+      if (cs && kk.startsWith('held:') && viewerId()) {
+        try { holdOkInFlight(kk, cs.ackHeld(now(), viewerId(), kk.slice(5))); } catch (e) {}
       } });
     const toggleFold = (k2) => {
       if (S.folded.has(k2)) S.folded.delete(k2); else S.folded.add(k2); };

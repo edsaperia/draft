@@ -876,6 +876,10 @@ const PREDATING = ['ending', 'quorum', 'authorship', 'judgments',
 const AMENDED = 'chamber'; // 🌍, constitutional and founder-held after this founding
 let guestPage = null;
 let guestOks = 0;
+// E41's own press (Q1447): `guestOks` counts `give-ok` alone, and a failed
+// motion's OK is `ack-held` — a second counter rather than a widened regex,
+// so *one press, one command* stays assertable for each of them separately
+let guestHeldOks = 0;
 // the readout and the rail, read the way `founding()` and `rail()` read the
 // founder's — the rail from the DOM, because that is what the member sees
 const guestState = () => guestPage.evaluate(() => ({
@@ -906,6 +910,8 @@ const secondSeatPreBegin = async () => {
   guestPage.on('pageerror', (e) => errors.push('[guest] ' + String(e)));
   guestPage.on('response', (r) => { if (r.request().method() === 'POST' &&
     /give-ok/.test(r.request().postData() || '')) guestOks += 1; });
+  guestPage.on('response', (r) => { if (r.request().method() === 'POST' &&
+    /ack-held/.test(r.request().postData() || '')) guestHeldOks += 1; });
   guestPage.on('response', (r) => { if (r.url().includes('/api/') && r.status() >= 400) {
     // the same allowance as the founder's listener: a refusal a step is
     // *about*, named by its body for as long as the step runs (Q1330's step)
@@ -1383,6 +1389,121 @@ const motionFillOnAmended = async () => {
   say('motion gone· ' + (ok3 ? 'withdrawn, and the entry no longer counts answers' + (e3 ? ' · ' + JSON.stringify(e3) : ' · the entry left the rail')
     : 'FAIL: the count survived the withdrawal · ' + JSON.stringify(e3)));
   if (!ok3) stuck.push('the count after the withdrawal');
+};
+
+/* ---- **a failed motion tells its mover** (SURFACE E41; Q1447, Ed 2026-09-17:
+ * *someone that proposes a motion should get an acknowledgement task if it
+ * fails*). The mover puts a second 🏛️ motion on 🌍, the founder **accepts**
+ * it, and — 🌍's 🛡️ being the founder's after this founding — it parks at the
+ * crown rather than landing, where the founder refuses it.
+ *
+ * **Not the founder answering *keep***, which the plan for this work asked
+ * for and which cannot fail a motion: §9.6's settle check skips any motion
+ * with a standing keep (`maybeSettleMotions`, *a standing keep blocks but does
+ * not kill*), so the motion above simply stands running — which is what the
+ * rows above it assert. The crown's refusal is the one road to a failure a
+ * live document has: an **ordinary** motion is adjudicated *held* only at the
+ * close (`engine-bridge`'s `finishClose`; a live bridge reports nothing but
+ * *carried*), and the system's own withdrawal is raised inside `sync` on a
+ * path the wire refuses at the door instead.
+ *
+ * Runs immediately after `motionFillOnAmended`, where the room is still two
+ * and the mover has just withdrawn their first motion, so the one-🏛️-out
+ * rule is clear and the second motion is nobody's twin. */
+const heldNewsOnRefusal = async () => {
+  if (!guestPage) return; // its own failure, already reported
+  const wire = (pg, cmd, args) => pg.evaluate(([c, a]) => fetch(location.pathname.replace('/d/', '/api/d/') + '/cmd', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ cmd: c, args: a }),
+  }).then((r) => r.json()).catch((e) => ({ error: String(e && e.message) })), [cmd, args]);
+  const viewOf = (pg) => pg.evaluate(() => fetch(location.pathname.replace('/d/', '/api/d/') + '/view')
+    .then((r) => r.json()).catch(() => null));
+  // a rung that is not the one standing: `openMotion` refuses a motion
+  // proposing what already stands, and the walk must not depend on which
+  // 🌍 the steps above left behind
+  const v0 = await viewOf(guestPage);
+  const stands = (((v0 || {}).view || {}).settings || []).find((s) => s.setting === 'chamber');
+  const want = ['closed', 'link', 'public'].find((r) =>
+    JSON.stringify((stands || {}).value) !== JSON.stringify({ rung: r }));
+  const put = await wire(guestPage, 'open-motion', { payload: { kind: 'set', setting: AMENDED, value: { rung: want } },
+    why: 'the room should decide who reads it' });
+  const motion = put && put.result;
+  if (!motion || put.error) {
+    say('refused mo· FAIL: the member could not put the second 🏛️ motion on 🌍 · ' + JSON.stringify(put));
+    stuck.push('the second 🏛️ motion on 🌍'); return;
+  }
+  const said = await wire(page, 'answer-motion', { motion, answer: 'accept' });
+  if (said && said.error) {
+    say('refused mo· FAIL: the founder could not accept · ' + JSON.stringify(said));
+    stuck.push('the founder’s accept on the 🏛️ motion'); return;
+  }
+  // unanimity carries it to the crown, not into the document (§9.7)
+  const vq = await viewOf(page);
+  const q = (((vq || {}).view || {}).crownTasks || []).find((t) => t.motion === motion);
+  if (!q) {
+    say('refused mo· FAIL: the carried motion did not reach the crown · ' +
+      JSON.stringify(((vq || {}).view || {}).motions || []).slice(0, 300));
+    stuck.push('the 👑 question on the carried motion'); return;
+  }
+  const no = await wire(page, 'answer-crown-question', { question: q.id, outcome: 'reject' });
+  if (no && no.error) {
+    say('refused mo· FAIL: the founder could not refuse · ' + JSON.stringify(no));
+    stuck.push('the founder’s refusal'); return;
+  }
+  await T(5000); // one poll in each seat
+  const hKey = 'held:' + motion;
+  const before = guestHeldOks;
+  const mine = await guestState();
+  const theirs = await rail();
+  const owed = mine.rail.includes(hKey);
+  const quiet = !theirs.includes(hKey);
+  say('rejected   · ' + (owed && quiet
+    ? 'the mover’s rail carries ' + hKey + ' and the founder who refused it carries nothing'
+    : 'FAIL: mover ' + JSON.stringify(mine.rail) + ' · founder ' + JSON.stringify(theirs)));
+  if (!owed || !quiet) stuck.push('E41’s news entry for the mover alone');
+  if (!owed) return;
+  // one press, and one only — the family's own machinery (Q846)
+  await guestPage.evaluate((k) => {
+    const el = document.querySelector('#rail [data-card="' + k + '"]');
+    if (el) el.click();
+  }, hKey);
+  await guestPage.waitForTimeout(500);
+  const pressed = await guestPage.evaluate(() => {
+    const b = document.querySelector('.setupcard [data-ok]');
+    if (!b || b.disabled) return false;
+    b.scrollIntoView({ block: 'center' });
+    b.click();
+    return true;
+  });
+  if (!pressed) {
+    say('rejected OK· FAIL: no OK on the mover’s rejection card');
+    stuck.push('the OK on E41’s card'); return;
+  }
+  await T(5000); // >4s: a poll lands, carrying the view the press was not in
+  const after = await guestState();
+  const gone = !after.rail.includes(hKey);
+  say('rejected OK· ' + (gone ? 'one press clears it, and it stays gone through a poll'
+    : 'FAIL: the entry survived the press · ' + JSON.stringify(after.rail)));
+  if (!gone) stuck.push('E41’s OK took more than one press');
+  await guestLand(guestPage.url());
+  const back = await guestState();
+  const stillGone = !back.rail.includes(hKey);
+  say('rejected OK· ' + (stillGone ? 'the module has the acknowledgement'
+    : 'FAIL: the entry came back on a reload · ' + JSON.stringify(back.rail)));
+  if (!stillGone) stuck.push('E41’s OK did not reach the module');
+  say('ack-held   · ' + (guestHeldOks - before) + ' sent for one press' +
+    (guestHeldOks - before === 1 ? '' : '  FAIL: expected exactly one'));
+  if (guestHeldOks - before !== 1) stuck.push('ack-held was sent ' + (guestHeldOks - before) + ' times');
+  // …and what is left is the grey ✖ record, in the rule's own pile, asking
+  // nothing — the same chip every other reader has had since the refusal
+  const chip = await guestPage.evaluate((k) => {
+    const el = document.querySelector('#band .achip[data-chip="' + k + '"]');
+    return el ? el.className : null;
+  }, hKey);
+  const filed = chip === null;
+  say('rejected ✖ · ' + (filed ? 'the news chip is gone from the pile, and the grey record stands in its place'
+    : 'FAIL: the news chip survived the OK · ' + chip));
+  if (!filed) stuck.push('E41’s chip after the OK');
 };
 
 /* ---- one motion, one tab, one entry (Q1367; a deck per setting, Q1348,
@@ -2411,6 +2532,10 @@ await secondSeatOnAmendment();
 // Q1319: with the amendment acknowledged, a member puts 🌍 to the room and
 // the founder's rail entry must read the motion's progress
 await motionFillOnAmended();
+
+// Q1447: and a motion of the mover's that fails — carried by the room, refused
+// at the crown — is news to the mover and to nobody else (SURFACE E41)
+await heldNewsOnRefusal();
 
 // and with two seats standing, each of them is the other's face in the topbar
 await topbarFaces();

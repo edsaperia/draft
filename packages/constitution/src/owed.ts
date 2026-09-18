@@ -1,12 +1,13 @@
 /**
  * What a member is owed, and the OK that answers it: the acknowledgement
  * family (SPEC §9.6a; SURFACE C8, E5, E9, E34, E35), out of session.ts since
- * Q1352 (q), 2026-09-14. Five kinds of news, one posture each way — an
+ * Q1352 (q), 2026-09-14. Six kinds of news, one posture each way — an
  * *owing* walks the room and emits one event per person it is addressed to,
  * an *OK* refuses nothing it can simply ignore — and the fold in session.ts
  * is what turns those events into `okOwed`, `releasesOwed`,
- * `amendmentsOwed`, `mailGaveUpOwed` and `departuresOwed` on each member's
- * record.
+ * `amendmentsOwed`, `mailGaveUpOwed`, `departuresOwed` and `heldOwed` on
+ * each member's record. The sixth (Q1447) is the one whose room is one
+ * person: a failed motion is news to its mover and to nobody else.
  *
  * Every function here reads the session through `OwedState`, a view of
  * exactly the fields this family needs and nothing else, and writes only by
@@ -15,7 +16,8 @@
  * command would replay differently from the session that wrote it.
  */
 
-import type { ConstitutionEvent, MemberId, MemberRecord, Power, PowerKey } from './types.js';
+import type { ConstitutionEvent, MemberId, MemberRecord, MotionId, MotionPayload,
+  Power, PowerKey } from './types.js';
 import type { People, PersonId } from './people.js';
 import type { SettingId } from './catalogue.js';
 
@@ -44,6 +46,18 @@ export interface OwedState {
  * it is called through. `OwedState` and `MotionHost` both satisfy it.
  */
 export interface DepartureAudience {
+  readonly members: ReadonlyMap<MemberId, MemberRecord>;
+  emit(event: ConstitutionEvent): void;
+}
+
+/**
+ * The narrower view a failed motion's owing needs (Q1447), and the same two
+ * fields `DepartureAudience` holds — its own name because its caller is the
+ * other host: every road to a failed motion runs inside `motions.ts`, whose
+ * `MotionHost` is a live view, and a rule about who is told reads better
+ * under the name of the thing it is about than under a departure's.
+ */
+export interface HeldAudience {
   readonly members: ReadonlyMap<MemberId, MemberRecord>;
   emit(event: ConstitutionEvent): void;
 }
@@ -287,6 +301,61 @@ export function ackDeparture(s: OwedState, t: number, member: MemberId,
   if (!m) throw new Error(`unknown member '${member}'`);
   if (!m.departuresOwed.has(departed)) return;
   s.emit({ type: 'departure-ok', t, member, departed });
+}
+
+/**
+ * **A failed motion tells its mover** (Ed, 2026-09-17 23:45, Q1447:
+ * *someone that proposes a motion should get an acknowledgement task if it
+ * fails*; SURFACE E41, SPEC §9.6a, R-130). `oweDeparture`'s shape exactly —
+ * one act, one thing, nothing batched and nothing minted — with one
+ * difference, which is the whole of the ruling: **the audience is one
+ * person.** Every other owing in this file walks the room, because the rule
+ * the room lives under moved; here nothing moved, and the only person with
+ * something to be told is the one who asked for the change.
+ *
+ * Three exclusions, each of them a road that is not a failure to tell
+ * somebody about:
+ *
+ * - **An admission has no mover.** `by` is null on an `admit` motion — the
+ *   application is the applicant's own proposal (§9.7½) — and the applicant
+ *   already reads *refused* on their own 🪪 card (E33, `application-refused`).
+ *   The kind is named as well as the null, so a seventh payload that one day
+ *   arrives with a mover does not inherit an audience nobody chose for it.
+ * - **The mover's own withdrawal**, which is not called from here at all:
+ *   `withdrawMotion` emits and stops, because somebody who let go of a
+ *   proposal does not need a card telling them they let go of it. The
+ *   *system's* withdrawal (`abandonMotion`, issue #26) does call in — there
+ *   the mover pressed and nothing happened, which is exactly the silence the
+ *   ruling is about.
+ * - **A mover who has gone**, `oweOks`' own two exclusions and no more: the
+ *   removed are out and the un-arrived never had a wallet to spend. **A
+ *   lapsed mover is owed it**, as they are for every owing in this file —
+ *   R-016's line is *were you here when it happened*, and they were: they
+ *   put the motion.
+ *
+ * Nothing guards against owing twice, and nothing needs to: a motion settles
+ * once, and every road here runs off the status event that settles it.
+ */
+export function oweHeld(s: HeldAudience, t: number, motion: MotionId,
+  mover: MemberId | null, kind: MotionPayload['kind']): void {
+  if (mover === null || kind === 'admit') return;
+  const m = s.members.get(mover);
+  if (!m || m.removed || m.arrivedAtT === null) return;
+  s.emit({ type: 'held-owed', t, motion, member: mover });
+}
+
+/**
+ * The OK on one failed motion (SURFACE E41) — `ackDeparture`'s posture
+ * exactly: a motion this member is not owed returns silently rather than
+ * throwing at a page that was a poll behind.
+ */
+export function ackHeld(s: OwedState, t: number, member: MemberId,
+  motion: MotionId): void {
+  s.requireOpen('acknowledging');
+  const m = s.members.get(member);
+  if (!m) throw new Error(`unknown member '${member}'`);
+  if (!m.heldOwed.has(motion)) return;
+  s.emit({ type: 'held-ok', t, motion, member });
 }
 
 /**

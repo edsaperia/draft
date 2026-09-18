@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 446
+  "entries": 450
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -192,6 +192,9 @@
   "page.gate.shield.why": "As the founder of this document, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to.",
   "page.gate.voice.title": "Constitutional Proposals",
   "page.gate.voice.waiting": "Waiting on your arrival.",
+  "page.heldNews.couldNotBePut": "Your proposal could not be put to the membership, and your ✏️ is back in your wallet.",
+  "page.heldNews.founderRefused": "ƒ (what) => 'The Founder refused your proposal: ' + what + '.'",
+  "page.heldNews.membershipRejected": "ƒ (what) => 'The membership rejected your proposal: ' + what + '.'",
   "page.host.paused": "This document is paused while we do some quick database maintenance.",
   "page.host.pausedOver": "Nearly there — hold on a moment longer.",
   "page.host.pausedWait": "ƒ (minutes) => (minutes <= 1 ? 'It should be back in about a minute.'\n        : 'It should be back in about ' + minutes + ' minutes.')",
@@ -306,6 +309,7 @@
   "page.synth.departedLeft": "ƒ (who) => who + ' has left'",
   "page.synth.departedRemoved": "ƒ (who) => who + ' has been removed'",
   "page.synth.hasJoined": "ƒ (who) => who + ' has joined'",
+  "page.synth.heldLead": "Your proposal did not pass: ",
   "page.synth.mailGaveUp": "An Invitation Did Not Send",
   "page.synth.passedLead": "Passed: ",
   "page.synth.redacted": "[redacted]",

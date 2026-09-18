@@ -27,7 +27,7 @@ import { inE, motionElectorateOf } from './populations.js';
 // the departure owing (Q901): one rule over all three routes out, so the
 // carried 🥾 motion's arm calls the same function `remove` and `resign` do.
 // `MotionHost` satisfies `DepartureAudience` by its `members` and `emit`.
-import { oweDeparture } from './owed.js';
+import { oweDeparture, oweHeld } from './owed.js';
 
 /** The settings whose change is the ask-everyone route (SPEC §9.6's test).
  *  Read by the fold's owing as well as by the carry's, so it lives beside
@@ -292,11 +292,19 @@ export function withdrawMotion(s: MotionHost, t: number, member: MemberId,
  * posture. The event is the same `motion-withdrawn` the log already carries,
  * so a replay reaches this state with no bridge at all (§3.3a: the stake, if
  * one was ever taken, comes back whole).
+ *
+ * **And the mover is told** (Q1447): this is the one withdrawal that is a
+ * failure — they pressed, the wallet was empty or the race would not take the
+ * candidate, and without the card the press simply vanishes. `withdrawMotion`
+ * above owes nothing, because letting go of your own proposal is not news to
+ * you. The owing is emitted after the withdrawal for `settleHeldEffects`'
+ * reason, and `oweHeld` never throws, which is this function's own rule kept.
  */
 export function abandonMotion(s: MotionHost, t: number, motion: MotionId): void {
   const rec = s.motions.get(motion);
   if (!rec || rec.status !== 'running') return;
   s.emit({ type: 'motion-withdrawn', t, motion });
+  oweHeld(s, t, motion, rec.by, rec.payload.kind);
 }
 
 /**
@@ -608,11 +616,31 @@ export function crownSeatVacated(s: MotionHost, t: number): void {
   }
 }
 
-/** Follow-ons of a held motion: a refused application is told so (§9.7½). */
+/**
+ * Follow-ons of a held motion: a refused application is told so (§9.7½), and
+ * **the mover is told their motion failed** (Ed, 2026-09-17, Q1447; SURFACE
+ * E41, R-130). Two callers, which are two of the three roads to a failure:
+ * `adjudicateOrdinaryMotion` with *held* — the engine ran the race and the
+ * value stood — and `answerCrownQuestion` with *reject*, the Founder's 🛡️
+ * refusing a motion the room had already carried. The third is
+ * `abandonMotion`, which calls `oweHeld` for itself, having no status event
+ * of this shape to hang it on.
+ *
+ * The owing goes **after** the status event and before nothing else, which is
+ * where the departure owing sits relative to `member-removed`: the news of an
+ * act beside the act in the log, rather than behind whatever a re-settle
+ * carried.
+ *
+ * Not a road: `crown-failed-closed`, which also lands a motion at `held`.
+ * It is emitted by `runClose` and folded there, reaching this file by no
+ * path at all, so the close owes nothing — which is the answer anyway, an
+ * OK being refused on a shut document.
+ */
 function settleHeldEffects(s: MotionHost, t: number, rec: MotionRecord): void {
   if (rec.payload.kind === 'admit') {
     s.emit({ type: 'application-refused', t, applicant: rec.payload.applicant });
   }
+  oweHeld(s, t, rec.id, rec.by, rec.payload.kind);
 }
 
 /**
