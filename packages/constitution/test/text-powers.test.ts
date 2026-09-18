@@ -9,7 +9,15 @@ import { EngineBridge } from '../src/engine-bridge.js';
 import { ParticipantApi } from '../../engine-core/src/participant-api.js';
 import type { Event as EngineEvent } from '../../engine-core/src/types.js';
 import { view } from '../src/view.js';
+import { LAPSE_MIN_MS } from '../src/values.js';
 import { buildConstituted, reserveTextShield } from './helpers.js';
+
+/**
+ * The shortest spell a room can state (Q1453): five minutes. The crown-lapse
+ * cases below want a spell that runs out inside the test, so they take the
+ * floor and tick a second past it.
+ */
+const SPELL = LAPSE_MIN_MS;
 
 const openDoc = () => ConstitutionSession.open({
   title: 'Hollow Oak Club Charter', slug: 'hollow-oak',
@@ -141,14 +149,14 @@ describe('🛡️ on the Text: an adoption waits on the founder’s accept (Q440
   });
 
   it('a sleeping crown grants: lapse auto-passes a pending text question', () => {
-    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 100 } });
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: SPELL } });
     reserveTextShield(s, bo, ['ada', cy], 2);
     const q = s.openTextCrownQuestion(3, { candidateId: 'c1', summary: 'x' });
-    s.tick(3 + 1000);
+    s.tick(3 + SPELL + 1000);
     expect(s.crownLapsed).toBe(true);
     expect(s.crownQuestionRecords().get(q)!.status).toBe('auto-passed');
     expect(s.textAdoptionNeedsAssent()).toBe(false);
-    s.memberReturn(3 + 1001, 'ada');
+    s.memberReturn(3 + SPELL + 1001, 'ada');
     expect(s.textAdoptionNeedsAssent()).toBe(true);
   });
 
@@ -259,7 +267,7 @@ describe('several 👑 questions stand at once (R-100)', () => {
   });
 
   it('a sleeping crown grants both, and the engine follows both', () => {
-    const first = parked({ lapse: { afterMs: 100 } }, 'lapse-two');
+    const first = parked({ lapse: { afterMs: SPELL } }, 'lapse-two');
     const { s, bridge, bo, cy, id } = first;
     const v = bridge.engine.currentVersion();
     const second = bridge.proposeText(30, cy,
@@ -267,10 +275,10 @@ describe('several 👑 questions stand at once (R-100)', () => {
     const race = bridge.engine.races().find((r) => r.id === second.raceId)!;
     bridge.judge(40, bo, second.id, race.incumbentId, 'a');
     expect(bridge.engine.getCandidate(second.id).state).toBe('awaiting-assent');
-    s.tick(40 + 1000);          // the crown lapses; every pending question auto-passes
+    s.tick(40 + SPELL + 1000);  // the crown lapses; every pending question auto-passes
     expect(s.crownQuestionRecords().get(questionFor(s, id).id)!.status).toBe('auto-passed');
     expect(s.crownQuestionRecords().get(questionFor(s, second.id).id)!.status).toBe('auto-passed');
-    bridge.tick(40 + 1000);     // and the engine hears both in the cursor walk
+    bridge.tick(40 + SPELL + 1000); // and the engine hears both in the cursor walk
     expect(bridge.engine.getCandidate(id).state).toBe('adopted');
     expect(bridge.engine.getCandidate(second.id).state).toBe('adopted');
     expect(bridge.engine.document()).toBe('Open every day.\nVisitors sign the book.');
@@ -337,11 +345,11 @@ describe('🛡️ on the Text parks the adoption (R-056)', () => {
   });
 
   it('a sleeping crown grants, and the engine follows', () => {
-    const { s, bridge, id } = parked({ lapse: { afterMs: 100 } }, 'assent-lapse');
+    const { s, bridge, id } = parked({ lapse: { afterMs: SPELL } }, 'assent-lapse');
     expect(bridge.engine.document()).toBe(START);
-    s.tick(20 + 1000);          // the crown lapses; the question auto-passes
+    s.tick(20 + SPELL + 1000);  // the crown lapses; the question auto-passes
     expect(s.crownQuestionRecords().get(questionFor(s, id).id)!.status).toBe('auto-passed');
-    bridge.tick(20 + 1000);     // and the engine hears it in the cursor walk
+    bridge.tick(20 + SPELL + 1000); // and the engine hears it in the cursor walk
     expect(bridge.engine.document()).toBe('Open every day.');
     expect(bridge.engine.getCandidate(id).state).toBe('adopted');
   });
@@ -585,12 +593,12 @@ describe('✒️ on the Text: the Founder amends at will (R-058)', () => {
     expect(s.textPen()).toBe(true);
     // a sleeping crown grants assent and performs no act (`doorPen`'s rule)
     const lapsing = buildConstituted({ keepText: { unilateral: true },
-      lapse: { afterMs: 100 } }).s;
+      lapse: { afterMs: SPELL } }).s;
     expect(lapsing.textPen()).toBe(true);
-    lapsing.tick(2 + 1000);
+    lapsing.tick(2 + SPELL + 1000);
     expect(lapsing.crownLapsed).toBe(true);
     expect(lapsing.textPen()).toBe(false);
-    lapsing.memberReturn(2 + 1001, 'ada');
+    lapsing.memberReturn(2 + SPELL + 1001, 'ada');
     expect(lapsing.textPen()).toBe(true);
   });
 

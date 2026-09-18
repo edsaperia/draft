@@ -74,6 +74,14 @@ const busy = (s: ConstitutionSession, bo: string, t: number): void => {
 const HOUR = 3_600_000, DAY = 24 * HOUR;
 
 /**
+ * **The shortest spell a room can state** (Q1453): five minutes, the floor
+ * `validateValue` holds. These tests want a spell that runs out inside the
+ * test rather than one a room would choose, so every short spell below is
+ * the floor itself and its clocks read *just before* and *just after* it.
+ */
+const SPELL = LAPSE_MIN_MS;
+
+/**
  * **Three warnings, a week, a day and an hour before the lapse, and a member
  * gets all three** (R-097, Ed 2026-09-08, Q1285: *only three — a week, a
  * day, and an hour — and you get all three*). Until this date one warning
@@ -207,21 +215,21 @@ describe('💤 promise 1 · live · a quiet member leaves E and every electorate
   });
 
   it('a spell under an hour warns nobody, and lapses on the clock as ever', () => {
-    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 } });
-    busy(s, bo, 7_000);
-    s.tick(9_999);
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: SPELL } });
+    busy(s, bo, SPELL - 3_000);
+    s.tick(SPELL - 1);
     expect(s.memberRecords().get(cy)!.lapseWarned).toBe(false);
-    s.tick(10_000 + s.memberRecords().get(cy)!.lastActivityT);
+    s.tick(SPELL + s.memberRecords().get(cy)!.lastActivityT);
     expect(s.memberRecords().get(cy)!.lapsed).toBe(true);
     expect(types(s)).not.toContain('lapse-warned');
   });
 
   it('takes them out of E, out of the motion electorate, and off the proposing gate', () => {
-    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 } });
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: SPELL } });
     expect(s.motionElectorate()).toContain(cy);
     expect(s.canPropose(cy)).toBe(true);
-    busy(s, bo, 9_000);
-    s.tick(10_500);
+    busy(s, bo, SPELL - 1_000);
+    s.tick(SPELL + 500);
     expect(s.E()).toBe(2);
     expect(s.motionElectorate()).not.toContain(cy);
     expect(s.canPropose(cy)).toBe(false);
@@ -230,9 +238,9 @@ describe('💤 promise 1 · live · a quiet member leaves E and every electorate
   });
 
   it('the lapse is a stall, not a departure: the record stays, un-removed', () => {
-    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 } });
-    busy(s, bo, 9_000);
-    s.tick(10_500);
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: SPELL } });
+    busy(s, bo, SPELL - 1_000);
+    s.tick(SPELL + 500);
     const rec = s.memberRecords().get(cy)!;
     expect(rec.lapsed).toBe(true);
     expect(rec.removed).toBe(false);
@@ -245,34 +253,34 @@ describe('💤 promise 1 · live · a quiet member leaves E and every electorate
 
 describe('💤 promise 3 · live · coming back is being here again, and nothing else', () => {
   it('a read revives, as an act does, and costs nothing', () => {
-    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 } });
-    busy(s, bo, 9_000);
-    s.tick(10_500);
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: SPELL } });
+    busy(s, bo, SPELL - 1_000);
+    s.tick(SPELL + 500);
     // `seen` is the host's presence stamp on every authenticated read.
     // **Seeing is presence** (Ed, 2026-09-08, R-096): for a lapsed member the
     // read is the revival — it used to refuse them on purpose, and a member
     // with a live cookie could read the room lapsed.
-    expect(s.seen(11_000, cy)).toBe(true);
+    expect(s.seen(SPELL + 1_000, cy)).toBe(true);
     expect(s.memberRecords().get(cy)!.lapsed).toBe(false);
     expect(s.E()).toBe(3);
     // no motion, no price, no acknowledgement — one event
     expect(types(s).filter((x) => x === 'member-returned')).toHaveLength(1);
     // returning twice writes nothing: the clock only moves on events
-    s.memberReturn(11_500, cy);
+    s.memberReturn(SPELL + 1_500, cy);
     expect(types(s).filter((x) => x === 'member-returned')).toHaveLength(1);
   });
 });
 
 describe('💤 promise 5 · live · a lapsed member is still a member', () => {
   it('is owed a constitutional change made while they were away, and still reads as a member', () => {
-    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 } });
-    busy(s, bo, 9_000);
-    s.tick(10_500);
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: SPELL } });
+    busy(s, bo, SPELL - 1_000);
+    s.tick(SPELL + 500);
     expect(s.memberRecords().get(cy)!.lapsed).toBe(true);
     // the founder's pen on a constitutional setting: everybody outside the
     // decision is owed it, and `oweOks` skips only the unarrived, the removed
     // and the convenor (Y10, Q530) — the lapsed are in
-    s.setSetting(11_000, 'judgments', { rung: 'never' });
+    s.setSetting(SPELL + 1_000, 'judgments', { rung: 'never' });
     expect(s.memberRecords().get(cy)!.okOwed.has('judgments')).toBe(true);
     // their own view still says member — lapsed, not gone
     const v = view(s, cy);
@@ -288,7 +296,7 @@ describe('💤 promise 6 · live · the founder’s clock runs too', () => {
   // question auto-passing, nothing changing hands, and the revival. What is
   // locked here is the gate above it and the mail's audience.
   it('a founder who holds nothing anywhere never lapses as a crown', () => {
-    const { s, bo, cy } = buildConstituted({ clerk: true, lapse: { afterMs: 10_000 } });
+    const { s, bo, cy } = buildConstituted({ clerk: true, lapse: { afterMs: SPELL } });
     // hand over every setting the founder still holds: with no reservation
     // left there is no assent to auto-grant, so no crown clock runs
     for (const e of CATALOGUE) {
@@ -296,9 +304,9 @@ describe('💤 promise 6 · live · the founder’s clock runs too', () => {
       if (s.settingState(e.id).holder === 'convenor') s.delegate(3, e.id);
     }
     expect(s.crowned()).toBe(false);
-    s.setIdentity(9_000, bo, { name: 'Bo' });
-    s.setIdentity(9_000, cy, { name: 'Cy' });
-    s.tick(50_000);
+    s.setIdentity(SPELL - 1_000, bo, { name: 'Bo' });
+    s.setIdentity(SPELL - 1_000, cy, { name: 'Cy' });
+    s.tick(5 * SPELL);
     expect(s.crownLapsed).toBe(false);
     expect(types(s)).not.toContain('crown-lapsed');
   });
@@ -343,18 +351,18 @@ describe('💤 promise 8 · live · the rule is re-read when it changes', () => 
   // shortened. What it does not have is the other road onto `rereadLapse`:
   // a carried 🏛️ motion.
   it('a carried 🏛️ motion on 💤 re-reads it too, and returns whoever it no longer lapses', () => {
-    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 } });
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: SPELL } });
     // 💤 is the founder's here, so hand it to the room first: a motion that
     // lands without the crown is the plainest reading of the room's own act
     s.delegate(3, 'lapse');
-    busy(s, bo, 9_000);
-    s.tick(10_500);
+    busy(s, bo, SPELL - 1_000);
+    s.tick(SPELL + 500);
     expect(s.memberRecords().get(cy)!.lapsed).toBe(true);
-    const m = s.openMotion(11_000, bo, { kind: 'set', setting: 'lapse',
-      value: { afterMs: 100_000 } });
-    s.answerMotion(11_000, 'ada', m, 'accept');
+    const m = s.openMotion(SPELL + 1_000, bo, { kind: 'set', setting: 'lapse',
+      value: { afterMs: 10 * SPELL } });
+    s.answerMotion(SPELL + 1_000, 'ada', m, 'accept');
     expect(s.motionRecords().get(m)!.status).toBe('carried');
-    expect(s.settingState('lapse').value).toEqual({ afterMs: 100_000 });
+    expect(s.settingState('lapse').value).toEqual({ afterMs: 10 * SPELL });
     // cy's quiet is now well inside the spell: the reading is no longer true
     expect(s.memberRecords().get(cy)!.lapsed).toBe(false);
     expect(s.E()).toBe(3);
@@ -370,31 +378,31 @@ describe('💤 promise 8 · live · the rule is re-read when it changes', () => 
   });
 
   it('the list is the latest set’s alone, and a member’s own return is not on it (Y26)', () => {
-    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 } });
-    busy(s, bo, 9_000);
-    s.tick(10_500);
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: SPELL } });
+    busy(s, bo, SPELL - 1_000);
+    s.tick(SPELL + 500);
     expect(s.memberRecords().get(cy)!.lapsed).toBe(true);
     // cy logs in: a return, but the rule did not make it
-    s.memberReturn(10_600, cy);
+    s.memberReturn(SPELL + 600, cy);
     expect(s.settingState('lapse').returned).toEqual([]);
     const own = s.logEntries().map((e) => e.event)
       .find((e) => e.type === 'member-returned');
     expect(own).not.toHaveProperty('cause');
-    // bo lapses next (quiet since 9_000; ada and cy act at 15_000); the pen
-    // turns 💤 off and returns them, then sets it again — the second set
-    // returned nobody, and says so
-    s.setIdentity(15_000, 'ada', { name: 'Ada' });
-    s.setIdentity(15_000, cy, { name: 'Cy' });
-    s.tick(20_700);
+    // bo lapses next (quiet a second short of the spell; ada and cy act just
+    // past it); the pen turns 💤 off and returns them, then sets it again —
+    // the second set returned nobody, and says so
+    s.setIdentity(SPELL + 5_000, 'ada', { name: 'Ada' });
+    s.setIdentity(SPELL + 5_000, cy, { name: 'Cy' });
+    s.tick(2 * SPELL + 700);
     expect(s.memberRecords().get(bo)!.lapsed).toBe(true);
     expect(s.memberRecords().get(cy)!.lapsed).toBe(false);
-    s.setSetting(20_800, 'lapse', { afterMs: null });
+    s.setSetting(2 * SPELL + 800, 'lapse', { afterMs: null });
     expect(s.memberRecords().get(bo)!.lapsed).toBe(false);
     expect(s.settingState('lapse').returned).toEqual([bo]);
     // a replay folds the same list from the same bytes
     expect(ConstitutionSession.replay([...s.logEntries()]).settingState('lapse').returned)
       .toEqual([bo]);
-    s.setSetting(20_900, 'lapse', { afterMs: 50_000 });
+    s.setSetting(2 * SPELL + 900, 'lapse', { afterMs: 5 * SPELL });
     expect(s.settingState('lapse').returned).toEqual([]);
   });
 });
@@ -417,18 +425,18 @@ describe('💤 · before 🍾 · the fold runs the clock the host never ticks', 
     }, 0);
     const bo = s.invite(1, 'bo@example.org');
     s.arrive(1, bo);
-    s.setSetting(1, 'lapse', { afterMs: 10_000 });
+    s.setSetting(1, 'lapse', { afterMs: SPELL });
     return { s, bo };
   };
 
   it('lapses an arrived member before the start — the founder with them', () => {
     const { s, bo } = founding();
     expect(s.constitutedAtT).toBeNull();
-    s.tick(9_000);
-    // a ten-second spell fits none of the three warnings (R-097); the
+    s.tick(SPELL - 1_000);
+    // a five-minute spell fits none of the three warnings (R-097); the
     // pre-start clock is the point here, and the warnings have their own block
     expect(s.memberRecords().get(bo)!.lapseWarned).toBe(false);
-    s.tick(12_000);
+    s.tick(SPELL + 2_000);
     expect(s.memberRecords().get(bo)!.lapsed).toBe(true);
     // and the founder's own clock has been running since `created`, so a
     // founding that outlasts the spell empties E entirely — 🍾 counts E, and
@@ -440,9 +448,9 @@ describe('💤 · before 🍾 · the fold runs the clock the host never ticks', 
 
   it('and re-reads the rule pre-start, which is the same code either way', () => {
     const { s, bo } = founding();
-    s.tick(12_000);
+    s.tick(SPELL + 2_000);
     expect(s.memberRecords().get(bo)!.lapsed).toBe(true);
-    s.setSetting(13_000, 'lapse', { afterMs: null });
+    s.setSetting(SPELL + 3_000, 'lapse', { afterMs: null });
     expect(s.memberRecords().get(bo)!.lapsed).toBe(false);
   });
 
@@ -461,11 +469,11 @@ describe('💤 · before 🍾 · the fold runs the clock the host never ticks', 
 
 describe('💤 · after the close · the clock stops, but the door back does not', () => {
   const closed = (): { s: ConstitutionSession; bo: string; cy: string } => {
-    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 } });
-    busy(s, bo, 9_000);
-    s.tick(10_500);
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: SPELL } });
+    busy(s, bo, SPELL - 1_000);
+    s.tick(SPELL + 500);
     expect(s.memberRecords().get(cy)!.lapsed).toBe(true);
-    s.close(11_000);
+    s.close(SPELL + 1_000);
     return { s, bo, cy };
   };
 
@@ -498,7 +506,7 @@ describe('💤 · after the close · the clock stops, but the door back does not
   it('but a lapsed member’s login still writes `member-returned` into the cut record — filed', () => {
     const { s, cy } = closed();
     expect(s.closed).toBe(true);
-    s.memberReturn(12_000, cy);
+    s.memberReturn(SPELL + 2_000, cy);
     expect(types(s).slice(types(s).indexOf('closed'))).toContain('member-returned');
     expect(s.memberRecords().get(cy)!.lapsed).toBe(false);
   });

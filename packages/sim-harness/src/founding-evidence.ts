@@ -8,9 +8,12 @@
  */
 
 import {
-  ConstitutionSession, view, constitutionBlock,
+  ConstitutionSession, view, constitutionBlock, LAPSE_MIN_MS,
 } from '../../constitution/src/index.js';
 import { say, check, eq, finish } from './evidence-log.js';
+
+/** The shortest spell a room can state (Q1453): five minutes. */
+const SPELL = LAPSE_MIN_MS;
 
 /* ========================================================================= */
 say('\n== founding-8: a staggered ceremony with a never holdout ==============');
@@ -292,7 +295,7 @@ say('\n== the crown: reserved is assent, not silence =========================='
 /* ========================================================================= */
 say('\n== the crown, v0.49: assent ends either route; a lapsed crown assents by itself ==');
 {
-  const { s, bo, cy } = threeRoom({ lapse: { afterMs: 10_000 } });
+  const { s, bo, cy } = threeRoom({ lapse: { afterMs: SPELL } });
   const m = s.openMotion(3, bo, { kind: 'set', setting: 'quorum',
     value: { form: 'share', n: 50 } });
   say('  bo moves the reserved quorum — constitutional by kind, reservation adds assent');
@@ -307,16 +310,16 @@ say('\n== the crown, v0.49: assent ends either route; a lapsed crown assents by 
   say('  ada goes quiet; the members stay active; the §9.5a clock runs');
   const m2 = s.openMotion(7_000, bo, { kind: 'set', setting: 'rate',
     value: { grant: 6, cap: 10, dripMinutes: 120 } });
-  s.setIdentity(9_000, bo, { name: 'Bo' });
-  s.setIdentity(9_000, cy, { name: 'Cy' });
-  s.tick(16_500);
+  s.setIdentity(SPELL - 1_000, bo, { name: 'Bo' });
+  s.setIdentity(SPELL - 1_000, cy, { name: 'Cy' });
+  s.tick(SPELL + 6_500);
   check(s.crownLapsed, 'the crown lapsed with its member');
-  s.adjudicateOrdinaryMotion(16_800, m2, 'carried');
+  s.adjudicateOrdinaryMotion(SPELL + 6_800, m2, 'carried');
   check(s.motionRecords().get(m2)!.status === 'carried',
     'lapse is automatic abstention: assent grants itself, the change applies');
   check(s.settingState('title').holder === 'convenor',
     'and nothing changes hands — every reserved setting stays reserved');
-  s.memberReturn(17_000, 'ada');
+  s.memberReturn(SPELL + 7_000, 'ada');
   check(!s.crownLapsed, 'revival is logging in: the assent requirement resumes');
 }
 

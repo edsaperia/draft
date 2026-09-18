@@ -81,6 +81,10 @@ import { engineFieldsFor } from '../src/adapter.js';
 import { view } from '../src/view.js';
 import { buildConstituted } from './helpers.js';
 import type { EndingValue, LapseValue, PaceValue } from '../src/values.js';
+import { LAPSE_MIN_MS } from '../src/values.js';
+
+/** The shortest spell a room can state (Q1453): five minutes. */
+const SPELL = LAPSE_MIN_MS;
 
 /**
  * A constituted document the founder holds **outright**, so the pen can move
@@ -141,10 +145,10 @@ describe('⏰ 1 — the record is cut on the clock (SPEC §4.6)', () => {
   });
 
   it('the close is tested before the lapse and freeze clocks, and returns', () => {
-    // ada and bo both quiet since t=10 under a 100_000ms lapse rule: at
+    // ada and bo both quiet since t=10 under a five-minute lapse rule: at
     // t = 1_000_000 both are long overdue, and neither lapses, because the
     // close is the first thing `tick` tests and it returns on it.
-    const { s, bo } = penHeld({ endsAtMs: 1_000_000, lapse: { afterMs: 100_000 } });
+    const { s, bo } = penHeld({ endsAtMs: 1_000_000, lapse: { afterMs: SPELL } });
     s.tick(1_000_000);
     expect(s.closed).toBe(true);
     expect(s.memberRecords().get(bo)!.lapsed).toBe(false);
@@ -373,7 +377,7 @@ describe('⏰ 8 — a close moved behind the log is refused, and refused for eve
     // document is *stuck*. Every tick from here throws before reaching the
     // lapse, crown and freeze clocks, so a document with a past ending is one
     // that neither closes, nor lapses anybody, nor ever freezes.
-    const { s, bo } = penHeld({ endsAtMs: 1_000_000, lapse: { afterMs: 100_000 } });
+    const { s, bo } = penHeld({ endsAtMs: 1_000_000, lapse: { afterMs: SPELL } });
     s.setSetting(20, 'ending', { endsAtMs: 5 }); // accepted: any non-negative time
     const before = s.logEntries().length;
 
@@ -383,7 +387,7 @@ describe('⏰ 8 — a close moved behind the log is refused, and refused for eve
     expect(s.logEntries()).toHaveLength(before);
     expect(s.verifyChain()).toBe(true);
     expect(s.closed).toBe(false);
-    // the collateral: bo was quiet from t=10 under a 100_000ms rule and is
+    // the collateral: bo was quiet from t=10 under a five-minute rule and is
     // hours overdue by t = 9_000_000, and nothing lapsed or warned him
     expect(s.memberRecords().get(bo)!.lapsed).toBe(false);
     expect(s.memberRecords().get(bo)!.lapseWarned).toBe(false);
