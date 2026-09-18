@@ -2593,6 +2593,10 @@
     color: var(--ok); margin-bottom: var(--s3);
   }
   .rechead .sub { color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 500; }
+  /* the counts, printed under the head (Q1452): tucked up under it by the
+     head's own bottom margin less one step, and giving that margin back
+     beneath, so the head and its counts read as one block */
+  .rsub.reccounts { margin-top: calc(var(--s1) - var(--s3)); margin-bottom: var(--s3); }
   .ranked {
     border: 1px solid var(--border); border-radius: var(--r-md);
     padding: var(--s3) 14px; margin-bottom: var(--s2);

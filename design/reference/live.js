@@ -1440,8 +1440,22 @@ window.LIVE = (function () {
       // anything else is passed through exactly as it arrives.
       const reasonOf = (f) => (!f || !f.reason ? null
         : f.reason === 'dominated' ? window.COPY.session.record.dominated : f.reason);
+      // **A wording of your own in the field is a reason the record announces
+      // itself** (Q1451, Ed 2026-09-18: *you should know the outcome of things
+      // you propose*). A sealed record pinned only where it changed the
+      // document or where you judged in it — *you are part of why it did not*
+      // — and an author is never asked to judge their own lone proposal (E13,
+      // Q1340), so the one member with a stake in a rejected wording got the
+      // silent grey chip everybody else got. The author is part of why. The
+      // join is the viewer's own candidate ids against the field's, both of
+      // which the view already carries, so nothing new is disclosed: it is
+      // their own proposal. Carried as the ids rather than a flag, because an
+      // early ✖ taken on one of them (Q1451 part 3) is the acknowledgement of
+      // that proposal and `isUnread` has to know which.
+      const mineIds = new Set((v.mine || []).map((m) => m.id));
       for (const o of v.records || []) {
         const field = o.field || [];
+        const mineIn = field.map((f) => f.candidateId).filter((id) => mineIds.has(id));
         const hs = field.flatMap((f) => f.hunks);
         // **A record stands beside the lines that descend from what it decided**
         // (Q1333, Ed 2026-09-11, the moon room: a ✔ on the Food heading). The
@@ -1489,11 +1503,24 @@ window.LIVE = (function () {
         const nowText = undecided ? null : plain(lines, sp);
         const gone = !undecided && sp.start === sp.end;
         const changedSince = standsNow !== null && (gone || nowText !== standsNow);
-        items.push({ id: 'rec:' + (o.raceId || o.candidateId), kind: 'quick', keys, state: 'sealed',
+        // **A wording closed early is its author's own news** (Q1451, part 3).
+        // The server serves the author — and nobody else — a reduced row while
+        // the clause is still racing: their candidate, no rivals, no reading,
+        // no judge count. It is keyed apart from the record the race will file
+        // when it finally ends, `rec:early:<candidate>`, because that press is
+        // the acknowledgement of *this proposal* and the full record must not
+        // ask the same person for it twice (`isUnread`'s `minePending`). The
+        // card that draws it is the sealed one with its eyebrow of numbers
+        // taken off — session.js, on this same flag.
+        const early = !!o.early;
+        items.push({ id: early ? 'rec:early:' + o.candidateId
+          : 'rec:' + (o.raceId || o.candidateId), kind: 'quick', keys, state: 'sealed',
           ...gapSite, ...(changedSince ? { changedSince: true, gone } : {}),
+          ...(early ? { early: true } : {}),
           // a gap record is titled by the block before its gap, as a gap draft is
           qLabel: labelFor(site.insertAfterKey || keys[0]), urgency: 0, pct: 100,
-          cap: adopted ? 'decided — adopted' : undecided ? 'undecided at the close — the text stood' : 'decided — the current text stood',
+          cap: early ? window.COPY.session.record.dominated
+            : adopted ? 'decided — adopted' : undecided ? 'undecided at the close — the text stood' : 'decided — the current text stood',
           decided: { outcome: adopted ? 'adopted' : undecided ? 'undecided' : 'retired — the current text stood',
             // `o.threshold` is still on the record row — the engine's own,
             // pinned (R-117) — and nothing reads it: the eyebrow stopped
@@ -1511,6 +1538,13 @@ window.LIVE = (function () {
             // taken against, not the one standing now. Absent, the card falls
             // back to the document's own `v.floor` as it always did.
             ...(typeof o.floor === 'number' ? { floor: o.floor } : {}),
+            // …and how many never answered in time (Q1452): the silences 💤's
+            // period had already taken out of the group when the batch
+            // decided, which is what makes a proposal carried by two of ten
+            // legible beside a 👥 clause that still names ten. Carried as the
+            // record states it, zero included — the card is what decides to
+            // say nothing about a decision nobody ran out of time on.
+            ...(typeof o.abstained === 'number' ? { abstained: o.abstained } : {}),
             // the cap mark (R-051), reduced to a boolean on the way in: the
             // card says one sentence and none of the arithmetic (STYLE §2 —
             // raw values are not copy), and the two numbers stay in the event
@@ -1524,6 +1558,7 @@ window.LIVE = (function () {
           // reason, the record is where its author reads it
           refusal: reasonOf(winner),
           verdict: o.judgedByMe ? 'voted on this' : undefined,
+          ...(mineIn.length ? { mineIn } : {}),
           unread: !undecided, ...slate });
       }
       // ✒️ on the Text (R-058, SURFACE E35, Q1034; Ed 2026-08-29, decision

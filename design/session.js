@@ -2113,9 +2113,19 @@
       // no line to cross, so there is nothing to compare the reading against,
       // and the ✒️ that stood for it here — the one place on the surface where
       // the pen glyph did not mean the Founder's own hand — goes with it.
-      '<div class="rechead" title="' +
+      '<div class="rechead">' +
+      '<span>' + (und ? T.record.undecided : T.record.decided) + ' · ' + (d.judges ?? 0) + '/' + ROSTER + PEOPLE +
+      // an undecided race nobody read prints no reading: 0% is a number about
+      // nothing
+      (und && !(best > 0) ? '' : ' · ' + pct(best) + JUDG) + '</span>' +
+      '<span class="sub">' + esc(d.when || '') + '</span></div>' +
+      // **The counts are printed, not hovered** (Q1452, Ed 2026-09-18: *print the
+      // count line on the card*): the sentence was a `title` on the head, which a
+      // phone never shows and a mouse only finds by resting — and it is the
+      // record's own account of why the outcome was the outcome. Same `rsub`
+      // vocabulary as the notes beneath it.
       // **How many preferred it, where the record knows** (Q1439, ruling a):
-      // the quorum counts approvals now, so the tooltip carries that count
+      // the quorum counts approvals now, so the line carries that count
       // beside the count of everybody who weighed in — `d.approvals` comes
       // from the race record (`RaceView.approvals`, the engine's, through
       // `itemsFromView`), and where it is absent the line reads as it always
@@ -2127,15 +2137,10 @@
       // proposal that carried on two approvals says so beside a 👥 clause
       // that goes on naming the whole membership. Null where the record
       // carries no number; the copy omits the clause at zero too.
-      esc(T.record.tooltip(d.judges ?? 0, ROSTER, d.floor ?? FLOOR,
+      '<span class="rsub reccounts">' + esc(T.record.counts(d.judges ?? 0, ROSTER, d.floor ?? FLOOR,
         yours ? T.record.youSaid(yours) : T.record.youNever,
         typeof d.approvals === 'number' ? d.approvals : null,
-        typeof d.abstained === 'number' ? d.abstained : null)) + '">' +
-      '<span>' + (und ? T.record.undecided : T.record.decided) + ' · ' + (d.judges ?? 0) + '/' + ROSTER + PEOPLE +
-      // an undecided race nobody read prints no reading: 0% is a number about
-      // nothing
-      (und && !(best > 0) ? '' : ' · ' + pct(best) + JUDG) + '</span>' +
-      '<span class="sub">' + esc(d.when || '') + '</span></div>') +
+        typeof d.abstained === 'number' ? d.abstained : null)) + '</span>') +
       // **The cap line** (SPEC §4.2, R-051; Q945, Ed 2026-08-27). Where the
       // ranking fit this decision was taken on ran out of its iteration cap,
       // the record says so — one line, in the same `rsub` vocabulary as *the

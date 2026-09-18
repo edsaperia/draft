@@ -71,7 +71,10 @@
     /* --- ink and ground ------------------------------------------- */
     --bg: #FFFFFF;
     --fg: #212529;
-    --muted: #6C757D;
+    /* one step a channel under Bootstrap's #6C757D, which read 4.45:1 on
+       --light against WCAG AA's 4.5; this is the lightest that clears it,
+       4.51:1 (Q1398 (a), Ed 2026-09-18) */
+    --muted: #6B747C;
     --border: #DEE2E6;
     --light: #F8F9FA;
 
@@ -1788,16 +1791,24 @@
     transition: border-color 120ms ease, box-shadow 120ms ease;
   }
   /* both labels are in the markup and CSS picks one, so choosing stays a
-     single attribute flip on every card a patch is open on */
+     single attribute flip on every card a patch is open on.
+
+     **Two attributes say the same thing, and the reason is ARIA's** (Q1395
+     (a), 2026-09-18). A decision card's lanes are `role="radio"` and carry
+     `aria-checked`; the founder's setting cards and the composer's own sign
+     control are buttons and carry `aria-pressed`, and `aria-pressed` on a
+     `radio` is an `aria-allowed-attr` failure, so neither can be made to
+     stand for both. Every rule below therefore names both, and the two never
+     appear on one element. */
   .lanepick .on { display: none; }
-  .lanepick[aria-pressed="true"] .on { display: inline; }
-  .lanepick[aria-pressed="true"] .off { display: none; }
+  .lanepick[aria-pressed="true"] .on, .lanepick[aria-checked="true"] .on { display: inline; }
+  .lanepick[aria-pressed="true"] .off, .lanepick[aria-checked="true"] .off { display: none; }
   .lanepick:hover { color: var(--primary); border-color: var(--primary); background: var(--bg); }
   .lanepick:hover .dot { border-color: var(--primary); }
-  .lanepick[aria-pressed="true"] {
+  .lanepick[aria-pressed="true"], .lanepick[aria-checked="true"] {
     color: #fff; background: var(--primary); border-color: var(--primary); font-weight: 600;
   }
-  .lanepick[aria-pressed="true"] .dot {
+  .lanepick[aria-pressed="true"] .dot, .lanepick[aria-checked="true"] .dot {
     border-color: #fff; background: #fff; box-shadow: inset 0 0 0 3px var(--primary);
   }
   .lanepick[disabled] { opacity: 0.55; cursor: default; }
@@ -1806,8 +1817,8 @@
      2026-08-17). Greying the whole trio said *you cannot change this*, which is
      true, and dimmed the record of what you said, which is not what a lock
      means. The unchosen options fade; your answer does not. */
-  .lanepick[disabled][aria-pressed="true"] { opacity: 1; }
-  .lanepick[disabled][aria-pressed="true"]:hover {
+  .lanepick[disabled][aria-pressed="true"], .lanepick[disabled][aria-checked="true"] { opacity: 1; }
+  .lanepick[disabled][aria-pressed="true"]:hover, .lanepick[disabled][aria-checked="true"]:hover {
     color: #fff; background: var(--primary); border-color: var(--primary);
   }
   @media (prefers-reduced-motion: reduce) { .lanepick, .lanepick .dot { transition: none; } }
@@ -2582,6 +2593,10 @@
     color: var(--ok); margin-bottom: var(--s3);
   }
   .rechead .sub { color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 500; }
+  /* the counts, printed under the head (Q1452): tucked up under it by the
+     head's own bottom margin less one step, and giving that margin back
+     beneath, so the head and its counts read as one block */
+  .rsub.reccounts { margin-top: calc(var(--s1) - var(--s3)); margin-bottom: var(--s3); }
   .ranked {
     border: 1px solid var(--border); border-radius: var(--r-md);
     padding: var(--s3) 14px; margin-bottom: var(--s2);

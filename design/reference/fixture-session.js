@@ -539,7 +539,13 @@ window.FIXTURE_SESSION = (function () {
       // what carried this one over a floor of five. The other records here
       // carry no `approvals` on purpose — that is the shape of a decision
       // taken before the rule changed, and the line has to read without it.
-      decided: { outcome: 'adopted', when: 'Tuesday, 11:20', p: 0.81, judges: 9, approvals: 6 },
+      // **And how many did not answer in time** (Q1452): of the five of the
+      // fourteen who never weighed in, four had run out 💤's period by the
+      // time it carried and one still had time — so the group was ten, the
+      // floor five, and six approvals took it. The one record on the page
+      // that says so; the rest ran out nobody's clock.
+      decided: { outcome: 'adopted', when: 'Tuesday, 11:20', p: 0.81, judges: 9, approvals: 6,
+        abstained: 4 },
       optionA: 'Friends of the house are welcome.',
       optionB: 'Friends of the house are welcome whenever a member is in.',
       rationale: 'As it stood it invited people to a house with nobody in it. The guest is a member’s guest, and the member should be here.'

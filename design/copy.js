@@ -244,7 +244,7 @@ window.COPY = (function () {
       // in time. Omitted at zero and where the record does not carry the
       // number at all — a decision nobody ran out of time on has nothing to
       // report, and neither has one taken before the rule existed.
-      tooltip: (judges, roster, floor, yoursLine, approvals, abstained) =>
+      counts: (judges, roster, floor, yoursLine, approvals, abstained) =>
         judges + ' of ' + roster + ' weighed in · ' +
         (approvals === null || approvals === undefined ? '' : approvals + ' preferred it · ') +
         (abstained ? abstained + ' did not answer in time · ' : '') +

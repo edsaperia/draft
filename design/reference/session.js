@@ -112,7 +112,7 @@
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks, mdBlocksHtml,
     originText, mdToHtml, htmlToMd, mdStrip, mdLine,
     richToSource, sourceToRich, readLane,
-    laneSeed, laneProposeHtml, laneCtlHtml, speakerHtml, fieldHtml, fieldOf, groundNote,
+    laneSeed, laneProposeHtml, laneCtlHtml, laneNameId, laneGroupAttrs, speakerHtml, fieldHtml, fieldOf, groundNote,
     headOnlyHeight, cardBody, COLLAPSE_MS, EXPAND_MS,
   } = window.CARDS;
   // **A power is not held until it has been acknowledged** (Ed, 2026-08-21).
@@ -559,8 +559,25 @@
   // The general rule underneath, worth keeping: **a decision announces itself if
   // it changed the document, or if you are part of why it did not.**
   const youJudged = (g) => !!(verdicts.get(pairKeyOf(g)) || g.verdict);
+  // **And you are part of why if one of the wordings was yours** (Q1451, Ed
+  // 2026-09-18: *X symbol should be for any kind of proposal you made that was
+  // rejected or refused, ordinary or constitutional — you should know the
+  // outcome of things you propose*). The rule above held for everybody who put
+  // something in *as a judgment*, and an author is never asked to judge their
+  // own lone proposal (E13, Q1340) — so the one person whose wording it was
+  // read the outcome as a silent grey dot. `mineIn` is the ids of the viewer's
+  // own candidates in this record's field, joined from the view by live.js.
+  //
+  // **One proposal, one acknowledgement.** A wording closed early by Q1440 is
+  // told to its author at once, on a card of its own keyed `rec:early:<id>`,
+  // and that press acknowledges *that proposal*. So when the race finally ends
+  // the full record speaks only for the wordings of mine nobody has answered
+  // for yet — while an adoption still announces itself through `carried`,
+  // because the charter moved and that is news whatever I proposed.
+  const EARLY_SEAL = 'rec:early:';
+  const minePending = (g) => (g.mineIn || []).some((id) => !readSeals.has(EARLY_SEAL + id));
   const isUnread = (g) => stateOf(g) === 'sealed' && g.unread &&
-    (carried(g) || youJudged(g)) && !readSeals.has(g.id);
+    (carried(g) || youJudged(g) || minePending(g)) && !readSeals.has(g.id);
 
   // Urgency — how much this wants *you* (leverage), not how close it is to
   // resolution (that stays the meter's job). It is carried by the strength of
@@ -2073,6 +2090,17 @@
     return (
       '<div class="sugg sealed-open" data-card="' + s.id + '"' +
       (skey ? ' data-site="' + skey + '"' : '') + '>' +
+      // **A wording closed early carries no eyebrow at all** (Q1451, Ed
+      // 2026-09-18). Its author is told at once, while the clause is still
+      // racing, and what they may be told is only that their own wording can
+      // no longer pass — never how many weighed in, never how far anything
+      // got, because the race has not sealed and a live race may not say which
+      // way the room is going (SPEC §3.5, SURFACE C12). The server withholds
+      // every one of those numbers from the row; the eyebrow goes here so the
+      // card cannot print a nought and call it a reading. What is left is the
+      // clause at the head, their own wording under it with its rationale and
+      // *Rejected — it could no longer pass*, and the OK.
+      (s.early ? '' :
       // **The whole record in one line** (Ed, 2026-08-17). It was three places —
       // an eyebrow, a rank label under it, and a record band at the foot — for
       // numbers that belong together: how many weighed in and what they came to.
@@ -2085,22 +2113,34 @@
       // no line to cross, so there is nothing to compare the reading against,
       // and the ✒️ that stood for it here — the one place on the surface where
       // the pen glyph did not mean the Founder's own hand — goes with it.
-      '<div class="rechead" title="' +
-      // **How many preferred it, where the record knows** (Q1439, ruling a):
-      // the quorum counts approvals now, so the tooltip carries that count
-      // beside the count of everybody who weighed in — `d.approvals` comes
-      // from the race record (`RaceView.approvals`, the engine's, through
-      // `itemsFromView`), and where it is absent the line reads as it always
-      // did. `FLOOR` is the view's own `floor` (set in `setData`), which is
-      // per race from the same change.
-      esc(T.record.tooltip(d.judges ?? 0, ROSTER, d.floor ?? FLOOR,
-        yours ? T.record.youSaid(yours) : T.record.youNever,
-        typeof d.approvals === 'number' ? d.approvals : null)) + '">' +
+      '<div class="rechead">' +
       '<span>' + (und ? T.record.undecided : T.record.decided) + ' · ' + (d.judges ?? 0) + '/' + ROSTER + PEOPLE +
       // an undecided race nobody read prints no reading: 0% is a number about
       // nothing
       (und && !(best > 0) ? '' : ' · ' + pct(best) + JUDG) + '</span>' +
       '<span class="sub">' + esc(d.when || '') + '</span></div>' +
+      // **The counts are printed, not hovered** (Q1452, Ed 2026-09-18: *print the
+      // count line on the card*): the sentence was a `title` on the head, which a
+      // phone never shows and a mouse only finds by resting — and it is the
+      // record's own account of why the outcome was the outcome. Same `rsub`
+      // vocabulary as the notes beneath it.
+      // **How many preferred it, where the record knows** (Q1439, ruling a):
+      // the quorum counts approvals now, so the line carries that count
+      // beside the count of everybody who weighed in — `d.approvals` comes
+      // from the race record (`RaceView.approvals`, the engine's, through
+      // `itemsFromView`), and where it is absent the line reads as it always
+      // did. `FLOOR` is the view's own `floor` (set in `setData`), which is
+      // per race from the same change.
+      // **And how many did not answer in time** (Q1452, Ed 2026-09-18):
+      // `d.abstained`, the same road — the decision's own count of the
+      // members 💤's period had already taken out of the group, so a
+      // proposal that carried on two approvals says so beside a 👥 clause
+      // that goes on naming the whole membership. Null where the record
+      // carries no number; the copy omits the clause at zero too.
+      '<span class="rsub reccounts">' + esc(T.record.counts(d.judges ?? 0, ROSTER, d.floor ?? FLOOR,
+        yours ? T.record.youSaid(yours) : T.record.youNever,
+        typeof d.approvals === 'number' ? d.approvals : null,
+        typeof d.abstained === 'number' ? d.abstained : null)) + '</span>') +
       // **The cap line** (SPEC §4.2, R-051; Q945, Ed 2026-08-27). Where the
       // ranking fit this decision was taken on ran out of its iteration cap,
       // the record says so — one line, in the same `rsub` vocabulary as *the
@@ -2516,15 +2556,20 @@
       // rather than an omission: the line under each question describes the
       // dispute, it is not somebody's argument for it. Drawing a person behind
       // it would claim an author the thing does not have.
-      const q = (c, v) =>
-        '<div class="propblock">' +
-        '<div class="rtag">' + esc(c.name) + '</div>' +
-        '<div class="rtext">' + esc(c.why) + '</div>' +
-        '<div class="qclause">' + esc(currentTextFor(c.key)) + '</div>' +
-        laneBarHtml(s, v, { edit: false }) + '</div>';
+      // the lane's name is the question's own name (Q1395 (a)), which on this
+      // card is the `.rtag` rather than the wording — the block's text is a
+      // description of the dispute, the tag is the thing being weighed
+      const q = (c, v) => {
+        const nameId = laneNameId(s, null, v);
+        return '<div class="propblock">' +
+          '<div class="rtag" id="' + nameId + '">' + esc(c.name) + '</div>' +
+          '<div class="rtext">' + esc(c.why) + '</div>' +
+          '<div class="qclause">' + esc(currentTextFor(c.key)) + '</div>' +
+          laneBarHtml(s, v, { edit: false, nameId }) + '</div>';
+      };
       return (
         '<div class="sugg diag-open" data-card="' + s.id + '" data-site="' +
-        (siteKey || s.pair[0].key) + '">' +
+        (siteKey || s.pair[0].key) + '"' + laneGroupAttrs(s, null) + '>' +
         clauseHeadHtml(s, { label: T.diag.headLabel,
                             html: T.diag.question }) +
         fieldHtml(q(s.pair[0], 'first') + q(s.pair[1], 'second'), 2, T.diag.fieldLab) +
@@ -2617,7 +2662,8 @@
       const rkey = (sv.keys ?? [])[0];
       const cur = runTextFor(sv, rkey);    // the run's text, as the head reads it (Q1308)
       return (
-        '<div class="sugg race-open" data-card="' + sv.id + '" data-site="' + rkey + '">' +
+        '<div class="sugg race-open" data-card="' + sv.id + '" data-site="' + rkey + '"' +
+        laneGroupAttrs(sv, rkey) + '>' +
         clauseHeadHtml(sv, Object.assign(headOpts(sv, rkey), { chips: chipsFor(rkey, sv.id) })) +
         // two replies to the same post; each states its own change against the
         // clause above, and carries its own argument and controls
@@ -2647,7 +2693,8 @@
         ? '<span class="pstep off">' + glyph + '</span>'
         : '<button class="pstep" data-step="' + s.id + ':' + s.sites[to].key + '" title="' + esc(label) + '">' + glyph + '</button>');
       return (
-        '<div class="sugg patch-open" data-card="' + s.id + '" data-site="' + site.key + '">' +
+        '<div class="sugg patch-open" data-card="' + s.id + '" data-site="' + site.key + '"' +
+        laneGroupAttrs(s, site.key) + '>' +
         '<div class="pnav">' +
         '<span class="pwhere">' + esc(site.label) + T.nav.placeOf(i + 1, n) + '</span>' +
         '<span class="psteps">' +
@@ -2690,7 +2737,8 @@
         '<div class="rtext">' + laneHtml(sv.marked) + '</div>'
       : laneHtml(sv.marked);
     return (
-      '<div class="sugg quick-open" data-card="' + sv.id + '" data-site="' + (key || '') + '">' +
+      '<div class="sugg quick-open" data-card="' + sv.id + '" data-site="' + (key || '') + '"' +
+      laneGroupAttrs(sv, key) + '>' +
       clauseHeadHtml(sv, Object.assign(headOpts(sv, key), { v: 'keep', edit: noEdit,
                           chips: chipsFor(key, sv.id) })) +
       groundNote(sv) +
@@ -3628,8 +3676,14 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
           : now ? window.COPY.grammar.commit.submit : window.COPY.grammar.commit.choose;
       };
       openCardEls(s.id).forEach((c) => {
+        // **A radio says `aria-checked`, a button says `aria-pressed`** (Q1395
+        // (a)): a lane on a decision card is `role="radio"` now, and writing
+        // `aria-pressed` onto one is an `aria-allowed-attr` failure — so the
+        // flip asks the element which it is rather than assuming. Anything
+        // else wearing `data-v` keeps the attribute it always had.
         c.querySelectorAll('[data-v]').forEach((o) =>
-          o.setAttribute('aria-pressed', String(now !== null && o.dataset.v === now)));
+          o.setAttribute(o.getAttribute('role') === 'radio' ? 'aria-checked' : 'aria-pressed',
+            String(now !== null && o.dataset.v === now)));
         syncSubmit(c.querySelector('[data-act="submit"]'));
       });
       // …and a patch's ✓, which floats at the foot of the window (Q1382)
