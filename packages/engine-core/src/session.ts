@@ -1612,6 +1612,18 @@ export class Session {
     return this.raceRules.races(t);
   }
 
+  /**
+   * **One member's own abstention deadline on one race** (Q1460): the moment
+   * their silence stops counting toward the group (§8.2), in engine ms, or
+   * null where 💤 is *never*, where they are not awaited on the race's
+   * approval pair, or where the race is not live. A fact about this seat
+   * alone, saying nothing about anybody else, so it crosses §3.5 untouched.
+   * Clock-free: the caller compares it with its own now.
+   */
+  abstainDeadline(raceId: string, participantId: string): number | null {
+    return this.raceRules.abstainDeadline(raceId, participantId);
+  }
+
   /** The live race holding a candidate; throws if it is not in one. */
   raceOf(candidateId: string, t: number = this.lastT): RaceView {
     return this.raceRules.raceOf(candidateId, t);

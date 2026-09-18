@@ -137,6 +137,14 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
       return { t, wallet: api.wallet(t), cards: api.nextCards(HAND, t) };
     } catch { return null; }
   })();
+  // **The one deadline a race carries for this seat** (Q1460): the engine's
+  // own number, read off the awaited row 💤's period will strike this member
+  // from — never a second rule, and never anybody else's. A moment already
+  // past is no countdown, so it is left out rather than sent negative.
+  const abstainAt = (raceId: string): { abstainAt?: number } => {
+    const at = engine.abstainDeadline(raceId, memberId);
+    return at !== null && at > nowMs ? { abstainAt: at } : {};
+  };
   // **At this poll's own clock** (Q1439): who has abstained, and so what each
   // race's floor is, moves with `t` and with no event to mark it.
   const clauses = engine.races(nowMs).filter((r) => r.settingId === undefined).map((r) => {
@@ -173,6 +181,15 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
       floor: r.floor,
       askable: dealt || ask !== null,
       ask,
+      // **this seat's own abstention clock** (Q1460, Ed 2026-09-18): the
+      // moment their silence here stops counting toward the group (§8.2,
+      // R-127), in server ms, so the card can say *💤 abstain in hh:mm*
+      // beside the Indifferent row. Absent where 💤 is *never*, where this
+      // seat has answered the race's approval pair or is out of E, and once
+      // the moment has passed — the page draws nothing in all four cases.
+      // It is one member's own clock and names nobody else, so §3.5 is
+      // untouched; `serverNowMs` below is the offset the page reads it by.
+      ...abstainAt(r.id),
       // **waiting behind a park on the same span** (R-100, SURFACE E36): the
       // batch passes this race over until the Founder answers a park it
       // overlaps, and the room is told so (Ed, 2026-09-09, Q1015) — the one
@@ -231,8 +248,12 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
     // room's text races outvalue an admission, and twenty members each
     // holding four text cards never met the applicant. Same blind CardView
     // as the clause rows carry (Q1202) — no standing, no author.
+    // **And an ordinary motion abstains like any other race** (Q1460): only
+    // the ordinary route is a race in the engine at all — a 🏛️ motion is put
+    // to the assembly and never enters here — so a setting row carries the
+    // same clock by construction, and no constitutional card can wear one.
     return { id: r.id, settingId: r.settingId, closeness: r.closeness, judges: r.leaderJudges,
-      floor: r.floor,
+      floor: r.floor, ...abstainAt(r.id),
       judged: here.some((j) => !j.superseded && !j.locked), askable: dealt || ask !== null, ask };
   });
   const mine = api.myCandidates().flatMap((m) => {

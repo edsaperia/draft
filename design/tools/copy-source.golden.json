@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 453
+  "entries": 454
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -21,6 +21,7 @@
   "RULES.removal.assembly": "To remove a member, all members apart from them must agree 🏛️.",
   "RULES.removal.consent": "To remove a member, all members must agree 🏛️.",
   "RULES.removal.proposal": "To remove a member, a majority of members must agree ✏️.",
+  "grammar.commit.abstainIn": "ƒ (hhmm) => '💤 abstain in ' + hhmm",
   "grammar.commit.bin": "Clears your choice and closes — there is nothing here to put back",
   "grammar.commit.binLocked": "Close — your vote stays on the record",
   "grammar.commit.cast": "Recorded — choose again to change it",

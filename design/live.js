@@ -1116,6 +1116,14 @@ window.LIVE = (function () {
       let textAssent = false;
       try { textAssent = !!pwPair('text').a; } catch (e) { textAssent = false; }
       const cards = v.raceCards || [];
+      // **The abstention clock arrives in the server's ms and is read in
+      // this browser's** (Q1460): the same offset the topbar countdown uses
+      // — the view's own `serverNowMs` against the moment it landed — carried
+      // once, here, so the ticker downstream compares a plain `Date.now()`
+      // and never has to know whose clock the number was written on. Zero on
+      // the fixture, which has no server and no skew to correct.
+      const skew = (v.serverNowMs != null && v.receivedAtMs != null)
+        ? v.receivedAtMs - v.serverNowMs : 0;
       const sideOf = (rc, ids) => (ids.has(rc.a.id) ? 'a' : ids.has(rc.b.id) ? 'b' : null);
       const RAIL = window.COPY.session.rail;
       const PARK = window.COPY.session.park;
@@ -1211,6 +1219,12 @@ window.LIVE = (function () {
           blockedByPark: r.blockedByPark ? PARK.blocked : false,
           deadlocked: !!r.deadlocked,
           crownWaits: textAssent,
+          // **when your silence here becomes an abstention** (Q1460): the
+          // seat's own deadline, on this browser's clock. The server sends it
+          // only while it is still ahead and only while this seat is awaited,
+          // so its mere presence is the whole condition for drawing the line;
+          // the items that cannot be voted on strike it again below.
+          abstainAt: r.abstainAt != null ? r.abstainAt + skew : undefined,
         });
         // a race holding only my own proposal is mine to withdraw, not to judge
         // — the `mine` item carries it (the author's preference is derived, never
@@ -1256,8 +1270,13 @@ window.LIVE = (function () {
           judgedKeys.add(pairId(j.a, j.b));
           // a pair a ground shift locked (↻) is told so and its verdict cannot
           // be changed; every other judged pair is yours to revise (§4.4)
+          // **A pair you have answered wears no countdown** (Q1460): the
+          // engine's clock is on the race's approval pair, and this card is
+          // not asking you anything any more. Ed has not ruled on what a
+          // judged card should say, if anything, so it says nothing.
           items.push(pairItem(j.a, j.b, { state: 'deciding', pick: whatOf(j.a, j.b, j.outcome),
-            cap: waitCap, shifted: j.locked ? SHIFTED_NOTE : false, locked: !!j.locked, urgency: 0.3 }));
+            cap: waitCap, shifted: j.locked ? SHIFTED_NOTE : false, locked: !!j.locked, urgency: 0.3,
+            abstainAt: undefined }));
         }
         for (const rc of asked) {
           if (judgedKeys.has(pairId(rc.a.id, rc.b.id))) continue;
@@ -1279,8 +1298,12 @@ window.LIVE = (function () {
           const two = !(r.candidates.length === 1 || others.length < 2);
           // its span is the pair's it would show (Q1407): the one candidate's, or the two challengers' together
           const sp0 = two ? spanOfSides(others[0].id, others[1].id) : spanOfSides(c0.id);
+          // …and no countdown either (Q1460): there is no pair to send from
+          // this card, so a line saying when not voting will count would be
+          // told to somebody with nothing to vote with.
           const rest = { ...baseFor(siteOfSpan(sp0, lines)), id: r.id, state: r.judged ? 'deciding' : 'needs',
-            cap: r.judged ? waitCap : RAIL.wantsVote, urgency: 0.3, card: null, ...slate };
+            cap: r.judged ? waitCap : RAIL.wantsVote, urgency: 0.3, card: null,
+            abstainAt: undefined, ...slate };
           if (!two) {
             const t0 = textIn(c0, sp0);
             items.push({ ...rest, kind: 'quick', marked: markedOf(plain(lines, sp0), t0),

@@ -2011,6 +2011,19 @@
   .vinblock {
     border-top: 1px solid var(--border); margin-top: var(--s3); padding-top: var(--s3);
   }
+  /* **And the abstention clock at its right** (Q1460, Ed 2026-09-18: *put the
+     indifferent countdown on the right side of the column, same size and font
+     and place as the "propose edit" text*). The block becomes the row holding
+     both: the radio keeps its own left edge and its own height, so the line
+     appearing moves nothing — `.lanebar` above it is the same arrangement,
+     and this is the same two positions on the block below them.
+     `align-items: center` rather than baseline, because the radio is a pill
+     whose own text sits well above the block's bottom edge. */
+  .vinblock { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); }
+  /* The propose-edit treatment exactly: caption size, muted, the card's own
+     face. It says something rather than doing something, so unlike the ✏️ it
+     never takes the accent on hover and is not a control at all. */
+  .absnote { font-size: var(--t-cap); color: var(--muted); white-space: nowrap; }
   /* The deadlock card's one raised voice: on every other card a line like this
      is a caveat at the foot, and here it is the reason the card exists, so it
      sits directly under the clause in the band the field would otherwise start.

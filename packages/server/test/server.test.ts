@@ -56,13 +56,18 @@ type MemberViewPayload = {
     members: Array<{ id: string; name: string | null; arrived: boolean;
       owed: number; answered: number }> };
   text: string; textVersion: number; floor: number;
-  settingRaces: Array<{ id: string; settingId: string; judged: boolean; askable: boolean; ask: unknown }>;
+  settingRaces: Array<{ id: string; settingId: string; judged: boolean; askable: boolean;
+    ask: unknown;
+    /** this seat's own 💤 deadline on the race, while it has one (Q1460) */
+    abstainAt?: number }>;
   wallet: number | null;
   walletInfo: { balance: number; nextDripInMs: number | null; dripIntervalMs: number | null;
     cap: number | null } | null;
   clauses: Array<{ id: string; contested: Array<{ start: number; end: number }>;
     incumbentId: string; deadlocked: boolean; closeness: number; judges: number; floor: number;
     judged: boolean; shifted: boolean;
+    /** this seat's own 💤 deadline on the race, while it has one (Q1460) */
+    abstainAt?: number;
     candidates: Array<{ id: string; mine: boolean; rationale: string; hunks: Hunk[];
       author?: { id: string; name: string | null; picture: string | null } }> }>;
   mine: Array<{ id: string; state: string; rationale: string; patch: unknown; footprint: unknown;

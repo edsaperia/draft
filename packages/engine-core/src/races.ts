@@ -115,8 +115,14 @@ interface ApprovalCore {
   approvals: number;
   /** Approvers and opposers together: answered, and in the group wherever they now are. */
   answered: number;
-  /** One period start per awaited member of E, in engine ms. */
-  awaitedFrom: number[];
+  /**
+   * One awaited member of E per entry, with the moment their own period on
+   * this pair began, in engine ms. **The id rides with the moment** (Q1460):
+   * the countdown a member is shown is their own entry's `from` plus 💤's
+   * period, so the number on the page and the number that abstains them are
+   * read off the same row rather than recomputed by a second rule.
+   */
+  awaited: Array<{ id: string; from: number }>;
 }
 
 /** What the races may read of the session: live closures, no copies. */
@@ -214,8 +220,33 @@ export class Races {
    */
   private awaitedAt(approval: ApprovalCore, t: number): number {
     const after = this.host.constitution().abstainAfterMs ?? null;
-    if (after === null) return approval.awaitedFrom.length;
-    return approval.awaitedFrom.reduce((n, from) => n + (t < from + after ? 1 : 0), 0);
+    if (after === null) return approval.awaited.length;
+    return approval.awaited.reduce((n, w) => n + (t < w.from + after ? 1 : 0), 0);
+  }
+
+  /**
+   * **When this member's silence on this race becomes an abstention** (Q1460,
+   * Ed 2026-09-18): their own entry in the race's awaited set plus 💤's
+   * period, in engine ms — the moment `awaitedAt` above stops counting them,
+   * read off the same row so the page's countdown and the abstention are one
+   * number and not two rules.
+   *
+   * The unit is **the race's approval pair**, because that is the unit the
+   * engine abstains on: the awaited set is the members of E who have not
+   * answered the leader against the current text (§8.2, R-127). Null where
+   * 💤 is *never*, where the race has no leader, where this seat is not
+   * awaited — out of E, or it has answered that pair — and, deliberately,
+   * never null merely because the moment has passed: the reader decides what
+   * a run-out period says, and only the reader knows what `t` is.
+   */
+  abstainDeadline(raceId: string, participantId: string): number | null {
+    const after = this.host.constitution().abstainAfterMs ?? null;
+    if (after === null) return null;
+    const cores = this.host.derived('races', () => this.buildRaces());
+    const found = cores.find((c) => c.core.id === raceId);
+    if (found === undefined) return null;
+    const mine = found.approval.awaited.find((w) => w.id === participantId);
+    return mine === undefined ? null : mine.from + after;
   }
 
   /**
@@ -241,7 +272,7 @@ export class Races {
       // on the pair, less those still awaited at `t`. Read here and nowhere
       // else, so the number the batch stamps on its record and the number the
       // page prints are the same arithmetic on the same moment.
-      abstained: approval.awaitedFrom.length - awaited,
+      abstained: approval.awaited.length - awaited,
       floor,
       // **Progress toward the quorum** (Q1362 (c), R-118): the leader's
       // *judges* over the floor, and judges is deliberately still the word —
@@ -515,7 +546,7 @@ export class Races {
     incumbentId: string,
     usable: readonly StoredComparison[],
   ): ApprovalCore {
-    if (leaderId === null) return { approvals: 0, answered: 0, awaitedFrom: [] };
+    if (leaderId === null) return { approvals: 0, answered: 0, awaited: [] };
     const answeredBy = new Set<string>();
     let approvals = 0;
     let answered = 0;
@@ -530,14 +561,14 @@ export class Races {
       if (c.outcome === 'a' ? c.aId === leaderId : c.bId === leaderId) approvals++;
     }
     const from = this.answerableSince(leaderId, incumbentId);
-    const awaitedFrom: number[] = [];
+    const awaited: Array<{ id: string; from: number }> = [];
     for (const m of this.host.eMembers()) {
       if (answeredBy.has(m)) continue;
       // **The later of the pair's own moment and the member's** (§8.2):
       // nobody's period runs before they were there to be asked.
-      awaitedFrom.push(Math.max(from, this.host.arrivalT(m)));
+      awaited.push({ id: m, from: Math.max(from, this.host.arrivalT(m)) });
     }
-    return { approvals, answered, awaitedFrom };
+    return { approvals, answered, awaited };
   }
 
   /**
@@ -613,7 +644,7 @@ export class Races {
       const core = this.approvalCore(m, incumbentId, usable);
       const a = core.approvals;
       const o = core.answered - core.approvals;
-      const w = core.awaitedFrom.length;
+      const w = core.awaited.length;
       const floored = a + w < floorFor(c, e.length, a + o + w);
       if (floored || (a + w <= o && !above(m))) byIncumbent.add(m);
     }
