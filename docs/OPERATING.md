@@ -474,8 +474,8 @@ Five things to know about it:
    - **`delete`** (Q1322) deletes one whole document — log, engine log,
      people, provisional text, bridge state — and is how a quarantined
      document leaves the store.
-   - **`wipe`** deletes every document and every sidecar. It has run once,
-     on Ed's word (2026-09-08).
+   - **`wipe`** deletes every document and every sidecar. It has run twice,
+     each time on Ed's word (2026-09-08, 2026-09-18).
 
    `repair-tail` is the near miss: it *shortens* one log to its intact
    prefix, and it keeps the original byte for byte beside it as
@@ -546,6 +546,17 @@ Five things to know about it:
    left migrated. The store has held only the people shape since. `export`
    cannot write a restore point for the old shape — it replays through the
    oracle, which refuses it — so Render's backups were the restore point.
+
+   **And a second time on 2026-09-18, before the push that carried Q1439–Q1458**
+   (Ed, 2026-09-17: *alpha documents are disposable* — the rules were tightened
+   outright, the approval floor, the refund and 💤's minimum among them, with no
+   path kept for logs written under the old ones): the refusal first, which
+   printed 14 — the 11 documents `/healthz` counted and the 3 it had
+   quarantined, which the host's `documents` does not include — then the wipe,
+   the restart, and `/healthz` at 0 · 0 · 0. **Wipe before the push, never
+   after**: `verify-deploy` reads `/healthz` before the deploy and asserts the
+   counts afterwards against it. The restart dropped the surface upload
+   (`surface: null`, §3), which the full deploy that followed put back.
 
 ## 6. Local development
 
