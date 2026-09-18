@@ -5,6 +5,7 @@
  * other common event (perhaps someone voting?)*)
  *
  *   node scripts/repro/focus-steal.mjs http://127.0.0.1:8202 [--secs 60]
+ *   node scripts/repro/focus-steal.mjs http://127.0.0.1:8202 --gap
  *
  * Founds a document on a dev server, invites twelve bots and one page seat, begins, and leaves
  * the bots to `room-bots` (run it beside this at a fast pace — the line is printed). The page
@@ -13,6 +14,17 @@
  * rationale box stops holding the focus: whether the box was replaced (`isConnected` false —
  * a rebuild) or merely blurred, what was open, and which render ran last. Asserts nothing;
  * prints the log. Exit 1 if the focus was lost at all.
+ *
+ * **`--gap` needs no bots and asserts.** It is Q1461 (iii): Enter at the end of a clause makes
+ * a new clause in the gap after it, and the sentence typed into it used to be torn in two. The
+ * room's part in it was only ever geometry — a busy document is taller, so the clause you are
+ * writing at is further down the window, and `toggle` travels to the card it is opening rather
+ * than opening it where it stands. So this arranges both by hand: one other seat proposes on
+ * that clause over HTTP (it is contested, as it was in the room), and the page scrolls the
+ * clause low in the window before pressing Enter. Then it types the sentence key by key with
+ * no pause, which is what a person does. Exit 1 on a tear, on a final model that is anything
+ * but the one gap site holding the whole sentence, or on a proposal that is not a pure
+ * insertion at the gap's own line.
  */
 import { chromium } from 'playwright';
 import { post as postTo, followLink, sleep } from '../lib/walk.mjs';
@@ -67,10 +79,33 @@ for (const [setting, value] of Object.entries({
 const NAMES = ['ada.lovelace', 'grace.hopper', 'alan.turing', 'edsger.dijkstra', 'barbara.liskov', 'donald.knuth',
   'margaret.hamilton', 'tony.hoare', 'frances.allen', 'john.backus', 'radia.perlman', 'ken.thompson'];
 for (const n of NAMES) await cmd('invite', { email: `${n}@bots.docs.vote` });
+// --gap's one other seat: a member who contests the clause over HTTP, so the run needs no bots
+const rivalEmail = `rival-${run}@example.org`;
+if (GAP) await cmd('invite', { email: rivalEmail });
 await cmd('invite', { email: testerEmail });
 await cmd('begin', {});
 say(`founded ${BASE}/d/${SLUG} — begun, ${NAMES.length} bots invited`);
 say(`beside this:  node scripts/room-bots.mjs ${BASE}/d/${SLUG} --min 2s --max 6s --tend 2s --heat 0.5 --seed focus`);
+
+const linkFor = async (to) => {
+  const t = await (await fetch(`${BASE}/api/dev/outbox`)).json();
+  return (t.mails ?? []).find((m) => m.to === to && m.link);
+};
+// **the clause is contested before the page reaches it** (Q1461 (iii)): the room did this by
+// itself, and one proposal over HTTP does it every time. `CLAUSE` is line 8, the last one.
+const CLAUSE = 8;
+if (GAP) {
+  const m = await linkFor(rivalEmail);
+  if (!m) die('no invitation for the rival seat in the dev outbox');
+  const cookie = (await followLink(m.link)).cookie;
+  const v = await (await fetch(`${BASE}/api/d/${SLUG}/view`, { headers: { cookie } })).json();
+  const r = await post(`/api/d/${SLUG}/cmd`, { cmd: 'propose-text', args: { baseVersion: v.textVersion ?? 0,
+    hunks: [{ start: CLAUSE, end: CLAUSE + 1,
+      lines: ['Accounts are shown at the annual meeting and may be inspected by any member whenever they ask.'] }],
+    why: 'plainer' } }, cookie);
+  if (!r.ok) die(`the rival could not contest the clause (${r.status}): ${(await r.text()).slice(0, 200)}`);
+  say('the clause is contested — one rival proposal over HTTP');
+}
 
 const tail = await (await fetch(`${BASE}/api/dev/outbox`)).json();
 const mail = (tail.mails ?? []).find((m) => m.to === testerEmail && m.link);
@@ -91,8 +126,11 @@ await page.evaluate(() => {
 });
 await page.reload();
 await page.waitForSelector('#charter', { timeout: 20_000 });
-say('waiting for the bots to arrive and the room to move (20s) — start room-bots now if it is not running');
-await sleep(20_000);
+if (GAP) await sleep(1500);            // --gap needs no room: the rival's proposal is the contest
+else {
+  say('waiting for the bots to arrive and the room to move (20s) — start room-bots now if it is not running');
+  await sleep(20_000);
+}
 
 // the probe: every render the charter makes, and every time the rationale stops holding the focus
 await page.evaluate(() => {
@@ -128,10 +166,23 @@ await clause.click();
 // the caret at the very end of the clause's text — `End` stops at the end of the visual line, which a wrapped clause is not
 await clause.evaluate((el) => { const r = document.createRange(); r.selectNodeContents(el); r.collapse(false);
   const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); });
-if (GAP) { await page.keyboard.press('Enter'); await sleep(300); // one key at a time, reading the draft's model after each: the first key at which the gap's own text stops
+let torn = null;
+if (GAP) {
+  // **the clause is put low in the window** before the Enter — the one thing a busy room
+  // was doing for us, and the whole of the tear: a clause outside `bringIntoView`'s
+  // comfortable band makes the open travel, and the caret arrives on the far side of it
+  say('clause at ' + JSON.stringify(await clause.evaluate((el) => {
+    el.scrollIntoView({ block: 'center' }); scrollBy(0, -320);
+    return { top: Math.round(el.getBoundingClientRect().top), key: el.dataset.key, cls: el.className };
+  })) + ' — the band bringIntoView leaves alone is 100–300');
+  await sleep(200);
+  await clause.evaluate((el) => { const r = document.createRange(); r.selectNodeContents(el); r.collapse(false);
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); });
+  await page.keyboard.press('Enter');
+  // no pause: a person types the next letter straight away, and that is the window
+  // one key at a time, reading the draft's model after each: the first key at which the gap's own text stops
   // growing is where the sentence is torn (Q1461), and what rendered last says by whom
   const want = 'This is a pluralist, pan-political space.';
-  let torn = null;
   for (let i = 0; i < want.length; i++) {
     await page.keyboard.type(want[i]);
     await sleep(40);
@@ -145,6 +196,13 @@ if (GAP) { await page.keyboard.press('Enter'); await sleep(300); // one key at a
     if (torn === null && (!gap || +gap.split(':')[1] !== i + 1)) { torn = i; say('TORN at key ' + i + ' (“' + want[i] + '”): ' + JSON.stringify(m)); }
     else if (i === 0 || i === want.length - 1) say('key ' + i + ': ' + JSON.stringify(m));
   }
+  // the model at the end: one site, the gap's own, holding the whole sentence and nothing else
+  const model = await page.evaluate(() => { const d = window.SESSION.SUGGS.find((x) => x.id === 'draft-yours');
+    return d ? d.sites.map((x) => ({ keys: x.keys, text: x.text })) : null; });
+  const ok = model && model.length === 1 && /^G\d+$/.test(model[0].keys[0]) &&
+    model[0].text === 'This is a pluralist, pan-political space.';
+  say((ok ? 'the draft is ' : 'THE DRAFT IS NOT one gap site holding the sentence: ') + JSON.stringify(model));
+  if (!ok) torn = torn ?? -1;
 }
 else await page.keyboard.type(' And on the noticeboard.', { delay: 40 });
 await sleep(600);
@@ -155,24 +213,36 @@ if (GAP) {
     const bs = [...document.querySelectorAll('#charter [data-act="draft-propose"], #charter [data-act="row-commit"]')];
     const d = window.SESSION.SUGGS.find((x) => x.id === 'draft-yours');
     return { gesture: window.SESSION.gesture, wallet: (document.querySelector('#wallet') || {}).textContent,
+      editMode: window.SESSION.editMode, docCls: (document.getElementById('doc') || {}).className,
       buttons: bs.map((b) => ({ act: b.dataset.act, pen: !!b.dataset.pen, disabled: b.disabled, title: b.title, vis: b.getBoundingClientRect().width > 0 })),
       draft: d && { sites: d.sites.map((x) => ({ keys: x.keys, text: x.text, origin: x.origin.map((o) => o.text), gap: x.gap })), unproposed: d.unproposed } };
   });
   say('typed: ' + JSON.stringify(await look()));
-  say('waiting 25s for the room to rebuild the column under the draft');
-  await sleep(25_000);
+  say('waiting 8s for a poll or two to rebuild the column under the draft');
+  await sleep(8_000);
   const after = await look();
   say('after: ' + JSON.stringify(after));
   const btn = page.locator('#charter [data-act="draft-propose"]:not([data-pen]), #charter [data-act="row-commit"]:not([data-pen])').first();
+  await btn.hover();
   const box = await btn.boundingBox();
   if (!box) { say('no propose control on the page'); await browser.close(); process.exit(1); }
+  say('pressing ' + JSON.stringify(box));
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down(); await sleep(1600); await page.mouse.up();
-  await sleep(2500);
+  await sleep(3000);
   say('pressed: ' + JSON.stringify(cmds));
   say('then: ' + JSON.stringify(await look()));
   await browser.close();
-  process.exit(cmds.some((c) => /propose-text/.test(c.sent) && c.status === 200) ? 0 : 1);
+  // **a new clause is a pure insertion at its own line, and the clause above is untouched**
+  const sent = cmds.filter((c) => /propose-text/.test(c.sent) && c.status === 200)
+    .map((c) => { try { return JSON.parse(c.sent).args; } catch { return null; } }).filter(Boolean);
+  const pure = sent.some((a) => (a.hunks ?? []).length === 1 && a.hunks[0].start === a.hunks[0].end &&
+    a.hunks[0].start === CLAUSE + 1 && (a.hunks[0].lines ?? []).join('\n') === 'This is a pluralist, pan-political space.');
+  if (!sent.length) say('no propose-text was accepted');
+  else if (!pure) say('THE PROPOSAL IS NOT a pure insertion at line ' + (CLAUSE + 1) + ': ' + JSON.stringify(sent));
+  else say(`proposed as a pure insertion at line ${CLAUSE + 1}, the clause above untouched`);
+  if (torn !== null) say(`torn at key ${torn}`);
+  process.exit(torn === null && pure ? 0 : 1);
 }
 const WHY = LANE ? '#charter [data-lane]' : '#charter .edit-why[data-why]';
 const HOLDS = LANE ? '[data-lane]' : '.edit-why';

@@ -620,7 +620,19 @@ const pickOption = (label) => page.evaluate((l) => {
   const r = o.getBoundingClientRect();
   return { x: r.x + 14, y: r.y + r.height / 2 };
 }, label);
-const fillFields = () => page.evaluate(() => {
+/* **A date the walk types is counted from the run, never written down** (found
+ * 2026-09-18 18:00, when the literal below — `2026-09-18T18:00` — became the
+ * past and every document the walk founded closed the moment it began: forty
+ * FAIL lines from `amendment` onwards, all of them *the document has closed*,
+ * and the same on main. A wall-clock literal in a walk is a time bomb with the
+ * fuse written on it. `datetime-local` takes local time with no zone, which is
+ * what the page's own field holds. */
+const dateIn = (days) => {
+  const d = new Date(Date.now() + days * 86_400_000);
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:00`;
+};
+const fillFields = () => page.evaluate((when) => {
   // **One number per choice group** (Q1162): 👥 draws two blocks each with
   // its own box, and filling both would answer in two forms at once — the
   // last claim winning, which committed a count of 5 in a room of 2. The
@@ -656,11 +668,11 @@ const fillFields = () => page.evaluate(() => {
       if (ch) takenChoice.add(ch);
       n.value = String(Math.max(+n.min || 1, 5));
     }
-    else if (n.type === 'datetime-local') n.value = '2026-09-18T18:00';
+    else if (n.type === 'datetime-local') n.value = when;
     else n.value = 'The club shall meet on the first Tuesday.';
     fire();
   });
-});
+}, dateIn(30));
 const committable = () => page.evaluate(() =>
   [...document.querySelectorAll('.setupcard .commitrow button')]
     .some((x) => !x.disabled && !/🗑/.test(x.textContent) && !x.querySelector('[data-gl="bin"]')));
@@ -2809,6 +2821,97 @@ if (column.skipped) {
     : 'FAIL: ' + JSON.stringify(column)));
   if (!columnOk) stuck.push('the column above the editing card (Q1336)');
 }
+/* ---- a new clause typed straight after the Enter that made it (Q1461 (iii),
+ * Ed's residency room 2026-09-18: the sentence came out appended to the clause
+ * above). Opening the composer used to travel to the card — an animated scroll
+ * — and the caret only landed in the lane on its far side, so everything typed
+ * meanwhile went on hitting the *column*. The clause is put **low** in the
+ * window first, because one already near the reading line makes the travel a
+ * no-op and hides the whole thing; then Enter and the sentence with no pause,
+ * which is what a person does. Binned through the row's own 🗑️ afterwards,
+ * like the column step above. */
+const gapKeys = await (async () => {
+  if (EMPTY_TEXT) return { skipped: 'an empty document has no clause to press Enter at the end of' };
+  const SENT = 'A new clause, typed the instant it was made.';
+  /* **Nothing open first.** A card still standing when the Enter lands makes
+   * `startDraft` take its own in-place path and the step tests nothing — which
+   * is exactly what the step did on its first outing, quietly green against the
+   * unfixed page (the step above leaves one open often enough). */
+  const was = await page.evaluate(() => {
+    const open = window.SESSION.openId;
+    if (open != null) window.SESSION.closeCard();
+    return open;
+  });
+  await T(500);
+  const found = await page.evaluate(() => {
+    const ps = [...document.querySelectorAll('#charter .prose p.editable[data-key]')]
+      .filter((p) => !p.classList.contains('gap') && !p.closest('.sugg') && p.textContent.trim().length > 5);
+    const p = ps[ps.length - 1];
+    if (!p) return null;
+    p.scrollIntoView({ block: 'center' });
+    scrollBy(0, -320);                         // out of bringIntoView's 100–300 band
+    return p.dataset.key;
+  });
+  if (!found) return { at: null, was };
+  await T(300);                                // the scroll settles before anything is measured
+  /* The caret at the clause's very end — and the recorder that reads the first
+   * character's own arrival. **Where it lands is read inside the page**: a
+   * `page.evaluate` between the Enter and the next key is a round trip of its
+   * own, and on a document this size it outlasts the travel, so the walk would
+   * measure the state the reader never typed into. The listener costs nothing
+   * and answers the only question there is — when the next character arrived,
+   * was the card open and was the caret in the new clause's lane? */
+  const at = await page.evaluate((k) => {
+    const p = [...document.querySelectorAll('#charter .prose p.editable[data-key]')]
+      .find((x) => x.dataset.key === k && !x.closest('.sugg'));
+    if (!p) return null;
+    const r = document.createRange(); r.selectNodeContents(p); r.collapse(false);
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    window.__firstKey = null;
+    document.addEventListener('beforeinput', (ev) => {
+      if (window.__firstKey || ev.inputType !== 'insertText') return;
+      const el = document.activeElement;
+      window.__firstKey = { open: window.SESSION.openId,
+        lane: el && el.dataset ? el.dataset.lane || null : null,
+        at: el && el.id ? '#' + el.id : null };
+    }, true);
+    return { key: k, top: Math.round(p.getBoundingClientRect().top) };
+  }, found);
+  if (!at) return { at };
+  await page.keyboard.press('Enter');
+  await page.keyboard.type(SENT, { delay: 40 });
+  await T(400);
+  const m = await page.evaluate(() => {
+    const d = (window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours');
+    const el = document.activeElement;
+    return { sites: d ? d.sites.map((x) => x.keys.join('+') + ':' + x.text) : null,
+      born: window.__firstKey, lane: el && el.dataset ? el.dataset.lane || null : null };
+  });
+  const binned = await page.evaluate(() => {
+    const b = document.querySelector('#charter [data-proposalrow] [data-act="row-discard"]');
+    if (!b || b.disabled) return false;
+    b.click();
+    return true;
+  });
+  await T(500);
+  return { at, ...m, want: SENT, binned,
+    draft: await page.evaluate(() => !!(window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours')) };
+})();
+if (gapKeys.skipped) {
+  say('gap keys   · skipped — ' + gapKeys.skipped);
+} else {
+  const one = gapKeys.sites && gapKeys.sites.length === 1 ? gapKeys.sites[0] : null;
+  const gap = one && /^G\d+:/.test(one) ? one.slice(0, one.indexOf(':')) : null;
+  const bornOk = !!gapKeys.born && gapKeys.born.open === 'draft-yours' &&
+    /^G\d+$/.test(gapKeys.born.lane || '');
+  const gapKeysOk = bornOk && !!gap && one.slice(gap.length + 1) === gapKeys.want &&
+    gapKeys.lane === gap && gapKeys.binned && !gapKeys.draft;
+  say('gap keys   · ' + (gapKeysOk
+    ? 'Enter at ' + gapKeys.at.key + ' (' + gapKeys.at.top + 'px down the window) opens the card and lands the caret in ' +
+      gap + ' before the next key; typing with no pause puts every character there'
+    : 'FAIL: ' + JSON.stringify(gapKeys)));
+  if (!gapKeysOk) stuck.push('a new clause typed straight after its Enter (Q1461)');
+}
 const caret = await page.evaluate((empty) => {
   const r = document.createRange();
   let p;
@@ -3366,7 +3469,7 @@ if (caret) {
         for (const k of ['quorum', 'lapse', 'ending']) {
           if (!(await H.open(k))) continue;
           const avoid = Object.values(standing[k] || {}).filter((x) => typeof x === 'number');
-          const r = await p3.evaluate((nos) => {
+          const r = await p3.evaluate(({ nos, when }) => {
             const out = [];
             for (const f of [...document.querySelectorAll('.setupcard input')]) {
               if (f.offsetParent === null) continue;
@@ -3378,13 +3481,13 @@ if (caret) {
                 for (let c = lo; c <= hi && nx === null; c += st) if (!nos.includes(c)) nx = c;
                 if (nx === null) continue;
                 f.value = String(nx);
-              } else f.value = '2026-10-19T19:00';
+              } else f.value = when;              // counted from the run, never written down
               for (const e of ['input', 'change']) f.dispatchEvent(new Event(e, { bubbles: true }));
               if (f.value !== before) out.push((f.dataset.num || f.dataset.txt || '?') + ' ' +
                 JSON.stringify(before) + '→' + JSON.stringify(f.value));
             }
             return out;
-          }, avoid);
+          }, { nos: avoid, when: dateIn(61) });
           if (r && r.length) { used = k; moved = r; break; }
           await p3.evaluate(() => { const a = document.querySelector('.setupcard .chipcol .achip'); if (a) a.click(); });
           await H.T(420);
