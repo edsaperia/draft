@@ -314,8 +314,9 @@ describe('🛡️ on the Text parks the adoption (R-056)', () => {
     expect(bridge.engine.getCandidate(id).state).toBe('adopted');
     const adopted = pick(bridge, 'adopted', (e) => e.candidateId === id);
     expect(adopted).toMatchObject({ p: park.p, threshold: park.threshold });
-    // the performance refund was paid: bo is better off than the bare stake
-    expect(bridge.engine.balance(bo, 22)).toBeGreaterThan(3);
+    // the refund was paid, and it is the stake and no more (§7, Q1454): an
+    // assent is an adoption, and this used to pay above the stake
+    expect(bridge.engine.balance(bo, 22)).toBe(4);
   });
 
   it('refuse retires it as a failed proposal at refund 0, with the reason on the record', () => {

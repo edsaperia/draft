@@ -36,7 +36,7 @@ import {
   credit,
   materialize,
   openLedger,
-  performanceRefund,
+  exitRefund,
   rephaseDrip,
   spend,
   type Ledger,
@@ -132,7 +132,7 @@ export interface StoredComparison {
    * answer was known in advance. So everything asking "what does the room
    * prefer, and how many voices are in?" counts it, and everything asking
    * "have we measured this enough?" — the deadlock test, the rival-pair gate,
-   * the performance a refund pays on — does not.
+   * the peak that ranks the graveyard — does not.
    */
   derived?: true;
 }
@@ -691,7 +691,8 @@ export class Session {
           this.versions.push(applyPatch(this.currentLines(), winner.patch.hunks));
         }
         winner.state = 'adopted';
-        const refund = performanceRefund(winner.stakePaid, winner.peakW);
+        // it passed, so the stake comes back whole and nothing more (§7, Q1454)
+        const refund = exitRefund(winner.stakePaid, 'passed');
         winner.exit = { t: event.t, cause: 'adopted', refund };
         const author = this.roster.get(winner.author);
         if (author) credit(author.ledger, this.constitutionValue, event.t, refund);
@@ -703,7 +704,7 @@ export class Session {
       case 'text-decreed': {
         // ✒️ on the Text (R-058). Everything `candidate-submitted` does about
         // money is deliberately absent — no `spend`, no `credit`, no
-        // `performanceRefund`: nothing was staked, so nothing is refunded, and
+        // refund: nothing was staked, so nothing is refunded, and
         // `stakePaid: 0` is what keeps a later reader from computing one.
         // Everything `adopted` does about the *document* is present, because
         // the document really did change: the version, `lastAdoptionT` (the
@@ -1444,8 +1445,9 @@ export class Session {
     if (c.state !== 'live' && c.state !== 'rebase-pending') {
       throw new Error(`candidate ${candidateId} is not in play (${c.state})`);
     }
-    // Withdrawals refund fully (SPEC §7).
-    this.emit({ type: 'candidate-withdrawn', t, id: candidateId, refund: c.stakePaid });
+    // Withdrawals refund fully, at any time (SPEC §7, §3.3a; Q1454 answer 2).
+    this.emit({ type: 'candidate-withdrawn', t, id: candidateId,
+      refund: exitRefund(c.stakePaid, 'handed-back') });
   }
 
   retire(t: number, candidateId: string): void {
@@ -1457,7 +1459,8 @@ export class Session {
       t,
       id: candidateId,
       raceId: this.raceIdOf(candidateId),
-      refund: performanceRefund(c.stakePaid, c.peakW),
+      // a proposal that did not pass returns nothing (§7, Q1454)
+      refund: exitRefund(c.stakePaid, 'failed'),
     });
   }
 
@@ -1472,8 +1475,8 @@ export class Session {
    * with them, being a fact about that same moment and that same fit — the
    * shielded adoption is the likeliest of all to be read afterwards, and is
    * not the one receipt allowed to lie by omission. Everything downstream of
-   * `adopted` — the version bump, the rebase of the field, the performance
-   * refund, `lastAdoptionT`, the fit cache — runs unchanged.
+   * `adopted` — the version bump, the rebase of the field, the refund of the
+   * stake, `lastAdoptionT`, the fit cache — runs unchanged.
    *
    * **refuse** retires it as a failed proposal at **refund 0**: a stake
    * that came back would price a refusal as a withdrawal. The reason is
@@ -1493,7 +1496,8 @@ export class Session {
         parked.cappedFit);
     } else {
       this.emit({ type: 'candidate-retired', t, id: candidateId,
-        raceId: parked.raceId, refund: 0, ...(reason ? { reason } : {}) });
+        raceId: parked.raceId, refund: exitRefund(c.stakePaid, 'failed'),
+        ...(reason ? { reason } : {}) });
     }
     return this.log.slice(before).map((e) => e.event);
   }
@@ -1513,7 +1517,9 @@ export class Session {
       const own = this.candidate(withdrawOwnCandidateId);
       if (own.author !== participantId) throw new Error('can only fold in your own candidate');
       if (own.state !== 'live') throw new Error('own candidate is not live');
-      refund = own.stakePaid; // co-signs refund fully (SPEC §7)
+      // a candidate folded into the one its author co-signs is handed back,
+      // not beaten: it refunds fully (SPEC §7)
+      refund = exitRefund(own.stakePaid, 'handed-back');
     }
     this.emit({
       type: 'co-signed',
@@ -1810,10 +1816,9 @@ export class Session {
         t,
         id,
         raceId: this.raceIdOf(id),
-        // §7's performance refund, as at any retirement: a wording the room
-        // never preferred pays back less than its stake, and one it liked
-        // before it lost pays back what its peak earned.
-        refund: performanceRefund(c.stakePaid, c.peakW),
+        // nothing, as at any failure (§7, Q1454): a wording no answer still
+        // to come could carry did not pass, and only passing is refunded.
+        refund: exitRefund(c.stakePaid, 'failed'),
         reason: 'dominated',
       });
     }
