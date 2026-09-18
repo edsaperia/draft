@@ -251,7 +251,9 @@ window.COPY = (function () {
         'quorum was ' + floor + ' · ' + yoursLine,
       youSaid: (verdict) => 'you ' + verdict,
       youNever: 'you never voted on this',
-      undecided: 'Undecided at the close',
+      // Ed's words (Q1456, 2026-09-18), one phrase for a proposal the clock
+      // cut off, a wording and a motion alike
+      undecided: 'Proposal ran out of time',
       decided: 'Decided',
       capped: 'the ranking maths stopped short on this one; the decision stands',
       // under the head, where the clause no longer reads as the record left it (Q1333)
