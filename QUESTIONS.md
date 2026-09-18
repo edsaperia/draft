@@ -223,7 +223,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1458** — claim by writing the block here, then commit it alone.
+**The next free number is 1459** — claim by writing the block here, then commit it alone.
+
+**1458 is a 🛡️-parked adoption's record carrying none of the membership's numbers** (claimed 2026-09-18 10:59, Q1452's builder; Q1439's gap): a text adoption under the Founder's veto goes out through `candidate-awaiting-assent` and comes back through `assent`, which calls `adopt` with the `p`, the threshold and the cap mark recorded at the park and no `decided` — so its record states no approvals, no floor and no abstentions, on the one road likeliest to be read afterwards. **Ruled, Ed, 2026-09-18 ~10:59: carry the numbers through the park** — the park event records the three as they stood when the membership's vote carried, and the adoption after Accept copies them. Engine-core, behind `q1454-refund`, which is in the same file; before Sunday if Sunday's document keeps 🛡️ on the text.
 
 **1457 is news nobody acknowledged before the close** (claimed 2026-09-18 10:58, Q1450's builder, widened by the session): a member owed an OK — a failed motion's E41 card was the builder's case; a changed rule, a departure, a release batch are the same shape — who has not pressed it when the clock closes the document is left with a task a closed document refuses, 🥂's signing being the only OK it takes. **Ruled, Ed, 2026-09-18 ~10:58: the close clears them** — on a closed document every un-OK'd news task is drawn as read: grey, filed, openable, asking nothing; only 🥂 asks. No log change: the view and the page stop serving owed OKs once the document is closed. Offered *let OK work on a closed document* (the log would grow after *final as of*). **The session described the symptom from the refusal rule and the builder's report, not from a measurement of every news kind — the build starts by measuring which kinds stay lit** on `?fixture=session&closed=1` and on a ladder document at the closed rung. One build with Q1456, behind `q1451-rejected-mark`.
 
