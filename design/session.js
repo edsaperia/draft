@@ -559,8 +559,25 @@
   // The general rule underneath, worth keeping: **a decision announces itself if
   // it changed the document, or if you are part of why it did not.**
   const youJudged = (g) => !!(verdicts.get(pairKeyOf(g)) || g.verdict);
+  // **And you are part of why if one of the wordings was yours** (Q1451, Ed
+  // 2026-09-18: *X symbol should be for any kind of proposal you made that was
+  // rejected or refused, ordinary or constitutional — you should know the
+  // outcome of things you propose*). The rule above held for everybody who put
+  // something in *as a judgment*, and an author is never asked to judge their
+  // own lone proposal (E13, Q1340) — so the one person whose wording it was
+  // read the outcome as a silent grey dot. `mineIn` is the ids of the viewer's
+  // own candidates in this record's field, joined from the view by live.js.
+  //
+  // **One proposal, one acknowledgement.** A wording closed early by Q1440 is
+  // told to its author at once, on a card of its own keyed `rec:early:<id>`,
+  // and that press acknowledges *that proposal*. So when the race finally ends
+  // the full record speaks only for the wordings of mine nobody has answered
+  // for yet — while an adoption still announces itself through `carried`,
+  // because the charter moved and that is news whatever I proposed.
+  const EARLY_SEAL = 'rec:early:';
+  const minePending = (g) => (g.mineIn || []).some((id) => !readSeals.has(EARLY_SEAL + id));
   const isUnread = (g) => stateOf(g) === 'sealed' && g.unread &&
-    (carried(g) || youJudged(g)) && !readSeals.has(g.id);
+    (carried(g) || youJudged(g) || minePending(g)) && !readSeals.has(g.id);
 
   // Urgency — how much this wants *you* (leverage), not how close it is to
   // resolution (that stays the meter's job). It is carried by the strength of
@@ -2073,6 +2090,17 @@
     return (
       '<div class="sugg sealed-open" data-card="' + s.id + '"' +
       (skey ? ' data-site="' + skey + '"' : '') + '>' +
+      // **A wording closed early carries no eyebrow at all** (Q1451, Ed
+      // 2026-09-18). Its author is told at once, while the clause is still
+      // racing, and what they may be told is only that their own wording can
+      // no longer pass — never how many weighed in, never how far anything
+      // got, because the race has not sealed and a live race may not say which
+      // way the room is going (SPEC §3.5, SURFACE C12). The server withholds
+      // every one of those numbers from the row; the eyebrow goes here so the
+      // card cannot print a nought and call it a reading. What is left is the
+      // clause at the head, their own wording under it with its rationale and
+      // *Rejected — it could no longer pass*, and the OK.
+      (s.early ? '' :
       // **The whole record in one line** (Ed, 2026-08-17). It was three places —
       // an eyebrow, a rank label under it, and a record band at the foot — for
       // numbers that belong together: how many weighed in and what they came to.
@@ -2107,7 +2135,7 @@
       // an undecided race nobody read prints no reading: 0% is a number about
       // nothing
       (und && !(best > 0) ? '' : ' · ' + pct(best) + JUDG) + '</span>' +
-      '<span class="sub">' + esc(d.when || '') + '</span></div>' +
+      '<span class="sub">' + esc(d.when || '') + '</span></div>') +
       // **The cap line** (SPEC §4.2, R-051; Q945, Ed 2026-08-27). Where the
       // ranking fit this decision was taken on ran out of its iteration cap,
       // the record says so — one line, in the same `rsub` vocabulary as *the

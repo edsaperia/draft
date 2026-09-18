@@ -38,7 +38,10 @@ type RaceRecord = { raceId: string; candidateId: string; outcome: string; when: 
   p: number | null; threshold: number | null; version: number; footprint: unknown;
   /** the span in the current text — the lines that descend from what it decided (Q1333) */
   at: { start: number; end: number };
-  displaced: string[]; judges: number; judgedByMe: boolean; field: CandidateOutcome[] };
+  displaced: string[]; judges: number; judgedByMe: boolean; field: CandidateOutcome[];
+  /** the author's early row for a wording closed while its clause still races
+   *  (Q1451): their own candidate, and none of the numbers */
+  early?: true };
 type CardOption = { id: string; incumbent?: true;
   setting?: { settingId: string; value: { endsAtMs?: number } } };
 type MemberViewPayload = {
@@ -4047,5 +4050,155 @@ describe('a proposal the room can no longer pass is closed (Q1440)', () => {
     }) as string;
     expect((await viewOf(cy)).view.motions.find((m) => m.id === again)!.status)
       .toBe('running');
+  });
+
+  /**
+   * **And its author alone is told at once** (Q1451, Ed 2026-09-18: *you
+   * should know the outcome of things you propose*). The hold-back above is a
+   * rule about what a live race may say to the room; it is not a reason to
+   * leave the one person whose wording it was with a *yours* line that simply
+   * vanished. So the author is served a row of their own the moment it closes
+   * — their candidate, the clause, the reason — and the numbers the hold-back
+   * exists to withhold never leave the server.
+   */
+  const roomOfThree = async () => {
+    const { base, dataDir } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Told At Once', email: 'ada@example.org',
+    })).json() as { slug: string; devLink: string };
+    const slug = created.slug;
+    const ada = cookieOf(await consume(created.devLink));
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const body = await (await post(base, `/api/d/${slug}/cmd`,
+        { cmd: name, args }, cookie)).json() as { error?: string; result?: unknown };
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+      return body.result;
+    };
+    const viewOf = async (cookie: string) => (await (await fetch(
+      `${base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as MemberViewPayload;
+    const follow = async (email: string): Promise<string> =>
+      cookieOf(await consume((await lastMailTo(dataDir, email)).link!));
+
+    await cmd(ada, 'confirm-starting-text',
+      { text: 'The clubhouse is open.\nThe rota is weekly.' });
+    await cmd(ada, 'invite', { email: 'bo@example.org' });
+    await cmd(ada, 'invite', { email: 'cy@example.org' });
+    const bo = await follow('bo@example.org');
+    const cy = await follow('cy@example.org');
+    const values: Record<string, unknown> = {
+      rate: { grant: 4, cap: 8, dripMinutes: 240 },
+      quorum: { form: 'count', n: 1 }, chamber: { rung: 'closed' },
+      authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
+      applications: { apply: false }, admission: { price: 'assembly' },
+      removal: { price: 'consent' },
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+      ending: { endsAtMs: null },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await cmd(ada, 'reclaim', { setting });
+      await cmd(ada, 'set-setting', { setting, value });
+    }
+    await cmd(ada, 'begin', {});
+    return { ada, bo, cy, cmd, viewOf };
+  };
+
+  it('tells the author at once, and the numbers stay behind', async () => {
+    const { ada, bo, cy, cmd, viewOf } = await roomOfThree();
+    const mine = await cmd(bo, 'propose-text', { baseVersion: 0, hunks: [
+      { start: 1, end: 2, lines: ['The rota is daily.'] }], why: 'daily is better',
+    }) as { id: string };
+    const rival = await cmd(cy, 'propose-text', { baseVersion: 0, hunks: [
+      { start: 1, end: 2, lines: ['The rota is monthly.'] }], why: 'monthly is enough',
+    }) as { id: string };
+    const inc = (await viewOf(ada)).clauses
+      .find((r) => r.candidates.some((c) => c.id === mine.id))!.incumbentId;
+    await cmd(cy, 'judge-race', { a: mine.id, b: inc, outcome: 'b' });
+    await cmd(ada, 'judge-race', { a: mine.id, b: inc, outcome: 'b' });
+
+    // -- the author has a row, and nobody else has one --------------------
+    const boV = await viewOf(bo);
+    expect(boV.records).toHaveLength(1);
+    const early = boV.records[0]!;
+    expect(early.early).toBe(true);
+    expect(early.outcome).toBe('retired');
+    // their own wording alone: the rival is still racing and is not on it
+    expect(early.field.map((f) => f.candidateId)).toEqual([mine.id]);
+    expect(early.field[0]!.reason).toBe('dominated');
+    expect(early.field[0]!.rationale).toBe('daily is better');
+    // the clause it was written for, so the card can stand beside it
+    expect(early.displaced).toEqual(['The rota is weekly.']);
+    expect(early.at).toEqual({ start: 1, end: 2 });
+    // …and none of the numbers. Read off the keys rather than the values:
+    // a withheld number is an absent key, not a null (SPEC §3.5)
+    const keys = Object.keys(early as unknown as Record<string, unknown>);
+    for (const k of ['judges', 'approvals', 'floor', 'abstained', 'judgedByMe']) {
+      expect(keys, `the early row carries ${k}`).not.toContain(k);
+    }
+    expect(early.p).toBeNull();
+    const fieldKeys = Object.keys(early.field[0] as unknown as Record<string, unknown>);
+    expect(fieldKeys).not.toContain('author');
+    expect(early.field[0]!.p).toBeNull();
+    // everybody else still waits for the race to end
+    expect((await viewOf(ada)).records).toEqual([]);
+    expect((await viewOf(cy)).records).toEqual([]);
+
+    // -- and when the race ends, everybody gets the whole record ----------
+    const inc2 = (await viewOf(ada)).clauses
+      .find((r) => r.candidates.some((c) => c.id === rival.id))!.incumbentId;
+    await cmd(bo, 'judge-race', { a: rival.id, b: inc2, outcome: 'b' });
+    await cmd(ada, 'judge-race', { a: rival.id, b: inc2, outcome: 'b' });
+    // (two records, not one: a race is named for its lowest-numbered member
+    // and is renamed when that member is the one that goes, so each closed
+    // wording ends up under a race id of its own — the same reason the first
+    // test in this block reads the field rather than the row)
+    for (const seat of [ada, bo, cy]) {
+      const v = await viewOf(seat);
+      expect(v.records.map((r) => r.early)).toEqual([undefined, undefined]);
+      expect(v.records.flatMap((r) => r.field).map((f) => f.candidateId).sort())
+        .toEqual([mine.id, rival.id].sort());
+      for (const r of v.records) expect(typeof r.judges).toBe('number');
+    }
+  });
+
+  it('the author’s early row survives an adoption above it', async () => {
+    // the hold-back's own trap (the test above this pair): a closed
+    // candidate's footprint is frozen in the version it retired on, and two
+    // lines adopted above move the live race and not it. The early row takes
+    // the same walk, so its clause travels with the text.
+    const { ada, bo, cy, cmd, viewOf } = await roomOfThree();
+    const mine = await cmd(bo, 'propose-text', { baseVersion: 0, hunks: [
+      { start: 1, end: 2, lines: ['The rota is daily.'] }], why: 'daily is better',
+    }) as { id: string };
+    const rival = await cmd(cy, 'propose-text', { baseVersion: 0, hunks: [
+      { start: 1, end: 2, lines: ['The rota is monthly.'] }], why: 'monthly is enough',
+    }) as { id: string };
+    const above = await cmd(ada, 'propose-text', { baseVersion: 0, hunks: [
+      { start: 0, end: 1, lines: ['Preamble.', 'Who we are.', 'The clubhouse is open.'] }],
+      why: 'a preamble',
+    }) as { id: string };
+    const incOf = async (id: string) => (await viewOf(ada)).clauses
+      .find((r) => r.candidates.some((c) => c.id === id))!.incumbentId;
+    await cmd(cy, 'judge-race', { a: mine.id, b: await incOf(mine.id), outcome: 'b' });
+    await cmd(ada, 'judge-race', { a: mine.id, b: await incOf(mine.id), outcome: 'b' });
+    await cmd(bo, 'judge-race', { a: above.id, b: await incOf(above.id), outcome: 'a' });
+
+    const boV = await viewOf(bo);
+    expect(boV.text.split('\n')).toEqual(
+      ['Preamble.', 'Who we are.', 'The clubhouse is open.', 'The rota is weekly.']);
+    // the preamble's own record is there too, adopted; the early row is the
+    // one to read, and the rota line is line 3 now
+    const early = boV.records.find((r) => r.early)!;
+    expect(early, 'no early row for the author').toBeTruthy();
+    expect(early.field.map((f) => f.candidateId)).toEqual([mine.id]);
+    expect(early.at).toEqual({ start: 3, end: 4 });
+    // the rival still races on the same line, and still says nothing to
+    // anybody else
+    expect(boV.clauses.some((r) => r.candidates.some((c) => c.id === rival.id))).toBe(true);
+    for (const seat of [ada, cy]) {
+      const v = await viewOf(seat);
+      expect(v.records.some((r) => r.early)).toBe(false);
+      expect(v.records.flatMap((r) => r.field).map((f) => f.candidateId))
+        .not.toContain(mine.id);
+    }
   });
 });

@@ -536,9 +536,15 @@ function checkSetupAlphabet() {
       find('setup-alphabet', `setup.js: chipHtml is no longer told which chip is the host at \`{ ${site} }\` — the news-glyph branch has nothing to key on`);
   // branch 2: a grant's news wears the power's glyph, in both columns
   if (!/if \(st === 'news' && c\.grants\) return glyphHtml\(c\.grants\);/.test(mo)) find('setup-alphabet', 'markOf: no grant branch — the table says a grant wears the glyph of the power it grants');
+  // branch 2a: and a rejection of the reader's own wears the drawn ✖ (Q1451,
+  // E41) — the one news card whose news is that something did *not* happen
+  if (!/if \(st === 'news' && c\.held\) return RETIRED;/.test(mo))
+    find('setup-alphabet', "markOf: no `st === 'news' && c.held` branch — the table says a motion of yours that did not pass wears the drawn ✖ (Q1451)");
   for (const col of ['rail mark', 'tab mark']) {
     if (!/glyph of the power it grants/.test(cell('news', col))) find('setup-alphabet', `news: markOf hands a grant its power's glyph, the ${col} cell says "${cell('news', col)}"`);
     if (!/drawn.*✔/.test(cell('news', col))) find('setup-alphabet', `news: markOf hands every other news card TICK, the ${col} cell says "${cell('news', col)}"`);
+    if (!/did not pass wears the drawn ✖/.test(cell('news', col)))
+      find('setup-alphabet', `news: markOf hands a held motion RETIRED (✖), the ${col} cell says "${cell('news', col)}"`);
   }
   // branch 3: the fall-through — ask the glyph, wait ⏳, yours ✏️, else the ✔.
   // Since Q288 (Ed, 2026-09-14) ⏳ and ✏️ are the charter's own drawn marks
@@ -548,7 +554,8 @@ function checkSetupAlphabet() {
   // constants are checked against `mkHtml` — one alphabet, asserted at the seam.
   if (!/return st === 'ask' \? glyphHtml\(c\.g\) : st === 'wait' \? WAITING : st === 'yours' \? YOURS : DONE;/.test(mo))
     find('setup-alphabet', 'markOf: the fall-through is no longer `ask → glyph · wait → WAITING (⏳) · yours → YOURS (✏️) · else DONE (✔)`');
-  for (const [name, kind] of [['WAITING', 'deciding'], ['YOURS', 'propose'], ['DONE', 'adopted']])
+  for (const [name, kind] of [['WAITING', 'deciding'], ['YOURS', 'propose'], ['DONE', 'adopted'],
+    ['RETIRED', 'retired']])
     if (!new RegExp(`const ${name} = window\\.CARDS\\.mkHtml\\('${kind}'\\);`).test(setup))
       find('setup-alphabet', `setup.js: ${name} is no longer cards.js's drawn '${kind}' mark — the setup alphabet and the charter's would draw two different glyphs (Q288)`);
   for (const col of ['rail mark', 'tab mark']) {
