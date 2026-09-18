@@ -128,7 +128,24 @@ await clause.click();
 // the caret at the very end of the clause's text — `End` stops at the end of the visual line, which a wrapped clause is not
 await clause.evaluate((el) => { const r = document.createRange(); r.selectNodeContents(el); r.collapse(false);
   const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); });
-if (GAP) { await page.keyboard.press('Enter'); await sleep(300); await page.keyboard.type('This is a pluralist, pan-political space.', { delay: 40 }); }
+if (GAP) { await page.keyboard.press('Enter'); await sleep(300); // one key at a time, reading the draft's model after each: the first key at which the gap's own text stops
+  // growing is where the sentence is torn (Q1461), and what rendered last says by whom
+  const want = 'This is a pluralist, pan-political space.';
+  let torn = null;
+  for (let i = 0; i < want.length; i++) {
+    await page.keyboard.type(want[i]);
+    await sleep(40);
+    const m = await page.evaluate(() => { const d = window.SESSION.SUGGS.find((x) => x.id === 'draft-yours');
+      const last = window.__renders[window.__renders.length - 1] || null;
+      const el = document.activeElement;
+      return { sites: d ? d.sites.map((x) => x.keys[0] + ':' + x.text.length) : null, openId: window.SESSION.openId,
+        active: el && ((el.dataset && (el.dataset.lane || el.dataset.key)) || el.id || el.className), renders: window.__renders.length,
+        last: last && last.name + '(' + last.keys.join(',') + ') ' + (Date.now() - last.at) + 'ms ago' }; });
+    const gap = (m.sites || []).find((x) => /^G/.test(x));
+    if (torn === null && (!gap || +gap.split(':')[1] !== i + 1)) { torn = i; say('TORN at key ' + i + ' (“' + want[i] + '”): ' + JSON.stringify(m)); }
+    else if (i === 0 || i === want.length - 1) say('key ' + i + ': ' + JSON.stringify(m));
+  }
+}
 else await page.keyboard.type(' And on the noticeboard.', { delay: 40 });
 await sleep(600);
 if (GAP) {
