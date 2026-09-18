@@ -1278,14 +1278,47 @@ window.LIVE = (function () {
             cap: waitCap, shifted: j.locked ? SHIFTED_NOTE : false, locked: !!j.locked, urgency: 0.3,
             abstainAt: undefined }));
         }
-        for (const rc of asked) {
-          if (judgedKeys.has(pairId(rc.a.id, rc.b.id))) continue;
+        // **How many more questions lie under this one** (Q1462, Ed
+        // 2026-09-18: *a queue card stack … that hints that there are other
+        // rivals beneath the current one*). The deal is unchanged (Q1312,
+        // SPEC §8.3): one pair per race at a time, so a clause holding
+        // twenty-two rivals reaches a member as one lit entry saying nothing
+        // about the other twenty-one. The count is the rivals still to come
+        // for **this seat**: live wordings on the race that are not the
+        // member's own (their own is the ✏️ line, never a question), that
+        // they have no standing judgment on against the current text — one a
+        // ground shift locked will be asked again, so it does not count as
+        // answered (§4.4) — and that are not already drawn as an entry of
+        // their own, the hand being able to hold more than one pair on a race
+        // (Q1200). Page-only: every fact is already on the clause row, so no
+        // server change and no full deploy.
+        const askedLive = asked.filter((rc) => !judgedKeys.has(pairId(rc.a.id, rc.b.id)));
+        const answered = new Set();
+        for (const j of r.myJudgments || []) {
+          if (j.locked) continue;
+          if (j.a === r.incumbentId) answered.add(j.b);
+          else if (j.b === r.incumbentId) answered.add(j.a);
+        }
+        const drawn = new Set(askedLive.flatMap((rc) => [rc.a.id, rc.b.id]));
+        const beneath = r.candidates
+          .filter((c) => !c.mine && !answered.has(c.id) && !drawn.has(c.id)).length;
+        // **The pile belongs to the pair that stands for the race** (Q1462):
+        // the first live pair here putting a wording against the current
+        // text, which is the question the next one will be too. A
+        // rival-against-rival pair asks something else — which of two
+        // challengers — so it carries no pile, and a race whose only live
+        // pair is one of those carries none at all.
+        let piled = false;
+        for (const rc of askedLive) {
           // urgency is the router's own (SPEC §8.1): the card's value over
           // the best in the hand, a pair from outside the hand priced against
           // that same top since Q98 — so every entry with a card carries a
           // real number and the 0.3 is reached only where there is no card at
           // all
-          items.push(pairItem(rc.a.id, rc.b.id, { state: 'needs',
+          const stands = rc.a.id === r.incumbentId || rc.b.id === r.incumbentId;
+          const pile = (!piled && stands && beneath > 0) ? { beneath } : {};
+          if (pile.beneath) piled = true;
+          items.push(pairItem(rc.a.id, rc.b.id, { state: 'needs', ...pile,
             cap: RAIL.wantsVote, urgency: rc.urgency != null ? rc.urgency : 0.3 }));
         }
         // a race with nothing dealt and nothing judged — passed over by the
