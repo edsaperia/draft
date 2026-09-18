@@ -3388,6 +3388,35 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     return html;
   }
 
+  // **The propose controls follow the draft as it is typed** (Q1461, Ed's
+  // screenshot from the residency room, 2026-09-18: *why can't I make a
+  // proposal* — a new clause typed into a gap, three edits in the wallet, and
+  // a ✏️ that would not wake). The row and the single-site card's commit were
+  // evaluated where the column is drawn and nowhere else. A clause's first
+  // keystroke *is* a draw, with the change already in it, which is what hid
+  // this; a gap is drawn by the Enter that makes it, **before** anything is
+  // typed, so its controls were born reading *nothing has changed yet* and
+  // stayed that way until something else happened to rebuild the column.
+  // Patched in place on every lane input — never a render under a caret — by
+  // the same two readers the draw uses, so the two cannot disagree; and a
+  // draft typed back to its origin greys them again, which it never did.
+  function syncProposeCtls() {
+    if (!doc || !EDITING() || !MAY_PROPOSE() || closedMode) return;
+    const rs = draftRowState();
+    const pt = proposeCtlTitles(draftOf());
+    const idle = T.row.idle;
+    doc.querySelectorAll('[data-proposalrow] [data-act="row-commit"], .sugg [data-act="draft-propose"]').forEach((b) => {
+      const pen = !!b.dataset.pen;
+      const inRow = b.dataset.act === 'row-commit';
+      b.disabled = pen ? !rs.changed : (!rs.changed || pt.broke);
+      b.title = inRow && !rs.changed ? idle : pen ? pt.penTitle : pt.title;
+    });
+    doc.querySelectorAll('[data-proposalrow] [data-act="row-discard"]').forEach((b) => { b.disabled = !rs.count; });
+    doc.querySelectorAll('[data-proposalrow] .rowmid').forEach((m) => {
+      m.textContent = rs.changedCount ? T.row.placesChanged(rs.changedCount) : '';
+    });
+  }
+
   // **The placement pass**: the column swapped in, then measured. The two
   // fits run after the swap and in this order — a stack is fitted to the
   // gutter it has (`fitStacks`), and a card to the stack beside it.
@@ -3633,6 +3662,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         el.classList.toggle('md', laneRaw());
         el.innerHTML = laneBlocks(site.text, originText(site), laneRaw());
         if (off != null) placeCaret(el, off);
+        syncProposeCtls();
         layoutQueue(); drawWires();
       };
       el.addEventListener('input', (ev) => { if (!ev.isComposing) remark(); });
