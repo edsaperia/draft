@@ -105,6 +105,74 @@ describe('a failed motion is owed to its mover (Q1447, SURFACE E41)', () => {
     expect(s.memberRecords().get(bo)!.heldOwed.size).toBe(0);
   });
 
+  /**
+   * **And the ordinary route owes nobody at the close either** (Ed,
+   * 2026-09-18, Q1450: *the 🥂 card gains one line for motions still open at
+   * the close, both routes, and the close raises no E41 card*).
+   *
+   * This is the assertion in the file that reversed. Until today
+   * `finishClose` held its motions with the same word the room's own verdict
+   * uses, so the mover was handed a card on a document where `ackHeld`
+   * throws — pinned, unanswerable, beside a page that asks nothing else of
+   * anybody. The record is unchanged, because a motion that did not pass
+   * files its grey ✖ whatever stopped it; what changed is that nobody is
+   * told, and that the view says *why* nobody is told rather than leaving
+   * the page to compare timestamps.
+   */
+  it('and neither does an ordinary motion the close holds (Q1450)', () => {
+    const { s, bo } = buildConstituted();
+    const m = s.openMotion(3, bo, { kind: 'set', setting: 'ending',
+      value: { endsAtMs: 2_000_000 } });
+    s.adjudicateOrdinaryMotion(9, m, 'held-at-close');
+    // the grey ✖ is written exactly as it always was, and nothing moved
+    expect(s.motionRecords().get(m)!.status).toBe('held');
+    expect(s.motionRecords().get(m)!.heldAtClose).toBe(true);
+    expect(s.settingState('ending').value).toEqual({ endsAtMs: 1_000_000 });
+    // …and nobody is told
+    expect(owings(s)).toEqual([]);
+    expect(s.memberRecords().get(bo)!.heldOwed.size).toBe(0);
+    expect(view(s, bo).owedHeld).toEqual([]);
+    // the fourth `heldBy`, which no news card reads: it is there so the 🥂
+    // card can tell a record the clock made from one the room made
+    expect(view(s, bo).motions.find((x) => x.id === m)!.heldBy).toBe('close');
+  });
+
+  it('and the room’s own hold still owes, so the two words are not one word', () => {
+    const { s, bo } = buildConstituted();
+    const m = s.openMotion(3, bo, { kind: 'set', setting: 'ending',
+      value: { endsAtMs: 2_000_000 } });
+    s.adjudicateOrdinaryMotion(4, m, 'held');
+    expect(s.motionRecords().get(m)!.heldAtClose).toBe(false);
+    expect(view(s, bo).motions.find((x) => x.id === m)!.heldBy).toBe('members');
+    expect(owings(s)).toEqual([[m, bo]]);
+  });
+
+  it('an application the close never decided is still told it was refused', () => {
+    const { s } = buildConstituted({
+      applications: { apply: true }, admission: { price: 'proposal' } });
+    const ap = s.startApplication(3, 'dee@example.org');
+    s.verifyApplication(4, ap);
+    s.submitApplication(5, ap);
+    const m = s.applicantRecords().get(ap)!.motion!;
+    // the applicant's own 🪪 reads *refused* (E33) whoever stopped it — that
+    // is a fact about them, not a task anybody has to press
+    s.adjudicateOrdinaryMotion(9, m, 'held-at-close');
+    expect(s.applicantRecords().get(ap)!.status).toBe('refused');
+    expect(owings(s)).toEqual([]);
+  });
+
+  it('replays to the same hash with the close’s own word in the log', () => {
+    const { s, bo } = buildConstituted();
+    const m = s.openMotion(3, bo, { kind: 'set', setting: 'ending',
+      value: { endsAtMs: 2_000_000 } });
+    s.adjudicateOrdinaryMotion(9, m, 'held-at-close');
+    s.close(9);
+    const again = ConstitutionSession.replay([...s.logEntries()], s.people);
+    expect(again.logEntries().at(-1)!.hash).toBe(s.logEntries().at(-1)!.hash);
+    expect(again.motionRecords().get(m)!.heldAtClose).toBe(true);
+    expect(again.memberRecords().get(bo)!.heldOwed.size).toBe(0);
+  });
+
   it('a refused application owes nobody — it has no mover, and reads *refused*', () => {
     const { s } = buildConstituted({
       applications: { apply: true }, admission: { price: 'proposal' } });

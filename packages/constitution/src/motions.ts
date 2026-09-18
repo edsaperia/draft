@@ -312,9 +312,16 @@ export function abandonMotion(s: MotionHost, t: number, motion: MotionId): void 
  * engine, the sim, a mock — runs the race and reports the outcome here, a
  * motion carrying when the room prefers it to what stands and the quorum is
  * met; post-368 the caller is an engine-core race over the value.
+ *
+ * **`held-at-close` is the third word, and only the close may say it**
+ * (Q1450, Ed 2026-09-18): the same hold, at T=0, by a clock rather than by
+ * the room. It settles and files exactly as `held` does and differs in one
+ * thing — the mover is told nothing, because an OK is refused on a shut
+ * document and the 🥂 card is what speaks for every motion the close found
+ * running (SURFACE E41).
  */
 export function adjudicateOrdinaryMotion(s: MotionHost, t: number,
-  motion: MotionId, outcome: 'carried' | 'held'): void {
+  motion: MotionId, outcome: 'carried' | 'held' | 'held-at-close'): void {
   s.requireOpen('a motion');
   const rec = s.motions.get(motion);
   if (!rec || rec.status !== 'running') throw new Error('the motion is not running');
@@ -329,7 +336,7 @@ export function adjudicateOrdinaryMotion(s: MotionHost, t: number,
   } else if (after === 'carried') {
     settleCarriedEffects(s, t, rec, /* everyoneHadSay */ false);
   } else if (after === 'held') {
-    settleHeldEffects(s, t, rec);
+    settleHeldEffects(s, t, rec, /* tellTheMover */ outcome !== 'held-at-close');
   }
 }
 
@@ -635,12 +642,20 @@ export function crownSeatVacated(s: MotionHost, t: number): void {
  * It is emitted by `runClose` and folded there, reaching this file by no
  * path at all, so the close owes nothing — which is the answer anyway, an
  * OK being refused on a shut document.
+ *
+ * **And `tellTheMover` is the close's own arm of that same answer** (Q1450,
+ * Ed 2026-09-18): the ordinary motions `finishClose` holds at T=0 do come
+ * through here, and they are the one case where the follow-on splits — the
+ * applicant is still told their application was refused, because that is a
+ * fact about them and not a task, while the mover is told nothing, the 🥂
+ * card counting every motion the close found running instead.
  */
-function settleHeldEffects(s: MotionHost, t: number, rec: MotionRecord): void {
+function settleHeldEffects(s: MotionHost, t: number, rec: MotionRecord,
+  tellTheMover = true): void {
   if (rec.payload.kind === 'admit') {
     s.emit({ type: 'application-refused', t, applicant: rec.payload.applicant });
   }
-  oweHeld(s, t, rec.id, rec.by, rec.payload.kind);
+  if (tellTheMover) oweHeld(s, t, rec.id, rec.by, rec.payload.kind);
 }
 
 /**

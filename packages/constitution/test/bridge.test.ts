@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import type { Event as EngineEvent } from '../../engine-core/src/types.js';
 import { EngineBridge } from '../src/engine-bridge.js';
 import { DEFAULT_TUNING } from '../src/adapter.js';
+import { view } from '../src/view.js';
 import { buildConstituted } from './helpers.js';
 
 describe('an ordinary motion, raced end to end', () => {
@@ -194,6 +195,32 @@ describe('the close (Q390: winners carry, the rest are held)', () => {
     expect(render.appliedSettings).toEqual([]);
     expect(s.motionRecords().get(motion)!.status).toBe('held');
     expect(s.settingState('ending').value).toEqual({ endsAtMs: 1_000_000 });
+  });
+
+  /**
+   * **And tells nobody about it** (Ed, 2026-09-18, Q1450). The close is the
+   * one hand that holds a motion on a document where an OK is refused, so
+   * E41's card would be pinned for ever; `finishClose` says `held-at-close`
+   * instead, and the 🥂 card — the only card a shut document asks anybody to
+   * press — counts what the clock found running, either route.
+   */
+  it('and tells its mover nothing, the 🥂 card speaking for it (Q1450)', () => {
+    const { s, bo, cy } = buildConstituted();
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'close-silent' });
+    // one of each route, both running when the clock runs out
+    const { motion } = bridge.openSetMotion(10, bo, 'ending', { endsAtMs: 3_000_000 });
+    const kept = bridge.openMotion(11, cy, { kind: 'set', setting: 'chamber',
+      value: { rung: 'closed' } });
+    bridge.close(1_000_000);
+    expect(s.motionRecords().get(motion)!.status).toBe('held');
+    expect(s.motionRecords().get(motion)!.heldAtClose).toBe(true);
+    expect(s.motionRecords().get(kept)!.status).toBe('kept-at-close');
+    for (const who of [bo, cy, 'ada']) {
+      expect(s.memberRecords().get(who)!.heldOwed.size).toBe(0);
+      expect(view(s, who).owedHeld).toEqual([]);
+    }
+    // the ordinary one still files its grey ✖, and says what stopped it
+    expect(view(s, bo).motions.find((m) => m.id === motion)!.heldBy).toBe('close');
   });
 });
 
