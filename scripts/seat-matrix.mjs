@@ -97,9 +97,12 @@
  *   clerk:  `seat-matrix: findings=25 noRule=0 shape=0 errors=0 refused=0 unstood=4 exit=1`
  * (quoted as they were printed; the line gained `filed=` afterwards).
  * Wall time was about 8 minutes per hat when the spell was a minute (the
- * lapse wait was 80–115 s of it); since Q1453 the shortest spell a document
- * may state is five minutes, so the `wait-lapsed` step waits that out and the
- * hat costs about five minutes more. A
+ * lapse wait was 80–115 s of it). Since Q1453 the shortest spell a document
+ * may state is five minutes, and for the two hours between that ruling and
+ * the next the `wait-lapsed` step sat through it, costing about five minutes
+ * a hat. **Since Q1455 it jumps the clock instead** (Ed, 2026-09-18), so what
+ * is left of that step is one turn of the host's own minute tick and the hat
+ * is back to roughly where it was. A
  * second member run `--baseline`d against the first reported *no rail
  * differences*, so `mask` folds every volatile field. Seats
  * stood per document: founder, early, lapsed, stranger before 🍾; late and the
@@ -184,7 +187,7 @@ import { writeFile, readFile } from 'node:fs/promises';
 import { chromium } from 'playwright';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
 import { tableAfter, keysOf } from './lib/surface-tables.mjs';
-import { say, sleep, arg, linkIn, outbox as devOutbox, typeIn, press } from './lib/walk.mjs';
+import { say, sleep, arg, linkIn, outbox as devOutbox, post, typeIn, press } from './lib/walk.mjs';
 
 /* ---- arguments -------------------------------------------------------- */
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
@@ -200,15 +203,39 @@ if (TO !== null && !EPOCHS.includes(TO)) {
   console.log('FAIL: --to must be one of ' + EPOCHS.join(', ')); process.exit(1);
 }
 const SETTLE_MS = 5000;        // one 4s poll and air — journey's figure
-const LAPSE_WAIT_MS = 420_000; // the bound on waiting for the clock to lapse a seat
+// The bound on waiting for the **host's own minute tick** to lapse the quiet
+// seat once the dev clock has moved past the spell. The wait was 420_000 for
+// the two hours between Q1453 and Q1455, when the walk sat through the five
+// real minutes; the clock is jumped now and what is left to wait for is one
+// turn of `main.ts`'s 60s interval.
+const LAPSE_WAIT_MS = 90_000;
 // 💤's spell on this document, in one place: the `lapse-floor` step sets it
 // and E22's mail assertion prices the warnings against it (R-097 sends every
 // `WARN_LEADS` lead that fits *inside* the spell, and at five minutes none
 // does). **Five minutes is the floor the validator holds** (Q1453, Ed
 // 2026-09-18) — this walk set a minute over the wire until then, which is
 // the very road that ruling shut, so the shortest real spell is what the
-// quiet seat now waits out, and `LAPSE_WAIT_MS` waits the longer for it.
+// quiet seat must outlast.
 const LAPSE_AFTER_MS = 5 * 60_000;
+/**
+ * **How far the dev clock jumps** (Q1455, Ed 2026-09-18: *a dev-only clock for
+ * that one seat*). Waiting out the five-minute floor cost about five minutes a
+ * hat, ten on CI at `--hat=both`, so `wait-lapsed` moves this document's clock
+ * instead — `POST /api/dev/clock`, dev-only, absent from the production
+ * artifact — and then waits for the host's ordinary tick to do the lapsing,
+ * which is the one thing about the lapse this walk still exercises for real.
+ *
+ * **An hour and five minutes, and the hour is not slack.** The other seats
+ * survive the jump by being named `present`, which stamps each through the
+ * ordinary presence door — and presence records at most one event an hour per
+ * member (`SEEN_EVERY_MS`), so a shorter jump could not refresh them and the
+ * route refuses one that tries. Nothing else on this document moves under an
+ * hour: ⏰ is `{ endsAtMs: null }` so there is no close to cross, ⏱️ drips
+ * every 240 minutes to a cap of 8, no race is open at this step (the two
+ * amendments above it are the founder's pen, not motions), and 💤's warnings
+ * need a lead shorter than the spell, of which there is none.
+ */
+const LAPSE_ADVANCE_MS = 65 * 60_000;
 // the bound on waiting for the outbox's sender pass to file a row's mail: it
 // runs on a kick after the commit, so a few hundred ms behind the fold
 const MAIL_WAIT_MS = 20_000;
@@ -1428,21 +1455,44 @@ const RUN = {
     return `${step.who} removed by the room after ${judged.join(', ') || 'nobody'} judged` +
       (crowned ? `, the Founder accepting ${crowned}` : '') + '; their page is the door';
   },
-  /** The lapsed seat goes quiet: page shut, no act, until the clock lapses it. */
+  /**
+   * The lapsed seat goes quiet: page shut, no act, until the clock lapses it.
+   *
+   * **The clock is jumped, the lapse is not** (Q1455, Ed 2026-09-18). The dev
+   * clock moves this document past 💤's spell in one call, and every other
+   * seat is named `present` in the same call, so the jump leaves exactly one
+   * stale member and the route does that atomically — a keep-alive sent over
+   * the wire afterwards would leave a window in which the host's tick could
+   * land and lapse seats nobody meant to lose. Nothing is written about the
+   * lapse here: the route moves the clock and stops, and what this then waits
+   * for is `main.ts`'s own minute tick finding the quiet member, which is the
+   * assertion Ed kept when he traded the five minutes away.
+   */
   wait: async (step, D) => {
     const s = D.seats[step.seat];
     if (!s.stood) throw new Error(`${step.seat} was never stood, so it cannot lapse`);
     await s.page.close(); s.page = null; s.quiet = true;
+    const present = Object.values(D.seats)
+      .filter((x) => x.stood && !x.quiet && !x.left &&
+        (x.def.role === 'member' || x.def.role === 'founder'))
+      .map((x) => x.email);
+    const jump = await post(D.docbase, '/api/dev/clock',
+      { slug: D.slug, advanceMs: LAPSE_ADVANCE_MS, present });
+    const jumped = await jump.json().catch(() => null);
+    if (jump.status !== 200) {
+      throw new Error('the dev clock refused the jump → ' + jump.status + ' ' +
+        JSON.stringify(jumped) + ' (a dev server is required; see assert-server)');
+    }
     const t0 = Date.now();
     let lapsed = false; let lastAlive = 0;
     while (Date.now() - t0 < LAPSE_WAIT_MS) {
-      await sleep(10_000);
+      await sleep(5_000);
       if (Date.now() - lastAlive > 30_000) { await keepAlive(D); lastAlive = Date.now(); }
       const v = await viewAs(D, 'founder');
       const row = (((v && v.view) || {}).members || []).find((m) => m.email === s.email);
       if (row && row.lapsed) { lapsed = true; break; }
     }
-    if (!lapsed) { s.stood = false; throw new Error(`seat ${step.seat} could not be stood: the clock did not lapse it within ${LAPSE_WAIT_MS / 1000}s`); }
+    if (!lapsed) { s.stood = false; throw new Error(`seat ${step.seat} could not be stood: the clock was moved ${LAPSE_ADVANCE_MS / 60_000} minutes on but the host's tick did not lapse it within ${LAPSE_WAIT_MS / 1000}s`); }
     // **Seeing is presence** (Ed, 2026-09-08, R-096): reopening the page is
     // the revival — the read returns the seat, E grows back, and from here on
     // it is an ordinary member again, served every open question. Until this
@@ -1455,7 +1505,9 @@ const RUN = {
     const back = (((after && after.view) || {}).members || []).find((m) => m.email === s.email);
     if (!back || back.lapsed) throw new Error(`seat ${step.seat} opened the page lapsed and was not returned by the read (R-096)`);
     s.quiet = false; // an ordinary member again: kept alive like the others
-    return `${step.seat} lapsed after ${Math.round((Date.now() - t0) / 1000)}s quiet; page reopened, and the read returned them (R-096)`;
+    return `${step.seat} lapsed ${Math.round((Date.now() - t0) / 1000)}s after the clock was moved ` +
+      `${LAPSE_ADVANCE_MS / 60_000} minutes on (${present.length} seats kept present); ` +
+      'page reopened, and the read returned them (R-096)';
   },
   /** A stranger knocks, verifies, and submits an application (applicants-walk's shape). */
   knock: async (step, D) => {
@@ -1509,8 +1561,11 @@ const RUN = {
 };
 
 /* ---- keeping the non-lapsing seats alive ---------------------------------- *
- * Presence is stamped hourly (`SEEN_EVERY_MS`), so under a one-minute 💤 a
- * polling page keeps nobody alive; only an act does. Every stood member seat
+ * Presence is stamped hourly (`SEEN_EVERY_MS`), so under a spell shorter than
+ * an hour a polling page keeps nobody alive; only an act does. It is also why
+ * `wait-lapsed` hands its `present` list to the dev clock rather than calling
+ * this after the jump: an hour of document time passes in that call, and only
+ * a stamp made inside it beats the host's next tick. Every stood member seat
  * that is not the lapsing one re-states its own name and face before each
  * snapshot — an act that changes nothing the view shows, and for the founder
  * the act that answers ✋🖼️ before the `text` step's reload. Not after the
