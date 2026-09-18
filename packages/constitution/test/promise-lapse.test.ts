@@ -58,6 +58,7 @@ import { ConstitutionSession } from '../src/session.js';
 import { CATALOGUE } from '../src/catalogue.js';
 import { WARN_LEADS, lapseDue, warningDue } from '../src/clocks.js';
 import { view } from '../src/view.js';
+import { LAPSE_MIN_MS, validateValue } from '../src/values.js';
 import { buildConstituted } from './helpers.js';
 
 /** Every event type in the log, in order — the fold's own account of itself. */
@@ -110,6 +111,43 @@ describe('💤 the three warnings (R-097)', () => {
     // a host down across two points sends the one that is still true
     expect(warningDue(due, null, 29 * DAY + 1)).toBe(DAY);
     expect(warningDue(due, DAY, 29 * DAY + 2)).toBeNull();       // and the stale week never follows
+  });
+});
+
+/**
+ * **The spell has a floor of five minutes** (Q1453, Ed 2026-09-18). The card
+ * has offered five minutes as its shortest since 💤 gained ⏱️'s unit picker,
+ * and the validator took *null or any positive duration* — so the floor was
+ * the page's alone and every other road to the value went round it: a
+ * delegated answer, a carried motion's payload, a founder's set, a replayed
+ * log. The refusal is the validator's now, which is the one door all four
+ * pass through.
+ */
+describe('💤 the spell has a floor of five minutes (Q1453)', () => {
+  it('the floor is five real minutes, named once', () => {
+    expect(LAPSE_MIN_MS).toBe(5 * 60_000);
+  });
+  it('never is accepted, and so is the floor itself and anything above it', () => {
+    expect(validateValue('lapse', { afterMs: null })).toBeNull();
+    expect(validateValue('lapse', { afterMs: LAPSE_MIN_MS })).toBeNull();
+    expect(validateValue('lapse', { afterMs: LAPSE_MIN_MS + 1 })).toBeNull();
+    expect(validateValue('lapse', { afterMs: 30 * DAY })).toBeNull();
+  });
+  it('anything under it is refused, and the refusal says the minimum', () => {
+    for (const afterMs of [1, 10_000, 60_000, LAPSE_MIN_MS - 1, 0, -1])
+      expect(validateValue('lapse', { afterMs }), String(afterMs))
+        .toMatch(/at least five minutes/);
+  });
+  it('and so is anything that is not a duration at all', () => {
+    expect(validateValue('lapse', { afterMs: Infinity })).toMatch(/at least five minutes/);
+    expect(validateValue('lapse', { afterMs: '10 minutes' })).toMatch(/at least five minutes/);
+    expect(validateValue('lapse', {})).toMatch(/at least five minutes/);
+  });
+  it('the founder’s own pen is refused a spell under the floor', () => {
+    const { s } = buildConstituted();
+    expect(() => s.setSetting(3, 'lapse', { afterMs: 60_000 })).toThrow(/five minutes/);
+    s.setSetting(3, 'lapse', { afterMs: LAPSE_MIN_MS });
+    expect(s.settingState('lapse').value).toEqual({ afterMs: LAPSE_MIN_MS });
   });
 });
 
