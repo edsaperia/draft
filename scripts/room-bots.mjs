@@ -69,6 +69,7 @@ const usage = () => {
     `[--heat 0.6] [--motions 0.08] [--seed <word>] [--theme <file.json>] [--members a@bots.docs.vote,b@…]\n` +
     `  the url is the document's own, e.g. https://docs.vote/d/hollow-oak\n` +
     `  --theme swaps what the bots write (provisos, new clauses, verb swaps, reasons) — e.g. scripts/repro/birthday-theme.json\n` +
+    `  --clause <n> sends four proposals in five at the n-th body paragraph (1-based, headings skipped): the crowded race\n` +
     `  --members seats members already on the roster by login link, after a host restart wiped the outbox\n` +
     `  --key (or DRAFT_BOT_KEY in the environment) reads the host's bot outbox, which is how a room ` +
     `runs on docs.vote; without it the dev outbox is read, which needs a dev server`);
@@ -93,6 +94,11 @@ const MIN = duration(flag('min', '30s'));
 const MAX = Math.max(MIN, duration(flag('max', '7m')));
 const HEAT = Math.min(1, Math.max(0, Number(flag('heat', '0.6'))));
 const MOTIONS = Math.min(1, Math.max(0, Number(flag('motions', '0.08'))));
+// **The crowded race on demand** (Ed, 2026-09-17: *bots piling many rival
+// wordings onto ONE clause*): `--clause n` names the n-th body paragraph, and
+// four proposals in five land on it — enough that the race there holds many
+// rivals while the rest of the document still moves. 0 is off.
+const CLAUSE = Math.max(0, Math.floor(Number(flag('clause', '0')) || 0));
 const SEED = flag('seed', 'room');
 const OUTBOX_EVERY = duration(flag('outbox', '3s'));
 /** The outbox the bots read: the host's keyed bot outbox with a key, else the dev outbox. */
@@ -480,7 +486,9 @@ const propose = async (seat, p, m) => {
   const hotBody = body.filter((i) => hot.has(i));
   const coldBody = body.filter((i) => !hot.has(i));
   const pool = (r() < HEAT && hotBody.length) ? hotBody : (coldBody.length ? coldBody : body);
-  const i = pick(r, pool);
+  // `--clause n`: the named paragraph four times in five, the ordinary pick otherwise
+  const target = CLAUSE > 0 && CLAUSE <= body.length ? body[CLAUSE - 1] : null;
+  const i = (target !== null && r() < 0.8) ? target : pick(r, pool);
   let edit = null;
   for (let tries = 0; tries < 6 && !edit; tries++) {
     const shape = weighted(r, SHAPE_WEIGHTS);
@@ -707,7 +715,7 @@ const main = async () => {
   const title = door.ok ? (await door.json().catch(() => ({}))).title : null;
   TITLE = title ?? null;
   console.log(`room-bots on ${BASE}/d/${SLUG}${title ? ` — “${title}”` : ''} · build ${(health.build ?? '').slice(0, 7) || 'unreported'}`);
-  console.log(`  each bot acts every ${MIN / 1000}–${Math.round(MAX / 1000)}s · heat ${HEAT} · motions ${MOTIONS} · seed “${SEED}”`);
+  console.log(`  each bot acts every ${MIN / 1000}–${Math.round(MAX / 1000)}s · heat ${HEAT} · motions ${MOTIONS}${CLAUSE ? ` · clause ${CLAUSE}` : ''} · seed “${SEED}”`);
   console.log(`  reading ${OUTBOX.path}${KEY ? ' with the key' : ' (no key — the dev outbox)'}`);
   console.log(`  invite bots through ✉️ at any address at ${BOT_DOMAIN} — e.g. ada.lovelace@${BOT_DOMAIN} — and they arrive here.\n`);
   const ticker = setInterval(summary, REPORT_EVERY);
