@@ -112,7 +112,7 @@
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks, mdBlocksHtml,
     originText, mdToHtml, htmlToMd, mdStrip, mdLine,
     richToSource, sourceToRich, readLane,
-    laneSeed, laneProposeHtml, laneCtlHtml, speakerHtml, fieldHtml, fieldOf, groundNote,
+    laneSeed, laneProposeHtml, laneCtlHtml, laneNameId, laneGroupAttrs, speakerHtml, fieldHtml, fieldOf, groundNote,
     headOnlyHeight, cardBody, COLLAPSE_MS, EXPAND_MS,
   } = window.CARDS;
   // **A power is not held until it has been acknowledged** (Ed, 2026-08-21).
@@ -2551,15 +2551,20 @@
       // rather than an omission: the line under each question describes the
       // dispute, it is not somebody's argument for it. Drawing a person behind
       // it would claim an author the thing does not have.
-      const q = (c, v) =>
-        '<div class="propblock">' +
-        '<div class="rtag">' + esc(c.name) + '</div>' +
-        '<div class="rtext">' + esc(c.why) + '</div>' +
-        '<div class="qclause">' + esc(currentTextFor(c.key)) + '</div>' +
-        laneBarHtml(s, v, { edit: false }) + '</div>';
+      // the lane's name is the question's own name (Q1395 (a)), which on this
+      // card is the `.rtag` rather than the wording — the block's text is a
+      // description of the dispute, the tag is the thing being weighed
+      const q = (c, v) => {
+        const nameId = laneNameId(s, null, v);
+        return '<div class="propblock">' +
+          '<div class="rtag" id="' + nameId + '">' + esc(c.name) + '</div>' +
+          '<div class="rtext">' + esc(c.why) + '</div>' +
+          '<div class="qclause">' + esc(currentTextFor(c.key)) + '</div>' +
+          laneBarHtml(s, v, { edit: false, nameId }) + '</div>';
+      };
       return (
         '<div class="sugg diag-open" data-card="' + s.id + '" data-site="' +
-        (siteKey || s.pair[0].key) + '">' +
+        (siteKey || s.pair[0].key) + '"' + laneGroupAttrs(s, null) + '>' +
         clauseHeadHtml(s, { label: T.diag.headLabel,
                             html: T.diag.question }) +
         fieldHtml(q(s.pair[0], 'first') + q(s.pair[1], 'second'), 2, T.diag.fieldLab) +
@@ -2652,7 +2657,8 @@
       const rkey = (sv.keys ?? [])[0];
       const cur = runTextFor(sv, rkey);    // the run's text, as the head reads it (Q1308)
       return (
-        '<div class="sugg race-open" data-card="' + sv.id + '" data-site="' + rkey + '">' +
+        '<div class="sugg race-open" data-card="' + sv.id + '" data-site="' + rkey + '"' +
+        laneGroupAttrs(sv, rkey) + '>' +
         clauseHeadHtml(sv, Object.assign(headOpts(sv, rkey), { chips: chipsFor(rkey, sv.id) })) +
         // two replies to the same post; each states its own change against the
         // clause above, and carries its own argument and controls
@@ -2682,7 +2688,8 @@
         ? '<span class="pstep off">' + glyph + '</span>'
         : '<button class="pstep" data-step="' + s.id + ':' + s.sites[to].key + '" title="' + esc(label) + '">' + glyph + '</button>');
       return (
-        '<div class="sugg patch-open" data-card="' + s.id + '" data-site="' + site.key + '">' +
+        '<div class="sugg patch-open" data-card="' + s.id + '" data-site="' + site.key + '"' +
+        laneGroupAttrs(s, site.key) + '>' +
         '<div class="pnav">' +
         '<span class="pwhere">' + esc(site.label) + T.nav.placeOf(i + 1, n) + '</span>' +
         '<span class="psteps">' +
@@ -2725,7 +2732,8 @@
         '<div class="rtext">' + laneHtml(sv.marked) + '</div>'
       : laneHtml(sv.marked);
     return (
-      '<div class="sugg quick-open" data-card="' + sv.id + '" data-site="' + (key || '') + '">' +
+      '<div class="sugg quick-open" data-card="' + sv.id + '" data-site="' + (key || '') + '"' +
+      laneGroupAttrs(sv, key) + '>' +
       clauseHeadHtml(sv, Object.assign(headOpts(sv, key), { v: 'keep', edit: noEdit,
                           chips: chipsFor(key, sv.id) })) +
       groundNote(sv) +
@@ -3663,8 +3671,14 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
           : now ? window.COPY.grammar.commit.submit : window.COPY.grammar.commit.choose;
       };
       openCardEls(s.id).forEach((c) => {
+        // **A radio says `aria-checked`, a button says `aria-pressed`** (Q1395
+        // (a)): a lane on a decision card is `role="radio"` now, and writing
+        // `aria-pressed` onto one is an `aria-allowed-attr` failure — so the
+        // flip asks the element which it is rather than assuming. Anything
+        // else wearing `data-v` keeps the attribute it always had.
         c.querySelectorAll('[data-v]').forEach((o) =>
-          o.setAttribute('aria-pressed', String(now !== null && o.dataset.v === now)));
+          o.setAttribute(o.getAttribute('role') === 'radio' ? 'aria-checked' : 'aria-pressed',
+            String(now !== null && o.dataset.v === now)));
         syncSubmit(c.querySelector('[data-act="submit"]'));
       });
       // …and a patch's ✓, which floats at the foot of the window (Q1382)

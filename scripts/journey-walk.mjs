@@ -4028,7 +4028,10 @@ if (caret) {
           return { card: true, cls: card.className,
             whys: [...card.querySelectorAll('.field .propblock .speaker .said')].map((e) => e.textContent.trim()),
             keepLane: !!card.querySelector('.clausehead [data-v="keep"]'),
-            pressed: [...card.querySelectorAll('[data-v][aria-pressed="true"]')].map((b) => b.dataset.v),
+            // a decision card's lanes are `role="radio"` since Q1395 (a), so
+            // what is chosen reads `aria-checked`; anything else wearing
+            // `data-v` is still a button and still says `aria-pressed`
+            pressed: [...card.querySelectorAll('[data-v][aria-pressed="true"], [data-v][aria-checked="true"]')].map((b) => b.dataset.v),
             cast: (card.querySelector('[data-act="submit"]') || {}).getAttribute
               ? card.querySelector('[data-act="submit"]').getAttribute('aria-pressed') : null,
             ledger: card.querySelectorAll('.ledger, .ledgerpair').length,
