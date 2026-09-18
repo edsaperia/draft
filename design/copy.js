@@ -591,6 +591,13 @@ window.COPY = (function () {
       departedLeft: (who) => who + ' has left',
       passedLead: 'Passed: ',
       rejectedLead: 'Rejected: ',
+      // the failed-motion news card's own title (SURFACE E41; Q1447). The
+      // record's `rejectedLead` states the outcome to the room; this one is
+      // addressed to the mover, so it says whose proposal it was — the same
+      // difference the departure titles above make, and the same reason the
+      // verb stays the neutral one: which hand refused it is the card's
+      // sentence to say, not the title's
+      heldLead: 'Your proposal did not pass: ',
       anonymous: 'Anonymous',
       // a person whose row has been erased (PRODUCTION.md stage 12, decision
       // 1253): the log still names their seat, the record still holds what
@@ -703,6 +710,22 @@ window.COPY = (function () {
       // settled, and the record says which hand had got there first
       mootPen: 'The Founder ✒️ had already set this rule, so nothing changed.',
       mootMembers: 'Another proposal had already set this rule, so nothing changed.',
+    },
+    // **A motion of yours that failed** (SURFACE E41; Q1447, Ed 2026-09-17:
+    // *someone that proposes a motion should get an acknowledgement task if
+    // it fails*). Three sentences, one per way a proposal can end without
+    // carrying, on the card the mover alone is served. A proposal on a rule
+    // reads the record's own body instead — the dateline and the two blocks
+    // — so these are the doors' (✉️ ❌), where nothing files a record.
+    // The verb is the actor's (STYLE T8): *refuse* is the Founder's word,
+    // *reject* the membership's. The third is neither, because nobody
+    // decided anything — the proposal never reached the room, and the
+    // sentence says where the ✏️ went, which is the whole of what the mover
+    // has lost track of.
+    heldNews: {
+      membershipRejected: (what) => 'The membership rejected your proposal: ' + what + '.',
+      founderRefused: (what) => 'The Founder refused your proposal: ' + what + '.',
+      couldNotBePut: 'Your proposal could not be put to the membership, and your ✏️ is back in your wallet.',
     },
     // the Proposals preamble (Y21): the gates' fragments, composed
     preamble: {

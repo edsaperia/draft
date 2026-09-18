@@ -419,7 +419,10 @@ window.LIVE = (function () {
             // `moot` rides the view (Q1348 (b)): a proposal that passed
             // without changing anything, and the hand that had already set
             // what it asked for — the record card's whole extra sentence
-            status: rec.status, moot: rec.moot || null,
+            // …and `heldBy` with it (Q1447): E41's card says *the Founder
+            // refused* or *the membership rejected* (STYLE T8), and `status`
+            // alone cannot tell a 🛡️ apart from the room's own answer
+            status: rec.status, moot: rec.moot || null, heldBy: rec.heldBy || null,
             by: rec.mine ? self.v.me : '(sealed)',
             at: rec.at, from: rec.from,
             answers: { has: (id) => id === self.v.me && rec.myAnswer !== null,
@@ -456,6 +459,10 @@ window.LIVE = (function () {
         // one card per departure (SURFACE E31, E32, E40), so the body names
         // who left — the whitelist injects whose OK it is
         ackDeparture: (t, member, departed) => api.cmd('ack-departure', { member: departed }),
+        // one card per failed motion (SURFACE E41; Q1447), so the body names
+        // the motion — the whitelist injects whose OK it is, and the module
+        // owes it to the mover alone, so another seat's press is nothing
+        ackHeld: (t, member, motion) => api.cmd('ack-held', { motion }),
         // the applicant's second act (SURFACE E33): the OK on a door that
         // shut under them — their own seat, so the body names nothing
         ackApplyShut: () => api.cmd('ack-apply-shut', {}),

@@ -201,8 +201,11 @@ describe('👁️ live · a constitutional motion is the count and my own answer
       s.answerMotion(11, cy, m, 'keep');
       const mine = view(s, bo).motions.find((x) => x.id === m)!;
       expect(Object.keys(mine).sort()).toEqual(
-        ['answeredCount', 'at', 'electorateSize', 'from', 'id', 'mine', 'moot', 'myAnswer',
-          'payload', 'route', 'status', 'why']);
+        // `heldBy` joined the row for E41 (Q1447) and seals nothing this rule
+        // does: it is null on everything but a settled motion, and how a
+        // settled one failed is what the record card already tells the room
+        ['answeredCount', 'at', 'electorateSize', 'from', 'heldBy', 'id', 'mine', 'moot',
+          'myAnswer', 'payload', 'route', 'status', 'why']);
       expect(mine.route).toBe('constitutional');
       expect(mine.answeredCount).toBe(2);
       expect(mine.electorateSize).toBe(3);

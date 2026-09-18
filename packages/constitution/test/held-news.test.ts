@@ -31,6 +31,7 @@ describe('a failed motion is owed to its mover (Q1447, SURFACE E41)', () => {
     expect(owings(s)).toEqual([]);
     s.adjudicateOrdinaryMotion(4, m, 'held');
     expect(s.motionRecords().get(m)!.status).toBe('held');
+    expect(view(s, bo).motions.find((x) => x.id === m)!.heldBy).toBe('members');
     // one owing, to the mover and to nobody else
     expect(owings(s)).toEqual([[m, bo]]);
     expect(s.memberRecords().get(bo)!.heldOwed).toEqual(new Set([m]));
@@ -56,6 +57,9 @@ describe('a failed motion is owed to its mover (Q1447, SURFACE E41)', () => {
     expect(s.motionRecords().get(m)!.status).toBe('held');
     expect(owings(s)).toEqual([[m, bo]]);
     expect(view(s, bo).owedHeld).toEqual([m]);
+    // the card says *refused*, not *rejected* (STYLE T8), and `status` alone
+    // cannot tell the two apart — `heldBy` is what the page reads for it
+    expect(view(s, bo).motions.find((x) => x.id === m)!.heldBy).toBe('crown');
   });
 
   it("the system's own withdrawal owes the mover — the mover's does not", () => {
@@ -74,6 +78,10 @@ describe('a failed motion is owed to its mover (Q1447, SURFACE E41)', () => {
     s.abandonMotion(6, theirs);
     expect(s.motionRecords().get(theirs)!.status).toBe('withdrawn');
     expect(owings(s)).toEqual([[theirs, bo]]);
+    // both withdrawals read `system` — the module emits one event for either,
+    // and `owedHeld` is what tells the host's apart from the mover's own
+    expect(view(s, bo).motions.find((x) => x.id === theirs)!.heldBy).toBe('system');
+    expect(view(s, bo).owedHeld).toEqual([theirs]);
   });
 
   it('a carried motion owes nobody a rejection', () => {

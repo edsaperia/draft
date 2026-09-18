@@ -4131,6 +4131,10 @@ var CONSTITUTION = (() => {
       }
     }
     const motions = [];
+    const crownRefused = /* @__PURE__ */ new Set();
+    for (const q of s.crownQuestionRecords().values()) {
+      if (q.status === "rejected" && q.motion !== null) crownRefused.add(q.motion);
+    }
     let myHeldMotion = null;
     for (const rec of s.motionRecords().values()) {
       if ((rec.status === "running" || rec.status === "awaiting-crown") && rec.route === "constitutional" && rec.by === member) {
@@ -4147,6 +4151,7 @@ var CONSTITUTION = (() => {
         why: rec.why,
         status: rec.status,
         moot: rec.moot,
+        heldBy: rec.status === "withdrawn" ? "system" : rec.status !== "held" ? null : crownRefused.has(rec.id) ? "crown" : "members",
         mine: rec.by === member,
         at: rec.settledAtT,
         from: s.amendedFrom(rec.id),

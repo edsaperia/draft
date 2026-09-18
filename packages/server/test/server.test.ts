@@ -2676,6 +2676,87 @@ describe('🥾 exile, resignation and the shut door say so (Q901, E31–E33)', (
     await cmd(ada, 'ack-departure', { member: deeId });
   }, 60_000);
 
+  /**
+   * **A failed motion tells its mover, and nobody else** (Ed, 2026-09-17,
+   * Q1447; SURFACE E41). Over the wire: a 🏛️ motion the room carries onto a
+   * setting whose 🛡️ the Founder kept parks at the crown; the Founder refuses
+   * it; the mover's `owedHeld` names it, every other seat's is empty, `heldBy`
+   * says which hand refused it so the card can use the Founder's own word
+   * (STYLE T8), and `ack-held` clears it on that seat and no other.
+   */
+  it('a failed motion owes its mover an OK, and ack-held clears it', async () => {
+    const { base, dataDir } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Refusal Charter', email: 'ada@example.org',
+    })).json() as { ok: boolean; slug: string; devLink: string };
+    const ada = cookieOf(await consume(created.devLink));
+    const slug = created.slug;
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const res = await post(base, `/api/d/${slug}/cmd`, { cmd: name, args }, cookie);
+      const body = await res.json() as { ok?: boolean; error?: string; result?: unknown };
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+      return body.result;
+    };
+    const viewOf = async (cookie: string) => (await (await fetch(
+      `${base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as MemberViewPayload;
+    const owed = async (cookie: string) => ((await viewOf(cookie)).view as unknown as
+      { owedHeld: string[] }).owedHeld;
+    const seat = async (email: string) => {
+      await cmd(ada, 'invite', { email });
+      return cookieOf(await consume((await lastMailTo(dataDir, email)).link!));
+    };
+    await cmd(ada, 'confirm-starting-text', { text: 'The Founder keeps the last word on names.' });
+    const bo = await seat('bo@example.org');
+    const cy = await seat('cy@example.org');
+    await cmd(ada, 'set-setting',
+      { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
+    const values: Record<string, unknown> = {
+      ending: { endsAtMs: null },
+      quorum: { form: 'count', n: 1 }, chamber: { rung: 'closed' },
+      authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
+      applications: { apply: false }, admission: { price: 'assembly' },
+      removal: { price: 'assembly' },
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await cmd(ada, 'reclaim', { setting });
+      await cmd(ada, 'set-setting', { setting, value });
+    }
+    // 🍾 keeps every power it is not told to lay down, 👁️'s 🛡️ among them —
+    // which is what puts the carried motion at the crown's door rather than
+    // straight into the document
+    await cmd(ada, 'begin', {});
+    expect(await owed(bo)).toEqual([]);
+
+    // bo puts it, the room carries it, the Founder refuses it
+    const m = await cmd(bo, 'open-motion', { payload:
+      { kind: 'set', setting: 'judgments', value: { rung: 'never' } },
+      why: 'how I judged should stay mine' }) as string;
+    for (const c of [ada, cy]) await cmd(c, 'answer-motion', { motion: m, answer: 'accept' });
+    const q = ((await viewOf(ada)).view as unknown as
+      { crownTasks: Array<{ id: string; motion: string | null }> })
+      .crownTasks.find((x) => x.motion === m)!;
+    expect(q, 'the carried motion did not reach the crown').toBeTruthy();
+    await cmd(ada, 'answer-crown-question', { question: q.id, outcome: 'reject' });
+    const asBo = await viewOf(bo);
+    expect(asBo.view.motions.find((x) => x.id === m)!.status).toBe('held');
+    expect((asBo.view.motions.find((x) => x.id === m) as unknown as
+      { heldBy: string }).heldBy).toBe('crown');
+
+    // the mover, and nobody else — the Founder who refused it least of all
+    expect(await owed(bo)).toEqual([m]);
+    expect(await owed(cy)).toEqual([]);
+    expect(await owed(ada)).toEqual([]);
+    // the body names the motion and the whitelist injects whose OK it is, so
+    // another seat's press is silently nothing rather than a refusal
+    await cmd(cy, 'ack-held', { motion: m });
+    expect(await owed(bo)).toEqual([m]);
+    await cmd(bo, 'ack-held', { motion: m });
+    expect(await owed(bo)).toEqual([]);
+    // and once given, a second press is ignored rather than refused
+    await cmd(bo, 'ack-held', { motion: m });
+  }, 60_000);
+
   it('an applicant’s view says whether the door is still open, and flips when 🤝 shuts', async () => {
     const { base, dataDir } = await boot();
     const created = await (await post(base, '/api/docs', {

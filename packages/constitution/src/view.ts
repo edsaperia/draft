@@ -101,6 +101,17 @@ export interface MotionView {
    * to say so, and to name the hand the standing rule actually came from.
    */
   moot: string | null;
+  /**
+   * **How a failed motion failed** (SURFACE E41; Q1447), and null while it is
+   * anything but failed. The page needs it for one word: STYLE T8 gives
+   * *refuse* to the Founder and *reject* to the membership, and a card that
+   * had only `status: 'held'` to read would have to guess which happened.
+   * `crown` is the Founder's 🛡️ over a motion the room carried, `members` the
+   * room deciding against it, and `system` **any** withdrawal — the module
+   * emits one event for the mover's own and for the host's alike (`motions.ts`),
+   * so the two are told apart by `owedHeld`, which carries only the host's.
+   */
+  heldBy: 'members' | 'crown' | 'system' | null;
   mine: boolean;
   /** When it settled — what the record and the clause's history line date. */
   at: number | null;
@@ -340,6 +351,12 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
   }
 
   const motions: MotionView[] = [];
+  // the motions a 👑 question refused (SURFACE E41; Q1447): read once, so a
+  // room with many settled motions does not walk the questions per motion
+  const crownRefused = new Set<string>();
+  for (const q of s.crownQuestionRecords().values()) {
+    if (q.status === 'rejected' && q.motion !== null) crownRefused.add(q.motion);
+  }
   let myHeldMotion: string | null = null;
   for (const rec of s.motionRecords().values()) {
     if ((rec.status === 'running' || rec.status === 'awaiting-crown') &&
@@ -357,6 +374,9 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
       why: rec.why,
       status: rec.status,
       moot: rec.moot,
+      heldBy: rec.status === 'withdrawn' ? 'system'
+        : rec.status !== 'held' ? null
+        : crownRefused.has(rec.id) ? 'crown' : 'members',
       mine: rec.by === member,
       at: rec.settledAtT,
       from: s.amendedFrom(rec.id),

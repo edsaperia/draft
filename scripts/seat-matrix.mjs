@@ -383,6 +383,14 @@ const AUDIENCE = {
   // clause is what puts them back inside the audience.
   'the removed member; every member':
     (s, step, ctx, ev) => s.name === ev.removed || isMember(s),
+  // E41, a motion that failed (Q1447, Ed 2026-09-17; read here with the row).
+  // One seat wide, like E38's, and for a related reason: nothing about the
+  // document changed, so there is nobody the room is owed — the news is the
+  // mover's alone. The mover is the seat of the step that **put** the motion
+  // (`ev.author`), never the step that failed it, which here is the founder
+  // refusing at the crown and is emphatically not the audience.
+  '**the mover, and nobody else**: a rejection changes no rule anybody lives under, so it is news to the one person who asked for the change':
+    (s, step, ctx, ev) => s.name === (STEPS[stepIndex(ev.author)] || {}).seat,
 };
 
 /* ---- table 2: the steps ------------------------------------------------ *
@@ -647,10 +655,12 @@ const STEPS = [
     // (C9, Q1344), and no seat here but the founder has pressed one — the
     // assertion's own note says what that buys and what it still holds
     events: [{ id: 'E10', key: (D) => (D.motionIds["judgments-motion"] ? 'mo:' + D.motionIds["judgments-motion"] : null), noKey: 'the motion judgments-motion put came back with no id', at: 'judgments-motion', waitsOn: 'grant-voice' }] },
-  // one keep, and the motion stands running for the rest of the run: a keep
-  // does not settle a 🏛️ motion, it blocks it (§9.6, `maybeSettleMotions`),
-  // which is exactly the state worth snapshotting — two answers on the wire,
-  // neither seat told the other's.
+  // one keep, and the motion stands running: a keep does not settle a 🏛️
+  // motion, it blocks it (§9.6, `maybeSettleMotions`), which is exactly the
+  // state worth snapshotting — two answers on the wire, neither seat told the
+  // other's. It stands that way until `fail-motion` near the foot of the live
+  // epoch, which revises this keep to accept and lets the Founder refuse the
+  // carry at the crown (E41, Q1447).
   { id: 'judgments-keep', epoch: 'live', kind: 'cmd', seat: 'late', cmd: 'answer-motion', ifHat: 'member',
     args: async (D) => {
       const v = await viewAs(D, 'late');
@@ -828,6 +838,26 @@ const STEPS = [
   // (`orDeparted`). The actor is inside the audience like anybody else —
   // only ❌ skips its own actor (Q1358) — so `early`, who moved it, carries
   // the card too.
+  // **A motion that failed** (SURFACE E41; Q1447, Ed 2026-09-17). The room
+  // carries `judgments-motion` — 🏛️ on 👁️, put by `early` twelve rows up and
+  // left running there — and the Founder refuses it at the crown, which is
+  // the one road to a failure a live document has. The other two are out of
+  // reach from here and are asserted in the module instead: an **ordinary**
+  // motion is only ever adjudicated *held* at the close (`engine-bridge.ts`'s
+  // `finishClose`; a live document's bridge reports nothing but *carried*),
+  // and the system's own withdrawal (`abandonMotion`, #26) is raised inside
+  // `sync` on a path the wire refuses at the door instead.
+  //
+  // **Before `carry-removal`**, which is the last live row because it takes a
+  // seat out: this needs every member seat alive to reach unanimity. 🛡️ on
+  // 👁️ is the founder's — 🍾's table kept everything but the Text — so the
+  // carry parks at the crown rather than applying, which is what gives the
+  // refusal something to refuse.
+  { id: 'fail-motion', epoch: 'live', kind: 'fail-motion', seat: 'founder', ifHat: 'member',
+    motion: 'judgments-motion',
+    events: [{ id: 'E41', at: 'fail-motion', author: 'judgments-motion',
+      key: (D) => (D.motionIds['judgments-motion'] ? 'held:' + D.motionIds['judgments-motion'] : null),
+      noKey: 'the motion judgments-motion put came back with no id' }] },
   { id: 'carry-removal', epoch: 'live', kind: 'carry-removal', seat: 'founder', who: 'late', ifHat: 'member',
     events: [{ id: 'E40', key: 'dep:', at: 'carry-removal', removed: 'late', orDeparted: true }] },
   // ---- closed -------------------------------------------------------------
@@ -1234,6 +1264,47 @@ const RUN = {
       if (!begun) throw new Error('🍾 was held for ' + BEGIN_HOLD_MS + 'ms and the document did not begin');
     }
     return `held ${label} for ${BEGIN_HOLD_MS}ms`;
+  },
+  /**
+   * **A motion fails** (SURFACE E41; Q1447). The room is walked into unanimity
+   * on the motion the step names, which parks it at the crown because the
+   * Founder holds its 🛡️, and then the Founder **refuses** it. Stops as soon
+   * as the 👑 question stands, so no more seats are asked than the settle
+   * needs; refuses if the motion never reaches the crown, since the row's
+   * assertion would then be about nothing.
+   */
+  'fail-motion': async (step, D) => {
+    if (step.ifHat && step.ifHat !== D.hat) return `skipped: the founder is a ${D.hat}`;
+    const motion = D.motionIds[step.motion];
+    if (!motion) throw new Error(`no motion id kept for step ${step.motion} — it did not land`);
+    const crownFor = async () => {
+      const f = await viewAs(D, 'founder');
+      return (((f || {}).view || {}).crownTasks || []).find((t) => t.motion === motion) || null;
+    };
+    const said = [];
+    for (const name of ['founder', 'early', 'late', 'lapsed']) {
+      if (await crownFor()) break;
+      const s = D.seats[name];
+      if (!s || !s.stood || !s.page || s.left) continue;
+      const v = await viewAs(D, name);
+      const m = (((v || {}).view || {}).motions || []).find((x) => x.id === motion);
+      if (!m || m.status !== 'running' || m.myAnswer === 'accept') continue;
+      const r = await cmdAs(D, name, 'answer-motion', { motion, answer: 'accept' });
+      if (r.status !== 200) throw new Error(`answer-motion as ${name} → ${r.status} ${JSON.stringify(r.body)}`);
+      said.push(name);
+    }
+    const q = await crownFor();
+    if (!q) throw new Error(`${motion} never reached the crown after ${said.join(', ') || 'nobody'} accepted — nothing for the Founder to refuse, so E41 has nothing to assert`);
+    const r = await cmdAs(D, 'founder', 'answer-crown-question', { question: q.id, outcome: 'reject' });
+    if (r.status !== 200) throw new Error(`answer-crown-question → ${r.status} ${JSON.stringify(r.body)}`);
+    // a refusal is not a refusal until the module says so: read the status
+    // back, or a row that silently carried would assert the wrong event
+    const after = await viewAs(D, 'early');
+    const mm = (((after || {}).view || {}).motions || []).find((x) => x.id === motion);
+    if (!mm || mm.status !== 'held') {
+      throw new Error(`${motion} stands at ${mm ? mm.status : '(gone)'} after the Founder refused it — expected held`);
+    }
+    return `${motion} carried on ${said.join(', ') || 'the answers already given'} and the Founder refused it at ${q.id}`;
   },
   /**
    * **A text adoption parks** (SURFACE E36, E37): the member seats judge for
@@ -1813,10 +1884,11 @@ say(`tables     · SURFACE §2 events ${EVENTS.length} rows · seats ${SEATS.len
 // pen kept on the Text at 🍾, a `reserve` behind `lay-down`, and a carry that
 // takes a seat out of the document and so has to stand last in its epoch.
 // **E39 was retired two days later** (Q1404): the row stays in the table,
-// struck through with a dash audience like E23, so the count holds at 40 and
-// its step is gone.
-if (EVENTS.length !== 40) {
-  shape.push(`SURFACE §2 has ${EVENTS.length} event rows, not the 40 this table was written against`);
+// struck through with a dash audience like E23, so the count held at 40 and
+// its step is gone. **E41 joined it on 2026-09-17** (Q1447, a motion that
+// failed), read here with its own `fail-motion` step, so the count is 41.
+if (EVENTS.length !== 41) {
+  shape.push(`SURFACE §2 has ${EVENTS.length} event rows, not the 41 this table was written against`);
 }
 for (const s of shape) say('  ? ' + s);
 
