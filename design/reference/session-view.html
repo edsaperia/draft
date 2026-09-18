@@ -3026,7 +3026,7 @@
     const hc = HELDCACHE[k];
     // recomputed rather than frozen, for `recordCard`'s reason: the words a
     // motion is described in are the page's, and the page's copy moves
-    hc.g = window.CARDS.CROSS;
+    hc.g = '✖'; // a character for whatever reads one (Q1459); `markOf` draws the ✖ while the OK is owed
     hc.base = pileKeyOf(rec);
     hc.t = PAGE_COPY.synth.heldLead + motionDisplay(rec);
     return hc;
