@@ -473,8 +473,11 @@ const tend = async (seat) => {
 /* -- the act: one thing a member might do when they come back ----------- */
 
 /** Prefer a challenger the bot likes over one it does not; the incumbent sits at its temperament's line. */
-/** a card about somebody's application — the race is keyed `admit:<id>` (SPEC §9.7½) */
-const isAdmission = (card) => /^admit:/.test(((card.a.setting || card.b.setting) || {}).settingId || '');
+/** a card about somebody at the door — an application's race is keyed `admit:<id>`, a member's
+ *  invitation's `invite:<person>` (SPEC §9.7½); the room is as hospitable to the one as the other
+ *  (Ed's invitation in the residency room, 2026-09-18, stood at 2 judges of 8 behind a hand of text pairs) */
+const DOOR_RACE = /^(admit|invite):/;
+const isAdmission = (card) => DOOR_RACE.test(((card.a.setting || card.b.setting) || {}).settingId || '');
 
 const judge = async (seat, card) => {
   const r = seat.r;
@@ -613,7 +616,7 @@ const act = async (seat) => {
   const admission = cards.find(isAdmission)
     // …or the pair its own row asks with, where the hand holds no card on it
     // (Q1393): the row carries it from the same build the page reads it on
-    || ((p.settingRaces ?? []).find((s) => /^admit:/.test(s.settingId) && !s.judged && s.ask) || {}).ask;
+    || ((p.settingRaces ?? []).find((s) => DOOR_RACE.test(s.settingId) && !s.judged && s.ask) || {}).ask;
   if (admission && m.gates?.judging !== false) options.push(['admit', 0.8]);
   if (cards.length && m.gates?.judging !== false) options.push(['judge', 0.55]);
   if (openMotions.length) options.push(['answer-motion', 0.2]);
