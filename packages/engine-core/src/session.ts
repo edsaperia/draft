@@ -704,7 +704,7 @@ export class Session {
       case 'text-decreed': {
         // ✒️ on the Text (R-058). Everything `candidate-submitted` does about
         // money is deliberately absent — no `spend`, no `credit`, no
-        // refund: nothing was staked, so nothing is refunded, and
+        // `exitRefund`: nothing was staked, so nothing is refunded, and
         // `stakePaid: 0` is what keeps a later reader from computing one.
         // Everything `adopted` does about the *document* is present, because
         // the document really did change: the version, `lastAdoptionT` (the
