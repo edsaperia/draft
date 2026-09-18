@@ -60,7 +60,6 @@
  * at all to write it. `scripts/build-server.mjs` greps its own output.
  */
 import type { LoadedDoc } from './store.js';
-import type { DocStore } from './store.js';
 import { foldTime, installDevClock } from './engine-host.js';
 
 /** Per document, how far ahead of the wall clock it is being run. The one
@@ -80,7 +79,6 @@ const MAX_ADVANCE_MS = 365 * 24 * 3600_000;
 const SEEN_THROTTLE_MS = 60 * 60_000;
 
 export interface ClockHost {
-  store: DocStore;
   /** `WritePath.tOf` — the document's fold clock, the close met on the way. */
   tOf: (doc: LoadedDoc) => number;
   /** `WritePath.commit`, whose `null` is the announced pause (issue #9). */
