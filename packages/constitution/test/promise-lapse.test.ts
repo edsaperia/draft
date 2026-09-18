@@ -9,9 +9,11 @@
  * `LapseValue` is `{ afterMs: number | null }` (`values.ts`): a positive
  * duration, or `null` for *never*. The catalogue entry is constitutional,
  * delegable, a judge-gate, consent order `neverIsHighest` — the longest spell
- * wins and *never* is the longest of all. The surface collects it in whole
- * **days**, 7–365 (`session-view.html` `num(S, 'lapseDays', …, 7, 365)`), so
- * a sub-day spell is reachable only through the API.
+ * wins and *never* is the longest of all. The surface collects it in
+ * **minutes, hours or days** since Q1439 (`setup.js` `LAPSE_BOUNDS`), the
+ * shortest it offers being five minutes — and since Q1453 that five minutes
+ * is the validator's own floor (`LAPSE_MIN_MS`), so a shorter spell is
+ * reachable by no road at all, the API included.
  *
  * ## The enumeration — every promise, in every epoch
  *
