@@ -203,9 +203,22 @@ window.BAND = (function () {
     // as it runs* on a card the founder meets **before** ⏰ in the order.
     const endingKnown = () => { const st = csState('ending');
       return !!(st && st.value) || S.ending === 'perpetual' || isNum(Date.parse(S.endsAt)); };
+    // **💤's spell is 👥's second dependence since Q1439 ruling s**: with the
+    // built-in third gone, the quorum's number is the whole floor and what the
+    // share is a share *of* is the group left once the period has run. The
+    // module's typed value where one stands, else the founder's own field —
+    // and absent where neither says anything, which prints no clause at all,
+    // since 👥 comes before 💤 in the founding order.
+    const lapseMsOf = () => {
+      const st = csState('lapse');
+      if (st && st.value) return st.value.afterMs;          // null = never
+      if (S.lapse === 'never') return null;
+      return isNum(S.lapseMs) ? +S.lapseMs : undefined;
+    };
     const roomNow = () => ({
       e: E(),
       endsAtMs: endingKnown() ? endsAtMsOf() : undefined,
+      lapseMs: lapseMsOf(),
       nowMs: serverNow(),
     });
     // what a value would mean for the room as it stands, or nothing

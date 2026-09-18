@@ -28,9 +28,12 @@
  * threshold machinery they read (`threshold.ts`) stays a release longer,
  * pinned and unable to bite. The rules the sentences obey are Ed's:
  *
- * 1. **A meaning names its own dependence.** 👥's is the room, ⏱️'s the
- *    window, and 💤's is the spell alone — so 💤's sentence names no room,
- *    because a false dependence is as wrong as a missing one.
+ * 1. **A meaning names its own dependence.** 👥's is the room — **and, since
+ *    v0.133, 💤's spell too** (Q1439 ruling s): with the built-in ⌈E/3⌉ gone
+ *    the card's number is the whole floor, and what the share is a share *of*
+ *    is the group left once the period has run. ⏱️'s is the window, and 💤's
+ *    is the spell alone — so 💤's sentence names no room, because a false
+ *    dependence is as wrong as a missing one.
  * 2. **Meanings live on the card, never in the clause.** The clause is the
  *    rule; this is advice at the moment of choosing, and would be false by
  *    next week. Nothing here is written into the constitution.
@@ -60,6 +63,16 @@ export interface Room {
   endsAtMs?: number | null;
   /** The caller's clock, since nothing in this package reads one. */
   nowMs?: number;
+  /**
+   * 💤 as it stands, in ms: a spell, `null` for never, absent where it is
+   * unknown. **👥's second dependence since v0.133** (Q1439 ruling s): with
+   * the built-in ⌈E/3⌉ gone the card's number is the whole floor, and what the
+   * share is a share *of* is the group left once the period has run. Absent is
+   * not *never* here either — the founder meets 👥 before 💤 in the founding
+   * order, so a sentence that read the two alike would answer a question they
+   * have not been asked.
+   */
+  lapseMs?: number | null;
 }
 
 /**
@@ -158,17 +171,41 @@ function spellPhrase(afterMs: number): string {
    restated as the number the room will actually be held to, and the sentence
    says why rather than quietly disagreeing with the control.
 
+   **And since v0.133 it is the whole floor** (ruling s, Ed 2026-09-18: *if the
+   membership want a smaller quorum they should be able to choose it* → why:
+   R-131). The built-in minimum of ⌈E/3⌉ used to sit under this number, unsaid
+   on any card, and the sentence could not name it without describing a rule
+   nobody had chosen — Q1449 was raised about exactly that gap and closes with
+   the term. What the sentence gains instead is 💤's clause: what the share is
+   a share *of* is the group a proposal is still waiting on, and once the
+   period has run that is the people who answered. So *— after ‹spell›, of
+   those who have voted on it* follows the share wherever the room has settled
+   a spell, and nothing follows it where 💤 is *never* or not yet known.
+
+   **The count form takes no clause**, which is the same rule and not an
+   omission: a count of four is four members whatever the group does. Only the
+   half-the-group cap moves under it, and `HALF_NOTE` is already the sentence
+   for that; *of those who have voted on it* after a count would be untrue.
+
    Every branch still ends in the floor and nothing else (Ed, 2026-09-06,
    Q1196; R-088): one consequence per value (T37), and there is no freeze. */
 const HALF_NOTE = ' No quorum can ask for more than half.';
 
-function quorumBody(q: number, n: number, form: 'count' | 'share', pct: number): string {
+function quorumBody(
+  q: number, n: number, form: 'count' | 'share', pct: number, after: string,
+): string {
   if (n === 1) return 'In a membership of one, your own vote is the whole quorum.';
   const of = q + ' of ' + n;
   return form === 'share'
     ? 'At least ' + pct + '% (' + of + ') of the membership must prefer a proposal ' +
-      'before it can be adopted.'
+      'before it can be adopted' + after + '.'
     : 'At least ' + of + ' members must prefer a proposal before it can be adopted.';
+}
+
+/** *— after a week, of those who have voted on it*, or nothing at all. */
+function afterClause(lapseMs: number | null | undefined): string {
+  if (typeof lapseMs !== 'number' || !Number.isFinite(lapseMs) || lapseMs <= 0) return '';
+  return ' — after ' + spellPhrase(lapseMs) + ', of those who have voted on it';
 }
 
 function quorumMeaning(v: QuorumValue, room: Room): string | null {
@@ -176,14 +213,19 @@ function quorumMeaning(v: QuorumValue, room: Room): string | null {
   const n = Math.max(1, Math.floor(room.e));
   const asked = quorumCount(v, n);
   if (!Number.isFinite(asked)) return null;
-  // the number the room is actually held to (R-126); the statistical minimum
-  // ⌈E/3⌉ can raise the *floor* above this, which is the mechanism's and not
-  // this setting's — the sentence speaks for 👥
+  // the number the room is actually held to, and since v0.133 the whole of the
+  // floor: nothing rides under it (R-126 for the cap, R-131 for the rest)
   const q = Math.min(asked, Math.ceil(n / 2));
   const pct = Math.min(Math.round(v.n), 50);
-  const body = quorumBody(q, n, v.form, pct);
+  const after = v.form === 'share' ? afterClause(room.lapseMs) : '';
+  const body = quorumBody(q, n, v.form, pct, after);
   const capped = q < asked ? HALF_NOTE : '';
-  return fit(body + capped) ?? fit(body);
+  // the clause is the cheapest thing to lose: the number is the consequence,
+  // and 💤's own card states the period in full a few paragraphs down
+  return fit(body + capped)
+    ?? fit(body)
+    ?? fit(quorumBody(q, n, v.form, pct, '') + capped)
+    ?? fit(quorumBody(q, n, v.form, pct, ''));
 }
 
 /* ---- ⏱️ -----------------------------------------------------------------

@@ -72,8 +72,20 @@ describe('the meaning family', () => {
     ...[7, 14, 30, 90].map((d): LapseValue => ({ afterMs: d * 86400000 })),
     { afterMs: null },
   ];
-  const rows = (e: number, endsAtMs: number | null) => {
-    const room: Room = { e, endsAtMs, nowMs: NOW };
+  /**
+   * **💤's standing spell is 👥's second dependence since v0.133** (Q1439
+   * ruling s): with the built-in third gone the card's number is the only
+   * number, and what the number is a share *of* is the group after the period
+   * has run. So the sentence names the period where the room has settled one,
+   * and the table runs over every spell the card can hold — absent, *never*,
+   * and both ends of the unit picker.
+   */
+  const SPELLS: Array<number | null | undefined> = [undefined, null, 5 * 60000, 90 * 86400000];
+  const rows = (e: number, endsAtMs: number | null, lapseMs?: number | null) => {
+    // `exactOptionalPropertyTypes`: *absent* is a state of its own here, and
+    // spelling it as `lapseMs: undefined` is not the same thing
+    const room: Room = { e, endsAtMs, nowMs: NOW,
+      ...(lapseMs === undefined ? {} : { lapseMs }) };
     return [
       ...QUORUMS(e).map((v) => ['quorum', v, room] as const),
       ...RATES.map((v) => ['rate', v, room] as const),
@@ -84,12 +96,14 @@ describe('the meaning family', () => {
   it('every value in the table has a sentence, and it fits', () => {
     for (let e = 1; e <= 12; e++) {
       for (const [, endsAtMs] of WINDOWS) {
-        for (const [id, v, room] of rows(e, endsAtMs)) {
+        for (const spell of SPELLS) {
+        for (const [id, v, room] of rows(e, endsAtMs, spell)) {
           const s = meaningOf(id, v, room);
           // **No silences left** (Q1362): 🌡️'s unreachable bar was the one
           // value in this table that could print nothing, and it has gone
           expect(s, `${id} ${JSON.stringify(v)} e=${e}`).not.toBeNull();
           expect(s!.length, `${id} ${JSON.stringify(v)} e=${e}: ${s}`).toBeLessThanOrEqual(MEANING_MAX);
+        }
         }
       }
     }
@@ -159,6 +173,47 @@ describe('the meaning family', () => {
     for (const n of [1, 2, 4, 9, 12]) {
       expect(meaningOf('quorum', { form: 'count', n }, room)).not.toMatch(/freez|still here/);
     }
+  });
+
+  /**
+   * **And the period's clause, where 💤 has settled one** (Q1439 ruling s, Ed
+   * 2026-09-18). With the built-in ⌈E/3⌉ gone the card's number is the only
+   * number a proposal is held to — and what the share is a share *of* is the
+   * group after the period has run, which is the people who answered. So the
+   * share sentence says so, in Ed's own sentence's own clause, wherever the
+   * room knows its spell.
+   *
+   * **The count form does not take the clause**, and that is deliberate: a
+   * count of four is four members whatever the group does — only the
+   * half-the-group cap moves under it, and `No quorum can ask for more than
+   * half.` is already the sentence for that. *of those who have voted on it*
+   * after a count would say something untrue.
+   */
+  it('👥 names 💤’s period where the room has one (Q1439 ruling s)', () => {
+    const withSpell: Room = { e: 10, endsAtMs: null, nowMs: NOW, lapseMs: 15 * 60000 };
+    expect(meaningOf('quorum', { form: 'share', n: 30 }, withSpell))
+      .toBe('At least 30% (3 of 10) of the membership must prefer a proposal before it ' +
+        'can be adopted — after 15 minutes, of those who have voted on it.');
+    // the spell is worded the way 💤's own sentence words it
+    expect(meaningOf('quorum', { form: 'share', n: 50 }, { ...withSpell, lapseMs: 7 * 86400000 }))
+      .toBe('At least 50% (5 of 10) of the membership must prefer a proposal before it ' +
+        'can be adopted — after a week, of those who have voted on it.');
+    // …and the cap's note still follows it
+    expect(meaningOf('quorum', { form: 'share', n: 100 }, { ...withSpell, lapseMs: 7 * 86400000 }))
+      .toBe('At least 50% (5 of 10) of the membership must prefer a proposal before it ' +
+        'can be adopted — after a week, of those who have voted on it.' +
+        ' No quorum can ask for more than half.');
+    // 💤 at *never*, and 💤 not yet known, are the same sentence: no clause
+    const plain = 'At least 30% (3 of 10) of the membership must prefer a proposal ' +
+      'before it can be adopted.';
+    expect(meaningOf('quorum', { form: 'share', n: 30 }, { ...withSpell, lapseMs: null })).toBe(plain);
+    expect(meaningOf('quorum', { form: 'share', n: 30 }, { e: 10, nowMs: NOW })).toBe(plain);
+    // the count form never takes the clause
+    expect(meaningOf('quorum', { form: 'count', n: 4 }, withSpell))
+      .toBe('At least 4 of 10 members must prefer a proposal before it can be adopted.');
+    // nor does a membership of one, which has nobody to wait on
+    expect(meaningOf('quorum', { form: 'count', n: 1 }, { ...withSpell, e: 1 }))
+      .toBe('In a membership of one, your own vote is the whole quorum.');
   });
 
   it('💤’s spells are words, and ⏱️’s spans are too', () => {
