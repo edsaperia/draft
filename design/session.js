@@ -4105,7 +4105,25 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       const open = () => {
         if (!alive()) return;
         const hold = holdSel(next);
+        // **Where the held thing stood, in case its own card swallows it** (Ed's
+        // screenshot from the residency room, 2026-09-19: *I clicked on this
+        // queue card and this is where it opened* — the card's foot under the
+        // topbar and its head 264px above the window). A gap race is held by its
+        // `insert-anchor`, and since Q1379 an open gap card **replaces** its
+        // anchor: after the render the selector finds nothing, `restoreStill`
+        // falls through to the next paragraph down — which the newborn card has
+        // just pushed — and the page chases that instead. Measured on the live
+        // room: five switches of five onto a gap card landed at −252…−264, every
+        // other at 117…259. The card's head is what stands where the anchor
+        // stood, so it is held there.
+        const heldEl = hold ? doc.querySelector(hold) : null;
+        const heldTop = heldEl ? heldEl.getBoundingClientRect().top : null;
         keepStill(() => { openId = next; renderAll(); }, hold);
+        if (heldTop !== null && !doc.querySelector(hold)) {
+          const born = [...doc.querySelectorAll('.sugg')].find((c) => c.dataset.card === next);
+          const drift = born ? born.getBoundingClientRect().top - heldTop : 0;
+          if (Math.abs(drift) > 0.5) scrollTo(0, scrollY + drift);
+        }
         // the card made the document taller, so every entry below it has moved
         layoutQueue();
         if (after) after();

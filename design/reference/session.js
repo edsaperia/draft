@@ -114,6 +114,9 @@
     richToSource, sourceToRich, readLane,
     laneSeed, laneProposeHtml, laneCtlHtml, laneNameId, laneGroupAttrs, speakerHtml, fieldHtml, fieldOf, groundNote,
     headOnlyHeight, cardBody, COLLAPSE_MS, EXPAND_MS,
+    // the abstention clock's one pass over the page (Q1460), run from a timer
+    // of its own in `init` and never from a render
+    tickAbstain,
   } = window.CARDS;
   // **A power is not held until it has been acknowledged** (Ed, 2026-08-21).
   // The host says whether this reader may propose and may judge; both default
@@ -4102,7 +4105,25 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       const open = () => {
         if (!alive()) return;
         const hold = holdSel(next);
+        // **Where the held thing stood, in case its own card swallows it** (Ed's
+        // screenshot from the residency room, 2026-09-19: *I clicked on this
+        // queue card and this is where it opened* — the card's foot under the
+        // topbar and its head 264px above the window). A gap race is held by its
+        // `insert-anchor`, and since Q1379 an open gap card **replaces** its
+        // anchor: after the render the selector finds nothing, `restoreStill`
+        // falls through to the next paragraph down — which the newborn card has
+        // just pushed — and the page chases that instead. Measured on the live
+        // room: five switches of five onto a gap card landed at −252…−264, every
+        // other at 117…259. The card's head is what stands where the anchor
+        // stood, so it is held there.
+        const heldEl = hold ? doc.querySelector(hold) : null;
+        const heldTop = heldEl ? heldEl.getBoundingClientRect().top : null;
         keepStill(() => { openId = next; renderAll(); }, hold);
+        if (heldTop !== null && !doc.querySelector(hold)) {
+          const born = [...doc.querySelectorAll('.sugg')].find((c) => c.dataset.card === next);
+          const drift = born ? born.getBoundingClientRect().top - heldTop : 0;
+          if (Math.abs(drift) > 0.5) scrollTo(0, scrollY + drift);
+        }
         // the card made the document taller, so every entry below it has moved
         layoutQueue();
         if (after) after();
@@ -4881,6 +4902,14 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       if (editsToNext >= 1) { editsToNext = 0; editsHeld = Math.min(EDIT_RULES.cap, editsHeld + 1); }
       renderWallet();
     }, 1000);
+
+    // **The abstention clock is a timer, not a render** (Q1460): one pass a
+    // second over every countdown on the page, patching the minutes where
+    // they moved and taking the line away once its moment has passed.
+    // Deliberately neither the 4s poll — which would step the number four
+    // seconds at a time — nor a render, which under a press is the one thing
+    // this surface must not do.
+    setInterval(() => tickAbstain(document), 1000);
 
     doc.addEventListener('beforeinput', (ev) => {
       const t = ev.target && ev.target.closest ? ev.target : null;
