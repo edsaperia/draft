@@ -347,11 +347,36 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
   // an author's derived preference is a mover (§3.3, §8.2): counted, never named
   const authorsOf = new Map<string, Set<string>>();
   // the records' key is the count of outcomes: a record exists per resolved
-  // race and never leaves, so the count moves exactly when a record would
+  // race and never leaves, so the count moves whenever a record would. Since
+  // Q1440 it can also move for a row the guard below holds back, which
+  // re-keys the column for nothing — the safe direction, and the reason the
+  // key is not computed from the rows that survive the guard: those change
+  // when a *race* ends, and a race whose last member is withdrawn ends with
+  // no outcome event at all.
   const recordsKey = api.outcomes().length;
+  // **A record waits for its race to finish** (Q1440; SURFACE C12, SPEC §3.5).
+  // Until now a `retired` outcome only ever came from the Founder's 🛡️
+  // refusing a parked patch, which is one candidate and, in practice, one
+  // race. A domination closes one wording out of a clause that may still be
+  // running, and filing its record then would stand a card reading *decided —
+  // the current text stood* beside a race the reader can still be dealt a pair
+  // on. That is not merely confusing: it says which way the room has been
+  // going on a race that has not sealed, which is the one thing a live race
+  // may never say. So a closed candidate's row is held back while a live race
+  // still contests the lines it was written for, and joins the record when
+  // that race resolves. Read on the spans rather than on the race id, because
+  // a race is named for its lowest-numbered member and loses that name the
+  // moment that member is the one that goes.
+  const liveSpans = engine.races(nowMs)
+    .filter((r) => r.settingId === undefined)
+    .flatMap((r) => r.contested);
+  const stillRacing = (cand: Candidate): boolean => cand.footprint.some((f) =>
+    liveSpans.some((s) => (f.start < s.end && s.start < f.end)
+      || (f.start === f.end && s.start <= f.start && f.start <= s.end)));
   for (const o of opts.records === false ? [] : api.outcomes()) {
     const c = engine.getCandidate(o.candidateId);
     if (c.patch === undefined) continue;
+    if (o.outcome === 'retired' && stillRacing(c)) continue;
     const mineJ = myJ.some((j) => j.aId === o.candidateId || j.bId === o.candidateId);
     const author = namedAuthor(c);
     const entry = { candidateId: o.candidateId, outcome: o.outcome, p: o.p ?? null,

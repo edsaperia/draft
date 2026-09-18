@@ -1432,6 +1432,14 @@ window.LIVE = (function () {
         const w = STANDS.authorship(u);
         return w ? 'made under ' + w + ', before the rule changed' : undefined;
       };
+      // **The engine's one reserved reason, put into words here** (Q1440).
+      // `candidate-retired.reason` is host prose everywhere else — the
+      // Founder's *Proposal refused by ‹name› 🛡️*, composed by the bridge,
+      // which has a name to use — and the engine has never heard of a
+      // language, so its own token becomes a sentence at the page's edge and
+      // anything else is passed through exactly as it arrives.
+      const reasonOf = (f) => (!f || !f.reason ? null
+        : f.reason === 'dominated' ? window.COPY.session.record.dominated : f.reason);
       for (const o of v.records || []) {
         const field = o.field || [];
         const hs = field.flatMap((f) => f.hunks);
@@ -1468,7 +1476,7 @@ window.LIVE = (function () {
         const slate = field.length > 1
           ? { slate: field.map((f) => ({ text: textOfF(f), src: f.hunks.flatMap((h) => h.lines).join('\n'),
               rationale: f.rationale, by: byName(f),
-              underNote: underNoteOf(f), refusal: f.reason || null,
+              underNote: underNoteOf(f), refusal: reasonOf(f),
               p: f.p == null ? undefined : f.p, won: f === winner && (adopted || undecided) })) } : {};
         // **The card says which text it changed** where the clause under it has
         // changed again since (Q1333): the head is the clause as it stands, so
@@ -1514,7 +1522,7 @@ window.LIVE = (function () {
           rationale: winner.rationale, by: byName(winner), underNote: underNoteOf(winner),
           // *Proposal refused by ‹name› 🛡️* (R-056): where the resolution had a
           // reason, the record is where its author reads it
-          refusal: winner.reason || null,
+          refusal: reasonOf(winner),
           verdict: o.judgedByMe ? 'voted on this' : undefined,
           unread: !undecided, ...slate });
       }
