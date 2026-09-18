@@ -1793,6 +1793,102 @@ async function walkDoor(page, doors, errors, walk) {
   const after = await box(DOOR);
   doors.push({ walk, before, commit, doorWhileEditing, editing, after, short, restored, restoredHidden });
 }
+
+/**
+ * **The queue card stack, against the entry it is drawn on** (R1, Q1462).
+ *
+ * The pile is a hint and nothing else: pressing the entry opens the same
+ * pair, and — the thing that bites here — **the entry's box does not move**.
+ * `layoutQueue` stacks the rail by measuring each `li`, the wire lands on the
+ * entry's own box and the drawer spaces entries by `gap`, so an edge taking
+ * any layout at all would push every entry beneath it down the column. So the
+ * measurement is a comparison rather than a number: the same entries read
+ * twice, once as the fixture serves them and once with `beneath` deleted and
+ * the rail re-rendered, and the two boxes must agree to the pixel. The second
+ * half is the count — `min(beneath, 3)` edges drawn, Ed's cap (2026-09-18).
+ *
+ * Edges are box-shadow layers, so they are counted off the computed style:
+ * the pile's are the only layers with no blur, `--shadow-sm`'s two both
+ * carrying one.
+ */
+async function walkRail(page, rails, walk) {
+  const read = () => page.evaluate(() => {
+    const R2 = (x) => Math.round(x * 100) / 100;
+    // split a box-shadow list on its top-level commas — a layer's own colour
+    // carries commas of its own inside parentheses
+    const layers = (s) => {
+      const out = []; let depth = 0, cur = '';
+      for (const ch of s) {
+        if (ch === '(') depth++;
+        if (ch === ')') depth--;
+        if (ch === ',' && depth === 0) { out.push(cur.trim()); cur = ''; } else cur += ch;
+      }
+      if (cur.trim()) out.push(cur.trim());
+      return out;
+    };
+    return [...document.querySelectorAll('#rail .qitem')].map((li) => {
+      const b = li.querySelector('button');
+      if (!b) return null;
+      const r = b.getBoundingClientRect();
+      const anchor = li.dataset.site || '';
+      return { q: li.dataset.q, anchor, pile: +(li.dataset.pile || 0),
+        box: [R2(r.left), R2(r.top + window.scrollY), R2(r.width), R2(r.height)],
+        edges: layers(getComputedStyle(b).boxShadow).filter((l) => / 0px -\d+px$/.test(l)).length };
+    }).filter(Boolean);
+  });
+  const withPile = await read();
+  const beneath = await page.evaluate(() =>
+    Object.fromEntries(window.SESSION.SUGGS.filter((s) => s.beneath).map((s) => [s.id, s.beneath])));
+  // the same rail with the field off, so the comparison is this page's own
+  // geometry rather than a remembered number
+  const saved = await page.evaluate(() => {
+    const keep = window.SESSION.SUGGS.filter((s) => s.beneath).map((s) => [s.id, s.beneath]);
+    for (const s of window.SESSION.SUGGS) delete s.beneath;
+    window.SESSION.refreshRail();
+    return keep;
+  });
+  await wait(page, 250);
+  const without = await read();
+  await page.evaluate((keep) => {
+    const by = new Map(keep);
+    for (const s of window.SESSION.SUGGS) if (by.has(s.id)) s.beneath = by.get(s.id);
+    window.SESSION.refreshRail();
+  }, saved);
+  await wait(page, 250);
+  rails.push({ walk, withPile, without, beneath });
+}
+function railRules(rails) {
+  const out = [];
+  const file = (rule, said, saw, note) => out.push({ rule, lens: 'positioning', said, saw, note });
+  for (const r of rails) {
+    const drawn = r.withPile.filter((e) => e.pile > 0);
+    if (!Object.keys(r.beneath).length) {
+      file('R1', 'the fixture carries a queue card stack at each of its three depths, so the pile is measured at all (Q1462)',
+        'no rail entry on the charter carried `beneath`', r.walk);
+      continue;
+    }
+    // matched on both fields rather than on a joined key: an id and a site
+    // are member-written strings, and a separator is a thing to get wrong
+    const bareOf = (e) => r.without.find((x) => x.q === e.q && x.anchor === e.anchor);
+    for (const e of drawn) {
+      const want = Math.min(3, r.beneath[e.q] || 0);
+      if (e.edges !== want) {
+        file('R1', 'a queue card stack draws min(beneath, 3) edges and no more — depth hints, capped at three, no number (Q1462, Ed 2026-09-18)',
+          e.q + ' says beneath ' + r.beneath[e.q] + ' and draws ' + e.edges + ' edge(s)', r.walk);
+      }
+      const was = bareOf(e);
+      if (!was) { file('R1', 'an entry keeps its place when its pile is taken away', e.q + ' left the rail when `beneath` was deleted', r.walk); continue; }
+      if (was.edges !== 0) file('R1', 'no pile is drawn where there is nothing beneath', e.q + ' still drew ' + was.edges + ' edge(s) with no `beneath`', r.walk);
+      const moved = e.box.map((v, i) => Math.abs(v - was.box[i])).filter((d) => d > 0.5);
+      if (moved.length) {
+        file('R1', 'a piled entry has exactly the box it would have with no pile — the pile takes no layout, so nothing beneath it moves (Q1462)',
+          e.q + ' is ' + e.box.join(',') + ' piled and ' + was.box.join(',') + ' bare', r.walk);
+      }
+    }
+  }
+  return out;
+}
+
 function doorRules(doors) {
   const out = [];
   const same = (a, b) => !!a && !!b && a.r.every((v, i) => Math.abs(v - b.r[i]) <= 0.5);
@@ -1829,7 +1925,7 @@ function doorRules(doors) {
   return out;
 }
 
-async function walkCharter(page, base, cards, errors, { closed, doors } = {}) {
+async function walkCharter(page, base, cards, errors, { closed, doors, rails } = {}) {
   await page.goto(base + '/session-view.html?fixture=session' + (closed ? '&closed=1&band=1' : ''));
   await page.waitForFunction(() => !!(window.SESSION && window.SESSION.SUGGS.length && document.querySelector('.qitem')),
     null, { timeout: 20_000 });
@@ -1901,6 +1997,9 @@ async function walkCharter(page, base, cards, errors, { closed, doors } = {}) {
   }
   // the floating 📝 (D1): the live session only — a closed document draws no door
   if (!closed && doors) await walkDoor(page, doors, errors, walk);
+  // the rail's own pile (R1, Q1462)  the live charter only; a closed page
+  // asks nothing of anybody, so nothing on it stands for a race still running
+  if (!closed && rails) await walkRail(page, rails, walk);
   if (closed) {
     // **The backlog's own records, checked rather than re-opened** (Q1339).
     // A backlog paragraph is keyed `U:<raceId>` **as a block of the document**
@@ -1947,6 +2046,7 @@ async function main() {
   const switches = [];
   const piles = [];
   const doors = [];
+  const rails = [];
   const t0 = Date.now();
   const run = async (name, fn) => {
     if (!WALKS.includes(name)) return;
@@ -1981,7 +2081,7 @@ async function main() {
       if (cards.length === n) errors.push('seat:' + seat + ' offered no cards — nothing was measured for it');
     }
   });
-  await run('charter', () => walkCharter(page, base, cards, errors, { doors }));
+  await run('charter', () => walkCharter(page, base, cards, errors, { doors, rails }));
   await run('closed', () => walkCharter(page, base, cards, errors, { closed: true }));
 
   const tok = await page.evaluate(() => window.__CA.tokens());
@@ -1989,7 +2089,7 @@ async function main() {
   server.close();
 
   for (const c of cards) c.findings = rulesFor(c, tok);
-  const cross = [...crossCard(cards), ...switchRules(switches), ...pileRules(piles), ...doorRules(doors)];
+  const cross = [...crossCard(cards), ...switchRules(switches), ...pileRules(piles), ...doorRules(doors), ...railRules(rails)];
   /**
    * **The rollup is the finding; the card is where it shows.** A stylesheet
    * fact — `.headclause` padded 6px, an OK label at --t-cap — is one defect
@@ -2053,7 +2153,7 @@ async function main() {
   const payload = {
     meta: { viewport: VIEWPORT, walks: WALKS, cards: cards.length, seconds: Math.round((Date.now() - t0) / 100) / 10,
       ...(BROWSER === 'chromium' ? {} : { browser: BROWSER, browserVersion: version }) },
-    tokens: tok, cards, switches, doors, rollup, cross, errors,
+    tokens: tok, cards, switches, doors, rails, rollup, cross, errors,
   };
 
   /**
