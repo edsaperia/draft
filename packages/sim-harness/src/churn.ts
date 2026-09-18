@@ -505,10 +505,12 @@ async function main(): Promise<void> {
   // and the extra twenty-seven were idle turns. **It does not stop now**, and
   // that is this file's largest finding rather than a failure of it: closing a
   // wording the room has refused takes its judgments out of the fit with it
-  // (R-122's defect, which was rare while retirement was rare) and §7's
-  // performance refund hands the stake back, so the room re-proposes and
-  // re-decides for as long as the clock runs. The comparison is reported
-  // rather than asserted, and the number beside it is what to read.
+  // (R-122's defect, which was rare while retirement was rare), so the room
+  // re-proposes and re-decides for as long as the clock runs. Q1454 took away
+  // half of what paid for that — a rejected wording's stake stays spent now,
+  // where §7 used to hand it back on performance — and what a room can still
+  // afford is whatever its passes refund. The comparison is reported rather
+  // than asserted, and the number beside it is what to read.
   {
     const c = barCells.get('0.5/conference')!;
     const o = barCells.get('0.5/ongoing')!;

@@ -102,7 +102,8 @@ say('\n== motion-race: an ordinary motion is the race machinery whole (Q390) =='
     'the new standing flowed back as ground');
   eq(bridge.engine.constitution.windowEndMs, 2_000_000,
     'the engine constitution was amended in flight (§9.6/Q328)');
-  check(bridge.engine.balance(bo, 22) > 3, 'the stake refunded on performance');
+  eq(bridge.engine.balance(bo, 22), 4,
+    'the motion carried, so the stake came back — and just the stake (§7)');
   eq(bridge.engine.balance(dee, 22), 4,
     'the close moved and nobody’s wallet did — the drip is real minutes (Q353)');
   eq(s.motionRecords().get(b.motion)!.status, 'running',
