@@ -324,7 +324,7 @@ window.LIVE = (function () {
     const { amFounder, applicantAsView, authorBy, avHtml, constituted, csState, cs_titleNow,
       devInboxButton, effMAns, esc, founderInfo, hydrateApplicant, ladderBar, loadGrants,
       mayApply, midOf, motionRaceSettingOf, msToLocal, now, pkeyOf, pressInFlight,
-      proseText, pwPair, relabel,
+      proseText, relabel,
       render, setStranger, srcDivs, strangerAsView, syncFromCs, syncProseRow, syncWallet,
       textDivs, viewerId } = env;
     // A ConstitutionSession lookalike over the last-fetched view: the page's
@@ -1110,11 +1110,6 @@ window.LIVE = (function () {
 
     function itemsFromView(v) {
       const lines = String(v.text || '').split(/\n/);
-      // the Text's shield (Q440): a carried change waits on the Founder's OK —
-      // the cards say so while it is held (this binding was lost in the glyph
-      // batch's stash detour; every live race threw on it)
-      let textAssent = false;
-      try { textAssent = !!pwPair('text').a; } catch (e) { textAssent = false; }
       const cards = v.raceCards || [];
       // **The abstention clock arrives in the server's ms and is read in
       // this browser's** (Q1460): the same offset the topbar countdown uses
@@ -1218,7 +1213,6 @@ window.LIVE = (function () {
           // you have nothing left to say here, and a note on every card
           blockedByPark: r.blockedByPark ? PARK.blocked : false,
           deadlocked: !!r.deadlocked,
-          crownWaits: textAssent,
           // **when your silence here becomes an abstention** (Q1460): the
           // seat's own deadline, on this browser's clock. The server sends it
           // while this seat is awaited on the race's approval pair and has

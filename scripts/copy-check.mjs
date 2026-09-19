@@ -101,6 +101,20 @@ function staticMode() {
     process.exit(2);
   };
   flat(COPY, '');
+  // **A reader of a key the copy file no longer holds prints "undefined"**
+  // (issue #58: `T.crown.waits` outlived its sentence by two weeks, on every
+  // text vote card under a kept 🛡️). session.js reads COPY.session as `T`;
+  // every `T.<a>.<b>` it names must be there. Kept to that one shape on purpose.
+  const sessionSrc = readFileSync(join(ROOT, 'design', 'session.js'), 'utf8');
+  const missing = new Set();
+  for (const m of sessionSrc.matchAll(/\bT\.(\w+)\.(\w+)/g)) {
+    const block = (COPY.session || {})[m[1]];
+    if (!block || typeof block !== 'object' || !(m[2] in block)) missing.add(`T.${m[1]}.${m[2]}`);
+  }
+  if (missing.size) {
+    console.error(`design/session.js reads copy that design/copy.js does not hold: ${[...missing].join(', ')}`);
+    process.exit(1);
+  }
   const out = { meta: { entries: Object.keys(entries).length }, entries };
 
   if (update || !existsSync(SRC_GOLDEN)) {

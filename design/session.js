@@ -2559,10 +2559,6 @@
     );
   }
 
-  // Q440 (2026-08-21): 🛡️ held on the Text — a live item carries crownWaits,
-  // and the card says a carried change waits on the Founder before it lands
-  const crownNote = (s) => (s.crownWaits
-    ? '<p class="setnote">' + T.crown.waits + '</p>' : '');
   // **A race waiting behind a park on the same clause** (SURFACE E36, R-100;
   // Ed, 2026-09-09, Q1015): the batch passes it over until the Founder
   // answers a park it overlaps, and every card the race can open says so in
@@ -2718,7 +2714,7 @@
         fieldHtml(
           proposalHtml(sv, { v: 'a', html: wordingHtml(cur, sv.race.a.text), why: sv.race.a.rationale, by: sv.race.a.by }) +
           proposalHtml(sv, { v: 'b', html: wordingHtml(cur, sv.race.b.text), why: sv.race.b.rationale, by: sv.race.b.by }), 2) +
-        reviseNote(sv) + crownNote(sv) + parkNote(sv) +
+        reviseNote(sv) + parkNote(sv) +
         // The one thing a race card cannot say any other way: the pair on it
         // is two challengers, so nothing on the card says *the clause above
         // is fine as it is*, and a reader could reasonably think one of them
@@ -2791,7 +2787,7 @@
                           chips: chipsFor(key, sv.id) })) +
       groundNote(sv) +
       fieldHtml(proposalHtml(sv, { v: 'approve', html: prop, why: sv.rationale, by: sv.by, edit: noEdit })) +
-      reviseNote(sv) + crownNote(sv) + parkNote(sv) +
+      reviseNote(sv) + parkNote(sv) +
       commitRowHtml(sv) +
       '</div>'
     );
