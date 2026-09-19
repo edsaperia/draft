@@ -3448,8 +3448,17 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   // Patched in place on every lane input — never a render under a caret — by
   // the same two readers the draw uses, so the two cannot disagree; and a
   // draft typed back to its origin greys them again, which it never did.
+  // **And not only in edit mode** (Q1476; Ed's screenshot from the tea room,
+  // 2026-09-19: *why can't I submit — after a wait then I could*, the wallet
+  // not empty). ✏️ *propose edit* on a proposal's own wording opens a draft
+  // without entering edit mode, seeded with that wording — so its card is
+  // born reading *nothing has changed yet*, exactly as a gap's is — and this
+  // returned at once wherever `EDITING()` was false, leaving the ✏️ asleep
+  // until some other render redrew it. The row is drawn only in edit mode, so
+  // outside it the row's selectors find nothing and the card's own commit is
+  // all this touches. Guard: `scripts/repro/propose-edit-wakes.mjs`.
   function syncProposeCtls() {
-    if (!doc || !EDITING() || !MAY_PROPOSE() || closedMode) return;
+    if (!doc || !MAY_PROPOSE() || closedMode) return;
     const rs = draftRowState();
     const pt = proposeCtlTitles(draftOf());
     const idle = T.row.idle;
