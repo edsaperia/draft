@@ -81,3 +81,18 @@ DRAFT_DATA_DIR=<fresh> npm run server`) unless it says docs.vote.
   card, and that 🥂 still signs. Red on the pre-fix page at the first four (issue #30
   findings 2–3): `withheld` held every record behind an ⚖️ OK the closed page has nowhere
   to give. `node scripts/repro/closed-unacked.mjs http://127.0.0.1:8341`
+
+## 2026-09-20 — a draft sends only the places that changed (issue #43, Q1479 (b))
+
+- `untouched-place.mjs` — **asserting**, like the two above: exit 1 on the defect, 2 on a
+  set-up that never got there. An untouched place in a draft survives on purpose (Q1382), and
+  the row beside it counts only the places that *changed* — but `hunksOf` sent every site, so
+  a member who typed into two paragraphs and put one back proposed both, and the untouched
+  clause joined the candidate's footprint and the race running there. Four cases, each on its
+  own document and each holding **two** sites so the filter is exercised rather than bypassed:
+  `two-places` (one clause changed, one put back — one hunk on the wire, carrying its own
+  `was`, and a footprint that does not cover the other clause), `deletion` (Q1415's emptied
+  clause still sends `lines: []`), `gap` (a sentence in the trailing gap still goes as a pure
+  insertion), `pen` (the Founder's ✒️ road, one hunk). Red on the pre-fix page at *exactly one
+  hunk goes over the wire* in all four.
+  `node scripts/repro/untouched-place.mjs http://127.0.0.1:8360`
