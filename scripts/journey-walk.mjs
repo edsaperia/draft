@@ -390,6 +390,18 @@ if (!EMPTY_TEXT) {
     await T(300);
     return true;
   };
+  // **The founder's column read as the page reads it** (`proseText`): since
+  // Q1467 the column shows its source while it is edited and its rendering
+  // while it is read, so a raw `textContent` is a fact about the view and
+  // never about the text. This is the one read-out both views share.
+  const proseSrc = () => page.evaluate(() => {
+    const pr = document.getElementById('prose');
+    return [...pr.children].map((b) => {
+      if (pr.classList.contains('mdsrc')) return b.textContent;
+      const m = b.className.match(/lvl(\d)/);
+      return (m ? '#'.repeat(+m[1]) + ' ' : b.classList.contains('bullet') ? '- ' : '') + window.CARDS.htmlToMd(b);
+    }).join('\n').trim();
+  });
   const bookLine = () => page.evaluate(() => {
     const pr = document.getElementById('prose');
     const b = [...pr.children].find((x) => /book/.test(x.textContent));
@@ -452,16 +464,8 @@ if (!EMPTY_TEXT) {
   const rodeOk = rode.detached && Math.abs(rode.level) <= 1;
   say('strip ride · ' + (rodeOk ? 'stuck under the navbar level with the 📝 tab, ground on' : 'FAIL: ' + JSON.stringify(rode)));
   if (!rodeOk) stuck.push('the strip riding before 🍾');
-  // what ✒️ will send: the column read as the page reads it (`proseText`) —
-  // and in edit mode the block's characters already are its line (Q1467)
-  const expectedText = await page.evaluate(() => {
-    const pr = document.getElementById('prose');
-    return [...pr.children].map((b) => {
-      if (pr.classList.contains('mdsrc')) return b.textContent;
-      const m = b.className.match(/lvl(\d)/);
-      return (m ? '#'.repeat(+m[1]) + ' ' : b.classList.contains('bullet') ? '- ' : '') + window.CARDS.htmlToMd(b);
-    }).join('\n').trim();
-  });
+  // what ✒️ will send: the column read as the page reads it (`proseText`)
+  const expectedText = await proseSrc();
   const saved = await page.evaluate(() => {
     const b = document.querySelector('#proserow [data-act="row-commit"]');
     const glyph = b ? window.CARDS.glyphTextOf(b).trim() : null;
@@ -531,9 +535,13 @@ if (!EMPTY_TEXT) {
   /* ---- a click outside leaves edit mode before 🍾 (Q1315, Ed 2026-09-11:
    * *clicking outside of cards should close them*) — on nothing, in the
    * rail's empty space: the mode off, the row gone, the column's text kept;
-   * 📝 again brings the mode back with the same text. */
+   * 📝 again brings the mode back with the same text.
+   * **The text is read as the page reads it** (`proseSrc`, `proseText`'s own
+   * shape): since Q1467 the column shows its source while it is edited and
+   * its rendering while it is read, so a raw `textContent` compared across
+   * the boundary compares two views rather than two texts. */
   const outsidePre = await (async () => {
-    const before = await page.evaluate(() => document.getElementById('prose').textContent);
+    const before = await proseSrc();
     const pt = await page.evaluate(() => {
       const r = document.querySelector('aside.queue').getBoundingClientRect();
       const x = Math.round(r.x + r.width / 2), y = Math.round(Math.max(40, Math.min(innerHeight - 40, r.bottom - 40)));
@@ -546,14 +554,14 @@ if (!EMPTY_TEXT) {
       editing: document.getElementById('doc').classList.contains('editing'),
       editable: document.getElementById('prose').getAttribute('contenteditable'),
       row: !!document.querySelector('#proserow [data-proposalrow]'),
-      strip: !!document.querySelector('#prosectl .lanectl'),
-      text: document.getElementById('prose').textContent }));
+      strip: !!document.querySelector('#prosectl .lanectl') }));
+    left.text = await proseSrc();
     await page.evaluate(() => document.querySelector('#ridetab .achip[data-tab="text"]').click());
     await T(300);
     const back = await page.evaluate(() => ({
       editing: document.getElementById('doc').classList.contains('editing'),
-      strip: !!document.querySelector('#prosectl .lanectl'),
-      text: document.getElementById('prose').textContent }));
+      strip: !!document.querySelector('#prosectl .lanectl') }));
+    back.text = await proseSrc();
     return { hit: pt.hit, left, back, kept: left.text === before && back.text === before };
   })();
   const outsidePreOk = !outsidePre.left.editing && outsidePre.left.editable === 'false' && !outsidePre.left.row &&
