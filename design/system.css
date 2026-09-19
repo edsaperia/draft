@@ -768,42 +768,69 @@
      that hints that there are other rivals beneath the current one*). The
      engine deals one pair per race at a time (SPEC §8.3, Q1312), so a clause
      carrying twenty rival wordings reaches the rail as one entry. The entry is
-     drawn as a pile: up to three card edges peeking out below it, **depth
-     only — no number and no words** — which is the closed tab strip's own
-     device one column over (M12), where a sliver says *there is more here*
-     without counting anything.
+     drawn as a pile: up to **five** card edges beneath it, **depth only — no
+     number and no words**.
 
-     **Box-shadow, not boxes.** `layoutQueue` stacks entries by measuring the
-     `li`, the wire lands on the entry's box and the drawer spaces them by
-     `gap`, so an edge that took any layout at all would push every entry
-     beneath it down the rail. An outer box-shadow takes none, cannot be
-     clicked, cannot be reached by the keyboard and is not clipped by the
-     button's own `overflow: hidden` — and depth is how this surface says
-     *there is more of this*, so the pile is the same thing the lift already
-     is rather than an outline, which no card here wears.
+     **The edges are the entry's own width, and the pile takes its room**
+     (Ed, 2026-09-19, from the residency room: *queue cards in the queue card
+     stack should be the same width as other queue cards (like the tabs in the
+     tab stack are the same width as other tabs) … more offset (1.5x what they
+     are now). Cards beneath them should be commensurately further away so you
+     can see the stack … limit them at 5 instead of 3*). The first cut drew
+     each edge 10px narrower a side, peeking 2px, inside the 8px the rail
+     leaves between entries, so that nothing beneath a pile moved; a pile that
+     has to fit in the gap cannot be seen, which was the note. So each edge is
+     now a full-width card peeking **3px** — 2px of its face and a 1px rule,
+     the rule being what tells one edge from the next at one width — and the
+     `li` carries the pile's depth as `padding-bottom`, which is what
+     `layoutQueue` measures and what the drawer's `gap` adds to: the entry
+     beneath stands that much further off, in either layout. The entry's own
+     button keeps the box it always had.
 
-     The geometry is `peek + inset` down and `-inset` of spread: a negative
-     spread shrinks the shadow vertically as well as horizontally, so the
-     offset has to pay the inset back before the edge shows at all. Each edge
-     is 10px narrower a side and peeks 2px further down, so the deepest reaches
-     6px — inside `QGAP`, the 8px the rail and the drawer both leave between
-     entries, which is why a pile never touches the entry under it. The colour
-     is the entry's own lifecycle hue at sliver strength (`--pilecol`, set per
-     entry by `renderQueue`): 2px of a 0.16 wash is a smudge, which is the
-     lesson `.achip.behind` is mixed at 42% for.
+     Still box-shadow, for what that buys: the edges cannot be clicked or
+     reached by the keyboard, follow the button's own corner radius, and are
+     not clipped by its `overflow: hidden`. The colours are **opaque** mixes
+     of the entry's lifecycle hue into the ground (`--pilecol`, set per entry
+     by `renderQueue`): the layers lie over one another, and a translucent
+     face would darken toward the entry as they piled up.
 
-     The colour falls back to transparent, because `--pilecol` and the
-     attribute are set together by one line of `renderQueue` and an unset
-     custom property inside a shorthand invalidates the **whole**
-     declaration — a pile with no hue would take the entry's own lift with it
-     rather than simply not drawing. */
-  .qitem[data-pile="1"] { --pile: 0 12px 0 -10px var(--pilecol, transparent); }
+     The hue falls back to transparent, because an unset custom property
+     inside a shorthand invalidates the **whole** declaration — a pile with no
+     hue would take the entry's own lift with it rather than simply not
+     drawing. */
+  .qitem[data-pile] {
+    --pilefill: color-mix(in srgb, var(--pilecol, transparent) 28%, var(--bg));
+    --pileline: color-mix(in srgb, var(--pilecol, transparent) 62%, var(--bg));
+  }
+  .qitem[data-pile="1"] {
+    padding-bottom: 3px;
+    --pile: 0 2px 0 0 var(--pilefill), 0 3px 0 0 var(--pileline);
+  }
   .qitem[data-pile="2"] {
-    --pile: 0 12px 0 -10px var(--pilecol, transparent), 0 24px 0 -20px var(--pilecol, transparent);
+    padding-bottom: 6px;
+    --pile: 0 2px 0 0 var(--pilefill), 0 3px 0 0 var(--pileline),
+            0 5px 0 0 var(--pilefill), 0 6px 0 0 var(--pileline);
   }
   .qitem[data-pile="3"] {
-    --pile: 0 12px 0 -10px var(--pilecol, transparent), 0 24px 0 -20px var(--pilecol, transparent),
-            0 36px 0 -30px var(--pilecol, transparent);
+    padding-bottom: 9px;
+    --pile: 0 2px 0 0 var(--pilefill), 0 3px 0 0 var(--pileline),
+            0 5px 0 0 var(--pilefill), 0 6px 0 0 var(--pileline),
+            0 8px 0 0 var(--pilefill), 0 9px 0 0 var(--pileline);
+  }
+  .qitem[data-pile="4"] {
+    padding-bottom: 12px;
+    --pile: 0 2px 0 0 var(--pilefill), 0 3px 0 0 var(--pileline),
+            0 5px 0 0 var(--pilefill), 0 6px 0 0 var(--pileline),
+            0 8px 0 0 var(--pilefill), 0 9px 0 0 var(--pileline),
+            0 11px 0 0 var(--pilefill), 0 12px 0 0 var(--pileline);
+  }
+  .qitem[data-pile="5"] {
+    padding-bottom: 15px;
+    --pile: 0 2px 0 0 var(--pilefill), 0 3px 0 0 var(--pileline),
+            0 5px 0 0 var(--pilefill), 0 6px 0 0 var(--pileline),
+            0 8px 0 0 var(--pilefill), 0 9px 0 0 var(--pileline),
+            0 11px 0 0 var(--pilefill), 0 12px 0 0 var(--pileline),
+            0 14px 0 0 var(--pilefill), 0 15px 0 0 var(--pileline);
   }
   /* the lift stays in front of the pile, as the front card's own shadow falls
      across the ones behind it; each rule repeats its own lift rather than the

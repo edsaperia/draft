@@ -268,7 +268,15 @@
   // `siteOfSpan`) is one site and carries the same two fields on itself, so
   // `gapOf` finds whichever holds a key's gap and `gapHolders` lists every
   // held-open anchor the column draws: one per gap site, one per live item.
-  const gapFields = (key) => { const at = blockBeforeGap(key); return { gapKey: key, insertAfterKey: at >= 0 ? DOC[at].key : null }; };
+  // **…and what that block said** (Q1463): a gap has no wording of its own,
+  // so the only thing that can carry it across a text change is the clause it
+  // was made after, remembered as it read then. `insertAfterKey` moves with
+  // the document; `afterText` never does — it is the gap's origin.
+  const gapFields = (key) => {
+    const at = blockBeforeGap(key);
+    return { gapKey: key, insertAfterKey: at >= 0 ? DOC[at].key : null,
+      afterText: at >= 0 ? sourceTextFor(DOC[at].key) : null };
+  };
   const gapOf = (s, key) => (s && s.sites ? s.sites.find((x) => x.gapKey === key) || null : s);
   // **A deleted clause's record holds its gap open while it is unread, and
   // leaves the margin once filed** (Q1333): the record stands where the clause
@@ -908,7 +916,10 @@
             ? T.rail.draftTitle
             : (g.cap || T.rail.yoursInRace)) + '">' +
           (drafting
-            ? '<span class="ql">' + markHtml('propose') + '<span>' + esc(plainLabel(e.label || g.qLabel)) + '</span></span>' +
+            // ✏️, or ↻ where the text moved out from under a site of it
+            // (Q1463): the gutter tab reads `markKindOf` and the rail said
+            // `propose` whatever had happened, so the two disagreed
+            ? '<span class="ql">' + markHtml(markKindOf(g)) + '<span>' + esc(plainLabel(e.label || g.qLabel)) + '</span></span>' +
               where +
               '<span class="qwhy' + (why ? '' : ' empty') + '">' +
               (why ? esc(why) : T.rail.noReason) + '</span>' +
@@ -948,8 +959,26 @@
       const oneLine = st === 'deciding' && !stuck(g);
       const top = !oneLine && !stuck(g) && g.id === topUrgentId && !seenTop;
       if (top) seenTop = true;
+      // **The pile: the rivals still to come on this clause** (`queue-card-stack`,
+      // Q1462, Ed 2026-09-18). The engine deals one pair per race at a time
+      // (SPEC §8.3, Q1312), so a crowded clause arrives as one entry and says
+      // nothing about the queue behind it; the entry is drawn as a pile of
+      // cards, **depth alone and capped at five** (three until Ed's note of
+      // 2026-09-19) — an edge per rival still to come, no number and no words.
+      // It is the tab stack's own convention one column over (M12): edges the
+      // entry's own width that peek, inert, carrying the hue and nothing else.
+      // **The button keeps its box and the `li` takes the pile's depth** as
+      // padding (system.css), so `layoutQueue` stands the entry beneath that
+      // much further off and the pile can be seen; the hue goes over whole
+      // and the stylesheet mixes it into the ground, opaque, since the edges
+      // lie over one another.
+      // the hue is read only where there is a pile to colour: a one-line
+      // entry's wash has never asked `anchHue` and must not start now
+      const pile = (!oneLine && st !== 'sealed') ? Math.min(5, Math.max(0, g.beneath | 0)) : 0;
+      const pileHue = pile ? (anchHue(g) || 'open') : null;
       html +=
-        '<li class="qitem' + (top ? ' mosturgent' : '') + '" data-q="' + g.id + '" data-site="' + (e.site ?? '') + '">' +
+        '<li class="qitem' + (top ? ' mosturgent' : '') + '" data-q="' + g.id + '" data-site="' + (e.site ?? '') + '"' +
+        (pile ? ' data-pile="' + pile + '" style="--pilecol: ' + tint(pileHue, 1) + '"' : '') + '>' +
         '<button class="' + [stateCls, sib.trim(), top ? 'mosturgent' : '',
           oneLine && g.shifted ? 'shifted' : '', justArrived === frontKeyOf(g) ? 'arriving' : '']
           .filter(Boolean).join(' ') +
@@ -2541,7 +2570,12 @@
       // it across (Q170, SURFACE E38). The third is the second plus a sentence
       // and a different pair of acts; the order matters, since a stranded
       // proposal is never `unproposed`.
-      if (s.stranded) return strandedCardHtml(s, site, closedMode);
+      // …and since Q1463 a **fourth**: a draft not proposed yet that the text
+      // moved out from under. It is the first reading, not the third — there
+      // is no candidate to withdraw or re-make, only words in a lane and a
+      // site with nowhere to go — so it stays the editing card and says so
+      // there. `unproposed` is tested first for exactly that.
+      if (s.stranded && !s.unproposed) return strandedCardHtml(s, site, closedMode);
       return s.unproposed ? editCardHtml(s, site) : mineCardHtml(s, site);
     }
     if (s.kind === 'diagonal') {
@@ -4213,6 +4247,23 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       return;
     }
 
+    // **The guard behind the follow** (Q1463, Ed 2026-09-18: *follow the
+    // paragraph, and refuse if lost*). The follow re-keys a draft's sites as
+    // the document moves under them; this asks the host, at the press and
+    // against the text it is about to send a version number for, whether
+    // every site's key still names the wording the site was written against —
+    // a question answered with no reference to the follow, which is the whole
+    // point of a backstop. Refused, nothing goes out, no edit is spent, and
+    // the card says why in the slot every other refusal uses.
+    const standDown = (d) => {
+      const why = hooks.misaimed ? hooks.misaimed(d) : null;
+      // a press that passes clears whatever the last one said
+      if (!why) { d.refusal = null; return false; }
+      d.refusal = why;
+      if (openId === d.id) renderAll(); else toggle(d.id, false);
+      return true;
+    };
+
     // Proposing is the point of sale: this is where the edit is spent (SPEC
     // §3.3 — the stake is paid at submission), and the only place a price is
     // stated in words. The draft stops being a draft and becomes a candidate
@@ -4227,6 +4278,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     if (what === 'draft-pen') {
       const d = draftOf();
       if (!d) return;
+      if (standDown(d)) return;
       const shut = () => {
         if (openId === d.id) openId = null;
         const i = SUGGS.indexOf(d);
@@ -4242,6 +4294,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     if (what === 'draft-propose') {
       const d = draftOf();
       if (!d) return;
+      if (standDown(d)) return;
       // **A re-made proposal is not a second one** (Q170): the draft was seeded
       // from a stranded proposal of yours and this press confirms *that*
       // candidate against the text as it now stands, so it keeps its id and the
@@ -5043,8 +5096,134 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   let HELD = [];
   const heldFor = (key) => (key ? HELD.filter((g) => tabAt(g, key)) : []);
 
-  // The data, keyed and seeded exactly as the page did it at load.
-  function bindData(d, s) {
+  // ---- a draft follows its paragraph (Q1463) -------------------------------
+  // **Follow the paragraph, and refuse if lost** (Ed, 2026-09-18). A draft's
+  // sites are keyed by engine line (`L8`, a gap `G9`) and the hunks it sends
+  // are read straight off those keys — so an adoption that inserts or removes
+  // a line *above* the draft leaves the key naming somebody else's clause, and
+  // the proposal that goes out replaces that one instead. Silently, and
+  // accepted: the version sent is the current one, so the engine's *targets
+  // version N* guard never fires. Nothing re-keyed anything, because `setData`
+  // carries the unproposed draft across the swap untouched — right about the
+  // words, wrong about the place.
+  //
+  // So each site is carried to the new position of its **origin wording**, the
+  // one thing about a site that names a paragraph rather than a line number.
+  // It is done inside `bindData` because this is the one moment both documents
+  // are in hand — the caller passes the one being replaced — and because
+  // everything downstream (`gapFields`, `syncDraftKeys`, the labels, the
+  // render, the hunks) then reads keys that have already been re-written. An
+  // already-proposed candidate needs none of it: the host derives its sites
+  // from the server's own spans on every poll.
+  //
+  // A **source line** is compared, not a rendered one, and loosely enough that
+  // a marker respaced on the way through `blocksOf` is still the same
+  // paragraph.
+  const normSrc = (t) => String(t == null ? '' : t)
+    .replace(/^(#{1,3}|-)\s+/, '$1 ').replace(/\s+$/, '');
+  const srcOfLine = (l) => (l ? normSrc(markerOf(l) + (l.x || '')) : null);
+  // the engine-keyed blocks of a document, in order: a gap is not a block, and
+  // a fixture's own `c3`/`h1` keys are not line numbers, so it never follows
+  const realBlocks = (arr) => (arr || []).filter((l) => !l.gap && /^L\d+$/.test(l.key || ''));
+
+  // A site whose paragraph is gone still has to stand somewhere — the member's
+  // words are in its card and are never discarded — so it is put at the
+  // nearest line that still exists and refuses to be proposed from there. Its
+  // origin is left alone, so the wording coming back brings the site back too.
+  function clampLost(s, is) {
+    if (!is.length || s.keys.every((k) => is.some((l) => l.key === k))) return;
+    const n = keyNum(s.keys[0]);
+    let best = is[0];
+    for (const l of is) if (Math.abs(keyNum(l.key) - n) < Math.abs(keyNum(best.key) - n)) best = l;
+    if (isGapKey(s.keys[0])) {
+      const gk = 'G' + (keyNum(best.key) + 1);
+      s.keys = [gk]; s.gapKey = gk; s.insertAfterKey = best.key;
+      if (s.origin && s.origin[0]) s.origin[0].key = gk;
+    } else {
+      s.keys = [best.key];
+    }
+    s.label = headingForKey(s.keys[0]);
+  }
+
+  function followSites(d, prev, now) {
+    const was = realBlocks(prev);
+    const is = realBlocks(now);
+    if (!was.length || !is.length) return;
+    const oldS = was.map(srcOfLine);
+    const newS = is.map(srcOfLine);
+    // an adoption is one changed region, so what matches from the top and what
+    // matches from the bottom say exactly how far a given line has moved
+    let pre = 0;
+    while (pre < oldS.length && pre < newS.length && oldS[pre] === newS[pre]) pre++;
+    let suf = 0;
+    while (suf < oldS.length - pre && suf < newS.length - pre
+      && oldS[oldS.length - 1 - suf] === newS[newS.length - 1 - suf]) suf++;
+    const delta = newS.length - oldS.length;
+    if (pre >= oldS.length && !delta) return;    // the same document, re-keyed
+    const posIn = (arr, key) => arr.findIndex((l) => l.key === key);
+    // where a block that stood at `p` should be looked for now: unmoved if the
+    // change is below it, shifted by the net change above it if it is not
+    const expect = (p) => (p < pre ? p : p + delta);
+    // **Ambiguity is the net shift's to break, and then it is lost** (Ed's
+    // ruling): two identical paragraphs give two candidates, the nearer to the
+    // expected position wins, and a dead heat is not guessed at.
+    const findRun = (needle, from) => {
+      const hits = [];
+      for (let p = 0; p + needle.length <= newS.length; p++) {
+        let ok = true;
+        for (let i = 0; i < needle.length; i++) if (newS[p + i] !== needle[i]) { ok = false; break; }
+        if (ok) hits.push(p);
+      }
+      if (!hits.length) return -1;
+      const want = expect(from);
+      hits.sort((a, b) => Math.abs(a - want) - Math.abs(b - want) || a - b);
+      if (hits.length > 1 && Math.abs(hits[0] - want) === Math.abs(hits[1] - want)) return -1;
+      return hits[0];
+    };
+    for (const s of d.sites || []) {
+      if (isGapKey(s.keys[0])) {
+        // **a gap follows the clause it sits after** (its own bookkeeping,
+        // Q1311): a gap has no wording of its own, so what identifies it is
+        // the block before it — and a gap at the very top has no such block
+        // and stays at the top, whatever is inserted beneath it.
+        if (s.insertAfterKey == null) { s.lost = false; continue; }
+        // a site seeded from a proposal of yours (`draft-remake`, `siteOfSpan`)
+        // carries the key and not the wording, so the first swap reads it off
+        // the document being replaced — where the key is still good
+        if (s.afterText == null) s.afterText = srcOfLine(was.find((l) => l.key === s.insertAfterKey));
+        if (s.afterText == null) { s.lost = false; continue; }
+        const at = findRun([normSrc(s.afterText)], Math.max(0, posIn(was, s.insertAfterKey)));
+        if (at < 0) { s.lost = true; clampLost(s, is); continue; }
+        const gk = 'G' + (keyNum(is[at].key) + 1);
+        s.keys = [gk]; s.gapKey = gk; s.insertAfterKey = is[at].key;
+        if (s.origin && s.origin[0]) s.origin[0].key = gk;
+        s.label = headingForKey(gk);
+        s.lost = false;
+        continue;
+      }
+      const needle = (s.origin || []).map((o) => normSrc(o.text));
+      if (!needle.length) continue;
+      const at = findRun(needle, Math.max(0, posIn(was, s.keys[0])));
+      if (at < 0) { s.lost = true; clampLost(s, is); continue; }
+      // a run follows as a run: one site is one piece of text over adjacent
+      // blocks, and it is only itself where all of them are still adjacent
+      s.keys = is.slice(at, at + needle.length).map((l) => l.key);
+      s.origin.forEach((o, i) => { o.key = s.keys[i]; });
+      s.label = headingForKey(s.keys[0]);
+      s.lost = false;
+    }
+    // …and a draft that has lost a place is **stranded**, the state a proposal
+    // the text moved under already has (Q170, SURFACE E38): the ↻ mark, its
+    // own sentence on the card, and nothing sent until it is re-aimed.
+    d.stranded = (d.sites || []).some((s) => s.lost);
+    if (d.focusKey && !(d.sites || []).some((s) => s.keys.includes(d.focusKey))) {
+      d.focusKey = d.sites[0] && d.sites[0].keys[0];
+    }
+  }
+
+  // The data, keyed and seeded exactly as the page did it at load. `prev` is
+  // the document being replaced, where there is one (Q1463).
+  function bindData(d, s, prev) {
     DOC = d; SUGGS = s.filter((g) => !withheld(g));
     HELD = s.filter((g) => withheld(g));
     // a card that has just been withheld cannot stay open behind it
@@ -5071,6 +5250,14 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       DOC.push({ t: 'p', x: '', key: 'G' + DOC.length, gap: true });
     }
     HEADS = DOC.filter((l) => l.t === 'h').map((l) => l.level ?? 1);
+    // **before anything reads the keys** (Q1463): an unproposed draft is the
+    // one item carried across a swap by hand, so it is the one item whose
+    // keys can be stale — everything else in SUGGS was just derived from the
+    // document standing here.
+    if (prev && prev !== DOC) {
+      const mine = SUGGS.find((x) => x.id === DRAFT_ID && x.unproposed && (x.sites || []).length);
+      if (mine) followSites(mine, prev, DOC);
+    }
     SUGGS.filter((s) => s.kind === 'draft').forEach((d) => {
       d.sites.forEach((s) => {
         if (!s.origin) s.origin = s.keys.map((k) => ({ key: k, text: sourceTextFor(k), note: null }));
@@ -5100,7 +5287,8 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       if (mine && !suggs.some((x) => x.id === DRAFT_ID)) suggs = suggs.concat([mine]);
     }
     const held = heldCaret();
-    bindData((next && next.DOC) || DOC, suggs);
+    const prevDoc = DOC;
+    bindData((next && next.DOC) || DOC, suggs, prevDoc);
     renderAll();
     if (held) restoreCaret(held);
     if (textChanged && hooks.textChanged) hooks.textChanged();

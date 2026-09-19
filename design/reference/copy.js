@@ -222,6 +222,13 @@ window.COPY = (function () {
       // one being written: it re-makes the proposal you already have, so there
       // is nothing left to pay and an empty wallet cannot stop it
       keepsCost: ' — it keeps its place and the edit it already cost',
+      // …and the same fact one step earlier (Q1463, Ed 2026-09-18: *follow the
+      // paragraph, and refuse if lost*): a draft you have **not** proposed
+      // yet, whose clause an adoption replaced while you were writing. Your
+      // words stay in the lane — nothing typed is ever discarded — but the
+      // site has no paragraph left to stand against, so it cannot go out until
+      // it is written against what now stands.
+      drafted: 'The document changed here, and your draft could not be carried across to the new wording — write it against the clause as it now stands.',
     },
     // the gap a draft stands in, named for the rail and the editing head
     gap: {
@@ -940,5 +947,65 @@ window.COPY = (function () {
     },
   };
 
-  return { RULES, grammar, session, page };
+  // ---- the spectator feed (feed.html, Q1466) --------------------------------
+  // **A second page, for somebody watching** (Ed, 2026-09-19: *a feed of new
+  // proposals and proposals that pass, with enough context that you can
+  // understand what's happening*). Every entry is a change and the place it
+  // bites; nothing here counts, ranks or says which way anything is going
+  // (SPEC §3.5). The verb is **pass** (STYLE T8), the office is **the
+  // Founder**, and an unnamed author is *Anonymous*, the door's own word.
+  const feed = {
+    name: 'Feed',
+    tabTitle: (title) => title + ' — feed',
+    toDocument: 'Open the document',
+    // an entry's eyebrow, by kind
+    proposed: 'New proposal',
+    passed: 'Passed',
+    // **how long it took** (Ed, 2026-09-19: *"Passed in 23 minutes"*), from
+    // the moment it was proposed; the two largest units and no more
+    passedIn: (durationWords) => 'Passed in ' + durationWords,
+    // **…and the numbers ride the title** (Ed, 2026-09-19: *"x of y voted" and
+    // the other stats should all be in the title … as they are on decision
+    // cards*): one line, the record head's own shape — what happened, a dot,
+    // what it came to
+    titled: (what, counts) => (counts ? what + ' · ' + counts : what),
+    underMinute: 'under a minute',
+    minutes: (n) => (n === 1 ? '1 minute' : n + ' minutes'),
+    hours: (n) => (n === 1 ? '1 hour' : n + ' hours'),
+    days: (n) => (n === 1 ? '1 day' : n + ' days'),
+    // **a passed entry's numbers are the passed card's** (Ed, same message:
+    // *the same stats as one on a passed card*): `record.counts`' sentence
+    // word for word, less its last clause — *you said* — since nobody watching
+    // a feed has a vote in it. A clause whose number an older log does not
+    // carry is omitted, as the record omits it.
+    counts: (voted, roster, floor, approvals, abstained) =>
+      [voted + ' of ' + roster + ' weighed in',
+        approvals === null || approvals === undefined ? '' : approvals + ' preferred it',
+        abstained ? abstained + ' did not answer in time' : '',
+        floor === null || floor === undefined ? '' : 'quorum was ' + floor]
+        .filter(Boolean).join(' · '),
+    decreed: 'The Founder amended this',
+    // where a change is, under the eyebrow: the section, or the top
+    top: 'At the top of the document',
+    // a change's two readings
+    stood: 'The clause as it stood',
+    put: 'The proposal',
+    nowStands: 'The clause as it stands',
+    after: 'A new clause, after',
+    first: 'A new clause, first in its section',
+    // a deletion that passed: the card's own sentence (`lane.removed`) is in the
+    // conditional, which is right for a proposal and wrong once it has happened
+    removed: 'This clause was removed.',
+    anonymous: 'Anonymous',
+    redacted: '[redacted]',
+    // the page's states
+    loading: 'Loading…',
+    notBegun: 'The document has not begun. Proposals will appear here once it has.',
+    empty: 'Nothing has been proposed yet.',
+    closed: (dateWords) => 'Closed ' + dateWords,
+    unreachable: 'The feed could not be reached. It will try again.',
+    missing: 'There is no document at this address.',
+  };
+
+  return { RULES, grammar, session, page, feed };
 })();

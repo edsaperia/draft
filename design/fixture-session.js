@@ -405,10 +405,11 @@ window.FIXTURE_SESSION = (function () {
       // **The three depths of the pile** (`queue-card-stack`, Q1462): this
       // entry, the Workshop one below it and § The Shed's stand within a
       // screen of each other in the rail, so the fixture shows one more
-      // beneath, two, and three-or-more side by side. `beneath` is what the
+      // beneath, three, and five-or-more side by side. `beneath` is what the
       // live page counts in `itemsFromView` — the rivals on this race the
       // seat has still to be asked about — and the rail caps the drawing at
-      // three edges, so the 5 there draws the pile a 3 would.
+      // five edges (Ed, 2026-09-19; three before), so the 8 there draws the
+      // pile a 5 would.
       id: 'quick-books', kind: 'quick', keys: ['books'], state: 'needs', beneath: 1,
       qLabel: '§ The Library Corner', urgency: 0.31,
       pct: 40, cap: 'two of the fourteen have voted — quorum is 5',
@@ -416,7 +417,7 @@ window.FIXTURE_SESSION = (function () {
       rationale: 'A year is one long absence. Two years still clears the shelves of anything genuinely abandoned, without swallowing the library of somebody who spent a winter abroad.'
     },
     {
-      id: 'quick-powertools', kind: 'quick', keys: ['powertools'], state: 'needs', beneath: 2,
+      id: 'quick-powertools', kind: 'quick', keys: ['powertools'], state: 'needs', beneath: 3,
       qLabel: '§ The Workshop', urgency: 0.47,
       pct: 60, cap: 'three of the fourteen have voted — quorum is 5',
       marked: 'Power tools are not used when the member is alone in the house<ins>, unless another member knows they are there and when they expect to finish</ins>, and not after the beginning of quiet hours.',
@@ -428,7 +429,7 @@ window.FIXTURE_SESSION = (function () {
     // document render dropped every heading before it reached the branch that
     // emits a card, so this one opened nothing at all.
     {
-      id: 'quick-shedhead', kind: 'quick', keys: ['shedhead'], state: 'needs', beneath: 5,
+      id: 'quick-shedhead', kind: 'quick', keys: ['shedhead'], state: 'needs', beneath: 8,
       qLabel: '§ The Shed, the Cellar and the Space Under the Stairs', urgency: 0.24,
       pct: 20, cap: 'one of the fourteen has voted — quorum is 5',
       marked: 'The <del>Shed, the Cellar and the Space Under the Stairs</del> <ins>Outdoor Stores</ins>',

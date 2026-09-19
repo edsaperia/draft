@@ -764,6 +764,82 @@
      rule as its card, and the rail and the card now say "open" the same way */
   .queue button[aria-current="true"] { box-shadow: var(--shadow-xl); }
 
+  /* **The queue card stack** (Q1462, Ed 2026-09-18: *a "queue card stack" …
+     that hints that there are other rivals beneath the current one*). The
+     engine deals one pair per race at a time (SPEC §8.3, Q1312), so a clause
+     carrying twenty rival wordings reaches the rail as one entry. The entry is
+     drawn as a pile: up to **five** card edges beneath it, **depth only — no
+     number and no words**.
+
+     **The edges are the entry's own width, and the pile takes its room**
+     (Ed, 2026-09-19, from the residency room: *queue cards in the queue card
+     stack should be the same width as other queue cards (like the tabs in the
+     tab stack are the same width as other tabs) … more offset (1.5x what they
+     are now). Cards beneath them should be commensurately further away so you
+     can see the stack … limit them at 5 instead of 3*). The first cut drew
+     each edge 10px narrower a side, peeking 2px, inside the 8px the rail
+     leaves between entries, so that nothing beneath a pile moved; a pile that
+     has to fit in the gap cannot be seen, which was the note. So each edge is
+     now a full-width card peeking **3px** — 2px of its face and a 1px rule,
+     the rule being what tells one edge from the next at one width — and the
+     `li` carries the pile's depth as `padding-bottom`, which is what
+     `layoutQueue` measures and what the drawer's `gap` adds to: the entry
+     beneath stands that much further off, in either layout. The entry's own
+     button keeps the box it always had.
+
+     Still box-shadow, for what that buys: the edges cannot be clicked or
+     reached by the keyboard, follow the button's own corner radius, and are
+     not clipped by its `overflow: hidden`. The colours are **opaque** mixes
+     of the entry's lifecycle hue into the ground (`--pilecol`, set per entry
+     by `renderQueue`): the layers lie over one another, and a translucent
+     face would darken toward the entry as they piled up.
+
+     The hue falls back to transparent, because an unset custom property
+     inside a shorthand invalidates the **whole** declaration — a pile with no
+     hue would take the entry's own lift with it rather than simply not
+     drawing. */
+  .qitem[data-pile] {
+    --pilefill: color-mix(in srgb, var(--pilecol, transparent) 28%, var(--bg));
+    --pileline: color-mix(in srgb, var(--pilecol, transparent) 62%, var(--bg));
+  }
+  .qitem[data-pile="1"] {
+    padding-bottom: 3px;
+    --pile: 0 2px 0 0 var(--pilefill), 0 3px 0 0 var(--pileline);
+  }
+  .qitem[data-pile="2"] {
+    padding-bottom: 6px;
+    --pile: 0 2px 0 0 var(--pilefill), 0 3px 0 0 var(--pileline),
+            0 5px 0 0 var(--pilefill), 0 6px 0 0 var(--pileline);
+  }
+  .qitem[data-pile="3"] {
+    padding-bottom: 9px;
+    --pile: 0 2px 0 0 var(--pilefill), 0 3px 0 0 var(--pileline),
+            0 5px 0 0 var(--pilefill), 0 6px 0 0 var(--pileline),
+            0 8px 0 0 var(--pilefill), 0 9px 0 0 var(--pileline);
+  }
+  .qitem[data-pile="4"] {
+    padding-bottom: 12px;
+    --pile: 0 2px 0 0 var(--pilefill), 0 3px 0 0 var(--pileline),
+            0 5px 0 0 var(--pilefill), 0 6px 0 0 var(--pileline),
+            0 8px 0 0 var(--pilefill), 0 9px 0 0 var(--pileline),
+            0 11px 0 0 var(--pilefill), 0 12px 0 0 var(--pileline);
+  }
+  .qitem[data-pile="5"] {
+    padding-bottom: 15px;
+    --pile: 0 2px 0 0 var(--pilefill), 0 3px 0 0 var(--pileline),
+            0 5px 0 0 var(--pilefill), 0 6px 0 0 var(--pileline),
+            0 8px 0 0 var(--pilefill), 0 9px 0 0 var(--pileline),
+            0 11px 0 0 var(--pilefill), 0 12px 0 0 var(--pileline),
+            0 14px 0 0 var(--pilefill), 0 15px 0 0 var(--pileline);
+  }
+  /* the lift stays in front of the pile, as the front card's own shadow falls
+     across the ones behind it; each rule repeats its own lift rather than the
+     three above being refactored, so an entry with no pile keeps the exact
+     declaration it has always had */
+  .qitem[data-pile] > button { box-shadow: var(--shadow-sm), var(--pile); }
+  .qitem[data-pile] > button:hover { box-shadow: var(--shadow-md), var(--pile); }
+  .qitem[data-pile] > button[aria-current="true"] { box-shadow: var(--shadow-xl), var(--pile); }
+
   /* The wash is the progress bar (Ed, 105/116): how far the fill reaches is
      closeness to resolution — since Q1362 (c), how far the room has got
      toward the quorum — how strong the colour is is urgency, and the hue is

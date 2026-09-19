@@ -963,21 +963,22 @@
       // Q1462, Ed 2026-09-18). The engine deals one pair per race at a time
       // (SPEC §8.3, Q1312), so a crowded clause arrives as one entry and says
       // nothing about the queue behind it; the entry is drawn as a pile of
-      // cards, **depth alone and capped at three** — one edge for one more,
-      // two for two, three for three or more, no number and no words. It is
-      // the tab stack's own convention one column over (M12): edges that peek,
-      // inert, carrying the hue and nothing else. **Drawn entirely outside the
-      // entry's box** — the edges are box-shadow layers, so the entry keeps
-      // the height `layoutQueue` measured and the wire keeps its anchor — and
-      // in the entry's own lifecycle hue at the sliver strength a 2px band
-      // needs, the same reasoning `.achip.behind` is mixed at 42% for.
+      // cards, **depth alone and capped at five** (three until Ed's note of
+      // 2026-09-19) — an edge per rival still to come, no number and no words.
+      // It is the tab stack's own convention one column over (M12): edges the
+      // entry's own width that peek, inert, carrying the hue and nothing else.
+      // **The button keeps its box and the `li` takes the pile's depth** as
+      // padding (system.css), so `layoutQueue` stands the entry beneath that
+      // much further off and the pile can be seen; the hue goes over whole
+      // and the stylesheet mixes it into the ground, opaque, since the edges
+      // lie over one another.
       // the hue is read only where there is a pile to colour: a one-line
       // entry's wash has never asked `anchHue` and must not start now
-      const pile = (!oneLine && st !== 'sealed') ? Math.min(3, Math.max(0, g.beneath | 0)) : 0;
+      const pile = (!oneLine && st !== 'sealed') ? Math.min(5, Math.max(0, g.beneath | 0)) : 0;
       const pileHue = pile ? (anchHue(g) || 'open') : null;
       html +=
         '<li class="qitem' + (top ? ' mosturgent' : '') + '" data-q="' + g.id + '" data-site="' + (e.site ?? '') + '"' +
-        (pile ? ' data-pile="' + pile + '" style="--pilecol: ' + tint(pileHue, 0.42) + '"' : '') + '>' +
+        (pile ? ' data-pile="' + pile + '" style="--pilecol: ' + tint(pileHue, 1) + '"' : '') + '>' +
         '<button class="' + [stateCls, sib.trim(), top ? 'mosturgent' : '',
           oneLine && g.shifted ? 'shifted' : '', justArrived === frontKeyOf(g) ? 'arriving' : '']
           .filter(Boolean).join(' ') +

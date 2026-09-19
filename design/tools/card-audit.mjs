@@ -1798,18 +1798,23 @@ async function walkDoor(page, doors, errors, walk) {
  * **The queue card stack, against the entry it is drawn on** (R1, Q1462).
  *
  * The pile is a hint and nothing else: pressing the entry opens the same
- * pair, and — the thing that bites here — **the entry's box does not move**.
- * `layoutQueue` stacks the rail by measuring each `li`, the wire lands on the
- * entry's own box and the drawer spaces entries by `gap`, so an edge taking
- * any layout at all would push every entry beneath it down the column. So the
- * measurement is a comparison rather than a number: the same entries read
- * twice, once as the fixture serves them and once with `beneath` deleted and
- * the rail re-rendered, and the two boxes must agree to the pixel. The second
- * half is the count — `min(beneath, 3)` edges drawn, Ed's cap (2026-09-18).
+ * pair, and **the entry's own button keeps its size and its left edge**. Since
+ * Ed's note of 2026-09-19 (*cards beneath them should be commensurately
+ * further away so you can see the stack*) the pile **does** take room: the
+ * `li` carries its depth as padding, which is what `layoutQueue` measures, so
+ * the entry beneath stands that much lower. So the measurement is a
+ * comparison: the same entries read twice, once as the fixture serves them
+ * and once with `beneath` deleted and the rail re-rendered — a piled entry's
+ * button must be the same size at the same left edge, and must stand within
+ * the piles' own depth of where it stood bare — lower where a pile above took
+ * room, or **higher** where the entry is held against the foot of the pinned
+ * band and the only room for its pile is upward (the fixture's 🔥).
+ * The second half is the count — `min(beneath, 5)` edges drawn, Ed's cap
+ * (three on 2026-09-18, five on 2026-09-19).
  *
  * Edges are box-shadow layers, so they are counted off the computed style:
  * the pile's are the only layers with no blur, `--shadow-sm`'s two both
- * carrying one.
+ * carrying one — and an edge is two of them, its face and its rule.
  */
 async function walkRail(page, rails, walk) {
   const read = () => page.evaluate(() => {
@@ -1833,7 +1838,9 @@ async function walkRail(page, rails, walk) {
       const anchor = li.dataset.site || '';
       return { q: li.dataset.q, anchor, pile: +(li.dataset.pile || 0),
         box: [R2(r.left), R2(r.top + window.scrollY), R2(r.width), R2(r.height)],
-        edges: layers(getComputedStyle(b).boxShadow).filter((l) => / 0px -\d+px$/.test(l)).length };
+        // a layer reads `<colour> 0px <y>px 0px 0px`: no blur and no spread is the
+        // pile's alone, and an edge is two of them — its face and its rule
+        edges: layers(getComputedStyle(b).boxShadow).filter((l) => / 0px \d+px 0px 0px$/.test(l)).length / 2 };
     }).filter(Boolean);
   });
   const withPile = await read();
@@ -1863,7 +1870,7 @@ function railRules(rails) {
   for (const r of rails) {
     const drawn = r.withPile.filter((e) => e.pile > 0);
     if (!Object.keys(r.beneath).length) {
-      file('R1', 'the fixture carries a queue card stack at each of its three depths, so the pile is measured at all (Q1462)',
+      file('R1', 'the fixture carries queue card stacks, so the pile is measured at all (Q1462)',
         'no rail entry on the charter carried `beneath`', r.walk);
       continue;
     }
@@ -1871,17 +1878,22 @@ function railRules(rails) {
     // are member-written strings, and a separator is a thing to get wrong
     const bareOf = (e) => r.without.find((x) => x.q === e.q && x.anchor === e.anchor);
     for (const e of drawn) {
-      const want = Math.min(3, r.beneath[e.q] || 0);
+      const want = Math.min(5, r.beneath[e.q] || 0);
       if (e.edges !== want) {
-        file('R1', 'a queue card stack draws min(beneath, 3) edges and no more — depth hints, capped at three, no number (Q1462, Ed 2026-09-18)',
+        file('R1', 'a queue card stack draws min(beneath, 5) edges and no more — depth hints, capped at five, no number (Q1462, Ed 2026-09-19)',
           e.q + ' says beneath ' + r.beneath[e.q] + ' and draws ' + e.edges + ' edge(s)', r.walk);
       }
       const was = bareOf(e);
       if (!was) { file('R1', 'an entry keeps its place when its pile is taken away', e.q + ' left the rail when `beneath` was deleted', r.walk); continue; }
       if (was.edges !== 0) file('R1', 'no pile is drawn where there is nothing beneath', e.q + ' still drew ' + was.edges + ' edge(s) with no `beneath`', r.walk);
-      const moved = e.box.map((v, i) => Math.abs(v - was.box[i])).filter((d) => d > 0.5);
-      if (moved.length) {
-        file('R1', 'a piled entry has exactly the box it would have with no pile — the pile takes no layout, so nothing beneath it moves (Q1462)',
+      // left, width and height to the pixel; the top within every pile on the
+      // rail put together (3px an edge), either way — down under a pile above
+      // it, up where the band's foot holds it
+      const room = 3 * drawn.reduce((n, x) => n + x.pile, 0);
+      const same = [0, 2, 3].every((i) => Math.abs(e.box[i] - was.box[i]) <= 0.5);
+      const drop = e.box[1] - was.box[1];
+      if (!same || Math.abs(drop) > room + 0.5) {
+        file('R1', 'a piled entry keeps its own button — the size it would be with no pile, at the same left edge — and moves by no more than the piles take (Q1462, Ed 2026-09-19)',
           e.q + ' is ' + e.box.join(',') + ' piled and ' + was.box.join(',') + ' bare', r.walk);
       }
     }
