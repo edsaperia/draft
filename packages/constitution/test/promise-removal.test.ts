@@ -434,31 +434,35 @@ describe('🥾 re-priced mid-motion: the route is fixed, the electorate is not (
 });
 
 describe('🥾 whatever the rung: what a departure takes with it (§9.3)', () => {
-  it('a standing `keep` leaves with the member, and the motion it blocked carries in the same beat', () => {
+  // **What leaves with a member is a standing answer or a silence** — never
+  // a keep, which since Q1473 (Ed, 2026-09-19) has already ended the motion
+  // it was cast on. These two asserted the keep; the promise they are about
+  // is unchanged, and is read here off an abstention and off a silence.
+  it('a standing answer leaves the count with the member, and the record keeps it', () => {
     const { s, bo, cy } = buildConstituted({
       doors: { remove: { unilateral: true, assent: false } } });
     const m1 = s.openMotion(3, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } });
-    s.answerMotion(4, 'ada', m1, 'accept');
-    s.answerMotion(5, cy, m1, 'keep');
-    expect(s.motionRecords().get(m1)!.status).toBe('running');
-    s.remove(6, cy); // ❌'s pen
-    expect(s.motionRecords().get(m1)!.status).toBe('carried');
+    s.answerMotion(4, cy, m1, 'abstain');
+    expect(s.motionRecords().get(m1)!.status).toBe('running'); // ada still owes
+    s.remove(5, cy); // ❌'s pen
+    expect(s.motionRecords().get(m1)!.status).toBe('running'); // and still does
     // **the record keeps what was said**: the electorate filter is the promise,
     // not the erasure of the answer
-    expect(s.motionRecords().get(m1)!.answers.get(cy)).toBe('keep');
+    expect(s.motionRecords().get(m1)!.answers.get(cy)).toBe('abstain');
+    s.answerMotion(6, 'ada', m1, 'accept');
+    expect(s.motionRecords().get(m1)!.status).toBe('carried');
   });
 
-  it('and the same by a carried `assembly` removal, not only by the pen', () => {
+  it('and a silence leaves too, by a carried `assembly` removal and not only by the pen', () => {
     const { s, bo, cy } = buildConstituted({ removal: { price: 'assembly' } });
     const m1 = s.openMotion(3, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } });
-    s.answerMotion(4, 'ada', m1, 'accept');
-    s.answerMotion(5, cy, m1, 'keep');
+    s.answerMotion(4, 'ada', m1, 'accept'); // cy never answers m1
+    expect(s.motionRecords().get(m1)!.status).toBe('running');
     // one 🏛️ out per member at a time, so the removal is ada's to put
     const m2 = s.openMotion(6, 'ada', { kind: 'remove', member: cy });
     s.answerMotion(7, bo, m2, 'accept');
     expect(s.motionRecords().get(m2)!.status).toBe('carried');
     expect(s.motionRecords().get(m1)!.status).toBe('carried');
-    expect(s.motionRecords().get(m1)!.answers.get(cy)).toBe('keep');
   });
 
   it('a founding answer goes too: uninvited pre-start, the question resolves on the rest', () => {

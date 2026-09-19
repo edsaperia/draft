@@ -364,12 +364,14 @@ describe('P4 and P5 — the mover stands, and nobody’s consent carries nothing
     expect(s.settingState('bar').value).toEqual({ pct: 90 });
   });
 
-  it('one keep blocks it, and what stands stands (§9.6)', () => {
+  // **one keep ends it** since Q1473 (Ed, 2026-09-19; R-136), where it used
+  // to leave the motion running: either way what stands stands
+  it('one keep ends it, and what stands stands (§9.6)', () => {
     const { s, bo, cy } = buildConstituted();
     const m = s.openMotion(30, cy, { kind: 'set', setting: 'bar', value: { pct: 90 } });
     s.answerMotion(31, 'ada', m, 'accept');
     s.answerMotion(32, bo, m, 'keep');
-    expect(s.motionRecords().get(m)!.status).toBe('running');
+    expect(s.motionRecords().get(m)!.status).toBe('held');
     expect(s.settingState('bar').value).toEqual({ pct: 66 });
   });
 });

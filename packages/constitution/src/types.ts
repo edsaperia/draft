@@ -295,6 +295,24 @@ export type ConstitutionEvent =
   /** Constitutional: the live-electorate settle check fired. Applies the payload in the fold. */
   | { type: 'motion-carried'; t: number; motion: MotionId }
   /**
+   * **A member of the electorate kept what stands, and that ends it** (Ed,
+   * 2026-09-19, Q1473; SPEC §9.6, R-136): the constitutional route's own
+   * failure, the other half of `motion-carried`. Until v0.138 a standing keep
+   * blocked and did not kill, and a blocked motion ended by withdrawal — which
+   * an application, having no mover, could not do, so a stranger one member
+   * had voted against sat under *Applicants* until the document closed.
+   *
+   * It carries the motion and nothing else. **Who kept it is not in this
+   * event** — the `motion-answer` that preceded it already holds that, and the
+   * record is the log's, never a reader's: every projection of a failed motion
+   * says *the membership* (`heldBy: 'members'`) and names nobody.
+   *
+   * A log written before v0.138 carries none of these, so it re-folds exactly
+   * as it always did; what changed is what the settle check emits from now on,
+   * never how an older event is read.
+   */
+  | { type: 'motion-held'; t: number; motion: MotionId }
+  /**
    * The ground moved under a live constitutional motion (Q1348, R-105):
    * the setting it moves took a new standing value — a rival carried
    * (`cause` names it) or the Founder's ✒️ set it (`'pen'`). The fold wipes

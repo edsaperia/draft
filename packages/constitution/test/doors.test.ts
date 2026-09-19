@@ -138,7 +138,8 @@ describe('❌ — the remove door', () => {
     const m = s.openMotion(3, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } });
     s.answerMotion(4, 'ada', m, 'accept');
     s.answerMotion(5, bo, m, 'accept');
-    s.answerMotion(6, cy, m, 'keep'); // the sole refuser
+    // cy is the one who has not answered — since Q1473 a keep would end the
+    // motion outright, so what an exile releases is a silence
     expect(s.motionRecords().get(m)!.status).toBe('running');
     s.remove(7, cy);
     expect(s.memberRecords().get(cy)!.removed).toBe(true);
