@@ -213,11 +213,13 @@ export const authTable: Route[] = [
       const { cfg, store, stash, auth, writes, commits } = ctx;
       // One bucket, `auth:<ip>`, shared by /auth/create, /auth/login and
       // /auth/apply: 60 was twenty arrivals on one venue address with a
-      // rehearsal in the same window taking it to forty (issue #69), and
-      // spending it lands a live magic link on raw JSON. **Twenty phones'
-      // worth** (Ed, 2026-09-19), matching the login door's own 200 (Q1341).
-      if (r.tooMany('auth', 200)) return true;
+      // rehearsal in the same window taking it to forty (issue #69).
+      // **Twenty phones' worth** (Ed, 2026-09-19), the login door's own 200
+      // (Q1341). The brake reads the token first so a refusal can hand it
+      // back on a page (`busyDoor`) rather than as raw JSON — the body is
+      // capped at 10 KB, so nothing is spent by reading it.
       const token = await readTokenBody(req);
+      if (r.tooMany('auth', 200, () => { busyDoor(ctx, r, token); })) return true;
       if (pausedDoor(ctx, r, token)) return true;
       const rec = await auth.useToken(token, nowMs);
       if (!rec || rec.kind !== 'create' || !rec.pending) {
@@ -396,8 +398,9 @@ export const authTable: Route[] = [
     handler: async (ctx, r) => {
       const { req, res, nowMs } = r;
       const { store, auth, writes } = ctx;
-      if (r.tooMany('auth', 200)) return true;
+      // the shared `auth:<ip>` bucket, answered as a page (issue #69, F3)
       const token = await readTokenBody(req);
+      if (r.tooMany('auth', 200, () => { busyDoor(ctx, r, token); })) return true;
       if (pausedDoor(ctx, r, token)) return true;
       const rec = await auth.useToken(token, nowMs);
       if (!rec || rec.kind !== 'apply' || rec.docId === undefined) {
@@ -450,8 +453,9 @@ export const authTable: Route[] = [
     handler: async (ctx, r) => {
       const { req, res, nowMs } = r;
       const { store, auth, writes } = ctx;
-      if (r.tooMany('auth', 200)) return true;
+      // the shared `auth:<ip>` bucket, answered as a page (issue #69, F3)
       const token = await readTokenBody(req);
+      if (r.tooMany('auth', 200, () => { busyDoor(ctx, r, token); })) return true;
       if (pausedDoor(ctx, r, token)) return true;
       const rec = await auth.useToken(token, nowMs);
       if (!rec || rec.kind !== 'login' || rec.docId === undefined ||
@@ -510,6 +514,11 @@ const PAGE = {
   paused: 'docs.vote is having a moment of quick maintenance.',
   pausedKept: 'Your link is still good — nothing has been used. Wait about a minute, then try it again.',
   pausedRetry: 'Try the link again',
+  /** The arrival door's own brake, met on a link (issue #69). The same
+   *  promise the pause makes, for the same reason: the limiter stands
+   *  before the token is spent, so the link in hand is still good. */
+  busy: 'docs.vote is busy — a lot of people are arriving at once.',
+  busyKept: 'Your link is still good — nothing has been used. Wait a few minutes, then try it again.',
   /** The door's own answer, and not an oracle either way (`design/door.js`). */
   sentLogin: 'If that address is on the membership, a link is on its way.',
   sentApply: 'A link is on its way — follow it to continue your application.',
@@ -565,6 +574,35 @@ function pausedDoor(ctx: RouteContext, r: Req, token: string): boolean {
     '<button type="submit" style="padding: .4rem .8rem">' +
     e(PAGE.pausedRetry) + '</button></form>'), 503);
   return true;
+}
+
+/**
+ * **A refused arrival is a page too, and the link it carried is still good**
+ * (issue #69, F3). The three doors below share one bucket, `auth:<ip>`, and
+ * a venue NATs a whole room onto one address — so the room spending it was
+ * always going to happen, and what the person met was the limiter's JSON
+ * rendered raw by the browser the interstitial had just auto-submitted
+ * into: no shell, no retry, no way back, and a live magic link behind it.
+ * Live, because the limiter stands **before** `useToken`, exactly as the
+ * pause does: the token is unspent and the same link works a few minutes
+ * later. So this says so, in `pausedDoor`'s own shape and for its own
+ * reasons — the token re-posted by a form, `referrer-policy: same-origin`
+ * so the retry is not read as a cross-site attack, `retry-after` saying in
+ * a header what the sentence says in words. The status stays the limiter's
+ * 429; only the medium changes.
+ */
+function busyDoor(ctx: RouteContext, r: Req, token: string): void {
+  const d = r.url.searchParams.get('d') ?? '';
+  const action = d === '' ? r.path : `${r.path}?d=${encodeURIComponent(d)}`;
+  r.res.setHeader('referrer-policy', 'same-origin');
+  r.res.setHeader('retry-after', '300');
+  html(r.res, shell(
+    '<p>' + e(PAGE.busy) + '</p>' +
+    '<p>' + e(PAGE.busyKept) + '</p>' +
+    '<form method="post" action="' + e(action) + '">' +
+    '<input type="hidden" name="token" value="' + e(token) + '">' +
+    '<button type="submit" style="padding: .4rem .8rem">' +
+    e(PAGE.pausedRetry) + '</button></form>'), 429);
 }
 
 /**

@@ -191,6 +191,41 @@ describe('the arrival doors (issue #69)', () => {
     for (const door of doors) expect((await arrive(door)).status, door).toBe(429);
   }, 60_000);
 
+  it('answers a refused arrival with a page, and leaves the link it carried good', async () => {
+    const { base } = await boot(true);
+    // a real, unspent creation link: the interstitial auto-submits it, so
+    // whatever this door writes is what the browser renders
+    const created = await (await post(base, '/api/docs', { title: 'Busy', email: 'founder.busy@example.org' }))
+      .json() as { devLink: string };
+    const link = new URL(created.devLink);
+    const token = link.searchParams.get('token') ?? '';
+    const ip = client();
+    const arrive = (headers: Record<string, string>) => fetch(base + '/auth/create?d=busy', {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded', origin: base, ...headers },
+      body: new URLSearchParams({ token }).toString(),
+      redirect: 'manual',
+    });
+    await spend(CAPS.auth, () => fetch(base + '/auth/create', {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded', origin: base, ...ip },
+      body: new URLSearchParams({ token: 'no-such-token' }).toString(),
+      redirect: 'manual',
+    }));
+    const refused = await arrive(ip);
+    expect(refused.status).toBe(429);
+    // a person is looking at this, so it is the docs.vote shell and not JSON
+    expect(refused.headers.get('content-type')).toMatch(/text\/html/);
+    expect(refused.headers.get('retry-after')).toBe('300');
+    const page = await refused.text();
+    expect(page).toContain('<!doctype html>');
+    expect(page, 'the page says the link is still good').toContain('still good');
+    expect(page, 'and re-posts it, so the retry is one press').toContain(token);
+    // the whole of the promise: the limiter stands above `useToken`, so the
+    // token was never spent — another address walks straight in with it
+    expect((await arrive(client())).status, 'the same link, another address').toBe(302);
+  }, 60_000);
+
   it('serves two hundred knocks at /apply on one address, then refuses', async () => {
     const { base } = await boot(true);
     const slug = await found(base, 'Knock', 'founder.knock@example.org');
