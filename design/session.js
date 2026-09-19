@@ -5267,6 +5267,23 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   // them in here; the page is rebuilt wholesale, as after any render.
   function setData(next) {
     const textChanged = !!(next && next.DOC && next.DOC !== DOC);
+    const prevDoc = DOC;
+    // **The items are about the document that arrives with them, not the one
+    // it replaces** (issue #66, 2026-09-19). A host that hands in both passes
+    // its items as a thunk, because an argument is evaluated before the call:
+    // the derivation reads the bound document — each site's remembered
+    // wording (`origin`) and every entry's label — so a caller that computed
+    // the items itself built them against the *previous* text, one render
+    // behind the column beside them. A site would then be keyed in the new
+    // line space and its wording looked up in the old column: blank where the
+    // key is new, somebody else's clause where a line went away above it, and
+    // that stale wording read straight back by the guard the ✏️ Re-make press
+    // is refused by. Resolved here, after the document moves and before
+    // `bindData` replaces SUGGS, which the derivation reads to find the
+    // candidate being re-made. One `setData`, because each one is a whole
+    // render.
+    let suggs = (next && next.SUGGS) || SUGGS;
+    if (typeof suggs === 'function') { DOC = (next && next.DOC) || DOC; suggs = suggs(); }
     // **An unproposed draft is local, and has to survive a data swap** (Ed,
     // 2026-08-21: *when I ✒️ any constitutional question the text
     // disappears*). Live, SUGGS is rebuilt from the server on every render
@@ -5276,13 +5293,11 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // is the open one; this holds whatever is open, which is the case that
     // was losing work. It is the same rule the surface already keeps for
     // every other provisional value: closing a card is not discarding.
-    let suggs = (next && next.SUGGS) || SUGGS;
     if (next && next.SUGGS) {
       const mine = SUGGS.find((x) => x.id === DRAFT_ID && x.unproposed);
       if (mine && !suggs.some((x) => x.id === DRAFT_ID)) suggs = suggs.concat([mine]);
     }
     const held = heldCaret();
-    const prevDoc = DOC;
     bindData((next && next.DOC) || DOC, suggs, prevDoc);
     renderAll();
     if (held) restoreCaret(held);
