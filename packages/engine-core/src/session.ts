@@ -661,7 +661,11 @@ export class Session {
         c.awaiting = { raceId: event.raceId, p: event.p, threshold: event.threshold,
           // the cap mark rides the park with the numbers (R-051); absent
           // stays absent, so a log written before it existed folds the same
-          ...(event.cappedFit ? { cappedFit: event.cappedFit } : {}) };
+          ...(event.cappedFit ? { cappedFit: event.cappedFit } : {}),
+          // and so does what the room decided on (Q1458), on the same terms:
+          // a park written before the field carries none, and the accept it
+          // is answered by adopts with none, exactly as it did before
+          ...(event.decided ? { decided: event.decided } : {}) };
         this.fitCache.clear();
         this.touch();
         break;
@@ -1488,7 +1492,12 @@ export class Session {
    * decided, not at the convenor's convenience. The cap mark (R-051) replays
    * with them, being a fact about that same moment and that same fit — the
    * shielded adoption is the likeliest of all to be read afterwards, and is
-   * not the one receipt allowed to lie by omission. Everything downstream of
+   * not the one receipt allowed to lie by omission. **And so do the
+   * membership's own three numbers** (Q1458, Ed 2026-09-18): approvals, floor
+   * and silences, recorded at the park and copied here, so the record of a
+   * shielded adoption states *n of E weighed in* like every other adoption's
+   * — and states it as it stood when the vote carried, whatever the room did
+   * while the answer was awaited. Everything downstream of
    * `adopted` — the version bump, the rebase of the field, the refund of the
    * stake, `lastAdoptionT`, the fit cache — runs unchanged.
    *
@@ -1507,7 +1516,7 @@ export class Session {
     const before = this.log.length;
     if (outcome === 'accept') {
       this.adopt(t, candidateId, parked.p, parked.threshold, parked.raceId,
-        parked.cappedFit);
+        parked.cappedFit, parked.decided);
     } else {
       this.emit({ type: 'candidate-retired', t, id: candidateId,
         raceId: parked.raceId, refund: exitRefund(c.stakePaid, 'failed'),
@@ -1805,9 +1814,15 @@ export class Session {
       // every standing park's offsets through `rebaseOthers`
       if (this.raceRules.overlapsPark(c.footprint, this.raceRules.parkedFootprints())) continue;
       if (this.constitutionValue.textAssent) {
+        // the membership's three numbers ride the park beside `p` and the
+        // cap mark (Q1458, Ed 2026-09-18): the park is the moment the vote
+        // carried, and all three move with the clock, so recording them
+        // here is the only way the adoption the convenor's accept produces
+        // can state what the room actually decided on rather than what a
+        // re-derivation at accept time would find
         this.emit({ type: 'candidate-awaiting-assent', t, id: leaderId,
           raceId: this.raceIdOf(leaderId), p, threshold,
-          ...(cappedFit ? { cappedFit } : {}) });
+          ...(cappedFit ? { cappedFit } : {}), decided });
         continue;
       }
       this.adopt(t, leaderId, p, threshold, undefined, cappedFit, decided);
