@@ -38,9 +38,15 @@
   const keyOf = (e) => e.kind + ':' + e.candidateId;
   const text = (lines) => (lines || []).join('\n');
 
-  const part = (label, html, cls) =>
-    '<div class="fpart"><p class="eyebrow">' + esc(label) + '</p>' +
-    '<div class="ftext' + (cls ? ' ' + cls : '') + '">' + html + '</div></div>';
+  // **Before | after, side by side** (the designer's pass, Ed 2026-09-19). One
+  // grid per change: the two labels on a line, the two clauses starting on a
+  // line, and a short change's neighbours in the *after* column alone, so that
+  // column reads as the document will. Each cell names its own place
+  // (`g-lb` label-before … `g-cb` context-below), which is what lets a phone
+  // put the same cells in one column without a second set of markup.
+  const label = (words, place) => '<p class="flabel ' + place + '">' + esc(words) + '</p>';
+  const cell = (html, place, cls) =>
+    '<div class="ftext ' + place + (cls ? ' ' + cls : '') + '">' + html + '</div>';
 
   // **A short change is read between its neighbours** (Ed, 2026-09-19: *if the
   // paragraph that changed is short, the previous and next paragraphs should be
@@ -48,8 +54,7 @@
   // characters — about three lines at the feed's measure; past it the change is
   // its own context, and its neighbours would only push the next entry away.
   const SHORT = 280;
-  const ctx = (line) => (line
-    ? '<div class="ftext fctx">' + C.wordingHtml(null, line) + '</div>' : '');
+  const ctx = (line, place) => (line ? cell(C.wordingHtml(null, line), place, 'fctx') : '');
 
   // how long a proposal took to pass, in its two largest units
   function tookWords(ms) {
@@ -62,44 +67,44 @@
     return T.days(d) + (h % 24 ? ' ' + T.hours(h % 24) : '');
   }
 
-  // one changed place: what stood there, then what is put there
+  // one changed place: what stood there on the left, what is put there on the right
   function changeHtml(e, ch) {
     const before = text(ch.before);
     const after = text(ch.after);
-    const put = e.kind === 'proposed' ? T.put : T.nowStands;
     const where = '<p class="fwhere">' + (ch.heading ? '§ ' + esc(ch.heading) : esc(T.top)) + '</p>';
-    // an insertion has no clause that stood: it says where it goes instead
-    const stood = ch.before.length
-      ? part(T.stood, C.wordingHtml(null, before), 'stood')
-      : (ch.above ? part(T.after, C.wordingHtml(null, ch.above), 'stood') : part(T.first, '', 'stood'));
     const short = before.length <= SHORT && after.length <= SHORT;
-    // an insertion's `above` is already its place, said under its own label
-    return '<div class="fchange">' + where +
-      (short && ch.before.length ? ctx(ch.above) : '') + stood +
-      // **always marked** (the deadlock card's rule, `force`): the floor stops a
-      // lane being lit end to end beside its incumbent, and here what stood is
-      // directly above and comparison is the whole point of the entry
-      part(put, e.kind !== 'proposed' && !after.trim()
+    // an insertion has no clause that stood: its left column says where it goes
+    const left = ch.before.length
+      ? label(T.stood, 'g-lb') + cell(C.wordingHtml(null, before), 'g-st', 'stood')
+      : (ch.above ? label(T.after, 'g-lb') + cell(C.wordingHtml(null, ch.above), 'g-st', 'stood')
+        : label(T.first, 'g-lb'));
+    // **always marked** (the deadlock card's rule, `force`): the floor stops a
+    // lane being lit end to end beside its incumbent, and here what stood is
+    // beside it and comparison is the whole point of the entry
+    const right = label(e.kind === 'proposed' ? T.put : T.nowStands, 'g-la') +
+      // an insertion's `above` is already its place, said in the left column
+      (short && ch.before.length ? ctx(ch.above, 'g-ca') : '') +
+      cell(e.kind !== 'proposed' && !after.trim()
         ? '<div class="lp removed">' + esc(T.removed) + '</div>'
-        : C.wordingHtml(ch.before.length ? before : null, after, true)) +
-      (short ? ctx(ch.below) : '') + '</div>';
+        : C.wordingHtml(ch.before.length ? before : null, after, true), 'g-pt') +
+      (short ? ctx(ch.below, 'g-cb') : '');
+    return '<div class="fchange">' + where + '<div class="fcols">' + left + right + '</div></div>';
   }
 
   function whoHtml(e) {
     // the record names the office, never the person (`amendmentBlocks`' rule)
-    if (e.kind === 'decreed') return null;
+    if (e.kind === 'decreed') return '<div class="fwho"><span class="name">' + esc(T.founder) + '</span></div>';
     const a = e.author;
     const person = a ? { n: a.name, pic: a.picture, erased: a.erased } : null;
     const name = !a ? T.anonymous : (a.erased ? T.redacted : (a.name || T.anonymous));
-    return { face: '<span class="who">' + C.avHtml(person) + '</span>',
-      name: '<span class="name">' + esc(name) + '</span>' };
+    return '<div class="fwho">' + C.avHtml(person) + '<span class="name">' + esc(name) + '</span></div>';
   }
 
   function entryHtml(e, arriving) {
     const o = e.outcome;
     // **the title says the whole outcome** (Ed, 2026-09-19), as a sealed
     // record's head does: what happened, then the passed card's own numbers
-    const label = e.kind === 'proposed' ? T.proposed
+    const title = e.kind === 'proposed' ? T.proposed
       : e.kind === 'adopted'
         ? (o ? T.titled(T.passedIn(tookWords(o.tookMs)), T.counts(o.voted, roster, o.floor, o.approvals, o.abstained))
           : T.passed)
@@ -112,17 +117,16 @@
       : e.kind === 'adopted' ? C.markHtml('adopted')
         : '<span class="qmark" aria-hidden="true">' + C.glyphHtml('✒️') + '</span>';
     const cls = e.kind === 'proposed' ? 'proposed' : e.kind === 'adopted' ? 'passed' : 'decreed';
-    const who = whoHtml(e);
+    const who = whoHtml(e) || '';
     const why = (e.rationale || '').trim();
+    // the margin — when, and who — then the rule with the mark on it, then the words
     return '<article class="fentry ' + cls + (arriving ? ' arrive' : '') + '" data-key="' + esc(keyOf(e)) + '">' +
-      '<div class="fhead"><p class="ftitle">' + mark + '<span>' + esc(label) + '</span></p>' +
-      '<time class="fwhen" datetime="' + new Date(e.t).toISOString() + '">' + timeOf(e.t) + '</time></div>' +
+      '<aside class="frail"><time datetime="' + new Date(e.t).toISOString() + '">' + timeOf(e.t) + '</time>' + who + '</aside>' +
+      '<div class="fmain"><span class="fnode">' + mark + '</span>' +
+      '<p class="ftitle">' + esc(title) + '</p>' +
       e.changes.map((ch) => changeHtml(e, ch)).join('') +
-      (who || why
-        ? '<div class="fwhy">' + (who ? who.face : '') + '<div class="body">' + (who ? who.name : '') +
-          (why ? '<span class="why">' + esc(why) + '</span>' : '') + '</div></div>'
-        : '') +
-      '</article>';
+      (why ? '<p class="fwhy">' + esc(why) + '</p>' : '') +
+      '</div></article>';
   }
 
   function draw(v) {
@@ -144,7 +148,7 @@
     let day = null;
     for (const e of v.entries) {
       const d = dayOf(e.t);
-      if (d !== day) { day = d; html += '<p class="eyebrow feedday">' + esc(d) + '</p>'; }
+      if (d !== day) { day = d; html += '<p class="feedday">' + esc(d) + '</p>'; }
       html += entryHtml(e, seen !== null && !seen.has(keyOf(e)));
     }
     list.innerHTML = html;

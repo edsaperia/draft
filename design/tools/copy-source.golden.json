@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 482
+  "entries": 483
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -29,6 +29,7 @@
   "feed.decreed": "The Founder amended this",
   "feed.empty": "Nothing has been proposed yet.",
   "feed.first": "A new clause, first in its section",
+  "feed.founder": "The Founder",
   "feed.hours": "ƒ (n) => (n === 1 ? '1 hour' : n + ' hours')",
   "feed.loading": "Loading…",
   "feed.minutes": "ƒ (n) => (n === 1 ? '1 minute' : n + ' minutes')",

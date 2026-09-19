@@ -995,6 +995,8 @@ window.COPY = (function () {
     // a deletion that passed: the card's own sentence (`lane.removed`) is in the
     // conditional, which is right for a proposal and wrong once it has happened
     removed: 'This clause was removed.',
+    // whose hand an amendment is: the office, never the person
+    founder: 'The Founder',
     anonymous: 'Anonymous',
     redacted: '[redacted]',
     // the page's states
