@@ -16,9 +16,10 @@ night before (Ed's issues review, item 18: *one deploy Friday or Saturday, never
 
        curl -s https://docs.vote/healthz
 
-2. **Start from a small store.** Boot time is the liveness risk: a host that must replay a big
-   room cannot come back inside Render's health-check window (Q1470). Delete last night's
-   rehearsal document — OPERATING §5, `draft-tools delete`, **pause first**.
+2. **No bots are running, anywhere.** Boot time is the liveness risk: a host that must replay a
+   big room cannot come back inside Render's health-check window (Q1470), and a bot room is what
+   grows one overnight. Small rooms stay where they are (Ed, 2026-09-19: *leave the rooms, just
+   make sure no bots are running*); `documents` in `/healthz` should be the number you expect.
 3. **Consider one restart, now and not later**, for a fresh heap: both unexplained deaths of
    2026-09-19 followed hours of uptime under a big room, and `/healthz` reports no memory (#70).
    OPERATING §3, *Restarting the live host*: pause, then *Manual Deploy → Restart*, then read
