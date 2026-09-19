@@ -96,3 +96,21 @@ DRAFT_DATA_DIR=<fresh> npm run server`) unless it says docs.vote.
   insertion), `pen` (the Founder's ✒️ road, one hunk). Red on the pre-fix page at *exactly one
   hunk goes over the wire* in all four.
   `node scripts/repro/untouched-place.mjs http://127.0.0.1:8360`
+
+## 2026-09-20 — the rehearsal, the night before the room
+
+- `rehearsal.mjs` — **asserting, like `admit-keep.mjs`**: a whole document's life driven
+  headless, so the room is walked before anybody real is in it. A bot Founder founds a
+  short-lived charter with every setting held and set (nothing delegated, so 🍾 is ready at
+  once), presses 🍾 laying every power down **except 🛡️ on the Text**, and then keeps the
+  three posts a person would keep in a live room until the clock closes it: the Founder's
+  Accept on every 👑 park (the third refused, so both roads are walked), the spectator feed
+  polled exactly as `design/feed.js` polls it, and `/healthz` with the round trips beside
+  it. At the close the Founder signs and the record is read twice — once full, once on a
+  **slim** poll (issue #30 finding 1). It starts no bots; it prints the `room-bots` line.
+  There is no default `--base`: docs.vote is never reached by forgetting an argument.
+
+  ```
+  node scripts/repro/rehearsal.mjs --base http://127.0.0.1:8350 --minutes 25 --bots 8
+  node scripts/room-bots.mjs http://127.0.0.1:8350/d/<slug> --key=$DRAFT_BOT_KEY --seed=rehearsal --min 10s --max 40s --heat 0.6 --motions 0.05
+  ```
