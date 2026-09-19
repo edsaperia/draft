@@ -474,8 +474,10 @@ Five things to know about it:
    - **`delete`** (Q1322) deletes one whole document — log, engine log,
      people, provisional text, bridge state — and is how a quarantined
      document leaves the store.
-   - **`wipe`** deletes every document and every sidecar. It has run twice,
-     each time on Ed's word (2026-09-08, 2026-09-18).
+   - **`wipe`** deletes every document and every sidecar. It has run three
+     times, each time on Ed's word (2026-09-08, 2026-09-18, and 2026-09-19 with the
+     host down — Q1470; `docs/runbooks/wipe.md` has the road for when the Shell tab
+     will not open).
 
    `repair-tail` is the near miss: it *shortens* one log to its intact
    prefix, and it keeps the original byte for byte beside it as
