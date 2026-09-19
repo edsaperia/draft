@@ -36,6 +36,20 @@ describe('the settings feed (Q1466)', () => {
     for (const e of passed) expect(JSON.stringify(e)).not.toContain(bo);
   });
 
+  // **the Founder's own ✒️ on a rule is an entry, and exactly one** (issue #68
+  // finding 2): the fold also synthesises a `pen:` motion record from the same
+  // event, so the count is the assertion and not only the kind
+  it('the Founder’s ✒️ change to a rule is one decreed entry', () => {
+    const { s } = buildConstituted();
+    s.setSetting(10, 'rate', { grant: 3, cap: 6, dripMinutes: 120 }, 'four was too many');
+    const feed = settingFeed(s.logEntries());
+    expect(feed).toHaveLength(1);
+    expect(feed[0]).toMatchObject({ t: 10, kind: 'decreed', motionId: null, setting: 'rate',
+      glyph: '⏱️', route: 'pen', to: { grant: 3, cap: 6, dripMinutes: 120 },
+      rationale: 'four was too many' });
+    expect(feed[0]!.from).not.toBeNull();
+  });
+
   it('a motion about a person makes no entry, and her address reaches nothing', () => {
     const { s, bo } = buildConstituted();
     s.openMotion(10, bo, { kind: 'invite', email: 'dee@example.org' });

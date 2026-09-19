@@ -244,6 +244,24 @@ describe('the spectator feed (Q1466)', () => {
     expect(await feed(undefined, next.eseq)).toMatchObject({ short: true });
   }, 60_000);
 
+  // **the Founder's ✒️ on a rule is one entry, and reaches the open page too**
+  // (issue #68 finding 2): the branch that draws it tested `by === 'convenor'`,
+  // which a post-start set never is
+  it('a ✒️ change to a rule makes exactly one entry, on a page already polling', async () => {
+    const b = await boot();
+    const { ada, cmd, feed } = await room(b, 'link', 'public');
+    const open = await feed();
+    await cmd(ada, 'set-setting', { setting: 'rate', value: { grant: 3, cap: 6, dripMinutes: 120 },
+      why: 'four was too many' });
+    const next = await feed(undefined, open.eseq) as unknown as
+      { short?: boolean; entries: Array<Record<string, unknown>> };
+    expect(next.short).toBeUndefined();
+    expect(next.entries).toHaveLength(1);
+    expect(next.entries[0]).toMatchObject({ kind: 'decreed', setting: 'rate', glyph: '⏱️', route: 'pen',
+      motionId: null, from: { grant: 4, cap: 8, dripMinutes: 240 }, to: { grant: 3, cap: 6, dripMinutes: 120 },
+      rationale: 'four was too many', author: null, changes: [] });
+  }, 60_000);
+
   it('the page is served at /d/:slug/feed, and a slug nobody made is a 404 on both rows', async () => {
     const b = await boot();
     const { slug } = await room(b, 'link', 'public');

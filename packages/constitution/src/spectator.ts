@@ -110,7 +110,12 @@ export function settingFeed(log: readonly LogEntry[]): SettingFeedEntry[] {
         glyph: GLYPH.get(rec.payload.setting) ?? '',
         route: rec.route === 'pen' ? 'pen' : rec.route,
         from: was, to: rec.payload.value, rationale: rec.why ?? '', tookMs: ev.t - rec.openedAtT });
-    } else if (ev.type === 'setting-set' && ev.by === 'convenor' && begun && RULE.has(ev.setting)) {
+    // **the Founder's ✒️ after the start is `crown`, never `convenor`** (issue
+    // #68 finding 2): `setSetting` stamps `by: postStart ? 'crown' : 'convenor'`
+    // and is the only emitter, so the old test could never be true and no ✒️
+    // change to a rule ever made an entry. `begun` is implied by `crown` and
+    // kept as the statement of what this branch is about.
+    } else if (ev.type === 'setting-set' && ev.by === 'crown' && begun && RULE.has(ev.setting)) {
       out.push({ t: ev.t, kind: 'decreed', motionId: null, setting: ev.setting,
         glyph: GLYPH.get(ev.setting) ?? '', route: 'pen',
         from: stoodForSet, to: ev.value, rationale: ev.why ?? '' });
