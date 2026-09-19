@@ -69,3 +69,15 @@ DRAFT_DATA_DIR=<fresh> npm run server`) unless it says docs.vote.
   no admit entry left to press and *Applicants* empty; and the same address free to apply
   again. Red on the pre-Q1473 module at *the application ends on that one vote*, the keep
   having left the motion running. `node scripts/repro/admit-keep.mjs http://127.0.0.1:8270`
+
+## 2026-09-19 — a closed document asks nothing but the signature (Q1479 (a))
+
+- `closed-unacked.mjs` — **asserting**, like `admit-keep.mjs`: exit 1 on the defect, 2 on a
+  set-up that never got there. A ladder document at `closed`, read from a seat the rung left
+  unsigned — chosen by the wire's own signatures, never by name — in a **fresh** browser
+  context, because an empty `localStorage` is exactly what the closing mail's link produces
+  on a second device. It asserts no clause still says *being decided*, no greyed tab that
+  opens nothing, one `rec:` rail entry per record on the wire, that one of them opens its
+  card, and that 🥂 still signs. Red on the pre-fix page at the first four (issue #30
+  findings 2–3): `withheld` held every record behind an ⚖️ OK the closed page has nowhere
+  to give. `node scripts/repro/closed-unacked.mjs http://127.0.0.1:8341`
