@@ -930,7 +930,11 @@
             // wrote this* and the entry is the accent blue; a word saying it a third
             // time is the surface reading its own glossary aloud. The place count
             // survives, because it says *which* place and nothing else does.
-            : '<span class="ql">' + markHtml('propose') + esc(plainLabel(e.label || g.qLabel)) +
+            // …and the same mark once it is proposed (issue #66): this branch
+            // hard-coded ✏️, so a stranded proposal of yours wore ↻ in the
+            // gutter and the contents rail and ✏️ here, at the same moment.
+            // SURFACE §6 is one alphabet in all three columns.
+            : '<span class="ql">' + markHtml(markKindOf(g)) + esc(plainLabel(e.label || g.qLabel)) +
               (e.of > 1 ? '<span class="qv"> · ' + T.rail.placesOf(e.n, e.of) + '</span>' : '') + '</span>') +
           '</button></li>';
         continue;

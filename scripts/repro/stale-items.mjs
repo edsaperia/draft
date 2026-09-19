@@ -198,6 +198,15 @@ if (!ONLY || ONLY === 'remake') {
   const after = await mine(page);
   say('  after: ' + JSON.stringify({ stranded: after.stranded, sites: after.sites, column: after.column }));
   check('the proposal is handed back stranded', after.stranded === true);
+  // **one alphabet in all three columns** (SURFACE §6): the gutter and the
+  // contents rail read `markKindOf`, and the margin index must draw the same ↻
+  const marks = await page.evaluate((id) => ({
+    rail: [...document.querySelectorAll(`#rail li[data-q="${id}"] .mk`)].map((m) => m.className),
+    toc: [...document.querySelectorAll(`#toc .mk`)].map((m) => m.className),
+  }), after.id);
+  say('  marks: ' + JSON.stringify(marks));
+  check('the margin index draws ↻ for a stranded proposal',
+    marks.rail.length > 0 && marks.rail.every((c) => /mk-stranded/.test(c)), JSON.stringify(marks));
   check('the entry remembers the clause as it now stands', after.sites[0].origin[0] === STANDS,
     JSON.stringify(after.sites[0].origin));
 
