@@ -2096,7 +2096,16 @@
     // asked about at once, so the commit is never still dark by the time
     // anybody has read the card
     slugCheckT = setTimeout(() => {
-      fetch('/api/slug/' + encodeURIComponent(slug)).then((r) => r.json()).then((res) => {
+      // **A refusal is not an answer** (issue #69, F2). The 429 the address
+      // door writes when a room of founders shares one venue address is
+      // valid JSON with no `available` in it, so the read below made it
+      // *taken*, for every address, for the ten minutes of the window, and
+      // `slugSeen` made it stick with the commit dark. Every non-2xx takes
+      // the `.catch` below instead — the defence Q534c already wrote for
+      // exactly this dead end.
+      fetch('/api/slug/' + encodeURIComponent(slug))
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+        .then((res) => {
         slugAsking = null;
         if (S.slug !== slug) return;
         // **The machine may pick the address, but it must say so** (Q534c,
