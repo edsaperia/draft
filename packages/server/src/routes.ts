@@ -82,8 +82,10 @@ export interface Req {
   readonly baseOrigin: string;
   /** 404 for a document that isn't there; hand back whatever is. */
   docOr404(doc: LoadedDoc | null): LoadedDoc | null;
-  /** 429 a mail-minting door when its per-IP bucket overflows. */
-  tooMany(route: string, max?: number): boolean;
+  /** 429 a mail-minting door when its per-IP bucket overflows. `refused`
+   *  writes the answer in the caller's own shape where JSON is the wrong
+   *  one — a door a person is looking at owes them a page (issue #69, F3). */
+  tooMany(route: string, max?: number, refused?: () => void): boolean;
   /** the operator's key, as every admin route and the bot outbox gate on it */
   bearerRefused(): boolean;
   /** a route that exists on a dev host only: an unknown path anywhere else */
@@ -164,9 +166,9 @@ export function makeReq(ctx: RouteContext, req: IncomingMessage, res: ServerResp
   nowMs: number, url: URL, baseOrigin: string): Req {
   const path = url.pathname;
   const seg = path.split('/').filter((s) => s.length > 0);
-  const tooMany = (route: string, max = 20): boolean => {
+  const tooMany = (route: string, max = 20, refused?: () => void): boolean => {
     if (!rateLimited(`${route}:${ipOf(req, ctx.cfg)}`, nowMs, max)) return false;
-    json(res, 429, { error: 'too many requests — try again shortly' });
+    if (refused) refused(); else json(res, 429, { error: 'too many requests — try again shortly' });
     return true;
   };
   return {

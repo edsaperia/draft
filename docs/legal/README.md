@@ -44,8 +44,10 @@ Checked against the source rather than remembered:
   (docId, memberId, expiry) — `auth.ts`, `routes.ts` (`setCookie`).
 - **Magic links**: 24 random bytes, 7-day TTL, single-use (deleted on verify),
   stored as a SHA-256 hash — `auth.ts`.
-- **IP addresses**: rate-limiting only, in-memory `Map`, 20 requests per route
-  per 10 minutes, read from `cf-connecting-ip` or a hop count. Never written
+- **IP addresses**: rate-limiting only, in-memory `Map`, one bucket per route
+  per address per 10 minutes, at a cap the route sets — 20 by default, and up
+  to 6000 on the doors a room of twenty phones shares one address at (issue
+  #69, 2026-09-19). Read from `cf-connecting-ip` or a hop count. Never written
   to disk by the app — `routes.ts`, `ipOf`.
 - **Operator notification mail** on every document creation, carrying the
   title, the founder's address and the URL — `mailer.ts` `MAILS.newDocument`,
