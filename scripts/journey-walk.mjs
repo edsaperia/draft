@@ -1636,6 +1636,38 @@ const motionDeckOnAmended = async () => {
     : 'FAIL: ' + JSON.stringify({ dA3, dB3, cardA3 })));
   if (!deckOk4) stuck.push('the entries once every motion is answered');
   await closeCard();
+  /* **…and a rename stands in the 🪶 clause's own pile like any other** (Q1474,
+   * Ed's screenshot 2026-09-19: *name the document proposal not showing
+   * correctly*). The title's paragraph is drawn by `titleGovPara` rather than
+   * by the section body every other rule goes through, and it built its pile
+   * from a list of its own — so a motion on the title had a rail entry, no tab
+   * anywhere, and a card that would not open. One motion is enough here: what
+   * it asserts is that the title's pile is `chipsFor`'s, and everything else
+   * about a motion the four steps above have already walked. `scripts/repro/
+   * title-motion-tab.mjs` is the whole reading, from a member's seat too. */
+  const putT = await wire(guestPage, 'open-motion',
+    { payload: { kind: 'set', setting: 'title', value: { text: 'A Better Name For The Journey' } }, why: 'it deserves a better name' });
+  const mT = putT && putT.result;
+  if (!mT || putT.error) {
+    say('rename put · FAIL: a motion on the title was refused · ' + JSON.stringify(putT));
+    stuck.push('a motion on the title');
+  } else {
+    await T(5000);
+    const mKT = 'mo:' + mT;
+    const seenT = await page.evaluate((k) => {
+      const rule = document.querySelector('#band .achip[data-chip="title"]');
+      const para = rule ? rule.closest('.cpara') : null;
+      const tab = document.querySelector('#band .achip[data-chip="' + k + '"]');
+      return { entry: !!document.querySelector('#rail li[data-q="' + k + '"]'),
+        inTitlePile: !!(tab && para && para.contains(tab)),
+        front: para && para.querySelector('.achip') ? para.querySelector('.achip').dataset.chip : null };
+    }, mKT);
+    const renameOk = seenT.entry && seenT.inTitlePile && seenT.front === 'title';
+    say('rename tab · ' + (renameOk ? 'a rename has its own rail entry and its own tab in the 🪶 clause’s pile, behind the rule’s own'
+      : 'FAIL: ' + JSON.stringify(seenT)));
+    if (!renameOk) stuck.push('the rename’s tab in the title’s pile (Q1474)');
+    await wire(guestPage, 'withdraw-motion', { motion: mT });
+  }
   await wire(guestPage, 'withdraw-motion', { motion: mA });
   await wire(cyPage, 'withdraw-motion', { motion: mB });
   await T(5000);
