@@ -50,8 +50,11 @@
      3. **Before and after stand side by side.** The width was there; the eye
         compares across a line far better than up and down a column, and the
         entry is half the height. A short change's neighbours (Ed's earlier
-        note) stand in the *after* column only, so that column reads as the
-        document will and the two clauses still start on one line.
+        note) run the full width above and below the pair — the paragraph
+        before, the comparison, the paragraph after — so neither column waits
+        on the other. (They stood in the *after* column alone for the first
+        hour, and on the residency room's real paragraphs a three-line
+        neighbour left a three-line hole beside it.)
      4. **A timeline with a hanging margin.** Time and author hang in the left
         margin against a rule that runs the length of the feed; the mark sits
         on the rule. A proposal that passed is a tinted band with a green rule,
@@ -116,15 +119,15 @@
   .fwhere { margin: 0 0 0.9em; font-size: var(--f-meta); color: var(--muted); padding-left: calc(var(--f-title) * 0.9); }
   .fchange + .fchange { margin-top: var(--gap); }
 
-  /* before | after: labels on one line, the two clauses starting on one line,
-     and the neighbours in the after column only */
+  /* the paragraph before, full width; then before | after, labels on one line
+     and the two clauses starting on one line; then the paragraph after */
   .fcols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: var(--gap);
     row-gap: 0.45em; padding-left: calc(var(--f-title) * 0.9); }
   .flabel { margin: 0; font-size: var(--f-meta); color: var(--muted); }
-  .g-lb { grid-column: 1; grid-row: 1; }  .g-la { grid-column: 2; grid-row: 1; }
-  .g-ca { grid-column: 2; grid-row: 2; }
+  .g-ca { grid-column: 1 / -1; grid-row: 1; margin-bottom: 0.35em; }
+  .g-lb { grid-column: 1; grid-row: 2; }  .g-la { grid-column: 2; grid-row: 2; }
   .g-st { grid-column: 1; grid-row: 3; }  .g-pt { grid-column: 2; grid-row: 3; }
-  .g-cb { grid-column: 2; grid-row: 4; }
+  .g-cb { grid-column: 1 / -1; grid-row: 4; margin-top: 0.35em; }
   .ftext { font-family: var(--font-text); font-size: var(--f-doc); line-height: 1.45; }
   .ftext .lp { margin: 0 0 0.5em; font-size: inherit; line-height: inherit; }
   .ftext .lp:last-child { margin-bottom: 0; }
@@ -177,9 +180,9 @@
     .ftitle, .fwhere, .fcols { padding-left: 0; }
     .fwhy { margin-left: 0; }
     .fcols { grid-template-columns: minmax(0, 1fr); }
-    .g-lb { grid-column: 1; grid-row: 1; }  .g-st { grid-column: 1; grid-row: 2; }
-    .g-la { grid-column: 1; grid-row: 3; margin-top: 0.6em; }
-    .g-ca { grid-column: 1; grid-row: 4; }  .g-pt { grid-column: 1; grid-row: 5; }
+    .g-ca { grid-column: 1; grid-row: 1; }
+    .g-lb { grid-column: 1; grid-row: 2; }  .g-st { grid-column: 1; grid-row: 3; }
+    .g-la { grid-column: 1; grid-row: 4; margin-top: 0.6em; }  .g-pt { grid-column: 1; grid-row: 5; }
     .g-cb { grid-column: 1; grid-row: 6; }
   }
 </style>

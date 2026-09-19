@@ -39,9 +39,9 @@
   const text = (lines) => (lines || []).join('\n');
 
   // **Before | after, side by side** (the designer's pass, Ed 2026-09-19). One
-  // grid per change: the two labels on a line, the two clauses starting on a
-  // line, and a short change's neighbours in the *after* column alone, so that
-  // column reads as the document will. Each cell names its own place
+  // grid per change: a short change's paragraph-before across the full width,
+  // the two labels on a line, the two clauses starting on a line, and the
+  // paragraph-after across the width again. Each cell names its own place
   // (`g-lb` label-before … `g-cb` context-below), which is what lets a phone
   // put the same cells in one column without a second set of markup.
   const label = (words, place) => '<p class="flabel ' + place + '">' + esc(words) + '</p>';
