@@ -930,7 +930,11 @@
             // wrote this* and the entry is the accent blue; a word saying it a third
             // time is the surface reading its own glossary aloud. The place count
             // survives, because it says *which* place and nothing else does.
-            : '<span class="ql">' + markHtml('propose') + esc(plainLabel(e.label || g.qLabel)) +
+            // …and the same mark once it is proposed (issue #66): this branch
+            // hard-coded ✏️, so a stranded proposal of yours wore ↻ in the
+            // gutter and the contents rail and ✏️ here, at the same moment.
+            // SURFACE §6 is one alphabet in all three columns.
+            : '<span class="ql">' + markHtml(markKindOf(g)) + esc(plainLabel(e.label || g.qLabel)) +
               (e.of > 1 ? '<span class="qv"> · ' + T.rail.placesOf(e.n, e.of) + '</span>' : '') + '</span>') +
           '</button></li>';
         continue;
@@ -2084,6 +2088,15 @@
     // the highest any proposal reached against the text it was measured on —
     // the number the bar was actually being asked about
     const best = Math.max(0, ...field.map((c) => c.p ?? 0));
+    // **A reading is printed only where the field carries one** (issue #66,
+    // 2026-09-19). A retired record carries no probability — the engine writes
+    // none — so `best` fell back to 0 and the eyebrow told the author who had
+    // just lost that 0% of the room approved their wording, beside a line
+    // counting the very people who weighed in. The guard beneath covered only
+    // a race the clock cut off; this is the same thought asked of the field
+    // itself. SURFACE §9's record row puts the percentages on the ranked
+    // field, not the eyebrow.
+    const hasP = field.some((c) => typeof c.p === 'number');
     // **The head is the clause, and the clause is not always the top of the
     // ranking.** `ranked.slice(1)` assumed it was — true on an adopted card,
     // where the winner both is the clause and leads the field, and false on a
@@ -2163,7 +2176,7 @@
       '<span>' + (und ? T.record.undecided : T.record.decided) + ' · ' + (d.judges ?? 0) + '/' + ROSTER + PEOPLE +
       // an undecided race nobody read prints no reading: 0% is a number about
       // nothing
-      (und && !(best > 0) ? '' : ' · ' + pct(best) + JUDG) + '</span>' +
+      (!hasP || (und && !(best > 0)) ? '' : ' · ' + pct(best) + JUDG) + '</span>' +
       '<span class="sub">' + esc(d.when || '') + '</span></div>' +
       // **The counts are printed, not hovered** (Q1452, Ed 2026-09-18: *print the
       // count line on the card*): the sentence was a `title` on the head, which a
@@ -5276,6 +5289,23 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   // them in here; the page is rebuilt wholesale, as after any render.
   function setData(next) {
     const textChanged = !!(next && next.DOC && next.DOC !== DOC);
+    const prevDoc = DOC;
+    // **The items are about the document that arrives with them, not the one
+    // it replaces** (issue #66, 2026-09-19). A host that hands in both passes
+    // its items as a thunk, because an argument is evaluated before the call:
+    // the derivation reads the bound document — each site's remembered
+    // wording (`origin`) and every entry's label — so a caller that computed
+    // the items itself built them against the *previous* text, one render
+    // behind the column beside them. A site would then be keyed in the new
+    // line space and its wording looked up in the old column: blank where the
+    // key is new, somebody else's clause where a line went away above it, and
+    // that stale wording read straight back by the guard the ✏️ Re-make press
+    // is refused by. Resolved here, after the document moves and before
+    // `bindData` replaces SUGGS, which the derivation reads to find the
+    // candidate being re-made. One `setData`, because each one is a whole
+    // render.
+    let suggs = (next && next.SUGGS) || SUGGS;
+    if (typeof suggs === 'function') { DOC = (next && next.DOC) || DOC; suggs = suggs(); }
     // **An unproposed draft is local, and has to survive a data swap** (Ed,
     // 2026-08-21: *when I ✒️ any constitutional question the text
     // disappears*). Live, SUGGS is rebuilt from the server on every render
@@ -5285,13 +5315,11 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // is the open one; this holds whatever is open, which is the case that
     // was losing work. It is the same rule the surface already keeps for
     // every other provisional value: closing a card is not discarding.
-    let suggs = (next && next.SUGGS) || SUGGS;
     if (next && next.SUGGS) {
       const mine = SUGGS.find((x) => x.id === DRAFT_ID && x.unproposed);
       if (mine && !suggs.some((x) => x.id === DRAFT_ID)) suggs = suggs.concat([mine]);
     }
     const held = heldCaret();
-    const prevDoc = DOC;
     bindData((next && next.DOC) || DOC, suggs, prevDoc);
     renderAll();
     if (held) restoreCaret(held);

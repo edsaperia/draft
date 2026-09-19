@@ -878,7 +878,13 @@
       charterKey = key;
       SESSION.setData({
         DOC: !on ? [] : (FIX ? FIX.DOC : blocksOf(cs.text, !cs.closed)).concat(closedBlocks()),
-        SUGGS: !on ? [] : LIVE_HOOKS.items ? LIVE_HOOKS.items() : FIX ? FIX.SUGGS.concat(FIX.CLOSED ? FIX.CLOSED.items : []) : [],
+        // **the items are handed in unbuilt** (issue #66): this is the one
+        // call that moves the document and its items together, and an
+        // argument is evaluated before the call — so `items()` here would
+        // derive every site's remembered wording and every label from the
+        // text the line above is replacing. `setData` runs the thunk once the
+        // new document is bound.
+        SUGGS: !on ? [] : LIVE_HOOKS.items ? LIVE_HOOKS.items : FIX ? FIX.SUGGS.concat(FIX.CLOSED ? FIX.CLOSED.items : []) : [],
       });
     } else if (on && LIVE_HOOKS.items && !typing) {
       SESSION.setData({ SUGGS: LIVE_HOOKS.items() });
