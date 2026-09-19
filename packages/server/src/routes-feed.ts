@@ -23,6 +23,8 @@
 import { join } from 'node:path';
 import { SpectatorApi } from '../../engine-core/src/spectator-api.js';
 import type { FeedEntry } from '../../engine-core/src/spectator-api.js';
+import { settingFeed } from '../../constitution/src/spectator.js';
+import type { SettingFeedEntry } from '../../constitution/src/spectator.js';
 import { asEngineDoc } from './engine-host.js';
 import { cookieSession, json, serveFile } from './routes.js';
 import type { Route } from './routes.js';
@@ -34,10 +36,31 @@ export const FEED_LIMIT = 200;
 
 interface NamedAuthor { name: string | null; picture: string | null; erased: boolean }
 
-/** The feed as served: the engine's entries, newest first, an author's id resolved to their row. */
-export function feedEntries(doc: LoadedDoc): Array<Omit<FeedEntry, 'author'> & { author: NamedAuthor | null }> {
+type TextEntry = Omit<FeedEntry, 'author'> & { author: NamedAuthor | null };
+/** A settings motion as served: the projection's entry, under the same three kinds as the text's. */
+type RuleEntry = SettingFeedEntry & { author: null; changes: [] };
+
+// the settings half is a replay of the document's own log, so it is kept per
+// document and rebuilt only when that log has grown
+const ruleCache = new WeakMap<LoadedDoc, { seq: number; entries: SettingFeedEntry[] }>();
+function ruleEntries(doc: LoadedDoc): SettingFeedEntry[] {
+  const log = doc.cs.logEntries();
+  const hit = ruleCache.get(doc);
+  if (hit && hit.seq === log.length) return hit.entries;
+  const entries = settingFeed(log);
+  ruleCache.set(doc, { seq: log.length, entries });
+  return entries;
+}
+
+/**
+ * The feed as served, newest first: the engine's text entries, an author's id
+ * resolved to their row, and the constitution's settings entries among them by
+ * time. A settings motion's mover is sealed, so its author is nobody's.
+ */
+export function feedEntries(doc: LoadedDoc): Array<TextEntry | RuleEntry> {
+  const rules: RuleEntry[] = ruleEntries(doc).map((e) => ({ ...e, author: null, changes: [] }));
   const bridge = asEngineDoc(doc).bridge;
-  if (bridge === null) return [];
+  if (bridge === null) return rules.slice(-FEED_LIMIT).reverse();
   // the members map first, the convenor record only for a clerk — the view's
   // own `recordOf`, since a founder who is a member keeps their identity there
   const recordOf = (id: string) => doc.cs.memberRecords().get(id) ??
@@ -47,12 +70,16 @@ export function feedEntries(doc: LoadedDoc): Array<Omit<FeedEntry, 'author'> & {
   // and the projection is a function of the engine alone
   const engine = bridge.engine;
   const all = engine.derived('host:spectatorFeed', () => new SpectatorApi(engine).feed());
-  return all.slice(-FEED_LIMIT).reverse().map((e) => {
+  const texts: TextEntry[] = all.map((e) => {
     const rec = e.author === null ? null : recordOf(e.author);
     return { ...e,
       author: e.author === null ? null
         : { name: rec?.name ?? null, picture: rec?.picture ?? null, erased: rec?.erased ?? false } };
   });
+  // one feed by time; a stable sort keeps each half's own order where two tie
+  const both: Array<TextEntry | RuleEntry> = [...texts, ...rules];
+  both.sort((a, b) => a.t - b.t);
+  return both.slice(-FEED_LIMIT).reverse();
 }
 
 /** May this request read the document's words? A living member, or 🌍 at link or public. */
@@ -82,7 +109,7 @@ export const feedTable: Route[] = [
       // the door's own answer decides a stranger's reading, so the feed and
       // the door can never disagree about who may see the words
       const door = strangerView(doc, nowMs, paused, null) as
-        { canRead: boolean; holding: { kind: string; sentence: string | null } };
+        { canRead: boolean; admission: string; holding: { kind: string; sentence: string | null } };
       const canRead = member || door.canRead;
       if (canRead && url.searchParams.get('since') === String(eseq)) {
         json(res, 200, { eseq, short: true, paused, stalled: !!doc.stalled });
@@ -101,6 +128,10 @@ export const feedTable: Route[] = [
         // the membership's size, which a passed entry's *n of E* is read against
         // — the door serves the same number to anybody (`members.arrived`)
         members: doc.cs.E(),
+        // two facts a rule's sentence turns on (🌍's *members and the Founder*,
+        // 🤝's *joins on arrival*), both already the door's to anybody
+        founderIsMember: doc.cs.convenorRecord().isMember,
+        admissionPrice: door.admission,
         holding: canRead ? null : door.holding,
         entries: canRead ? feedEntries(doc) : [],
       });

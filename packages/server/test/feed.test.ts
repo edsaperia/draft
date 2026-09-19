@@ -205,6 +205,23 @@ describe('the spectator feed (Q1466)', () => {
     expect(member.entries[0]!.author).toBeNull();
   }, 60_000);
 
+  it('a motion on a rule is in the feed with its icon and what stood, and the mover is nobody', async () => {
+    const b = await boot();
+    const { bo, cmd, feed } = await room(b, 'link', 'public');
+    await cmd(bo, 'open-motion', { payload: { kind: 'set', setting: 'chamber', value: { rung: 'public' } },
+      why: 'let the neighbours read it' });
+    const f = await feed() as unknown as { founderIsMember: boolean; admissionPrice: string;
+      entries: Array<Record<string, unknown>> };
+    expect(f.founderIsMember).toBe(true);
+    expect(f.admissionPrice).toBe('assembly');
+    expect(f.entries).toHaveLength(1);
+    expect(f.entries[0]).toMatchObject({ kind: 'proposed', setting: 'chamber', glyph: '🌍', route: 'constitutional',
+      from: { rung: 'link' }, to: { rung: 'public' }, rationale: 'let the neighbours read it', author: null, changes: [] });
+    // sealed: 👤 is public in this room and the mover is still on no key
+    expect(JSON.stringify(f.entries[0])).not.toContain('Bo Tanner');
+    expect(Object.keys(f.entries[0]!)).not.toContain('by');
+  }, 60_000);
+
   it('the page is served at /d/:slug/feed, and a slug nobody made is a 404 on both rows', async () => {
     const b = await boot();
     const { slug } = await room(b, 'link', 'public');
