@@ -997,12 +997,14 @@ describe('the surface is served', () => {
  * The limiter behind a proxy (defect 3, re-fixed after staging caught the
  * first answer being wrong on 2026-08-20). What must hold is one sentence:
  * a client cannot change which bucket it lands in by sending headers.
- * /auth/login is the door to hammer — its limiter runs before anything
- * else, and a bad token neither mails nor writes to a log.
+ * /auth/login is the door to hammer — nothing but the 10 KB token read
+ * stands above its limiter, and a bad token neither mails nor writes to a
+ * log. The shared `auth` bucket is 200 since issue #69, so the first
+ * refusal is the two-hundred-and-first request.
  */
 describe('rate limiting reads the client the proxy states', () => {
   const flood = async (base: string,
-                       headers: (i: number) => Record<string, string>, n = 62) => {
+                       headers: (i: number) => Record<string, string>, n = 202) => {
     let limited = 0;
     for (let i = 0; i < n && limited === 0; i++) {
       const res = await fetch(`${base}/auth/login`, {
@@ -1023,7 +1025,7 @@ describe('rate limiting reads the client the proxy states', () => {
       'cf-connecting-ip': '198.51.100.7',
       'x-forwarded-for': `203.0.113.${i}, 198.51.100.7, 10.7.${i}.${i}`,
     }));
-    expect(limited).toBe(61);
+    expect(limited).toBe(201);
   });
 
   it('gives two clients two buckets', async () => {
@@ -1037,7 +1039,7 @@ describe('rate limiting reads the client the proxy states', () => {
     const limited = await flood(base, (i) => ({
       'x-forwarded-for': `10.0.0.${i}, 198.51.102.9`,
     }));
-    expect(limited).toBe(61);
+    expect(limited).toBe(201);
   });
 });
 
