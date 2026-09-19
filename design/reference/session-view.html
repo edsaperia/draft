@@ -537,13 +537,17 @@
       return !m ? '<div>' + md(l) + '</div>'
         : m.t === 'b' ? '<div class="bullet">' + md(m.text) + '</div>'
         : '<div class="docline lvl' + m.level + '" data-h="' + esc(window.CARDS.mdStrip(m.text)) + '">' + md(m.text) + '</div>'; }).join('');
-  // the same text as **source** (Q1313): the characters exactly, one block per
-  // line, the block's marker in the text and nothing dressed — the lane's own
-  // markdown mode (`laneBlocks` raw); a heading keeps `data-h` and `data-lvl`
-  // so the contents rail and the folds still know it is one
+  // the same text as **source** (Q1313), which since Q1467 is what the column
+  // wears whenever it is being edited: the characters exactly, one block per
+  // line, the block's marker in the text and no mark rendered. A heading keeps
+  // `data-h` and `data-lvl` so the contents rail and the folds still know it
+  // is one — **and its rank**, since a block keeps the treatment it will land
+  // at while it is edited (Q1467); the bullet's own dot is drawn off in
+  // `system.css` where the `- ` is standing in the text itself.
+  const srcCls = (m) => (!m ? '' : m.t === 'b' ? ' class="bullet"' : ' class="docline lvl' + m.level + '"');
   const srcDivs = (text) => String(text).split(/\n/).filter((l) => l.trim())
     .map((l) => { const m = window.CARDS.mdBlock(l);
-      return '<div' + (m && m.t === 'h' ? ' data-h="' + esc(window.CARDS.mdStrip(m.text)) + '" data-lvl="' + m.level + '"' : '') +
+      return '<div' + srcCls(m) + (m && m.t === 'h' ? ' data-h="' + esc(window.CARDS.mdStrip(m.text)) + '" data-lvl="' + m.level + '"' : '') +
         '>' + esc(l) + '</div>'; }).join('');
   // **The address the surface states is the route the server serves** (Ed,
   // backlog 70: *the Link clause says the document lives at docs.vote/[slug]
@@ -2207,13 +2211,17 @@
     const at = sel.rangeCount ? sel.getRangeAt(0).startContainer : null;
     for (const b of [...prose.children]) {
       const t = b.textContent;
-      // **source view consumes nothing and dresses nothing** (Q1313): the
-      // characters are the line; a heading is still named, for the contents
-      // rail and the folds
+      // **source view consumes nothing** (Q1313): the characters are the line,
+      // marker and all, and none of them leaves the text. A heading is still
+      // named, for the contents rail and the folds — **and still wears its
+      // rank** (Q1467), which is a class over text the block keeps rather than
+      // a rewrite of it, so it can be kept in step under the caret.
       if (prose.classList.contains('mdsrc')) {
         const s = window.CARDS.mdBlock(t);
         if (s && s.t === 'h') { b.dataset.h = window.CARDS.mdStrip(s.text); b.dataset.lvl = s.level; }
         else { delete b.dataset.h; delete b.dataset.lvl; }
+        const cls = !s ? '' : s.t === 'b' ? 'bullet' : 'docline lvl' + s.level;
+        if (b.className !== cls) b.className = cls;
         continue;
       }
       delete b.dataset.lvl;

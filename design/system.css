@@ -1388,20 +1388,18 @@
     color: var(--muted); pointer-events: none; user-select: none;
   }
   .doc .bullet:has(+ .bullet), .lp.bullet:has(+ .lp.bullet) { margin-bottom: var(--s1); }
-  /* the marker itself, where the source is shown: in the column in edit mode
-     — rendered or with `[]` pressed, since Q1403 — put back before the block
-     in a `.nocaret` span; in a lane, the characters the author typed, dimmed
-     and still text (`laneBlocks`) — and where they stand the dot does not */
+  /* the marker itself, wherever the source is shown — the charter's column and
+     every lane in edit mode (Q1467), the founder's own column while it is
+     edited — dimmed and still ordinary text, so a caret stands anywhere in it
+     (`blockHtml`, `laneBlocks`); and where it stands the bullet's dot does not.
+     The founder's column carries no span, its blocks being typed into in
+     place, so the source view answers for it by the column's own class. */
   .mdmark { color: var(--muted); }
   .lp.bullet:has(.mdmark) { padding-left: 0; }
   .lp.bullet:has(.mdmark)::before, .doc .bullet:has(> .mdmark)::before { content: none; }
   .doc .bullet:has(> .mdmark) { padding-left: 0; }
-  /* source mode is the whole column at once: the same monospace the lane's
-     markdown mode wears, so the two never disagree about what a character is */
-  .doc .prose.mdsrc, .doc .prose.mdsrc .docline {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: var(--t-small); line-height: 1.6;
-  }
+  .doc .prose.mdsrc .bullet::before { content: none; }
+  .doc .prose.mdsrc .bullet { padding-left: 0; }
   /* **An empty document has one clause, and it is empty** (Q649 (a), Ed
      2026-08-22). The block keeps a line's height so it can be clicked, and
      its sentence is drawn out of the text flow — as inline content it would
@@ -2360,31 +2358,29 @@
     transition: box-shadow 140ms ease;
   }
   .editctl.detached .lanectl { box-shadow: var(--shadow-md); }
-  /* markdown mode: the characters, exactly, and nothing rendered */
-  .lanebox .editlane.md {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: var(--t-small); line-height: 1.6;
-  }
-  .lfmt, .lmode {
+  /* (the monospace markdown mode went with the `[]` toggle, Q1467: a lane is
+     the source at all times and is set in the document's own face, since the
+     block it shows keeps the rank it will land at) */
+  .lfmt {
     appearance: none; font: inherit; font-size: var(--t-cap); line-height: 1;
     background: none; border: 0; color: var(--muted); cursor: pointer;
     padding: 3px 6px; border-radius: var(--r-sm);
   }
-  /* **A strip of three controls is one object, so they are one size**
+  /* **A strip's controls are one object, so they are one size**
      (housekeeping pass, 2026-08-17). They were 26x20, 26x**23** and 26x20: the
      italic button was three pixels taller than the bold one beside it and sat
      two pixels higher, because the height was coming from whatever the glyph
      *inside* each button happened to be — B at --t-ui, the serif I at 1.05rem —
      and a button sized by its content is a button whose size is a coincidence.
      A fixed box, centred, so an optical adjustment to a glyph can never move the
-     control around it again. */
-  .lfmt, .lmode {
+     control around it again. (Three became two with `[]`, Q1467.) */
+  .lfmt {
     width: 26px; height: 22px; padding: 0;
     display: inline-flex; align-items: center; justify-content: center;
   }
-  .lfmt:hover, .lmode:hover { background: var(--light); color: var(--fg); }
+  .lfmt:hover { background: var(--light); color: var(--fg); }
   /* B and I are acts on a selection: quiet while no editing lane holds the
-     caret (Q1294 (b)); `[]` needs no lane and is never disabled */
+     caret (Q1294 (b)) */
   .lfmt:disabled { opacity: 0.35; cursor: default; }
   .lfmt:disabled:hover { background: none; color: var(--muted); }
   .lfmt b { font-size: var(--t-ui); }
@@ -2393,13 +2389,6 @@
     font-family: Georgia, "Times New Roman", serif; font-style: italic;
     font-size: 1.05rem; font-weight: 500;
   }
-  /* one button, off by default, its own pressed-ness carrying the state */
-  .lmode {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: var(--t-ui); letter-spacing: -0.05em;
-  }
-  .lmode[aria-pressed="true"] { background: var(--primary); color: #fff; font-weight: 600; }
-  .lmode[aria-pressed="true"]:hover { background: var(--primary-hover); color: #fff; }
   .lanebox .editlane code {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 0.9em; background: var(--light); padding: 0 3px; border-radius: 3px;
