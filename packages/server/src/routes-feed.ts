@@ -44,19 +44,17 @@ type RuleEntry = SettingFeedEntry & { author: null; changes: [] };
 // document and rebuilt only when that log has grown
 const ruleCache = new WeakMap<LoadedDoc, { seq: number; entries: SettingFeedEntry[] }>();
 /**
- * **OFF, 2026-09-19 03:17.** docs.vote went to 502 on every request within a
- * minute of the build that first served these entries taking traffic (dcf26bb,
- * 03:13), and this is the one server-side path that build added: a replay of
- * the document's **whole** constitution log, redone whenever that log has
- * grown — which in a live room is every poll — on a log the size of the
- * residency room's. Unproven as the cause and switched off on suspicion,
- * because the host being down outranks knowing why. It comes back as an
- * incremental fold (keep the state, apply only the new events) once it has
- * been timed against a log of that size.
+ * **Suspected, switched off for thirteen minutes, and cleared** (2026-09-19).
+ * docs.vote went to 502 within a minute of the build that first served these
+ * entries taking traffic, and this replay was that build's one new server
+ * path, so it was switched off on suspicion at 03:17. It was not the cause:
+ * the replay measures 5 ms over a synthetic log of twelve thousand entries,
+ * and the live host went on to serve this very path in 0.2 s and stay up. The
+ * outage was the first process on the new build dying as it took traffic, and
+ * a nine-minute boot behind it (the residency room's logs are replayed at
+ * every start) — see QUESTIONS Q1469.
  */
-const RULES_IN_FEED = false;
 function ruleEntries(doc: LoadedDoc): SettingFeedEntry[] {
-  if (!RULES_IN_FEED) return [];
   const log = doc.cs.logEntries();
   const hit = ruleCache.get(doc);
   if (hit && hit.seq === log.length) return hit.entries;

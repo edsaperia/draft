@@ -205,9 +205,7 @@ describe('the spectator feed (Q1466)', () => {
     expect(member.entries[0]!.author).toBeNull();
   }, 60_000);
 
-  // skipped with the path it tests: `RULES_IN_FEED` is off in routes-feed.ts
-  // since the 03:13 outage of 2026-09-19, and comes back with the incremental fold
-  it.skip('a motion on a rule is in the feed with its icon and what stood, and the mover is nobody', async () => {
+  it('a motion on a rule is in the feed with its icon and what stood, and the mover is nobody', async () => {
     const b = await boot();
     const { bo, cmd, feed } = await room(b, 'link', 'public');
     await cmd(bo, 'open-motion', { payload: { kind: 'set', setting: 'chamber', value: { rung: 'public' } },
