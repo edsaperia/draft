@@ -115,7 +115,15 @@ export const feedTable: Route[] = [
       // seconds, sixty in the window, so this is a venue's worth of screens
       if (!member && r.tooMany('feed', 1500)) return true;
       const bridge = asEngineDoc(doc).bridge;
-      const eseq = bridge === null ? 0 : bridge.engine.log.length;
+      // **the change token counts both logs** (issue #68 finding 1): the feed
+      // is made of two projections — the engine's text entries and the
+      // constitution's settings entries — and a motion on a rule writes the
+      // constitution's log alone. A token that counted the engine's moved for
+      // a proposal on the text and never for one on the rules, so a page left
+      // open through a 🌍, 👥 or 🪪 vote was answered `short` for the motion's
+      // whole open life and never redrew. Both logs are append-only, so the
+      // sum moves when either does, and the page holds it opaquely.
+      const eseq = (bridge === null ? 0 : bridge.engine.log.length) + doc.cs.logEntries().length;
       const paused = ctx.pause.payload(nowMs);
       // the door's own answer decides a stranger's reading, so the feed and
       // the door can never disagree about who may see the words

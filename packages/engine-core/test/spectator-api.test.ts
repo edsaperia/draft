@@ -119,6 +119,23 @@ describe('the spectator feed (Q1466)', () => {
     }
   });
 
+  // **a withdrawn proposal leaves the feed** (issue #68 finding 3): it stood
+  // on a projector for ever as a live-looking *New proposal*, there being no
+  // branch for the withdrawal at all
+  it('a withdrawn proposal leaves the feed, and its neighbours stay', () => {
+    const s = open();
+    const { id } = s.submitCandidate(100, {
+      author: 'p1', patch: rewrite(0, 4, 'Decisions are made by a vote.'), rationale: 'consensus stalls',
+    });
+    s.submitCandidate(101, { author: 'p2', patch: rewrite(0, 1, 'Membership is by invitation.'), rationale: 'r' });
+    expect(new SpectatorApi(s).feed()).toHaveLength(2);
+    s.withdraw(102, id);
+    const feed = new SpectatorApi(s).feed();
+    expect(feed).toHaveLength(1);
+    expect(feed[0]).toMatchObject({ kind: 'proposed', rationale: 'r' });
+    expect(JSON.stringify(feed)).not.toContain('consensus stalls');
+  });
+
   it('names an author only where `authorVisible` does', () => {
     const s = open({ authorshipVisibility: 'anonymous' });
     s.submitCandidate(100, { author: 'p1', patch: rewrite(0, 1, 'Membership is by invitation.'), rationale: 'r' });

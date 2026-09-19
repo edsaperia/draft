@@ -180,6 +180,14 @@ export class SpectatorApi {
         if (typeof ev.floor === 'number') outcome.floor = ev.floor;
         if (typeof ev.abstained === 'number') outcome.abstained = ev.abstained;
         out[out.length - 1]!.outcome = outcome;
+      } else if (ev.type === 'candidate-withdrawn') {
+        // **a proposal taken back leaves the feed** (issue #68 finding 3):
+        // there is nothing on the table any more, and an entry that goes on
+        // reading *New proposal* is a claim about a live question. Only its
+        // own `proposed` entry goes: a candidate cannot be both withdrawn and
+        // adopted, so nothing that passed is ever reachable from here.
+        const at = out.findIndex((x) => x.kind === 'proposed' && x.candidateId === ev.id);
+        if (at !== -1) out.splice(at, 1);
       } else if (ev.type === 'text-decreed') {
         patched(ev.t, 'decreed', ev.id, ev.rationale, null, ev.patch);
       }
