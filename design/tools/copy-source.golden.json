@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 483
+  "entries": 482
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -45,7 +45,6 @@
   "feed.stood": "The clause as it stood",
   "feed.tabTitle": "ƒ (title) => title + ' — feed'",
   "feed.titled": "ƒ (what, counts) => (counts ? what + ' · ' + counts : what)",
-  "feed.toDocument": "Open the document",
   "feed.top": "At the top of the document",
   "feed.underMinute": "under a minute",
   "feed.unreachable": "The feed could not be reached. It will try again.",

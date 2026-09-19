@@ -131,9 +131,6 @@
     document.title = T.tabTitle(v.title || 'docs.vote');
     $('feedname').textContent = v.title || '';
     $('feedword').textContent = T.name;
-    const to = $('todoc');
-    to.textContent = T.toDocument;
-    to.href = slug ? '/d/' + encodeURIComponent(slug) : '#';
     const state = $('feedstate');
     const list = $('feed');
     let say = '';

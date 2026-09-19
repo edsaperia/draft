@@ -957,7 +957,6 @@ window.COPY = (function () {
   const feed = {
     name: 'Feed',
     tabTitle: (title) => title + ' — feed',
-    toDocument: 'Open the document',
     // an entry's eyebrow, by kind
     proposed: 'New proposal',
     passed: 'Passed',
