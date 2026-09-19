@@ -43,7 +43,20 @@ type RuleEntry = SettingFeedEntry & { author: null; changes: [] };
 // the settings half is a replay of the document's own log, so it is kept per
 // document and rebuilt only when that log has grown
 const ruleCache = new WeakMap<LoadedDoc, { seq: number; entries: SettingFeedEntry[] }>();
+/**
+ * **OFF, 2026-09-19 03:17.** docs.vote went to 502 on every request within a
+ * minute of the build that first served these entries taking traffic (dcf26bb,
+ * 03:13), and this is the one server-side path that build added: a replay of
+ * the document's **whole** constitution log, redone whenever that log has
+ * grown — which in a live room is every poll — on a log the size of the
+ * residency room's. Unproven as the cause and switched off on suspicion,
+ * because the host being down outranks knowing why. It comes back as an
+ * incremental fold (keep the state, apply only the new events) once it has
+ * been timed against a log of that size.
+ */
+const RULES_IN_FEED = false;
 function ruleEntries(doc: LoadedDoc): SettingFeedEntry[] {
+  if (!RULES_IN_FEED) return [];
   const log = doc.cs.logEntries();
   const hit = ruleCache.get(doc);
   if (hit && hit.seq === log.length) return hit.entries;
