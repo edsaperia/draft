@@ -3650,6 +3650,21 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         echo();
       });
     });
+    // **A refusal is retired by the next keystroke on its card** (SURFACE Y25,
+    // Q1330; found drifting by Q1463's builder, whose sentence stayed until a
+    // later press passed). In place, like everything a keystroke does here: the
+    // flag goes and the one element with it, and nothing is rendered under the
+    // caret. The lane and the reason both count as the card.
+    const retireRefusal = (el) => {
+      const d = draftOf();
+      if (!d || !d.refusal) return;
+      d.refusal = null;
+      const card = el.closest('.sugg');
+      const said = card && card.querySelector('.foot.refusal');
+      if (said) said.remove();
+    };
+    doc.querySelectorAll('[data-lane], .edit-why').forEach((el) =>
+      el.addEventListener('input', () => retireRefusal(el)));
     doc.querySelectorAll('[data-lane]').forEach((el) => {
       // Re-marking as you type means rewriting the lane's own markup under the
       // caret, so the caret is taken out by character offset and put back after

@@ -838,7 +838,19 @@ window.COMPOSER = (function () {
         clauseHeadHtml(d, {
           // a gap's head names the gap, there being no clause to show
           label: seeded ? seeded.note : site.origin[0] && site.origin[0].gap ? gapLabel(site.keys[0]) : undefined,
-          html: site.origin.map((o) => '<div class="lp' + (o.t === 'h' ? ' hblock lvl' + (o.level || 1) : o.bullet ? ' bullet' : '') +
+          // **A stranded draft's head shows what stands now** (Q1463, Ed
+          // 2026-09-19, his pick of three): the paragraph it was written against
+          // is gone, the sentence below tells the member to write against the
+          // clause as it now stands, and the head's label says *as it stands* —
+          // so the head reads the document's lines at the place the site is
+          // held, as E38 has a stranded proposal's do. The wording it was
+          // written against is still there to work from: it is what the lane
+          // was seeded with. Everywhere else the head is the origin, which for
+          // a draft that has followed its paragraph is the same words.
+          html: (site.lost
+            ? site.keys.map((k) => lineOf(k)).filter((l) => l && !l.gap)
+              .map((l) => ({ key: l.key, text: l.x, t: l.t, level: l.level, bullet: l.bullet }))
+            : site.origin).map((o) => '<div class="lp' + (o.t === 'h' ? ' hblock lvl' + (o.level || 1) : o.bullet ? ' bullet' : '') +
             '" data-key="' + o.key + '">' + blockHtml({ x: o.text, t: o.t, level: o.level, bullet: o.bullet }) + '</div>').join(''),
         }) +
         // and your draft as the one reply, in the reply's own order: the wording,

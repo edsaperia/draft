@@ -252,11 +252,31 @@ if (!ONLY || ONLY === 'lost') {
   check('the words are kept', after.sites[0].text.endsWith('And on the noticeboard.'));
   check('the card says what happened',
     (after.note || []).some((n) => /could not be carried across/.test(n)), JSON.stringify(after.note));
+  // **the head shows what stands now** (Ed, 2026-09-19): the label says *as it
+  // stands*, so the wording under it is the clause that replaced the drafted one
+  const head = await page.evaluate(() => {
+    const h = document.querySelector('.sugg .clausehead, .sugg .headclause');
+    return h ? h.textContent.replace(/\s+/g, ' ').trim() : null;
+  });
+  check('the head shows the clause as it now stands',
+    /open to any member who asks the treasurer/.test(String(head)) && !/Accounts are shown/.test(String(head)), JSON.stringify(head));
 
   const { sent } = await pressPropose(page);
   check('✏️ sent nothing', proposals(sent).length === 0, JSON.stringify(sent.map((c) => c.sent.slice(0, 80))));
   const said = await model(page);
   check('and said why on the card', /moved while you were writing/.test(String(said && said.refusal)), JSON.stringify(said && said.refusal));
+  // **…and the next keystroke on the card retires the sentence** (SURFACE Y25):
+  // in place, with no render under the caret
+  const lane = page.locator('.sugg [data-lane]').first();
+  await lane.click();
+  await page.keyboard.type('x');
+  await sleep(400);
+  const gone = await page.evaluate(() => ({
+    shown: !!document.querySelector('.sugg .foot.refusal'),
+    focused: !!(document.activeElement && document.activeElement.closest('[data-lane]')) }));
+  const cleared = await model(page);
+  check('a keystroke retires the refusal, the caret left where it was',
+    !gone.shown && gone.focused && !(cleared && cleared.refusal), JSON.stringify({ gone, refusal: cleared && cleared.refusal }));
   await page.context().close();
 }
 
