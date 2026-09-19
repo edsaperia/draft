@@ -4103,7 +4103,7 @@ if (caret) {
           return { id: li.dataset.q, mark: mk ? ([...mk.classList].find((c) => c.startsWith('mk-')) || '').slice(3) : '',
             cap: b ? b.title : '', teasers: [...li.querySelectorAll('.qwhy')].map((e) => e.textContent.trim()),
             // the queue card stack's depth (Q1462): how many rivals are still
-            // to come on this race, capped at three, 0 where there is no pile
+            // to come on this race, capped at five, 0 where there is no pile
             pile: +(li.dataset.pile || 0) };
         });
       }, id);
