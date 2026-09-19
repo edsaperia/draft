@@ -189,6 +189,27 @@
       '</div></article>';
   }
 
+  // **a frozen feed must say it is frozen** (issue #68 finding 5): the route
+  // carries the host's two flags on every answer, the short one included, and
+  // a page that read neither went on showing what it last drew right through a
+  // deploy or a store that has stopped saving — where the session-view draws a
+  // modal and a red flag. The sentences are the session's own, word for word,
+  // since it is the same host saying the same thing.
+  function sayOf(v) {
+    if (v.paused) return P.host.paused;
+    if (v.stalled) return P.host.stalled;
+    if (!v.canRead) return (v.holding && v.holding.sentence) || '';
+    if (!v.begun) return T.notBegun;
+    if (!v.entries || !v.entries.length) return T.empty;
+    if (v.closed) return T.closed(dayOf(v.closed.at));
+    return '';
+  }
+  function saying(words) {
+    const state = $('feedstate');
+    state.textContent = words || '';
+    state.hidden = !words;
+  }
+
   function draw(v) {
     last = v;
     roster = v.members || 0;
@@ -196,15 +217,8 @@
     document.title = T.tabTitle(v.title || 'docs.vote');
     $('feedname').textContent = v.title || '';
     $('feedword').textContent = T.name;
-    const state = $('feedstate');
     const list = $('feed');
-    let say = '';
-    if (!v.canRead) say = (v.holding && v.holding.sentence) || '';
-    else if (!v.begun) say = T.notBegun;
-    else if (!v.entries.length) say = T.empty;
-    else if (v.closed) say = T.closed(dayOf(v.closed.at));
-    state.textContent = say;
-    state.hidden = !say;
+    saying(sayOf(v));
     let html = '';
     let day = null;
     for (const e of v.entries) {
@@ -221,12 +235,21 @@
     try {
       const r = await fetch('/api/d/' + encodeURIComponent(slug) + '/feed' +
         (eseq === null ? '' : '?since=' + eseq), { credentials: 'same-origin' });
-      if (r.status === 404) { $('feedstate').hidden = false; $('feedstate').textContent = T.missing; return; }
+      if (r.status === 404) { saying(T.missing); return; }
       if (!r.ok) throw new Error('feed ' + r.status);
       const v = await r.json();
-      if (!v.short) { draw(v); eseq = v.canRead ? v.eseq : null; }
+      // the short answer builds nothing, but it still carries the two flags,
+      // so the sentence is read off it over what was last drawn: a pause that
+      // arrives while nothing else is moving is exactly the case that used to
+      // be silent (issue #68 finding 5)
+      if (v.short) { saying(sayOf(Object.assign({}, last, v))); return; }
+      draw(v);
+      eseq = v.canRead ? v.eseq : null;
     } catch (err) {
-      if (!last) { $('feedstate').hidden = false; $('feedstate').textContent = T.unreachable; }
+      // **a refused poll says so whether or not anything is drawn** (finding
+      // 5): a 429 under a venue's screens on one address used to be silence
+      // in front of a stale page
+      saying(T.unreachable);
     }
   }
 
