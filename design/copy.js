@@ -964,6 +964,11 @@ window.COPY = (function () {
     // **how long it took** (Ed, 2026-09-19: *"Passed in 23 minutes"*), from
     // the moment it was proposed; the two largest units and no more
     passedIn: (durationWords) => 'Passed in ' + durationWords,
+    // **…and the numbers ride the title** (Ed, 2026-09-19: *"x of y voted" and
+    // the other stats should all be in the title … as they are on decision
+    // cards*): one line, the record head's own shape — what happened, a dot,
+    // what it came to
+    titled: (what, counts) => (counts ? what + ' · ' + counts : what),
     underMinute: 'under a minute',
     minutes: (n) => (n === 1 ? '1 minute' : n + ' minutes'),
     hours: (n) => (n === 1 ? '1 hour' : n + ' hours'),

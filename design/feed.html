@@ -64,8 +64,15 @@
   .fentry.passed, .fentry.decreed { border-left: 3px solid var(--ok); padding-left: calc(var(--s4) - 2px); }
   .fhead { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3);
     margin: 0 0 var(--s2); }
-  .fhead .eyebrow { margin: 0; }
-  .fentry.passed .fhead .eyebrow, .fentry.decreed .fhead .eyebrow { color: var(--ok); }
+  /* the title is the record head's register — a sentence, not an eyebrow —
+     since a passed entry's says the whole outcome and an upper-case line that
+     long is a wall */
+  .ftitle { margin: 0; font-size: var(--t-ui); font-weight: 600; display: flex; gap: var(--s2);
+    align-items: baseline; min-width: 0; }
+  /* the mark at the title's own size: the rail sets it a step down, for a
+     margin index; here it heads a card read from across a room */
+  .ftitle .qmark { flex: none; font-size: 1.15em; width: 1.3em; }
+  .fentry.passed .ftitle, .fentry.decreed .ftitle { color: var(--ok); }
   .fwhen { color: var(--muted); font-size: var(--t-small); white-space: nowrap; }
   .fwhere { font-family: var(--font-text); font-size: var(--t-ui); color: var(--muted); margin: 0 0 var(--s3); }
   .fchange + .fchange { margin-top: var(--s4); padding-top: var(--s4); border-top: 1px solid var(--border); }
@@ -82,15 +89,14 @@
      they are where the change is and no part of it */
   .ftext.fctx { color: var(--muted); font-size: var(--t-ui); margin: 0 0 var(--s3); opacity: 0.8; }
   .fpart + .ftext.fctx { margin: var(--s3) 0 0; }
-  /* a passed entry's numbers: the record's own `rsub` register, one quiet line */
-  .fcounts { margin: var(--s3) 0 0; font-size: var(--t-small); color: var(--muted); }
   /* **read from across a room**: on a window wide enough to be a projected one
      the column and its text both step up the scale */
   @media (min-width: 1200px) {
     .feedwrap, .navbar .wrap.feednav { max-width: 920px; }
     .ftext { font-size: var(--t-lead); }
     .ftext.fctx, .fwhy .why, .fwhere { font-size: var(--t-body); }
-    .fcounts, .fwhen, .fwhy .name { font-size: var(--t-ui); }
+    .fwhen, .fwhy .name { font-size: var(--t-ui); }
+    .ftitle { font-size: var(--t-body); }
   }
   .fwhy { display: flex; gap: var(--s2); align-items: flex-start; margin: var(--s3) 0 0;
     padding-top: var(--s3); border-top: 1px solid var(--border); }
@@ -121,6 +127,7 @@
     <a id="todoc" href="#"></a>
   </div>
 </header>
+<div id="glyphsprite"></div>
 <div class="alphaflag"><b>Warning:</b> docs.vote is in alpha!</div>
 <main class="feedwrap">
   <p class="feedstate" id="feedstate" role="status"></p>

@@ -97,17 +97,27 @@
 
   function entryHtml(e, arriving) {
     const o = e.outcome;
+    // **the title says the whole outcome** (Ed, 2026-09-19), as a sealed
+    // record's head does: what happened, then the passed card's own numbers
     const label = e.kind === 'proposed' ? T.proposed
-      : e.kind === 'adopted' ? (o ? T.passedIn(tookWords(o.tookMs)) : T.passed) : T.decreed;
+      : e.kind === 'adopted'
+        ? (o ? T.titled(T.passedIn(tookWords(o.tookMs)), T.counts(o.voted, roster, o.floor, o.approvals, o.abstained))
+          : T.passed)
+        : T.decreed;
+    // **and wears its lifecycle mark** (Ed, same note: *an emoji showing the
+    // lifecycle*): the rail's own alphabet, drawn by the card grammar — 💡 an
+    // idea is on the table, ✔ the charter changed here — and ✒️, the Founder's
+    // own hand, on an amendment
+    const mark = e.kind === 'proposed' ? C.markHtml('needs')
+      : e.kind === 'adopted' ? C.markHtml('adopted')
+        : '<span class="qmark" aria-hidden="true">' + C.glyphHtml('✒️') + '</span>';
     const cls = e.kind === 'proposed' ? 'proposed' : e.kind === 'adopted' ? 'passed' : 'decreed';
     const who = whoHtml(e);
     const why = (e.rationale || '').trim();
     return '<article class="fentry ' + cls + (arriving ? ' arrive' : '') + '" data-key="' + esc(keyOf(e)) + '">' +
-      '<div class="fhead"><p class="eyebrow">' + esc(label) + '</p>' +
+      '<div class="fhead"><p class="ftitle">' + mark + '<span>' + esc(label) + '</span></p>' +
       '<time class="fwhen" datetime="' + new Date(e.t).toISOString() + '">' + timeOf(e.t) + '</time></div>' +
       e.changes.map((ch) => changeHtml(e, ch)).join('') +
-      // the passed card's own numbers, where the entry carries them
-      (o ? '<p class="fcounts">' + esc(T.counts(o.voted, roster, o.floor, o.approvals, o.abstained)) + '</p>' : '') +
       (who || why
         ? '<div class="fwhy">' + (who ? who.face : '') + '<div class="body">' + (who ? who.name : '') +
           (why ? '<span class="why">' + esc(why) + '</span>' : '') + '</div></div>'
@@ -157,6 +167,16 @@
       if (!last) { $('feedstate').hidden = false; $('feedstate').textContent = T.unreachable; }
     }
   }
+
+  // the drawn glyphs' sprite, injected inline as the session-view injects it
+  // (Q1401) and retried the same way: a fetch that fails costs the pictures
+  // and nothing else
+  (function sprite(wait, left) {
+    const again = () => { if (left > 0) setTimeout(() => sprite(Math.min(wait * 2, 120000), left - 1), wait); };
+    fetch('/fluent-glyphs.svg').then((r) => (r.ok ? r.text() : '')).then((t) => {
+      if (t) $('glyphsprite').innerHTML = t; else again();
+    }).catch(again);
+  })(1000, 8);
 
   $('feedstate').textContent = T.loading;
   if (slug) {
