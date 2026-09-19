@@ -821,9 +821,9 @@
   // units are the Fluent Flat drawings since Q1401 (👍 from 2026-09-16, Ed:
   // *👍 should be drawn*), through the one renderer, so the pair is the same
   // picture on every machine. A third unit, ✒️ for the line a reading had to
-  // cross, went with the bar (Q1362).
+  // cross, went with the bar (Q1362), and 👍 itself with the reading it
+  // stood beside (Q1481, Ed 2026-09-19): 👤 is the one unit left.
   const PEOPLE = '<span class="unit">' + glyphHtml('👤') + '</span>';
-  const JUDG = '<span class="unit">' + glyphHtml('👍') + '</span>';
   // did anything displace the incumbent?
   const carried = (g) => fieldOf(g).some((c) => c.won);
   // Whatever wants you most keeps its place on the screen whatever else is
@@ -2085,18 +2085,6 @@
     // *this one* to a reader who could already see it at the top of a ranked
     // list, under a green ✔, at the head of a card (Ed: *remove the box that it
     // is in*).
-    // the highest any proposal reached against the text it was measured on —
-    // the number the bar was actually being asked about
-    const best = Math.max(0, ...field.map((c) => c.p ?? 0));
-    // **A reading is printed only where the field carries one** (issue #66,
-    // 2026-09-19). A retired record carries no probability — the engine writes
-    // none — so `best` fell back to 0 and the eyebrow told the author who had
-    // just lost that 0% of the room approved their wording, beside a line
-    // counting the very people who weighed in. The guard beneath covered only
-    // a race the clock cut off; this is the same thought asked of the field
-    // itself. SURFACE §9's record row puts the percentages on the ranked
-    // field, not the eyebrow.
-    const hasP = field.some((c) => typeof c.p === 'number');
     // **The head is the clause, and the clause is not always the top of the
     // ranking.** `ranked.slice(1)` assumed it was — true on an adopted card,
     // where the winner both is the clause and leads the field, and false on a
@@ -2172,11 +2160,16 @@
       // no line to cross, so there is nothing to compare the reading against,
       // and the ✒️ that stood for it here — the one place on the surface where
       // the pen glyph did not mean the Founder's own hand — goes with it.
+      // **And the reading went after it** (Q1481, Ed 2026-09-19: *is this
+      // percentage still accurate?*). It was the ranking model's confidence
+      // that the winner beats the text it replaced — the number the bar was
+      // asked about, and since Q1439 the number nothing is asked about: what
+      // decides is the count, which the line beneath states in full. A reader
+      // took *86% 👍* for a share of voters, which it never was. The
+      // percentages on the ranked field below stay: there they order what was
+      // tried.
       '<div class="rechead">' +
-      '<span>' + (und ? T.record.undecided : T.record.decided) + ' · ' + (d.judges ?? 0) + '/' + ROSTER + PEOPLE +
-      // an undecided race nobody read prints no reading: 0% is a number about
-      // nothing
-      (!hasP || (und && !(best > 0)) ? '' : ' · ' + pct(best) + JUDG) + '</span>' +
+      '<span>' + (und ? T.record.undecided : T.record.decided) + ' · ' + (d.judges ?? 0) + '/' + ROSTER + PEOPLE + '</span>' +
       '<span class="sub">' + esc(d.when || '') + '</span></div>' +
       // **The counts are printed, not hovered** (Q1452, Ed 2026-09-18: *print the
       // count line on the card*): the sentence was a `title` on the head, which a
