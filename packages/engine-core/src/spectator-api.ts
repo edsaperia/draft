@@ -14,17 +14,25 @@
  *  - **an author only where `authorVisible` says so** (SPEC §3.5a), the one
  *    reveal rule, asked here exactly as every other reader asks it.
  *
- * What it never carries: a judgment, a count, a standing, a probability, a
- * floor, who has or has not answered, or anything else that says which way
- * a question still open is going (SPEC §3.5: *no feed … shows direction on a
- * race the participant hasn't judged* — and a spectator has judged none).
- * An adoption's own numbers are on the log and are the sealed record's to
- * print; the feed says that it passed, and when.
+ * What it never carries **on a question still open**: a judgment, a count, a
+ * standing, a probability, a floor, who has or has not answered, or anything
+ * else that says which way it is going (SPEC §3.5: *no feed … shows direction
+ * on a race the participant hasn't judged* — and a spectator has judged none).
+ *
+ * **A proposal that passed carries its decision's own numbers** (Ed,
+ * 2026-09-19: *the same stats as one on a passed card … how many voted, how
+ * many preferred, how many lapsed, also how long between when it was proposed
+ * and when it passed*): the counts the sealed record prints, which are a
+ * resolved outcome's and so public the moment it happened — never who, never
+ * which way anybody went, and never a probability.
  *
  * **A feed entry is the change and the place, never the document**: each
  * hunk carries the lines it replaces as they stood at the time, the lines
- * it puts there, the nearest heading above and the one line before it —
- * enough to read the change where it bites, and nothing of the rest.
+ * it puts there, the nearest heading above, and **one paragraph either
+ * side** (Ed, 2026-09-19: *if the paragraph that changed is short, the
+ * previous and next paragraphs should be shown in the feed as context*) —
+ * enough to read the change where it bites, and nothing of the rest. Whether
+ * a change is short enough to want its neighbours is the page's to say.
  */
 
 import { authorVisible } from './participant-api.js';
@@ -36,12 +44,30 @@ import { splitLines } from './text/diff.js';
 export interface FeedChange {
   /** The nearest heading above the change, its marker stripped; null above the first. */
   heading: string | null;
-  /** The nearest non-blank line before the change that is not that heading; null at the top. */
+  /** The paragraph before the change, in its own section: null at the top and under a heading. */
   above: string | null;
+  /** The paragraph after the change, in its own section: null at the end and before a heading. */
+  below: string | null;
   /** The lines replaced, as they stood when the entry happened. Empty on an insertion. */
   before: string[];
   /** The lines put there. Empty on a deletion. */
   after: string[];
+}
+
+/** A passed proposal's own numbers — the sealed record's, and counts only. */
+export interface FeedOutcome {
+  /**
+   * The distinct members who voted on it, its author among them by their
+   * derived preference (§3.3) — the number the record calls *weighed in*
+   * (Q1337): nobody who only judged a rival.
+   */
+  voted: number;
+  /** What the batch decided on (Q1439, Q1452); absent on a log older than the fields. */
+  approvals?: number;
+  floor?: number;
+  abstained?: number;
+  /** From the moment it was proposed to the moment it passed. */
+  tookMs: number;
 }
 
 export interface FeedEntry {
@@ -61,11 +87,14 @@ export interface FeedEntry {
    */
   author: string | null;
   changes: FeedChange[];
+  /** Present on `adopted` and nowhere else: an open question has no numbers here. */
+  outcome?: FeedOutcome;
 }
 
 const HEADING = /^#{1,3}\s+/;
 
-function placeOf(lines: string[], start: number): { heading: string | null; above: string | null } {
+function placeOf(lines: string[], start: number, end: number):
+{ heading: string | null; above: string | null; below: string | null } {
   let heading: string | null = null;
   let above: string | null = null;
   for (let i = start - 1; i >= 0; i--) {
@@ -74,12 +103,21 @@ function placeOf(lines: string[], start: number): { heading: string | null; abov
     if (HEADING.test(l)) { heading = l.replace(HEADING, ''); break; }
     if (above === null) above = l;
   }
-  return { heading, above };
+  // the next paragraph, and only inside the section: a heading ends the search,
+  // since the next section's name says nothing about this change
+  let below: string | null = null;
+  for (let i = end; i < lines.length; i++) {
+    const l = lines[i]!;
+    if (l.trim() === '') continue;
+    if (!HEADING.test(l)) below = l;
+    break;
+  }
+  return { heading, above, below };
 }
 
 function changesOf(base: string[], hunks: Hunk[]): FeedChange[] {
   return hunks.map((h) => ({
-    ...placeOf(base, h.start),
+    ...placeOf(base, h.start, h.end),
     before: base.slice(h.start, h.end),
     after: [...h.lines],
   }));
@@ -111,10 +149,21 @@ export class SpectatorApi {
       out.push({ t, kind, candidateId: id, rationale, author,
         changes: changesOf(linesAt(patch.baseVersion), patch.hunks) });
     };
+    const proposedAt = new Map<string, number>();
+    // who voted on each candidate, up to a moment: a count, never who or which way
+    const judgments = s.judgments();
+    const votersOf = (id: string, author: string, upTo: number): number => {
+      const who = new Set<string>([author]);
+      for (const j of judgments) {
+        if (j.t <= upTo && (j.aId === id || j.bId === id)) who.add(j.participantId);
+      }
+      return who.size;
+    };
     for (const e of s.log) {
       const ev = e.event;
       if (ev.type === 'candidate-submitted') {
         if (!ev.patch) continue;
+        proposedAt.set(ev.id, ev.t);
         patched(ev.t, 'proposed', ev.id, ev.rationale, visible(ev.id), ev.patch);
       } else if (ev.type === 'adopted') {
         const c = s.getCandidate(ev.candidateId);
@@ -124,6 +173,13 @@ export class SpectatorApi {
         // since that is the text the membership changed
         patched(ev.t, 'adopted', c.id, c.rationale, visible(c.id),
           { baseVersion: ev.newVersion - 1, hunks: c.patch.hunks });
+        const outcome: FeedOutcome = { voted: votersOf(c.id, c.author, ev.t),
+          tookMs: ev.t - (proposedAt.get(c.id) ?? c.submittedT) };
+        // absent means an older log, and is never written as `undefined`
+        if (typeof ev.approvals === 'number') outcome.approvals = ev.approvals;
+        if (typeof ev.floor === 'number') outcome.floor = ev.floor;
+        if (typeof ev.abstained === 'number') outcome.abstained = ev.abstained;
+        out[out.length - 1]!.outcome = outcome;
       } else if (ev.type === 'text-decreed') {
         patched(ev.t, 'decreed', ev.id, ev.rationale, null, ev.patch);
       }

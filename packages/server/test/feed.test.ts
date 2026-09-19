@@ -29,11 +29,12 @@ import { FilePersistence } from '../src/persistence.js';
 const DESIGN_DIR = join(import.meta.dirname, '..', '..', '..', 'design');
 
 type Feed = {
-  eseq: number; short?: boolean; title: string; begun: boolean; canRead: boolean;
+  eseq: number; short?: boolean; title: string; begun: boolean; canRead: boolean; members: number;
   holding: { kind: string; sentence: string | null } | null;
   entries: Array<{ t: number; kind: string; candidateId: string; rationale: string;
     author: { name: string | null; picture: string | null; erased: boolean } | null;
-    changes: Array<{ heading: string | null; above: string | null; before: string[]; after: string[] }> }>;
+    changes: Array<{ heading: string | null; above: string | null; below: string | null; before: string[]; after: string[] }>;
+    outcome?: { voted: number; approvals?: number; floor?: number; abstained?: number; tookMs: number } }>;
 };
 
 interface Booted { base: string; draft: DraftServer; dataDir: string }
@@ -151,13 +152,12 @@ describe('the spectator feed (Q1466)', () => {
     expect(one.entries[0]).toMatchObject({
       kind: 'proposed', rationale: 'rust',
       author: { name: 'Bo Tanner', erased: false },
-      changes: [{ heading: 'Tools', above: null,
+      changes: [{ heading: 'Tools', above: null, below: 'The press is booked a week ahead.',
         before: ['Tools are returned clean.'], after: ['Tools are returned clean and oiled.'] }],
     });
-    // **it does not show the full document**: not one untouched line is in the answer
-    const wire = JSON.stringify(one);
-    expect(wire).not.toContain('shared at harvest');
-    expect(wire).not.toContain('booked a week ahead');
+    // **it does not show the full document**: a paragraph either side inside
+    // the section, and not a word from anywhere else
+    expect(JSON.stringify(one)).not.toContain('shared at harvest');
 
     // ada seconds it: the author and one other is the floor, and it passes
     const v = await view(ada);
@@ -168,10 +168,14 @@ describe('the spectator feed (Q1466)', () => {
     expect(two.entries.map((e) => e.kind)).toEqual(['adopted', 'proposed']);
     expect(two.entries[0]!.changes[0]).toMatchObject({
       heading: 'Tools', before: ['Tools are returned clean.'], after: ['Tools are returned clean and oiled.'] });
-    // **no direction, no count** — an entry's keys are exactly these
-    for (const e of two.entries) {
-      expect(Object.keys(e).sort()).toEqual(['author', 'candidateId', 'changes', 'kind', 'rationale', 't']);
-    }
+    // **a passed entry carries the passed card's own numbers** (Ed, 2026-09-19):
+    // bo and ada voted, both preferred it, nobody ran out of time, of three
+    expect(two.members).toBe(3);
+    expect(two.entries[0]!.outcome).toMatchObject({ voted: 2, approvals: 2, floor: 2, abstained: 0 });
+    expect(two.entries[0]!.outcome!.tookMs).toBeGreaterThanOrEqual(0);
+    // **and an open question carries none**: no direction, no count
+    expect(Object.keys(two.entries[1]!).sort()).toEqual(['author', 'candidateId', 'changes', 'kind', 'rationale', 't']);
+    expect(Object.keys(one.entries[0]!).sort()).toEqual(['author', 'candidateId', 'changes', 'kind', 'rationale', 't']);
     // the short answer: nothing moved, nothing is built
     expect(await feed(undefined, two.eseq)).toMatchObject({ short: true, eseq: two.eseq });
   }, 60_000);

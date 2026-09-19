@@ -42,7 +42,11 @@ export function feedEntries(doc: LoadedDoc): Array<Omit<FeedEntry, 'author'> & {
   // own `recordOf`, since a founder who is a member keeps their identity there
   const recordOf = (id: string) => doc.cs.memberRecords().get(id) ??
     (id === doc.cs.convenorRecord().id ? doc.cs.convenorRecord() : null);
-  const all = new SpectatorApi(bridge.engine).feed();
+  // once per engine state, whichever screen asks first (the engine's own memo,
+  // as the member view's per-state work rides it): a venue's screens all poll,
+  // and the projection is a function of the engine alone
+  const engine = bridge.engine;
+  const all = engine.derived('host:spectatorFeed', () => new SpectatorApi(engine).feed());
   return all.slice(-FEED_LIMIT).reverse().map((e) => {
     const rec = e.author === null ? null : recordOf(e.author);
     return { ...e,
@@ -94,6 +98,9 @@ export const feedTable: Route[] = [
         paused,
         stalled: !!doc.stalled,
         canRead,
+        // the membership's size, which a passed entry's *n of E* is read against
+        // — the door serves the same number to anybody (`members.arrived`)
+        members: doc.cs.E(),
         holding: canRead ? null : door.holding,
         entries: canRead ? feedEntries(doc) : [],
       });

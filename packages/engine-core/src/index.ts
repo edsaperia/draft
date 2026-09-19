@@ -13,7 +13,7 @@ export type { JudgmentView } from './session.js';
 export { ParticipantApi, authorVisible } from './participant-api.js';
 export type { CardView, OptionView, GazetteEntry } from './participant-api.js';
 export { SpectatorApi } from './spectator-api.js';
-export type { FeedEntry, FeedChange } from './spectator-api.js';
+export type { FeedEntry, FeedChange, FeedOutcome } from './spectator-api.js';
 export { adoptionThreshold } from './adoption-threshold.js';
 export type {
   EquivalenceVerdict,

@@ -56,7 +56,7 @@ describe('the spectator feed (Q1466)', () => {
     expect(feed[0]).toMatchObject({
       t: 100, kind: 'proposed', candidateId: id, rationale: 'consensus stalls',
       changes: [{
-        heading: 'Decisions', above: null,
+        heading: 'Decisions', above: null, below: 'Meetings happen when someone calls one.',
         before: ['Decisions are made by consensus.'],
         after: ['Decisions are made by a vote.'],
       }],
@@ -69,11 +69,12 @@ describe('the spectator feed (Q1466)', () => {
     s.submitCandidate(101, { author: 'p2', patch: insert(0, 3, 'Members pay no dues.'), rationale: 'r' });
     const [end, mid] = new SpectatorApi(s).feed();
     expect(end!.changes[0]).toEqual({
-      heading: 'Decisions', above: 'Meetings happen when someone calls one.',
+      heading: 'Decisions', above: 'Meetings happen when someone calls one.', below: null,
       before: [], after: ['Minutes are kept.'],
     });
     // line 3 is the second heading; above it stand a blank and the first clause
-    expect(mid!.changes[0]).toMatchObject({ heading: 'Charter', above: 'Membership is open to anyone.' });
+    // … and below it the next section's heading, which is nobody's context
+    expect(mid!.changes[0]).toMatchObject({ heading: 'Charter', above: 'Membership is open to anyone.', below: null });
   });
 
   it('an adoption is a second entry, read against the text it changed', () => {
@@ -100,6 +101,14 @@ describe('the spectator feed (Q1466)', () => {
       before: ['Meetings happen when someone calls one.'],
       after: ['Meetings happen monthly.'],
     });
+    // **a passed entry carries its decision's numbers and nothing else does**:
+    // the author and the seconder voted, both preferred it, nobody ran out of
+    // time, and it took from its proposal to the judgment that carried it (the
+    // batch runs at once on a cooldown of nothing)
+    expect(feed[2]!.outcome).toEqual({ voted: 2, approvals: 2, floor: 2, abstained: 0, tookMs: 200 - 101 });
+    expect(feed[3]!.outcome).toMatchObject({ voted: 2, tookMs: 300 - 100 });
+    expect(feed[0]!.outcome).toBeUndefined();
+    expect(feed[1]!.outcome).toBeUndefined();
     // every adoption entry, applied to the version before it, is the version after
     for (const e of s.log) {
       if (e.event.type !== 'adopted') continue;
