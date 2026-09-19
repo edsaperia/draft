@@ -253,8 +253,49 @@ const crown = ((crownView.view && crownView.view.crownTasks) || [])[0];
 say('crown      · ' + JSON.stringify(crown && { id: crown.id, motion: crown.motion }));
 if (!crown) fail('the crown', 'the carried invitation raised no 👑 question for the held 🛡️');
 else {
-  const ans = await cmd('founder', 'answer-crown-question', { question: crown.id, outcome: 'accept' });
-  if (!ans.ok) fail('the crown', '👑 accept refused: ' + JSON.stringify(ans.error || ans));
+  /* **And the Founder is asked on the page, not over the wire** (Q1475, Ed
+   * 2026-09-19, the Founder of a live room: *I did have founder veto but I
+   * wasn't served a queue card for it*). This walk answered the question with
+   * a command and so never looked at the founder's own surface, where the
+   * motion's rail entry read ⏳ — *you have answered it*, which is true of
+   * the Founder on every motion their own accept carried — so the ask never
+   * ran. An invitation's card is a `mo:<id>` card, which is the door's half
+   * of the fix `applicants-walk` reads on the admission card. */
+  const chair = await seat(`founder-${run}@example.org`);
+  const entry = await chair.evaluate((id) => {
+    const li = document.querySelector('#rail .qitem[data-q="mo:' + id + '"]');
+    const b = li && li.querySelector('button');
+    return b ? { st: (b.className.match(/st-\w+/) || [''])[0] } : null;
+  }, crown.motion);
+  say('👑 entry   · ' + JSON.stringify(entry));
+  if (!entry || entry.st !== 'st-ask') {
+    fail('the 👑 entry', 'a parked invitation should ask the Founder, saw ' + JSON.stringify(entry));
+  }
+  const cq = await chair.evaluate(async (id) => {
+    const li = document.querySelector('#rail .qitem[data-q="mo:' + id + '"]');
+    const tab = document.querySelector('[data-tab="mo:' + id + '"]')
+      || (li && li.querySelector('button'));
+    if (!tab) return { err: 'no tab for the parked motion' };
+    tab.click();
+    await new Promise((s) => setTimeout(s, 1200));
+    const c = document.querySelector('.setupcard');
+    if (!c) return { err: 'the tab opened no card' };
+    return { crownq: [...c.querySelectorAll('[data-crownq]')].map((b) => b.dataset.crownq),
+      radios: c.querySelectorAll('.lanepick:not([disabled])').length,
+      text: (c.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 140) };
+  }, crown.motion);
+  say('👑 card    · ' + JSON.stringify(cq));
+  if (!cq || cq.err || cq.crownq.join('|') !== 'reject|accept' || cq.radios !== 0) {
+    fail('the 👑 card', 'a parked invitation should carry the 👑 pair and no vote: ' + JSON.stringify(cq));
+  }
+  const pressed = await chair.evaluate(() => {
+    const b = document.querySelector('.setupcard [data-crownq="accept"]');
+    if (!b) return false;
+    b.click();
+    return true;
+  });
+  say('👑 ✒️      · ' + (pressed ? 'pressed on the page' : 'no ✒️ to press'));
+  if (!pressed) fail('the 👑 accept', 'the parked invitation offered the Founder no ✒️');
 }
 await T(2500);
 

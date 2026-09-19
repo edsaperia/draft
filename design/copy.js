@@ -616,6 +616,16 @@ window.COPY = (function () {
       // title asking for an application would offer one that cannot be made
       shut: 'The rule has changed since you began: this document is now invitation-only, so your application cannot be submitted.',
       shutTitle: 'Applications Have Closed',
+      // **and the answer, when it is no** (Q1473, Ed 2026-09-19). A refused
+      // application left the surface saying *Submitted — the members are
+      // deciding* for ever: nothing on the applicant's page had a word for
+      // the one status it can end in badly, and nothing mailed them either.
+      // Ed's ruling makes it the ordinary case at 🏛️ — one member's vote
+      // against ends the application there and then — so the card says so.
+      // **It names nobody and counts nothing**: which members answered, and
+      // how, is theirs (§3.5).
+      refused: 'The membership did not agree to it.',
+      refusedTitle: 'Your Application Was Not Accepted',
       // **what the application holds so far** (Q1366, Ed 2026-09-15): the 🪪
       // card lists the three things a submission carries, each as given or as
       // not yet given, so a ✓ on ✋ 🖼️ 👋 is visibly kept before Submit — the

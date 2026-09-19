@@ -699,8 +699,12 @@ window.BAND = (function () {
       // cannot be made, and the card is done once the OK has been given. It is
       // the card's own `t` rather than an `n`, because `n` would also stand on
       // a *submitted* application, which is a different done.
+      // …and the same rule where the answer was no (Q1473): the title says
+      // what happened, since *Apply for Membership* over a refusal offers an
+      // application that has already been made and answered
       const shut = applyShutOnMe();
-      const base = [{ k: 'apply', g: '🪪', t: shut ? T.shutTitle : T.apply, own: 'you',
+      const base = [{ k: 'apply', g: '🪪',
+        t: a.refused ? T.refusedTitle : shut ? T.shutTitle : T.apply, own: 'you',
         kind: 'personal', done: () => a.submitted || (shut && a.shutAcked) }];
       if (!a.started) return base;
       return base.concat([
@@ -746,7 +750,7 @@ window.BAND = (function () {
         // submitted, the entry says what is happening to it, in the words the
         // rest of the surface uses (Q1391, Ed 2026-09-16: *before the members
         // — a proposal like any other* is a baffling thing for a queue card to say)
-        ? (S.app.submitted ? 'Submitted — the members are deciding' : applyShutOnMe() ? '' : S.app.started ? (['appname', 'apppic'].every((k2) => APPCARDS().find((x) => x.k === k2).done()) ? 'Ready to submit' : 'Three small tasks') : 'Membership is by application')
+        ? (S.app.refused ? PAGE_COPY.appcards.refused : S.app.submitted ? 'Submitted — the members are deciding' : applyShutOnMe() ? '' : S.app.started ? (['appname', 'apppic'].every((k2) => APPCARDS().find((x) => x.k === k2).done()) ? 'Ready to submit' : 'Three small tasks') : 'Membership is by application')
         : c.k === 'appmail' ? (S.app.emailVerified ? S.app.email + ' · verified'
           : S.app.emailSent ? 'Check your inbox' : 'Your identity here')
         : c.k === 'appname' ? (S.app.name || 'What members will call you')
@@ -771,6 +775,12 @@ window.BAND = (function () {
           holdRow('🖼️', H.picture, a.pic ? avHtml({ n: a.name, pic: a.pic }) : '<i>' + esc(H.noPicture) + '</i>') +
           holdRow('👋', H.words, a.text.trim() ? '<b>' + esc(a.text.trim()) + '</b>' : '<i>' + esc(H.noWords) + '</i>') +
           '</div>';
+        // **the answer, where it was no** (Q1473, Ed 2026-09-19): a refused
+        // application read *Submitted — the members are deciding* for ever,
+        // and Ed's ruling makes the refusal the ordinary case at 🏛️. One
+        // sentence, naming nobody and counting nothing; the explainer above
+        // it goes with the vote it explains.
+        if (a.refused) return '<p class="why">' + esc(PAGE_COPY.appcards.refused) + '</p>';
         return '<p class="why">Your application goes before the members as a proposal (✏️) — it passes if the membership is sure enough.</p>' +
           (a.submitted
             ? '<div class="lockline">' + TICK + '<span>Submitted. ' + APPLICANT.judged + ' of ' + E() + ' have voted on it — you will get an email either way.</span></div>'
@@ -919,6 +929,21 @@ window.BAND = (function () {
         fitBand(band);
         return;
       }
+      // **The 👑 takes the pattern whole** (CP5, Q1100, Ed's refinement):
+      // 🗑️ closes the card with the question kept pending, and the two
+      // reserved powers are the two answers — a Founder Action passes it, the
+      // Founder Veto holds it. The word-buttons retired 2026-08-31. Both wear
+      // their power's glyph and both exercise it, which is what T44 asks of a
+      // glyphed commit. One implementation since Q1475, the admission card
+      // having needed the same row: the pair groups at the far right, the
+      // veto immediately left of the pen (Ed, 2026-09-02, Q1154).
+      const crownPairRow = () => (amFounder()
+        ? binBtn() + '<span class="rightpair">' +
+          '<button class="btn glyphbtn emojibtn" data-crownq="reject"' +
+          ' title="Refuse — the Founder Veto holds it, and what stands stands">' + glyphHtml('🛡️') + '</button>' +
+          '<button class="btn btn-approve glyphbtn emojibtn" data-crownq="accept"' +
+          ' title="Accept — a Founder Action passes it now">' + glyphHtml('✒️') + '</button></span>'
+        : binBtn());
       const cardFor = (g) => {
         const c = card(S.open);
         // A card the room owns keeps its own body — choosing to hand it over is
@@ -959,6 +984,30 @@ window.BAND = (function () {
               esc(applicantName(ap)) + ' is a member from the moment they asked.</p>',
               binBtn() + '<button class="btn btn-approve okbtn" data-ok="' + esc(c.k) + '">OK</button>',
               g.cards);
+          }
+          // **The membership has agreed and the Founder has not answered**
+          // (Q1475, Ed 2026-09-19, the Founder of a live room: *I did have
+          // founder veto but I wasn't served a queue card for it*). ✉️'s 🛡️
+          // is held, so a carried admission parks on the Founder's assent
+          // (§9.7 rule 9) and the module opens the 👑 question — and this
+          // card had no branch for it at either price: it went on drawing the
+          // vote, so the Founder was shown a question they had answered and
+          // a member pressing an answer was refused *the motion is not
+          // running*. It reads as the passed card it is now, in the settled
+          // motion's own grammar (CP5, Q1100, the `awaiting-crown` branch
+          // below): the two blocks with the membership's choice marked
+          // chosen, the pair of powers for the Founder, and for everybody
+          // else the park's own sentence and nothing to press.
+          const parked = liveMotionRec(c);
+          if (parked && parked.status === 'awaiting-crown') {
+            return cardHtml(c, ctx, said +
+              '<div class="pick"><span class="opttext">' + esc(PAGE_COPY.consent.staysAsIs) + '</span></div>' +
+              '<div class="pick on"><span class="opttext">' +
+              esc(PAGE_COPY.consent.joins(applicantName(ap))) + '</span>' +
+              chosenRadio('Chosen by the membership') + '</div>' +
+              (amFounder() ? '' : '<p class="setnote">' +
+                esc(window.COPY.session.park.awaiting) + '</p>'),
+              crownPairRow(), g.cards);
           }
           // **🏛️ — everybody's consent**, which is the constitutional motion the
           // room already knows: the shared picks, and the generic commit path,
@@ -1178,21 +1227,7 @@ window.BAND = (function () {
             '<div class="pick on"><span class="opttext">' + esc(toClause) + '</span>' +
             chosenRadio('Chosen by the membership') + '</div>' +
             (m.why ? window.CARDS.speakerHtml(m.why) : ''),
-            // **The 👑 takes the pattern whole** (CP5, Q1100, Ed's refinement):
-            // 🗑️ closes the card with the question kept pending, and the two
-            // reserved powers are the two answers — a Founder Action passes it,
-            // the Founder Veto holds it. The word-buttons retired 2026-08-31.
-            // Both wear their power's glyph and both exercise it, which is what
-            // T44 asks of a glyphed commit.
-            (amFounder()
-              // the pair groups at the far right, the veto immediately left of
-              // the pen (Ed, 2026-09-02, Q1154)
-              ? binBtn() + '<span class="rightpair">' +
-                '<button class="btn glyphbtn emojibtn" data-crownq="reject"' +
-                ' title="Refuse — the Founder Veto holds it, and what stands stands">' + glyphHtml('🛡️') + '</button>' +
-                '<button class="btn btn-approve glyphbtn emojibtn" data-crownq="accept"' +
-                ' title="Accept — a Founder Action passes it now">' + glyphHtml('✒️') + '</button></span>'
-              : binBtn()), g.cards);
+            crownPairRow(), g.cards);
         }
         // a live motion takes the route its own value asks for (329a)
         if (m && routeOfM(m, c) === 'ordinary') {

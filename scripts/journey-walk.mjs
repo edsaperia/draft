@@ -1392,8 +1392,13 @@ const motionFillOnAmended = async () => {
   say('mover’s ⏳ · ' + (okG ? 'the mover’s own entry is a ⏳ wait with the same bar: ' + g1.title
     : 'FAIL: ' + JSON.stringify(g1)));
   if (!okG) stuck.push('the 🏛️ motion’s fill on the mover’s entry');
-  // the founder answers *keep*: a keep blocks a 🏛️ motion rather than settling
-  // it (§9.6), so the motion stands with every answer in — and the bar is full
+  /* **The founder answers *keep*, and that is the end of it** (Q1473, Ed
+   * 2026-09-19: *it should fail as soon as someone votes against on a 🏛️*).
+   * Until v0.138 a keep blocked and did not kill, and these lines asserted
+   * the motion standing with every answer in and its bar full — which is the
+   * state a document can no longer be in. What the press does now is settle
+   * it: the vote leaves both rails, the mover is served E41's card for it,
+   * and their 🏛️ comes back. */
   const kept = await wire(page, 'answer-motion', { motion, answer: 'keep' });
   if (kept && kept.error) {
     say('motion kept· FAIL: the founder could not answer · ' + JSON.stringify(kept));
@@ -1401,18 +1406,32 @@ const motionFillOnAmended = async () => {
   }
   await T(5000);
   const e2 = await entryAt(page, mKey);
-  const ok2 = !!e2 && e2.fill === '100%' && e2.title === '2 of 2 have answered' && e2.mark === 'deciding';
-  say('motion moves· ' + (ok2 ? 'the founder’s answer moves it: ' + e2.title + ' · fill ' + e2.fill + ' · the entry files as ⏳'
-    : 'FAIL: ' + JSON.stringify(e2)));
-  if (!ok2) stuck.push('the 🏛️ motion’s fill after the founder answered');
+  const g2 = await entryAt(guestPage, mKey);
+  const news2 = await entryAt(guestPage, 'held:' + motion);
+  const ok2 = !e2 && !g2 && !!news2 && news2.state === 'st-news';
+  say('a keep ends· ' + (ok2 ? 'the founder’s vote against settles it: the vote leaves both rails and the mover is served its ✖ news'
+    : 'FAIL: ' + JSON.stringify({ e2, g2, news2 })));
+  if (!ok2) stuck.push('a keep ends the 🏛️ motion (Q1473)');
+  /* …and the 🏛️ comes back with it, which is what lets the withdrawal below
+   * be walked at all: one 🏛️ out per member at a time (§9.6). */
+  const put2 = await wire(guestPage, 'open-motion', { payload: { kind: 'set', setting: AMENDED, value: { rung: 'link' } },
+    why: 'a link is enough, then' });
+  const motion2 = put2 && put2.result;
+  if (!motion2 || put2.error) {
+    say('🏛️ back   · FAIL: the settled motion did not free the mover’s 🏛️ · ' + JSON.stringify(put2));
+    stuck.push('the 🏛️ slot after a keep');
+    return;
+  }
+  await T(5000);
   // withdrawn: nothing is in flight, so the entry says the rule again, not a count
-  const drop = await wire(guestPage, 'withdraw-motion', { motion });
+  const mKey2 = 'mo:' + motion2;
+  const drop = await wire(guestPage, 'withdraw-motion', { motion: motion2 });
   if (drop && drop.error) {
     say('motion gone· FAIL: the member could not withdraw · ' + JSON.stringify(drop));
     stuck.push('withdrawing the 🏛️ motion');
   }
   await T(5000);
-  const e3 = await entryAt(page, mKey);
+  const e3 = await entryAt(page, mKey2);
   const ok3 = !e3 || !/have answered/.test(e3.title || '');
   say('motion gone· ' + (ok3 ? 'withdrawn, and the entry no longer counts answers' + (e3 ? ' · ' + JSON.stringify(e3) : ' · the entry left the rail')
     : 'FAIL: the count survived the withdrawal · ' + JSON.stringify(e3)));
@@ -1425,11 +1444,12 @@ const motionFillOnAmended = async () => {
  * it, and — 🌍's 🛡️ being the founder's after this founding — it parks at the
  * crown rather than landing, where the founder refuses it.
  *
- * **Not the founder answering *keep***, which the plan for this work asked
- * for and which cannot fail a motion: §9.6's settle check skips any motion
- * with a standing keep (`maybeSettleMotions`, *a standing keep blocks but does
- * not kill*), so the motion above simply stands running — which is what the
- * rows above it assert. The crown's refusal is the road this walk takes; an
+ * **Not the founder answering *keep***, which is a road of its own since
+ * Q1473 (Ed, 2026-09-19) and is walked where it happens — `motionFillOnAmended`
+ * above, whose *a keep ends* row reads the ✖ news this same card family
+ * raises. Until v0.138 a keep could not fail a motion at all: the settle
+ * check skipped any motion carrying one, so the motion simply stood running.
+ * The crown's refusal is the road this section takes; an
  * **ordinary** motion is held the moment no answer still to come could carry
  * it (Q1440, `engine-bridge`'s `sync`), which `invite-walk` asserts, and the
  * system's own withdrawal is raised inside `sync` on a path the wire refuses
@@ -1612,7 +1632,13 @@ const motionDeckOnAmended = async () => {
     : 'FAIL: ' + JSON.stringify(cardA)));
   if (!deckOk2) stuck.push('the first motion’s card');
   await closeCard();
-  const ansA = await wire(page, 'answer-motion', { motion: mA, answer: 'keep' });
+  /* **The founder abstains rather than keeps** (Q1473): what this step is
+   * about is two motions on one setting, each its own tab and entry, each
+   * answered and each still running — and since v0.138 a keep settles the
+   * motion it is cast on, which would take the entry out of the rail before
+   * the next line could read it. An abstention is the answer that leaves a
+   * motion collecting, and it leaves the third seat's answer owed. */
+  const ansA = await wire(page, 'answer-motion', { motion: mA, answer: 'abstain' });
   if (ansA && ansA.error) { say('motions ansA · FAIL: ' + JSON.stringify(ansA)); stuck.push('the founder’s answer on the first motion'); }
   await T(5000);
   const dA2 = await entryAt(page, mKA), dB2 = await entryAt(page, mKB);
@@ -1621,7 +1647,7 @@ const motionDeckOnAmended = async () => {
   say('motions 3  · ' + (deckOk3 ? 'the first answered: its entry files as ⏳ ' + dA2.title + ' · the second still asks ' + dB2.title
     : 'FAIL: ' + JSON.stringify({ dA2, dB2 })));
   if (!deckOk3) stuck.push('the entries after the first answer');
-  const ansB = await wire(page, 'answer-motion', { motion: mB, answer: 'keep' });
+  const ansB = await wire(page, 'answer-motion', { motion: mB, answer: 'abstain' });
   if (ansB && ansB.error) { say('motions ansB · FAIL: ' + JSON.stringify(ansB)); stuck.push('the founder’s answer on the second motion'); }
   await T(5000);
   const dA3 = await entryAt(page, mKA), dB3 = await entryAt(page, mKB);
@@ -1631,7 +1657,7 @@ const motionDeckOnAmended = async () => {
     return c ? [...c.querySelectorAll('[data-motion][aria-pressed="true"]')].map((b) => b.dataset.motion) : null;
   }, mKA);
   const deckOk4 = !!dA3 && dA3.mark === 'deciding' && !!dB3 && dB3.mark === 'deciding' && /^2 of 3 have answered$/.test(dB3.title || '') &&
-    !!cardA3 && cardA3.join() === 'no';
+    !!cardA3 && cardA3.join() === 'abstain';
   say('motions 4  · ' + (deckOk4 ? 'both answered, both entries ⏳: ' + dB3.title + ' · the first’s card reopens with the answer given pre-pressed'
     : 'FAIL: ' + JSON.stringify({ dA3, dB3, cardA3 })));
   if (!deckOk4) stuck.push('the entries once every motion is answered');

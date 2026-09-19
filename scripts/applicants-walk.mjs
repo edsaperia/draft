@@ -775,7 +775,35 @@ if (admEntry) {
     await T(5000); // >4s: a poll lands carrying the judged race
     const now = await entryNow();
     say('entry      · after voting ' + JSON.stringify(now));
-    if (!now || now.st !== 'st-wait' || now.mark !== 'glass') {
+    /* **Whose turn it is decides between the two** (Q1475, Ed 2026-09-19).
+     * Where the room is still deciding, the entry waits under ⏳ — the vote
+     * is cast and the answer is other people's. But this walk's founder is
+     * the whole membership, so their own vote carries the race at once, and
+     * ✉️'s 🛡️ is born held: the admission **parks on their own assent**, and
+     * the entry that waited on nobody but them read ⏳ and said so to nobody.
+     * It asks now, and its card is the 👑 pair. Which of the two this run
+     * meets depends on the engine's cooldown, so it is read off the view
+     * rather than assumed. */
+    const parkedQ = await page.evaluate(async (slug) => {
+      const v = await (await fetch(`/api/d/${slug}/view`)).json();
+      return ((v.view && v.view.crownTasks) || []).length > 0;
+    }, SLUG);
+    if (parkedQ) {
+      const pcard = await page.evaluate(() => {
+        const c = document.querySelector('.setupcard');
+        return c ? { crownq: [...c.querySelectorAll('[data-crownq]')].map((b) => b.dataset.crownq),
+          radios: c.querySelectorAll('.lanepick:not([disabled])').length } : null;
+      });
+      say('👑 parked  · the founder\'s own vote carried it, and ✉️\'s 🛡️ holds it · ' + JSON.stringify(pcard));
+      if (!now || now.st !== 'st-ask') {
+        say('FAIL: a parked admission should ask the founder, saw ' + JSON.stringify(now));
+        stuck.push('the parked entry asks');
+      }
+      if (!pcard || pcard.crownq.join('|') !== 'reject|accept' || pcard.radios !== 0) {
+        say('FAIL: the parked ✏️-priced card should carry the 👑 pair and no vote');
+        stuck.push('the parked ✏️ card');
+      }
+    } else if (!now || now.st !== 'st-wait' || now.mark !== 'glass') {
       say('FAIL: after the vote the admit entry should wait under ⏳, saw ' + JSON.stringify(now));
       stuck.push('the entry waits');
     }
@@ -835,20 +863,62 @@ if (admEntry) {
     const held = chose && await press(1600);
     if (!held) { say('FAIL: could not consent to the admission on the 🏛️ card'); stuck.push('the consent'); }
     else {
-      await T(1500);
+      await T(5000);
       // **the door's 🛡️ is born held** (SPEC §9.7 rule 9): a carried
-      // admission parks behind the founder's assent, so the crown question
-      // is answered over the wire as the founding's settings were — the
-      // crown card is journey's to walk, not this one's
+      // admission parks behind the founder's assent, so the module opens a
+      // 👑 question. **And the page had nowhere to put it** (Q1475, Ed
+      // 2026-09-19, the founder of a live room: *I did have founder veto but
+      // I wasn't served a queue card for it*) — this walk answered it over
+      // the wire and so never met the gap. It is walked on the page now: the
+      // entry asks, the card is the passed pair with the two powers on it and
+      // no vote left to cast, and ✒️ is what admits.
       const founderView = await page.evaluate(async (slug) =>
         (await (await fetch(`/api/d/${slug}/view`)).json()), SLUG);
       const crown = ((founderView.view && founderView.view.crownTasks) || [])[0];
       if (!crown) { say('FAIL: the carried admission raised no crown question for the founder\'s 🛡️'); stuck.push('the crown question'); }
       else {
-        const assent = await cmd('answer-crown-question', { question: crown.id, outcome: 'accept' });
-        say('🛡️ assent · ' + crown.id + ' → ' + assent.status);
-        if (assent.status !== 200) stuck.push('the crown\'s assent');
-        await T(1500);
+        const parked = await page.evaluate((k) => {
+          const li = document.querySelector('#rail .qitem[data-q="' + k + '"]');
+          const b = li && li.querySelector('button');
+          return b ? { st: (b.className.match(/st-\w+/) || [''])[0] } : null;
+        }, admEntry.k);
+        say('👑 entry   · ' + JSON.stringify(parked));
+        if (!parked || parked.st !== 'st-ask') {
+          say('FAIL: the parked admission should ask the founder, saw ' + JSON.stringify(parked));
+          stuck.push('the 👑 entry asks the founder');
+        }
+        await open(admEntry.k);
+        const pc = await page.evaluate(() => {
+          const c = document.querySelector('.setupcard');
+          if (!c) return null;
+          return {
+            crownq: [...c.querySelectorAll('[data-crownq]')].map((b) => b.dataset.crownq),
+            // nothing left to press: the one radio on a parked card is the
+            // membership's own choice, marked and disabled
+            radios: c.querySelectorAll('.lanepick:not([disabled])').length,
+            chosen: [...c.querySelectorAll('.pick.on .lanepick[disabled]')]
+              .map((b) => (b.textContent || '').trim()),
+            confirm: c.querySelectorAll('[data-confirm], [data-admitgo]').length,
+            text: (c.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 200),
+          };
+        });
+        say('👑 card    · ' + JSON.stringify(pc));
+        const pcOk = !!pc && pc.crownq.join('|') === 'reject|accept' && pc.radios === 0 &&
+          pc.confirm === 0 && pc.chosen.join('') === 'Chosen by the membership' &&
+          pc.text.includes(NAME);
+        if (!pcOk) {
+          say('FAIL: the parked card should carry the 👑 pair, the membership\'s choice and no vote');
+          stuck.push('the 👑 card');
+        }
+        const pressed = await page.evaluate(() => {
+          const b = document.querySelector('.setupcard [data-crownq="accept"]');
+          if (!b) return false;
+          b.click();
+          return true;
+        });
+        say('👑 ✒️      · ' + (pressed ? 'pressed on the page' : 'FAIL: no ✒️ to press'));
+        if (!pressed) stuck.push('the 👑 accept');
+        await T(5000);
       }
       // the seat mail lands on the outbox's next sender pass, not on the
       // commit that raised it, so it is polled for rather than read once.

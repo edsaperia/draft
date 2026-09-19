@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 505
+  "entries": 507
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -120,6 +120,8 @@
   "page.appcards.holds.noWords": "none — the words are optional",
   "page.appcards.holds.picture": "Your picture",
   "page.appcards.holds.words": "Your words",
+  "page.appcards.refused": "The membership did not agree to it.",
+  "page.appcards.refusedTitle": "Your Application Was Not Accepted",
   "page.appcards.shut": "The rule has changed since you began: this document is now invitation-only, so your application cannot be submitted.",
   "page.appcards.shutTitle": "Applications Have Closed",
   "page.asMember": "This is your answer to this question as a member.",

@@ -1557,7 +1557,10 @@
       mailOpen: false, name: '', pic: '', text: '', submitted: false, csId: null,
       // whether the door shutting under you has been acknowledged (E33, Q901):
       // the module is the truth about it, this is the provisional layer's copy
-      shutAcked: false },
+      shutAcked: false,
+      // …and whether the membership answered no (Q1473): the applicant's own
+      // status, which the 🪪 card reads to stop saying they are deciding
+      refused: false },
     ending: '', endsAt: '',
     quorumBy: '', quorumForm: '', quorumPct: '', quorumN: '',
     joinBy: '', admission: '',
@@ -3862,7 +3865,27 @@
   // E10's audience is *every active member*; the lapsed see it waiting.
   const viewerLapsed = () => { if (!cs || !viewerIsMember()) return false;
     const r = cs.memberRecords().get(viewerId()); return !!(r && r.lapsed); };
-  const mustAct = (c) => (motionOn(c) ? (viewerIsMember() && !viewerLapsed() && !answeredMotion(c) && !motionExcludesMe(c))
+  // **A proposal parked on the Founder's own 🛡️ asks the Founder** (Q1475,
+  // Ed 2026-09-19, founder of a live room: *I did have founder veto but I
+  // wasn't served a queue card for it*). The membership has finished, the
+  // motion stands at `awaiting-crown`, and the only act left is theirs — but
+  // `mustAct` asked *have you answered this motion*, and the Founder had:
+  // their own accept was part of what carried it. So the one entry in the
+  // rail waiting on nobody but them sat at ⏳. Whatever the payload — a rule,
+  // an invitation, a removal, somebody at the door — and only while the
+  // question is really pending, so a lapsed or vacated crown, which passes it
+  // by itself, asks nothing.
+  const crownAsksMe = (c) => {
+    if (!cs || !amFounder()) return false;
+    const rec = liveMotionRec(c);
+    if (!rec || rec.status !== 'awaiting-crown') return false;
+    for (const q of cs.crownQuestionRecords().values()) {
+      if (q.motion === rec.id && q.status === 'pending') return true;
+    }
+    return false;
+  };
+  const mustAct = (c) => (motionOn(c) ? (crownAsksMe(c) ||
+      (viewerIsMember() && !viewerLapsed() && !answeredMotion(c) && !motionExcludesMe(c)))
     : c.isBegin ? (amFounder() && !constituted())
     : c.isClosing ? false
     : c.leaveDoor ? false                                      // nothing asks you to leave (Q1400)
@@ -6335,7 +6358,11 @@
   // number came back, and it pins until your OK, because a reveal you
   // answered blind into is a decision you are owed; a gate opening takes
   // the same rule, being exactly the shape of an unacknowledged decision.
-  const waiting = (c) => (motionOn(c) ? answeredMotion(c)
+  // …and it is not waiting on anybody while it waits on **you** (Q1475): a
+  // motion parked on the Founder's own 🛡️ is read here before `mustAct` is
+  // reached, and *have you answered it* is true of the Founder on every
+  // motion they carried — so the entry filed ⏳ and the ask never ran
+  const waiting = (c) => (motionOn(c) ? (!crownAsksMe(c) && answeredMotion(c))
     : c.isBegin ? (!amFounder() && !constituted())   // a member sees the start waiting on the founder
     : c.isClosing ? false
     : c.isGate ? !c.open()

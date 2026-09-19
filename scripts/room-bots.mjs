@@ -387,9 +387,14 @@ const seat_of = (email, cookie) => {
     opinion: (id) => hash01(`${seed}/${id}`) < temperament.change };
 };
 
-/** Refusals a member meets in the ordinary course of a busy room, counted rather than shouted. */
+/** Refusals a member meets in the ordinary course of a busy room, counted
+ *  rather than shouted. **A motion somebody settled while this bot was
+ *  deciding** joined them at Q1473 (Ed, 2026-09-19): a vote against ends a
+ *  🏛️ proposal on the press, so a seat whose view is a few seconds old
+ *  answers one that has gone — the ordinary shape of a room with more than
+ *  one person in it. */
 const ordinary = (msg) =>
-  /not in a live race|no such race|already resolved|not live|already stands|insufficient|version|stale|base/i.test(msg);
+  /not in a live race|no such race|already resolved|not live|already stands|insufficient|version|stale|base|motion is not running/i.test(msg);
 
 const refused = (seat, act, e) => {
   const msg = e instanceof Error ? e.message : String(e);
