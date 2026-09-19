@@ -225,6 +225,25 @@ describe('the spectator feed (Q1466)', () => {
     expect(Object.keys(f.entries[0]!)).not.toContain('by');
   }, 60_000);
 
+  // **the change token counts both logs** (issue #68 finding 1): a motion on a
+  // rule writes the constitution's log and never the engine's, so a token that
+  // counted the engine alone left a projector reading *nothing has been
+  // proposed yet* for the whole open life of a 🌍, 👥 or 🪪 vote
+  it('a constitutional motion reaches a page that is already polling', async () => {
+    const b = await boot();
+    const { bo, cmd, feed } = await room(b, 'link', 'public');
+    const open = await feed();
+    expect(open.entries).toEqual([]);
+    await cmd(bo, 'open-motion', { payload: { kind: 'set', setting: 'chamber', value: { rung: 'public' } },
+      why: 'let the neighbours read it' });
+    const next = await feed(undefined, open.eseq);
+    expect(next.short).toBeUndefined();
+    expect(next.entries).toHaveLength(1);
+    expect(next.entries[0]).toMatchObject({ kind: 'proposed' });
+    // and the new token is short again while nothing moves
+    expect(await feed(undefined, next.eseq)).toMatchObject({ short: true });
+  }, 60_000);
+
   it('the page is served at /d/:slug/feed, and a slug nobody made is a 404 on both rows', async () => {
     const b = await boot();
     const { slug } = await room(b, 'link', 'public');
