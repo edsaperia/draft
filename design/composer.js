@@ -19,10 +19,7 @@
  * `SIGNING`, `SIGNER`, `AUTHOR_RUNG`, `SIGNER_PERSON`) go in as calls for
  * the same reason, `init` replacing every one of them; `caretPulse` goes in
  * as a call for a different one, being a `const` below the line `make` is
- * called on and so still in its temporal dead zone. `laneMode` travels the
- * other way: the strip's own handler and the page's `SESSION.setLaneRaw`
- * both write it, so it comes back as a settable property rather than only
- * through `laneRaw`.
+ * called on and so still in its temporal dead zone.
  *
  * Two things deliberately did not come. `mineSeq` names a draft at the
  * moment it is proposed and is `act`'s alone, so it stays beside `act`. And
@@ -220,6 +217,8 @@ window.COMPOSER = (function () {
     // Everything a block carries that is not its text: the gutter marks on a
     // clause, the fold triangle on a heading. All of it sits *before* the words,
     // so its length is a constant to subtract rather than a position to track.
+    // The block's markdown marker is **not** in it since Q1467: the marker is
+    // the line's own first characters, and the caret counts them.
     const leadLen = (block) => [...block.querySelectorAll('.chipcol, .nocaret')]
       .reduce((n, el) => n + el.textContent.length, 0);
 
@@ -308,6 +307,59 @@ window.COMPOSER = (function () {
       setCaretIn(blocks[blocks.length - 1], blocks[blocks.length - 1].textContent.length);
     }
 
+    // **B and I put the marks in, and take them out again** (Q1467). Edit mode
+    // is markdown source everywhere since the `[]` toggle went, so bold and
+    // italic are `**` and `*` written round the selection — and a press on a
+    // selection that already carries them removes them instead, whether the
+    // marks are inside the selection or standing just outside it in the same
+    // block. `insertText` rather than a node rewrite, so the host's own
+    // `input` handler re-marks and the site's text follows. One act for both
+    // columns; `blockOf` says what a block is on the surface asking (a lane's
+    // `.lp`, the founder's column's own child).
+    function markSelection(marks, blockOf) {
+      const sel = getSelection();
+      if (!sel || !sel.rangeCount) return;
+      const r = sel.getRangeAt(0);
+      const s = sel.toString();
+      const n = marks.length;
+      const put = (t) => document.execCommand('insertText', false, t);
+      if (s.length > 2 * n && s.startsWith(marks) && s.endsWith(marks)) return put(s.slice(n, -n));
+      const block = s ? blockOf(r.startContainer) : null;
+      if (block && block === blockOf(r.endContainer)) {
+        const offOf = (node, o) => {
+          const g = document.createRange();
+          g.selectNodeContents(block);
+          try { g.setEnd(node, o); } catch (e) { return null; }
+          return g.toString().length;
+        };
+        const a = offOf(r.startContainer, r.startOffset), b = offOf(r.endContainer, r.endOffset);
+        const t = block.textContent;
+        // `*` inside `**` is the bold marks' own second character, never an
+        // italic pair — a grammar of three marks has no `***` (`MD_RX`)
+        const doubled = marks === '*' && (t.slice(a - 2, a - 1) === '*' || t.slice(b + 1, b + 2) === '*');
+        if (a != null && b != null && a >= n && !doubled &&
+            t.slice(a - n, a) === marks && t.slice(b, b + n) === marks) {
+          const at = (k) => {
+            const w = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+            let node = w.nextNode(), acc = 0;
+            while (node) {
+              if (acc + node.length >= k) return [node, k - acc];
+              acc += node.length; node = w.nextNode();
+            }
+            return null;
+          };
+          const p1 = at(a - n), p2 = at(b + n);
+          if (p1 && p2) {
+            const g = document.createRange();
+            g.setStart(p1[0], p1[1]); g.setEnd(p2[0], p2[1]);
+            sel.removeAllRanges(); sel.addRange(g);
+            return put(s);
+          }
+        }
+      }
+      put(marks + s + marks);
+    }
+
     // ---- opening the composer -------------------------------------------
     // `initial` carries the keystroke that started it: the clause with that one
     // character already applied, and where the caret should sit afterwards.
@@ -391,15 +443,13 @@ window.COMPOSER = (function () {
     function startDraftFromTyping(p, ev) {
       const key = p.dataset.key;
       if (!key) return;
-      // the caret is measured in the **words** — the column's marker is a
-      // `.nocaret` span, drawn and never counted — and the lane holds the
-      // **source line**, marker first (Q1403), so every offset moves past the
-      // marker on its way from the one to the other
-      const orig = currentTextFor(key);
-      const mark = markerFor(key);
-      const src = mark + orig;
-      const sel = caretRangeIn(p) || { start: orig.length, end: orig.length };
-      let a = Math.min(sel.start, orig.length), b = Math.min(sel.end, orig.length);
+      // **A caret offset in the column is an offset into the source line**
+      // (Q1467): edit mode draws the block's marker as ordinary text, so what
+      // is measured here and what the lane holds are the same string and
+      // nothing is added on the way between them.
+      const src = markerFor(key) + currentTextFor(key);
+      const sel = caretRangeIn(p) || { start: src.length, end: src.length };
+      let a = Math.min(sel.start, src.length), b = Math.min(sel.end, src.length);
       // **Enter at a clause edge inserts rather than rewrites** (backlog 204,
       // Q261): a collapsed caret at the very end of an unmodified clause opens a
       // draft on the gap after it, at the very start on the gap before it — a
@@ -408,10 +458,9 @@ window.COMPOSER = (function () {
       const enter = ev.inputType === 'insertParagraph' || ev.inputType === 'insertLineBreak';
       const d0 = draftOf();
       if (enter && a === b && !isGapKey(key) && !(d0 && siteFor(d0, key))) {
-        if (a === orig.length) return startDraft(gapAfter(key), null, { text: '', caret: 0 });
-        if (a === 0 && orig.length) return startDraft(gapBefore(key), null, { text: '', caret: 0 });
+        if (a === src.length) return startDraft(gapAfter(key), null, { text: '', caret: 0 });
+        if (a === 0 && src.length) return startDraft(gapBefore(key), null, { text: '', caret: 0 });
       }
-      a += mark.length; b += mark.length;
       let ins = '';
       switch (ev.inputType) {
         case 'insertText': ins = ev.data == null ? '' : ev.data; break;
@@ -422,16 +471,15 @@ window.COMPOSER = (function () {
         case 'insertFromPaste':
           ins = (ev.dataTransfer && ev.dataTransfer.getData('text/plain')) || ''; break;
         case 'deleteContentBackward':
-          // **Backspace at the words' start of a heading or bullet takes the
-          // marker off whole** (Q1403): the block becomes a paragraph with the
-          // caret where it was, and the next backspace — now at a paragraph's
-          // start — is Q1302's join. From the column the caret cannot stand
-          // inside the marker, so this is the one way the keystroke reaches
-          // it; in the open lane the marker is ordinary text.
+          // **Backspace takes one character, marker included** (Q1467,
+          // retiring Q1403's whole-marker special case): the caret can stand
+          // anywhere in the source line now, so a Backspace after a `#`
+          // deletes that `#` like any other character and a heading is
+          // demoted or flattened one press at a time. At the line's true
+          // start — offset 0, before the marker — it is Q1302's join.
           if (a === b) {
-            if (mark && a === mark.length) { a = 0; }
-            else if (a === 0) return joinWithNeighbour(key, -1, d0);
-            else a -= 1;
+            if (a === 0) return joinWithNeighbour(key, -1, d0);
+            a -= 1;
           }
           break;
         case 'deleteContentForward':
@@ -553,17 +601,11 @@ window.COMPOSER = (function () {
     // identical word inserted — "used on ~~bone~~ bone," — which is nonsense the
     // reader has to see through. Split off, the comma is the only thing that
     // lights, which is the truth.
-    // Rich by default; markdown is the checking view (Ed, 2026-08-17). One
-    // preference rather than one per card \u2014 it is how *you* like to work, and it
-    // would be strange for it to reset every time a different clause opened.
-    // **And since Q1294 it is the column's, not the lane's** (Ed, 2026-09-10):
-    // the `[]` toggle sits with B and I in the one strip at the top right of
-    // the lifted column (`laneCtlHtml`, Q1294 (b): *top right of the edit box*)
-    // and flips every clause and every open lane at once (`srcMode`,
-    // `laneBlocks`); outside edit mode there is no strip and the column is
-    // always rendered.
-    let laneMode = 'rich';
-    const laneRaw = () => laneMode === 'md';
+    // **A lane is markdown source, always** (Q1467, Ed 2026-09-19): rich
+    // editing and the `[]` toggle that chose between them are gone, so there
+    // is no preference to hold, no caret to convert between two views, and
+    // nothing the lane shows that the candidate does not store. Outside edit
+    // mode the column is rendered, as it always was.
     // ---- the strip's state (Q1294 (b)) ----------------------------------------
     // Each editing lane's re-mark (the rewrite of its own markup after a change,
     // bound in `renderDoc`), keyed by the lane, so the column's B and I can reach
@@ -990,15 +1032,9 @@ window.COMPOSER = (function () {
       dropDraft, dropDraftSite,
       caretRangeIn, selectedBlocks, laneCaret, placeCaret,
       startDraft, startDraftFromTyping, startDraftFromRun,
-      laneRaw, laneRemark, syncEditCtl,
+      laneRemark, syncEditCtl, markSelection,
       commitBtnHtml, proposalRowHtml, proposeCtlTitles, draftRowState, setDraftSigned,
-      editCardHtml, mineCardHtml, strandedCardHtml,
-      // the column's `[]` preference, written from two places outside this
-      // file — the strip's own handler in `columnPass`, and the page through
-      // `SESSION.setLaneRaw` — so it goes back as the variable rather than as
-      // a copy of whatever it held at make time
-      get laneMode() { return laneMode; },
-      set laneMode(v) { laneMode = v; } };
+      editCardHtml, mineCardHtml, strandedCardHtml };
   }
   return { make };
 })();

@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 506
+  "entries": 505
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -86,7 +86,6 @@
   "grammar.field.rivals": "ƒ (n) => 'Proposed · ' + n + ' rival proposals'",
   "grammar.fmt.bold": "Bold (the markdown is **like this**)",
   "grammar.fmt.italic": "Italic (the markdown is *like this*)",
-  "grammar.fmt.mdMode": "Markdown — see and type the characters exactly as they are stored, the whole text at once",
   "grammar.ground.sub": "the clause changed after you voted",
   "grammar.ground.tag": "The text you voted on",
   "grammar.head.label": "The clause as it stands",

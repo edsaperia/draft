@@ -257,28 +257,28 @@ window.EDIT_MODE = (function () {
       if (bin) bin.disabled = !dirty;
     }
     // ---- the column's strip before the start (Q1313) --------------------------
-    // **The same strip as after 🍾** (Ed, 2026-09-11 14:08): B · I · `[]` at
-    // the top right of the lifted column, `laneCtlHtml` from cards.js in the
+    // **The same strip as after 🍾** (Ed, 2026-09-11 14:08): B · I at the top
+    // right of the lifted column, `laneCtlHtml` from cards.js in the
     // `.editctl` box system.css places for the charter, drawn where the row is
     // drawn — edit mode, the founder's seat, before the start — and empty
-    // otherwise. The `[]` preference is session.js's (`laneRaw`), one for both
-    // columns; outside edit mode the column is always rendered (K22).
+    // otherwise. **`[]` went with Q1467** (Ed, 2026-09-19): edit mode *is* the
+    // source, in this column as in the charter's, and outside edit mode the
+    // column is rendered (K22). So the strip and the source view are one
+    // question, and the strip showing is the whole of it.
     const proseStrip = () => document.getElementById('prosectl');
     const proseStripShown = () => !!env.cs && !constituted() && env.S.editMode && amFounder();
-    // the view the column should wear: source with `[]` pressed, in edit mode only
-    const proseWantRaw = () => proseStripShown() && SESSION.laneRaw();
+    // the view the column should wear: source while it is being edited
+    const proseWantRaw = () => proseStripShown();
     // …and the view it wears now — what every read-out asks, never the wish
     const proseIsRaw = () => env.prose.classList.contains('mdsrc');
     function renderProseCtl() {
       const pc = proseStrip();
       if (!pc) return;
       const show = proseStripShown();
-      const raw = show && SESSION.laneRaw();
       pc.className = show ? 'editctl' : '';
       // rewritten only when its state changed: `render` follows every keystroke
-      const mode = pc.querySelector('.lmode');
       if (!show) pc.innerHTML = '';
-      else if (!mode || mode.getAttribute('aria-pressed') !== String(raw)) pc.innerHTML = window.CARDS.laneCtlHtml(raw);
+      else if (!pc.firstChild) pc.innerHTML = window.CARDS.laneCtlHtml();
       syncProseView();
       syncProseCtl();
     }
@@ -368,26 +368,18 @@ window.EDIT_MODE = (function () {
       renderToc();
     }
     // **The strip's presses** — a prevented mousedown, so the column keeps its
-    // selection (the charter's handlers do the same): `[]` flips the view
-    // through `render`, which converts the column with its caret; B and I act
-    // on the selection where the caret is — execCommand rendered, the
-    // characters themselves in source — and `relabel` redraws the marks.
+    // selection (the charter's handlers do the same): B and I write the
+    // markdown marks round the selection where the caret is, and take them off
+    // again where it already carries them (`markSelection`, Q1467, the one act
+    // both columns make). Then `relabel` redraws the marks.
     document.addEventListener('mousedown', (ev) => {
-      const b = ev.target.closest('#prosectl [data-act="col-mode"], #prosectl .lfmt');
+      const b = ev.target.closest('#prosectl .lfmt');
       if (!b || ev.button !== 0) return;
       ev.preventDefault(); ev.stopPropagation();
-      if (b.dataset.act === 'col-mode') {
-        SESSION.setLaneRaw(!SESSION.laneRaw());
-        render();
-        return;
-      }
       if (b.disabled || document.activeElement !== env.prose) return;
-      if (proseIsRaw()) {
-        const marks = b.dataset.fmt === 'bold' ? '**' : '*';
-        document.execCommand('insertText', false, marks + getSelection().toString() + marks);
-      } else {
-        document.execCommand(b.dataset.fmt);
-      }
+      SESSION.markSelection(b.dataset.fmt === 'bold' ? '**' : '*',
+        (n) => { const el = n.nodeType === 1 ? n : n.parentElement;
+          return el && env.prose.contains(el) ? [...env.prose.children].find((c) => c === el || c.contains(el)) || null : null; });
       env.prose.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'formatText' }));
     });
     // **A keystroke in read mode enters edit mode with that character applied**

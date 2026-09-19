@@ -57,7 +57,7 @@ window.CARDS = (function () {
   //
   // The empty block is what an **editing** lane wants: a line you can still put
   // a caret in, saying what it is through a pseudo-element so there is nothing
-  // for `htmlToMd` to serialise back into the candidate (system.css,
+  // for `readLane` to read back into the candidate (system.css,
   // `.lp.empty::before`). A lane that is only *read* wants the opposite —
   // `removedHtml` below — so this returns the empty block and `laneHtml` is
   // what a reading site calls.
@@ -653,20 +653,21 @@ window.CARDS = (function () {
   // **A marker previews as it will land** (Q1294, Ed 2026-09-10): a block
   // whose text begins `# ` or `- ` wears the heading or bullet treatment
   // here, with the marker itself dimmed in a `.mdmark` span — still text, so
-  // the caret counts it and `htmlToMd` writes it back: what is proposed is the
-  // source, and the engine's `blocksOf` reads the same prefix on landing.
+  // the caret counts it: what is proposed is the source, and the engine's
+  // `blocksOf` reads the same prefix on landing.
   // **And the marker is the only thing that ranks a block** (Q1403, Ed
   // 2026-09-16): the lane holds the candidate's markdown exactly — an
   // existing heading arrives with its `# ` as real text (`sourceTextFor`), a
   // block whose marker is deleted is a paragraph, a typed marker makes a
   // heading. Until Q1403 a `kinds` argument re-applied the origin's rank to
-  // a marker-less block, which is what made a heading's rank uneditable. In
-  // markdown mode nothing is dressed at all.
-  function laneBlocks(text, oldText, raw) {
-    // `raw` is markdown mode: the characters as they are, monospace, nothing
-    // rendered — which is the whole point of the mode, since it exists to let
-    // somebody check that their edit is exactly what they meant.
-    const render = raw ? esc : mdToHtml;
+  // a marker-less block, which is what made a heading's rank uneditable.
+  // **The lane is the source and nothing else** (Q1467, Ed 2026-09-19): the
+  // inline marks stand as the characters `**`, `*` and backticks rather than
+  // as bold, italic and code, so the lane and the candidate hold the same
+  // string and no caret is ever converted between two readings of it. The
+  // block still wears its rank, which is what a marker is for.
+  function laneBlocks(text, oldText) {
+    const render = esc;
     // Result-only (274): the diff marks what a proposal adds and never what it
     // cut, in the lane exactly as on the card.
     const pieces = oldText == null ? [[String(text), null]] : diffPieces(oldText, text, false);
@@ -680,11 +681,11 @@ window.CARDS = (function () {
     }
     // An emptied block keeps its `<br>` — it is still a line you can put a
     // caret in — and says what it is through a pseudo-element, so the helper is
-    // drawn without being *content*: nothing for `htmlToMd` to serialise back
-    // into the candidate, and nothing for the caret to land after.
+    // drawn without being *content*: nothing to read back into the candidate,
+    // and nothing for the caret to land after.
     return blocks.map((ps) => {
       const src = ps.map(([t]) => t).join('');
-      const typed = raw ? null : mdBlock(src);
+      const typed = mdBlock(src);
       // the marker's characters come off the front of the pieces, whatever
       // the diff made of them — a marker is never marked green
       let lead = typed ? typed.marker.length : 0;
@@ -769,9 +770,11 @@ window.CARDS = (function () {
     }).join('');
   }
   const mdLine = (src) => linkifyHtml(mdToHtml(src));
-  // …and back. Walks what the browser made of the lane and writes the markdown
-  // for it, so editing rich never silently drops the marks it is showing.
-  // `<ins>`/`<del>` are the diff's own wrappers and contribute nothing.
+  // …and back. Walks what the browser made of a rendered editable and writes
+  // the markdown for it, so editing rendered never silently drops the marks it
+  // is showing. `<ins>`/`<del>` are the diff's own wrappers and contribute
+  // nothing. Since Q1467 its one caller is the founder's pre-🍾 column
+  // (`edit-mode.js`), which is rendered while it is read.
   function htmlToMd(node) {
     let out = '';
     for (const n of node.childNodes) {
@@ -791,27 +794,20 @@ window.CARDS = (function () {
   const mdStrip = (src) => String(src).replace(MD_RX, (m) =>
     m.startsWith('**') ? m.slice(2, -2) : m.slice(1, -1));
 
-  // A caret offset does **not** mean the same thing in the two views: markdown
-  // mode shows the syntax characters and rich mode does not, so the same place
-  // in the text is a different number of characters along. Switching view
-  // therefore converts rather than assuming — otherwise the caret drifts by two
-  // characters for every bold word above it, which is exactly the class of bug
-  // the mode exists to help somebody catch.
+  // A caret offset does **not** mean the same thing in a rendered block and in
+  // its source: the source shows the syntax characters and the rendering does
+  // not, so the same place in the text is a different number of characters
+  // along. A surface that shows both therefore converts rather than assuming —
+  // otherwise the caret drifts by two characters for every bold word above it.
+  // Since Q1467 that is the founder's own column alone, which is rendered
+  // while it is read and source while it is edited; the charter's lanes are
+  // source at all times and convert nothing (`richToSource` went with the
+  // `[]` toggle).
   const MD_ONE = /^(\*\*[^*\n]+\*\*|\*[^*\n]+\*|`[^`\n]+`)$/;
   const mdLead = (p) => (p.startsWith('**') ? 2 : 1);
   const mdInner = (p) => (p.startsWith('**') ? p.slice(2, -2) : p.slice(1, -1));
   const mdParts = (src) => String(src).split(MD_RX).filter((p) => p !== '' && p != null);
 
-  function richToSource(src, off) {
-    let s = 0, r = 0;
-    for (const part of mdParts(src)) {
-      const mark = MD_ONE.test(part);
-      const inner = mark ? mdInner(part) : part;
-      if (off <= r + inner.length) return s + (mark ? mdLead(part) : 0) + (off - r);
-      r += inner.length; s += part.length;
-    }
-    return String(src).length;
-  }
   function sourceToRich(src, off) {
     let s = 0, r = 0;
     for (const part of mdParts(src)) {
@@ -827,16 +823,12 @@ window.CARDS = (function () {
   const originText = (site) => site.origin.map((o) => o.text).join('\n');
   // Read back whatever the browser made of the editing: blocks separated by
   // newlines, however they ended up nested.
-  // Read the lane back as **markdown source**, which is what a candidate is.
-  // In markdown mode the visible characters already are the source; in rich
-  // mode the marks are real elements and have to be written back out, so that
-  // editing rendered never silently drops the emphasis it is showing you.
+  // The lane's visible characters **are** the candidate's markdown source
+  // (Q1467), so reading it back is reading its text — nothing is serialised
+  // out of elements and no emphasis can be dropped on the way.
   function readLane(el) {
-    const raw = el.classList.contains('md');
     const blocks = [...el.children].filter((c) => c.classList && c.classList.contains('lp'));
-    const src = blocks.length
-      ? blocks.map((b) => (raw ? b.innerText : htmlToMd(b))).join('\n')
-      : (raw ? el.innerText : htmlToMd(el));
+    const src = blocks.length ? blocks.map((b) => b.innerText).join('\n') : el.innerText;
     return src.replace(/ /g, ' ').replace(/\r/g, '')
       .replace(/\n{2,}/g, '\n').replace(/\n$/, '');
   }
@@ -1187,23 +1179,21 @@ window.CARDS = (function () {
   // ---- the lane controls (Q1294 (b), Ed 2026-09-10) -------------------------
   // **One strip for the whole column**, at the top right of the text's card
   // in edit mode: B and I act on the selection in whichever editing lane
-  // holds the caret (and are disabled while none does), `[]` flips every
-  // clause and every open lane between rendered and source, its pressed-ness
-  // carrying the state. Drawn by the column's host beside the column, never
-  // inside the contenteditable (a button inside one becomes harvested text),
-  // and never per lane — a patch with three sites has one strip.
+  // holds the caret, and are disabled while none does. Drawn by the column's
+  // host beside the column, never inside the contenteditable (a button
+  // inside one becomes harvested text), and never per lane — a patch with
+  // three sites has one strip.
   // The italic button is a **serif capital I** (Ed, 2026-08-17): a sans
   // italic I is a slash with no serifs on it — it reads as punctuation rather
   // than as a letter. The serifs are what make it an I while it is still
-  // leaning. `[]` is one button, not a pair (Ed, 2026-08-17): off by default,
-  // pressed for markdown.
-  function laneCtlHtml(raw) {
+  // leaning.
+  // **`[]` went with Q1467** (Ed, 2026-09-19): edit mode is the source, so
+  // there is no second view for it to flip to.
+  function laneCtlHtml() {
     return '<div class="lanectl" data-editctl="1">' +
       '<button class="lfmt" data-fmt="bold" disabled title="' + G.fmt.bold + '"><b>B</b></button>' +
       '<button class="lfmt" data-fmt="italic" disabled title="' + G.fmt.italic + '">' +
       '<span class="ital">I</span></button>' +
-      '<button class="lmode" data-act="col-mode" data-mode="' + (raw ? 'rich' : 'md') + '"' +
-      ' aria-pressed="' + !!raw + '" title="' + G.fmt.mdMode + '">[]</button>' +
       '</div>';
   }
 
@@ -1223,7 +1213,6 @@ window.CARDS = (function () {
       washFor: () => '',
       ownChip: () => '',
       speakerTitle: '',   // falsy → speakerHtml's own default wording
-      laneRaw: () => false,
       currentTextFor: () => '',
       valAttr: 'data-v',
       root: () => document,
@@ -1522,22 +1511,21 @@ window.CARDS = (function () {
       // **No controls of its own since Q1294 (b)** (Ed, 2026-09-10: *top right
       // of the edit box, identical to the existing composer control. You can
       // put bold and italic there too*): the lane is the text and nothing
-      // else. B, I and `[]` are one strip at the top right of the lifted
-      // column — `laneCtlHtml` below, drawn by session.js beside the column —
-      // so a patch with three sites has one strip, not three, and
-      // `env.laneRaw()` is the one view state read here.
+      // else. B and I are one strip at the top right of the lifted column —
+      // `laneCtlHtml` below, drawn by session.js beside the column — so a
+      // patch with three sites has one strip, not three.
       return '<div class="lanebox' + (blank ? ' blanklane' : '') + '">' +
         (blank
           // the blank lane is the clause as the column draws it in edit mode
-          // (Q1403): its marker shown and uncounted, the first keystroke
-          // opening the real lane where the marker is text
+          // (Q1403), which since Q1467 is `laneBlocks` itself: the source
+          // line, its marker ordinary text and counted, the first keystroke
+          // opening the real lane at the offset the caret already holds
           ? '<div class="editlane" contenteditable="true" data-deadlane data-key="' + blank +
-            '" spellcheck="false"><div class="lp">' +
-            (env.markerFor(blank) ? '<span class="nocaret mdmark" contenteditable="false">' + esc(env.markerFor(blank)) + '</span>' : '') +
-            esc(env.currentTextFor(blank)) + '</div></div>'
-          : '<div class="editlane' + (env.laneRaw() ? ' md' : '') + '" contenteditable="true" data-lane="' +
+            '" spellcheck="false">' +
+            laneBlocks(env.markerFor(blank) + env.currentTextFor(blank), null) + '</div>'
+          : '<div class="editlane" contenteditable="true" data-lane="' +
             site.keys[0] + '" spellcheck="false">' +
-            laneBlocks(site.text, originText(site), env.laneRaw()) + '</div>') +
+            laneBlocks(site.text, originText(site)) + '</div>') +
         // …and the face on it is **what everybody else will see**, not what you
         // know (K30, backlog 255). One place decides it, because `setDraftSigned`
         // patches the same element in place when the sign choice flips.
@@ -1772,7 +1760,7 @@ window.CARDS = (function () {
     GLYPH, glyphKey, glyphHtml, glyphify, glyphTextOf,
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks, mdDiffPieces, mdPiecesHtml, mdDiffHtml, mdBlocksHtml,
     originText, MD_RX, mdToHtml, htmlToMd, mdStrip, mdBlock, linkify, linkifyHtml, mdLine,
-    MD_ONE, mdLead, mdInner, mdParts, richToSource, sourceToRich, readLane,
+    MD_ONE, mdLead, mdInner, mdParts, sourceToRich, readLane,
     abstainHhmm, abstainNoteHtml, tickAbstain,
     laneSeed, laneProposeHtml, laneCtlHtml, laneNameId, laneGroupAttrs, speakerHtml, railSpeakerHtml, secToggleHtml, fieldHtml, fieldOf, groundNote,
     initials, PERSON, avHtml,

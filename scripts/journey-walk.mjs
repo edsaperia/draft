@@ -336,14 +336,17 @@ if (!EMPTY_TEXT) {
   }));
   await T(300);
   /* ---- the strip before 🍾 (Q1313, Ed 2026-09-11: *same strip as after 🍾*)
-   * B · I · [] at the lifted column's top right — the charter's own strip,
+   * B · I at the lifted column's top right — the charter's own strip,
    * measured as the edit-mode step measures it after 🍾: 1px inside the card's
-   * top edge, --s2 inside its right, no lane controls and no [] on the row; B
+   * top edge, --s2 inside its right, no lane controls and no `[]` anywhere; B
    * and I dark until the column holds the caret. Then Q1314's shape — a paste
    * of several paragraphs, as a ClipboardEvent carrying text/plain — after
-   * which the row's ✒️ must be live; then [] pressed: the exact characters,
-   * monospace, the caret converted (the lane's own arithmetic); released,
-   * rendered again; and ✒️ confirms the same text whichever view showed. */
+   * which the row's ✒️ must be live.
+   * **And since Q1467 edit mode IS the source** (Ed, 2026-09-19): the column
+   * shows the characters — `**book**`, `# House rules`, `- No dogs` — in the
+   * document's own face, never monospace, each block still wearing the rank
+   * its marker names; B on a word already between `**` takes the marks off,
+   * and a second press puts them back. ✒️ then confirms exactly that text. */
   const stripAt = () => page.evaluate(() => {
     const pr = document.getElementById('prose');
     const st = document.querySelector('#prosectl .lanectl');
@@ -352,32 +355,29 @@ if (!EMPTY_TEXT) {
     return { order: [...st.querySelectorAll('button')].map((x) => x.textContent.trim()).join(''),
       top: Math.round(r.top - c.top), right: Math.round(c.right - r.right),
       laneCtl: document.querySelectorAll('.lanebox .lanectl').length,
-      rowMode: document.querySelectorAll('#proserow .lmode').length,
+      anyMode: document.querySelectorAll('.lmode, [data-act="col-mode"]').length,
       fmtDark: [...st.querySelectorAll('.lfmt')].every((x) => x.disabled),
-      pressed: st.querySelector('.lmode').getAttribute('aria-pressed') === 'true',
       src: pr.classList.contains('mdsrc'),
       mono: /mono|Menlo|Consolas/i.test(getComputedStyle(pr).fontFamily) };
   });
-  const caretIn = (which) => page.evaluate((w) => {
-    // the caret placed, or read back: offset in characters into the block that holds it
+  // select a run of characters inside the block that holds it, by text
+  const selectIn = (word) => page.evaluate((w) => {
     const pr = document.getElementById('prose');
-    const sel = getSelection();
-    if (w) {
-      pr.focus({ preventScroll: true });
-      const blk = [...pr.children].find((b) => /book/.test(b.textContent));
-      if (!blk) return null;
-      const strong = blk.querySelector('strong');
-      const r = document.createRange();
-      if (strong) r.setStart(strong.firstChild, 2); else { const t = blk.firstChild; r.setStart(t, blk.textContent.indexOf('book') + 2); }
-      r.collapse(true); sel.removeAllRanges(); sel.addRange(r);
+    pr.focus({ preventScroll: true });
+    const blk = [...pr.children].find((b) => b.textContent.includes(w));
+    if (!blk) return false;
+    const walk = document.createTreeWalker(blk, NodeFilter.SHOW_TEXT);
+    let node, at = null;
+    while ((node = walk.nextNode())) {
+      const i = node.nodeValue.indexOf(w);
+      if (i >= 0) { at = [node, i]; break; }
     }
-    if (!sel.rangeCount) return null;
-    const rg = sel.getRangeAt(0);
-    const blk = [...pr.children].find((b) => b === rg.endContainer || b.contains(rg.endContainer));
-    if (!blk) return null;
-    const r2 = document.createRange(); r2.selectNodeContents(blk); r2.setEnd(rg.endContainer, rg.endOffset);
-    return { off: r2.toString().length, text: blk.textContent };
-  }, which);
+    if (!at) return false;
+    const r = document.createRange();
+    r.setStart(at[0], at[1]); r.setEnd(at[0], at[1] + w.length);
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    return true;
+  }, word);
   const pressStrip = async (sel) => {
     const box = await page.evaluate((s) => {
       const b = document.querySelector(s);
@@ -390,6 +390,23 @@ if (!EMPTY_TEXT) {
     await T(300);
     return true;
   };
+  // **The founder's column read as the page reads it** (`proseText`): since
+  // Q1467 the column shows its source while it is edited and its rendering
+  // while it is read, so a raw `textContent` is a fact about the view and
+  // never about the text. This is the one read-out both views share.
+  const proseSrc = () => page.evaluate(() => {
+    const pr = document.getElementById('prose');
+    return [...pr.children].map((b) => {
+      if (pr.classList.contains('mdsrc')) return b.textContent;
+      const m = b.className.match(/lvl(\d)/);
+      return (m ? '#'.repeat(+m[1]) + ' ' : b.classList.contains('bullet') ? '- ' : '') + window.CARDS.htmlToMd(b);
+    }).join('\n').trim();
+  });
+  const bookLine = () => page.evaluate(() => {
+    const pr = document.getElementById('prose');
+    const b = [...pr.children].find((x) => /book/.test(x.textContent));
+    return b ? b.textContent : null;
+  });
   const stripRest = await stripAt();
   // B and I follow the caret a tick behind focusout, so each state is read
   // after one
@@ -405,32 +422,30 @@ if (!EMPTY_TEXT) {
     const pr = document.getElementById('prose');
     const b = document.querySelector('#proserow [data-act="row-commit"]');
     return { blocks: pr.children.length, penLive: !!(b && !b.disabled),
-      heading: !!pr.querySelector('.docline.lvl1'), strong: !!pr.querySelector('strong'),
+      heading: !!pr.querySelector('.docline.lvl1'), rendered: !!pr.querySelector('strong'),
       bullet: !!pr.querySelector('.bullet') };
   });
-  const caretRich = await caretIn(true);
-  const flipped = await pressStrip('#prosectl [data-act="col-mode"]');
-  const stripSrc = await stripAt();
-  const caretSrc = await caretIn(false);
   const srcChars = await page.evaluate(() => {
     const pr = document.getElementById('prose');
     return { stars: [...pr.children].some((b) => /\*\*book\*\*/.test(b.textContent)),
       hash: [...pr.children].some((b) => /^# House rules$/.test(b.textContent)),
       dash: [...pr.children].some((b) => /^- No dogs$/.test(b.textContent)),
-      dressed: !!pr.querySelector('strong, .docline, .bullet') };
+      dressed: !!pr.querySelector('.docline, .bullet') };
   });
-  const flippedBack = await pressStrip('#prosectl [data-act="col-mode"]');
-  const stripBack = await stripAt();
-  const caretBack = await caretIn(false);
-  const stripPreOk = !!stripRest && stripRest.order === 'BI[]' && stripRest.top === 1 && stripRest.right === 8 &&
-    stripRest.laneCtl === 0 && stripRest.rowMode === 0 && !stripRest.pressed && !stripRest.src &&
+  // B on a word the marks already hold takes them off; B again puts them back
+  const selected = await selectIn('book');
+  const unbolded = (await pressStrip('#prosectl [data-fmt="bold"]')) ? await bookLine() : null;
+  const reselected = await selectIn('book');
+  const rebolded = (await pressStrip('#prosectl [data-fmt="bold"]')) ? await bookLine() : null;
+  const stripPreOk = !!stripRest && stripRest.order === 'BI' && stripRest.top === 1 && stripRest.right === 8 &&
+    stripRest.laneCtl === 0 && stripRest.anyMode === 0 && stripRest.src && !stripRest.mono &&
     !!darkThenLit && darkThenLit.dark && darkThenLit.lit &&
-    pasted && afterPaste.blocks === 5 && afterPaste.penLive && afterPaste.heading && afterPaste.strong && afterPaste.bullet &&
-    !!caretRich && caretRich.off === 18 && flipped && !!stripSrc && stripSrc.pressed && stripSrc.src && stripSrc.mono &&
-    !!caretSrc && caretSrc.off === 20 && srcChars.stars && srcChars.hash && srcChars.dash && !srcChars.dressed &&
-    flippedBack && !!stripBack && !stripBack.pressed && !stripBack.src && !stripBack.mono && !!caretBack && caretBack.off === 18;
-  say('strip pre  · ' + (stripPreOk ? 'B · I · [] at the card\'s top right before 🍾, dark until the caret, a pasted text lights ✒️, [] shows the characters in monospace with the caret converted (18 → 20 → 18), released rendered'
-    : 'FAIL: ' + JSON.stringify({ stripRest, darkThenLit, afterPaste, caretRich, stripSrc, caretSrc, srcChars, stripBack, caretBack })));
+    pasted && afterPaste.blocks === 5 && afterPaste.penLive && afterPaste.heading && !afterPaste.rendered && afterPaste.bullet &&
+    srcChars.stars && srcChars.hash && srcChars.dash && srcChars.dressed &&
+    selected && reselected && unbolded === 'Guests sign the book at the door.' &&
+    rebolded === 'Guests sign the **book** at the door.';
+  say('strip pre  · ' + (stripPreOk ? 'B · I at the card\'s top right before 🍾, no [], dark until the caret, a pasted text lights ✒️, the column shows the characters in the document\'s own face with every rank kept, and B takes the marks off a bold word and puts them back'
+    : 'FAIL: ' + JSON.stringify({ stripRest, darkThenLit, afterPaste, srcChars, selected, unbolded, reselected, rebolded })));
   if (!stripPreOk) stuck.push('the strip before 🍾');
   // the strip rides with the tab: at the page's end both are stuck under the
   // navbar, level, and the strip wears its ground
@@ -449,11 +464,8 @@ if (!EMPTY_TEXT) {
   const rodeOk = rode.detached && Math.abs(rode.level) <= 1;
   say('strip ride · ' + (rodeOk ? 'stuck under the navbar level with the 📝 tab, ground on' : 'FAIL: ' + JSON.stringify(rode)));
   if (!rodeOk) stuck.push('the strip riding before 🍾');
-  // what ✒️ will send: the column read as the page reads it, marks written back
-  const expectedText = await page.evaluate(() => [...document.getElementById('prose').children].map((b) => {
-    const m = b.className.match(/lvl(\d)/);
-    return (m ? '#'.repeat(+m[1]) + ' ' : b.classList.contains('bullet') ? '- ' : '') + window.CARDS.htmlToMd(b);
-  }).join('\n').trim());
+  // what ✒️ will send: the column read as the page reads it (`proseText`)
+  const expectedText = await proseSrc();
   const saved = await page.evaluate(() => {
     const b = document.querySelector('#proserow [data-act="row-commit"]');
     const glyph = b ? window.CARDS.glyphTextOf(b).trim() : null;
@@ -523,9 +535,13 @@ if (!EMPTY_TEXT) {
   /* ---- a click outside leaves edit mode before 🍾 (Q1315, Ed 2026-09-11:
    * *clicking outside of cards should close them*) — on nothing, in the
    * rail's empty space: the mode off, the row gone, the column's text kept;
-   * 📝 again brings the mode back with the same text. */
+   * 📝 again brings the mode back with the same text.
+   * **The text is read as the page reads it** (`proseSrc`, `proseText`'s own
+   * shape): since Q1467 the column shows its source while it is edited and
+   * its rendering while it is read, so a raw `textContent` compared across
+   * the boundary compares two views rather than two texts. */
   const outsidePre = await (async () => {
-    const before = await page.evaluate(() => document.getElementById('prose').textContent);
+    const before = await proseSrc();
     const pt = await page.evaluate(() => {
       const r = document.querySelector('aside.queue').getBoundingClientRect();
       const x = Math.round(r.x + r.width / 2), y = Math.round(Math.max(40, Math.min(innerHeight - 40, r.bottom - 40)));
@@ -538,14 +554,14 @@ if (!EMPTY_TEXT) {
       editing: document.getElementById('doc').classList.contains('editing'),
       editable: document.getElementById('prose').getAttribute('contenteditable'),
       row: !!document.querySelector('#proserow [data-proposalrow]'),
-      strip: !!document.querySelector('#prosectl .lanectl'),
-      text: document.getElementById('prose').textContent }));
+      strip: !!document.querySelector('#prosectl .lanectl') }));
+    left.text = await proseSrc();
     await page.evaluate(() => document.querySelector('#ridetab .achip[data-tab="text"]').click());
     await T(300);
     const back = await page.evaluate(() => ({
       editing: document.getElementById('doc').classList.contains('editing'),
-      strip: !!document.querySelector('#prosectl .lanectl'),
-      text: document.getElementById('prose').textContent }));
+      strip: !!document.querySelector('#prosectl .lanectl') }));
+    back.text = await proseSrc();
     return { hit: pt.hit, left, back, kept: left.text === before && back.text === before };
   })();
   const outsidePreOk = !outsidePre.left.editing && outsidePre.left.editable === 'false' && !outsidePre.left.row &&
@@ -2401,9 +2417,9 @@ const editState = await page.evaluate(() => {
     runway: Math.round(parseFloat(getComputedStyle(document.getElementById('doc')).paddingBottom)),
     gap: !!document.querySelector('#charter .prose p.editable.blank.gap[data-key^="G"]'),
     // **the lane controls are the column's one strip** (Q1294 (b), Ed
-    // 2026-09-10: *top right of the edit box*): B · I · [] at the card's top
+    // 2026-09-10: *top right of the edit box*): B · I at the card's top
     // right — 1px inside its top edge, --s2 (8px) inside its right — no lane
-    // carrying controls of its own, and no [] left on the row
+    // carrying controls of its own, and no [] anywhere since Q1467
     strip: (() => {
       const st = document.querySelector('#charter .editctl .lanectl');
       if (!st || !col) return null;
@@ -2411,7 +2427,7 @@ const editState = await page.evaluate(() => {
       return { order: [...st.querySelectorAll('button')].map((x) => x.textContent.trim()).join(''),
         top: Math.round(r.top - c.top), right: Math.round(c.right - r.right),
         laneCtl: document.querySelectorAll('.lanebox .lanectl').length,
-        rowMode: document.querySelectorAll('#charter [data-proposalrow] .lmode').length };
+        anyMode: document.querySelectorAll('.lmode, [data-act="col-mode"]').length };
     })() };
 });
 // **the pile is 📝 and the Text's held powers, no more** (Q1404): a power 🍾
@@ -2425,8 +2441,8 @@ const textPowersHeld = await page.evaluate(() => fetch(location.pathname.replace
   .catch(() => null));
 const wantRide = textPowersHeld === null ? null : 1 + textPowersHeld;
 editState.wantRide = wantRide;
-const stripOk = !!editState.strip && editState.strip.order === 'BI[]' && editState.strip.top === 1 &&
-  editState.strip.right === 8 && editState.strip.laneCtl === 0 && editState.strip.rowMode === 0;
+const stripOk = !!editState.strip && editState.strip.order === 'BI' && editState.strip.top === 1 &&
+  editState.strip.right === 8 && editState.strip.laneCtl === 0 && editState.strip.anyMode === 0;
 const rowBare = editState.rowGround && /rgba\(0, 0, 0, 0\)|transparent/.test(editState.rowGround.bg) &&
   editState.rowGround.shadow === 'none' && editState.rowGround.border === 'none';
 // ✏️ always; ✒️ only ever *beside* it, never instead (the founder has not
@@ -2438,7 +2454,7 @@ const editOk = (await hostEditable()) === 'true' && editState.editing && editSta
   editState.rideRight === editState.consRight + 2 && editState.padTop === 24 &&
   Math.abs(editState.lineDelta) <= 1 && editState.runway === 0 && stripOk &&
   (EMPTY_TEXT ? !editState.gap : editState.gap);
-say('edit mode  · ' + JSON.stringify(editState) + (editOk ? '' : '  FAIL: 📝 should lift the column (24px over the first line), fan the pile to 📝 plus the Text\'s held powers (' + wantRide + ' tabs, Q1404) on the constitution\'s gutter, draw the bare row greyed with ✏️ (✒️ only beside it), the B · I · [] strip at the card\'s top right with no lane carrying controls, and the trailing gap'));
+say('edit mode  · ' + JSON.stringify(editState) + (editOk ? '' : '  FAIL: 📝 should lift the column (24px over the first line), fan the pile to 📝 plus the Text\'s held powers (' + wantRide + ' tabs, Q1404) on the constitution\'s gutter, draw the bare row greyed with ✏️ (✒️ only beside it), the B · I strip at the card\'s top right with no lane carrying controls, and the trailing gap'));
 if (!editOk) stuck.push('edit mode');
 /* ---- a click outside leaves edit mode after 🍾 too (Q1315, Ed 2026-09-11:
  * *clicking outside of cards should close them*, ruled for both eras): on
@@ -2911,6 +2927,66 @@ if (gapKeys.skipped) {
       gap + ' before the next key; typing with no pause puts every character there'
     : 'FAIL: ' + JSON.stringify(gapKeys)));
   if (!gapKeysOk) stuck.push('a new clause typed straight after its Enter (Q1461)');
+}
+/* ---- a heading's `#`, from the column, with real key presses (Q1467; Ed,
+ * the residency room 2026-09-19: *I can't edit headings in the text. the #s
+ * are not editable*). Edit mode is the markdown source, so the marker is
+ * ordinary text: a click lands a caret in it, one step right stands the caret
+ * behind the `#`, and Backspace takes that character and no other. The draft
+ * must be on **that** heading — the failure this replaces put the caret at the
+ * end of the paragraph above and opened a draft there, a keystroke aimed at
+ * one clause landing on another (Q1461's family). Binned through the row's own
+ * 🗑️ afterwards, like the two steps above. */
+const headKeys = await (async () => {
+  const found = await page.evaluate(() => {
+    if (window.SESSION.openId != null) window.SESSION.closeCard();
+    const head = [...document.querySelectorAll('#charter .prose [data-key]')]
+      .filter((b) => !b.closest('.sugg') && b.getClientRects().length)
+      .find((b) => { const m = b.querySelector('.mdmark'); return m && /^#+\s*$/.test(m.textContent); });
+    if (!head) return null;
+    head.scrollIntoView({ block: 'center' });
+    const mark = head.querySelector('.mdmark');
+    const c = head.cloneNode(true);
+    c.querySelectorAll('.chipcol, .nocaret, .sechint, .mdmark').forEach((el) => el.remove());
+    const r = document.createRange(); r.selectNodeContents(mark);
+    const q = r.getBoundingClientRect();
+    return { key: head.dataset.key, marker: mark.textContent, words: c.textContent,
+      furniture: mark.closest('[contenteditable="false"]') != null,
+      x: q.left + 2, y: q.top + q.height / 2 };
+  });
+  if (!found) return { skipped: 'the charter holds no heading with a marker' };
+  await T(300);
+  await page.mouse.click(found.x, found.y);
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('Backspace');
+  await T(500);
+  const m = await page.evaluate(() => {
+    const d = (window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours');
+    return { sites: d ? d.sites.map((x) => x.keys.join('+') + ':' + x.text) : null,
+      lane: document.activeElement && document.activeElement.dataset
+        ? document.activeElement.dataset.lane || null : null };
+  });
+  const binned = await page.evaluate(() => {
+    const b = document.querySelector('#charter [data-proposalrow] [data-act="row-discard"]');
+    if (!b || b.disabled) return false;
+    b.click();
+    return true;
+  });
+  await T(500);
+  return { ...found, ...m, binned,
+    draft: await page.evaluate(() => !!(window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours')) };
+})();
+if (headKeys.skipped) {
+  say('head keys  · skipped — ' + headKeys.skipped);
+} else {
+  const want = headKeys.key + ':' + headKeys.marker.slice(1) + headKeys.words;
+  const headKeysOk = !headKeys.furniture && !!headKeys.sites && headKeys.sites.length === 1 &&
+    headKeys.sites[0] === want && headKeys.lane === headKeys.key && headKeys.binned && !headKeys.draft;
+  say('head keys  · ' + (headKeysOk
+    ? 'a click on ' + headKeys.key + '’s ' + JSON.stringify(headKeys.marker.trim()) +
+      ' stands a caret in it, and Backspace takes that character on that heading alone'
+    : 'FAIL: ' + JSON.stringify(headKeys)));
+  if (!headKeysOk) stuck.push('a heading’s marker edited from the column (Q1467)');
 }
 const caret = await page.evaluate((empty) => {
   const r = document.createRange();

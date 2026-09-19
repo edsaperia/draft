@@ -110,8 +110,7 @@
     // eyebrow, and the glyphs inside the charter column's own sentences
     glyphHtml, glyphify,
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks, mdBlocksHtml,
-    originText, mdToHtml, htmlToMd, mdStrip, mdLine,
-    richToSource, sourceToRich, readLane,
+    originText, mdToHtml, mdStrip, mdLine, readLane,
     laneSeed, laneProposeHtml, laneCtlHtml, laneNameId, laneGroupAttrs, speakerHtml, fieldHtml, fieldOf, groundNote,
     headOnlyHeight, cardBody, COLLAPSE_MS, EXPAND_MS,
     // the abstention clock's one pass over the page (Q1460), run from a timer
@@ -184,7 +183,6 @@
     isChilled: (id) => chilled.has(id),
     washFor: (s, k) => anchWash(s, true, k),
     ownChip: (s) => ownChipHtml(s),
-    laneRaw: () => laneRaw(),
     currentTextFor: (k) => currentTextFor(k),
     markerFor: (k) => markerFor(k),
     root: () => doc,
@@ -222,24 +220,26 @@
     (MAY_PROPOSE() && EDITING() ? 'true' : 'false') + '" spellcheck="false">';
 
   // ---- one rendering of a block for reading (Q1294, Ed 2026-09-10) ---------
-  // The column renders markdown: `mdLine` draws the inline marks and links
-  // the docs.vote addresses, and a bullet block (`line.bullet`, read off a
-  // `- ` prefix by the host's `blocksOf` exactly as `# ` makes a heading)
-  // takes its class here. In edit mode with the `[]` toggle pressed the whole
-  // column shows its **source** instead — the characters as stored. **And in
-  // edit mode the block's marker is always shown** (Q1403, Ed 2026-09-16: *in
-  // edit mode you should always see the markdown #s for headings, otherwise
-  // you have no way of editing them*): rendered or source, `# ` / `## ` /
-  // `- ` stands in front of the block in a `.nocaret` span, so it is read and
-  // never counted — the caret offsets `startDraftFromTyping` measures stay
-  // offsets into `line.x`, and the composer adds the marker's length itself
-  // when it opens the lane (where the marker is real, editable text).
-  const srcMode = () => laneRaw() && EDITING() && !closedMode;
-  const markShown = () => EDITING() && !closedMode;
+  // The column renders markdown for reading: `mdLine` draws the inline marks
+  // and links the docs.vote addresses, and a bullet block (`line.bullet`,
+  // read off a `- ` prefix by the host's `blocksOf` exactly as `# ` makes a
+  // heading) takes its class here.
+  // **Edit mode is the source, always** (Q1467, Ed 2026-09-19: *I can't edit
+  // headings in the text. the #s are not editable*). Until this the marker
+  // stood in a `contenteditable="false"` span so the caret offsets stayed
+  // offsets into `line.x` — and Chrome will not stand a caret before such a
+  // span, so a click on the `#` and Home in a heading both landed at the end
+  // of the paragraph above. Now the block *is* its source line, marker and
+  // inline marks as ordinary editable text, dimmed but selectable, so a
+  // caret offset in a block is an offset into that line and there is nothing
+  // to convert. A block keeps its rank while it is edited: the element is
+  // still the heading or the bullet it was.
+  const srcMode = () => EDITING() && !closedMode;
   const markerOf = (l) => (l.t === 'h' ? '#'.repeat(l.level || 1) + ' ' : l.bullet ? '- ' : '');
   const blockHtml = (l) =>
-    (markShown() && markerOf(l) ? '<span class="nocaret mdmark" contenteditable="false">' + markerOf(l) + '</span>' : '') +
-    (srcMode() ? esc(l.x) : mdLine(l.x));
+    (srcMode()
+      ? (markerOf(l) ? '<span class="mdmark">' + esc(markerOf(l)) + '</span>' : '') + esc(l.x)
+      : mdLine(l.x));
   const bulletCls = (l) => (l.bullet ? ' bullet' : '');
 
   // ---- gap sites (backlog 204, Q261) ---------------------------------------
@@ -2249,8 +2249,8 @@
 
   // ---- the composer -------------------------------------------------------
   // design/composer.js since refactor Q1352 (i): made here, where the code
-  // stood, so its `laneRemark` map and its `laneMode` are the same objects at
-  // the same moment they always were. The bag is in three parts, and which
+  // stood, so its `laneRemark` map is the same object at
+  // the same moment it always was. The bag is in three parts, and which
   // part a name is in is a fact about this file, not a style: a value is a
   // name defined by now and never reassigned; a call is one `init` replaces;
   // an accessor is one the page swaps under the surface after load.
@@ -2279,12 +2279,9 @@
     dropDraft, dropDraftSite,
     caretRangeIn, selectedBlocks, laneCaret, placeCaret,
     startDraft, startDraftFromTyping, startDraftFromRun,
-    laneRaw, laneRemark, syncEditCtl,
+    laneRemark, syncEditCtl, markSelection,
     commitBtnHtml, proposalRowHtml, proposeCtlTitles, draftRowState, setDraftSigned,
     editCardHtml, mineCardHtml, strandedCardHtml } = COMPOSER;
-  // and `laneMode` itself is `COMPOSER.laneMode`, because two things here
-  // write it: the column strip's `[]` handler, and the page through
-  // `SESSION.setLaneRaw`.
   let mineSeq = 0;                      // proposing frees the composer for the next draft
 
   // The gutter marks belonging to a clause, minus the one whose card we are
@@ -3013,7 +3010,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // right as the row sticks to its foot (the viewport is the card). Outside
     // the contenteditable, since a button inside one is harvested text.
     const strip = EDITING() && MAY_PROPOSE() && !closedMode;
-    let html = (strip ? '<div class="editctl">' + laneCtlHtml(laneRaw()) + '</div>' : '') + PROSE();
+    let html = (strip ? '<div class="editctl">' + laneCtlHtml() + '</div>' : '') + PROSE();
     let cardDone = false;
     let headIdx = 0;
     // The draft being written, if the composer is open on it. `pendingId`
@@ -3480,45 +3477,12 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         renderAll(); drawWires();
       })
     );
-    // **The `[]` toggle flips the whole column** (Q1294): one preference, one
-    // rebuild — every clause and every open lane redrawn rendered or as
-    // source. A mousedown, prevented, so the lane keeps its selection through
-    // the press; the caret is read out first and put back in the rebuilt
-    // lane, its offset converted between the two views, because markdown
-    // mode counts the syntax characters and rich mode does not
-    // (richToSource / sourceToRich). On the column's strip since Q1294 (b).
-    doc.querySelectorAll('[data-editctl] [data-act="col-mode"]').forEach((b) =>
-      b.addEventListener('mousedown', (ev) => {
-        ev.preventDefault(); ev.stopPropagation();
-        const d = draftOf();
-        const ae = document.activeElement;
-        const focused = ae && ae.closest ? ae.closest('[data-lane]') : null;
-        let land = null;
-        if (focused && d) {
-          const site = siteFor(d, focused.dataset.lane);
-          let off = laneCaret(focused);
-          if (off != null && site) off = laneRaw() ? sourceToRich(site.text, off) : richToSource(site.text, off);
-          land = { key: focused.dataset.lane, off };
-        }
-        COMPOSER.laneMode = laneRaw() ? 'rich' : 'md';
-        renderAll();
-        if (land) {
-          const lane = doc.querySelector('[data-lane="' + land.key + '"]');
-          if (lane) {
-            lane.focus({ preventScroll: true });
-            if (land.off != null) placeCaret(lane, land.off);
-          }
-        }
-        syncEditCtl();
-      })
-    );
     // **B and I act on the lane that holds the caret** (Q1294 (b)): the
     // strip is the column's, so the lane is found at the press — the focused
-    // editable, which the prevented mousedown leaves focused — and the act is
-    // what it always was: execCommand in rich mode, the cheapest thing that
-    // produces real elements for `htmlToMd` to write back; in markdown mode
-    // the selection wrapped in the characters themselves, because that is
-    // what the mode is *for*. Then the lane's own re-mark (`laneRemark`),
+    // editable, which the prevented mousedown leaves focused. Since Q1467 a
+    // lane is always markdown source, so the act is always the characters
+    // themselves around the selection, and a second press takes them off
+    // again (`markSelection`). Then the lane's own re-mark (`laneRemark`),
     // since the diff and the site's text are the lane's to keep. With no lane
     // focused the two are disabled (`syncEditCtl`) and no press arrives.
     doc.querySelectorAll('[data-editctl] .lfmt').forEach((b) =>
@@ -3528,12 +3492,8 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         const lane = ae && ae.closest ? ae.closest('[data-lane]') : null;
         if (!lane || !doc.contains(lane)) return;
         lane.focus({ preventScroll: true });
-        if (laneRaw()) {
-          const marks = b.dataset.fmt === 'bold' ? '**' : '*';
-          document.execCommand('insertText', false, marks + getSelection().toString() + marks);
-        } else {
-          document.execCommand(b.dataset.fmt);
-        }
+        markSelection(b.dataset.fmt === 'bold' ? '**' : '*',
+          (n) => { const el = n.nodeType === 1 ? n : n.parentElement; return el && el.closest ? el.closest('.lp') : null; });
         const remark = laneRemark.get(lane);
         if (remark) remark();
       })
@@ -3696,16 +3656,15 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         if (!site) return;
         site.text = readLane(el);
         const off = laneCaret(el);
-        el.classList.toggle('md', laneRaw());
-        el.innerHTML = laneBlocks(site.text, originText(site), laneRaw());
+        el.innerHTML = laneBlocks(site.text, originText(site));
         if (off != null) placeCaret(el, off);
         syncProposeCtls();
         layoutQueue(); drawWires();
       };
       el.addEventListener('input', (ev) => { if (!ev.isComposing) remark(); });
       el.addEventListener('compositionend', remark);
-      // The lane has no controls of its own since Q1294 (b): B, I and `[]`
-      // are the column's strip, wired above, and reach this lane's re-mark
+      // The lane has no controls of its own since Q1294 (b): B and I are the
+      // column's strip, wired above, and reach this lane's re-mark
       // through `laneRemark` when the caret is here.
       laneRemark.set(el, remark);
       // The lane is a rich editable, because Enter has to make a real paragraph
@@ -4843,13 +4802,11 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     }
     if (!p) return false;
     const key = p.dataset.key;
-    const orig = currentTextFor(key);
     const sel = picked && picked.blocks[0] === p ? caretRangeIn(p) : null;
-    // the caret is measured in the words (the column's marker is `.nocaret`,
-    // Q1403) and the lane holds the source line, so the offset moves past
-    // the marker on the way in
-    const a = (sel && sel.start != null ? Math.min(sel.start, orig.length) : orig.length) + markerFor(key).length;
     const src = sourceTextFor(key);
+    // an offset in the column is an offset into the source line (Q1467), and
+    // so is the lane's — nothing is added on the way in
+    const a = sel && sel.start != null ? Math.min(sel.start, src.length) : src.length;
     startDraft(key, null, { text: src.slice(0, a) + ch + src.slice(a), caret: a + ch.length });
     return true;
   }
@@ -5442,8 +5399,8 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // read-mode keystroke, and what the riding tab says about the draft
     proposalRowHtml, typeAt, draftRowState, dropDraft,
     // the column's one strip (Q1294 (b)), shared with the founder's pre-🍾
-    // column since Q1313: its sync, and the `[]` preference both columns read
-    syncEditCtl, laneRaw, setLaneRaw: (raw) => { COMPOSER.laneMode = raw ? 'md' : 'rich'; },
+    // column since Q1313: its sync, and the one act B and I make (Q1467)
+    syncEditCtl, markSelection,
     arcFrames, flyGlyph, pencilStorm, renderWallet, beat, act, narrow: NARROW,
     // the hold vocabulary, shared with the founder's own wallets in the page:
     // `nudgeHome` brings a released flight back (never travelling less than a

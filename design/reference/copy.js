@@ -173,7 +173,6 @@ window.COPY = (function () {
     fmt: {
       bold: 'Bold (the markdown is **like this**)',
       italic: 'Italic (the markdown is *like this*)',
-      mdMode: 'Markdown — see and type the characters exactly as they are stored, the whole text at once',
     },
     whyPlaceholder: 'We should change this because…',
   };
@@ -957,7 +956,6 @@ window.COPY = (function () {
   const feed = {
     name: 'Feed',
     tabTitle: (title) => title + ' — feed',
-    toDocument: 'Open the document',
     // an entry's eyebrow, by kind
     proposed: 'New proposal',
     passed: 'Passed',
@@ -996,6 +994,8 @@ window.COPY = (function () {
     // a deletion that passed: the card's own sentence (`lane.removed`) is in the
     // conditional, which is right for a proposal and wrong once it has happened
     removed: 'This clause was removed.',
+    // whose hand an amendment is: the office, never the person
+    founder: 'The Founder',
     anonymous: 'Anonymous',
     redacted: '[redacted]',
     // the page's states
