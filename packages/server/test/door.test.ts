@@ -2,7 +2,7 @@
  * **The login door is rate-limited per IP and per email** (Q1341; Ed,
  * 2026-09-12). One bucket per address at 200 in ten minutes, so a
  * convention room on one venue wifi is not refused as one attacker; one
- * bucket per email at 5, so a script working one address is. The per-email
+ * bucket per email at 10, so a script working one address is. The per-email
  * check runs before the roster lookup, so the door refuses a known and an
  * unknown address identically and stays no membership oracle.
  */
@@ -65,19 +65,24 @@ async function found(base: string, title: string, email: string): Promise<string
 const login = (base: string, slug: string, email: string, headers: Record<string, string> = {}) =>
   post(base, `/api/d/${slug}/login`, { email }, headers);
 
+/** Ten mails to one address in the window (Q1341 set 5 and called it a
+ *  guess; Ed raised it to 10 on 2026-09-19, issue #69 — five is one
+ *  impatient member pressing 📧 while the mail is slow). */
+const LOGIN_MAILS = 10;
+
 describe('the login door (Q1341)', () => {
-  it('allows five logins per email in the window and refuses the sixth, known or unknown alike', async () => {
+  it('allows ten logins per email in the window and refuses the eleventh, known or unknown alike', async () => {
     const { base } = await boot(false);
     const founder = 'founder.door@example.org';
     const slug = await found(base, 'Door', founder);
 
-    // a member's address: five pass, the sixth is refused
-    for (let i = 0; i < 5; i++) {
+    // a member's address: ten pass, the eleventh is refused
+    for (let i = 0; i < LOGIN_MAILS; i++) {
       expect((await login(base, slug, founder)).status, `founder login ${i + 1}`).toBe(200);
     }
-    const sixth = await login(base, slug, founder);
-    expect(sixth.status).toBe(429);
-    expect(await sixth.json()).toEqual({ error: 'too many requests — try again shortly' });
+    const eleventh = await login(base, slug, founder);
+    expect(eleventh.status).toBe(429);
+    expect(await eleventh.json()).toEqual({ error: 'too many requests — try again shortly' });
 
     // the same socket, another address: the per-email bucket is the address's
     expect((await login(base, slug, 'someone.else@example.org')).status).toBe(200);
@@ -85,7 +90,7 @@ describe('the login door (Q1341)', () => {
     // an address nobody on the roster has behaves exactly the same way, so
     // the refusal says nothing about who is a member
     const stranger = 'nobody.here@example.org';
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < LOGIN_MAILS; i++) {
       expect((await login(base, slug, stranger)).status, `stranger login ${i + 1}`).toBe(200);
     }
     const refused = await login(base, slug, stranger);

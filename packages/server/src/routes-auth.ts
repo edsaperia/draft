@@ -297,15 +297,18 @@ export const authTable: Route[] = [
       // Two buckets on this door (Q1341, Ed 2026-09-12). Per IP, 200 in ten
       // minutes: a convention room shares one venue wifi and so one address,
       // and twenty logins were what a room of twenty spends arriving. Per
-      // email, 5 in ten minutes: a scripted attack on one address is the
-      // thing the old cap actually stopped, and it is keyed on the address,
-      // not the socket. Both numbers are guesses; revisit them after a real
-      // convention. The per-email check runs before the roster lookup so a
-      // known and an unknown address are refused identically.
+      // email, **10** in ten minutes: a scripted attack on one address is
+      // the thing this cap actually stops, and it is keyed on the address,
+      // not the socket. Q1341 set it at 5 and called the number a guess —
+      // and 5 is one impatient member pressing 📧 while the mail is slow,
+      // which is the ordinary case in a room that is all arriving at once
+      // (issue #69). **Ed, 2026-09-19: 10.** The per-email check runs
+      // before the roster lookup so a known and an unknown address are
+      // refused identically.
       if (r.tooMany('login', 200)) return true;
       const body = await readJson(req);
       const email = emailOk(expectString(body, 'email'));
-      if (rateLimited(`login-email:${email}`, nowMs, 5)) {
+      if (rateLimited(`login-email:${email}`, nowMs, 10)) {
         json(res, 429, { error: 'too many requests — try again shortly' });
         return true;
       }
