@@ -209,7 +209,10 @@ else await page.keyboard.type(' And on the noticeboard.', { delay: 40 });
 await sleep(600);
 if (GAP) {
   const cmds = [];
-  page.on('response', async (r) => { if (r.url().endsWith('/cmd')) cmds.push({ status: r.status(), body: (await r.text().catch(() => '')).slice(0, 300), sent: (r.request().postData() || '').slice(0, 200) }); });
+  // **the body is kept whole**: it is parsed below, and since Q1463 (1) a
+  // hunk carries the wording it replaces as well as its own, so a proposal
+  // runs past any slice worth reading and a truncated one parses as nothing
+  page.on('response', async (r) => { if (r.url().endsWith('/cmd')) cmds.push({ status: r.status(), body: (await r.text().catch(() => '')).slice(0, 300), sent: r.request().postData() || '' }); });
   const look = () => page.evaluate(() => {
     const bs = [...document.querySelectorAll('#charter [data-act="draft-propose"], #charter [data-act="row-commit"]')];
     const d = window.SESSION.SUGGS.find((x) => x.id === 'draft-yours');

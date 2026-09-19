@@ -32,7 +32,7 @@
  * Exit 0 only if all four pass; exit 1 on any failure, 2 on a broken set-up.
  */
 import { chromium } from 'playwright';
-import { post as postTo, followLink, sleep } from '../lib/walk.mjs';
+import { post as postTo, followLink, sleep, withWas } from '../lib/walk.mjs';
 
 const argv = process.argv.slice(2);
 const BASE = (argv.find((a) => /^https?:/.test(a)) || 'http://127.0.0.1:8208').replace(/\/$/, '');
@@ -70,10 +70,11 @@ async function found(run) {
     if (!r.ok) die(`${name} refused (${r.status}): ${JSON.stringify(j)}`);
     return j.result ?? j;
   };
-  // the ✒️ decree, always against the version the document is holding now
+  // the ✒️ decree, always against the version the document is holding now —
+  // and stating the wording it replaces, like any other client (Q1463 (1))
   const decree = async (hunks, why) => {
     const v = await (await fetch(`${BASE}/api/d/${slug}/view`, { headers: { cookie: founder } })).json();
-    return cmd('pen-text', { baseVersion: v.textVersion ?? 0, hunks, why });
+    return cmd('pen-text', { baseVersion: v.textVersion ?? 0, hunks: withWas(v.text, hunks), why });
   };
   await cmd('confirm-starting-text', { text: TEXT(run).join('\n') });
   await cmd('set-convenor-membership', { isMember: true });
