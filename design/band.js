@@ -1847,6 +1847,16 @@ window.BAND = (function () {
       // still taken once per opening.
       if (S.open && !snaps[S.open]) takeSnap(S.open);
       renderDev();
+      // **the document's own close, before anything reads it** (CP9; Q1479 (a),
+      // issue #30 finding 2). Not the same fact as the wallets going, which
+      // waits on the farewell below — this one is true the moment the clock
+      // runs out, and `syncCharter` on the next line hands the column to
+      // `bindData`, whose `withheld` asks it. Set after that render it was
+      // false at the boot's own `render()`, and a closed document has no
+      // movement for the poll to re-render on, so a quiet closed page never
+      // rendered again and the record never arrived.
+      const closedNow = !!(env.cs && env.cs.closed);
+      SESSION.setDocClosed(closedNow);
       renderTitle(); renderRail(); renderBand(); syncCharter(); renderMail(); renderPowerWallets();
       document.getElementById('mebtn').innerHTML = avHtml(
         S.viewer === 'applicant' ? { n: S.app.name || '?', pic: S.app.pic }
@@ -1863,15 +1873,12 @@ window.BAND = (function () {
       launchGrant();
       launchFarewell();
       // the closed page: every clause grey, typing opens nothing, the wallets
-      // gone once the farewell has flown (or at once, for a reader arriving after)
-      const closedNow = !!(env.cs && env.cs.closed);
+      // gone once the farewell has flown (or at once, for a reader arriving
+      // after) — which is why these stay here, below `launchFarewell()`, while
+      // the document's own close is read above
       document.getElementById('doc').classList.toggle('closedpage', closedNow);
       const gone = closedNow && (env.WAL.farewellDone || signedClose() || !viewerIsMember());
       SESSION.setClosed(gone || atTheDoor());
-      // …and the document's own close, which is not the same fact (CP9): the
-      // wallets go when the farewell has flown, but a card stops being able to
-      // commit the moment the clock runs out.
-      SESSION.setDocClosed(closedNow);
       // the pulse is the room's (SPEC §3.5), and neither seat at the door is in it
       const pulse = document.getElementById('pulse');
       if (pulse) pulse.style.display = gone || atTheDoor() ? 'none' : '';
