@@ -226,7 +226,18 @@
       if (d !== day) { day = d; html += '<p class="feedday">' + esc(d) + '</p>'; }
       html += entryHtml(e, seen !== null && !seen.has(keyOf(e)));
     }
+    // **a reader who has scrolled back stays where they are** (issue #68
+    // finding 6): every node is replaced on every poll and entries prepend, so
+    // the browser's scroll anchoring has nothing to hold on to, and an arrival
+    // walked the page down by its own height — 389px on one entry, measured on
+    // a projector at 1920×1080. The list only ever grows above what is being
+    // read, so the height it gained is exactly the distance to carry the
+    // reader back. At the top nothing is done: there the newest entry
+    // arriving into view is the point.
+    const was = document.documentElement.scrollHeight;
     list.innerHTML = html;
+    const grew = document.documentElement.scrollHeight - was;
+    if (grew > 0 && window.scrollY > 0) window.scrollBy(0, grew);
     seen = new Set(v.entries.map(keyOf));
   }
 
