@@ -323,6 +323,45 @@ window.COMPOSER = (function () {
       const s = sel.toString();
       const n = marks.length;
       const put = (t) => document.execCommand('insertText', false, t);
+      // **A run across paragraphs is marked paragraph by paragraph** (Q1467;
+      // Ed, 2026-09-19, his pick of three: *wrap each paragraph's part
+      // separately*). Markdown has no bold that spans a paragraph break, so one
+      // pair round the whole run left both paragraphs wearing literal asterisks
+      // outside edit mode. Each part takes its own pair; a block's own marker
+      // (`# `, `- `) and the white space at a part's edges stay outside it,
+      // since a pair that opens on a space is not a pair (`MD_RX`); a blank
+      // line is left alone; and a press on a run whose every part is already
+      // marked takes them all off, as it does inside one block. It comes
+      // before the whole-selection test below, which would take the first
+      // part's opening pair and the last part's closing one and leave the
+      // middle broken. Guard: `scripts/repro/bold-across-blocks.mjs`.
+      if (s.indexOf('\n') >= 0) {
+        const first = blockOf(r.startContainer);
+        let atStart = false;
+        if (first) {
+          const g = document.createRange();
+          g.selectNodeContents(first);
+          try { g.setEnd(r.startContainer, r.startOffset); atStart = g.toString().length === 0; } catch (e) { /* not in the block */ }
+        }
+        const parts = s.split('\n').map((line, i) => {
+          // only a line that begins its block can begin with the block's marker
+          const m = (i > 0 || atStart) ? /^(?:#{1,3}|-)\s+/.exec(line) : null;
+          const head = m ? m[0] : '';
+          const rest = line.slice(head.length);
+          const lead = /^\s*/.exec(rest)[0];
+          const tail = /\s*$/.exec(rest.slice(lead.length))[0];
+          return { head: head + lead, core: rest.slice(lead.length, rest.length - tail.length), tail };
+        });
+        // `*x*` is italic and `**x**` is not: the single mark must not read
+        // the bold pair's own characters as its own
+        const isMarked = (c) => c.length > 2 * n && c.startsWith(marks) && c.endsWith(marks) &&
+          (n === 2 || (c[1] !== '*' && c[c.length - 2] !== '*'));
+        const cores = parts.filter((p) => p.core);
+        const all = cores.length > 0 && cores.every((p) => isMarked(p.core));
+        return put(parts.map((p) => p.head + (!p.core ? ''
+          : all ? p.core.slice(n, -n)
+            : isMarked(p.core) ? p.core : marks + p.core + marks) + p.tail).join('\n'));
+      }
       if (s.length > 2 * n && s.startsWith(marks) && s.endsWith(marks)) return put(s.slice(n, -n));
       const block = s ? blockOf(r.startContainer) : null;
       if (block && block === blockOf(r.endContainer)) {
@@ -838,7 +877,19 @@ window.COMPOSER = (function () {
         clauseHeadHtml(d, {
           // a gap's head names the gap, there being no clause to show
           label: seeded ? seeded.note : site.origin[0] && site.origin[0].gap ? gapLabel(site.keys[0]) : undefined,
-          html: site.origin.map((o) => '<div class="lp' + (o.t === 'h' ? ' hblock lvl' + (o.level || 1) : o.bullet ? ' bullet' : '') +
+          // **A stranded draft's head shows what stands now** (Q1463, Ed
+          // 2026-09-19, his pick of three): the paragraph it was written against
+          // is gone, the sentence below tells the member to write against the
+          // clause as it now stands, and the head's label says *as it stands* —
+          // so the head reads the document's lines at the place the site is
+          // held, as E38 has a stranded proposal's do. The wording it was
+          // written against is still there to work from: it is what the lane
+          // was seeded with. Everywhere else the head is the origin, which for
+          // a draft that has followed its paragraph is the same words.
+          html: (site.lost
+            ? site.keys.map((k) => lineOf(k)).filter((l) => l && !l.gap)
+              .map((l) => ({ key: l.key, text: l.x, t: l.t, level: l.level, bullet: l.bullet }))
+            : site.origin).map((o) => '<div class="lp' + (o.t === 'h' ? ' hblock lvl' + (o.level || 1) : o.bullet ? ' bullet' : '') +
             '" data-key="' + o.key + '">' + blockHtml({ x: o.text, t: o.t, level: o.level, bullet: o.bullet }) + '</div>').join(''),
         }) +
         // and your draft as the one reply, in the reply's own order: the wording,

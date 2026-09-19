@@ -676,7 +676,15 @@ window.SETUP = (function () {
       // (`railSpeakerHtml`'s `.qface`) between the mark and the sentence; the
       // tooltip above is the sentence alone
       (c.face ? '<span class="qface" aria-hidden="true">' + avHtml(c.face) + '</span>' : '') +
-      '<span class="qt">' + esc(labelOf(c, ctx)) + '</span></span>' +
+      '<span class="qt">' + esc(labelOf(c, ctx)) + '</span>' +
+      // **and the abstention clock in the last day** (Q1460 (e)): the surface
+      // writes `absAt` on a card whose ordinary motion races — this seat's
+      // own deadline on it, and nobody else's — so the entry says when
+      // silence here will be counted and a vote not cast cannot hide behind
+      // an unopened card. The twenty-four hours, and the *abstained* past
+      // them, are the renderer's own rule; the clause rail says the same
+      // thing in the same words.
+      window.CARDS.abstainNoteHtml(c.absAt, 'rail') + '</span>' +
       // the summary is the entry's body: markup where the context hands
       // markup (the member surface's — a spoken rationale, a news line, the
       // deck's count), else a plain teaser wrapped here (the applicant's and
