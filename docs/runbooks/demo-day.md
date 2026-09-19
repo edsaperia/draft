@@ -35,6 +35,10 @@ night before (Ed's issues review, item 18: *one deploy Friday or Saturday, never
   the constitution while the engine adopts at half (#72).
 - **Let the clock close it.** Set ⏰ to the minute you want the close; no press closes a document
   on docs.vote, and the dev host's ⏭ invents signatures (#74).
+- **The room can move the close, and will.** Moving the closing time is an ordinary proposal
+  (SPEC §9.6): in the rehearsal of 2026-09-20 a bot moved ⏰ two hours on and the rest approved
+  it, five minutes before the document was due to close. If the close has to hold, **keep 🛡️ on
+  ⏰ at 🍾**, so a carried change to it waits on your Accept — and then answer it.
 - **Never script "a member leaves, then their proposal carries"** (#65).
 
 ## What to tell the room
