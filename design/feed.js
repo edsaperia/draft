@@ -122,10 +122,15 @@
     // the margin — when, and who — then the rule with the mark on it, then the words
     return '<article class="fentry ' + cls + (arriving ? ' arrive' : '') + '" data-key="' + esc(keyOf(e)) + '">' +
       '<aside class="frail"><time datetime="' + new Date(e.t).toISOString() + '">' + timeOf(e.t) + '</time>' + who + '</aside>' +
-      '<div class="fmain"><span class="fnode">' + mark + '</span>' +
-      '<p class="ftitle">' + esc(title) + '</p>' +
-      e.changes.map((ch) => changeHtml(e, ch)).join('') +
+      // **the reason is said, and said first** (Ed, 2026-09-19: *the Rationale
+      // should come top in feed items … and should look more obviously like
+      // something "spoken" by the proposer (e.g. closer to the name and
+      // avatar)*): a speech bubble under the title, level with the face in the
+      // margin and pointing at it. The mark rides inside the title so a phone,
+      // which has no rule for it to sit on, can set it inline.
+      '<div class="fmain"><p class="ftitle"><span class="fnode">' + mark + '</span>' + esc(title) + '</p>' +
       (why ? '<p class="fwhy">' + esc(why) + '</p>' : '') +
+      e.changes.map((ch) => changeHtml(e, ch)).join('') +
       '</div></article>';
   }
 
