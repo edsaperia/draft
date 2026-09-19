@@ -114,9 +114,11 @@
     richToSource, sourceToRich, readLane,
     laneSeed, laneProposeHtml, laneCtlHtml, laneNameId, laneGroupAttrs, speakerHtml, fieldHtml, fieldOf, groundNote,
     headOnlyHeight, cardBody, COLLAPSE_MS, EXPAND_MS,
-    // the abstention clock's one pass over the page (Q1460), run from a timer
-    // of its own in `init` and never from a render
-    tickAbstain,
+    // the abstention clock: the note the rail draws beside a live entry
+    // (Q1460 (e)) and the one pass over the page that ticks every note on it,
+    // card and rail alike, run from a timer of its own in `init` and never
+    // from a render
+    abstainNoteHtml, tickAbstain,
   } = window.CARDS;
   // **A power is not held until it has been acknowledged** (Ed, 2026-08-21).
   // The host says whether this reader may propose and may judge; both default
@@ -1020,7 +1022,19 @@
               // rather than colliding and truncating on one (Ed, 284)
               ? '<span class="qprio">Prioritise:<b>' + esc(plainLabel(e.prio[0])) +
                 '</b><i>vs</i><b>' + esc(plainLabel(e.prio[1])) + '</b></span>'
-              : '<span>' + esc(plainLabel(e.label || g.qLabel)) + '</span>') + '</span>' +
+              : '<span>' + esc(plainLabel(e.label || g.qLabel)) + '</span>') +
+            // **The entry carries the clock too, in the last day** (Q1460
+            // (e), Ed 2026-09-19: *the rail should only show the clock when
+            // it's less than 24 hrs*). A vote you have not cast can hide
+            // behind an unopened card, so the entry says when silence here
+            // will be counted — the glyph and the figures, and nothing else,
+            // because the sentence is on the card the entry opens. The
+            // twenty-four hours is the renderer's own rule (`rail`), so the
+            // rail is quiet on anything further off; a passed moment reads
+            // *abstained* here as it does there. An entry with no live
+            // deadline carries none: a pair this seat has answered, a race
+            // it cannot vote on, 💤 at *never*.
+            abstainNoteHtml(g.abstainAt, 'rail') + '</span>' +
             // No kind chip and no "copy edit"/"3 proposals racing" line (Ed,
             // 184): both restated in words what the card's own shape already
             // shows — one teaser is a suggestion, two divided teasers are a
