@@ -15,7 +15,17 @@
  * which the page reads out of the charter column **by key**, must be the wording
  * the proposal actually replaces; and every key an item carries must name a
  * block the column actually holds, which is where an item keyed in one line
- * space and a column built in another disagree first.
+ * space and a column built in another disagree first.  The second is asserted
+ * again **on every `setData`**, from inside the page, because a sample every
+ * 120ms can step over a swap — and `--case=<family>` takes a whole family.
+ *
+ * Both directions are driven, because they read differently.  A line carried in
+ * **above** the race moves its key UP: an item newer than the column then names
+ * a block that does not exist, or the line below.  A line **taken away** above
+ * it moves the key DOWN, and a newer item against an older column is headed by
+ * exactly the line above — which is the report's own sentence, so it is driven
+ * three ways (a clause deleted, two clauses merged into one, a blank line taken
+ * out) against four reader states.
  *
  *   tea          the whole sequence, the reader idle and then opening
  *   open-card    the card open on the contested clause across the adoption
@@ -23,6 +33,12 @@
  *   caret        a draft of the reader's own being typed across it
  *   command      the reader's own judgment sent in the same instant
  *   storm        six lines carried in above the open card, one every 400ms
+ *   delete/*     a clause deleted above the race, four reader states: their own
+ *                judgment sent in the same instant, a caret in a draft, another
+ *                clause's card open, and a propose hold still held down
+ *   delete-carried  the same deletion carried by the room rather than decreed
+ *   merge/*      two clauses above it rewritten as one
+ *   blank/*      a blank line above it taken out
  *   parked       the tea room's own configuration — the Founder keeping the
  *                Text's 🛡️ — where the change parks and the room reads a ⏳
  *   seeded       ✏️ *propose edit* on a rival's wording that is carried
@@ -119,8 +135,11 @@ async function carry(d, cid, voters) {
   }
 }
 
-async function seat(browser, link, slug) {
+async function seat(browser, link, slug, gesture) {
   const page = await (await browser.newContext({ viewport: { width: 1600, height: 1000 } })).newPage();
+  // journey's own seam: the commit gesture is a click on this tree, and a hold
+  // is the one state the 4s poll defers for, so the hold case asks for one
+  if (gesture) await page.addInitScript((g) => { window.COMMIT_GESTURE_OVERRIDE = g; }, gesture);
   const errs = [];
   page.on('pageerror', (e) => { errs.push(e.message); say(`  pageerror: ${e.message}`); });
   await page.goto(link);
@@ -134,6 +153,34 @@ async function seat(browser, link, slug) {
   await page.reload();
   await page.waitForSelector('#charter', { timeout: 20_000 });
   await sleep(1500);
+  // **The check that samples cannot make**: every data swap, not every 120ms.
+  // `setData` is the one door both the column and the items go through, so the
+  // invariant is asserted on the far side of each call — if an item's engine
+  // key ever names a block the column does not hold, the two are in different
+  // line spaces at that instant, however briefly. `had` records whether that
+  // call carried a column of its own, which is what tells a SUGGS-only swap
+  // apart from a full one.
+  await page.evaluate(() => {
+    const S = window.SESSION;
+    window.__la = [];
+    const orig = S.setData;
+    window.__laN = 0;
+    S.setData = (next) => {
+      window.__laN++;
+      const r = orig(next);
+      try {
+        const keys = new Set(S.DOC.filter((l) => !l.gap).map((l) => l.key));
+        for (const g of S.SUGGS) {
+          for (const k of (g.keys || [])) {
+            if (/^L\d+$/.test(k) && !keys.has(k)) {
+              window.__la.push({ id: g.id, key: k, doc: [...keys], withColumn: !!(next && next.DOC) });
+            }
+          }
+        }
+      } catch (e) { window.__la.push({ threw: String(e && e.message) }); }
+      return r;
+    };
+  });
   return { page, errs };
 }
 
@@ -200,6 +247,21 @@ function verdict(label, s, raceId) {
   say(`  *** MISMATCH [${label}] head ${JSON.stringify(s.head)} at ${s.site} — the card is about ${JSON.stringify(WANT)}`);
 }
 
+/** every swap the page made, read once a case is over */
+async function swaps(page, label) {
+  const seen = await page.evaluate(() => window.__la || []).catch(() => []);
+  const n = await page.evaluate(() => window.__laN || 0).catch(() => 0);
+  // a check nothing runs is not a check (CLAUDE.md: a sink with no source)
+  if (!n) { bad.push({ label: label + '/swap', never: true }); say(`  *** the swap check never ran in ${label}`); return; }
+  say(`  ${n} swap(s) watched, ${seen.length} bad`);
+  if (!seen.length) return;
+  for (const x of seen) {
+    bad.push({ label: label + '/swap', ...x });
+    say(`  *** MISMATCH [${label}] a swap left ${x.id} keyed ${x.key} against a column without it` +
+      ` (the call ${x.withColumn ? 'carried' : 'did NOT carry'} a column)`);
+  }
+}
+
 /** sample the open card until `ms` has passed, reporting every change */
 async function watch(page, ms, label, raceId) {
   const t0 = Date.now();
@@ -235,7 +297,7 @@ async function teaRoom() {
 const browser = await chromium.launch();
 const ran = [];
 async function run(name, fn) {
-  if (ONLY && ONLY !== name) return;
+  if (ONLY && name !== ONLY && !name.startsWith(ONLY + '/')) return;   // `--case=delete` takes the family
   ran.push(name);
   say(`=== ${name}`);
   await fn();
@@ -264,6 +326,7 @@ await run('tea', async () => {
   await carry(d, cid, everyone);
   say(`  after No milk: ${JSON.stringify(await d.lines())}`);
   await watch(page, 16_000, 'tea/after', raceId);
+  await swaps(page, 'case');
   await page.context().close();
 });
 
@@ -291,6 +354,7 @@ async function moveUnder(name, prepare) {
     const s = await snap(page);
     say(`  re-opened: site=${s.site} head=${JSON.stringify(s.head)}`);
     verdict(name + '/reopen', s, raceId);
+    await swaps(page, name);
     await page.context().close();
   });
 }
@@ -326,13 +390,19 @@ await moveUnder('caret', async ({ page }) => {
 });
 
 await moveUnder('command', async ({ page, raceId }) => {
+  // the reader picks a lane and **sends** the judgment, so their own command's
+  // refresh — and live.js's SUGGS-only swap behind it — lands beside the move
   await openRace(page, raceId); await sleep(500);
-  // the reader picks a lane, so their own command's refresh lands beside the move
   await page.evaluate(() => {
     const r = document.querySelector('.sugg .lanepick input, .sugg .lanepick');
     if (r) r.click();
   });
-  await sleep(200);
+  await sleep(250);
+  page.evaluate(() => {
+    const b = [...document.querySelectorAll('.sugg .commitrow button')]
+      .find((x) => !x.disabled && !x.querySelector('[data-gl="bin"]'));
+    if (b) b.click();
+  }).catch(() => {});
 });
 
 /* ---- a fast room: proposals and adoptions arriving under an open card ----
@@ -369,8 +439,156 @@ await run('storm', async () => {
   const s = await snap(page);
   say(`  re-opened: site=${s.site} head=${JSON.stringify(s.head)}`);
   verdict('storm/reopen', s, raceId);
+  await swaps(page, 'case');
   await page.context().close();
 });
+
+/* ---- a line REMOVED above the contested one ----------------------------
+   The other direction, and the one the report's own words need (the
+   coordinator's reading, 2026-09-19). Every case above adds a line above the
+   race, which moves its key UP; an item newer than the column then names a
+   block that does not exist, or the line below. A line **taken away** above it
+   moves the key DOWN, and a newer item drawn against an older column is headed
+   by exactly the line above. Three removals — a clause deleted, two clauses
+   merged into one, a blank line taken out — against four reader states: their
+   own command in the same instant, a caret in a draft, another clause's card
+   open, and a press still held down (which is the one state the 4s poll defers
+   for, so nothing else can repaint under it). */
+
+/** a four-line document with the race on `at`, and whatever moves the text above it */
+async function removeUnder(name, { text, at, move, carried = false, gesture = null }, prepare) {
+  await run(name, async () => {
+    const d = await found(text, ['a', 'b', 'r'], ['r']);
+    const lines0 = await d.lines();
+    let v = await d.view(d.cookies.b);
+    await d.cmd('propose-text', { baseVersion: v.textVersion,
+      hunks: H(v, [{ start: at, end: at + 1, lines: [lines0[at] + ' unless everyone agrees'] }]),
+      why: 'people take sugar' }, d.cookies.b);
+    const raceId = ((await d.view()).clauses || []).find((r) => r.candidates.length)?.id;
+    const { page } = await seat(browser, d.links.r, d.slug, gesture);
+    await sleep(4500);
+    const back = await prepare({ d, page, raceId });
+    const during = back && back.during ? back.during : null;
+    const after = back && back.after ? back.after : (typeof back === 'function' ? back : null);
+    v = await d.view();
+    if (during) during({ page, raceId });
+    if (carried) {
+      // the room's own removal, not the Founder's — the tea room's way
+      const cid = (await d.cmd('propose-text', { baseVersion: v.textVersion,
+        hunks: H(v, move(String(v.text).split('\n'))), why: 'tidier' }, d.cookies.a)).id;
+      await carry(d, cid, ['founder', 'b']);
+    } else {
+      await d.cmd('pen-text', { baseVersion: v.textVersion, hunks: H(v, move(String(v.text).split('\n'))), why: 'tidier' });
+    }
+    say(`  removed; document ${JSON.stringify(await d.lines())}`);
+    if (after) { await sleep(400); await after({ page, raceId }); }
+    await watch(page, 15_000, name, raceId);
+    await openRace(page, raceId);
+    await sleep(700);
+    const s = await snap(page);
+    say(`  re-opened: site=${s.site} head=${JSON.stringify(s.head)}`);
+    verdict(name + '/reopen', s, raceId);
+    await page.mouse.up().catch(() => {});
+    await swaps(page, name);
+    await page.context().close();
+  });
+}
+
+// the three removals, each above the contested line
+const FOUR = 'Yorkshire tea, 8 teabags\nWarm the pot first\nNo sugar\nMugs, not cups';
+const BLANK = 'Yorkshire tea, 8 teabags\n\nNo sugar\nMugs, not cups';
+const DEL = { text: FOUR, at: 2, move: () => [{ start: 1, end: 2, lines: [] }] };
+const MERGE = { text: FOUR, at: 2, move: (l) => [{ start: 0, end: 2, lines: [`${l[0]}, ${l[1].toLowerCase()}`] }] };
+const UNBLANK = { text: BLANK, at: 2, move: () => [{ start: 1, end: 2, lines: [] }] };
+
+// (i) the reader's own command in the same instant
+const withCommand = async ({ page, raceId }) => {
+  await openRace(page, raceId); await sleep(500);
+  await page.evaluate(() => {
+    const r = document.querySelector('.sugg .lanepick input, .sugg .lanepick');
+    if (r) r.click();
+  });
+  await sleep(250);
+  return { during: ({ page: pg }) => pg.evaluate(() => {
+    const b = [...document.querySelectorAll('.sugg .commitrow button')]
+      .find((x) => !x.disabled && !/🗑/u.test(x.textContent) && !x.querySelector('[data-gl="bin"]'));
+    if (b) b.click();
+    return !!b;
+  }).catch(() => false) };
+};
+// (ii) a caret in a draft on another clause
+const withCaret = async ({ page }) => {
+  await page.evaluate(() => {
+    const el = [...document.querySelectorAll('#charter [data-key]')].find((x) => x.getAttribute('data-key') === 'L0');
+    if (!el) return;
+    el.scrollIntoView({ block: 'center' });
+    el.click();
+  });
+  await sleep(600);
+  await page.keyboard.type(' — warmed');
+  await sleep(500);
+  say(`  draft open: ${JSON.stringify((await snap(page)).openId)}`);
+};
+// (iii) another clause's card open
+const withOtherCard = async ({ d, page }) => {
+  const v = await d.view(d.cookies.b);
+  const last = (await d.lines()).length - 1;
+  await d.cmd('propose-text', { baseVersion: v.textVersion,
+    hunks: H(v, [{ start: last, end: last + 1, lines: ['Mugs, never cups'] }]), why: 'mugs' }, d.cookies.b);
+  await sleep(4500);
+  const other = ((await d.view()).clauses || []).find((r) => r.contested?.[0]?.start === last);
+  if (other) { await openRace(page, other.id); await sleep(500); }
+  say(`  other card open: ${JSON.stringify((await snap(page)).site)}`);
+  // …and the contested card is opened once the text has moved, which is where
+  // a column spared behind another card would show
+  return async ({ page: pg, raceId }) => { await openRace(pg, raceId); await sleep(500); };
+};
+// (iv) a press still held down — the propose hold is the one gesture the two
+// polls defer for by name (`SESSION.holding`, CLAUDE.md's *nothing rebuilds
+// under a press*), so the page is frozen while the text moves beneath it and
+// has to catch up whole when the hand lets go
+const withHold = async ({ page }) => {
+  await page.evaluate(() => {
+    const el = [...document.querySelectorAll('#charter [data-key]')].find((x) => x.getAttribute('data-key') === 'L0');
+    if (!el) return;
+    el.scrollIntoView({ block: 'center' });
+    el.click();
+  });
+  await sleep(600);
+  await page.keyboard.type(' — warmed');
+  await sleep(600);
+  const box = await page.evaluate(() => {
+    const b = document.querySelector('[data-act="draft-propose"]:not([disabled]), [data-act="row-commit"]:not([disabled])');
+    if (!b) return null;
+    b.scrollIntoView({ block: 'center' });
+    const r = b.getBoundingClientRect();
+    return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+  });
+  if (!box) { say('  no ✏️ to hold'); return null; }
+  await page.mouse.move(box.x, box.y);
+  await page.mouse.down();
+  await sleep(150);
+  say(`  holding ✏️: ${JSON.stringify(await page.evaluate(() => ({ holding: window.SESSION.holding })))}`);
+  // let go once the text has moved, and let the page catch up
+  return async ({ page: pg, raceId }) => {
+    say(`  held through the move: ${JSON.stringify(await pg.evaluate(() => ({ holding: window.SESSION.holding,
+      doc: window.SESSION.DOC.filter((l) => !l.gap).length })))}`);
+    await pg.mouse.up();
+    await sleep(2500);
+    await openRace(pg, raceId);
+    await sleep(600);
+  };
+};
+
+await removeUnder('delete/command', DEL, withCommand);
+await removeUnder('delete/caret', DEL, withCaret);
+await removeUnder('delete/other-card', DEL, withOtherCard);
+await removeUnder('delete/hold', { ...DEL, gesture: 'hold' }, withHold);
+await removeUnder('delete-carried/command', { ...DEL, carried: true }, withCommand);
+await removeUnder('merge/command', MERGE, withCommand);
+await removeUnder('merge/other-card', MERGE, withOtherCard);
+await removeUnder('blank/command', UNBLANK, withCommand);
+await removeUnder('blank/other-card', UNBLANK, withOtherCard);
 
 /* ---- the tea room's own configuration: the Founder keeps the Text's 🛡️ ---
    A change the membership carries then *parks* (SPEC §9.7 rule 8), and every
@@ -437,6 +655,7 @@ await run('parked', async () => {
   s = await snap(page);
   say(`  park card after: site=${s.site} head=${JSON.stringify(s.head)}`);
   verdict('parked/after', s, null);
+  await swaps(page, 'case');
   await page.context().close();
 });
 
@@ -490,6 +709,7 @@ await run('seeded', async () => {
   await sleep(6000);
   say('  B draft after: ' + JSON.stringify(await draft()));
   say('  B page after: ' + JSON.stringify(await snap(page)).slice(0, 400));
+  await swaps(page, 'case');
   await page.context().close();
 });
 
