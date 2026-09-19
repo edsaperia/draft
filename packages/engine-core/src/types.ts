@@ -245,10 +245,14 @@ export interface Candidate {
    * the room's confidence at the moment it decided, not the convenor's
    * convenience — and the close records the park's own race. The cap mark
    * (R-051) rides here for the same reason: it is a fact about the same
-   * moment and the same fit, and absent still means converged.
+   * moment and the same fit, and absent still means converged. So do the
+   * membership's own three numbers (Q1458) — approvals, floor and silences —
+   * which is what lets the record of a shielded adoption say *n of E weighed
+   * in* like any other; absent means a log written before the field.
    */
   awaiting?: { raceId: string; p: number; threshold: number;
-    cappedFit?: { iterations: number; gradMax: number } };
+    cappedFit?: { iterations: number; gradMax: number };
+    decided?: { approvals: number; floor: number; abstained: number } };
 }
 
 /**
@@ -533,6 +537,23 @@ export type Event =
        * receipt that lies by omission. Absent means the fit converged.
        */
       cappedFit?: { iterations: number; gradMax: number };
+      /**
+       * **What the room decided on, held over the park** (Q1458, Ed
+       * 2026-09-18): the approvals the winner held, the floor it met and the
+       * silences 💤 had already taken, snapshotted by the batch exactly as
+       * `p` and `threshold` are. `assent`'s accept copies them onto the
+       * `adopted` event, so a shielded adoption's record states the
+       * membership's numbers like any other — and states **the numbers that
+       * stood when the vote carried**, not the ones a re-derivation at the
+       * convenor's convenience would find. All three move with the clock
+       * (§8.2), so the park is the only honest moment to read them.
+       *
+       * One optional object rather than three optional fields, because the
+       * three are one snapshot of one moment and are never separately known;
+       * optional on `cappedFit`'s own terms — absent, never `undefined`, so
+       * every log written before the field existed folds byte for byte.
+       */
+      decided?: { approvals: number; floor: number; abstained: number };
     }
   | {
       /**

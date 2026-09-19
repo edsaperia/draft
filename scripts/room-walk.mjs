@@ -354,6 +354,14 @@ if (park === null) {
   const rec = (after.records ?? []).find((r) => r.candidateId === cidB
     || r.field?.some((f) => f.candidateId === cidB));
   must(rec?.outcome === 'adopted', `a record with outcome 'adopted' exists for the parked candidate`);
+  // **and it states the membership's numbers** (Q1458, Ed 2026-09-18): the
+  // three ride the park and the accept copies them, so the passed card on a
+  // shielded adoption says how many weighed in exactly as any other does.
+  // Until this they were the one adoption's record that stated none of them.
+  must(typeof rec?.approvals === 'number' && typeof rec?.floor === 'number'
+    && typeof rec?.abstained === 'number',
+    `the parked adoption's record carries the numbers the room decided on `
+    + `(approvals ${rec?.approvals}, floor ${rec?.floor}, did not answer ${rec?.abstained})`);
   const mine = (after.mine ?? []).find((c) => c.id === cidB);
   must(mine && mine.state !== 'live', `the author's own entry left 'live' (${mine?.state})`);
 }
