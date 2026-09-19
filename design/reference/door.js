@@ -111,6 +111,12 @@ window.DOOR = (function () {
       // the link verified them before the page existed (§9.7½)
       S.app.started = true; S.app.emailSent = true; S.app.emailVerified = true; S.app.mailOpen = false;
       S.app.submitted = a.status !== 'started' && a.status !== 'verified';
+      // **and whether the answer was no** (Q1473, Ed 2026-09-19): the one
+      // status a submitted application can end in badly, which the surface had
+      // no word for — the 🪪 card went on reading *the members are deciding*
+      // after they had decided. Monotone like `shutAcked` below and for the
+      // same reason: a poll already in flight must not take the news back.
+      if (a.status === 'refused') S.app.refused = true;
       // the OK on a shut door is the module's (SURFACE E33, Q901), and it
       // **only ever sets** — `owedSettings`' rule from the other side: the flag
       // is monotone in the module, so a poll already in flight when the press

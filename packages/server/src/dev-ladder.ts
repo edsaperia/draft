@@ -811,15 +811,30 @@ async function motions(host: LadderHost, doc: LoadedDoc, bridge: EngineBridge,
       'Two more ✏️ to start with — the first hour is the busy one.');
   });
 
-  // constitutional, still collecting: three quarters have answered
+  // constitutional, still collecting: three quarters have answered.
+  // **No keep among them** (Q1473, Ed 2026-09-19): a vote against now ends a
+  // constitutional motion the moment it is cast, so one `keep` in this mix
+  // settled the motion and the next answer threw *the motion is not
+  // running* — the stale-generator shape of 2026-09-18's quorum range. A
+  // rung that wants a motion still collecting casts only the two answers
+  // that leave it collecting.
   say('a constitutional motion on 👁️, still collecting', () => {
     const mover = cast[3]!;
     const m = cs.openMotion(pen.next(), mover, { kind: 'set', setting: 'judgments',
       value: otherRung('judgments') },
       'Let the room see the judging once it can no longer be swayed.');
     for (const who of cast.slice(0, Math.floor(cast.length * 0.75))) {
-      if (who !== mover) cs.answerMotion(pen.next(), who, m, rnd() < 0.8 ? 'accept' : 'keep');
+      if (who !== mover) cs.answerMotion(pen.next(), who, m, rnd() < 0.8 ? 'accept' : 'abstain');
     }
+  });
+
+  // and one a member voted against, so the rung shows that ✖ record too (Q1473)
+  say('a constitutional motion a member voted against', () => {
+    const mover = cast[9]!;
+    const m = cs.openMotion(pen.next(), mover, { kind: 'set', setting: 'authorship',
+      value: otherRung('authorship') },
+      'Let a proposer put their name to it if they want to.');
+    cs.answerMotion(pen.next(), cast[10]!, m, 'keep');
   });
 
   say('a constitutional motion carried', () => {

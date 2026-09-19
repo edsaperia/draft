@@ -179,12 +179,13 @@ describe('replay sweep: the whole lifecycle re-folds bit-identically', () => {
       value: { rung: 'closed' } });
     s.answerMotion(4, 'ada', m, 'accept');
     s.answerMotion(5, bo, m, 'accept');
-    s.answerMotion(6, cy, m, 'keep');
-    expect(s.motionRecords().get(m)!.status).toBe('running'); // one keep blocks
-    // keep ada and bo active; cy goes quiet after their keep
+    expect(s.motionRecords().get(m)!.status).toBe('running'); // cy still owes
+    // ada and bo stay active; cy never answers at all — since Q1473 a keep
+    // would have ended the motion on the spot, so what a lapse releases is a
+    // silence
     s.setIdentity(SPELL - 1_000, 'ada', { name: 'Ada' });
     s.setIdentity(SPELL - 1_000, bo, { name: 'Bo' });
-    // a lapsed member's standing keep leaves with them: the electorate is E,
+    // a lapsed member's silence leaves with them: the electorate is E,
     // evaluated live (§9.5, §9.5a, R-088), and a lapsed member is outside it
     s.tick(SPELL + 2_000);
     expect(s.memberRecords().get(cy)!.lapsed).toBe(true);

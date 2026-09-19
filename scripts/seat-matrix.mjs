@@ -664,19 +664,24 @@ const STEPS = [
     // (C9, Q1344), and no seat here but the founder has pressed one — the
     // assertion's own note says what that buys and what it still holds
     events: [{ id: 'E10', key: (D) => (D.motionIds["judgments-motion"] ? 'mo:' + D.motionIds["judgments-motion"] : null), noKey: 'the motion judgments-motion put came back with no id', at: 'judgments-motion', waitsOn: 'grant-voice' }] },
-  // one keep, and the motion stands running: a keep does not settle a 🏛️
-  // motion, it blocks it (§9.6, `maybeSettleMotions`), which is exactly the
-  // state worth snapshotting — two answers on the wire, neither seat told the
-  // other's. It stands that way until `fail-motion` near the foot of the live
-  // epoch, which revises this keep to accept and lets the Founder refuse the
-  // carry at the crown (E41, Q1447).
+  // one abstention, and the motion stands running, which is the state worth
+  // snapshotting — two answers on the wire, neither seat told the other's. It
+  // stands that way until `fail-motion` near the foot of the live epoch, which
+  // revises this answer to accept and lets the Founder refuse the carry at the
+  // crown (E41, Q1447).
+  //
+  // **It was a keep until Q1473** (Ed, 2026-09-19): a keep blocked a 🏛️
+  // motion without killing it, so the row could leave one standing and come
+  // back to it. A vote against ends the motion now, so a keep here would
+  // settle it here — and `fail-motion` would find nothing running to carry.
+  // An abstention is the answer that leaves a motion collecting.
   { id: 'judgments-keep', epoch: 'live', kind: 'cmd', seat: 'late', cmd: 'answer-motion', ifHat: 'member',
     args: async (D) => {
       const v = await viewAs(D, 'late');
       const m = (((v || {}).view || {}).motions || []).find((x) => x.status === 'running' &&
         x.route === 'constitutional' && ((x.payload || {}).setting) === 'judgments');
       if (!m) throw new Error("no running 🏛️ motion on `judgments` in the late seat's view — the motion step did not land");
-      return { motion: m.id, answer: 'keep' };
+      return { motion: m.id, answer: 'abstain' };
     },
     events: [] },
   // **A proposal stranded by a text change** (SURFACE E38; Q170, Ed

@@ -1096,7 +1096,13 @@ var CONSTITUTION = (() => {
         const electorate = motionElectorateOf(s.members.values()).filter((m2) => m2.id !== excl);
         if (electorate.length === 0) continue;
         const answers = electorate.map((m) => rec.answers.get(m.id));
-        if (answers.some((a) => a === void 0 || a === "keep")) continue;
+        if (answers.some((a) => a === "keep")) {
+          s.emit({ type: "motion-held", t, motion: rec.id });
+          settleHeldEffects(s, t, rec);
+          settled = true;
+          break;
+        }
+        if (answers.some((a) => a === void 0)) continue;
         if (!answers.some((a) => a === "accept")) continue;
         if (s.reservedTarget(rec)) {
           s.emit({
@@ -1897,6 +1903,12 @@ var CONSTITUTION = (() => {
             assent: st.powers.assent || p !== "unilateral"
           }, "motion");
         }
+        break;
+      }
+      case "motion-held": {
+        const rec = s.motions.get(event.motion);
+        rec.status = "held";
+        rec.settledAtT = event.t;
         break;
       }
       case "motion-adjudicated": {

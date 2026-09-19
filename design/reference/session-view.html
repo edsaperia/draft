@@ -1557,7 +1557,10 @@
       mailOpen: false, name: '', pic: '', text: '', submitted: false, csId: null,
       // whether the door shutting under you has been acknowledged (E33, Q901):
       // the module is the truth about it, this is the provisional layer's copy
-      shutAcked: false },
+      shutAcked: false,
+      // …and whether the membership answered no (Q1473): the applicant's own
+      // status, which the 🪪 card reads to stop saying they are deciding
+      refused: false },
     ending: '', endsAt: '',
     quorumBy: '', quorumForm: '', quorumPct: '', quorumN: '',
     joinBy: '', admission: '',
@@ -2898,6 +2901,10 @@
     // 100%. Undefined at the other two prices, where there is no race.
     const sr = admissionPrice() === 'proposal' ? settingRaceOf('admit:' + id) : null;
     ADMCACHE[k].racePct = sr ? Math.round((sr.closeness || 0) * 100) : undefined;
+    // …and the entry carries this seat's abstention clock in the last day
+    // (Q1460 (e)), off the same race the card's Indifferent row reads
+    const aab = motionAbstainAt(ADMCACHE[k]);
+    if (aab != null) ADMCACHE[k].absAt = aab; else delete ADMCACHE[k].absAt;
     return ADMCACHE[k];
   };
   // the engine's own race behind a setting motion on the ordinary route —
@@ -3858,7 +3865,27 @@
   // E10's audience is *every active member*; the lapsed see it waiting.
   const viewerLapsed = () => { if (!cs || !viewerIsMember()) return false;
     const r = cs.memberRecords().get(viewerId()); return !!(r && r.lapsed); };
-  const mustAct = (c) => (motionOn(c) ? (viewerIsMember() && !viewerLapsed() && !answeredMotion(c) && !motionExcludesMe(c))
+  // **A proposal parked on the Founder's own 🛡️ asks the Founder** (Q1475,
+  // Ed 2026-09-19, founder of a live room: *I did have founder veto but I
+  // wasn't served a queue card for it*). The membership has finished, the
+  // motion stands at `awaiting-crown`, and the only act left is theirs — but
+  // `mustAct` asked *have you answered this motion*, and the Founder had:
+  // their own accept was part of what carried it. So the one entry in the
+  // rail waiting on nobody but them sat at ⏳. Whatever the payload — a rule,
+  // an invitation, a removal, somebody at the door — and only while the
+  // question is really pending, so a lapsed or vacated crown, which passes it
+  // by itself, asks nothing.
+  const crownAsksMe = (c) => {
+    if (!cs || !amFounder()) return false;
+    const rec = liveMotionRec(c);
+    if (!rec || rec.status !== 'awaiting-crown') return false;
+    for (const q of cs.crownQuestionRecords().values()) {
+      if (q.motion === rec.id && q.status === 'pending') return true;
+    }
+    return false;
+  };
+  const mustAct = (c) => (motionOn(c) ? (crownAsksMe(c) ||
+      (viewerIsMember() && !viewerLapsed() && !answeredMotion(c) && !motionExcludesMe(c)))
     : c.isBegin ? (amFounder() && !constituted())
     : c.isClosing ? false
     : c.leaveDoor ? false                                      // nothing asks you to leave (Q1400)
@@ -5127,6 +5154,11 @@
     // whose race it would have to share with its rivals (`soleCandidateRaceOf`).
     const msr = rec.route === 'ordinary' ? soleCandidateRaceOf(rec) : null;
     if (msr) mc.racePct = Math.round((msr.closeness || 0) * 100); else delete mc.racePct;
+    // …and its entry carries this seat's abstention clock in the last day
+    // (Q1460 (e)), from the same race the card's own line reads — a set
+    // motion's included, whose clock is its setting's leading pair's
+    const mab = motionAbstainAt(mc);
+    if (mab != null) mc.absAt = mab; else delete mc.absAt;
     return mc;
   };
   // the card a motion card stands for: itself where it has no motion
@@ -5143,6 +5175,29 @@
     if (!c.admit) return null;
     for (const rec of liveMotions()) if (motionTargets(rec) === c.k) return rec;
     return null;
+  };
+  /**
+   * **When silence on this motion becomes an abstention** (Q1460 (c), Ed
+   * 2026-09-18: *every ordinary motion* wears the clock — a membership motion
+   * and a setting-value motion alike, and **never** a 🏛️ one). Only the
+   * ordinary route is a race in the engine, so a constitutional motion has no
+   * deadline to read and this answers undefined for one by its route alone.
+   *
+   * A membership motion *is* its race, so the number is exactly this card's;
+   * a **set** motion shares its setting's race with every rival value still
+   * running (Q1348), so what it carries is **the leading pair's** — the pair
+   * the seat's silence is actually counted on, which is Ed's own answer to
+   * the question that held (c) open.
+   *
+   * In the server's ms, like everything on the view, so it is read into this
+   * browser's by the offset `serverNow` already keeps for the topbar clock.
+   */
+  const motionAbstainAt = (c) => {
+    const rec = liveMotionRec(c);
+    if (!rec || rec.route !== 'ordinary') return undefined;
+    const sr = settingRaceOf(motionRaceSettingOf(rec) || '');
+    if (!sr || sr.abstainAt == null) return undefined;
+    return sr.abstainAt + (Date.now() - serverNow());
   };
   const deckAnswerWord = { accept: 'yes', keep: 'no', abstain: 'abstain' };
   const motionOn = (c) => { const rec = liveMotionRec(c); return rec ? pageMotion(rec) : null; };
@@ -6072,19 +6127,26 @@
   // the pressed lane is the motion shown's (`effMAns`, Q1348): a card the
   // page can name reads its own, everything else reads the key's press
   const pressedOn = (key) => { const c = card(key); return c ? effMAns(c) : S.mAns[key]; };
-  const consentPicks = (key, opts) => '<div class="choice" role="radiogroup">' +
+  // `absAt` is the abstention clock (Q1460 (c)), drawn on the textless block —
+  // which is the motion card's Indifferent row, and so the same place on it
+  // as `vinBlockHtml`'s on a judgment. The block takes `absrow` only where
+  // there is a note to put in it, so a card without one is byte-identical to
+  // what it was.
+  const consentPicks = (key, opts, absAt) => '<div class="choice" role="radiogroup">' +
     opts.map(([v, html, kind]) => {
       const on = pressedOn(key) === v;
       const ruled = kind === 'keep' || kind === 'prefer';   // a rule, either way (Q1377)
       const off = ruled ? window.COPY.grammar.lane.prefer : window.COPY.grammar.commit.indifferent;
       const onW = ruled ? window.COPY.grammar.lane.preferred : window.COPY.grammar.commit.indifferent;
-      return '<div class="pick' + (on ? ' on' : '') + '">' +
+      const note = (!ruled && absAt != null) ? window.CARDS.abstainNoteHtml(absAt) : '';
+      return '<div class="pick' + (on ? ' on' : '') + (note ? ' absrow' : '') + '">' +
         (html ? '<span class="opttext">' + html + '</span>' : '') +
         '<button class="lanepick" aria-pressed="' + on + '" data-motion="' + v + '"><span class="dot"></span>' +
-        '<span class="off">' + off + '</span><span class="on">' + onW + '</span></button></div>';
+        '<span class="off">' + off + '</span><span class="on">' + onW + '</span></button>' +
+        note + '</div>';
     }).join('') + '</div>';
   const MOTION_PICKS = { constitutional: ['no', 'yes', 'abstain'], ordinary: ['stands', 'proposed', 'either'] };
-  const motionBlocks = (key, stands, proposed, why, route, mover) => {
+  const motionBlocks = (key, stands, proposed, why, route, mover, absAt) => {
     // **The mover's own card asks nothing** (K8, Q1370): the two blocks with
     // the proposed one marked as theirs — the radio the composer's *Proposed*,
     // inert, the ledger's own mark — and no third block, since there is
@@ -6102,11 +6164,11 @@
       [k, esc(stands), 'keep'],
       [p, esc(proposed) + (why ? window.CARDS.speakerHtml(why) : ''), 'prefer'],
       [t, '', t],
-    ]);
+    ], absAt);
   };
-  const inviteBody = (c, m, route, mover) =>
-    motionBlocks(c.k, PAGE_COPY.consent.staysAsIs, PAGE_COPY.consent.joins(m.invite), m.why, route, mover);
-  const removeBody = (c, m, route, mover) => {
+  const inviteBody = (c, m, route, mover, absAt) =>
+    motionBlocks(c.k, PAGE_COPY.consent.staysAsIs, PAGE_COPY.consent.joins(m.invite), m.why, route, mover, absAt);
+  const removeBody = (c, m, route, mover, absAt) => {
     const nm = nameOfMember(m.removee);
     // 🏛️ without [avatar] (Q401a): under 'others' the subject sees the
     // motion running against them — ruled, Ed 2026-08-19 — and is asked
@@ -6115,23 +6177,31 @@
       return '<p class="why">' + PAGE_COPY.consent.removeSelfWhy + '</p>' +
         '<p class="setnote">' + PAGE_COPY.consent.removeSelfCount(m.judged || 0, Math.max(E() - 1, 0)) + '</p>';
     }
-    return motionBlocks(c.k, PAGE_COPY.consent.staysIn(nm), PAGE_COPY.consent.leaves(nm), m.why, route, mover);
+    return motionBlocks(c.k, PAGE_COPY.consent.staysIn(nm), PAGE_COPY.consent.leaves(nm), m.why, route, mover, absAt);
   };
   // a set motion: the standing clause against the proposed one — the
   // paragraph's own sentence (`decisionLine`) against the full sentence for
   // the motion's own value (A3), never its short label
   // the picks are keyed by the motion card (`c.k`), the sentences by the
   // setting it is about (`hostKeyOf`) — one motion, one card (Q1367)
-  const motionPairBody = (c, m, route, mover) => (m.invite ? inviteBody(c, m, route, mover)
-    : m.removee !== undefined ? removeBody(c, m, route, mover)
+  const motionPairBody = (c, m, route, mover) => {
+    // **Every ordinary motion wears the abstention clock** (Q1460 (c)): the
+    // ordinary route alone is a race in the engine, so a 🏛️ motion has no
+    // deadline to read; and the mover's own card has no Indifferent block to
+    // put one on, there being nothing to be indifferent about in a thing you
+    // put yourself (K8).
+    const absAt = (route === 'ordinary' && !mover) ? motionAbstainAt(c) : undefined;
+    return (m.invite ? inviteBody(c, m, route, mover, absAt)
+    : m.removee !== undefined ? removeBody(c, m, route, mover, absAt)
     // a return still in flight from a log made before Q1404 closed the road
     // (or the ladder's stagehand): the power's rule as it stands against the
     // rule it would put back — `m.to` is `pwSaid`'s sentence
     // the motion's own card, so the standing rule names its setting (Q1429)
-    : c.power ? motionBlocks(c.k, powerHeadLine(c, true), m.to, m.why, route, mover)
+    : c.power ? motionBlocks(c.k, powerHeadLine(c, true), m.to, m.why, route, mover, absAt)
     : (() => { const rec = liveMotionRec(c);
       const v = rec && rec.payload && rec.payload.kind === 'set' ? rec.payload.value : null;
-      return motionBlocks(c.k, decisionLine(c), (v !== null && sentenceFor(hostKeyOf(c), v)) || m.to, m.why, route, mover); })());
+      return motionBlocks(c.k, decisionLine(c), (v !== null && sentenceFor(hostKeyOf(c), v)) || m.to, m.why, route, mover, absAt); })());
+  };
   const consentBody = (c, m) => motionPairBody(c, m, 'constitutional');
   // the mover's ordinary card is theirs, not an ask (K8, Q1370): the blocks
   // inert with the proposed one marked, and the commit row withdraw alone
@@ -6288,7 +6358,11 @@
   // number came back, and it pins until your OK, because a reveal you
   // answered blind into is a decision you are owed; a gate opening takes
   // the same rule, being exactly the shape of an unacknowledged decision.
-  const waiting = (c) => (motionOn(c) ? answeredMotion(c)
+  // …and it is not waiting on anybody while it waits on **you** (Q1475): a
+  // motion parked on the Founder's own 🛡️ is read here before `mustAct` is
+  // reached, and *have you answered it* is true of the Founder on every
+  // motion they carried — so the entry filed ⏳ and the ask never ran
+  const waiting = (c) => (motionOn(c) ? (!crownAsksMe(c) && answeredMotion(c))
     : c.isBegin ? (!amFounder() && !constituted())   // a member sees the start waiting on the founder
     : c.isClosing ? false
     : c.isGate ? !c.open()
@@ -7510,6 +7584,7 @@
     me: (...a) => me(...a),
     membersHold: (...a) => membersHold(...a),
     midOf: (...a) => midOf(...a),
+    motionAbstainAt: (...a) => motionAbstainAt(...a),
     motionBlocks: (...a) => motionBlocks(...a),
     motionOn: (...a) => motionOn(...a),
     motionPicked: (...a) => motionPicked(...a),

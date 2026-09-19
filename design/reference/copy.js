@@ -152,9 +152,27 @@ window.COPY = (function () {
       // residency room: *a countdown for when not voting will count as a
       // lapse* · *same size and font and place as the "propose edit" text* ·
       // *actually "💤 abstain in hh:mm"*). His words, whole: the glyph names
-      // the rule 💤 stands for, and `hhmm` is the hours and minutes left,
-      // rounded up, so it never reads 00:00 while there is time to vote.
-      abstainIn: (hhmm) => '💤 abstain in ' + hhmm,
+      // the rule 💤 stands for, and `left` is the time remaining, rounded up,
+      // so it never reads 00:00 while there is time to vote.
+      abstainIn: (left) => '💤 abstain in ' + left,
+      // **And past a day it counts in days** (Q1460 (f), Ed 2026-09-19: *If
+      // it's more than a day away, the card should show e.g. "abstain in 3
+      // days & hh:mm"*). Whole days, then the hours and minutes left over;
+      // the *&* is his own. Under twenty-four hours the line is the hh:mm
+      // alone and this template is never reached.
+      abstainDays: (n, hhmm) => n + (n === 1 ? ' day' : ' days') + ' & ' + hhmm,
+      // **And once the period has run the spot stays and says so** (Q1460
+      // (a), Ed 2026-09-18, choosing this over the line going and over *— you
+      // can still vote*). A statement about this seat's silence, not a
+      // refusal: a late vote is still taken, and casting one clears the line
+      // exactly as answering in time always did.
+      abstained: '💤 abstained',
+      // **The rail says the same thing in the room it has** (Q1460 (e), Ed
+      // 2026-09-19: *the rail should only show the clock when it's less than
+      // 24 hrs*): inside the last day the entry carries the glyph and the
+      // figures alone — the card beside it is where the sentence is — and
+      // once the period has run it carries `abstained` like the card.
+      abstainShort: (hhmm) => '💤 ' + hhmm,
     },
     // reviseNote: what a locked judgment says for itself
     revise: {
@@ -228,6 +246,20 @@ window.COPY = (function () {
       // site has no paragraph left to stand against, so it cannot go out until
       // it is written against what now stands.
       drafted: 'The document changed here, and your draft could not be carried across to the new wording — write it against the clause as it now stands.',
+    },
+    // **what a draft's card says when its press sent nothing or came back
+    // refused** (Ed, 2026-09-19: *yes*, move them — they were five literals in
+    // live.js, the first of them in three copies). Two ways the text can have
+    // moved under a draft — the page's own check before the press (Q1463) and
+    // the host's stale-version answer after it — read as one sentence, because
+    // to the member they are one event; the verb follows the act, ✏️ propose
+    // or ✒️ amend.
+    refusal: {
+      movedPropose: 'The text moved while you were writing — your draft is kept; read the new wording and propose again.',
+      movedAmend: 'The text moved while you were writing — your draft is kept; read the new wording and amend again.',
+      notProposed: (reason) => 'That could not be proposed: ' + reason + '.',
+      notAmended: (reason) => 'That could not be amended: ' + reason + '.',
+      noAnswer: 'the server did not answer',
     },
     // the gap a draft stands in, named for the rail and the editing head
     gap: {
@@ -584,6 +616,16 @@ window.COPY = (function () {
       // title asking for an application would offer one that cannot be made
       shut: 'The rule has changed since you began: this document is now invitation-only, so your application cannot be submitted.',
       shutTitle: 'Applications Have Closed',
+      // **and the answer, when it is no** (Q1473, Ed 2026-09-19). A refused
+      // application left the surface saying *Submitted — the members are
+      // deciding* for ever: nothing on the applicant's page had a word for
+      // the one status it can end in badly, and nothing mailed them either.
+      // Ed's ruling makes it the ordinary case at 🏛️ — one member's vote
+      // against ends the application there and then — so the card says so.
+      // **It names nobody and counts nothing**: which members answered, and
+      // how, is theirs (§3.5).
+      refused: 'The membership did not agree to it.',
+      refusedTitle: 'Your Application Was Not Accepted',
       // **what the application holds so far** (Q1366, Ed 2026-09-15): the 🪪
       // card lists the three things a submission carries, each as given or as
       // not yet given, so a ✓ on ✋ 🖼️ 👋 is visibly kept before Submit — the
@@ -998,6 +1040,33 @@ window.COPY = (function () {
     founder: 'The Founder',
     anonymous: 'Anonymous',
     redacted: '[redacted]',
+    // **a proposal about a rule** (Ed, 2026-09-19: *of course motions on
+    // settings should appear in the feed* … *proposals on settings should have
+    // that setting's icon instead of 💡*). The title says which way it was put,
+    // since *all members must agree* is a different thing to watch than a vote;
+    // the place is the constitution and the setting's own noun (`page.cards`).
+    proposedConstitutional: 'New constitutional proposal 🏛️',
+    constitution: 'Constitution',
+    ruleStood: 'The rule as it stood',
+    ruleNow: 'The rule as it stands',
+    noRule: 'No rule had been set.',
+    // **the rules' own sentences, for the settings whose sentence is a number
+    // or a date.** The ladder settings read `RULES` through `clauseOf` like
+    // every card; these are spelled by the page's own clause writers
+    // (`ENDING_RULE`, `LAPSE_RULE`, `RATE_RULE` in session-view.html, and
+    // `page.quorumRule` here), word for word — two homes for one sentence
+    // until the page reads these, which is a change to the regular page and
+    // waits for its own pass.
+    rule: {
+      endingNever: 'Changes to the document may be made perpetually.',
+      endingAfter: (when) => 'No more changes to the document may be made after ' + when + '.',
+      lapseNever: 'Inactive members never lapse and are still counted towards votes.',
+      lapseAfter: (spell) => 'After ' + spell + ', inactive members lapse and automatically abstain from votes.',
+      rate: (phrase) => 'Members may make a new proposal ✏️ every ' + phrase + '.',
+      unit: { days: 'day', hours: 'hour', minutes: 'minute' },
+      units: (n, unit) => n + ' ' + unit,
+      address: (slug) => 'The document lives at docs.vote/d/' + slug + '.',
+    },
     // the page's states
     loading: 'Loading…',
     notBegun: 'The document has not begun. Proposals will appear here once it has.',

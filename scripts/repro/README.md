@@ -58,3 +58,14 @@ DRAFT_DATA_DIR=<fresh> npm run server`) unless it says docs.vote.
   node scripts/repro/found-residency.mjs
   node scripts/room-bots.mjs https://docs.vote/d/residency-charter --key=<DRAFT_BOT_KEY> --theme=scripts/repro/residency-theme.json --seed=residency --min 20s --max 2m --heat 0.7
   ```
+
+## 2026-09-19 — a vote against ends a 🏛️ proposal (Q1473)
+
+- `admit-keep.mjs` — **asserting, unlike everything above**: it exits 1 on a failure, so it
+  is a guard and not a print-out. A document at 🪪 🏛️ with three members and somebody at the
+  door; one member accepts, one votes against, and four things are read where a member reads
+  them — the motion `held` and the applicant `refused`; the applicant's own 🪪 card saying the
+  membership did not agree, naming nobody and counting nothing; the other member's rail with
+  no admit entry left to press and *Applicants* empty; and the same address free to apply
+  again. Red on the pre-Q1473 module at *the application ends on that one vote*, the keep
+  having left the motion running. `node scripts/repro/admit-keep.mjs http://127.0.0.1:8270`
