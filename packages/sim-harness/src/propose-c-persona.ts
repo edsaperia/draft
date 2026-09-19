@@ -13,6 +13,7 @@
  */
 
 import type { CardView, ParticipantApi } from '../../engine-core/src/index.js';
+import { attest, splitLines } from '../../engine-core/src/index.js';
 import { ScriptedPersona, TIE_THRESHOLD, type DraftProposal } from './persona.js';
 import { conditionalUtility, currentPositions, type Issue } from './scenario.js';
 
@@ -72,7 +73,9 @@ export class ProposeCPersona extends ScriptedPersona {
     return {
       patch: {
         baseVersion: api.currentVersion(),
-        hunks: [{ start: issue.line, end: issue.line + 1, lines: [best.text] }],
+        // the wording it replaces, as every participant must state it (Q1463 (1))
+        hunks: attest(splitLines(api.document()),
+          [{ start: issue.line, end: issue.line + 1, lines: [best.text] }]),
       },
       rationale: best.rationale,
     };

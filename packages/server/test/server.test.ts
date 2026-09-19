@@ -18,6 +18,7 @@ import type { Persistence } from '../src/persistence.js';
 import { PgPersistence } from '../src/pg-persistence.js';
 import { asEngineDoc, resumeBridge } from '../src/engine-host.js';
 import { LIMITS } from '../src/commands.js';
+import { attestBody } from './attest-wire.js';
 import { SCHEMA_VERSION, chainHash } from '../../constitution/src/index.js';
 import type { ConstitutionEvent } from '../../constitution/src/index.js';
 
@@ -185,14 +186,20 @@ const cookieOf = (res: Response): string => {
   return header!.split(';')[0]!;
 };
 
-const post = (base: string, path: string, body: unknown, cookie?: string) =>
+// **A text proposal states the wording it replaces** (Q1463 (1), R-136), and
+// the host refuses one that does not. Every post in this file goes through
+// here, so `attestBody` fills `was` / `after` from the view the post is about
+// — leaving alone anything the caller attested itself, and anything against a
+// version that is not the one standing, which is what keeps the stale-version
+// and the bot-style-stale tests saying exactly what they said before.
+const post = async (base: string, path: string, body: unknown, cookie?: string) =>
   fetch(base + path, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
       ...(cookie ? { cookie } : {}),
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify(await attestBody(base, path, body, cookie)),
   });
 
 /** Follow a magic link the way a browser does: GET the interstitial,

@@ -27,7 +27,7 @@
  * insertion at the gap's own line.
  */
 import { chromium } from 'playwright';
-import { post as postTo, followLink, sleep } from '../lib/walk.mjs';
+import { post as postTo, followLink, sleep, withWas } from '../lib/walk.mjs';
 
 const argv = process.argv.slice(2);
 const BASE = (argv.find((a) => /^https?:/.test(a)) || 'http://127.0.0.1:8202').replace(/\/$/, '');
@@ -100,8 +100,9 @@ if (GAP) {
   const cookie = (await followLink(m.link)).cookie;
   const v = await (await fetch(`${BASE}/api/d/${SLUG}/view`, { headers: { cookie } })).json();
   const r = await post(`/api/d/${SLUG}/cmd`, { cmd: 'propose-text', args: { baseVersion: v.textVersion ?? 0,
-    hunks: [{ start: CLAUSE, end: CLAUSE + 1,
-      lines: ['Accounts are shown at the annual meeting and may be inspected by any member whenever they ask.'] }],
+    // the wording it replaces, off this seat's own view (Q1463 (1))
+    hunks: withWas(v.text, [{ start: CLAUSE, end: CLAUSE + 1,
+      lines: ['Accounts are shown at the annual meeting and may be inspected by any member whenever they ask.'] }]),
     why: 'plainer' } }, cookie);
   if (!r.ok) die(`the rival could not contest the clause (${r.status}): ${(await r.text()).slice(0, 200)}`);
   say('the clause is contested — one rival proposal over HTTP');

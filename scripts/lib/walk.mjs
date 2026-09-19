@@ -76,6 +76,25 @@ export const outbox = async (base) => {
   const ob = await (await fetch(base + '/api/dev/outbox')).json();
   return ob.mails || ob;
 };
+/**
+ * **What a patch says it is replacing** (Q1463 (1), Ed 2026-09-19; SPEC §2.1
+ * → why: R-136). Every text proposal states the wording it believes it is
+ * replacing, and the host refuses one that does not — the page, a bot and
+ * every walk alike. So a walk that posts `propose-text`, `pen-text` or
+ * `rebase-text` hands its hunks through here first, with **the document as it
+ * stood when the hunks were written**: a replacement takes `was`, the exact
+ * lines at [start, end), and a pure insertion `after`, the exact line before
+ * it (`null` at the top).
+ *
+ * `text` is the document as one string — `view.text`, which is where every
+ * walk already gets it.
+ */
+export const withWas = (text, hunks) => {
+  const lines = text === '' || text == null ? [] : String(text).split('\n');
+  return hunks.map((h) => (h.start === h.end
+    ? { ...h, after: h.start === 0 ? null : (lines[h.start - 1] ?? null) }
+    : { ...h, was: lines.slice(h.start, h.end) }));
+};
 /** A JSON POST as the page sends one: same-origin header, the seat's cookie if any. */
 export const post = (base, path, body, cookie) => fetch(base + path, {
   method: 'POST',

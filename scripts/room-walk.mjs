@@ -54,7 +54,7 @@
  * phase B: parked), and asserts the resolution instead.
  */
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
-import { say, post as postTo, followLink } from './lib/walk.mjs';
+import { say, post as postTo, followLink, withWas } from './lib/walk.mjs';
 
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
 const SEED = Number((process.argv.find((a) => a.startsWith('--seed=')) || '').split('=')[1] || 11);
@@ -121,7 +121,8 @@ async function proposeAndVote({ author, seats, pick, newLine, why, resolved, ins
   // itself untouched — what moves every record below it (Q1333)
   const p = await cmd(author, 'propose-text', {
     baseVersion: v.textVersion,
-    hunks: [{ start: li, end: insertBefore ? li : li + 1, lines: [newLine] }],
+    // the wording it replaces, off the very view the line was picked from (Q1463 (1))
+    hunks: withWas(v.text, [{ start: li, end: insertBefore ? li : li + 1, lines: [newLine] }]),
     why,
   });
   const cid = p.id;

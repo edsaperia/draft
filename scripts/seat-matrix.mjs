@@ -184,7 +184,7 @@ import { writeFile, readFile } from 'node:fs/promises';
 import { chromium } from 'playwright';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
 import { tableAfter, keysOf } from './lib/surface-tables.mjs';
-import { say, sleep, arg, linkIn, outbox as devOutbox, typeIn, press } from './lib/walk.mjs';
+import { say, sleep, arg, linkIn, outbox as devOutbox, typeIn, press, withWas } from './lib/walk.mjs';
 
 /* ---- arguments -------------------------------------------------------- */
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
@@ -705,7 +705,8 @@ const STEPS = [
     args: async (D) => {
       const v = await viewAs(D, 'lapsed');
       return { baseVersion: v.textVersion,
-        hunks: [{ start: 0, end: 1, lines: ['The clubhouse shall be kept open at all hours.'] }],
+        // the wording it replaces, off this seat's own view (Q1463 (1))
+        hunks: withWas(v.text, [{ start: 0, end: 1, lines: ['The clubhouse shall be kept open at all hours.'] }]),
         why: 'the hours are the whole of what people ask me about' };
     },
     events: [] },
@@ -717,7 +718,7 @@ const STEPS = [
     args: async (D) => {
       const v = await viewAs(D, 'founder');
       return { baseVersion: v.textVersion,
-        hunks: [{ start: 0, end: 1, lines: ['The clubhouse shall be kept open on weekdays.'] }],
+        hunks: withWas(v.text, [{ start: 0, end: 1, lines: ['The clubhouse shall be kept open on weekdays.'] }]),
         why: 'the hours were never the club’s to promise' };
     },
     // the key is the entry the author's own page files for it — `mine:<id>`
@@ -753,7 +754,7 @@ const STEPS = [
     args: async (D) => {
       const v = await viewAs(D, 'founder');
       return { baseVersion: v.textVersion,
-        hunks: [{ start: 1, end: 2, lines: ['Every member may bring two guests.'] }],
+        hunks: withWas(v.text, [{ start: 1, end: 2, lines: ['Every member may bring two guests.'] }]),
         why: 'one guest is thin for a clubhouse this size' };
     },
     // the key is learned by asking the document what race the proposal made:

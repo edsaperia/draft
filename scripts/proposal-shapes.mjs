@@ -74,7 +74,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
-import { say, post as postTo, arg, openCard, press, pageGesture, browserFor } from './lib/walk.mjs';
+import { say, post as postTo, arg, openCard, press, pageGesture, browserFor, withWas } from './lib/walk.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8171');
@@ -353,7 +353,8 @@ const CELL_OF = new Map();    // candidate id → cell
 for (const c of CELLS) {
   const v = await view(c.who);
   const r = await cmd(c.who, 'propose-text', {
-    baseVersion: v.textVersion, hunks: c.hunks, why: `shape ${c.id}`,
+    // the wording each hunk replaces, off this cell's own view (Q1463 (1))
+    baseVersion: v.textVersion, hunks: withWas(v.text, c.hunks), why: `shape ${c.id}`,
   });
   if (!r || !r.id) die(`${c.id}: propose-text answered ${JSON.stringify(r)}`);
   CAND.set(c.id, r.id);
@@ -1190,7 +1191,7 @@ const P2_CELLS = [
 CELL_OF.clear();
 for (const c of P2_CELLS) {
   const v = await view(c.who);
-  const r = await cmd(c.who, 'propose-text', { baseVersion: v.textVersion, hunks: c.hunks, why: `shape ${c.id}` });
+  const r = await cmd(c.who, 'propose-text', { baseVersion: v.textVersion, hunks: withWas(v.text, c.hunks), why: `shape ${c.id}` });
   if (!r || !r.id) die(`${c.id}: propose-text answered ${JSON.stringify(r)}`);
   c.cand = r.id; CAND.set(c.id, r.id); CELL_OF.set(r.id, c);
   say(`  ${c.id} · ${c.who} → ${r.id}`);
