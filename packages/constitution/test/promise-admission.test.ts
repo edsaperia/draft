@@ -94,7 +94,7 @@ describe('🪪/🤝 promise 1: at assembly nobody joins without everyone’s con
 
   /**
    * **And one vote against refuses the application there and then** (Ed,
-   * 2026-09-19, Q1473; R-136). Until v0.138 the keep blocked and did not
+   * 2026-09-19, Q1473; R-138). Until v0.138 the keep blocked and did not
    * kill, and an application — which has no mover, so nobody could withdraw
    * it — sat under *Applicants* until the document closed. Ed found one in a
    * live room. The refusal is the road a rejected application already took at

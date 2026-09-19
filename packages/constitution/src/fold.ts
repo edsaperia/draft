@@ -795,7 +795,7 @@ function applyLifecycle(s: FoldState, event: ConstitutionEvent): void {
       break;
     }
     case 'motion-held': {
-      // **A vote against ends it** (Ed, 2026-09-19, Q1473; R-136). The same
+      // **A vote against ends it** (Ed, 2026-09-19, Q1473; R-138). The same
       // grey ✖ an ordinary motion the room rejected files, by the same
       // fields: `held`, dated, and `heldAtClose` left false, because the
       // membership decided it and the clock did not. Nothing of the payload

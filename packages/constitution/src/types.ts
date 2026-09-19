@@ -296,7 +296,7 @@ export type ConstitutionEvent =
   | { type: 'motion-carried'; t: number; motion: MotionId }
   /**
    * **A member of the electorate kept what stands, and that ends it** (Ed,
-   * 2026-09-19, Q1473; SPEC §9.6, R-136): the constitutional route's own
+   * 2026-09-19, Q1473; SPEC §9.6, R-138): the constitutional route's own
    * failure, the other half of `motion-carried`. Until v0.138 a standing keep
    * blocked and did not kill, and a blocked motion ended by withdrawal — which
    * an application, having no mover, could not do, so a stranger one member

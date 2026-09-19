@@ -137,7 +137,7 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
     expect(s.settingState('bar').settledBy).toBe('motion');
   });
 
-  // **The first vote against ends it** (Ed, 2026-09-19, Q1473; R-136),
+  // **The first vote against ends it** (Ed, 2026-09-19, Q1473; R-138),
   // reversing *a standing keep blocks but does not kill*: this test asserted
   // that the motion ran on and that cy could revise their keep into an accept.
   it('one keep ends it, at once, and what stands stands (§9.6)', () => {

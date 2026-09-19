@@ -244,7 +244,7 @@ say('\n== motions, constitutional route: unanimity over the live electorate ==='
     'cy abstains and it carries — everyone at accept-or-abstain, zero keep');
   eq(s.settingState('bar').value, { pct: 80 }, 'the amendment applied in the fold');
 
-  // **a vote against ends it** (Ed, 2026-09-19, Q1473; R-136), where until
+  // **a vote against ends it** (Ed, 2026-09-19, Q1473; R-138), where until
   // v0.138 a standing keep blocked and did not kill, and only a withdrawal
   // could end a blocked motion
   const back = s.openMotion(6, bo, { kind: 'set', setting: 'bar', value: { pct: 66 } });

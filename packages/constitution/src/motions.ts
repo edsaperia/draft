@@ -456,7 +456,7 @@ function runningTwin(s: MotionHost, payload: MotionPayload): MotionId | null {
  * every roster event.
  *
  * **And it fails at the moment one of them keeps what stands** (Ed,
- * 2026-09-19, Q1473; SPEC §9.6, R-136). Until v0.138 a standing keep blocked
+ * 2026-09-19, Q1473; SPEC §9.6, R-138). Until v0.138 a standing keep blocked
  * and did not kill — the motion ran on, ⏳ for everyone who had answered,
  * because the keeper might change their mind — and R-021 gave a blocked
  * motion one way out, the mover's withdrawal. **An application has no mover**

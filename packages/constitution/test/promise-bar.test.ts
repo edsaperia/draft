@@ -364,7 +364,7 @@ describe('P4 and P5 — the mover stands, and nobody’s consent carries nothing
     expect(s.settingState('bar').value).toEqual({ pct: 90 });
   });
 
-  // **one keep ends it** since Q1473 (Ed, 2026-09-19; R-136), where it used
+  // **one keep ends it** since Q1473 (Ed, 2026-09-19; R-138), where it used
   // to leave the motion running: either way what stands stands
   it('one keep ends it, and what stands stands (§9.6)', () => {
     const { s, bo, cy } = buildConstituted();
