@@ -52,8 +52,12 @@ export const memberTable: Route[] = [
           // (venue Wi-Fi): a stranger's page polls every 4s, 150 in the
           // ten-minute window, so 240 fell to two phones in eight minutes
           // and the page died of the 429 it took for a view (Ed's phone,
-          // 2026-09-12). Ten phones' worth — still a brake on a scraper.
-          if (r.tooMany('stranger', 1500)) return true;
+          // 2026-09-12). 1500 was ten phones' worth, and twenty spent it in
+          // five minutes on one venue address (issue #69, reproduced
+          // 2026-09-19) — so the room sawtoothed, five minutes alive and
+          // five dead. **Twenty phones' worth** (Ed, 2026-09-19): forty
+          // polling pages for a full window, still a brake on a scraper.
+          if (r.tooMany('stranger', 6000)) return true;
           const seq = doc.cs.logEntries().length;
           const engineDoc0 = asEngineDoc(doc);
           const eseq = engineDoc0.bridge === null ? 0 : engineDoc0.bridge.engine.log.length;

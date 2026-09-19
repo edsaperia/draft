@@ -53,7 +53,11 @@ export const authTable: Route[] = [
     match: ({ seg }) => seg[0] === 'api' && seg[1] === 'slug' && seg.length === 3,
     handler: async (ctx, r) => {
       const { res, seg, nowMs } = r;
-      if (r.tooMany('slug', 120)) return true;
+      // twenty founders on one venue address, each trying addresses until
+      // one is free: 120 was 6 tries each (issue #69). **Twenty phones'
+      // worth** (Ed, 2026-09-19) — and a refusal here dead-ends 📍, so the
+      // budget has to outlast the typing.
+      if (r.tooMany('slug', 600)) return true;
       const slug = decodeURIComponent(seg[2]!);
       if (!SLUG_OK.test(slug) || slug.length > LIMITS.slug) {
         json(res, 200, { available: false, legal: false });
@@ -78,7 +82,10 @@ export const authTable: Route[] = [
     handler: async (ctx, r) => {
       const { req, res, nowMs } = r;
       const { cfg, stash, auth, mailer, writes } = ctx;
-      if (r.tooMany('docs')) return true;
+      // the limiter's default 20 put twenty founders on one venue address
+      // exactly at the cap, with every 📨 resend counting against it (issue
+      // #69). **Twenty phones' worth** (Ed, 2026-09-19): three sends each.
+      if (r.tooMany('docs', 60)) return true;
       const body = await readJson(req);
       const title = cap(expectString(body, 'title'), LIMITS.title, 'the title');
       const email = emailOk(expectString(body, 'email'));
@@ -148,7 +155,10 @@ export const authTable: Route[] = [
     match: '/api/docs/pending',
     handler: async (ctx, r) => {
       const { req, res, nowMs } = r;
-      if (r.tooMany('pending', 120)) return true;
+      // the founder's typing is stashed as they type, so 120 was ~6 stashes
+      // each for twenty founders on one venue address and then silence
+      // (issue #69). **Twenty phones' worth** (Ed, 2026-09-19).
+      if (r.tooMany('pending', 600)) return true;
       const body = await readJson(req);
       const pendingId = expectString(body, 'pendingId');
       const text = cap(expectString(body, 'text'), LIMITS.text, 'the text');
@@ -201,7 +211,12 @@ export const authTable: Route[] = [
     handler: async (ctx, r) => {
       const { req, res, nowMs } = r;
       const { cfg, store, stash, auth, writes, commits } = ctx;
-      if (r.tooMany('auth', 60)) return true;
+      // One bucket, `auth:<ip>`, shared by /auth/create, /auth/login and
+      // /auth/apply: 60 was twenty arrivals on one venue address with a
+      // rehearsal in the same window taking it to forty (issue #69), and
+      // spending it lands a live magic link on raw JSON. **Twenty phones'
+      // worth** (Ed, 2026-09-19), matching the login door's own 200 (Q1341).
+      if (r.tooMany('auth', 200)) return true;
       const token = await readTokenBody(req);
       if (pausedDoor(ctx, r, token)) return true;
       const rec = await auth.useToken(token, nowMs);
@@ -318,7 +333,12 @@ export const authTable: Route[] = [
       const { cfg, store, auth, mailer, writes } = ctx;
       const doc = r.docOr404(store.bySlug(seg[2]!));
       if (!doc) return true;
-      if (r.tooMany('apply')) return true;
+      // the knock beside the login door kept the limiter's default 20 when
+      // Q1341 raised the door to 200: keyed `apply:<ip>`, global across
+      // documents, every retype burning one, so a room of twenty was at the
+      // cap on arrival (issue #69). **Twenty phones' worth** (Ed,
+      // 2026-09-19), the login door's own number.
+      if (r.tooMany('apply', 200)) return true;
       const body = await readJson(req);
       const email = emailOk(expectString(body, 'email'));
       // the same refusals the module makes at startApplication, made
@@ -376,7 +396,7 @@ export const authTable: Route[] = [
     handler: async (ctx, r) => {
       const { req, res, nowMs } = r;
       const { store, auth, writes } = ctx;
-      if (r.tooMany('auth', 60)) return true;
+      if (r.tooMany('auth', 200)) return true;
       const token = await readTokenBody(req);
       if (pausedDoor(ctx, r, token)) return true;
       const rec = await auth.useToken(token, nowMs);
@@ -430,7 +450,7 @@ export const authTable: Route[] = [
     handler: async (ctx, r) => {
       const { req, res, nowMs } = r;
       const { store, auth, writes } = ctx;
-      if (r.tooMany('auth', 60)) return true;
+      if (r.tooMany('auth', 200)) return true;
       const token = await readTokenBody(req);
       if (pausedDoor(ctx, r, token)) return true;
       const rec = await auth.useToken(token, nowMs);
