@@ -1396,6 +1396,20 @@ describe('the clock closes the document (SPEC §4.6, Q467)', () => {
     expect(signed.record!.signatures.map((s) => [s.name, s.comment]))
       .toEqual([['Bo', 'I still think daily.'], ['Cy', '']]);
 
+    // -- and a signature must not empty the record on everybody else's page
+    // (issue #30 finding 1). Every 🥂 OK is a write, so the next 4s poll on
+    // every other open page is a *slim* view: it already holds the sealed
+    // records and asks for them to be left out. The record is built from the
+    // same outcomes, so skipping them left the closed document reading as
+    // nothing adopted and nothing in the backlog — at the one moment the
+    // whole room is looking at it.
+    const h = closed as MemberViewPayload & { recordsKey: number };
+    const polled = await (await fetch(`${base}/api/d/${slug}/view?since=${h.seq}.${h.eseq}` +
+      `&tv=${h.textVersion}&rk=${h.recordsKey}`, { headers: { cookie: bo } }))
+      .json() as MemberViewPayload & { slim: string[] };
+    expect(polled.slim).toContain('records');
+    expect(polled.record!.undecided.map((u) => u.raceId)).toEqual(rec.undecided.map((u) => u.raceId));
+
     // -- the mail: every member and invitee, once, and not again next minute
     const closedMails = () => readFileSync(join(dataDir, 'outbox.jsonl'), 'utf8')
       .split('\n').filter((l) => l.length > 0)

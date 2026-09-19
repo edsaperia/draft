@@ -34,6 +34,15 @@ import type { Span } from './record-spans.js';
  * `opts.records === false` skips the sealed records — the heaviest part of
  * a busy room's view, and one that changes only when a race resolves — for
  * a poll that already holds them (`recordsKey`, the slim view below).
+ *
+ * **Never on a closed document** (issue #30, 2026-09-19): the close's own
+ * `record` is built from those same outcomes, and it is not the page's to
+ * keep — every 🥂 OK is a write, so the next poll on every *other* open page
+ * is slim, and skipping the outcomes there handed the whole room a record
+ * with nothing adopted and an empty backlog at the moment they were all
+ * reading it. The loop's other output still drains into `records`, which the
+ * route deletes, so the answer stays slim on the wire; a closed room resolves
+ * nothing, so the cost is the loop body an open document already pays.
  */
 export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
   opts: { records?: boolean } = {}): {
@@ -432,7 +441,7 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
   // clause it was written for, and the reason, and none of what the hold-back
   // exists to withhold — no rival, no reading, no judge count, no floor.
   const earlyMine: Array<{ o: ReturnType<typeof api.outcomes>[number]; c: Candidate }> = [];
-  for (const o of opts.records === false ? [] : api.outcomes()) {
+  for (const o of opts.records === false && !engine.closed ? [] : api.outcomes()) {
     const c = engine.getCandidate(o.candidateId);
     if (c.patch === undefined) continue;
     if (o.outcome === 'retired' && stillRacing(c, o.version)) {
