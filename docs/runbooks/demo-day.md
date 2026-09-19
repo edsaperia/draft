@@ -46,15 +46,17 @@ night before (Ed's issues review, item 18: *one deploy Friday or Saturday, never
   the Back button spent it (#67) — is answered at the address itself: 📧 *Log In* mails a fresh
   one. Anybody on a Microsoft 365 or Proofpoint work address should use a personal one.
 - **Press OK on your welcomes as they arrive.** A member who has not is shown nothing that is
-  waiting (Q1478), and on a closed page never sees the record (#30 finding 2, Q1479 (a)).
+  waiting (Q1478; Ed, 2026-09-19: as built for this room, and said aloud).
 - **On a phone: keep it upright, and press ✓ rather than leaving a choice selected while you
   talk** — pull-to-refresh discards it (#73).
 
 ## The projector
 
-- The feed is `docs.vote/d/<slug>/feed`. **If it looks still, reload it** — a frozen feed looks
-  exactly like a live one (#68 finding 5).
-- **Do not open a ✖ record on the projector** — it can print `0% 👍` beside DECIDED (#66 finding 2).
+- The feed is `docs.vote/d/<slug>/feed`. Since the night before it says so itself when the host is
+  paused, when the store has stopped saving, or when its own poll was refused (#68); a reload is
+  still the first thing to try on a screen that looks wrong.
+- **A proposal that lost, or that the Founder refused, stays on the feed as *New proposal*** (Ed,
+  2026-09-19: left for this room). Only a proposal its author takes back leaves.
 
 ## If something goes wrong
 
