@@ -24,6 +24,27 @@
      face the membership sees, so the page takes them rather than restating them -->
 <link rel="stylesheet" href="/setup.css">
 <style>
+  /* **The feed is dark** (Ed, 2026-09-19: *the feed should be dark mode; better
+     to view on a projector*). The design system is deliberately single-theme
+     and light (Ed, 2026-08-14) and stays so: this is the same tokens given
+     other values **on this page alone**, so every rule that reads a token —
+     the navbar, a face's disc, the highlighter — follows without being
+     restated, and nothing the session-view draws can ever pick it up. Ground
+     near black and not black, since a projector turns pure black on white
+     text into glare; every pair here clears WCAG AA. */
+  :root {
+    color-scheme: dark;
+    --bg: #101317;
+    --fg: #ECEEF0;
+    --muted: #A4ADB6;
+    --border: #2C333B;
+    --light: #171B20;
+    --primary: #7DB2FF;
+    --primary-hover: #A3C8FF;
+    --primary-subtle: #1B2B44;
+    --ok: #45D08F;
+    --ins-bg: rgba(255, 214, 10, 0.30);
+  }
   /* the feed is one column of reading: the charter column's own measure */
   .feedwrap { max-width: 760px; margin: 0 auto; padding: var(--s4) var(--s4) var(--s5); }
   .navbar .wrap.feednav { max-width: 760px; align-items: center; }
@@ -56,6 +77,21 @@
   .ftext .lp:last-child { margin-bottom: 0; }
   /* what stood is reference, not the subject: cold, by the palette's rule */
   .ftext.stood { color: var(--muted); }
+  /* a short change's neighbours (Ed, 2026-09-19): the paragraphs either side,
+     quieter than what stood — smaller as well as cold, and unlabelled, since
+     they are where the change is and no part of it */
+  .ftext.fctx { color: var(--muted); font-size: var(--t-ui); margin: 0 0 var(--s3); opacity: 0.8; }
+  .fpart + .ftext.fctx { margin: var(--s3) 0 0; }
+  /* a passed entry's numbers: the record's own `rsub` register, one quiet line */
+  .fcounts { margin: var(--s3) 0 0; font-size: var(--t-small); color: var(--muted); }
+  /* **read from across a room**: on a window wide enough to be a projected one
+     the column and its text both step up the scale */
+  @media (min-width: 1200px) {
+    .feedwrap, .navbar .wrap.feednav { max-width: 920px; }
+    .ftext { font-size: var(--t-lead); }
+    .ftext.fctx, .fwhy .why, .fwhere { font-size: var(--t-body); }
+    .fcounts, .fwhen, .fwhy .name { font-size: var(--t-ui); }
+  }
   .fwhy { display: flex; gap: var(--s2); align-items: flex-start; margin: var(--s3) 0 0;
     padding-top: var(--s3); border-top: 1px solid var(--border); }
   .fwhy .who { flex: none; font-size: var(--t-lead); line-height: 1; }

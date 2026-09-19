@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 476
+  "entries": 482
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -24,15 +24,20 @@
   "feed.after": "A new clause, after",
   "feed.anonymous": "Anonymous",
   "feed.closed": "ƒ (dateWords) => 'Closed ' + dateWords",
+  "feed.counts": "ƒ (voted, roster, floor, approvals, abstained) =>\n      [voted + ' of ' + roster + ' weighed in',\n        approvals === null || approvals === undefined ? '' : approvals + ' preferred it',\n        abstained ? abstained + ' did not answer in time' : '',\n        floor === null || floor === undefined ? '' : 'quorum was ' + floor]\n        .filter(Boolean).join(' · ')",
+  "feed.days": "ƒ (n) => (n === 1 ? '1 day' : n + ' days')",
   "feed.decreed": "The Founder amended this",
   "feed.empty": "Nothing has been proposed yet.",
   "feed.first": "A new clause, first in its section",
+  "feed.hours": "ƒ (n) => (n === 1 ? '1 hour' : n + ' hours')",
   "feed.loading": "Loading…",
+  "feed.minutes": "ƒ (n) => (n === 1 ? '1 minute' : n + ' minutes')",
   "feed.missing": "There is no document at this address.",
   "feed.name": "Feed",
   "feed.notBegun": "The document has not begun. Proposals will appear here once it has.",
   "feed.nowStands": "The clause as it stands",
   "feed.passed": "Passed",
+  "feed.passedIn": "ƒ (durationWords) => 'Passed in ' + durationWords",
   "feed.proposed": "New proposal",
   "feed.put": "The proposal",
   "feed.redacted": "[redacted]",
@@ -41,6 +46,7 @@
   "feed.tabTitle": "ƒ (title) => title + ' — feed'",
   "feed.toDocument": "Open the document",
   "feed.top": "At the top of the document",
+  "feed.underMinute": "under a minute",
   "feed.unreachable": "The feed could not be reached. It will try again.",
   "grammar.commit.abstainIn": "ƒ (hhmm) => '💤 abstain in ' + hhmm",
   "grammar.commit.bin": "Clears your choice and closes — there is nothing here to put back",

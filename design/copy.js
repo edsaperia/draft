@@ -961,6 +961,24 @@ window.COPY = (function () {
     // an entry's eyebrow, by kind
     proposed: 'New proposal',
     passed: 'Passed',
+    // **how long it took** (Ed, 2026-09-19: *"Passed in 23 minutes"*), from
+    // the moment it was proposed; the two largest units and no more
+    passedIn: (durationWords) => 'Passed in ' + durationWords,
+    underMinute: 'under a minute',
+    minutes: (n) => (n === 1 ? '1 minute' : n + ' minutes'),
+    hours: (n) => (n === 1 ? '1 hour' : n + ' hours'),
+    days: (n) => (n === 1 ? '1 day' : n + ' days'),
+    // **a passed entry's numbers are the passed card's** (Ed, same message:
+    // *the same stats as one on a passed card*): `record.counts`' sentence
+    // word for word, less its last clause — *you said* — since nobody watching
+    // a feed has a vote in it. A clause whose number an older log does not
+    // carry is omitted, as the record omits it.
+    counts: (voted, roster, floor, approvals, abstained) =>
+      [voted + ' of ' + roster + ' weighed in',
+        approvals === null || approvals === undefined ? '' : approvals + ' preferred it',
+        abstained ? abstained + ' did not answer in time' : '',
+        floor === null || floor === undefined ? '' : 'quorum was ' + floor]
+        .filter(Boolean).join(' · '),
     decreed: 'The Founder amended this',
     // where a change is, under the eyebrow: the section, or the top
     top: 'At the top of the document',

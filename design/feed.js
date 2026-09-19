@@ -30,6 +30,7 @@
   let eseq = null;          // the engine log length the page last drew
   let seen = null;          // keys drawn so far; null until the first draw
   let last = null;          // the last full answer
+  let roster = 0;           // the membership's size, a passed entry's *of E*
 
   const two = (n) => (n < 10 ? '0' : '') + n;
   const dayOf = (ms) => { const d = new Date(ms); return d.getDate() + ' ' + MONTHS[d.getMonth()]; };
@@ -41,6 +42,26 @@
     '<div class="fpart"><p class="eyebrow">' + esc(label) + '</p>' +
     '<div class="ftext' + (cls ? ' ' + cls : '') + '">' + html + '</div></div>';
 
+  // **A short change is read between its neighbours** (Ed, 2026-09-19: *if the
+  // paragraph that changed is short, the previous and next paragraphs should be
+  // shown in the feed as context*). Short is both wordings under this many
+  // characters — about three lines at the feed's measure; past it the change is
+  // its own context, and its neighbours would only push the next entry away.
+  const SHORT = 280;
+  const ctx = (line) => (line
+    ? '<div class="ftext fctx">' + C.wordingHtml(null, line) + '</div>' : '');
+
+  // how long a proposal took to pass, in its two largest units
+  function tookWords(ms) {
+    const min = Math.floor(ms / 60000);
+    if (min < 1) return T.underMinute;
+    if (min < 60) return T.minutes(min);
+    const h = Math.floor(min / 60);
+    if (h < 24) return T.hours(h) + (min % 60 ? ' ' + T.minutes(min % 60) : '');
+    const d = Math.floor(h / 24);
+    return T.days(d) + (h % 24 ? ' ' + T.hours(h % 24) : '');
+  }
+
   // one changed place: what stood there, then what is put there
   function changeHtml(e, ch) {
     const before = text(ch.before);
@@ -51,13 +72,17 @@
     const stood = ch.before.length
       ? part(T.stood, C.wordingHtml(null, before), 'stood')
       : (ch.above ? part(T.after, C.wordingHtml(null, ch.above), 'stood') : part(T.first, '', 'stood'));
-    return '<div class="fchange">' + where + stood +
+    const short = before.length <= SHORT && after.length <= SHORT;
+    // an insertion's `above` is already its place, said under its own label
+    return '<div class="fchange">' + where +
+      (short && ch.before.length ? ctx(ch.above) : '') + stood +
       // **always marked** (the deadlock card's rule, `force`): the floor stops a
       // lane being lit end to end beside its incumbent, and here what stood is
       // directly above and comparison is the whole point of the entry
       part(put, e.kind !== 'proposed' && !after.trim()
         ? '<div class="lp removed">' + esc(T.removed) + '</div>'
-        : C.wordingHtml(ch.before.length ? before : null, after, true)) + '</div>';
+        : C.wordingHtml(ch.before.length ? before : null, after, true)) +
+      (short ? ctx(ch.below) : '') + '</div>';
   }
 
   function whoHtml(e) {
@@ -71,7 +96,9 @@
   }
 
   function entryHtml(e, arriving) {
-    const label = e.kind === 'proposed' ? T.proposed : e.kind === 'adopted' ? T.passed : T.decreed;
+    const o = e.outcome;
+    const label = e.kind === 'proposed' ? T.proposed
+      : e.kind === 'adopted' ? (o ? T.passedIn(tookWords(o.tookMs)) : T.passed) : T.decreed;
     const cls = e.kind === 'proposed' ? 'proposed' : e.kind === 'adopted' ? 'passed' : 'decreed';
     const who = whoHtml(e);
     const why = (e.rationale || '').trim();
@@ -79,6 +106,8 @@
       '<div class="fhead"><p class="eyebrow">' + esc(label) + '</p>' +
       '<time class="fwhen" datetime="' + new Date(e.t).toISOString() + '">' + timeOf(e.t) + '</time></div>' +
       e.changes.map((ch) => changeHtml(e, ch)).join('') +
+      // the passed card's own numbers, where the entry carries them
+      (o ? '<p class="fcounts">' + esc(T.counts(o.voted, roster, o.floor, o.approvals, o.abstained)) + '</p>' : '') +
       (who || why
         ? '<div class="fwhy">' + (who ? who.face : '') + '<div class="body">' + (who ? who.name : '') +
           (why ? '<span class="why">' + esc(why) + '</span>' : '') + '</div></div>'
@@ -88,6 +117,7 @@
 
   function draw(v) {
     last = v;
+    roster = v.members || 0;
     document.title = T.tabTitle(v.title || 'docs.vote');
     $('feedname').textContent = v.title || '';
     $('feedword').textContent = T.name;
@@ -140,10 +170,13 @@
   const at = (h, mi) => new Date(2026, 8, 19, h, mi).getTime();
   draw({
     title: 'The Hollow Oak Club Charter', begun: true, closed: null, canRead: true, holding: null,
+    members: 19,
     entries: [
       { t: at(15, 42), kind: 'adopted', candidateId: 'c7', author: null,
+        outcome: { voted: 11, approvals: 8, floor: 5, abstained: 3, tookMs: 71 * 60000 },
         rationale: 'Nobody can find the key on a Sunday, and the list on the door is three treasurers out of date.',
-        changes: [{ heading: 'The Shed', above: null,
+        changes: [{ heading: 'The Shed', above: 'The shed holds the mower, the ladders and the marquee.',
+          below: 'Anything borrowed from the shed is written in the book by the door.',
           before: ['The shed key is held by the **Treasurer**.'],
           after: ['The shed key is held by the **Treasurer**, and a second hangs in the kitchen for any member to sign out.'] }] },
       { t: at(15, 20), kind: 'proposed', candidateId: 'c9',
