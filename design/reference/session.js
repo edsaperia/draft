@@ -821,9 +821,9 @@
   // units are the Fluent Flat drawings since Q1401 (👍 from 2026-09-16, Ed:
   // *👍 should be drawn*), through the one renderer, so the pair is the same
   // picture on every machine. A third unit, ✒️ for the line a reading had to
-  // cross, went with the bar (Q1362).
+  // cross, went with the bar (Q1362), and 👍 itself with the reading it
+  // stood beside (Q1481, Ed 2026-09-19): 👤 is the one unit left.
   const PEOPLE = '<span class="unit">' + glyphHtml('👤') + '</span>';
-  const JUDG = '<span class="unit">' + glyphHtml('👍') + '</span>';
   // did anything displace the incumbent?
   const carried = (g) => fieldOf(g).some((c) => c.won);
   // Whatever wants you most keeps its place on the screen whatever else is
@@ -930,7 +930,11 @@
             // wrote this* and the entry is the accent blue; a word saying it a third
             // time is the surface reading its own glossary aloud. The place count
             // survives, because it says *which* place and nothing else does.
-            : '<span class="ql">' + markHtml('propose') + esc(plainLabel(e.label || g.qLabel)) +
+            // …and the same mark once it is proposed (issue #66): this branch
+            // hard-coded ✏️, so a stranded proposal of yours wore ↻ in the
+            // gutter and the contents rail and ✏️ here, at the same moment.
+            // SURFACE §6 is one alphabet in all three columns.
+            : '<span class="ql">' + markHtml(markKindOf(g)) + esc(plainLabel(e.label || g.qLabel)) +
               (e.of > 1 ? '<span class="qv"> · ' + T.rail.placesOf(e.n, e.of) + '</span>' : '') + '</span>') +
           '</button></li>';
         continue;
@@ -2081,9 +2085,6 @@
     // *this one* to a reader who could already see it at the top of a ranked
     // list, under a green ✔, at the head of a card (Ed: *remove the box that it
     // is in*).
-    // the highest any proposal reached against the text it was measured on —
-    // the number the bar was actually being asked about
-    const best = Math.max(0, ...field.map((c) => c.p ?? 0));
     // **The head is the clause, and the clause is not always the top of the
     // ranking.** `ranked.slice(1)` assumed it was — true on an adopted card,
     // where the winner both is the clause and leads the field, and false on a
@@ -2159,11 +2160,16 @@
       // no line to cross, so there is nothing to compare the reading against,
       // and the ✒️ that stood for it here — the one place on the surface where
       // the pen glyph did not mean the Founder's own hand — goes with it.
+      // **And the reading went after it** (Q1481, Ed 2026-09-19: *is this
+      // percentage still accurate?*). It was the ranking model's confidence
+      // that the winner beats the text it replaced — the number the bar was
+      // asked about, and since Q1439 the number nothing is asked about: what
+      // decides is the count, which the line beneath states in full. A reader
+      // took *86% 👍* for a share of voters, which it never was. The
+      // percentages on the ranked field below stay: there they order what was
+      // tried.
       '<div class="rechead">' +
-      '<span>' + (und ? T.record.undecided : T.record.decided) + ' · ' + (d.judges ?? 0) + '/' + ROSTER + PEOPLE +
-      // an undecided race nobody read prints no reading: 0% is a number about
-      // nothing
-      (und && !(best > 0) ? '' : ' · ' + pct(best) + JUDG) + '</span>' +
+      '<span>' + (und ? T.record.undecided : T.record.decided) + ' · ' + (d.judges ?? 0) + '/' + ROSTER + PEOPLE + '</span>' +
       '<span class="sub">' + esc(d.when || '') + '</span></div>' +
       // **The counts are printed, not hovered** (Q1452, Ed 2026-09-18: *print the
       // count line on the card*): the sentence was a `title` on the head, which a
@@ -2559,10 +2565,6 @@
     );
   }
 
-  // Q440 (2026-08-21): 🛡️ held on the Text — a live item carries crownWaits,
-  // and the card says a carried change waits on the Founder before it lands
-  const crownNote = (s) => (s.crownWaits
-    ? '<p class="setnote">' + T.crown.waits + '</p>' : '');
   // **A race waiting behind a park on the same clause** (SURFACE E36, R-100;
   // Ed, 2026-09-09, Q1015): the batch passes it over until the Founder
   // answers a park it overlaps, and every card the race can open says so in
@@ -2718,7 +2720,7 @@
         fieldHtml(
           proposalHtml(sv, { v: 'a', html: wordingHtml(cur, sv.race.a.text), why: sv.race.a.rationale, by: sv.race.a.by }) +
           proposalHtml(sv, { v: 'b', html: wordingHtml(cur, sv.race.b.text), why: sv.race.b.rationale, by: sv.race.b.by }), 2) +
-        reviseNote(sv) + crownNote(sv) + parkNote(sv) +
+        reviseNote(sv) + parkNote(sv) +
         // The one thing a race card cannot say any other way: the pair on it
         // is two challengers, so nothing on the card says *the clause above
         // is fine as it is*, and a reader could reasonably think one of them
@@ -2791,7 +2793,7 @@
                           chips: chipsFor(key, sv.id) })) +
       groundNote(sv) +
       fieldHtml(proposalHtml(sv, { v: 'approve', html: prop, why: sv.rationale, by: sv.by, edit: noEdit })) +
-      reviseNote(sv) + crownNote(sv) + parkNote(sv) +
+      reviseNote(sv) + parkNote(sv) +
       commitRowHtml(sv) +
       '</div>'
     );
@@ -3448,8 +3450,17 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   // Patched in place on every lane input — never a render under a caret — by
   // the same two readers the draw uses, so the two cannot disagree; and a
   // draft typed back to its origin greys them again, which it never did.
+  // **And not only in edit mode** (Q1476; Ed's screenshot from the tea room,
+  // 2026-09-19: *why can't I submit — after a wait then I could*, the wallet
+  // not empty). ✏️ *propose edit* on a proposal's own wording opens a draft
+  // without entering edit mode, seeded with that wording — so its card is
+  // born reading *nothing has changed yet*, exactly as a gap's is — and this
+  // returned at once wherever `EDITING()` was false, leaving the ✏️ asleep
+  // until some other render redrew it. The row is drawn only in edit mode, so
+  // outside it the row's selectors find nothing and the card's own commit is
+  // all this touches. Guard: `scripts/repro/propose-edit-wakes.mjs`.
   function syncProposeCtls() {
-    if (!doc || !EDITING() || !MAY_PROPOSE() || closedMode) return;
+    if (!doc || !MAY_PROPOSE() || closedMode) return;
     const rs = draftRowState();
     const pt = proposeCtlTitles(draftOf());
     const idle = T.row.idle;
@@ -5065,8 +5076,21 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   // reached for them). What makes this safe to re-run is that the
   // capability is part of the charter column's data key, so an
   // acknowledgment re-keys and the full set is handed back in.
+  //
+  // **Two things this never governed** (Q1479 (a), Ed 2026-09-19; issue #30).
+  // *A closed document*: the rule above is *no task before the power it
+  // needs*, and on a closed page there is no ⚖️ left to press — the rail
+  // keeps only 🥂 — so every `rec:` the server sent would wait for ever and
+  // the final document would read as still being decided to anybody whose OK
+  // is in another browser. Once the clock has run nothing waits behind ⚖️:
+  // the record is not a task, it is what the document ended up saying.
+  // *The Founder's amendment*: an `amd:` card is a ✒️ act reported (SURFACE
+  // E35, R-058), not a race, and ⚖️ is not the action it asks for. Neither
+  // is `mine`, which would send both down the *yours* road — force-kept, ✏️,
+  // 🗑️ to withdraw — and none of that is true of a sealed record.
   const KEPT_UNJUDGED = new Set(['park', 'draft', 'crown']);
-  const withheld = (g) => !KEPT_UNJUDGED.has(g.kind) && !g.mine && !MAY_JUDGE();
+  const withheld = (g) => !docClosed && !g.amendment &&
+    !KEPT_UNJUDGED.has(g.kind) && !g.mine && !MAY_JUDGE();
 
   // **…but the document does not read as empty while they wait** (Q1413, Ed
   // 2026-09-17, from the proposal-shapes walk's surprise: a new member of a
@@ -5258,6 +5282,23 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   // them in here; the page is rebuilt wholesale, as after any render.
   function setData(next) {
     const textChanged = !!(next && next.DOC && next.DOC !== DOC);
+    const prevDoc = DOC;
+    // **The items are about the document that arrives with them, not the one
+    // it replaces** (issue #66, 2026-09-19). A host that hands in both passes
+    // its items as a thunk, because an argument is evaluated before the call:
+    // the derivation reads the bound document — each site's remembered
+    // wording (`origin`) and every entry's label — so a caller that computed
+    // the items itself built them against the *previous* text, one render
+    // behind the column beside them. A site would then be keyed in the new
+    // line space and its wording looked up in the old column: blank where the
+    // key is new, somebody else's clause where a line went away above it, and
+    // that stale wording read straight back by the guard the ✏️ Re-make press
+    // is refused by. Resolved here, after the document moves and before
+    // `bindData` replaces SUGGS, which the derivation reads to find the
+    // candidate being re-made. One `setData`, because each one is a whole
+    // render.
+    let suggs = (next && next.SUGGS) || SUGGS;
+    if (typeof suggs === 'function') { DOC = (next && next.DOC) || DOC; suggs = suggs(); }
     // **An unproposed draft is local, and has to survive a data swap** (Ed,
     // 2026-08-21: *when I ✒️ any constitutional question the text
     // disappears*). Live, SUGGS is rebuilt from the server on every render
@@ -5267,13 +5308,11 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // is the open one; this holds whatever is open, which is the case that
     // was losing work. It is the same rule the surface already keeps for
     // every other provisional value: closing a card is not discarding.
-    let suggs = (next && next.SUGGS) || SUGGS;
     if (next && next.SUGGS) {
       const mine = SUGGS.find((x) => x.id === DRAFT_ID && x.unproposed);
       if (mine && !suggs.some((x) => x.id === DRAFT_ID)) suggs = suggs.concat([mine]);
     }
     const held = heldCaret();
-    const prevDoc = DOC;
     bindData((next && next.DOC) || DOC, suggs, prevDoc);
     renderAll();
     if (held) restoreCaret(held);

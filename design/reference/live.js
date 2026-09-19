@@ -324,7 +324,7 @@ window.LIVE = (function () {
     const { amFounder, applicantAsView, authorBy, avHtml, constituted, csState, cs_titleNow,
       devInboxButton, effMAns, esc, founderInfo, hydrateApplicant, ladderBar, loadGrants,
       mayApply, midOf, motionRaceSettingOf, msToLocal, now, pkeyOf, pressInFlight,
-      proseText, pwPair, relabel,
+      proseText, relabel,
       render, setStranger, srcDivs, strangerAsView, syncFromCs, syncProseRow, syncWallet,
       textDivs, viewerId } = env;
     // A ConstitutionSession lookalike over the last-fetched view: the page's
@@ -1110,11 +1110,6 @@ window.LIVE = (function () {
 
     function itemsFromView(v) {
       const lines = String(v.text || '').split(/\n/);
-      // the Text's shield (Q440): a carried change waits on the Founder's OK —
-      // the cards say so while it is held (this binding was lost in the glyph
-      // batch's stash detour; every live race threw on it)
-      let textAssent = false;
-      try { textAssent = !!pwPair('text').a; } catch (e) { textAssent = false; }
       const cards = v.raceCards || [];
       // **The abstention clock arrives in the server's ms and is read in
       // this browser's** (Q1460): the same offset the topbar countdown uses
@@ -1218,7 +1213,6 @@ window.LIVE = (function () {
           // you have nothing left to say here, and a note on every card
           blockedByPark: r.blockedByPark ? PARK.blocked : false,
           deadlocked: !!r.deadlocked,
-          crownWaits: textAssent,
           // **when your silence here becomes an abstention** (Q1460): the
           // seat's own deadline, on this browser's clock. The server sends it
           // while this seat is awaited on the race's approval pair and has
@@ -1742,7 +1736,19 @@ window.LIVE = (function () {
       const hunksOf = (d) => {
         const all = env.cs.text === '' ? [] : String(env.cs.text).split('\n');
         const nLines = all.length;
-        return d.sites.map((site) => {
+        // **Only the places that changed go out** (issue #43's page half;
+        // Q1479 (b), Ed 2026-09-19). A site typed into and put back survives
+        // with its origin's own wording (Q1382: an unchanged site is kept),
+        // and the row beside it already says *1 place changed* — but every
+        // site was sent, so the untouched clause joined the proposal's
+        // footprint, made it a rival of whatever else was running there, and
+        // stranded one of the two when either carried, over a change nobody
+        // made. `draftRowState`'s own test, so what goes out is what the row
+        // counts; it also stops an empty gap sending one blank line. A site
+        // with no remembered wording is sent as it always was.
+        const changed = (site) => !Array.isArray(site.origin) ||
+          site.text !== site.origin.map((x) => x.text).join('\n');
+        return d.sites.filter(changed).map((site) => {
           const ls = site.text.split('\n');
           // a **gap site** (backlog 204) is a pure insertion: `start === end`
           // at the line the gap stands before, clamped to the text's end

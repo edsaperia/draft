@@ -878,7 +878,13 @@
       charterKey = key;
       SESSION.setData({
         DOC: !on ? [] : (FIX ? FIX.DOC : blocksOf(cs.text, !cs.closed)).concat(closedBlocks()),
-        SUGGS: !on ? [] : LIVE_HOOKS.items ? LIVE_HOOKS.items() : FIX ? FIX.SUGGS.concat(FIX.CLOSED ? FIX.CLOSED.items : []) : [],
+        // **the items are handed in unbuilt** (issue #66): this is the one
+        // call that moves the document and its items together, and an
+        // argument is evaluated before the call — so `items()` here would
+        // derive every site's remembered wording and every label from the
+        // text the line above is replacing. `setData` runs the thunk once the
+        // new document is bound.
+        SUGGS: !on ? [] : LIVE_HOOKS.items ? LIVE_HOOKS.items : FIX ? FIX.SUGGS.concat(FIX.CLOSED ? FIX.CLOSED.items : []) : [],
       });
     } else if (on && LIVE_HOOKS.items && !typing) {
       SESSION.setData({ SUGGS: LIVE_HOOKS.items() });
@@ -2096,7 +2102,16 @@
     // asked about at once, so the commit is never still dark by the time
     // anybody has read the card
     slugCheckT = setTimeout(() => {
-      fetch('/api/slug/' + encodeURIComponent(slug)).then((r) => r.json()).then((res) => {
+      // **A refusal is not an answer** (issue #69, F2). The 429 the address
+      // door writes when a room of founders shares one venue address is
+      // valid JSON with no `available` in it, so the read below made it
+      // *taken*, for every address, for the ten minutes of the window, and
+      // `slugSeen` made it stick with the commit dark. Every non-2xx takes
+      // the `.catch` below instead — the defence Q534c already wrote for
+      // exactly this dead end.
+      fetch('/api/slug/' + encodeURIComponent(slug))
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+        .then((res) => {
         slugAsking = null;
         if (S.slug !== slug) return;
         // **The machine may pick the address, but it must say so** (Q534c,
@@ -3617,7 +3632,20 @@
     // Pre-save the *card* still opens beside the big heading rather than
     // here, so the clause stands on its own while it is open.
     if (!cs && !settled(card('title'))) return '';
-    const chips = cs ? [card('title')].concat(pwTabsFor('title')) : [card('title')];
+    // **The pile is every setting's pile** (Q1474, Ed's screenshot 2026-09-19:
+    // *name the document proposal not showing correctly*). This built its own
+    // list — the 🪶 tab and the two power tabs — so a motion running on the
+    // title had a rail entry and no tab to stand beside, its records filed
+    // nowhere, and `anchorOf` fell through to its last resort and laid the
+    // entry's wire on the big heading. `ctx.chipsFor` is the one builder every
+    // other clause goes through (band.js's `para`), and it already knows the
+    // whole pile: the rule, the answer task, the power tabs, one tab per
+    // running motion (Q1367, E10) and the filed records behind them (Q942).
+    // `host` is the rule's own key, as `para` sets it, so the 🪶 tab stays at
+    // the front whatever is asking behind it (Q1299). Pre-save there is no
+    // module, no motion and no power to draw, so that branch is untouched.
+    const chips = cs ? ctx.chipsFor(card('title')) : [card('title')];
+    chips.host = 'title';
     const openHere = (cs || settled(card('title'))) && chips.find((c) => S.open === c.k);
     if (openHere) return h.paraWith(openHere, chips);
     return '<div class="cpara">' + h.pile(chips) +
