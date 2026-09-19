@@ -35,7 +35,7 @@
   const two = (n) => (n < 10 ? '0' : '') + n;
   const dayOf = (ms) => { const d = new Date(ms); return d.getDate() + ' ' + MONTHS[d.getMonth()]; };
   const timeOf = (ms) => { const d = new Date(ms); return two(d.getHours()) + ':' + two(d.getMinutes()); };
-  const keyOf = (e) => e.kind + ':' + e.candidateId;
+  const keyOf = (e) => e.kind + ':' + (e.candidateId || e.motionId || e.setting + '@' + e.t);
   const text = (lines) => (lines || []).join('\n');
 
   // **Before | after, side by side** (the designer's pass, Ed 2026-09-19). One
@@ -65,6 +65,53 @@
     if (h < 24) return T.hours(h) + (min % 60 ? ' ' + T.minutes(min % 60) : '');
     const d = Math.floor(h / 24);
     return T.days(d) + (h % 24 ? ' ' + T.hours(h % 24) : '');
+  }
+
+  // ---- a rule's value as the constitution's own sentence ---------------------
+  // The ladder settings read `RULES` through the card grammar's `clauseOf`, as
+  // every card does; the ones whose sentence carries a number or a date are
+  // spelled from `COPY.feed.rule`, and 👥's from the page's own `quorumRule`.
+  // A value this cannot word gives '' and the entry is not drawn: a spectator
+  // is never shown a raw value.
+  const P = window.COPY.page;
+  const PAGE_KEY = { link: 'slug' };
+  let ctxOf = { founderIsMember: true, admissionPrice: 'assembly' };
+  function dripPhrase(mins) {
+    const m = +mins; if (!(m > 0)) return '';
+    const p = m % 1440 === 0 ? [m / 1440, 'days'] : m % 60 === 0 ? [m / 60, 'hours'] : [m, 'minutes'];
+    return p[0] === 1 ? T.rule.unit[p[1]] : T.rule.units(p[0], p[1]);
+  }
+  function ruleWords(setting, v, spell) {
+    if (!v) return '';
+    switch (setting) {
+      case 'chamber': case 'judgments': case 'authorship': return C.clauseOf(setting, v.rung, ctxOf);
+      case 'admission': case 'removal': return C.clauseOf(setting, v.price, ctxOf);
+      case 'applications': return C.clauseOf('applications', v.apply ? 'apply' : 'invite', ctxOf);
+      case 'quorum': return v.form === 'count' ? P.quorumRule.count(v.n)
+        : P.quorumRule.share(v.n + '%', P.val.quorumTail(Math.ceil((v.n / 100) * roster), roster));
+      case 'rate': return dripPhrase(v.dripMinutes) ? T.rule.rate(dripPhrase(v.dripMinutes)) : '';
+      case 'lapse': return v.afterMs === null ? T.rule.lapseNever : (spell ? T.rule.lapseAfter(spell) : '');
+      case 'ending': return v.endsAtMs === null ? T.rule.endingNever
+        : T.rule.endingAfter(new Date(v.endsAtMs).toLocaleString(undefined,
+          { weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }).replace(' ', ' at '));
+      case 'title': return v.text ? P.titledLead + v.text + '.' : '';
+      case 'link': return v.slug ? T.rule.address(v.slug) : '';
+      default: return '';
+    }
+  }
+  const nounOf = (setting) => { const c = P.cards[PAGE_KEY[setting] || setting]; return (c && c.n) || ''; };
+  const sentence = (words) => C.glyphify(esc(words));
+
+  // a rule's change: the rule as it stood on the left, what is put on the right
+  function ruleHtml(e) {
+    const to = ruleWords(e.setting, e.to, e.toSpell);
+    if (!to) return '';
+    const from = ruleWords(e.setting, e.from, e.fromSpell);
+    const noun = nounOf(e.setting);
+    return '<div class="fchange"><p class="fwhere">§ ' + esc(T.constitution) + (noun ? ' · ' + esc(noun) : '') + '</p>' +
+      '<div class="fcols">' + label(T.ruleStood, 'g-lb') + cell('<div class="lp">' + sentence(from || T.noRule) + '</div>', 'g-st', 'stood') +
+      label(e.kind === 'proposed' ? T.put : T.ruleNow, 'g-la') + cell(C.glyphify(C.wordingHtml(from || null, to, true)), 'g-pt') +
+      '</div></div>';
   }
 
   // one changed place: what stood there on the left, what is put there on the right
@@ -104,7 +151,13 @@
     const o = e.outcome;
     // **the title says the whole outcome** (Ed, 2026-09-19), as a sealed
     // record's head does: what happened, then the passed card's own numbers
-    const title = e.kind === 'proposed' ? T.proposed
+    const rule = !!e.setting;
+    const body = rule ? ruleHtml(e) : e.changes.map((ch) => changeHtml(e, ch)).join('');
+    if (rule && !body) return '';
+    const title = rule ? (e.kind === 'proposed'
+      ? (e.route === 'constitutional' ? T.proposedConstitutional : T.proposed)
+      : e.kind === 'adopted' ? T.passedIn(tookWords(e.tookMs || 0)) : T.decreed)
+      : e.kind === 'proposed' ? T.proposed
       : e.kind === 'adopted'
         ? (o ? T.titled(T.passedIn(tookWords(o.tookMs)), T.counts(o.voted, roster, o.floor, o.approvals, o.abstained))
           : T.passed)
@@ -113,7 +166,9 @@
     // lifecycle*): the rail's own alphabet, drawn by the card grammar — 💡 an
     // idea is on the table, ✔ the charter changed here — and ✒️, the Founder's
     // own hand, on an amendment
-    const mark = e.kind === 'proposed' ? C.markHtml('needs')
+    // a proposal about a rule wears **the rule's own icon** (Ed, 2026-09-19)
+    const mark = rule ? '<span class="qmark" aria-hidden="true">' + C.glyphHtml(e.glyph) + '</span>'
+      : e.kind === 'proposed' ? C.markHtml('needs')
       : e.kind === 'adopted' ? C.markHtml('adopted')
         : '<span class="qmark" aria-hidden="true">' + C.glyphHtml('✒️') + '</span>';
     const cls = e.kind === 'proposed' ? 'proposed' : e.kind === 'adopted' ? 'passed' : 'decreed';
@@ -128,15 +183,16 @@
       // avatar)*): a speech bubble under the title, level with the face in the
       // margin and pointing at it. The mark rides inside the title so a phone,
       // which has no rule for it to sit on, can set it inline.
-      '<div class="fmain"><p class="ftitle"><span class="fnode">' + mark + '</span>' + esc(title) + '</p>' +
+      '<div class="fmain"><p class="ftitle"><span class="fnode">' + mark + '</span>' + sentence(title) + '</p>' +
       (why ? '<p class="fwhy">' + esc(why) + '</p>' : '') +
-      e.changes.map((ch) => changeHtml(e, ch)).join('') +
+      body +
       '</div></article>';
   }
 
   function draw(v) {
     last = v;
     roster = v.members || 0;
+    ctxOf = { founderIsMember: v.founderIsMember !== false, admissionPrice: v.admissionPrice || 'assembly' };
     document.title = T.tabTitle(v.title || 'docs.vote');
     $('feedname').textContent = v.title || '';
     $('feedword').textContent = T.name;
@@ -205,6 +261,17 @@
           below: 'Anything borrowed from the shed is written in the book by the door.',
           before: ['The shed key is held by the **Treasurer**.'],
           after: ['The shed key is held by the **Treasurer**, and a second hangs in the kitchen for any member to sign out.'] }] },
+      // proposals about the rules, wearing the rule's own icon: one put to
+      // everybody, one the membership passed, and one whose value is a spell
+      { t: at(15, 35), kind: 'proposed', motionId: 'mo-4', setting: 'chamber', glyph: '🌍', route: 'constitutional',
+        from: { rung: 'closed' }, to: { rung: 'link' }, author: null, changes: [],
+        rationale: 'The allotment society keeps asking what we decided. Let them read it.' },
+      { t: at(15, 28), kind: 'adopted', motionId: 'mo-3', setting: 'rate', glyph: '⏱️', route: 'ordinary',
+        from: { grant: 3, cap: 3, dripMinutes: 240 }, to: { grant: 3, cap: 3, dripMinutes: 60 }, tookMs: 46 * 60000,
+        author: null, changes: [], rationale: 'Four hours between proposals is a long afternoon.' },
+      { t: at(15, 24), kind: 'proposed', motionId: 'mo-5', setting: 'lapse', glyph: '💤', route: 'constitutional',
+        from: { afterMs: null }, to: { afterMs: 1209600000 }, toSpell: '14 days', author: null, changes: [],
+        rationale: 'Half of us are away all August and the quorum should not wait for them.' },
       { t: at(15, 20), kind: 'proposed', candidateId: 'c9',
         author: { name: 'Marguerite Okafor', picture: 'e🦉', erased: false },
         rationale: 'A quorum of five was written when we were forty. We are nineteen.',

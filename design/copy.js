@@ -230,6 +230,20 @@ window.COPY = (function () {
       // it is written against what now stands.
       drafted: 'The document changed here, and your draft could not be carried across to the new wording — write it against the clause as it now stands.',
     },
+    // **what a draft's card says when its press sent nothing or came back
+    // refused** (Ed, 2026-09-19: *yes*, move them — they were five literals in
+    // live.js, the first of them in three copies). Two ways the text can have
+    // moved under a draft — the page's own check before the press (Q1463) and
+    // the host's stale-version answer after it — read as one sentence, because
+    // to the member they are one event; the verb follows the act, ✏️ propose
+    // or ✒️ amend.
+    refusal: {
+      movedPropose: 'The text moved while you were writing — your draft is kept; read the new wording and propose again.',
+      movedAmend: 'The text moved while you were writing — your draft is kept; read the new wording and amend again.',
+      notProposed: (reason) => 'That could not be proposed: ' + reason + '.',
+      notAmended: (reason) => 'That could not be amended: ' + reason + '.',
+      noAnswer: 'the server did not answer',
+    },
     // the gap a draft stands in, named for the rail and the editing head
     gap: {
       atStart: 'A new clause at the start',
@@ -999,6 +1013,33 @@ window.COPY = (function () {
     founder: 'The Founder',
     anonymous: 'Anonymous',
     redacted: '[redacted]',
+    // **a proposal about a rule** (Ed, 2026-09-19: *of course motions on
+    // settings should appear in the feed* … *proposals on settings should have
+    // that setting's icon instead of 💡*). The title says which way it was put,
+    // since *all members must agree* is a different thing to watch than a vote;
+    // the place is the constitution and the setting's own noun (`page.cards`).
+    proposedConstitutional: 'New constitutional proposal 🏛️',
+    constitution: 'Constitution',
+    ruleStood: 'The rule as it stood',
+    ruleNow: 'The rule as it stands',
+    noRule: 'No rule had been set.',
+    // **the rules' own sentences, for the settings whose sentence is a number
+    // or a date.** The ladder settings read `RULES` through `clauseOf` like
+    // every card; these are spelled by the page's own clause writers
+    // (`ENDING_RULE`, `LAPSE_RULE`, `RATE_RULE` in session-view.html, and
+    // `page.quorumRule` here), word for word — two homes for one sentence
+    // until the page reads these, which is a change to the regular page and
+    // waits for its own pass.
+    rule: {
+      endingNever: 'Changes to the document may be made perpetually.',
+      endingAfter: (when) => 'No more changes to the document may be made after ' + when + '.',
+      lapseNever: 'Inactive members never lapse and are still counted towards votes.',
+      lapseAfter: (spell) => 'After ' + spell + ', inactive members lapse and automatically abstain from votes.',
+      rate: (phrase) => 'Members may make a new proposal ✏️ every ' + phrase + '.',
+      unit: { days: 'day', hours: 'hour', minutes: 'minute' },
+      units: (n, unit) => n + ' ' + unit,
+      address: (slug) => 'The document lives at docs.vote/d/' + slug + '.',
+    },
     // the page's states
     loading: 'Loading…',
     notBegun: 'The document has not begun. Proposals will appear here once it has.',

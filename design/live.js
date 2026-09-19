@@ -1775,7 +1775,10 @@ window.LIVE = (function () {
       //
       // The sentence is the one a stale version already gets, and it is true
       // in exactly the same way: the text moved while you were writing.
-      const MOVED_ON = 'The text moved while you were writing — your draft is kept; read the new wording and propose again.';
+      // the draft's refusal sentences, the copy file's (`session.refusal`): read
+      // here, in the scope the three hooks below share
+      const REFUSAL = window.COPY.session.refusal;
+      const MOVED_ON = REFUSAL.movedPropose;
       const sameLine = (a, b) => String(a == null ? '' : a).replace(/^(#{1,3}|-)\s+/, '$1 ').replace(/\s+$/, '')
         === String(b == null ? '' : b).replace(/^(#{1,3}|-)\s+/, '$1 ').replace(/\s+$/, '');
       env.LIVE_HOOKS.misaimed = (d) => {
@@ -1831,8 +1834,8 @@ window.LIVE = (function () {
             const stale = /targets version/.test((res && res.error) || '');
             back.id = DRAFT_ID; back.unproposed = true;
             back.refusal = stale
-              ? 'The text moved while you were writing — your draft is kept; read the new wording and amend again.'
-              : 'That could not be amended: ' + ((res && res.error) || 'the server did not answer') + '.';
+              ? REFUSAL.movedAmend
+              : REFUSAL.notAmended((res && res.error) || REFUSAL.noAnswer);
             if (!SESSION.SUGGS.includes(back)) SESSION.SUGGS.push(back);
             SESSION.setData({ SUGGS: itemsFromView(env.cs.v) });
             SESSION.toggle(DRAFT_ID, false);
@@ -1871,8 +1874,8 @@ window.LIVE = (function () {
             const back = liveItem(local) || d;
             back.id = DRAFT_ID; back.unproposed = true;
             back.refusal = stale
-              ? 'The text moved while you were writing — your draft is kept; read the new wording and propose again.'
-              : 'That could not be proposed: ' + ((res && res.error) || 'the server did not answer') + '.';
+              ? REFUSAL.movedPropose
+              : REFUSAL.notProposed((res && res.error) || REFUSAL.noAnswer);
             if (!SESSION.SUGGS.includes(back)) SESSION.SUGGS.push(back);
             syncWallet();
             SESSION.setData({ SUGGS: itemsFromView(env.cs.v) });
