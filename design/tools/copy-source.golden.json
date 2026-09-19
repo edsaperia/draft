@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 483
+  "entries": 486
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -49,7 +49,10 @@
   "feed.top": "At the top of the document",
   "feed.underMinute": "under a minute",
   "feed.unreachable": "The feed could not be reached. It will try again.",
-  "grammar.commit.abstainIn": "ƒ (hhmm) => '💤 abstain in ' + hhmm",
+  "grammar.commit.abstainDays": "ƒ (n, hhmm) => n + (n === 1 ? ' day' : ' days') + ' & ' + hhmm",
+  "grammar.commit.abstainIn": "ƒ (left) => '💤 abstain in ' + left",
+  "grammar.commit.abstainShort": "ƒ (hhmm) => '💤 ' + hhmm",
+  "grammar.commit.abstained": "💤 abstained",
   "grammar.commit.bin": "Clears your choice and closes — there is nothing here to put back",
   "grammar.commit.binLocked": "Close — your vote stays on the record",
   "grammar.commit.cast": "Recorded — choose again to change it",
