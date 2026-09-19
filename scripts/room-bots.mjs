@@ -49,7 +49,7 @@
  */
 
 import { readFileSync } from 'node:fs';
-import { sleep, post as postTo, followLink } from './lib/walk.mjs';
+import { sleep, post as postTo, followLink, withWas } from './lib/walk.mjs';
 
 /* -- arguments --------------------------------------------------------- */
 
@@ -539,7 +539,10 @@ const propose = async (seat, p, m) => {
   const rung = (m.settings ?? []).find((s) => s.setting === 'authorship')?.value?.rung ?? '';
   const signed = /Elective$/.test(rung) && r() < 0.4;
   const why = !edit.rival && r() < 0.15 ? pick(r, WHY.generic) : edit.why;
-  await cmd(seat, 'propose-text', { baseVersion: p.textVersion, hunks: edit.hunks, why,
+  // **a bot says what it is replacing, like anybody** (Q1463 (1)): the host
+  // refuses a patch that does not, and `p.text` is the very text `lines` was
+  // read off, so the attestation is of what this bot actually saw
+  await cmd(seat, 'propose-text', { baseVersion: p.textVersion, hunks: withWas(p.text, edit.hunks), why,
     ...(signed ? { signed: true } : {}) });
   tally.proposals += 1;
   say(seat.name, `proposed on line ${i}${hot.has(i) ? ' (contested)' : ''}: ${edit.label}${signed ? ', signed' : ''}`);

@@ -1238,6 +1238,51 @@ function checkCommands(M) {
   const unsent = handlers.filter((h) => !sentByPage.has(h) && !sentByWalks.has(h));
   note(`  ${handlers.length} commands, ${sentByPage.size} sent by the page, ${unsent.length} sent by nothing but the tests` +
     (unsent.length ? `: ${unsent.join(', ')}` : ''));
+
+  // **The three text commands take an attested patch** (SPEC §2.1, §2.4 →
+  // why: R-136). Each one must reach the module through `attestedOf`, never
+  // through the bare `patchOf` beside it: the difference is the whole of the
+  // guard, and it is one character on a call the type checker is happy with
+  // either way. The attestation itself must be stated (`required: true`) and
+  // must be read against the version the patch names, not against whatever
+  // stands now, which on a stale patch is a different document.
+  const TEXT_CMDS = ['propose-text', 'pen-text', 'rebase-text'];
+  for (const c of TEXT_CMDS) {
+    const row = new RegExp(`'${c}':[\\s\\S]*?\\n  \\},`).exec(table.slice(table.indexOf(`'${c}':`)));
+    const body = row ? row[0] : '';
+    if (!body) { find('commands', `the checker cannot read '${c}' out of HANDLERS`); continue; }
+    if (!/attestedOf\(bridge, args\)/.test(body)) {
+      find('commands', `'${c}' does not take its patch through attestedOf() — ` +
+        'a patch whose wording it never checks can rewrite the wrong clause (SPEC §2.4, R-136)');
+    }
+    if (/patchOf\(args\)/.test(body)) {
+      find('commands', `'${c}' still calls patchOf() directly, which checks no wording (R-136)`);
+    }
+  }
+  const attested = /function attestedOf[\s\S]*?\n}/.exec(src)?.[0] ?? '';
+  if (!/required: true/.test(attested)) {
+    find('commands', 'attestedOf() does not require the attestation — R-136 is *required, not optional*');
+  }
+  if (!/documentAt\(patch\.baseVersion\)/.test(attested)) {
+    find('commands', 'attestedOf() does not read the version the patch names (SPEC §2.4, R-136)');
+  }
+  // and the participant API is the same door for everything that is not the page
+  const api = js('packages/engine-core/src/participant-api.ts');
+  const submitAt = api.indexOf('  submit(');
+  const submit = submitAt < 0 ? '' : api.slice(submitAt, api.indexOf('\n  }', submitAt));
+  if (!/checkAttestation\([\s\S]*?required: true/.test(submit)) {
+    find('commands', 'ParticipantApi.submit does not require the attestation — SPEC §1: ' +
+      'a sim persona and a personal AI speak this door exactly as a human client does (R-136)');
+  }
+  // **and none of it is written down**: the three emitters strip it, so an
+  // event's shape does not move and every log replays byte for byte
+  const engineSrc = js('packages/engine-core/src/session.ts');
+  const strips = [...engineSrc.matchAll(/stripAttestation\(/g)].length;
+  if (strips < 3) {
+    find('commands', `only ${strips} of the three text emitters strip the attestation — ` +
+      'it is validation, never record (R-136)');
+  }
+  note(`  the three text commands attest, the API requires it, ${strips} emitters strip it`);
 }
 
 /**

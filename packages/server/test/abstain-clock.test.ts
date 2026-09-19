@@ -29,6 +29,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { createDraftServer } from '../src/server.js';
 import type { DraftServer } from '../src/server.js';
 import { FilePersistence } from '../src/persistence.js';
+import { attestBody } from './attest-wire.js';
 
 const DESIGN_DIR = join(import.meta.dirname, '..', '..', '..', 'design');
 const HOUR = 3_600_000;
@@ -69,11 +70,13 @@ const cookieOf = (res: Response): string => {
   expect(header).toBeTruthy();
   return header!.split(';')[0]!;
 };
-const post = (base: string, path: string, body: unknown, cookie?: string) =>
+// a text proposal states the wording it replaces (Q1463 (1)) — `attestBody`
+// fills it from the view the post is about, for hunks written out by hand
+const post = async (base: string, path: string, body: unknown, cookie?: string) =>
   fetch(base + path, {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...(cookie ? { cookie } : {}) },
-    body: JSON.stringify(body),
+    body: JSON.stringify(await attestBody(base, path, body, cookie)),
   });
 /** Follow a magic link the way a browser does: the POST is what consumes. */
 const consume = async (link: string): Promise<Response> => {

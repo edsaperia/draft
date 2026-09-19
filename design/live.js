@@ -1728,15 +1728,27 @@ window.LIVE = (function () {
       // of a line here — until Q1403 the origin block's `# ` was, which meant
       // a heading's rank could not be changed from the lane and a marker
       // typed on a heading would have been doubled.
+      // **And it says what it is replacing** (Q1463 (1), Ed 2026-09-19; SPEC
+      // §2.1 → why: R-136). Every hunk carries `was`, the exact lines of the
+      // document the page is holding that it means to replace, and a pure
+      // insertion carries `after`, the exact line it means to follow — `null`
+      // at the very top, where there is none. The host refuses a patch that
+      // carries neither, and refuses one whose wording is not what the
+      // version it names actually holds, so a line adopted above a draft can
+      // no longer land the words on the wrong clause. Exact lines out of
+      // `env.cs.text`: this is the attestation, not the page's own looser
+      // comparison (`misaimed` below), which is about whether the draft can
+      // still be carried at all.
       const hunksOf = (d) => {
-        const nLines = env.cs.text === '' ? 0 : String(env.cs.text).split('\n').length;
+        const all = env.cs.text === '' ? [] : String(env.cs.text).split('\n');
+        const nLines = all.length;
         return d.sites.map((site) => {
           const ls = site.text.split('\n');
           // a **gap site** (backlog 204) is a pure insertion: `start === end`
           // at the line the gap stands before, clamped to the text's end
           if (/^G\d+$/.test(site.keys[0])) {
             const n = Math.min(lineIdx(site.keys[0]), nLines);
-            return { start: n, end: n, lines: ls };
+            return { start: n, end: n, lines: ls, after: n === 0 ? null : all[n - 1] };
           }
           const start = Math.min(lineIdx(site.keys[0]), nLines);
           const end = Math.max(start, Math.min(lineIdx(site.keys[site.keys.length - 1]) + 1, nLines));
@@ -1753,8 +1765,12 @@ window.LIVE = (function () {
           // here, so a first insertion into it cannot become a deletion
           // either. A site emptied and then typed into again is not empty and
           // never reaches this.
-          if (end > start && !site.text.trim()) return { start, end, lines: [] };
-          return { start, end, lines: ls };
+          const was = all.slice(start, end);
+          if (end > start && !site.text.trim()) return { start, end, lines: [], was };
+          // a clamped site that replaces nothing is an insertion after all, and
+          // an insertion attests with `after` (the empty document, Q649 (a))
+          if (start === end) return { start, end, lines: ls, after: start === 0 ? null : all[start - 1] };
+          return { start, end, lines: ls, was };
         });
       };
       // what a draft would send, readable by a walk (`SESSION.LIVE_HOOKS.hunksOf`)
@@ -1782,6 +1798,13 @@ window.LIVE = (function () {
       // here, in the scope the three hooks below share
       const REFUSAL = window.COPY.session.refusal;
       const MOVED_ON = REFUSAL.movedPropose;
+      // **The host's two stale answers are one event to a member** (Q1463 (1)):
+      // *targets version N* is the text having moved on to a version this
+      // draft never saw, and *not what this proposal replaces* is it having
+      // moved under a draft whose version is current (R-136). Both mean the
+      // same thing to the person typing, so both take the same sentence and
+      // no new copy is owed.
+      const movedUnder = (e) => /targets version|not what this proposal/.test(String(e || ''));
       const sameLine = (a, b) => String(a == null ? '' : a).replace(/^(#{1,3}|-)\s+/, '$1 ').replace(/\s+$/, '')
         === String(b == null ? '' : b).replace(/^(#{1,3}|-)\s+/, '$1 ').replace(/\s+$/, '');
       env.LIVE_HOOKS.misaimed = (d) => {
@@ -1834,7 +1857,7 @@ window.LIVE = (function () {
         api.cmd('pen-text', { baseVersion: env.cs.v.textVersion, hunks: hunksOf(d), why: d.rationale || '' })
           .then((res) => {
             if (res && res.ok) { SESSION.setData({ SUGGS: itemsFromView(env.cs.v) }); return; }
-            const stale = /targets version/.test((res && res.error) || '');
+            const stale = movedUnder(res && res.error);
             back.id = DRAFT_ID; back.unproposed = true;
             back.refusal = stale
               ? REFUSAL.movedAmend
@@ -1873,7 +1896,7 @@ window.LIVE = (function () {
               return;
             }
             // refused: the draft comes back unproposed, the pencil with it
-            const stale = /targets version/.test((res && res.error) || '');
+            const stale = movedUnder(res && res.error);
             const back = liveItem(local) || d;
             back.id = DRAFT_ID; back.unproposed = true;
             back.refusal = stale

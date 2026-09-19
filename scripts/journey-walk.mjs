@@ -3863,8 +3863,11 @@ if (caret) {
       const api = location.pathname.replace('/d/', '/api/d/');
       return fetch(api + '/view').then((r) => r.json()).then((v) => fetch(api + '/cmd', {
         method: 'POST', headers: { 'content-type': 'application/json' },
+        // `was` states the wording this hunk replaces, which the door requires
+        // of every client (Q1463 (1)) — read off the very view just fetched
         body: JSON.stringify({ cmd: 'propose-text', args: { baseVersion: v.textVersion,
-          hunks: [{ start: n, end: n + 1, lines: ['Every member may bring two guests.'] }],
+          hunks: [{ start: n, end: n + 1, lines: ['Every member may bring two guests.'],
+            was: [String(v.text || '').split('\n')[n]] }],
           why: 'Sundays are the point' } }),
       })).then((r) => r.json()).catch((e) => ({ error: String(e && e.message) }));
     }, line);
@@ -4154,7 +4157,8 @@ if (caret) {
       return fetch(api + '/view').then((r) => r.json()).then((v) => fetch(api + '/cmd', {
         method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ cmd: 'propose-text', args: { baseVersion: v.textVersion,
-          hunks: [{ start: n, end: n + 1, lines: ['Every member may bring one guest, on Sundays.'] }],
+          hunks: [{ start: n, end: n + 1, lines: ['Every member may bring one guest, on Sundays.'],
+            was: [String(v.text || '').split('\n')[n]] }],
           why } }),
       })).then((r) => r.json()).catch((e) => ({ error: String(e && e.message) }));
     }, [line, WHY2]);
@@ -4521,8 +4525,10 @@ if (caret) {
             const api = location.pathname.replace('/d/', '/api/d/');
             return fetch(api + '/view').then((r) => r.json()).then((v) => fetch(api + '/cmd', {
               method: 'POST', headers: { 'content-type': 'application/json' },
+              // a pure insertion attests with `after`, the line it follows (Q1463 (1))
               body: JSON.stringify({ cmd: 'propose-text', args: { baseVersion: v.textVersion,
-                hunks: [{ start: n, end: n, lines: [text] }], why } }),
+                hunks: [{ start: n, end: n, lines: [text],
+                  after: n === 0 ? null : String(v.text || '').split('\n')[n - 1] }], why } }),
             })).then((r) => r.json()).catch((e) => ({ error: String(e && e.message) }));
           }, [n, text, why]);
           const nLines = await page.evaluate(() => {
@@ -4735,13 +4741,14 @@ const dominatedProposal = async () => {
     stuck.push('a free clause for the domination'); await ctx.close(); return;
   }
   const WORDING = 'The clubhouse keeps a visitors’ book.';
-  const put = await guestPage.evaluate(([n, text, base]) => fetch(
+  const put = await guestPage.evaluate(([n, text, base, was]) => fetch(
     location.pathname.replace('/d/', '/api/d/') + '/cmd', {
       method: 'POST', headers: { 'content-type': 'application/json' },
+      // `was` is the wording it replaces, off the same view `at` was chosen from (Q1463 (1))
       body: JSON.stringify({ cmd: 'propose-text', args: { baseVersion: base,
-        hunks: [{ start: n, end: n + 1, lines: [text] }], why: 'we should know who came' } }),
+        hunks: [{ start: n, end: n + 1, lines: [text], was }], why: 'we should know who came' } }),
     }).then((r) => r.json()).catch((e) => ({ error: String(e && e.message) })),
-  [at, WORDING, (v0 || {}).textVersion]);
+  [at, WORDING, (v0 || {}).textVersion, [lines[at]]]);
   const cand = put && put.result && put.result.id;
   if (!cand || put.error) {
     say('dominated  · FAIL: the member could not propose · ' + JSON.stringify(put));
@@ -4971,8 +4978,10 @@ const draftFollowsClause = async () => {
   await cyPage.waitForTimeout(2600);
 
   const AT = 2;
+  // a pure insertion attests with `after`, the line it follows (Q1463 (1))
   const put = await wire(cyPage, 'propose-text', { baseVersion: (v0 || {}).textVersion,
-    hunks: [{ start: AT, end: AT, lines: ['Nothing in this charter excuses unkindness.'] }],
+    hunks: [{ start: AT, end: AT, lines: ['Nothing in this charter excuses unkindness.'],
+      after: String((v0 || {}).text || '').split('\n')[AT - 1] }],
     why: 'it belongs near the front' });
   const cand = put && put.result && put.result.id;
   if (!cand || put.error) {

@@ -18,6 +18,7 @@ import type { Persistence } from '../src/persistence.js';
 import { PgPersistence } from '../src/pg-persistence.js';
 import { asEngineDoc, resumeBridge } from '../src/engine-host.js';
 import { LIMITS } from '../src/commands.js';
+import { attestBody } from './attest-wire.js';
 import { SCHEMA_VERSION, chainHash } from '../../constitution/src/index.js';
 import type { ConstitutionEvent } from '../../constitution/src/index.js';
 
@@ -185,14 +186,20 @@ const cookieOf = (res: Response): string => {
   return header!.split(';')[0]!;
 };
 
-const post = (base: string, path: string, body: unknown, cookie?: string) =>
+// **A text proposal states the wording it replaces** (Q1463 (1), R-136), and
+// the host refuses one that does not. Every post in this file goes through
+// here, so `attestBody` fills `was` / `after` from the view the post is about
+// — leaving alone anything the caller attested itself, and anything against a
+// version that is not the one standing, which is what keeps the stale-version
+// and the bot-style-stale tests saying exactly what they said before.
+const post = async (base: string, path: string, body: unknown, cookie?: string) =>
   fetch(base + path, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
       ...(cookie ? { cookie } : {}),
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify(await attestBody(base, path, body, cookie)),
   });
 
 /** Follow a magic link the way a browser does: GET the interstitial,
@@ -2060,6 +2067,63 @@ describe('👤 authorship on the wire (SPEC §3.5a)', () => {
     // and nothing was proposed — the refusal left no candidate behind
     expect((await sealed.viewOf(sealed.cy)).mine).toEqual([]);
   });
+  /**
+   * **The hole Q1463 (1) closes, over the wire** (Ed, 2026-09-19; SPEC §2.4 →
+   * why: R-136). A bot, a personal AI or any outside client holds line numbers
+   * and re-reads the version; when a line is adopted *above* its draft the
+   * numbers go stale while the version it quotes is **current**, so the
+   * engine's *targets version N* guard has nothing to fire on and the proposal
+   * silently rewrites the wrong clause.
+   *
+   * On the tree before this ruling all three posts below were accepted, and
+   * the second landed a candidate to replace the rota clause with wording
+   * written for the clubhouse one. The attestation is what tells them apart.
+   */
+  it('refuses a bot-style stale patch whose version is current (Q1463 (1), R-136)', async () => {
+    const el = await foundAt('anonymous');
+    // **raw**, straight past `post`'s helper: every body here is written by
+    // hand precisely because it is what an outside client would send
+    const send = (cookie: string, args: unknown) => fetch(`${el.base}/api/d/${el.slug}/cmd`, {
+      method: 'POST', headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({ cmd: 'propose-text', args }),
+    });
+    const v = await el.viewOf(el.cy);
+    const lines = v.text.split('\n');
+    expect(lines).toEqual(['The clubhouse is open all week.', 'The rota is weekly.']);
+
+    // 1 · no attestation at all — refused at the door, whatever the numbers say
+    const bare = await send(el.cy, { baseVersion: v.textVersion,
+      hunks: [{ start: 1, end: 2, lines: ['The rota is fortnightly.'] }], why: 'less often' });
+    expect(bare.status).toBe(400);
+    expect(((await bare.json()) as { error: string }).error).toMatch(/carries no 'was'/);
+
+    // 2 · **the stale hunk**: a draft written against line 0 and sent at line
+    //     1, the version current. Today's engine takes it; the attestation
+    //     refuses it, because line 1 is not the wording it was written against
+    const misaimed = await send(el.cy, { baseVersion: v.textVersion,
+      hunks: [{ start: 1, end: 2, lines: ['The clubhouse is open on Sundays too.'],
+        was: ['The clubhouse is open all week.'] }], why: 'Sundays' });
+    expect(misaimed.status).toBe(400);
+    expect(((await misaimed.json()) as { error: string }).error)
+      .toMatch(/the text at lines 2–2 is not what this proposal replaces/);
+
+    // 3 · the same wording aimed where it belongs is taken
+    const right = await send(el.cy, { baseVersion: v.textVersion,
+      hunks: [{ start: 0, end: 1, lines: ['The clubhouse is open on Sundays too.'],
+        was: ['The clubhouse is open all week.'] }], why: 'Sundays' });
+    expect(right.status).toBe(200);
+
+    // and the two refusals left nothing behind: one candidate, the right one
+    const mine = (await el.viewOf(el.cy)).mine;
+    expect(mine).toHaveLength(1);
+    // an insertion states the line it follows, and the top of the document null
+    const ins = await send(el.cy, { baseVersion: v.textVersion,
+      hunks: [{ start: 0, end: 0, lines: ['A preamble.'], after: 'not the top' }], why: 'first' });
+    expect(ins.status).toBe(400);
+    expect(((await ins.json()) as { error: string }).error)
+      .toMatch(/is not what this proposal was written after/);
+  });
+
   // the file's budget, on the describe: each of these founds a real document
   // over HTTP, and five of the seven timed out at the 5 s default under load
   // in batch Q (B32/B34)

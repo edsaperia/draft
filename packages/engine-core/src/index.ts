@@ -51,6 +51,13 @@ export {
   splitHunks,
   validateHunks,
 } from './text/patch.js';
+export {
+  AttestationError,
+  attest,
+  checkAttestation,
+  isAttested,
+  stripAttestation,
+} from './text/attest.js';
 export { rebaseHunks } from './text/rebase.js';
 export { composeTextual } from './text/compose.js';
 export { fitDavidson } from './ranking/davidson.js';

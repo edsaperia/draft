@@ -10,6 +10,7 @@
  */
 
 import type { CardView, OptionView, ParticipantApi, PatchSet, Rng } from '../../engine-core/src/index.js';
+import { attest, splitLines } from '../../engine-core/src/index.js';
 import {
   conditionalUtility,
   currentPositions,
@@ -156,7 +157,11 @@ export class ScriptedPersona implements Persona {
       return {
         patch: {
           baseVersion: api.currentVersion(),
-          hunks: [{ start: issue.line, end: issue.line + 1, lines: [best.text] }],
+          // **a persona says what it is replacing, like any participant**
+          // (Q1463 (1), SPEC §2.1): `submit` refuses a patch that does not,
+          // and there is no sim backdoor
+          hunks: attest(splitLines(api.document()),
+            [{ start: issue.line, end: issue.line + 1, lines: [best.text] }]),
         },
         rationale: best.rationale,
       };

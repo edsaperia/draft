@@ -22,6 +22,7 @@ import { SCHEMA_VERSION, INC_PREFIX } from './types.js';
 import type { Hunk, PatchSet, Span } from './text/types.js';
 import type { Comparison, Fit, Outcome } from './ranking/types.js';
 import { applyPatch, footprint, footprintsConflict, validateHunks } from './text/patch.js';
+import { checkAttestation, stripAttestation } from './text/attest.js';
 import { splitLines, joinLines } from './text/diff.js';
 import { rebaseHunks } from './text/rebase.js';
 import { fitDavidson } from './ranking/davidson.js';
@@ -1263,6 +1264,12 @@ export class Session {
       }
       if (input.patch.hunks.length === 0) throw new Error('empty patch');
       validateHunks(this.currentLines().length, input.patch.hunks);
+      // **Checked where it is given, required where the act enters** (R-136).
+      // The participant boundaries — `ParticipantApi.submit` and the host's
+      // three text commands — refuse a patch that carries no attestation;
+      // here it is honoured wherever it is present and never demanded, so
+      // the library's own callers and every replay are untouched.
+      checkAttestation(this.currentLines(), input.patch.hunks, { required: false });
     } else if (input.setting) {
       // Q390: values are simpler than prose in exactly one way — equality
       // is decidable — so §5's dedup gate collapses to it (SPEC v0.53).
@@ -1294,7 +1301,10 @@ export class Session {
       t,
       id,
       author: input.author,
-      ...(input.patch ? { patch: input.patch } : {}),
+      // **The attestation is validation, not record** (R-136): it is stripped
+      // here, at the one door that writes a submission, so an event's shape
+      // does not move and every log on disk replays byte for byte.
+      ...(input.patch ? { patch: { ...input.patch, hunks: stripAttestation(input.patch.hunks) } } : {}),
       ...(input.setting ? { setting: input.setting } : {}),
       rationale: input.rationale,
       ...(input.machineAuthored ? { machineAuthored: true } : {}),
@@ -1362,6 +1372,8 @@ export class Session {
     }
     if (input.patch.hunks.length === 0) throw new Error('empty patch');
     validateHunks(this.currentLines().length, input.patch.hunks);
+    // the pen's patch attests like anybody's where it carries one (R-136)
+    checkAttestation(this.currentLines(), input.patch.hunks, { required: false });
     // **§4.2's park rule reaching the second door** (R-058, narrowed by
     // R-100). The sweep adopts no text across a parked span, and since R-100
     // `rebaseOthers` does rebase a parked patch — but only where the rebase
@@ -1379,16 +1391,18 @@ export class Session {
     }
     const id = `c${++this.candidateCounter}`;
     const newVersion = this.currentVersion() + 1;
+    // stripped before it is written, as a submission's is (R-136)
+    const patch = { ...input.patch, hunks: stripAttestation(input.patch.hunks) };
     this.emit({
       type: 'text-decreed',
       t,
       id,
       author: input.author,
-      patch: input.patch,
+      patch,
       rationale: input.rationale,
       newVersion,
     });
-    this.rebaseOthers(t, id, input.patch.hunks, newVersion);
+    this.rebaseOthers(t, id, patch.hunks, newVersion);
     return { id };
   }
 
@@ -1546,10 +1560,13 @@ export class Session {
     }
     if (patch.hunks.length === 0) throw new Error('empty patch');
     validateHunks(this.currentLines().length, patch.hunks);
+    // a re-made proposal attests like a fresh one where it carries one (R-136)
+    checkAttestation(this.currentLines(), patch.hunks, { required: false });
     // **Revising is one of §2.4's three roads**, so the reason may be rewritten
     // with the wording (Q170). Optional and omitted where it is unchanged, so a
     // log written before this existed replays byte for byte.
-    this.emit({ type: 'candidate-confirmed', t, id: candidateId, patch,
+    this.emit({ type: 'candidate-confirmed', t, id: candidateId,
+      patch: { ...patch, hunks: stripAttestation(patch.hunks) },
       ...(rationale === undefined ? {} : { rationale }) });
   }
 

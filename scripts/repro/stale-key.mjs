@@ -21,11 +21,18 @@
  *            card must say so, and ✏️ must send nothing at all.
  *   gap      a draft in the trailing gap; one line inserted at index 2. The gap must re-key
  *            G9 → G10 and propose as a pure insertion after the clause it was made after.
+ *   wire     **no page at all** (Q1463 (1), Ed 2026-09-19; SPEC §2.4 → why: R-136). A bot, a
+ *            personal AI or any other outside client holds the same line numbers and has none
+ *            of the page's following, so the guard behind it is the host's: every text proposal
+ *            states the wording it believes it is replacing, and the host refuses one that does
+ *            not — and refuses one whose wording is not what its own lines hold, though the
+ *            version it names is current. Posted straight to `/cmd`, and asserted on the text
+ *            afterwards: the wrong clause must be untouched.
  *
- * Exit 0 only if all three pass; exit 1 on any failure, 2 on a broken set-up.
+ * Exit 0 only if all four pass; exit 1 on any failure, 2 on a broken set-up.
  */
 import { chromium } from 'playwright';
-import { post as postTo, followLink, sleep } from '../lib/walk.mjs';
+import { post as postTo, followLink, sleep, withWas } from '../lib/walk.mjs';
 
 const argv = process.argv.slice(2);
 const BASE = (argv.find((a) => /^https?:/.test(a)) || 'http://127.0.0.1:8208').replace(/\/$/, '');
@@ -63,10 +70,11 @@ async function found(run) {
     if (!r.ok) die(`${name} refused (${r.status}): ${JSON.stringify(j)}`);
     return j.result ?? j;
   };
-  // the ✒️ decree, always against the version the document is holding now
+  // the ✒️ decree, always against the version the document is holding now —
+  // and stating the wording it replaces, like any other client (Q1463 (1))
   const decree = async (hunks, why) => {
     const v = await (await fetch(`${BASE}/api/d/${slug}/view`, { headers: { cookie: founder } })).json();
-    return cmd('pen-text', { baseVersion: v.textVersion ?? 0, hunks, why });
+    return cmd('pen-text', { baseVersion: v.textVersion ?? 0, hunks: withWas(v.text, hunks), why });
   };
   await cmd('confirm-starting-text', { text: TEXT(run).join('\n') });
   await cmd('set-convenor-membership', { isMember: true });
@@ -324,6 +332,64 @@ if (!ONLY || ONLY === 'gap') {
       want >= 0 && h.start === h.end && h.start === want + 1, `origin at ${want}, hunk [${h.start}, ${h.end})`);
   }
   await page.context().close();
+}
+
+/* ======================================================================== *
+ * 4 · wire — no page: the host's own guard, for a bot and any outside client
+ * ======================================================================== */
+if (!ONLY || ONLY === 'wire') {
+  say('case wire: a stale hunk posted straight to /cmd, the version current');
+  const run = 'w' + Date.now().toString(36);
+  const { slug, decree, link } = await found(run);
+  const cookie = (await followLink(link)).cookie;
+  const view = async () => (await (await fetch(`${BASE}/api/d/${slug}/view`, { headers: { cookie } })).json());
+  const propose = async (args) => {
+    const r = await post(`/api/d/${slug}/cmd`, { cmd: 'propose-text', args }, cookie);
+    return { status: r.status, body: await r.json().catch(() => ({})) };
+  };
+  const WORDING = 'Accounts are shown at the annual meeting and on the noticeboard.';
+
+  // 1 · nothing said about what it replaces: refused whatever the numbers are
+  const v0 = await view();
+  const bare = await propose({ baseVersion: v0.textVersion,
+    hunks: [{ start: 8, end: 9, lines: [WORDING] }], why: 'plainer' });
+  say('  bare: ' + bare.status + ' ' + JSON.stringify(bare.body.error || ''));
+  check('a proposal that says nothing about what it replaces is refused',
+    bare.status === 400 && /carries no 'was'/.test(String(bare.body.error)), JSON.stringify(bare.body));
+
+  // 2 · **the stale hunk itself**: the client drafted against line 8, a line was
+  //     adopted above it, and it re-reads the version but not the lines
+  await decree([{ start: 2, end: 2,
+    lines: ['Notice of every meeting goes up a week before it, on the board by the door.'] }], 'notice');
+  say('  one line inserted at index 2 by the Founder’s pen');
+  const v1 = await view();
+  const stale = await propose({ baseVersion: v1.textVersion,
+    hunks: [{ start: 8, end: 9, lines: [WORDING], was: [LAST] }], why: 'plainer' });
+  say('  stale: ' + stale.status + ' ' + JSON.stringify(stale.body.error || ''));
+  check('a stale hunk against a current version is refused',
+    stale.status === 400 && /not what this proposal replaces/.test(String(stale.body.error)),
+    JSON.stringify(stale.body));
+
+  // 3 · and the clause it would have rewritten is untouched
+  const lines = String((await view()).text || '').split('\n');
+  check('the wrong clause was not rewritten',
+    lines[8] === 'The treasurer may spend up to fifty pounds without asking; anything more goes to a meeting.',
+    JSON.stringify(lines[8]));
+
+  // 4 · the same draft aimed where its wording now stands is taken
+  const at = lines.indexOf(LAST);
+  const right = await propose({ baseVersion: v1.textVersion,
+    hunks: [{ start: at, end: at + 1, lines: [WORDING], was: [LAST] }], why: 'plainer' });
+  say('  aimed: ' + right.status + ' ' + JSON.stringify(right.body.error || right.body.result || ''));
+  check('the same draft aimed at its own wording is taken',
+    right.status === 200 && right.body.result && right.body.result.id, JSON.stringify(right.body));
+
+  // 5 · an insertion says the line it follows, and is refused where that is wrong
+  const wrongAfter = await propose({ baseVersion: v1.textVersion,
+    hunks: [{ start: 3, end: 3, lines: ['A new clause.'], after: 'something nobody wrote' }], why: 'new' });
+  check('an insertion after a line that is not there is refused',
+    wrongAfter.status === 400 && /was written after/.test(String(wrongAfter.body.error)),
+    JSON.stringify(wrongAfter.body));
 }
 
 await browser.close();

@@ -12,6 +12,8 @@ import type {
   MotionAnswer, MotionInput, Power, PowerKey, SettingId, SettingValue,
 } from '../../constitution/src/index.js';
 import type { PatchSet } from '../../engine-core/src/text/types.js';
+import { checkAttestation } from '../../engine-core/src/text/attest.js';
+import { splitLines } from '../../engine-core/src/text/diff.js';
 import { emojiFaceOf } from './faces.js';
 
 export interface Actor {
@@ -142,6 +144,33 @@ const refuseTaken = (cs: ConstitutionSession, pic: string, self: string): string
   return pic;
 };
 
+/**
+ * **The attestation, at the door** (SPEC §2.4 → why: R-136). Every text
+ * proposal states what it believes it is replacing, and one that does not —
+ * or whose wording is not what the version it names actually holds — is
+ * refused here: for the page, a bot and any outside client alike.
+ *
+ * It is the guard the version check cannot be. A hunk carries line numbers
+ * and a version, so a client that drafted against line 8 while a line was
+ * adopted above it holds a stale number against a version that is
+ * nonetheless **current** — *targets version N* has nothing to fire on, and
+ * the wrong clause is rewritten with the author's own words.
+ *
+ * **The version guard still speaks first**: where the patch names anything
+ * but the version standing now, the engine's own refusal is the truer
+ * sentence and nothing is said here. Otherwise the attestation is checked
+ * against the lines that version holds, exactly — and then dropped:
+ * `submitCandidate`, `decreeText` and `confirmRebase` strip it before they
+ * emit, so no event's shape moves and every log replays byte for byte.
+ */
+function attestedOf(bridge: EngineBridge, args: Args): PatchSet {
+  const patch = patchOf(args);
+  if (patch.baseVersion !== bridge.engine.currentVersion()) return patch;
+  checkAttestation(splitLines(bridge.engine.documentAt(patch.baseVersion)),
+    patch.hunks, { required: true });
+  return patch;
+}
+
 /** A patch as the page sends it: line hunks against a stated version. */
 function patchOf(args: Args): PatchSet {
   const baseVersion = args.baseVersion;
@@ -168,7 +197,23 @@ function patchOf(args: Args): PatchSet {
       total += l.length + 1;
     }
     if (total > LIMITS.text) throw new Error(`the text is too long (${LIMITS.text} characters at most)`);
-    return { start, end, lines: lines as string[] };
+    // **What the hunk says it is replacing** (R-136), shape only — the wording
+    // is `attestedOf`'s question, and neither field is ever stored, so neither
+    // counts against the patch's own length. `was` on a replacement, `after`
+    // on a pure insertion, both absent on a patch from a client that does not
+    // send them yet, which `attestedOf` is what refuses.
+    const { was, after } = h as Record<string, unknown>;
+    if (was !== undefined && (!Array.isArray(was) || !was.every((l) => typeof l === 'string'))) {
+      throw new Error("a hunk's 'was' is a list of strings");
+    }
+    if (after !== undefined && after !== null && typeof after !== 'string') {
+      throw new Error("a hunk's 'after' is a string or null");
+    }
+    return {
+      start, end, lines: lines as string[],
+      ...(was === undefined ? {} : { was: was as string[] }),
+      ...(after === undefined ? {} : { after: after as string | null }),
+    };
   });
   return { baseVersion, hunks };
 }
@@ -384,7 +429,7 @@ const HANDLERS: Record<string, Handler> = {
         throw new Error("signing is not offered under this document's anonymity rule (§3.5a)");
       }
     }
-    return bridge.proposeText(t, a.memberId, patchOf(args), why, signed);
+    return bridge.proposeText(t, a.memberId, attestedOf(bridge, args), why, signed);
   },
   /* -- ✒️ on the Text (R-058, entry 160): the Founder's amendment passes the
      instant it is submitted. **No `signed` argument** — the office signs, not
@@ -394,7 +439,7 @@ const HANDLERS: Record<string, Handler> = {
   'pen-text': (cs, a, t, args, bridge) => {
     if (bridge === null) throw new Error('the document has not begun');
     const why = typeof args.why === 'string' ? cap(args.why, LIMITS.why, 'the reason') : '';
-    return bridge.penText(t, a.memberId, patchOf(args), why);
+    return bridge.penText(t, a.memberId, attestedOf(bridge, args), why);
   },
   /* -- re-making a stranded proposal (SPEC §2.4, Q170): the author's own
      patch, rebuilt against the text that replaced the one it was written for.
@@ -406,7 +451,7 @@ const HANDLERS: Record<string, Handler> = {
     if (bridge === null) throw new Error('the document has not begun');
     const why = typeof args.why === 'string'
       ? cap(args.why, LIMITS.why, 'the rationale') : undefined;
-    return bridge.rebaseText(t, a.memberId, str(args, 'candidate'), patchOf(args), why);
+    return bridge.rebaseText(t, a.memberId, str(args, 'candidate'), attestedOf(bridge, args), why);
   },
   'withdraw-text': (cs, a, t, args, bridge) => {
     if (bridge === null) throw new Error('the document has not begun');
