@@ -4104,7 +4104,15 @@ if (caret) {
             cap: b ? b.title : '', teasers: [...li.querySelectorAll('.qwhy')].map((e) => e.textContent.trim()),
             // the queue card stack's depth (Q1462): how many rivals are still
             // to come on this race, capped at five, 0 where there is no pile
-            pile: +(li.dataset.pile || 0) };
+            pile: +(li.dataset.pile || 0),
+            // **the abstention clock on the entry** (Q1460 (e)): the figures
+            // as drawn, or null where the entry carries none — a live pair
+            // inside 💤's last day wears one, a pair this seat has answered
+            // does not. The button's own box goes with it, so a clock that
+            // pushed the entry about would be read here too.
+            abs: ((n) => (n ? (n.querySelector('.abst') || n).textContent.trim() : null))(li.querySelector('.absnote')),
+            box: ((r) => (r ? [Math.round(r.width), Math.round(r.height)] : null))(
+              b ? b.getBoundingClientRect() : null) };
         });
       }, id);
       // the race's one lit entry, as the older steps read it: by the race id,
@@ -4226,6 +4234,20 @@ if (caret) {
             say('abstain 1  · ' + (okA ? 'the Indifferent row carries its own countdown, ' + c1.abstain + ' of 💤’s twenty minutes'
               : 'FAIL: ' + JSON.stringify(c1.abstain)));
             if (!okA) stuck.push('the abstention countdown on an unjudged pair (Q1460)');
+            // **Q1460 (e) — and the rail entry carries the same figures**,
+            // twenty minutes being well inside the last day (Ed, 2026-09-19:
+            // *the rail should only show the clock when it's less than 24
+            // hrs*). Read off the entries as they stood before the card was
+            // opened, so it is the rail's own line and not the card's; the
+            // entry's box is read with it, because a clock that pushed the
+            // entry about would be a rail that moves when a minute passes.
+            const eAbs = e1.filter((x) => x.abs !== null);
+            const okR = eAbs.length === e1.length && e1.every((x) => /^00:(19|20)$/.test(x.abs))
+              && e1.every((x) => x.box && x.box[0] === e1[0].box[0]);
+            say('abstain 3  · ' + (okR ? e1.length + ' lit ' + (e1.length === 1 ? 'entry' : 'entries') +
+              ', each carrying the same clock in the rail, ' + e1[0].abs + ', every button ' + e1[0].box[0] + 'px wide'
+              : 'FAIL: ' + JSON.stringify(e1.map((x) => [x.id, x.abs, x.box]))));
+            if (!okR) stuck.push('the abstention clock on the rail entry (Q1460 (e))');
           }
           // **Keep, deliberately** — *the current text*, on both pairs. A room
           // of two has a floor of one, so one approving vote adopts the
@@ -4257,6 +4279,16 @@ if (caret) {
           say('pile 2     · ' + (okP2 ? 'judged · the other pair is its own entry now, nothing beneath it, no pile anywhere on the race'
             : 'FAIL: ' + JSON.stringify(e2.map((e) => [e.id, e.mark, e.pile]))));
           if (!okP2) stuck.push('the queue card stack after the first judgment (Q1462)');
+          // **Q1460 (e) — and the answered pair's entry loses its clock**, the
+          // other one keeping its own: the entry is the card's own rule read
+          // one column over, and a ⏳ is not asking you anything
+          if (lapseSet) {
+            const judged = byId(e2, q1.id), stillAsking = byId(e2, q2.id);
+            const okR2 = ok3 && judged && judged.abs === null && stillAsking && /^00:(19|20)$/.test(stillAsking.abs || '');
+            say('abstain 4  · ' + (okR2 ? 'judged · that entry carries no clock, the pair still asking keeps ' + stillAsking.abs
+              : 'FAIL: ' + JSON.stringify(e2.map((e) => [e.id, e.mark, e.abs]))));
+            if (!okR2) stuck.push('the rail clock after a judgment (Q1460 (e))');
+          }
           // 4 — the other pair by its own entry, never by a second press on
           // the first; judge it
           const c2 = ok3 ? await openEntry(q2.id) : { card: false };

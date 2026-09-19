@@ -919,51 +919,104 @@ window.CARDS = (function () {
      **Rounded up, never down**, which is the opposite of the session-clock's
      rule and for the same reason: that clock must never promise time the
      document does not have, and this one must never say 00:00 while a vote
-     would still be counted. Null once the moment has passed — what a run-out
-     period should read is Ed's to say, and until he says it the line goes.
+     would still be counted.
+
+     **Past a day it counts in days** (Q1460 (f)): *3 days & 04:12*, whole
+     days and then the hours and minutes left over, *1 day* in the singular.
+     Under twenty-four hours it is the hh:mm alone.
+
+     **And once the moment is behind us the spot stays and reads *abstained***
+     (Q1460 (a), Ed's own pick): the seat's silence has been counted, and a
+     line that vanished at zero took the one fact the reader needed with it.
+     Casting a late vote clears it, exactly as answering in time does — the
+     view stops serving the moment the instant the pair is answered.
 
      **The number is its own element.** The sentence is one string in copy.js,
      so the site of the time inside it is found by rendering the string around
      a sentinel the copy cannot contain, and only that element's text is
      patched as it counts (`tickAbstain`). Nothing around it is rebuilt, which
-     is what lets the line tick under a press and between polls alike. The
-     sentinel is ␟ and deliberately **not** a NUL, which is the separator the
-     charter key uses: a NUL in a source file makes git call it binary and
-     every diff of this file a whole-file diff. */
+     is what lets the line tick under a press and between polls alike — and
+     the flip to *abstained* rewrites that one span, once, since the words in
+     front of the figures are not the same words. The sentinel is ␟ and
+     deliberately **not** a NUL, which is the separator the charter key uses:
+     a NUL in a source file makes git call it binary and every diff of this
+     file a whole-file diff.
+
+     **Two forms, one renderer** (Q1460 (e)): the card's sentence, and the
+     rail's glyph-and-figures, which is drawn only inside the last day —
+     `railTooFar` is that rule and lives here, with the words. */
+  const ABS_DAY = 86_400_000;
+  const pad2 = (n) => String(n).padStart(2, '0');
   function abstainHhmm(msLeft) {
     if (!(msLeft > 0)) return null;
     const mins = Math.ceil(msLeft / 60000);
-    return String(Math.floor(mins / 60)).padStart(2, '0') + ':' + String(mins % 60).padStart(2, '0');
+    return pad2(Math.floor(mins / 60)) + ':' + pad2(mins % 60);
   }
-  const ABS_PARTS = (() => {
-    const p = String(G.commit.abstainIn('␟')).split('␟');
-    return [p[0] || '', p[1] || ''];
-  })();
-  /** The line, or nothing at all: no deadline, or one already behind us. */
-  function abstainNoteHtml(atMs) {
+  /** The whole of what is left, in the card's units: hh:mm, or n days & hh:mm. */
+  function abstainLeft(msLeft) {
+    if (!(msLeft > 0)) return null;
+    const mins = Math.ceil(msLeft / 60000);
+    const days = Math.floor(mins / 1440);
+    if (days < 1) return abstainHhmm(msLeft);
+    const rest = mins % 1440;
+    return String(G.commit.abstainDays(days, pad2(Math.floor(rest / 60)) + ':' + pad2(rest % 60)));
+  }
+  /** The two forms: the card's sentence around the figures, the rail's glyph and figures. */
+  const ABS_FORMS = {
+    card: { parts: String(G.commit.abstainIn('␟')).split('␟'), cls: '', left: abstainLeft,
+      railTooFar: () => false },
+    rail: { parts: String(G.commit.abstainShort('␟')).split('␟'), cls: ' qab',
+      // the rail's figures are always hh:mm, because it is drawn only in the
+      // last day; the card's own line is untouched by that and shows at any
+      // distance (Q1460 (e))
+      left: abstainHhmm, railTooFar: (msLeft) => msLeft >= ABS_DAY },
+  };
+  const absForm = (form) => ABS_FORMS[form] || ABS_FORMS.card;
+  /** What the note holds: the sentence around the figures, or *abstained*. */
+  function abstainInnerHtml(atMs, form) {
+    const f = absForm(form);
+    const left = f.left(atMs - Date.now());
+    if (left === null) return glyphify(esc(String(G.commit.abstained)));
+    return glyphify(esc(f.parts[0] || '')) + '<span class="abst">' + esc(left) + '</span>' +
+      glyphify(esc(f.parts[1] || ''));
+  }
+  /** The line, or nothing at all: no deadline, or one the rail is too far from. */
+  function abstainNoteHtml(atMs, form) {
     const at = Number(atMs);
     if (!Number.isFinite(at)) return '';
-    const hhmm = abstainHhmm(at - Date.now());
-    if (hhmm === null) return '';
-    return '<span class="absnote" data-abstain-at="' + at + '">' +
-      glyphify(esc(ABS_PARTS[0])) + '<span class="abst">' + hhmm + '</span>' +
-      glyphify(esc(ABS_PARTS[1])) + '</span>';
+    const f = absForm(form);
+    const msLeft = at - Date.now();
+    if (f.railTooFar(msLeft)) return '';
+    return '<span class="absnote' + f.cls + '" data-abstain-at="' + at + '"' +
+      (form ? ' data-absform="' + esc(form) + '"' : '') +
+      (msLeft > 0 ? '' : ' data-abstained="1"') + '>' +
+      abstainInnerHtml(at, form) + '</span>';
   }
   /**
-   * One pass over every countdown on the page: the minutes patched where they
-   * changed, the whole line removed where its moment has passed. Called on a
-   * timer, never from a render — a countdown that waited for the 4s poll
-   * would jump four seconds at a time, and one that forced a render would
-   * rebuild the control under the reader's pointer.
+   * One pass over every countdown on the page: the figures patched where they
+   * changed, and the line flipped to *abstained* once — and only once — at
+   * zero. Called on a timer, never from a render: a countdown that waited for
+   * the 4s poll would jump four seconds at a time, and one that forced a
+   * render would rebuild the control under the reader's pointer.
    */
   function tickAbstain(root) {
     const scope = root || (typeof document === 'undefined' ? null : document);
     if (!scope || !scope.querySelectorAll) return;
     scope.querySelectorAll('.absnote[data-abstain-at]').forEach((el) => {
-      const hhmm = abstainHhmm(Number(el.getAttribute('data-abstain-at')) - Date.now());
-      if (hhmm === null) { el.remove(); return; }
+      const form = el.getAttribute('data-absform') || 'card';
+      const left = absForm(form).left(Number(el.getAttribute('data-abstain-at')) - Date.now());
+      if (left === null) {
+        // the words in front of the figures are not the words of *abstained*,
+        // so this one is a rewrite of the note rather than a patch of its
+        // number — done once, guarded by its own flag
+        if (el.getAttribute('data-abstained') !== '1') {
+          el.setAttribute('data-abstained', '1');
+          el.innerHTML = glyphify(esc(String(G.commit.abstained)));
+        }
+        return;
+      }
       const n = el.querySelector('.abst');
-      if (n && n.textContent !== hhmm) n.textContent = hhmm;
+      if (n && n.textContent !== left) n.textContent = left;
     });
   }
 
@@ -1773,7 +1826,7 @@ window.CARDS = (function () {
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks, mdDiffPieces, mdPiecesHtml, mdDiffHtml, mdBlocksHtml,
     originText, MD_RX, mdToHtml, htmlToMd, mdStrip, mdBlock, linkify, linkifyHtml, mdLine,
     MD_ONE, mdLead, mdInner, mdParts, richToSource, sourceToRich, readLane,
-    abstainHhmm, abstainNoteHtml, tickAbstain,
+    abstainHhmm, abstainLeft, abstainNoteHtml, tickAbstain,
     laneSeed, laneProposeHtml, laneCtlHtml, laneNameId, laneGroupAttrs, speakerHtml, railSpeakerHtml, secToggleHtml, fieldHtml, fieldOf, groundNote,
     initials, PERSON, avHtml,
     headOnlyHeight, cardBody, COLLAPSE_MS, EXPAND_MS,

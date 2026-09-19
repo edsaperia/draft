@@ -54,7 +54,7 @@ window.BAND = (function () {
       founderSpeakerLane, grantProv, groups, iDraft, isChange, isNum, isRoom, isStranger,
       heldBody, hostKeyOf, judgedOn, launchFarewell, launchGrant, liveMotionRec,
       mailGiveUpBatch, mailGiveUpBody,
-      mayPen, mayPenOn, me, membersHold, midOf, motionBlocks, motionOn, motionPicked,
+      mayPen, mayPenOn, me, membersHold, midOf, motionAbstainAt, motionBlocks, motionOn, motionPicked,
       motionTargets, nameOfMember, namePickNow, oneVoiceAsk, ordinaryBody, owedDeparture,
       pairWords, penOkFor,
       perpetual, picPickNow, policyNow, powerBody,
@@ -979,16 +979,24 @@ window.BAND = (function () {
           // the membership as it stands
           const rc = admitCardOf(c.admit);
           const pick = S['adm:' + c.admit] || null;
+          // **An admission at ✏️ price is an ordinary motion, so it wears the
+          // clock** (Q1460 (c)): the applicant's own race is this card's
+          // alone, so the deadline on it is exactly this seat's silence here.
+          // On the textless block, which is this card's Indifferent row.
+          const absAt = motionAbstainAt(c);
           // option blocks (CP1); Indifferent is a textless block whose radio
           // names the act instead of *Prefer this* (CP4, Q1099)
-          const lane = (v, label) => '<div class="pick' + (pick === v ? ' on' : '') + '">' +
+          const lane = (v, label) => {
+            const note = (v === 'either' && absAt != null) ? window.CARDS.abstainNoteHtml(absAt) : '';
+            return '<div class="pick' + (pick === v ? ' on' : '') + (note ? ' absrow' : '') + '">' +
             // `ctl` (T46): *Admit them* is the lane's own act, not the clause
             (label ? '<span class="opttext ctl">' + label + '</span>' : '') +
             '<button class="lanepick" aria-pressed="' + (pick === v) +
             '" data-admitpick="' + esc(c.admit) + '" data-v="' + v + '">' +
             '<span class="dot"></span>' + (v === 'either' ? '<span>Indifferent</span>'
               : '<span class="off">Prefer this</span><span class="on">Preferred</span>') +
-            '</button></div>';
+            '</button>' + note + '</div>';
+          };
           return cardHtml(c, ctx, said +
             '<p class="why">The membership decides this.</p>' +
             (rc ? '<div class="choice" role="radiogroup" aria-label="Admit them?">' +

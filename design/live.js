@@ -1221,9 +1221,12 @@ window.LIVE = (function () {
           crownWaits: textAssent,
           // **when your silence here becomes an abstention** (Q1460): the
           // seat's own deadline, on this browser's clock. The server sends it
-          // only while it is still ahead and only while this seat is awaited,
-          // so its mere presence is the whole condition for drawing the line;
-          // the items that cannot be voted on strike it again below.
+          // while this seat is awaited on the race's approval pair and has
+          // not answered it — **on either side of the moment** since Q1460
+          // (a), a passed one being what the spot reads *💤 abstained* off —
+          // so its mere presence is the whole condition for drawing the line
+          // and the renderer decides which of the two it says; the items that
+          // cannot be voted on strike it again below.
           abstainAt: r.abstainAt != null ? r.abstainAt + skew : undefined,
         });
         // a race holding only my own proposal is mine to withdraw, not to judge

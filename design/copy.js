@@ -152,9 +152,27 @@ window.COPY = (function () {
       // residency room: *a countdown for when not voting will count as a
       // lapse* · *same size and font and place as the "propose edit" text* ·
       // *actually "💤 abstain in hh:mm"*). His words, whole: the glyph names
-      // the rule 💤 stands for, and `hhmm` is the hours and minutes left,
-      // rounded up, so it never reads 00:00 while there is time to vote.
-      abstainIn: (hhmm) => '💤 abstain in ' + hhmm,
+      // the rule 💤 stands for, and `left` is the time remaining, rounded up,
+      // so it never reads 00:00 while there is time to vote.
+      abstainIn: (left) => '💤 abstain in ' + left,
+      // **And past a day it counts in days** (Q1460 (f), Ed 2026-09-19: *If
+      // it's more than a day away, the card should show e.g. "abstain in 3
+      // days & hh:mm"*). Whole days, then the hours and minutes left over;
+      // the *&* is his own. Under twenty-four hours the line is the hh:mm
+      // alone and this template is never reached.
+      abstainDays: (n, hhmm) => n + (n === 1 ? ' day' : ' days') + ' & ' + hhmm,
+      // **And once the period has run the spot stays and says so** (Q1460
+      // (a), Ed 2026-09-18, choosing this over the line going and over *— you
+      // can still vote*). A statement about this seat's silence, not a
+      // refusal: a late vote is still taken, and casting one clears the line
+      // exactly as answering in time always did.
+      abstained: '💤 abstained',
+      // **The rail says the same thing in the room it has** (Q1460 (e), Ed
+      // 2026-09-19: *the rail should only show the clock when it's less than
+      // 24 hrs*): inside the last day the entry carries the glyph and the
+      // figures alone — the card beside it is where the sentence is — and
+      // once the period has run it carries `abstained` like the card.
+      abstainShort: (hhmm) => '💤 ' + hhmm,
     },
     // reviseNote: what a locked judgment says for itself
     revise: {

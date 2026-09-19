@@ -76,9 +76,9 @@ for (let ms = 1; ms < 9 * DAY; ms += 7 * MIN + 13_000) {
 // **The abstention countdown's own ladder** (Q1460) — hh:mm, and the
 // opposite rounding rule to the clock above: every figure rounds **up**, so
 // the line never reads 00:00 while a vote of yours would still be counted.
-// Null once the moment is behind us; what the row should say then is Ed's
-// to rule, and until he rules it the line is not drawn at all.
-const { abstainHhmm } = ctx.window.CARDS;
+// Null once the moment is behind us, which is what the renderer reads as
+// *💤 abstained* (Q1460 (a)).
+const { abstainHhmm, abstainLeft, abstainNoteHtml, tickAbstain } = ctx.window.CARDS;
 const hhmm = [
   [abstainHhmm(0), null],
   [abstainHhmm(-5 * MIN), null],
@@ -97,5 +97,119 @@ for (const [got, want] of hhmm) {
   }
 }
 cases.push(...hhmm);
+
+// **And past a day the card counts in days** (Q1460 (f), Ed 2026-09-19: *If
+// it's more than a day away, the card should show e.g. "abstain in 3 days &
+// hh:mm"*). Whole days, then the hours and minutes left over; *1 day* in the
+// singular; under twenty-four hours it is the hh:mm alone, so `abstainLeft`
+// and `abstainHhmm` agree everywhere below a day and part company above it.
+// The same rounding-up rule throughout, which is what puts 23:59:59.999 in
+// the day column rather than at 24:00.
+const days = [
+  [abstainLeft(0), null],
+  [abstainLeft(-1), null],
+  [abstainLeft(1), '00:01'],
+  [abstainLeft(23 * HOUR + 58 * MIN), '23:58'],
+  [abstainLeft(DAY - 1), '1 day & 00:00'],       // rounded up over the boundary, never 24:00
+  [abstainLeft(DAY), '1 day & 00:00'],
+  [abstainLeft(DAY + MIN), '1 day & 00:01'],
+  [abstainLeft(DAY + 4 * HOUR + 12 * MIN), '1 day & 04:12'],
+  [abstainLeft(2 * DAY), '2 days & 00:00'],      // and the plural from two
+  [abstainLeft(3 * DAY + 4 * HOUR + 11 * MIN + 1), '3 days & 04:12'],  // Ed's own example
+  [abstainLeft(7 * DAY), '7 days & 00:00'],
+];
+for (const [got, want] of days) {
+  if (got !== want) {
+    failed++;
+    console.error(`✗ abstainLeft: got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`);
+  }
+}
+cases.push(...days);
+
+// **The note itself, and the flip at zero** (Q1460 (a), (e)). The renderer
+// is a string function with no DOM behind it, so its two forms and its one
+// rewrite can be read here rather than only in a browser: the card's
+// sentence, the rail's glyph-and-figures — drawn only inside the last day —
+// and *abstained* on both once the moment is behind us. The glyph comes back
+// as drawn markup, so each case asks what the note *says* rather than
+// matching its whole HTML.
+const NOW = Date.now();
+const says = (html) => String(html).replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').trim();
+const note = [
+  [says(abstainNoteHtml(NOW + 20 * MIN)), 'abstain in 00:20'],
+  [says(abstainNoteHtml(NOW + 3 * DAY + 4 * HOUR + 12 * MIN)), 'abstain in 3 days & 04:12'],
+  [says(abstainNoteHtml(NOW - MIN)), 'abstained'],
+  [abstainNoteHtml(undefined), ''],
+  // the rail: the figures alone inside the last day, nothing beyond it, and
+  // the same *abstained* once the period has run (Ed, 2026-09-19)
+  // the rail's own line has no words in it at all — the glyph is markup, so
+  // what is left when the markup goes is the figures and nothing else
+  [says(abstainNoteHtml(NOW + 20 * MIN, 'rail')), '00:20'],
+  [says(abstainNoteHtml(NOW + 23 * HOUR, 'rail')), '23:00'],
+  [abstainNoteHtml(NOW + 25 * HOUR, 'rail'), ''],
+  [says(abstainNoteHtml(NOW - MIN, 'rail')), 'abstained'],
+];
+// the figures the rail draws are inside the markup, so they are read off the
+// one element the ticker patches rather than off the stripped sentence
+const railFigs = (ms) => (/<span class="abst">([^<]*)</.exec(abstainNoteHtml(NOW + ms, 'rail')) || [])[1] ?? null;
+note.push([railFigs(20 * MIN), '00:20'], [railFigs(23 * HOUR), '23:00'], [railFigs(25 * HOUR), null]);
+// …and the card's, which keeps its figures in the same element
+const cardFigs = (ms) => (/<span class="abst">([^<]*)</.exec(abstainNoteHtml(NOW + ms)) || [])[1] ?? null;
+note.push([cardFigs(20 * MIN), '00:20'], [cardFigs(3 * DAY), '3 days &amp; 00:00']);
+for (const [got, want] of note) {
+  if (got !== want) {
+    failed++;
+    console.error(`✗ abstainNoteHtml: got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`);
+  }
+}
+cases.push(...note);
+
+// **The ticker patches, and flips once** (Q1460 (a)): a countdown's figures
+// are the only thing it writes while the moment is ahead, and at zero it
+// rewrites that one note to *abstained* and leaves it alone afterwards. A
+// hand-made element stands for the page here — `tickAbstain` walks whatever
+// it is handed and touches nothing else.
+const el = (at) => {
+  const inner = { html: abstainNoteHtml(at) };
+  const m = /<span class="abst">([^<]*)</.exec(inner.html);
+  const abst = { textContent: m ? m[1] : '', tagName: 'SPAN' };
+  const attrs = { 'data-abstain-at': String(at) };
+  if (!/data-abstained/.test(inner.html)) delete attrs['data-abstained'];
+  else attrs['data-abstained'] = '1';
+  return { abst, attrs, writes: 0,
+    getAttribute: (k) => (k in attrs ? attrs[k] : null),
+    setAttribute: (k, v) => { attrs[k] = v; },
+    querySelector: () => abst,
+    set innerHTML(v) { this.writes++; this.said = says(v); },
+  };
+};
+const scopeOf = (e) => ({ querySelectorAll: () => [e] });
+const ticked = [];
+{
+  const e = el(NOW + 20 * MIN);
+  e.abst.textContent = 'stale';
+  tickAbstain(scopeOf(e));
+  ticked.push([e.abst.textContent, '00:20'], [e.writes, 0]);
+}
+{
+  const e = el(NOW - MIN);          // born past: already flipped, and left alone
+  ticked.push([e.attrs['data-abstained'], '1']);
+  tickAbstain(scopeOf(e));
+  ticked.push([e.writes, 0]);
+}
+{
+  const e = el(NOW - MIN);          // and one that arrives ahead and runs out
+  delete e.attrs['data-abstained'];
+  tickAbstain(scopeOf(e));
+  tickAbstain(scopeOf(e));
+  ticked.push([e.writes, 1], [e.said, 'abstained'], [e.attrs['data-abstained'], '1']);
+}
+for (const [got, want] of ticked) {
+  if (got !== want) {
+    failed++;
+    console.error(`✗ tickAbstain: got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`);
+  }
+}
+cases.push(...ticked);
 console.log(failed ? `clock-check: ${failed} of ${cases.length} failed` : `clock-check: ${cases.length} cases ok`);
 process.exit(failed ? 1 : 0);

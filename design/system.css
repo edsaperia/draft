@@ -872,6 +872,15 @@
      the compression ladder is gone (Ed, 2026-08-16 — see the rail's own note on
      what urgency now decides). */
   .queue .ql { font-weight: 600; font-size: var(--t-ui); display: flex; }
+  /* **The abstention clock at the end of the title row** (Q1460 (e)): the
+     entry's own last day, in the rail's caption type, pushed to the right
+     edge by `auto` so it lands where a count or a date would. `flex: none` and
+     `nowrap` keep it whole; the baseline is the title's, so it reads as part
+     of that line rather than as a second one — nothing below the row moves
+     when it appears. Drawn inside a washed button, so it takes the entry's
+     own muted ink like every other quiet thing in the rail. */
+  .queue .ql > .qab { margin-left: auto; padding-left: 8px; flex: none;
+    align-self: baseline; font-weight: 400; }
   .queue .qs { font-size: var(--t-cap); color: var(--muted); display: flex; gap: 6px; align-items: baseline; }
   .queue .qv { display: block; font-size: var(--t-cap); color: var(--muted); margin-top: 1px; }
 
@@ -2096,6 +2105,13 @@
      `align-items: center` rather than baseline, because the radio is a pill
      whose own text sits well above the block's bottom edge. */
   .vinblock { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); }
+  /* **And a motion's Indifferent block is the same row** (Q1460 (c), Ed
+     2026-09-18: *every ordinary motion* wears it). A motion composes with the
+     setting's own control rather than with `vinBlockHtml`, so its textless
+     block is an ordinary `.pick` — the class is put on only where the note is
+     drawn, and it says the same two positions as `.vinblock` above and
+     nothing else, the block's own hairline and rhythm staying `.pick + .pick`'s. */
+  .pick.absrow { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); }
   /* The propose-edit treatment exactly: caption size, muted, the card's own
      face. It says something rather than doing something, so unlike the ✏️ it
      never takes the accent on hover and is not a control at all. */

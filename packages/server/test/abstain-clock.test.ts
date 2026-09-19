@@ -39,6 +39,8 @@ type View = {
   clauses: Array<{ id: string; judged: boolean; incumbentId: string; abstainAt?: number;
     candidates: Array<{ id: string; mine: boolean }> }>;
   raceCards: Array<{ kind: string; raceId?: string; a: { id: string }; b: { id: string } }>;
+  /** the blind row behind a motion on the ordinary route (Q1371, Q1460 (c)) */
+  settingRaces: Array<{ id: string; settingId: string; abstainAt?: number }>;
 };
 
 interface Booted { base: string; draft: DraftServer; dataDir: string }
@@ -105,7 +107,7 @@ const lastLinkTo = async (b: Booted, to: string): Promise<string> => {
  * silent throughout, is what keeps a race open long enough to be asked
  * anything about it.
  */
-async function room(b: Booted, lapseMs: number | null) {
+async function room(b: Booted, lapseMs: number | null, admissionPrice = 'assembly') {
   const created = await (await post(b.base, '/api/docs', {
     title: 'Abstention Charter', email: 'ada@example.org',
   })).json() as { slug: string; devLink: string };
@@ -127,7 +129,7 @@ async function room(b: Booted, lapseMs: number | null) {
     rate: { grant: 4, cap: 8, dripMinutes: 240 },
     quorum: { form: 'count', n: 1 },
     chamber: { rung: 'link' }, authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
-    applications: { apply: false }, admission: { price: 'assembly' },
+    applications: { apply: false }, admission: { price: admissionPrice },
     machines: { enabled: false, budget: 0 },
     lapse: { afterMs: lapseMs },
   };
@@ -197,7 +199,16 @@ describe('💤 the abstention countdown in the view (Q1460, SPEC §8.2)', () => 
     expect(adaView.clauses[0]!.abstainAt).toBeUndefined();
   }, 60_000);
 
-  it('once the period has run, the deadline is gone rather than negative', async () => {
+  /**
+   * **A moment already behind us is served all the same** (Q1460 (a), Ed
+   * 2026-09-18: once the period has run the spot reads *💤 abstained* and
+   * stays). The condition is the awaited row, never the clock: this seat is
+   * in it while it is in E and silent on the approval pair, and out of it the
+   * instant it answers — on either side of the moment, a late vote being
+   * still a vote. So the number does not move when the period runs out; only
+   * what the page says about it does.
+   */
+  it('a passed deadline is still served, and goes when the seat answers late', async () => {
     const b = await boot();
     const { slug, ada, bo, cmd, view } = await room(b, 6 * HOUR);
     await cmd(bo, 'propose-text', {
@@ -216,9 +227,81 @@ describe('💤 the abstention countdown in the view (Q1460, SPEC §8.2)', () => 
     const doc = b.draft.store.bySlug(slug)!;
     const { raceView } = await import('../src/views.js');
     const before = raceView(doc, now.me, Date.now()) as unknown as View;
-    expect(before.clauses[0]!.abstainAt).toBeTypeOf('number');
+    const at = before.clauses[0]!.abstainAt;
+    expect(at).toBeTypeOf('number');
     const after = raceView(doc, now.me, Date.now() + 7 * HOUR) as unknown as View;
     expect(after.clauses, 'the race is still open').toHaveLength(1);
-    expect(after.clauses[0]!.abstainAt).toBeUndefined();
+    expect(after.clauses[0]!.abstainAt, 'the same moment, an hour past it').toBe(at);
+
+    // …and a late vote clears it exactly as an early one does: ada keeps the
+    // current text (the room is three, so nothing is decided by it) and the
+    // row carries no deadline at any clock afterwards.
+    const card = now.raceCards.find((c) => c.kind === 'edge');
+    expect(card, 'ada is dealt the pair').toBeTruthy();
+    const inc = now.clauses[0]!.incumbentId;
+    await cmd(ada, 'judge-race',
+      { a: card!.a.id, b: card!.b.id, outcome: card!.a.id === inc ? 'a' : 'b' });
+    const late = raceView(doc, now.me, Date.now() + 7 * HOUR) as unknown as View;
+    expect(late.clauses).toHaveLength(1);
+    expect(late.clauses[0]!.judged).toBe(true);
+    expect(late.clauses[0]!.abstainAt, 'answered, so nothing is awaited').toBeUndefined();
+  }, 60_000);
+
+  /**
+   * **Every ordinary motion carries the same clock, and no constitutional one
+   * does** (Q1460 (c), Ed 2026-09-18: *every ordinary motion* — membership
+   * motions and setting-value motions alike, never a 🏛️ one).
+   *
+   * The reason it holds by construction rather than by a second rule: only
+   * the ordinary route races in the engine, so `settingRaces` is the set of
+   * motions a silence can be counted on, and `abstainAt` is read off the same
+   * awaited row as a clause's. A constitutional motion is put to the assembly
+   * and never enters the projection at all, so there is nothing for it to
+   * wear.
+   */
+  it('an ordinary motion carries the clock, on either kind, and a 🏛️ one carries none', async () => {
+    const b = await boot();
+    // **at ✏️ price, so an invitation is a race**: at *assembly* the same
+    // motion is the unanimity vote and abstains nowhere
+    const { ada, bo, cmd, view } = await room(b, 6 * HOUR, 'proposal');
+
+    // a **set** motion — ⏱️ is ordinary (§9.7.1) — put by bo, so ada is the
+    // seat awaited on it and bo is the mover, whose own preference is in
+    await cmd(bo, 'open-motion', {
+      payload: { kind: 'set', setting: 'rate', value: { grant: 5, cap: 8, dripMinutes: 240 } },
+      why: 'one more to start with',
+    });
+    // and a **membership** motion, which is its own one-candidate race
+    await cmd(bo, 'open-motion', {
+      payload: { kind: 'invite', email: 'di@example.org' }, why: 'di should be here',
+    });
+
+    const adaView = await view(ada);
+    const rowFor = (v: View, pre: string) =>
+      v.settingRaces.find((r) => r.settingId === pre || r.settingId.startsWith(pre + ':'));
+    const set = rowFor(adaView, 'rate');
+    expect(set, 'the set motion races').toBeTruthy();
+    expect(set!.abstainAt, 'and carries this seat’s own deadline').toBeTypeOf('number');
+    expect(Math.abs(set!.abstainAt! - (adaView.serverNowMs + 6 * HOUR))).toBeLessThan(5 * 60_000);
+    const inv = rowFor(adaView, 'invite');
+    expect(inv, 'the invitation races too').toBeTruthy();
+    expect(inv!.abstainAt).toBeTypeOf('number');
+
+    // **the mover is not awaited on either** (§3.3): their preference for
+    // what they put is already in, so there is no silence of theirs to run out
+    const boView = await view(bo);
+    expect(rowFor(boView, 'rate')!.abstainAt).toBeUndefined();
+    expect(rowFor(boView, 'invite')!.abstainAt).toBeUndefined();
+
+    // …and a constitutional motion — 🌍 is one — is not a race at all, so it
+    // has no row here and no card of it can wear a clock
+    await cmd(bo, 'open-motion', {
+      payload: { kind: 'set', setting: 'chamber', value: { rung: 'public' } },
+      why: 'let the world read it',
+    });
+    const withCon = await view(ada);
+    expect(rowFor(withCon, 'chamber'), 'the assembly route never enters the projection')
+      .toBeUndefined();
+    expect(withCon.settingRaces.every((r) => r.settingId !== 'chamber')).toBe(true);
   }, 60_000);
 });

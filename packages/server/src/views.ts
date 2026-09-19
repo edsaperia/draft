@@ -139,11 +139,19 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
   })();
   // **The one deadline a race carries for this seat** (Q1460): the engine's
   // own number, read off the awaited row 💤's period will strike this member
-  // from — never a second rule, and never anybody else's. A moment already
-  // past is no countdown, so it is left out rather than sent negative.
+  // from — never a second rule, and never anybody else's.
+  //
+  // **A moment already behind us is served too** (Q1460 (a), Ed 2026-09-18:
+  // once the period has run the spot reads *💤 abstained* and stays). The
+  // condition is the awaited row itself and nothing about the clock:
+  // `abstainDeadline` answers while this seat is in the race's awaited set —
+  // in E, and silent on the approval pair — and answers `null` the instant it
+  // answers that pair, whichever side of the moment it does so on. So the
+  // page is told *when* and works out *whether* against its own clock, which
+  // is the one number a browser can be trusted with.
   const abstainAt = (raceId: string): { abstainAt?: number } => {
     const at = engine.abstainDeadline(raceId, memberId);
-    return at !== null && at > nowMs ? { abstainAt: at } : {};
+    return at !== null ? { abstainAt: at } : {};
   };
   // **At this poll's own clock** (Q1439): who has abstained, and so what each
   // race's floor is, moves with `t` and with no event to mark it.
@@ -184,11 +192,12 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
       // **this seat's own abstention clock** (Q1460, Ed 2026-09-18): the
       // moment their silence here stops counting toward the group (§8.2,
       // R-127), in server ms, so the card can say *💤 abstain in hh:mm*
-      // beside the Indifferent row. Absent where 💤 is *never*, where this
-      // seat has answered the race's approval pair or is out of E, and once
-      // the moment has passed — the page draws nothing in all four cases.
-      // It is one member's own clock and names nobody else, so §3.5 is
-      // untouched; `serverNowMs` below is the offset the page reads it by.
+      // beside the Indifferent row — and *💤 abstained* once that moment is
+      // behind us (Q1460 (a)). Absent where 💤 is *never*, where this seat has
+      // answered the race's approval pair, and where it is out of E; the page
+      // draws nothing in all three. It is one member's own clock and names
+      // nobody else, so §3.5 is untouched; `serverNowMs` below is the offset
+      // the page reads it by.
       ...abstainAt(r.id),
       // **waiting behind a park on the same span** (R-100, SURFACE E36): the
       // batch passes this race over until the Founder answers a park it
@@ -248,18 +257,15 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
     // room's text races outvalue an admission, and twenty members each
     // holding four text cards never met the applicant. Same blind CardView
     // as the clause rows carry (Q1202) — no standing, no author.
-    // **And an ordinary motion abstains like any other race** (Q1460): only
-    // the ordinary route is a race in the engine at all — a 🏛️ motion is put
-    // to the assembly and never enters here — so a setting row carries the
-    // same clock by construction, and no constitutional card can wear one.
-    // **Nothing draws it yet**, and the reason is the row's own: a *set*
-    // motion shares its setting's race with every rival value still running
-    // (Q1348), so this deadline is the race's leading pair's and not that
-    // card's, while a membership motion *is* its race and it would be exact.
-    // Drawing it on one kind and not the other would make two cards that
-    // look identical say different things, so it waits on Ed's ruling —
-    // Q1460's open (c). The number is served because it is the honest one
-    // about the race, whoever comes to read it.
+    // **And every ordinary motion wears the clock** (Q1460 (c), Ed
+    // 2026-09-18): only the ordinary route is a race in the engine at all — a
+    // 🏛️ motion is put to the assembly and never enters here — so a setting
+    // row carries the same clock by construction, and no constitutional card
+    // can wear one. A membership motion *is* its race, so the number is
+    // exact; a *set* motion shares its setting's race with every rival value
+    // still running (Q1348), so what it carries is **the leading pair's**,
+    // which is the pair the seat's silence is actually counted on and the
+    // honest number about the race either way.
     return { id: r.id, settingId: r.settingId, closeness: r.closeness, judges: r.leaderJudges,
       floor: r.floor, ...abstainAt(r.id),
       judged: here.some((j) => !j.superseded && !j.locked), askable: dealt || ask !== null, ask };
