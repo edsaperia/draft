@@ -1736,7 +1736,19 @@ window.LIVE = (function () {
       const hunksOf = (d) => {
         const all = env.cs.text === '' ? [] : String(env.cs.text).split('\n');
         const nLines = all.length;
-        return d.sites.map((site) => {
+        // **Only the places that changed go out** (issue #43's page half;
+        // Q1479 (b), Ed 2026-09-19). A site typed into and put back survives
+        // with its origin's own wording (Q1382: an unchanged site is kept),
+        // and the row beside it already says *1 place changed* — but every
+        // site was sent, so the untouched clause joined the proposal's
+        // footprint, made it a rival of whatever else was running there, and
+        // stranded one of the two when either carried, over a change nobody
+        // made. `draftRowState`'s own test, so what goes out is what the row
+        // counts; it also stops an empty gap sending one blank line. A site
+        // with no remembered wording is sent as it always was.
+        const changed = (site) => !Array.isArray(site.origin) ||
+          site.text !== site.origin.map((x) => x.text).join('\n');
+        return d.sites.filter(changed).map((site) => {
           const ls = site.text.split('\n');
           // a **gap site** (backlog 204) is a pure insertion: `start === end`
           // at the line the gap stands before, clamped to the text's end
