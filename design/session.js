@@ -2084,6 +2084,15 @@
     // the highest any proposal reached against the text it was measured on —
     // the number the bar was actually being asked about
     const best = Math.max(0, ...field.map((c) => c.p ?? 0));
+    // **A reading is printed only where the field carries one** (issue #66,
+    // 2026-09-19). A retired record carries no probability — the engine writes
+    // none — so `best` fell back to 0 and the eyebrow told the author who had
+    // just lost that 0% of the room approved their wording, beside a line
+    // counting the very people who weighed in. The guard beneath covered only
+    // a race the clock cut off; this is the same thought asked of the field
+    // itself. SURFACE §9's record row puts the percentages on the ranked
+    // field, not the eyebrow.
+    const hasP = field.some((c) => typeof c.p === 'number');
     // **The head is the clause, and the clause is not always the top of the
     // ranking.** `ranked.slice(1)` assumed it was — true on an adopted card,
     // where the winner both is the clause and leads the field, and false on a
@@ -2163,7 +2172,7 @@
       '<span>' + (und ? T.record.undecided : T.record.decided) + ' · ' + (d.judges ?? 0) + '/' + ROSTER + PEOPLE +
       // an undecided race nobody read prints no reading: 0% is a number about
       // nothing
-      (und && !(best > 0) ? '' : ' · ' + pct(best) + JUDG) + '</span>' +
+      (!hasP || (und && !(best > 0)) ? '' : ' · ' + pct(best) + JUDG) + '</span>' +
       '<span class="sub">' + esc(d.when || '') + '</span></div>' +
       // **The counts are printed, not hovered** (Q1452, Ed 2026-09-18: *print the
       // count line on the card*): the sentence was a `title` on the head, which a
