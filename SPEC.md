@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.135
+# Group Drafting Engine — Specification v0.136
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -23,6 +23,8 @@ The record is co-equal with the text: it is where outvoted currents remain visib
 
 **2.1 Patches.** A candidate is a patch: a transformation of the document with a **footprint** (the spans it touches). One type covers everything — clause rewrites, insertions, deletions (patch to empty), restructures, and cross-cutting edits such as a document-wide rename, which is one candidate with a wide footprint, adopted atomically or not at all. Paragraphs exist for display and anchoring only; the mechanism's unit is the edit.
 
+**A patch states what it replaces.** Every hunk carries, beside the span it touches, the exact lines of its base version it means to replace — and a pure insertion, which replaces nothing, carries instead the exact line it means to follow, or nothing at all where it stands at the top of the document. The comparison is exact: blank lines are lines, and no whitespace or marker is normalised away. It is a claim about the base version rather than part of the candidate: it is checked where the act enters (§2.4) and is never recorded. → why: R-136
+
 **2.2 Overlap: three gates.** When two live patches' footprints overlap, three gates are tried in order.
 
 | # | Gate | Test | If it succeeds | The race becomes | Stake |
@@ -34,6 +36,8 @@ The record is co-equal with the text: it is where outvoted currents remain visib
 **2.3 Races.** A race is a connected component of mutually conflicting live patches, plus the incumbent text of the contested spans (the empty incumbent, for insertions). All resolution machinery attaches to races.
 
 **2.4 Rebase.** Adoption applies the winning patch and rebases every live patch onto the new text. A failed rebase returns the patch to its author: confirm against the new text (evidence resets), revise, or withdraw with full refund.
+
+**A patch aimed at text that has moved is refused at the door.** Rebasing reaches every patch the engine holds and no draft still being written on a client, whose line numbers go stale the moment a line is adopted above them while the version it quotes stays current — so the version alone cannot tell an aimed patch from a misaimed one. **Every participant boundary therefore checks §2.1's statement** against the lines the named version holds, and refuses the act where the statement is missing or does not match: the participant API and the host's proposing, amending and re-making commands alike, for a member's client, a machine member (§10) and any other participant equally (§1). A refusal is not a loss — the wording is the client's to aim again. → why: R-136
 
 **2.5 Surgery.** When a wide patch and a narrow patch collide at one site, the system proposes carving the contested instance into its own race, letting the rest of the wide patch proceed. The author accepts or declines. Surgery also normalizes partial-overlap rivals (A does X+Y, B does X+Z: the X-rivalry becomes its own race; Y and Z proceed independently).
 
