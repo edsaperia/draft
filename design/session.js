@@ -5070,8 +5070,21 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   // reached for them). What makes this safe to re-run is that the
   // capability is part of the charter column's data key, so an
   // acknowledgment re-keys and the full set is handed back in.
+  //
+  // **Two things this never governed** (Q1479 (a), Ed 2026-09-19; issue #30).
+  // *A closed document*: the rule above is *no task before the power it
+  // needs*, and on a closed page there is no ⚖️ left to press — the rail
+  // keeps only 🥂 — so every `rec:` the server sent would wait for ever and
+  // the final document would read as still being decided to anybody whose OK
+  // is in another browser. Once the clock has run nothing waits behind ⚖️:
+  // the record is not a task, it is what the document ended up saying.
+  // *The Founder's amendment*: an `amd:` card is a ✒️ act reported (SURFACE
+  // E35, R-058), not a race, and ⚖️ is not the action it asks for. Neither
+  // is `mine`, which would send both down the *yours* road — force-kept, ✏️,
+  // 🗑️ to withdraw — and none of that is true of a sealed record.
   const KEPT_UNJUDGED = new Set(['park', 'draft', 'crown']);
-  const withheld = (g) => !KEPT_UNJUDGED.has(g.kind) && !g.mine && !MAY_JUDGE();
+  const withheld = (g) => !docClosed && !g.amendment &&
+    !KEPT_UNJUDGED.has(g.kind) && !g.mine && !MAY_JUDGE();
 
   // **…but the document does not read as empty while they wait** (Q1413, Ed
   // 2026-09-17, from the proposal-shapes walk's surprise: a new member of a
