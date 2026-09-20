@@ -67,6 +67,7 @@ night before (Ed's issues review, item 18: *one deploy Friday or Saturday, never
 | What you see | What to do |
 |---|---|
 | One member's page looks stale or odd | They reload — after proposing or copying whatever they are typing: an unproposed draft lives only in the page. |
+| Somebody's card shows a proposal against the wrong clause — *the line above* | **Screenshot the whole card first, with the clause tabs and the topbar in it**, then they reload. Q1477 is unexplained on somebody else's proposal (the author's-own-card cause was fixed the night before, #66), so the picture is worth more than the fix: whose proposal, what had just been adopted above it, and whether the card was already open. |
 | *This link has already been used* | The page's own resend form, or 📧 *Log In* at the document's address. |
 | Every page draws the maintenance modal | The host is paused. It lifts itself within fifteen minutes; by hand, `POST /api/admin/resume` with `DRAFT_BOT_KEY` (OPERATING §3). |
 | A red flag, bottom of the page | The document is `stalled` — the store is refusing its saves. OPERATING §11. Do not restart on a guess; read the error log first. |
