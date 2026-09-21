@@ -487,6 +487,13 @@ jobs:
       # about the first three and nothing after the fourth.
       - run: npm run picture-walk
         if: always()
+      # **The rail follows the text as each face lands** (2026-09-21, the
+      # session-probe's 43 rail differences read): the page re-laid its rail
+      # only when the last pending face was in, so with Bold a second behind
+      # Regular every entry stood a line off its clause for that second. Holds
+      # one face back and times how long the rail stays stale.
+      - run: npm run rail-font-walk
+        if: always()
       # **The take-back** (Q1318, Ed 2026-09-11: *I should be able to choose
       # a value to take it back with ✒️, but I wasn't able to do that here*):
       # hand a setting to the membership, then reclaim it with the pen and a

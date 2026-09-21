@@ -5035,8 +5035,20 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // and every absolutely placed thing beside it is 25px stale until the
     // next scroll or poll. Every handler that re-measures on a resize is the
     // set that must re-run, so the page hands itself one.
+    //
+    // **And each face is its own arrival** (2026-09-21, the session-probe's
+    // 43 rail differences read): `loadingdone` fires once, when the *last*
+    // pending face is in, and Regular landing is what moves every clause —
+    // so with Bold a second behind it the rail stood a line off the text for
+    // that second, and for three where nothing else re-laid it. A face's own
+    // `loaded` promise is the moment the text moves; one that is never asked
+    // for stays pending and costs nothing. Guard: `npm run rail-font-walk`.
     if (document.fonts && document.fonts.addEventListener) {
-      document.fonts.addEventListener('loadingdone', () => dispatchEvent(new Event('resize')));
+      const relay = () => dispatchEvent(new Event('resize'));
+      document.fonts.addEventListener('loadingdone', relay);
+      if (document.fonts.forEach) {
+        document.fonts.forEach((f) => { if (f.loaded && f.loaded.then) f.loaded.then(relay, () => {}); });
+      }
     }
     // the wallet has a phone form (`renderWallet`), so a width crossing the
     // line redraws it once — never per resize event, which a flight in the

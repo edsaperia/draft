@@ -241,6 +241,27 @@ async function runSide(context, base, probe, side) {
   // the probes' precondition: both pages from scroll 0, one settled frame
   await page.evaluate(() => { window.scrollTo(0, 0); });
   await page.waitForTimeout(250);
+  // …and **at rest**, never merely 250ms on (2026-09-21, the 43 rail
+  // differences of 2026-09-16 and 2026-09-21 read): a rail entry glides to
+  // its clause over 220ms (`.qitem`'s `transition: top`), and the glide
+  // starts whenever the page last re-laid the rail — on a font face landing,
+  // which leaves thirty milliseconds of the pause above to spare. The flake
+  // read every charter entry one text line (24.6px) off on one side, the
+  // clauses agreeing, the files identical; it did not reproduce in fifty-four
+  // cold runs, so this is the margin made wide rather than a race caught in
+  // the act. Rest is two looks 150ms apart finding every clause and entry
+  // where it was, with no entry mid-glide; capped, so a page that never
+  // settles is still measured and says so in its diffs. The page's own half,
+  // which did reproduce: `npm run rail-font-walk`.
+  await page.waitForFunction(() => {
+    const tops = [...document.querySelectorAll('.qitem, .anch')]
+      .map((e) => Math.round(e.getBoundingClientRect().top * 10)).join();
+    const still = tops === window.__probeRest;
+    window.__probeRest = tops;
+    const gliding = document.getAnimations().some((x) => x.playState === 'running' &&
+      x.effect && x.effect.target && x.effect.target.closest && x.effect.target.closest('.qitem'));
+    return still && !gliding;
+  }, null, { polling: 150, timeout: 5000 }).catch(() => {});
   await page.addScriptTag({ url: base + probe.script });
   await page.waitForFunction(() => !!window.__probeReport, null, { timeout: 60_000 });
   const report = await page.evaluate(() => window.__probeReport);
