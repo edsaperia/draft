@@ -271,8 +271,9 @@ window.LIVE = (function () {
               data.slim.some((k) => k !== 'view' && data[k] === undefined)) {
               askFull = true;
               console.warn('[live] a slim answer named a part this page has never held; asking again');
-              this.refresh();
-              return;
+              // returned, not fired: whoever awaits this poll (the refresh
+              // after a command) waits for the whole view, not for nothing
+              return this.refresh();
             }
             askFull = false;
             if (Array.isArray(data.slim) && env.cs.v) {
