@@ -19,9 +19,14 @@ Written 2026-09-21 for builders with none of the planning session's context. Del
 7. **A finding that turns out to need a decision stops and is reported**, with the readings as options. Do not implement a reading on spec.
 8. Each stage's report: what changed by `file:line`, each guard and that it was red before, each gate's result with counts, walks that could not run and why, anything found on the way.
 
-## Stage 0 — land Q1490 (built 2026-09-21, review owed)
+## Stage 0 — land Q1490 (done 2026-09-21)
 
-The 👥 scale opens to 1–100% with two conditional sentences on the card; R-126 reversed as R-139; SPEC v0.139. Built in five commits ending `20d9c95`. The planning session reviews the diff and runs the seven gates; the builder left the probe references unfrozen on purpose, the session-probe carrying 43 rail diffs that predate it. **Stage 1 does not start until Stage 0 is committed**, because both touch `packages/engine-core` and `design/setup.js`.
+The 👥 scale opens to 1–100% with two conditional sentences on the card; R-126 reversed as R-139; SPEC v0.139. Built in five commits ending `20d9c95`. Reviewed, the seven gates green (`febaeb0` cleared a lint red the repro scripts carried, `7bbf742` a test-runner heartbeat timeout in `memo-differential`); the builder left the probe references unfrozen on purpose, the session-probe carrying 43 rail diffs that predate it. **Stage 1 does not start until Stage 0 is committed**, because both touch `packages/engine-core` and `design/setup.js`.
+
+## Stage 0b — two things owed before the page stages (small; the planning session or the next builder)
+
+- **The 👥 bracket prints the real floor** (Ed, 2026-09-21 evening, Q1490's block: *print the real floor*). The `(x of y)` after a share is the floor the engine applies, `max(⌈n·E/100⌉, min(2, E))`, never the share's bare arithmetic — a 1% share in a membership of twelve reads *(2 of 12)*. One helper computes it, `shareCount` (`design/setup.js`, beside `SHARE`), and the same helper feeds `quorumNote`'s test for *The minimum quorum is 2…* — **so do not raise `shareCount` itself, which would switch that sentence off**: give `shareTail` and `shareWords` a floor figure of their own and leave the note reading the bare share. Every site that prints a settled share goes through those two writers (the constitution's clause, the strip's taken line, the composer's lane), so all of them follow. Moves the card-copy golden where a fixture's share comes to one; read the diff. Guard: a `slider-walk` or `card-audit` assertion that at E ≥ 2 no 👥 bracket reads *(1 of*.
+- **Read the session-probe's drift before anything is re-frozen.** On 2026-09-21 `design/tools/session-probe.js` showed 43 rail differences, every right-hand rail entry 24–25 px low against `design/reference/`, **with no surface file changed since the last freeze (`88a1136`)** — so the cause is outside the code: the browser the probe drives, a font, the window, or the date. Run the probe, find which element above the rail's entries gained the height, and say which it is. If it is environmental, make the probe robust to it or re-freeze with the reason written in the commit; never let `qa:freeze` swallow it unread. The setup-probe's own 19 differences are Q1490's 👥 card and are intended.
 
 ## Stage 1 — server and engine, no ruling needed (the full lane)
 
