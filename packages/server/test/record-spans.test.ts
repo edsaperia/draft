@@ -79,4 +79,18 @@ describe('spanNow — the steps after the record’s version, in order', () => {
     // a record decided against version 2 is untouched by steps 1 and 2
     expect(spanNow({ start: 3, end: 4 }, 2, steps)).toEqual({ start: 3, end: 3 });
   });
+
+  // **and stops short where the span is wanted in an earlier version's own
+  // coordinates** (Q1488): a record's field is read at the version the record
+  // was decided at, and a member of it that closed early is frozen behind it.
+  it('carries only as far as `upTo`', () => {
+    expect(spanNow({ start: 1, end: 2 }, 0, steps, 1)).toEqual({ start: 1, end: 2 });
+    expect(spanNow({ start: 1, end: 2 }, 0, steps, 2)).toEqual({ start: 3, end: 4 });
+    expect(spanNow({ start: 1, end: 2 }, 0, steps, 3)).toEqual({ start: 3, end: 3 });
+    // carrying forward only: a span already past `upTo` comes back untouched
+    expect(spanNow({ start: 3, end: 4 }, 2, steps, 1)).toEqual({ start: 3, end: 4 });
+    // and no `upTo` is the whole walk, as every caller before this had
+    expect(spanNow({ start: 1, end: 2 }, 0, steps, Infinity))
+      .toEqual(spanNow({ start: 1, end: 2 }, 0, steps));
+  });
 });

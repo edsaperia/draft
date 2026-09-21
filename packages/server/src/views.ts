@@ -441,6 +441,7 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
   // clause it was written for, and the reason, and none of what the hold-back
   // exists to withhold — no rival, no reading, no judge count, no floor.
   const earlyMine: Array<{ o: ReturnType<typeof api.outcomes>[number]; c: Candidate }> = [];
+  const fieldVersions = new Map<string, number>();
   for (const o of opts.records === false && !engine.closed ? [] : api.outcomes()) {
     const c = engine.getCandidate(o.candidateId);
     if (c.patch === undefined) continue;
@@ -464,6 +465,9 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
       byRace.set(o.raceId, rec);
     }
     rec.field.push(entry);
+    // the version each member's hunks are expressed against (Q1488): its own
+    // base for a candidate closed early, the adoption's for the winner
+    fieldVersions.set(o.candidateId, o.version);
     if (!authorsOf.has(o.raceId)) authorsOf.set(o.raceId, new Set());
     authorsOf.get(o.raceId)!.add(c.author);
     rec.judgedByMe = rec.judgedByMe || mineJ;
@@ -488,20 +492,54 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
   // mapped the first time any seat's view reaches it after an event.
   const steps = engine.derived('host:versionSteps', () => versionSteps(engine));
   const recordSpans = engine.derived('host:recordSpans', () => new Map<string, Span>());
+  const spanOf = (hunks: ReadonlyArray<{ start: number; end: number }>): Span =>
+    ({ start: Math.min(...hunks.map((h) => h.start)), end: Math.max(...hunks.map((h) => h.end)) });
   for (const rec of byRace.values()) {
-    const hs = rec.field.flatMap((f) => f.hunks);
-    const span = { start: Math.min(...hs.map((h) => h.start)), end: Math.max(...hs.map((h) => h.end)) };
+    /**
+     * **A record's span is in the record's own line space** (Q1488; the
+     * wrong-line hunt of 2026-09-20). Each field member's hunks are expressed
+     * against the version *it* was written for, and a rival closed early
+     * (Q1440) stays frozen there — `rebaseOthers` carries only what is live or
+     * parked. So the union of the whole field mixed two line spaces the moment
+     * a line was carried in above the race: the record began a line too high,
+     * named more lines than changed, and told every seat *This clause has
+     * changed again since* of a clause that had not.
+     *
+     * **The span stays the whole field's**, because the card is the whole
+     * field's: one *Previous text* stands above every wording that was put on
+     * this clause, so it has to cover what each of them meant to replace or a
+     * rival's wording is shown against lines it does not align with. What
+     * changes is that each member is carried to the record's own version by
+     * `spanNow` first — the walk the stranded road above already takes — so
+     * the union is taken in one line space instead of two.
+     */
+    const winner = rec.outcome === 'adopted'
+      ? rec.field.find((f) => f.candidateId === rec.candidateId)?.hunks : undefined;
+    const parts = rec.field.map((f) => {
+      const v = fieldVersions.get(f.candidateId) ?? rec.version;
+      return v < rec.version ? spanNow(spanOf(f.hunks), v, steps, rec.version) : spanOf(f.hunks);
+    });
+    const span = { start: Math.min(...parts.map((s) => s.start)),
+      end: Math.max(...parts.map((s) => s.end)) };
     let prev: string[] = [];
     try { prev = linesAt(rec.version); } catch { prev = []; }
     rec.displaced = prev.slice(span.start, span.end);
     let at = recordSpans.get(rec.raceId);
     if (!at) {
-      // an adopted record starts from the lines its winner put there, in
-      // `version + 1`; a retired or undecided one from the field's span,
-      // the incumbent standing, in `version` itself
-      const winner = rec.outcome === 'adopted'
-        ? rec.field.find((f) => f.candidateId === rec.candidateId)?.hunks : undefined;
-      at = winner ? spanNow(adoptedSpan(span, winner), rec.version + 1, steps)
+      // An adopted record starts from the lines its winner put there, in
+      // `version + 1`; a retired or undecided one from the field's span, the
+      // incumbent standing, in `version` itself.
+      //
+      // **The winner's own span, not the field's** (Q1488): `at` is not the
+      // other end of `displaced` — the page reads the clause standing there
+      // and compares it with the *winner's* wording, so *This clause has
+      // changed again since* is what a record wears whenever `at` reaches one
+      // line further than the winner did. A field wider than its winner is
+      // the ordinary case on a contested clause, and the sentence fired on
+      // every one of them, of a change the record itself is. Where there is
+      // no winner the comparison is against the displaced text, so there the
+      // field's span is the right one and stays.
+      at = winner ? spanNow(adoptedSpan(spanOf(winner), winner), rec.version + 1, steps)
         : spanNow(span, rec.version, steps);
       recordSpans.set(rec.raceId, at);
     }

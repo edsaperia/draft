@@ -480,7 +480,9 @@ await run('patches', async () => {
    closed early (Q1440: enough of the room prefers the current text to it), so its patch is frozen in
    the line space of that moment; a line is then carried in ABOVE the clause; then the first rival is
    carried.  The record files both under one race, and its *Previous text* must be the lines the
-   winner replaced — not those lines and a neighbour. */
+   whole field ran over, read in ONE line space — not that union taken across two, which reaches
+   back over a neighbour nobody proposed anything about.  Ruled and cured as Q1488; its `at` is the
+   winner's own span, which is what the page compares the winner's wording against. */
 await run('record', async () => {
   const d = await found(TEXT, MEMBERS, ['r']);
   const R = await seat(browser, d.links.r, d.slug);

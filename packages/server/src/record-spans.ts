@@ -82,10 +82,17 @@ export function adoptedSpan(span: Span, winner: Hunk[]): Span {
 /**
  * A span in `version`'s coordinates, carried to the current version. Steps
  * whose `v` is at or below `version` are already in the span's coordinates.
+ *
+ * `upTo` stops the walk short, for a span that is wanted in some **earlier**
+ * version's coordinates rather than today's (Q1488): a record's field is read
+ * in the version the record was decided at, and a member of it that closed
+ * early is frozen one or more versions behind that. It carries forward only —
+ * a span already at or past `upTo` comes back untouched.
  */
-export function spanNow(span: Span, version: number, steps: VersionStep[]): Span {
+export function spanNow(span: Span, version: number, steps: VersionStep[],
+  upTo = Infinity): Span {
   let out = span;
-  for (const s of steps) if (s.v > version) out = shiftSpan(out, s.hunks);
+  for (const s of steps) if (s.v > version && s.v <= upTo) out = shiftSpan(out, s.hunks);
   return out;
 }
 
