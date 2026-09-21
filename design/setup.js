@@ -1595,10 +1595,25 @@ window.SETUP = (function () {
     return M && M.quorumCount ? Math.min(M.quorumCount({ form: 'share', n }, E), E)
       : Math.min(Math.max(1, Math.ceil(n * E / 100)), E);
   };
+  /* **The bracket prints the floor the engine applies, never the share's bare
+     arithmetic** (Ed, 2026-09-21, Q1490: *print the real floor*): a race is
+     held to `max(⌈n·E/100⌉, min(2, E))` (SPEC §4.2, the module's
+     `adoptionFloor`), so 1% of a membership of twelve reads *(2 of 12)* —
+     the number a member will actually meet. `shareCount` above stays the bare
+     share **on purpose**: `quorumNote` reads it to know the share came to
+     fewer than two, and raising it would switch that sentence off exactly
+     where it is owed. Guard: `npm run slider-walk`. */
+  const shareFloor = (pct, e) => {
+    const c = shareCount(pct, e), E = Math.max(1, +e || 1);
+    if (c === null) return null;
+    const M = window.CONSTITUTION;
+    return M && M.adoptionFloor ? M.adoptionFloor(c, E)
+      : Math.max(Math.min(c, E), Math.min(2, E));
+  };
   const shareTail = (pct, e) => (pct === '' || pct === null || pct === undefined || !isFinite(+pct)
-    ? '' : window.COPY.page.val.quorumTail(shareCount(pct, e), Math.max(1, +e || 1)));
+    ? '' : window.COPY.page.val.quorumTail(shareFloor(pct, e), Math.max(1, +e || 1)));
   const shareWords = (pct, e) => (pct === '' || pct === null || pct === undefined || !isFinite(+pct)
-    ? '' : window.COPY.page.val.quorumPct(+pct, shareCount(pct, e), Math.max(1, +e || 1)));
+    ? '' : window.COPY.page.val.quorumPct(+pct, shareFloor(pct, e), Math.max(1, +e || 1)));
   /* …and the slot the tail is repainted into, keyed by the setting so the
      `input` handlers can find it without knowing which surface drew it —
      the trick `data-meaning` played for the meaning line until that line

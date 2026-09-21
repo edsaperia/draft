@@ -88,7 +88,10 @@
       case 'admission': case 'removal': return C.clauseOf(setting, v.price, ctxOf);
       case 'applications': return C.clauseOf('applications', v.apply ? 'apply' : 'invite', ctxOf);
       case 'quorum': return v.form === 'count' ? P.quorumRule.count(v.n)
-        : P.quorumRule.share(v.n + '%', P.val.quorumTail(Math.ceil((v.n / 100) * roster), roster));
+        : P.quorumRule.share(v.n + '%', P.val.quorumTail(
+          // the floor a race is held to, max(⌈n·E/100⌉, min(2, E)) — product
+          // before quotient (issue #24), the seconder under it (Q1490)
+          Math.max(Math.ceil((v.n * roster) / 100), Math.min(2, roster)), roster));
       case 'rate': return dripPhrase(v.dripMinutes) ? T.rule.rate(dripPhrase(v.dripMinutes)) : '';
       case 'lapse': return v.afterMs === null ? T.rule.lapseNever : (spell ? T.rule.lapseAfter(spell) : '');
       case 'ending': return v.endsAtMs === null ? T.rule.endingNever

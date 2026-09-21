@@ -4780,7 +4780,10 @@
         { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false })),
     quorum: () => (S.quorumForm === 'count'
       ? PAGE_COPY.val.quorumOf(Math.min(takenOf('quorum') || S.quorumN, E()), E())
-      : PAGE_COPY.val.quorumPct(takenOf('quorum') || S.quorumPct, quorumCount(), E())),
+      : PAGE_COPY.val.quorumPct(takenOf('quorum') || S.quorumPct,
+        // the bracket is the floor a race is held to, never the bare share
+        // (Ed, 2026-09-21, Q1490; setup.js's shareFloor is the writers' copy)
+        M.adoptionFloor(quorumCount(), E()), E())),
     authorship: () => ({'anonymous':'Nobody’s name, ever','anonymousElective':'Nobody’s name unless they choose','sealed':'Names at the close','sealedElective':'Names at the close, or earlier by choice','public':'Names from the start'})[takenOf('authorship') || (S.authorship === 'roster' ? 'anonymous' : S.authorship)],
     judgments: () => ({ never: 'Never revealed', after: 'Revealed at the end' }[
       takenOf('judgments') || (S.judgments === 'roster' ? 'never' : S.judgments)]),

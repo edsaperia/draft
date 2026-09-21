@@ -321,6 +321,31 @@ for (const key of ['quorum']) {
   check('the share says what it comes to in this membership',
     !!sh && /\(1 of 1\)/.test(sh.label), sh ? sh.label.slice(0, 60) : '');
 
+  // **The bracket prints the floor the engine applies** (Ed, 2026-09-21,
+  // Q1490: *print the real floor*) — `max(⌈n·E/100⌉, min(2, E))`, so in a
+  // membership of two or more no 👥 bracket can read *(1 of*. This founding is
+  // a membership of one, so the writers every site prints a share through
+  // are asked directly, over the whole scale and memberships of 2 to 40,
+  // against the module's own `adoptionFloor`. And the other half of the same
+  // ruling: `quorumNote` must go on reading the **bare** share, or the
+  // *minimum quorum is 2* sentence falls silent exactly where it is owed.
+  const floors = await page.evaluate(() => {
+    const U = window.SETUP, M = window.CONSTITUTION, bad = [];
+    for (let E = 2; E <= 40; E += 1) for (let pct = 1; pct <= 100; pct += 1) {
+      const want = M.adoptionFloor(M.quorumCount({ form: 'share', n: pct }, E), E);
+      for (const [name, s] of [['shareTail', U.shareTail(pct, E)], ['shareWords', U.shareWords(pct, E)]]) {
+        if (/\(1 of/.test(s) || !s.includes('(' + want + ' of ' + E + ')')) bad.push(name + ' ' + pct + '% of ' + E + ': ' + s);
+      }
+    }
+    return { bad, note: U.quorumNote('share', 1, 12), floorMin: window.COPY.page.quorumFloorMin,
+      tail: U.shareTail(1, 12) };
+  });
+  check('no bracket reads (1 of … in a membership of two or more',
+    floors.bad.length === 0, floors.bad.slice(0, 3).join(' · '));
+  check('1% of twelve reads (2 of 12)', /\(2 of 12\)/.test(floors.tail), floors.tail);
+  check('…and the minimum-quorum sentence still stands beside it',
+    !!floors.note && floors.note === floors.floorMin, floors.note);
+
   await clickIn('.setupcard [data-confirm]');
   await page.waitForTimeout(400);
   check('the ✓ files the answer', !(await rail()).includes(want), 'rail: ' + (await rail()).join(', '));
