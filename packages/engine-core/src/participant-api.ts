@@ -13,7 +13,6 @@ import type { JudgmentView, Session } from './session.js';
 import type { Candidate, Card, Constitution, EdgeSubtype } from './types.js';
 import type { PatchSet, Span } from './text/types.js';
 import { checkAttestation } from './text/attest.js';
-import { splitLines } from './text/diff.js';
 
 /**
  * **The one reveal rule** (SPEC §3.5a, Q770 and entry 31). Every reader of
@@ -283,7 +282,9 @@ export class ParticipantApi {
     },
   ): { id: string } {
     if (input.patch && input.patch.baseVersion === this.session.currentVersion()) {
-      checkAttestation(splitLines(this.session.document()), input.patch.hunks, { required: true });
+      // the lines the session holds, never the text split back (Q1491)
+      checkAttestation(this.session.linesAt(this.session.currentVersion()),
+        input.patch.hunks, { required: true });
     }
     const { id } = this.session.submitCandidate(now, {
       author: this.participantId,

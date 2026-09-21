@@ -23,7 +23,7 @@ import type { Hunk, PatchSet, Span } from './text/types.js';
 import type { Comparison, Fit, Outcome } from './ranking/types.js';
 import { applyPatch, footprint, footprintsConflict, validateHunks } from './text/patch.js';
 import { checkAttestation, stripAttestation } from './text/attest.js';
-import { splitLines, joinLines } from './text/diff.js';
+import { splitLines, joinLines, normalizeLines } from './text/diff.js';
 import { rebaseHunks } from './text/rebase.js';
 import { fitDavidson } from './ranking/davidson.js';
 import { chainHash, sha256Hex, stableStringify } from './hash.js';
@@ -1031,9 +1031,24 @@ export class Session {
   }
 
   documentAt(version: number): string {
+    return joinLines(this.linesAt(version) as string[]);
+  }
+
+  /**
+   * **The lines a version holds — the one line array** (Q1491). A patch is
+   * line numbers and wording against a version, so everything that checks a
+   * patch is asking about *these*, and `splitLines(documentAt(v))` is not
+   * reliably the same array: the round trip through one string normalises
+   * any line ending a line turns out to contain, and a text written before
+   * the doors normalised could hold one. Four callers asked the round trip
+   * and three asked the session, which is exactly how the participant
+   * boundary came to refuse wording the session itself would have taken.
+   * Ask this instead, and the two cannot disagree again.
+   */
+  linesAt(version: number): readonly string[] {
     const lines = this.versions[version];
     if (!lines) throw new Error(`unknown version ${version}`);
-    return joinLines(lines);
+    return lines;
   }
 
   /**
@@ -1231,6 +1246,34 @@ export class Session {
     this.emit({ type: 'participant-resumed', t, participantId });
   }
 
+  /**
+   * **A carriage return never enters the text** (Q1491, the nh2026
+   * convention). A hunk's `lines` are what the version array is built out of,
+   * so this is the last place a line ending inside one of them can be caught:
+   * past here a "line" holding a `\r` is a line the document cannot represent
+   * — `document()` joins with '\n' and every reader that splits the text back
+   * gets a different array from the one the session holds, which is how
+   * fifteen proposals came to be told the wording they replaced was not the
+   * wording they replaced.
+   *
+   * **At the command, never in the fold.** Every road into the version array
+   * comes through `submitCandidate`, `decreeText` or `confirmRebase`, and
+   * each normalises what it is given before it validates it; `apply` does
+   * not, so a log written before this rule replays exactly as it was written.
+   * The same object comes back where nothing moves, so nothing else is
+   * touched either.
+   */
+  private normalizedPatch(patch: PatchSet): PatchSet {
+    let moved = false;
+    const hunks = patch.hunks.map((h) => {
+      const lines = normalizeLines(h.lines);
+      if (lines === h.lines) return h;
+      moved = true;
+      return { ...h, lines: lines as string[] };
+    });
+    return moved ? { ...patch, hunks } : patch;
+  }
+
   submitCandidate(
     t: number,
     input: {
@@ -1260,20 +1303,21 @@ export class Session {
         `rationale exceeds ${this.constitutionValue.rationaleMaxChars} chars`,
       );
     }
-    if (input.patch) {
-      if (input.patch.baseVersion !== this.currentVersion()) {
+    const patch = input.patch ? this.normalizedPatch(input.patch) : undefined;
+    if (patch) {
+      if (patch.baseVersion !== this.currentVersion()) {
         throw new Error(
-          `patch targets version ${input.patch.baseVersion}; current is ${this.currentVersion()}`,
+          `patch targets version ${patch.baseVersion}; current is ${this.currentVersion()}`,
         );
       }
-      if (input.patch.hunks.length === 0) throw new Error('empty patch');
-      validateHunks(this.currentLines().length, input.patch.hunks);
+      if (patch.hunks.length === 0) throw new Error('empty patch');
+      validateHunks(this.currentLines().length, patch.hunks);
       // **Checked where it is given, required where the act enters** (R-136).
       // The participant boundaries — `ParticipantApi.submit` and the host's
       // three text commands — refuse a patch that carries no attestation;
       // here it is honoured wherever it is present and never demanded, so
       // the library's own callers and every replay are untouched.
-      checkAttestation(this.currentLines(), input.patch.hunks, { required: false });
+      checkAttestation(this.currentLines(), patch.hunks, { required: false });
     } else if (input.setting) {
       // Q390: values are simpler than prose in exactly one way — equality
       // is decidable — so §5's dedup gate collapses to it (SPEC v0.53).
@@ -1308,7 +1352,7 @@ export class Session {
       // **The attestation is validation, not record** (R-136): it is stripped
       // here, at the one door that writes a submission, so an event's shape
       // does not move and every log on disk replays byte for byte.
-      ...(input.patch ? { patch: { ...input.patch, hunks: stripAttestation(input.patch.hunks) } } : {}),
+      ...(patch ? { patch: { ...patch, hunks: stripAttestation(patch.hunks) } } : {}),
       ...(input.setting ? { setting: input.setting } : {}),
       rationale: input.rationale,
       ...(input.machineAuthored ? { machineAuthored: true } : {}),
@@ -1369,15 +1413,16 @@ export class Session {
     if (input.rationale.length > this.constitutionValue.rationaleMaxChars) {
       throw new Error(`rationale exceeds ${this.constitutionValue.rationaleMaxChars} chars`);
     }
-    if (input.patch.baseVersion !== this.currentVersion()) {
+    const given = this.normalizedPatch(input.patch);
+    if (given.baseVersion !== this.currentVersion()) {
       throw new Error(
-        `patch targets version ${input.patch.baseVersion}; current is ${this.currentVersion()}`,
+        `patch targets version ${given.baseVersion}; current is ${this.currentVersion()}`,
       );
     }
-    if (input.patch.hunks.length === 0) throw new Error('empty patch');
-    validateHunks(this.currentLines().length, input.patch.hunks);
+    if (given.hunks.length === 0) throw new Error('empty patch');
+    validateHunks(this.currentLines().length, given.hunks);
     // the pen's patch attests like anybody's where it carries one (R-136)
-    checkAttestation(this.currentLines(), input.patch.hunks, { required: false });
+    checkAttestation(this.currentLines(), given.hunks, { required: false });
     // **§4.2's park rule reaching the second door** (R-058, narrowed by
     // R-100). The sweep adopts no text across a parked span, and since R-100
     // `rebaseOthers` does rebase a parked patch — but only where the rebase
@@ -1396,7 +1441,7 @@ export class Session {
     const id = `c${++this.candidateCounter}`;
     const newVersion = this.currentVersion() + 1;
     // stripped before it is written, as a submission's is (R-136)
-    const patch = { ...input.patch, hunks: stripAttestation(input.patch.hunks) };
+    const patch = { ...given, hunks: stripAttestation(given.hunks) };
     this.emit({
       type: 'text-decreed',
       t,
@@ -1558,12 +1603,13 @@ export class Session {
    * After a failed rebase the author confirms (or revises) against the
    * new text; evidence resets (SPEC §2.4).
    */
-  confirmRebase(t: number, candidateId: string, patch: PatchSet, rationale?: string): void {
+  confirmRebase(t: number, candidateId: string, given: PatchSet, rationale?: string): void {
     this.assertOpen();
     const c = this.candidate(candidateId);
     if (c.state !== 'rebase-pending') {
       throw new Error(`candidate ${candidateId} is not awaiting confirmation`);
     }
+    const patch = this.normalizedPatch(given);
     if (patch.baseVersion !== this.currentVersion()) {
       throw new Error('confirmation must target the current version');
     }

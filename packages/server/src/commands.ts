@@ -13,7 +13,6 @@ import type {
 } from '../../constitution/src/index.js';
 import type { PatchSet } from '../../engine-core/src/text/types.js';
 import { checkAttestation } from '../../engine-core/src/text/attest.js';
-import { splitLines } from '../../engine-core/src/text/diff.js';
 import { emojiFaceOf } from './faces.js';
 
 export interface Actor {
@@ -166,8 +165,12 @@ const refuseTaken = (cs: ConstitutionSession, pic: string, self: string): string
 function attestedOf(bridge: EngineBridge, args: Args): PatchSet {
   const patch = patchOf(args);
   if (patch.baseVersion !== bridge.engine.currentVersion()) return patch;
-  checkAttestation(splitLines(bridge.engine.documentAt(patch.baseVersion)),
-    patch.hunks, { required: true });
+  // **The lines the engine holds, never the text split back** (Q1491): a
+  // version written before the doors normalised can hold a line ending
+  // inside a line, and the round trip through one string takes it out — so
+  // the page's faithful attestation was refused against an array the engine
+  // itself does not have.
+  checkAttestation(bridge.engine.linesAt(patch.baseVersion), patch.hunks, { required: true });
   return patch;
 }
 

@@ -28,6 +28,7 @@
     "toc-travel": "node design/tools/toc-travel.mjs",
     "drawer-walk": "node design/tools/drawer-walk.mjs",
     "picture-walk": "node design/tools/picture-walk.mjs",
+    "crlf-paste": "node scripts/repro/crlf-paste.mjs",
     "journey": "node scripts/journey-walk.mjs",
     "applicants-walk": "node scripts/applicants-walk.mjs",
     "after-begin-walk": "node scripts/after-begin-walk.mjs",

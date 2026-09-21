@@ -29,6 +29,30 @@ export function joinLines(lines: string[]): string {
   return lines.join("\n");
 }
 
+/**
+ * **A line array holds lines** (Q1491): one element, one line, no line ending
+ * inside any of them. Every element is split the way `splitLines` splits a
+ * whole text — '\r\n' and bare '\r' become '\n', then split on '\n' — so a
+ * trailing carriage return falls off and an embedded ending becomes the two
+ * lines it is, rather than one "line" the document cannot represent.
+ *
+ * The empty string is a blank line here, not an empty document: this maps
+ * one element to one or more elements and never to none, which is what keeps
+ * a hunk's blank lines intact.
+ *
+ * It is for the **doors** — the roads a hunk's `lines` take into the version
+ * array — and never for the fold, which must reproduce whatever a log was
+ * written with. The same array comes back untouched where nothing moves.
+ */
+export function normalizeLines(lines: readonly string[]): readonly string[] {
+  if (!lines.some((l) => l.includes("\r") || l.includes("\n"))) return lines;
+  const out: string[] = [];
+  for (const l of lines) {
+    out.push(...l.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n"));
+  }
+  return out;
+}
+
 /** Internal edit-script operation produced by the Myers backtrack. */
 type Op = "eq" | "del" | "ins";
 

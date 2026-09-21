@@ -38,7 +38,6 @@
 import { authorVisible } from './participant-api.js';
 import type { Session } from './session.js';
 import type { Hunk, PatchSet } from './text/types.js';
-import { splitLines } from './text/diff.js';
 
 /** One changed place: what stood, what is put there, and where that is. */
 export interface FeedChange {
@@ -93,7 +92,7 @@ export interface FeedEntry {
 
 const HEADING = /^#{1,3}\s+/;
 
-function placeOf(lines: string[], start: number, end: number):
+function placeOf(lines: readonly string[], start: number, end: number):
 { heading: string | null; above: string | null; below: string | null } {
   let heading: string | null = null;
   let above: string | null = null;
@@ -115,7 +114,7 @@ function placeOf(lines: string[], start: number, end: number):
   return { heading, above, below };
 }
 
-function changesOf(base: string[], hunks: Hunk[]): FeedChange[] {
+function changesOf(base: readonly string[], hunks: Hunk[]): FeedChange[] {
   return hunks.map((h) => ({
     ...placeOf(base, h.start, h.end),
     before: base.slice(h.start, h.end),
@@ -139,7 +138,8 @@ export class SpectatorApi {
   feed(): FeedEntry[] {
     const out: FeedEntry[] = [];
     const s = this.session;
-    const linesAt = (v: number): string[] => splitLines(s.documentAt(v));
+    // the lines the session holds, never the text split back (Q1491)
+    const linesAt = (v: number): readonly string[] => s.linesAt(v);
     const visible = (id: string): string | null => {
       const c = s.getCandidate(id);
       return authorVisible(c, s.constitution, { closed: s.closed }) ? c.author : null;

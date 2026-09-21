@@ -20,7 +20,7 @@
  * attestation simply writes one, and gets it through untouched — which is
  * what `refuses a bot-style stale patch` in `server.test.ts` does.
  */
-import { attest, splitLines } from '../../engine-core/src/index.js';
+import { attest } from '../../engine-core/src/index.js';
 import type { Hunk } from '../../engine-core/src/text/types.js';
 
 const TEXT_COMMANDS = new Set(['propose-text', 'pen-text', 'rebase-text']);
@@ -55,5 +55,16 @@ Promise<unknown> {
   if (hunks.some((h) => h.was !== undefined || h.after !== undefined)) return body;
   const v = await viewOf(base, path, cookie);
   if (v === null || v.textVersion !== a.baseVersion) return body;
-  return { ...body, args: { ...args, hunks: attest(splitLines(v.text), hunks) } };
+  return { ...body, args: { ...args, hunks: attest(linesAsThePageReadsThem(v.text), hunks) } };
+}
+
+/**
+ * **The page's own reading of the text it was served** (Q1491): split on '\n'
+ * and nothing else, an empty document holding no lines. `splitLines` would
+ * normalise a line ending inside a line away, which is precisely the
+ * difference that refused fifteen faithful proposals at the convention — so a
+ * test posting through this seam would have been blind to it.
+ */
+function linesAsThePageReadsThem(text: string): string[] {
+  return text === '' ? [] : text.split('\n');
 }

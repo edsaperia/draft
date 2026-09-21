@@ -1263,8 +1263,14 @@ function checkCommands(M) {
   if (!/required: true/.test(attested)) {
     find('commands', 'attestedOf() does not require the attestation — R-136 is *required, not optional*');
   }
-  if (!/documentAt\(patch\.baseVersion\)/.test(attested)) {
-    find('commands', 'attestedOf() does not read the version the patch names (SPEC §2.4, R-136)');
+  // **The lines that version holds, never the text split back** (Q1491): a
+  // `splitLines(documentAt(v))` round trip normalises any line ending a line
+  // turns out to contain, so the door compared the page's faithful
+  // attestation against an array the engine does not have — and refused
+  // fifteen proposals at the convention over a pasted carriage return.
+  if (!/linesAt\(patch\.baseVersion\)/.test(attested)) {
+    find('commands', 'attestedOf() does not read the lines of the version the patch names ' +
+      '— linesAt(), never the text split back (SPEC §2.4, R-136; Q1491)');
   }
   // and the participant API is the same door for everything that is not the page
   const api = js('packages/engine-core/src/participant-api.ts');

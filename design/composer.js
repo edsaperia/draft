@@ -475,6 +475,20 @@ window.COMPOSER = (function () {
       toggle(d.id, !initial, land);
     }
 
+    // **A carriage return never reaches a lane** (Q1491, the nh2026
+    // convention 2026-09-20). A paste out of a Windows editor arrives with
+    // '\r\n' endings; split on '\n' alone, every line but the last keeps a
+    // trailing '\r', and that character rides the draft into the hunk, into
+    // the document, and thereafter into every attestation made against the
+    // line — fifteen proposals were refused over one, told the wording they
+    // replaced was not the wording they replaced. The engine's doors
+    // normalise too, so nothing gets in from any client; this is so the draft
+    // never holds one at all and the lane shows exactly what will be sent.
+    function pastedText(ev) {
+      const t = (ev.dataTransfer && ev.dataTransfer.getData('text/plain')) || '';
+      return t.replace(/\r\n?/g, '\n');
+    }
+
     // The first keystroke in a clause. Every input is intercepted: the charter
     // itself is never modified in place — what the character does is open the
     // composer with that character already in it, which is what makes typing in
@@ -507,8 +521,7 @@ window.COMPOSER = (function () {
         // (Ed, 231) — which falls out of this for free: the lane holds a run of
         // paragraphs, so a newline at the end is simply an empty second block.
         case 'insertParagraph': case 'insertLineBreak': ins = '\n'; break;
-        case 'insertFromPaste':
-          ins = (ev.dataTransfer && ev.dataTransfer.getData('text/plain')) || ''; break;
+        case 'insertFromPaste': ins = pastedText(ev); break;
         case 'deleteContentBackward':
           // **Backspace takes one character, marker included** (Q1467,
           // retiring Q1403's whole-marker special case): the caret can stand
@@ -597,8 +610,7 @@ window.COMPOSER = (function () {
       switch (ev.inputType) {
         case 'insertText': ins = ev.data == null ? '' : ev.data; break;
         case 'insertParagraph': case 'insertLineBreak': ins = '\n'; break;
-        case 'insertFromPaste':
-          ins = (ev.dataTransfer && ev.dataTransfer.getData('text/plain')) || ''; break;
+        case 'insertFromPaste': ins = pastedText(ev); break;
         case 'deleteContentBackward': case 'deleteContentForward':
         case 'deleteByCut': case 'deleteWordBackward': case 'deleteWordForward':
           break;                                 // the selection itself is what goes
