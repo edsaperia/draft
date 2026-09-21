@@ -350,4 +350,62 @@ describe('🍾 begin — the founder starts the document (Q443)', () => {
     expect(r.rollingHash()).toBe(s.rollingHash());
     expect(r.memberRecords().get(bo)!.lastActivityT).toBe(s.memberRecords().get(bo)!.lastActivityT);
   });
+
+  /* ---- Q1482: **withdrawing the invitation that was holding a question up
+   * must let it resolve** (Ed, the nh2026 convention 2026-09-20, 10:58: *why
+   * can't I begin?*, then *12 out of 12 of the membership have voted* with 👥
+   * still collecting).
+   *
+   * A blind question does not resolve while invitations are in flight (Q413
+   * (b)), and the remedy §9.6a names for a veto by one unopened email is that
+   * the founder withdraws it. But the withdrawal rang no bell: the departure
+   * roads re-check the room only `if (wasInE)`, and somebody who never
+   * arrived was never in E — so the hold was lifted and nobody looked again.
+   * The founder is left reading *n of n answered* under a 🍾 that refuses,
+   * and the only way out is to take the question back and set it. */
+  const collecting = (slug: string) => {
+    const s = ConstitutionSession.open({ title: 'T', slug,
+      convenor: { id: 'ada', email: 'ada@example.org', isMember: true } }, 0);
+    const bo = s.invite(1, 'bo@example.org');
+    s.arrive(1, bo);
+    const dee = s.invite(1, 'dee@example.org');   // the invitation never opened
+    s.confirmStartingText(1, 'x');
+    for (const [k, v] of Object.entries({
+      ending: { endsAtMs: 1_000_000 }, chamber: { rung: 'link' },
+      rate: { grant: 4, cap: 8, dripMinutes: 240 }, ...FOUNDER_SET,
+    })) { s.reclaim(1, k as never); s.setSetting(1, k as never, v as never); }
+    s.delegate(1, 'quorum');
+    s.answer(2, 'ada', 'quorum', { form: 'count', n: 2 });
+    s.answer(2, bo, 'quorum', { form: 'count', n: 2 });
+    // everybody who is here has answered, and the question still collects
+    expect(s.settingState('quorum').collecting).toBe(true);
+    expect(s.readiness().ready).toBe(false);
+    return { s, dee };
+  };
+
+  it('withdrawing the unopened invitation resolves the question it was holding (Q1482)', () => {
+    const { s, dee } = collecting('t-uninvite');
+    s.uninvite(3, dee);
+    expect(s.settingState('quorum').collecting).toBe(false);
+    expect(s.settingState('quorum').value).toEqual({ form: 'count', n: 2 });
+    expect(s.readiness().ready).toBe(true);
+    expect(s.readiness().waiting).toEqual([]);
+    s.begin(4);
+    expect(s.constitutedAtT).toBe(4);
+  });
+
+  it('and so does removing them outright, the other road out of the roster', () => {
+    const { s, dee } = collecting('t-remove');
+    s.remove(3, dee);
+    expect(s.settingState('quorum').collecting).toBe(false);
+    expect(s.readiness().ready).toBe(true);
+  });
+
+  it('the resolution replays — it is an event, not a read', () => {
+    const { s, dee } = collecting('t-replay');
+    s.uninvite(3, dee);
+    const r = ConstitutionSession.replay([...s.logEntries()]);
+    expect(r.rollingHash()).toBe(s.rollingHash());
+    expect(r.settingState('quorum').value).toEqual({ form: 'count', n: 2 });
+  });
 });

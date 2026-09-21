@@ -609,6 +609,7 @@ export class ConstitutionSession {
     // rather than behind whatever a re-settle carried
     this.oweDeparture(t, member, this.convenor.id); // ❌ is the convenor's act (Q1358)
     if (wasInE) this.afterRosterChange(t, 'departure', member);
+    else this.maybeResolveAll(t);                   // Q1482: E did not move, a gate did
   }
 
   /**
@@ -637,6 +638,7 @@ export class ConstitutionSession {
     this.emit({ type: 'member-removed', t, member, by: 'self' });
     this.oweDeparture(t, member);   // Q901, `remove`'s rule and its placing
     if (wasInE) this.afterRosterChange(t, 'departure', member);
+    else this.maybeResolveAll(t);   // Q1482: E did not move, a gate did
     // after the roster's own follow-ons, never inside them: the seat this
     // may have just vacated is R-060's vacancy however it arose, and the
     // auto-pass is the last word on a settled roster rather than a step in
@@ -656,6 +658,7 @@ export class ConstitutionSession {
     const wasInE = inE(m);
     this.emit({ type: 'member-uninvited', t, member });
     if (wasInE) this.afterRosterChange(t, 'departure', member);
+    else this.maybeResolveAll(t);   // Q1482: E did not move, a gate did
   }
 
   arrive(t: number, member: MemberId): void {
@@ -763,6 +766,25 @@ export class ConstitutionSession {
       electorate: electorate.map((m) => m.id).sort() });
   }
 
+  /**
+   * **Somebody leaving is not the only thing a departure changes** (Q1482;
+   * Ed, the nh2026 convention 2026-09-20: *why can't I begin?* under *12 out
+   * of 12 of the membership have voted*).
+   *
+   * `afterRosterChange` is the road for a departure out of **E** — the
+   * electorate moved, so the ground shifted, the floor is re-read and
+   * everything is asked again. Somebody who never arrived was never in E, so
+   * that road was skipped entirely; but the *other* gate `maybeResolve` holds
+   * a blind question on is **invitations in flight** (Q413 (b)), and
+   * withdrawing an unopened invitation is exactly the thing that lifts it.
+   * The hold went and nobody looked again, so the question the withdrawal was
+   * meant to free went on collecting for ever and 🍾 went on refusing —
+   * §9.6a's own remedy for a veto by one unopened email, and it did nothing.
+   *
+   * So every road out of the roster ends here, whether or not E moved. It
+   * emits nothing of its own, which is why it is safe on a road that changed
+   * no ground: a question either resolves or it does not.
+   */
   private maybeResolveAll(t: number): void {
     for (const id of MANAGED) this.maybeResolve(t, id);
   }
