@@ -133,9 +133,12 @@ async function seat(browser, where, slug, me) {
   // an invitation link is spent once: the first seat follows it, and a second
   // page for the same member carries the cookie it left behind
   if (where.cookie) {
+    // by `url`, never by a domain of our own: the host's links are built from
+    // its own base, so a seat keyed to 127.0.0.1 against a server that says
+    // localhost is no seat at all — and a walk whose second page silently
+    // becomes the stranger's door reads as green
     await context.addCookies(where.cookie.split('; ').filter(Boolean).map((c) => ({
-      name: c.slice(0, c.indexOf('=')), value: c.slice(c.indexOf('=') + 1),
-      domain: '127.0.0.1', path: '/' })));
+      name: c.slice(0, c.indexOf('=')), value: c.slice(c.indexOf('=') + 1), url: BASE })));
   }
   const page = await context.newPage();
   const errs = [];
@@ -325,10 +328,12 @@ if (!ONLY || ONLY === 'cork') {
 
   await intoEdit(page);
   const typed = await typeInto(page, CLAUSE, ' They are open to any member who asks.');
-  if (!typed) { check('a draft could be begun on the third clause', false); }
-  else {
-    const d = (await model(page)).draft;
-    say('  drafted: ' + JSON.stringify(d && d.sites.map((s) => s.keys)));
+  const drafted = typed ? (await model(page)).draft : null;
+  if (!drafted || !(drafted.sites || []).length) {
+    check('a draft could be begun on the third clause', false, 'no draft in the model');
+  } else {
+    const d = drafted;
+    say('  drafted: ' + JSON.stringify(d.sites.map((s) => s.keys)));
     const bad = aimOf(d, lines);
     check('the draft is keyed to the line its wording stands on', bad.length === 0, bad.join(' · '));
     const { sent, pressed } = await pressPropose(page);
@@ -419,6 +424,10 @@ if (!ONLY || ONLY === 'insertion') {
     }
     if (!began) return { skipped: true };
     const d = (await model(page)).draft;
+    // **a check that never ran is not a pass**: a draft the model does not
+    // hold has no aim to read, and saying nothing about it would make every
+    // way of failing to open one read as green
+    if (!d || !(d.sites || []).length) return { skipped: true };
     const bad = aimOf(d, lines);
     // 🗑️ *discard all* puts the column back
     const drop = page.locator('#charter [data-proposalrow] [data-act="row-discard"]').first();
@@ -435,7 +444,10 @@ if (!ONLY || ONLY === 'insertion') {
     for (const where of [THIRD, LAST]) {
       for (const how of ['type', 'edit']) {
         const r = await aim(page, where, how);
-        if (r.skipped) { say(`  ${what} · ${how} on “${where.slice(0, 20)}…” — no draft to read`); continue; }
+        if (r.skipped) {
+          check(`${what}: ${how} on ${where.slice(0, 16)} opened a draft to read`, false, 'no draft in the model');
+          continue;
+        }
         say(`  ${what} · ${how} on “${where.slice(0, 20)}…” → ${JSON.stringify(r.sites)}`);
         check(`${what}: ${how} on ${where.slice(0, 16)} is keyed where its wording stands`,
           r.bad.length === 0, r.bad.join(' · '));
@@ -481,7 +493,10 @@ if (!ONLY || ONLY === 'insertion') {
     await sleep(wait);
     for (const where of [THIRD, LAST]) {
       const r = await aim(late.page, where, 'type');
-      if (r.skipped) { say(`  ${label} · no draft to read on “${where.slice(0, 20)}…”`); continue; }
+      if (r.skipped) {
+        check(`${label}: a draft opened on ${where.slice(0, 16)}`, false, 'no draft in the model');
+        continue;
+      }
       say(`  ${label} · “${where.slice(0, 20)}…” → ${JSON.stringify(r.sites)}`);
       check(`${label}: the draft on ${where.slice(0, 16)} is keyed where its wording stands`,
         r.bad.length === 0, r.bad.join(' · '));

@@ -197,9 +197,12 @@ if (!ONLY || ONLY === 'run') {
   const { page, context } = await seat(browser, r);
   if (!(await selectAndType(page, 'L4', 'L6', 'The middle, rewritten.'))) die('no L4–L6 to select');
   const one = await places(page);
-  say('  the first place: ' + JSON.stringify(one.sites.map((s) => s.keys)));
+  say('  the first place: ' + JSON.stringify(one && one.sites.map((s) => s.keys)));
+  // a check that never ran is not a pass: the first place has to be there for
+  // the second one to be about anything
   check('a selection across neighbouring paragraphs is one place',
-    one.sites.length === 1 && !faults(one).length, JSON.stringify(one.sites));
+    !!one && one.sites.length === 1 && !faults(one).length, JSON.stringify(one && one.sites));
+  if (!one) die('no draft after the first selection');
 
   // the card now stands over L4–L6; this selection runs from above it to below
   const crossed = await selectAndType(page, 'L3', 'L7', 'The lot, rewritten.');
@@ -238,9 +241,10 @@ if (!ONLY || ONLY === 'inside') {
     await sleep(900);
   }
   const m = await places(page);
-  say('  places: ' + JSON.stringify(m.sites.map((s) => s.span)));
+  say('  places: ' + JSON.stringify(m && m.sites.map((s) => s.span)));
   check('Enter inside a multi-line place makes no second place',
-    m.sites.length === 1 && !faults(m).length, JSON.stringify(m.sites.map((s) => s.keys)));
+    !!m && m.sites.length === 1 && !faults(m).length,
+    m ? JSON.stringify(m.sites.map((s) => s.keys)) : 'no draft in the model');
   await context.close();
 }
 
@@ -268,9 +272,9 @@ if (!ONLY || ONLY === 'edit') {
     else say('  (no ✏️ propose edit offered on that card)');
   }
   const m = await places(page);
-  say('  places: ' + JSON.stringify(m.sites.map((s) => s.span)));
+  say('  places: ' + JSON.stringify(m && m.sites.map((s) => s.span)));
   check('✏️ propose edit makes no place over a line the draft already holds',
-    !faults(m).length, faults(m).join(' · '));
+    !!m && !faults(m).length, m ? faults(m).join(' · ') : 'no draft in the model');
   await context.close();
 }
 
