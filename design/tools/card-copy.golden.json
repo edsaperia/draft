@@ -728,7 +728,10 @@
      "Put it back as it stands",
      "Set it"
     ],
-    "helpers": []
+    "helpers": [
+     "",
+     ""
+    ]
    },
    "rate": {
     "eyebrow": "",
@@ -3693,7 +3696,10 @@
      "Put it back as it stands",
      "Set it"
     ],
-    "helpers": []
+    "helpers": [
+     "",
+     ""
+    ]
    },
    "rate": {
     "eyebrow": "",
@@ -4506,7 +4512,10 @@
      "Put it back as it stands",
      "Set it"
     ],
-    "helpers": []
+    "helpers": [
+     "",
+     ""
+    ]
    },
    "rate": {
     "eyebrow": "",
@@ -5668,7 +5677,7 @@
     "eyebrow": "",
     "head": "A proposal ✏️ cannot pass until it is preferred by at least 38% of the membership (n of m).Chosen by the membership",
     "lock": "",
-    "body": "A proposal ✏️ cannot pass until it is preferred by at least % of the membership (n of m).Propose this",
+    "body": "A proposal ✏️ cannot pass until it is preferred by at least % of the membership (n of m).With this quorum, 2 members preferring the current text can stop a proposal.Propose this",
     "options": [],
     "inputs": [
      {
@@ -5696,6 +5705,7 @@
      "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
+     "With this quorum, 2 members preferring the current text can stop a proposal.",
      "We should change this because…"
     ]
    },
@@ -7805,7 +7815,7 @@
     "eyebrow": "",
     "head": "A proposal ✏️ cannot pass until it is preferred by at least 38% of the membership (n of m).Chosen by the membership",
     "lock": "",
-    "body": "A proposal ✏️ cannot pass until it is preferred by at least % of the membership (n of m).Propose this",
+    "body": "A proposal ✏️ cannot pass until it is preferred by at least % of the membership (n of m).With this quorum, 2 members preferring the current text can stop a proposal.Propose this",
     "options": [],
     "inputs": [
      {
@@ -7833,6 +7843,7 @@
      "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
+     "With this quorum, 2 members preferring the current text can stop a proposal.",
      "We should change this because…"
     ]
    },

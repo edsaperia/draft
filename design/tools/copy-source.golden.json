@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 507
+  "entries": 509
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -338,8 +338,10 @@
   "page.pwTitle.inviteU": "Can the Founder Invite at Will?",
   "page.pwTitle.removeA": "Does the Founder Have a Veto over Removals?",
   "page.pwTitle.removeU": "Can the Founder Remove at Will?",
+  "page.quorumFloorMin": "The minimum quorum is 2: the author and one other member.",
   "page.quorumRule.count": "ƒ (n) => 'A proposal ✏️ cannot pass until it is preferred by at least ' + n + ' members.'",
   "page.quorumRule.share": "ƒ (share, tail) => 'A proposal ✏️ cannot pass until it is preferred by at least ' +\n        share + ' of the membership' + (tail || '') + '.'",
+  "page.quorumStop": "ƒ (k) => 'With this quorum, ' + (k === 1 ? 'one member' : k + ' members') +\n      ' preferring the current text can stop a proposal.'",
   "page.refuseSet": "ƒ (reason) => 'That could not be set: ' + reason + '.'",
   "page.refused": "ƒ (reason) => 'That was refused: ' + reason + '.'",
   "page.ride.pressToWrite": "press to write",

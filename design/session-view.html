@@ -498,7 +498,7 @@
     // 👥's share bounds and its (x of y), and 💤's units (Q1439): one control
     // each, drawn by setup.js, so the founder's card, the member's answer card
     // and this script's composer cannot state three different ranges
-    SHARE, shareCount, shareTail, shareWords, shareSlot,
+    SHARE, shareCount, shareTail, shareWords, shareSlot, quorumNote, quorumSlot,
     LAPSE_UNITS, LAPSE_BOUNDS, lapseParts, unitSel } = window.SETUP;
   // **Every card can carry a refusal** (Q1330, SURFACE Y25): the settings,
   // motion and door bodies draw `doorErrHtml` where the control that tried
@@ -3754,6 +3754,14 @@
       sh.textContent = k === 'quorum' && S.myAns.quorumForm === 'share' && isNum(t.value)
         ? shareTail(t.value, E()) : '';
     }
+    // …and 👥's own sentence beneath the block (Q1490, R-139), the one
+    // meaning line left on the surface: repainted in place for the same
+    // reason, and only under the block whose form the member has chosen.
+    (t.closest('.setupcard') || document).querySelectorAll('[data-qnote]').forEach((slot) => {
+      const [sk, form] = String(slot.dataset.qnote).split(':');
+      slot.textContent = sk === k && S.myAns.quorumForm === form && isNum(t.value)
+        ? quorumNote(form, t.value, E()) : '';
+    });
   };
   // committed = the answer reached the module; provisional stays page-side
   const answered = (c) => { const st = csState(ansKey(c));
@@ -6039,18 +6047,21 @@
     },
     // **A lane offers a rule, so it says the rule** (Q1112 (b)) — and since
     // Q1439 that rule is Ed's sentence with the share's own numbers after
-    // *of the membership* (rulings m, t), the share box running 5 to 50 like
-    // every other 👥 box
+    // *of the membership* (rulings m, t), the share box running 1 to 100 like
+    // every other 👥 box since Q1490 (R-139) and carrying the same sentence
+    // under it. The lane re-renders on every keystroke, so `quorumSlot` is
+    // redrawn here rather than repainted as the two cards repaint it.
     quorum: (d) => (S.quorumForm === 'count'
-      ? inputBlock(PAGE_COPY.quorumRule.count(
-        '<input class="num" type="number" min="1" max="99" data-mnum=" of the membership" value="' +
-        esc((d.to.match(/\d+/) || [])[0] || takenOf('quorum') || quorumCount()) + '">'),
-        '', d, 'quorum')
+      ? (() => { const n = (d.to.match(/\d+/) || [])[0] || takenOf('quorum') || quorumCount();
+        return inputBlock(PAGE_COPY.quorumRule.count(
+          '<input class="num" type="number" min="1" max="99" data-mnum=" of the membership" value="' +
+          esc(n) + '">') + quorumSlot('quorum', 'count', n, E()),
+          '', d, 'quorum'); })()
       : (() => { const n = (d.to.match(/\d+/) || [])[0] || takenOf('quorum') || S.quorumPct;
         return inputBlock(PAGE_COPY.quorumRule.share(
           '<input class="num" type="number" min="' + SHARE.min + '" max="' + SHARE.max +
           '" data-mnum="% of the membership" value="' + esc(n) + '">%',
-          shareSlot('quorum', n, E())),
+          shareSlot('quorum', n, E())) + quorumSlot('quorum', 'share', n, E()),
           '', d, 'quorum'); })()),
     // 🪪: the price of admission, its three rungs as lanes, labels MVAL's
     // verbatim. The register-era 🪪 had no value to compose and spec-check

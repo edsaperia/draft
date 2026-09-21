@@ -837,6 +837,19 @@ window.COPY = (function () {
         share + ' of the membership' + (tail || '') + '.',
       count: (n) => 'A proposal ✏️ cannot pass until it is preferred by at least ' + n + ' members.',
     },
+    // **👥 is the one card that says what its number comes to** (Q1490, Ed
+    // 2026-09-21 → why: R-139), a deliberate exception to Q1439 ruling u,
+    // which took the meaning line off every card. The scale runs 1 to 100 now
+    // and both of its ends need a sentence the number does not carry: above
+    // half, how few can stop a proposal; below the seconder, that two is the
+    // floor whatever is asked for. One is printed at a time and only once a
+    // number has been typed — a blind card shows nothing it would come to —
+    // and neither is printed in a membership of one, where every quorum is
+    // the whole of it. Their one home is here; `quorumNote` in setup.js
+    // chooses between them and every surface repaints that in place.
+    quorumStop: (k) => 'With this quorum, ' + (k === 1 ? 'one member' : k + ' members') +
+      ' preferring the current text can stop a proposal.',
+    quorumFloorMin: 'The minimum quorum is 2: the author and one other member.',
     titledLead: 'The document is titled ',
     // the card value lines (VALUE) — the label-vocabulary strings that MVAL
     // keys on stay in the page until pass 2 moves that cluster whole

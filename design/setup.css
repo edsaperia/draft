@@ -205,6 +205,13 @@
      keystroke's own meaning sentence until that line left the surface —
      Q1439, 2026-09-18) */
   .pick .exp:empty { display: none; }
+  /* **👥's own sentence sits inside the option's text** (Q1490, R-139), under
+     the rule it is about rather than under the whole block, because it is a
+     gloss on the number in that very clause. It is not clause text, so it
+     takes the chrome face back off `.opttext` (T46's second half) while
+     keeping every other `.exp` rule — the muted colour, the small size and
+     the collapse when there is nothing to say. */
+  .pick .opttext .exp { font-family: var(--font-ui); line-height: 1.5; }
   /* **The option block** (CP1, Q1096, 2026-08-31): the option's text stands
      above its radio as text to be read, and the radio beneath is the same
      *Prefer this / Preferred* pill on every card — what you read is the

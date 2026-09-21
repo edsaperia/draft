@@ -74,7 +74,8 @@ window.BAND = (function () {
       // 👥's share and 💤's unit picker (Q1439): the bounds, the (x of y) slot
       // and the select are setup.js's, so the founder's card, the member's
       // answer card and the composer draw one control between them
-      SHARE, shareTail, shareSlot, LAPSE_BOUNDS, lapseParts, unitSel } = window.SETUP;
+      SHARE, shareTail, shareSlot, quorumNote, quorumSlot,
+      LAPSE_BOUNDS, lapseParts, unitSel } = window.SETUP;
     // 👥's two sentences, copy.js's (Q1439, ruling p) — one home for the
     // founder's card, the member's answer card and the composer's lane
     const RULE_QUORUM = window.COPY.page.quorumRule;
@@ -220,6 +221,10 @@ window.BAND = (function () {
     // are repainted in place rather than by a render — **nothing rebuilds
     // under a press**, and a card rebuilt under the caret is the drag bug's
     // cousin. The full render still waits for `change`, as the slider's does.
+    // **…and 👥's own sentence with them** (Q1490, R-139): the one meaning
+    // line left on the surface is repainted by the same rule and in the same
+    // breath — only the block whose form is chosen has a number that means
+    // anything, so the other block's slot is emptied rather than left stale.
     const syncShare = (el) => {
       if (!el.closest) return;
       const card = el.closest('.setupcard') || document;
@@ -227,6 +232,11 @@ window.BAND = (function () {
         const k = slot.dataset.share;
         slot.textContent = k === 'quorum' && S.quorumForm === 'share'
           ? shareTail(S.quorumPct, E()) : '';
+      });
+      card.querySelectorAll('[data-qnote]').forEach((slot) => {
+        const [k, form] = String(slot.dataset.qnote).split(':');
+        slot.textContent = k === 'quorum' && S.quorumForm === form
+          ? quorumNote(form, form === 'share' ? S.quorumPct : S.quorumN, E()) : '';
       });
     };
     // ---- **What stands is not offered back** (Q1293, Ed 2026-09-09, reading
@@ -575,13 +585,16 @@ window.BAND = (function () {
         return '<div class="choice" role="radiogroup">' +
         theyDecide('quorum') +
         // …and since Q1439 the sentence is Ed's own (ruling p) with the
-        // numbers after the share (ruling m), the box running 5 to 50 — no
-        // quorum may ask for more than half the group a proposal waits on.
+        // numbers after the share (ruling m), the box running **1 to 100**
+        // since Q1490 (R-139): the whole scale, with `quorumSlot` under each
+        // block saying what the number comes to at either end of it.
         opt(V, 'quorumForm', 'share',
           RULE_QUORUM.share(numIn(V, 'quorumPct', SHARE.min, SHARE.max) + '%',
-            shareSlot('quorum', V.quorumPct, E())), '') +
+            shareSlot('quorum', V.quorumPct, E())) +
+          quorumSlot('quorum', 'share', V.quorumPct, E()), '') +
         opt(V, 'quorumForm', 'count',
-          RULE_QUORUM.count(numIn(V, 'quorumN', 1, 40)), '') +
+          RULE_QUORUM.count(numIn(V, 'quorumN', 1, 40)) +
+          quorumSlot('quorum', 'count', V.quorumN, E()), '') +
         '</div>'; })(),
       authorship: () =>
         (() => { const V = ladderView('authorship');
