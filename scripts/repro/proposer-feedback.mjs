@@ -133,7 +133,7 @@ async function carry(d, cid, voters, losers = []) {
         else if (losers.includes(card.a.id)) outcome = 'b';
         else if (losers.includes(card.b.id)) outcome = 'a';
         if (!outcome) continue;
-        try { await d.as(m)('judge-race', { a: card.a.id, b: card.b.id, outcome }); cast++; } catch (e) { /* judged already, or it carried */ }
+        try { await d.as(m)('judge-race', { a: card.a.id, b: card.b.id, outcome }); cast++; } catch { /* judged already, or it carried */ }
       }
     }
   }

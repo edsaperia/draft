@@ -165,7 +165,7 @@ async function carry(d, cid, voters) {
     if (!clause) break;
     // the pair that puts `cid` against the current text, dealt or not
     const pair = { a: clause.incumbentId, b: cid };
-    try { await d.cmd('judge-race', { a: pair.a, b: pair.b, outcome: 'b' }, c); cast++; } catch (e) { /* its own author */ }
+    try { await d.cmd('judge-race', { a: pair.a, b: pair.b, outcome: 'b' }, c); cast++; } catch { /* its own author */ }
   }
   const v = await d.view();
   const still = (v.clauses ?? []).some((r) => r.candidates?.some((k) => k.id === cid));
@@ -182,7 +182,7 @@ async function seat(browser, link, slug) {
   // fetch from inside the page with a marker the route lets through)
   await page.route('**/api/d/*/cmd', async (route) => {
     let body = null;
-    try { body = JSON.parse(route.request().postData() || '{}'); } catch (e) { /* not json */ }
+    try { body = JSON.parse(route.request().postData() || '{}'); } catch { /* not json */ }
     if (body && body.cmd === 'propose-text' && !(body.args && body.args.why && /^walk:/.test(body.args.why))) {
       page.__caught = body.args;
       return route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ error: 'caught by the walk' }) });
@@ -339,7 +339,7 @@ async function audit(page, label, { edit = true, seen = null } = {}) {
         }, laneSel);
         await page.keyboard.type(' zz');
         typed = true;
-      } catch (e) { /* no lane */ }
+      } catch { /* no lane */ }
       await sleep(500);
       // the press itself, with the command caught on the wire: what the page
       // would have sent is read off the request and the host never hears it
@@ -560,7 +560,7 @@ await run('deadlock', async () => {
   await R.page.route('**/api/d/*/view*', async (route) => {
     // asked without its since-query, so the answer is always a whole view and never the short one
     const resp = await route.fetch({ url: route.request().url().split('?')[0] });
-    let j = null; try { j = await resp.json(); } catch (e) { return route.fulfill({ response: resp }); }
+    let j = null; try { j = await resp.json(); } catch { return route.fulfill({ response: resp }); }
     if (j && Array.isArray(j.clauses)) { for (const c of j.clauses) c.deadlocked = true; j.eseq = (j.eseq || 0) + 0.5; }
     return route.fulfill({ response: resp, json: j });
   });

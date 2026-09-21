@@ -150,8 +150,8 @@ const seat = async (cookie, { narrow = false, unacked = false } = {}) => {
   page.on('pageerror', (e) => errs.push(String(e)));
   page.on('response', async (res) => {
     if (res.request().method() !== 'POST' || !/\/api\/d\/[^/]+\/cmd$/.test(res.url())) return;
-    let body = null; try { body = JSON.parse(res.request().postData() || 'null'); } catch (e) {}
-    let ans = null; try { ans = await res.json(); } catch (e) {}
+    let body = null; try { body = JSON.parse(res.request().postData() || 'null'); } catch {}
+    let ans = null; try { ans = await res.json(); } catch {}
     wire.push({ cmd: body && body.cmd, args: body && body.args, status: res.status(), answer: ans });
   });
   await page.goto(`${BASE}/d/${SLUG}`);
@@ -418,7 +418,7 @@ SCENARIOS['typing-under-poll'] = async (s, cookie, name) => {
   verdict(name, !!c3 && c3.field === '7' && !!c2 && c2.field === '7', 'a number typed and not yet left: after another member’s act the field reads ' +
     (c2 && c2.field) + ' (focus ' + (c2 && c2.focus) + '), after the Founder’s decree ' + (c3 && c3.field) + ' (focus ' + (c3 && c3.focus) + ')');
 };
-SCENARIOS['bad-numbers'] = async (s, cookie, name) => {
+SCENARIOS['bad-numbers'] = async (s, cookie) => {
   await openRate(s);
   for (const n of ['0', '2.5', '5000']) {
     const c = await typeBlur(s, n);
