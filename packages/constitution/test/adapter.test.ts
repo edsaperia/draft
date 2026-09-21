@@ -213,16 +213,18 @@ describe('toEngineConstitution: every engine field against the value it came fro
     const { constitution: c, quorumN, floor } = toEngineConstitution(s, DEFAULT_TUNING, 's');
     expect(c.quorum).toEqual({ form: 'count', n: 4 });
     expect(quorumN).toBe(4);
-    // **the count itself does not track E, but the cap does** (Q1439, R-126):
-    // a count of 4 asks for 4 from eight people up and for half the room below
-    // that, since no quorum may ask for more than half. **And nothing rides
-    // under it** since v0.133 (ruling s, R-131), so a room of twenty is held
-    // to the four it asked for and not to ⌈20/3⌉ = 7.
+    // **the count itself does not track E, but the cap does** (Q1439, R-126;
+    // Q1490, R-139 moved the cap from half the population to the whole of
+    // it): a count of 4 asks for 4 from four people up, and for the whole
+    // membership below that — however few are left, the quorum never outgrows
+    // them. **And nothing rides under it** since v0.133 (ruling s, R-131), so
+    // a room of twenty is held to the four it asked for and not to ⌈20/3⌉ = 7.
     for (const E of [1, 5, 20]) {
-      expect(floor(E), `E = ${E}`).toBe(Math.max(1, Math.min(4, Math.ceil(E / 2))));
+      expect(floor(E), `E = ${E}`).toBe(Math.max(Math.min(2, E), Math.min(4, E)));
     }
     expect(floor(1)).toBe(1);
-    expect(floor(5)).toBe(3);
+    expect(floor(3)).toBe(3);
+    expect(floor(5)).toBe(4);
     expect(floor(20)).toBe(4);
   });
 

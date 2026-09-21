@@ -280,7 +280,7 @@ var CONSTITUTION = (() => {
         if (v.form !== "count" && v.form !== "share") return "quorum: form must be 'count' or 'share'";
         if (v.form === "count")
           return isInt(v.n) && v.n >= 0 ? null : "quorum: count n must be an integer ≥ 0";
-        return isFiniteNum(v.n) && v.n >= 0 && v.n <= 50 ? null : "quorum: share n must be 0–50 — no quorum asks for more than half (Q1439)";
+        return isFiniteNum(v.n) && v.n >= 0 && v.n <= 100 ? null : "quorum: share n must be 0–100 (Q1490)";
       case "ladder":
         return typeof v.rung === "string" ? null : "ladder: { rung: string } required";
       case "rate":
@@ -329,7 +329,7 @@ var CONSTITUTION = (() => {
     return Math.ceil(E / 3);
   }
   function adoptionFloor(quorumN, E) {
-    return Math.max(Math.min(quorumN, Math.ceil(E / 2)), Math.min(2, E));
+    return Math.max(Math.min(quorumN, E), Math.min(2, E));
   }
 
   // src/catalogue.ts
@@ -4025,7 +4025,6 @@ var CONSTITUTION = (() => {
     if (days !== null && days >= 28 && days <= 31) return "a month";
     return spellWords(ms);
   }
-  var HALF_NOTE = " No quorum can ask for more than half.";
   function quorumBody(q, n, form, pct) {
     if (n === 1) return "In a membership of one, your own vote is the whole quorum.";
     return form === "share" ? "A proposal cannot pass until it is preferred by at least " + pct + "% of the membership (" + q + " of " + n + ")." : "A proposal cannot pass until it is preferred by at least " + q + " members.";
@@ -4035,11 +4034,9 @@ var CONSTITUTION = (() => {
     const n = Math.max(1, Math.floor(room.e));
     const asked = quorumCount(v, n);
     if (!Number.isFinite(asked)) return null;
-    const q = Math.min(asked, Math.ceil(n / 2));
-    const pct = Math.min(Math.round(v.n), 50);
-    const body = quorumBody(q, n, v.form, pct);
-    const capped = q < asked ? HALF_NOTE : "";
-    return fit(body + capped) ?? fit(body);
+    const q = Math.min(asked, n);
+    const pct = Math.round(v.n);
+    return fit(quorumBody(q, n, v.form, pct));
   }
   function rateMeaning(v, room) {
     const { grant, cap, dripMinutes } = v;

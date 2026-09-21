@@ -189,18 +189,68 @@ describe('the floor counts approvals (Q1439, R-125)', () => {
   });
 });
 
-describe('the floor is read against the group X is waiting on (R-126)', () => {
-  it('a count-form quorum above half the group is capped', () => {
-    // count 5 in a room of 5: the cap is ⌈5/2⌉ = 3
-    const { s } = proposed({ quorum: { form: 'count', n: 5 } });
-    expect(only(s, 2000).floor).toBe(3);
-    expect(s.adoptionFloor()).toBe(3);
+describe('the floor is read against the group X is waiting on (R-126, R-139)', () => {
+  it('a count-form quorum above the group is capped at the group', () => {
+    // count 9 in a room of 5: the cap is the group itself, 5 — R-088's
+    // property, that however few are left the quorum never outgrows them,
+    // and all that is left of R-126's cap since Q1490 (R-139)
+    const { s } = proposed({ quorum: { form: 'count', n: 9 } });
+    expect(only(s, 2000).floor).toBe(5);
+    expect(s.adoptionFloor()).toBe(5);
   });
 
-  it('a share-form quorum is a share of the group, capped at half of it', () => {
+  it('a count at the whole group is unanimity, and asks for it', () => {
+    // and below the group it is simply the number asked for: the cap at half
+    // used to make this 3 (Q1490 reversed it, R-139)
+    const { s } = proposed({ quorum: { form: 'count', n: 5 } });
+    expect(only(s, 2000).floor).toBe(5);
+  });
+
+  it('a share-form quorum is a share of the group, to 100% of it', () => {
     const { s } = proposed({ quorum: { form: 'share', n: 50 } });
-    // the whole room is still in the group: ⌈50×5/100⌉ = 3, cap ⌈5/2⌉ = 3
+    // the whole room is still in the group: ⌈50×5/100⌉ = 3, and nothing caps
+    // it — 50% of five is 3, as it reads, not a majority (Q1490)
     expect(only(s, 2000).floor).toBe(3);
+    // …and the whole scale is available above it
+    expect(only(proposed({ quorum: { form: 'share', n: 100 } }).s, 2000).floor).toBe(5);
+    expect(only(proposed({ quorum: { form: 'share', n: 90 } }).s, 2000).floor).toBe(5);
+    expect(only(proposed({ quorum: { form: 'share', n: 51 } }).s, 2000).floor).toBe(3);
+  });
+
+  /**
+   * **At 100% one member preferring the current text ends the proposal**
+   * (Q1490, R-139): the quorum is the whole group, so the best future — every
+   * member still to answer approving — cannot reach it once anybody has
+   * answered the other way, and §4.4 closes the candidate. It was put to Ed
+   * before he confirmed the ruling, and taken.
+   */
+  it('at 100% one vote for the current text closes the proposal (§4.4)', () => {
+    const { s, id } = proposed({ quorum: { form: 'share', n: 100 } });
+    const r = only(s, 2000);
+    expect(r.floor).toBe(5);
+    s.judge(2000, 'p2', r.leaderId!, r.incumbentId, 'b');   // prefer the text
+    s.tick(2100);
+    expect(s.getCandidate(id).state).toBe('retired');
+    expect(s.getCandidate(id).exit?.cause).toBe('dominated');
+  });
+
+  /**
+   * **And 💤 is what keeps such a room moving** (Q1490): a silence that has
+   * run its period leaves the group the quorum is read against (§8.2), so
+   * 100% is *everybody still deciding* rather than everybody on the roster.
+   */
+  it('silence past 💤 shrinks the group, and unanimity with it', () => {
+    const P = 30 * MINUTE;
+    const { s } = proposed({ quorum: { form: 'share', n: 100 }, abstainAfterMs: P });
+    expect(only(s, 2000).floor).toBe(5);
+    // three of the five say nothing for their period: the group is the author
+    // and the one member still inside it
+    const r = only(s, 2000);
+    s.judge(2000, 'p2', r.leaderId!, r.incumbentId, 'a');
+    const late = only(s, 2000 + P + 1);
+    expect(late.group).toBe(2);
+    expect(late.floor).toBe(2);
+    expect(late.approvals).toBe(2);
   });
 
   it('no third sits under the room’s number any more (ruling s, R-131 reversing R-073)', () => {
@@ -232,7 +282,8 @@ describe('the floor is read against the group X is waiting on (R-126)', () => {
   });
 
   it('the seconder is min(2, E): unanimity at E = 2, one at E = 1', () => {
-    // E = 2: ⌈2/2⌉ caps every quorum at 1, so the seconder is the whole floor
+    // E = 2: a room that settled no quorum has Q′ = 0, so the seconder is the
+    // whole floor — and it is unanimity there
     const two = proposed({}, 2);
     expect(two.s.adoptionFloor()).toBe(2);
     expect(only(two.s, 2000).floor).toBe(2);

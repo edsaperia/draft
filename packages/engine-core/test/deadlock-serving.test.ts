@@ -27,7 +27,12 @@ function open(): Session {
         // one measured comparison and a huge ε: the first judgment deadlocks
         deadlockMinComparisons: 1,
         deadlockEpsilon: 10,
-        quorum: { form: 'count', n: 3 },
+        // two of three: above the author's own approval, below what the
+        // unjudged member could still bring, so the race stays live to be
+        // served. It asked for 3 while the cap read that as ⌈3/2⌉ = 2; since
+        // Q1490 (R-139) the cap is the whole group and 3 would be unanimity,
+        // which closes the candidate rather than holding it (§4.4).
+        quorum: { form: 'count', n: 2 },
       }),
       settings: { s1: { n: 1 } },
     },

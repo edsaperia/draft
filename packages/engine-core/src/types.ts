@@ -43,7 +43,8 @@ export interface Constitution {
   /**
    * The room's settled quorum (SPEC §4.2, §9.0a): a fixed count, or a
    * share — **of the group the leader is waiting on** since Q1439 (R-126),
-   * rounded up — and in either form never more than half of that group.
+   * rounded up — and in either form never more than the whole of that group
+   * (Q1490, R-139: the cap at half went, a share running to 100%).
    * null = no quorum settled (Q′ = 0), which leaves the statistical minimum
    * governing alone.
    */
@@ -318,7 +319,7 @@ export interface RaceView {
    * *Indifferent* leaves it at once; silence leaves it a period after the
    * pair as it stands became answerable, or never where 💤 is *never*. A
    * share-form quorum is a share of **this**, and neither form may ask for
-   * more than half of it.
+   * more than the whole of it (Q1490, R-139).
    */
   group: number;
   /**
@@ -333,9 +334,9 @@ export interface RaceView {
    */
   abstained: number;
   /**
-   * **F, at the time the view was taken** (SPEC §4.2): `max(Q′, min(⌈E/3⌉,
-   * F_max))`, the quorum read against `group` and capped at half of it, the
-   * statistical minimum read against the whole of E. It moves with the clock
+   * **F, at the time the view was taken** (SPEC §4.2): `max(Q′, min(2, E))`,
+   * the quorum read against `group` and capped at the whole of it (R-139),
+   * the seconder read against the whole of E. It moves with the clock
    * as well as with the log, because an abstention needs no event — which is
    * why `races()` takes a `t`.
    */

@@ -72,12 +72,13 @@ export function adoptionFloorTerm(E: number): number {
  * `min(2, E)` because at E = 1 the sole member is the room and at E = 2 it is
  * unanimity.
  *
- * **And no quorum may ask for more than half** (R-126): ✏️ is *enough of the
- * room* and 🏛️ is *everybody*, so an approval quorum of 100% would make them
- * one rung, and the consent rule taking the strictest answer would let one
- * founding answer hand every member a standing veto over the text. The cap
- * binds only the **count** form from the surface, a share being refused above
- * 50 at validation (`values.ts`).
+ * **And a quorum may ask for everybody** (Q1490, Ed 2026-09-21 → why: R-139,
+ * reversing R-126's cap at half): a share runs to 100% and a count to the
+ * whole population the quorum is read against. What is left of the cap binds
+ * the **count** form alone, which the population moves under — however few
+ * are left, the quorum never outgrows them (§9.5a, R-088) — a share being
+ * refused above 100 at validation (`values.ts`) and ⌈n·E/100⌉ never exceeding
+ * E anyway.
  *
  * `E` here is the population the quorum is read against. The engine reads it
  * against **the group a candidate is waiting on** (`races.ts`'s `floorFor`,
@@ -86,5 +87,5 @@ export function adoptionFloorTerm(E: number): number {
  * The two move together or not at all — `floor-agreement.test.ts`.
  */
 export function adoptionFloor(quorumN: number, E: number): number {
-  return Math.max(Math.min(quorumN, Math.ceil(E / 2)), Math.min(2, E));
+  return Math.max(Math.min(quorumN, E), Math.min(2, E));
 }

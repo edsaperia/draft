@@ -1851,19 +1851,19 @@ function checkApprovalFloor() {
   } else note('  `clearsFloor` tests approvals against the race’s own floor');
 
   const caps = [
-    ['packages/engine-core/src/races.ts', 'floorFor', /Math\.min\(asked, Math\.ceil\(group \/ 2\)\)/],
-    ['packages/constitution/src/populations.ts', 'adoptionFloor', /Math\.min\(quorumN, Math\.ceil\(E \/ 2\)\)/],
+    ['packages/engine-core/src/races.ts', 'floorFor', /Math\.min\(asked, group\)/],
+    ['packages/constitution/src/populations.ts', 'adoptionFloor', /Math\.min\(quorumN, E\)/],
   ];
   for (const [file, name, pat] of caps) {
     const src = uncomment(read(file));
     const i = src.indexOf(`function ${name}(`);
     const fn = i < 0 ? '' : src.slice(i, src.indexOf('\n}', i));
     if (!fn) {
-      find('floor', `${file} has no \`${name}\` — the floor's arithmetic lives in two places and both must cap the quorum at half (Q1439, R-126)`);
+      find('floor', `${file} has no \`${name}\` — the floor's arithmetic lives in two places and both must cap the quorum at the population it is read against (Q1490, R-139)`);
       continue;
     }
     if (!pat.test(fn)) {
-      find('floor', `${file}'s \`${name}\` no longer caps the quorum at half the population it is read against (Q1439, R-126) — the two copies move together or not at all`);
+      find('floor', `${file}'s \`${name}\` no longer caps the quorum at the whole population it is read against (Q1490, R-139, reversing R-126's cap at half) — the two copies move together or not at all, and without the cap a count larger than the group holds every race for ever (R-088)`);
     }
     // the built-in third, gone at v0.133 (Q1439 ruling s, R-131): a term put
     // back into either copy would leave the whole suite green while the card's
@@ -1875,7 +1875,7 @@ function checkApprovalFloor() {
       find('floor', `${file}'s \`${name}\` no longer holds the seconder — F is never fewer than two approvals, min(2, E) (Q1439 ruling u, R-131): at a floor of one the author's own derived preference is the whole floor, and the churn study measured 888 reversions in 904 adoptions`);
     }
   }
-  note('  both copies cap the quorum at half, hold the seconder, and hold no third');
+  note('  both copies cap the quorum at the population, hold the seconder, and hold no third');
   if (floorRow && !/max\(Q′, min\(2, E\)\)/.test(floorRow.Value || '')) {
     find('floor', `Appendix A's floor row no longer states F as max(Q′, min(2, E)): "${(floorRow.Value || '').slice(0, 80)}" — the ⌈E/3⌉ minimum went at v0.133 and a seconder took its place (Q1439 rulings s and u, R-131)`);
   } else note('  Appendix A states F as max(Q′, min(2, E))');

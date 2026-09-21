@@ -50,8 +50,11 @@ function open(overrides: Record<string, unknown> = {}, size = 9): Session {
       rngSeed: 'pair-ground',
       cooldownMs: 0,
       // out of reach for the handful of approvals these walks cast, so a race
-      // stays up to be read (Q1439: the cap makes this ⌈9/2⌉ = 5)
-      quorum: { form: 'count', n: 99 },
+      // stays up to be read. It was a count of 99, which the old cap at half
+      // the group made ⌈9/2⌉ = 5; since Q1490 (R-139) the cap is the whole
+      // group, and 99 would be unanimity — a floor no race stays live under,
+      // one vote for the current text closing it (§4.4). Five, asked for.
+      quorum: { form: 'count', n: 5 },
       ...overrides,
     }),
   }, 0);

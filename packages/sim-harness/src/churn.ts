@@ -467,7 +467,7 @@ async function main(): Promise<void> {
   say('');
   // **The floor as the label states it is the floor at a full group** (Q1439,
   // and Q1439 ruling u since v0.133): `max(Q′, min(2, E))` with
-  // `Q′ = min(asked, ⌈G/2⌉)` — SPEC §4.2 and `races.ts`'s `floorFor`, which is
+  // `Q′ = min(asked, G)` — SPEC §4.2 and `races.ts`'s `floorFor`, which is
   // the line this one shadows and which no longer carries a ⌈E/3⌉ term at all
   // (R-131). G is the group the leader waits on, and it is E only while nobody
   // has abstained and nobody is indifferent; with 💤 set it shrinks, and so can
@@ -477,14 +477,15 @@ async function main(): Promise<void> {
   const floorAt = (q: Constitution['quorum']): number => {
     const e = ROOM.personas.length;
     const asked = q === null ? 0 : q.form === 'count' ? q.n : Math.ceil((q.n * e) / 100);
-    return Math.max(Math.min(asked, Math.ceil(e / 2)), Math.min(2, e));
+    return Math.max(Math.min(asked, e), Math.min(2, e));
   };
-  // **The 80 % arm is gone, and it cannot come back** (Q1439, ruling a, R-126):
-  // `validateValue` refuses a share above 50, and the engine caps *either* form
-  // at half the group it is read against — so at fifteen the strictest floor a
-  // room can ask for is 8, where this study once measured 12. The row is a
-  // **count** of twelve instead: the same number the old arm reached, asked the
-  // only way the surface still allows, and it prints the cap doing its work.
+  // **The 80 % arm could come back** (Q1490, R-139, 2026-09-21): the cap at
+  // half went, `validateValue` accepts a share to 100 and the engine caps
+  // either form at the whole group, so a room of fifteen can ask for 12 as a
+  // share again. The arms are left exactly as the 2026-09-18 re-run measured
+  // them — a **count** of twelve reaching the same number the old 80 % arm did
+  // — so the published findings go on comparing like with like; re-opening the
+  // share arm is a new study, not an edit to this one.
   const QUORUMS: { label: string; q: Constitution['quorum'] }[] = [
     { label: 'no quorum', q: null },
     { label: 'quorum 25% — ongoing', q: { form: 'share', n: 25 } },

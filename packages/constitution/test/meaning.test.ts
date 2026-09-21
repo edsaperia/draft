@@ -155,15 +155,20 @@ describe('the meaning family', () => {
     // the shape holds at the shipped preset, which is the sentence Ed wrote
     expect(meaningOf('quorum', { form: 'share', n: 50 }, { e: 10, nowMs: NOW }))
       .toBe('A proposal cannot pass until it is preferred by at least 50% of the membership (5 of 10).');
-    // **the share shown is the true one, never above half** (ruling a, R-126):
-    // a count of 9 in a room of 9 is read as 5, and the sentence says why
+    // **a quorum may ask for everybody** (Q1490, R-139, reversing R-126): a
+    // count of 9 in a room of 9 is 9, and the note that explained the old cap
+    // at half went with the cap
     expect(meaningOf('quorum', { form: 'count', n: 9 }, room))
-      .toBe('A proposal cannot pass until it is preferred by at least 5 members.' +
-        ' No quorum can ask for more than half.');
-    // …and a count larger than the room is the same reading, not a promise
-    // that nothing can pass until more members arrive (R-088 as amended)
+      .toBe('A proposal cannot pass until it is preferred by at least 9 members.');
+    expect(meaningOf('quorum', { form: 'share', n: 100 }, room))
+      .toBe('A proposal cannot pass until it is preferred by at least 100% of the membership (9 of 9).');
+    for (const n of [1, 2, 4, 9, 12]) {
+      expect(meaningOf('quorum', { form: 'count', n }, room)).not.toMatch(/more than half/);
+    }
+    // …and a count larger than the room is read against the room, not a
+    // promise that nothing can pass until more members arrive (R-088)
     expect(meaningOf('quorum', { form: 'count', n: 12 }, room))
-      .toMatch(/at least 5 members\./);
+      .toMatch(/at least 9 members\./);
     expect(meaningOf('quorum', { form: 'count', n: 12 }, room))
       .not.toMatch(/more members arrive/);
     // a membership of one is its own reading: there is no *x of y* to print

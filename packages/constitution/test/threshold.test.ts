@@ -158,10 +158,11 @@ describe('threshold anchors (§4.3, v0.48)', () => {
 describe('populations (§4.2, §8.2, v0.48: one E, three uses)', () => {
   it('quorum: a fixed count, or ⌈share × E⌉', () => {
     expect(quorumCount({ form: 'count', n: 5 }, 14)).toBe(5);
-    // the shares are 40 and 50 rather than 60 and 100 since Q1439 (R-126):
-    // no quorum asks for more than half, and `values.ts` refuses one above it
     expect(quorumCount({ form: 'share', n: 40 }, 14)).toBe(6); // ⌈5.6⌉
     expect(quorumCount({ form: 'share', n: 50 }, 7)).toBe(4);  // ⌈3.5⌉
+    // and the whole scale since Q1490 (R-139), `values.ts` accepting 0–100
+    expect(quorumCount({ form: 'share', n: 100 }, 14)).toBe(14);
+    expect(quorumCount({ form: 'share', n: 1 }, 14)).toBe(1);  // ⌈0.14⌉
   });
 
   it('F = max(Q′, min(2, E)) — the room’s number, with a seconder under it', () => {
@@ -173,12 +174,14 @@ describe('populations (§4.2, §8.2, v0.48: one E, three uses)', () => {
     expect(adoptionFloorTerm(14)).toBe(5);
     expect(adoptionFloor(3, 14)).toBe(3);  // the room asked for three: three
     expect(adoptionFloor(7, 14)).toBe(7);  // and for seven, which is half
-    // **and never past half** (Q1439, R-126): a quorum of 9 in a room of 14
-    // is read as ⌈14/2⌉ = 7, 🏛️'s rung being *everybody* and not ✏️'s
-    expect(adoptionFloor(9, 14)).toBe(7);
+    // **and never past the membership** (Q1490, R-139, reversing R-126's cap
+    // at half): a quorum of 9 in a room of 14 is 9, and one of 99 is 14
+    expect(adoptionFloor(9, 14)).toBe(9);
+    expect(adoptionFloor(99, 14)).toBe(14);
     expect(adoptionFloor(2, 100)).toBe(2); // ⌈100/3⌉ clamped to 12 used to sit here
     expect(adoptionFloor(20, 100)).toBe(20);
-    expect(adoptionFloor(80, 100)).toBe(50);
+    expect(adoptionFloor(80, 100)).toBe(80);
+    expect(adoptionFloor(100, 100)).toBe(100); // unanimity, asked for
     expect(adoptionFloor(1, 100)).toBe(2); // the seconder, where the room asked for one
     expect(adoptionFloor(0, 100)).toBe(2); // and where it asked for nothing
     expect(adoptionFloor(0, 2)).toBe(2);   // at E = 2 the seconder is unanimity

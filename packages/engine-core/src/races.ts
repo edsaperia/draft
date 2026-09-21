@@ -54,15 +54,20 @@ export function candidateNum(id: string): number {
 }
 
 /**
- * **F = max(Q′, min(2, E))** (SPEC §4.2; Q1439 → why: R-125, R-126, R-131).
+ * **F = max(Q′, min(2, E))** (SPEC §4.2; Q1439 → why: R-125, R-131; Q1490 →
+ * why: R-139).
  *
  * **Q′ is read against the group** the leader is waiting on — its approvers,
  * its opposers and the members of E it is still awaiting — because a quorum is
  * what the room asks of the people who are actually deciding this question,
  * and a silence that has run its 💤 period is not one of them (§8.2). Q′ is a
  * share of that group, rounded up, or a fixed count; and **in either form
- * never more than half of it**, since ✏️ is *enough of the room* and 🏛️ is
- * *everybody*, and an approval quorum of 100% would make them one rung.
+ * never more than the whole of it** (R-139, Ed 2026-09-21, reversing R-126's
+ * cap at half): a membership that wants unanimity may ask for it, and 💤 is
+ * what keeps such a room moving — a silence that has run its period leaves
+ * the group, so 100% is four of four where four are still deciding. The cap
+ * that is left binds the **count** form alone, which E moves under: however
+ * few are left, the quorum never outgrows them (§9.5a, R-088).
  *
  * **The built-in minimum of a third of E has gone** (Ed, 2026-09-18, Q1439
  * ruling s: *if the membership want a smaller quorum they should be able to
@@ -89,7 +94,7 @@ export function candidateNum(id: string): number {
 export function floorFor(c: Constitution, e: number, group: number): number {
   const q = c.quorum;
   const asked = q === null ? 0 : q.form === 'count' ? q.n : Math.ceil((q.n * group) / 100);
-  const quorumN = Math.min(asked, Math.ceil(group / 2));
+  const quorumN = Math.min(asked, group);
   return Math.max(quorumN, Math.min(2, e));
 }
 
