@@ -1,7 +1,14 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { Session, makeConstitution } from '../src/session.js';
 import { makeRng, type Rng } from '../src/rng.js';
 import type { Participant } from '../src/types.js';
+
+// Every case here is synchronous and the file runs for a minute and a half on
+// a slow machine; vitest's worker answers its own heartbeat on the event loop,
+// and a file that never yields fails the run with *Timeout calling
+// "onTaskUpdate"* though every test passed (2026-09-21). One tick between
+// cases lets the heartbeat through.
+afterEach(() => new Promise<void>((done) => { setTimeout(done, 0); }));
 
 /**
  * **The memo against no memo, step for step** (Q1326, Ed 2026-09-14: *build
