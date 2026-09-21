@@ -257,6 +257,14 @@ window.COPY = (function () {
     refusal: {
       movedPropose: 'The text moved while you were writing — your draft is kept; read the new wording and propose again.',
       movedAmend: 'The text moved while you were writing — your draft is kept; read the new wording and amend again.',
+      // **and what a selection across an open card is told** (Q1492): a
+      // selection dragged over a card sees the blocks on either side of it
+      // and none of the ones beneath, so it is not one run and cannot be one
+      // place. The draft already there is untouched, and this says so.
+      crossesCard: 'That selection runs across an open card, so it is not one place — close the card, or select the paragraphs on one side of it.',
+      // …and the backstop under it: two places over the same lines is a
+      // patch the document cannot take, and the press sends nothing.
+      overlapping: 'Two of the places you have changed cover the same lines — discard one of them and propose again.',
       notProposed: (reason) => 'That could not be proposed: ' + reason + '.',
       notAmended: (reason) => 'That could not be amended: ' + reason + '.',
       noAnswer: 'the server did not answer',

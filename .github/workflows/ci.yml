@@ -715,6 +715,11 @@ jobs:
       # beneath it — is walked beside it and is green.
       - run: npm run head-insertion-aim -- "$WALK_BASE"
         if: always()
+      # **the places** (Q1492): a selection dragged across an open editing card
+      # made a second place over the lines of the first, and the host refused
+      # the patch whole with the member's work in it.
+      - run: npm run overlapping-sites -- "$WALK_BASE"
+        if: always()
       - run: npm run slug-walk -- "$WALK_BASE" test-charter
         if: always()
       - run: npm run ladder -- "$WALK_BASE"

@@ -590,6 +590,28 @@ window.COMPOSER = (function () {
     // it comes out as one candidate and not as a patch.
     function startDraftFromRun(picked, ev) {
       const keys = picked.blocks.map((b) => b.dataset.key);
+      // **A run is one place, and two places never share a line** (K14–K16).
+      // `selectedBlocks` reads the column's own editable blocks, and an open
+      // card — an editing card over a site of this draft, a race card over a
+      // clause — takes the blocks it covers out of that list: a selection
+      // dragged across one comes back as the blocks on either side of it and
+      // nothing in between. That is not a run. Sent as one it spans every
+      // line between its ends, swallowing the site standing inside it, and
+      // the patch goes out with two hunks over the same lines — which the
+      // host refuses whole, the member's work with it (Q1492; the nh2026
+      // convention 2026-09-20, `hunks 0 and 1 overlap: [73, 86) and [74, 80)`
+      // and `[85, 95) and [86, 95)`, one member rewriting a long section each
+      // time). So the run is only a run where its blocks are neighbours in
+      // the document and none of them is already somewhere this draft holds;
+      // otherwise nothing is made, and the draft that is there says why.
+      const d0 = draftOf();
+      const ix = keys.map(docIndexOfKey);
+      const apart = ix.some((n, i) => i > 0 && n !== ix[i - 1] + 1);
+      const held = !!d0 && keys.some((k) => siteFor(d0, k));
+      if (apart || held) {
+        if (d0) { d0.refusal = T.refusal.crossesCard; renderAll(); }
+        return;
+      }
       // the run is the blocks' source lines (Q1403); a caret measured in a
       // block's words moves past that block's own marker
       const texts = keys.map(sourceTextFor);

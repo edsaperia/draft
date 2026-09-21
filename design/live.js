@@ -1842,6 +1842,16 @@ window.LIVE = (function () {
       env.LIVE_HOOKS.misaimed = (d) => {
         const text = env.cs && env.cs.text != null ? String(env.cs.text) : '';
         const lines = text === '' ? [] : text.split('\n');
+        // **Two places never cover the same lines** (SURFACE K14–K16, Q1492).
+        // The cure is at the draft model, which no longer makes a site over a
+        // line another one holds; this is the backstop under it, because a
+        // patch whose hunks overlap is refused *whole* by the host and the
+        // member loses every word of it. Asked before the wording checks,
+        // since it is about the draft rather than about the text.
+        const spans = ((d && d.sites) || []).filter((s) => !/^G\d+$/.test(s.keys[0]))
+          .map((s) => [lineIdx(s.keys[0]), lineIdx(s.keys[s.keys.length - 1]) + 1])
+          .sort((a, b) => a[0] - b[0]);
+        for (let i = 1; i < spans.length; i++) if (spans[i][0] < spans[i - 1][1]) return REFUSAL.overlapping;
         // an empty document is one empty clause and nothing to be stale about
         // (Q649 (a)): the engine holds zero lines, so there is no wording to
         // compare and the first insertion into it is always aimed right
