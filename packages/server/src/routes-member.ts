@@ -136,6 +136,10 @@ export const memberTable: Route[] = [
         // and `slim` names them so the page keeps its own. A client that says
         // nothing gets everything, as before.
         const pageSeq = since === null ? null : Number(since.split('.')[0]);
+        // the second half of `since` is the engine seq the page holds, which
+        // is 0 for as long as it has never been served a view with an engine
+        // behind it (Q1477, below)
+        const pageEseq = since === null ? null : Number(since.split('.')[1]);
         const pageTv = url.searchParams.get('tv');
         const pageRk = url.searchParams.get('rk');
         // **An applicant is a stranger who has knocked** (Q1281, 2026-09-07):
@@ -220,7 +224,23 @@ export const memberTable: Route[] = [
             // the founder's text still changes (confirm-starting-text), so
             // neither the text nor the records are ever left out then —
             // journey's *paste ✒️* step held a stale column otherwise
-            const versioned = ed.bridge !== null;
+            //
+            // **…and not for the page's last poll before it either** (Q1477,
+            // the nh2026 convention 2026-09-20). It is not enough that *this*
+            // document is versioned: what `tv` claims has to have been served
+            // under a version too. `textVersion` reads 0 on both sides of the
+            // cork — over the founder's unversioned text before it, over the
+            // engine's document at version 0 after — and 🍾 confirms whatever
+            // the column holds (R-081), which draws no paragraph for a blank
+            // line. So the first answer after the cork left the text out of
+            // every page that had been polling through it, each completed it
+            // from the text it already had, and the room read the document in
+            // a line space two lines out of step with the engine's until the
+            // first adoption moved the version. The page's own engine seq is
+            // the one thing that tells the two zeroes apart: it is 0 until
+            // there is an engine to count.
+            const sawEngine = pageEseq !== null && pageEseq > 0;
+            const versioned = ed.bridge !== null && sawEngine;
             const keepRecords = versioned && pageRk !== null && Number(pageRk) === rkNow;
             const rv = raceView(doc, memberId, nowMs, { records: !keepRecords });
             const out: Record<string, unknown> = { ...rv };

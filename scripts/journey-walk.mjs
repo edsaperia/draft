@@ -1256,6 +1256,41 @@ const secondSeatOnAmendment = async () => {
     if (!ok) stuck.push('the member seat after 🍾 ' + when);
   };
   noPhantoms(arrived, 'through the poll');
+  /* ---- head insertion (Q1477, the nh2026 convention 2026-09-20) ----------
+   * **A page that polled across 🍾 must be served the text the engine opened
+   * on.** `textVersion` reads 0 on both sides of the cork — over the founder's
+   * unversioned text before it, over the engine's document at version 0 after
+   * — and the slim view leaves the text out when the page's `tv` matches. 🍾
+   * confirms whatever the column holds (R-081), and the column draws no
+   * paragraph for a blank line, so at the convention the engine opened on a
+   * text two lines shorter than the one the room had been reading: every page
+   * kept its own, drew the document in a line space that was not the engine's
+   * and aimed five proposals two lines low, all refused by R-136's guard.
+   * Two halves, both on the seat that watched 🍾 by its poll: the answer such
+   * a poll gets must carry a text, and every block the column draws must name
+   * the line the host serves. Repro: `scripts/repro/head-insertion-aim.mjs
+   * --case=cork`. */
+  const aim = await guestPage.evaluate(async () => {
+    const base = location.pathname.replace('/d/', '/api/d/');
+    // the seqs a page that had been polling since before the cork still holds:
+    // a document seq it has fallen behind, and no engine seq at all
+    const slim = await (await fetch(base + '/view?since=1.0&tv=0&rk=0')).json();
+    const now = await (await fetch(base + '/view')).json();
+    const lines = String(now.text || '').split('\n');
+    return {
+      named: slim.slim || [], carried: slim.text !== undefined, eseq: slim.eseq,
+      wrong: (window.SESSION.DOC || []).filter((l) => !l.gap && /^L\d+$/.test(l.key || ''))
+        .filter((l) => lines[Number(l.key.slice(1))] !==
+          ((l.t === 'h' ? '#'.repeat(l.level || 1) + ' ' : l.bullet ? '- ' : '') + (l.x || '')))
+        .map((l) => l.key),
+    };
+  });
+  const aimOk = aim.carried && !aim.wrong.length;
+  say('head inser.· ' + (aimOk
+    ? 'a poll from before 🍾 is served the engine’s own text, and every block the column draws names the line the host serves'
+    : 'FAIL: ' + (aim.carried ? '' : 'the answer left the text out (slim ' + JSON.stringify(aim.named) + ') · ') +
+      (aim.wrong.length ? 'blocks keyed outside the host’s text: ' + JSON.stringify(aim.wrong) : '')));
+  if (!aimOk) stuck.push('Q1477: the text a page holds across 🍾');
   // one press, and one only
   const before = guestOks;
   await guestPage.evaluate((k) => {

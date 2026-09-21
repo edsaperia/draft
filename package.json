@@ -30,6 +30,7 @@
     "picture-walk": "node design/tools/picture-walk.mjs",
     "rail-font-walk": "node design/tools/rail-font-walk.mjs",
     "crlf-paste": "node scripts/repro/crlf-paste.mjs",
+    "head-insertion-aim": "node scripts/repro/head-insertion-aim.mjs",
     "journey": "node scripts/journey-walk.mjs",
     "applicants-walk": "node scripts/applicants-walk.mjs",
     "after-begin-walk": "node scripts/after-begin-walk.mjs",

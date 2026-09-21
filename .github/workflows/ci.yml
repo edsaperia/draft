@@ -708,6 +708,13 @@ jobs:
       # its OK, then the questions in order whatever the founder has not reached
       - run: npm run member-questions-walk -- "$WALK_BASE"
         if: always()
+      # **the aim** (Q1477, the nh2026 convention): a page that polled across
+      # 🍾 kept the founder's text, drew the document in a line space that was
+      # not the engine's and aimed its proposals two lines low. The plan's own
+      # hunt — a rival's insertion at the head of the text, a draft begun
+      # beneath it — is walked beside it and is green.
+      - run: npm run head-insertion-aim -- "$WALK_BASE"
+        if: always()
       - run: npm run slug-walk -- "$WALK_BASE" test-charter
         if: always()
       - run: npm run ladder -- "$WALK_BASE"

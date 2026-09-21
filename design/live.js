@@ -137,6 +137,11 @@ window.LIVE = (function () {
           : PAGE_COPY.host.pausedOver;
       }
     }
+    // **A part is only kept if it was ever held** (Q1477). The slim view lets
+    // the page complete an answer from its own copy of the text and the
+    // records; set here, the next poll asks for everything instead, and one
+    // full answer clears it. The page's half of the cork defect below.
+    let askFull = false;
     const api = {
       chain: Promise.resolve(),
       birth: null, // {pendingId, devLink, slug} once the creation mail is sent
@@ -198,8 +203,8 @@ window.LIVE = (function () {
         // the seqs, and the server leaves out whichever has not moved
         const since = env.cs && env.cs.isRemote
           ? '?since=' + encodeURIComponent(env.cs.v.seq + '.' + (env.cs.v.eseq || 0)) +
-            (typeof env.cs.v.textVersion === 'number' ? '&tv=' + env.cs.v.textVersion : '') +
-            (typeof env.cs.v.recordsKey === 'number' ? '&rk=' + env.cs.v.recordsKey : '') : '';
+            (!askFull && typeof env.cs.v.textVersion === 'number' ? '&tv=' + env.cs.v.textVersion : '') +
+            (!askFull && typeof env.cs.v.recordsKey === 'number' ? '&rk=' + env.cs.v.recordsKey : '') : '';
         return fetch('/api/d/' + LIVESLUG + '/view' + since)
           .then((r) => {
             noteBuild(r.headers.get('x-build'));
@@ -249,6 +254,27 @@ window.LIVE = (function () {
             // already had them, and each is the page's own copy from the last
             // full view — merged here, at the one boundary, so nothing
             // downstream knows a view can arrive in pieces
+            // …**but only from a part this page has actually been served**
+            // (Q1477, the nh2026 convention 2026-09-20). The text is left out
+            // when the page's `tv` matches the document's version, and
+            // `textVersion` reads 0 both over the founder's unversioned text
+            // before 🍾 and over the engine's document after it — so the
+            // first answer after the cork left the text out of every page
+            // that had polled through it, and each went on drawing the
+            // founder's text against the engine's line numbers. Cured at the
+            // wire, and caught here too: a page holding no engine seq has
+            // held no versioned text, so it asks again for the whole thing
+            // rather than completing the answer from a text that was never
+            // this document's.
+            if (!askFull && Array.isArray(data.slim) && env.cs.v &&
+              (data.eseq || 0) > 0 && !(env.cs.v.eseq || 0) &&
+              data.slim.some((k) => k !== 'view' && data[k] === undefined)) {
+              askFull = true;
+              console.warn('[live] a slim answer named a part this page has never held; asking again');
+              this.refresh();
+              return;
+            }
+            askFull = false;
             if (Array.isArray(data.slim) && env.cs.v) {
               for (const k of data.slim) if (data[k] === undefined) data[k] = env.cs.v[k];
             }
