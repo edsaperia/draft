@@ -202,12 +202,14 @@ const walkTo = async (stop, delegate) => {
 // only number there is. The count form's bounds are locked in the fold instead
 // (`packages/constitution/test/promise-quorum.test.ts`).
 //
-// **The top end moved to 50** (Q1439, ruling a, Ed 2026-09-17): no quorum may
-// ask for more than half the group a proposal is waiting on, so a share above
-// 50 is not a number the question has an answer for — the box says so, and the
-// ✓ stays dark on one typed past it (`shareOutOfRange` in session-view.html).
+// **The top end moved to 50** (Q1439, ruling a, Ed 2026-09-17) and **back to
+// 100 at Q1490** (R-139, Ed 2026-09-21: *I think we should allow for quorums
+// up to 100%, and let the lapse mechanic compensate*), **with the bottom at
+// one member** the same afternoon. So the box offers the whole scale, and
+// what it refuses is only what is off it — the ✓ stays dark on a number typed
+// outside the range (`shareOutOfRange` in session-view.html).
 const BOUNDS = {
-  quorum: { min: 5, max: 50, step: 5 },
+  quorum: { min: 1, max: 100, step: 5 },
 };
 
 /* ---- 👥: two blocks, the form part of the answer (Q1162) ----------------
@@ -217,8 +219,8 @@ const BOUNDS = {
    What is asserted is the same promises transposed: **born untouched** (no
    block on, boxes empty, dark ✓), **typing into a block's box chooses that
    block** (F6's rule reaching the answer rungs), and **the range is the
-   question's own** (5–100 on the share box, where the track's ends used to
-   be read). */
+   question's own** (1–100 on the share box since Q1490, where the track's
+   ends used to be read). */
 for (const key of ['quorum']) {
   const want = 'ans-' + key;
   console.log('\n' + want);
@@ -272,15 +274,16 @@ for (const key of ['quorum']) {
     !!share && share.box.min === BOUNDS[key].min && share.box.max === BOUNDS[key].max,
     share ? share.box.min + '…' + share.box.max : '');
 
-  // **51 is refused** (Q1439, ruling a). Two halves, and the second is the one
-  // that bites: the box's own `max` (asserted above) stops the spinner, and a
-  // number typed past it leaves the ✓ dark — otherwise a share the module will
-  // reject arms the commit and the refusal arrives at the far end of the act.
+  // **101 is refused** (Q1439, ruling a; the end moved to 100 at Q1490,
+  // R-139). Two halves, and the second is the one that bites: the box's own
+  // `max` (asserted above) stops the spinner, and a number typed past it
+  // leaves the ✓ dark — otherwise a share the module will reject arms the
+  // commit and the refusal arrives at the far end of the act.
   await page.evaluate(() => {
     const p = [...document.querySelectorAll('.setupcard .pick')]
       .find((x) => (x.querySelector('[data-ans]') || { dataset: {} }).dataset.ansval === 'share');
     const box = p && p.querySelector('[data-ansnum]');
-    if (box) { box.value = '51';
+    if (box) { box.value = '101';
       for (const e of ['input', 'change']) box.dispatchEvent(new Event(e, { bubbles: true })); }
   });
   await page.waitForTimeout(400);
@@ -293,8 +296,8 @@ for (const key of ['quorum']) {
     return { value: box ? box.value : null, overflow: !!(box && box.validity.rangeOverflow),
       commitOff: !commit || commit.disabled };
   });
-  check('51 is over the share box’s own end', over.overflow, 'value: ' + over.value);
-  check('the ✓ stays dark on a share above 50', over.commitOff);
+  check('101 is over the share box’s own end', over.overflow, 'value: ' + over.value);
+  check('the ✓ stays dark on a share above 100', over.commitOff);
 
   // typing into the share block's box chooses that block and wakes the ✓
   await page.evaluate(() => {

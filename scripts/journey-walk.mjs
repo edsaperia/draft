@@ -4176,19 +4176,21 @@ if (caret) {
     const jar = (await page.context().cookies(BASE)).map((c) => c.name + '=' + c.value).join('; ');
     const floored = await fetch(BASE + '/api/d/' + slug + '/cmd', { method: 'POST',
       headers: { 'content-type': 'application/json', cookie: jar },
-      body: JSON.stringify({ cmd: 'set-setting', args: { setting: 'quorum', value: { form: 'count', n: 3 } } }) })
+      body: JSON.stringify({ cmd: 'set-setting', args: { setting: 'quorum', value: { form: 'share', n: 50 } } }) })
       .then((r) => r.json()).catch((e) => ({ error: String(e && e.message) }));
     if (floored && floored.error) {
-      say('deck       · FAIL: could not raise the floor above the room · ' + JSON.stringify(floored.error));
+      say('deck       · FAIL: could not set the floor above one voice · ' + JSON.stringify(floored.error));
       stuck.push('the deck’s floor');
     }
-    // **And a third seat, since Q1439** (R-126). The count of 3 above used to
-    // be *above the room* and hold every race at the floor; no quorum may ask
-    // for more than half of the group now, so in a room of two the floor is
-    // one however high the count — and one approving voice, the author's own
-    // derived preference among them, carries the leader away mid-step. At
-    // three the same count reads ⌈3/2⌉ = 2, which the one author's preference
-    // does not meet, and the race stands for its pairs to be judged. cy is
+    // **And a third seat, since Q1439** (R-126). The count above used to be
+    // *above the room* and hold every race at the floor; a quorum is read
+    // against the group now, so a number out of reach is no help — and since
+    // Q1490 (R-139) it is worse than none, a count at or above the group
+    // being unanimity, which closes a candidate the moment anybody prefers
+    // the current text (§4.4). **A share of 50 is the number**: ⌈G/2⌉ is
+    // exactly what the old cap produced at every size this walk reaches, it
+    // sits above the author's own lone approval, and the race stands to be
+    // judged rather than carried or closed out from under the step. cy is
     // invited already; the login door seats them, which is what the askable
     // section below does a few steps later anyway.
     const cySeat = await fetch(BASE + '/api/d/' + slug + '/login', { method: 'POST',
@@ -4206,7 +4208,7 @@ if (caret) {
       for (let i = 0; i < 40 && !deckPage.url().includes('/d/'); i++) await deckPage.waitForTimeout(500);
       await deckPage.waitForTimeout(2600);
       say('deck seat  · ' + (deckPage.url().includes('/d/')
-        ? 'a third seat is here, so a count of 3 is under half the room and holds the race'
+        ? 'a third seat is here, so a share of 50 is above one voice and below the room, and holds the race'
         : 'FAIL: the third seat never landed'));
     }
     await T(4600);                                   // the founder's poll takes the new floor
@@ -4539,8 +4541,12 @@ if (caret) {
          * view: the hand holds no card on T. Asserted: the entry is lit, not
          * ⏳; the press opens the rival pair as a race card; the judgment
          * lands; and only then does the entry file as ⏳ — the ruling's other
-         * half. The floor goes to four first: a third seat makes E three, and
-         * three is what the deck step set. Skipped, and said, under
+         * half. The floor goes to two first — a third seat makes E three, so
+         * two is above the author's own lone approval and below the room.
+         * **It asked for four until Q1490** (R-139), when the old cap at half
+         * the group read that as ⌈3/2⌉ = 2; the cap is the whole group now,
+         * so four would be unanimity and every wording here would close on
+         * the founder's first keep (§4.4). Skipped, and said, under
          * --new-clause and --empty-text, whose own gap proposals stand where
          * T would go. */
         if (NEW_CLAUSE || EMPTY_TEXT) {
@@ -4548,10 +4554,10 @@ if (caret) {
         } else {
           const floored4 = await fetch(BASE + '/api/d/' + slug + '/cmd', { method: 'POST',
             headers: { 'content-type': 'application/json', cookie: jar },
-            body: JSON.stringify({ cmd: 'set-setting', args: { setting: 'quorum', value: { form: 'count', n: 4 } } }) })
+            body: JSON.stringify({ cmd: 'set-setting', args: { setting: 'quorum', value: { form: 'count', n: 2 } } }) })
             .then((r) => r.json()).catch((e) => ({ error: String(e && e.message) }));
           if (floored4 && floored4.error) {
-            say('askable    · FAIL: could not raise the floor above three seats · ' + JSON.stringify(floored4.error));
+            say('askable    · FAIL: could not set the floor above one voice · ' + JSON.stringify(floored4.error));
             stuck.push('the askable case’s floor');
           }
           // **The login door first, the invitation as the fallback** — the
@@ -4746,7 +4752,9 @@ await noRoadBack();
  * kept its rail entry, its tabs and its pairs until T=0.
  *
  * The room here is three (the pairs step seated cy), and the quorum is a
- * count of three, which at a group of three reads ⌈3/2⌉ = 2. bo proposes on a
+ * count of two — what the old cap at half the group produced out of the
+ * numbers the two steps above used to ask for, and what they ask for plainly
+ * since Q1490 (R-139). bo proposes on a
  * line nothing is racing on; the founder prefers the text that stands, and
  * the proposal is still live — a = 1, o = 1, w = 1, and cy could still make
  * it two against one. cy prefers the text as well, and now no answer still to

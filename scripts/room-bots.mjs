@@ -410,7 +410,9 @@ const answerFor = (seat, q, m) => {
   switch (q.setting) {
     case 'ending': return { endsAtMs: now + Math.round(between(r, 90, 240)) * 60_000 };
     case 'quorum': return r() < 0.7
-      // no quorum asks for more than half (Q1439): the share is refused above 50 at the value
+      // **the range stays where it was** though the validator opened to 0–100
+      // at Q1490 (R-139): a bot room asked for unanimity would adopt nothing,
+      // and what these seats are for is a document that moves
       ? { form: 'share', n: Math.round(between(r, 20, 50)) }
       : { form: 'count', n: Math.max(1, Math.floor(m.members.length * between(r, 0.2, 0.5))) };
     case 'rate': return { grant: 5, cap: 8, dripMinutes: pick(r, [3, 5, 10]) };

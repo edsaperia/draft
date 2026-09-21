@@ -190,9 +190,11 @@ function drawFor(id: SettingId, valueType: string, rungs: readonly string[] | un
     // come back, and the `default` below is the right answer until it does.
     case 'quorum': // 👥 — never above the roster, or the document freezes at 🍾
       return rnd() < 0.5
-        // never above half (Q1439: the validator refuses a share over 50, and a
-        // draw of 51–55 stalled the ladder at *constitution* on one seed in
-        // five — seed 320609 reddened CI's `walks` on 2026-09-18)
+        // never above half — **not the validator's bound any more** (Q1490,
+        // R-139 opened it to 0–100), but the ladder's own: a draw of 51–55
+        // stalled it at *constitution* on one seed in five (seed 320609
+        // reddened CI's `walks` on 2026-09-18), and a rung that asks for
+        // near-unanimity walks a document that never adopts
         ? { form: 'share', n: between(rnd, 30, 50) }
         : { form: 'count', n: between(rnd, 4, 8) };
     case 'rate': // ⏱️ — enough ✏️ for thirty proposals, a drip in real minutes
