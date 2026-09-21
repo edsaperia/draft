@@ -123,17 +123,20 @@ window.COMPOSER = (function () {
         // heading, so the two clauses are not neighbours and never merge
         if (at === last + 1) {
           s.keys.push(key); s.origin.push(orig);
+          if (s.seed != null) s.seed += '\n' + orig.text;
           const off = s.text.length + 1;
           s.text += '\n' + text;
           return { site: s, offset: off };
         }
         if (at === first - 1) {
           s.keys.unshift(key); s.origin.unshift(orig);
+          if (s.seed != null) s.seed = orig.text + '\n' + s.seed;
           s.text = text + '\n' + s.text;
           return { site: s, offset: 0 };
         }
       }
       const s = { keys: [key], origin: [orig], text, label: headingForKey(key) };
+      if (seed) s.seed = seed.text;
       // a gap site is born with its own anchor's bookkeeping (Q1311): the
       // held-open `.insert-anchor` after the block before it is where its card
       // stands (the read side's shape for a proposed section, Q261's smaller half)
@@ -148,14 +151,34 @@ window.COMPOSER = (function () {
     // in the lane and in the proposal because its `# ` is in the text, where
     // the member can also delete it. The block's kind still rides along for
     // anything that asks what the block *was* (the card's head).
+    // **An origin is what the document holds, never the wording you started
+    // from** (Q1483, the nh2026 convention 2026-09-20: *the propose edit
+    // button doesn't always pick up the right text*). The two are different
+    // things the moment ✏️ seeds a draft off somebody else's lane, and until
+    // now one field carried both: the origin took the seed's words, so
+    // `misaimed` compared a rival's wording against the clause as it stands
+    // (live.js), found them different, and refused every press with *the text
+    // moved while you were writing* — which was false, nothing was sent, and
+    // `followSites` would have gone looking for the rival's line in the
+    // document and marked the draft stranded. So the seeded wording — **what
+    // the diff is measured against** (Ed, 228) — lives on the site as `seed`,
+    // and the origin is **what the document holds**, which is the identity the
+    // follow and the misaim guard need and the only thing either reads.
     function originOf(key, seed) {
       const l = lineOf(key) || {};
       // a gap has nothing standing in it: an empty paragraph origin, marked so
       // the card's head can say which gap and the host can send an insertion
       if (isGapKey(key)) return { key, text: '', note: seed ? seed.note : null, t: 'p', gap: true };
-      return { key, text: seed ? seed.text : sourceTextFor(key), note: seed ? seed.note : null,
+      return { key, text: sourceTextFor(key), note: seed ? seed.note : null,
                t: l.t, level: l.level, bullet: !!l.bullet };
     }
+    // the wording a site's lane is diffed against, and what its head shows:
+    // the seed where ✏️ started it off another lane, the document's own
+    // blocks otherwise. One block, as a seeded site's head has always drawn.
+    const headBlocksOf = (site) => (site.seed == null ? site.origin
+      : [{ key: site.keys[0], text: site.seed, t: site.origin[0] && site.origin[0].t,
+           level: site.origin[0] && site.origin[0].level,
+           bullet: !!(site.origin[0] && site.origin[0].bullet) }]);
 
     // A **run** of blocks taken as one site. Ed's ruling (2026-08-17): four
     // contiguous paragraphs deleted together are one candidate, and not even a
@@ -164,9 +187,10 @@ window.COMPOSER = (function () {
     // single site whatever the run's length, which is what `draft-site` has meant
     // since 225; all that is new is being able to select one rather than having
     // to type your way across it.
-    function addDraftRun(d, keys, text) {
-      const s = { keys: keys.slice(), origin: keys.map((k) => originOf(k, null)),
+    function addDraftRun(d, keys, text, seed) {
+      const s = { keys: keys.slice(), origin: keys.map((k) => originOf(k, seed || null)),
                   text, label: headingForKey(keys[0]) };
+      if (seed) s.seed = seed.text;
       d.sites.push(s);
       d.sites.sort((a, b) => docIndexOfKey(a.keys[0]) - docIndexOfKey(b.keys[0]));
       return s;
@@ -402,11 +426,27 @@ window.COMPOSER = (function () {
     // ---- opening the composer -------------------------------------------
     // `initial` carries the keystroke that started it: the clause with that one
     // character already applied, and where the caret should sit afterwards.
-    function startDraft(key, seed, initial) {
+    // `run` is the blocks the wording being taken is a reading OF — ✏️
+    // *propose edit* under a card headed by several lines hands all of them
+    // (Q1483, the other half). It used to hand the one key the button carried,
+    // so a card headed *Step 3…* and *Remedies…* gave a draft of *Step 3…*
+    // alone aimed at `[22, 23)` where the card is about `[22, 24)`: sent, the
+    // candidate's several lines would have replaced one and doubled the rest.
+    // A run of one, a run holding a gap, or a run the key is not in is no run.
+    function startDraft(key, seed, initial, run) {
       if (!key) return;
       const d = ensureDraft();
+      const keys = (run && run.length > 1 && run.includes(key) && !run.some(isGapKey)) ? run : null;
       let site = siteFor(d, key), offset = 0;
-      if (site) {
+      if (keys) {
+        // the whole run gives way to the whole run, wherever the draft held
+        // part of it — the same rule a seed on one clause follows
+        d.sites = d.sites.filter((x) => !x.keys.some((k) => keys.includes(k)));
+        site = addDraftRun(d, keys,
+          seed ? seed.text : keys.map(sourceTextFor).filter(Boolean).join('\n'), seed);
+        key = keys[0];
+      }
+      else if (site) {
         if (initial) site.text = initial.text;
         // **A seed replaces what is in the box** (Ed, 2026-08-17: *clicking a
         // "propose edit" puts that text in it instead*). It used to seed only on
@@ -418,6 +458,7 @@ window.COMPOSER = (function () {
         else if (seed) {
           const at = site.keys.indexOf(key);
           site.text = seed.text;
+          site.seed = seed.text;
           site.keys = [key];
           site.origin = [originOf(key, seed)];
           if (at < 0) site.label = headingForKey(key);
@@ -923,7 +964,7 @@ window.COMPOSER = (function () {
           html: (site.lost
             ? site.keys.map((k) => lineOf(k)).filter((l) => l && !l.gap)
               .map((l) => ({ key: l.key, text: l.x, t: l.t, level: l.level, bullet: l.bullet }))
-            : site.origin).map((o) => '<div class="lp' + (o.t === 'h' ? ' hblock lvl' + (o.level || 1) : o.bullet ? ' bullet' : '') +
+            : headBlocksOf(site)).map((o) => '<div class="lp' + (o.t === 'h' ? ' hblock lvl' + (o.level || 1) : o.bullet ? ' bullet' : '') +
             '" data-key="' + o.key + '">' + blockHtml({ x: o.text, t: o.t, level: o.level, bullet: o.bullet }) + '</div>').join(''),
         }) +
         // and your draft as the one reply, in the reply's own order: the wording,
@@ -1034,7 +1075,7 @@ window.COMPOSER = (function () {
         clauseHeadHtml(d, s.origin[0] && s.origin[0].gap
           ? { text: null, label: T.insert.headLabel, key: s.keys[0],
               chips: chipsFor(s.keys[0], d.id) }
-          : { text: s.origin.map((o) => o.text).join('\n'), key: s.keys[0],
+          : { text: originText(s), key: s.keys[0],
               chips: chipsFor(s.keys[0], d.id) }) +
         // …and **a deletion of yours says so** (Q1412): this lane is read, not
         // edited, so where the site's text is empty it carries the removal

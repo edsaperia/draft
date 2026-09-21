@@ -3105,6 +3105,214 @@ const caret = await page.evaluate((empty) => {
   s.addRange(r);
   return p.dataset.key || '(no key)';
 }, EMPTY_TEXT);
+/* ---- ✏️ *propose edit* over a run of two lines (Q1483, the nh2026
+ * convention 2026-09-20: *the propose edit button doesn't always pick up the
+ * right text*) ------------------------------------------------------------
+ * Two halves of one defect, on one card:
+ *
+ *   **a rival's lane** — the draft remembered the rival's wording as what it
+ *   replaces, and Q1463's misaim guard compares that to the clause as it
+ *   stands, so **every press was refused on the page** with *the text moved
+ *   while you were writing*, which was false, and nothing was ever sent;
+ *
+ *   **the keep lane** — the head of a card over a *run* reads the whole run
+ *   (`runTextFor`, Q1308) and ✏️ under it opened a draft on the first block
+ *   alone: a card about `[k, k+2)` gave a draft aimed at `[k, k+1)`, so a
+ *   candidate's several lines would have replaced one and doubled the rest.
+ *
+ * Each lane is pressed, the draft read out of the page's own model, and the
+ * proposal put with the row's own hold, its hunk read off the wire — the
+ * page's own `hunksOf` being closed over inside session-view.html where no
+ * walk can reach it. **Each proposal is withdrawn before the next**, so the
+ * step asks one spare ✏️ of the seat that reads and one of the seat that puts
+ * the rival wording — and it picks both by reading the wallets, because by
+ * the end of this walk the founder's is empty, bo's and cy's depend on the
+ * drip, and which seat can still pay is not a thing to assume. **Called from
+ * inside the proposing section**, where two seats still hold an ✏️: by the
+ * end of this walk nobody does. It leaves the clause and both wallets as it
+ * found them.
+ * It fails on the pre-fix page at *run edit 1 · FAIL: … refused on the page*
+ * and at *run edit 2 · FAIL: … opened ["Lk"]*. */
+const proposeEditOverRun = async () => {
+  if (!guestPage) return;                       // its own failure, already reported
+  const wire = (pg, cmd, args) => pg.evaluate(([c, a]) => fetch(location.pathname.replace('/d/', '/api/d/') + '/cmd', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ cmd: c, args: a }),
+  }).then((r) => r.json()).catch((e) => ({ error: String(e && e.message) })), [cmd, args]);
+  const viewOf = (pg) => pg.evaluate(() => fetch(location.pathname.replace('/d/', '/api/d/') + '/view')
+    .then((r) => r.json()).catch(() => null));
+
+  const v0 = await viewOf(page);
+  const lines = String((v0 || {}).text || '').split('\n');
+  // a clause already racing opens its race rather than a run of its own
+  const taken = new Set();
+  for (const c of ((v0 || {}).clauses || [])) {
+    for (const sp of (c.contested || [])) for (let i = sp.start; i <= sp.end; i++) taken.add(i);
+  }
+  let k = -1;
+  for (let i = 0; i + 1 < lines.length; i++) {
+    if (taken.has(i) || taken.has(i + 1) || !lines[i].trim() || !lines[i + 1].trim()) continue;
+    k = i; break;
+  }
+  if (k < 0) {
+    say('run edit   · FAIL: every run of two lines is already racing · ' + JSON.stringify([...taken]));
+    stuck.push('a free two-line run for the propose-edit run'); return;
+  }
+  // **the founder reads and bo writes**, and no third seat is minted: cy is
+  // seated later in the walk and its page has acknowledged nothing, so it
+  // holds no cards to press — and the two gap proposals the `askable` step
+  // makes are the whole of cy's wallet.
+  const reader = { who: 'ada', pg: page }, author = { who: 'bo', pg: guestPage };
+  for (const s of [reader, author]) s.purse = ((await viewOf(s.pg)) || {}).wallet;
+  const wallets = { ada: reader.purse, bo: author.purse };
+  if (!(reader.purse >= 1 && author.purse >= 1)) {
+    say('run edit   · FAIL: an ✏️ apiece is needed and the wallets are ' + JSON.stringify(wallets));
+    stuck.push('an ✏️ apiece for the run edit'); return;
+  }
+  const rp = reader.pg;
+  const RIVAL = 'Two lines stand here as one, and the club keeps the shorter.';
+  const put = await wire(author.pg, 'propose-text', { baseVersion: (v0 || {}).textVersion,
+    hunks: [{ start: k, end: k + 2, lines: [RIVAL], was: [lines[k], lines[k + 1]] }],
+    why: 'shorter is plainer' });
+  const rival = put && put.result && put.result.id;
+  if (!rival) {
+    say('run edit   · FAIL: ' + author.who + ' could not put the rival wording on L' + k + '+L' + (k + 1) +
+      ' · ' + JSON.stringify(put).slice(0, 160) + ' · wallets ' + JSON.stringify(wallets));
+    stuck.push('the rival wording the run edit is read against'); return;
+  }
+  await T(5600);                                 // one poll in the reader's seat
+  // **whatever this step made, it takes away again** — on its way out of any
+  // of the failures below as much as at the end, because a rival left
+  // standing is an ✏️ of bo's gone and a race on a clause the steps after
+  // this one look for
+  let outstanding = null;
+  try {
+
+  // the page's own model of the draft a press opened — read rather than
+  // driven, so a failure names what the page holds
+  const draftNow = () => rp.evaluate(() => {
+    const S = window.SESSION;
+    const d = (S.SUGGS || []).find((x) => x.id === 'draft-yours');
+    if (!d || !(d.sites || []).length) return null;
+    const s = d.sites[0];
+    return { sites: d.sites.length, keys: s.keys.slice(), text: s.text,
+      seed: s.seed == null ? null : s.seed, origin: s.origin.map((o) => o.text),
+      refusal: d.refusal || null };
+  });
+  // **what went out, off the wire.** `LIVE_HOOKS` is closed over inside
+  // session-view.html and no walk can reach it (head-insertion-aim says the
+  // same), so the hunk is read from the request itself — which is the better
+  // reading anyway: it is what the host was actually told.
+  let sent = null;
+  rp.on('response', (r) => {
+    const body = r.request().postData() || '';
+    if (!/\/cmd$/.test(r.url()) || !/propose-text/.test(body)) return;
+    let hunks = null;
+    try { hunks = JSON.parse(body).args.hunks.map((h) => [h.start, h.end, (h.lines || []).length]); } catch { /* not ours */ }
+    sent = { status: r.status(), hunks };
+  });
+  // the row's ✏️, held as the propose step holds it (backlog 184: a click in
+  // the click position, a real press held down in the hold position)
+  const holdCommit = async () => {
+    const b = await rp.$('#charter [data-proposalrow] [data-act="row-commit"]:not([data-pen]):not([disabled])');
+    if (!b) return false;
+    await b.scrollIntoViewIfNeeded();
+    const bx = await b.boundingBox();
+    if (!bx) return false;
+    await rp.mouse.move(bx.x + bx.width / 2, bx.y + bx.height / 2);
+    if ((await pageGesture()) === 'click') await rp.mouse.click(bx.x + bx.width / 2, bx.y + bx.height / 2);
+    else { await rp.mouse.down(); await T(1400); await rp.mouse.up(); }
+    await T(2600);
+    return true;
+  };
+
+  for (const lane of ['approve', 'keep']) {
+    const n = lane === 'approve' ? 1 : 2;
+    const opened = await rp.evaluate(([a, b, ln]) => {
+      const S = window.SESSION;
+      const it = (S.SUGGS || []).find((x) => !x.mine && (x.keys || []).join('+') === 'L' + a + '+L' + b);
+      if (!it) return { found: false, have: (S.SUGGS || []).map((x) => x.id + ':' + (x.keys || []).join('+')) };
+      try { S.toggle(it.id, false); } catch { /* already open */ }
+      const q = String(it.id).replace(/["\\]/g, '\\$&');
+      const card = document.querySelector('.sugg[data-card="' + q + '"]');
+      const btn = card && [...card.querySelectorAll('[data-propose-from]')]
+        .find((x) => x.dataset.proposeFrom.split('|')[1] === ln);
+      if (!btn) return { found: true, id: it.id, btn: false,
+        lanes: card ? [...card.querySelectorAll('[data-propose-from]')].map((x) => x.dataset.proposeFrom) : null };
+      btn.click();
+      return { found: true, id: it.id, btn: true };
+    }, [k, k + 1, lane]);
+    if (!opened.found || !opened.btn) {
+      say('run edit ' + n + ' · FAIL: no ' + lane + ' lane on ' + reader.who + '’s card over L' + k + '+L' + (k + 1) +
+        ' · ' + JSON.stringify(opened).slice(0, 220));
+      stuck.push('the ' + lane + ' lane of a two-line run’s card'); return;
+    }
+    await T(1200);
+    const d = await draftNow();
+    const keysOk = !!d && d.sites === 1 && d.keys.join('+') === 'L' + k + '+L' + (k + 1);
+    // the seeded lane starts from the rival's wording and the keep lane from
+    // the run's own, and either way the **origin is what the document holds**
+    const seedOk = !!d && (lane === 'keep' ? d.seed === null : d.seed === RIVAL);
+    const originOk = !!d && d.origin.join('\n') === lines[k] + '\n' + lines[k + 1];
+    if (!keysOk || !seedOk || !originOk) {
+      say('run edit ' + n + ' · FAIL: ✏️ on the ' + lane + ' lane of L' + k + '+L' + (k + 1) +
+        ' opened ' + JSON.stringify(d).slice(0, 300));
+      stuck.push('✏️ over a two-line run (' + lane + ')'); return;
+    }
+    // something of the member's own in it, so what goes out is a wording and
+    // not the run put back (Q1479 (b)); typed into the lane by its own key,
+    // which is where the caret already is
+    const typed = await rp.evaluate((sel) => {
+      const box = document.querySelector(sel);
+      if (!box) return false;
+      box.focus({ preventScroll: true });
+      const r = document.createRange(); r.selectNodeContents(box); r.collapse(false);
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      return true;
+    }, '.sugg[data-card="draft-yours"] [data-lane="L' + k + '"]');
+    if (!typed) {
+      say('run edit ' + n + ' · FAIL: no lane keyed L' + k + ' on the draft card to type into');
+      stuck.push('the lane of a draft ✏️ opened over a run (' + lane + ')'); return;
+    }
+    await rp.keyboard.type(' zz');
+    await T(900);
+    sent = null;
+    const held = await holdCommit();
+    const landed = await rp.evaluate(([a, b]) => {
+      const S = window.SESSION;
+      const m = (S.SUGGS || []).find((x) => x.mine && x.unproposed !== true &&
+        (x.keys || []).join('+') === 'L' + a + '+L' + b);
+      const dr = (S.SUGGS || []).find((x) => x.id === 'draft-yours' && (x.sites || []).length);
+      return { id: m ? m.id : null, cand: m ? m.candidate : null, edits: S.editsHeld,
+        draft: !!dr, refusal: dr ? (dr.refusal || null) : null };
+    }, [k, k + 1]);
+    // **the whole run, in one hunk**: a draft on the first block alone sends
+    // `[k, k+1)` and the lines it leaves behind are doubled
+    const aim = sent && sent.hunks;
+    const aimOk = !!aim && aim.length === 1 && aim[0][0] === k && aim[0][1] === k + 2;
+    const sentOk = held && !!sent && sent.status < 400 && aimOk && !!landed.id && !landed.draft;
+    say('run edit ' + n + ' · ' + (sentOk
+      ? '✏️ on the ' + lane + ' lane of a card over L' + k + '+L' + (k + 1) + ' opens the whole run' +
+        (lane === 'keep' ? '' : ', seeded from the rival’s wording') +
+        ', and ' + reader.who + '’s proposal goes out as [' + k + ', ' + (k + 2) + ') · propose-text ' + sent.status
+      : 'FAIL: ' + (sent ? 'propose-text ' + sent.status + ' · sent ' + JSON.stringify(aim) +
+          ' for [' + k + ', ' + (k + 2) + ')' : 'nothing was sent') +
+        ' · held ' + held + ' · ' + JSON.stringify(landed).slice(0, 220)));
+    outstanding = landed.cand;
+    if (!sentOk) { stuck.push('sending a draft ✏️ opened over a run (' + lane + ')'); return; }
+    // **withdrawn before the next**, so the second half asks the same one ✏️
+    // of the same wallet and the rival's card is served again
+    await rp.evaluate(() => { try { window.SESSION.toggle(window.SESSION.openId, false); } catch { /* none open */ } });
+    if (outstanding) { await wire(rp, 'withdraw-text', { candidate: outstanding }); outstanding = null; }
+    await T(5600);
+  }
+
+  } finally {
+    if (outstanding) await wire(rp, 'withdraw-text', { candidate: outstanding });
+    await wire(author.pg, 'withdraw-text', { candidate: rival });
+    await T(1200);
+  }
+};
 say('caret      · ' + (caret || 'FAIL: no charter paragraph to type in'));
 if (caret) {
   /* Inside edit mode the ordinary `'X'` is applied by `typeAt` to the block the
@@ -4022,6 +4230,8 @@ if (caret) {
       await closeCard();
     }
   }
+
+  await proposeEditOverRun();
 
   /* ---- races wait behind the ⚖️ OK (Q1328) --------------------------------
    * Ed, 2026-09-11: *I shouldn't be served a task until I can do its main

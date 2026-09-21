@@ -322,6 +322,18 @@
     if (keys.length < 2 || !keys.includes(key) || keys.some(isGapKey)) return sourceTextFor(key);
     return keys.map(sourceTextFor).filter(Boolean).join('\n');
   }
+  // …and the blocks that run is made of, for ✏️ *propose edit* (Q1483): the
+  // same run `runTextFor` reads, and a patch site's own. A run of one and a
+  // run holding a gap are no run — a gap site's bookkeeping is its own
+  // (Q1311) and never merges with the clause beside it.
+  function proposeRunFor(s, key) {
+    const run = (ks) => (ks && ks.length > 1 && !ks.some(isGapKey) ? ks.slice() : null);
+    if (s && s.kind === 'patch') {
+      const site = (s.sites || []).find((x) => x.key === key) || (s.sites || [])[0];
+      return site ? run(site.keys || [site.key]) : null;
+    }
+    return run((s && s.keys) || []);
+  }
   // the insert head's line: *(no text here)*, whatever stands either side —
   // the eyebrow, *The gap as it stands*, says the rest (Q1379, Ed 2026-09-15;
   // it was Q1308's sentence naming the neighbours in their first words)
@@ -3611,7 +3623,11 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         const [id, lane, key] = b.dataset.proposeFrom.split('|');
         const s = SUGGS.find((x) => x.id === id);
         if (!s) return;
-        startDraft(key || (s.keys ?? [])[0], laneSeed(s, lane, key, markerFor));
+        // **the draft opens over the whole run the lane's wording reads**
+        // (Q1483): the head shows the run (`runTextFor`), the seed is the
+        // candidate's reading of the run, so the draft has to be the run's
+        startDraft(key || (s.keys ?? [])[0], laneSeed(s, lane, key, markerFor),
+          null, proposeRunFor(s, key || (s.keys ?? [])[0]));
       })
     );
     // The composer's own fields. Neither re-renders the document: a re-render

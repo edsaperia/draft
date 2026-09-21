@@ -820,7 +820,13 @@ window.CARDS = (function () {
     }
     return mdStrip(src).length;
   }
-  const originText = (site) => site.origin.map((o) => o.text).join('\n');
+  // What a site's lane is diffed against — the green marking's base. **The
+  // wording you started from where ✏️ gave you one** (Ed, 228), and the
+  // document's own blocks otherwise; the two stopped being the same field in
+  // Q1483, because the origin is also what says where the site still belongs
+  // (`misaimed`, `followSites`) and a rival's wording is nowhere in the
+  // document.
+  const originText = (site) => (site.seed != null ? site.seed : site.origin.map((o) => o.text).join('\n'));
   // Read back whatever the browser made of the editing: blocks separated by
   // newlines, however they ended up nested.
   // The lane's visible characters **are** the candidate's markdown source
