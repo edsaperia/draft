@@ -342,9 +342,11 @@ because it leaves a 429 in the platform's logs.
 
 **The login door has two buckets** (Q1341, Ed 2026-09-12): 200 requests per
 IP in ten minutes, since a convention room arrives on one venue wifi and so
-on one address, and 5 per email address in the same window, which is what
-stops a script working one address. Both numbers are guesses to revisit
-after a real convention.
+on one address, and **10** per email address in the same window (5 until
+`d1f6345`, 2026-09-19 — issue #86), which is what stops a script working one
+address. Both numbers are guesses to revisit after a real convention; the
+per-IP one was revisited after the first (issue #69), the per-address one
+raised the same night.
 
 **Reading a failure.** A `/healthz` 404 usually means the live build predates
 the health route rather than that anything is wrong; check `x-build` against
