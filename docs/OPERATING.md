@@ -906,6 +906,13 @@ beneath. **Either store**, since stage 5a: pass the database URL on
 docs.vote and a data directory locally. It reads and writes nothing else,
 so unlike the deleting verbs it is safe beside a running service.
 
+**When it is read** (Ed, 2026-09-22): **within a day of every room closing,
+and weekly on a fixed day besides.** Nothing alerts on a line landing — Ed
+ruled the log is enough, and the log is only enough if it is read — so the
+reading is a runbook step, not a reflex: `docs/runbooks/demo-day.md`
+§ *Afterwards* is the after-a-room half, and the weekly read is the same
+command. Every line is a defect to file.
+
 **What the page shows for the same event** (SURFACE Y25): the sentence
 under the card the command left from, and a stagehand's line at the foot of
 the window — the sentence, then the command, its arguments, the document,

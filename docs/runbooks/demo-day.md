@@ -82,3 +82,17 @@ night before (Ed's issues review, item 18: *one deploy Friday or Saturday, never
 
 Export before deleting anything (`docs/runbooks/backup-and-restore.md`), and write down what
 surprised the room while it is fresh: every one of those is a question or an issue.
+
+**Read the error log within a day of the room closing** (Ed, 2026-09-22: *we should
+check the error log regularly, or every time there has been a busy document*). Nobody is
+told when a line lands — the log is the reporting, so a room that nobody reads the log
+after is a room whose defects are still unknown. In a shell on the host:
+
+    node dist/draft-tools.mjs errors "$DATABASE_URL" 200
+
+prints the last two hundred, newest first, one event per line with its reason beneath
+(`docs/OPERATING.md` §11 says what each field means, and which two refusals are counted on
+`/healthz` instead). Every line is a defect: a member was refused, or the page threw. File
+each as a question or an issue with its `seat` and `at`, which a member's screenshot can be
+matched to. **The same read happens weekly in the quiet weeks**, on a fixed day, so a
+defect in a document nobody is watching does not wait for the next room to find it.
