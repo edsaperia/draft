@@ -213,3 +213,5 @@ This file is deleted in the same commit.
 ## Stage notes
 
 (One line per stage as it lands: commit, run id, the number it moved.)
+
+- **Stage 1** — PR #96, 90045bf4 (rebased as 34354c12); run 35792314266: the walks decided after 10m19s, down from 43 min (slowest group seat-member; the others 8m00s–10m09s; ~35 s setup per runner). Exit 3 proved on run 35793133650 (both seat groups red at noRule=7), reverted green on 35794080592. `seat-matrix --hat=both` split into one hat per group, identical assertions (each hat was already its own document). `ci`'s timeout is 45 on a push to main, 15 otherwise, so a timeout never cancels the deploy's poll and strands docs.vote paused. Leftovers on main as c44e8289: the copy golden re-frozen after Q1503, `*.sh text eol=lf`.
