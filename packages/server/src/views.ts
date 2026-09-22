@@ -602,8 +602,13 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
       footprint: c.footprint, displaced: prev.slice(span.start, span.end),
       at: spanNow(span, o.version, steps), early: true, field: [entry] });
   }
+  // **every resolved race keeps its record** (Q1504, Ed 2026-09-22): the
+  // last fifty were kept here once, and a convention of 93 adoptions lost its
+  // earlier ✔s from the closed page. Nothing is capped: a live poll that
+  // already holds the records is answered without them (`recordsKey`, the
+  // slim view in routes-member.ts), which is what the cap never protected
   const records = [...byRace.values(), ...earlyRows.values()]
-    .sort((a, b) => a.when - b.when).slice(-50);
+    .sort((a, b) => a.when - b.when);
   // **The record** (SPEC §4.6, the shape record-builder renders), once closed:
   // the final text, what adopted, the backlog of undecided races each with
   // its field and the text that stood, the changes carried-but-unassented,
