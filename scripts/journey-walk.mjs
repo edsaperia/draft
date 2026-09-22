@@ -93,13 +93,18 @@ const LIFECYCLE = {
   L2: 'L2 ✋ saved',    // an answer about yourself: on Save; your member row, and still there after a reload
   L3: 'L3 answered',   // a blind question answered (--delegate-all): on ✓; the entry leaves the rail, the card shows the count
   L4: 'L4 judged',     // a judgment cast: ✓ closes; the pair's own entry files as ⏳, the other pairs' stay lit (pairs 3, pairs 7)
-  L5: 'L5 proposed',   // a motion committed: on Propose; the ✏️ entry pinned
+  L5: 'L5 proposed',   // a motion committed (and a text proposal, Q1485 (A)): on Propose the card closes; the ✏️ entry pinned
   L6: 'L6 📧 sent',    // 📧 send: the card closes on send; the clause says to check your inbox
   L7: 'L7 owed OK',    // a decision you are owed: on OK, one press, persisted per member; the clause keeps the change line
   L8: 'L8 grant OK',   // a power arrives: on OK; ACK_KEYS per seat — not served again after a reload, the socket held
   L9: 'L9 🗑️',        // 🗑️: always closes; un-actioned input reverted (⏱️'s number, ✋'s text), the set value untouched
 };
 const L = (k) => LIFECYCLE[k].padEnd(11) + '· ';
+// **what the rail says for a few seconds after a press** (Q1485 (A), Ed
+// 2026-09-21: *Close, and say so*) — `COPY.session.rail.justProposed`, quoted
+// here rather than read out of the page, so a copy edit that drops it reddens
+// this walk rather than passing silently
+const JUST_PROPOSED = 'Proposed — the members are deciding';
 // Q911: a walk on a default port will drive whatever process is listening,
 // and a stale one serves today's page over a week-old engine — so the first
 // thing this does is refuse a server that is not this tree.
@@ -3287,8 +3292,13 @@ const proposeEditOverRun = async () => {
       const m = (S.SUGGS || []).find((x) => x.mine && x.unproposed !== true &&
         (x.keys || []).join('+') === 'L' + a + '+L' + b);
       const dr = (S.SUGGS || []).find((x) => x.id === 'draft-yours' && (x.sites || []).length);
+      const just = document.querySelector('#rail .qjust');
+      const doc0 = document.getElementById('doc');
       return { id: m ? m.id : null, cand: m ? m.candidate : null, edits: S.editsHeld,
-        draft: !!dr, refusal: dr ? (dr.refusal || null) : null };
+        draft: !!dr, refusal: dr ? (dr.refusal || null) : null,
+        // **the card closes at Propose and the rail says so** (Q1485 (A))
+        open: S.openId, just: just ? just.textContent.trim() : null,
+        editing: !!(doc0 && doc0.classList.contains('editing')) };
     }, [k, k + 1]);
     // **the whole run, in one hunk**: a draft on the first block alone sends
     // `[k, k+1)` and the lines it leaves behind are doubled
@@ -3301,14 +3311,20 @@ const proposeEditOverRun = async () => {
     // open card's, so the card vanished with no animation a round trip after
     // it said *Submitted*. `mine:` is that other name.
     const named = !!landed.id && !String(landed.id).startsWith('mine:');
-    const sentOk = held && !!sent && sent.status < 400 && aimOk && !!landed.id && !landed.draft && named;
+    // **the card closes at the press, and the rail says the thing went out**
+    // (Q1485 (A), Ed 2026-09-21: *Close, and say so*). Red on the pre-fix
+    // page: the card stayed open under the proposal's own id wearing a
+    // pressed *✏️ Submitted*, and no entry anywhere carried a sentence.
+    const shutOk = landed.open === null && !landed.editing && landed.just === JUST_PROPOSED;
+    const sentOk = held && !!sent && sent.status < 400 && aimOk && !!landed.id && !landed.draft && named && shutOk;
     say('run edit ' + n + ' · ' + (sentOk
       ? '✏️ on the ' + lane + ' lane of a card over L' + k + '+L' + (k + 1) + ' opens the whole run' +
         (lane === 'keep' ? '' : ', seeded from the rival’s wording') +
-        ', and ' + reader.who + '’s proposal goes out as [' + k + ', ' + (k + 2) + ') · propose-text ' + sent.status
+        ', and ' + reader.who + '’s proposal goes out as [' + k + ', ' + (k + 2) + ') · propose-text ' + sent.status +
+        ' · the card closed, edit mode ended, the rail says “' + landed.just + '”'
       : 'FAIL: ' + (sent ? 'propose-text ' + sent.status + ' · sent ' + JSON.stringify(aim) +
           ' for [' + k + ', ' + (k + 2) + ')' : 'nothing was sent') +
-        ' · held ' + held + ' · ' + JSON.stringify(landed).slice(0, 220)));
+        ' · held ' + held + ' · ' + JSON.stringify(landed).slice(0, 260)));
     outstanding = landed.cand;
     if (!sentOk) { stuck.push('sending a draft ✏️ opened over a run (' + lane + ')'); return; }
     // **withdrawn before the next**, so the second half asks the same one ✏️

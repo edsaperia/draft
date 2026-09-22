@@ -4893,10 +4893,38 @@
   // once on opening; the disc is the card's own sealed speaker, since a
   // motion names no mover (SURFACE C13). One motion, one entry (Q1367): no
   // count of others rides beneath, each having an entry of its own.
+  // **A motion just put says so for a few seconds** (Q1485 (A), Ed
+  // 2026-09-21: *Close, and say so*; the rule is one for text and rules
+  // alike). The card closes at the press now, so the only thing left on the
+  // surface saying the motion went out is its rail entry — which, like a text
+  // proposal's, is a line naming the rule and nothing else. It wears the
+  // sentence until `justPut` runs out, and the sentence is then taken off by
+  // a patch rather than a render: five seconds after a press the member may
+  // be typing somewhere, and a render there would take the caret.
+  const PUT_MS = 5000;
+  let justPut = null;                    // { k, until } — the rule a motion of mine went out on
+  let justPutTimer = null;
+  const justPutOn = (c) => {
+    if (!justPut || !c || !c.motion || hostKeyOf(c) !== justPut.k) return false;
+    if (Date.now() >= justPut.until) return false;
+    const rec = liveMotionRec(c);
+    return !!rec && rec.by != null && rec.by === viewerId();
+  };
+  function flashPut(k) {
+    justPut = { k, until: Date.now() + PUT_MS };
+    if (justPutTimer) clearTimeout(justPutTimer);
+    justPutTimer = setTimeout(() => {
+      justPutTimer = null; justPut = null;
+      let moved = false;
+      document.querySelectorAll('#rail .qjust').forEach((n) => { n.remove(); moved = true; });
+      if (moved) SESSION.layoutQueue();
+    }, PUT_MS);
+  }
   const summary = (c) => {
     const m = motionOn(c);
-    if (m) return window.CARDS.railSpeakerHtml(m.why, null);
-    return '';
+    const body = m ? window.CARDS.railSpeakerHtml(m.why, null) : '';
+    if (!justPutOn(c)) return body;
+    return '<span class="qwhy qjust">' + esc(window.COPY.session.rail.justProposed) + '</span>' + body;
   };
 
   // **What is unlocked, and by what.** Reading needs nothing. Proposing and
@@ -8108,6 +8136,7 @@
           const sent = cs.openMotion(now(), viewerId(), draftPayload(d0), d0.why || undefined);
           S.draft = null;
           S.doorErr = null;
+          flashPut(d0.k);                    // the rail says it went out (Q1485 (A))
           // the reason rode in as the motion's `why` (K12); it is spent, the
           // way `commitSetting` spends it on the pen's own commit
           if (own && S.setWhy) delete S.setWhy[d0.k];
@@ -8117,6 +8146,7 @@
             // did not happen, and the lane is where the Founder's words are —
             // dropping it makes a refusal cost them the sentence they wrote.
             if (own && S.setWhy && d0.why) S.setWhy[d0.k] = d0.why;
+            justPut = null;                    // nothing went out, so nothing to announce
             S.open = d0.k;                     // the card is shut by now: bring it back under its sentence
             setDoorErr(d0.k, 'That could not be proposed: ' + plainRefusal(res.error) + '.');
           } });
@@ -8793,10 +8823,23 @@
     const spread = Math.max(0, HOLD_MS - LEAD_MS - SEAT_MS);
     const timers = seats.map((s2, i) =>
       setTimeout(() => s2.classList.add('in'), LEAD_MS + i * spread / seats.length));
+    // **And the 🏛️ route closes its card too** (Q1485 (A), Ed 2026-09-21:
+    // *Close, and say so* — text and rules alike, and a constitutional motion
+    // is a rule proposal like any other). Q1485 (D) gave the ✏️ route its
+    // close; this one still ended in a bare `render()`, so the room convened,
+    // the motion went out, and the card redrew as though the press had done
+    // nothing. Only where the motion actually went: a refusal keeps its card
+    // standing under its own sentence, and an assembly the draft moved under
+    // put nothing at all.
+    let put = false;
     const finish = () => {
       assembly = null;
       btn.classList.remove('penholding'); btn.removeAttribute('aria-disabled');
-      setTimeout(() => { el.remove(); render(); }, 420);
+      setTimeout(() => {
+        el.remove();
+        if (put && !S.doorErr && S.open === d0.k) return closeThen(() => { S.open = null; });
+        render();
+      }, 420);
     };
     assembly = { el, btn, timers, done: setTimeout(() => {
       el.classList.add('done');
@@ -8815,6 +8858,8 @@
         S.mAns[d0.k] = 'yes';
         S.doorErr = null;
         S.draft = null;
+        flashPut(d0.k);                    // the rail says it went out (Q1485 (A))
+        put = true;
         // the reason is spent with the act (K12), as `commitSetting` spends it
         if (seeded && S.setWhy) delete S.setWhy[d0.k]; }
       catch (e) {
@@ -8828,6 +8873,8 @@
         // the reason was spent on a send that did not happen — it comes back
         // with the draft, the lane being where the Founder's words are
         if (seeded && S.setWhy && d0.why) S.setWhy[d0.k] = d0.why;
+        justPut = null;                    // nothing went out, so nothing to announce
+        S.open = d0.k;                     // the card is shut by now: bring it back under its sentence
         setDoorErr(d0.k, 'That could not be proposed: ' + plainRefusal(res.error) + '.');
       } });
       finish();
@@ -9699,6 +9746,11 @@
     // `setEditMode` and not `toggleEditMode`, which would close the card the
     // press has just turned into the draft.
     enterEditing: () => setEditMode(true),
+    // …and the way out, for the act that ends the writing (Q1485 (A)):
+    // proposing spends the whole draft, so the lifted column has nothing left
+    // in it. `setEditMode` and not `leaveEditMode`, whose first act is to
+    // close the open card — the card has already collapsed by then.
+    leaveEditing: () => setEditMode(false),
     // the sign control (Q770): the elective 👤 rung's base, or null — read at
     // call time, so a 👤 motion carrying while a draft is open changes what the
     // next draft offers and nothing about the one being typed

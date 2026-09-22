@@ -920,10 +920,6 @@
      {
       "label": "🗑️",
       "title": "Withdraw — the edit comes back in full"
-     },
-     {
-      "label": "✏️ Submitted",
-      "title": "Proposed — one edit spent. It is in the race now."
      }
     ],
     "hints": [
@@ -933,8 +929,7 @@
      "Guests — numbers — open it",
      "8 decided and filed at this clause — open them",
      "A member wrote this. Who, is sealed until the closing record.",
-     "Withdraw — the edit comes back in full",
-     "Proposed — one edit spent. It is in the race now."
+     "Withdraw — the edit comes back in full"
     ],
     "helpers": []
    },
@@ -977,17 +972,12 @@
      {
       "label": "🗑️",
       "title": "Withdraw — the edit comes back in full"
-     },
-     {
-      "label": "✏️ Submitted",
-      "title": "Proposed — one edit spent. It is in the race now."
      }
     ],
     "hints": [
      "Close this one",
      "A member wrote this. Who, is sealed until the closing record.",
-     "Withdraw — the edit comes back in full",
-     "Proposed — one edit spent. It is in the race now."
+     "Withdraw — the edit comes back in full"
     ],
     "helpers": []
    },
@@ -2193,10 +2183,6 @@
      {
       "label": "🗑️",
       "title": "Withdraw — the edit comes back in full"
-     },
-     {
-      "label": "✏️ Submitted",
-      "title": "Proposed — one edit spent. It is in the race now."
      }
     ],
     "hints": [
@@ -2206,8 +2192,7 @@
      "Guests — numbers — open it",
      "8 decided and filed at this clause — open them",
      "A member wrote this. Who, is sealed until the closing record.",
-     "Withdraw — the edit comes back in full",
-     "Proposed — one edit spent. It is in the race now."
+     "Withdraw — the edit comes back in full"
     ],
     "helpers": []
    },
@@ -2250,17 +2235,12 @@
      {
       "label": "🗑️",
       "title": "Withdraw — the edit comes back in full"
-     },
-     {
-      "label": "✏️ Submitted",
-      "title": "Proposed — one edit spent. It is in the race now."
      }
     ],
     "hints": [
      "Close this one",
      "A member wrote this. Who, is sealed until the closing record.",
-     "Withdraw — the edit comes back in full",
-     "Proposed — one edit spent. It is in the race now."
+     "Withdraw — the edit comes back in full"
     ],
     "helpers": []
    },

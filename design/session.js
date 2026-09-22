@@ -149,6 +149,13 @@
   // a way to a caret, so it opens edit mode the way 📝 does (SURFACE K13). A
   // no-op in the fixture, which has no mode to be in.
   let ENTER_EDITING = () => {};
+  // …and the way out, for the one act that ends the writing (Q1485 (A), Ed
+  // 2026-09-21: *Close, and say so*). Proposing consumes the whole draft, so
+  // there is nothing left to write and the lifted column is a room with
+  // nobody in it. Deliberately **not** the page's `leaveEditMode`, which
+  // closes the open card first: the card has already collapsed by the time
+  // this is called, and a second close would animate nothing twice.
+  let LEAVE_EDITING = () => {};
   // the sign control (Q770): null means no elective 👤 rung — no control
   let SIGNING = () => null;
   let SIGNER = () => '';
@@ -947,7 +954,12 @@
             // gutter and the contents rail and ✏️ here, at the same moment.
             // SURFACE §6 is one alphabet in all three columns.
             : '<span class="ql">' + markHtml(markKindOf(g)) + esc(plainLabel(e.label || g.qLabel)) +
-              (e.of > 1 ? '<span class="qv"> · ' + T.rail.placesOf(e.n, e.of) + '</span>' : '') + '</span>') +
+              (e.of > 1 ? '<span class="qv"> · ' + T.rail.placesOf(e.n, e.of) + '</span>' : '') + '</span>' +
+              // **and for a few seconds after the press, one sentence** (Q1485
+              // (A)): the card has just closed, so without this the whole of
+              // the feedback on a proposal is a one-line entry that was
+              // already there. It is taken away by `flashProposed`'s patch.
+              (proposedFlash === g.id ? '<span class="qwhy qjust">' + esc(T.rail.justProposed) + '</span>' : '')) +
           '</button></li>';
         continue;
       }
@@ -2323,6 +2335,38 @@
     commitBtnHtml, proposalRowHtml, proposeCtlTitles, draftRowState, setDraftSigned,
     editCardHtml, mineCardHtml, strandedCardHtml } = COMPOSER;
   let mineSeq = 0;                      // proposing frees the composer for the next draft
+
+  /* **A proposal closes its card and says one sentence** (Q1485 (A), Ed
+     2026-09-21: *Close, and say so*; reverses his own *one lifecycle, not two
+     screens* of 2026-08-17 for the moment of the press). The card the member
+     was writing in collapses onto its clause with the ordinary closing
+     animation, edit mode ends where the draft it held has gone — and the only
+     thing left saying the proposal is in is the rail entry, which is one line
+     naming a heading. So for a few seconds it carries a sentence instead, and
+     then settles into the one-line `yours` form it keeps for the rest of its
+     life.
+
+     **The sentence is taken away by a patch, never by a render** (the caret
+     rule, plan rule 6): five seconds after a press is long enough for the
+     member to be typing somewhere else, and a render under that caret would
+     take it. `layoutQueue` after it, because the entry's height has changed
+     and the rail stands its neighbours off it. */
+  const PROPOSED_MS = 5000;
+  let proposedFlash = null;             // the id of the entry wearing the sentence
+  let proposedTimer = null;
+  function flashProposed(id) {
+    proposedFlash = id;
+    if (proposedTimer) clearTimeout(proposedTimer);
+    proposedTimer = setTimeout(() => {
+      proposedTimer = null;
+      if (proposedFlash !== id) return;
+      proposedFlash = null;
+      const el = queueEl || document;
+      let moved = false;
+      el.querySelectorAll('.qjust').forEach((n) => { n.remove(); moved = true; });
+      if (moved) layoutQueue();
+    }, PROPOSED_MS);
+  }
 
   // The gutter marks belonging to a clause, minus the one whose card we are
   // building. A stacked card replaces its paragraph, so any *other* live
@@ -4332,15 +4376,32 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       if (!remake) editsHeld -= EDIT_RULES.stake;
       const key = d.sites[0].keys[0];
       const wasOpen = openId === d.id;
-      d.id = 'mine-' + key + '-' + (++mineSeq);
-      d.unproposed = false;
-      d.qLabel = d.sites[0].label;
-      d.pct = 6;
-      d.cap = T.yours.justIn + (d.signed ? T.yours.signedTail : '');
-      if (hooks.propose) { const r = hooks.propose(d); if (typeof r === 'string') d.id = r; }
-      if (wasOpen) openId = d.id;
-      keepStill(() => renderAll(), '[data-key="' + key + '"]');
-      layoutQueue(); drawWires();
+      // **The card closes at the press, the way every other commit does**
+      // (Q1485 (A), Ed 2026-09-21: *Close, and say so*). It stayed open
+      // wearing a pressed *✏️ Submitted*, and a round trip later the refresh
+      // took it away with no animation — so the one word saying the proposal
+      // was in showed for as long as the host took and then vanished in a
+      // snap. It collapses onto its clause first, and what says the thing is
+      // in is the rail's own sentence, `flashProposed`. A refusal from the
+      // wire re-opens the draft card under its sentence (`hooks.propose`).
+      const send = () => {
+        d.id = 'mine-' + key + '-' + (++mineSeq);
+        d.unproposed = false;
+        d.qLabel = d.sites[0].label;
+        d.pct = 6;
+        d.cap = T.yours.justIn + (d.signed ? T.yours.signedTail : '');
+        if (hooks.propose) { const r = hooks.propose(d); if (typeof r === 'string') d.id = r; }
+        if (wasOpen) openId = null;
+        flashProposed(d.id);
+        // **and the writing is over** (Q1485 (A)): the press consumed the
+        // whole draft, every site of it, so the lifted column has nothing
+        // left in it. Asked of the model rather than assumed, because that is
+        // the rule Ed gave — *edit mode ends where no other draft site is left*.
+        if (EDITING() && !draftOf()) LEAVE_EDITING();
+        keepStill(() => renderAll(), '[data-key="' + key + '"]');
+        layoutQueue(); drawWires();
+      };
+      if (wasOpen) collapseCards(d.id, send); else send();
       return;
     }
 
@@ -4987,6 +5048,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     if (env.mayPen) MAY_PEN = env.mayPen;
     if (env.editing) EDITING = env.editing;
     if (env.enterEditing) ENTER_EDITING = env.enterEditing;
+    if (env.leaveEditing) LEAVE_EDITING = env.leaveEditing;
     // the sign control's two reads (Q770): the elective base, if any, and
     // what a signature would read as — both at call time, like the two above
     if (env.signing) SIGNING = env.signing;

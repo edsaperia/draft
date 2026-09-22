@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 521
+  "entries": 520
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -450,6 +450,7 @@
   "session.race.foot": "Neither of these has to win — the clause above stands unless the membership comes to prefer one of them.",
   "session.rail.deadlocked": "ƒ (judges, comparisons) => 'Deadlocked — ' + judges +\n        ' people can’t agree on a proposal even after ' + comparisons +\n        ' votes. Can you propose something everyone will agree on?'",
   "session.rail.draftTitle": "Your draft — not proposed yet.",
+  "session.rail.justProposed": "Proposed — the members are deciding",
   "session.rail.noReason": "no reason given yet — say what this is for",
   "session.rail.placesOf": "ƒ (n, of) => n + ' of ' + of + ' places'",
   "session.rail.stillDeciding": "still deciding — click to change your mind",
@@ -496,8 +497,6 @@
   "session.row.penCost": " — it passes at once and costs nothing",
   "session.row.placesChanged": "ƒ (n) => (n === 1 ? '1 place changed' : n + ' places changed')",
   "session.row.signedSuffix": " — signed",
-  "session.row.submitted": "✏️ Submitted",
-  "session.row.submittedTitle": "Proposed — one edit spent. It is in the race now.",
   "session.row.withdraw": "Withdraw",
   "session.row.withdrawCost": " — the edit comes back in full",
   "session.sign.anonExpLead": "Nobody is told who proposed this",

@@ -1099,11 +1099,15 @@ window.COMPOSER = (function () {
         // **The same row the editing card had, one step further on** (Ed,
         // 2026-08-17). 🗑️ stays exactly where it was — discarding a draft and
         // withdrawing a proposal are the same gesture at two moments, and the
-        // only difference is that one of them hands an edit back. And the right
-        // slot keeps the ✏️ that was *Propose*, now reading **Submitted**: the
-        // act has become the fact of it, which is what the judgment row's ✓ does
-        // when it is pressed. Nothing moves between the two cards, which is the
-        // point — it is one lifecycle, not two screens.
+        // only difference is that one of them hands an edit back.
+        // **And the right slot is empty** (Q1485 (A), Ed 2026-09-21: *Close,
+        // and say so*). It held the ✏️ that was *Propose*, pressed and dead,
+        // reading **Submitted** — the act become the fact of it — which was
+        // the whole of *one lifecycle, not two screens*. The card closes at
+        // the press now, so nobody ever meets that face at the moment it was
+        // written for, and on a card reopened an hour later a pressed button
+        // is a control that does nothing. What says the proposal is in is the
+        // rail: its sentence at the press, its pinned line thereafter.
         // **A passed proposal is not its author's to withdraw** (SPEC §9.7 rule
         // 8, SURFACE E37): once the membership has passed it and it waits on the
         // Founder, 🗑️ is dead — the room has decided, and the line on the rail
@@ -1112,8 +1116,6 @@ window.COMPOSER = (function () {
         '<button class="btn btn-withdraw glyphbtn" data-act="draft-withdraw"' + (d.awaiting ? ' disabled' : '') +
         ' title="' + (d.awaiting ? esc(d.cap || '') : T.row.withdraw +
         (n > 1 ? T.row.allPlaces(n) : '') + T.row.withdrawCost) + '">' + glyphHtml('🗑️') + '</button>' +
-        '<button class="btn btn-propose" aria-pressed="true" disabled' +
-        ' title="' + T.row.submittedTitle + '">' + glyphify(T.row.submitted) + '</button>' +
         '</div>' +
         '</div>'
       );

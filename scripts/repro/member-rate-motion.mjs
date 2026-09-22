@@ -231,6 +231,11 @@ const rateMotionsOf = async (cookie) => { const v = await viewAs(cookie); const 
 const shot = async (s, name) => { if (SHOTS) await s.page.screenshot({ path: `${SHOTS}/${name}.png` }); };
 const wireOf = (s) => s.wire.map((w) => `${w.cmd} ${JSON.stringify(w.args).slice(0, 160)} → ${w.status} ${JSON.stringify(w.answer).slice(0, 200)}`);
 
+// **what the rail says for a few seconds after a press** (Q1485 (A), Ed
+// 2026-09-21: *Close, and say so*) — `COPY.session.rail.justProposed`, quoted
+// rather than read off the page, so a copy edit that drops it reddens this
+// walk instead of passing in silence
+const JUST_PROPOSED = 'Proposed — the members are deciding';
 const SCENARIOS = {};
 const typeThenPress = (n) => async (s, cookie, name) => {
   say(`   opened: ${JSON.stringify(await openRate(s))}`);
@@ -258,10 +263,21 @@ const typeThenPress = (n) => async (s, cookie, name) => {
   wireOf(s).slice(-4).forEach((l) => say('   wire: ' + l));
   const running = await rateMotionsOf(cookie);
   const want = posted.length && posted[0].args && posted[0].args.payload && posted[0].args.payload.value;
-  verdict(name, posted.length === 1 && posted[0].status === 200 && presses === 1 && want && want.dripMinutes === n,
+  // **the card closes and the rail says so** (Q1485 (A), Ed 2026-09-21:
+  // *Close, and say so* — text and rules alike). The close is Q1485 (D),
+  // built in Stage 3; the sentence is this. Red before it: no `.qjust`
+  // anywhere, the put leaving the rail entry reading its rule's name alone.
+  const shut = await s.page.evaluate(() => {
+    const j = document.querySelector('#rail .qjust');
+    return { open: !!document.querySelector('.setupcard'), just: j ? j.textContent.trim() : null };
+  });
+  say('   after the put: ' + JSON.stringify(shut));
+  const shutOk = !shut.open && shut.just === JUST_PROPOSED;
+  verdict(name, posted.length === 1 && posted[0].status === 200 && presses === 1 && want && want.dripMinutes === n && shutOk,
     `typed ${n}: ${posted.length} open-motion posted after ${presses} press(es)` +
     (posted[0] ? `, value ${JSON.stringify(want)}, answer ${posted[0].status} ${JSON.stringify(posted[0].answer).slice(0, 120)}` : '') +
-    ` · motions on ⏱️ in the module: ${running.length}`);
+    ` · motions on ⏱️ in the module: ${running.length}` +
+    ` · card ${shut.open ? 'STILL OPEN' : 'closed'}, the rail says ${JSON.stringify(shut.just)}`);
   return { c1, c2, posted };
 };
 SCENARIOS['wide-type-press'] = typeThenPress(7);

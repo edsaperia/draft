@@ -1993,9 +1993,13 @@ window.LIVE = (function () {
             if (!SESSION.SUGGS.includes(back)) SESSION.SUGGS.push(back);
             syncWallet();
             SESSION.setData({ SUGGS: itemsFromView(env.cs.v) });
-            // the card was open under the id it was proposed as; it opens again
-            // as the draft, with the refusal on it
-            if (SESSION.openId === local) SESSION.toggle(DRAFT_ID, false);
+            // **the refusal brings the card back** (Q1485 (A)): the press
+            // closes the card now, so there is nothing open to re-render the
+            // sentence into — this used to ask whether the card was still
+            // open under the id it was proposed as, which after the close it
+            // never is. The draft opens again, with the refusal on it, the
+            // way `pen`'s own refusal has always done.
+            SESSION.toggle(DRAFT_ID, false);
           });
       };
       env.LIVE_HOOKS.withdraw = (id) => {

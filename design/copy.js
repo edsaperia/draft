@@ -203,6 +203,11 @@ window.COPY = (function () {
     rail: {
       draftTitle: 'Your draft — not proposed yet.',
       yoursInRace: 'Yours, in the race',
+      // **what the entry says for a few seconds after the press** (Q1485 (A),
+      // Ed 2026-09-21: *Close, and say so*). The card has just collapsed onto
+      // its clause, so this is the only thing on the surface saying the
+      // proposal went out; it settles to the one-line `yours` form after it.
+      justProposed: 'Proposed — the members are deciding',
       noReason: 'no reason given yet — say what this is for',
       placesOf: (n, of) => n + ' of ' + of + ' places',
       // a live race's tooltip (Q1200): it wants your vote while the router
@@ -359,8 +364,6 @@ window.COPY = (function () {
       withdraw: 'Withdraw',
       allPlaces: (n) => ' all ' + n + ' places',
       withdrawCost: ' — the edit comes back in full',
-      submitted: '✏️ Submitted',
-      submittedTitle: 'Proposed — one edit spent. It is in the race now.',
       idle: 'Nothing has changed yet — type in the document to start a draft',
     },
     // the sign control (Q770): whether your name goes on the draft
