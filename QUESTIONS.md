@@ -223,7 +223,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1498** — claim by writing the block here, then commit it alone.
+**The next free number is 1499** — claim by writing the block here, then commit it alone.
+
+**1498 is a member removed by a carried motion who is told nothing** (claimed 2026-09-22 14:10, found by Stage 4's 4f and not built; nothing changed). SURFACE E40 says a member removed by a carried 🥾 motion gets *exactly E31's tells* — the mail among them — *the act being the room's rather than the Founder's*. The relay disagrees: `write-path.ts`'s arm reads `event.type === 'member-removed' && event.by === 'convenor'`, and its own comment says so in as many words — *a carried removal (`viaMotion`, E10/E11's outcome) and a resignation (the member's own act) relay nothing*. A resignation is right by both readings, the person having done it themselves; a carried removal is the one case where a document exiles somebody who is then outside it with no channel left, which is the whole argument `removed` was written under (Q901, Q1012). **The readings:** (a) *the surface wins* — the arm drops its `by === 'convenor'` test for the carried road too, one clause and `MAILS.removed`'s own words, which name the Founder and would need a second sentence naming the membership instead (recommended: E40 is the rule, and the rule is the one in force); (b) *the code wins* — E40 is amended to say a carried removal tells the room and not the person, which is hard to defend beside the door's own departure sentence; (c) *ask what a resignation and a lapse are owed at the same time*, since none of the three is mailed and only one of them is clearly right. Nothing here is urgent: no room has carried a 🥾 motion.
 
 **1496–1497 are what Stage 3 of the convention plan left for Ed** (claimed 2026-09-22 11:00; `design/spec-pass/plan-convention-fixes.md`, Stage 3's note; neither is built and neither blocks Stage 4).
 
