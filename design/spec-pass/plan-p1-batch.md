@@ -105,3 +105,5 @@ Then the second supervised sitting (PRODUCTION.md stage 19).
 
 (Appended by the builder as each stage lands: commit, what was found on the
 way, what was left and why.)
+
+- **#78** (Stage 1, 2026-09-23): `readLane` (cards.js) keeps an empty last block of two or more as the lane's final newline, each block's own trailing break taken off first; `sentText` (cards.js, new) drops that line again from what goes out — `hunksOf` (live.js) and `draftRowState` (composer.js) read it, so Enter alone at a lane's end neither sends a blank line nor counts as a change. Guards: `scripts/repro/lane-enter.mjs` (fixture, four cases: end · bare · middle · twice — red at end, bare and twice on the pre-fix page) and `journey`'s *lane keys* (red on the pre-fix `readLane`: one line, glued). Found: live.js's comment promised `SESSION.LIVE_HOOKS.hunksOf` to walks and no walk could reach it — `SESSION.hunksOf` now exists. Left: `focus-steal --lane` (needs a bot room); charters already carrying a join (not built, the plan's column).

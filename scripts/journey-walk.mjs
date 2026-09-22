@@ -3071,6 +3071,75 @@ if (gapKeys.skipped) {
     : 'FAIL: ' + JSON.stringify(gapKeys)));
   if (!gapKeysOk) stuck.push('a new clause typed straight after its Enter (Q1461)');
 }
+/* ---- Enter at the end of a lane you are already drafting in (issue #78; the
+ * twelve-seat integration room, 2026-09-20: *"…of each month.Meetings begin at
+ * seven…"* in the signed charter). `readLane` stripped the trailing newline
+ * the Enter made, so the lane was redrawn without its new block, the caret
+ * came back to line one and the second sentence was glued onto the first.
+ * Real key presses: type at a clause's end (the draft opens), Enter, a
+ * sentence; the hunk the page would send is read off `SESSION.hunksOf` and
+ * must carry two lines. Then Enter alone at the end must leave the draft
+ * sending one line — the empty line is the lane's, never the proposal's
+ * (`sentText`). Binned through the row's own 🗑️, like the steps above.
+ * Red on the pre-#78 page at *one line, glued*. */
+const laneKeys = await (async () => {
+  if (EMPTY_TEXT) return { skipped: 'an empty document has no clause to draft on' };
+  const FIRST = ' Circulated within a week.';
+  const SECOND = 'A second sentence on its own line.';
+  await page.evaluate(() => { if (window.SESSION.openId != null) window.SESSION.closeCard(); });
+  await T(500);
+  const at = await page.evaluate(() => {
+    const p = [...document.querySelectorAll('#charter .prose p.editable[data-key]')]
+      .find((x) => !x.classList.contains('gap') && !x.closest('.sugg') &&
+        !x.querySelector('.mdmark') && x.textContent.trim().length > 5);
+    if (!p) return null;
+    p.scrollIntoView({ block: 'center' });
+    const r = document.createRange(); r.selectNodeContents(p); r.collapse(false);
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    return p.dataset.key;
+  });
+  if (!at) return { at };
+  await page.keyboard.type(FIRST, { delay: 30 });
+  await T(700);
+  await page.keyboard.press('Enter');
+  await page.keyboard.type(SECOND, { delay: 30 });
+  await T(500);
+  const read = () => page.evaluate(() => {
+    const d = (window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours');
+    const hunks = d && window.SESSION.hunksOf ? window.SESSION.hunksOf(d) : null;
+    return { text: d && d.sites[0] ? d.sites[0].text : null,
+      lanes: document.querySelectorAll('.sugg.editcard [data-lane] .lp').length,
+      lines: hunks && hunks[0] ? hunks[0].lines : null };
+  });
+  const two = await read();
+  // the second sentence taken back off, and the new line left bare
+  for (let i = 0; i < SECOND.length; i++) await page.keyboard.press('Backspace');
+  await T(500);
+  const bare = await read();
+  const binned = await page.evaluate(() => {
+    const b = document.querySelector('#charter [data-proposalrow] [data-act="row-discard"]');
+    if (!b || b.disabled) return false;
+    b.click();
+    return true;
+  });
+  await T(500);
+  return { at, two, bare, binned, want: [FIRST.trim(), SECOND],
+    draft: await page.evaluate(() => !!(window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours')) };
+})();
+if (laneKeys.skipped) {
+  say('lane keys  · skipped — ' + laneKeys.skipped);
+} else {
+  const l2 = laneKeys.two && laneKeys.two.lines;
+  const twoOk = !!l2 && l2.length === 2 && l2[0].endsWith(laneKeys.want[0]) && l2[1] === laneKeys.want[1] &&
+    laneKeys.two.lanes === 2;
+  const lb = laneKeys.bare && laneKeys.bare.lines;
+  const bareOk = !!lb && lb.length === 1 && lb[0].endsWith(laneKeys.want[0]) && laneKeys.bare.lanes === 2;
+  const laneKeysOk = !!laneKeys.at && twoOk && bareOk && laneKeys.binned && !laneKeys.draft;
+  say('lane keys  · ' + (laneKeysOk
+    ? 'Enter at the end of the draft on ' + laneKeys.at + ' makes a second line: the hunk carries two lines, and the new line left bare sends one'
+    : 'FAIL: ' + JSON.stringify(laneKeys)));
+  if (!laneKeysOk) stuck.push('Enter at the end of a lane you are drafting in (#78)');
+}
 /* ---- a heading's `#`, from the column, with real key presses (Q1467; Ed,
  * the residency room 2026-09-19: *I can't edit headings in the text. the #s
  * are not editable*). Edit mode is the markdown source, so the marker is

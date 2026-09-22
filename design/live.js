@@ -1839,10 +1839,13 @@ window.LIVE = (function () {
         // made. `draftRowState`'s own test, so what goes out is what the row
         // counts; it also stops an empty gap sending one blank line. A site
         // with no remembered wording is sent as it always was.
+        // The empty last line an Enter at a lane's end leaves for the caret is
+        // the lane's and never goes out (#78, `sentText`).
+        const sent = window.CARDS.sentText;
         const changed = (site) => !Array.isArray(site.origin) ||
-          site.text !== site.origin.map((x) => x.text).join('\n');
+          sent(site) !== site.origin.map((x) => x.text).join('\n');
         return d.sites.filter(changed).map((site) => {
-          const ls = site.text.split('\n');
+          const ls = sent(site).split('\n');
           // a **gap site** (backlog 204) is a pure insertion: `start === end`
           // at the line the gap stands before, clamped to the text's end
           if (/^G\d+$/.test(site.keys[0])) {
@@ -1872,8 +1875,10 @@ window.LIVE = (function () {
           return { start, end, lines: ls, was };
         });
       };
-      // what a draft would send, readable by a walk (`SESSION.LIVE_HOOKS.hunksOf`)
+      // what a draft would send, readable by a walk as `SESSION.hunksOf` — the
+      // page's `LIVE_HOOKS` is closed over where no walk reaches it (#78's step)
       env.LIVE_HOOKS.hunksOf = hunksOf;
+      SESSION.hunksOf = hunksOf;
 
       // **Refuse if lost** (Q1463, Ed 2026-09-18), the second half of *follow
       // the paragraph, and refuse if lost*. The page carries a draft's sites

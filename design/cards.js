@@ -832,12 +832,31 @@ window.CARDS = (function () {
   // The lane's visible characters **are** the candidate's markdown source
   // (Q1467), so reading it back is reading its text — nothing is serialised
   // out of elements and no emphasis can be dropped on the way.
+  // **A block the member made is a line they made** (issue #78): Enter at the
+  // lane's end makes an empty last block, and until #78 the trailing strip
+  // read it as no change at all — the lane was redrawn without it, the caret
+  // came back to line one and the next sentence was glued onto the last with
+  // no separator, into the adopted text. So each block's own trailing break (a
+  // `<br>` the browser keeps in it) comes off the block, and an empty **last**
+  // block of two or more is kept as the lane's final newline; runs of blank
+  // lines still collapse, a blank line being no line the column holds
+  // (`blocksOf`). What goes out drops that last empty line again: `sentText`.
   function readLane(el) {
     const blocks = [...el.children].filter((c) => c.classList && c.classList.contains('lp'));
-    const src = blocks.length ? blocks.map((b) => b.innerText).join('\n') : el.innerText;
+    const clean = (s) => s.replace(/ /g, ' ').replace(/\r/g, '');
+    if (blocks.length) {
+      const lines = blocks.map((b) => clean(b.innerText).replace(/\n$/, ''));
+      const joined = lines.join('\n').replace(/\n{2,}/g, '\n');
+      return lines.length > 1 && lines[lines.length - 1] === '' ? joined : joined.replace(/\n$/, '');
+    }
+    const src = el.innerText;
     return src.replace(/ /g, ' ').replace(/\r/g, '')
       .replace(/\n{2,}/g, '\n').replace(/\n$/, '');
   }
+  // What a site sends, and what counts as a change: its text without the
+  // empty last line an Enter at the lane's end leaves standing for the caret
+  // (#78). The lane keeps that line; the proposal never carries it.
+  const sentText = (site) => String(site.text == null ? '' : site.text).replace(/\n+$/, '');
 
   // ---- pure card sub-builders ---------------------------------------------
 
@@ -1831,7 +1850,7 @@ window.CARDS = (function () {
     GLYPH, glyphKey, glyphHtml, glyphify, glyphTextOf,
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks, mdDiffPieces, mdPiecesHtml, mdDiffHtml, mdBlocksHtml,
     originText, MD_RX, mdToHtml, htmlToMd, mdStrip, mdBlock, linkify, linkifyHtml, mdLine,
-    MD_ONE, mdLead, mdInner, mdParts, sourceToRich, readLane,
+    MD_ONE, mdLead, mdInner, mdParts, sourceToRich, readLane, sentText,
     abstainHhmm, abstainLeft, abstainNoteHtml, tickAbstain,
     laneSeed, laneProposeHtml, laneCtlHtml, laneNameId, laneGroupAttrs, speakerHtml, railSpeakerHtml, secToggleHtml, fieldHtml, fieldOf, groundNote,
     initials, PERSON, avHtml,

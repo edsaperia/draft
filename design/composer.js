@@ -895,7 +895,8 @@ window.COMPOSER = (function () {
       // into a clause and take it out again and the site survives with its
       // origin's own wording, so `sites.length` would say *1 place changed*
       // beside a greyed commit.
-      const dirty = sites.filter((s) => s.text !== s.origin.map((x) => x.text).join('\n'));
+      // An empty last line is the lane's, not the proposal's (#78, `sentText`).
+      const dirty = sites.filter((s) => window.CARDS.sentText(s) !== s.origin.map((x) => x.text).join('\n'));
       return { count: sites.length, changedCount: dirty.length, changed: dirty.length > 0 };
     };
     function signControlHtml(d) {
