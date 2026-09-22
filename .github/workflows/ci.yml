@@ -637,7 +637,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        group: [seat-member, seat-clerk, journey, motions, doors]
+        # repros since Stage 4: the guards CLAUDE.md named and no job ran
+        group: [seat-member, seat-clerk, journey, motions, doors, repros]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

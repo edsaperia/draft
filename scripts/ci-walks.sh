@@ -5,7 +5,10 @@
 # below, each on its own runner with its own server, so a push is decided by
 # the slowest group rather than by the sum.
 #
-#   bash scripts/ci-walks.sh seat-member|seat-clerk|journey|motions|doors
+#   bash scripts/ci-walks.sh seat-member|seat-clerk|journey|motions|doors|repros
+#
+# (`repros`, the sixth, since Stage 4: the guards CLAUDE.md named and no
+# workflow ran.)
 #
 # **Q917 (a)'s guarantee, kept in shell.** In the old job every walk was a
 # step with `if: always()`, so one walk's failure could not hide the next
@@ -42,7 +45,8 @@ case "$GROUP" in
   journey)     PORT_MAIN=8165 ;;
   motions)     PORT_MAIN=8167 ;;
   doors)       PORT_MAIN=8169; PORT_ROOM=8162 ;;
-  *) echo "usage: ci-walks.sh seat-member|seat-clerk|journey|motions|doors"; exit 2 ;;
+  repros)      PORT_MAIN=8171; PORT_DESIGN=8164 ;;
+  *) echo "usage: ci-walks.sh seat-member|seat-clerk|journey|motions|doors|repros"; exit 2 ;;
 esac
 
 PIDS=()
@@ -84,6 +88,27 @@ boot() {
   done
   if [ -z "$up" ]; then
     echo "::error::the $name server never answered /healthz on $port — its log follows" >&2
+    cat "$log" >&2
+    exit 1
+  fi
+  BOOTED="$base"
+}
+
+# boot_design <port> — the static design server (`npm run design`), for a
+# walk that opens the fixture pages the product server does not serve.
+# Sets BOOTED like boot().
+boot_design() {
+  local port="$1" base="http://127.0.0.1:$1"
+  local log="$TMP/walk-server-design.log"
+  node scripts/design-server.mjs "$port" > "$log" 2>&1 &
+  PIDS+=("$!")
+  local up=""
+  for _ in $(seq 1 60); do
+    if curl -fsS -o /dev/null "$base/session-view.html" 2>/dev/null; then up=1; break; fi
+    sleep 0.5
+  done
+  if [ -z "$up" ]; then
+    echo "::error::the design server never answered on $port — its log follows" >&2
     cat "$log" >&2
     exit 1
   fi
@@ -211,6 +236,41 @@ case "$GROUP" in
     # the whole loop: propose → every member served → vote → adopt, twice,
     # then the 🛡️ park-and-crown path on a ladder document (Q1178)
     walk "room-walk" npm run room-walk -- "$ROOM_BASE"
+    ;;
+
+  # **The guards that ran nowhere** (plan-ci-speed.md Stage 4; the shape
+  # issue #17 found on 2026-09-17). Each is named in CLAUDE.md as the guard
+  # over a gotcha, and until this group none was run by any workflow — so
+  # *red on the pre-fix page* was worth nothing, nothing ran the page.
+  # `spec-check` now lists any guard CLAUDE.md names that no workflow runs.
+  repros)
+    boot repros "$PORT_MAIN"; BASE=$BOOTED
+    boot_design "$PORT_DESIGN"; DESIGN_BASE=$BOOTED
+    # a Windows paste puts no carriage return in a draft (Q1491). Serves
+    # design/ itself
+    walk "crlf-paste" npm run crlf-paste
+    # 👥 born untouched, and its two blocks (Q779, Q1162). Serves design/
+    # itself
+    walk "slider-walk" npm run slider-walk
+    # a judged card that races the 4 s poll files as closed (Q1493 (a))
+    walk "poll-race" npm run poll-race -- "$BASE"
+    # an unproposed draft follows its paragraph (Q1463)
+    walk "stale-key" node scripts/repro/stale-key.mjs "$BASE"
+    # Enter at a clause's end makes a gap the sentence is not torn from
+    # (Q1461); `--gap` is the half that needs no bots and asserts
+    walk "focus-steal --gap" node scripts/repro/focus-steal.mjs "$BASE" --gap
+    # a heading's `#` is reachable from the column (Q1467); the fixture page,
+    # so the design server
+    walk "heading-marker" node scripts/repro/heading-marker.mjs "$DESIGN_BASE"
+    # a rename has its tab (Q1474)
+    walk "title-motion-tab" node scripts/repro/title-motion-tab.mjs "$BASE"
+    # a proposal aims at its own line: the two cases CLAUDE.md names, a
+    # seed that is not an origin (Q1483, `shapes`) and a record's span in
+    # one line space (Q1488, `record`). The walk's other six cases were
+    # green too when this group was built, but the whole walk is twelve
+    # minutes on its own, which would make this the slowest group by half
+    walk "wrong-line-room --case=shapes" node scripts/repro/wrong-line-room.mjs "$BASE" --case=shapes
+    walk "wrong-line-room --case=record" node scripts/repro/wrong-line-room.mjs "$BASE" --case=record
     ;;
 esac
 
