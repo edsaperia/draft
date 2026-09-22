@@ -21,7 +21,7 @@ import { ConstitutionSession, view } from '../../constitution/src/index.js';
 import type { ApplicantRecord } from '../../constitution/src/index.js';
 import { ParticipantApi } from '../../engine-core/src/participant-api.js';
 import { LIMITS, cap, runCommand } from './commands.js';
-import { logError } from './error-log.js';
+import { logError, noteRace, raceRefusal } from './error-log.js';
 import { asEngineDoc } from './engine-host.js';
 import type { LoadedDoc } from './store.js';
 import { raceView, strangerView } from './views.js';
@@ -272,9 +272,20 @@ export const memberTable: Route[] = [
         // the seat as its id — never the address — the command, its
         // arguments and the reason, so a refusal a member met on the page
         // can be looked up on the host afterwards
-        const refused = (status: number, reason: string): void => logError(cfg.dataDir, {
-          kind: 'refused', status, method: 'POST', path: pathOf(req),
-          doc: doc.id, slug: doc.cs.slug, seat: applicantId ?? memberId, cmd, args, reason });
+        // **…except the ones nobody did anything wrong to meet** (Q1493 (a),
+        // Ed 2026-09-21: *The page handles both*). A judgment on a pair that
+        // closed since the card was drawn, and a proposal pressed in the
+        // second after somebody else's adoption, are races with the 4 s poll
+        // rather than anything a member got wrong — the page answers both
+        // itself now, so they are tallied on `/healthz` and kept out of a
+        // log whose whole use is that an operator reads every line of it.
+        const refused = (status: number, reason: string): void => {
+          const race = raceRefusal(cmd, reason);
+          if (race !== null) { noteRace(ctx.races, race, nowMs); return; }
+          logError(cfg.dataDir, {
+            kind: 'refused', status, method: 'POST', path: pathOf(req),
+            doc: doc.id, slug: doc.cs.slug, seat: applicantId ?? memberId, cmd, args, reason });
+        };
         // an applicant's two acts: submit, and the OK on a door that shut
         // under them (SURFACE E33, Q901) — nothing else speaks for them
         if (applicantId !== null && cmd !== 'submit-application' && cmd !== 'ack-apply-shut') {

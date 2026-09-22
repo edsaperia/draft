@@ -115,6 +115,11 @@ export const healthTable: Route[] = [
         // the throws nobody handled since boot (entry 77) — see `errors`
         // in server.ts. `total` is the one number to watch between sessions.
         errors: ctx.errors,
+        // and the refusals nobody did anything wrong to meet (Q1493 (a)):
+        // a race with the 4 s poll, answered by the page and counted here
+        // instead of being written into the error log. A room that makes
+        // many of these is saying something about its pace, not a defect.
+        races: ctx.races,
         // the adoption metronome this process is pacing at (§4.2, entry
         // 77): stated because it is an operator knob a restart changes and
         // nothing else on the surface reports it.

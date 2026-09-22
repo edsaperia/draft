@@ -801,6 +801,21 @@ A line, newest last:
   pointer where it had one; for a 500 it is the full message, which the
   wire never gets.
 
+**Two refusals are counted instead, and never written here** (Q1493 (a);
+Ed, 2026-09-21: *The page handles both*). A judgment on a pair that closed
+between the card being drawn and the ✓ being pressed, and a proposal
+refused **only** for *patch targets version n; current is n + 1*, are races
+with the page's four-second poll rather than anything a member got wrong —
+sixteen of the nh2026 convention's forty refusals were one or the other.
+The page answers both itself: the judged card files as closed, and the
+proposal is re-read against the version that now stands and sent again once
+where its lines are unchanged. So they are tallied on `/healthz` under
+`races`, beside `errors` and in the same shape — `total`, one count per
+kind (`judged-closed`, `stale-version`) and a `last` of a moment and a kind
+— and they append no line to this file, whose whole use is that somebody
+reads every line of it. A room producing a great many of them is saying
+something about its own pace, which is worth knowing and is not a defect.
+
 **A stalled document** (Q1346). A save the store rejects for a reason no
 retry will clear — a 23505, another writer holding the document's log
 (§3's split) — marks the document `stalled`: it still serves, every write

@@ -36,6 +36,7 @@ import type { Mailer } from './mailer.js';
 import type { MailOutbox } from './outbox.js';
 import type { Stash } from './stash.js';
 import type { PauseState, WritePath } from './write-path.js';
+import type { RaceCounts } from './error-log.js';
 import { str } from './commands.js';
 
 /**
@@ -60,6 +61,9 @@ export interface RouteContext {
     total: number; request: number; tick: number; outbox: number;
     last: null | { at: number; where: string; kind: string };
   };
+  /** the refusals a member did nothing wrong to meet (Q1493 (a)): a race with
+   *  the poll, answered by the page and counted rather than logged */
+  readonly races: RaceCounts;
   readonly bootedAtMs: number;
   /** an https baseUrl: HSTS, the proxy redirect and the cookie's Secure flag */
   readonly httpsOn: boolean;

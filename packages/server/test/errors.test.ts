@@ -13,7 +13,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { afterAll, describe, expect, it } from 'vitest';
-import { ARGS_CAP, ERROR_LOG_FILE, capArgs, errorTail, logError } from '../src/error-log.js';
+import { ARGS_CAP, ERROR_LOG_FILE, capArgs, errorTail, logError,
+  newRaceCounts, noteRace, raceRefusal } from '../src/error-log.js';
 import { FilePersistence } from '../src/persistence.js';
 import { createDraftServer } from '../src/server.js';
 import type { DraftServer } from '../src/server.js';
@@ -178,5 +179,82 @@ describe('a refused command lands in the error log (Q1330)', () => {
       { cmd: 'set-identity', args: { name: 'Bo' } }, bo);
     expect(named.status).toBe(200);
     expect(await named.json()).toMatchObject({ ok: true });
+  });
+});
+
+/**
+ * **The refusals nobody did anything wrong to meet** (Q1493 (a); Ed,
+ * 2026-09-21: *The page handles both*). Sixteen of the nh2026 convention's
+ * forty refusals were a race with the 4 s poll — a judgment on a pair that
+ * closed since the card was drawn, a proposal pressed in the second after
+ * somebody else's adoption. The page answers both itself, so they are
+ * counted on `/healthz` and kept out of a log whose whole use is that an
+ * operator reads every line of it.
+ */
+describe('a race with the poll is tallied, not logged (Q1493 (a))', () => {
+  it('names the two kinds by the command and the sentence together, and nothing else', () => {
+    expect(raceRefusal('judge-race', 'candidate c1 is not in a live race')).toBe('judged-closed');
+    expect(raceRefusal('judge-race', 'candidate is not live')).toBe('judged-closed');
+    expect(raceRefusal('judge-race', 'stale card: incumbent text has changed')).toBe('judged-closed');
+    expect(raceRefusal('propose-text', 'patch targets version 40; current is 41')).toBe('stale-version');
+    expect(raceRefusal('rebase-text', 'patch targets version 3; current is 4')).toBe('stale-version');
+    // the sentence alone is not enough: the same words from another door are
+    // a different fact, and the version guard's *sibling* refusal is a claim
+    // about the wording rather than a race (R-136)
+    expect(raceRefusal('answer', 'candidate c1 is not in a live race')).toBeNull();
+    expect(raceRefusal('judge-race', 'you may not judge yet')).toBeNull();
+    expect(raceRefusal('propose-text', 'the text at lines 3–4 is not what this proposal replaces')).toBeNull();
+    expect(raceRefusal('propose-text', 'insufficient ✏️ for the stake (§7)')).toBeNull();
+    expect(raceRefusal(null, 'patch targets version 1; current is 2')).toBeNull();
+    const c = newRaceCounts();
+    noteRace(c, 'judged-closed', 111);
+    noteRace(c, 'stale-version', 222);
+    noteRace(c, 'stale-version', 333);
+    expect(c).toEqual({ total: 3, 'judged-closed': 1, 'stale-version': 2,
+      last: { at: 333, kind: 'stale-version' } });
+  });
+
+  it('the wire still refuses, /healthz counts it by kind, and the error log stays empty', async () => {
+    const { base, dataDir } = await boot();
+    const created = await (await post(base, '/api/docs',
+      { title: 'Races', email: 'ada.races@example.org' })).json() as { slug: string; devLink: string };
+    const ada = await follow(created.devLink);
+    const cmd = async (name: string, args: unknown): Promise<Response> =>
+      post(base, `/api/d/${created.slug}/cmd`, { cmd: name, args }, ada);
+    expect((await cmd('set-convenor-membership', { isMember: true })).status).toBe(200);
+    expect((await cmd('confirm-starting-text', { text: 'One line stands here.' })).status).toBe(200);
+    const values: Record<string, unknown> = {
+      ending: { endsAtMs: null }, rate: { grant: 4, cap: 8, dripMinutes: 240 },
+      quorum: { form: 'count', n: 1 }, chamber: { rung: 'link' },
+      authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
+      applications: { apply: false }, admission: { price: 'assembly' },
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await cmd('reclaim', { setting });
+      expect((await cmd('set-setting', { setting, value })).status, setting).toBe(200);
+    }
+    expect((await cmd('begin', {})).status).toBe(200);
+
+    // a proposal against a version the document has moved past — the whole of
+    // what the convention's members met in the second after an adoption
+    const stale = await cmd('propose-text', { baseVersion: 99, why: 'again',
+      hunks: [{ start: 0, end: 1, lines: ['One line stands here, and is plainer.'],
+        was: ['One line stands here.'] }] });
+    expect(stale.status).toBe(400);
+    expect(((await stale.json()) as { error: string }).error).toMatch(/^patch targets version 99; current is \d+$/);
+    // …and one that is not a race with the poll is logged exactly as before
+    const other = await cmd('answer', { setting: 'chamber', value: { rung: 'link' } });
+    expect(other.status).toBe(400);
+
+    const logged = rows(dataDir);
+    expect(logged.map((r) => r.cmd)).toEqual(['answer']);
+    const health = (await (await fetch(`${base}/healthz`)).json()) as
+      { races: { total: number; 'judged-closed': number; 'stale-version': number;
+        last: null | { kind: string } } };
+    expect(health.races.total).toBe(1);
+    expect(health.races['stale-version']).toBe(1);
+    expect(health.races['judged-closed']).toBe(0);
+    expect(health.races.last?.kind).toBe('stale-version');
   });
 });

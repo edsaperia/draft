@@ -28,7 +28,7 @@ import type { Persistence } from './persistence.js';
 import { PgPersistence } from './pg-persistence.js';
 import { Stash } from './stash.js';
 import { makeMailer } from './mailer.js';
-import { logError } from './error-log.js';
+import { logError, newRaceCounts } from './error-log.js';
 import { MailOutbox } from './outbox.js';
 import { asEngineDoc, resumeBridge } from './engine-host.js';
 import type { Mailer } from './mailer.js';
@@ -129,6 +129,11 @@ export async function createDraftServer(cfg: ServerConfig,
    */
   const errors = { total: 0, request: 0, tick: 0, outbox: 0,
     last: null as null | { at: number; where: string; kind: string } };
+  // **and beside them, the refusals nobody did anything wrong to meet**
+  // (Q1493 (a)): a judgment on a pair that closed, a proposal pressed in the
+  // second after somebody else's adoption. The page answers both itself, so
+  // they are counted here and kept out of the error log — see `raceRefusal`.
+  const races = newRaceCounts();
   const noteError = (where: 'request' | 'tick' | 'outbox', e: unknown): void => {
     errors.total += 1;
     errors[where] += 1;
@@ -198,7 +203,7 @@ export async function createDraftServer(cfg: ServerConfig,
    */
   const ctx: RouteContext = {
     cfg, store, auth, mailer, outbox, stash, commits, writes, pause,
-    errors, bootedAtMs, httpsOn,
+    errors, races, bootedAtMs, httpsOn,
     designDir: cfg.designDir,
     buildSha: cfg.buildSha,
     surfaceSha: null,

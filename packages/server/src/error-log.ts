@@ -85,3 +85,50 @@ export function logError(dataDir: string, row: ErrorRow, at = Date.now()): void 
 export function errorTail(dataDir: string, n = 50): unknown[] {
   return outboxTail(errorLogPath(dataDir), n);
 }
+
+/**
+ * **The refusals nobody did anything wrong to meet** (Q1493 (a), Ed
+ * 2026-09-21: *The page handles both*).
+ *
+ * Sixteen of the nh2026 convention's forty refusals were a race with the 4 s
+ * poll: a judgment on a candidate that closed between the card being drawn
+ * and the ✓ being pressed, and a proposal pressed in the second after
+ * somebody else's adoption — the author's own words refused though nothing
+ * of theirs had moved. In a cooldown-0 document with twelve people these are
+ * ordinary, and Q1330 says a member is not expected to meet a refusal at all.
+ *
+ * So the page answers both itself (`design/live.js`) and they stop being
+ * refusals here: **tallied, not logged**. The error log is for things an
+ * operator should read, and sixteen lines of *the room was faster than you*
+ * buried the five that mattered. The count stays, by kind, on `/healthz`
+ * beside `errors` — a room that produces a great many of these is saying
+ * something about its pace, which is worth knowing and is not a defect.
+ *
+ * Matched on the command **and** the sentence: *is not live* from any other
+ * door is a different fact, and a sentence alone would swallow it.
+ */
+export type RaceKind = 'judged-closed' | 'stale-version';
+export function raceRefusal(cmd: string | null | undefined, reason: string): RaceKind | null {
+  if (cmd === 'judge-race') {
+    return /is not in a live race|is not live|stale card/.test(reason) ? 'judged-closed' : null;
+  }
+  if (cmd === 'propose-text' || cmd === 'rebase-text' || cmd === 'pen-text') {
+    return /^patch targets version \d+; current is \d+$/.test(reason) ? 'stale-version' : null;
+  }
+  return null;
+}
+
+/** What `/healthz` reports beside `errors`: the same shape, counted by kind. */
+export interface RaceCounts {
+  total: number;
+  'judged-closed': number;
+  'stale-version': number;
+  last: null | { at: number; kind: RaceKind };
+}
+export const newRaceCounts = (): RaceCounts =>
+  ({ total: 0, 'judged-closed': 0, 'stale-version': 0, last: null });
+export function noteRace(c: RaceCounts, kind: RaceKind, at = Date.now()): void {
+  c.total += 1;
+  c[kind] += 1;
+  c.last = { at, kind };
+}

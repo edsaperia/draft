@@ -31,6 +31,7 @@
     "rail-font-walk": "node design/tools/rail-font-walk.mjs",
     "crlf-paste": "node scripts/repro/crlf-paste.mjs",
     "head-insertion-aim": "node scripts/repro/head-insertion-aim.mjs",
+    "poll-race": "node scripts/repro/poll-race.mjs",
     "overlapping-sites": "node scripts/repro/overlapping-sites.mjs",
     "rate-motion": "node scripts/repro/member-rate-motion.mjs",
     "journey": "node scripts/journey-walk.mjs",

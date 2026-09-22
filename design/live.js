@@ -182,7 +182,16 @@ window.LIVE = (function () {
             answer = j && (j.error || j.ok) ? j : { error: PAGE_COPY.noAnswer(status), status };
             // a paused host (Q1345) is not a refusal: the modal says it all
             if (status === 503 && j && j.paused) { noteHost(j); return; }
-            if (answer.error) {
+            // **…unless the caller says it is answering this one itself**
+            // (Q1493 (a), Ed 2026-09-21: *The page handles both*). A race
+            // with the 4 s poll — a pair that closed since the card was
+            // drawn, a version that moved in the second before the press —
+            // is not a refusal anybody should read: the page files the card
+            // or sends again, and `opts.quiet` is how the caller says so.
+            // One predicate, asked of the sentence, so nothing is silenced
+            // that the caller has not named.
+            const quiet = !!(opts && opts.quiet && opts.quiet(answer.error));
+            if (answer.error && !quiet) {
               console.warn('[live]', name, answer.error);
               refusalNoted({ name, args, card, status, error: answer.error, at: sentAt });
             }
@@ -530,6 +539,26 @@ window.LIVE = (function () {
     // asks with (Q1393): an admission a busy room's hot set never deals is
     // still a vote every member is owed, and the row carries it as a clause
     // row carries its `ask` (Q1202)
+    /* **The two refusals the page answers with the poll itself** (Q1493 (a),
+       Ed 2026-09-21: *The page handles both*).
+
+       Sixteen of the nh2026 convention's forty refusals were a race with the
+       4 s poll, and Q1330's rule is that a member is not expected to meet a
+       refusal at all. `raceGone` is a judgment on a pair that closed between
+       the card being drawn and the ✓ being pressed: the command's own
+       refresh brings back a view the pair is no longer in, so the card files
+       as closed exactly as the next poll would have filed it, and nothing is
+       printed. `versionMoved` is a proposal pressed in the second after
+       somebody else's adoption — and it is **the version alone**, never
+       *not what this proposal replaces*, which is a claim about the wording
+       and means the text really did move under this draft.
+
+       The sentences are the engine's, matched here and in `raceRefusal`
+       (packages/server/src/error-log.ts), which keeps the same two out of
+       the error log; the two readers are deliberately independent, since one
+       silencing the other's finding would be worse than two copies. */
+    const raceGone = (e) => /is not in a live race|is not live|stale card/.test(String(e || ''));
+    const versionMoved = (e) => /^patch targets version \d+; current is \d+\.?$/.test(String(e || '').trim());
     const raceCardOf = (settingId) => ((env.cs && env.cs.v && env.cs.v.raceCards) || []).find((x) =>
       (x.a.setting && x.a.setting.settingId === settingId) ||
       (x.b.setting && x.b.setting.settingId === settingId))
@@ -544,7 +573,9 @@ window.LIVE = (function () {
       const outcome = (pick === 'either' || pick === 'abstain') ? 'tie'
         : (pick === 'stands' || pick === 'no') ? (incSide || 'tie')
         : (incSide === 'a' ? 'b' : 'a');
-      api.cmd('judge-race', { a: rc.a.id, b: rc.b.id, outcome });
+      // the card files as closed and nothing is printed where the pair
+      // closed under the press (Q1493 (a)) — the refresh does the filing
+      api.cmd('judge-race', { a: rc.a.id, b: rc.b.id, outcome }, { quiet: raceGone });
     }
     // **A motion card's race is its motion's, not its key's** (issue #6). Since
     // Q1367 a motion is its own card keyed `mo:<id>`, and `midOf` maps page
@@ -1767,7 +1798,7 @@ window.LIVE = (function () {
           : what === 'keep' ? (c.inc || 'tie')
           : what === 'approve' ? challenger
           : what === 'a' ? 'a' : what === 'b' ? 'b' : 'tie';
-        api.cmd('judge-race', { a: c.a, b: c.b, outcome });
+        api.cmd('judge-race', { a: c.a, b: c.b, outcome }, { quiet: raceGone });   // Q1493 (a)
       };
       // A hunk replaces the document's lines [start, end); the engine holds an
       // empty document as **zero** lines, so the empty clause an empty
@@ -1945,7 +1976,27 @@ window.LIVE = (function () {
             SESSION.toggle(DRAFT_ID, false);
           });
       };
-      env.LIVE_HOOKS.propose = (d) => {
+      /* **A proposal refused only for the version is sent again, once**
+         (Q1493 (a), Ed 2026-09-21: *The page handles both*).
+
+         The commonest refusal a member met in the convention was
+         *targets version 40; current is 41* — somebody else's adoption
+         landing in the second between the poll that drew the card and the
+         press. Nothing of the proposer's had moved, and the remedy was to
+         write the same thing again.
+
+         So the page does it: the command's own refresh has already brought
+         the new view, `followSites` has re-keyed the draft against it
+         (Q1463), and `misaimed` — the backstop that asks the served text
+         whether every site's origin wording still stands — decides. Clean,
+         it goes again with the new version, and the member sees nothing but
+         their proposal landing. Not clean, the ordinary stranded road takes
+         over and the sentence is the one it always was.
+
+         **At most one re-send per press**, and `again` is the whole of that
+         rule: a room adopting faster than a round trip must not turn one
+         press into a queue of proposals. The second refusal prints. */
+      const sendProposal = (d, again) => {
         const hunks = hunksOf(d);
         const local = d.id;
         // **Re-making a stranded proposal confirms it; it does not open a
@@ -1974,9 +2025,11 @@ window.LIVE = (function () {
             localIdOf.set(res.result.id, local); proposedAs.set(local, res.result.id);
           }
         };
-        (remake
-          ? api.cmd('rebase-text', { candidate: remake, baseVersion: env.cs.v.textVersion, hunks, why: d.rationale || '' }, { landed: named })
-          : api.cmd('propose-text', { baseVersion: env.cs.v.textVersion, hunks, why: d.rationale || '', signed: !!d.signed }, { landed: named }))
+        // the first press says nothing about a version race; the re-send does
+        const opts = again ? { landed: named } : { landed: named, quiet: versionMoved };
+        return (remake
+          ? api.cmd('rebase-text', { candidate: remake, baseVersion: env.cs.v.textVersion, hunks, why: d.rationale || '' }, opts)
+          : api.cmd('propose-text', { baseVersion: env.cs.v.textVersion, hunks, why: d.rationale || '', signed: !!d.signed }, opts))
           .then((res) => {
             if (remake) remakeSent.delete(remake);
             if (res && res.ok && res.result && res.result.id) {
@@ -1987,6 +2040,29 @@ window.LIVE = (function () {
             const stale = movedUnder(res && res.error);
             const back = liveItem(local) || d;
             back.id = DRAFT_ID; back.unproposed = true;
+            // **the version race, answered here** (Q1493 (a)): the refresh
+            // that came with the command has already re-keyed this draft, so
+            // the only question left is whether the wording it replaces still
+            // stands — which is exactly what `misaimed` asks of the served
+            // text. Clean, it goes again under the version that now stands;
+            // otherwise it falls through to the sentence below, and a site
+            // the follow lost is stranded as it always was.
+            if (!again && versionMoved(res && res.error)) {
+              back.refusal = null;
+              if (!SESSION.SUGGS.includes(back)) SESSION.SUGGS.push(back);
+              SESSION.setData({ SUGGS: itemsFromView(env.cs.v) });
+              const d2 = liveItem(DRAFT_ID) || back;
+              const why = env.LIVE_HOOKS.misaimed ? env.LIVE_HOOKS.misaimed(d2) : null;
+              if (!why) {
+                d2.id = local; d2.unproposed = false; d2.refusal = null;
+                return sendProposal(d2, true);
+              }
+              d2.refusal = why;
+              syncWallet();
+              SESSION.setData({ SUGGS: itemsFromView(env.cs.v) });
+              SESSION.toggle(DRAFT_ID, false);
+              return;
+            }
             back.refusal = stale
               ? REFUSAL.movedPropose
               : REFUSAL.notProposed((res && res.error) || REFUSAL.noAnswer);
@@ -2002,6 +2078,7 @@ window.LIVE = (function () {
             SESSION.toggle(DRAFT_ID, false);
           });
       };
+      env.LIVE_HOOKS.propose = (d) => sendProposal(d, false);
       env.LIVE_HOOKS.withdraw = (id) => {
         // called after session.js has already dropped the item, so the
         // candidate is read off the id: the view's own ('mine:<id>') or the one
