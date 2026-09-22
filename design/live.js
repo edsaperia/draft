@@ -1278,8 +1278,18 @@ window.LIVE = (function () {
         const waitCap = r.blockedByPark ? PARK.blocked : RAIL.votedStillRunning;
         // the item for one pair: the quick card where the current text is a
         // side, the race card where two challengers were dealt
-        const pairItem = (aId, bId, extra) => {
-          const sp = spanOfSides(aId, bId);                  // the pair's own span (Q1407)
+        // **a ⚔️ card is about the race, so it stands at the race's span**
+        // (Q1487, the wrong-line hunt of 2026-09-20). Q1407 cuts a pair's
+        // card to the two sides' own lines, which is right while the card
+        // shows that pair — but a race the engine calls deadlocked shows the
+        // *whole field* to anybody who has judged in it (`stuck`), over the
+        // race's span, and the item under it was still keyed to the pair: a
+        // card about `[22, 24)` stood on `L24`, wore that clause's tab, was
+        // filed at that clause in the rail and headed itself with its one
+        // line. Until you have judged it is an ordinary pair card and keeps
+        // the pair's span, which is what `whole` says here.
+        const pairItem = (aId, bId, extra, whole) => {
+          const sp = whole ? csp : spanOfSides(aId, bId);    // the pair's own span (Q1407)
           const base = baseFor(siteOfSpan(sp, lines));
           const A = sideOfId(aId, sp), B = sideOfId(bId, sp);
           const incSide = A.inc ? 'a' : B.inc ? 'b' : null;
@@ -1312,7 +1322,7 @@ window.LIVE = (function () {
           // judged card should say, if anything, so it says nothing.
           items.push(pairItem(j.a, j.b, { state: 'deciding', pick: whatOf(j.a, j.b, j.outcome),
             cap: waitCap, shifted: j.locked ? SHIFTED_NOTE : false, locked: !!j.locked, urgency: 0.3,
-            abstainAt: undefined }));
+            abstainAt: undefined }, !!r.deadlocked));
         }
         // **How many more questions lie under this one** (Q1462, Ed
         // 2026-09-18: *a queue card stack … that hints that there are other

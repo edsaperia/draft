@@ -2500,7 +2500,12 @@
     return (
       '<div class="sugg dead-open" data-card="' + s.id + '"' +
       (key ? ' data-site="' + key + '"' : '') + '>' +
-      clauseHeadHtml(s, { text: sourceTextFor(key), key: key, chips: chipsFor(key, s.id),
+      // **the head is the whole run** (Q1308's rule, reaching the ⚔️ card at
+      // last — Q1487): the field beneath is read against `cur`, which has
+      // been the run's text since Q1308, while the head read the first block
+      // alone. A card headed *Step 3…* over three wordings that each read
+      // lines 22–24 is the *off by one line* Ed saw in the room.
+      clauseHeadHtml(s, { text: cur, key: key, chips: chipsFor(key, s.id),
                           label: T.dead.headLabel }) +
       // The card's own voice, and the only place it raises it. On a race card a
       // line like this is a caveat at the foot; here it is the whole point of

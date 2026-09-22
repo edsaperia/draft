@@ -593,7 +593,11 @@ await run('deadlock', async () => {
   // whole race, the site it is put on is the card's first block alone
   const slateEdit = await R.page.evaluate(async () => {
     const S = window.SESSION;
-    const it = S.SUGGS.find((g) => g.raceId && g.deadlocked && g.state === 'deciding' && (g.keys || []).length === 1);
+    // any ⚔️ item: it used to look for one keyed to a single block, which was
+    // the symptom (Q1487) and not the case — with the item standing at the
+    // race's span there is no such item left and the check simply stopped
+    // running, which is a failure and not a pass
+    const it = S.SUGGS.find((g) => g.raceId && g.deadlocked && g.state === 'deciding');
     if (!it) return null;
     if (S.openId !== it.id) S.toggle(it.id, false);
     await new Promise((res) => setTimeout(res, 900));
@@ -605,8 +609,12 @@ await run('deadlock', async () => {
     return { card: it.id, cardKeys: it.keys, from, draft: dd ? dd.sites.map((x) => ({ keys: x.keys, text: x.text })) : null };
   });
   say('  ⚔️ propose edit: ' + JSON.stringify(slateEdit));
-  if (slateEdit && slateEdit.draft && slateEdit.draft[0] && slateEdit.draft[0].text.split(String.fromCharCode(10)).length > slateEdit.draft[0].keys.length) {
-    flag('deadlock', 'AIM(⚔️)', { card: slateEdit.card, siteKeys: slateEdit.draft[0].keys, seededLines: slateEdit.draft[0].text.split(String.fromCharCode(10)).length });
+  if (!slateEdit || slateEdit.none || !slateEdit.draft || !slateEdit.draft[0]) {
+    flag('deadlock', 'EDIT-DID-NOT-OPEN(⚔️)', { got: slateEdit });
+  } else if (slateEdit.draft[0].text.split(String.fromCharCode(10)).length > slateEdit.draft[0].keys.length ||
+    slateEdit.draft[0].keys.join('+') !== (slateEdit.cardKeys || []).join('+')) {
+    flag('deadlock', 'AIM(⚔️)', { card: slateEdit.card, cardKeys: slateEdit.cardKeys,
+      siteKeys: slateEdit.draft[0].keys, seededLines: slateEdit.draft[0].text.split(String.fromCharCode(10)).length });
   }
   for (const g of got) {
     say('  ⚔️ ' + g.id + ' keys=' + JSON.stringify(g.keys) + ' head=' + JSON.stringify(g.head));
