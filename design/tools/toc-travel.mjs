@@ -4,6 +4,7 @@
  * document, maybe because the topbar is not being taken into account"*).
  *
  *   npm run toc-travel
+ *   npm run toc-travel -- --slow   (settle on a 400 ms timer, for a tab where rAF never fires)
  *
  * Clicks every in-page anchor in `#toc` and asserts the thing it points at comes
  * to rest **at or below the bottom of `.navbar`** — the bar is `position: sticky;
@@ -46,6 +47,8 @@ const SIZES = [{ width: 1600, height: 1000 }, { width: 1280, height: 900 }, { wi
 // what puts `#cs-…` anchors there, and `tocLead` emits them only once there is
 // a saved document to point at
 const FIXTURE = '/session-view.html?fixture=session&band=1';
+// `--slow`: settle on the old 400 ms timer rather than on animation frames
+const SLOW = process.argv.includes('--slow');
 
 function serveDesign() {
   const server = createServer(async (req, res) => {
@@ -91,7 +94,7 @@ async function measureAt(browser, base, size, fails) {
   let measured = 0;
   const skipped = [], opened = [], unfolded = [];
   for (let i = 0; i < counts.all; i++) {
-    const r = await page.evaluate(async (n) => {
+    const r = await page.evaluate(async ({ n, slow }) => {
       const a = document.querySelectorAll('#toc a[href^="#"]')[n];
       if (!a) return { gone: true };
       const href = a.getAttribute('href');
@@ -111,7 +114,18 @@ async function measureAt(browser, base, size, fails) {
       // scroll — so each anchor is clicked from a page that has finished moving
       // and measured once this one has. Clicking mid-collapse measures the
       // previous anchor's animation, not this anchor's arrival.
-      const settle = () => new Promise((ok) => setTimeout(ok, 400));
+      //
+      // **Two animation frames, not a literal** (plan-ci-speed.md Stage 2): a
+      // scroll's relayout and a click's render are done by the second frame,
+      // and the one thing that runs longer — a card's collapse, a timer of
+      // `COLLAPSE_MS` — is waited out by its own constant where a card was
+      // shut. The old 400 ms, three times per anchor at three sizes, was 4.5
+      // minutes of CI. `--slow` restores it for a browser whose tab never
+      // paints, where rAF never fires (the extension's backgrounded tab).
+      const frames = () => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(() => ok())));
+      const settle = slow ? () => new Promise((ok) => setTimeout(ok, 400)) : frames;
+      const collapsed = slow ? settle
+        : () => new Promise((ok) => setTimeout(ok, (window.CARDS && window.CARDS.COLLAPSE_MS) || 400)).then(frames);
       window.scrollTo(0, 0);
       await settle();
       const wasOpen = window.SESSION.openId;
@@ -123,13 +137,13 @@ async function measureAt(browser, base, size, fails) {
       if (r2.opened) {
         // close it again so the next anchor measures the same page as the first
         try { window.SESSION.toggle(window.SESSION.openId, false); } catch { /* already shut */ }
-        await settle();
+        await collapsed();
         return r2;
       }
       r2.top = again && (abox.width || abox.height) ? abox.top : null;
       r2.bottom = document.querySelector('.navbar').getBoundingClientRect().bottom;
       return r2;
-    }, i);
+    }, { n: i, slow: SLOW });
     if (r.gone) continue;
     // **M10's card branch is not navigation** (Ed, 179): a charter heading
     // holding exactly one question *is* that question, so clicking it opens
