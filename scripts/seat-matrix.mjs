@@ -1906,8 +1906,16 @@ say(`tables     · SURFACE §2 events ${EVENTS.length} rows · seats ${SEATS.len
 // struck through with a dash audience like E23, so the count held at 40 and
 // its step is gone. **E41 joined it on 2026-09-17** (Q1447, a motion that
 // failed), read here with its own `fail-motion` step, so the count is 41.
-if (EVENTS.length !== 41) {
-  shape.push(`SURFACE §2 has ${EVENTS.length} event rows, not the 41 this table was written against`);
+// **E42 joined on 2026-09-19** (Q1473, an application the membership
+// refused) and reddened CI's `walks` job on this line for three days before
+// anybody read it (Stage 4 of the convention plan, 2026-09-22). Its audience
+// cell is written — *the applicant, and nobody else* — so it is not a
+// no-rule row; what it has not got is a **step**: this table prices 🪪 at
+// `proposal`, where a refusal is a dominated race (§4.4) and not one vote
+// against, and driving one to that state is a design of its own. The count
+// is 42 and the step is owed — Q1499 asks Ed which road it should take.
+if (EVENTS.length !== 42) {
+  shape.push(`SURFACE §2 has ${EVENTS.length} event rows, not the 42 this table was written against`);
 }
 for (const s of shape) say('  ? ' + s);
 
