@@ -1525,6 +1525,9 @@
     el.querySelectorAll('[data-txt]').forEach((b) => ks.add(b.dataset.txt));
     el.querySelectorAll('[data-num]').forEach((b) => ks.add(b.dataset.num));
     el.querySelectorAll('[data-ans]').forEach((b) => ks.add('ans:' + b.dataset.ans));
+    // …and a date rung's pending kind (issue #75 F1), which it writes beside
+    // the answer rather than into it
+    el.querySelectorAll('[data-ans][data-ansval="date"]').forEach((b) => ks.add('ans:' + b.dataset.ans + 'Kind'));
     if (el.querySelector('[data-setwhy]')) ks.add('setWhy');
     if (el.querySelector('[data-titlelane]')) ks.add('titleDraft');
     // ❌'s subject is provisional input like any other, so 🗑️ puts it back
@@ -8009,11 +8012,20 @@
       S.draft.to = v;
       S.draft.val = mvalTyped(S.open, v);
       return render(); }
+    // **A blind answer's field repaints in place on its `change`, never
+    // renders** (issue #75 F2 — Q1486 (A)'s rule reaching the `ans-*`
+    // family). `change` fires on the blur the commit's own mousedown causes,
+    // and a render there replaced the commit under the press: mouseup landed
+    // on a new node, no click was dispatched and the first press on every
+    // typed answer sent nothing. The `input` road keeps the answer, the ✓ and
+    // the rail current at every keystroke; this only makes sure the value a
+    // blur settles is the one that stands.
     if (ev.target.matches('[data-ansdate]')) {
-      S.myAns[ev.target.dataset.ansdate] = ev.target.value || null; return render(); }
+      S.myAns[ev.target.dataset.ansdate] = ev.target.value || null;
+      renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
     if (ev.target.matches('[data-ansnum]')) {
       setAnsNum(ev.target);
-      return render(); }
+      renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
     // a motion's own control writes the value it proposes — `setMotionField`
     // above is the reader, shared with the `input` listener since Q1486 (A);
     // a date picker keeps its own branch below, because one rebuilt under the
@@ -8524,9 +8536,22 @@
     // particular string is a place to answer rather than an answer.
     const an = ev.target.closest('[data-ans]');
     if (an) { const v = an.dataset.ansval;
-      S.myAns[an.dataset.ans] = (v === 'true') ? true : (v === 'false') ? false
-        : (v === 'date') ? (S.myAns[an.dataset.ans] === 'never' ? null : S.myAns[an.dataset.ans])
-        : v;
+      // **A date rung is a kind of answer before it is one** (issue #75 F1):
+      // *At a set time* carries no value of its own — the date does — so its
+      // press wrote the existing answer back onto itself, and on an unanswered
+      // card the rung could never become chosen and its box never appeared.
+      // The press records the kind (`<key>Kind`, read by the body's `on`
+      // test), keeps a date already given, and clears a *Never*; the ✓ still
+      // lights only once a date is in the box (`filled`). Any other rung
+      // clears the kind.
+      const k = an.dataset.ans;
+      if (v === 'date') {
+        S.myAns[k + 'Kind'] = 'date';
+        if (S.myAns[k] === 'never') S.myAns[k] = null;
+      } else {
+        delete S.myAns[k + 'Kind'];
+        S.myAns[k] = (v === 'true') ? true : (v === 'false') ? false : v;
+      }
       return render(); }
     // 🍾's power table (entry 158; one cell per setting × power since Q1195
     // (c)). **The write is one direction only**: *lay down* sends the power
@@ -9224,6 +9249,10 @@
     // box **in place**, with no render, because a card rebuilt under the caret
     // is the drag bug's cousin. `change` — the blur — does the full one.
     if (t.dataset.ansnum) { setAnsNum(t);
+      renderRail(); SESSION.refreshRail(); refreshCommit(); }
+    // …and a date typed into ⏰'s answer (issue #75), the same way: the ✓
+    // wakes the moment the box holds a whole date
+    if (t.dataset.ansdate) { S.myAns[t.dataset.ansdate] = t.value || null;
       renderRail(); SESSION.refreshRail(); refreshCommit(); }
   });
   // …and the render the drag deferred. `change` on a range is the release —

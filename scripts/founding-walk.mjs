@@ -575,7 +575,11 @@ if (DELEGATE && !TAKEBACK) {
   const steps = log.map((e) => e.step);
   const at = steps.indexOf('open ' + want);
   const ok = at >= 0;
-  const answered = steps.includes('commit ' + want);
+  // …and a commit step that found no control to press is not an answer
+  // (issue #75: ⏰'s date rung could not be chosen, so its ✓ never woke,
+  // and the step was logged *no commit control* while the verdict said
+  // *answers it*)
+  const answered = log.some((e) => e.step === 'commit ' + want && !e.note);
   verdict = { want, ok, answered, after: ok ? steps[at - 1] : null };
   // The founder answers on their own surface (§9.0b) and the Proposing gate
   // waits on it, so a founder who is never asked cannot begin their own
