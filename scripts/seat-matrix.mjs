@@ -273,6 +273,7 @@ const isMember = (s) => !s.left &&
  */
 const activeButTheMover = (s, step, ctx, ev) => isMember(s) && s.name !== ctx.actorOf(ev);
 const AUDIENCE = {
+  'the holder': (s) => s.role === 'founder',
   'every member': (s) => isMember(s),
   'every member who had no say **and arrived when it was set**, lapsed included; a later joiner reads it as the document':
     (s, step, ctx, ev) => isMember(s) && s.name !== ctx.actorOf(ev) &&
