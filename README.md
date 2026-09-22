@@ -29,11 +29,11 @@ Without `RESEND_API_KEY` the server runs a **dev inbox**: every mail, magic link
 | `npm run design` | Serves `design/` at the address it prints (8137 by default, `DESIGN_PORT` or an argument otherwise), with the fixture documents: `/session-view.html` a blank arrival, `/session-view.html?fixture=session` a session mid-flight, `&closed=1` a closed one. **Every address names the page** — at `/` the page boots as the live birth, which has no API behind this server. Needs no server and no account. |
 | `npm run sim -w @draft/sim-harness -- --mode scripted --scenario clubhouse --seeds 5` | A deterministic simulated session, scored against the scenario's ground truth. No network. |
 | `npm run sweep -w @draft/sim-harness` | The calibration sweep: 425 scripted runs over the constitution's seven knobs (25 baseline seeds, plus 25 for each of the 16 variant values). LLM-free. |
-| `npm run test:pg` | The server suite against a real Postgres (a local `postgres:17` on `127.0.0.1:5433`); `npm test` skips those 18 tests without one. |
+| `npm run test:pg` | The server suite against a real Postgres (a local `postgres:17` on `127.0.0.1:5433`); `npm test` skips those 19 tests without one. |
 
 ## Packages
 
-TypeScript end to end; `pg` is the only runtime dependency. Tests measured 2026-09-19 with `npm test`: **1,396 passing** (9 todo, 18 skipped without Postgres).
+TypeScript end to end; `pg` is the only runtime dependency. Tests measured 2026-09-22 with `npm test`: **1,435 passing** (9 todo, 19 skipped without Postgres).
 
 | Package | What it is | Tests |
 |---|---|---|
