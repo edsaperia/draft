@@ -347,15 +347,27 @@ jobs:
           # **Do not re-send the pause while waiting** (issue #8, F4): once
           # traffic has moved it would pause the *new* instance, which is
           # the room, not the deploy.
+          #
+          # **One sighting is not a cutover** (2026-09-22, the convention
+          # batch's deploy, a9ca8e8): attempt 5 read the new build on `/`,
+          # and five seconds later verify-deploy's /healthz was answered by
+          # the old instance still draining behind Render's balancer —
+          # `booted 5929a6e, expected a9ca8e8` on a deploy that had landed.
+          # The two instances overlap for a while and the balancer is not
+          # atomic across requests, so the new build has to answer on both
+          # `/` (x-build) and `/healthz` (booted) three attempts running
+          # before the verifier is trusted to meet only the new one.
           deadline=$(( $(date +%s) + waitSeconds ))
-          i=0
+          i=0; streak=0
           while [ "$(date +%s)" -lt "$deadline" ]; do
             i=$(( i + 1 ))
             sleep 15
             live=$(curl -s -m 10 -D - -o /dev/null "$BASE/" | tr -d '\r' \
               | awk 'tolower($1)=="x-build:"{print $2}')
-            echo "  attempt $i: ${live:-none}"
-            if [ "$live" = "$GITHUB_SHA" ]; then deployed=1; break; fi
+            booted=$(curl -s -m 10 "$BASE/healthz" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).booted||"")}catch{console.log("")}})')
+            if [ "$live" = "$GITHUB_SHA" ] && [ "$booted" = "$GITHUB_SHA" ]; then streak=$(( streak + 1 )); else streak=0; fi
+            echo "  attempt $i: x-build ${live:-none} · booted ${booted:-none} · streak $streak"
+            if [ "$streak" -ge 3 ]; then deployed=1; break; fi
           done
           if [ -z "$deployed" ]; then
             echo "the deployed build never became $GITHUB_SHA in ${waitSeconds}s — refusing"
