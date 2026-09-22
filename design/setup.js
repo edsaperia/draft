@@ -1085,9 +1085,32 @@ window.SETUP = (function () {
           : clickGesture ? 'Ask all members — a full one-second assembly'
           : 'Ask all members — a full one-second hold') + '"' +
         ' data-holdmotion="' + c.k + '">' + glyphHtml('🏛️') + '</button>'
-      : '<button class="btn btn-approve glyphbtn emojibtn"' + (dto ? '' : ' disabled') +
-        ' data-putmotion="1" title="Propose it">' + glyphHtml('✏️') + '</button>';
+      // **An empty wallet darkens the ✏️, with the countdown beside it**
+      // (Q1486 (E), Ed 2026-09-21: *dark, with ✏️ hh:mm countdown (for
+      // proposals as well as rule changes, the same anywhere you would want
+      // to press the button but you have no ✏️s)*). It was lit, and the press
+      // met the module's own *insufficient ✏️ for the stake* — engine
+      // vocabulary, and told to the one member who most wants the rule moved
+      // and has nothing to move it with. An ordinary motion is the only route
+      // that costs: 🏛️ is free, so the branch above never asks.
+      : (() => {
+        const broke = walletBroke();
+        return (broke ? window.CARDS.abstainNoteHtml(dripAt(), 'drip') : '') +
+          '<button class="btn btn-approve glyphbtn emojibtn"' + (dto && !broke ? '' : ' disabled') +
+          ' data-putmotion="1" title="' + esc(broke ? window.COPY.session.row.broke : 'Propose it') + '">' +
+          glyphHtml('✏️') + '</button>';
+      })();
   };
+  /* **What the wallet says about a press that would spend an ✏️** (Q1486 (E)).
+     Both halves read `window.SESSION`, which owns the wallet on both
+     surfaces — before 🍾 there is no session mounted and nothing composes a
+     motion, so a missing SESSION answers *not broke* and changes nothing. */
+  const walletBroke = () => {
+    const S2 = window.SESSION;
+    if (!S2 || S2.editsHeld == null) return false;
+    return S2.editsHeld < ((S2.EDIT_RULES && S2.EDIT_RULES.stake) || 1);
+  };
+  const dripAt = () => (window.SESSION ? window.SESSION.dripAt : null);
 
   /* ---- the consent controls, shared -----------------------------------------
      Moved out of founding-ceremony.html when Q344 closed (Ed, 2026-08-18): a

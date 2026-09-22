@@ -1022,8 +1022,15 @@
   // the module's sentences carry their own § pointer, which is this
   // repository's vocabulary and not a member's (STYLE.md §8): the pointer
   // goes and the sentence stays
-  const plainRefusal = (m) => String(m == null ? '' : m)
-    .replace(/\s*\(§[^)]*\)\s*$/, '').replace(/\.$/, '').trim();
+  // **and one of them is said in the member's own words** (Q1486 (E)): the
+  // module's *insufficient ✏️ for the stake* carries `stake`, which is engine
+  // vocabulary. The controls that could reach it are dark before the press
+  // now, so this is the backstop rather than the remedy.
+  const plainRefusal = (m) => {
+    const s = String(m == null ? '' : m)
+      .replace(/\s*\(§[^)]*\)\s*$/, '').replace(/\.$/, '').trim();
+    return /^insufficient ✏️/.test(s) ? PAGE_COPY.noPencil : s;
+  };
   // an answer that arrives after the act has to repaint by itself: a
   // refusal from the wire lands one round trip and one refresh later
   const setDoorErr = (k, m) => { S.doorErr = m ? { k: k, m: m } : null; render(); };
@@ -7865,6 +7872,10 @@
     const c = card(S.open);
     if (c && founderPairOn(c)) refreshCommit();
     else {
+      // the commit is swapped in place by its own node, and since Q1486 (E)
+      // it may stand beside a countdown — which is not part of that node, so
+      // a swap that left it would stack a second one on every keystroke
+      document.querySelectorAll('.setupcard .pdrip').forEach((n) => n.remove());
       const slot = document.querySelector('.setupcard [data-putmotion], .setupcard [data-holdmotion]');
       if (slot && c) slot.outerHTML = commitFor(c);
     }
@@ -7988,6 +7999,7 @@
       const c = card(S.open);
       if (c && founderPairOn(c)) refreshCommit();
       else {
+        document.querySelectorAll('.setupcard .pdrip').forEach((n) => n.remove());   // Q1486 (E), as above
         const slot = document.querySelector('.setupcard [data-putmotion], .setupcard [data-holdmotion]');
         if (slot && c) slot.outerHTML = commitFor(c);
       }

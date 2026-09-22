@@ -2132,6 +2132,14 @@
      face. It says something rather than doing something, so unlike the ✏️ it
      never takes the accent on hover and is not a control at all. */
   .absnote { font-size: var(--t-cap); color: var(--muted); white-space: nowrap; }
+  /* **✏️ hh:mm beside a dark commit** (Q1486 (E), Ed 2026-09-21: *dark, with
+     ✏️ hh:mm countdown*). The abstention clock's own note, standing in the
+     floating propose row and on a composer's commit: a reading and not a
+     control, so it never takes a press meant for the button beside it — the
+     row is `pointer-events: none` throughout and only its buttons are live,
+     and on a card this says the same thing in a place that is not. Tabular
+     figures, so the row does not twitch as the minutes fall. */
+  .pdrip { font-variant-numeric: tabular-nums; pointer-events: none; margin-right: var(--s2); flex: none; }
   /* The deadlock card's one raised voice: on every other card a line like this
      is a caveat at the foot, and here it is the reason the card exists, so it
      sits directly under the clause in the band the field would otherwise start.

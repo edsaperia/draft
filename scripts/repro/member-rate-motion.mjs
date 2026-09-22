@@ -196,6 +196,11 @@ const readCard = (s) => s.page.evaluate(() => {
     field: f ? f.value : null, fieldBox: r ? { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) } : null,
     commit: b ? { kind: b.hasAttribute('data-putmotion') ? '✏️ put' : '🏛️ hold', disabled: b.disabled, title: b.title } : null,
     pickOn: !!c.querySelector('.pick.on'), err: (c.querySelector('.doorerr, .seterr, .refusal, .mrange') || {}).textContent || null,
+    // **the empty wallet's countdown** (Q1486 (E), Ed 2026-09-21: *dark, with
+    // ✏️ hh:mm countdown*) — the glyph is drawn, so the characters come back
+    // through `glyphTextOf`, and the moment it counts to is its own attribute
+    drip: (() => { const all = c.querySelectorAll('.pdrip'); const n = all[0]; return n
+      ? { text: ((G ? G(n) : n.textContent) || '').trim(), at: +n.getAttribute('data-abstain-at'), n: all.length } : null; })(),
     wallet: document.querySelectorAll('#wallet i:not(.gone)').length, focus: document.activeElement && (document.activeElement.dataset.mrate ? 'the ⏱️ field' : document.activeElement.tagName) };
 });
 const typeRate = async (s, n) => {
@@ -369,9 +374,26 @@ SCENARIOS['empty-wallet'] = async (s, cookie, name) => {
   await shot(s, name + '-2');
   say('   press posts: ' + (put.map((w) => w.status + ' ' + JSON.stringify(w.answer)).join(' | ') || 'nothing'));
   say('   the card then: ' + JSON.stringify(c2 && { text: c2.text, err: c2.err, commit: c2.commit, field: c2.field }));
-  const told = /✏️|proposals? left|insufficient|no proposals/i.test(((c2 && c2.text) || '').replace(c0 ? c0.text : '', ''));
-  verdict(name, told, 'with no ✏️ left: commit ' + JSON.stringify(c1 && c1.commit) + ' · posted ' + put.length +
-    (put[0] ? ' → ' + put[0].status + ' ' + JSON.stringify(put[0].answer).slice(0, 160) : '') +
+  // **Dark, with the countdown beside it** (Q1486 (E), Ed 2026-09-21, ruling
+  // the question this scenario raised: *dark, with ✏️ hh:mm countdown (for
+  // proposals as well as rule changes, the same anywhere you would want to
+  // press the button but you have no ✏️s)*). Red before it: the ✏️ was lit
+  // with an empty wallet, the press posted, and the module answered
+  // *insufficient ✏️ for the stake* — engine vocabulary, told to the one
+  // member who most wants the rule moved and has nothing to move it with.
+  const dark = !!(c1 && c1.commit && c1.commit.disabled);
+  // **one countdown, however many keystrokes** — the commit is swapped in
+  // place by its own node and the countdown stands beside it, so a swap that
+  // does not clear it stacks another on every press (found by this walk, the
+  // afternoon it was written)
+  const clock = !!(c1 && c1.drip) && c1.drip.n === 1 &&
+    /^✏️ \d\d:\d\d$/.test(c1.drip.text) && c1.drip.at > Date.now();
+  const quiet = put.length === 0;
+  verdict(name, dark && clock && quiet, 'with no ✏️ left: the commit is ' +
+    (dark ? 'dark' : 'LIT') + ' ' + JSON.stringify(c1 && c1.commit) +
+    ' · beside it ' + (c1 && c1.drip ? '“' + c1.drip.text + '”' : 'NO COUNTDOWN') +
+    ' · the press posted ' + put.length +
+    (put[0] ? ' → ' + put[0].status + ' ' + JSON.stringify(put[0].answer).slice(0, 160) : ' (nothing)') +
     ' · the words the card added: “' + ((c2 && c2.text) || '').slice(-160) + '”');
 };
 SCENARIOS['decree-under'] = async (s, cookie, name) => {

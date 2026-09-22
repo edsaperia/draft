@@ -173,6 +173,14 @@ window.COPY = (function () {
       // figures alone — the card beside it is where the sentence is — and
       // once the period has run it carries `abstained` like the card.
       abstainShort: (hhmm) => '💤 ' + hhmm,
+      // **And the same shape where the wallet is empty** (Q1486 (E), Ed
+      // 2026-09-21, widening his own question: *dark, with ✏️ hh:mm countdown
+      // (for proposals as well as rule changes, the same anywhere you would
+      // want to press the button but you have no ✏️s)*). His words, and the
+      // countdown machinery is the abstention clock's — one timer, patching
+      // the figures in place, never a render. The moment is the wallet's own
+      // next drip as the view serves it.
+      dripIn: (hhmm) => '✏️ ' + hhmm,
     },
     // reviseNote: what a locked judgment says for itself
     revise: {
@@ -538,6 +546,15 @@ window.COPY = (function () {
     refuseSet: (reason) => 'That could not be set: ' + reason + '.',
     // every other refusal, under the card that sent it (Q1330, SURFACE Y25)
     refused: (reason) => 'That was refused: ' + reason + '.',
+    // **The one module sentence the page says in its own words** (Q1486 (E),
+    // Ed 2026-09-21). The engine refuses a press an empty wallet cannot pay
+    // for with *insufficient ✏️ for the stake (§7)* — a § pointer, which
+    // `plainRefusal` already strips, and *stake*, which is engine vocabulary
+    // (STYLE §1: the surface says what a thing costs, never what it stakes).
+    // The page's own controls are dark before that refusal can be reached now
+    // (`walletBroke`), so nobody should meet it; it is kept in the member's
+    // words for the day a road reaches it that nothing here foresaw.
+    noPencil: 'you have no ✏️ left to spend on this',
     // the host's two flags (Q1345, Q1346; Ed, 2026-09-12): the announced
     // pause, drawn as a modal over the whole page while a deploy runs, and
     // the red flag on a document whose saves the store rejects

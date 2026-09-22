@@ -3334,6 +3334,109 @@ const proposeEditOverRun = async () => {
     await T(5600);
   }
 
+  /* **An empty wallet darkens the ✏️, and says when the next one lands**
+   * (Q1486 (E), Ed 2026-09-21, widening his own question: *dark, with ✏️
+   * hh:mm countdown (for proposals as well as rule changes, the same
+   * anywhere you would want to press the button but you have no ✏️s)*).
+   *
+   * The reader's wallet is spent dry on the wire — ordinary title motions,
+   * one ✏️ each — and then a draft is opened on the run this step already
+   * owns. Red before the fix at *the row's ✏️ is live with an empty wallet*:
+   * the button was dark already (that much was right), but nothing said
+   * when it would wake, and pressing it was the only way to find out.
+   *
+   * *The countdown's text moving* is driven rather than waited for: a ten
+   * minute drip does not change its minutes inside a walk, so the step moves
+   * the note's own deadline — the one absolute instant the clock reads —
+   * and lets the **page's own 1 s timer** repaint it, then asserts the
+   * figures moved and that it is the very same element, which is the whole
+   * claim (one timer patching in place, never a render). */
+  const spent = [];
+  const trail = { purse: null, puts: [], dry: null, back: null, purse2: null };
+  try {
+    trail.purse = ((await viewOf(rp)) || {}).wallet || 0;
+    for (let i = 0; i < trail.purse; i++) {
+      const r = await wire(rp, 'open-motion', { payload: { kind: 'set', setting: 'title',
+        value: { text: 'Broke Row Probe ' + (i + 1) } } });
+      trail.puts.push(r && (r.result || r.error || r.ok));
+      if (r && r.result) spent.push(r.result.motion || r.result.id || r.result);
+    }
+    await T(5600);
+    trail.dry = ((await viewOf(rp)) || {}).wallet;
+    // a draft on the run this step owns, opened the way the lanes above do
+    await rp.evaluate(([a, b]) => {
+      const S = window.SESSION;
+      const it = (S.SUGGS || []).find((x) => !x.mine && (x.keys || []).join('+') === 'L' + a + '+L' + b) ||
+        (S.SUGGS || []).find((x) => !x.mine);
+      if (it) { try { S.toggle(it.id, false); } catch { /* already open */ } }
+      const q = it ? String(it.id).replace(/["\\]/g, '\\$&') : '';
+      const card = q && document.querySelector('.sugg[data-card="' + q + '"]');
+      const btn = card && card.querySelector('[data-propose-from]');
+      if (btn) btn.click();
+    }, [k, k + 1]);
+    await T(1000);
+    await rp.evaluate((sel) => {
+      const box = document.querySelector(sel);
+      if (!box) return;
+      box.focus({ preventScroll: true });
+      const r = document.createRange(); r.selectNodeContents(box); r.collapse(false);
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    }, '.sugg[data-card="draft-yours"] [data-lane]');
+    await rp.keyboard.type(' zz');
+    await T(700);
+    const dark = await rp.evaluate(() => {
+      const b = document.querySelector('#charter [data-proposalrow] [data-act="row-commit"]:not([data-pen])') ||
+        document.querySelector('.sugg [data-act="draft-propose"]:not([data-pen])');
+      const n = document.querySelector('#charter .pdrip, .sugg .pdrip');
+      // the ✏️ in the note is a drawn glyph, so the characters come back
+      // through `glyphTextOf` — `textContent` would print the figures alone
+      return { there: !!b, disabled: !!(b && b.disabled), title: b ? b.title : null,
+        note: n ? (window.CARDS.glyphTextOf(n) || '').trim() : null,
+        at: n ? +n.getAttribute('data-abstain-at') : null };
+    });
+    sent = null;
+    const held = await holdCommit();          // no enabled ✏️ to hold: nothing goes out
+    await T(900);
+    // the page's own clock, driven: the deadline moved, the timer repaints it
+    const ticked = await rp.evaluate(() => {
+      const n = document.querySelector('#charter .pdrip, .sugg .pdrip');
+      if (!n) return null;
+      n.__mark = 1;                                    // the same element, or it is a render
+      const was = (window.CARDS.glyphTextOf(n) || '').trim();
+      n.setAttribute('data-abstain-at', String(Date.now() + 3 * 3600_000));
+      return { was };
+    });
+    await T(1400);
+    const now2 = await rp.evaluate(() => {
+      const n = document.querySelector('#charter .pdrip, .sugg .pdrip');
+      return n ? { text: (window.CARDS.glyphTextOf(n) || '').trim(), same: n.__mark === 1 } : null;
+    });
+    // and it wakes when an ✏️ comes back: a withdrawal returns the stake whole
+    if (spent.length) { trail.back = await wire(rp, 'withdraw-motion', { motion: spent.pop() }); }
+    await T(5600);
+    trail.purse2 = ((await viewOf(rp)) || {}).wallet;
+    const woke = await rp.evaluate(() => {
+      const b = document.querySelector('#charter [data-proposalrow] [data-act="row-commit"]:not([data-pen])') ||
+        document.querySelector('.sugg [data-act="draft-propose"]:not([data-pen])');
+      return { there: !!b, disabled: !!(b && b.disabled), note: !!document.querySelector('#charter .pdrip, .sugg .pdrip') };
+    });
+    const clock = /^✏️ \d\d:\d\d$/.test(dark.note || '') && dark.at > Date.now();
+    const moved = !!ticked && !!now2 && now2.same && now2.text !== ticked.was && /^✏️ \d\d:\d\d$/.test(now2.text);
+    const brokeOk = dark.there && dark.disabled && clock && !held && sent === null &&
+      moved && woke.there && !woke.disabled && !woke.note;
+    say('broke row  · ' + (brokeOk
+      ? 'an empty wallet darkens the row’s ✏️ and stands “' + dark.note + '” beside it; nothing is sent on a press; ' +
+        'the page’s own clock repaints the same note “' + ticked.was + '” → “' + now2.text + '”; ' +
+        'and a returned ✏️ wakes the button and takes the countdown away'
+      : 'FAIL: dark ' + JSON.stringify(dark) + ' · held ' + held + ' · sent ' + JSON.stringify(sent) +
+        ' · ticked ' + JSON.stringify(ticked) + ' → ' + JSON.stringify(now2) + ' · woke ' + JSON.stringify(woke) +
+        ' · wallet ' + JSON.stringify(trail).slice(0, 400)));
+    if (!brokeOk) stuck.push('the empty wallet’s dark ✏️ and its countdown');
+  } finally {
+    for (const m of spent) await wire(rp, 'withdraw-motion', { motion: m });
+    await T(1200);
+  }
+
   } finally {
     // …and any draft of the reader's that never went out: an unproposed draft
     // left standing is a card and a rail entry the steps after this one count

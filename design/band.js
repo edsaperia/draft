@@ -1787,6 +1787,10 @@ window.BAND = (function () {
       // pen above is a `disabled` flip because its words never change; this one
       // is a swap because its glyph, its words and its hold all can.
       if (c && founderPairOn(c)) {
+        // the commit may stand beside a countdown since Q1486 (E), and that
+        // is not part of the node being swapped — left in place it would
+        // stack a second one on every keystroke
+        document.querySelectorAll('.setupcard .pdrip').forEach((n) => n.remove());
         const slot = document.querySelector(
           '.setupcard [data-putmotion], .setupcard [data-holdmotion]');
         if (slot) slot.outerHTML = founderCommit(c);

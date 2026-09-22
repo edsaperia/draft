@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 520
+  "entries": 522
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -74,6 +74,7 @@
   "grammar.commit.chillOff": "Not this one, not now — it stays open and stops being the most urgent",
   "grammar.commit.chillOn": "Cooled — this one will not be put at the front of your queue. Press again to allow it.",
   "grammar.commit.choose": "Choose one of the three first",
+  "grammar.commit.dripIn": "ƒ (hhmm) => '✏️ ' + hhmm",
   "grammar.commit.indifferent": "Indifferent",
   "grammar.commit.submit": "Submit this vote",
   "grammar.commit.vinDiagonal": "They matter equally",
@@ -266,6 +267,7 @@
   "page.motionRec.ruleNoun": "this rule",
   "page.motionRec.titleNoun": "the document’s title",
   "page.noAnswer": "ƒ (status) => (status ? 'the server answered ' + status : 'the server could not be reached')",
+  "page.noPencil": "you have no ✏️ left to spend on this",
   "page.nothingToPut": "That could not be proposed: nothing is chosen on this card.",
   "page.outOfRange": "ƒ (lo, hi) => 'That has to be a whole number between ' + lo + ' and ' + hi + '.'",
   "page.penWait": "Founder Actions ✒️ are waiting in your tasks — accept them and this turns.",

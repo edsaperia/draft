@@ -822,8 +822,35 @@ window.COMPOSER = (function () {
         '<button class="btn btn-withdraw glyphbtn" data-act="row-discard"' + (o.discardDisabled ? ' disabled' : '') +
         ' title="' + esc(o.discardTitle || T.row.discardAll) + '">' + glyphHtml('🗑️') + '</button>' +
         '<span class="rowmid">' + esc(mid) + '</span>' +
+        // **an empty wallet says when the next ✏️ lands** (Q1486 (E), Ed
+        // 2026-09-21: *dark, with ✏️ hh:mm countdown*). Beside the dark
+        // commit, never instead of it, and never where the ✏️ would be spent
+        // by nobody — the pen's own ✒️ costs nothing, so it keeps its place.
+        dripNoteHtml(o) +
         (o.pen ? btn(true, o.title) + (o.pair ? btn(false, o.proposeTitle) : '') : btn(false, o.title)) +
         '</div>';
+    }
+    /**
+     * **The countdown on a dark ✏️** (Q1486 (E), Ed 2026-09-21, widening his
+     * own question: *dark, with ✏️ hh:mm countdown (for proposals as well as
+     * rule changes, the same anywhere you would want to press the button but
+     * you have no ✏️s)*).
+     *
+     * Drawn only where the wallet is what is stopping the press — a draft
+     * with nothing changed in it greys the same button and has nothing to do
+     * with the drip — and only where a next ✏️ is actually coming: at the cap
+     * there is nothing to wait for, and a document whose rate gives no drip
+     * at all has no moment to name, so the line is absent and the button's
+     * own tooltip is the whole of what is said (`T.row.broke`).
+     *
+     * The moment is the wallet's own next drip as the view serves it
+     * (`walletInfo.nextDripInMs`, through `SESSION.setWallet`), and the
+     * machinery is the abstention clock's: one absolute ms in an attribute,
+     * one 1 s timer patching the figures, never a render.
+     */
+    function dripNoteHtml(o) {
+      if (!o || !o.broke) return '';
+      return window.CARDS.abstainNoteHtml(env.dripAt(), 'drip');
     }
     // **What the row's commits say they will do** (Q1382): the hold's price,
     // the places it lands in, the signature it carries, and the one case where
@@ -854,7 +881,10 @@ window.COMPOSER = (function () {
       const btn = (pen) => '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose"' +
         (pen ? ' data-pen="1"' : '') + ((pen ? !rs.changed : (!rs.changed || pt.broke)) ? ' disabled' : '') +
         ' title="' + esc(pen ? pt.penTitle : pt.title) + '">' + glyphHtml(pen ? '✒️' : '✏️') + '</button>';
-      return MAY_PEN() ? btn(true) + btn(false) : btn(false);
+      // the same countdown beside the same dark button (Q1486 (E)): this is
+      // the row's ✏️ drawn on the card, so it says what the row says
+      const drip = dripNoteHtml({ broke: pt.broke && rs.changed });
+      return MAY_PEN() ? btn(true) + drip + btn(false) : drip + btn(false);
     };
     // what the row says about the draft as it stands
     const draftRowState = () => {

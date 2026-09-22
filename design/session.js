@@ -2330,6 +2330,9 @@
     get editsHeld() { return editsHeld; },
     get doc() { return doc; },
     get openId() { return openId; },
+    // when the next ✏️ lands, as an absolute moment (Q1486 (E)) — a function
+    // and not a value, since the composer reads it at every draw
+    dripAt: () => dripAtMs(),
   });
   const { DRAFT_ID, draftOf, docIndexOfKey, siteFor, syncDraftKeys,
     dropDraft, dropDraftSite,
@@ -3502,6 +3505,9 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       const pt = proposeCtlTitles(draftOf());
       html += proposalRowHtml({
         count: rs.changedCount, changed: rs.changed, pen, pair: pen,
+        // the wallet is what is stopping this press, and the row says when
+        // that stops being true (Q1486 (E))
+        broke: pt.broke && rs.changed,
         disabled: !rs.changed || pt.broke, penDisabled: !rs.changed,
         discardDisabled: !rs.count,
         title: !rs.changed ? idle : pen ? pt.penTitle : pt.title,
@@ -3542,6 +3548,22 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       const inRow = b.dataset.act === 'row-commit';
       b.disabled = pen ? !rs.changed : (!rs.changed || pt.broke);
       b.title = inRow && !rs.changed ? idle : pen ? pt.penTitle : pt.title;
+    });
+    // **and the countdown appears with the dark button, not one render later**
+    // (Q1486 (E), and Q1461's own lesson): the note is drawn where the wallet
+    // is what stops the press, and whether that is true changes as the draft
+    // is typed — so it is put in and taken out here, beside the `disabled` it
+    // belongs to. Never rebuilt while it stands: its figures are the 1 s
+    // timer's, and a replaced node would restart at the whole minute.
+    const wantDrip = pt.broke && rs.changed;
+    doc.querySelectorAll('[data-proposalrow], .sugg .race-mid.commitrow').forEach((row) => {
+      const btn = row.querySelector('[data-act="row-commit"]:not([data-pen]), [data-act="draft-propose"]:not([data-pen])');
+      if (!btn) return;
+      const note = row.querySelector('.pdrip');
+      if (!wantDrip) { if (note) note.remove(); return; }
+      if (note) return;
+      const html = abstainNoteHtml(dripAtMs(), 'drip');
+      if (html) btn.insertAdjacentHTML('beforebegin', html);
     });
     doc.querySelectorAll('[data-proposalrow] [data-act="row-discard"]').forEach((b) => { b.disabled = !rs.count; });
     doc.querySelectorAll('[data-proposalrow] .rowmid').forEach((m) => {
@@ -4865,6 +4887,28 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
   }
 
+  /**
+   * **The same wait, as a moment rather than a reading** (Q1486 (E), Ed
+   * 2026-09-21: *dark, with ✏️ hh:mm countdown*). `dripIn` is what the tray
+   * shows, recomputed at every render; a countdown that ticks under a press
+   * needs one absolute instant it can be patched against, so this answers
+   * when the next ✏️ lands and `abstainNoteHtml`'s clock does the rest.
+   *
+   * Null where there is nothing to wait for: at the cap the wallet cannot
+   * take another, and a document whose rate drips at all is the only one
+   * with a moment to name (`SESSION_MINUTES` is Infinity otherwise, live and
+   * in the fixture alike). Both live and fixture arrive at the same number —
+   * `syncWallet` sets `editsToNext` to `1 - nextDripInMs / dripIntervalMs`
+   * and `SESSION_MINUTES` to a sixth of the interval in seconds, so the
+   * product below *is* `nextDripInMs`.
+   */
+  function dripAtMs() {
+    if (!isFinite(SESSION_MINUTES)) return null;
+    if (editsHeld >= EDIT_RULES.cap) return null;
+    const left = Math.max(0, 1 - Math.max(0, Math.min(1, editsToNext))) * SESSION_MINUTES * 6 * 1000;
+    return Date.now() + left;
+  }
+
   // settleWashes before the wires, and both after everything else. Every washed
   // element has just been rendered wearing its *previous* colour, and
   // settleWashes is what hands it the new one so the transition has something
@@ -5076,8 +5120,13 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     setInterval(() => {
       if (editsHeld >= EDIT_RULES.cap) return;
       editsToNext += 1 / (SESSION_MINUTES * 6);
+      const was = editsHeld;
       if (editsToNext >= 1) { editsToNext = 0; editsHeld = Math.min(EDIT_RULES.cap, editsHeld + 1); }
       renderWallet();
+      // the fixture's own drip lands here rather than through `setWallet`, so
+      // it wakes the propose row the same way a live one does (Q1486 (E)) —
+      // only where an ✏️ actually arrived, since this ticks every second
+      if (editsHeld !== was) syncProposeCtls();
     }, 1000);
 
     // **The abstention clock is a timer, not a render** (Q1460): one pass a
@@ -5532,6 +5581,15 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // d seconds is SESSION_MINUTES = d / 6; null says the document does not drip
     if (w && w.dripSeconds !== undefined) SESSION_MINUTES = w.dripSeconds == null ? Infinity : w.dripSeconds / 6;
     renderWallet();
+    // **and the ✏️ wakes when the ✏️ arrives** (Q1486 (E), Ed 2026-09-21).
+    // The wallet is not part of the charter column's data key — rightly: the
+    // column does not change when your purse does — so a drip landing under
+    // an open draft left the row's commit dark and its countdown standing
+    // until something else happened to redraw the column. Patched in place
+    // by the same reader the draw uses, never a render: this runs on every
+    // poll, and a render here would be the caret rule broken four times a
+    // minute.
+    syncProposeCtls();
   }
   // the room the records speak of (stage 8): E and the floor, from the view
   // ---- `session-clock` (Q466/Q471) ----------------------------------------
@@ -5610,6 +5668,11 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     get readSeals() { return readSeals; },
     get verdicts() { return verdicts; },
     get editsHeld() { return editsHeld; },
+    // the rate as it stands, and when the next ✏️ lands (Q1486 (E)): the
+    // band's own composer draws the same dark commit and the same countdown,
+    // and reads both from here rather than keeping a second copy of either
+    get EDIT_RULES() { return EDIT_RULES; },
+    get dripAt() { return dripAtMs(); },
     // the id the one unproposed draft is held under in SUGGS: the page carries
     // such a draft across a data swap by this id, so it reads it here rather
     // than keeping a copy of the literal
