@@ -187,6 +187,16 @@ Glyph names are stable (tabulated 2026-09-07, Q1208; the founding order's own gl
   owes nothing to the surface's look.
 - Subject lines name the document: *you have created a document called
   [title]*.
+- **A mail is the only channel to somebody outside the document, and it says
+  the whole thing.** Three go to people who have no seat to read anything on
+  — `removed`, `closed` and, since Q1493 (Ed, 2026-09-21: *An email when
+  withdrawn*), `uninvited` — and each carries the document's own address and
+  **no login link**, since a token would be minted for a seat that does not
+  exist. They name the **office and never the person** (SURFACE C10), give no
+  reason where the act takes none, and promise nothing about what happens
+  next: *The invitation to become a member of “‹title›” is no longer open,
+  and the link you were sent will not let you in.* The link it replaces says
+  nothing of its own — it lands on the ordinary door.
 
 ## 7. The audit log
 

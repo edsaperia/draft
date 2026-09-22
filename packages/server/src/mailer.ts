@@ -284,6 +284,30 @@ ${link}
       `The document is here, if its visibility lets you read it:\n${link}`,
     link,
   }),
+  /**
+   * **A withdrawn invitation is told to the person it was sent to** (Q1493,
+   * Ed 2026-09-21: *An email when withdrawn*). The convention's own error
+   * log has a withdrawn invitee's old link answered *unknown member 'm-7'*
+   * at 12:43 — a stranger following the only address they had been given
+   * and meeting the machine's own vocabulary. The link lands on the
+   * ordinary door now (`routes-auth`), and this is the other half: the
+   * person hears it from the document rather than from a dead link.
+   *
+   * `removed`'s shape, for `removed`'s reasons — no login link, since a
+   * token would be minted for a seat that no longer exists, but the
+   * document's own address, because where 🌍 lets strangers read they may
+   * still read. **The office, never the name** (SURFACE C10), and no reason,
+   * since withdrawing an invitation takes none. It does not say they may be
+   * invited again: nobody has decided that, and a mail is the wrong place to
+   * promise it.
+   */
+  uninvited: (title: string, link: string): Omit<Mail, 'to'> => ({
+    subject: `Your invitation to “${title}” has been withdrawn`,
+    text: `The invitation to become a member of “${title}” is no longer open, ` +
+      `and the link you were sent will not let you in.\n\n` +
+      `The document is here, if its visibility lets you read it:\n${link}`,
+    link,
+  }),
   lapsed: (title: string, link: string): Omit<Mail, 'to'> => ({
     subject: `Your membership of “${title}” has lapsed`,
     text: `Your membership of “${title}” has lapsed. This means you automatically ` +

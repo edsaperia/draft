@@ -69,6 +69,41 @@ await cmd('founder', 'invite', { email: m1 });
 await cmd('founder', 'invite', { email: m2 });
 jars.set('m1', (await followLink(linkIn(await mailTo(m1)))).cookie);
 jars.set('m2', (await followLink(linkIn(await mailTo(m2)))).cookie);
+
+/* ---- a withdrawn invitation, before the start (Q1493) -------------------
+   Ed, 2026-09-21: *An email when withdrawn*. The withdrawal was silent, and
+   the only thing that ever said it had happened was the old link — which
+   answered *unknown member 'm-7'* at 12:43 on the day of the convention, the
+   machine's own vocabulary to somebody following the one address they had
+   been given. Withdrawing is the Founder's own act and lives before 🍾
+   (`requirePreStart`), so the step stands here, where the document still is.
+   Red on the pre-fix host at *no mail* and at *400*. */
+{
+  const gone = `m3-${run}@example.org`;
+  await cmd('founder', 'invite', { email: gone });
+  const sent = await mailTo(gone);
+  const deadLink = linkIn(sent);
+  const v0 = await (await fetch(`${BASE}/api/d/${SLUG}/view`, { headers: { cookie: jars.get('founder') } })).json();
+  const row = ((v0.view || {}).members || []).find((m) => m.email === gone);
+  const pulled = row ? await cmd('founder', 'uninvite', { member: row.id }) : { ok: false };
+  await T(900);
+  const told = (await outbox(BASE)).filter((x) => x.to === gone);
+  const last = told[0];                     // the tail is newest first
+  const subjectOk = !!last && /has been withdrawn/.test(String(last.subject || ''));
+  const noToken = !!last && !/token=/.test(String(last.text || last.body || ''));
+  const door = deadLink ? await followLink(deadLink) : { status: 0, location: '', cookie: '' };
+  const doorOk = door.status === 302 && door.location === `/d/${SLUG}` && !door.cookie;
+  say('withdrawn  · ' + JSON.stringify({ pulled: !!pulled.ok, mails: told.length,
+    subject: last && last.subject, door: door.status + ' ' + door.location }));
+  if (!pulled.ok || told.length !== 2 || !subjectOk || !noToken) {
+    fail('the withdrawal mail', 'one mail saying the invitation is withdrawn, with no login link — saw '
+      + JSON.stringify(told.map((x) => x.subject)));
+  }
+  if (!doorOk) {
+    fail('the dead link', 'the withdrawn invitee’s old link should land on the ordinary door — saw '
+      + door.status + ' ' + door.location + (door.cookie ? ' with a cookie' : ''));
+  }
+}
 for (const [setting, value] of Object.entries({
   ending: { endsAtMs: Date.now() + 30 * 24 * 3600_000 }, authorship: { rung: 'sealedElective' },
   judgments: { rung: 'after' }, applications: { apply: true }, admission: { price: 'proposal' },

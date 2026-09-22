@@ -269,6 +269,17 @@ export class WritePath {
         if (m !== undefined && mailable(m.email)) {
           push(m.email, MAILS.removed(title, `${cfg.baseUrl}/d/${cs.slug}`));
         }
+      } else if (event.type === 'member-uninvited') {
+        // **a withdrawn invitation is told to the person it was sent to**
+        // (Q1493, Ed 2026-09-21: *An email when withdrawn*). The `removed`
+        // arm's own shape — no token, the document's address — for the same
+        // reason: the seat is gone, so a login link would be minted for
+        // nobody. Whichever hand withdrew it and whichever side of 🍾 it
+        // happened on: the event is the fact, and there is one event.
+        const m = cs.memberRecords().get(event.member);
+        if (m !== undefined && mailable(m.email)) {
+          push(m.email, MAILS.uninvited(title, `${cfg.baseUrl}/d/${cs.slug}`));
+        }
       } else if (event.type === 'lapse-warned' || event.type === 'member-lapsed') {
         const m = cs.memberRecords().get(event.member);
         const email = m?.email ?? (event.member === cs.convenorRecord().id

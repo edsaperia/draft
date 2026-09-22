@@ -470,8 +470,18 @@ export const authTable: Route[] = [
       if (!doc) return true;
       const t = writes.tOf(doc);
       const m = doc.cs.memberRecords().get(rec.memberId);
+      // **A seat that is gone lands on the ordinary door** (Q1493, Ed
+      // 2026-09-21). The convention's error log has a withdrawn invitee's
+      // old link answered *unknown member 'm-7'* at 12:43: `arrive` throws
+      // those words for a row marked removed, and a stranger following the
+      // one address they had been given met the machine's own vocabulary.
+      // They are told by mail that the invitation was withdrawn
+      // (`MAILS.uninvited`); the link itself simply opens the document, with
+      // no cookie and so no seat — which is the stranger's door, and says
+      // nothing about the withdrawal because the mail has said it already.
+      if (!m || m.removed) { redirect(res, `/d/${doc.cs.slug}`); return true; }
       // membership begins at first arrival (§9.6a); revival is logging in
-      if (m && m.arrivedAtT === null) doc.cs.arrive(t, rec.memberId);
+      if (m.arrivedAtT === null) doc.cs.arrive(t, rec.memberId);
       else if (m && m.lapsed) doc.cs.memberReturn(t, rec.memberId);
       await writes.commit(doc, nowMs);
       setCookie(res, doc.id, auth.cookieFor(doc.id, rec.memberId, nowMs), ctx.httpsOn);
