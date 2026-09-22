@@ -3520,6 +3520,20 @@
     // held as the card reads it: a pending release is already *given* (R-048)
     const held = (mm[1] === 'u' ? p.u : p.a) && !(mm[1] === 'u' ? pend.u : pend.a);
     const wantHeld = want === 'held';
+    // **Nothing is laid down on a setting with no value** (SPEC §9.7, R-048;
+    // Q1493, the nh2026 convention 2026-09-20, where the module refused the
+    // Founder's 🛡️ on 👥 at 11:05 — `'quorum' has no value yet`). The lane
+    // has been greyed for this since R-048 (`blockGive`), but the *act* never
+    // asked again: the choice lives in `S` from the press that made it, and
+    // the value the page held when it was made is not the value the module
+    // holds when the card commits — a delegation taken back clears it, and a
+    // poll never lands under an open card. So the act asks the module itself,
+    // and says so rather than throwing into a `catch` nobody reads.
+    if (!wantHeld && !constituted() && !pwHasValue(k)) {
+      S[key] = undefined;
+      S.open = key;
+      return setDoorErr(key, PAGE_COPY.pw.notes.opensWithValue);
+    }
     if (wantHeld !== held) {
       try {
         if (!wantHeld) {

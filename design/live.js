@@ -1171,6 +1171,10 @@ window.LIVE = (function () {
       const RAIL = window.COPY.session.rail;
       const PARK = window.COPY.session.park;
       const STRANDED = window.COPY.session.stranded;
+      // …and the three a proposal of your own wears, and the record captions
+      // (Q1493’s list of strings that were literals here)
+      const YOURS = window.COPY.session.yours;
+      const REC = window.COPY.session.record;
       // **and the ground shift says what happened** (SURFACE E16). The
       // server's `shifted` is a flag — *a judgment of mine locked by a
       // ground shift* — and the rail entry's tooltip is the sentence, as
@@ -1511,8 +1515,8 @@ window.LIVE = (function () {
         items.push({ id: localIdOf.get(m.id) || ('mine:' + m.id), kind: 'draft', mine: true, keys,
           state: 'needs', qLabel: sites[0].label, urgency: 0,
           pct: awaiting ? 100 : 0,
-          cap: (stranded ? STRANDED.cap : awaiting ? PARK.yours : 'yours · in the race') +
-            (m.signed ? ' · signed' : ''),
+          cap: (stranded ? STRANDED.cap : awaiting ? PARK.yours : YOURS.inRace) +
+            (m.signed ? YOURS.signedTail : ''),
           signed: !!m.signed, awaiting, stranded,
           rationale: m.rationale, sites, candidate: m.id });
       }
@@ -1630,9 +1634,9 @@ window.LIVE = (function () {
           ...(early ? { early: true } : {}),
           // a gap record is titled by the block before its gap, as a gap draft is
           qLabel: labelFor(site.insertAfterKey || keys[0]), urgency: 0, pct: 100,
-          cap: early ? window.COPY.session.record.dominated
-            : adopted ? 'decided — adopted' : undecided ? 'undecided at the close — the text stood' : 'decided — the current text stood',
-          decided: { outcome: adopted ? 'adopted' : undecided ? 'undecided' : 'retired — the current text stood',
+          cap: early ? REC.dominated
+            : adopted ? REC.capAdopted : undecided ? REC.capUndecided : REC.capStood,
+          decided: { outcome: adopted ? REC.outAdopted : undecided ? REC.outUndecided : REC.outStood,
             // `o.threshold` is still on the record row — the engine's own,
             // pinned (R-117) — and nothing reads it: the eyebrow stopped
             // comparing the reading to a line with the line itself (Q1362)

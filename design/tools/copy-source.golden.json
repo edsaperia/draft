@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 511
+  "entries": 520
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -456,6 +456,9 @@
   "session.rail.wantsVote": "wants your vote",
   "session.rail.yoursInRace": "Yours, in the race",
   "session.record.amended": "The Founder amended this",
+  "session.record.capAdopted": "decided — adopted",
+  "session.record.capStood": "decided — the current text stood",
+  "session.record.capUndecided": "undecided at the close — the text stood",
   "session.record.capped": "the ranking maths stopped short on this one; the decision stands",
   "session.record.changedSince": "This clause has changed again since.",
   "session.record.counts": "ƒ (judges, roster, floor, yoursLine, approvals, abstained) =>\n        judges + ' of ' + roster + ' weighed in · ' +\n        (approvals === null || approvals === undefined ? '' : approvals + ' preferred it · ') +\n        (abstained ? abstained + ' did not answer in time · ' : '') +\n        'quorum was ' + floor + ' · ' + yoursLine",
@@ -465,6 +468,9 @@
   "session.record.gone": "This clause has since been removed.",
   "session.record.ok": "OK",
   "session.record.okTitle": "It leaves your margin and stays in the record",
+  "session.record.outAdopted": "adopted",
+  "session.record.outStood": "retired — the current text stood",
+  "session.record.outUndecided": "undecided",
   "session.record.replaced": "the text it replaced",
   "session.record.undecided": "Proposal ran out of time",
   "session.record.youNever": "you never voted on this",
@@ -513,6 +519,9 @@
   "session.verdict.preferred": "ƒ (quoted) => 'preferred ' + quoted",
   "session.verdict.skipped": "skipped (recirculates with decay)",
   "session.verdict.theFirst": "the first",
-  "session.verdict.theSecond": "the second"
+  "session.verdict.theSecond": "the second",
+  "session.yours.inRace": "yours · in the race",
+  "session.yours.justIn": "yours · just in, evidence starting",
+  "session.yours.signedTail": " · signed"
  }
 }

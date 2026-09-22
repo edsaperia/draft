@@ -321,6 +321,26 @@ window.COPY = (function () {
       // Founder's (STYLE T8); the verb is *pass*, never *carry* and never
       // *adopted*.
       dominated: 'Rejected — it could no longer pass',
+      // **what a sealed record's own entry says it is** (Q1493's list, the
+      // nh2026 convention 2026-09-20): the rail entry's tooltip, and the
+      // caption under the mark. They were four literals in `live.js`, on the
+      // road Q1484 and Q1485 walked; the rule is that every string a member
+      // can read lives here.
+      capAdopted: 'decided — adopted',
+      capStood: 'decided — the current text stood',
+      capUndecided: 'undecided at the close — the text stood',
+      outAdopted: 'adopted',
+      outStood: 'retired — the current text stood',
+      outUndecided: 'undecided',
+    },
+    // **a proposal of your own, as its line says it** (Q1493's list): the
+    // three faces the caption wears between the press and the race, and the
+    // tail a signed one takes. `stranded` and `park` above carry the other
+    // two states.
+    yours: {
+      justIn: 'yours · just in, evidence starting',
+      inRace: 'yours · in the race',
+      signedTail: ' · signed',
     },
     // the proposal row and the commit titles either side of the ✏️ hold
     row: {

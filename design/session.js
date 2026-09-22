@@ -4336,7 +4336,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       d.unproposed = false;
       d.qLabel = d.sites[0].label;
       d.pct = 6;
-      d.cap = 'yours · just in, evidence starting' + (d.signed ? ' · signed' : '');
+      d.cap = T.yours.justIn + (d.signed ? T.yours.signedTail : '');
       if (hooks.propose) { const r = hooks.propose(d); if (typeof r === 'string') d.id = r; }
       if (wasOpen) openId = d.id;
       keepStill(() => renderAll(), '[data-key="' + key + '"]');
