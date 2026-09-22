@@ -4945,8 +4945,8 @@
    "hat": {
     "eyebrow": "",
     "head": "",
-    "lock": "Set by the founder when the document was made.",
-    "body": "Set toSet by the founder when the document was made.",
+    "lock": "",
+    "body": "The Founder is part of the membership.ChosenThe Founder is not part of the membership.Choose this",
     "options": [],
     "inputs": [],
     "foot": [
@@ -4959,9 +4959,7 @@
      "Founder’s Membership — close it",
      "Put it back as it stands"
     ],
-    "helpers": [
-     "Set by the founder when the document was made."
-    ]
+    "helpers": []
    },
    "held:mo-2": {
     "eyebrow": "",
