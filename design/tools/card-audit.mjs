@@ -1844,6 +1844,26 @@ async function walkRail(page, rails, walk) {
     }).filter(Boolean);
   });
   const withPile = await read();
+  // **the stranded entry is red** (R2, Q1484, Ed 2026-09-21: *Red entry,
+  // words unchanged*). Its ground is a wash of the surface's one red and its
+  // ↻ is painted the same; the channels are read back off `:root` rather than
+  // written down here, so the audit cannot disagree with the palette about
+  // what red is. Asked which entry is stranded rather than told: a check that
+  // cannot find its subject has not run, and says so.
+  const stranded = await page.evaluate(() => {
+    const red = getComputedStyle(document.documentElement).getPropertyValue('--lc-wrong').trim();
+    const mine = (window.SESSION.SUGGS || []).filter((s) => s.mine && s.stranded);
+    const out = [];
+    for (const s of mine) {
+      const li = document.querySelector('#rail .qitem[data-q="' + String(s.id).replace(/["\\]/g, '\\$&') + '"]');
+      const b = li && li.querySelector('button');
+      const mk = li && li.querySelector('.qmark .mk, .mk');
+      out.push({ id: s.id, there: !!b,
+        wash: b ? getComputedStyle(b).getPropertyValue('--washcol').trim().replace(/\s+/g, ' ') : null,
+        ink: mk ? getComputedStyle(mk).color : null, mk: mk ? mk.className : null });
+    }
+    return { red, rows: out };
+  });
   const beneath = await page.evaluate(() =>
     Object.fromEntries(window.SESSION.SUGGS.filter((s) => s.beneath).map((s) => [s.id, s.beneath])));
   // the same rail with the field off, so the comparison is this page's own
@@ -1862,12 +1882,35 @@ async function walkRail(page, rails, walk) {
     window.SESSION.refreshRail();
   }, saved);
   await wait(page, 250);
-  rails.push({ walk, withPile, without, beneath });
+  rails.push({ walk, withPile, without, beneath, stranded });
 }
 function railRules(rails) {
   const out = [];
   const file = (rule, said, saw, note) => out.push({ rule, lens: 'positioning', said, saw, note });
   for (const r of rails) {
+    // R2 — the stranded entry's ground and its ↻, both the surface's one red
+    const st = r.stranded || { red: '', rows: [] };
+    const chans = String(st.red).split(',').map((x) => x.trim()).filter(Boolean);
+    if (chans.length !== 3) {
+      file('R2', 'the palette states a red in channel form, so a wash can be made of it (Q1484)',
+        '`--lc-wrong` on :root reads ' + JSON.stringify(st.red), r.walk);
+    } else if (!st.rows.length) {
+      file('R2', 'the fixture carries a stranded proposal, so the red is measured at all (Q1484)',
+        'no item on the charter is `mine && stranded`', r.walk);
+    } else {
+      const want = 'rgb(' + chans.join(', ') + ')';
+      for (const e of st.rows) {
+        if (!e.there) { file('R2', 'a stranded proposal of yours has a rail entry', e.id + ' has none', r.walk); continue; }
+        if (!String(e.wash).startsWith('rgba(' + chans.join(', ') + ',')) {
+          file('R2', 'a stranded entry’s ground is a wash of the surface’s one red (Q1484, Ed 2026-09-21: *Red entry, words unchanged*)',
+            e.id + ' washes ' + e.wash + ', where --lc-wrong is ' + chans.join(', '), r.walk);
+        }
+        if (e.ink !== want) {
+          file('R2', 'a stranded entry’s ↻ is painted that same red (Q1484)',
+            e.id + '’s ' + e.mk + ' is ' + e.ink + ', wanted ' + want, r.walk);
+        }
+      }
+    }
     const drawn = r.withPile.filter((e) => e.pile > 0);
     if (!Object.keys(r.beneath).length) {
       file('R1', 'the fixture carries queue card stacks, so the pile is measured at all (Q1462)',

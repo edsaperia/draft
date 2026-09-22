@@ -931,8 +931,12 @@
           '<button class="yours' + (drafting ? ' drafting' : '') + '" data-q="' + g.id + '"' +
           ' aria-current="' + (openId === g.id) + '"' +
           // a draft has no fill: there is nothing yet to be close to
-          washAttrs(qKey(g, e), drafting ? tint('yours', 0.20) : wash(g, 'yours').col,
-            drafting ? '100%' : wash(g, 'yours').fill) +
+          // …and the hue comes from `anchHue`, not from the literal it used
+          // to be (Q1484): a stranded proposal of yours is red, and the rail
+          // entry, the gutter tab and the card head have to agree about that
+          // as they agree about everything else
+          washAttrs(qKey(g, e), drafting ? tint(anchHue(g) || 'yours', 0.20) : wash(g, anchHue(g) || 'yours').col,
+            drafting ? '100%' : wash(g, anchHue(g) || 'yours').fill) +
           ' title="' + esc(drafting
             ? T.rail.draftTitle
             : (g.cap || T.rail.yoursInRace)) + '">' +
@@ -4593,7 +4597,15 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // decision you judged holds a slot in the margin because you are owed an
     // answer, and it still moved nothing, so it stays grey.
     if (st === 'sealed') return isUnread(g) ? (carried(g) ? 'changed' : 'closed') : null;
-    if (st === 'yours') return 'yours';
+    // **A stranded proposal is red** (Q1484, Ed 2026-09-21: *make the card a
+    // colour that suggests something needs to be done (red?)* → *Red entry,
+    // words unchanged*). It is yours and it is waiting on you, so under Q170
+    // it took the ordinary `yours` blue — and blue says *yours* and nothing
+    // more, which is the whole of what Ed watched a proposer fail to read.
+    // One hue in three columns, as this function exists to guarantee: the
+    // rail entry's ground, the clause's gutter tab, and the head of the card
+    // the entry opens all follow from here.
+    if (st === 'yours') return g.stranded ? 'wrong' : 'yours';
     // ⚔️ is tested **before** ⏳, because it is the state that replaces it: you
     // have judged, and where an ordinary race would now go grey and run on
     // without you, this one still wants something. Yellow, still — the palette's

@@ -463,9 +463,18 @@ function checkMarks() {
   // **↻ is a character, and the two who wear it are told apart by a colour**
   // (SURFACE Y22, Q170): the one thing that would break if it were a picture.
   if (!/\.mk-shifted\s*\{\s*color:\s*var\(--muted\)/.test(rules)) find('marks', '↻ (.mk-shifted) is not grey (Q612)');
-  if (!/\.mk-stranded\s*\{\s*color:\s*rgb\(var\(--lc-yours\)\)/.test(rules)) find('marks', '↻ blue (.mk-stranded) is not the yours hue (Q170)');
+  // …and since Q1484 (Ed, 2026-09-21: *Red entry, words unchanged*) the
+  // stranded one is the surface's own red rather than the `yours` blue
+  if (!/\.mk-stranded\s*\{\s*color:\s*rgb\(var\(--lc-wrong\)\)/.test(rules)) find('marks', '↻ red (.mk-stranded) is not the wrong hue (Q1484)');
   const lc = (n) => (css.match(new RegExp(`--lc-${n}:\\s*([0-9, ]+)`)) || [])[1];
   if (lc('deciding') !== lc('closed')) find('marks', '--lc-deciding and --lc-closed are not one grey');
+  // **One red, in one place** (Q1484): `--slash` and `--lc-wrong` are the same
+  // colour in two notations, so the strike on a laid-down power, the phone
+  // drawer's count and the stranded entry cannot drift apart.
+  if (!/--slash:\s*rgb\(var\(--lc-wrong\)\)/.test(css)) find('marks', '--slash is not rgb(var(--lc-wrong)) — the surface has two reds (Q1484)');
+  // the stranded entry, the gutter tab and the card head all take their hue
+  // from `anchHue`, which is the one place that may know about the red
+  if (!/st === 'yours'\) return g\.stranded \? 'wrong' : 'yours'/.test(js('design/session.js'))) find('marks', "anchHue does not give a stranded proposal the 'wrong' hue (Q1484)");
   note(`  ${rows.length} marks; KEEP_ORDER ${keep.length}, STACK_ORDER ${stack.length}`);
 }
 
