@@ -840,6 +840,46 @@ kind (`judged-closed`, `stale-version`) and a `last` of a moment and a kind
 reads every line of it. A room producing a great many of them is saying
 something about its own pace, which is worth knowing and is not a defect.
 
+**What the page sends** (plan stage 5b). A refusal has been written down
+here since Q1330; an error the page *threw* was written down nowhere at
+all, and the only two this project ever caught were found by hand — the
+swallowed boot error of Q1281, months later, and the `?debug=1` strip's, on
+a phone Ed happened to be holding. So the surface's own `error` and
+`unhandledrejection` handlers post to `POST /api/page-error` and the line
+joins this file as `kind: 'page'`:
+
+```
+{"at":1789239001122,"kind":"page","path":"/d/moon","doc":"d-cea25a9578",
+ "slug":"moon","seat":"m-4","source":"/session.js","line":4212,"col":17,
+ "build":"5929a6e","reason":"TypeError: undefined is not an object"}
+```
+
+It is a **production** route, not a `DEV:` one, because the errors worth
+reading are the ones a room met — and what it accepts is therefore the
+whole of its privacy story:
+
+- **Only six fields are read**, and anything else in the body is dropped:
+  the message, the source file, its line and column, the page's path and
+  the document's address. `reason` is the message.
+- **The seat and the build are the host's**, never the client's word: the
+  seat comes from the cookie for that document, the build from what this
+  process is serving (a surface upload's commit where there is one). A
+  body naming either is ignored. A page with no document — the birth, at
+  `/` — sends no slug and the line carries the path alone.
+- **No text a member typed.** The stack never leaves the browser; the
+  message is capped at 200 characters with its whitespace collapsed, so a
+  pasted paragraph cannot ride in on a newline. A path is sent and stored
+  **without its query**, at both ends, because a magic link's token travels
+  in one.
+- **Rate-limited twice**: five a minute per seat (a seatless page by its
+  address), and sixty per ten minutes per address before the body is even
+  read. Over either, a 429 and no line.
+
+The page holds itself to five reports per load and never repeats one
+message, since a render that throws throws on every frame. The `?debug=1`
+strip — which prints the same errors on the phone that met them and sends
+nothing — is unchanged and runs beside it.
+
 **A stalled document** (Q1346). A save the store rejects for a reason no
 retry will clear — a 23505, another writer holding the document's log
 (§3's split) — marks the document `stalled`: it still serves, every write

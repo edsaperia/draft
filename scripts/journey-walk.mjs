@@ -120,7 +120,16 @@ if (GESTURE) await page.addInitScript((g) => { window.COMMIT_GESTURE_OVERRIDE = 
 // on an untrusted event is chromium-only (walk.mjs's `installPaste`)
 await installPaste(page);
 const errors = [];
-page.on('pageerror', (e) => errors.push(String(e)));
+/**
+ * **A page error a step is *about*** (plan stage 5b), the same discipline as
+ * `expectRefused` below: the one throw this walk performs in order to be
+ * reported. Named by its message, and only for as long as the step that
+ * pushed it is running — a blanket allowance would hide the boot errors
+ * this list exists to catch (Q1281).
+ */
+const expectThrown = [];
+const noteThrown = (s) => { if (!expectThrown.some((re) => re.test(s))) errors.push(s); };
+page.on('pageerror', (e) => noteThrown(String(e)));
 // **A refused command is a failure even when the walk recovers from it**
 // (2026-08-22). Both of the day's birth bugs went straight past this walk:
 // a held commit fired twice, so the second 📧 send asked for the address the
@@ -940,7 +949,7 @@ const secondSeatPreBegin = async () => {
   }
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
   guestPage = await ctx.newPage();
-  guestPage.on('pageerror', (e) => errors.push('[guest] ' + String(e)));
+  guestPage.on('pageerror', (e) => noteThrown('[guest] ' + String(e)));
   guestPage.on('response', (r) => { if (r.request().method() === 'POST' &&
     /give-ok/.test(r.request().postData() || '')) guestOks += 1; });
   guestPage.on('response', (r) => { if (r.request().method() === 'POST' &&
@@ -4519,6 +4528,52 @@ if (caret) {
     if (!gone) stuck.push('the refusal line did not dismiss (Q1330)');
     await guestPage.evaluate(() => { const a = document.querySelector('.setupcard .chipcol .achip'); if (a) a.click(); });
     await guestPage.waitForTimeout(400);
+  }
+
+  /* ---- the page reports its own errors (plan stage 5b) ----------------------
+   * A refusal has been written down on the host since Q1330; an error the
+   * page *threw* was written down nowhere at all, and the only two this
+   * project ever caught were found by hand — Q1281's swallowed boot error,
+   * months later, and the `?debug=1` strip's, on a phone Ed was holding.
+   * So the guest's page throws one on purpose and the walk reads it back off
+   * the host through the dev route: `kind: 'page'`, the seat the cookie
+   * stands for and not the body's word, and the page's path **without its
+   * query**, a magic link's token travelling in one. The throw is expected
+   * here and is not a walk failure — `expectThrown` counts it off, for this
+   * step only. */
+  if (guestPage && ok) {
+    const PROBE = 'journey page error probe';
+    const REJECT = 'journey page rejection probe';
+    expectThrown.push(new RegExp(PROBE), new RegExp(REJECT));
+    let tail = null;
+    try {
+      // from a script of the page's own rather than the walk's `evaluate`
+      // handle, so both handlers meet an ordinary page error. (`source` is
+      // empty for an inline script whatever it is appended to — the field's
+      // own parsing, capping and origin-stripping are `errors.test.ts`'s.)
+      await guestPage.evaluate(([m, j]) => {
+        const s = document.createElement('script');
+        s.textContent = 'setTimeout(function () { throw new Error(' + JSON.stringify(m) + '); }, 0);' +
+          'setTimeout(function () { Promise.reject(new Error(' + JSON.stringify(j) + ')); }, 0);';
+        document.head.appendChild(s);
+      }, [PROBE, REJECT]);
+      await guestPage.waitForTimeout(1200);
+      tail = await (await fetch(BASE + '/api/dev/errors')).json();
+    } catch (e) { tail = { errors: [], fetchFailed: String(e) }; }
+    finally { expectThrown.length = 0; }
+    const here = new URL(guestPage.url()).pathname.replace(/^\/d\//, '');
+    const rows = (tail && tail.errors) || [];
+    const row = rows.find((r) => r.kind === 'page' && String(r.reason).includes(PROBE));
+    const rej = rows.find((r) => r.kind === 'page' && String(r.reason).includes(REJECT));
+    const pageOk = !!row && !!rej && typeof row.seat === 'string' && row.seat.length > 0 &&
+      String(row.path).startsWith('/d/') && !String(row.path).includes('?') &&
+      row.slug === here && !('args' in row) && !('cmd' in row) &&
+      typeof row.line === 'number' && /^rejection: /.test(String(rej.reason));
+    say('page error · ' + (pageOk
+      ? 'a throw and a rejection reported and read back off the host · seat ' + row.seat +
+        ' · path ' + row.path + ' · line ' + row.line + ' · ' + (row.source || 'no source')
+      : 'FAIL: ' + JSON.stringify({ row, rej, some: rows.slice(0, 3), fetchFailed: tail && tail.fetchFailed })));
+    if (!pageOk) stuck.push('the page did not report its own uncaught error (stage 5b)');
   }
 
   /* ---- one pair, one tab, one entry (Q1367; the deck of Q1200 and the

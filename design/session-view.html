@@ -268,6 +268,66 @@
   </div>
 </header>
 <script>
+  // **The page reports its own uncaught errors** (plan stage 5b, after the
+  // nh2026 convention). A refusal has been written down on the host since
+  // Q1330; an error the page *threw* was written down nowhere at all, and
+  // the only two this project has ever caught were found by hand — Q1281's
+  // swallowed boot error months later, and the `?debug=1` strip's on a
+  // phone Ed happened to be holding. So every uncaught error and rejection
+  // goes to `POST /api/page-error` and joins the same log (OPERATING §11).
+  //
+  // **First in the file, so it is listening before anything else loads**:
+  // the load-order block below is where a boot error comes from, and a
+  // reporter registered after it would miss exactly the errors it exists
+  // for. The `?debug=1` strip at the foot of this block is the other half
+  // of the same idea and sends nothing; both can run at once.
+  //
+  // **Five fields and no more**: the message, the file and line the browser
+  // names, this page's path, and the document's address so the host can
+  // find the seat. The seat and the build are the host's to add and are not
+  // ours to claim. **Nothing a member typed goes** — which is why the stack
+  // stays here, the server caps and collapses what does go, and the path is
+  // sent without its query, a magic link's token travelling in one.
+  (() => {
+    const slug = (/^\/d\/([A-Za-z0-9-]+)/.exec(location.pathname) || [])[1] || null;
+    // the page's own brake, before the host's: a render that throws throws
+    // on every frame, and the tenth copy of one sentence tells nobody more
+    // than the first did
+    let sent = 0;
+    let last = '';
+    const report = (message, source, line, col) => {
+      if (!message || sent >= 5) return;
+      const key = message + '@' + source + ':' + line;
+      if (key === last) return;
+      last = key;
+      sent++;
+      try {
+        fetch('/api/page-error', {
+          method: 'POST', credentials: 'same-origin', keepalive: true,
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ message: String(message), source: String(source || ''),
+            line: line, col: col, path: location.pathname, slug: slug }),
+        }).catch(() => {});
+      } catch (e) { /* a report is never the thing that fails */ }
+    };
+    // capture, because a failed <script> or <img> fires an error event that
+    // does not bubble — and a page whose own files did not arrive is the
+    // most useful report there is
+    addEventListener('error', (ev) => {
+      if (ev.error || ev.message) {
+        report(ev.message || String(ev.error), ev.filename, ev.lineno, ev.colno);
+        return;
+      }
+      const t = ev.target;
+      if (t && t !== window && (t.src || t.href)) {
+        report('failed to load ' + String(t.src || t.href).split('?')[0], '', 0, 0);
+      }
+    }, true);
+    addEventListener('unhandledrejection', (ev) => {
+      const r = ev.reason;
+      report('rejection: ' + ((r && r.message) || String(r)), '', 0, 0);
+    });
+  })();
   // The drawers (narrow only): one attribute on the root names the open one,
   // the doors toggle it, and a tap anywhere outside the open drawer — the
   // darkened ground, the document — closes it. Choosing inside a drawer

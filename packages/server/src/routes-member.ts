@@ -21,12 +21,12 @@ import { ConstitutionSession, view } from '../../constitution/src/index.js';
 import type { ApplicantRecord } from '../../constitution/src/index.js';
 import { ParticipantApi } from '../../engine-core/src/participant-api.js';
 import { LIMITS, cap, runCommand } from './commands.js';
-import { logError, noteRace, raceRefusal } from './error-log.js';
+import { PAGE_ERRORS_PER_MINUTE, logError, noteRace, pageErrorOf, raceRefusal } from './error-log.js';
 import { asEngineDoc } from './engine-host.js';
 import type { LoadedDoc } from './store.js';
 import { raceView, strangerView } from './views.js';
 import { PauseState } from './write-path.js';
-import { cookieSession, expectString, json, pathOf, readJson } from './routes.js';
+import { cookieSession, expectString, ipOf, json, pathOf, rateLimited, readJson } from './routes.js';
 import type { Route } from './routes.js';
 
 export const memberTable: Route[] = [
@@ -360,6 +360,57 @@ export const memberTable: Route[] = [
       await ctx.store.setProvisional(doc,
         cap(expectString(body, 'text'), LIMITS.text, 'the text'));
       json(res, 200, { ok: true });
+      return true;
+    },
+  },
+  {
+    /**
+     * **The page reports its own uncaught errors** (plan stage 5b, after
+     * the nh2026 convention): the surface's `error` and `unhandledrejection`
+     * handlers post here, and the line joins the host's error log as
+     * `kind: 'page'` (docs/OPERATING.md §11). A refusal has been written
+     * down since Q1330 and a page error nowhere at all — the swallowed boot
+     * error of Q1281 was found by hand months after it started.
+     *
+     * **A production route**, outside the `DEV:` label, because the errors
+     * worth reading are the ones a room met. What it accepts is `error-log.ts`'s
+     * `pageErrorOf` and nothing else; what it adds — the seat, the document,
+     * the build — is the host's own knowledge, never the client's word.
+     *
+     * **No document is needed.** The birth is at `/` and throws there too,
+     * so the slug is optional: with one, the line carries the document and
+     * the seat that cookie stands for; without, the path alone.
+     *
+     * Two brakes. The per-IP one is the cheap outer guard, taken before the
+     * body is read; the per-seat one is the plan's *a few a minute*, and a
+     * seatless page is keyed by its address, which is the only name it has.
+     */
+    name: 'POST /api/page-error — what the surface caught',
+    method: 'POST',
+    match: ({ seg }) => seg[0] === 'api' && seg[1] === 'page-error' && seg.length === 2,
+    handler: async (ctx, r) => {
+      const { req, res, nowMs } = r;
+      if (r.tooMany('page-error', 60)) return true;
+      const body = await readJson(req);
+      const doc = typeof body.slug === 'string' ? ctx.store.bySlug(body.slug) : null;
+      const session = doc === null ? null : cookieSession(ctx.auth, req, doc.id);
+      const seat = session === null ? null : session.memberId;
+      if (rateLimited(`page-error:${seat ?? ipOf(req, ctx.cfg)}`, nowMs,
+        PAGE_ERRORS_PER_MINUTE, 60_000)) {
+        json(res, 429, { error: 'too many requests — try again shortly' });
+        return true;
+      }
+      const row = pageErrorOf(body, { seat, doc: doc?.id ?? null, slug: doc?.cs.slug ?? null,
+        // the commit this process is serving the page from: a surface
+        // upload moves it without restarting, so the upload's is the truer
+        // answer where there is one (Q1347)
+        build: ctx.surfaceSha ?? ctx.buildSha });
+      if (row === null) { json(res, 400, { error: 'a page error needs a message' }); return true; }
+      logError(ctx.persistence, row, nowMs);
+      // nothing to say back: the page is not waiting and must not be given
+      // anything to get wrong about its own failure
+      res.statusCode = 204;
+      res.end();
       return true;
     },
   },

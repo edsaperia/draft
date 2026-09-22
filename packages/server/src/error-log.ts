@@ -79,6 +79,88 @@ export function logError(sink: ErrorSink, row: ErrorRow, at = Date.now()): void 
 }
 
 /**
+ * **What the page may say about itself** (plan stage 5b, after the nh2026
+ * convention). A refusal has been written down since Q1330; an error the
+ * page *threw* was written down nowhere at all, and the only two the
+ * project has ever caught were found by hand — the swallowed boot error of
+ * Q1281 months later, the `?debug=1` strip's on a phone Ed happened to be
+ * holding. So the surface posts its uncaught errors and rejections to
+ * `POST /api/page-error` and they join the same log as `kind: 'page'`.
+ *
+ * **It is a production route, so what it accepts is the whole of the
+ * privacy story**, and it is decided here rather than on the page: a client
+ * can say anything, and a log an operator reads must not become a place a
+ * member's words end up by accident.
+ *
+ *  - **Only these fields are read.** Anything else in the body is dropped
+ *    on the floor — not validated, not logged, not answered about.
+ *  - **The seat and the build are the host's**, never the client's word:
+ *    the seat comes from the cookie, the build from what this process is
+ *    serving. A body naming either is ignored.
+ *  - **No text a member typed.** The stack never leaves the page; the
+ *    message is the browser's own sentence, capped, its whitespace
+ *    collapsed so a pasted paragraph cannot ride in on a newline. A
+ *    message is not free text by design, but it can quote input — a
+ *    `JSON.parse` failure does — so the cap is the defence, not the hope.
+ *  - **A path is a path.** Query and hash go, both here and on the page:
+ *    a magic link's token travels in a query string, and a report naming
+ *    the address you were on must not be a way to write one down.
+ */
+export const PAGE_CAPS = { message: 200, source: 200, path: 200 } as const;
+/** Per seat, per minute (the plan's *a few a minute*); the page holds
+ *  itself to five per load besides, since a render that throws throws on
+ *  every frame. */
+export const PAGE_ERRORS_PER_MINUTE = 5;
+
+/** One string, whitespace collapsed and capped, or undefined where there
+ *  was nothing to keep. */
+function capText(v: unknown, n: number): string | undefined {
+  if (typeof v !== 'string') return undefined;
+  const s = v.replace(/\s+/g, ' ').trim().slice(0, n);
+  return s.length > 0 ? s : undefined;
+}
+
+/** A finite, non-negative whole number, or undefined. */
+function capNum(v: unknown): number | undefined {
+  if (typeof v !== 'number' || !Number.isFinite(v) || v < 0) return undefined;
+  return Math.min(Math.trunc(v), 10_000_000);
+}
+
+/** A path with its query and hash taken off. */
+function capPath(v: unknown): string {
+  const s = capText(v, PAGE_CAPS.path * 4)?.split('?')[0]!.split('#')[0] ?? '';
+  const p = s.slice(0, PAGE_CAPS.path);
+  return p.startsWith('/') ? p : '/';
+}
+
+/**
+ * The line a page error becomes, or null where the body said nothing —
+ * which is a 400 and not a line, since a log of empty reports is a log
+ * nobody will read to the end of.
+ */
+export function pageErrorOf(body: Record<string, unknown>, at: {
+  seat: string | null; doc: string | null; slug: string | null; build: string | null;
+}): ErrorRow | null {
+  const reason = capText(body.message, PAGE_CAPS.message);
+  if (reason === undefined) return null;
+  // a source is a URL the browser hands the page; its path is the useful
+  // part and its query is not ours to keep
+  const source = capText(body.source, PAGE_CAPS.source * 4);
+  const file = source === undefined ? undefined
+    : capText(source.replace(/^[a-z]+:\/\/[^/]+/i, '').split('?')[0]!.split('#')[0],
+      PAGE_CAPS.source);
+  const line = capNum(body.line);
+  const col = capNum(body.col);
+  return {
+    kind: 'page', path: capPath(body.path), reason,
+    doc: at.doc, slug: at.slug, seat: at.seat, build: at.build,
+    ...(file === undefined ? {} : { source: file }),
+    ...(line === undefined ? {} : { line }),
+    ...(col === undefined ? {} : { col }),
+  };
+}
+
+/**
  * **The refusals nobody did anything wrong to meet** (Q1493 (a), Ed
  * 2026-09-21: *The page handles both*).
  *

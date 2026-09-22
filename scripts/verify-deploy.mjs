@@ -233,6 +233,18 @@ await check('/api/dev/errors is not in the artifact (Q1330)', async () => {
   return '404';
 });
 
+// …and the route the *page* reports to is the opposite case: a production
+// route (plan stage 5b), so the check is that it is **there**. An empty body
+// is a 400 and writes no line, so asking costs the live log nothing — and a
+// 404 here would mean the surface has been reporting into a hole.
+await check('POST /api/page-error is in the artifact (stage 5b)', async () => {
+  const r = await fetch(base + '/api/page-error', { method: 'POST',
+    headers: { 'content-type': 'application/json' }, body: '{}' });
+  expect(r.status === 400 || r.status === 429,
+    `status ${r.status} — the page has nowhere to report its own errors`);
+  return String(r.status);
+});
+
 // **Asked with each route's real method** (Q674). A 404 for a GET on a
 // POST-only route proves nothing at all — it is what a *present* route
 // answers — so the ladder and the seat switch are asked the way they would
