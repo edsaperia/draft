@@ -318,6 +318,13 @@ window.BAND = (function () {
     const rungOpt = (V, key, val, ttl, exp, inner, off, extra) =>
       (V.__stand && sameField(V.__stand[key], val) ? '' : opt(V, key, val, ttl, exp, inner, off, extra));
 
+    // **What 🎩 stands at, read from the module** (Q1503): the Founder's row
+    // carries the role and `settled(card('hat'))` says whether it was ever
+    // set (`membershipSet`, or the start, or this page's own press). Null
+    // until then, so nothing is pre-answered (F6). The body and the commit
+    // row read this one function, so they cannot disagree about it.
+    const hatCurrent = () => (settled(card('hat')) || S.seen.has('hat'))
+      ? (iDraft() ? 'member' : 'clerk') : null;
     const BODY = {
       // the retrospective branch keys on the **start**, not on the OK (Q820):
       // until 🍾 the column below is still the founder's and still the answer,
@@ -336,20 +343,24 @@ window.BAND = (function () {
         // acknowledgement this branch used to carry (Q797, an OK) is retired —
         // 📝 → write → ✒️, and no OK anywhere.
         : ''),
-      hat: () => {
+      hat: (locked) => {
         const started = !!(env.cs && env.cs.constitutedAtT !== null);
         // the radio is the session-view's own opt(), over the derived current
         // (the pw() pattern): the generic data-set handler lands S.hatPick
-        // nothing is preselected until it has been answered once
-        const o = { hatPick: S.hatPick || (S.seen.has('hat') ? (iDraft() ? 'member' : 'clerk') : null) };
+        // nothing is preselected until it has been answered once — and
+        // **answered is the module's word, not this page's** (Q1503, Ed's
+        // convention observation 2026-09-22): `S.seen` is page-local and no
+        // reload rebuilds it, so a founder who came back past 🍾 met two
+        // greyed radios with neither marked. `hatCurrent` reads the row.
+        const o = { hatPick: S.hatPick || hatCurrent() };
         // 🎩 has no clause in the constitution, so its two sentences live here
         // alone, in the clause voice (Q1109; STYLE §3 — third person, about
         // the document)
         return '<div class="choice" role="radiogroup">' +
           // the consequences cut, the fact kept (Ed's card review, 2026-09-02);
           // *a clerk can stay unnamed* survives on ✋'s clerk branch alone
-          opt(o, 'hatPick', 'member', 'The Founder is part of the membership.', '', '', started) +
-          opt(o, 'hatPick', 'clerk', 'The Founder is not part of the membership.', '', '', started) +
+          opt(o, 'hatPick', 'member', 'The Founder is part of the membership.', '', '', started || !!locked) +
+          opt(o, 'hatPick', 'clerk', 'The Founder is not part of the membership.', '', '', started || !!locked) +
           '</div>';
         // the *Settled.* note went with Ed's card review round 3 (2026-09-05,
         // 39 🎩): a locked card says so by its greyed radios alone
@@ -1337,6 +1348,13 @@ window.BAND = (function () {
           // pressable, and refused by the server with a console warning nobody
           // reads. `founderHandOff` is the same question the composer swap has
           // always asked, put to the body.
+          // **🎩 from any other seat is the founder's own card, locked** (Q1503):
+          // `readBody`'s *Set to* line has no `VALUE.hat` to print and read
+          // *Set to* and nothing on every member's seat, where the two
+          // sentences with the standing one marked say the answer in full —
+          // the settled grammar every other option-block card reads by
+          : c.k === 'hat' && !amFounder()
+          ? BODY.hat(true)
           : ((!amFounder() || founderHandOff(c)) && c.own !== 'you' && !doorDirect(c))
           // **The watch-half is retired** (Q1176, Ed 2026-09-02 pm): *What the
           // membership said*, the distribution strip, the taken line and the
@@ -1583,9 +1601,11 @@ window.BAND = (function () {
               // means *not yet* (Y19), and 🎩 after the start is *never*.
               // 🗑️ stays as the close, with 1167 b's close-only OK beside it
               // (Ed's QA, 2026-09-02 pm).
-              if (env.cs && env.cs.constitutedAtT !== null) return binBtn() +
+              // …and from any seat but the founder's the card is locked in
+              // every era (Q1503), so the same close-only row
+              if ((env.cs && env.cs.constitutedAtT !== null) || !amFounder()) return binBtn() +
                 '<button class="btn btn-approve okbtn" data-close="1">OK</button>';
-              const cur = S.seen.has('hat') ? (iDraft() ? 'member' : 'clerk') : null;
+              const cur = hatCurrent();   // the module's answer, not `S.seen`'s (Q1503)
               const dirty = !!S.hatPick && S.hatPick !== cur;
               return binBtn() +
                 '<button class="btn btn-approve glyphbtn emojibtn"' +
