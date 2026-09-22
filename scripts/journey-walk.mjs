@@ -3294,7 +3294,14 @@ const proposeEditOverRun = async () => {
     // `[k, k+1)` and the lines it leaves behind are doubled
     const aim = sent && sent.hunks;
     const aimOk = !!aim && aim.length === 1 && aim[0][0] === k && aim[0][1] === k + 2;
-    const sentOk = held && !!sent && sent.status < 400 && aimOk && !!landed.id && !landed.draft;
+    // **and the page still knows it by the name it proposed it under**
+    // (Q1485 (D)): the command's own refresh rebuilds every item out of the
+    // fresh view, and until the page has been handed the new candidate's id
+    // it rebuilds the proposal under the view's own name — which is not the
+    // open card's, so the card vanished with no animation a round trip after
+    // it said *Submitted*. `mine:` is that other name.
+    const named = !!landed.id && !String(landed.id).startsWith('mine:');
+    const sentOk = held && !!sent && sent.status < 400 && aimOk && !!landed.id && !landed.draft && named;
     say('run edit ' + n + ' · ' + (sentOk
       ? '✏️ on the ' + lane + ' lane of a card over L' + k + '+L' + (k + 1) + ' opens the whole run' +
         (lane === 'keep' ? '' : ', seeded from the rival’s wording') +

@@ -578,6 +578,13 @@ const runDocument = async (hat) => {
     const label = await press(3600, '[data-putmotion]');
     if (!label) bad.push('the second commit would not press');
     await T(1200);
+    // **and the card closes on the put** (L5; Q1485 (D), the nh2026
+    // convention 2026-09-20). The handler ended `return render()` where every
+    // neighbour `closeThen`s, so the card stayed open and redrew as if
+    // untouched — the typed value back to what stands and ✏️ dark, which
+    // reads as a press that did nothing.
+    const shut = await page.evaluate(() => !document.querySelector('.setupcard'));
+    if (!shut) bad.push('the card is still open after the put (Q1485 (D))');
     const running = await page.evaluate(async (slug) => {
       const b = await (await fetch(`/api/d/${slug}/view`)).json().catch(() => null);
       const ms = (b && b.view && b.view.motions) || [];

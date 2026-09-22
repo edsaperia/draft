@@ -192,6 +192,15 @@ window.LIVE = (function () {
             console.warn('[live]', name, e && e.message);
             refusalNoted({ name, args, card, status: 0, error: answer.error, detail: String(e && e.message), at: sentAt });
           })
+          // **…and whoever sent it learns the answer before the refresh acts
+          // on it** (Q1485 (D), the nh2026 convention 2026-09-20). The
+          // refresh below rebuilds every item out of the fresh view, so a
+          // caller that only learns the new candidate's id from the resolved
+          // promise learns it one render too late: the page had already
+          // rebuilt the proposal under the view's own name, found no item
+          // with the open card's id and shut the card with no animation.
+          // Anything that has to be true *of the next render* is done here.
+          .then(() => { if (opts && opts.landed) { try { opts.landed(answer); } catch (e) { console.warn('[live] landed', e && e.message); } } })
           .then(() => this.refresh());
         return this.chain.then(() => answer);
       },
@@ -1950,13 +1959,23 @@ window.LIVE = (function () {
         // command it cannot see is a command nothing holds against HANDLERS.
         // `signed` is the draft's own choice (Q770); the server is the gate that
         // refuses it under a rung that offers no choice
+        // **the id is handed over before the refresh** (Q1485 (D)): the
+        // command's own refresh renders the new candidate, and until the page
+        // knows it is *this* draft it renders under the view's own name —
+        // which is not the open card's, so the card vanished with no
+        // animation a round trip after it said *Submitted*. The name is what
+        // has to be true of the next render, so it is set in `landed`.
+        const named = (res) => {
+          if (res && res.ok && res.result && res.result.id) {
+            localIdOf.set(res.result.id, local); proposedAs.set(local, res.result.id);
+          }
+        };
         (remake
-          ? api.cmd('rebase-text', { candidate: remake, baseVersion: env.cs.v.textVersion, hunks, why: d.rationale || '' })
-          : api.cmd('propose-text', { baseVersion: env.cs.v.textVersion, hunks, why: d.rationale || '', signed: !!d.signed }))
+          ? api.cmd('rebase-text', { candidate: remake, baseVersion: env.cs.v.textVersion, hunks, why: d.rationale || '' }, { landed: named })
+          : api.cmd('propose-text', { baseVersion: env.cs.v.textVersion, hunks, why: d.rationale || '', signed: !!d.signed }, { landed: named }))
           .then((res) => {
             if (remake) remakeSent.delete(remake);
             if (res && res.ok && res.result && res.result.id) {
-              localIdOf.set(res.result.id, local); proposedAs.set(local, res.result.id);
               SESSION.setData({ SUGGS: itemsFromView(env.cs.v) });
               return;
             }

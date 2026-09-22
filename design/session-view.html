@@ -7960,6 +7960,18 @@
       // the value went between the render and the press — the commit was live
       // when it was drawn, so the press is answered rather than dropped
       if (own && !d0) return setDoorErr(S.open, NOTHING_TO_PUT);
+      // **A put closes its card, with the card's own closing animation**
+      // (Q1485 (D), the nh2026 convention 2026-09-20; Ed: *submitting a
+      // proposal doesn't close the card so the proposer doesn't always
+      // understand that it's live*). L5 has said a rule proposal's card
+      // closes on Propose since it existed, and this handler ended `return
+      // render()` where every neighbour here `closeThen`s — so the card
+      // stayed open and redrew as if nothing had happened: the typed number
+      // back to what stands, ✏️ dark, and no sign anywhere that the motion
+      // had gone. That reading — *it did nothing* — is the literal match for
+      // what Ed saw. A refusal re-opens the card under its sentence, the
+      // rule `refuseSet` follows for a refused set.
+      const putMotion = () => {
       if (d0 && d0.to) {
         // **A refused motion is not a sent one** (Q811). The draft was
         // cleared whatever came back, and live `openMotion` is a command
@@ -7992,13 +8004,17 @@
             // did not happen, and the lane is where the Founder's words are —
             // dropping it makes a refusal cost them the sentence they wrote.
             if (own && S.setWhy && d0.why) S.setWhy[d0.k] = d0.why;
+            S.open = d0.k;                     // the card is shut by now: bring it back under its sentence
             setDoorErr(d0.k, 'That could not be proposed: ' + plainRefusal(res.error) + '.');
           } });
         } catch (e) {
+          S.open = d0.k;
           setDoorErr(d0.k, 'That could not be proposed: ' + plainRefusal(e && e.message) + '.');
         }
       }
-      return render(); }
+      };
+      if (!(d0 && d0.to)) { putMotion(); return render(); }
+      return closeThen(() => { putMotion(); if (!S.doorErr) S.open = null; }); }
     const cq = ev.target.closest('[data-crownq]');
     if (cq) return closeThen(() => {
       const rec = liveMotionRec(card(S.open));
