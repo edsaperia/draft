@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 520
+  "entries": 521
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -267,6 +267,7 @@
   "page.motionRec.titleNoun": "the document’s title",
   "page.noAnswer": "ƒ (status) => (status ? 'the server answered ' + status : 'the server could not be reached')",
   "page.nothingToPut": "That could not be proposed: nothing is chosen on this card.",
+  "page.outOfRange": "ƒ (lo, hi) => 'That has to be a whole number between ' + lo + ' and ' + hi + '.'",
   "page.penWait": "Founder Actions ✒️ are waiting in your tasks — accept them and this turns.",
   "page.picNote.notImage": "That is not a picture.",
   "page.picNote.tooBig": "That picture is too big to open here.",

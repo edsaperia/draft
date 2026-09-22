@@ -32,6 +32,7 @@
     "crlf-paste": "node scripts/repro/crlf-paste.mjs",
     "head-insertion-aim": "node scripts/repro/head-insertion-aim.mjs",
     "overlapping-sites": "node scripts/repro/overlapping-sites.mjs",
+    "rate-motion": "node scripts/repro/member-rate-motion.mjs",
     "journey": "node scripts/journey-walk.mjs",
     "applicants-walk": "node scripts/applicants-walk.mjs",
     "after-begin-walk": "node scripts/after-begin-walk.mjs",

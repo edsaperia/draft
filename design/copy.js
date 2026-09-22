@@ -945,6 +945,10 @@ window.COPY = (function () {
     whyChangingPlaceholder: 'I am changing this because…',
     clerkNoPencil: 'You are not a member, so there is no ✏️ for you to spend — this one is yours to set.',
     nothingToPut: 'That could not be proposed: nothing is chosen on this card.',
+    // **a number a field will not take** (Q1486 (G), the nh2026 convention
+    // 2026-09-20): the field's own min and max, said once, where the module's
+    // validator prose — *dripMinutes must be …* — used to land on the card
+    outOfRange: (lo, hi) => 'That has to be a whole number between ' + lo + ' and ' + hi + '.',
     // the composer's free sentences (the lane pairs stay with MVAL's cluster)
     composeNote: {
       redirect: 'Every link the document has ever had keeps working — a change leaves a redirect behind.',

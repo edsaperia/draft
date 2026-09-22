@@ -720,6 +720,13 @@ jobs:
       # the patch whole with the member's work in it.
       - run: npm run overlapping-sites -- "$WALK_BASE"
         if: always()
+      # **a settings motion composed with real key presses** (Q1486): the only
+      # walk that types into a field composer rather than setting `.value` or
+      # posting by `fetch`, which is why none of the others could see that a
+      # member needed two presses to move ⏱️, that the field showed back a
+      # number nobody typed, or that a poll took what was typed away.
+      - run: npm run rate-motion -- "$WALK_BASE"
+        if: always()
       - run: npm run slug-walk -- "$WALK_BASE" test-charter
         if: always()
       - run: npm run ladder -- "$WALK_BASE"

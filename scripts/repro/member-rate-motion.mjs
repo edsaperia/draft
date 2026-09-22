@@ -195,7 +195,7 @@ const readCard = (s) => s.page.evaluate(() => {
     inputs: [...c.querySelectorAll('input, select, textarea')].map((i) => (i.dataset.mrate ? 'mrate=' : '') + i.type + ':' + i.value),
     field: f ? f.value : null, fieldBox: r ? { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) } : null,
     commit: b ? { kind: b.hasAttribute('data-putmotion') ? '✏️ put' : '🏛️ hold', disabled: b.disabled, title: b.title } : null,
-    pickOn: !!c.querySelector('.pick.on'), err: (c.querySelector('.doorerr, .seterr, .refusal') || {}).textContent || null,
+    pickOn: !!c.querySelector('.pick.on'), err: (c.querySelector('.doorerr, .seterr, .refusal, .mrange') || {}).textContent || null,
     wallet: document.querySelectorAll('#wallet i:not(.gone)').length, focus: document.activeElement && (document.activeElement.dataset.mrate ? 'the ⏱️ field' : document.activeElement.tagName) };
 });
 const typeRate = async (s, n) => {
@@ -305,11 +305,17 @@ const echo = (n) => async (s, cookie, name) => {
   const put = s.wire.slice(before).filter((w) => w.cmd === 'open-motion');
   say('   and the press posts: ' + (put.map((w) => JSON.stringify(w.args.payload.value) + ' → ' + w.status + ' ' + JSON.stringify(w.answer).slice(0, 140)).join(' | ') || 'nothing'));
 };
+// **Minutes only, as now** — Ed's ruling of 2026-09-21 on this walk's own
+// finding (Q1486 (D)), keeping Q1160: a ⏱️ motion carries the interval and
+// the standing grant and cap ride through unchanged. So the question the
+// walk asked here is answered, and what it asserts is the answer: one field,
+// and it is the interval's.
 SCENARIOS['grant-cap'] = async (s, cookie, name) => {
   await openRate(s);
   const c = await readCard(s);
-  verdict(name, !!c && c.inputs.length >= 3, `the member's ⏱️ composer holds ${c ? c.inputs.length : 0} field(s): ${c && c.inputs.join(', ')} — ` +
-    'the rule it changes is grant · cap · interval, and the clause on the page says only the interval');
+  const one = !!c && c.inputs.length === 1 && /^mrate=/.test(c.inputs[0]);
+  verdict(name, one, `the member's ⏱️ composer holds ${c ? c.inputs.length : 0} field(s): ${c && c.inputs.join(', ')} — ` +
+    'the interval alone since Q1160, ruled again by Ed 2026-09-21 (Q1486 (D)); the grant and the cap ride through');
 };
 SCENARIOS['same-as-stands'] = async (s, cookie, name) => {
   await openRate(s);
@@ -372,7 +378,11 @@ SCENARIOS['decree-under'] = async (s, cookie, name) => {
   say('   the card then: ' + JSON.stringify(c3 && { key: c3.key, text: c3.text, err: c3.err, field: c3.field, commit: c3.commit }));
   verdict(name, put.length === 1 && put[0].status === 200, 'a decree under an open composer: ' +
     (put.length ? put[0].status + ' ' + JSON.stringify(put[0].answer).slice(0, 160) : 'the press posted nothing; commit was ' + JSON.stringify(c2 && c2.commit)));
-  // and the second decree, onto the very value the member has composed
+  // and the second decree, onto the very value the member has composed.
+  // **The card is shut by now** (Q1485 (D), built 2026-09-22): a put closes
+  // its card with the closing animation, so the second half opens ⏱️ again
+  // rather than measuring a field that is no longer in the document.
+  await openRate(s);
   const c4 = await typeBlur(s, 2);
   await cmdAs(FCOOKIE, 'set-setting', { setting: 'rate', value: { grant: 3, cap: 3, dripMinutes: 2 }, why: '' });
   await s.page.waitForTimeout(9000);
@@ -418,8 +428,13 @@ SCENARIOS['typing-under-poll'] = async (s, cookie, name) => {
   verdict(name, !!c3 && c3.field === '7' && !!c2 && c2.field === '7', 'a number typed and not yet left: after another member’s act the field reads ' +
     (c2 && c2.field) + ' (focus ' + (c2 && c2.focus) + '), after the Founder’s decree ' + (c3 && c3.field) + ' (focus ' + (c3 && c3.focus) + ')');
 };
-SCENARIOS['bad-numbers'] = async (s, cookie) => {
+// **the field's own bar, and the field's own words** (Q1486 (G)): a number
+// outside `min`, `max` or the step is refused by the field, so nothing is
+// sent and the module's validator prose — *dripMinutes must be a whole
+// number of real minutes, at least 1 (Q353)* — never reaches a member.
+SCENARIOS['bad-numbers'] = async (s, cookie, name) => {
   await openRate(s);
+  const bad = [];
   for (const n of ['0', '2.5', '5000']) {
     const c = await typeBlur(s, n);
     const before = s.wire.length;
@@ -429,9 +444,15 @@ SCENARIOS['bad-numbers'] = async (s, cookie) => {
     say('   typed “' + n + '”: field ' + JSON.stringify(c && c.field) + ' ✏️ lit ' + JSON.stringify(c && c.commit && !c.commit.disabled) + ' · posts ' +
       (put.map((w) => JSON.stringify(w.args.payload.value) + ' → ' + w.status + ' ' + JSON.stringify(w.answer)).join(' | ') || 'nothing') +
       ' · the card says: ' + JSON.stringify(c2 && c2.err));
+    const said = (c2 && c2.err) || '';
+    if (put.length) bad.push(n + ' was sent');
+    if (!/whole number between/.test(said)) bad.push(n + ' said ' + JSON.stringify(said.slice(0, 90)));
     for (const m of await rateMotionsOf(cookie)) if (m.status === 'running') await cmdAs(cookie, 'withdraw-motion', { motion: m.id });
     await s.page.waitForTimeout(5000);
   }
+  verdict(name, bad.length === 0, bad.length
+    ? bad.join(' · ')
+    : '0 · 2.5 · 5000 each refused by the field itself, nothing sent, and the card says the field’s own bar');
 };
 
 // the likeliest number in a room starved at ten minutes is 1 — typed, never left, and the room moves
@@ -495,7 +516,10 @@ SCENARIOS['narrow-ways'] = async (s, cookie, name) => {
   await s.page.keyboard.press('Enter'); await s.page.waitForTimeout(700);
   out['press Enter / Go'] = await lit();
   for (const [k, v] of Object.entries(out)) say('   ' + k + ': ' + JSON.stringify(v));
-  verdict(name, out['typed, nothing else'].lit === true, 'the ✏️ is dark while a number is typed; what wakes it: ' +
+  verdict(name, out['typed, nothing else'].lit === true,
+    (out['typed, nothing else'].lit === true
+      ? 'the ✏️ is lit by the typing itself, and stays lit through: '
+      : 'the ✏️ is dark while a number is typed; what wakes it: ') +
     Object.entries(out).filter(([, v]) => v && v.lit).map(([k]) => k).join(' · '));
 };
 

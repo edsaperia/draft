@@ -1808,20 +1808,31 @@ window.BAND = (function () {
     // top. Render state re-applied after the rebuild — the same shape as
     // `settleLift` and the wallet's spend-preview — and only while the open
     // card is the one it was: a card that has just opened takes `focusOpened`.
+    // **Every field on the card, not two of them** (Q1486 (B), the nh2026
+    // convention 2026-09-20). This knew `data-txt` and `data-num`, which are
+    // the founder's own value fields, and knew nothing of the five a *motion*
+    // is composed with — so a 4s poll landing while a member typed into ⏱️'s
+    // or 👥's composer replaced the field under the caret, and WebKit and
+    // Gecko fire no `change` on removal, so what was typed was simply gone.
+    // In a room of twelve that is about four seconds to compose in. The
+    // attribute is found rather than listed twice: whichever of the seven the
+    // focused field carries is the one the restore looks it up by.
+    const KEEP_ATTRS = ['data-txt', 'data-num', 'data-mtext', 'data-mslug',
+      'data-mpace', 'data-mrate', 'data-mnum'];
     const renderKeep = () => {
       const a = document.activeElement;
       const inp = a && a.closest && a.closest('.setupcard') &&
-        a.matches('input[data-txt], input[data-num]') ? a : null;
+        a.matches(KEEP_ATTRS.map((x) => 'input[' + x + ']').join(', ')) ? a : null;
+      const attr = inp ? KEEP_ATTRS.find((x) => inp.hasAttribute(x)) : null;
       const box = document.querySelector('.setupcard .emojibox');
       let sel = null;
       try { if (inp) sel = [inp.selectionStart, inp.selectionEnd]; } catch (e) { /* type=email has none */ }
-      return { open: S.open, key: inp ? (inp.dataset.txt || inp.dataset.num) : null,
-        attr: inp ? (inp.dataset.txt ? 'data-txt' : 'data-num') : null,
+      return { open: S.open, key: attr ? inp.getAttribute(attr) : null, attr,
         sel, scroll: box ? box.scrollTop : 0 };
     };
     const renderRestore = (k) => {
       if (!k || !k.open || k.open !== S.open) return;
-      if (k.key) {
+      if (k.attr) {
         const el = document.querySelector('.setupcard input[' + k.attr + '="' + k.key + '"]');
         if (el && document.activeElement !== el) {
           el.focus({ preventScroll: true });

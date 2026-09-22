@@ -5833,7 +5833,13 @@
   const inputBlock = (html, note, d, k, onIf) => {
     const on = typeof onIf === 'boolean' ? onIf : !!(d && d.to) && !/^never/i.test(String(d.to));
     const w = composeWords(k, d && d.to);
+    // **the range sentence, where there is one** (Q1486 (G)): drawn only when
+    // the field has refused a number, and written into — or made, or taken
+    // away — in place as the field is typed (`patchMotionField`), so an empty
+    // one is never on the card for the copy audit to read
+    const bad = (d && d.rangeErr) || '';
     return '<div class="pick' + (on ? ' on' : '') + '"><span class="opttext">' + html + '</span>' + (note || '') +
+      (bad ? '<p class="setnote mrange">' + esc(bad) + '</p>' : '') +
       '<button class="lanepick" type="button" aria-pressed="' + on + '" data-pickinput="1"' +
       ' title="' + esc(w.title) + '">' +
       '<span class="dot"></span><span class="off">' + esc(w.off) + '</span>' +
@@ -6043,9 +6049,16 @@
     rate: (d) => {
       // one number since Q1160: a motion proposes the interval, and the
       // standing grant and cap ride through unchanged
-      const n = d.to.match(/\d+/g) || [];
+      // **the field shows the number being proposed** (Q1486 (C), the nh2026
+      // convention 2026-09-20; Q1289's defect on ⏰ over again). It read its
+      // number back out of the *display phrase* — and `dripPhrase` prints
+      // *minute*, *hour*, *day* with no digit in them at all, and *2 hours*
+      // for 120 — so 1 and 60 snapped back to whatever stands and 120 read
+      // as 2, while the value that would have been posted was right the
+      // whole time. The draft's own value is the only thing that knows.
+      const n = d.val && isNum(d.val.dripMinutes) ? d.val.dripMinutes : (d.to.match(/\d+/g) || [])[0];
       return inputBlock('Members may make a new proposal ✏️ every ' +
-        '<input class="num" type="number" min="1" max="2880" data-mrate="z" value="' + esc(n[0] || S.dripMin) + '"> minutes.',
+        '<input class="num" type="number" min="1" max="2880" data-mrate="z" value="' + esc(n || S.dripMin) + '"> minutes.',
         '', d, 'rate');
     },
     ending: (d) => {
@@ -7740,6 +7753,107 @@
   // the grid's scroll survives every render since Q1327 (`renderKeep`), not
   // only the picker's own; the name stays for its three callers
   const pickerRender = () => render();
+  /**
+   * **What a motion's own field proposes, read from the field** (Q1486 (A)
+   * and (G), the nh2026 convention 2026-09-20; Ed: *a member was unable to
+   * propose to change the proposal rate*). The composers — ⏱️ 👥 💤 🪶 📍 —
+   * were read in the document's `change` listener alone, so the draft had no
+   * value until the field lost focus and ✏️ stayed dark while you typed: on
+   * every engine two presses, and on touch WebKit a tap on a dark ✏️ does not
+   * blur the field, so nothing ever happened and nothing said why. One reader
+   * for both listeners: `change` renders after it, `input` patches the commit
+   * in place, because **nothing renders under a focused field**.
+   *
+   * **And the field's own `min` and `max` are the bar** (G). A number outside
+   * them left the draft with a value the module would refuse, and the
+   * validator's own prose — *dripMinutes must be …* — landed on the card. Out
+   * of range there is nothing to propose: the draft keeps no phrase, so the
+   * commit is dark, and `rangeErr` is the one sentence the card shows, which
+   * is `copy.js`'s.
+   */
+  function setMotionField(el) {
+    const d = S.draft;
+    if (!d) return;
+    // the field's own bar, asked of the field: its `min`, its `max` and its
+    // step — `type="number"` steps by one, so 2.5 is the browser's own
+    // `stepMismatch` and never reaches the module's *must be a whole number*
+    const v = el.validity || {};
+    const out = el.type === 'number' && el.value !== '' &&
+      !!(v.rangeUnderflow || v.rangeOverflow || v.stepMismatch);
+    d.rangeErr = out ? PAGE_COPY.outOfRange(el.min, el.max) : '';
+    if (out) { d.to = ''; d.val = null; return; }
+    if (el.matches('[data-mtext]')) { d.to = el.value.trim(); d.val = { text: d.to }; return; }
+    if (el.matches('[data-mslug]')) {
+      const v = el.value.trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
+      d.to = v ? docAddr(v) : '';
+      d.val = v ? { slug: v } : null;
+      return;
+    }
+    if (el.matches('[data-mpace]')) {
+      d.to = 'Rising from ' + el.value + '%';
+      d.val = { shape: 'ramp', startPct: +el.value };
+      return;
+    }
+    if (el.matches('[data-mrate]')) {
+      // the interval alone (Q1160): the standing grant and cap ride through
+      const stand = takenValOf('rate') || { grant: 3, cap: 3 };
+      const z = +(el.value || S.dripMin || 180);
+      d.to = 'a new proposal every ' + dripPhrase(z);
+      d.val = { grant: stand.grant, cap: stand.cap, dripMinutes: z };
+      return;
+    }
+    if (el.matches('[data-mnum]')) {
+      const nv = +el.value;
+      // 💤 composes in its own unit since Q1439: the number and the unit ride
+      // on the draft, the spell is what is proposed
+      if (S.open === 'lapse') {
+        const unit = d.lapseUnit || 'days';
+        d.lapseN = el.value === '' ? '' : nv;
+        d.lapseUnit = unit;
+        d.to = el.value + ' ' + unit + el.dataset.mnum;
+        d.val = el.value === '' ? null : { afterMs: nv * (LAPSE_UNITS[unit] || LAPSE_UNITS.days) };
+        return;
+      }
+      d.to = el.value + el.dataset.mnum;
+      d.val = (S.open === 'quorum') ? { form: S.quorumForm, n: nv } : null;
+    }
+  }
+  /** the block, the commit and the range sentence, corrected where they stand
+   *  — never a render, the field being the one holding the caret */
+  function patchMotionField(el) {
+    // typing into a field is choosing its block, which is `inputBlock`'s own
+    // `on` test read in place (the date picker's branch does the same)
+    const pick = el && el.closest ? el.closest('.pick') : null;
+    if (pick) {
+      const sibs = pick.parentElement ? pick.parentElement.querySelectorAll('.pick') : [];
+      const on = !!(S.draft && S.draft.to);
+      sibs.forEach((p) => {
+        const here = p === pick && on;
+        p.classList.toggle('on', here);
+        const b = p.querySelector('.lanepick');
+        if (b) b.setAttribute('aria-pressed', String(here));
+      });
+    }
+    const c = card(S.open);
+    if (c && founderPairOn(c)) refreshCommit();
+    else {
+      const slot = document.querySelector('.setupcard [data-putmotion], .setupcard [data-holdmotion]');
+      if (slot && c) slot.outerHTML = commitFor(c);
+    }
+    const msg = (S.draft && S.draft.rangeErr) || '';
+    let note = document.querySelector('.setupcard .mrange');
+    if (!msg) { if (note) note.remove(); return; }
+    if (!note && pick) {
+      note = document.createElement('p');
+      note.className = 'setnote mrange';
+      // above the control, where the render draws it — walked up to the
+      // block's own child, since `insertBefore` takes one of those
+      let ref = pick.querySelector('.lanepick');
+      while (ref && ref.parentElement !== pick) ref = ref.parentElement;
+      pick.insertBefore(note, ref || null);
+    }
+    if (note) note.textContent = msg;
+  }
   document.addEventListener('change', (ev) => {
     // ❌'s subject picker (entry 96) — a select answers on `change`, and the
     // choice is provisional like every other value in `S` until the act. Two
@@ -7801,28 +7915,30 @@
     if (ev.target.matches('[data-ansnum]')) {
       setAnsNum(ev.target);
       return render(); }
-    // a motion's own control writes the value it proposes — on `change`, not
-    // every keystroke, because a date picker rebuilt under the pointer is a
-    // date picker you cannot use
+    // a motion's own control writes the value it proposes — `setMotionField`
+    // above is the reader, shared with the `input` listener since Q1486 (A);
+    // a date picker keeps its own branch below, because one rebuilt under the
+    // pointer is a date picker you cannot use
     if (ev.target.matches('[data-mtext],[data-mslug],[data-mpace],[data-mdate],[data-mnum],[data-mrate]') &&
       (!S.draft || S.draft.k !== S.open)) S.draft = { k: S.open, to: '', why: '' };
     if (!S.draft) return;
-    if (ev.target.matches('[data-mtext]')) { S.draft.to = ev.target.value.trim();
-      S.draft.val = { text: S.draft.to }; return render(); }
-    if (ev.target.matches('[data-mslug]')) {
-      const v = ev.target.value.trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
-      S.draft.to = v ? docAddr(v) : '';
-      S.draft.val = v ? { slug: v } : null;
-      return render(); }
-    if (ev.target.matches('[data-mpace]')) { S.draft.to = 'Rising from ' + ev.target.value + '%';
-      S.draft.val = { shape: 'ramp', startPct: +ev.target.value }; return render(); }
-    if (ev.target.matches('[data-mrate]')) {
-      // the interval alone (Q1160): the standing grant and cap ride through
-      const stand = takenValOf('rate') || { grant: 3, cap: 3 };
-      const z = +(ev.target.value || S.dripMin || 180);
-      S.draft.to = 'a new proposal every ' + dripPhrase(z);
-      S.draft.val = { grant: stand.grant, cap: stand.cap, dripMinutes: z };
-      return render(); }
+    if (ev.target.matches('[data-mtext],[data-mslug],[data-mpace],[data-mrate],[data-mnum]')) {
+      setMotionField(ev.target);
+      // **A render under a press destroys the press** (Q1486 (A), the other
+      // half of the two-press defect, and plan rule 6). `change` fires on the
+      // blur the press itself causes, and this rendered — so the very button
+      // the flight is aimed at was replaced under it, the flight's own
+      // synthetic click landed on a node no longer in the document, and
+      // nothing was sent until the member pressed a second time. Where the
+      // caret has gone to a commit, the card is corrected where it stands.
+      // …and then nothing at all. The `input` road has kept the draft, the
+      // block and the commit current at every keystroke, so all a render here
+      // can do is replace the very button the flight is aimed at — which is
+      // what made every engine need two presses. Where the change came from
+      // somewhere other than a press the card is one poll behind on the
+      // sentences that quote the number, and no further.
+      return;
+    }
     if (ev.target.matches('[data-mdate]')) {
       S.draft.to = ev.target.value
         ? new Date(ev.target.value).toLocaleString(undefined,
@@ -7848,23 +7964,6 @@
         if (slot && c) slot.outerHTML = commitFor(c);
       }
       return;
-    }
-    if (ev.target.matches('[data-mnum]')) {
-      const nv = +ev.target.value;
-      // 💤 composes in its own unit since Q1439: the number and the unit ride
-      // on the draft, the spell is what is proposed
-      if (S.open === 'lapse') {
-        const unit = S.draft.lapseUnit || 'days';
-        S.draft.lapseN = ev.target.value === '' ? '' : nv;
-        S.draft.lapseUnit = unit;
-        S.draft.to = ev.target.value + ' ' + unit + ev.target.dataset.mnum;
-        S.draft.val = ev.target.value === ''
-          ? null : { afterMs: nv * (LAPSE_UNITS[unit] || LAPSE_UNITS.days) };
-        return render();
-      }
-      S.draft.to = ev.target.value + ev.target.dataset.mnum;
-      S.draft.val = (S.open === 'quorum') ? { form: S.quorumForm, n: nv } : null;
-      return render();
     }
   });
   document.addEventListener('click', (ev) => {
@@ -8889,6 +8988,16 @@
       S.draft.to = addrs.length ? addrs[0] + ' joins the membership' : '';
       const slot = document.querySelector('[data-putmotion], [data-holdmotion]');
       if (slot) slot.outerHTML = commitFor(card(S.draft.k));
+      return;
+    }
+    // …and every other field composer, on the same rule (Q1486 (A)): the
+    // value exists as it is typed, and the commit and the range sentence are
+    // corrected where they stand. The date picker is not among them — it
+    // answers on `change` and has no keystrokes to follow.
+    if (t.matches && t.matches('[data-mtext],[data-mslug],[data-mpace],[data-mrate],[data-mnum]')) {
+      if (!S.draft || S.draft.k !== S.open) S.draft = { k: S.open, to: '', why: '' };
+      setMotionField(t);
+      patchMotionField(t);
       return;
     }
     const ml = t.closest && t.closest('[data-motionlane]');
