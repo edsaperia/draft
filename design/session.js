@@ -1235,8 +1235,16 @@
         const g = SUGGS.find((x) => x.id === el.dataset.q);
         const x = !g && extraMeta.has(el.dataset.q) ? extraMeta.get(el.dataset.q) : null;
         const kind = g ? markKindOf(g) : null;
+        // **↻ is in the drawer too** (Q1484 (c), the nh2026 convention
+        // 2026-09-20). The wide rail's own list (`live`, below) has carried
+        // `stranded` since it existed — SURFACE §6's *pins: yes* — and this
+        // one never did, so on a phone a proposal the text moved out from
+        // under was in the one place that lists what asks something of you
+        // and in the door's count, and in neither. A stranded proposal wants
+        // an act of yours, which is the whole admission rule here.
         const live = holdsFocus(el) || (x ? !!x.pinned
-          : g ? (kind === 'urgent' || kind === 'propose' || kind === 'weigh' || isUnread(g)) : false);
+          : g ? (kind === 'urgent' || kind === 'propose' || kind === 'stranded' ||
+            kind === 'weigh' || isUnread(g)) : false);
         if (!live) { el.style.display = 'none'; continue; }
         el.style.display = '';
         const ay = a.getBoundingClientRect().top;
