@@ -149,6 +149,13 @@
   // a way to a caret, so it opens edit mode the way 📝 does (SURFACE K13). A
   // no-op in the fixture, which has no mode to be in.
   let ENTER_EDITING = () => {};
+  // …and the way out, for the one act that ends the writing (Q1485 (A), Ed
+  // 2026-09-21: *Close, and say so*). Proposing consumes the whole draft, so
+  // there is nothing left to write and the lifted column is a room with
+  // nobody in it. Deliberately **not** the page's `leaveEditMode`, which
+  // closes the open card first: the card has already collapsed by the time
+  // this is called, and a second close would animate nothing twice.
+  let LEAVE_EDITING = () => {};
   // the sign control (Q770): null means no elective 👤 rung — no control
   let SIGNING = () => null;
   let SIGNER = () => '';
@@ -321,6 +328,18 @@
     // paragraph breaks and a heading its rank
     if (keys.length < 2 || !keys.includes(key) || keys.some(isGapKey)) return sourceTextFor(key);
     return keys.map(sourceTextFor).filter(Boolean).join('\n');
+  }
+  // …and the blocks that run is made of, for ✏️ *propose edit* (Q1483): the
+  // same run `runTextFor` reads, and a patch site's own. A run of one and a
+  // run holding a gap are no run — a gap site's bookkeeping is its own
+  // (Q1311) and never merges with the clause beside it.
+  function proposeRunFor(s, key) {
+    const run = (ks) => (ks && ks.length > 1 && !ks.some(isGapKey) ? ks.slice() : null);
+    if (s && s.kind === 'patch') {
+      const site = (s.sites || []).find((x) => x.key === key) || (s.sites || [])[0];
+      return site ? run(site.keys || [site.key]) : null;
+    }
+    return run((s && s.keys) || []);
   }
   // the insert head's line: *(no text here)*, whatever stands either side —
   // the eyebrow, *The gap as it stands*, says the rest (Q1379, Ed 2026-09-15;
@@ -912,8 +931,12 @@
           '<button class="yours' + (drafting ? ' drafting' : '') + '" data-q="' + g.id + '"' +
           ' aria-current="' + (openId === g.id) + '"' +
           // a draft has no fill: there is nothing yet to be close to
-          washAttrs(qKey(g, e), drafting ? tint('yours', 0.20) : wash(g, 'yours').col,
-            drafting ? '100%' : wash(g, 'yours').fill) +
+          // …and the hue comes from `anchHue`, not from the literal it used
+          // to be (Q1484): a stranded proposal of yours is red, and the rail
+          // entry, the gutter tab and the card head have to agree about that
+          // as they agree about everything else
+          washAttrs(qKey(g, e), drafting ? tint(anchHue(g) || 'yours', 0.20) : wash(g, anchHue(g) || 'yours').col,
+            drafting ? '100%' : wash(g, anchHue(g) || 'yours').fill) +
           ' title="' + esc(drafting
             ? T.rail.draftTitle
             : (g.cap || T.rail.yoursInRace)) + '">' +
@@ -935,7 +958,12 @@
             // gutter and the contents rail and ✏️ here, at the same moment.
             // SURFACE §6 is one alphabet in all three columns.
             : '<span class="ql">' + markHtml(markKindOf(g)) + esc(plainLabel(e.label || g.qLabel)) +
-              (e.of > 1 ? '<span class="qv"> · ' + T.rail.placesOf(e.n, e.of) + '</span>' : '') + '</span>') +
+              (e.of > 1 ? '<span class="qv"> · ' + T.rail.placesOf(e.n, e.of) + '</span>' : '') + '</span>' +
+              // **and for a few seconds after the press, one sentence** (Q1485
+              // (A)): the card has just closed, so without this the whole of
+              // the feedback on a proposal is a one-line entry that was
+              // already there. It is taken away by `flashProposed`'s patch.
+              (proposedFlash === g.id ? '<span class="qwhy qjust">' + esc(T.rail.justProposed) + '</span>' : '')) +
           '</button></li>';
         continue;
       }
@@ -1223,8 +1251,16 @@
         const g = SUGGS.find((x) => x.id === el.dataset.q);
         const x = !g && extraMeta.has(el.dataset.q) ? extraMeta.get(el.dataset.q) : null;
         const kind = g ? markKindOf(g) : null;
+        // **↻ is in the drawer too** (Q1484 (c), the nh2026 convention
+        // 2026-09-20). The wide rail's own list (`live`, below) has carried
+        // `stranded` since it existed — SURFACE §6's *pins: yes* — and this
+        // one never did, so on a phone a proposal the text moved out from
+        // under was in the one place that lists what asks something of you
+        // and in the door's count, and in neither. A stranded proposal wants
+        // an act of yours, which is the whole admission rule here.
         const live = holdsFocus(el) || (x ? !!x.pinned
-          : g ? (kind === 'urgent' || kind === 'propose' || kind === 'weigh' || isUnread(g)) : false);
+          : g ? (kind === 'urgent' || kind === 'propose' || kind === 'stranded' ||
+            kind === 'weigh' || isUnread(g)) : false);
         if (!live) { el.style.display = 'none'; continue; }
         el.style.display = '';
         const ay = a.getBoundingClientRect().top;
@@ -2294,6 +2330,9 @@
     get editsHeld() { return editsHeld; },
     get doc() { return doc; },
     get openId() { return openId; },
+    // when the next ✏️ lands, as an absolute moment (Q1486 (E)) — a function
+    // and not a value, since the composer reads it at every draw
+    dripAt: () => dripAtMs(),
   });
   const { DRAFT_ID, draftOf, docIndexOfKey, siteFor, syncDraftKeys,
     dropDraft, dropDraftSite,
@@ -2303,6 +2342,38 @@
     commitBtnHtml, proposalRowHtml, proposeCtlTitles, draftRowState, setDraftSigned,
     editCardHtml, mineCardHtml, strandedCardHtml } = COMPOSER;
   let mineSeq = 0;                      // proposing frees the composer for the next draft
+
+  /* **A proposal closes its card and says one sentence** (Q1485 (A), Ed
+     2026-09-21: *Close, and say so*; reverses his own *one lifecycle, not two
+     screens* of 2026-08-17 for the moment of the press). The card the member
+     was writing in collapses onto its clause with the ordinary closing
+     animation, edit mode ends where the draft it held has gone — and the only
+     thing left saying the proposal is in is the rail entry, which is one line
+     naming a heading. So for a few seconds it carries a sentence instead, and
+     then settles into the one-line `yours` form it keeps for the rest of its
+     life.
+
+     **The sentence is taken away by a patch, never by a render** (the caret
+     rule, plan rule 6): five seconds after a press is long enough for the
+     member to be typing somewhere else, and a render under that caret would
+     take it. `layoutQueue` after it, because the entry's height has changed
+     and the rail stands its neighbours off it. */
+  const PROPOSED_MS = 5000;
+  let proposedFlash = null;             // the id of the entry wearing the sentence
+  let proposedTimer = null;
+  function flashProposed(id) {
+    proposedFlash = id;
+    if (proposedTimer) clearTimeout(proposedTimer);
+    proposedTimer = setTimeout(() => {
+      proposedTimer = null;
+      if (proposedFlash !== id) return;
+      proposedFlash = null;
+      const el = queueEl || document;
+      let moved = false;
+      el.querySelectorAll('.qjust').forEach((n) => { n.remove(); moved = true; });
+      if (moved) layoutQueue();
+    }, PROPOSED_MS);
+  }
 
   // The gutter marks belonging to a clause, minus the one whose card we are
   // building. A stacked card replaces its paragraph, so any *other* live
@@ -2488,7 +2559,12 @@
     return (
       '<div class="sugg dead-open" data-card="' + s.id + '"' +
       (key ? ' data-site="' + key + '"' : '') + '>' +
-      clauseHeadHtml(s, { text: sourceTextFor(key), key: key, chips: chipsFor(key, s.id),
+      // **the head is the whole run** (Q1308's rule, reaching the ⚔️ card at
+      // last — Q1487): the field beneath is read against `cur`, which has
+      // been the run's text since Q1308, while the head read the first block
+      // alone. A card headed *Step 3…* over three wordings that each read
+      // lines 22–24 is the *off by one line* Ed saw in the room.
+      clauseHeadHtml(s, { text: cur, key: key, chips: chipsFor(key, s.id),
                           label: T.dead.headLabel }) +
       // The card's own voice, and the only place it raises it. On a race card a
       // line like this is a caveat at the foot; here it is the whole point of
@@ -3429,6 +3505,9 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       const pt = proposeCtlTitles(draftOf());
       html += proposalRowHtml({
         count: rs.changedCount, changed: rs.changed, pen, pair: pen,
+        // the wallet is what is stopping this press, and the row says when
+        // that stops being true (Q1486 (E))
+        broke: pt.broke && rs.changed,
         disabled: !rs.changed || pt.broke, penDisabled: !rs.changed,
         discardDisabled: !rs.count,
         title: !rs.changed ? idle : pen ? pt.penTitle : pt.title,
@@ -3469,6 +3548,22 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       const inRow = b.dataset.act === 'row-commit';
       b.disabled = pen ? !rs.changed : (!rs.changed || pt.broke);
       b.title = inRow && !rs.changed ? idle : pen ? pt.penTitle : pt.title;
+    });
+    // **and the countdown appears with the dark button, not one render later**
+    // (Q1486 (E), and Q1461's own lesson): the note is drawn where the wallet
+    // is what stops the press, and whether that is true changes as the draft
+    // is typed — so it is put in and taken out here, beside the `disabled` it
+    // belongs to. Never rebuilt while it stands: its figures are the 1 s
+    // timer's, and a replaced node would restart at the whole minute.
+    const wantDrip = pt.broke && rs.changed;
+    doc.querySelectorAll('[data-proposalrow], .sugg .race-mid.commitrow').forEach((row) => {
+      const btn = row.querySelector('[data-act="row-commit"]:not([data-pen]), [data-act="draft-propose"]:not([data-pen])');
+      if (!btn) return;
+      const note = row.querySelector('.pdrip');
+      if (!wantDrip) { if (note) note.remove(); return; }
+      if (note) return;
+      const html = abstainNoteHtml(dripAtMs(), 'drip');
+      if (html) btn.insertAdjacentHTML('beforebegin', html);
     });
     doc.querySelectorAll('[data-proposalrow] [data-act="row-discard"]').forEach((b) => { b.disabled = !rs.count; });
     doc.querySelectorAll('[data-proposalrow] .rowmid').forEach((m) => {
@@ -3611,7 +3706,11 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         const [id, lane, key] = b.dataset.proposeFrom.split('|');
         const s = SUGGS.find((x) => x.id === id);
         if (!s) return;
-        startDraft(key || (s.keys ?? [])[0], laneSeed(s, lane, key, markerFor));
+        // **the draft opens over the whole run the lane's wording reads**
+        // (Q1483): the head shows the run (`runTextFor`), the seed is the
+        // candidate's reading of the run, so the draft has to be the run's
+        startDraft(key || (s.keys ?? [])[0], laneSeed(s, lane, key, markerFor),
+          null, proposeRunFor(s, key || (s.keys ?? [])[0]));
       })
     );
     // The composer's own fields. Neither re-renders the document: a re-render
@@ -4303,15 +4402,32 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       if (!remake) editsHeld -= EDIT_RULES.stake;
       const key = d.sites[0].keys[0];
       const wasOpen = openId === d.id;
-      d.id = 'mine-' + key + '-' + (++mineSeq);
-      d.unproposed = false;
-      d.qLabel = d.sites[0].label;
-      d.pct = 6;
-      d.cap = 'yours · just in, evidence starting' + (d.signed ? ' · signed' : '');
-      if (hooks.propose) { const r = hooks.propose(d); if (typeof r === 'string') d.id = r; }
-      if (wasOpen) openId = d.id;
-      keepStill(() => renderAll(), '[data-key="' + key + '"]');
-      layoutQueue(); drawWires();
+      // **The card closes at the press, the way every other commit does**
+      // (Q1485 (A), Ed 2026-09-21: *Close, and say so*). It stayed open
+      // wearing a pressed *✏️ Submitted*, and a round trip later the refresh
+      // took it away with no animation — so the one word saying the proposal
+      // was in showed for as long as the host took and then vanished in a
+      // snap. It collapses onto its clause first, and what says the thing is
+      // in is the rail's own sentence, `flashProposed`. A refusal from the
+      // wire re-opens the draft card under its sentence (`hooks.propose`).
+      const send = () => {
+        d.id = 'mine-' + key + '-' + (++mineSeq);
+        d.unproposed = false;
+        d.qLabel = d.sites[0].label;
+        d.pct = 6;
+        d.cap = T.yours.justIn + (d.signed ? T.yours.signedTail : '');
+        if (hooks.propose) { const r = hooks.propose(d); if (typeof r === 'string') d.id = r; }
+        if (wasOpen) openId = null;
+        flashProposed(d.id);
+        // **and the writing is over** (Q1485 (A)): the press consumed the
+        // whole draft, every site of it, so the lifted column has nothing
+        // left in it. Asked of the model rather than assumed, because that is
+        // the rule Ed gave — *edit mode ends where no other draft site is left*.
+        if (EDITING() && !draftOf()) LEAVE_EDITING();
+        keepStill(() => renderAll(), '[data-key="' + key + '"]');
+        layoutQueue(); drawWires();
+      };
+      if (wasOpen) collapseCards(d.id, send); else send();
       return;
     }
 
@@ -4503,7 +4619,15 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // decision you judged holds a slot in the margin because you are owed an
     // answer, and it still moved nothing, so it stays grey.
     if (st === 'sealed') return isUnread(g) ? (carried(g) ? 'changed' : 'closed') : null;
-    if (st === 'yours') return 'yours';
+    // **A stranded proposal is red** (Q1484, Ed 2026-09-21: *make the card a
+    // colour that suggests something needs to be done (red?)* → *Red entry,
+    // words unchanged*). It is yours and it is waiting on you, so under Q170
+    // it took the ordinary `yours` blue — and blue says *yours* and nothing
+    // more, which is the whole of what Ed watched a proposer fail to read.
+    // One hue in three columns, as this function exists to guarantee: the
+    // rail entry's ground, the clause's gutter tab, and the head of the card
+    // the entry opens all follow from here.
+    if (st === 'yours') return g.stranded ? 'wrong' : 'yours';
     // ⚔️ is tested **before** ⏳, because it is the state that replaces it: you
     // have judged, and where an ordinary race would now go grey and run on
     // without you, this one still wants something. Yellow, still — the palette's
@@ -4763,6 +4887,28 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
   }
 
+  /**
+   * **The same wait, as a moment rather than a reading** (Q1486 (E), Ed
+   * 2026-09-21: *dark, with ✏️ hh:mm countdown*). `dripIn` is what the tray
+   * shows, recomputed at every render; a countdown that ticks under a press
+   * needs one absolute instant it can be patched against, so this answers
+   * when the next ✏️ lands and `abstainNoteHtml`'s clock does the rest.
+   *
+   * Null where there is nothing to wait for: at the cap the wallet cannot
+   * take another, and a document whose rate drips at all is the only one
+   * with a moment to name (`SESSION_MINUTES` is Infinity otherwise, live and
+   * in the fixture alike). Both live and fixture arrive at the same number —
+   * `syncWallet` sets `editsToNext` to `1 - nextDripInMs / dripIntervalMs`
+   * and `SESSION_MINUTES` to a sixth of the interval in seconds, so the
+   * product below *is* `nextDripInMs`.
+   */
+  function dripAtMs() {
+    if (!isFinite(SESSION_MINUTES)) return null;
+    if (editsHeld >= EDIT_RULES.cap) return null;
+    const left = Math.max(0, 1 - Math.max(0, Math.min(1, editsToNext))) * SESSION_MINUTES * 6 * 1000;
+    return Date.now() + left;
+  }
+
   // settleWashes before the wires, and both after everything else. Every washed
   // element has just been rendered wearing its *previous* colour, and
   // settleWashes is what hands it the new one so the transition has something
@@ -4958,6 +5104,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     if (env.mayPen) MAY_PEN = env.mayPen;
     if (env.editing) EDITING = env.editing;
     if (env.enterEditing) ENTER_EDITING = env.enterEditing;
+    if (env.leaveEditing) LEAVE_EDITING = env.leaveEditing;
     // the sign control's two reads (Q770): the elective base, if any, and
     // what a signature would read as — both at call time, like the two above
     if (env.signing) SIGNING = env.signing;
@@ -4973,8 +5120,13 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     setInterval(() => {
       if (editsHeld >= EDIT_RULES.cap) return;
       editsToNext += 1 / (SESSION_MINUTES * 6);
+      const was = editsHeld;
       if (editsToNext >= 1) { editsToNext = 0; editsHeld = Math.min(EDIT_RULES.cap, editsHeld + 1); }
       renderWallet();
+      // the fixture's own drip lands here rather than through `setWallet`, so
+      // it wakes the propose row the same way a live one does (Q1486 (E)) —
+      // only where an ✏️ actually arrived, since this ticks every second
+      if (editsHeld !== was) syncProposeCtls();
     }, 1000);
 
     // **The abstention clock is a timer, not a render** (Q1460): one pass a
@@ -5035,8 +5187,20 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // and every absolutely placed thing beside it is 25px stale until the
     // next scroll or poll. Every handler that re-measures on a resize is the
     // set that must re-run, so the page hands itself one.
+    //
+    // **And each face is its own arrival** (2026-09-21, the session-probe's
+    // 43 rail differences read): `loadingdone` fires once, when the *last*
+    // pending face is in, and Regular landing is what moves every clause —
+    // so with Bold a second behind it the rail stood a line off the text for
+    // that second, and for three where nothing else re-laid it. A face's own
+    // `loaded` promise is the moment the text moves; one that is never asked
+    // for stays pending and costs nothing. Guard: `npm run rail-font-walk`.
     if (document.fonts && document.fonts.addEventListener) {
-      document.fonts.addEventListener('loadingdone', () => dispatchEvent(new Event('resize')));
+      const relay = () => dispatchEvent(new Event('resize'));
+      document.fonts.addEventListener('loadingdone', relay);
+      if (document.fonts.forEach) {
+        document.fonts.forEach((f) => { if (f.loaded && f.loaded.then) f.loaded.then(relay, () => {}); });
+      }
     }
     // the wallet has a phone form (`renderWallet`), so a width crossing the
     // line redraws it once — never per resize event, which a flight in the
@@ -5417,6 +5581,15 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // d seconds is SESSION_MINUTES = d / 6; null says the document does not drip
     if (w && w.dripSeconds !== undefined) SESSION_MINUTES = w.dripSeconds == null ? Infinity : w.dripSeconds / 6;
     renderWallet();
+    // **and the ✏️ wakes when the ✏️ arrives** (Q1486 (E), Ed 2026-09-21).
+    // The wallet is not part of the charter column's data key — rightly: the
+    // column does not change when your purse does — so a drip landing under
+    // an open draft left the row's commit dark and its countdown standing
+    // until something else happened to redraw the column. Patched in place
+    // by the same reader the draw uses, never a render: this runs on every
+    // poll, and a render here would be the caret rule broken four times a
+    // minute.
+    syncProposeCtls();
   }
   // the room the records speak of (stage 8): E and the floor, from the view
   // ---- `session-clock` (Q466/Q471) ----------------------------------------
@@ -5495,6 +5668,11 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     get readSeals() { return readSeals; },
     get verdicts() { return verdicts; },
     get editsHeld() { return editsHeld; },
+    // the rate as it stands, and when the next ✏️ lands (Q1486 (E)): the
+    // band's own composer draws the same dark commit and the same countdown,
+    // and reads both from here rather than keeping a second copy of either
+    get EDIT_RULES() { return EDIT_RULES; },
+    get dripAt() { return dripAtMs(); },
     // the id the one unproposed draft is held under in SUGGS: the page carries
     // such a draft across a data swap by this id, so it reads it here rather
     // than keeping a copy of the literal

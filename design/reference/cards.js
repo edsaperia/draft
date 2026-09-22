@@ -820,7 +820,13 @@ window.CARDS = (function () {
     }
     return mdStrip(src).length;
   }
-  const originText = (site) => site.origin.map((o) => o.text).join('\n');
+  // What a site's lane is diffed against — the green marking's base. **The
+  // wording you started from where ✏️ gave you one** (Ed, 228), and the
+  // document's own blocks otherwise; the two stopped being the same field in
+  // Q1483, because the origin is also what says where the site still belongs
+  // (`misaimed`, `followSites`) and a rival's wording is nowhere in the
+  // document.
+  const originText = (site) => (site.seed != null ? site.seed : site.origin.map((o) => o.text).join('\n'));
   // Read back whatever the browser made of the editing: blocks separated by
   // newlines, however they ended up nested.
   // The lane's visible characters **are** the candidate's markdown source
@@ -962,13 +968,24 @@ window.CARDS = (function () {
       // last day; the card's own line is untouched by that and shows at any
       // distance (Q1460 (e))
       left: abstainHhmm, railTooFar: (msLeft) => msLeft >= ABS_DAY },
+    // **A third form, and it is not about abstaining** (Q1486 (E), Ed
+    // 2026-09-21: *dark, with ✏️ hh:mm countdown … the same anywhere you would
+    // want to press the button but you have no ✏️s*). The words differ and the
+    // deadline is the wallet's next drip rather than a race's; everything else
+    // is this family — one absolute moment in an attribute, one 1 s timer
+    // patching the figures in place, never a render. At zero it prints
+    // nothing: the ✏️ has arrived and the button beside it has woken, which
+    // says it better than any sentence could. `zero` is what makes that
+    // possible, and is why the flip is not hard-coded to *abstained*.
+    drip: { parts: String(G.commit.dripIn('␟')).split('␟'), cls: ' pdrip',
+      left: abstainHhmm, railTooFar: () => false, zero: () => '' },
   };
   const absForm = (form) => ABS_FORMS[form] || ABS_FORMS.card;
-  /** What the note holds: the sentence around the figures, or *abstained*. */
+  /** What the note holds: the sentence around the figures, or what its form says at zero. */
   function abstainInnerHtml(atMs, form) {
     const f = absForm(form);
     const left = f.left(atMs - Date.now());
-    if (left === null) return glyphify(esc(String(G.commit.abstained)));
+    if (left === null) return f.zero ? f.zero() : glyphify(esc(String(G.commit.abstained)));
     return glyphify(esc(f.parts[0] || '')) + '<span class="abst">' + esc(left) + '</span>' +
       glyphify(esc(f.parts[1] || ''));
   }
@@ -998,12 +1015,13 @@ window.CARDS = (function () {
       const form = el.getAttribute('data-absform') || 'card';
       const left = absForm(form).left(Number(el.getAttribute('data-abstain-at')) - Date.now());
       if (left === null) {
-        // the words in front of the figures are not the words of *abstained*,
-        // so this one is a rewrite of the note rather than a patch of its
-        // number — done once, guarded by its own flag
+        // the words in front of the figures are not the words the form says
+        // at zero, so this one is a rewrite of the note rather than a patch
+        // of its number — done once, guarded by its own flag
         if (el.getAttribute('data-abstained') !== '1') {
+          const f = absForm(form);
           el.setAttribute('data-abstained', '1');
-          el.innerHTML = glyphify(esc(String(G.commit.abstained)));
+          el.innerHTML = f.zero ? f.zero() : glyphify(esc(String(G.commit.abstained)));
         }
         return;
       }

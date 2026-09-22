@@ -137,6 +137,11 @@ window.LIVE = (function () {
           : PAGE_COPY.host.pausedOver;
       }
     }
+    // **A part is only kept if it was ever held** (Q1477). The slim view lets
+    // the page complete an answer from its own copy of the text and the
+    // records; set here, the next poll asks for everything instead, and one
+    // full answer clears it. The page's half of the cork defect below.
+    let askFull = false;
     const api = {
       chain: Promise.resolve(),
       birth: null, // {pendingId, devLink, slug} once the creation mail is sent
@@ -177,7 +182,16 @@ window.LIVE = (function () {
             answer = j && (j.error || j.ok) ? j : { error: PAGE_COPY.noAnswer(status), status };
             // a paused host (Q1345) is not a refusal: the modal says it all
             if (status === 503 && j && j.paused) { noteHost(j); return; }
-            if (answer.error) {
+            // **…unless the caller says it is answering this one itself**
+            // (Q1493 (a), Ed 2026-09-21: *The page handles both*). A race
+            // with the 4 s poll — a pair that closed since the card was
+            // drawn, a version that moved in the second before the press —
+            // is not a refusal anybody should read: the page files the card
+            // or sends again, and `opts.quiet` is how the caller says so.
+            // One predicate, asked of the sentence, so nothing is silenced
+            // that the caller has not named.
+            const quiet = !!(opts && opts.quiet && opts.quiet(answer.error));
+            if (answer.error && !quiet) {
               console.warn('[live]', name, answer.error);
               refusalNoted({ name, args, card, status, error: answer.error, at: sentAt });
             }
@@ -187,6 +201,15 @@ window.LIVE = (function () {
             console.warn('[live]', name, e && e.message);
             refusalNoted({ name, args, card, status: 0, error: answer.error, detail: String(e && e.message), at: sentAt });
           })
+          // **…and whoever sent it learns the answer before the refresh acts
+          // on it** (Q1485 (D), the nh2026 convention 2026-09-20). The
+          // refresh below rebuilds every item out of the fresh view, so a
+          // caller that only learns the new candidate's id from the resolved
+          // promise learns it one render too late: the page had already
+          // rebuilt the proposal under the view's own name, found no item
+          // with the open card's id and shut the card with no animation.
+          // Anything that has to be true *of the next render* is done here.
+          .then(() => { if (opts && opts.landed) { try { opts.landed(answer); } catch (e) { console.warn('[live] landed', e && e.message); } } })
           .then(() => this.refresh());
         return this.chain.then(() => answer);
       },
@@ -198,8 +221,8 @@ window.LIVE = (function () {
         // the seqs, and the server leaves out whichever has not moved
         const since = env.cs && env.cs.isRemote
           ? '?since=' + encodeURIComponent(env.cs.v.seq + '.' + (env.cs.v.eseq || 0)) +
-            (typeof env.cs.v.textVersion === 'number' ? '&tv=' + env.cs.v.textVersion : '') +
-            (typeof env.cs.v.recordsKey === 'number' ? '&rk=' + env.cs.v.recordsKey : '') : '';
+            (!askFull && typeof env.cs.v.textVersion === 'number' ? '&tv=' + env.cs.v.textVersion : '') +
+            (!askFull && typeof env.cs.v.recordsKey === 'number' ? '&rk=' + env.cs.v.recordsKey : '') : '';
         return fetch('/api/d/' + LIVESLUG + '/view' + since)
           .then((r) => {
             noteBuild(r.headers.get('x-build'));
@@ -249,6 +272,28 @@ window.LIVE = (function () {
             // already had them, and each is the page's own copy from the last
             // full view — merged here, at the one boundary, so nothing
             // downstream knows a view can arrive in pieces
+            // …**but only from a part this page has actually been served**
+            // (Q1477, the nh2026 convention 2026-09-20). The text is left out
+            // when the page's `tv` matches the document's version, and
+            // `textVersion` reads 0 both over the founder's unversioned text
+            // before 🍾 and over the engine's document after it — so the
+            // first answer after the cork left the text out of every page
+            // that had polled through it, and each went on drawing the
+            // founder's text against the engine's line numbers. Cured at the
+            // wire, and caught here too: a page holding no engine seq has
+            // held no versioned text, so it asks again for the whole thing
+            // rather than completing the answer from a text that was never
+            // this document's.
+            if (!askFull && Array.isArray(data.slim) && env.cs.v &&
+              (data.eseq || 0) > 0 && !(env.cs.v.eseq || 0) &&
+              data.slim.some((k) => k !== 'view' && data[k] === undefined)) {
+              askFull = true;
+              console.warn('[live] a slim answer named a part this page has never held; asking again');
+              // returned, not fired: whoever awaits this poll (the refresh
+              // after a command) waits for the whole view, not for nothing
+              return this.refresh();
+            }
+            askFull = false;
             if (Array.isArray(data.slim) && env.cs.v) {
               for (const k of data.slim) if (data[k] === undefined) data[k] = env.cs.v[k];
             }
@@ -494,6 +539,26 @@ window.LIVE = (function () {
     // asks with (Q1393): an admission a busy room's hot set never deals is
     // still a vote every member is owed, and the row carries it as a clause
     // row carries its `ask` (Q1202)
+    /* **The two refusals the page answers with the poll itself** (Q1493 (a),
+       Ed 2026-09-21: *The page handles both*).
+
+       Sixteen of the nh2026 convention's forty refusals were a race with the
+       4 s poll, and Q1330's rule is that a member is not expected to meet a
+       refusal at all. `raceGone` is a judgment on a pair that closed between
+       the card being drawn and the ✓ being pressed: the command's own
+       refresh brings back a view the pair is no longer in, so the card files
+       as closed exactly as the next poll would have filed it, and nothing is
+       printed. `versionMoved` is a proposal pressed in the second after
+       somebody else's adoption — and it is **the version alone**, never
+       *not what this proposal replaces*, which is a claim about the wording
+       and means the text really did move under this draft.
+
+       The sentences are the engine's, matched here and in `raceRefusal`
+       (packages/server/src/error-log.ts), which keeps the same two out of
+       the error log; the two readers are deliberately independent, since one
+       silencing the other's finding would be worse than two copies. */
+    const raceGone = (e) => /is not in a live race|is not live|stale card/.test(String(e || ''));
+    const versionMoved = (e) => /^patch targets version \d+; current is \d+\.?$/.test(String(e || '').trim());
     const raceCardOf = (settingId) => ((env.cs && env.cs.v && env.cs.v.raceCards) || []).find((x) =>
       (x.a.setting && x.a.setting.settingId === settingId) ||
       (x.b.setting && x.b.setting.settingId === settingId))
@@ -508,7 +573,9 @@ window.LIVE = (function () {
       const outcome = (pick === 'either' || pick === 'abstain') ? 'tie'
         : (pick === 'stands' || pick === 'no') ? (incSide || 'tie')
         : (incSide === 'a' ? 'b' : 'a');
-      api.cmd('judge-race', { a: rc.a.id, b: rc.b.id, outcome });
+      // the card files as closed and nothing is printed where the pair
+      // closed under the press (Q1493 (a)) — the refresh does the filing
+      api.cmd('judge-race', { a: rc.a.id, b: rc.b.id, outcome }, { quiet: raceGone });
     }
     // **A motion card's race is its motion's, not its key's** (issue #6). Since
     // Q1367 a motion is its own card keyed `mo:<id>`, and `midOf` maps page
@@ -1041,9 +1108,21 @@ window.LIVE = (function () {
     // a candidate's reading of a span: the current lines with its hunks
     // applied — the words for the card, or with `src` the **source lines**
     // exactly, which is what a lane seeded from the candidate holds (Q1403)
+    // **An insertion at a replacement's own start goes above it** (Q1489, the
+    // wrong-line hunt of 2026-09-20). The engine takes a hunk set sorted by
+    // start and applies it last-to-first, and it refuses `[k, k+1)` before
+    // `[k, k)` as an overlap — so at one start the insertion is always first
+    // in the array and therefore always applied *after* the replacement,
+    // which is what puts its line above the new wording. This sorted by
+    // start alone, stably, so the two kept the array's order and the
+    // insertion went in first: the replacement then spliced the inserted
+    // line away and the reader's card showed the new wording followed by the
+    // old line, with the inserted line lost. The author's own card, drawn
+    // from sites, read right — which is why nobody saw it.
     const applyIn = (lines, sp, hunks) => {
       const region = lines.slice(sp.start, sp.end);
-      for (const h of (hunks || []).slice().sort((a, b) => b.start - a.start)) {
+      const len = (h) => h.end - h.start;
+      for (const h of (hunks || []).slice().sort((a, b) => b.start - a.start || len(b) - len(a))) {
         region.splice(h.start - sp.start, h.end - h.start, ...h.lines);
       }
       return region.filter((l) => l.trim()).join('\n');
@@ -1123,6 +1202,10 @@ window.LIVE = (function () {
       const RAIL = window.COPY.session.rail;
       const PARK = window.COPY.session.park;
       const STRANDED = window.COPY.session.stranded;
+      // …and the three a proposal of your own wears, and the record captions
+      // (Q1493’s list of strings that were literals here)
+      const YOURS = window.COPY.session.yours;
+      const REC = window.COPY.session.record;
       // **and the ground shift says what happened** (SURFACE E16). The
       // server's `shifted` is a flag — *a judgment of mine locked by a
       // ground shift* — and the rail entry's tooltip is the sentence, as
@@ -1239,8 +1322,18 @@ window.LIVE = (function () {
         const waitCap = r.blockedByPark ? PARK.blocked : RAIL.votedStillRunning;
         // the item for one pair: the quick card where the current text is a
         // side, the race card where two challengers were dealt
-        const pairItem = (aId, bId, extra) => {
-          const sp = spanOfSides(aId, bId);                  // the pair's own span (Q1407)
+        // **a ⚔️ card is about the race, so it stands at the race's span**
+        // (Q1487, the wrong-line hunt of 2026-09-20). Q1407 cuts a pair's
+        // card to the two sides' own lines, which is right while the card
+        // shows that pair — but a race the engine calls deadlocked shows the
+        // *whole field* to anybody who has judged in it (`stuck`), over the
+        // race's span, and the item under it was still keyed to the pair: a
+        // card about `[22, 24)` stood on `L24`, wore that clause's tab, was
+        // filed at that clause in the rail and headed itself with its one
+        // line. Until you have judged it is an ordinary pair card and keeps
+        // the pair's span, which is what `whole` says here.
+        const pairItem = (aId, bId, extra, whole) => {
+          const sp = whole ? csp : spanOfSides(aId, bId);    // the pair's own span (Q1407)
           const base = baseFor(siteOfSpan(sp, lines));
           const A = sideOfId(aId, sp), B = sideOfId(bId, sp);
           const incSide = A.inc ? 'a' : B.inc ? 'b' : null;
@@ -1273,7 +1366,7 @@ window.LIVE = (function () {
           // judged card should say, if anything, so it says nothing.
           items.push(pairItem(j.a, j.b, { state: 'deciding', pick: whatOf(j.a, j.b, j.outcome),
             cap: waitCap, shifted: j.locked ? SHIFTED_NOTE : false, locked: !!j.locked, urgency: 0.3,
-            abstainAt: undefined }));
+            abstainAt: undefined }, !!r.deadlocked));
         }
         // **How many more questions lie under this one** (Q1462, Ed
         // 2026-09-18: *a queue card stack … that hints that there are other
@@ -1453,8 +1546,8 @@ window.LIVE = (function () {
         items.push({ id: localIdOf.get(m.id) || ('mine:' + m.id), kind: 'draft', mine: true, keys,
           state: 'needs', qLabel: sites[0].label, urgency: 0,
           pct: awaiting ? 100 : 0,
-          cap: (stranded ? STRANDED.cap : awaiting ? PARK.yours : 'yours · in the race') +
-            (m.signed ? ' · signed' : ''),
+          cap: (stranded ? STRANDED.cap : awaiting ? PARK.yours : YOURS.inRace) +
+            (m.signed ? YOURS.signedTail : ''),
           signed: !!m.signed, awaiting, stranded,
           rationale: m.rationale, sites, candidate: m.id });
       }
@@ -1572,9 +1665,9 @@ window.LIVE = (function () {
           ...(early ? { early: true } : {}),
           // a gap record is titled by the block before its gap, as a gap draft is
           qLabel: labelFor(site.insertAfterKey || keys[0]), urgency: 0, pct: 100,
-          cap: early ? window.COPY.session.record.dominated
-            : adopted ? 'decided — adopted' : undecided ? 'undecided at the close — the text stood' : 'decided — the current text stood',
-          decided: { outcome: adopted ? 'adopted' : undecided ? 'undecided' : 'retired — the current text stood',
+          cap: early ? REC.dominated
+            : adopted ? REC.capAdopted : undecided ? REC.capUndecided : REC.capStood,
+          decided: { outcome: adopted ? REC.outAdopted : undecided ? REC.outUndecided : REC.outStood,
             // `o.threshold` is still on the record row — the engine's own,
             // pinned (R-117) — and nothing reads it: the eyebrow stopped
             // comparing the reading to a line with the line itself (Q1362)
@@ -1705,7 +1798,7 @@ window.LIVE = (function () {
           : what === 'keep' ? (c.inc || 'tie')
           : what === 'approve' ? challenger
           : what === 'a' ? 'a' : what === 'b' ? 'b' : 'tie';
-        api.cmd('judge-race', { a: c.a, b: c.b, outcome });
+        api.cmd('judge-race', { a: c.a, b: c.b, outcome }, { quiet: raceGone });   // Q1493 (a)
       };
       // A hunk replaces the document's lines [start, end); the engine holds an
       // empty document as **zero** lines, so the empty clause an empty
@@ -1816,6 +1909,16 @@ window.LIVE = (function () {
       env.LIVE_HOOKS.misaimed = (d) => {
         const text = env.cs && env.cs.text != null ? String(env.cs.text) : '';
         const lines = text === '' ? [] : text.split('\n');
+        // **Two places never cover the same lines** (SURFACE K14–K16, Q1492).
+        // The cure is at the draft model, which no longer makes a site over a
+        // line another one holds; this is the backstop under it, because a
+        // patch whose hunks overlap is refused *whole* by the host and the
+        // member loses every word of it. Asked before the wording checks,
+        // since it is about the draft rather than about the text.
+        const spans = ((d && d.sites) || []).filter((s) => !/^G\d+$/.test(s.keys[0]))
+          .map((s) => [lineIdx(s.keys[0]), lineIdx(s.keys[s.keys.length - 1]) + 1])
+          .sort((a, b) => a[0] - b[0]);
+        for (let i = 1; i < spans.length; i++) if (spans[i][0] < spans[i - 1][1]) return REFUSAL.overlapping;
         // an empty document is one empty clause and nothing to be stale about
         // (Q649 (a)): the engine holds zero lines, so there is no wording to
         // compare and the first insertion into it is always aimed right
@@ -1873,7 +1976,27 @@ window.LIVE = (function () {
             SESSION.toggle(DRAFT_ID, false);
           });
       };
-      env.LIVE_HOOKS.propose = (d) => {
+      /* **A proposal refused only for the version is sent again, once**
+         (Q1493 (a), Ed 2026-09-21: *The page handles both*).
+
+         The commonest refusal a member met in the convention was
+         *targets version 40; current is 41* — somebody else's adoption
+         landing in the second between the poll that drew the card and the
+         press. Nothing of the proposer's had moved, and the remedy was to
+         write the same thing again.
+
+         So the page does it: the command's own refresh has already brought
+         the new view, `followSites` has re-keyed the draft against it
+         (Q1463), and `misaimed` — the backstop that asks the served text
+         whether every site's origin wording still stands — decides. Clean,
+         it goes again with the new version, and the member sees nothing but
+         their proposal landing. Not clean, the ordinary stranded road takes
+         over and the sentence is the one it always was.
+
+         **At most one re-send per press**, and `again` is the whole of that
+         rule: a room adopting faster than a round trip must not turn one
+         press into a queue of proposals. The second refusal prints. */
+      const sendProposal = (d, again) => {
         const hunks = hunksOf(d);
         const local = d.id;
         // **Re-making a stranded proposal confirms it; it does not open a
@@ -1891,13 +2014,25 @@ window.LIVE = (function () {
         // command it cannot see is a command nothing holds against HANDLERS.
         // `signed` is the draft's own choice (Q770); the server is the gate that
         // refuses it under a rung that offers no choice
-        (remake
-          ? api.cmd('rebase-text', { candidate: remake, baseVersion: env.cs.v.textVersion, hunks, why: d.rationale || '' })
-          : api.cmd('propose-text', { baseVersion: env.cs.v.textVersion, hunks, why: d.rationale || '', signed: !!d.signed }))
+        // **the id is handed over before the refresh** (Q1485 (D)): the
+        // command's own refresh renders the new candidate, and until the page
+        // knows it is *this* draft it renders under the view's own name —
+        // which is not the open card's, so the card vanished with no
+        // animation a round trip after it said *Submitted*. The name is what
+        // has to be true of the next render, so it is set in `landed`.
+        const named = (res) => {
+          if (res && res.ok && res.result && res.result.id) {
+            localIdOf.set(res.result.id, local); proposedAs.set(local, res.result.id);
+          }
+        };
+        // the first press says nothing about a version race; the re-send does
+        const opts = again ? { landed: named } : { landed: named, quiet: versionMoved };
+        return (remake
+          ? api.cmd('rebase-text', { candidate: remake, baseVersion: env.cs.v.textVersion, hunks, why: d.rationale || '' }, opts)
+          : api.cmd('propose-text', { baseVersion: env.cs.v.textVersion, hunks, why: d.rationale || '', signed: !!d.signed }, opts))
           .then((res) => {
             if (remake) remakeSent.delete(remake);
             if (res && res.ok && res.result && res.result.id) {
-              localIdOf.set(res.result.id, local); proposedAs.set(local, res.result.id);
               SESSION.setData({ SUGGS: itemsFromView(env.cs.v) });
               return;
             }
@@ -1905,17 +2040,45 @@ window.LIVE = (function () {
             const stale = movedUnder(res && res.error);
             const back = liveItem(local) || d;
             back.id = DRAFT_ID; back.unproposed = true;
+            // **the version race, answered here** (Q1493 (a)): the refresh
+            // that came with the command has already re-keyed this draft, so
+            // the only question left is whether the wording it replaces still
+            // stands — which is exactly what `misaimed` asks of the served
+            // text. Clean, it goes again under the version that now stands;
+            // otherwise it falls through to the sentence below, and a site
+            // the follow lost is stranded as it always was.
+            if (!again && versionMoved(res && res.error)) {
+              back.refusal = null;
+              if (!SESSION.SUGGS.includes(back)) SESSION.SUGGS.push(back);
+              SESSION.setData({ SUGGS: itemsFromView(env.cs.v) });
+              const d2 = liveItem(DRAFT_ID) || back;
+              const why = env.LIVE_HOOKS.misaimed ? env.LIVE_HOOKS.misaimed(d2) : null;
+              if (!why) {
+                d2.id = local; d2.unproposed = false; d2.refusal = null;
+                return sendProposal(d2, true);
+              }
+              d2.refusal = why;
+              syncWallet();
+              SESSION.setData({ SUGGS: itemsFromView(env.cs.v) });
+              SESSION.toggle(DRAFT_ID, false);
+              return;
+            }
             back.refusal = stale
               ? REFUSAL.movedPropose
               : REFUSAL.notProposed((res && res.error) || REFUSAL.noAnswer);
             if (!SESSION.SUGGS.includes(back)) SESSION.SUGGS.push(back);
             syncWallet();
             SESSION.setData({ SUGGS: itemsFromView(env.cs.v) });
-            // the card was open under the id it was proposed as; it opens again
-            // as the draft, with the refusal on it
-            if (SESSION.openId === local) SESSION.toggle(DRAFT_ID, false);
+            // **the refusal brings the card back** (Q1485 (A)): the press
+            // closes the card now, so there is nothing open to re-render the
+            // sentence into — this used to ask whether the card was still
+            // open under the id it was proposed as, which after the close it
+            // never is. The draft opens again, with the refusal on it, the
+            // way `pen`'s own refusal has always done.
+            SESSION.toggle(DRAFT_ID, false);
           });
       };
+      env.LIVE_HOOKS.propose = (d) => sendProposal(d, false);
       env.LIVE_HOOKS.withdraw = (id) => {
         // called after session.js has already dropped the item, so the
         // candidate is read off the id: the view's own ('mine:<id>') or the one

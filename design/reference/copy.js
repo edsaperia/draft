@@ -173,6 +173,14 @@ window.COPY = (function () {
       // figures alone — the card beside it is where the sentence is — and
       // once the period has run it carries `abstained` like the card.
       abstainShort: (hhmm) => '💤 ' + hhmm,
+      // **And the same shape where the wallet is empty** (Q1486 (E), Ed
+      // 2026-09-21, widening his own question: *dark, with ✏️ hh:mm countdown
+      // (for proposals as well as rule changes, the same anywhere you would
+      // want to press the button but you have no ✏️s)*). His words, and the
+      // countdown machinery is the abstention clock's — one timer, patching
+      // the figures in place, never a render. The moment is the wallet's own
+      // next drip as the view serves it.
+      dripIn: (hhmm) => '✏️ ' + hhmm,
     },
     // reviseNote: what a locked judgment says for itself
     revise: {
@@ -203,6 +211,11 @@ window.COPY = (function () {
     rail: {
       draftTitle: 'Your draft — not proposed yet.',
       yoursInRace: 'Yours, in the race',
+      // **what the entry says for a few seconds after the press** (Q1485 (A),
+      // Ed 2026-09-21: *Close, and say so*). The card has just collapsed onto
+      // its clause, so this is the only thing on the surface saying the
+      // proposal went out; it settles to the one-line `yours` form after it.
+      justProposed: 'Proposed — the members are deciding',
       noReason: 'no reason given yet — say what this is for',
       placesOf: (n, of) => n + ' of ' + of + ' places',
       // a live race's tooltip (Q1200): it wants your vote while the router
@@ -257,6 +270,14 @@ window.COPY = (function () {
     refusal: {
       movedPropose: 'The text moved while you were writing — your draft is kept; read the new wording and propose again.',
       movedAmend: 'The text moved while you were writing — your draft is kept; read the new wording and amend again.',
+      // **and what a selection across an open card is told** (Q1492): a
+      // selection dragged over a card sees the blocks on either side of it
+      // and none of the ones beneath, so it is not one run and cannot be one
+      // place. The draft already there is untouched, and this says so.
+      crossesCard: 'That selection runs across an open card, so it is not one place — close the card, or select the paragraphs on one side of it.',
+      // …and the backstop under it: two places over the same lines is a
+      // patch the document cannot take, and the press sends nothing.
+      overlapping: 'Two of the places you have changed cover the same lines — discard one of them and propose again.',
       notProposed: (reason) => 'That could not be proposed: ' + reason + '.',
       notAmended: (reason) => 'That could not be amended: ' + reason + '.',
       noAnswer: 'the server did not answer',
@@ -313,6 +334,26 @@ window.COPY = (function () {
       // Founder's (STYLE T8); the verb is *pass*, never *carry* and never
       // *adopted*.
       dominated: 'Rejected — it could no longer pass',
+      // **what a sealed record's own entry says it is** (Q1493's list, the
+      // nh2026 convention 2026-09-20): the rail entry's tooltip, and the
+      // caption under the mark. They were four literals in `live.js`, on the
+      // road Q1484 and Q1485 walked; the rule is that every string a member
+      // can read lives here.
+      capAdopted: 'decided — adopted',
+      capStood: 'decided — the current text stood',
+      capUndecided: 'undecided at the close — the text stood',
+      outAdopted: 'adopted',
+      outStood: 'retired — the current text stood',
+      outUndecided: 'undecided',
+    },
+    // **a proposal of your own, as its line says it** (Q1493's list): the
+    // three faces the caption wears between the press and the race, and the
+    // tail a signed one takes. `stranded` and `park` above carry the other
+    // two states.
+    yours: {
+      justIn: 'yours · just in, evidence starting',
+      inRace: 'yours · in the race',
+      signedTail: ' · signed',
     },
     // the proposal row and the commit titles either side of the ✏️ hold
     row: {
@@ -331,8 +372,6 @@ window.COPY = (function () {
       withdraw: 'Withdraw',
       allPlaces: (n) => ' all ' + n + ' places',
       withdrawCost: ' — the edit comes back in full',
-      submitted: '✏️ Submitted',
-      submittedTitle: 'Proposed — one edit spent. It is in the race now.',
       idle: 'Nothing has changed yet — type in the document to start a draft',
     },
     // the sign control (Q770): whether your name goes on the draft
@@ -507,6 +546,15 @@ window.COPY = (function () {
     refuseSet: (reason) => 'That could not be set: ' + reason + '.',
     // every other refusal, under the card that sent it (Q1330, SURFACE Y25)
     refused: (reason) => 'That was refused: ' + reason + '.',
+    // **The one module sentence the page says in its own words** (Q1486 (E),
+    // Ed 2026-09-21). The engine refuses a press an empty wallet cannot pay
+    // for with *insufficient ✏️ for the stake (§7)* — a § pointer, which
+    // `plainRefusal` already strips, and *stake*, which is engine vocabulary
+    // (STYLE §1: the surface says what a thing costs, never what it stakes).
+    // The page's own controls are dark before that refusal can be reached now
+    // (`walletBroke`), so nobody should meet it; it is kept in the member's
+    // words for the day a road reaches it that nothing here foresaw.
+    noPencil: 'you have no ✏️ left to spend on this',
     // the host's two flags (Q1345, Q1346; Ed, 2026-09-12): the announced
     // pause, drawn as a modal over the whole page while a deploy runs, and
     // the red flag on a document whose saves the store rejects
@@ -837,6 +885,19 @@ window.COPY = (function () {
         share + ' of the membership' + (tail || '') + '.',
       count: (n) => 'A proposal ✏️ cannot pass until it is preferred by at least ' + n + ' members.',
     },
+    // **👥 is the one card that says what its number comes to** (Q1490, Ed
+    // 2026-09-21 → why: R-139), a deliberate exception to Q1439 ruling u,
+    // which took the meaning line off every card. The scale runs 1 to 100 now
+    // and both of its ends need a sentence the number does not carry: above
+    // half, how few can stop a proposal; below the seconder, that two is the
+    // floor whatever is asked for. One is printed at a time and only once a
+    // number has been typed — a blind card shows nothing it would come to —
+    // and neither is printed in a membership of one, where every quorum is
+    // the whole of it. Their one home is here; `quorumNote` in setup.js
+    // chooses between them and every surface repaints that in place.
+    quorumStop: (k) => 'With this quorum, ' + (k === 1 ? 'one member' : k + ' members') +
+      ' preferring the current text can stop a proposal.',
+    quorumFloorMin: 'The minimum quorum is 2: the author and one other member.',
     titledLead: 'The document is titled ',
     // the card value lines (VALUE) — the label-vocabulary strings that MVAL
     // keys on stay in the page until pass 2 moves that cluster whole
@@ -904,6 +965,10 @@ window.COPY = (function () {
     whyChangingPlaceholder: 'I am changing this because…',
     clerkNoPencil: 'You are not a member, so there is no ✏️ for you to spend — this one is yours to set.',
     nothingToPut: 'That could not be proposed: nothing is chosen on this card.',
+    // **a number a field will not take** (Q1486 (G), the nh2026 convention
+    // 2026-09-20): the field's own min and max, said once, where the module's
+    // validator prose — *dripMinutes must be …* — used to land on the card
+    outOfRange: (lo, hi) => 'That has to be a whole number between ' + lo + ' and ' + hi + '.',
     // the composer's free sentences (the lane pairs stay with MVAL's cluster)
     composeNote: {
       redirect: 'Every link the document has ever had keeps working — a change leaves a redirect behind.',
