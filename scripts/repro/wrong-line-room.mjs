@@ -281,7 +281,15 @@ async function audit(page, label, { edit = true, seen = null } = {}) {
       for (const sid of sideIds) {
         const k = cand(sid); if (!k || !span) continue;
         const region = lines.slice(span.start, span.end);
-        for (const h of hunksOfCand(k).slice().sort((a, b) => b.start - a.start)) region.splice(h.start - span.start, h.end - h.start, ...h.lines);
+        // last-to-first, and at one start the **replacement** before the
+        // insertion — the engine's own order (`engineReading` above states
+        // the same rule the other way round). Written without the tie-break
+        // this mirrored the defect Q1489 is about, so it agreed with the page
+        // and this check could never have found it.
+        for (const h of hunksOfCand(k).slice()
+          .sort((a, b) => b.start - a.start || (b.end - b.start) - (a.end - a.start))) {
+          region.splice(h.start - span.start, h.end - h.start, ...h.lines);
+        }
         readings[sid] = region.filter((l) => l.trim());
       }
       return { kind: it.kind, keys: it.keys, isInsert: !!it.isInsert, card: it.card || null, candId: it.candId || null,

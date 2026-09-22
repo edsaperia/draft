@@ -1068,9 +1068,21 @@ window.LIVE = (function () {
     // a candidate's reading of a span: the current lines with its hunks
     // applied — the words for the card, or with `src` the **source lines**
     // exactly, which is what a lane seeded from the candidate holds (Q1403)
+    // **An insertion at a replacement's own start goes above it** (Q1489, the
+    // wrong-line hunt of 2026-09-20). The engine takes a hunk set sorted by
+    // start and applies it last-to-first, and it refuses `[k, k+1)` before
+    // `[k, k)` as an overlap — so at one start the insertion is always first
+    // in the array and therefore always applied *after* the replacement,
+    // which is what puts its line above the new wording. This sorted by
+    // start alone, stably, so the two kept the array's order and the
+    // insertion went in first: the replacement then spliced the inserted
+    // line away and the reader's card showed the new wording followed by the
+    // old line, with the inserted line lost. The author's own card, drawn
+    // from sites, read right — which is why nobody saw it.
     const applyIn = (lines, sp, hunks) => {
       const region = lines.slice(sp.start, sp.end);
-      for (const h of (hunks || []).slice().sort((a, b) => b.start - a.start)) {
+      const len = (h) => h.end - h.start;
+      for (const h of (hunks || []).slice().sort((a, b) => b.start - a.start || len(b) - len(a))) {
         region.splice(h.start - sp.start, h.end - h.start, ...h.lines);
       }
       return region.filter((l) => l.trim()).join('\n');
