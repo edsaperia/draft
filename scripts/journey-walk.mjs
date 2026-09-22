@@ -3214,7 +3214,11 @@ const proposeEditOverRun = async () => {
   // the row's ✏️, held as the propose step holds it (backlog 184: a click in
   // the click position, a real press held down in the hold position)
   const holdCommit = async () => {
-    const b = await rp.$('#charter [data-proposalrow] [data-act="row-commit"]:not([data-pen]):not([disabled])');
+    // the floating row where the window has one, else the card's own ✏️ —
+    // which is the control a draft opened by ✏️ *propose edit* carries when
+    // the reader never went through 📝
+    const b = await rp.$('#charter [data-proposalrow] [data-act="row-commit"]:not([data-pen]):not([disabled])')
+      || await rp.$('.sugg [data-act="draft-propose"]:not([data-pen]):not([disabled])');
     if (!b) return false;
     await b.scrollIntoViewIfNeeded();
     const bx = await b.boundingBox();
@@ -3308,6 +3312,15 @@ const proposeEditOverRun = async () => {
   }
 
   } finally {
+    // …and any draft of the reader's that never went out: an unproposed draft
+    // left standing is a card and a rail entry the steps after this one count
+    await rp.evaluate(() => {
+      const b = document.querySelector('#charter [data-proposalrow] [data-act="row-discard"]') ||
+        document.querySelector('.sugg [data-act="draft-cancel"]');
+      if (b && !b.disabled) b.click();
+      try { window.SESSION.toggle(window.SESSION.openId, false); } catch { /* none open */ }
+    });
+    await T(600);
     if (outstanding) await wire(rp, 'withdraw-text', { candidate: outstanding });
     await wire(author.pg, 'withdraw-text', { candidate: rival });
     await T(1200);
