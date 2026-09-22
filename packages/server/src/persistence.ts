@@ -23,6 +23,7 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 import type { LogEntry, PersonId } from '../../constitution/src/index.js';
+import { outboxTail } from './mailer.js';
 
 /**
  * One person's row (PRODUCTION.md decision 436, landed under 1253): the
@@ -127,6 +128,50 @@ export const outboxDue = (row: OutboxRow, nowMs: number): boolean =>
   (row.lastAttemptMs === null ||
     row.lastAttemptMs + outboxBackoffMs(row.attempts) <= nowMs);
 
+/** The file the file store writes its error log to, at the data dir's root. */
+export const ERROR_LOG_FILE = 'errors.jsonl';
+export const errorLogPath = (dataDir: string): string => join(dataDir, ERROR_LOG_FILE);
+
+/**
+ * **One line of the error log** (Q1330; the store's since the convention,
+ * plan stage 5a): a refused command, a failed request, or an error the page
+ * caught and reported. The shape is the file's own line, and the Postgres
+ * backend stores exactly it — the row is `text`, never `jsonb`, for the
+ * reason every event is (`pg-persistence.ts`: a member's free text can
+ * carry a NUL or a lone surrogate, and an insert error inside a request's
+ * catch would turn one refusal into a 500).
+ *
+ * **Absent stays absent**, as the log envelope's `schemaVersion` does: a
+ * line read back from either store is `toEqual` the line that was written,
+ * so the two stores cannot drift into printing different things.
+ */
+export interface ErrorLine {
+  at: number;
+  /** `refused`: the module or a route said no, and the member was told (4xx).
+   *  `failed`: the route threw something carrying a system code (500).
+   *  `page`: the surface's own uncaught error or rejection (stage 5b). */
+  kind: 'refused' | 'failed' | 'page';
+  /** the status the wire got; a page error is nobody's status and carries none */
+  status?: number;
+  method?: string;
+  /** the address's path — the API path for a refusal, the page's for a page error */
+  path: string;
+  doc?: string | null;
+  slug?: string | null;
+  /** the seat that sent it — a member or applicant id, never an address */
+  seat?: string | null;
+  cmd?: string | null;
+  args?: string;
+  argsTruncated?: true;
+  /** page only: the file the browser named, its line and column, and the
+   *  commit that served the page (the host's own, never the client's word) */
+  source?: string;
+  line?: number;
+  col?: number;
+  build?: string | null;
+  reason: string;
+}
+
 export interface Persistence {
   /* -- documents: one append-only hash-chained log each ------------------ */
   listDocIds(): Promise<string[]>;
@@ -209,6 +254,21 @@ export interface Persistence {
    */
   pruneOutbox(beforeMs: number): Promise<number>;
 
+  /* -- the error log (Q1330; the store's since plan stage 5a) ------------- */
+  /**
+   * Append one line. **It was a file beside either store until the
+   * convention** — and on docs.vote the data dir is the ephemeral disk, so
+   * every deploy and every restart took the whole record of what had gone
+   * wrong with it. Here it is the store's, so it survives both.
+   *
+   * The caller is `logError`, which runs inside a request's catch and never
+   * waits: a rejection here is one console line, never a 500. Neither
+   * backend promises ordering against anything but itself.
+   */
+  appendError(line: ErrorLine): Promise<void>;
+  /** The tail, newest first — what the dev route and `draft-tools errors` print. */
+  readErrors(n?: number): Promise<ErrorLine[]>;
+
   /* -- lifecycle ---------------------------------------------------------- */
   /** Release what the backend holds (a connection pool); called once at
    *  shutdown after every commit has drained. Optional: files need none. */
@@ -238,6 +298,7 @@ export interface MaintainablePersistence extends Persistence {
 }
 
 export class FilePersistence implements MaintainablePersistence {
+  private readonly dataDir: string;
   private readonly docsDir: string;
   private readonly tokensPath: string;
   private readonly stashPath: string;
@@ -247,6 +308,7 @@ export class FilePersistence implements MaintainablePersistence {
   private readonly outbox: Map<string, OutboxRow>;
 
   constructor(dataDir: string) {
+    this.dataDir = dataDir;
     this.docsDir = join(dataDir, 'docs');
     mkdirSync(this.docsDir, { recursive: true });
     this.tokensPath = join(dataDir, 'tokens.json');
@@ -465,6 +527,21 @@ export class FilePersistence implements MaintainablePersistence {
     return { pending, failed };
   }
 
+  /* -- the error log (§11) -------------------------------------------------- */
+
+  /** One JSON line at the data dir's root, the layout §11 has always
+   *  described; the directory is made on the first write, never at boot. */
+  async appendError(line: ErrorLine): Promise<void> {
+    mkdirSync(this.dataDir, { recursive: true });
+    appendFileSync(errorLogPath(this.dataDir), JSON.stringify(line) + '\n', 'utf8');
+  }
+
+  /** The outbox's own reader, so the tail and the dev inbox answer in one
+   *  shape — and a torn last line is skipped rather than thrown over. */
+  async readErrors(n = 50): Promise<ErrorLine[]> {
+    return outboxTail(errorLogPath(this.dataDir), n) as ErrorLine[];
+  }
+
   /* -- enumeration for the copier (copy-store.ts), never for the server -- */
 
   async dumpTokens(): Promise<Array<readonly [string, TokenRecord]>> {
@@ -487,14 +564,17 @@ export class FilePersistence implements MaintainablePersistence {
    * calls it on a store it opened itself, after its own refusal has been
    * passed. Returns how many documents were deleted. The dev inbox
    * (`outbox.jsonl`) goes too — it holds every magic link ever minted here —
-   * and `secret.txt` stays, being the deployment's key rather than data.
+   * and so does the error log, whose capped arguments carry an invitee's
+   * address (§11): a wipe leaves nothing of the room's people behind, which
+   * is the only reason it is ever run, and both stores answer alike.
+   * `secret.txt` stays, being the deployment's key rather than data.
    */
   async wipe(): Promise<number> {
     const ids = await this.listDocIds();
     rmSync(this.docsDir, { recursive: true, force: true });
     mkdirSync(this.docsDir, { recursive: true });
     for (const path of [this.tokensPath, this.stashPath, this.outboxPath,
-      join(this.docsDir, '..', 'outbox.jsonl')]) {
+      join(this.docsDir, '..', 'outbox.jsonl'), errorLogPath(this.dataDir)]) {
       rmSync(path, { force: true });
     }
     this.tokens.clear();

@@ -13,9 +13,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { afterAll, describe, expect, it } from 'vitest';
-import { ARGS_CAP, ERROR_LOG_FILE, capArgs, errorTail, logError,
+import { ARGS_CAP, capArgs, logError,
   newRaceCounts, noteRace, raceRefusal } from '../src/error-log.js';
-import { FilePersistence } from '../src/persistence.js';
+import { ERROR_LOG_FILE, FilePersistence } from '../src/persistence.js';
 import { createDraftServer } from '../src/server.js';
 import type { DraftServer } from '../src/server.js';
 
@@ -28,17 +28,29 @@ const rows = (dir: string): Row[] =>
     ? readFileSync(join(dir, ERROR_LOG_FILE), 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l) as Row)
     : [];
 
-describe('the error log file', () => {
-  it('caps the arguments and says so, and a write that cannot happen does not throw', () => {
+describe('the error log', () => {
+  it('caps the arguments and says so, and a write that cannot happen does not throw', async () => {
     expect(capArgs({ a: 1 })).toEqual({ args: '{"a":1}' });
     const big = capArgs({ picture: 'x'.repeat(ARGS_CAP * 2) });
     expect(big.args).toHaveLength(ARGS_CAP);
     expect(big.argsTruncated).toBe(true);
-    // a data dir that is a file: mkdir and append both fail, and neither throws out
-    const dir = tmp();
-    expect(() => logError(join(dir, 'not-a-dir', 'x\0y'), { kind: 'refused', status: 400,
-      method: 'POST', path: '/x', reason: 'r' })).not.toThrow();
-    expect(errorTail(dir)).toEqual([]);
+    // **a store that refuses must not take the request with it** — every
+    // caller is inside a request's catch, so `logError` neither throws nor
+    // returns a promise anybody waits on, and a Postgres insert that
+    // rejects (plan stage 5a) is one console line. A rejection nobody
+    // caught would fail this run by itself, which is the assertion.
+    const row = { kind: 'refused' as const, status: 400, method: 'POST', path: '/x', reason: 'r' };
+    // a store that throws where it stands — a data dir that is a file
+    expect(() => logError({ appendError: () => { throw new Error('ENOTDIR'); } }, row)).not.toThrow();
+    // …and one that rejects, which is what a Postgres insert does
+    expect(() => logError({ appendError: () => Promise.reject(new Error('pg is down')) }, row))
+      .not.toThrow();
+    await new Promise((r) => setTimeout(r, 20));
+    // and a store that works writes exactly one line, read back through the seam
+    const p = new FilePersistence(tmp());
+    logError(p, row, 99);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(await p.readErrors()).toEqual([{ at: 99, ...row }]);
   });
 });
 
@@ -142,7 +154,7 @@ describe('a refused command lands in the error log (Q1330)', () => {
     const tail = (await (await fetch(`${base}/api/dev/errors`)).json()) as { errors: Row[] };
     expect(tail.errors.map((r) => r.cmd ?? r.path)).toEqual(
       [`/api/d/${created.slug}/cmd`, 'no-such-command', 'answer']);
-    expect(errorTail(dataDir, 1)).toHaveLength(1);
+    expect(await new FilePersistence(dataDir).readErrors(1)).toHaveLength(1);
   });
 
   /**

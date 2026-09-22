@@ -38,7 +38,7 @@ export const memberTable: Route[] = [
       (seg[3] === 'view' || seg[3] === 'cmd'),
     handler: async (ctx, r) => {
       const { req, res, url, seg, nowMs } = r;
-      const { cfg, store, auth, mailer, pause, writes } = ctx;
+      const { store, auth, mailer, pause, writes } = ctx;
       const doc = r.docOr404(store.bySlug(seg[2]!));
       if (!doc) return true;
       const session = cookieSession(auth, req, doc.id);
@@ -282,7 +282,7 @@ export const memberTable: Route[] = [
         const refused = (status: number, reason: string): void => {
           const race = raceRefusal(cmd, reason);
           if (race !== null) { noteRace(ctx.races, race, nowMs); return; }
-          logError(cfg.dataDir, {
+          logError(ctx.persistence, {
             kind: 'refused', status, method: 'POST', path: pathOf(req),
             doc: doc.id, slug: doc.cs.slug, seat: applicantId ?? memberId, cmd, args, reason });
         };

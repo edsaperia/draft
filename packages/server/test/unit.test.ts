@@ -10,7 +10,8 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { FilePersistence, OUTBOX_MAX_ATTEMPTS, WriteChain } from '../src/persistence.js';
+import { ERROR_LOG_FILE, FilePersistence, OUTBOX_MAX_ATTEMPTS, WriteChain } from '../src/persistence.js';
+import { errorLogContract } from './error-store.js';
 import { MailOutbox } from '../src/outbox.js';
 import { Auth } from '../src/auth.js';
 import { Stash } from '../src/stash.js';
@@ -68,6 +69,29 @@ describe('FilePersistence', () => {
     await p.sweepTokens(50);
     expect(await p.takeToken('old')).toBeNull();
     expect(await p.takeToken('live')).not.toBeNull();
+  });
+
+  /** The same body `pg.test.ts` runs, because the property is that the two
+   *  stores answer alike (plan stage 5a). */
+  it('the error log is a row of the store: newest first, capped, byte for byte', async () => {
+    const dir = tmp();
+    await errorLogContract(new FilePersistence(dir));
+    // and the layout §11 describes is still the layout: one JSON line each,
+    // at the data dir's root, which is what `draft-tools errors` reads
+    const raw = readFileSync(join(dir, ERROR_LOG_FILE), 'utf8');
+    expect(raw.split('\n').filter(Boolean)).toHaveLength(6);
+    expect(JSON.parse(raw.split('\n')[0]!)).toMatchObject({ at: 1000, kind: 'refused' });
+  });
+
+  it('the wipe takes the error log with it — both stores leave nothing of the room', async () => {
+    const dir = tmp();
+    const p = new FilePersistence(dir);
+    await p.appendError({ at: 1, kind: 'refused', status: 400, method: 'POST',
+      path: '/api/d/moon/cmd', cmd: 'invite', args: '{"email":"ada@example.org"}',
+      reason: 'that address is taken' });
+    expect(await p.readErrors()).toHaveLength(1);
+    await p.wipe();
+    expect(await p.readErrors()).toEqual([]);
   });
 });
 

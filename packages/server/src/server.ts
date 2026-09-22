@@ -202,7 +202,7 @@ export async function createDraftServer(cfg: ServerConfig,
    * static family and `/healthz` must see the move.
    */
   const ctx: RouteContext = {
-    cfg, store, auth, mailer, outbox, stash, commits, writes, pause,
+    cfg, store, persistence, auth, mailer, outbox, stash, commits, writes, pause,
     errors, races, bootedAtMs, httpsOn,
     designDir: cfg.designDir,
     buildSha: cfg.buildSha,
@@ -246,7 +246,7 @@ export async function createDraftServer(cfg: ServerConfig,
       // status and the reason. The 500's reason is the full message, which
       // the wire never gets (stage 3, defect 9) and the operator's file may.
       if (!(e as { logged?: boolean }).logged) {
-        logError(cfg.dataDir, { kind: internal ? 'failed' : 'refused',
+        logError(persistence, { kind: internal ? 'failed' : 'refused',
           status: internal ? 500 : 400, method: req.method ?? '-', path: pathOf(req),
           reason: message });
       }

@@ -30,8 +30,10 @@ list, annotated, is `docs/OPERATING.md` §5):
 Two files live in the data directory and are **not** part of a copy, because
 no store writes them through the persistence seam: `outbox.jsonl` (the dev
 inbox — every magic link ever minted locally) and `bots-outbox.jsonl`
-(`docs/OPERATING.md` §10). `errors.jsonl` (§11) and `secret.txt` are the
-deployment's, not the data's, and are likewise not copied.
+(`docs/OPERATING.md` §10). The error log (§11) and `secret.txt` are the
+deployment's, not the data's, and are likewise not copied — the log is on
+the persistence seam as of stage 5a and the copiers still pass it over on
+purpose, a record of defects here being no part of a restore somewhere else.
 
 **A backup directory is as sensitive as the room.** `people.json` carries
 every address and `log.jsonl` every founding answer in plaintext — the

@@ -417,17 +417,22 @@ mail-outbox.json     the durable mail queue: everything accepted and not yet
                      not, and a backup dropping it un-sends whatever is in it
 outbox.jsonl         dev mail only — every mail and its magic link
 bots-outbox.jsonl    mail to *@bots.docs.vote, under either store (§10)
-errors.jsonl         the error log (§11): every refused command and every
-                     failed request, one JSON line each, under either store
+errors.jsonl         the error log (§11): every refused command, every failed
+                     request and every error the page reported, one JSON line
+                     each. **The file store's only** — under Postgres this is
+                     the `errors` table, so a deploy no longer takes it
 secret.txt           only when DRAFT_SECRET is unset (so: dev only)
 ```
 
 **A copy carries the first eight and not the last four.** `export` and
 `import` move everything down to `mail-outbox.json`, because those are what
-the persistence seam holds; `outbox.jsonl`, `bots-outbox.jsonl`,
-`errors.jsonl` and `secret.txt` are written beside it and are not a
-document's state. `docs/runbooks/backup-and-restore.md` is the same list
-as a backup's contents.
+a document's state is; `outbox.jsonl`, `bots-outbox.jsonl`, `errors.jsonl`
+and `secret.txt` are written beside it and are not. The error log is on the
+persistence seam as of stage 5a and is still not copied, deliberately: it is
+an operator's record of defects in *this* deployment, and a backup restored
+somewhere else would carry defects that never happened there.
+`docs/runbooks/backup-and-restore.md` is the same list as a backup's
+contents.
 
 Five things to know about it:
 
@@ -531,7 +536,9 @@ Five things to know about it:
    and store in one act, is owed then and not before, the restart being
    honest while the store holds only alpha documents.
    `wipe` deletes every document and every sidecar (tokens, stashes, queued
-   mail, the dev inbox) and leaves the schema migrated; it **refuses**
+   mail, the dev inbox, and since stage 5a the error log, whose capped
+   arguments carry an invitee's address) and leaves the schema migrated;
+   it **refuses**
    without the flag, and with any `<name>` but the store's own — the data
    directory's basename, or the database's name — printing the count it
    would have deleted:
@@ -766,11 +773,26 @@ A member is not expected to meet a refusal at all (Ed, 2026-09-11, Q1330:
 error on screen with a debug message, and create some kind of error log we
 can debug*), so one that happens is a defect, and this is where it is
 written down. **Every refused command and every failed request** appends
-one JSON line to `errors.jsonl` in the data dir — under the file store and
-the Postgres store alike, since the file's reader is `tail` and the bot
-outbox already lives beside Postgres the same way (§10). On docs.vote the
-data dir is the ephemeral disk, so **a deploy takes the file**: read it
-while the room is running, or copy it off first.
+one line here.
+
+**It lives in the store** (plan stage 5a, after the nh2026 convention):
+`errors.jsonl` in the data dir under the file store, a row of the `errors`
+table under Postgres. It was a file under both until then, on the argument
+that a log whose reader is `tail` was not worth an hour of persistence seam
+— and on docs.vote the data dir is the ephemeral disk, so **every deploy
+and every restart deleted the whole record of what had gone wrong**. The
+convention's forty refusals were readable the next morning only because
+somebody remembered to copy the file off first. Nothing else changed: the
+line is the same JSON either store holds, so a line read back from one is
+identical to the same line read back from the other, and that is what the
+persistence tests assert over both.
+
+The table is one row per line — `at`, `kind`, `document_id` and the line
+itself as `payload`, `text` and never `jsonb` for the reason every event is
+(a member's free text can carry a NUL or a lone surrogate, and an insert
+error inside a request's catch would turn one refusal into a 500). Nothing
+prunes it; a `wipe` empties it with everything else, because its capped
+arguments carry an invitee's address.
 
 A line, newest last:
 
@@ -787,6 +809,8 @@ A line, newest last:
   500). `/healthz` keeps counting the second kind as `errors.request`; the
   first is not counted there, by design (a 400 is the product working), but
   it is logged here, because the page now prints it and somebody will ask.
+  Since stage 5b there is a third, `page`: an error or rejection the
+  surface itself caught and reported — see *What the page sends* below.
 - `seat` is the member's or applicant's **id**, never an address — the
   people rows are the only place an address belongs (§5). `doc` and `slug`
   name the document; a refusal before any document was found (a body that
@@ -835,10 +859,12 @@ fifty, newest first, the outbox's own shape — the route is under the `DEV`
 label and is not in the production artifact (`verify-deploy` asserts the
 404). On docs.vote, in a shell on the host:
 
-    node dist/draft-tools.mjs errors <dataDir> [n]
+    node dist/draft-tools.mjs errors "$DATABASE_URL" [n]
 
 prints the last `n` (50), newest first, one event per line with its reason
-beneath. A Postgres URL is the wrong address for this verb and it says so.
+beneath. **Either store**, since stage 5a: pass the database URL on
+docs.vote and a data directory locally. It reads and writes nothing else,
+so unlike the deleting verbs it is safe beside a running service.
 
 **What the page shows for the same event** (SURFACE Y25): the sentence
 under the card the command left from, and a stagehand's line at the foot of

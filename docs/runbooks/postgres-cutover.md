@@ -42,8 +42,8 @@ serving from. Its procedure is in
 [backup-and-restore.md](backup-and-restore.md).
 
 Two read: `people <store> <docId>` lists a document's person rows, and
-`errors <dataDir> [n]` prints the tail of the error log (`docs/OPERATING.md`
-§11; a `postgres://` URL is the wrong address for it and it says so).
+`errors <store> [n]` prints the tail of the error log (`docs/OPERATING.md`
+§11 — either store since stage 5a, so on docs.vote it is the database URL).
 
 **Three delete**, each behind its own typed refusal — nothing here deletes
 on a bare verb:

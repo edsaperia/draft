@@ -31,7 +31,8 @@
 import pg from 'pg';
 import type { LogEntry, PersonId } from '../../constitution/src/index.js';
 import { OUTBOX_MAX_ATTEMPTS, outboxBackoffMs } from './persistence.js';
-import type { MaintainablePersistence, OutboxRow, PersonRow, StashRecord, TokenRecord } from './persistence.js';
+import type { ErrorLine, MaintainablePersistence, OutboxRow, PersonRow, StashRecord,
+  TokenRecord } from './persistence.js';
 
 /** Each migration runs once, in order, inside one transaction. */
 const MIGRATIONS: ReadonlyArray<{ version: number; sql: string }> = [
@@ -145,6 +146,41 @@ const MIGRATIONS: ReadonlyArray<{ version: number; sql: string }> = [
         picture     text,
         PRIMARY KEY (document_id, person_id)
       );
+    `,
+  },
+  {
+    // **The error log comes into the store** (plan stage 5a, after the
+    // nh2026 convention). It was a file beside either backend (Q1330), and
+    // on docs.vote the data dir is the ephemeral disk — so every deploy and
+    // every restart deleted the whole record of what had gone wrong, which
+    // is how the convention's forty refusals came within an afternoon of
+    // being unreadable.
+    //
+    // **The line is one `text` column**, not a column per field: it is the
+    // same JSON the file store writes, so a line read back from either store
+    // is identical, and a new field (stage 5b's page errors) is no migration.
+    // Text rather than jsonb for the reason every event is — a refusal's
+    // capped arguments are a member's own words, NULs and lone surrogates
+    // and all, and an insert error inside a request's catch would turn one
+    // refusal into a 500. `at`, `kind` and `document_id` are beside it so an
+    // operator with a psql prompt can filter without parsing.
+    //
+    // **No foreign key on `document_id`**: a refusal is about a moment, not
+    // about a document that must still exist, and a log line must never be
+    // the reason a document cannot be deleted (the outbox's own rule).
+    // `payload` rather than `line` or `row`, both of which are SQL's own
+    // words and would have to be quoted at every site — the outbox's
+    // `addressee` is the same courtesy.
+    version: 6,
+    sql: `
+      CREATE TABLE errors (
+        id          bigserial PRIMARY KEY,
+        at          bigint NOT NULL,
+        kind        text   NOT NULL,
+        document_id text,
+        payload     text   NOT NULL
+      );
+      CREATE INDEX errors_at ON errors (at DESC, id DESC);
     `,
   },
 ];
@@ -517,6 +553,32 @@ export class PgPersistence implements MaintainablePersistence {
     return { pending: Number(rows[0]?.pending ?? 0), failed: Number(rows[0]?.failed ?? 0) };
   }
 
+  /* -- the error log (§11) -------------------------------------------------- */
+
+  /**
+   * One row per line, the whole line as `text`. `at` is the line's own
+   * moment and `id` breaks a tie, so two lines written in the same
+   * millisecond still come back in the order they were written.
+   */
+  async appendError(line: ErrorLine): Promise<void> {
+    await this.pool.query(
+      'INSERT INTO errors (at, kind, document_id, payload) VALUES ($1, $2, $3, $4)',
+      [line.at, line.kind, line.doc ?? null, JSON.stringify(line)]);
+  }
+
+  async readErrors(n = 50): Promise<ErrorLine[]> {
+    const { rows } = await this.pool.query<{ payload: string }>(
+      'SELECT payload FROM errors ORDER BY at DESC, id DESC LIMIT $1', [n]);
+    // a row that will not parse is skipped rather than thrown over, as the
+    // file store's tail skips a torn last line: a tail is a convenience and
+    // must not be the thing that fails
+    const out: ErrorLine[] = [];
+    for (const r of rows) {
+      try { out.push(JSON.parse(r.payload) as ErrorLine); } catch { /* skipped */ }
+    }
+    return out;
+  }
+
   /* -- enumeration for the copier (copy-store.ts), never for the server -- */
 
   async dumpOutbox(): Promise<OutboxRow[]> {
@@ -549,13 +611,16 @@ export class PgPersistence implements MaintainablePersistence {
    * migrations table stays, so the schema is still this build's. Not on the
    * `Persistence` contract, so nothing the server holds can reach it:
    * `draft-tools wipe` calls it on a store it opened itself, after its own
-   * refusal has been passed. Returns how many documents were deleted.
+   * refusal has been passed. Returns how many documents were deleted. The
+   * error log goes too, as it does on the disk: its capped arguments carry
+   * an invitee's address (§11), and a wipe leaving the room's people in a
+   * table would not be a wipe.
    */
   async wipe(): Promise<number> {
     const ids = await this.listDocIds();
     await this.pool.query(
       'TRUNCATE people, document_log, engine_log, provisional, bridge_state, ' +
-      'documents, tokens, stashes, outbox');
+      'documents, tokens, stashes, outbox, errors');
     return ids.length;
   }
 

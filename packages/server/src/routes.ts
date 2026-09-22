@@ -31,7 +31,7 @@ import { extname } from 'node:path';
 import type { Auth } from './auth.js';
 import type { ServerConfig } from './config.js';
 import type { DocStore, LoadedDoc } from './store.js';
-import type { WriteChain } from './persistence.js';
+import type { Persistence, WriteChain } from './persistence.js';
 import type { Mailer } from './mailer.js';
 import type { MailOutbox } from './outbox.js';
 import type { Stash } from './stash.js';
@@ -46,6 +46,9 @@ import { str } from './commands.js';
 export interface RouteContext {
   readonly cfg: ServerConfig;
   readonly store: DocStore;
+  /** the backend itself, for the one thing that is not a document: the
+   *  error log, which is a row of the store since plan stage 5a */
+  readonly persistence: Persistence;
   readonly auth: Auth;
   readonly mailer: Mailer;
   readonly outbox: MailOutbox;
