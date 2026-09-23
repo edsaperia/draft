@@ -273,6 +273,16 @@ case "$GROUP" in
     # minutes on its own, which would make this the slowest group by half
     walk "wrong-line-room --case=shapes" node scripts/repro/wrong-line-room.mjs "$BASE" --case=shapes
     walk "wrong-line-room --case=record" node scripts/repro/wrong-line-room.mjs "$BASE" --case=record
+    # the P1 batch's own guards (2026-09-23): Enter at a lane's end makes a
+    # line (#78, the fixture page); a refused vote or withdrawal is taken
+    # back and a hung command releases the chain (#37); a carried change
+    # parked on the Founder's 🛡️ is the Founder's to crown (#32, Q1475)
+    walk "lane-enter" node scripts/repro/lane-enter.mjs "$DESIGN_BASE"
+    walk "refused-acts" node scripts/repro/refused-acts.mjs "$BASE"
+    walk "crown-rail" node scripts/repro/crown-rail.mjs "$BASE"
+    # the spectator feed's scroll hold (#87) — no server, design/feed.html
+    # from disk
+    walk "feed-scroll-hold" node scripts/repro/feed-scroll-hold.mjs
     ;;
 esac
 

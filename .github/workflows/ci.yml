@@ -171,6 +171,11 @@ jobs:
         env:
           HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
           BASE: ${{ vars.DRAFT_BASE_URL }}
+          # **Two keys since #10** (Ed's P1 batch, 2026-09-22): the admin
+          # key pauses, resumes and uploads a surface; the bot key reads the
+          # bot outbox alone and is here only for verify-deploy, which checks
+          # that the bot key is refused at the surface route
+          ADMIN_KEY: ${{ secrets.DRAFT_ADMIN_KEY }}
           BOT_KEY: ${{ secrets.DRAFT_BOT_KEY }}
           BEFORE: ${{ github.event.before }}
           GH_TOKEN: ${{ github.token }}
@@ -266,13 +271,13 @@ jobs:
           # and counts)
           VERIFY_BEFORE=""
           if [ -f before.json ]; then VERIFY_BEFORE="--before=before.json"; fi
-          if [ "$lane" = surface ] && [ -n "$BASE" ] && [ -n "$BOT_KEY" ]; then
+          if [ "$lane" = surface ] && [ -n "$BASE" ] && [ -n "$ADMIN_KEY" ]; then
             # the served set: the page files at the top of design/, and the
             # document's face under design/fonts/ with its licence (Q1402),
             # as routes-surface.ts's asset rows and surface.ts's SURFACE_NAME allow
             tar --format=ustar -czf surface.tgz $(ls design/*.html design/*.js design/*.css design/*.svg design/*.png design/*.woff design/*.woff2 design/*.txt design/fonts/*.woff2 design/fonts/OFL.txt 2>/dev/null)
             if curl -fsS -X POST "$BASE/api/admin/surface?sha=$GITHUB_SHA" \
-                 -H "authorization: Bearer $BOT_KEY" -H 'content-type: application/gzip' \
+                 -H "authorization: Bearer $ADMIN_KEY" -H 'content-type: application/gzip' \
                  --data-binary @surface.tgz -o surface.json; then
               echo "surface reloaded: $(node -e 'console.log(JSON.parse(require("fs").readFileSync("surface.json","utf8")).files.length)') files"
               live=$(curl -s -D - -o /dev/null "$BASE/" | tr -d '\r' | awk 'tolower($1)=="x-build:"{print $2}')
@@ -295,7 +300,7 @@ jobs:
           # pinned to the old one by keep-alive would go on writing to a log
           # the new one has loaded. Paused, the old instance persists
           # nothing and every page shows the modal until the new one
-          # answers. Needs the DRAFT_BOT_KEY secret (the same key as on the
+          # answers. Needs the DRAFT_ADMIN_KEY secret (the same key as on the
           # host); without it the deploy still runs, unpaused, and says so.
           #
           # **And a pause this step made is this step's to lift** (issue #8,
@@ -304,8 +309,8 @@ jobs:
           # never lands used to leave the room paused until the host's own
           # fifteen-minute lift, with the job long since red and nobody
           # watching.
-          if [ -n "$BASE" ] && [ -n "$BOT_KEY" ]; then
-            if curl -fsS -X POST "$BASE/api/admin/pause" -H "authorization: Bearer $BOT_KEY" \
+          if [ -n "$BASE" ] && [ -n "$ADMIN_KEY" ]; then
+            if curl -fsS -X POST "$BASE/api/admin/pause" -H "authorization: Bearer $ADMIN_KEY" \
                  -H 'content-type: application/json' -d '{}' -o /dev/null; then
               echo "PAUSED=1" >> "$GITHUB_ENV"
               # the poll's own budget, measured from the pause rather than
@@ -325,7 +330,7 @@ jobs:
               echo "the live host did not accept the pause — deploying anyway"
             fi
           else
-            echo "no DRAFT_BOT_KEY secret or DRAFT_BASE_URL — deploying without a pause (Q1345)"
+            echo "no DRAFT_ADMIN_KEY secret or DRAFT_BASE_URL — deploying without a pause (Q1345)"
           fi
           # unpaused, nothing is waiting on us and the old budget stands
           if [ -z "$waitSeconds" ]; then waitSeconds=$(( 25 * 60 )); fi
@@ -405,9 +410,9 @@ jobs:
         if: failure() && env.PAUSED == '1'
         env:
           BASE: ${{ vars.DRAFT_BASE_URL }}
-          BOT_KEY: ${{ secrets.DRAFT_BOT_KEY }}
+          ADMIN_KEY: ${{ secrets.DRAFT_ADMIN_KEY }}
         run: |
-          curl -fsS -X POST "$BASE/api/admin/resume" -H "authorization: Bearer $BOT_KEY" \
+          curl -fsS -X POST "$BASE/api/admin/resume" -H "authorization: Bearer $ADMIN_KEY" \
             -H 'content-type: application/json' -d '{}' -o /dev/null \
             && echo "the pause is lifted — the live host is writing again" \
             || echo "the resume was refused: lift it by hand (docs/OPERATING.md §3) or wait out PauseState.MAX_MS"
