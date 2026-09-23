@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 563
+  "entries": 565
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -24,7 +24,7 @@
   "feed.after": "A new clause, after",
   "feed.anonymous": "Anonymous",
   "feed.closed": "ƒ (dateWords) => 'Closed ' + dateWords",
-  "feed.constitution": "Constitution",
+  "feed.constitution": "Rules",
   "feed.counts": "ƒ (voted, roster, floor, approvals, abstained) =>\n      [voted + ' of ' + roster + ' weighed in',\n        approvals === null || approvals === undefined ? '' : approvals + ' preferred it',\n        abstained ? abstained + ' did not answer in time' : '',\n        floor === null || floor === undefined ? '' : 'quorum was ' + floor]\n        .filter(Boolean).join(' · ')",
   "feed.days": "ƒ (n) => (n === 1 ? '1 day' : n + ' days')",
   "feed.decreed": "The Founder amended this",
@@ -237,13 +237,13 @@
   "page.doorEmpty.invite": "Nobody has been invited yet.",
   "page.doorEmpty.remove": "Nobody is proposed for removal.",
   "page.doorPending.invite": "proposed",
-  "page.founderMark.crowned": "Part of the constitution is reserved: changing it needs the founder’s assent",
+  "page.founderMark.crowned": "Some of the rules are reserved: changing them needs the founder’s assent",
   "page.founderMark.none": "The Founder reserves nothing — no special part in the document",
   "page.gate.accept": "ƒ (glyph) => 'Accept ' + glyph",
   "page.gate.begin.title": "Begin",
-  "page.gate.canjudge.done": "Open — the constitution is settled.",
+  "page.gate.canjudge.done": "Open — the rules are settled.",
   "page.gate.canjudge.title": "Voting",
-  "page.gate.canjudge.waiting": "Waiting on the constitution.",
+  "page.gate.canjudge.waiting": "Waiting on the rules.",
   "page.gate.canjudge.why": "A vote is your say on a proposal: you are shown two at a time and choose the one you prefer, or neither.",
   "page.gate.canpropose.done": "Open — members can propose as soon as they arrive.",
   "page.gate.canpropose.title": "Proposals",
@@ -307,8 +307,8 @@
   "page.preamble.proposeAtBegin": " They may propose changes to rules when the document begins.",
   "page.preamble.proposeLead": "Members may propose changes to rules ",
   "page.preamble.voteOnly": "Members may vote on proposals.",
-  "page.preamble.voteTail": ". They may begin voting on proposals when the whole constitution has been decided.",
-  "page.preamble.voteWhenDecided": "Members may begin voting on proposals when the whole constitution has been decided.",
+  "page.preamble.voteTail": ". They may begin voting on proposals when all the rules have been decided.",
+  "page.preamble.voteWhenDecided": "Members may begin voting on proposals when all the rules have been decided.",
   "page.prose.below": ", below.",
   "page.prose.heading": "heading",
   "page.prose.nothingYet": "Nothing written yet.",
@@ -374,6 +374,8 @@
   "page.ride.readOnly": "read only",
   "page.ride.textDash": "Text — ",
   "page.ride.writing": "you are writing; press to stop",
+  "page.rulesDrafting": "The rules are being drafted.",
+  "page.rulesHeading": "Rules",
   "page.said": "ƒ (s) => 'You said: “' + s + '”'",
   "page.slugNote.free": " is free.",
   "page.slugNote.illegal": "Lower case, digits and hyphens",

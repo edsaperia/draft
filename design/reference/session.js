@@ -95,6 +95,12 @@
   let seqToken = 0;       // supersedes an in-flight open/move/close sequence
   const resolved = new Set();
   const pendingJudge = new Set();   // a pair whose judgment is between press and filing (#37)
+  // **A vote refused at the press says so on its card** (Q1505, SURFACE Y25):
+  // item id → Y25's *That was refused: …*, drawn above the commit row and
+  // retired by the next choice on the card (`choose`)
+  const refusedSay = new Map();
+  const refusedFoot = (s) => (refusedSay.has(s.id)
+    ? '<div class="foot refusal" role="alert">' + esc(refusedSay.get(s.id)) + '</div>' : '');
 
   // ---- the card grammar lives in cards.js now (2026-08-18) ----------------
   // The decision-card machinery was lifted into design/cards.js so the setup
@@ -2713,6 +2719,7 @@
         // before you reach for them rather than after.
         reviseNote(s) +
         '<div class="foot">' + T.diag.foot + '</div>' +
+        refusedFoot(s) +
         commitRowHtml(s) +
         '</div>'
       );
@@ -2804,6 +2811,7 @@
         // must win. Neither has to: the clause above is in the same ranking
         // and stays unless the room comes to prefer one of them (Q1362 (a)).
         '<div class="foot">' + T.race.foot + '</div>' +
+        refusedFoot(sv) +
         commitRowHtml(sv) +
         '</div>'
       );
@@ -2842,6 +2850,7 @@
         // Indifferent block is an answer and stays on every site card; the
         // bar — 🗑️ · ❄️? · ✓ — is the proposal-row's, once, at the foot of the
         // window (`renderPatchRow`), where the one judgment for all sites is cast
+        refusedFoot(s) +
         vinBlockHtml(s) +
         '</div>'
       );
@@ -2871,6 +2880,7 @@
       groundNote(sv) +
       fieldHtml(proposalHtml(sv, { v: 'approve', html: prop, why: sv.rationale, by: sv.by, edit: noEdit })) +
       reviseNote(sv) + parkNote(sv) +
+      refusedFoot(sv) +
       commitRowHtml(sv) +
       '</div>'
     );
@@ -3829,6 +3839,11 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       if (!s) return;
       const now = pickOf(s) === el.dataset.v ? null : el.dataset.v;
       picked.set(pairKeyOf(s), now);
+      // the next choice on a card retires its refusal (Y25, Q1505): in place,
+      // like the choice itself
+      if (refusedSay.delete(s.id)) {
+        openCardEls(s.id).forEach((c) => c.querySelectorAll('.foot.refusal').forEach((f) => f.remove()));
+      }
       // One judgment, however many cards it is showing on (181): every card
       // for this suggestion moves its selection together.
       const syncSubmit = (submit) => {
@@ -4275,6 +4290,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         const heldEl = hold ? doc.querySelector(hold) : null;
         const heldTop = heldEl ? heldEl.getBoundingClientRect().top : null;
         keepStill(() => { openId = next; renderAll(); }, hold);
+        focusOpenedCard(next);
         if (heldTop !== null && !doc.querySelector(hold)) {
           const born = [...doc.querySelectorAll('.sugg')].find((c) => c.dataset.card === next);
           const drift = born ? born.getBoundingClientRect().top - heldTop : 0;
@@ -4591,7 +4607,9 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       resolved.add(key);
       justArrived = firstTime ? key : null;
       if (hooks.judge) hooks.judge(id, what, pair);
-      const shut = () => { if (openId === id) openId = null; renderAll(); drawWires(); };
+      const held = !!document.activeElement && !!document.activeElement.closest &&
+        !!document.activeElement.closest('.sugg[data-card], [data-patchrow]');
+      const shut = () => { if (openId === id) openId = null; renderAll(); drawWires(); if (held) focusTabOf(id); };
       if (openId === id) collapseCards(id, shut); else shut();
     }, firstTime && btn ? 240 : 0);
   }
@@ -4930,7 +4948,64 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   // (Ed, 2026-08-17: *cables don't change colour when the cards change colour*).
   // The wire's own fade is unaffected by the order: it carries its previous
   // value in `prevWire` rather than reading it off the DOM.
+  // **Where the keyboard stands survives the column being rebuilt** (Q1397,
+  // Ed 2026-09-22: focus stays on the card after an act). `renderAll` rebuilds
+  // every card, tab and entry wholesale, so the element holding focus stopped
+  // existing on every render and a keyboard was dropped back to the top of the
+  // page. The focused control is named by what it is — a card's lane or act,
+  // a clause tab — and found again after the rebuild. A caret has keepers of
+  // its own (`heldCaret`, the lane's `remark`), so editables are left alone.
+  const focusKeep = () => {
+    const a = document.activeElement;
+    if (!a || a === document.body || !doc.contains(a) || a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return null;
+    const card = a.closest('.sugg[data-card]');
+    if (card) return { card: card.dataset.card, v: a.dataset.v || null, act: a.dataset.act || null, anchor: a.dataset.anchor || null };
+    const tab = a.closest('.achip[data-anchor]');
+    return tab ? { tab: tab.dataset.anchor } : null;
+  };
+  const focusRestore = (k) => {
+    if (!k) return;
+    const q = (v) => String(v).replace(/["\\]/g, '\\$&');
+    let el = null;
+    if (k.card) {
+      const card = doc.querySelector('.sugg[data-card="' + q(k.card) + '"]');
+      if (!card) return;
+      el = (k.v && card.querySelector('[data-v="' + q(k.v) + '"]')) ||
+        (k.act && card.querySelector('[data-act="' + q(k.act) + '"]')) ||
+        (k.anchor && card.querySelector('.achip[data-anchor="' + q(k.anchor) + '"]'));
+    } else if (k.tab) {
+      el = doc.querySelector('.achip[role="button"][data-anchor="' + q(k.tab) + '"]');
+    }
+    if (el && document.activeElement !== el) { try { el.focus({ preventScroll: true }); } catch (e) { /* gone */ } }
+  };
+  // **Opening puts the keyboard on the main decision** (SURFACE C5, Q1397):
+  // the chosen lane, else the first, never the commit row; a card with no
+  // lane — a record — takes its own tab in the strip, which is inside it.
+  // The editing card is the caret's (K13) and is left to the composer.
+  const focusOpenedCard = (id) => {
+    if (id === DRAFT_ID) return;
+    const card = [...doc.querySelectorAll('.sugg[data-card]')].find((c) => c.dataset.card === id);
+    // the tab pressed rides into the card's strip, so the keyboard may already
+    // be inside — it still goes on to the decision, unless it is on one
+    if (!card || (card.contains(document.activeElement) && document.activeElement.matches('[data-v]'))) return;
+    const el = card.querySelector('[data-v][aria-checked="true"]:not([disabled])') ||
+      card.querySelector('[data-v]:not([disabled])') ||
+      card.querySelector('.achip[role="button"]');
+    if (el) { try { el.focus({ preventScroll: true }); } catch (e) { /* gone */ } }
+  };
+  // …and **an act that closes a card hands the keyboard to its tab**
+  // (Q1397): the card runs back onto its paragraph and the tab is what stands
+  // there, so a keyboard carries on from the card it acted on
+  // A tab filed behind others in its pile is inert (`behind`), so the pile's
+  // front tab — the way back into that clause — takes the keyboard instead.
+  const focusTabOf = (id) => {
+    const mine = [...doc.querySelectorAll('.achip[data-anchor]')].filter((x) => x.dataset.anchor === id && !x.closest('.sugg'));
+    const t = mine.find((x) => x.getAttribute('role') === 'button') ||
+      (mine[0] && mine[0].closest('.chipcol') && mine[0].closest('.chipcol').querySelector('.achip[role="button"]'));
+    if (t) { try { t.focus({ preventScroll: true }); } catch (e) { /* gone */ } }
+  };
   function renderAll() {
+    const kept = focusKeep();
     // `layoutQueue` belongs here rather than at each call site (Ed, 2026-08-17:
     // *when I resolve the 🔥 card, a new one should appear in my sidebar
     // immediately, rather than me having to deselect it first*). The rail was
@@ -4945,6 +5020,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // the host's riding tab carries the draft's count (backlog 204) — a DOM
     // poke on the host's side, never a render, so this cannot recurse
     if (hooks.rendered) hooks.rendered();
+    focusRestore(kept);
   }
 
   // **The patch row** (Q1382, Ed 2026-09-15: *the vote for a patch is also
@@ -5645,14 +5721,31 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   // this on a refusal; only the verdict it was sent with is taken back, since
   // a later revision of the same pair may already be in flight — and the
   // entry asks again, the view having kept the pair unanswered.
-  function unjudge(id, what) {
+  // **…and says so under its card** (Q1505, Ed 2026-09-23; SURFACE Y25):
+  // `said` is the sentence, which the card carries until the next choice on
+  // it; the card is re-opened, as Y25's band cards are, unless the member has
+  // since opened another charter card — a refusal does not take a card away
+  // from somebody reading one.
+  function unjudge(id, what, said) {
     const s = SUGGS.find((x) => x.id === id);
     if (!s) return false;
     const key = pairKeyOf(s);
     if (committed.get(key) !== what) return false;
     resolved.delete(key); verdicts.delete(key); picked.delete(key); committed.delete(key);
     if (justArrived === key) justArrived = null;
+    if (said) refusedSay.set(id, said);
     renderAll(); drawWires();
+    // a quick refusal lands while the press's own close is still running
+    // (`collapseCards` → `shut`), so the re-open waits for the card to be
+    // shut rather than toggling it closed a second time; a card still open
+    // after that is simply open, the sentence already drawn on it
+    let tries = 0;
+    const reopen = () => {
+      if (!said || !refusedSay.has(id)) return;
+      if (openId === null) { toggle(id, true); return; }
+      if (openId === id && ++tries < 10) setTimeout(reopen, 150);
+    };
+    reopen();
     return true;
   }
 

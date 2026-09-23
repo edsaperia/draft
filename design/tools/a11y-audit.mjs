@@ -611,14 +611,16 @@ const motionProbe = () => {
   // …and the grant sparkle's still form, asked of the stylesheet even where
   // no grant is waiting in this scene: a probe span in the first rail entry,
   // read and taken out again
+  // — and in the floating 📝 too, which sparkles until first pressed (Q1516 (1))
   let sparkle = null;
-  const host = document.querySelector('.queue button:not(.sealdot)');
-  if (host) {
+  for (const host of [document.querySelector('.queue button:not(.sealdot)'), document.querySelector('#editdoor [data-act="edit-door"]')]) {
+    if (!host) continue;
     const probe = document.createElement('span');
     probe.className = 'sparkle';
     host.insertBefore(probe, host.firstChild);
-    sparkle = getComputedStyle(probe).animationName;
+    const name = getComputedStyle(probe).animationName;
     probe.remove();
+    if (sparkle === null || (name && name !== 'none')) sparkle = name;
   }
   return { running, sparkles: document.querySelectorAll('.sparkle').length, sparkle };
 };

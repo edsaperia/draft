@@ -72,14 +72,28 @@ window.EDIT_MODE = (function () {
     // read mode only, under the tab's own gate — a member who may propose, not
     // the stranger, the applicant or a closed document (C9) — and only once the
     // document has begun: before 🍾 the founder's row is `#proserow`'s.
+    // **Since Q1516 the door has its own corner** (Ed, 2026-09-23): the
+    // window's bottom-right, about 1.5× the row's circles (system.css), never
+    // in the row's place — it had covered 🗑️ ✏️ and 🗑️ ❄️ ✓ from there. And
+    // **it sparkles until a member first presses it** (Q1516 (1)), as an
+    // unaccepted grant's rail entry does (Q1501): the same sweep, its phase
+    // the clock's so a re-render carries on mid-sweep, still under reduced
+    // motion, and never after the first press — which is remembered per seat
+    // beside the grants' acceptances (`DOOR_PRESSED` in `S.okd`, persisted by
+    // `saveGrants` since `ackPersists` names it), so a reload does not bring
+    // it back.
+    const SPARKLE_MS = 3200;              // system.css's `sparkleSweep` length
     function renderEditDoor() {
       const ed = document.getElementById('editdoor');
       if (!ed) return;
       const show = !!env.cs && constituted() && !env.S.editMode && canEditText();
+      const sparkle = !env.S.okd.has(env.DOOR_PRESSED);
       ed.innerHTML = show
         ? '<div class="race-mid commitrow proposalrow" data-editdoor="1"><span class="rowmid"></span>' +
           '<button class="btn btn-propose glyphbtn emojibtn" data-act="edit-door" title="' +
-          esc(PAGE_COPY.ride.textDash + PAGE_COPY.ride.pressToWrite) + '">' + glyphHtml('📝') + '</button></div>'
+          esc(PAGE_COPY.ride.textDash + PAGE_COPY.ride.pressToWrite) + '">' +
+          (sparkle ? '<span class="sparkle" aria-hidden="true" style="animation-delay: -' + (Date.now() % SPARKLE_MS) + 'ms"></span>' : '') +
+          glyphHtml('📝') + '</button></div>'
         : '';
       syncEditDoor();
     }
@@ -107,6 +121,8 @@ window.EDIT_MODE = (function () {
       const b = ev.target.closest('#editdoor [data-act="edit-door"]');
       if (!b) return;
       ev.stopPropagation();
+      // the first press ends the sparkle for this seat, for good (Q1516 (1))
+      if (!env.S.okd.has(env.DOOR_PRESSED)) { env.S.okd.add(env.DOOR_PRESSED); env.saveGrants(); }
       toggleEditMode();
     });
     // 📝 pressed: the door. With a card open the card closes into its paragraph
@@ -139,13 +155,14 @@ window.EDIT_MODE = (function () {
     // It replaced a one-shot halo of its own; no copy, ever (Ed: no nudge copy).
     function ringTab() { beatEl(tabFor('text')); }
     // **The riding tab** (SURFACE K31): the text's pile — 📝 in front, the ✒️ 🛡️
-    // power tabs beneath — drawn once, in `#ridetab`, a sticky child of `.doc`
-    // that rests beside the charter heading and travels with the reader. Empty
-    // while a power tab's card is open (the strip has the tabs then), and
-    // before the save (no document, no text). It carries the draft's count
-    // while one is pending, and wears the active treatment in edit mode and
-    // while detached (Q1087: one treatment, one meaning — *this is the open
-    // card's tab*, and in edit mode the text is the open card).
+    // power tabs beneath — drawn once, in `#ridetab`, a child of `.doc` that
+    // rests beside the text's heading and, since Q1516 (2), stays there: it no
+    // longer travels with the reader, the floating 📝 being the handle that
+    // does. Empty while a power tab's card is open (the strip has the tabs
+    // then), and before the save (no document, no text). It carries the
+    // draft's count while one is pending, and wears the active treatment in
+    // edit mode (Q1087: one treatment, one meaning — *this is the open card's
+    // tab*, and in edit mode the text is the open card).
     function renderRideTab() {
       const rt = document.getElementById('ridetab');
       if (!rt) return;
@@ -213,16 +230,14 @@ window.EDIT_MODE = (function () {
       const r = col.getBoundingClientRect(), pt = parseFloat(getComputedStyle(col).paddingTop) || 0;
       return { top: r.top + pt, bottom: r.top + pt + 24, lineBox: 24 };
     }
-    // detached: the line the tab rests beside has scrolled out under the
-    // navbar, so the tab is riding rather than resting
+    // **The tab no longer rides** (Q1516 (2), Ed 2026-09-23: the floating
+    // button being enough): it rests at the text's heading and scrolls away
+    // with it, in read mode and in edit mode alike, so there is no detached
+    // state to keep — only the door, which follows the tab it must stay
+    // beneath (Q1380)
     function syncRideTab() {
       const rt = document.getElementById('ridetab');
       if (!rt || !rt.firstChild) return;
-      const line = rideLine();
-      const navH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 58;
-      const detached = !!line && line.bottom < navH + 8;
-      rt.classList.toggle('detached', detached);
-      // the door follows the tab it must stay beneath (Q1380)
       syncEditDoor();
     }
     // …and the column's strip rides on the same scroll (Q1313): its ground and

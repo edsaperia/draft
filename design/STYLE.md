@@ -24,6 +24,7 @@ the audit log (§7); this is the checklist. §§1–6 state the rules by subject
 | **the membership**, **the membership as it stands**, **a membership of five** | the room, a room of five (for the people who decide) | Ed, 2026-08-28, QA on `/pairwise`: *rather than using "room" in this way, use "the current membership" or "the membership at that time" or "the membership as it changes".* *Room* survives only as a place — 🧭's *a few hours in one room* was one, until the card left the birth (Q1363). Guard: `spec-check`'s `BANNED`, with an exact-string allowance list for the physical sense (item 69), empty since Q1363. |
 | **inactive** | quiet (of a membership) | |
 | **Anonymity** | Privacy (the section) | |
+| **Rules** (the section, and what it holds: *the rules are settled*) | Constitution (the section), the constitution (for the document's rules), Settings | Ed, 2026-09-23, Q1516 (5): groups drafting a constitution read *the constitution of the constitution*; *Settings* reads like preferences. `constitution-section` and `#cs-constitution` stay code names; *constitutional* (🏛️) survives. |
 | **task**, **card** | queue-card | Copy says tasks; the design system names the objects cards. |
 | **document**, **charter** | draft (for the thing being made) | `draft` means a candidate patch everywhere in this project. |
 | **the record** | rolling log hash, audit log (as a noun a member meets) | No engine jargon on a card. |

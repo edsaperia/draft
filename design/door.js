@@ -33,7 +33,7 @@ window.DOOR = (function () {
     let STR = null;   // the server's stranger payload (live); the fixture derives its own
     const setStranger = (d) => { STR = d; };
     const HOLDING = {
-      drafting: () => 'The constitution is being drafted.',
+      drafting: () => PAGE_COPY.rulesDrafting,
       'founder-deciding': (f) => 'The Founder ' + (f ? f + ' ' : '') + 'is deciding if you can see this document.',
       'members-deciding': () => 'The members are deciding if you can see this document.',
       'members-only': (f, by) => (by === 'members' ? 'The members decided' : 'The Founder ' + (f ? f + ' ' : '') + 'decided') +

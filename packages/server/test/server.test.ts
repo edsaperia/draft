@@ -1845,12 +1845,12 @@ describe("the stranger's door (Q452/455/456)", () => {
       return { status: res.status, body: JSON.parse(raw) as StrangerPayload, raw };
     };
 
-    // the birth: the constitution is being drafted, nothing to redact yet
+    // the birth: the rules are being drafted (Q1516 (5)), nothing to redact yet
     let k = await knock();
     expect(k.status, k.raw).toBe(200);
     expect(k.body.stranger).toBe(true);
     expect(k.body.title).toBe('Orchard Rules');
-    expect(k.body.holding).toEqual({ kind: 'drafting', sentence: 'The constitution is being drafted.' });
+    expect(k.body.holding).toEqual({ kind: 'drafting', sentence: 'The rules are being drafted.' });
     expect(k.body.text).toBeNull();
     expect(k.body.textShape).toEqual([]);
     expect(k.body.canRead).toBe(false);

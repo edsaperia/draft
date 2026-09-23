@@ -24,7 +24,8 @@ window.DOOR = (function () {
     // picture from the Fluent Flat set, and the sentences take glyphify
     const { glyphHtml, glyphify } = window.CARDS;
     const { policyNow, admissionPrice, avHtml, esc, csState, card, recordBody, cardHtml,
-      binBtn, departedSentence, textDivs, hydrateFromModule, blocksOf, isStranger, E, render } = env;
+      binBtn, departedSentence, textDivs, hydrateFromModule, itemsFromView, closedBlocks, blocksOf, isStranger, E, render,
+      plainRefusal, setDoorErr, doorErrHtml, showErrLine } = env;
     // There is no login screen. A stranger arrives at the three columns: the
     // rules are public while the text is private, the text's *shape* stands
     // as bars at real metrics, one sentence says who decided, what they
@@ -32,7 +33,7 @@ window.DOOR = (function () {
     let STR = null;   // the server's stranger payload (live); the fixture derives its own
     const setStranger = (d) => { STR = d; };
     const HOLDING = {
-      drafting: () => 'The constitution is being drafted.',
+      drafting: () => PAGE_COPY.rulesDrafting,
       'founder-deciding': (f) => 'The Founder ' + (f ? f + ' ' : '') + 'is deciding if you can see this document.',
       'members-deciding': () => 'The members are deciding if you can see this document.',
       'members-only': (f, by) => (by === 'members' ? 'The members decided' : 'The Founder ' + (f ? f + ' ' : '') + 'decided') +
@@ -117,6 +118,8 @@ window.DOOR = (function () {
       // after they had decided. Monotone like `shutAcked` below and for the
       // same reason: a poll already in flight must not take the news back.
       if (a.status === 'refused') S.app.refused = true;
+      // …and whether it was yes (issue #29 F2), monotone for the same reason
+      if (a.status === 'admitted') S.app.admitted = true;
       // the OK on a shut door is the module's (SURFACE E33, Q901), and it
       // **only ever sets** — `owedSettings`' rule from the other side: the flag
       // is monotone in the module, so a poll already in flight when the press
@@ -158,8 +161,8 @@ window.DOOR = (function () {
       lockline: { value: (c) => {
         const st = csState(c.k);
         return st && st.settledBy && st.settledBy !== 'convenor'
-          ? 'Decided by the members.'
-          : 'Set by the founder when the document was made.';
+          ? PAGE_COPY.lockline.members
+          : PAGE_COPY.lockline.founder;
       } },
     });
     // An undecided rule has no value to print and nobody to attribute it to,
@@ -218,10 +221,26 @@ window.DOOR = (function () {
       const sentence = [departedSentence(), p ? p.holding.sentence : ''].filter(Boolean).join(' ');
       hold.textContent = sentence;
       hold.hidden = !sentence;
-      const key = 'stranger:' + (p ? (p.canRead ? 'read:' + p.text : 'shape:' + JSON.stringify(p.textShape)) : '');
+      // **A closed document's ✔s, where 🌍 lets you read it** (Q1508): the
+      // server carries the records on a closed, readable document alone, and
+      // they are filed through the member path's own drawing (`itemsFromView`
+      // over the door's view), so a stranger's closed page is the member's
+      // closed page, every tab filed — the undecided ones at the Backlog
+      // after the text, which `closedBlocks` builds from the same records —
+      // and the Amendments and the Signatures with them (Q1512 (d)): the
+      // payload carries both on a closed, readable document, and the member
+      // path's own `closedBlocks` brackets the text with all three
+      const recs = p && p.canRead && Array.isArray(p.records) && env.cs ? p.records : null;
+      const readClosed = !!(p && p.canRead && p.closed && env.cs);
+      const key = 'stranger:' + (p ? (p.canRead ? 'read:' + p.text : 'shape:' + JSON.stringify(p.textShape)) : '') +
+        (recs ? '\u0000rec:' + recs.length : '') +
+        (readClosed ? '\u0000closed:' + ((p.closed.signatures || []).length) + ':' +
+          ((p.amendmentRecords || []).length) : '');
       if (key !== env.charterKey) {
         env.charterKey = key;
-        SESSION.setData({ DOC: p && p.canRead && p.text ? blocksOf(p.text) : [], SUGGS: [] });
+        SESSION.setData({ DOC: (p && p.canRead && p.text ? blocksOf(p.text) : [])
+          .concat(readClosed ? closedBlocks() : []),
+        SUGGS: recs ? itemsFromView(env.cs.v) : [] });
         const shape = p && !p.canRead ? p.textShape.filter((b) => b.chars > 0) : [];
         red.classList.toggle('black', new URLSearchParams(location.search).get('bars') === 'black');
         red.innerHTML = shape.length ? barsHtml(shape, red) : '';
@@ -263,14 +282,19 @@ window.DOOR = (function () {
     // the rail's one card
     const STRCARDS = () => {
       const p = strPayload() || {};
-      // Under an open join policy the act the word Join names — arriving IS
-      // joining — is not built (Q509), and /login mails a non-member nothing:
-      // the door states the policy and offers the login it can actually do.
       const login = { k: 'strlogin', g: '📧', t: 'Log In', kind: 'personal', own: 'you',
         done: () => false };
-      const apply = { k: 'strapply', g: '🪪', t: 'Apply for Membership', kind: 'personal', own: 'you', done: () => false };
-      return p.applyOpen ? [login, apply] : [login];
+      // **an open door is joined from the page** (issue #36 F1; Q509 (a)): at
+      // 🤝 yes with 🪪 at ✒️ the payload says `joinOpen` and never `applyOpen`,
+      // and the door offered Log In alone, which mails a stranger nothing. The
+      // card keeps the key `strapply` — it posts the same knock, and the link
+      // it mails is the joining (`/auth/apply` admits at ✒️)
+      const apply = { k: 'strapply', g: '🪪', t: joining() ? PAGE_COPY.strjoin.title : 'Apply for Membership',
+        kind: 'personal', own: 'you', done: () => false };
+      return (p.applyOpen || p.joinOpen) ? [login, apply] : [login];
     };
+    // an open door with no application to make: the 🪪 card is a Join
+    const joining = () => { const p = strPayload() || {}; return !p.applyOpen && !!p.joinOpen; };
     const STRS = { email: '', sent: null, sentTo: '' };   // the stranger's provisional layer
     const strRailCtx = {
       get open() { return S.open; }, get E() { return E(); },
@@ -282,7 +306,7 @@ window.DOOR = (function () {
       // its tab says what it is, and the field is the whole of the card
       noTitleHead: (c) => c.k === 'strlogin',
       summary: (c) => (STRS.sent === c.k ? 'Check your inbox'
-        : c.k === 'strapply' ? 'Membership is by application'
+        : c.k === 'strapply' ? (joining() ? 'Anyone with the link may join' : 'Membership is by application')
         : (strPayload() || {}).joinOpen ? 'Anyone with the link may join' : 'Members log in by email'),
       value: (c) => strRailCtx.summary(c), isRoom: () => false,
     };
@@ -304,14 +328,17 @@ window.DOOR = (function () {
         '<input type="email" data-stremail="1" value="' + esc(STRS.email) + '" placeholder="you@example.com"></span>';
       const body = STRS.sent === c.k
         ? '<p class="why">Sent to <b>' + esc(STRS.sentTo) + '</b>. ' +
-          (c.k === 'strapply' ? 'Follow the link to begin your application — the address is your identity here.'
+          (c.k === 'strapply' ? (joining() ? PAGE_COPY.strjoin.sent
+            : 'Follow the link to begin your application — the address is your identity here.')
             : 'If that address is on the membership, a link is on its way.') + '</p>' +
           // the field stays after the send (Q609): typing a different address
           // un-sends, and the send button returns
           field
-        : (login ? '' : '<p class="why">' +
-            'Membership is by application. Your email is your identity here — the link it sends is the login, and the answer arrives on it.</p>') +
-          field;
+        : (login ? '' : '<p class="why">' + (joining() ? esc(PAGE_COPY.strjoin.why) :
+            'Membership is by application. Your email is your identity here — the link it sends is the login, and the answer arrives on it.') + '</p>') +
+          field +
+          // a refused send is said under the card that sent it (Y25; issue #36 F2)
+          (doorErrHtml ? doorErrHtml(c.k) : '');
       const foot = binBtn() + (STRS.sent !== c.k
         ? '<button class="btn btn-approve glyphbtn emojibtn"' + (okAddr ? '' : ' disabled') +
           ' data-strsend="' + c.k + '" title="Send the link">' + glyphHtml('📧') + '</button>'
@@ -322,6 +349,8 @@ window.DOOR = (function () {
       const t = ev.target.closest('[data-stremail]');
       if (!t) return;
       STRS.email = t.value;
+      // the next keystroke retires a refusal (Y25)
+      if (S.doorErr && S.doorErr.k === S.open) S.doorErr = null;
       if (STRS.sent && STRS.email.trim() !== STRS.sentTo) { STRS.sent = null; return render(); }
       const b = document.querySelector('[data-strsend]');
       if (b) b.disabled = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(STRS.email.trim());
@@ -330,13 +359,33 @@ window.DOOR = (function () {
       const send = ev.target.closest('[data-strsend]');
       if (send) {
         const k = send.dataset.strsend;
-        STRS.sent = k; STRS.sentTo = STRS.email.trim();
-        if (LIVEMODE) {
-          // the same answer whatever the server says: the door is not an oracle
-          api.post('/api/d/' + LIVESLUG + (k === 'strapply' ? '/apply' : '/login'), { email: STRS.sentTo })
-            .catch(() => {});
-        }
-        return render();
+        const to = STRS.email.trim();
+        // the fixture has no wire: the send is the press
+        if (!LIVEMODE) { STRS.sent = k; STRS.sentTo = to; return render(); }
+        // **sent means the host took it** (issue #36 F2; SURFACE Y25): the card
+        // read *Sent to …* before the knock was posted and the answer was
+        // thrown away, so a 429, a 400 or a host answering 502 all promised a
+        // link that never came. The door is still no oracle — a member's
+        // address and a stranger's get the same `ok` — but a refusal is said
+        // under the card and on the stagehand's line, in Y25's words.
+        send.disabled = true;
+        const name = k === 'strapply' ? 'apply' : 'login';
+        const path = '/api/d/' + LIVESLUG + '/' + name;
+        const no = (error, status) => {
+          STRS.sent = null;
+          if (setDoorErr) setDoorErr(k, PAGE_COPY.refused(plainRefusal ? plainRefusal(error) : error));
+          if (showErrLine) showErrLine({ name: 'POST ' + path, args: { email: to }, error, status, at: Date.now() });
+          render();
+        };
+        fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ email: to }) })
+          .then((r) => r.json().then((j) => ({ status: r.status, j }), () => ({ status: r.status, j: null })))
+          .then(({ status, j }) => {
+            if (j && j.ok) { STRS.sent = k; STRS.sentTo = to; if (S.doorErr && S.doorErr.k === k) S.doorErr = null; return render(); }
+            no((j && j.error) || PAGE_COPY.noAnswer(status), status);
+          })
+          .catch(() => no(PAGE_COPY.noAnswer(0), 0));
+        return undefined;
       }
     });
 

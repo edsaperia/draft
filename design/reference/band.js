@@ -125,8 +125,14 @@ window.BAND = (function () {
       // delegation hands over — `DECIDING`'s per-setting sentence — and carries
       // **no explanation of the blind collection**: the *Not now — every member
       // states…* frame and the per-setting aggregation tail are gone (Q1152).
-      // Blindness is still said to the person it protects, on the member's own
-      // answer card (`BLINDNOTE`).
+      // **And it is not said anywhere else either** (issue #19). This said
+      // blindness survived on the member's own answer card, in a `BLINDNOTE`
+      // constant; Q1175 took the note off every answer body the same evening
+      // — bare blocks, the clause text being the explanation — and left the
+      // constant behind, defined, exported and rendered nowhere, so the
+      // comment described a card nobody has been served since. The constant
+      // is gone with this note. Blindness returns to the surface with the 🍾
+      // redesign (Q1169); until then it is stated in no body at all.
       return '<div class="choice delegrung">' +
         opt(ladderView(c.k), dk, 'roster', decidingOf(c.k) + '.', '') +
         '</div>';
@@ -728,7 +734,7 @@ window.BAND = (function () {
       // application that has already been made and answered
       const shut = applyShutOnMe();
       const base = [{ k: 'apply', g: '🪪',
-        t: a.refused ? T.refusedTitle : shut ? T.shutTitle : T.apply, own: 'you',
+        t: a.refused ? T.refusedTitle : a.admitted ? T.admittedTitle : shut ? T.shutTitle : T.apply, own: 'you',
         kind: 'personal', done: () => a.submitted || (shut && a.shutAcked) }];
       if (!a.started) return base;
       return base.concat([
@@ -752,8 +758,12 @@ window.BAND = (function () {
     const applyShutOnMe = () => {
       const a = S.app;
       if (!a.emailVerified || a.submitted) return false;
-      if (env.cs && env.cs.isRemote) return env.cs.v && env.cs.v.applyOpen === false;
-      return !(policyNow() === 'apply' && admissionPrice() !== 'pen');
+      // shut means 🤝 no: at ✒️ the door is open and a verified applicant's
+      // submit admits them (issue #36 F3) — `applyOpen` alone read that as shut
+      if (env.cs && env.cs.isRemote) {
+        return env.cs.v && env.cs.v.applyOpen === false && env.cs.v.joinOpen === false;
+      }
+      return policyNow() !== 'apply';
     };
     const appCtx = {
       get open() { return S.open; }, get E() { return E(); },
@@ -774,7 +784,7 @@ window.BAND = (function () {
         // submitted, the entry says what is happening to it, in the words the
         // rest of the surface uses (Q1391, Ed 2026-09-16: *before the members
         // — a proposal like any other* is a baffling thing for a queue card to say)
-        ? (S.app.refused ? PAGE_COPY.appcards.refused : S.app.submitted ? 'Submitted — the members are deciding' : applyShutOnMe() ? '' : S.app.started ? (['appname', 'apppic'].every((k2) => APPCARDS().find((x) => x.k === k2).done()) ? 'Ready to submit' : 'Three small tasks') : 'Membership is by application')
+        ? (S.app.refused ? PAGE_COPY.appcards.refused : S.app.admitted ? PAGE_COPY.appcards.admitted : S.app.submitted ? 'Submitted — the members are deciding' : applyShutOnMe() ? '' : S.app.started ? (['appname', 'apppic'].every((k2) => APPCARDS().find((x) => x.k === k2).done()) ? 'Ready to submit' : 'Three small tasks') : 'Membership is by application')
         : c.k === 'appmail' ? (S.app.emailVerified ? S.app.email + ' · verified'
           : S.app.emailSent ? 'Check your inbox' : 'Your identity here')
         : c.k === 'appname' ? (S.app.name || 'What members will call you')
@@ -805,7 +815,14 @@ window.BAND = (function () {
         // sentence, naming nobody and counting nothing; the explainer above
         // it goes with the vote it explains.
         if (a.refused) return '<p class="why">' + esc(PAGE_COPY.appcards.refused) + '</p>';
-        return '<p class="why">Your application goes before the members as a proposal (✏️) — it passes if the membership is sure enough.</p>' +
+        // …and where it was yes (issue #29 F2): the promise of a mail has been kept
+        if (a.admitted) return '<p class="why">' + esc(PAGE_COPY.appcards.admitted) + '</p>';
+        // what it goes before, by 🪪's price (issue #29 F3); nothing at ✒️ once
+        // submitted, the race having opened at whatever price it met
+        const price = admissionPrice();
+        const WHY = PAGE_COPY.appcards.why;
+        return (a.submitted && price === 'pen' ? ''
+          : '<p class="why">' + esc(WHY[price] || WHY.proposal) + '</p>') +
           (a.submitted
             ? '<div class="lockline">' + TICK + '<span>Submitted. ' + APPLICANT.judged + ' of ' + E() + ' have voted on it — you will get an email either way.</span></div>'
             : a.started
@@ -1307,8 +1324,20 @@ window.BAND = (function () {
         }
         // — unless it is a decision you are owed: the OK comes before the
         // motion, since an unacknowledged rule sits in the rail until it is
-        // pressed (the composer returns the moment it is)
-        if (composerOn(c) && stateOf(c, ctx) !== 'news') {
+        // pressed (the composer returns the moment it is).
+        // **…but news never takes a composer out from under a draft** (the P1
+        // sweep, 2026-09-23, after issue #80 made a Founder's ✒️ change to an
+        // ordinary rule news again): a composer already on screen for this
+        // card, holding a motion the member has typed and not sent, stays
+        // the composer when the news lands — the value and the caret are
+        // kept (Q1486, *nothing rebuilds under a caret*), and the news waits
+        // in the rail, its OK served the next time the card opens. Read off
+        // the card in the document, so a card closed and reopened meets the
+        // OK first, as it always did; the draft itself is never discarded.
+        const composing = S.open === c.k && !!S.draft && S.draft.k === c.k &&
+          !!(S.draft.to || S.draft.why) &&
+          !!document.querySelector('.setupcard[data-setupcard="' + c.k + '"] [data-dropmotion]');
+        if (composerOn(c) && (stateOf(c, ctx) !== 'news' || composing)) {
           // **The settled card is the composer** (Ed, 2026-08-18): the rule as
           // it stands at the head, the alternatives as the setting's own
           // controls, session-view's rationale lane, 🗑️ and the route's commit.
@@ -1433,7 +1462,7 @@ window.BAND = (function () {
           // change, not for the road it takes. `founderProposal` reads it here.
           if (amFounder() && env.cs && founderDirect(cc) && isChange(k) && !motionOn(cc) && !membersHold(cc)) {
             const v = (S.setWhy && S.setWhy[k]) || '';
-            return '<div class="body whyset"><p class="eyebrow fieldlab">Why are you changing this?</p>' +
+            return '<div class="body whyset"><p class="eyebrow fieldlab">' + PAGE_COPY.whyChangingLabel + '</p>' +
               founderSpeakerLane(v) + '</div>';
           }
           // anybody else, reading what happened: what changed, and their reason
@@ -1848,13 +1877,22 @@ window.BAND = (function () {
     // In a room of twelve that is about four seconds to compose in. The
     // attribute is found rather than listed twice: whichever of the seven the
     // focused field carries is the one the restore looks it up by.
+    // **…and a member's answer fields** (the P1 sweep, 2026-09-23): `ans-*`
+    // cards are composed in `data-ansnum` and `data-ansdate`, and a poll
+    // landing while a member typed an answer took the caret the same way.
+    // 👥's two boxes share one key, so the field is found again by its place
+    // among the fields carrying that key, not by the key alone. A date box
+    // holds no value until it is whole, so a half-typed one comes back empty
+    // with the caret in it — Q1513.
     const KEEP_ATTRS = ['data-txt', 'data-num', 'data-mtext', 'data-mslug',
-      'data-mpace', 'data-mrate', 'data-mnum'];
+      'data-mpace', 'data-mrate', 'data-mnum', 'data-ansnum', 'data-ansdate'];
+    const keptSel = (attr, key) => '.setupcard input[' + attr + '="' + key + '"]';
     const renderKeep = () => {
       const a = document.activeElement;
       const inp = a && a.closest && a.closest('.setupcard') &&
         a.matches(KEEP_ATTRS.map((x) => 'input[' + x + ']').join(', ')) ? a : null;
       const attr = inp ? KEEP_ATTRS.find((x) => inp.hasAttribute(x)) : null;
+      const nth = attr ? [...document.querySelectorAll(keptSel(attr, inp.getAttribute(attr)))].indexOf(inp) : 0;
       const box = document.querySelector('.setupcard .emojibox');
       let sel = null;
       try { if (inp) sel = [inp.selectionStart, inp.selectionEnd]; } catch (e) { /* type=email has none */ }
@@ -1872,16 +1910,24 @@ window.BAND = (function () {
           why = r.toString().length;
         } else why = lane.textContent.length;
       }
-      return { open: S.open, key: attr ? inp.getAttribute(attr) : null, attr,
+      return { open: S.open, key: attr ? inp.getAttribute(attr) : null, attr, nth,
         sel, why, scroll: box ? box.scrollTop : 0 };
     };
     const renderRestore = (k) => {
       if (!k || !k.open || k.open !== S.open) return;
       if (k.attr) {
-        const el = document.querySelector('.setupcard input[' + k.attr + '="' + k.key + '"]');
+        const all = document.querySelectorAll(keptSel(k.attr, k.key));
+        const el = all[k.nth] || all[0];
         if (el && document.activeElement !== el) {
           el.focus({ preventScroll: true });
-          try { if (k.sel && typeof k.sel[0] === 'number') el.setSelectionRange(k.sel[0], k.sel[1]); } catch (e) { /* not a text control */ }
+          if (k.sel && typeof k.sel[0] === 'number') {
+            try { el.setSelectionRange(k.sel[0], k.sel[1]); } catch (e) { /* not a text control */ }
+          } else if (el.type === 'number' && el.value !== '') {
+            // a number box has no selection to restore, and focus puts the
+            // caret at its start — so the next digit went in front of the
+            // ones typed; setting the value again leaves it at the end
+            const v = el.value; el.value = ''; el.value = v;
+          }
         }
       }
       if (k.why !== null && k.why !== undefined) {

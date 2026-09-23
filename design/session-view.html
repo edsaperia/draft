@@ -746,6 +746,9 @@
   // the caret each time would fight the founder's typing
   const focusOpened = (el, k) => focusComposer(el);
 
+  // the `S.okd` key that says this seat has pressed the floating 📝 once
+  // (Q1516 (1)); `ackPersists` below remembers it with the grants
+  const DOOR_PRESSED = 'editdoor';
   // ---- edit mode (backlog 204, Ed 2026-08-28; SURFACE K31) ----------------
   // design/edit-mode.js since refactor Q1352 (d): made here, where the code
   // stood — before `S`, `prose`, `ctx` and `cs` exist, so those four are
@@ -758,6 +761,8 @@
     get prose() { return prose; },
     get ctx() { return ctx; },
     get cs() { return cs; },
+    DOOR_PRESSED,
+    saveGrants: (...a) => saveGrants(...a),
     amFounder: (...a) => amFounder(...a),
     beatEl: (...a) => beatEl(...a),
     card: (...a) => card(...a),
@@ -1998,7 +2003,10 @@
   // `adm:<applicant>` cannot be a literal in ACK_KEYS, there being one per
   // joiner, so the two callers ask this instead; ACK_KEYS stays the literal
   // list `spec-check` reads out of this file.
-  const ackPersists = (k) => ACK_KEYS.includes(k) || /^adm:/.test(k);
+  // …and one fact that is no acknowledgement at all: **whether this seat has
+  // pressed the floating 📝 yet** (Q1516 (1)) — the door sparkles until it
+  // has, and the fact rides the same per-seat store so a reload keeps it
+  const ackPersists = (k) => ACK_KEYS.includes(k) || /^adm:/.test(k) || k === DOOR_PRESSED;
   // grants stage behind the constitutional OKs (Q453c): a gate or grant
   // asks nothing of you while a decision you are owed still waits
   // **…a decision** (SURFACE E4, W4: *staged behind the constitutional
@@ -2450,7 +2458,7 @@
     // the outline lists only what exists: before the save there is no
     // constitution to point at (Ed, 2026-08-18)
     return (!settled(card('myemail')) ? '' :
-      '<li class="lvl1">' + secToggleHtml('cs-constitution') + '<a href="#cs-constitution">Constitution</a></li>' +
+      '<li class="lvl1">' + secToggleHtml('cs-constitution') + '<a href="#cs-constitution">' + esc(PAGE_COPY.rulesHeading) + '</a></li>' +
       secLive().filter((s2) => !s2.railOnly).map((s2) =>
         '<li class="lvl2">' + secToggleHtml('cs-' + s2.key) + '<a href="#cs-' + s2.key + '">' + esc(s2.title) + '</a></li>').join('') +
       '<li class="lvl1"><a href="#dochead">' + esc(S.title || 'Untitled') + '</a></li>') +
@@ -4839,7 +4847,7 @@
     // is being headed yet — the run is three clauses on an unsaved document —
     // and the table of contents already withholds its Constitution entry
     // until the save, so a heading here disagreed with the outline beside it.
-    { key: 'constitution', label: cs ? 'Constitution' : '',
+    { key: 'constitution', label: cs ? PAGE_COPY.rulesHeading : '',
       // **The birth has no sections** (Ed, 2026-08-21: *during the birth we
       // don't need to see the Membership section*). Before the save there is
       // no constitution to divide up — the run is the title, the link and

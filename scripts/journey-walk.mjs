@@ -461,22 +461,25 @@ if (!EMPTY_TEXT) {
   say('strip pre  · ' + (stripPreOk ? 'B · I at the card\'s top right before 🍾, no [], dark until the caret, a pasted text lights ✒️, the column shows the characters in the document\'s own face with every rank kept, and B takes the marks off a bold word and puts them back'
     : 'FAIL: ' + JSON.stringify({ stripRest, darkThenLit, afterPaste, srcChars, selected, unbolded, reselected, rebolded })));
   if (!stripPreOk) stuck.push('the strip before 🍾');
-  // the strip rides with the tab: at the page's end both are stuck under the
-  // navbar, level, and the strip wears its ground
+  // the strip rides: at the page's end it is stuck under the navbar and wears
+  // its ground — and **the 📝 tab does not ride with it** (Q1516 (2), Ed
+  // 2026-09-23): it rests at the text's heading, scrolled off the top with it
   const rode = await page.evaluate(() => {
     window.scrollTo(0, document.body.scrollHeight);
     return new Promise((res) => requestAnimationFrame(() => setTimeout(() => {
       const st = document.getElementById('prosectl');
       const tab = document.querySelector('#ridetab .achip[data-tab="text"]');
+      const navH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 58;
       const o = { detached: st.classList.contains('detached'),
-        level: Math.round(st.querySelector('.lanectl').getBoundingClientRect().top - tab.getBoundingClientRect().top) };
+        stripTop: Math.round(st.querySelector('.lanectl').getBoundingClientRect().top),
+        tabBottom: Math.round(tab.getBoundingClientRect().bottom), navH };
       window.scrollTo(0, 0);
       res(o);
     }, 120)));
   });
   await T(200);
-  const rodeOk = rode.detached && Math.abs(rode.level) <= 1;
-  say('strip ride · ' + (rodeOk ? 'stuck under the navbar level with the 📝 tab, ground on' : 'FAIL: ' + JSON.stringify(rode)));
+  const rodeOk = rode.detached && rode.stripTop >= rode.navH - 1 && rode.tabBottom < rode.navH;
+  say('strip ride · ' + (rodeOk ? 'the strip stuck under the navbar, ground on; the 📝 tab left at the text’s heading (' + rode.tabBottom + 'px), not riding' : 'FAIL: ' + JSON.stringify(rode)));
   if (!rodeOk) stuck.push('the strip riding before 🍾');
   // what ✒️ will send: the column read as the page reads it (`proseText`)
   const expectedText = await proseSrc();
@@ -2849,15 +2852,27 @@ const door = await (async () => {
   const tabUp = await beneathAt();
   const before = await box(DOOR);
   if (!before) return { before, atTop, tabUp };
+  /* **The door sparkles until it is first pressed** (Q1516 (1), Ed
+   * 2026-09-23): `.sparkle` inside the door before the press, gone after it,
+   * and still gone after a reload — the first press is remembered per seat
+   * as a grant's acceptance is. The pre-fix page drew no sparkle at all. */
+  const sparkles = () => page.evaluate(() => document.querySelectorAll('#editdoor [data-act="edit-door"] .sparkle').length);
+  const sparkleBefore = await sparkles();
+  const win = await page.evaluate(() => ({ w: visualViewport.width, h: visualViewport.height }));
   await page.click(DOOR);
   await T(400);
   const entered = { editing: await page.evaluate(() => document.getElementById('doc').classList.contains('editing')),
-    editable: await hostEditable(), door: await box(DOOR), commit: await box(ROW) };
+    editable: await hostEditable(), door: await box(DOOR), commit: await box(ROW), bin: await box('#charter [data-proposalrow] [data-act="row-discard"]') };
   await page.evaluate(() => document.querySelector('#ridetab .achip[data-tab="text"]').click());
   await T(400);
   const left = { editing: await page.evaluate(() => document.getElementById('doc').classList.contains('editing')),
-    row: !!(await box(ROW)), door: await box(DOOR) };
-  return { before, entered, left, atTop, tabUp };
+    row: !!(await box(ROW)), door: await box(DOOR), sparkles: await sparkles() };
+  await page.reload();
+  await T(3200);
+  await page.evaluate(() => { const c = document.querySelector('#ridetab .achip[data-tab="text"]'); if (c) { c.scrollIntoView({ block: 'start' }); window.scrollBy(0, -200); } });
+  await T(300);
+  const reloaded = { door: await box(DOOR), sparkles: await sparkles() };
+  return { before, entered, left, atTop, tabUp, sparkleBefore, reloaded, win };
 })();
 const sameBox = (a, b) => !!a && !!b && a.slice(0, 4).every((v, i) => Math.abs(v - b[i]) <= 0.5);
 // beneath the tab: hidden exactly when the resting tab is below the door's top, shown once it is above (Q1380)
@@ -2867,12 +2882,25 @@ const beneathOk = !!door.atTop && !!door.tabUp &&
 // a floating control is a circle (Q1380): width is height, and fully round
 const circleOk = !!door.before && door.before[2] === door.before[3] && door.before[6] === '50%' &&
   !!door.entered.commit && door.entered.commit[2] === door.entered.commit[3] && door.entered.commit[6] === '50%';
-const doorOk = beneathOk && circleOk && !!door.before && door.before[4] === '21.6px' && door.entered.editing && door.entered.editable === 'true' &&
-  !door.entered.door && sameBox(door.before, door.entered.commit) &&
+/* **Its own corner, about 1.5× the row's circles** (Q1516 (3), (4)): the
+ * door's right and bottom edges `--s5` (24px) off the window's, its diameter
+ * 1.5× the row's ✏️'s, and its box meeting neither the ✏️ nor the 🗑️ the row
+ * draws in edit mode. The pre-fix page stood the door in the ✏️'s own box. */
+const cornerOk = !!door.before && Math.abs(door.win.w - (door.before[0] + door.before[2]) - 24) <= 0.5 &&
+  Math.abs(door.win.h - (door.before[1] + door.before[3]) - 24) <= 0.5;
+const sizeOk = !!door.before && !!door.entered.commit && Math.abs(door.before[2] - 1.5 * door.entered.commit[2]) <= 1;
+const meets = (a, b) => !!a && !!b && a[0] < b[0] + b[2] && b[0] < a[0] + a[2] && a[1] < b[1] + b[3] && b[1] < a[1] + a[3];
+const clearOk = !meets(door.before, door.entered.commit) && !meets(door.before, door.entered.bin);
+const sparkleOk = door.sparkleBefore === 1 && door.left.sparkles === 0 && !!door.reloaded.door && door.reloaded.sparkles === 0;
+const doorOk = beneathOk && circleOk && cornerOk && sizeOk && clearOk && !!door.before && door.before[4] === '21.6px' && door.entered.editing && door.entered.editable === 'true' &&
+  !door.entered.door &&
   !door.left.editing && !door.left.row && sameBox(door.before, door.left.door);
-say('door       · ' + (doorOk ? 'the floating 📝 at ' + door.before.slice(0, 4).join('×') + ' (“' + door.before[5] + '”), a circle, hidden at the top with the tab ' + (door.atTop.chipBottom - door.atTop.doorTop) + 'px below it and shown with it up, enters edit mode, the row\'s ✏️ takes its box, and 📝 on the tab brings it back in the same box'
-  : 'FAIL: ' + JSON.stringify(door)));
-if (!doorOk) stuck.push('the floating 📝 (Q1335)');
+say('door       · ' + (doorOk ? 'the floating 📝 at ' + door.before.slice(0, 4).join('×') + ' (“' + door.before[5] + '”), a circle in the window’s corner at 1.5× the row’s ' + door.entered.commit[2] + 'px, clear of the row’s ✏️ and 🗑️, hidden at the top with the tab ' + (door.atTop.chipBottom - door.atTop.doorTop) + 'px below it and shown with it up, enters edit mode, and 📝 on the tab brings it back in the same box'
+  : 'FAIL: ' + JSON.stringify({ cornerOk, sizeOk, clearOk, beneathOk, circleOk, door })));
+if (!doorOk) stuck.push('the floating 📝 (Q1335, Q1516)');
+say('sparkle    · ' + (sparkleOk ? 'the floating 📝 sparkles before its first press, not after it, and not after a reload (Q1516 (1))'
+  : 'FAIL: sparkle before the press ' + door.sparkleBefore + ', after it ' + door.left.sparkles + ', after a reload ' + door.reloaded.sparkles + (door.reloaded.door ? '' : ' (no door after the reload)')));
+if (!sparkleOk) stuck.push('the floating 📝’s sparkle (Q1516 (1))');
 
 // the other half of backlog 50: what *is* news to a member is a rule changed
 // while they were here, and one press of OK is what dismisses it

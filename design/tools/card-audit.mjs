@@ -1837,15 +1837,25 @@ async function walkDoor(page, doors, errors, walk) {
   await wait(page, 250);
   const restored = await box(DOOR);
   const restoredHidden = await page.evaluate(() => getComputedStyle(document.querySelector('#editdoor [data-act="edit-door"]')).visibility === 'hidden');
+  // the window as a fixed box sees it — the visual viewport, never
+  // `documentElement`'s client box, which is the whole document on this page
+  const win = await page.evaluate(() => ({ w: visualViewport.width, h: visualViewport.height,
+    s5: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--s5')) }));
   await page.click(DOOR);
   await wait(page, 400);
   const commit = await box(ROW);
+  // every button the proposal-row draws in edit mode (🗑️, ✏️, ✒️ beside it) —
+  // D4's population: the door's place must meet none of them
+  const rowBtns = await page.evaluate(() => [...document.querySelectorAll('[data-proposalrow] .btn, #patchrow .btn')].map((b) => {
+    const r = b.getBoundingClientRect();
+    return { act: b.dataset.act || b.className, r: [r.left, r.top, r.width, r.height] };
+  }).filter((b) => b.r[2] > 0));
   const doorWhileEditing = await box(DOOR);
   const editing = await page.evaluate(() => document.getElementById('doc').classList.contains('editing'));
   await page.evaluate(() => document.querySelector('#ridetab .achip[data-tab="text"]').click());
   await wait(page, 400);
   const after = await box(DOOR);
-  doors.push({ walk, before, commit, doorWhileEditing, editing, after, short, restored, restoredHidden });
+  doors.push({ walk, before, commit, rowBtns, win, doorWhileEditing, editing, after, short, restored, restoredHidden });
 }
 
 /**
@@ -2002,16 +2012,31 @@ function doorRules(doors) {
   const out = [];
   const same = (a, b) => !!a && !!b && a.r.every((v, i) => Math.abs(v - b.r[i]) <= 0.5);
   for (const d of doors) {
-    const said = 'the floating 📝 stands in the proposal-row\'s ✏️\'s box — same place, same size, before and after edit mode (Q1335)';
+    // **its own corner, about 1.5× the row's circles** (Q1516 (3), (4), Ed
+    // 2026-09-23 — it had stood in the row's ✏️'s own box since Q1335): the
+    // door's right and bottom edges `--s5` off the window's, its diameter 1.5×
+    // the row's ✏️'s, and the same box before and after a round trip
+    const said = 'the floating 📝 stands in its own corner — right and bottom `--s5` off the window\'s edges — at 1.5× the proposal-row\'s circles, the same box before and after edit mode (Q1516 (3), (4))';
     if (!d.editing || !d.commit) {
       out.push({ rule: 'D1', lens: 'positioning', said, saw: 'pressing the door ' + (d.editing ? 'drew no row' : 'did not enter edit mode'), note: d.walk });
       continue;
     }
     if (d.doorWhileEditing) out.push({ rule: 'D1', lens: 'positioning', said, saw: 'the door is still drawn in edit mode, beside the row', note: d.walk });
-    if (!same(d.before, d.commit)) out.push({ rule: 'D1', lens: 'positioning', said,
-      saw: 'the door at ' + d.before.r.join('×') + ', the row\'s ✏️ at ' + d.commit.r.join('×'), note: d.walk });
+    const offRight = d.win.w - (d.before.r[0] + d.before.r[2]), offBottom = d.win.h - (d.before.r[1] + d.before.r[3]);
+    if (Math.abs(offRight - d.win.s5) > 0.5 || Math.abs(offBottom - d.win.s5) > 0.5) out.push({ rule: 'D1', lens: 'positioning', said,
+      saw: 'the door stands ' + Math.round(offRight * 100) / 100 + 'px off the window\'s right and ' + Math.round(offBottom * 100) / 100 + 'px off its foot, against ' + d.win.s5, note: d.walk });
+    if (Math.abs(d.before.r[2] - 1.5 * d.commit.r[2]) > 1) out.push({ rule: 'D1', lens: 'positioning', said,
+      saw: 'the door ' + d.before.r[2] + 'px across, the row\'s ✏️ ' + d.commit.r[2] + 'px (1.5× is ' + Math.round(1.5 * d.commit.r[2] * 100) / 100 + ')', note: d.walk });
     if (!same(d.before, d.after)) out.push({ rule: 'D1', lens: 'positioning', said,
       saw: 'the door at ' + d.before.r.join('×') + ' before, ' + (d.after ? d.after.r.join('×') : 'gone') + ' after leaving', note: d.walk });
+    // **D4 — the door never shares the proposal row's place** (Q1516 (3): it
+    // covered 🗑️ ✏️ and 🗑️ ❄️ ✓): its read-mode box meets no button the row
+    // draws in edit mode
+    const meets = (a, b) => a[0] < b[0] + b[2] - 0.5 && b[0] < a[0] + a[2] - 0.5 && a[1] < b[1] + b[3] - 0.5 && b[1] < a[1] + a[3] - 0.5;
+    for (const b of d.rowBtns || []) {
+      if (meets(d.before.r, b.r)) out.push({ rule: 'D4', lens: 'positioning', said: 'the floating 📝 never shares the proposal row\'s place: its box meets none of the row\'s buttons (Q1516 (3))',
+        saw: 'the door at ' + d.before.r.join('×') + ' meets the row\'s ' + b.act + ' at ' + b.r.map((v) => Math.round(v * 100) / 100).join('×'), note: d.walk });
+    }
     // **D2 — a floating control is a circle** (Q1380, Ed 2026-09-15): the door,
     // the row's ✏️ and 🗑️ are `--float-d` across (3rem since Ed's 2026-09-16
     // *larger, and stand out more*) and fully round, lifted by shadow; the

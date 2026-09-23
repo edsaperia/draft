@@ -158,54 +158,31 @@ window.WALLETS = (function () {
     // tool feeding both channels — two would drift, and the not-held sentence is
     // the one that most needs to be readable, since it is the answer to *why is
     // this one crossed out*.
-    // **What a socket says: the symbol, then the verb** (Ed, 2026-08-22: *don't
-    // name the item — just have the symbol, larger than in the wallet, and then
-    // explain what it is using the verb; keep the language as clear and
-    // functional as possible, using verbs and nouns that relate to concrete
-    // things on the page*). So no *"The shield."* opening — naming a thing is not
-    // explaining it, and the glyph has already said which one this is. Each
-    // sentence starts with **who can do what**, and every noun in it is something
-    // the reader can point at: the document, the settings, a ✒️ tab, the
-    // membership, an address.
-    //
-    // Held and not-held are different sentences, and the difference is the
-    // subject. Holding it, the sentence is about **you** and says what it costs
-    // and what comes back. Not holding it, the sentence names **who can** — which
-    // answers the question a struck-through tool actually raises, and does it
-    // without a word of apology.
-    //
-    // One table, both channels: the bubble draws it, and the tooltip is the same
-    // sentence, so the two can never drift.
+    // **What a socket says: the symbol, then the verb.** The sentences and
+    // the reasoning that shaped them are `PAGE_COPY.wallet` in design/copy.js
+    // (issue #19: every string a member can read lives in that file); what is
+    // left here is which of them this socket is in, which is the only part
+    // that is about the page. One table, both channels: the bubble draws it
+    // and the tooltip is the same sentence, so the two can never drift.
+    const W = window.COPY.page.wallet;
     const SAY = (el) => {
       const k = el.id;
       if (k === 'quill') {
         const spent = env.cs ? 3 : (S.seen.has('title') ? 1 : 0) + (S.seen.has('slug') ? 1 : 0) + (S.emailSent ? 1 : 0);
         const left = 4 - Math.min(3, spent) - 1;
-        return { g: '🪶', t: left > 0
-          ? 'You can name this document, choose its address and verify your email. Each one spends a feather. The last feather stays, and starts a new document.'
-          : 'You can start a new document.' };
+        return { g: '🪶', t: left > 0 ? W.quillSpending : W.quillSpent };
       }
       if (k === 'wallet') {
-        return { g: '✏️', t: (charterOn() && mayPropose())
-          ? 'You can propose changes to the text. A ✏️ comes back if the membership passes yours, and more arrive as the document runs.'
-          : 'Members can propose changes to the text, once the document has begun.' };
+        return { g: '✏️', t: (charterOn() && mayPropose()) ? W.proposeHeld : W.proposeNot };
       }
       if (k === 'penwallet') {
-        return { g: '✒️', t: mayPen()
-          ? 'You can change ' + penLocks() + (penLocks() === 1 ? ' setting' : ' settings') + ' yourself, without asking anybody. Each setting’s ✒️ tab says whether you can.'
-          : 'The Founder can change some settings without asking anybody, where they have kept Founder Actions.' };
+        return { g: '✒️', t: mayPen() ? W.penHeld(penLocks()) : W.penNot };
       }
       if (k === 'shieldwallet') {
-        return { g: '🛡️', t: mayShield()
-          ? 'You can refuse a change the membership passes on ' + shieldLocks() + (shieldLocks() === 1 ? ' setting' : ' settings') + '. Nothing changes there until you accept it.'
-          : 'The Founder can refuse a change the membership passes, where they have kept the Founder Veto.' };
+        return { g: '🛡️', t: mayShield() ? W.shieldHeld(shieldLocks()) : W.shieldNot };
       }
       if (k === 'voicewallet') {
-        return { g: '🏛️', t: !mayVoice()
-          ? 'Any member can propose a constitutional change 🏛️; all members must agree for it to pass.'
-          : heldMotion()
-            ? 'You are asking all members to agree to a constitutional change. This comes back when that question settles, or when you withdraw it.'
-            : 'You can ask all members to agree to a constitutional change. One question at a time.' };
+        return { g: '🏛️', t: !mayVoice() ? W.voiceNot : heldMotion() ? W.voiceOut : W.voiceHeld };
       }
       return { g: '', t: el.title || '' };
     };
@@ -221,7 +198,7 @@ window.WALLETS = (function () {
       // the symbol, bigger than it is in the socket — in the wallet it is a
       // token in a row and here it is the subject of the sentence beside it
       sayEl.innerHTML = '<span class="saysym">' + glyphHtml(s.g) + '</span><span class="saytxt">' + glyphify(esc(s.t)) +
-        (el.id === 'quill' ? '<br><a class="doclink" href="/">Start a new document</a>' : '') + '</span>';
+        (el.id === 'quill' ? '<br><a class="doclink" href="/">' + esc(W.startNew) + '</a>' : '') + '</span>';
       const r = el.getBoundingClientRect();
       // clamped to the window, with the nib following the socket rather than the
       // box — a bubble pushed off a right-hand wallet must still point at it

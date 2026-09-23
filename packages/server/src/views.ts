@@ -703,7 +703,7 @@ export const strangerView = (doc: LoadedDoc, nowMs: number,
   // do about it — the last is the rail's business (📧 or Apply)
   let holding: { kind: string; sentence: string | null };
   if (!cs.textConfirmed) {
-    holding = { kind: 'drafting', sentence: 'The constitution is being drafted.' };
+    holding = { kind: 'drafting', sentence: 'The rules are being drafted.' };
   } else if (chamber.settledBy === null) {
     holding = chamber.holder === 'convenor'
       ? { kind: 'founder-deciding', sentence: `${founder} is deciding if you can see this document.` }

@@ -889,8 +889,22 @@
     0% { background-position: 130% 0; }
     40%, 100% { background-position: -30% 0; }
   }
+  /* **…and so does the floating 📝 until it is first pressed** (Q1516 (1),
+     Ed 2026-09-23): the same band, the same 3.2 s sweep and the same still
+     form, inside the disc. The disc is white where a grant's entry wears its
+     own hue, and white light over white is nothing — so the band here is the
+     *yours* hue, the one the still form already wears. edit-mode.js draws the
+     span only until the seat's first press. */
+  #editdoor [data-act="edit-door"] { position: relative; overflow: hidden; }
+  #editdoor [data-act="edit-door"] > :not(.sparkle) { position: relative; z-index: 1; }
+  #editdoor [data-act="edit-door"] > .sparkle {
+    position: absolute; inset: 0; z-index: 0; pointer-events: none; border-radius: inherit;
+    background: linear-gradient(105deg, transparent 38%, rgba(var(--lc-yours), 0.4) 50%, transparent 62%);
+    background-size: 260% 100%; background-repeat: no-repeat; background-position: 130% 0;
+    animation: sparkleSweep 3200ms ease-in-out infinite;
+  }
   @media (prefers-reduced-motion: reduce) {
-    .queue button:not(.sealdot) > .sparkle {
+    .queue button:not(.sealdot) > .sparkle, #editdoor [data-act="edit-door"] > .sparkle {
       animation: none; background: none;
       box-shadow: inset 0 0 0 2px rgba(var(--lc-yours), 0.45);
     }
@@ -1136,17 +1150,16 @@
 
   /* ---- the text as a card: the riding tab, the beat, edit mode, the row
      (backlog 204, Ed 2026-08-28; SURFACE K31) ------------------------------ */
-  /* **The riding tab.** The text's 📝 pile stands in `#ridetab`, a direct
-     child of `.doc` placed right after the band, so its containing block is
-     the whole column and `position: sticky` carries it from the charter
-     heading to the document's foot. It takes no height of its own: the pile
-     is absolute in the gutter and lifted back up by the title's line box plus
-     the heading's margin, so at rest it sits exactly where it did beside the
-     title — the same 30px-on-30px measurement setup.css records — and the
-     sticky `top` is offset by the same amount, so detached it rides at
-     `--nav-h` plus the gutter's own air. z-index above every `.anch` pile it
-     passes (they are unpositioned or z:1–4 in a stack), never displacing one. */
-  .ridetab { --ride-up: calc(30px + var(--s3)); position: sticky; top: calc(var(--nav-h) + var(--s2) + var(--ride-up)); height: 0; z-index: 8; }
+  /* **The riding tab — which no longer rides** (Q1516 (2), Ed 2026-09-23:
+     the floating 📝 being enough). The text's 📝 pile stands in `#ridetab`, a
+     direct child of `.doc` placed right after the band. It takes no height of
+     its own: the pile is absolute in the gutter and lifted back up to the
+     text's first line (`--ride-up`, measured by `renderRideTab`), and it
+     rests there, scrolling away with the heading in read mode and in edit
+     mode alike — until Q1516 it was `position: sticky` and travelled with the
+     reader to the document's foot. Positioned, so it keeps its z-index above
+     any `.anch` pile beside it (unpositioned or z:1–4 in a stack). */
+  .ridetab { --ride-up: calc(30px + var(--s3)); position: relative; height: 0; z-index: 8; }
   /* **Its gutter is the constitution's gutter** (Ed's QA, 2026-08-30): the
      tab was resolving `right: 100%` against `.doc`'s whole content box while
      every clause-tab resolves against a `.cpara` inside `.setrow`'s centred
@@ -1163,13 +1176,10 @@
   }
   .ridetab .ridein { position: relative; }
   .ridetab .chipcol { top: calc(-1 * var(--ride-up)); margin-right: calc(14px + var(--s3)); }
-  /* **Detached, and in edit mode, it wears the active treatment** (M12: the
-     8px on `padding-left` as well as `width`, so the glyph does not move —
-     Q1087: one treatment, one meaning; in edit mode the text *is* the open
-     card, and a tab that has left its heading is the open card's tab
-     travelling with you). Lifted a step while riding, since it is over the
-     prose rather than beside it. */
-  .ridetab.detached .achip[data-tab="text"], .ridetab.editing .achip[data-tab="text"] {
+  /* **In edit mode it wears the active treatment** (M12: the 8px on
+     `padding-left` as well as `width`, so the glyph does not move — Q1087:
+     one treatment, one meaning; in edit mode the text *is* the open card). */
+  .ridetab.editing .achip[data-tab="text"] {
     width: 42px; padding-left: 8px; padding-right: 0;
     background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 34%, var(--bg));
   }
@@ -1177,14 +1187,13 @@
      the strip's own tuck-under (`.clausehead .achip`'s -2px) — on every tab,
      ✒️ 🛡️ included, exactly as a clausehead gives it to resting tabs too
      (Ed, 2026-08-17: every tab's right edge lands on the card's left edge;
-     Ed, 2026-08-31: tabs should always tuck). Detached over the prose there
-     is no card edge, and the pile rests on the closed piles' own column. */
+     Ed, 2026-08-31: tabs should always tuck). In read mode there is no card
+     edge, and the pile rests on the closed piles' own column. */
   .ridetab.editing .achip { margin-right: -2px; padding-right: 2px; width: 36px; }
   .ridetab.editing .achip[data-tab="text"] { width: 44px; padding-right: 2px; }
   /* In edit mode the pile is drawn as the strip — the pile expanded, the ✒️ 🛡️
      tabs beneath 📝 reachable (Ed's QA, 2026-08-30) — and only the front tab
      wears the active treatment; the power tabs stay 34px, as in any strip. */
-  .ridetab.detached .achip { box-shadow: var(--shadow-md); }
   .ridetab .achip { position: relative; }
   /* the draft's count while one is pending: a corner figure, --t-micro */
   .ridetab .ridecount {
@@ -1404,6 +1413,21 @@
      nothing reads its box, so it is `contents` too: the row's containing
      block is `.doc`, the door's, and `#charter > .prose` still matches. */
   #editdoor { display: contents; }
+  /* **The door has its own corner** (Q1516 (3), (4), Ed 2026-09-23): it
+     stood in the row's ✏️'s own box (Q1335) and covered 🗑️ ✏️ and 🗑️ ❄️ ✓
+     from there, so it moves to the window's bottom-right corner, `--s5` off
+     both edges — the gutter the row keeps from the foot — and is about 1.5×
+     the row's circles: 4.5rem against the row's 3rem. The disc grew, not the
+     picture in it (B6's one glyph size, as when the row's circles grew). The
+     row's box collapses to the button alone, so nothing of it lies over the
+     page; card-audit D1 holds the corner and the size, D4 that it meets none
+     of the row's buttons. */
+  #editdoor .race-mid.commitrow.proposalrow[data-editdoor] {
+    --float-d: 4.5rem;
+    position: fixed; right: var(--s5); bottom: var(--s5); left: auto; top: auto;
+    width: auto; max-width: none; height: auto; margin: 0; padding: 0;
+  }
+  #editdoor [data-editdoor] .rowmid { display: none; }
   /* …hidden while the resting 📝 tab is still below it (Q1380; `syncEditDoor`
      in edit-mode.js measures both), the box kept for D1 */
   #editdoor.belowtab [data-editdoor] { visibility: hidden; }

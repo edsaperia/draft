@@ -245,6 +245,13 @@ window.COPY = (function () {
     // its place — or withdraw it, which gives the edit back. The card's
     // sentence, its rail line, and the right-hand act; the 🗑️ beside it keeps
     // the withdrawal's own words (`row`).
+    // **and the ground shift says what happened** (SURFACE E16). The server's
+    // `shifted` is a flag — *a judgment of mine locked by a ground shift* —
+    // and this is the rail entry's tooltip, as the fixture has always
+    // supplied it. It names no candidate because the view does not carry
+    // which one was adopted, only that this wording is no longer the one you
+    // judged.
+    shifted: 'The wording was changed here after you voted, so your vote was about a wording that no longer exists.',
     stranded: {
       note: 'The document changed here, and your proposal could not be carried across to the new wording.',
       cap: 'Yours · the text moved under it',
@@ -526,6 +533,15 @@ window.COPY = (function () {
       below: ', below.',
     },
     // the riding tab's tooltip and the pre-🍾 prose row
+    // **the constitution section's heading reads Rules** (Q1516 (5), Ed
+    // 2026-09-23): groups drafting a constitution read *the constitution of
+    // the constitution*; *Settings* was offered and set aside as reading like
+    // preferences. The band's heading and the contents rail's entry both;
+    // `constitution-section` and `#cs-constitution` stay the code's names
+    rulesHeading: 'Rules',
+    // the stranger's door while the founding is still under way (door.js's
+    // `HOLDING.drafting`), in the same word
+    rulesDrafting: 'The rules are being drafted.',
     ride: {
       writing: 'you are writing; press to stop',
       pressToWrite: 'press to write',
@@ -565,14 +581,33 @@ window.COPY = (function () {
         : 'It should be back in about ' + minutes + ' minutes.'),
       pausedOver: 'Nearly there — hold on a moment longer.',
       stalled: 'This document cannot save changes at the moment. Nothing you do here will be kept.',
+      // **the page has lost the host** (Q1505, Ed 2026-09-23: warn before
+      // anybody acts, never after): a red bar along the top, the page still
+      // readable, the cause added only where the page knows it
+      reconnecting: 'Reconnecting…',
+      offline: 'Your device is offline.',
+      notAnswering: 'docs.vote is not answering.',
+      // every commit's tooltip while the bar stands
+      held: 'Waiting to reconnect — what you have typed is kept',
     },
     // the wire did not answer, or answered with a status and no sentence
     noAnswer: (status) => (status ? 'the server answered ' + status : 'the server could not be reached'),
     binPutBack: 'Put it back as it stands',
     // 👑/📯 in the topbar
     founderMark: {
-      crowned: 'Part of the constitution is reserved: changing it needs the founder’s assent',
+      crowned: 'Some of the rules are reserved: changing them needs the founder’s assent',
       none: 'The Founder reserves nothing — no special part in the document',
+    },
+    // **The lockline tells the truth about who set it** (Q510 (a), Ed
+    // 2026-08-21): the line under the value on a settled card. It had said
+    // *Set by the founder when the document was made* on every rule, the ones
+    // the room decided by consent included, and the *when* survives only
+    // where it is true. Three surfaces print the pair — the member's card,
+    // the stranger's door and the shared settled body's own fallback — which
+    // is why it is one entry rather than three spellings (issue #19).
+    lockline: {
+      members: 'Decided by the members.',
+      founder: 'Set by the founder when the document was made.',
     },
     // 📍's verdict fragments, composed around the bold address
     slugNote: {
@@ -652,6 +687,14 @@ window.COPY = (function () {
     // the applicant's five tasks (APPCARDS): not settings, one label each,
     // moved here from the page unchanged (Q1209's build) because a member
     // reads them
+    // **the Join card on an open-door document** (issue #36 F1; Q509 (a), whose
+    // ruling ended *the Join affordance comes back*): 🤝 yes with 🪪 at ✒️, where
+    // arriving is joining — the door's 🪪 card becomes a join, and its link seats
+    strjoin: {
+      title: 'Join',
+      why: 'Anyone with the link may join. Your email is your identity here — the link it sends makes you a member.',
+      sent: 'Follow the link to join — the address is your identity here.',
+    },
     appcards: {
       apply: 'Apply for Membership',
       appmail: 'Your Email',
@@ -675,6 +718,21 @@ window.COPY = (function () {
       // how, is theirs (§3.5).
       refused: 'The membership did not agree to it.',
       refusedTitle: 'Your Application Was Not Accepted',
+      // **…and when it is yes** (issue #29 F2): an admitted applicant still
+      // read *Submitted — the members are deciding* above a promise of a mail
+      // that had already arrived
+      admitted: 'The membership admitted you. The email sent to you is your way in.',
+      admittedTitle: 'Your Application Was Accepted',
+      // **what an application goes before, by 🪪's price** (issue #29 F3): the
+      // ✏️ sentence stood at every price, and *sure enough* is not the words
+      // for a vote everybody must agree to (STYLE §1). At ✒️ the door is free,
+      // said only before submitting — a submitted application is already in a
+      // race opened at the price it met, so nothing is said there
+      why: {
+        assembly: 'Your application goes before the members as a constitutional proposal (🏛️) — it passes only if every member agrees.',
+        proposal: 'Your application goes before the members as a proposal (✏️) — it passes if the membership is sure enough.',
+        pen: 'Anyone may join: submitting your application makes you a member straight away.',
+      },
       // **what the application holds so far** (Q1366, Ed 2026-09-15): the 🪪
       // card lists the three things a submission carries, each as given or as
       // not yet given, so a ✓ on ✋ 🖼️ 👋 is visibly kept before Submit — the
@@ -684,6 +742,43 @@ window.COPY = (function () {
         name: 'Your name', picture: 'Your picture', words: 'Your words',
         noName: 'not yet given', noPicture: 'not yet chosen', noWords: 'none — the words are optional',
       },
+    },
+    // **What a socket says: the symbol, then the verb** (Ed, 2026-08-22:
+    // *don't name the item — just have the symbol, larger than in the wallet,
+    // and then explain what it is using the verb; keep the language as clear
+    // and functional as possible, using verbs and nouns that relate to
+    // concrete things on the page*). So no *"The shield."* opening — naming a
+    // thing is not explaining it, and the glyph has already said which one
+    // this is. Each sentence starts with **who can do what**, and every noun
+    // in it is something the reader can point at: the document, the settings,
+    // a ✒️ tab, the membership, an address.
+    //
+    // Held and not-held are different sentences, and the difference is the
+    // subject. Holding it, the sentence is about **you** and says what it
+    // costs and what comes back. Not holding it, the sentence names **who
+    // can** — which answers the question a struck-through tool actually
+    // raises, and does it without a word of apology.
+    //
+    // One table, both channels: the bubble draws it, and the tooltip is the
+    // same sentence, so the two can never drift.
+    wallet: {
+      quillSpending: 'You can name this document, choose its address and verify your email. Each one spends a feather. The last feather stays, and starts a new document.',
+      quillSpent: 'You can start a new document.',
+      // the one capability the bubble would swallow, so the navigation moves
+      // inside it: the link under the 🪶 sentence
+      startNew: 'Start a new document',
+      proposeHeld: 'You can propose changes to the text. A ✏️ comes back if the membership passes yours, and more arrive as the document runs.',
+      proposeNot: 'Members can propose changes to the text, once the document has begun.',
+      // the count is the settings this founder's own hand still reaches
+      penHeld: (n) => 'You can change ' + n + (n === 1 ? ' setting' : ' settings') +
+        ' yourself, without asking anybody. Each setting’s ✒️ tab says whether you can.',
+      penNot: 'The Founder can change some settings without asking anybody, where they have kept Founder Actions.',
+      shieldHeld: (n) => 'You can refuse a change the membership passes on ' + n +
+        (n === 1 ? ' setting' : ' settings') + '. Nothing changes there until you accept it.',
+      shieldNot: 'The Founder can refuse a change the membership passes, where they have kept the Founder Veto.',
+      voiceNot: 'Any member can propose a constitutional change 🏛️; all members must agree for it to pass.',
+      voiceOut: 'You are asking all members to agree to a constitutional change. This comes back when that question settles, or when you withdraw it.',
+      voiceHeld: 'You can ask all members to agree to a constitutional change. One question at a time.',
     },
     // the power tabs' titles (T6–T9) and the synthetic cards' titles
     pwTitle: {
@@ -714,6 +809,10 @@ window.COPY = (function () {
       departedRemoved: (who) => who + ' has been removed',
       departedLeft: (who) => who + ' has left',
       passedLead: 'Passed: ',
+      // a change the Founder's ✒️ made (the pen route) was never put to
+      // anybody, so it did not *pass* (Q1514, Ed 2026-09-23): the news card's
+      // own phrasing, naming the office, never the person
+      founderChangedLead: 'Changed by the Founder: ',
       rejectedLead: 'Rejected: ',
       // the failed-motion news card's own title (SURFACE E41; Q1447). The
       // record's `rejectedLead` states the outcome to the room; this one is
@@ -855,13 +954,13 @@ window.COPY = (function () {
     preamble: {
       beforeBegin: 'When the document begins, members may propose changes to rules and vote on proposals.',
       voteOnly: 'Members may vote on proposals.',
-      voteWhenDecided: 'Members may begin voting on proposals when the whole constitution has been decided.',
+      voteWhenDecided: 'Members may begin voting on proposals when all the rules have been decided.',
       proposeAtBegin: ' They may propose changes to rules when the document begins.',
       proposeLead: 'Members may propose changes to rules ',
       onceAnswered: 'once they have answered the questions the Founder delegated',
       asArrive: 'as soon as they arrive',
       andVote: ', and may vote on proposals.',
-      voteTail: '. They may begin voting on proposals when the whole constitution has been decided.',
+      voteTail: '. They may begin voting on proposals when all the rules have been decided.',
       passOrdinary: 'A proposal ✏️ passes once it is preferred by enough of the membership, and by more than prefer the current text.',
       passConstitutional: 'A constitutional proposal 🏛️ passes only when all members agree.',
     },
@@ -900,6 +999,10 @@ window.COPY = (function () {
       ' preferring the current text can stop a proposal.',
     quorumFloorMin: 'The minimum quorum is 2: the author and one other member.',
     titledLead: 'The document is titled ',
+    // the 📧 clause in the birth tab left open once the document exists
+    // (issue #38 F4): the text typed here is no longer sent, so it says so
+    birthMade: (slug) => 'This document now lives at docs.vote/d/' + slug +
+      '. What is typed here no longer reaches it.',
     // the card value lines (VALUE) — the label-vocabulary strings that MVAL
     // keys on stay in the page until pass 2 moves that cluster whole
     val: {
@@ -963,6 +1066,9 @@ window.COPY = (function () {
     },
     theFounder: 'The Founder',
     crownHand: 'The founder’s own hand — a Founder Action ✒️, not a proposal',
+    // the founder's own rationale lane on a settled card: the field's label,
+    // and the placeholder in the lane beneath it
+    whyChangingLabel: 'Why are you changing this?',
     whyChangingPlaceholder: 'I am changing this because…',
     clerkNoPencil: 'You are not a member, so there is no ✏️ for you to spend — this one is yours to set.',
     nothingToPut: 'That could not be proposed: nothing is chosen on this card.',
@@ -970,7 +1076,10 @@ window.COPY = (function () {
     // 2026-09-20): the field's own min and max, said once, where the module's
     // validator prose — *dripMinutes must be …* — used to land on the card
     outOfRange: (lo, hi) => 'That has to be a whole number between ' + lo + ' and ' + hi + '.',
-    // the composer's free sentences (the lane pairs stay with MVAL's cluster)
+    // the composer's free sentences. The lane pairs that are still the page's
+    // are ⏰'s and 💤's *never* rungs alone, beside MVAL's cluster: since
+    // issue #19 every lane whose rung the clause table already has a sentence
+    // for — 🪪 🥾 👤 ⚖️ 🌍 🤝 — draws it from RULES above.
     composeNote: {
       redirect: 'Every link the document has ever had keeps working — a change leaves a redirect behind.',
       neverNeedsAll: 'Taking the end date away needs all members to agree — every change made so far was made under a promise that the document would seal on a date and be signed.',
@@ -1004,10 +1113,29 @@ window.COPY = (function () {
       downTip: 'Laid down at the start — press to keep it',
       givenTip: 'Already given up on its own card — it comes back only there',
     },
+    // 🥂's line about whose names the record reveals. **The record says who
+    // is named; the card reads the record** (Q770, entry 31): a sentence
+    // derived from the rung alone is wrong the moment one person signs, so
+    // live the count comes from the field entries the server has already
+    // passed through the one reveal rule — the first five. The fixture has no
+    // record and keeps a plain sentence from the standing rung, the elective
+    // rungs riding their base (Q767) — the last three.
+    closingNames: {
+      nothing: 'Nothing was proposed, so the record names nobody.',
+      none: 'The record names nobody: every proposal keeps the privacy it was made under.',
+      all: (proposers) => 'The record names every one of the ' + proposers + '.',
+      some: (named, proposers) => 'The record names ' + named + ' of the ' + proposers + '.',
+      // **honour**: the rule moved while the document was open — some
+      // proposals were made under one rung and stand under another
+      honour: ' Proposals keep the privacy they were made under: the rule moved while the document was open.',
+      sealed: 'Authorship stays sealed: the record names nobody.',
+      public: 'Authorship was public throughout.',
+      unsealed: 'Authorship is unsealed: the record names who proposed what.',
+    },
     // 🥂's batch (SURFACE E24, §9's 🥂 row). The rest of the list is still
-    // literal in `begin.js` and moves here with issue #19; this one sentence
-    // was written after the rule that the words live in this file, so it
-    // starts here.
+    // literal in `begin.js` — issue #19 moved the names line above and no
+    // more; this one sentence was written after the rule that the words live
+    // in this file, so it starts here.
     //
     // **The line for what the clock found running** (Q1450, Ed 2026-09-18).
     // A motion still open when the document closes fails at that moment, on
@@ -1032,8 +1160,8 @@ window.COPY = (function () {
       canjudge: {
         title: 'Voting',
         why: 'A vote is your say on a proposal: you are shown two at a time and choose the one you prefer, or neither.',
-        waiting: 'Waiting on the constitution.',
-        done: 'Open — the constitution is settled.',
+        waiting: 'Waiting on the rules.',
+        done: 'Open — the rules are settled.',
       },
       voice: {
         // **the 🏛️ grant is the membership's own door** (Q1502, Ed
@@ -1120,9 +1248,10 @@ window.COPY = (function () {
     // settings should appear in the feed* … *proposals on settings should have
     // that setting's icon instead of 💡*). The title says which way it was put,
     // since *all members must agree* is a different thing to watch than a vote;
-    // the place is the constitution and the setting's own noun (`page.cards`).
+    // the place is the Rules section (Q1516 (5)) and the setting's own noun
+    // (`page.cards`).
     proposedConstitutional: 'New constitutional proposal 🏛️',
-    constitution: 'Constitution',
+    constitution: 'Rules',
     ruleStood: 'The rule as it stood',
     ruleNow: 'The rule as it stands',
     noRule: 'No rule had been set.',
@@ -1149,6 +1278,8 @@ window.COPY = (function () {
     empty: 'Nothing has been proposed yet.',
     closed: (dateWords) => 'Closed ' + dateWords,
     unreachable: 'The feed could not be reached. It will try again.',
+    // the host's red flag, said about the document to a reader who cannot act
+    stalled: 'This document cannot save changes at the moment, so nothing here will change until it can.',
     missing: 'There is no document at this address.',
   };
 

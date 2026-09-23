@@ -533,6 +533,15 @@ window.COPY = (function () {
       below: ', below.',
     },
     // the riding tab's tooltip and the pre-🍾 prose row
+    // **the constitution section's heading reads Rules** (Q1516 (5), Ed
+    // 2026-09-23): groups drafting a constitution read *the constitution of
+    // the constitution*; *Settings* was offered and set aside as reading like
+    // preferences. The band's heading and the contents rail's entry both;
+    // `constitution-section` and `#cs-constitution` stay the code's names
+    rulesHeading: 'Rules',
+    // the stranger's door while the founding is still under way (door.js's
+    // `HOLDING.drafting`), in the same word
+    rulesDrafting: 'The rules are being drafted.',
     ride: {
       writing: 'you are writing; press to stop',
       pressToWrite: 'press to write',
@@ -586,7 +595,7 @@ window.COPY = (function () {
     binPutBack: 'Put it back as it stands',
     // 👑/📯 in the topbar
     founderMark: {
-      crowned: 'Part of the constitution is reserved: changing it needs the founder’s assent',
+      crowned: 'Some of the rules are reserved: changing them needs the founder’s assent',
       none: 'The Founder reserves nothing — no special part in the document',
     },
     // **The lockline tells the truth about who set it** (Q510 (a), Ed
@@ -945,13 +954,13 @@ window.COPY = (function () {
     preamble: {
       beforeBegin: 'When the document begins, members may propose changes to rules and vote on proposals.',
       voteOnly: 'Members may vote on proposals.',
-      voteWhenDecided: 'Members may begin voting on proposals when the whole constitution has been decided.',
+      voteWhenDecided: 'Members may begin voting on proposals when all the rules have been decided.',
       proposeAtBegin: ' They may propose changes to rules when the document begins.',
       proposeLead: 'Members may propose changes to rules ',
       onceAnswered: 'once they have answered the questions the Founder delegated',
       asArrive: 'as soon as they arrive',
       andVote: ', and may vote on proposals.',
-      voteTail: '. They may begin voting on proposals when the whole constitution has been decided.',
+      voteTail: '. They may begin voting on proposals when all the rules have been decided.',
       passOrdinary: 'A proposal ✏️ passes once it is preferred by enough of the membership, and by more than prefer the current text.',
       passConstitutional: 'A constitutional proposal 🏛️ passes only when all members agree.',
     },
@@ -1151,8 +1160,8 @@ window.COPY = (function () {
       canjudge: {
         title: 'Voting',
         why: 'A vote is your say on a proposal: you are shown two at a time and choose the one you prefer, or neither.',
-        waiting: 'Waiting on the constitution.',
-        done: 'Open — the constitution is settled.',
+        waiting: 'Waiting on the rules.',
+        done: 'Open — the rules are settled.',
       },
       voice: {
         // **the 🏛️ grant is the membership's own door** (Q1502, Ed
@@ -1239,9 +1248,10 @@ window.COPY = (function () {
     // settings should appear in the feed* … *proposals on settings should have
     // that setting's icon instead of 💡*). The title says which way it was put,
     // since *all members must agree* is a different thing to watch than a vote;
-    // the place is the constitution and the setting's own noun (`page.cards`).
+    // the place is the Rules section (Q1516 (5)) and the setting's own noun
+    // (`page.cards`).
     proposedConstitutional: 'New constitutional proposal 🏛️',
-    constitution: 'Constitution',
+    constitution: 'Rules',
     ruleStood: 'The rule as it stood',
     ruleNow: 'The rule as it stands',
     noRule: 'No rule had been set.',
