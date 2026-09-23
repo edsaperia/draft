@@ -455,9 +455,9 @@ const READ_BAND = () => {
   const G = window.CARDS.glyphTextOf;
   const vis = (el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < innerHeight; };
   return { card: c ? c.dataset.setupcard : null,
-    cardText: c ? (G(c) || c.innerText).replace(/s+/g, ' ').trim().slice(0, 420) : null,
+    cardText: c ? (G(c) || c.innerText).replace(/\s+/g, ' ').trim().slice(0, 420) : null,
     commit: c ? [...c.querySelectorAll('.commitrow button')].map((b) => (G(b) || b.textContent).trim() + (b.disabled ? '(off)' : '')) : null,
-    rail: [...document.querySelectorAll('#rail [data-card], #rail li.qitem')].map((e) => (e.dataset.card || e.dataset.q) + (vis(e) ? '' : '(off screen)') + ' “' + (G(e) || '').replace(/s+/g, ' ').trim().slice(0, 50) + '”'),
+    rail: [...document.querySelectorAll('#rail [data-card], #rail li.qitem')].map((e) => (e.dataset.card || e.dataset.q) + (vis(e) ? '' : '(off screen)') + ' “' + (G(e) || '').replace(/\s+/g, ' ').trim().slice(0, 50) + '”'),
     tabs: [...document.querySelectorAll('#band [data-tab^="mo:"], #band [data-tab="rate"]')].map((t) => t.dataset.tab + ':' + (t.title || '')),
     pencils: document.querySelectorAll('#wallet i:not(.gone)').length, held: window.SESSION.editsHeld,
     flying: !!document.querySelector('.flypencil'), scrollY: Math.round(scrollY) };
@@ -541,7 +541,7 @@ async function drawer(s, shotName) {
   const got = await s.page.evaluate(() => {
     const door = document.getElementById('drawerright');
     if (!door) return { door: null };
-    const label = door.textContent.replace(/s+/g, ' ').trim();
+    const label = door.textContent.replace(/\s+/g, ' ').trim();
     const badge = door.querySelector('*') ? getComputedStyle(door.querySelector('*')).backgroundColor : null;
     door.click();
     return { door: label, badge };
