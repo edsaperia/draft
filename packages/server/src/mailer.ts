@@ -235,6 +235,20 @@ export const MAILS = {
       `Log in to take your seat:\n${link}`,
     link,
   }),
+  /**
+   * **A refused application is told** (issue #29; SPEC §9.7½: *either way
+   * they are told by mail*). One template for every road — the room's vote
+   * against, a race it could not carry, the close, the Founder's refusal at
+   * the crown — since the event carries no road, so it names no actor and
+   * gives no reason. No login: there is no seat, as `removed`.
+   */
+  applicationRefused: (title: string, link: string): Omit<Mail, 'to'> => ({
+    subject: `Your application to “${title}” was not accepted`,
+    text: `Your application to become a member of “${title}” was not accepted, ` +
+      `and it is now closed.\n\n` +
+      `The document is here, if its visibility lets you read it:\n${link}`,
+    link,
+  }),
   login: (title: string, link: string): Omit<Mail, 'to'> => ({
     subject: `Log in to “${title}”`,
     text: `Here is your login link for “${title}”:\n${link}`,
@@ -280,6 +294,18 @@ ${link}
   removed: (title: string, link: string): Omit<Mail, 'to'> => ({
     subject: `You are no longer a member of “${title}”`,
     text: `The Founder has removed you from the membership of “${title}” ` +
+      `and so you are no longer eligible to vote in it.\n\n` +
+      `The document is here, if its visibility lets you read it:\n${link}`,
+    link,
+  }),
+  /**
+   * **A removal the membership carried** (SURFACE E40, Q1498): exactly E31's
+   * tells, the act being the room's rather than the Founder's — `removed`'s
+   * shape and subject, the members named as the actor.
+   */
+  removedByMotion: (title: string, link: string): Omit<Mail, 'to'> => ({
+    subject: `You are no longer a member of “${title}”`,
+    text: `The members of “${title}” have voted to remove you from its membership, ` +
       `and so you are no longer eligible to vote in it.\n\n` +
       `The document is here, if its visibility lets you read it:\n${link}`,
     link,

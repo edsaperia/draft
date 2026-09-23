@@ -675,6 +675,21 @@ window.COPY = (function () {
       // how, is theirs (§3.5).
       refused: 'The membership did not agree to it.',
       refusedTitle: 'Your Application Was Not Accepted',
+      // **…and when it is yes** (issue #29 F2): an admitted applicant still
+      // read *Submitted — the members are deciding* above a promise of a mail
+      // that had already arrived
+      admitted: 'The membership admitted you. The email sent to you is your way in.',
+      admittedTitle: 'Your Application Was Accepted',
+      // **what an application goes before, by 🪪's price** (issue #29 F3): the
+      // ✏️ sentence stood at every price, and *sure enough* is not the words
+      // for a vote everybody must agree to (STYLE §1). At ✒️ the door is free,
+      // said only before submitting — a submitted application is already in a
+      // race opened at the price it met, so nothing is said there
+      why: {
+        assembly: 'Your application goes before the members as a constitutional proposal (🏛️) — it passes only if every member agrees.',
+        proposal: 'Your application goes before the members as a proposal (✏️) — it passes if the membership is sure enough.',
+        pen: 'Anyone may join: submitting your application makes you a member straight away.',
+      },
       // **what the application holds so far** (Q1366, Ed 2026-09-15): the 🪪
       // card lists the three things a submission carries, each as given or as
       // not yet given, so a ✓ on ✋ 🖼️ 👋 is visibly kept before Submit — the

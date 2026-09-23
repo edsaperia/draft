@@ -3159,6 +3159,113 @@ describe('the applicant is served the door plus their application (Q1281)', () =
 });
 
 /**
+ * **Everybody the document turns away is told** (issue #29, and Q1498 riding
+ * it). SPEC §9.7½ ends its admissions paragraph *either way they are told by
+ * mail*, and the 🪪 card promises it — but `relay` had no arm for
+ * `application-refused`, so a refused applicant heard nothing on any road.
+ * And SURFACE E40 gives a member removed by a carried 🥾 motion *exactly
+ * E31's tells*, the mail among them, while the arm mailed exile alone.
+ */
+describe('a refusal and a carried removal are mailed (issue #29, Q1498)', () => {
+  const mailsTo = (dataDir: string, to: string) => readFileSync(join(dataDir, 'outbox.jsonl'), 'utf8')
+    .split(/\r?\n/).filter((l) => l.length > 0)
+    .map((l) => JSON.parse(l) as { to: string; subject: string; text: string; link?: string })
+    .filter((m) => m.to === to);
+  async function room(prices: { admission: string; removal?: string }, ends: number | null) {
+    const b = await boot();
+    const created = await (await post(b.base, '/api/docs', {
+      title: 'Door Charter', email: 'ada@example.org',
+    })).json() as { ok: boolean; slug: string; devLink: string };
+    const ada = cookieOf(await consume(created.devLink));
+    const slug = created.slug;
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const res = await post(b.base, `/api/d/${slug}/cmd`, { cmd: name, args }, cookie);
+      const body = await res.json() as { ok?: boolean; error?: string; result?: unknown };
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+      return body.result;
+    };
+    const seat = async (email: string) => {
+      await cmd(ada, 'invite', { email });
+      return cookieOf(await consume((await lastMailTo(b.dataDir, email)).link!));
+    };
+    await cmd(ada, 'confirm-starting-text', { text: 'The door is answered by whoever is nearest.' });
+    const bo = await seat('bo@example.org');
+    const cy = await seat('cy@example.org');
+    await cmd(ada, 'set-setting', { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
+    const values: Record<string, unknown> = {
+      ending: { endsAtMs: ends },
+      quorum: { form: 'count', n: 1 }, chamber: { rung: 'link' },
+      authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
+      applications: { apply: true }, admission: { price: prices.admission },
+      ...(prices.removal ? { removal: { price: prices.removal } } : {}),
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await post(b.base, `/api/d/${slug}/cmd`, { cmd: 'reclaim', args: { setting } }, ada);
+      await cmd(ada, 'set-setting', { setting, value });
+    }
+    await cmd(ada, 'set-convenor-membership', { isMember: true });
+    // the doors' powers laid down, so a carried act lands without the crown
+    await cmd(ada, 'begin', { laidDown: [
+      { setting: 'door:invite', power: 'unilateral' }, { setting: 'door:invite', power: 'assent' },
+      { setting: 'door:remove', power: 'unilateral' }, { setting: 'door:remove', power: 'assent' },
+    ] });
+    const knock = async (email: string, name: string) => {
+      const k = await (await post(b.base, `/api/d/${slug}/apply`, { email })).json() as { devLink: string };
+      const c = cookieOf(await consume(k.devLink));
+      await cmd(c, 'submit-application', { name });
+      return c;
+    };
+    const viewOf = async (cookie: string) => (await (await fetch(
+      `${b.base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as MemberViewPayload;
+    return { ...b, slug, ada, bo, cy, cmd, knock, viewOf };
+  }
+  /** Every mail to this address but the verification the knock sent. */
+  const toldTo = (dataDir: string, to: string) =>
+    mailsTo(dataDir, to).filter((m) => !/\/auth\/apply/.test(m.link ?? ''));
+
+  it('an application one member votes against at 🏛️ is refused, and the applicant is mailed', async () => {
+    const { dataDir, draft, ada, cmd, knock, viewOf } = await room({ admission: 'assembly' }, null);
+    await knock('dee@example.org', 'Dee');
+    const motion = (await viewOf(ada)).view.motions.find((m) => (m.payload as { kind: string }).kind === 'admit')!;
+    await cmd(ada, 'answer-motion', { motion: motion.id, answer: 'keep' }); // Q1473: this ends it
+    await draft.outbox.drain();
+    const told = toldTo(dataDir, 'dee@example.org');
+    expect(told, 'the refusal, beside the verification mail').toHaveLength(1);
+    expect(told[0]!.subject).toContain('Door Charter');
+    // no seat, so no login: the document's own address, as exile's mail
+    expect(told[0]!.link).not.toContain('token=');
+    expect(told[0]!.text).not.toContain('token=');
+  }, 60_000);
+
+  it('an application the close finds still running at ✏️ is refused, and the applicant is mailed', async () => {
+    const ends = Date.now() + 3_600_000;
+    const { dataDir, draft, knock } = await room({ admission: 'proposal' }, ends);
+    await knock('eve@example.org', 'Eve');
+    await draft.tick(ends + 1_000); // nobody judged it: the close holds the motion
+    await draft.outbox.drain();
+    const told = toldTo(dataDir, 'eve@example.org');
+    // the close's own mail goes to members and invitees, never an applicant,
+    // so the one mail here is the refusal
+    expect(told).toHaveLength(1);
+    expect(told[0]!.subject).toContain('Door Charter');
+  }, 60_000);
+
+  it('a member removed by a carried 🥾 motion is mailed, the membership named as the actor (E40)', async () => {
+    const { dataDir, draft, ada, cy, cmd, viewOf } = await room({ admission: 'assembly', removal: 'assembly' }, null);
+    const boId = (await viewOf(ada)).view.members.find((m) => m.email === 'bo@example.org')!.id;
+    const motion = await cmd(cy, 'open-motion', { payload: { kind: 'remove', member: boId }, why: 'moved away' });
+    await cmd(ada, 'answer-motion', { motion, answer: 'accept' });
+    await draft.outbox.drain();
+    const told = mailsTo(dataDir, 'bo@example.org').filter((m) => /no longer a member/.test(m.subject));
+    expect(told, 'the removed member hears it from the document').toHaveLength(1);
+    expect(told[0]!.text, 'the room removed them, not the Founder').not.toContain('The Founder');
+    expect(told[0]!.text).toMatch(/members/);
+    expect(told[0]!.link).not.toContain('token=');
+  }, 60_000);
+});
+
+/**
  * **A shape on the send is ignored** (Q1363, Ed 2026-09-15): 🧭 left the
  * birth, so `/api/docs` no longer reads `shape` — a row's name, `custom` or
  * nonsense alike births an unshaped document, every setting unset in the

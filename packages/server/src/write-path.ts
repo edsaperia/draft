@@ -286,16 +286,29 @@ export class WritePath {
         for (const m of cs.memberRecords().values()) {
           if (!m.removed) tell(m.email, m.arrivedAtT === null ? null : m.id);
         }
-      } else if (event.type === 'member-removed' && event.by === 'convenor') {
+      } else if (event.type === 'application-refused') {
+        // **a refused applicant is told** (issue #29; SPEC §9.7½): every road
+        // — the room's vote against, a race it could not carry, the close,
+        // the crown's refusal — emits this one event, so one mail serves them
+        // all. The address is the applicant's row; no token, there being no
+        // seat (the exile arm's shape)
+        const a = cs.applicantRecords().get(event.applicant);
+        if (a !== undefined && mailable(a.email)) {
+          push(a.email, MAILS.applicationRefused(title, `${cfg.baseUrl}/d/${cs.slug}`));
+        }
+      } else if (event.type === 'member-removed' && event.by !== 'self') {
         // exile at will (SURFACE E31, Q901): the removed member is outside
         // the document by now, so mail is the channel — with the document's
-        // address and **no token**, the `closed` arm's shape, since a login
-        // link would be minted for a seat that no longer exists. A carried
-        // removal (`viaMotion`, E10/E11's outcome) and a resignation (the
-        // member's own act) relay nothing.
+        // address and **no token** (E31's form), since a login link would be
+        // minted for a seat that no longer exists. **A carried removal is
+        // told too** (SURFACE E40, Q1498): exactly E31's tells, the members
+        // named as the actor. A resignation (the member's own act) relays
+        // nothing.
         const m = cs.memberRecords().get(event.member);
         if (m !== undefined && mailable(m.email)) {
-          push(m.email, MAILS.removed(title, `${cfg.baseUrl}/d/${cs.slug}`));
+          const link = `${cfg.baseUrl}/d/${cs.slug}`;
+          push(m.email, event.by === 'convenor' ? MAILS.removed(title, link)
+            : MAILS.removedByMotion(title, link));
         }
       } else if (event.type === 'member-uninvited') {
         // **a withdrawn invitation is told to the person it was sent to**

@@ -728,7 +728,7 @@ window.BAND = (function () {
       // application that has already been made and answered
       const shut = applyShutOnMe();
       const base = [{ k: 'apply', g: '🪪',
-        t: a.refused ? T.refusedTitle : shut ? T.shutTitle : T.apply, own: 'you',
+        t: a.refused ? T.refusedTitle : a.admitted ? T.admittedTitle : shut ? T.shutTitle : T.apply, own: 'you',
         kind: 'personal', done: () => a.submitted || (shut && a.shutAcked) }];
       if (!a.started) return base;
       return base.concat([
@@ -774,7 +774,7 @@ window.BAND = (function () {
         // submitted, the entry says what is happening to it, in the words the
         // rest of the surface uses (Q1391, Ed 2026-09-16: *before the members
         // — a proposal like any other* is a baffling thing for a queue card to say)
-        ? (S.app.refused ? PAGE_COPY.appcards.refused : S.app.submitted ? 'Submitted — the members are deciding' : applyShutOnMe() ? '' : S.app.started ? (['appname', 'apppic'].every((k2) => APPCARDS().find((x) => x.k === k2).done()) ? 'Ready to submit' : 'Three small tasks') : 'Membership is by application')
+        ? (S.app.refused ? PAGE_COPY.appcards.refused : S.app.admitted ? PAGE_COPY.appcards.admitted : S.app.submitted ? 'Submitted — the members are deciding' : applyShutOnMe() ? '' : S.app.started ? (['appname', 'apppic'].every((k2) => APPCARDS().find((x) => x.k === k2).done()) ? 'Ready to submit' : 'Three small tasks') : 'Membership is by application')
         : c.k === 'appmail' ? (S.app.emailVerified ? S.app.email + ' · verified'
           : S.app.emailSent ? 'Check your inbox' : 'Your identity here')
         : c.k === 'appname' ? (S.app.name || 'What members will call you')
@@ -805,7 +805,14 @@ window.BAND = (function () {
         // sentence, naming nobody and counting nothing; the explainer above
         // it goes with the vote it explains.
         if (a.refused) return '<p class="why">' + esc(PAGE_COPY.appcards.refused) + '</p>';
-        return '<p class="why">Your application goes before the members as a proposal (✏️) — it passes if the membership is sure enough.</p>' +
+        // …and where it was yes (issue #29 F2): the promise of a mail has been kept
+        if (a.admitted) return '<p class="why">' + esc(PAGE_COPY.appcards.admitted) + '</p>';
+        // what it goes before, by 🪪's price (issue #29 F3); nothing at ✒️ once
+        // submitted, the race having opened at whatever price it met
+        const price = admissionPrice();
+        const WHY = PAGE_COPY.appcards.why;
+        return (a.submitted && price === 'pen' ? ''
+          : '<p class="why">' + esc(WHY[price] || WHY.proposal) + '</p>') +
           (a.submitted
             ? '<div class="lockline">' + TICK + '<span>Submitted. ' + APPLICANT.judged + ' of ' + E() + ' have voted on it — you will get an email either way.</span></div>'
             : a.started

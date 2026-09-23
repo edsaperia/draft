@@ -78,6 +78,8 @@ const stuck = [];
 // end, and the founder's rail is read for the 🥾 entry that names them
 let guestResign = null;
 let guestSeat = null;
+// the applicant's own 🪪 card, read on the page they already hold (issue #29)
+let guestApplyCard = null;
 // …and what their own page says once the seat is gone (issue #11, F2)
 let guestDoor = null;
 let closeGuest = async () => {};
@@ -395,6 +397,15 @@ if (knock.status !== 200 || !knock.body || !knock.body.devLink) {
       say('FAIL: the Apply card does not read as submitted: ' + JSON.stringify(cardSays.slice(0, 160)));
       stuck.push('the Apply card reads Submitted');
     } else {
+      // **the card names the route at its price** (issue #29 F3): the ✏️
+      // sentence stood at every price, *sure enough* over a unanimous vote
+      // (the glyph is drawn, so the words are what the text holds)
+      const route = PRICE === 'assembly' ? 'every member agrees' : 'members as a proposal (';
+      if (!cardSays.includes(route)) {
+        say('FAIL: at 🪪 ' + PRICE + ' the Apply card should say ' + JSON.stringify(route) + ': ' +
+          JSON.stringify(cardSays.slice(0, 200)));
+        stuck.push('the Apply card names its route');
+      }
       say('applicant  · ' + NAME + ' verified and submitted on the surface · ' +
         JSON.stringify((cardSays.match(/Submitted\.[^—]*/) || [''])[0].trim()));
     }
@@ -496,6 +507,18 @@ if (knock.status !== 200 || !knock.body || !knock.body.devLink) {
         rail: [...document.querySelectorAll('#rail li')]
           .map((li) => li.dataset.q || (li.querySelector('[data-card]') || { dataset: {} }).dataset.card || null),
       };
+    });
+  };
+  guestApplyCard = async () => {
+    await guest.reload({ waitUntil: 'load' });
+    await T(2500);
+    await guest.evaluate(() => { const b = document.querySelector('#rail [data-card="apply"]'); if (b) b.click(); });
+    await T(600);
+    return guest.evaluate(() => {
+      const c = document.querySelector('.setupcard');
+      const li = document.querySelector('#rail [data-card="apply"]');
+      return { card: c ? (c.textContent || '').replace(/\s+/g, ' ').trim() : '',
+        entry: li ? (li.closest('li') || li).textContent.replace(/\s+/g, ' ').trim() : '' };
     });
   };
   closeGuest = () => guestCtx.close();
@@ -919,6 +942,17 @@ if (admEntry) {
         say('👑 ✒️      · ' + (pressed ? 'pressed on the page' : 'FAIL: no ✒️ to press'));
         if (!pressed) stuck.push('the 👑 accept');
         await T(5000);
+      }
+      // **the applicant's own page says it was yes** (issue #29 F2): read on
+      // the `app:` seat they still hold, before the seat mail swaps it — the
+      // card said *Submitted — the members are deciding* after they had
+      if (guestApplyCard) {
+        const own = await guestApplyCard();
+        say('admitted   · their 🪪 · ' + JSON.stringify(own.entry.slice(0, 90)) + ' · ' + JSON.stringify(own.card.slice(0, 120)));
+        if (/members are deciding/.test(own.entry + own.card) || !/admitted you/.test(own.card)) {
+          say('FAIL: the admitted applicant\'s own card does not say they were admitted (issue #29)');
+          stuck.push('the admitted card');
+        }
       }
       // the seat mail lands on the outbox's next sender pass, not on the
       // commit that raised it, so it is polled for rather than read once.

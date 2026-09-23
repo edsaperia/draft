@@ -117,6 +117,8 @@ window.DOOR = (function () {
       // after they had decided. Monotone like `shutAcked` below and for the
       // same reason: a poll already in flight must not take the news back.
       if (a.status === 'refused') S.app.refused = true;
+      // …and whether it was yes (issue #29 F2), monotone for the same reason
+      if (a.status === 'admitted') S.app.admitted = true;
       // the OK on a shut door is the module's (SURFACE E33, Q901), and it
       // **only ever sets** — `owedSettings`' rule from the other side: the flag
       // is monotone in the module, so a poll already in flight when the press
