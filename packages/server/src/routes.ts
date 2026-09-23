@@ -31,11 +31,12 @@ import { extname } from 'node:path';
 import type { Auth } from './auth.js';
 import type { ServerConfig } from './config.js';
 import type { DocStore, LoadedDoc } from './store.js';
-import type { WriteChain } from './persistence.js';
+import type { Persistence, WriteChain } from './persistence.js';
 import type { Mailer } from './mailer.js';
 import type { MailOutbox } from './outbox.js';
 import type { Stash } from './stash.js';
 import type { PauseState, WritePath } from './write-path.js';
+import type { RaceCounts } from './error-log.js';
 import { str } from './commands.js';
 
 /**
@@ -45,6 +46,9 @@ import { str } from './commands.js';
 export interface RouteContext {
   readonly cfg: ServerConfig;
   readonly store: DocStore;
+  /** the backend itself, for the one thing that is not a document: the
+   *  error log, which is a row of the store since plan stage 5a */
+  readonly persistence: Persistence;
   readonly auth: Auth;
   readonly mailer: Mailer;
   readonly outbox: MailOutbox;
@@ -60,6 +64,9 @@ export interface RouteContext {
     total: number; request: number; tick: number; outbox: number;
     last: null | { at: number; where: string; kind: string };
   };
+  /** the refusals a member did nothing wrong to meet (Q1493 (a)): a race with
+   *  the poll, answered by the page and counted rather than logged */
+  readonly races: RaceCounts;
   readonly bootedAtMs: number;
   /** an https baseUrl: HSTS, the proxy redirect and the cookie's Secure flag */
   readonly httpsOn: boolean;
@@ -82,10 +89,13 @@ export interface Req {
   readonly baseOrigin: string;
   /** 404 for a document that isn't there; hand back whatever is. */
   docOr404(doc: LoadedDoc | null): LoadedDoc | null;
-  /** 429 a mail-minting door when its per-IP bucket overflows. */
-  tooMany(route: string, max?: number): boolean;
-  /** the operator's key, as every admin route and the bot outbox gate on it */
-  bearerRefused(): boolean;
+  /** 429 a mail-minting door when its per-IP bucket overflows. `refused`
+   *  writes the answer in the caller's own shape where JSON is the wrong
+   *  one — a door a person is looking at owes them a page (issue #69, F3). */
+  tooMany(route: string, max?: number, refused?: () => void): boolean;
+  /** the bearer check, against the one key this route takes: the admin key
+   *  on pause, resume and surface, the bot key on the bot outbox (issue #10) */
+  bearerRefused(key: string | null | undefined): boolean;
   /** a route that exists on a dev host only: an unknown path anywhere else */
   devOff(): boolean;
 }
@@ -164,9 +174,9 @@ export function makeReq(ctx: RouteContext, req: IncomingMessage, res: ServerResp
   nowMs: number, url: URL, baseOrigin: string): Req {
   const path = url.pathname;
   const seg = path.split('/').filter((s) => s.length > 0);
-  const tooMany = (route: string, max = 20): boolean => {
+  const tooMany = (route: string, max = 20, refused?: () => void): boolean => {
     if (!rateLimited(`${route}:${ipOf(req, ctx.cfg)}`, nowMs, max)) return false;
-    json(res, 429, { error: 'too many requests — try again shortly' });
+    if (refused) refused(); else json(res, 429, { error: 'too many requests — try again shortly' });
     return true;
   };
   return {
@@ -178,9 +188,9 @@ export function makeReq(ctx: RouteContext, req: IncomingMessage, res: ServerResp
     tooMany,
     // an unknown path without a key configured, 401 (and the limiter) with a
     // wrong one; true means the answer has been written
-    bearerRefused: () => {
-      if (!ctx.cfg.botKey) { json(res, 404, { error: 'not found' }); return true; }
-      if (bearerOk(req.headers.authorization, ctx.cfg.botKey)) return false;
+    bearerRefused: (key) => {
+      if (!key) { json(res, 404, { error: 'not found' }); return true; }
+      if (bearerOk(req.headers.authorization, key)) return false;
       if (!tooMany('bots')) json(res, 401, { error: 'unauthorized' });
       return true;
     },

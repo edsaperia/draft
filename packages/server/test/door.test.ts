@@ -2,7 +2,7 @@
  * **The login door is rate-limited per IP and per email** (Q1341; Ed,
  * 2026-09-12). One bucket per address at 200 in ten minutes, so a
  * convention room on one venue wifi is not refused as one attacker; one
- * bucket per email at 5, so a script working one address is. The per-email
+ * bucket per email at 10, so a script working one address is. The per-email
  * check runs before the roster lookup, so the door refuses a known and an
  * unknown address identically and stays no membership oracle.
  */
@@ -12,6 +12,8 @@ import { join } from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { afterAll, describe, expect, it } from 'vitest';
 import { FilePersistence } from '../src/persistence.js';
+import { rateLimited } from '../src/routes.js';
+import { MAILS } from '../src/mailer.js';
 import { createDraftServer } from '../src/server.js';
 import type { DraftServer } from '../src/server.js';
 
@@ -20,7 +22,7 @@ const tmp = () => mkdtempSync(join(tmpdir(), 'draft-door-'));
 const booted: DraftServer[] = [];
 afterAll(async () => { for (const d of booted) await d.close(); });
 
-async function boot(trustProxy: boolean): Promise<{ base: string }> {
+async function boot(trustProxy: boolean): Promise<{ base: string; draft: DraftServer; persistence: FilePersistence }> {
   const dataDir = tmp();
   const cfg = {
     port: 0, dataDir, baseUrl: 'http://127.0.0.1',
@@ -30,11 +32,12 @@ async function boot(trustProxy: boolean): Promise<{ base: string }> {
     secret: 'test-secret', store: 'file' as const, databaseUrl: null,
     trustProxy, buildSha: null, notifyEmail: null,
   };
-  const draft = await createDraftServer(cfg, new FilePersistence(dataDir));
+  const persistence = new FilePersistence(dataDir);
+  const draft = await createDraftServer(cfg, persistence);
   await new Promise<void>((r) => draft.server.listen(0, '127.0.0.1', r));
   cfg.baseUrl = `http://127.0.0.1:${(draft.server.address() as AddressInfo).port}`;
   booted.push(draft);
-  return { base: cfg.baseUrl };
+  return { base: cfg.baseUrl, draft, persistence };
 }
 
 const post = (base: string, path: string, body: unknown, headers: Record<string, string> = {}) =>
@@ -64,19 +67,24 @@ async function found(base: string, title: string, email: string): Promise<string
 const login = (base: string, slug: string, email: string, headers: Record<string, string> = {}) =>
   post(base, `/api/d/${slug}/login`, { email }, headers);
 
+/** Ten mails to one address in the window (Q1341 set 5 and called it a
+ *  guess; Ed raised it to 10 on 2026-09-19, issue #69 — five is one
+ *  impatient member pressing 📧 while the mail is slow). */
+const LOGIN_MAILS = 10;
+
 describe('the login door (Q1341)', () => {
-  it('allows five logins per email in the window and refuses the sixth, known or unknown alike', async () => {
+  it('allows ten logins per email in the window and refuses the eleventh, known or unknown alike', async () => {
     const { base } = await boot(false);
     const founder = 'founder.door@example.org';
     const slug = await found(base, 'Door', founder);
 
-    // a member's address: five pass, the sixth is refused
-    for (let i = 0; i < 5; i++) {
+    // a member's address: ten pass, the eleventh is refused
+    for (let i = 0; i < LOGIN_MAILS; i++) {
       expect((await login(base, slug, founder)).status, `founder login ${i + 1}`).toBe(200);
     }
-    const sixth = await login(base, slug, founder);
-    expect(sixth.status).toBe(429);
-    expect(await sixth.json()).toEqual({ error: 'too many requests — try again shortly' });
+    const eleventh = await login(base, slug, founder);
+    expect(eleventh.status).toBe(429);
+    expect(await eleventh.json()).toEqual({ error: 'too many requests — try again shortly' });
 
     // the same socket, another address: the per-email bucket is the address's
     expect((await login(base, slug, 'someone.else@example.org')).status).toBe(200);
@@ -84,7 +92,7 @@ describe('the login door (Q1341)', () => {
     // an address nobody on the roster has behaves exactly the same way, so
     // the refusal says nothing about who is a member
     const stranger = 'nobody.here@example.org';
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < LOGIN_MAILS; i++) {
       expect((await login(base, slug, stranger)).status, `stranger login ${i + 1}`).toBe(200);
     }
     const refused = await login(base, slug, stranger);
@@ -108,5 +116,364 @@ describe('the login door (Q1341)', () => {
     expect(r.status).toBe(429);
     // another client at the same door is not refused
     expect((await login(base, slug, 'seat201@example.org', { 'cf-connecting-ip': '198.51.100.43' })).status).toBe(200);
+  });
+});
+
+/**
+ * **The arrival doors are sized for twenty phones on one address** (issue
+ * #69; Ed, 2026-09-19). A venue NATs every phone to one address, so each of
+ * these buckets is the whole room's, and the caps were sized for ten — a
+ * room of twenty spent the door's 1500 in five minutes and then sawtoothed,
+ * five minutes alive and five dead. Each case drives one bucket to its
+ * boundary: the cap is served, the next request is the 429. The numbers are
+ * the point, so they are written out here rather than imported.
+ */
+const CAPS = { stranger: 6000, auth: 200, apply: 200, docs: 60, slug: 600, pending: 600 };
+
+/** One `BUCKET` map serves this whole file, so a case sharing an address
+ *  with another would share its budget: every case takes a fresh one. */
+let nextIp = 100;
+const client = (): Record<string, string> => ({ 'cf-connecting-ip': `198.51.100.${nextIp++}` });
+
+/** Drive a door `n` times and say how many were not refused, reading every
+ *  body so no socket is left holding one. The host writes a line per
+ *  response and the runner captures every one of them, which at six
+ *  thousand costs more than the requests do: the line is silenced for the
+ *  length of the loop and handed back, whatever happens. */
+async function spend(n: number, once: (i: number) => Promise<Response>): Promise<number> {
+  const said = console.log;
+  console.log = () => {};
+  try {
+    let served = 0;
+    for (let i = 0; i < n; i++) {
+      const r = await once(i);
+      await r.arrayBuffer();
+      if (r.status !== 429) served += 1;
+    }
+    return served;
+  } finally { console.log = said; }
+}
+
+describe('the arrival doors (issue #69)', () => {
+  it('serves a cookieless page six thousand views on one address, then refuses', async () => {
+    const { base } = await boot(true);
+    const slug = await found(base, 'Venue', 'founder.venue@example.org');
+    const ip = client();
+    // Six thousand round trips are seventy seconds of CI for a number, so
+    // all but the last two are counted straight into the bucket the door
+    // keys — `${route}:${ip}`, the limiter's own module, the one the host
+    // is holding. The boundary is still the real door's: with the bucket at
+    // 5998, two requests must be served and the next refused, which is red
+    // if the literal moves in either direction, and red too if the door
+    // ever keys its bucket some other way — nothing here can pass vacuously.
+    for (let i = 0; i < CAPS.stranger - 2; i++) {
+      rateLimited(`stranger:${ip['cf-connecting-ip']}`, Date.now(), CAPS.stranger);
+    }
+    // the quiet poll — `since` at the document's own sequence — is what a
+    // page actually sends every four seconds, and costs the bucket exactly
+    // what a full view does, the limiter standing above that branch
+    const opening = await fetch(`${base}/api/d/${slug}/view`, { headers: ip });
+    expect(opening.status, 'the five-thousand-nine-hundred-and-ninety-ninth view').toBe(200);
+    const { seq, eseq } = await opening.json() as { seq: number; eseq: number };
+    const quiet = `${base}/api/d/${slug}/view?since=${seq}.${eseq}`;
+    expect((await fetch(quiet, { headers: ip })).status, 'the six-thousandth').toBe(200);
+    expect((await fetch(quiet, { headers: ip })).status, 'the six-thousand-and-first').toBe(429);
+    // the phone beside it, on its own address, is untouched
+    expect((await fetch(quiet, { headers: client() })).status).toBe(200);
+  }, 60_000);
+
+  it('shares two hundred arrivals between /auth/create, /auth/login and /auth/apply', async () => {
+    const { base } = await boot(true);
+    const ip = client();
+    const doors = ['/auth/create', '/auth/login', '/auth/apply'];
+    const arrive = (path: string) => fetch(base + path, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded', origin: base, ...ip },
+      body: new URLSearchParams({ token: 'no-such-token' }).toString(),
+      redirect: 'manual',
+    });
+    // spent across all three doors, because `auth:<ip>` is one bucket
+    const served = await spend(CAPS.auth, (i) => arrive(doors[i % 3]!));
+    expect(served, 'arrivals served').toBe(CAPS.auth);
+    for (const door of doors) expect((await arrive(door)).status, door).toBe(429);
+  }, 60_000);
+
+  it('answers a refused arrival with a page, and leaves the link it carried good', async () => {
+    const { base } = await boot(true);
+    // a real, unspent creation link: the interstitial auto-submits it, so
+    // whatever this door writes is what the browser renders
+    const created = await (await post(base, '/api/docs', { title: 'Busy', email: 'founder.busy@example.org' }))
+      .json() as { devLink: string };
+    const link = new URL(created.devLink);
+    const token = link.searchParams.get('token') ?? '';
+    const ip = client();
+    const arrive = (headers: Record<string, string>) => fetch(base + '/auth/create?d=busy', {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded', origin: base, ...headers },
+      body: new URLSearchParams({ token }).toString(),
+      redirect: 'manual',
+    });
+    await spend(CAPS.auth, () => fetch(base + '/auth/create', {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded', origin: base, ...ip },
+      body: new URLSearchParams({ token: 'no-such-token' }).toString(),
+      redirect: 'manual',
+    }));
+    const refused = await arrive(ip);
+    expect(refused.status).toBe(429);
+    // a person is looking at this, so it is the docs.vote shell and not JSON
+    expect(refused.headers.get('content-type')).toMatch(/text\/html/);
+    expect(refused.headers.get('retry-after')).toBe('300');
+    const page = await refused.text();
+    expect(page).toContain('<!doctype html>');
+    expect(page, 'the page says the link is still good').toContain('still good');
+    expect(page, 'and re-posts it, so the retry is one press').toContain(token);
+    // the whole of the promise: the limiter stands above `useToken`, so the
+    // token was never spent — another address walks straight in with it
+    expect((await arrive(client())).status, 'the same link, another address').toBe(302);
+  }, 60_000);
+
+  /* **A body the door cannot read is still counted** (issue #89): 264da28
+   * read the token above the brake so a refusal could hand it back, and a
+   * malformed or oversized body threw before `tooMany` ever saw it — never
+   * counted, each one a row in the error log. The bucket is filled to one
+   * short of its cap straight through the limiter's own module, as the
+   * stranger case does; the unreadable request must be the one that fills
+   * it, so the good arrival after it is the 429. */
+  it('counts a malformed or oversized body at all three doors before it reads it', async () => {
+    const { base } = await boot(true);
+    const bodies: Array<[string, Record<string, string>, string]> = [
+      ['malformed json', { 'content-type': 'application/json' }, '{'],
+      ['oversized form', { 'content-type': 'application/x-www-form-urlencoded' },
+        'token=' + 'x'.repeat(10_001)],
+    ];
+    for (const door of ['/auth/create', '/auth/login', '/auth/apply']) {
+      for (const [what, headers, body] of bodies) {
+        const ip = client();
+        for (let i = 0; i < CAPS.auth - 1; i++) {
+          rateLimited(`auth:${ip['cf-connecting-ip']}`, Date.now(), CAPS.auth);
+        }
+        const bad = await fetch(base + door, {
+          method: 'POST', headers: { origin: base, ...headers, ...ip }, body, redirect: 'manual',
+        });
+        await bad.arrayBuffer();
+        expect(bad.status, `${door} · ${what} · the two-hundredth`).not.toBe(429);
+        const good = await fetch(base + door, {
+          method: 'POST',
+          headers: { 'content-type': 'application/x-www-form-urlencoded', origin: base, ...ip },
+          body: new URLSearchParams({ token: 'no-such-token' }).toString(),
+          redirect: 'manual',
+        });
+        await good.arrayBuffer();
+        expect(good.status, `${door} · after ${what} · the two-hundred-and-first`).toBe(429);
+        // and past the cap the unreadable body is refused like any other
+        const again = await fetch(base + door, {
+          method: 'POST', headers: { origin: base, ...headers, ...ip }, body, redirect: 'manual',
+        });
+        await again.arrayBuffer();
+        expect(again.status, `${door} · ${what} · past the cap`).toBe(429);
+      }
+    }
+  }, 60_000);
+
+  it('serves two hundred knocks at /apply on one address, then refuses', async () => {
+    const { base } = await boot(true);
+    const slug = await found(base, 'Knock', 'founder.knock@example.org');
+    const ip = client();
+    // an empty body is refused as a bad request *after* the limiter has
+    // counted it, which is what makes this the bucket's own boundary
+    const knock = () => post(base, `/api/d/${slug}/apply`, {}, ip);
+    expect(await spend(CAPS.apply, knock), 'knocks served').toBe(CAPS.apply);
+    expect((await knock()).status).toBe(429);
+  }, 60_000);
+
+  it('serves sixty creations on one address, then refuses', async () => {
+    const { base } = await boot(true);
+    const ip = client();
+    const create = () => post(base, '/api/docs', {}, ip);
+    expect(await spend(CAPS.docs, create), 'creations served').toBe(CAPS.docs);
+    expect((await create()).status).toBe(429);
+  }, 60_000);
+
+  it('serves six hundred address checks on one address, then refuses', async () => {
+    const { base } = await boot(true);
+    const ip = client();
+    const ask = () => fetch(`${base}/api/slug/free-address`, { headers: ip });
+    expect(await spend(CAPS.slug, ask), 'address checks served').toBe(CAPS.slug);
+    expect((await ask()).status).toBe(429);
+  }, 60_000);
+
+  it('serves six hundred stashes on one address, then refuses', async () => {
+    const { base } = await boot(true);
+    const ip = client();
+    const stash = () => post(base, '/api/docs/pending', { pendingId: 'no-such-draft', text: 'x' }, ip);
+    expect(await spend(CAPS.pending, stash), 'stashes served').toBe(CAPS.pending);
+    expect((await stash()).status).toBe(429);
+  }, 60_000);
+});
+
+/**
+ * **A refused application link is answered with a page, and the refusal is
+ * logged** (issue #35, F2 and F3; absorbing #53). `/auth/apply` spends the
+ * token and then asks the module to start the application, and the module
+ * refuses three ordinary states — invitation-only, an address already on the
+ * membership, an application already underway. The throw fell to the
+ * central catch, which answered the interstitial's navigation with raw JSON:
+ * no shell, no way back, the link already spent. It is `spentPage`'s 410 now,
+ * led by Y25's sentence, with a `refused` row in the error log that names
+ * the document.
+ */
+describe('the apply door refuses with a page (issue #35)', () => {
+  const knock = async (base: string, slug: string, email: string): Promise<string> => {
+    const r = await post(base, `/api/d/${slug}/apply`, { email });
+    expect(r.status, await r.clone().text()).toBe(200);
+    const { devLink } = await r.json() as { devLink: string };
+    return new URL(devLink).searchParams.get('token') ?? '';
+  };
+  const follow = (base: string, slug: string, token: string) => fetch(`${base}/auth/apply?d=${slug}`, {
+    method: 'POST', redirect: 'manual',
+    headers: { 'content-type': 'application/x-www-form-urlencoded', origin: base },
+    body: new URLSearchParams({ token }).toString(),
+  });
+  const doorOpen = async (base: string, slug: string, founder: string, apply: boolean) => {
+    const cookie = await founderCookie(base, slug, founder);
+    const r = await post(base, `/api/d/${slug}/cmd`,
+      { cmd: 'set-setting', args: { setting: 'applications', value: { apply } } }, { cookie });
+    expect(r.status, await r.clone().text()).toBe(200);
+  };
+  const refusedRows = async (base: string) =>
+    ((await (await fetch(`${base}/api/dev/errors`)).json()) as {
+      errors: { kind: string; status: number; path: string; slug?: string; reason: string }[] })
+      .errors.filter((row) => row.kind === 'refused' && row.path === '/auth/apply');
+
+  it('a second knock from one address, followed after the first, reads as already underway', async () => {
+    const { base } = await boot(false);
+    const slug = await found(base, 'Twice', 'founder.twice@example.org');
+    await doorOpen(base, slug, 'founder.twice@example.org', true);
+    const first = await knock(base, slug, 'knocker@example.org');
+    const second = await knock(base, slug, 'knocker@example.org');
+    expect((await follow(base, slug, first)).status).toBe(302);
+    const refused = await follow(base, slug, second);
+    expect(refused.status).toBe(410);
+    expect(refused.headers.get('content-type')).toMatch(/text\/html/);
+    const page = await refused.text();
+    expect(page).toContain('That was refused: an application from that address is already underway');
+    expect(page, 'the module’s own pointer is dropped').not.toContain('§');
+    expect(page, 'and the document is a link away').toContain(`/d/${slug}`);
+    const rows = await refusedRows(base);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ status: 410, slug, reason: expect.stringContaining('already underway') });
+  });
+
+  it('a knock whose door shut before the link was followed reads as invitation-only', async () => {
+    const { base } = await boot(false);
+    const slug = await found(base, 'Shut', 'founder.shut@example.org');
+    await doorOpen(base, slug, 'founder.shut@example.org', true);
+    const token = await knock(base, slug, 'late@example.org');
+    await doorOpen(base, slug, 'founder.shut@example.org', false);
+    const refused = await follow(base, slug, token);
+    expect(refused.status).toBe(410);
+    expect(refused.headers.get('content-type')).toMatch(/text\/html/);
+    expect(await refused.text()).toContain('That was refused: this document is invitation-only');
+    expect((await refusedRows(base))[0]).toMatchObject({ status: 410, slug });
+  });
+});
+
+/** The founder's seat on a document `found` made: a login link, followed. */
+async function founderCookie(base: string, slug: string, email: string): Promise<string> {
+  const r = await login(base, slug, email);
+  const { devLink } = await r.json() as { devLink: string };
+  const u = new URL(devLink);
+  const seated = await fetch(u.origin + u.pathname, {
+    method: 'POST', redirect: 'manual',
+    headers: { 'content-type': 'application/x-www-form-urlencoded', origin: u.origin },
+    body: new URLSearchParams({ token: u.searchParams.get('token') ?? '' }).toString(),
+  });
+  expect(seated.status).toBe(302);
+  return (seated.headers.get('set-cookie') ?? '').split(';')[0]!;
+}
+
+/**
+ * **A magic link waits for a person** (issue #67). The interstitial made the
+ * GET prefetch-safe and then spent the token itself — `forms[0].submit()` —
+ * so anything that *renders* the page (a link scanner detonating it in a
+ * headless browser) took the seat, and the member read *already used*. A cut
+ * link was read as a used one and sent the reader to an address the mail did
+ * not carry; the two mails a stranger waits on had one attempt and no queue;
+ * and an address no provider can deliver was accepted everywhere.
+ */
+describe('the magic link waits for a press (issue #67)', () => {
+  it('the interstitial runs nothing, and only its button spends the link', async () => {
+    const { base } = await boot(false);
+    const { devLink } = await (await post(base, '/api/docs',
+      { title: 'Oak', email: 'f.oak@example.org' })).json() as { devLink: string };
+    const page = await (await fetch(devLink)).text();
+    expect(page, 'no script acts on the link').not.toContain('submit()');
+    expect(page).not.toContain('<script');
+    expect(page, 'the button is not hidden behind <noscript>').not.toContain('<noscript>');
+    expect(page).toMatch(/<button[^>]*type="submit"[^>]*>Continue<\/button>/);
+    // a renderer that fetches the page twice spends nothing; the press seats
+    await fetch(devLink);
+    const u = new URL(devLink);
+    const pressed = await fetch(u.origin + u.pathname + u.search.replace(/token=[^&]*&?/, ''), {
+      method: 'POST', redirect: 'manual',
+      headers: { 'content-type': 'application/x-www-form-urlencoded', origin: u.origin },
+      body: new URLSearchParams({ token: u.searchParams.get('token') ?? '' }).toString(),
+    });
+    expect(pressed.status).toBe(302);
+  });
+
+  it('a link cut short reads as cut, spends nothing, and the whole one still works', async () => {
+    const { base } = await boot(false);
+    const slug = await found(base, 'Cut', 'founder.cut@example.org');
+    const { devLink } = await (await login(base, slug, 'founder.cut@example.org')).json() as { devLink: string };
+    const u = new URL(devLink);
+    const token = u.searchParams.get('token') ?? '';
+    // a wrap between the token and `&d=` loses the tail and the address
+    const cut = await fetch(`${u.origin}${u.pathname}?token=${token.slice(0, 20)}`);
+    const said = await cut.text();
+    expect(said).toContain('not complete');
+    expect(said).not.toContain('already been used');
+    const whole = await fetch(u.origin + u.pathname, {
+      method: 'POST', redirect: 'manual',
+      headers: { 'content-type': 'application/x-www-form-urlencoded', origin: u.origin },
+      body: new URLSearchParams({ token }).toString(),
+    });
+    expect(whole.status).toBe(302);
+  });
+
+  it('every mail with a link names the document’s own address in its words', () => {
+    const link = 'https://docs.vote/auth/login?token=x&d=hollow-oak';
+    for (const m of [MAILS.invite('T', link), MAILS.login('T', link), MAILS.admitted('T', link),
+      MAILS.applyVerify('T', link.replace('login', 'apply')), MAILS.lapsed('T', link),
+      MAILS.lapseWarning('T', link, 86_400_000), MAILS.closed('T', link)]) {
+      expect(m.text.replace(link, '').replace(link.replace('login', 'apply'), ''),
+        m.subject).toContain('docs.vote/d/hollow-oak');
+    }
+  });
+
+  it('a login mail the provider refuses is queued, not lost', async () => {
+    const { base, draft, persistence } = await boot(false);
+    const slug = await found(base, 'Queue', 'founder.queue@example.org');
+    const id = draft.store.bySlug(slug)!.id;
+    const send = draft.mailer.send;
+    draft.mailer.send = async () => { throw new Error('the mail could not be sent — try again shortly'); };
+    try {
+      const r = await login(base, slug, 'founder.queue@example.org');
+      expect(r.status, await r.clone().text()).toBe(200);
+      const rows = await persistence.listOutboxFor(id, 'founder.queue@example.org');
+      expect(rows.length, 'the mail waits in the outbox for the next attempt').toBeGreaterThan(0);
+      expect(rows[rows.length - 1]!.tokenHash, 'with the hash that revokes it on a give-up').toBeTruthy();
+    } finally { draft.mailer.send = send; }
+  });
+
+  it('an address a provider cannot deliver is refused where it is typed', async () => {
+    const { base } = await boot(false);
+    const slug = await found(base, 'Ascii', 'founder.ascii@example.org');
+    for (const email of ['josé@example.com', 'ed@münchen.de']) {
+      const r = await login(base, slug, email);
+      expect(r.status, email).toBe(400);
+      expect(((await r.json()) as { error: string }).error).toMatch(/plain|ASCII|accent/i);
+    }
   });
 });

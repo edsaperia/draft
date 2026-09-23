@@ -233,17 +233,29 @@ say('\n== motions, constitutional route: unanimity over the live electorate ==='
   check(s.motionRecords().get(m)!.answers.get(bo) === 'accept',
     'and bo stands at accept from the open — proposers prefer their own proposals (v0.49)');
   s.answerMotion(4, 'ada', m, 'accept');
-  s.answerMotion(5, cy, m, 'keep');
-  check(s.motionRecords().get(m)!.status === 'running',
-    'a standing keep blocks but does not kill');
-  eq(s.settingState('bar').value, { pct: 66 }, 'until it settles, what stands stands');
-  const blind = view(s, 'ada').motions.find((x) => x.id === m)!;
-  check(blind.answeredCount === 3 && JSON.stringify(blind).indexOf('keep') < 0,
+  // read by cy, who has not answered: their own answer is the one thing a
+  // view ever carries, so the seat that shows blindness is a silent one
+  const blind = view(s, cy).motions.find((x) => x.id === m)!;
+  check(blind.answeredCount === 2 && JSON.stringify(blind).indexOf('accept') < 0,
     'while it runs, only the count shows — no split, no names');
-  s.answerMotion(6, cy, m, 'abstain');
+  eq(s.settingState('bar').value, { pct: 66 }, 'until it settles, what stands stands');
+  s.answerMotion(5, cy, m, 'abstain');
   check(s.motionRecords().get(m)!.status === 'carried',
-    'cy stands down to abstain and it carries — everyone at accept-or-abstain, zero keep');
+    'cy abstains and it carries — everyone at accept-or-abstain, zero keep');
   eq(s.settingState('bar').value, { pct: 80 }, 'the amendment applied in the fold');
+
+  // **a vote against ends it** (Ed, 2026-09-19, Q1473; R-138), where until
+  // v0.138 a standing keep blocked and did not kill, and only a withdrawal
+  // could end a blocked motion
+  const back = s.openMotion(6, bo, { kind: 'set', setting: 'bar', value: { pct: 66 } });
+  s.answerMotion(7, cy, back, 'keep');
+  check(s.motionRecords().get(back)!.status === 'held',
+    'one member keeps what stands and the proposal ends there (§9.6)');
+  eq(s.settingState('bar').value, { pct: 80 }, 'and what stands stands');
+  check(view(s, 'ada').motions.find((x) => x.id === back)!.heldBy === 'members',
+    'the record says the membership held it, and names nobody');
+  check(s.memberRecords().get(bo)!.heldOwed.has(back),
+    'and the mover is owed the news of it (SURFACE E41)');
 
   say('  an arrival mid-motion joins the electorate — no snapshot (v0.48)');
   const inv = s.openMotion(8, bo, { kind: 'invite', email: 'dee@example.org' }, 'dee kept our minutes for a year');

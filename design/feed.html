@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- **The spectator feed** (Q1466, Ed 2026-09-19): a second page, at
+     /d/:slug/feed, for somebody watching a document rather than drafting it —
+     new proposals and proposals that pass, each with the place it bites, and
+     never the whole document. It reads `GET /api/d/:slug/feed` and nothing
+     else, which reads engine-core's `SpectatorApi` and nothing else (backlog
+     42), so what a spectator may not see never reaches this file.
+
+     Its assets are named from the root (`/system.css`), not relatively as
+     session-view.html's are: this page stands one segment deeper than the
+     host's asset row looks (`routes-surface.ts`), and the root form is served
+     by that row as it stands — and by `npm run design`, where the page at
+     `/feed.html` has no document behind it and shows a small fixture.
+
+     A doctype, unlike session-view.html: that page's quirks mode is a fact
+     about boxes measured since its first day, and this one has none to keep. -->
+<title>docs.vote</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪶</text></svg>">
+<link rel="stylesheet" href="/system.css">
+<!-- the faces: the avatar's own rules live in setup.css, and a face here is the
+     face the membership sees, so the page takes them rather than restating them -->
+<link rel="stylesheet" href="/setup.css">
+<style>
+  /* ==========================================================================
+     **A wall, not a document** (Ed, 2026-09-19, asking for a designer's pass:
+     *there are a lot of different fonts very close together, and in a single
+     column layout with a lot of width available perhaps you could make better
+     use of the space* — and: *it doesn't have to conform to the normal surface
+     in terms of fonts or design language; it's designed to be shown large on a
+     projector rather than looking like a document on a laptop*).
+
+     The first cut was a decision card laid flat: two families alternating line
+     by line, five sizes in one entry, upper-case micro labels, and *before*
+     stacked over *after* in a 920px column with half the wall empty. What it
+     is now, and the four decisions behind it:
+
+     1. **Two families with one job each.** The serif is the charter's own
+        words — what stood, what is put, the paragraphs either side — and
+        nothing else. The sans is everything said *about* them: the title, the
+        section, the labels, the time, who, and why. A reader across a room can
+        tell the document from the commentary by the face alone.
+     2. **Three sizes, and they follow the window.** The words, the title, the
+        small print — set in `vw` between a floor and a ceiling, so a projected
+        1920 window reads from the back and a laptop is not shouted at. No
+        upper-case labels: capitals at the smallest size are the least legible
+        thing a projector can be asked to show.
+     3. **Before and after stand side by side.** The width was there; the eye
+        compares across a line far better than up and down a column, and the
+        entry is half the height. A short change's neighbours (Ed's earlier
+        note) run the full width above and below the pair — the paragraph
+        before, the comparison, the paragraph after — so neither column waits
+        on the other. (They stood in the *after* column alone for the first
+        hour, and on the residency room's real paragraphs a three-line
+        neighbour left a three-line hole beside it.)
+     4. **A timeline with a hanging margin.** Time and author hang in the left
+        margin against a rule that runs the length of the feed; the mark sits
+        on the rule. A proposal that passed is a tinted band with a green rule,
+        which is the one thing that should be seen from the back of the room.
+
+     Dark, as Ed asked the same night: the design system's tokens given other
+     values **on this page alone** — the system itself stays single-theme and
+     light (Ed, 2026-08-14) — near black and not black, since a projector turns
+     pure black under white text into glare.
+     ========================================================================== */
+  :root {
+    color-scheme: dark;
+    --bg: #101317;
+    --fg: #F1F3F5;
+    --muted: #A9B2BB;
+    --border: #2C333B;
+    --light: #171B20;
+    --primary: #7DB2FF;
+    --primary-subtle: #1B2B44;
+    --ok: #45D08F;
+    --ins-bg: rgba(255, 214, 10, 0.30);
+    /* the three sizes */
+    --f-doc: clamp(1.125rem, 1.4vw, 2.125rem);
+    --f-title: clamp(1rem, 1.05vw, 1.5rem);
+    --f-meta: clamp(0.875rem, 0.85vw, 1.25rem);
+    /* the hanging margin, and the air between it and the words */
+    --rail: clamp(7rem, 11vw, 13rem);
+    --gap: clamp(1rem, 2vw, 2.5rem);
+  }
+  body { padding-bottom: 0; }
+  .navbar .wrap.feednav, .feedwrap { max-width: min(94vw, 1800px); margin: 0 auto; }
+  .navbar .wrap.feednav { align-items: center; padding: 10px 0; }
+  .feednav .brand { font-size: var(--f-title); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .feednav .brand .sess { margin-left: 0.6em; }
+  .feedwrap { padding: var(--gap) 0 calc(var(--gap) * 2); }
+  .feedstate { color: var(--muted); font-size: var(--f-title); margin: calc(var(--gap) * 2) 0; text-align: center; }
+
+  /* a day is a line in the margin, where the times are */
+  .feedday { width: var(--rail); text-align: right; margin: var(--gap) 0 0; padding: 0 0 0.4em;
+    font-size: var(--f-meta); font-weight: 600; color: var(--muted); }
+  .feedday:first-child { margin-top: 0; }
+
+  /* one entry: the margin, then the rule, then the words */
+  .fentry { display: grid; grid-template-columns: var(--rail) minmax(0, 1fr); margin: 0; }
+  .frail { text-align: right; padding: var(--gap) var(--gap) var(--gap) 0; font-size: var(--f-meta); color: var(--muted); min-width: 0; }
+  .frail time { display: block; font-size: var(--f-title); font-weight: 600; color: var(--fg);
+    font-variant-numeric: tabular-nums; line-height: 1.5; }
+  .fwho { margin-top: 0.5em; display: flex; flex-direction: column; align-items: flex-end; gap: 0.3em; }
+  /* a face is read at the margin's own scale: the disc's size is stated in the
+     disc's own (smaller) em, which is what its initials are set in */
+  .fwho .av { width: 3.4em; height: 3.4em; font-size: 0.65em; }
+  .fwho .emojiface { font-size: 2em; }
+  .fwho .name { overflow-wrap: anywhere; }
+  .fmain { position: relative; border-left: 2px solid var(--border); padding: var(--gap) 0 var(--gap) var(--gap); min-width: 0; }
+  /* the mark sits on the rule, on a disc of the ground so the rule stops at it */
+  .fnode { position: absolute; left: -1px; top: var(--gap); transform: translateX(-50%);
+    width: 2.1em; height: 2.1em; border-radius: 50%; background: var(--bg); border: 2px solid var(--border);
+    display: grid; place-items: center; font-size: var(--f-title); line-height: 1; }
+  .fnode .qmark { width: auto; font-size: 1em; margin: 0; }
+
+  .ftitle { margin: 0 0 0.5em; font-size: var(--f-title); font-weight: 600; line-height: 1.5; padding-left: 0.9em; }
+  .fwhere { margin: 0 0 0.9em; font-size: var(--f-meta); color: var(--muted); padding-left: calc(var(--f-title) * 0.9); }
+  .fchange + .fchange { margin-top: var(--gap); }
+
+  /* the paragraph before, full width; then before | after, labels on one line
+     and the two clauses starting on one line; then the paragraph after */
+  .fcols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: var(--gap);
+    row-gap: 0.45em; padding-left: calc(var(--f-title) * 0.9); }
+  .flabel { margin: 0; font-size: var(--f-meta); color: var(--muted); }
+  .g-ca { grid-column: 1 / -1; grid-row: 1; margin-bottom: 0.35em; }
+  .g-lb { grid-column: 1; grid-row: 2; }  .g-la { grid-column: 2; grid-row: 2; }
+  .g-st { grid-column: 1; grid-row: 3; }  .g-pt { grid-column: 2; grid-row: 3; }
+  .g-cb { grid-column: 1 / -1; grid-row: 4; margin-top: 0.35em; }
+  .ftext { font-family: var(--font-text); font-size: var(--f-doc); line-height: 1.45; }
+  .ftext .lp { margin: 0 0 0.5em; font-size: inherit; line-height: inherit; }
+  .ftext .lp:last-child { margin-bottom: 0; }
+  .ftext .lp.hblock { font-size: 1.1em; }
+  .ftext .lp.removed { font-family: var(--font-ui); font-size: var(--f-title); }
+  /* what stood is reference, and so are the neighbours: cold, and the
+     neighbours a step further back */
+  .ftext.stood { color: var(--muted); }
+  .ftext.fctx { color: var(--muted); opacity: 0.6; }
+  /* **why is said, and said first** (Ed, 2026-09-19): a speech bubble under the
+     title, level with the proposer's face in the margin, its tail reaching
+     back across the rule toward them. The sans, since it is somebody's words
+     about the charter and not the charter's; a lighter ground than the page
+     so it reads as an object somebody put there. */
+  .fwhy { position: relative; width: fit-content; max-width: min(100%, 58em);
+    margin: 0 0 1.1em calc(var(--f-title) * 0.9); padding: 0.6em 0.95em;
+    background: rgba(255, 255, 255, 0.075); border-radius: 0.2em 0.9em 0.9em 0.9em;
+    font-size: var(--f-title); line-height: 1.5; color: var(--fg); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .fwhy::before { content: ''; position: absolute; top: 0; left: -0.7em; width: 0.7em; height: 0.8em;
+    background: inherit; clip-path: polygon(100% 0, 0 0, 100% 100%); }
+
+  /* **a pass is seen from the back of the room**: the band, the rule, the title */
+  .fentry.passed, .fentry.decreed { background: color-mix(in srgb, var(--ok) 7%, var(--bg)); }
+  .fentry.passed .fmain, .fentry.decreed .fmain { border-left-color: var(--ok); }
+  .fentry.passed .fnode, .fentry.decreed .fnode { border-color: var(--ok); }
+  .fentry.passed .ftitle, .fentry.decreed .ftitle { color: var(--ok); }
+
+  .fentry.arrive .fmain { animation: farrive 1400ms ease; }
+  @keyframes farrive { from { background: var(--primary-subtle); } to { background: transparent; } }
+  @media (prefers-reduced-motion: reduce) { .fentry.arrive .fmain { animation: none; } }
+
+  .alphaflag { position: fixed; bottom: 10px; left: 10px; z-index: 55;
+    font-size: var(--t-small); color: var(--muted); background: var(--bg);
+    border: 1px solid var(--border); border-radius: var(--r-sm);
+    padding: 3px 8px; pointer-events: none; }
+  .alphaflag b { font-weight: 600; color: var(--fg); }
+
+  /* a phone: the margin folds into a line over the entry, and before stands
+     over after again — there is no width to spend */
+  @media (max-width: 900px) {
+    :root { --gap: 1rem; }
+    .navbar .wrap.feednav, .feedwrap { max-width: none; padding-left: var(--s3); padding-right: var(--s3); }
+    .alphaflag { position: static; display: block; width: fit-content; margin: 8px auto 0; }
+    .feedday { width: auto; text-align: left; }
+    /* the band bleeds to the screen's edge, so its words keep the page's margin */
+    .fentry { grid-template-columns: minmax(0, 1fr); border-top: 1px solid var(--border);
+      margin: 0 calc(-1 * var(--s3)); padding: 0 var(--s3); }
+    .fentry.passed, .fentry.decreed { border-top-color: var(--ok); }
+    .frail { text-align: left; padding: var(--gap) 0 0; display: flex; align-items: center; gap: 0.75em; }
+    .frail time { order: 2; margin-left: auto; font-size: var(--f-meta); }
+    .fwho { margin: 0; flex-direction: row; align-items: center; }
+    .fmain { border-left: 0; padding: 0.5em 0 var(--gap); }
+    /* no rule to sit on: the mark leads the title's first line */
+    .fnode { position: static; transform: none; display: inline; width: auto; height: auto; border: 0;
+      background: none; margin: 0 0.35em 0 0; }
+    /* the bubble hangs from the face-and-name line, so it comes before the
+       title here, and its tail points up at the face */
+    .fmain { display: flex; flex-direction: column; }
+    .fwhy { order: -1; margin: 0.1em 0 0.9em; border-radius: 0.9em; }
+    .fwhy::before { top: -0.55em; left: 0.75em; width: 0.9em; height: 0.6em; clip-path: polygon(0 100%, 100% 100%, 20% 0); }
+    .ftitle, .fwhere, .fcols { padding-left: 0; }
+    .fcols { grid-template-columns: minmax(0, 1fr); }
+    .g-ca { grid-column: 1; grid-row: 1; }
+    .g-lb { grid-column: 1; grid-row: 2; }  .g-st { grid-column: 1; grid-row: 3; }
+    .g-la { grid-column: 1; grid-row: 4; margin-top: 0.6em; }  .g-pt { grid-column: 1; grid-row: 5; }
+    .g-cb { grid-column: 1; grid-row: 6; }
+  }
+</style>
+
+<header class="navbar">
+  <div class="wrap feednav">
+    <span class="brand" id="feedtitle" role="heading" aria-level="1">🪶 <span id="feedname"></span><span class="sess" id="feedword"></span></span>
+  </div>
+</header>
+<div id="glyphsprite"></div>
+<div class="alphaflag"><b>Warning:</b> docs.vote is in alpha!</div>
+<main class="feedwrap">
+  <p class="feedstate" id="feedstate" role="status"></p>
+  <div id="feed" aria-live="polite"></div>
+</main>
+
+<script src="/copy.js"></script>
+<script src="/cards.js"></script>
+<script src="/feed.js"></script>

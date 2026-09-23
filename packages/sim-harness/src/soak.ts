@@ -273,6 +273,12 @@ async function main(): Promise<void> {
       const draft = await seat.persona.draft(api, Date.now());
       if (draft === null) return;
       try {
+        // **The wording it replaces goes over the wire with it** (Q1463 (1)):
+        // the persona attested against `p.text`, this seat's own view, which
+        // is the text it drafted from — and the host refuses a patch carrying
+        // nothing. A simultaneous adoption elsewhere therefore comes back as
+        // a refusal here rather than as an edit to somebody else's clause,
+        // and that is the collision this harness exists to see.
         await cmd(seat.cookie, 'propose-text',
           { baseVersion: draft.patch.baseVersion, hunks: draft.patch.hunks,
             why: draft.rationale }, `propose(${seat.id})`);
@@ -292,7 +298,10 @@ async function main(): Promise<void> {
         // base the draft was written against is a finding, on the same
         // footing as the mid-round branch below.
         const why = e instanceof Error ? e.message : String(e);
-        if (/version|stale|base|conflict|duplicate/i.test(why)) {
+        // *not what this proposal replaces* is the same collision seen through
+        // the attestation (Q1463 (1), R-136): the version was current and the
+        // wording under the lines was not, which is a race lost, not a defect
+        if (/version|stale|base|conflict|duplicate|not what this proposal/i.test(why)) {
           collisions += 1;
           check(!/^\s*$/.test(why),
             `a refused simultaneous proposal says why (${why.slice(0, 60)})`);

@@ -155,6 +155,36 @@ window.BEGIN = (function () {
       try { return !servedCards().some((c) => !c.isBegin && !remedyOnly(c)); }
       finally { askingLast = false; }
     };
+    // **🍾 waits in the open while the room answers** (issue #76, Ed
+    // 2026-09-22: *a ⏳ Begin task in the rail with a list of the
+    // usernames/avatars which have answers still due*). When everything the
+    // document is waiting for is a delegated question still collecting, and
+    // the founder has given every answer of their own, the founder's part is
+    // done and the wait is the room's: 🍾 is served, refused with its reason,
+    // as a ⏳ entry naming who is still to answer. Until #76 it was hidden
+    // behind F9 whenever anything else stood in the rail — ✋ and 🖼️ are
+    // served from the save and never block (Q980), so on every real document
+    // the founder met no 🍾, no reason and no names; `founder-answers` passed
+    // only because the fixture's founder has a name. Only while *every* hold
+    // is `collecting`: an unset rule or the `one-voice` dead end keeps its
+    // own road (F5, F19), so 🍾 never jumps ahead of the founder's own work.
+    const ownAnswersGiven = (rd) => {
+      const me = (rd.members || []).find((m) => m.id === env.viewerId());
+      return !me || me.answered >= me.owed;
+    };
+    const beginCollecting = () => {
+      if (!amFounder()) return false;
+      const rd = readinessOf();
+      if (!rd || rd.ready) return false;
+      const holds = rd.holds || [];
+      return holds.length > 0 && holds.every((h) => h.why === 'collecting') && ownAnswersGiven(rd);
+    };
+    // the members whose answers are still due, in the register's order —
+    // participation by name, never preference (the module's own readout)
+    const dueMembers = () => {
+      const rd = readinessOf();
+      return rd ? (rd.members || []).filter((m) => m.owed > m.answered) : [];
+    };
     const beginOffered = () => {
       const rd = readinessOf();
       // no readout at all is not the same as a readout that says *not yet*: the
@@ -162,7 +192,7 @@ window.BEGIN = (function () {
       // last-resort door stays shut here rather than offer a press through an
       // unknown state
       if (!rd) return false;
-      if (!rd.ready) return nothingElseServed();
+      if (!rd.ready) return beginCollecting() || nothingElseServed();
       // …and the voice — but only where the voice is actually being served.
       // 🏛️ arrives when you become a member (Q1365) and rides the Founded
       // line, so for a founder-member it is served from the save; a clerk is
@@ -502,7 +532,7 @@ window.BEGIN = (function () {
         (sigs.length ? '<div class="fieldlab">Signed</div>' + sigList : '');
     };
 
-    return { readinessOf, oneVoiceRemedy, inviteTask, oneVoiceAsk, beginOffered, releaseBody, mailGiveUpBody,
+    return { readinessOf, oneVoiceRemedy, inviteTask, oneVoiceAsk, beginOffered, beginCollecting, dueMembers, releaseBody, mailGiveUpBody,
       BEGIN_ROWS, beginStillHeld, beginPos, beginLayDown, beginBody, closingBody };
   }
   return { make };

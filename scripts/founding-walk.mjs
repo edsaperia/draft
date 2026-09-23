@@ -31,8 +31,14 @@ const AS_JSON = process.argv.includes('--json');
  * as outstanding. It cannot ride `journey-walk.mjs` either, and for a reason
  * worth keeping: a delegated question never resolves on one voice (Q413), so
  * `begin` refuses and the live journey would correctly stall short of a begun
- * document. What it checks is pure page logic, identical in the fixture and
- * live, so the fixture is an honest place to check it.
+ * document. What it checks is page logic over one founder alone — the
+ * `one-voice` wait — and the fixture is an honest place for that. **It is not
+ * the live page's walk for a room still answering** (issue #76): this header
+ * used to claim the fixture and the live path were identical, while the live
+ * founder met no 🍾 at all for as long as ✋ or 🖼️ were served and the fixture's
+ * founder, who has a name, met it. A room of more than one voice still
+ * collecting — 🍾 as a ⏳ entry naming who is due — is asserted on the live
+ * path by `npm run journey -- --delegate-all`'s *who is due* line.
  */
 /**
  * `--takeback=<key>` (Q1318, Ed 2026-09-11: *I should be able to choose a
@@ -575,7 +581,11 @@ if (DELEGATE && !TAKEBACK) {
   const steps = log.map((e) => e.step);
   const at = steps.indexOf('open ' + want);
   const ok = at >= 0;
-  const answered = steps.includes('commit ' + want);
+  // …and a commit step that found no control to press is not an answer
+  // (issue #75: ⏰'s date rung could not be chosen, so its ✓ never woke,
+  // and the step was logged *no commit control* while the verdict said
+  // *answers it*)
+  const answered = log.some((e) => e.step === 'commit ' + want && !e.note);
   verdict = { want, ok, answered, after: ok ? steps[at - 1] : null };
   // The founder answers on their own surface (§9.0b) and the Proposing gate
   // waits on it, so a founder who is never asked cannot begin their own

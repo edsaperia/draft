@@ -165,10 +165,11 @@ function spellPhrase(afterMs: number): string {
    characters instead of a clause. `x` is ⌈n·y/100⌉, the product before the
    quotient (issue #24).
 
-   **And the share shown is the true one, never above 50** (ruling a, R-126):
-   no quorum may ask for more than half, so a count or a share above that is
-   restated as the number the room will actually be held to, and the sentence
-   says why rather than quietly disagreeing with the control.
+   **And the share shown is the true one** (ruling a, R-126, as amended by
+   Q1490's R-139): a count above the membership is still restated as the
+   number the room will actually be held to, since E moves under a count; the
+   half cap and the note that explained it went with the scale on 2026-09-21,
+   a share now running to 100% and ⌈n·E/100⌉ never exceeding E.
 
    **The number is the whole of what the room chose** since v0.133 (ruling s →
    why: R-131): ⌈E/3⌉ used to sit under it, unsaid on any card, which is the
@@ -184,8 +185,6 @@ function spellPhrase(afterMs: number): string {
 
    Every branch still ends in the floor and nothing else (Ed, 2026-09-06,
    Q1196; R-088): one consequence per value (T37), and there is no freeze. */
-const HALF_NOTE = ' No quorum can ask for more than half.';
-
 function quorumBody(q: number, n: number, form: 'count' | 'share', pct: number): string {
   if (n === 1) return 'In a membership of one, your own vote is the whole quorum.';
   return form === 'share'
@@ -199,14 +198,12 @@ function quorumMeaning(v: QuorumValue, room: Room): string | null {
   const n = Math.max(1, Math.floor(room.e));
   const asked = quorumCount(v, n);
   if (!Number.isFinite(asked)) return null;
-  // the number the room is actually held to (R-126); the seconder under it is
+  // the number the room is actually held to (R-139); the seconder under it is
   // the mechanism's and not this setting's (R-131), so the sentence is silent
   // about it exactly as it was about ⌈E/3⌉
-  const q = Math.min(asked, Math.ceil(n / 2));
-  const pct = Math.min(Math.round(v.n), 50);
-  const body = quorumBody(q, n, v.form, pct);
-  const capped = q < asked ? HALF_NOTE : '';
-  return fit(body + capped) ?? fit(body);
+  const q = Math.min(asked, n);
+  const pct = Math.round(v.n);
+  return fit(quorumBody(q, n, v.form, pct));
 }
 
 /* ---- ⏱️ -----------------------------------------------------------------

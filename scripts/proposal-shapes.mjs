@@ -74,7 +74,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
-import { say, post as postTo, arg, openCard, press, pageGesture, browserFor } from './lib/walk.mjs';
+import { say, post as postTo, arg, openCard, press, pageGesture, browserFor, withWas, landOn } from './lib/walk.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8171');
@@ -256,7 +256,7 @@ async function seatContext(who) {
  *  out for the API half — a magic link is single-use, so one link serves both. */
 async function arrive(who, link) {
   const p = PAGES.get(who) || await seatContext(who);
-  await p.goto(link, { waitUntil: 'domcontentloaded' });
+  await landOn(p, link, { waitUntil: 'domcontentloaded' });
   await p.waitForURL(/\/d\//, { timeout: 20_000 }).catch(() => {});
   const cookies = await CONTEXTS.get(who).cookies();
   if (!cookies.length) die(`${who}: the magic link set no cookie (landed at ${p.url()})`);
@@ -353,7 +353,8 @@ const CELL_OF = new Map();    // candidate id → cell
 for (const c of CELLS) {
   const v = await view(c.who);
   const r = await cmd(c.who, 'propose-text', {
-    baseVersion: v.textVersion, hunks: c.hunks, why: `shape ${c.id}`,
+    // the wording each hunk replaces, off this cell's own view (Q1463 (1))
+    baseVersion: v.textVersion, hunks: withWas(v.text, c.hunks), why: `shape ${c.id}`,
   });
   if (!r || !r.id) die(`${c.id}: propose-text answered ${JSON.stringify(r)}`);
   CAND.set(c.id, r.id);
@@ -625,12 +626,12 @@ async function openSeat(who, width, height, minItems) {
   const page = PAGES.get(who);
   ctx.seat = who; ctx.width = width; ctx.page = page;
   await page.setViewportSize({ width, height });
-  await page.goto(`${PAGE_BASE}/d/${SLUG}`, { waitUntil: 'domcontentloaded' });
+  await landOn(page, `${PAGE_BASE}/d/${SLUG}`, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!(window.SESSION && window.__PS), null, { timeout: 20_000 })
     .catch(() => {});
   if (who !== 'founder') {
     await clearTasks(page);
-    await page.goto(`${PAGE_BASE}/d/${SLUG}`, { waitUntil: 'domcontentloaded' });
+    await landOn(page, `${PAGE_BASE}/d/${SLUG}`, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => !!(window.SESSION && window.__PS), null, { timeout: 20_000 })
       .catch(() => {});
     await T(page, 600);
@@ -905,7 +906,7 @@ say('\nPhase 1n — a newcomer’s gutter, behind their OKs');
   const page = PAGES.get(who);
   ctx.seat = who; ctx.width = 1600; ctx.page = page;
   await page.setViewportSize({ width: 1600, height: 1000 });
-  await page.goto(`${PAGE_BASE}/d/${SLUG}`, { waitUntil: 'domcontentloaded' });
+  await landOn(page, `${PAGE_BASE}/d/${SLUG}`, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!(window.SESSION && window.__PS), null, { timeout: 20_000 })
     .catch(() => {});
   await T(page, 900);
@@ -1190,7 +1191,7 @@ const P2_CELLS = [
 CELL_OF.clear();
 for (const c of P2_CELLS) {
   const v = await view(c.who);
-  const r = await cmd(c.who, 'propose-text', { baseVersion: v.textVersion, hunks: c.hunks, why: `shape ${c.id}` });
+  const r = await cmd(c.who, 'propose-text', { baseVersion: v.textVersion, hunks: withWas(v.text, c.hunks), why: `shape ${c.id}` });
   if (!r || !r.id) die(`${c.id}: propose-text answered ${JSON.stringify(r)}`);
   c.cand = r.id; CAND.set(c.id, r.id); CELL_OF.set(r.id, c);
   say(`  ${c.id} · ${c.who} → ${r.id}`);

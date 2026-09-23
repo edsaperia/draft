@@ -6,7 +6,7 @@
  * defect was that 📍 let a taken address be committed at all, so the send was
  * the first thing in the world to ask about it.
  *
- * Two halves, and this walks both.
+ * Three halves, and this walks all of them.
  *   · **A suggested address moves** (Q534c). The address 📍 pre-fills from
  *     the title is the machine's, so a collision is resolved before the
  *     founder ever meets it — and the note names the address the title
@@ -16,6 +16,10 @@
  *     typed, the address is theirs: a collision is a refusal to read and
  *     correct, never something the page quietly moves. Commit dark, note
  *     naming the nearest free address, nothing sent at the wire.
+ *   · **The birth tab left open is told where the document went** (issue
+ *     #38 F3, F4). The link is followed, and the birth tab types and presses
+ *     📨: its 📧 clause says where the document lives, and nothing walks
+ *     back to 📍 or offers a twin.
  *
  *   npm run server                # in another shell, with a dev outbox
  *                                 # (no RESEND_API_KEY): the last check reads
@@ -42,7 +46,7 @@
  */
 import { chromium } from 'playwright';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
-import { say, onPage } from './lib/walk.mjs';
+import { followLink, say, onPage } from './lib/walk.mjs';
 
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
 // the slug is a search too, not `argv[3]`: once the base can come from the
@@ -153,7 +157,48 @@ const mine = held.filter((m) => JSON.stringify(m).includes('/d/' + FREE));
 check(mine.length > 0, 'the send wrote a creation mail for /d/' + FREE +
   ' (the outbox held ' + held.length + ' mail(s), ' + mine.length + ' for this address' +
   (openCard ? '; the open card was ' + openCard : '') + ')');
-check(refused.length === 0, 'nothing refused at the wire: ' + JSON.stringify(refused));
+
+/* ---- the birth tab left open beside the document (issue #38 F3, F4) ----
+   The link opens in a new tab and this one stays open. Its keystrokes were
+   refused with a 404 nothing read, and its 📨 was told its own address was
+   taken and walked back to 📍 offering `<slug>-2` — a twin with the same
+   Founder. Now the host says where the document is, and the 📧 clause says
+   so. */
+const link = (mine.find((m) => m.link) || {}).link;
+check(!!link, 'the creation mail carries its link');
+if (link) {
+  const followed = await followLink(link);
+  check(followed.location === '/d/' + FREE, 'the link founds the document at /d/' + FREE +
+    ' (' + followed.status + ' → ' + followed.location + ')');
+  const said = () => page.evaluate(() => document.body.innerText);
+  const LIVES = 'This document now lives at docs.vote/d/' + FREE;
+  await page.click('#prose');
+  await page.keyboard.type(' typed after the save');
+  await T(2000);                  // past the stash listener's 800 ms debounce
+  check((await said()).includes(LIVES), 'typing in the birth tab: the 📧 clause says where the document lives');
+  const mailsBefore = held.length;
+  await open('myemail');
+  await press(1250);
+  await T(1800);
+  const card = await page.evaluate(() => {
+    const c = document.querySelector('.setupcard');
+    return c ? (c.dataset.k || 'some card') : null;
+  });
+  check(card === null, '📨 from the birth tab walks nobody back to 📍 (open card: ' + card + ')');
+  check(!/\b-2\b/.test(await page.evaluate(() => (document.querySelector('.setupcard [data-slug]') || {}).value || '')),
+    'and offers no twin address');
+  const after = await (await fetch(BASE + '/api/dev/outbox')).json().catch(() => null);
+  const heldAfter = Array.isArray(after && after.mails) ? after.mails : Array.isArray(after) ? after : [];
+  // creation mails only: the founding just now mailed the operator its notice
+  const creations = (ms) => ms.filter((m) => /\/auth\/create\?/.test(m.link || '') &&
+    JSON.stringify(m).includes('/d/' + FREE)).length;
+  check(creations(heldAfter) === creations(mine),
+    '📨 on a made creation sends no mail (' + mailsBefore + ' → ' + heldAfter.length + ' in the outbox)');
+  check((await said()).includes(LIVES), 'and the 📧 clause still says where the document lives');
+}
+// the stash's 409 is the host answering the birth tab, not a refusal
+const unexpected = refused.filter((x) => x !== '409 POST /api/docs/pending');
+check(unexpected.length === 0, 'nothing refused at the wire: ' + JSON.stringify(unexpected));
 check(errors.length === 0, 'no page errors: ' + JSON.stringify(errors.slice(0, 2)));
 
 say(fails.length ? '\nFAILED (' + fails.length + ')' : '\nall good');

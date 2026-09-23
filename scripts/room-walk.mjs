@@ -54,7 +54,7 @@
  * phase B: parked), and asserts the resolution instead.
  */
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
-import { say, post as postTo, followLink } from './lib/walk.mjs';
+import { say, post as postTo, followLink, withWas } from './lib/walk.mjs';
 
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
 const SEED = Number((process.argv.find((a) => a.startsWith('--seed=')) || '').split('=')[1] || 11);
@@ -121,7 +121,8 @@ async function proposeAndVote({ author, seats, pick, newLine, why, resolved, ins
   // itself untouched — what moves every record below it (Q1333)
   const p = await cmd(author, 'propose-text', {
     baseVersion: v.textVersion,
-    hunks: [{ start: li, end: insertBefore ? li : li + 1, lines: [newLine] }],
+    // the wording it replaces, off the very view the line was picked from (Q1463 (1))
+    hunks: withWas(v.text, [{ start: li, end: insertBefore ? li : li + 1, lines: [newLine] }]),
     why,
   });
   const cid = p.id;
@@ -353,6 +354,14 @@ if (park === null) {
   const rec = (after.records ?? []).find((r) => r.candidateId === cidB
     || r.field?.some((f) => f.candidateId === cidB));
   must(rec?.outcome === 'adopted', `a record with outcome 'adopted' exists for the parked candidate`);
+  // **and it states the membership's numbers** (Q1458, Ed 2026-09-18): the
+  // three ride the park and the accept copies them, so the passed card on a
+  // shielded adoption says how many weighed in exactly as any other does.
+  // Until this they were the one adoption's record that stated none of them.
+  must(typeof rec?.approvals === 'number' && typeof rec?.floor === 'number'
+    && typeof rec?.abstained === 'number',
+    `the parked adoption's record carries the numbers the room decided on `
+    + `(approvals ${rec?.approvals}, floor ${rec?.floor}, did not answer ${rec?.abstained})`);
   const mine = (after.mine ?? []).find((c) => c.id === cidB);
   must(mine && mine.state !== 'live', `the author's own entry left 'live' (${mine?.state})`);
 }

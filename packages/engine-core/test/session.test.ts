@@ -51,11 +51,18 @@ function openWide(): Session {
  *
  * It held the *bar* at 0.999 until v0.128 (Q1362 (a), R-114): with the bar
  * gone the floor is the only thing that holds a supported race open, so a
- * quorum of 99 in a room of five says "not about adoption" in the one place
- * the rule still reads.
+ * quorum above what these walks cast says "not about adoption" in the one
+ * place the rule still reads.
+ *
+ * **Three, asked for, since v0.139** (Q1490, R-139): it was a count of 99,
+ * which the old cap at half the group turned into ⌈5/2⌉ = 3. The cap is at
+ * the whole group now, so 99 in a room of five is unanimity — and a floor of
+ * unanimity does not hold a race open, it closes it, the first preference for
+ * the current text leaving no future that can meet the floor (§4.4). The
+ * three the cap used to produce is asked for directly.
  */
 function openHeld(): Session {
-  return openSession({ quorum: { form: 'count', n: 99 } });
+  return openSession({ quorum: { form: 'count', n: 3 } });
 }
 
 /** Replace line `line` with `text` (single-hunk rewrite). */
@@ -1017,13 +1024,16 @@ describe('rival-pair gating (SPEC §8.3, Q48)', () => {
    * Hold the floor out of reach so no adoption interferes. It froze the
    * threshold at 0.99 until v0.128, when the bar left the test (R-114).
    *
-   * **And it takes a room of nine since Q1439** (R-126): no quorum may ask for
-   * more than half, so a count of 99 in a room of five is read as ⌈5/2⌉ = 3
-   * and the third approval below would carry the race out from under the gate
-   * it is testing. At nine the same count reads 5, which the four voices here
-   * never reach.
+   * **And it takes a room of nine since Q1439** (R-126): a count of 99 in a
+   * room of five was read as ⌈5/2⌉ = 3 and the third approval below would
+   * carry the race out from under the gate it is testing. At nine the cap
+   * gave 5, which the four voices here never reach.
+   *
+   * **Five is asked for since Q1490** (R-139): the cap is the whole group now,
+   * so a count of 99 would be unanimity and the first vote for the current
+   * text would close the candidate (§4.4) instead of holding it.
    */
-  const openGated = () => openSession({ quorum: { form: 'count', n: 99 } }, 9);
+  const openGated = () => openSession({ quorum: { form: 'count', n: 5 } }, 9);
 
   const twoRivals = (s: Session) => {
     const { id: c1 } = s.submitCandidate(1000, {
@@ -1112,10 +1122,13 @@ describe('rival-pair gating (SPEC §8.3, Q48)', () => {
 describe('quorum in the adoption floor (SPEC §4.2, 367b)', () => {
   it('a count quorum raises the floor above the statistical minimum', () => {
     const s = openSession({ quorum: { form: 'count', n: 4 } });
-    // ceil(5/3) = 2; the room asked for 4 — the room's number governs, **up
-    // to half** (Q1439, R-126), so in a room of five it is read as 3
-    expect(s.adoptionFloor()).toBe(3);
-    // and a count under the cap is the count itself
+    // ceil(5/3) = 2; the room asked for 4 and gets 4 — the room's number
+    // governs up to the whole membership since Q1490 (R-139, reversing
+    // R-126's cap at half, which read this as 3)
+    expect(s.adoptionFloor()).toBe(4);
+    // and a count at the membership is unanimity, never more than it
+    expect(openSession({ quorum: { form: 'count', n: 5 } }).adoptionFloor()).toBe(5);
+    expect(openSession({ quorum: { form: 'count', n: 99 } }).adoptionFloor()).toBe(5);
     expect(openSession({ quorum: { form: 'count', n: 3 } }, 9).adoptionFloor()).toBe(3);
   });
 
@@ -1234,9 +1247,11 @@ describe('ParticipantApi.outcomes (stage 8): resolutions are public, nothing els
 describe('stage 8 follow-up: closeness, urgency, the record and the wallet clock', () => {
   it('closeness is a magnitude: mirror races read identically whichever side leads', () => {
     // a room of nine, so the three approvals the 'a' mirror casts stay under
-    // the floor (Q1439: at five, `openHeld`'s capped floor of 3 would carry
-    // it mid-mirror and there would be no race left to read)
-    const held = () => openSession({ quorum: { form: 'count', n: 99 } }, 9);
+    // the floor (Q1439: at five, `openHeld`'s floor of 3 would carry it
+    // mid-mirror and there would be no race left to read). Five is asked for
+    // rather than left to a cap: since Q1490 (R-139) a count above the group
+    // is unanimity, which closes the 'b' mirror rather than holding it.
+    const held = () => openSession({ quorum: { form: 'count', n: 5 } }, 9);
     const mk = (dir: 'a' | 'b') => {
       const s = held();
       const { id } = s.submitCandidate(1000, {
@@ -1635,16 +1650,18 @@ describe('the text is the top of the ranking (Q1362, R-114)', () => {
     // particular vote — a race is otherwise carried by the first majority that
     // passes through it, which is the cooldown's business and not this rule's.
     //
-    // **The room is twenty-four, not fifteen, since Q1439** (R-126): no quorum
-    // may ask for more than half, so a count of 99 in a room of fifteen is
-    // read as 8 — exactly the tally — and the race carried mid-vote. At
-    // twenty-four the cap is 12, above either tally, and the statistical
-    // minimum the amendment leaves behind is ⌈24/3⌉ = 8, which the eight
-    // approvals meet and the seven do not. Ten people never vote; silence
-    // imputes nothing (💤 is unset here), so they stay in the group and the
-    // capped quorum stays 12.
+    // **The room is twenty-four, not fifteen, since Q1439** (R-126): a count
+    // of 99 in a room of fifteen was read as 8 — exactly the tally — and the
+    // race carried mid-vote. At twenty-four the cap gave 12, above either
+    // tally. Ten people never vote; silence imputes nothing (💤 is unset
+    // here), so they stay in the group and the quorum stays 12.
+    //
+    // **Twelve is asked for since Q1490** (R-139): the cap is the whole group
+    // now, so 99 would be unanimity — and the seven votes for the current
+    // text would close the candidate outright (§4.4), which is not the thing
+    // under test.
     const run = (forVotes: number) => {
-      const s = openSession({ quorum: { form: 'count', n: 99 } }, 24);
+      const s = openSession({ quorum: { form: 'count', n: 12 } }, 24);
       const { id } = s.submitCandidate(1000, {
         author: 'p1', patch: rewrite(0, 1, 'A.'), rationale: 'r',
       });
@@ -1671,12 +1688,13 @@ describe('the text is the top of the ranking (Q1362, R-114)', () => {
     // tolerance one order carried and the other stood (the stage-1 build's
     // first finding, 2026-09-15). Both orders must read *not on top*.
     // **A room of twenty, thirteen of whom vote, since Q1439** (R-126): the
-    // capped quorum is 10, above the seven approvals either order produces, so
-    // the dead-even fit is read on a live race in both — at fourteen the cap
-    // would be exactly seven and the *for*-first order would carry the race at
-    // 7–0 before the dissent arrived.
+    // quorum is 10, above the seven approvals either order produces, so the
+    // dead-even fit is read on a live race in both — at fourteen it would be
+    // exactly seven and the *for*-first order would carry the race at 7–0
+    // before the dissent arrived. The ten is asked for since Q1490 (R-139),
+    // a count above the group being unanimity now rather than half of it.
     const run = (againstFirst: boolean) => {
-      const s = openSession({ quorum: { form: 'count', n: 99 } }, 20);
+      const s = openSession({ quorum: { form: 'count', n: 10 } }, 20);
       const { id } = s.submitCandidate(1000, {
         author: 'p1', patch: rewrite(0, 1, 'A.'), rationale: 'r',
       });
@@ -1708,10 +1726,11 @@ describe('the text is the top of the ranking (Q1362, R-114)', () => {
     // rather than on whatever was true after some particular vote.
     //
     // **Eighteen seats, not sixteen, since Q1439** (R-126): X collects eight
-    // approvals on the way, and at sixteen the capped quorum is eight, so X
-    // carried before Y's own votes arrived. At eighteen the cap is nine and
-    // the minimum the amendment leaves is ⌈18/3⌉ = 6, which Y's seven meet.
-    const s = openSession({ quorum: { form: 'count', n: 99 } }, 18);
+    // approvals on the way, and at sixteen the quorum is eight, so X carried
+    // before Y's own votes arrived. At eighteen it is nine, above both
+    // tallies. Nine is asked for since Q1490 (R-139), a count above the group
+    // being unanimity now — which would close both candidates instead.
+    const s = openSession({ quorum: { form: 'count', n: 9 } }, 18);
     const { id: x } = s.submitCandidate(1000, {
       author: 'p1', patch: rewrite(0, 1, 'X.'), rationale: 'r' });
     const { id: y } = s.submitCandidate(1100, {
@@ -1753,10 +1772,12 @@ describe('the text is the top of the ranking (Q1362, R-114)', () => {
     // ordering carries X.
     //
     // **Twenty-eight seats, not twenty, since Q1439** (R-126): Y collects
-    // thirteen approvals here, and at twenty the capped quorum is ten, so Y
-    // carried while it was still briefly the leader. At twenty-eight the cap
-    // is fourteen, above both tallies, and the fit is read on a live race.
-    const s = openSession({ quorum: { form: 'count', n: 99 } }, 28);
+    // thirteen approvals here, and at twenty the quorum is ten, so Y carried
+    // while it was still briefly the leader. At twenty-eight it is fourteen,
+    // above both tallies, and the fit is read on a live race. Fourteen is
+    // asked for since Q1490 (R-139), a count above the group being unanimity
+    // now rather than half of it.
+    const s = openSession({ quorum: { form: 'count', n: 14 } }, 28);
     const { id: x } = s.submitCandidate(1000, {
       author: 'p1', patch: rewrite(0, 1, 'X.'), rationale: 'r' });
     const { id: y } = s.submitCandidate(1100, {
@@ -1814,9 +1835,10 @@ describe('the text is the top of the ranking (Q1362, R-114)', () => {
     // score now. Both candidates sit in one race, so they share a salience
     // weight and the ratio of their scores is the ratio of their peaks.
     //
-    // A room of nine, since X collects four approvals below and `openHeld`'s
-    // capped floor in a room of five is three (Q1439, R-126).
-    const s = openSession({ quorum: { form: 'count', n: 99 } }, 9);
+    // A room of nine at five, since X collects four approvals below and
+    // `openHeld`'s floor in a room of five is three (Q1439, R-126; the five
+    // is asked for rather than capped down from 99 since Q1490, R-139).
+    const s = openSession({ quorum: { form: 'count', n: 5 } }, 9);
     const { id: x } = s.submitCandidate(1000, {
       author: 'p1', patch: rewrite(0, 1, 'X.'), rationale: 'r' });
     const { id: y } = s.submitCandidate(1100, {

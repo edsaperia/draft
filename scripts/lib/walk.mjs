@@ -51,7 +51,20 @@ export const browserFor = (argv = process.argv, env = process.env) => {
   return engine;
 };
 
-export const say = (...a) => console.log(...a);
+/**
+ * `WALK_TIMING=1` puts the milliseconds since the previous line in front of
+ * each (plan-ci-speed.md Stage 6: *journey, profiled not changed*), so a
+ * walk's log is its own profile — sort by the first column. Off, a line is
+ * exactly what it always was.
+ */
+const TIMING = process.env.WALK_TIMING === '1';
+let lastSay = 0;
+export const say = (...a) => {
+  if (!TIMING) return console.log(...a);
+  const now = Date.now(), ms = lastSay ? now - lastSay : 0;
+  lastSay = now;
+  console.log(`[+${String(ms).padStart(6)} ms]`, ...a);
+};
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 /** `--name=value` from argv, else `dflt` (null when none is given). */
 export const arg = (name, dflt = null) => {
@@ -75,6 +88,25 @@ export const linkIn = (mail) => (JSON.stringify(mail).match(/http:[A-Za-z0-9_?=/
 export const outbox = async (base) => {
   const ob = await (await fetch(base + '/api/dev/outbox')).json();
   return ob.mails || ob;
+};
+/**
+ * **What a patch says it is replacing** (Q1463 (1), Ed 2026-09-19; SPEC §2.1
+ * → why: R-136). Every text proposal states the wording it believes it is
+ * replacing, and the host refuses one that does not — the page, a bot and
+ * every walk alike. So a walk that posts `propose-text`, `pen-text` or
+ * `rebase-text` hands its hunks through here first, with **the document as it
+ * stood when the hunks were written**: a replacement takes `was`, the exact
+ * lines at [start, end), and a pure insertion `after`, the exact line before
+ * it (`null` at the top).
+ *
+ * `text` is the document as one string — `view.text`, which is where every
+ * walk already gets it.
+ */
+export const withWas = (text, hunks) => {
+  const lines = text === '' || text == null ? [] : String(text).split('\n');
+  return hunks.map((h) => (h.start === h.end
+    ? { ...h, after: h.start === 0 ? null : (lines[h.start - 1] ?? null) }
+    : { ...h, was: lines.slice(h.start, h.end) }));
 };
 /** A JSON POST as the page sends one: same-origin header, the seat's cookie if any. */
 export const post = (base, path, body, cookie) => fetch(base + path, {
@@ -101,6 +133,32 @@ export const followLink = async (link) => {
   return { status: r.status,
     cookie: (r.headers.get('set-cookie') ?? '').split(';')[0],
     location: r.headers.get('location') ?? '' };
+};
+/**
+ * **Open a URL in a browser, pressing Continue where it is a magic link**
+ * (issue #67 F1). The interstitial used to submit itself, so a walk seated a
+ * browser by `goto` alone; it waits for a person's press now, which is the
+ * whole of the fix — a link scanner that renders the page spends nothing. So
+ * every walk that lands a browser on a link lands it here: a plain `goto` for
+ * any other address, and on `/auth/create|login|apply` one press of the
+ * interstitial's own button, then the wait until the page has left `/auth/`.
+ * Answers what `goto` answered.
+ */
+export const landOn = async (page, url, opts = {}) => {
+  const res = await page.goto(url, opts);
+  let path = '';
+  try { path = new URL(page.url()).pathname; } catch { /* about:blank */ }
+  if (/^\/auth\/(create|login|apply)$/.test(path)) {
+    const button = await page.$('form[method="post"] button[type="submit"]');
+    if (button) {
+      await Promise.all([
+        page.waitForURL((u) => !/^\/auth\//.test(new URL(u).pathname),
+          { waitUntil: opts.waitUntil || 'load', timeout: 30_000 }).catch(() => {}),
+        button.click(),
+      ]);
+    }
+  }
+  return res;
 };
 
 /* ---- the page ------------------------------------------------------------ */

@@ -141,13 +141,47 @@ window.COPY = (function () {
       indifferent: 'Indifferent',
       vinDiagonal: 'They matter equally',
       vinPair: 'I can’t split them',
+      // the park and the Text's crown card still close by a bin; a judgment
+      // has none since Q1500
       binLocked: 'Close — your vote stays on the record',
-      bin: 'Clears your choice and closes — there is nothing here to put back',
       chillOn: 'Cooled — this one will not be put at the front of your queue. Press again to allow it.',
       chillOff: 'Not this one, not now — it stays open and stops being the most urgent',
       cast: 'Recorded — choose again to change it',
       submit: 'Submit this vote',
       choose: 'Choose one of the three first',
+      // **What silence here will come to mean** (Q1460, Ed 2026-09-18, in the
+      // residency room: *a countdown for when not voting will count as a
+      // lapse* · *same size and font and place as the "propose edit" text* ·
+      // *actually "💤 abstain in hh:mm"*). His words, whole: the glyph names
+      // the rule 💤 stands for, and `left` is the time remaining, rounded up,
+      // so it never reads 00:00 while there is time to vote.
+      abstainIn: (left) => '💤 abstain in ' + left,
+      // **And past a day it counts in days** (Q1460 (f), Ed 2026-09-19: *If
+      // it's more than a day away, the card should show e.g. "abstain in 3
+      // days & hh:mm"*). Whole days, then the hours and minutes left over;
+      // the *&* is his own. Under twenty-four hours the line is the hh:mm
+      // alone and this template is never reached.
+      abstainDays: (n, hhmm) => n + (n === 1 ? ' day' : ' days') + ' & ' + hhmm,
+      // **And once the period has run the spot stays and says so** (Q1460
+      // (a), Ed 2026-09-18, choosing this over the line going and over *— you
+      // can still vote*). A statement about this seat's silence, not a
+      // refusal: a late vote is still taken, and casting one clears the line
+      // exactly as answering in time always did.
+      abstained: '💤 abstained',
+      // **The rail says the same thing in the room it has** (Q1460 (e), Ed
+      // 2026-09-19: *the rail should only show the clock when it's less than
+      // 24 hrs*): inside the last day the entry carries the glyph and the
+      // figures alone — the card beside it is where the sentence is — and
+      // once the period has run it carries `abstained` like the card.
+      abstainShort: (hhmm) => '💤 ' + hhmm,
+      // **And the same shape where the wallet is empty** (Q1486 (E), Ed
+      // 2026-09-21, widening his own question: *dark, with ✏️ hh:mm countdown
+      // (for proposals as well as rule changes, the same anywhere you would
+      // want to press the button but you have no ✏️s)*). His words, and the
+      // countdown machinery is the abstention clock's — one timer, patching
+      // the figures in place, never a render. The moment is the wallet's own
+      // next drip as the view serves it.
+      dripIn: (hhmm) => '✏️ ' + hhmm,
     },
     // reviseNote: what a locked judgment says for itself
     revise: {
@@ -166,7 +200,6 @@ window.COPY = (function () {
     fmt: {
       bold: 'Bold (the markdown is **like this**)',
       italic: 'Italic (the markdown is *like this*)',
-      mdMode: 'Markdown — see and type the characters exactly as they are stored, the whole text at once',
     },
     whyPlaceholder: 'We should change this because…',
   };
@@ -179,6 +212,11 @@ window.COPY = (function () {
     rail: {
       draftTitle: 'Your draft — not proposed yet.',
       yoursInRace: 'Yours, in the race',
+      // **what the entry says for a few seconds after the press** (Q1485 (A),
+      // Ed 2026-09-21: *Close, and say so*). The card has just collapsed onto
+      // its clause, so this is the only thing on the surface saying the
+      // proposal went out; it settles to the one-line `yours` form after it.
+      justProposed: 'Proposed — the members are deciding',
       noReason: 'no reason given yet — say what this is for',
       placesOf: (n, of) => n + ' of ' + of + ' places',
       // a live race's tooltip (Q1200): it wants your vote while the router
@@ -215,6 +253,35 @@ window.COPY = (function () {
       // one being written: it re-makes the proposal you already have, so there
       // is nothing left to pay and an empty wallet cannot stop it
       keepsCost: ' — it keeps its place and the edit it already cost',
+      // …and the same fact one step earlier (Q1463, Ed 2026-09-18: *follow the
+      // paragraph, and refuse if lost*): a draft you have **not** proposed
+      // yet, whose clause an adoption replaced while you were writing. Your
+      // words stay in the lane — nothing typed is ever discarded — but the
+      // site has no paragraph left to stand against, so it cannot go out until
+      // it is written against what now stands.
+      drafted: 'The document changed here, and your draft could not be carried across to the new wording — write it against the clause as it now stands.',
+    },
+    // **what a draft's card says when its press sent nothing or came back
+    // refused** (Ed, 2026-09-19: *yes*, move them — they were five literals in
+    // live.js, the first of them in three copies). Two ways the text can have
+    // moved under a draft — the page's own check before the press (Q1463) and
+    // the host's stale-version answer after it — read as one sentence, because
+    // to the member they are one event; the verb follows the act, ✏️ propose
+    // or ✒️ amend.
+    refusal: {
+      movedPropose: 'The text moved while you were writing — your draft is kept; read the new wording and propose again.',
+      movedAmend: 'The text moved while you were writing — your draft is kept; read the new wording and amend again.',
+      // **and what a selection across an open card is told** (Q1492): a
+      // selection dragged over a card sees the blocks on either side of it
+      // and none of the ones beneath, so it is not one run and cannot be one
+      // place. The draft already there is untouched, and this says so.
+      crossesCard: 'That selection runs across an open card, so it is not one place — close the card, or select the paragraphs on one side of it.',
+      // …and the backstop under it: two places over the same lines is a
+      // patch the document cannot take, and the press sends nothing.
+      overlapping: 'Two of the places you have changed cover the same lines — discard one of them and propose again.',
+      notProposed: (reason) => 'That could not be proposed: ' + reason + '.',
+      notAmended: (reason) => 'That could not be amended: ' + reason + '.',
+      noAnswer: 'the server did not answer',
     },
     // the gap a draft stands in, named for the rail and the editing head
     gap: {
@@ -268,6 +335,26 @@ window.COPY = (function () {
       // Founder's (STYLE T8); the verb is *pass*, never *carry* and never
       // *adopted*.
       dominated: 'Rejected — it could no longer pass',
+      // **what a sealed record's own entry says it is** (Q1493's list, the
+      // nh2026 convention 2026-09-20): the rail entry's tooltip, and the
+      // caption under the mark. They were four literals in `live.js`, on the
+      // road Q1484 and Q1485 walked; the rule is that every string a member
+      // can read lives here.
+      capAdopted: 'decided — adopted',
+      capStood: 'decided — the current text stood',
+      capUndecided: 'undecided at the close — the text stood',
+      outAdopted: 'adopted',
+      outStood: 'retired — the current text stood',
+      outUndecided: 'undecided',
+    },
+    // **a proposal of your own, as its line says it** (Q1493's list): the
+    // three faces the caption wears between the press and the race, and the
+    // tail a signed one takes. `stranded` and `park` above carry the other
+    // two states.
+    yours: {
+      justIn: 'yours · just in, evidence starting',
+      inRace: 'yours · in the race',
+      signedTail: ' · signed',
     },
     // the proposal row and the commit titles either side of the ✏️ hold
     row: {
@@ -286,8 +373,6 @@ window.COPY = (function () {
       withdraw: 'Withdraw',
       allPlaces: (n) => ' all ' + n + ' places',
       withdrawCost: ' — the edit comes back in full',
-      submitted: '✏️ Submitted',
-      submittedTitle: 'Proposed — one edit spent. It is in the race now.',
       idle: 'Nothing has changed yet — type in the document to start a draft',
     },
     // the sign control (Q770): whether your name goes on the draft
@@ -462,6 +547,15 @@ window.COPY = (function () {
     refuseSet: (reason) => 'That could not be set: ' + reason + '.',
     // every other refusal, under the card that sent it (Q1330, SURFACE Y25)
     refused: (reason) => 'That was refused: ' + reason + '.',
+    // **The one module sentence the page says in its own words** (Q1486 (E),
+    // Ed 2026-09-21). The engine refuses a press an empty wallet cannot pay
+    // for with *insufficient ✏️ for the stake (§7)* — a § pointer, which
+    // `plainRefusal` already strips, and *stake*, which is engine vocabulary
+    // (STYLE §1: the surface says what a thing costs, never what it stakes).
+    // The page's own controls are dark before that refusal can be reached now
+    // (`walletBroke`), so nobody should meet it; it is kept in the member's
+    // words for the day a road reaches it that nothing here foresaw.
+    noPencil: 'you have no ✏️ left to spend on this',
     // the host's two flags (Q1345, Q1346; Ed, 2026-09-12): the announced
     // pause, drawn as a modal over the whole page while a deploy runs, and
     // the red flag on a document whose saves the store rejects
@@ -558,6 +652,14 @@ window.COPY = (function () {
     // the applicant's five tasks (APPCARDS): not settings, one label each,
     // moved here from the page unchanged (Q1209's build) because a member
     // reads them
+    // **the Join card on an open-door document** (issue #36 F1; Q509 (a), whose
+    // ruling ended *the Join affordance comes back*): 🤝 yes with 🪪 at ✒️, where
+    // arriving is joining — the door's 🪪 card becomes a join, and its link seats
+    strjoin: {
+      title: 'Join',
+      why: 'Anyone with the link may join. Your email is your identity here — the link it sends makes you a member.',
+      sent: 'Follow the link to join — the address is your identity here.',
+    },
     appcards: {
       apply: 'Apply for Membership',
       appmail: 'Your Email',
@@ -571,6 +673,31 @@ window.COPY = (function () {
       // title asking for an application would offer one that cannot be made
       shut: 'The rule has changed since you began: this document is now invitation-only, so your application cannot be submitted.',
       shutTitle: 'Applications Have Closed',
+      // **and the answer, when it is no** (Q1473, Ed 2026-09-19). A refused
+      // application left the surface saying *Submitted — the members are
+      // deciding* for ever: nothing on the applicant's page had a word for
+      // the one status it can end in badly, and nothing mailed them either.
+      // Ed's ruling makes it the ordinary case at 🏛️ — one member's vote
+      // against ends the application there and then — so the card says so.
+      // **It names nobody and counts nothing**: which members answered, and
+      // how, is theirs (§3.5).
+      refused: 'The membership did not agree to it.',
+      refusedTitle: 'Your Application Was Not Accepted',
+      // **…and when it is yes** (issue #29 F2): an admitted applicant still
+      // read *Submitted — the members are deciding* above a promise of a mail
+      // that had already arrived
+      admitted: 'The membership admitted you. The email sent to you is your way in.',
+      admittedTitle: 'Your Application Was Accepted',
+      // **what an application goes before, by 🪪's price** (issue #29 F3): the
+      // ✏️ sentence stood at every price, and *sure enough* is not the words
+      // for a vote everybody must agree to (STYLE §1). At ✒️ the door is free,
+      // said only before submitting — a submitted application is already in a
+      // race opened at the price it met, so nothing is said there
+      why: {
+        assembly: 'Your application goes before the members as a constitutional proposal (🏛️) — it passes only if every member agrees.',
+        proposal: 'Your application goes before the members as a proposal (✏️) — it passes if the membership is sure enough.',
+        pen: 'Anyone may join: submitting your application makes you a member straight away.',
+      },
       // **what the application holds so far** (Q1366, Ed 2026-09-15): the 🪪
       // card lists the three things a submission carries, each as given or as
       // not yet given, so a ✓ on ✋ 🖼️ 👋 is visibly kept before Submit — the
@@ -782,7 +909,24 @@ window.COPY = (function () {
         share + ' of the membership' + (tail || '') + '.',
       count: (n) => 'A proposal ✏️ cannot pass until it is preferred by at least ' + n + ' members.',
     },
+    // **👥 is the one card that says what its number comes to** (Q1490, Ed
+    // 2026-09-21 → why: R-139), a deliberate exception to Q1439 ruling u,
+    // which took the meaning line off every card. The scale runs 1 to 100 now
+    // and both of its ends need a sentence the number does not carry: above
+    // half, how few can stop a proposal; below the seconder, that two is the
+    // floor whatever is asked for. One is printed at a time and only once a
+    // number has been typed — a blind card shows nothing it would come to —
+    // and neither is printed in a membership of one, where every quorum is
+    // the whole of it. Their one home is here; `quorumNote` in setup.js
+    // chooses between them and every surface repaints that in place.
+    quorumStop: (k) => 'With this quorum, ' + (k === 1 ? 'one member' : k + ' members') +
+      ' preferring the current text can stop a proposal.',
+    quorumFloorMin: 'The minimum quorum is 2: the author and one other member.',
     titledLead: 'The document is titled ',
+    // the 📧 clause in the birth tab left open once the document exists
+    // (issue #38 F4): the text typed here is no longer sent, so it says so
+    birthMade: (slug) => 'This document now lives at docs.vote/d/' + slug +
+      '. What is typed here no longer reaches it.',
     // the card value lines (VALUE) — the label-vocabulary strings that MVAL
     // keys on stay in the page until pass 2 moves that cluster whole
     val: {
@@ -849,6 +993,10 @@ window.COPY = (function () {
     whyChangingPlaceholder: 'I am changing this because…',
     clerkNoPencil: 'You are not a member, so there is no ✏️ for you to spend — this one is yours to set.',
     nothingToPut: 'That could not be proposed: nothing is chosen on this card.',
+    // **a number a field will not take** (Q1486 (G), the nh2026 convention
+    // 2026-09-20): the field's own min and max, said once, where the module's
+    // validator prose — *dripMinutes must be …* — used to land on the card
+    outOfRange: (lo, hi) => 'That has to be a whole number between ' + lo + ' and ' + hi + '.',
     // the composer's free sentences (the lane pairs stay with MVAL's cluster)
     composeNote: {
       redirect: 'Every link the document has ever had keeps working — a change leaves a redirect behind.',
@@ -915,8 +1063,14 @@ window.COPY = (function () {
         done: 'Open — the constitution is settled.',
       },
       voice: {
-        title: 'Constitutional Proposals',
+        // **the 🏛️ grant is the membership's own door** (Q1502, Ed
+        // 2026-09-22: *Activate your membership*); its body is about 🏛️
+        // alone, and — by the same ruling — says what activating it opens,
+        // the one grant body that does (T45's exception)
+        title: 'Activate Your Membership',
+        why: 'A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules.',
         waiting: 'Waiting on your arrival.',
+        accept: 'Activate 🏛️',
       },
       pen: {
         title: 'Founder Actions',
@@ -928,10 +1082,104 @@ window.COPY = (function () {
         why: 'As the founder of this document, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to.',
         waiting: 'Waiting on the save.',
       },
+      // **a grant is accepted, not OK'd** (Q1501, Ed 2026-09-22; T44 amended
+      // for the grants alone): the commit names the act and the power it
+      // hands you — 💡's power is ✏️ — and 🏛️'s reads its own word above
+      accept: (glyph) => 'Accept ' + glyph,
       begin: { title: 'Begin' },
       closing: { title: 'The Close' },
     },
   };
 
-  return { RULES, grammar, session, page };
+  // ---- the spectator feed (feed.html, Q1466) --------------------------------
+  // **A second page, for somebody watching** (Ed, 2026-09-19: *a feed of new
+  // proposals and proposals that pass, with enough context that you can
+  // understand what's happening*). Every entry is a change and the place it
+  // bites; nothing here counts, ranks or says which way anything is going
+  // (SPEC §3.5). The verb is **pass** (STYLE T8), the office is **the
+  // Founder**, and an unnamed author is *Anonymous*, the door's own word.
+  const feed = {
+    name: 'Feed',
+    tabTitle: (title) => title + ' — feed',
+    // an entry's eyebrow, by kind
+    proposed: 'New proposal',
+    passed: 'Passed',
+    // **how long it took** (Ed, 2026-09-19: *"Passed in 23 minutes"*), from
+    // the moment it was proposed; the two largest units and no more
+    passedIn: (durationWords) => 'Passed in ' + durationWords,
+    // **…and the numbers ride the title** (Ed, 2026-09-19: *"x of y voted" and
+    // the other stats should all be in the title … as they are on decision
+    // cards*): one line, the record head's own shape — what happened, a dot,
+    // what it came to
+    titled: (what, counts) => (counts ? what + ' · ' + counts : what),
+    underMinute: 'under a minute',
+    minutes: (n) => (n === 1 ? '1 minute' : n + ' minutes'),
+    hours: (n) => (n === 1 ? '1 hour' : n + ' hours'),
+    days: (n) => (n === 1 ? '1 day' : n + ' days'),
+    // **a passed entry's numbers are the passed card's** (Ed, same message:
+    // *the same stats as one on a passed card*): `record.counts`' sentence
+    // word for word, less its last clause — *you said* — since nobody watching
+    // a feed has a vote in it. A clause whose number an older log does not
+    // carry is omitted, as the record omits it.
+    counts: (voted, roster, floor, approvals, abstained) =>
+      [voted + ' of ' + roster + ' weighed in',
+        approvals === null || approvals === undefined ? '' : approvals + ' preferred it',
+        abstained ? abstained + ' did not answer in time' : '',
+        floor === null || floor === undefined ? '' : 'quorum was ' + floor]
+        .filter(Boolean).join(' · '),
+    decreed: 'The Founder amended this',
+    // where a change is, under the eyebrow: the section, or the top
+    top: 'At the top of the document',
+    // a change's two readings
+    stood: 'The clause as it stood',
+    put: 'The proposal',
+    nowStands: 'The clause as it stands',
+    after: 'A new clause, after',
+    first: 'A new clause, first in its section',
+    // a deletion that passed: the card's own sentence (`lane.removed`) is in the
+    // conditional, which is right for a proposal and wrong once it has happened
+    removed: 'This clause was removed.',
+    // whose hand an amendment is: the office, never the person
+    founder: 'The Founder',
+    anonymous: 'Anonymous',
+    redacted: '[redacted]',
+    // **a proposal about a rule** (Ed, 2026-09-19: *of course motions on
+    // settings should appear in the feed* … *proposals on settings should have
+    // that setting's icon instead of 💡*). The title says which way it was put,
+    // since *all members must agree* is a different thing to watch than a vote;
+    // the place is the constitution and the setting's own noun (`page.cards`).
+    proposedConstitutional: 'New constitutional proposal 🏛️',
+    constitution: 'Constitution',
+    ruleStood: 'The rule as it stood',
+    ruleNow: 'The rule as it stands',
+    noRule: 'No rule had been set.',
+    // **the rules' own sentences, for the settings whose sentence is a number
+    // or a date.** The ladder settings read `RULES` through `clauseOf` like
+    // every card; these are spelled by the page's own clause writers
+    // (`ENDING_RULE`, `LAPSE_RULE`, `RATE_RULE` in session-view.html, and
+    // `page.quorumRule` here), word for word — two homes for one sentence
+    // until the page reads these, which is a change to the regular page and
+    // waits for its own pass.
+    rule: {
+      endingNever: 'Changes to the document may be made perpetually.',
+      endingAfter: (when) => 'No more changes to the document may be made after ' + when + '.',
+      lapseNever: 'Inactive members never lapse and are still counted towards votes.',
+      lapseAfter: (spell) => 'After ' + spell + ', inactive members lapse and automatically abstain from votes.',
+      rate: (phrase) => 'Members may make a new proposal ✏️ every ' + phrase + '.',
+      unit: { days: 'day', hours: 'hour', minutes: 'minute' },
+      units: (n, unit) => n + ' ' + unit,
+      address: (slug) => 'The document lives at docs.vote/d/' + slug + '.',
+    },
+    // the page's states
+    loading: 'Loading…',
+    notBegun: 'The document has not begun. Proposals will appear here once it has.',
+    empty: 'Nothing has been proposed yet.',
+    closed: (dateWords) => 'Closed ' + dateWords,
+    unreachable: 'The feed could not be reached. It will try again.',
+    // the host's red flag, said about the document to a reader who cannot act
+    stalled: 'This document cannot save changes at the moment, so nothing here will change until it can.',
+    missing: 'There is no document at this address.',
+  };
+
+  return { RULES, grammar, session, page, feed };
 })();

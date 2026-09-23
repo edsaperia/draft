@@ -196,3 +196,69 @@ describe('a mail that gave up, end to end', () => {
     expect(r.status).toBe(404);
   });
 });
+
+/**
+ * **A withdrawn invitation is told to the person it was sent to** (Q1493,
+ * Ed 2026-09-21: *An email when withdrawn*). Until now the withdrawal was
+ * silent, and the only thing that ever said it had happened was the old
+ * link — which answered *unknown member 'm-7'* at 12:43 on the day of the
+ * convention, the machine's own vocabulary to a stranger following the one
+ * address they had been given. Both halves here: the mail, and the link.
+ */
+describe('a withdrawn invitation (Q1493)', () => {
+  it('mails the invitee with the document’s address and no login link, and the old link lands on the ordinary door', async () => {
+    const { base, dataDir } = await boot();
+    const made = await post(base, '/api/docs',
+      { title: 'Withdrawn Charter', email: 'ada.wd@example.org' });
+    const { slug } = await made.json() as { slug: string };
+    const seat = async (link: string): Promise<string> => {
+      const u = new URL(link);
+      const r = await fetch(u.origin + u.pathname, {
+        method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded', origin: base },
+        body: new URLSearchParams({ token: u.searchParams.get('token')! }).toString(),
+        redirect: 'manual',
+      });
+      return r.headers.get('set-cookie')!.split(';')[0]!;
+    };
+    const cookie = await seat(inbox(dataDir).at(-1)!.link!);
+    expect((await post(base, `/api/d/${slug}/cmd`,
+      { cmd: 'invite', args: { email: 'bo.wd@example.org' } }, cookie)).status).toBe(200);
+    await new Promise((r) => setTimeout(r, 150));
+    const invite = inbox(dataDir).filter((m) => m.to === 'bo.wd@example.org').at(-1)!;
+    expect(invite.link).toBeTruthy();
+
+    const v = await (await fetch(`${base}/api/d/${slug}/view`, { headers: { cookie } }))
+      .json() as { view: { members: Array<{ id: string; email: string }> } };
+    const bo = v.view.members.find((m) => m.email === 'bo.wd@example.org')!;
+    expect((await post(base, `/api/d/${slug}/cmd`,
+      { cmd: 'uninvite', args: { member: bo.id } }, cookie)).status).toBe(200);
+    await new Promise((r) => setTimeout(r, 200));
+
+    // one mail, naming the document and carrying its address — **no token**,
+    // because the seat it would be minted for no longer exists
+    const mails = inbox(dataDir).filter((m) => m.to === 'bo.wd@example.org') as
+      Array<{ to: string; subject?: string; text?: string; link?: string }>;
+    expect(mails).toHaveLength(2);
+    const told = mails.at(-1)!;
+    expect(told.subject).toBe('Your invitation to “Withdrawn Charter” has been withdrawn');
+    expect(told.link).toBe(`${base}/d/${slug}`);
+    expect(told.text ?? '').toContain('no longer open');
+    expect(told.text ?? '').not.toContain('token=');
+    // the office, never a name (SURFACE C10)
+    expect(told.text ?? '').not.toContain('ada.wd@example.org');
+
+    // and the link they were sent opens the document as a stranger would
+    // see it: a redirect, no cookie, and no sentence about the withdrawal
+    const u = new URL(invite.link!);
+    const dead = await fetch(u.origin + u.pathname, {
+      method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded', origin: base },
+      body: new URLSearchParams({ token: u.searchParams.get('token')! }).toString(),
+      redirect: 'manual',
+    });
+    expect(dead.status).toBe(302);
+    expect(dead.headers.get('location')).toBe(`/d/${slug}`);
+    expect(dead.headers.get('set-cookie')).toBeNull();
+    const door = await (await fetch(`${base}/api/d/${slug}/view`)).json() as { stranger?: boolean };
+    expect(door.stranger).toBe(true);
+  });
+});

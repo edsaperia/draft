@@ -3,6 +3,7 @@
 // answered the three blind questions on the page, then 🍾 fired. What did the
 // page show after 🍾, and what does its ✉️ tab open?
 import { chromium } from 'playwright';
+import { landOn } from '../lib/walk.mjs';
 
 const BASE = process.argv[2] || 'http://127.0.0.1:8181';
 const run = Date.now().toString(36);
@@ -64,7 +65,7 @@ page.on('console', (m) => { if (m.type() !== 'log') logs.push(`${m.type()}: ${m.
 page.on('pageerror', (e) => logs.push(`PAGEERROR ${e.message}`));
 const sent = [];
 page.on('response', async (r) => { if (/\/cmd$/.test(r.url()) && r.request().method() === 'POST') sent.push(r.status() + ' ' + (r.request().postData() || '').slice(0, 90)); });
-await page.goto(await outboxLink(m1), { waitUntil: 'networkidle' });
+await landOn(page, await outboxLink(m1), { waitUntil: 'networkidle' });
 await page.waitForTimeout(1500);
 const dump = async (label) => {
   const out = await page.evaluate(() => ({

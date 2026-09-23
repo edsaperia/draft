@@ -5,6 +5,7 @@
  */
 
 import type { CardView, ParticipantApi } from '../../engine-core/src/index.js';
+import { attest } from '../../engine-core/src/index.js';
 import type { DraftProposal } from './persona.js';
 import type { PersonaProfile } from './scenario.js';
 
@@ -129,7 +130,9 @@ export function validateDraftResult(
   return {
     patch: {
       baseVersion: api.currentVersion(),
-      hunks: [{ start: result.line, end: result.line + 1, lines: [result.newText] }],
+      // the wording it replaces, as every participant must state it (Q1463 (1)):
+      // `lines` is the very document this draft was written against
+      hunks: attest(lines, [{ start: result.line, end: result.line + 1, lines: [result.newText] }]),
     },
     rationale: result.rationale.slice(0, 300),
   };

@@ -386,7 +386,14 @@
     // entry of its own, keyed ; the rail entry is the way in, the
     // pile's front tab being the rule's own
     ['open-motion-judging', () => click('#rail [data-card^="mo:"]')],
-    ['pick-answer', () => click('.setupcard [data-motion]')],
+    // **The founder answers *yes*, and cy casts the vote against** (Q1473,
+    // Ed 2026-09-19). Both seats used to press the first lane, which is the
+    // keep — harmless while a keep blocked without killing, and since v0.138
+    // the end of the motion: the founder's press settled it and cy's three
+    // steps had nothing left to open. In this order the scenario walks the
+    // whole of the new rule — the room agrees, then one member ends it — and
+    // no step is left with nothing to click.
+    ['pick-answer', () => click('.setupcard [data-motion="yes"]')],
     ['commit-answer', () => click('.setupcard [data-confirm]')],
     ['seat-cy', () => setSeat('2')],
     ['open-motion-cy', () => click('#rail [data-card^="mo:"]')],

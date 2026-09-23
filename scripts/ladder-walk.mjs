@@ -42,7 +42,7 @@
  */
 import { chromium } from 'playwright';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
-import { say, arg, onPage } from './lib/walk.mjs';
+import { say, arg, onPage, landOn } from './lib/walk.mjs';
 
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
 const STOP = arg('to');
@@ -101,7 +101,7 @@ async function pressNext() {
 }
 
 say(`ladder-walk against ${BASE}, seed ${SEED}`);
-await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+await landOn(page, BASE + '/', { waitUntil: 'domcontentloaded' });
 await T(600);
 
 // the seed goes in before the first press, so the walk is reproducible
@@ -145,6 +145,35 @@ async function okThe(key) {
     if (ok !== null) { ok.scrollIntoView({ block: 'center' }); ok.click(); }
   });
   await T(600);
+}
+
+/**
+ * **What 🎩 says about itself once it is locked** (Q1503, Ed's convention
+ * observation 2026-09-22: *both radio options with greyed out radios*). The
+ * session rung is a founder's seat reloaded past 🍾 — the one place every
+ * real visit after the start lands — and the card there read its marked
+ * radio from `S.seen`, a page-local set no reload rebuilds, while the module
+ * has held the fact since Q682. Opens 🎩, reads its two radios, and closes
+ * it by the bin so the rung's other measures see the page they always saw.
+ */
+async function hatCard() {
+  await page.evaluate(() => {
+    document.querySelector('#rail [data-card="hat"], #band [data-tab="hat"]')?.click();
+  });
+  await T(500);
+  const r = await page.evaluate(() => {
+    const picks = [...document.querySelectorAll('.setupcard .choice .pick')];
+    const out = {
+      radios: picks.length,
+      locked: picks.filter((p) => p.querySelector('.lanepick')?.disabled).length,
+      marked: picks.filter((p) => p.classList.contains('on'))
+        .map((p) => (p.querySelector('.opttext')?.textContent ?? '').trim()),
+    };
+    document.querySelector('.setupcard [data-revert]')?.click();
+    return out;
+  });
+  await T(400);
+  return r;
 }
 
 /**
@@ -312,6 +341,10 @@ async function assertSurface(rung) {
       m.walletClass !== null && !/\bnotheld\b/.test(m.walletClass),
       m.walletClass === null ? 'no socket' : `class="${m.walletClass}"`);
     check(rung, 'the membership is drawn', m.members > 1, `${m.members} rows`);
+    // **Q1503**: a reloaded page past 🍾 must say what 🎩 was locked at
+    const hat = await hatCard();
+    check(rung, '🎩 is locked, with its answer marked', hat.radios === 2 && hat.locked === 2 && hat.marked.length === 1,
+      `${hat.radios} radios, ${hat.locked} locked, marked: ${JSON.stringify(hat.marked)}`);
   }
   if (rung === 'closing') {
     check(rung, 'the clock is counting down', /m|min|hour|h\b/i.test(m.clockText), m.clockText);

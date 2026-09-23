@@ -187,7 +187,7 @@ import { writeFile, readFile } from 'node:fs/promises';
 import { chromium } from 'playwright';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
 import { tableAfter, keysOf } from './lib/surface-tables.mjs';
-import { say, sleep, arg, linkIn, outbox as devOutbox, post, typeIn, press } from './lib/walk.mjs';
+import { say, sleep, arg, linkIn, outbox as devOutbox, post, typeIn, press, withWas, landOn as openLink } from './lib/walk.mjs';
 
 /* ---- arguments -------------------------------------------------------- */
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
@@ -691,19 +691,24 @@ const STEPS = [
     // (C9, Q1344), and no seat here but the founder has pressed one — the
     // assertion's own note says what that buys and what it still holds
     events: [{ id: 'E10', key: (D) => (D.motionIds["judgments-motion"] ? 'mo:' + D.motionIds["judgments-motion"] : null), noKey: 'the motion judgments-motion put came back with no id', at: 'judgments-motion', waitsOn: 'grant-voice' }] },
-  // one keep, and the motion stands running: a keep does not settle a 🏛️
-  // motion, it blocks it (§9.6, `maybeSettleMotions`), which is exactly the
-  // state worth snapshotting — two answers on the wire, neither seat told the
-  // other's. It stands that way until `fail-motion` near the foot of the live
-  // epoch, which revises this keep to accept and lets the Founder refuse the
-  // carry at the crown (E41, Q1447).
+  // one abstention, and the motion stands running, which is the state worth
+  // snapshotting — two answers on the wire, neither seat told the other's. It
+  // stands that way until `fail-motion` near the foot of the live epoch, which
+  // revises this answer to accept and lets the Founder refuse the carry at the
+  // crown (E41, Q1447).
+  //
+  // **It was a keep until Q1473** (Ed, 2026-09-19): a keep blocked a 🏛️
+  // motion without killing it, so the row could leave one standing and come
+  // back to it. A vote against ends the motion now, so a keep here would
+  // settle it here — and `fail-motion` would find nothing running to carry.
+  // An abstention is the answer that leaves a motion collecting.
   { id: 'judgments-keep', epoch: 'live', kind: 'cmd', seat: 'late', cmd: 'answer-motion', ifHat: 'member',
     args: async (D) => {
       const v = await viewAs(D, 'late');
       const m = (((v || {}).view || {}).motions || []).find((x) => x.status === 'running' &&
         x.route === 'constitutional' && ((x.payload || {}).setting) === 'judgments');
       if (!m) throw new Error("no running 🏛️ motion on `judgments` in the late seat's view — the motion step did not land");
-      return { motion: m.id, answer: 'keep' };
+      return { motion: m.id, answer: 'abstain' };
     },
     events: [] },
   // **A proposal stranded by a text change** (SURFACE E38; Q170, Ed
@@ -732,7 +737,8 @@ const STEPS = [
     args: async (D) => {
       const v = await viewAs(D, 'lapsed');
       return { baseVersion: v.textVersion,
-        hunks: [{ start: 0, end: 1, lines: ['The clubhouse shall be kept open at all hours.'] }],
+        // the wording it replaces, off this seat's own view (Q1463 (1))
+        hunks: withWas(v.text, [{ start: 0, end: 1, lines: ['The clubhouse shall be kept open at all hours.'] }]),
         why: 'the hours are the whole of what people ask me about' };
     },
     events: [] },
@@ -744,7 +750,7 @@ const STEPS = [
     args: async (D) => {
       const v = await viewAs(D, 'founder');
       return { baseVersion: v.textVersion,
-        hunks: [{ start: 0, end: 1, lines: ['The clubhouse shall be kept open on weekdays.'] }],
+        hunks: withWas(v.text, [{ start: 0, end: 1, lines: ['The clubhouse shall be kept open on weekdays.'] }]),
         why: 'the hours were never the club’s to promise' };
     },
     // the key is the entry the author's own page files for it — `mine:<id>`
@@ -780,7 +786,7 @@ const STEPS = [
     args: async (D) => {
       const v = await viewAs(D, 'founder');
       return { baseVersion: v.textVersion,
-        hunks: [{ start: 1, end: 2, lines: ['Every member may bring two guests.'] }],
+        hunks: withWas(v.text, [{ start: 1, end: 2, lines: ['Every member may bring two guests.'] }]),
         why: 'one guest is thin for a clubhouse this size' };
     },
     // the key is learned by asking the document what race the proposal made:
@@ -1055,7 +1061,7 @@ const cmdAs = (D, name, op, args) => D.seats[name].page.evaluate(async ([slug, o
   return { status: r.status, body: await r.json().catch(() => null) };
 }, [D.slug, op, args]);
 const landOn = async (page, url) => {
-  await page.goto(url);
+  await openLink(page, url);
   for (let i = 0; i < 40 && !page.url().includes('/d/'); i++) await page.waitForTimeout(500);
   await page.waitForTimeout(2600);
 };
@@ -1233,7 +1239,7 @@ const RUN = {
   seat: async (step, D) => {
     const s = await standUp(D, step.seat);
     if (s.def.role === 'stranger') {
-      await s.page.goto(D.docbase + '/d/' + D.slug);
+      await openLink(s.page, D.docbase + '/d/' + D.slug);
       await s.page.waitForTimeout(2600);
     } else {
       const mail = (await devOutbox(BASE)).find((m) => JSON.stringify(m).includes(s.email));
@@ -1499,7 +1505,7 @@ const RUN = {
     // date a read did not revive, and the seat stayed lapsed for the rest of
     // the run with its page open, which is the state Ed says never exists.
     s.page = await s.ctx.newPage(); attachNets(D, step.seat, s.page);
-    await s.page.goto(D.docbase + '/d/' + D.slug);
+    await openLink(s.page, D.docbase + '/d/' + D.slug);
     await s.page.waitForTimeout(2600);
     const after = await viewAs(D, 'founder');
     const back = (((after && after.view) || {}).members || []).find((m) => m.email === s.email);
@@ -1517,7 +1523,7 @@ const RUN = {
       body: JSON.stringify({ email: s.email }) });
     const body = await r.json().catch(() => null);
     if (r.status !== 200 || !body || !body.devLink) throw new Error(`the door refused the knock → ${r.status} ${JSON.stringify(body)}`);
-    await s.page.goto(body.devLink);
+    await openLink(s.page, body.devLink);
     await s.page.waitForTimeout(2200);
     // **the seat is read, not assumed** (Q1281): a page that booted as
     // nobody is an unstood seat, and an unstood seat is a red run — this is
@@ -1968,8 +1974,16 @@ say(`tables     · SURFACE §2 events ${EVENTS.length} rows · seats ${SEATS.len
 // struck through with a dash audience like E23, so the count held at 40 and
 // its step is gone. **E41 joined it on 2026-09-17** (Q1447, a motion that
 // failed), read here with its own `fail-motion` step, so the count is 41.
-if (EVENTS.length !== 41) {
-  shape.push(`SURFACE §2 has ${EVENTS.length} event rows, not the 41 this table was written against`);
+// **E42 joined on 2026-09-19** (Q1473, an application the membership
+// refused) and reddened CI's `walks` job on this line for three days before
+// anybody read it (Stage 4 of the convention plan, 2026-09-22). Its audience
+// cell is written — *the applicant, and nobody else* — so it is not a
+// no-rule row; what it has not got is a **step**: this table prices 🪪 at
+// `proposal`, where a refusal is a dominated race (§4.4) and not one vote
+// against, and driving one to that state is a design of its own. The count
+// is 42 and the step is owed — Q1499 asks Ed which road it should take.
+if (EVENTS.length !== 42) {
+  shape.push(`SURFACE §2 has ${EVENTS.length} event rows, not the 42 this table was written against`);
 }
 for (const s of shape) say('  ? ' + s);
 

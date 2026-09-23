@@ -250,7 +250,10 @@ describe('domination by a rival (Q1440)', () => {
     // cooldown the dominations stand on the view instead of being acted on,
     // so the leader can be read beside them.
     const { s, x, y } = twoRivals(
-      { quorum: { form: 'count', n: 12 }, cooldownMs: 10 * HOUR }, 6);
+      // three of six — what a count of 12 came to while the cap was at half
+      // the group (Q1490, R-139 moved it to the whole group, where 12 would
+      // be unanimity and the adoption below would never land)
+      { quorum: { form: 'count', n: 3 }, cooldownMs: 10 * HOUR }, 6);
     const third = s.submitCandidate(1200, {
       author: 'p3', rationale: 'third',
       patch: rewrite(s.currentVersion(), 1, 'Membership is open to the curious.'),

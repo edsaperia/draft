@@ -281,7 +281,7 @@ var CONSTITUTION = (() => {
         if (v.form !== "count" && v.form !== "share") return "quorum: form must be 'count' or 'share'";
         if (v.form === "count")
           return isInt(v.n) && v.n >= 0 ? null : "quorum: count n must be an integer ≥ 0";
-        return isFiniteNum(v.n) && v.n >= 0 && v.n <= 50 ? null : "quorum: share n must be 0–50 — no quorum asks for more than half (Q1439)";
+        return isFiniteNum(v.n) && v.n >= 0 && v.n <= 100 ? null : "quorum: share n must be 0–100 (Q1490)";
       case "ladder":
         return typeof v.rung === "string" ? null : "ladder: { rung: string } required";
       case "rate":
@@ -330,7 +330,7 @@ var CONSTITUTION = (() => {
     return Math.ceil(E / 3);
   }
   function adoptionFloor(quorumN, E) {
-    return Math.max(Math.min(quorumN, Math.ceil(E / 2)), Math.min(2, E));
+    return Math.max(Math.min(quorumN, E), Math.min(2, E));
   }
 
   // src/catalogue.ts
@@ -1097,7 +1097,13 @@ var CONSTITUTION = (() => {
         const electorate = motionElectorateOf(s.members.values()).filter((m2) => m2.id !== excl);
         if (electorate.length === 0) continue;
         const answers = electorate.map((m) => rec.answers.get(m.id));
-        if (answers.some((a) => a === void 0 || a === "keep")) continue;
+        if (answers.some((a) => a === "keep")) {
+          s.emit({ type: "motion-held", t, motion: rec.id });
+          settleHeldEffects(s, t, rec);
+          settled = true;
+          break;
+        }
+        if (answers.some((a) => a === void 0)) continue;
         if (!answers.some((a) => a === "accept")) continue;
         if (s.reservedTarget(rec)) {
           s.emit({
@@ -1898,6 +1904,12 @@ var CONSTITUTION = (() => {
             assent: st.powers.assent || p !== "unilateral"
           }, "motion");
         }
+        break;
+      }
+      case "motion-held": {
+        const rec = s.motions.get(event.motion);
+        rec.status = "held";
+        rec.settledAtT = event.t;
         break;
       }
       case "motion-adjudicated": {
@@ -2862,6 +2874,7 @@ var CONSTITUTION = (() => {
       this.emit({ type: "member-removed", t, member, by: "convenor" });
       this.oweDeparture(t, member, this.convenor.id);
       if (wasInE) this.afterRosterChange(t, "departure", member);
+      else this.maybeResolveAll(t);
     }
     /**
      * Resignation (entry 94): free, immediate, refusable by nobody — a
@@ -2889,6 +2902,7 @@ var CONSTITUTION = (() => {
       this.emit({ type: "member-removed", t, member, by: "self" });
       this.oweDeparture(t, member);
       if (wasInE) this.afterRosterChange(t, "departure", member);
+      else this.maybeResolveAll(t);
       this.crownSeatVacated(t);
     }
     uninvite(t, member) {
@@ -2902,6 +2916,7 @@ var CONSTITUTION = (() => {
       const wasInE = inE(m);
       this.emit({ type: "member-uninvited", t, member });
       if (wasInE) this.afterRosterChange(t, "departure", member);
+      else this.maybeResolveAll(t);
     }
     arrive(t, member) {
       if (this.closedFlag) throw new Error("the document has closed; there is nothing left to join, only to read (§4.6)");
@@ -2974,6 +2989,25 @@ var CONSTITUTION = (() => {
         electorate: electorate.map((m) => m.id).sort()
       });
     }
+    /**
+     * **Somebody leaving is not the only thing a departure changes** (Q1482;
+     * Ed, the nh2026 convention 2026-09-20: *why can't I begin?* under *12 out
+     * of 12 of the membership have voted*).
+     *
+     * `afterRosterChange` is the road for a departure out of **E** — the
+     * electorate moved, so the ground shifted, the floor is re-read and
+     * everything is asked again. Somebody who never arrived was never in E, so
+     * that road was skipped entirely; but the *other* gate `maybeResolve` holds
+     * a blind question on is **invitations in flight** (Q413 (b)), and
+     * withdrawing an unopened invitation is exactly the thing that lifts it.
+     * The hold went and nobody looked again, so the question the withdrawal was
+     * meant to free went on collecting for ever and 🍾 went on refusing —
+     * §9.6a's own remedy for a veto by one unopened email, and it did nothing.
+     *
+     * So every road out of the roster ends here, whether or not E moved. It
+     * emits nothing of its own, which is why it is safe on a road that changed
+     * no ground: a question either resolves or it does not.
+     */
     maybeResolveAll(t) {
       for (const id of MANAGED) this.maybeResolve(t, id);
     }
@@ -4014,7 +4048,6 @@ var CONSTITUTION = (() => {
     if (days !== null && days >= 28 && days <= 31) return "a month";
     return spellWords(ms);
   }
-  var HALF_NOTE = " No quorum can ask for more than half.";
   function quorumBody(q, n, form, pct) {
     if (n === 1) return "In a membership of one, your own vote is the whole quorum.";
     return form === "share" ? "A proposal cannot pass until it is preferred by at least " + pct + "% of the membership (" + q + " of " + n + ")." : "A proposal cannot pass until it is preferred by at least " + q + " members.";
@@ -4024,11 +4057,9 @@ var CONSTITUTION = (() => {
     const n = Math.max(1, Math.floor(room.e));
     const asked = quorumCount(v, n);
     if (!Number.isFinite(asked)) return null;
-    const q = Math.min(asked, Math.ceil(n / 2));
-    const pct = Math.min(Math.round(v.n), 50);
-    const body = quorumBody(q, n, v.form, pct);
-    const capped = q < asked ? HALF_NOTE : "";
-    return fit(body + capped) ?? fit(body);
+    const q = Math.min(asked, n);
+    const pct = Math.round(v.n);
+    return fit(quorumBody(q, n, v.form, pct));
   }
   function rateMeaning(v, room) {
     const { grant, cap, dripMinutes } = v;

@@ -794,6 +794,18 @@ function applyLifecycle(s: FoldState, event: ConstitutionEvent): void {
       // membership payloads apply through their follow-on events
       break;
     }
+    case 'motion-held': {
+      // **A vote against ends it** (Ed, 2026-09-19, Q1473; R-138). The same
+      // grey ✖ an ordinary motion the room rejected files, by the same
+      // fields: `held`, dated, and `heldAtClose` left false, because the
+      // membership decided it and the clock did not. Nothing of the payload
+      // applies — what stands stands — and the answers stay on the record, as
+      // they do on every settled motion.
+      const rec = s.motions.get(event.motion)!;
+      rec.status = 'held';
+      rec.settledAtT = event.t;
+      break;
+    }
     case 'motion-adjudicated': {
       const rec = s.motions.get(event.motion)!;
       rec.settledAtT = event.t;

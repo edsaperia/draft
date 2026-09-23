@@ -49,7 +49,7 @@
  */
 
 import { readFileSync } from 'node:fs';
-import { sleep, post as postTo, followLink } from './lib/walk.mjs';
+import { sleep, post as postTo, followLink, withWas } from './lib/walk.mjs';
 
 /* -- arguments --------------------------------------------------------- */
 
@@ -70,6 +70,7 @@ const usage = () => {
     `  the url is the document's own, e.g. https://docs.vote/d/hollow-oak\n` +
     `  --theme swaps what the bots write (provisos, new clauses, verb swaps, reasons) — e.g. scripts/repro/birthday-theme.json\n` +
     `  --clause <n> sends four proposals in five at the n-th body paragraph (1-based, headings skipped): the crowded race\n` +
+    `  --pile <0–1> how often a proposal lands on a clause the theme holds rival wordings for (its \`rivals\` groups; default 0.8)\n` +
     `  --members seats members already on the roster by login link, after a host restart wiped the outbox\n` +
     `  --key (or DRAFT_BOT_KEY in the environment) reads the host's bot outbox, which is how a room ` +
     `runs on docs.vote; without it the dev outbox is read, which needs a dev server`);
@@ -282,6 +283,25 @@ const WHY = Object.assign({
   generic: ['Reads better.', 'Clearer.', 'I would rather this.', ''],
 }, THEME.why && typeof THEME.why === 'object' ? THEME.why : {});
 
+/**
+ * **Rivals: the crowded race as real alternatives** (Ed, 2026-09-18: *a room
+ * where bots will make a lot of rivals on the same clauses … something I'll
+ * have lots of opinions on*). A theme's `rivals` is a list of groups, each
+ * `{ match, wordings: [{ text, why }] }`. A body line belongs to a group when
+ * it matches the group's regex **or is one of its wordings** — so the pile
+ * follows its clause through an adoption and through lines moving about it,
+ * which a line number (`--clause`) cannot. `--pile` is how often a proposal
+ * lands on such a line, offering a wording that neither stands there nor is
+ * among the live candidates; a group with nothing fresh left takes the
+ * ordinary shapes on top, which crowds it further. Example:
+ * `scripts/repro/residency-theme.json`.
+ */
+const RIVALS = (Array.isArray(THEME.rivals) ? THEME.rivals : [])
+  .filter((g) => g && typeof g.match === 'string' && Array.isArray(g.wordings))
+  .map((g) => ({ re: new RegExp(g.match), wordings: g.wordings.filter((w) => w && typeof w.text === 'string') }));
+const PILE = Math.min(1, Math.max(0, Number(flag('pile', '0.8'))));
+const rivalGroupOf = (line) => RIVALS.find((g) => g.re.test(line) || g.wordings.some((w) => w.text === line.trim()));
+
 const isHeading = (line) => /^#+\s/.test(line);
 const sentences = (s) => s.match(/[^.!?]+[.!?]+(\s|$)/g)?.map((x) => x.trim()) ?? [s];
 
@@ -367,9 +387,14 @@ const seat_of = (email, cookie) => {
     opinion: (id) => hash01(`${seed}/${id}`) < temperament.change };
 };
 
-/** Refusals a member meets in the ordinary course of a busy room, counted rather than shouted. */
+/** Refusals a member meets in the ordinary course of a busy room, counted
+ *  rather than shouted. **A motion somebody settled while this bot was
+ *  deciding** joined them at Q1473 (Ed, 2026-09-19): a vote against ends a
+ *  🏛️ proposal on the press, so a seat whose view is a few seconds old
+ *  answers one that has gone — the ordinary shape of a room with more than
+ *  one person in it. */
 const ordinary = (msg) =>
-  /not in a live race|no such race|already resolved|not live|already stands|insufficient|version|stale|base/i.test(msg);
+  /not in a live race|no such race|already resolved|not live|already stands|insufficient|version|stale|base|motion is not running/i.test(msg);
 
 const refused = (seat, act, e) => {
   const msg = e instanceof Error ? e.message : String(e);
@@ -385,8 +410,11 @@ const answerFor = (seat, q, m) => {
   switch (q.setting) {
     case 'ending': return { endsAtMs: now + Math.round(between(r, 90, 240)) * 60_000 };
     case 'quorum': return r() < 0.7
-      ? { form: 'share', n: Math.round(between(r, 30, 60)) }
-      : { form: 'count', n: Math.max(1, Math.round(m.members.length * between(r, 0.3, 0.6))) };
+      // **the range stays where it was** though the validator opened to 0–100
+      // at Q1490 (R-139): a bot room asked for unanimity would adopt nothing,
+      // and what these seats are for is a document that moves
+      ? { form: 'share', n: Math.round(between(r, 20, 50)) }
+      : { form: 'count', n: Math.max(1, Math.floor(m.members.length * between(r, 0.2, 0.5))) };
     case 'rate': return { grant: 5, cap: 8, dripMinutes: pick(r, [3, 5, 10]) };
     case 'lapse': return r() < 0.6 ? { afterMs: null } : { afterMs: pick(r, [7, 14, 30]) * 86_400_000 };
     case 'machines': return { enabled: false, budget: 0 };
@@ -452,8 +480,11 @@ const tend = async (seat) => {
 /* -- the act: one thing a member might do when they come back ----------- */
 
 /** Prefer a challenger the bot likes over one it does not; the incumbent sits at its temperament's line. */
-/** a card about somebody's application — the race is keyed `admit:<id>` (SPEC §9.7½) */
-const isAdmission = (card) => /^admit:/.test(((card.a.setting || card.b.setting) || {}).settingId || '');
+/** a card about somebody at the door — an application's race is keyed `admit:<id>`, a member's
+ *  invitation's `invite:<person>` (SPEC §9.7½); the room is as hospitable to the one as the other
+ *  (Ed's invitation in the residency room, 2026-09-18, stood at 2 judges of 8 behind a hand of text pairs) */
+const DOOR_RACE = /^(admit|invite):/;
+const isAdmission = (card) => DOOR_RACE.test(((card.a.setting || card.b.setting) || {}).settingId || '');
 
 const judge = async (seat, card) => {
   const r = seat.r;
@@ -488,8 +519,24 @@ const propose = async (seat, p, m) => {
   const pool = (r() < HEAT && hotBody.length) ? hotBody : (coldBody.length ? coldBody : body);
   // `--clause n`: the named paragraph four times in five, the ordinary pick otherwise
   const target = CLAUSE > 0 && CLAUSE <= body.length ? body[CLAUSE - 1] : null;
-  const i = (target !== null && r() < 0.8) ? target : pick(r, pool);
+  // a theme's rival groups: a clause that has one is where `--pile` sends the proposal,
+  // with a wording nobody has put — neither what stands nor any live candidate's line
+  const rivalLines = body.filter((k) => rivalGroupOf(lines[k]));
+  const piled = rivalLines.length && r() < PILE ? pick(r, rivalLines) : null;
+  const i = piled !== null ? piled : (target !== null && r() < 0.8) ? target : pick(r, pool);
   let edit = null;
+  if (piled !== null) {
+    const taken = new Set([lines[i].trim()]);
+    for (const c of p.clauses ?? []) {
+      for (const cand of c.candidates ?? []) for (const h of cand.hunks ?? []) for (const l of h.lines ?? []) taken.add(l.trim());
+    }
+    const fresh = rivalGroupOf(lines[i]).wordings.filter((w) => !taken.has(w.text));
+    if (fresh.length) {
+      const w = pick(r, fresh);
+      edit = { rival: true, hunks: [{ start: i, end: i + 1, lines: [w.text] }], why: w.why ?? '',
+        label: `offered a rival wording — “${w.text.slice(0, 48)}…”` };
+    }
+  }
   for (let tries = 0; tries < 6 && !edit; tries++) {
     const shape = weighted(r, SHAPE_WEIGHTS);
     if (shape === 'delete' && body.length < 4) continue;
@@ -498,8 +545,11 @@ const propose = async (seat, p, m) => {
   if (!edit) return false;
   const rung = (m.settings ?? []).find((s) => s.setting === 'authorship')?.value?.rung ?? '';
   const signed = /Elective$/.test(rung) && r() < 0.4;
-  const why = r() < 0.15 ? pick(r, WHY.generic) : edit.why;
-  await cmd(seat, 'propose-text', { baseVersion: p.textVersion, hunks: edit.hunks, why,
+  const why = !edit.rival && r() < 0.15 ? pick(r, WHY.generic) : edit.why;
+  // **a bot says what it is replacing, like anybody** (Q1463 (1)): the host
+  // refuses a patch that does not, and `p.text` is the very text `lines` was
+  // read off, so the attestation is of what this bot actually saw
+  await cmd(seat, 'propose-text', { baseVersion: p.textVersion, hunks: withWas(p.text, edit.hunks), why,
     ...(signed ? { signed: true } : {}) });
   tally.proposals += 1;
   say(seat.name, `proposed on line ${i}${hot.has(i) ? ' (contested)' : ''}: ${edit.label}${signed ? ', signed' : ''}`);
@@ -514,7 +564,7 @@ const motionValue = (seat, s) => {
   if (v === null || v === undefined) return null;
   switch (s.setting) {
     case 'quorum': {
-      const n = v.form === 'share' ? Math.min(100, Math.max(0, v.n + pick(r, [-10, 10])))
+      const n = v.form === 'share' ? Math.min(50, Math.max(0, v.n + pick(r, [-10, 10]))) // never above half (Q1439)
         : Math.max(0, v.n + pick(r, [-1, 1]));
       return n === v.n ? null : { form: v.form, n };
     }
@@ -576,7 +626,7 @@ const act = async (seat) => {
   const admission = cards.find(isAdmission)
     // …or the pair its own row asks with, where the hand holds no card on it
     // (Q1393): the row carries it from the same build the page reads it on
-    || ((p.settingRaces ?? []).find((s) => /^admit:/.test(s.settingId) && !s.judged && s.ask) || {}).ask;
+    || ((p.settingRaces ?? []).find((s) => DOOR_RACE.test(s.settingId) && !s.judged && s.ask) || {}).ask;
   if (admission && m.gates?.judging !== false) options.push(['admit', 0.8]);
   if (cards.length && m.gates?.judging !== false) options.push(['judge', 0.55]);
   if (openMotions.length) options.push(['answer-motion', 0.2]);
@@ -715,7 +765,7 @@ const main = async () => {
   const title = door.ok ? (await door.json().catch(() => ({}))).title : null;
   TITLE = title ?? null;
   console.log(`room-bots on ${BASE}/d/${SLUG}${title ? ` — “${title}”` : ''} · build ${(health.build ?? '').slice(0, 7) || 'unreported'}`);
-  console.log(`  each bot acts every ${MIN / 1000}–${Math.round(MAX / 1000)}s · heat ${HEAT} · motions ${MOTIONS}${CLAUSE ? ` · clause ${CLAUSE}` : ''} · seed “${SEED}”`);
+  console.log(`  each bot acts every ${MIN / 1000}–${Math.round(MAX / 1000)}s · heat ${HEAT} · motions ${MOTIONS}${CLAUSE ? ` · clause ${CLAUSE}` : ''}${RIVALS.length ? ` · pile ${PILE} over ${RIVALS.length} rival groups` : ''} · seed “${SEED}”`);
   console.log(`  reading ${OUTBOX.path}${KEY ? ' with the key' : ' (no key — the dev outbox)'}`);
   console.log(`  invite bots through ✉️ at any address at ${BOT_DOMAIN} — e.g. ada.lovelace@${BOT_DOMAIN} — and they arrive here.\n`);
   const ticker = setInterval(summary, REPORT_EVERY);

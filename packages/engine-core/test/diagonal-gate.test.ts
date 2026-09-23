@@ -35,6 +35,18 @@ function openWithRaces(people: number, questions: number,
   );
 }
 
+/**
+ * **The counts below are one under half the room, deliberately** (Q1490,
+ * R-139). Every walk here wants live questions to prioritise, so each race
+ * must hold a leader and adopt nothing: `populate` casts one judgment for the
+ * current text, and the floor has to sit above the author's own approval and
+ * below what the unanswered members could still bring. The cap used to do
+ * that arithmetic — a count of E was read as ⌈E/2⌉ — and since the cap moved
+ * to the whole group, a count of E is unanimity, which closes each value at
+ * the same sweep rather than holding it (§4.4, the note on the 2E walk
+ * below). So the number the cap used to produce is asked for directly.
+ */
+
 /** Submit one rival value per question and give each race one judgment,
  *  so every race holds a leader; the judging participant ends up idle. */
 function populate(s: Session, questions: number, judge: string): string[] {
@@ -55,7 +67,7 @@ function populate(s: Session, questions: number, judge: string): string[] {
 describe('the volume gate (below E live questions: none, for anyone)', () => {
   it('an idle participant is served no diagonal in a quiet document', () => {
     // E = 5, three live questions: prioritisation has no work to do.
-    const s = openWithRaces(5, 3, { quorum: { form: 'count', n: 5 } });
+    const s = openWithRaces(5, 3, { quorum: { form: 'count', n: 3 } });
     populate(s, 3, 'p5'); // p5 judges every pair there is — idle
     const cards = s.feed('p5', 10, 3 * HOUR);
     expect(cards.some((c) => c.kind === 'diagonal')).toBe(false);
@@ -65,7 +77,7 @@ describe('the volume gate (below E live questions: none, for anyone)', () => {
 describe('the audience gate (E to 2E: only to an empty queue)', () => {
   it('serves diagonals to the participant with nothing left, none to one with work', () => {
     // E = 3, four live questions: the gate is open, the stream is not.
-    const s = openWithRaces(3, 4, { quorum: { form: 'count', n: 3 } });
+    const s = openWithRaces(3, 4, { quorum: { form: 'count', n: 2 } });
     populate(s, 4, 'p3');
     // p2 authored half the field but has pairs left to judge: no diagonal.
     const busy = s.feed('p2', 10, 3 * HOUR);
@@ -80,7 +92,7 @@ describe('the audience gate (E to 2E: only to an empty queue)', () => {
   });
 
   it('stops after three in a row — past the limit the queue is simply empty', () => {
-    const s = openWithRaces(3, 4, { quorum: { form: 'count', n: 3 } });
+    const s = openWithRaces(3, 4, { quorum: { form: 'count', n: 2 } });
     populate(s, 4, 'p3');
     for (let k = 0; k < 3; k++) {
       const card = s.feed('p3', 1, 3 * HOUR)[0]!;
@@ -91,7 +103,7 @@ describe('the audience gate (E to 2E: only to an empty queue)', () => {
   });
 
   it('an unjudged deadlocked race counts as work to do and defers the diagonal', () => {
-    const s = openWithRaces(3, 4, { quorum: { form: 'count', n: 3 } });
+    const s = openWithRaces(3, 4, { quorum: { form: 'count', n: 2 } });
     populate(s, 4, 'p3');
     // Force one race deadlocked-looking? Deadlock needs 20 measured
     // comparisons; cheaper to assert via the code path with a judged one:
@@ -115,7 +127,7 @@ describe('the saturation stream (at 2E the old rate returns for everybody)', () 
     // smallest room that reaches 2E with every race still running — a = 1,
     // o = 1 and one member still to answer, which is no domination.
     const s = openWithRaces(3, 6, {
-      quorum: { form: 'count', n: 3 }, salienceEvery: 2,
+      quorum: { form: 'count', n: 2 }, salienceEvery: 2,
     });
     populate(s, 6, 'p1');
     // p2 has pairs left to judge (p1 did the judging) — and still sees
@@ -137,7 +149,7 @@ describe('the saturation stream (at 2E the old rate returns for everybody)', () 
 
 describe('active selection', () => {
   it('a served diagonal is leader vs leader from two distinct races', () => {
-    const s = openWithRaces(3, 4, { quorum: { form: 'count', n: 3 } });
+    const s = openWithRaces(3, 4, { quorum: { form: 'count', n: 2 } });
     populate(s, 4, 'p3');
     const card = s.feed('p3', 1, 3 * HOUR)[0]!;
     expect(card.kind).toBe('diagonal');

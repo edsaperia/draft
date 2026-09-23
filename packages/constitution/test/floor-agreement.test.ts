@@ -110,10 +110,11 @@ describe('the adoption floor: the engine and the constitution agree (§4.2)', ()
   });
 
   it('the room’s number is the whole floor, between the cap and the seconder', () => {
-    // **Up to half** (Q1439, R-126): a count of 8 in a room of 9 is read as
-    // ⌈9/2⌉ = 5. F_max of 1 no longer enters anywhere, which is the point.
-    expect(engineFloor(9, { form: 'count', n: 8 }, 1)).toBe(5);
-    expect(adoptionFloor(8, 9)).toBe(5);
+    // **Up to the whole membership** (Q1490, R-139, reversing R-126's cap at
+    // half): a count of 8 in a room of 9 is 8, where it used to read ⌈9/2⌉ =
+    // 5. F_max of 1 no longer enters anywhere, which is the point.
+    expect(engineFloor(9, { form: 'count', n: 8 }, 1)).toBe(8);
+    expect(adoptionFloor(8, 9)).toBe(8);
     // and under the cap nothing moved: a count of 4 in a room of 9 is 4
     expect(engineFloor(9, { form: 'count', n: 4 }, 1)).toBe(4);
     expect(adoptionFloor(4, 9)).toBe(4);
@@ -124,15 +125,38 @@ describe('the adoption floor: the engine and the constitution agree (§4.2)', ()
     expect(adoptionFloor(3, 9)).toBe(3);
   });
 
-  it('no quorum may ask for more than half, on either side (Q1439, R-126)', () => {
-    // the count form is the only one that can reach the cap from the surface:
-    // a share above 50 is refused at validation (`values.ts`). At E = 2 and
-    // E = 3 the seconder is above half, so the two meet there (ruling u).
+  it('no quorum outgrows the population, on either side (Q1490, R-139)', () => {
+    // the count form is the only one that can reach the cap at all: a share
+    // is ⌈n·E/100⌉, which never exceeds E for the 0–100 `values.ts` accepts.
+    // The cap is R-088's property and all that is left of R-126's.
     for (const E of [1, 2, 5, 8, 25]) {
-      const want = Math.max(Math.ceil(E / 2), Math.min(2, E));
-      expect(adoptionFloor(999, E), `E ${E}`).toBe(want);
+      expect(adoptionFloor(999, E), `E ${E}`).toBe(E);
       expect(engineFloor(E, { form: 'count', n: 999 }, 12)).toBe(adoptionFloor(999, E));
     }
+  });
+
+  it('a share to 100% reaches unanimity, and one member meets the seconder (Q1490)', () => {
+    // **the top of the scale** — ⌈100·E/100⌉ = E, uncapped and unclamped
+    for (const E of [1, 2, 5, 8, 25]) {
+      const q: QuorumValue = { form: 'share', n: 100 };
+      expect(quorumCount(q, E), `E ${E}`).toBe(E);
+      expect(adoptionFloor(quorumCount(q, E), E)).toBe(E);
+      expect(engineFloor(E, q, 12)).toBe(E);
+    }
+    // **and the bottom of it** (Ed, 2026-09-21): a share or a count that comes
+    // to one member is held to the seconder — the author and one other — at
+    // every size but the room of one, where the sole member is the room
+    // (R-063). The mechanism is R-131's `min(2, E)`, untouched; what is new
+    // is that the surface offers the number at all.
+    for (const E of [2, 5, 12, 40]) {
+      expect(adoptionFloor(1, E), `count 1, E ${E}`).toBe(2);
+      expect(engineFloor(E, { form: 'count', n: 1 }, 12)).toBe(2);
+      expect(quorumCount({ form: 'share', n: 1 }, E)).toBe(1);
+      expect(engineFloor(E, { form: 'share', n: 1 }, 12)).toBe(2);
+    }
+    expect(adoptionFloor(1, 1)).toBe(1);
+    expect(engineFloor(1, { form: 'count', n: 1 }, 12)).toBe(1);
+    expect(engineFloor(1, { form: 'share', n: 1 }, 12)).toBe(1);
   });
 
   it('a share quorum tracks E identically on both sides', () => {

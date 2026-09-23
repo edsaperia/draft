@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { chainHash } from '../src/hash.js';
 import { ConstitutionSession } from '../src/session.js';
 import type { ConstitutionEvent } from '../src/types.js';
+import { SCHEMA_VERSION } from '../src/types.js';
 import { view } from '../src/view.js';
 import { buildConstituted } from './helpers.js';
 
@@ -135,18 +137,59 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
     expect(s.settingState('bar').settledBy).toBe('motion');
   });
 
-  it('a standing keep blocks but does not kill; revision can complete it', () => {
+  // **The first vote against ends it** (Ed, 2026-09-19, Q1473; R-138),
+  // reversing *a standing keep blocks but does not kill*: this test asserted
+  // that the motion ran on and that cy could revise their keep into an accept.
+  it('one keep ends it, at once, and what stands stands (§9.6)', () => {
     const { s, bo, cy } = constituted();
     const m = s.openMotion(3, bo, { kind: 'set', setting: 'chamber',
       value: { rung: 'closed' } });
     s.answerMotion(4, 'ada', m, 'accept');
     s.answerMotion(5, bo, m, 'accept');
     s.answerMotion(6, cy, m, 'keep');
-    expect(s.motionRecords().get(m)!.status).toBe('running'); // blocked, alive
-    expect(s.settingState('chamber').value).toEqual({ rung: 'link' }); // what stands stands
-    s.answerMotion(7, cy, m, 'accept'); // answers are revisable until it settles
+    const rec = s.motionRecords().get(m)!;
+    expect(rec.status).toBe('held');
+    expect(rec.settledAtT).toBe(6);
+    expect(rec.heldAtClose).toBe(false); // the membership held it, not the clock
+    expect(s.settingState('chamber').value).toEqual({ rung: 'link' });
+    // and there is nothing left to revise: the motion is settled
+    expect(() => s.answerMotion(7, cy, m, 'accept')).toThrow(/not running/);
+    // the mover's 🏛️ slot comes back with it, and the payload is puttable again
+    expect(s.openMotion(8, bo, { kind: 'set', setting: 'chamber',
+      value: { rung: 'closed' } })).toBe('mo-2');
+  });
+
+  // **The module takes the mover's own keep** (issue #88 finding 2, ruled by
+  // Ed 2026-09-22: not built — a mover who changes their mind withdraws, and
+  // the API stays as it is). The page no longer draws the mover a lane
+  // (K8); a client speaking the API directly still reaches this, and it ends
+  // the motion as any keep does.
+  it('the mover’s own keep is accepted and ends their motion (#88, ruled: no refusal)', () => {
+    const { s, bo } = constituted();
+    const m = s.openMotion(3, bo, { kind: 'set', setting: 'chamber', value: { rung: 'closed' } });
+    expect(() => s.answerMotion(4, bo, m, 'keep')).not.toThrow();
+    expect(s.motionRecords().get(m)!.status).toBe('held');
+    expect(s.settingState('chamber').value).toEqual({ rung: 'link' });
+  });
+
+  it('a keep before anybody else has answered ends it just the same', () => {
+    const { s, bo, cy } = constituted();
+    const m = s.openMotion(3, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } });
+    s.answerMotion(4, cy, m, 'keep'); // ada has not answered at all
+    expect(s.motionRecords().get(m)!.status).toBe('held');
+    expect(s.settingState('bar').value).toEqual({ pct: 66 });
+  });
+
+  it('accept and abstain stay revisable while it runs', () => {
+    const { s, bo, cy } = constituted();
+    const m = s.openMotion(3, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } });
+    s.answerMotion(4, 'ada', m, 'abstain');
+    s.answerMotion(5, 'ada', m, 'accept');   // revised
+    expect(s.motionRecords().get(m)!.status).toBe('running'); // cy still owes
+    s.answerMotion(6, bo, m, 'abstain');     // the mover stands down
+    expect(s.motionRecords().get(m)!.status).toBe('running');
+    s.answerMotion(7, cy, m, 'abstain');     // abstention never blocks
     expect(s.motionRecords().get(m)!.status).toBe('carried');
-    expect(s.settingState('chamber').value).toEqual({ rung: 'closed' });
   });
 
   it('pure abstention carries nothing — even the mover may stand down to it', () => {
@@ -269,14 +312,19 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
     expect(s.settingState('bar').value).toEqual({ pct: 80 });
   });
 
-  it('a removal the member refuses stays blocked — expulsion is effectively impossible', () => {
+  // under `consent` the subject is asked, so their own keep is the one that
+  // ends it (Q1473): expulsion was effectively impossible before and is
+  // immediately impossible now, and the mover is told (SURFACE E41)
+  it('a removal the member refuses ends there — expulsion is effectively impossible', () => {
     const { s, bo, cy } = constituted();
     const m = s.openMotion(3, bo, { kind: 'remove', member: cy });
     s.answerMotion(4, 'ada', m, 'accept');
     s.answerMotion(5, bo, m, 'accept');
     s.answerMotion(6, cy, m, 'keep');
-    expect(s.motionRecords().get(m)!.status).toBe('running');
+    expect(s.motionRecords().get(m)!.status).toBe('held');
     expect(s.E()).toBe(3);
+    expect(s.memberRecords().get(bo)!.heldOwed).toEqual(new Set([m]));
+    expect(s.memberRecords().get(cy)!.heldOwed.size).toBe(0); // the keeper is told nothing
   });
 
   it('a blank rationale is a real proposal (v0.57) — the lane is offered, never demanded', () => {
@@ -319,8 +367,10 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
     const { s, bo, cy } = constituted();
     const m80 = s.openMotion(3, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } });
     const m90 = s.openMotion(3, cy, { kind: 'set', setting: 'bar', value: { pct: 90 } });
-    s.answerMotion(4, 'ada', m90, 'accept'); // given against 66, the old ground
-    s.answerMotion(4, bo, m90, 'keep');
+    // ada's is given against 66, the old ground; bo is left unanswered on the
+    // rival, since any third answer would settle it one way or the other
+    // before the shift could be shown (a keep ends it outright — Q1473)
+    s.answerMotion(4, 'ada', m90, 'accept');
     s.answerMotion(5, 'ada', m80, 'accept');
     s.answerMotion(5, cy, m80, 'accept'); // bo's carries at 80
     expect(s.motionRecords().get(m80)!.status).toBe('carried');
@@ -346,6 +396,25 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
     expect(r.rollingHash()).toBe(s.rollingHash());
     expect(r.settingState('bar').value).toEqual({ pct: 90 });
     expect([...r.motionRecords().get(m90)!.answers]).toEqual([...rival.answers]);
+  });
+
+  // **a keep after the ground moved ends that rival and nothing else**
+  // (Q1473, with R-104/R-105): the shift wipes the answers, so the keep is
+  // given against the value that now stands, and it settles only the motion
+  // it was cast on
+  it('a keep on a rival that outlived a carry ends the rival alone', () => {
+    const { s, bo, cy } = constituted();
+    const m80 = s.openMotion(3, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } });
+    const m90 = s.openMotion(3, cy, { kind: 'set', setting: 'bar', value: { pct: 90 } });
+    s.answerMotion(4, 'ada', m80, 'accept');
+    s.answerMotion(4, cy, m80, 'accept');
+    expect(s.motionRecords().get(m80)!.status).toBe('carried');
+    expect(s.motionRecords().get(m90)!.status).toBe('running'); // asked again against 80
+    s.answerMotion(5, bo, m90, 'keep');
+    expect(s.motionRecords().get(m90)!.status).toBe('held');
+    expect(s.motionRecords().get(m80)!.status).toBe('carried'); // untouched
+    expect(s.settingState('bar').value).toEqual({ pct: 80 });
+    expect(s.memberRecords().get(cy)!.heldOwed).toEqual(new Set([m90]));
   });
 
   it('a mover who stood down to abstain stands at accept again when the motion is re-put', () => {
@@ -681,12 +750,61 @@ describe('guards', () => {
     const m = s.openMotion(3, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } });
     s.answerMotion(4, 'ada', m, 'accept');
     s.answerMotion(5, bo, m, 'accept');
-    s.answerMotion(6, cy, m, 'keep');
-    s.answerMotion(7, cy, m, 'accept');
+    s.answerMotion(6, cy, m, 'abstain');
     const r = ConstitutionSession.replay([...s.logEntries()]);
     expect(r.rollingHash()).toBe(s.rollingHash());
     expect(r.settingState('bar').value).toEqual({ pct: 80 });
     expect(r.motionRecords().get(m)!.status).toBe('carried');
+  });
+
+  it('replay reproduces a motion a keep ended, bit-identically (Q1473)', () => {
+    const { s, bo, cy } = constituted();
+    const m = s.openMotion(3, bo, { kind: 'set', setting: 'chamber',
+      value: { rung: 'closed' } });
+    s.answerMotion(4, 'ada', m, 'accept');
+    s.answerMotion(5, cy, m, 'keep');
+    const r = ConstitutionSession.replay([...s.logEntries()]);
+    expect(r.verifyChain()).toBe(true);
+    expect(r.rollingHash()).toBe(s.rollingHash());
+    expect(r.motionRecords().get(m)!.status).toBe('held');
+    expect(r.motionRecords().get(m)!.settledAtT).toBe(5);
+    expect(r.settingState('chamber').value).toEqual({ rung: 'link' });
+    expect(r.memberRecords().get(bo)!.heldOwed).toEqual(new Set([m]));
+  });
+
+  /**
+   * **A log written under the old rule replays exactly as it did** (Q1473).
+   * The guarantee is structural — `replay` folds events and never calls a
+   * command, so the settle check cannot reach it — and this is the assertion
+   * of it: a `motion-answer` carrying *keep* is appended by hand, as a
+   * document written before v0.138 carries one, and the motion it sits on is
+   * still **running** after the replay, with the value it proposed unapplied
+   * and nobody owed anything. Nothing retroactively fails at load; the new
+   * rule lives in what the next answer emits.
+   */
+  it('an old-rule log with a standing keep replays running, not held (Q1473)', () => {
+    const { s, bo, cy } = constituted();
+    const m = s.openMotion(3, bo, { kind: 'set', setting: 'chamber',
+      value: { rung: 'closed' } });
+    s.answerMotion(4, 'ada', m, 'accept');
+    const log = [...s.logEntries()];
+    const prev = log[log.length - 1]!.hash;
+    const event: ConstitutionEvent = { type: 'motion-answer', t: 5, motion: m,
+      member: cy, answer: 'keep' };
+    log.push({ seq: log.length, hash: chainHash(prev, event), prevHash: prev, event,
+      schemaVersion: SCHEMA_VERSION });
+    const r = ConstitutionSession.replay(log);
+    expect(r.verifyChain()).toBe(true);
+    expect(r.logEntries().length).toBe(log.length); // nothing added at load
+    const rec = r.motionRecords().get(m)!;
+    expect(rec.status).toBe('running');
+    expect(rec.settledAtT).toBeNull();
+    expect(rec.answers.get(cy)).toBe('keep');
+    expect(r.settingState('chamber').value).toEqual({ rung: 'link' });
+    expect(r.memberRecords().get(bo)!.heldOwed.size).toBe(0);
+    // and the next answer settles it under the new rule, not the old
+    r.answerMotion(6, bo, m, 'accept');
+    expect(r.motionRecords().get(m)!.status).toBe('held');
   });
 });
 

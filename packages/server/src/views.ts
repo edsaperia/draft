@@ -34,6 +34,15 @@ import type { Span } from './record-spans.js';
  * `opts.records === false` skips the sealed records — the heaviest part of
  * a busy room's view, and one that changes only when a race resolves — for
  * a poll that already holds them (`recordsKey`, the slim view below).
+ *
+ * **Never on a closed document** (issue #30, 2026-09-19): the close's own
+ * `record` is built from those same outcomes, and it is not the page's to
+ * keep — every 🥂 OK is a write, so the next poll on every *other* open page
+ * is slim, and skipping the outcomes there handed the whole room a record
+ * with nothing adopted and an empty backlog at the moment they were all
+ * reading it. The loop's other output still drains into `records`, which the
+ * route deletes, so the answer stays slim on the wire; a closed room resolves
+ * nothing, so the cost is the loop body an open document already pays.
  */
 export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
   opts: { records?: boolean } = {}): {
@@ -137,6 +146,22 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
       return { t, wallet: api.wallet(t), cards: api.nextCards(HAND, t) };
     } catch { return null; }
   })();
+  // **The one deadline a race carries for this seat** (Q1460): the engine's
+  // own number, read off the awaited row 💤's period will strike this member
+  // from — never a second rule, and never anybody else's.
+  //
+  // **A moment already behind us is served too** (Q1460 (a), Ed 2026-09-18:
+  // once the period has run the spot reads *💤 abstained* and stays). The
+  // condition is the awaited row itself and nothing about the clock:
+  // `abstainDeadline` answers while this seat is in the race's awaited set —
+  // in E, and silent on the approval pair — and answers `null` the instant it
+  // answers that pair, whichever side of the moment it does so on. So the
+  // page is told *when* and works out *whether* against its own clock, which
+  // is the one number a browser can be trusted with.
+  const abstainAt = (raceId: string): { abstainAt?: number } => {
+    const at = engine.abstainDeadline(raceId, memberId);
+    return at !== null ? { abstainAt: at } : {};
+  };
   // **At this poll's own clock** (Q1439): who has abstained, and so what each
   // race's floor is, moves with `t` and with no event to mark it.
   const clauses = engine.races(nowMs).filter((r) => r.settingId === undefined).map((r) => {
@@ -173,6 +198,16 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
       floor: r.floor,
       askable: dealt || ask !== null,
       ask,
+      // **this seat's own abstention clock** (Q1460, Ed 2026-09-18): the
+      // moment their silence here stops counting toward the group (§8.2,
+      // R-127), in server ms, so the card can say *💤 abstain in hh:mm*
+      // beside the Indifferent row — and *💤 abstained* once that moment is
+      // behind us (Q1460 (a)). Absent where 💤 is *never*, where this seat has
+      // answered the race's approval pair, and where it is out of E; the page
+      // draws nothing in all three. It is one member's own clock and names
+      // nobody else, so §3.5 is untouched; `serverNowMs` below is the offset
+      // the page reads it by.
+      ...abstainAt(r.id),
       // **waiting behind a park on the same span** (R-100, SURFACE E36): the
       // batch passes this race over until the Founder answers a park it
       // overlaps, and the room is told so (Ed, 2026-09-09, Q1015) — the one
@@ -231,8 +266,17 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
     // room's text races outvalue an admission, and twenty members each
     // holding four text cards never met the applicant. Same blind CardView
     // as the clause rows carry (Q1202) — no standing, no author.
+    // **And every ordinary motion wears the clock** (Q1460 (c), Ed
+    // 2026-09-18): only the ordinary route is a race in the engine at all — a
+    // 🏛️ motion is put to the assembly and never enters here — so a setting
+    // row carries the same clock by construction, and no constitutional card
+    // can wear one. A membership motion *is* its race, so the number is
+    // exact; a *set* motion shares its setting's race with every rival value
+    // still running (Q1348), so what it carries is **the leading pair's**,
+    // which is the pair the seat's silence is actually counted on and the
+    // honest number about the race either way.
     return { id: r.id, settingId: r.settingId, closeness: r.closeness, judges: r.leaderJudges,
-      floor: r.floor,
+      floor: r.floor, ...abstainAt(r.id),
       judged: here.some((j) => !j.superseded && !j.locked), askable: dealt || ask !== null, ask };
   });
   const mine = api.myCandidates().flatMap((m) => {
@@ -397,7 +441,8 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
   // clause it was written for, and the reason, and none of what the hold-back
   // exists to withhold — no rival, no reading, no judge count, no floor.
   const earlyMine: Array<{ o: ReturnType<typeof api.outcomes>[number]; c: Candidate }> = [];
-  for (const o of opts.records === false ? [] : api.outcomes()) {
+  const fieldVersions = new Map<string, number>();
+  for (const o of opts.records === false && !engine.closed ? [] : api.outcomes()) {
     const c = engine.getCandidate(o.candidateId);
     if (c.patch === undefined) continue;
     if (o.outcome === 'retired' && stillRacing(c, o.version)) {
@@ -420,6 +465,9 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
       byRace.set(o.raceId, rec);
     }
     rec.field.push(entry);
+    // the version each member's hunks are expressed against (Q1488): its own
+    // base for a candidate closed early, the adoption's for the winner
+    fieldVersions.set(o.candidateId, o.version);
     if (!authorsOf.has(o.raceId)) authorsOf.set(o.raceId, new Set());
     authorsOf.get(o.raceId)!.add(c.author);
     rec.judgedByMe = rec.judgedByMe || mineJ;
@@ -444,20 +492,54 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
   // mapped the first time any seat's view reaches it after an event.
   const steps = engine.derived('host:versionSteps', () => versionSteps(engine));
   const recordSpans = engine.derived('host:recordSpans', () => new Map<string, Span>());
+  const spanOf = (hunks: ReadonlyArray<{ start: number; end: number }>): Span =>
+    ({ start: Math.min(...hunks.map((h) => h.start)), end: Math.max(...hunks.map((h) => h.end)) });
   for (const rec of byRace.values()) {
-    const hs = rec.field.flatMap((f) => f.hunks);
-    const span = { start: Math.min(...hs.map((h) => h.start)), end: Math.max(...hs.map((h) => h.end)) };
+    /**
+     * **A record's span is in the record's own line space** (Q1488; the
+     * wrong-line hunt of 2026-09-20). Each field member's hunks are expressed
+     * against the version *it* was written for, and a rival closed early
+     * (Q1440) stays frozen there — `rebaseOthers` carries only what is live or
+     * parked. So the union of the whole field mixed two line spaces the moment
+     * a line was carried in above the race: the record began a line too high,
+     * named more lines than changed, and told every seat *This clause has
+     * changed again since* of a clause that had not.
+     *
+     * **The span stays the whole field's**, because the card is the whole
+     * field's: one *Previous text* stands above every wording that was put on
+     * this clause, so it has to cover what each of them meant to replace or a
+     * rival's wording is shown against lines it does not align with. What
+     * changes is that each member is carried to the record's own version by
+     * `spanNow` first — the walk the stranded road above already takes — so
+     * the union is taken in one line space instead of two.
+     */
+    const winner = rec.outcome === 'adopted'
+      ? rec.field.find((f) => f.candidateId === rec.candidateId)?.hunks : undefined;
+    const parts = rec.field.map((f) => {
+      const v = fieldVersions.get(f.candidateId) ?? rec.version;
+      return v < rec.version ? spanNow(spanOf(f.hunks), v, steps, rec.version) : spanOf(f.hunks);
+    });
+    const span = { start: Math.min(...parts.map((s) => s.start)),
+      end: Math.max(...parts.map((s) => s.end)) };
     let prev: string[] = [];
     try { prev = linesAt(rec.version); } catch { prev = []; }
     rec.displaced = prev.slice(span.start, span.end);
     let at = recordSpans.get(rec.raceId);
     if (!at) {
-      // an adopted record starts from the lines its winner put there, in
-      // `version + 1`; a retired or undecided one from the field's span,
-      // the incumbent standing, in `version` itself
-      const winner = rec.outcome === 'adopted'
-        ? rec.field.find((f) => f.candidateId === rec.candidateId)?.hunks : undefined;
-      at = winner ? spanNow(adoptedSpan(span, winner), rec.version + 1, steps)
+      // An adopted record starts from the lines its winner put there, in
+      // `version + 1`; a retired or undecided one from the field's span, the
+      // incumbent standing, in `version` itself.
+      //
+      // **The winner's own span, not the field's** (Q1488): `at` is not the
+      // other end of `displaced` — the page reads the clause standing there
+      // and compares it with the *winner's* wording, so *This clause has
+      // changed again since* is what a record wears whenever `at` reaches one
+      // line further than the winner did. A field wider than its winner is
+      // the ordinary case on a contested clause, and the sentence fired on
+      // every one of them, of a change the record itself is. Where there is
+      // no winner the comparison is against the displaced text, so there the
+      // field's span is the right one and stays.
+      at = winner ? spanNow(adoptedSpan(spanOf(winner), winner), rec.version + 1, steps)
         : spanNow(span, rec.version, steps);
       recordSpans.set(rec.raceId, at);
     }
@@ -520,8 +602,13 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
       footprint: c.footprint, displaced: prev.slice(span.start, span.end),
       at: spanNow(span, o.version, steps), early: true, field: [entry] });
   }
+  // **every resolved race keeps its record** (Q1504, Ed 2026-09-22): the
+  // last fifty were kept here once, and a convention of 93 adoptions lost its
+  // earlier ✔s from the closed page. Nothing is capped: a live poll that
+  // already holds the records is answered without them (`recordsKey`, the
+  // slim view in routes-member.ts), which is what the cap never protected
   const records = [...byRace.values(), ...earlyRows.values()]
-    .sort((a, b) => a.when - b.when).slice(-50);
+    .sort((a, b) => a.when - b.when);
   // **The record** (SPEC §4.6, the shape record-builder renders), once closed:
   // the final text, what adopted, the backlog of undecided races each with
   // its field and the text that stood, the changes carried-but-unassented,

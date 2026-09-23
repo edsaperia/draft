@@ -13,31 +13,46 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { afterAll, describe, expect, it } from 'vitest';
-import { ARGS_CAP, ERROR_LOG_FILE, capArgs, errorTail, logError } from '../src/error-log.js';
-import { FilePersistence } from '../src/persistence.js';
+import { ARGS_CAP, PAGE_CAPS, capArgs, logError,
+  newRaceCounts, noteRace, pageErrorOf, raceRefusal } from '../src/error-log.js';
+import { ERROR_LOG_FILE, FilePersistence } from '../src/persistence.js';
 import { createDraftServer } from '../src/server.js';
 import type { DraftServer } from '../src/server.js';
 
 const tmp = () => mkdtempSync(join(tmpdir(), 'draft-errors-'));
 
-type Row = { at: number; kind: string; status: number; method: string; path: string;
-  doc?: string; slug?: string; seat?: string; cmd?: string; args?: string; argsTruncated?: true; reason: string };
+type Row = { at: number; kind: string; status?: number; method?: string; path: string;
+  doc?: string | null; slug?: string | null; seat?: string | null; cmd?: string;
+  args?: string; argsTruncated?: true;
+  source?: string; line?: number; col?: number; build?: string | null; reason: string };
 const rows = (dir: string): Row[] =>
   existsSync(join(dir, ERROR_LOG_FILE))
     ? readFileSync(join(dir, ERROR_LOG_FILE), 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l) as Row)
     : [];
 
-describe('the error log file', () => {
-  it('caps the arguments and says so, and a write that cannot happen does not throw', () => {
+describe('the error log', () => {
+  it('caps the arguments and says so, and a write that cannot happen does not throw', async () => {
     expect(capArgs({ a: 1 })).toEqual({ args: '{"a":1}' });
     const big = capArgs({ picture: 'x'.repeat(ARGS_CAP * 2) });
     expect(big.args).toHaveLength(ARGS_CAP);
     expect(big.argsTruncated).toBe(true);
-    // a data dir that is a file: mkdir and append both fail, and neither throws out
-    const dir = tmp();
-    expect(() => logError(join(dir, 'not-a-dir', 'x\0y'), { kind: 'refused', status: 400,
-      method: 'POST', path: '/x', reason: 'r' })).not.toThrow();
-    expect(errorTail(dir)).toEqual([]);
+    // **a store that refuses must not take the request with it** — every
+    // caller is inside a request's catch, so `logError` neither throws nor
+    // returns a promise anybody waits on, and a Postgres insert that
+    // rejects (plan stage 5a) is one console line. A rejection nobody
+    // caught would fail this run by itself, which is the assertion.
+    const row = { kind: 'refused' as const, status: 400, method: 'POST', path: '/x', reason: 'r' };
+    // a store that throws where it stands — a data dir that is a file
+    expect(() => logError({ appendError: () => { throw new Error('ENOTDIR'); } }, row)).not.toThrow();
+    // …and one that rejects, which is what a Postgres insert does
+    expect(() => logError({ appendError: () => Promise.reject(new Error('pg is down')) }, row))
+      .not.toThrow();
+    await new Promise((r) => setTimeout(r, 20));
+    // and a store that works writes exactly one line, read back through the seam
+    const p = new FilePersistence(tmp());
+    logError(p, row, 99);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(await p.readErrors()).toEqual([{ at: 99, ...row }]);
   });
 });
 
@@ -141,7 +156,7 @@ describe('a refused command lands in the error log (Q1330)', () => {
     const tail = (await (await fetch(`${base}/api/dev/errors`)).json()) as { errors: Row[] };
     expect(tail.errors.map((r) => r.cmd ?? r.path)).toEqual(
       [`/api/d/${created.slug}/cmd`, 'no-such-command', 'answer']);
-    expect(errorTail(dataDir, 1)).toHaveLength(1);
+    expect(await new FilePersistence(dataDir).readErrors(1)).toHaveLength(1);
   });
 
   /**
@@ -178,5 +193,183 @@ describe('a refused command lands in the error log (Q1330)', () => {
       { cmd: 'set-identity', args: { name: 'Bo' } }, bo);
     expect(named.status).toBe(200);
     expect(await named.json()).toMatchObject({ ok: true });
+  });
+});
+
+/**
+ * **The refusals nobody did anything wrong to meet** (Q1493 (a); Ed,
+ * 2026-09-21: *The page handles both*). Sixteen of the nh2026 convention's
+ * forty refusals were a race with the 4 s poll — a judgment on a pair that
+ * closed since the card was drawn, a proposal pressed in the second after
+ * somebody else's adoption. The page answers both itself, so they are
+ * counted on `/healthz` and kept out of a log whose whole use is that an
+ * operator reads every line of it.
+ */
+describe('a race with the poll is tallied, not logged (Q1493 (a))', () => {
+  it('names the two kinds by the command and the sentence together, and nothing else', () => {
+    expect(raceRefusal('judge-race', 'candidate c1 is not in a live race')).toBe('judged-closed');
+    expect(raceRefusal('judge-race', 'candidate is not live')).toBe('judged-closed');
+    expect(raceRefusal('judge-race', 'stale card: incumbent text has changed')).toBe('judged-closed');
+    expect(raceRefusal('propose-text', 'patch targets version 40; current is 41')).toBe('stale-version');
+    expect(raceRefusal('rebase-text', 'patch targets version 3; current is 4')).toBe('stale-version');
+    // the sentence alone is not enough: the same words from another door are
+    // a different fact, and the version guard's *sibling* refusal is a claim
+    // about the wording rather than a race (R-136)
+    expect(raceRefusal('answer', 'candidate c1 is not in a live race')).toBeNull();
+    expect(raceRefusal('judge-race', 'you may not judge yet')).toBeNull();
+    expect(raceRefusal('propose-text', 'the text at lines 3–4 is not what this proposal replaces')).toBeNull();
+    expect(raceRefusal('propose-text', 'insufficient ✏️ for the stake (§7)')).toBeNull();
+    expect(raceRefusal(null, 'patch targets version 1; current is 2')).toBeNull();
+    const c = newRaceCounts();
+    noteRace(c, 'judged-closed', 111);
+    noteRace(c, 'stale-version', 222);
+    noteRace(c, 'stale-version', 333);
+    expect(c).toEqual({ total: 3, 'judged-closed': 1, 'stale-version': 2,
+      last: { at: 333, kind: 'stale-version' } });
+  });
+
+  it('the wire still refuses, /healthz counts it by kind, and the error log stays empty', async () => {
+    const { base, dataDir } = await boot();
+    const created = await (await post(base, '/api/docs',
+      { title: 'Races', email: 'ada.races@example.org' })).json() as { slug: string; devLink: string };
+    const ada = await follow(created.devLink);
+    const cmd = async (name: string, args: unknown): Promise<Response> =>
+      post(base, `/api/d/${created.slug}/cmd`, { cmd: name, args }, ada);
+    expect((await cmd('set-convenor-membership', { isMember: true })).status).toBe(200);
+    expect((await cmd('confirm-starting-text', { text: 'One line stands here.' })).status).toBe(200);
+    const values: Record<string, unknown> = {
+      ending: { endsAtMs: null }, rate: { grant: 4, cap: 8, dripMinutes: 240 },
+      quorum: { form: 'count', n: 1 }, chamber: { rung: 'link' },
+      authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
+      applications: { apply: false }, admission: { price: 'assembly' },
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await cmd('reclaim', { setting });
+      expect((await cmd('set-setting', { setting, value })).status, setting).toBe(200);
+    }
+    expect((await cmd('begin', {})).status).toBe(200);
+
+    // a proposal against a version the document has moved past — the whole of
+    // what the convention's members met in the second after an adoption
+    const stale = await cmd('propose-text', { baseVersion: 99, why: 'again',
+      hunks: [{ start: 0, end: 1, lines: ['One line stands here, and is plainer.'],
+        was: ['One line stands here.'] }] });
+    expect(stale.status).toBe(400);
+    expect(((await stale.json()) as { error: string }).error).toMatch(/^patch targets version 99; current is \d+$/);
+    // …and one that is not a race with the poll is logged exactly as before
+    const other = await cmd('answer', { setting: 'chamber', value: { rung: 'link' } });
+    expect(other.status).toBe(400);
+
+    const logged = rows(dataDir);
+    expect(logged.map((r) => r.cmd)).toEqual(['answer']);
+    const health = (await (await fetch(`${base}/healthz`)).json()) as
+      { races: { total: number; 'judged-closed': number; 'stale-version': number;
+        last: null | { kind: string } } };
+    expect(health.races.total).toBe(1);
+    expect(health.races['stale-version']).toBe(1);
+    expect(health.races['judged-closed']).toBe(0);
+    expect(health.races.last?.kind).toBe('stale-version');
+  });
+});
+
+/**
+ * **The page reports its own uncaught errors** (plan stage 5b, after the
+ * nh2026 convention). A production route, so what it accepts *is* the
+ * privacy story, and this is where the limits are proved: only the listed
+ * fields are read, the seat and the build are the host's, no text a member
+ * typed can ride in, a path arrives without its query, and the rate limit
+ * holds. The page half — the two handlers and the brake — is
+ * `npm run journey`'s *page error* step.
+ */
+describe('the page reports its own errors (stage 5b)', () => {
+  it('reads the listed fields and nothing else, and caps what it reads', () => {
+    const at = { seat: 'm-4', doc: 'd-1', slug: 'moon', build: 'abc1234' };
+    expect(pageErrorOf({ message: "TypeError: undefined is not an object (evaluating 'x.y')",
+      source: 'http://127.0.0.1:8140/session.js?v=3', line: 4212.7, col: 17,
+      path: '/d/moon?token=SECRET#x', slug: 'moon' }, at)).toEqual({
+      kind: 'page', path: '/d/moon', doc: 'd-1', slug: 'moon', seat: 'm-4', build: 'abc1234',
+      source: '/session.js', line: 4212, col: 17,
+      reason: "TypeError: undefined is not an object (evaluating 'x.y')",
+    });
+
+    // **the whole of what is kept is what is listed**: a body may say
+    // anything and none of it becomes a line
+    const rich = pageErrorOf({ message: 'boom', stack: 'at draft (/session.js:1)\nat b',
+      text: 'the clause a member was typing', seat: 'm-99', build: 'forged',
+      args: { picture: 'x'.repeat(50_000) }, cmd: 'propose-text', status: 500 }, at)!;
+    expect(Object.keys(rich).sort()).toEqual(
+      ['build', 'doc', 'kind', 'path', 'reason', 'seat', 'slug']);
+    expect(rich.seat).toBe('m-4');
+    expect(rich.build).toBe('abc1234');
+    expect(JSON.stringify(rich)).not.toContain('typing');
+
+    // a long message is capped, and its whitespace collapsed first, so a
+    // pasted paragraph cannot ride in on a newline
+    const long = pageErrorOf({ message: 'x'.repeat(PAGE_CAPS.message * 3) }, at)!;
+    expect(long.reason).toHaveLength(PAGE_CAPS.message);
+    expect(pageErrorOf({ message: '  a\n\n  b\tc  ' }, at)!.reason).toBe('a b c');
+    // a source is a path, capped; a line that is not a number is no line
+    expect(pageErrorOf({ message: 'b', source: 'x'.repeat(PAGE_CAPS.source * 3) }, at)!.source)
+      .toHaveLength(PAGE_CAPS.source);
+    const loose = pageErrorOf({ message: 'b', source: 42, line: 'twelve', col: -1 }, at)!;
+    expect(loose.source).toBeUndefined();
+    expect(loose.line).toBeUndefined();
+    expect(loose.col).toBeUndefined();
+    // a path that is not one, or is not there at all, is the root
+    expect(pageErrorOf({ message: 'b' }, at)!.path).toBe('/');
+    expect(pageErrorOf({ message: 'b', path: 'https://elsewhere.example/x' }, at)!.path).toBe('/');
+    // and a report with nothing to say is not a line
+    expect(pageErrorOf({ message: '   ' }, at)).toBeNull();
+    expect(pageErrorOf({}, at)).toBeNull();
+  });
+
+  it('over the wire: the seat is the cookie’s, the query is gone, and the rate limit holds', async () => {
+    const { base, dataDir } = await boot();
+    const EMAIL = 'ada.page@example.org';
+    const created = await (await post(base, '/api/docs', { title: 'Pages', email: EMAIL }))
+      .json() as { slug: string; devLink: string };
+    const ada = await follow(created.devLink);
+    const me = ((await (await fetch(`${base}/api/d/${created.slug}/view`, { headers: { cookie: ada } }))
+      .json()) as { me: string }).me;
+
+    const send = (body: unknown, cookie?: string) => post(base, '/api/page-error', body, cookie);
+
+    // a seated page: the seat is the cookie's, never the body's
+    const one = await send({ message: 'TypeError: x is not a function',
+      source: `${base}/session.js`, line: 4212, col: 17,
+      path: `/d/${created.slug}?token=SECRETTOKEN`, slug: created.slug,
+      seat: 'm-somebody-else' }, ada);
+    expect(one.status).toBe(204);
+    let logged = rows(dataDir);
+    expect(logged).toHaveLength(1);
+    expect(logged[0]).toMatchObject({ kind: 'page', seat: me, slug: created.slug,
+      path: `/d/${created.slug}`, source: '/session.js', line: 4212,
+      reason: 'TypeError: x is not a function' });
+    expect(logged[0]!.doc).toMatch(/^d-/);
+    // the token that travelled in the query is nowhere in the file
+    expect(readFileSync(join(dataDir, ERROR_LOG_FILE), 'utf8')).not.toContain('SECRETTOKEN');
+
+    // **the birth has no document and still reports**: no slug, no seat
+    const birth = await send({ message: 'rejection: boom', path: '/' });
+    expect(birth.status).toBe(204);
+    logged = rows(dataDir);
+    expect(logged).toHaveLength(2);
+    expect(logged[1]).toMatchObject({ kind: 'page', path: '/', doc: null, slug: null, seat: null });
+
+    // a body with no message is a 400 and no line — and it still spends a
+    // slot, or an empty report would be a free way to flood the route
+    expect((await send({ path: '/d/x', slug: created.slug }, ada)).status).toBe(400);
+    expect(rows(dataDir)).toHaveLength(2);
+
+    // **five a minute per seat.** Two of this seat's are spent; the next
+    // three land, and the sixth is refused with nothing written.
+    for (let i = 0; i < 3; i++) {
+      expect((await send({ message: `boom ${i}`, slug: created.slug }, ada)).status).toBe(204);
+    }
+    const over = await send({ message: 'boom over', slug: created.slug }, ada);
+    expect(over.status).toBe(429);
+    expect(rows(dataDir).filter((r) => r.kind === 'page')).toHaveLength(5);
+    expect(readFileSync(join(dataDir, ERROR_LOG_FILE), 'utf8')).not.toContain('boom over');
   });
 });

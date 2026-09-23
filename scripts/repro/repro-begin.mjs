@@ -2,6 +2,7 @@
 // A dev server at BASE; founder + two members; one member's page open headless
 // through Begin; the rail dumped after three polls, then again after a reload.
 import { chromium } from 'playwright';
+import { landOn } from '../lib/walk.mjs';
 
 const BASE = process.argv[2] || 'http://127.0.0.1:8181';
 const run = Date.now().toString(36);
@@ -56,7 +57,7 @@ const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
 const logs = [];
 page.on('console', (m) => { if (m.type() !== 'log') logs.push(`${m.type()}: ${m.text()}`); });
 page.on('pageerror', (e) => logs.push(`PAGEERROR ${e.message}`));
-await page.goto(m1Invite, { waitUntil: 'networkidle' });
+await landOn(page, m1Invite, { waitUntil: 'networkidle' });
 await page.waitForTimeout(1500);
 say(`m1's page at ${page.url()}`);
 // m1's API seat, by a fresh login link (dev hands it back)

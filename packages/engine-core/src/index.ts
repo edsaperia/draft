@@ -12,6 +12,8 @@ export { pairValue } from './routing.js';
 export type { JudgmentView } from './session.js';
 export { ParticipantApi, authorVisible } from './participant-api.js';
 export type { CardView, OptionView, GazetteEntry } from './participant-api.js';
+export { SpectatorApi } from './spectator-api.js';
+export type { FeedEntry, FeedChange, FeedOutcome } from './spectator-api.js';
 export { adoptionThreshold } from './adoption-threshold.js';
 export type {
   EquivalenceVerdict,
@@ -49,6 +51,13 @@ export {
   splitHunks,
   validateHunks,
 } from './text/patch.js';
+export {
+  AttestationError,
+  attest,
+  checkAttestation,
+  isAttested,
+  stripAttestation,
+} from './text/attest.js';
 export { rebaseHunks } from './text/rebase.js';
 export { composeTextual } from './text/compose.js';
 export { fitDavidson } from './ranking/davidson.js';

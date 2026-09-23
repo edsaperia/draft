@@ -83,13 +83,47 @@ describe('🪪/🤝 promise 1: at assembly nobody joins without everyone’s con
     expect(rec.route).toBe('constitutional');
     expect(rec.by).toBeNull();
     expect(rec.answers.size).toBe(0);
-    // one keep blocks: two accepts out of three settle nothing
+    // two accepts settle nothing while the third member is still to answer
     s.answerMotion(6, 'ada', rec.id, 'accept');
     s.answerMotion(7, bo, rec.id, 'accept');
-    s.answerMotion(8, cy, rec.id, 'keep');
     expect(s.motionRecords().get(rec.id)!.status).toBe('running');
     expect(s.applicantRecords().get(ap)!.status).toBe('submitted');
     expect(s.E()).toBe(3);
+    void cy;
+  });
+
+  /**
+   * **And one vote against refuses the application there and then** (Ed,
+   * 2026-09-19, Q1473; R-138). Until v0.138 the keep blocked and did not
+   * kill, and an application — which has no mover, so nobody could withdraw
+   * it — sat under *Applicants* until the document closed. Ed found one in a
+   * live room. The refusal is the road a rejected application already took at
+   * the ✏️ price: `application-refused` and the applicant's own status.
+   */
+  it('a single keep refuses the application at once, and they may apply again (Q1473)', () => {
+    const { s, bo, cy } = buildConstituted({
+      applications: { apply: true }, admission: { price: 'assembly' } });
+    const ap = s.startApplication(3, 'dee@example.org');
+    s.verifyApplication(4, ap);
+    s.submitApplication(5, ap, { words: 'I bake.' });
+    const mo = s.applicantRecords().get(ap)!.motion!;
+    s.answerMotion(6, 'ada', mo, 'accept');
+    s.answerMotion(7, cy, mo, 'keep');
+    expect(s.motionRecords().get(mo)!.status).toBe('held');
+    expect(s.applicantRecords().get(ap)!.status).toBe('refused');
+    expect(s.E()).toBe(3); // nobody joined
+    // nobody is owed a card: an application has no mover (§9.6a, R-130)
+    for (const id of ['ada', bo, cy]) {
+      expect(s.memberRecords().get(id)!.heldOwed.size).toBe(0);
+    }
+    // the door is not barred: a refused application is not one underway
+    const again = s.startApplication(8, 'dee@example.org');
+    expect(again).not.toBe(ap);
+    expect(s.applicantRecords().get(again)!.status).toBe('started');
+    // and the log re-folds to the same state
+    const r = ConstitutionSession.replay([...s.logEntries()], s.people);
+    expect(r.rollingHash()).toBe(s.rollingHash());
+    expect(r.applicantRecords().get(ap)!.status).toBe('refused');
   });
 });
 

@@ -184,6 +184,24 @@ const IN_PAGE = () => {
    * rule — but it agrees with a screen reader on the cases this surface
    * produces, which are aria-label, a label element, text content and title.
    */
+  // **The text a name is computed from is the text that is rendered**
+  // (corrected 2026-09-23, building Q1395): the name computation skips what
+  // CSS hides and what is `aria-hidden`, and `textContent` does not — so a
+  // lane's *Prefer this* / *Preferred* pair, one of them always hidden, read
+  // as both at once and *Indifferent* as *IndifferentIndifferent*, which is
+  // not what a screen reader says (Chrome's own tree was read beside it).
+  const shownText = (el) => {
+    let out = '';
+    for (const n of el.childNodes) {
+      if (n.nodeType === 3) { out += n.nodeValue; continue; }
+      if (n.nodeType !== 1) continue;
+      if (n.getAttribute('aria-hidden') === 'true') continue;
+      const cs = getComputedStyle(n);
+      if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+      out += shownText(n);
+    }
+    return out;
+  };
   const accName = (el) => {
     const al = el.getAttribute('aria-label');
     if (al && al.trim()) return al.trim();
@@ -191,8 +209,8 @@ const IN_PAGE = () => {
     if (lb) {
       const t = lb.split(/\s+/).map((id) => {
         const e = document.getElementById(id);
-        return e ? (e.textContent || '') : '';
-      }).join(' ').trim();
+        return e ? shownText(e) : '';
+      }).join(' ').replace(/\s+/g, ' ').trim();
       if (t) return t;
     }
     if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') {
@@ -210,7 +228,7 @@ const IN_PAGE = () => {
       return '';
     }
     if (el.tagName === 'IMG') return (el.getAttribute('alt') || '').trim();
-    const txt = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    const txt = shownText(el).replace(/\s+/g, ' ').trim();
     if (txt) return txt;
     const ti = el.getAttribute('title');
     if (ti && ti.trim()) return ti.trim();
@@ -393,9 +411,12 @@ const IN_PAGE = () => {
         const opts = [...g.querySelectorAll('[role="radio"], input[type="radio"], .lanepick')]
           .filter((el) => window.__A11Y.visible(el));
         if (opts.length < 2) continue;
-        const names = opts.map((o) => window.__A11Y.accName(o).replace(/\s+/g, ' ').slice(0, 60));
+        // compared whole, shown cut (corrected 2026-09-23): two rival wordings
+        // that part after the sixtieth character are two names, not one
+        const full = opts.map((o) => window.__A11Y.accName(o).replace(/\s+/g, ' '));
+        const names = full.map((n) => n.slice(0, 60));
         const roles = opts.map((o) => o.getAttribute('role') || (o.tagName === 'INPUT' ? 'radio' : ''));
-        const uniq = new Set(names.filter(Boolean));
+        const uniq = new Set(full.filter(Boolean));
         if (uniq.size < names.length) {
           out.push({
             path: window.__A11Y.pathOf(g), n: opts.length, names, distinct: uniq.size,
@@ -576,6 +597,33 @@ async function focusWalk(page, base, url, errors) {
 }
 
 /**
+ * A17 · **nothing repeats by itself once reduced motion is asked for.** Read
+ * with `prefers-reduced-motion: reduce` emulated: every element whose
+ * computed animation runs for ever. `sparkles` counts the grant sparkle
+ * (Q1501) so a run can say whether it met one at all.
+ */
+const motionProbe = () => {
+  const path = (e) => e.tagName.toLowerCase() + (e.className && typeof e.className === 'string' ? '.' + e.className.trim().split(/\s+/).slice(0, 2).join('.') : '');
+  const running = [...document.querySelectorAll('*')].filter((e) => {
+    const cs = getComputedStyle(e);
+    return cs.animationName && cs.animationName !== 'none' && /infinite/.test(cs.animationIterationCount);
+  }).map((e) => ({ path: path(e), name: getComputedStyle(e).animationName }));
+  // …and the grant sparkle's still form, asked of the stylesheet even where
+  // no grant is waiting in this scene: a probe span in the first rail entry,
+  // read and taken out again
+  let sparkle = null;
+  const host = document.querySelector('.queue button:not(.sealdot)');
+  if (host) {
+    const probe = document.createElement('span');
+    probe.className = 'sparkle';
+    host.insertBefore(probe, host.firstChild);
+    sparkle = getComputedStyle(probe).animationName;
+    probe.remove();
+  }
+  return { running, sparkles: document.querySelectorAll('.sparkle').length, sparkle };
+};
+
+/**
  * A14 · a commit that is only ever a held pointer. The page states its own
  * gesture (SURFACE §7.2's switch, read through `SESSION.holdMs` and the
  * `.holding` machinery), so this asks the page rather than guessing: a control
@@ -703,6 +751,13 @@ async function main() {
       scene.probes = await page.evaluate(PROBES, null);
       scene.focusRules = await page.evaluate(focusRules);
       scene.holds = await page.evaluate(holdProbe);
+      // A17 · what still moves when the reader has asked for stillness (Q1501's
+      // sparkle is the first motion on the surface that repeats by itself):
+      // the stylesheet's own reduced-motion branch, read with the media
+      // emulated, every element whose animation never ends
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      scene.motion = await page.evaluate(motionProbe);
+      await page.emulateMedia({ reducedMotion: 'no-preference' });
       if (axe) scene.axe = await runAxe(page);
 
       /**
@@ -820,6 +875,12 @@ async function main() {
             'the card closed and focus fell to <body> — the keyboard is back at the top of the page',
             c.card, s.name);
         }
+      }
+    }
+    if (s.motion) {
+      for (const m of s.motion.running) add('A17 motion', 'nothing repeats by itself under reduced motion', 'animation ' + m.name + ' runs for ever', m.path, s.name);
+      if (s.motion.sparkle && s.motion.sparkle !== 'none') {
+        add('A17 motion', 'nothing repeats by itself under reduced motion', 'the grant sparkle runs ' + s.motion.sparkle + ' (Q1501)', '.queue button > .sparkle', s.name);
       }
     }
     if (s.holds && s.holds.holders.length) {

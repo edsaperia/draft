@@ -121,6 +121,43 @@ const staged = await page.evaluate(() => {
 });
 if (staged) say(Math.abs(staged.gap - GAP) < 0.5, 'the DOM\'s last child sorted first keeps its gap: ' + staged.gap.toFixed(1) + 'px under ' + staged.id + ' → ' + staged.next);
 
+// 1b. **↻ is in the drawer** (Q1484 (c), the nh2026 convention 2026-09-20).
+// The wide rail lists `stranded` among the entries that pin and the drawer's
+// own list did not, so on a phone a proposal the text had moved out from
+// under was in neither the one list of what asks something of you nor the
+// door's count. The page is asked which entry is stranded rather than told:
+// a check that cannot find its subject has not run, and says so.
+const stranded = await page.evaluate(() => {
+  const ul = document.querySelector('.layout > .queue ul');
+  const mine = (window.SESSION.SUGGS || []).filter((g) => g.mine && g.stranded && !g.unproposed);
+  const el = mine.length ? ul.querySelector('[data-q="' + String(mine[0].id).replace(/["\\]/g, '\\$&') + '"]') : null;
+  const btn = el && el.querySelector('button');
+  const mk = el && el.querySelector('.qmark .mk');
+  return { any: mine.length, id: mine[0] ? mine[0].id : null, there: !!el,
+    shown: !!el && getComputedStyle(el).display !== 'none',
+    mark: mk ? mk.className : (el ? el.className : null),
+    // **and it is red** (Q1484, Ed 2026-09-21: *Red entry, words unchanged*).
+    // The entry's ground is a wash of the surface's one red and the ↻ is
+    // painted it; at 390 the drawer is the only list there is, so the rule
+    // has to hold here as well as in the wide rail.
+    wash: btn ? getComputedStyle(btn).getPropertyValue('--washcol').trim() : null,
+    ink: mk ? getComputedStyle(mk).color : null,
+    red: getComputedStyle(document.documentElement).getPropertyValue('--lc-wrong').trim(),
+    count: (document.querySelector('#drawerright .dcount') || {}).textContent || null };
+});
+say(stranded.any > 0, 'the fixture holds a stranded proposal to look for' + (stranded.id ? ' (' + stranded.id + ')' : ''));
+say(stranded.shown, 'the stranded proposal ↻ stands in the drawer' +
+  (stranded.shown ? ' as ' + stranded.mark : ': there ' + stranded.there + ', shown ' + stranded.shown));
+// the channels as the stylesheet holds them, read back rather than written
+// down here, so the walk cannot disagree with the palette about what red is
+const chans = (stranded.red || '').split(',').map((x) => x.trim()).filter(Boolean);
+const wantRgb = chans.length === 3 ? 'rgb(' + chans.join(', ') + ')' : null;
+const washRed = !!wantRgb && (stranded.wash || '').replace(/\s+/g, ' ')
+  .startsWith('rgba(' + chans.join(', ') + ',');
+say(!!wantRgb && washRed && stranded.ink === wantRgb,
+  'the stranded entry is red in the drawer: ground ' + stranded.wash + ', ↻ ' + stranded.ink +
+  (wantRgb ? ' (--lc-wrong is ' + wantRgb + ')' : ' — the palette has no --lc-wrong'));
+
 // 2. a tap on the empty space closes it — by mouse
 const spot = await emptySpot(page);
 say(!spot.on.includes('(in an entry)'), 'the empty spot (' + spot.x.toFixed(0) + ',' + spot.y.toFixed(0) + ') is on ' + spot.on);
@@ -142,8 +179,12 @@ await page.mouse.up();
 await page.waitForTimeout(150);
 say(await drawer(page) === 'right', 'a drag of 120px on the empty space leaves the drawer open');
 
-// 4. an entry still opens and the drawer follows
-const first = e.rows[0];
+// 4. an entry still opens and the drawer follows. Measured again here: the
+// drawer has been opened and closed three times since the spacing pass, and
+// the list is laid out by flex `order`, so an entry's box then is not a
+// promise about its box now.
+const now = await entries(page);
+const first = now.rows[0] || e.rows[0];
 await page.mouse.click((first.left + first.right) / 2, (first.top + first.bottom) / 2);
 await page.waitForTimeout(900);
 const opened = await page.evaluate(() => {

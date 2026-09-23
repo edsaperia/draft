@@ -12,6 +12,7 @@ import { INC_PREFIX } from './session.js';
 import type { JudgmentView, Session } from './session.js';
 import type { Candidate, Card, Constitution, EdgeSubtype } from './types.js';
 import type { PatchSet, Span } from './text/types.js';
+import { checkAttestation } from './text/attest.js';
 
 /**
  * **The one reveal rule** (SPEC §3.5a, Q770 and entry 31). Every reader of
@@ -260,6 +261,18 @@ export class ParticipantApi {
       .filter((j) => j.participantId === this.participantId);
   }
 
+  /**
+   * Propose (SPEC §3.3). **A text proposal must say what it is replacing**
+   * (SPEC §2.1, §2.4 → why: R-136): every replacement hunk carries `was` and
+   * every pure insertion `after`, and a patch carrying neither is refused
+   * here — this being the participant boundary, which a sim persona and a
+   * personal AI speak exactly as a human client does. `attest()` fills them
+   * from the text the draft was written against.
+   *
+   * **The version guard speaks first** where it applies: a patch against a
+   * version that is no longer current is stale in the older, plainer way,
+   * and *targets version N* is the truer sentence for it.
+   */
   submit(
     now: number,
     input: {
@@ -268,6 +281,11 @@ export class ParticipantApi {
       rationale: string;
     },
   ): { id: string } {
+    if (input.patch && input.patch.baseVersion === this.session.currentVersion()) {
+      // the lines the session holds, never the text split back (Q1491)
+      checkAttestation(this.session.linesAt(this.session.currentVersion()),
+        input.patch.hunks, { required: true });
+    }
     const { id } = this.session.submitCandidate(now, {
       author: this.participantId,
       ...(input.patch ? { patch: input.patch } : {}),

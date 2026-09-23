@@ -1,7 +1,14 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { Session, makeConstitution } from '../src/session.js';
 import { makeRng, type Rng } from '../src/rng.js';
 import type { Participant } from '../src/types.js';
+
+// Every case here is synchronous and the file runs for a minute and a half on
+// a slow machine; vitest's worker answers its own heartbeat on the event loop,
+// and a file that never yields fails the run with *Timeout calling
+// "onTaskUpdate"* though every test passed (2026-09-21). One tick between
+// cases lets the heartbeat through.
+afterEach(() => new Promise<void>((done) => { setTimeout(done, 0); }));
 
 /**
  * **The memo against no memo, step for step** (Q1326, Ed 2026-09-14: *build
@@ -267,8 +274,18 @@ function differential(
  * everything afresh, with the whole published picture of both compared at
  * every step, and the warm side runs under `memo.audit`, which recomputes
  * *and serialises* every cache hit. Nothing about the assertions is relaxed.
+ *
+ * **Raised from 30 s to 120 s on 2026-09-19** (Ed: *you decide*). Measured the
+ * same night on this machine, alone and with nothing else running: *moon* 24 s,
+ * *oak* 25.5 s, *clerk* 18 s, the abstaining script 12 s — and *moon* timed out
+ * at 30 s twice in a full-suite run. **That is seventeen times the 1.4 s this
+ * comment records**, so the allowance is no longer the interesting number: the
+ * scripts got slow somewhere between Q1439 and today, and whether that is the
+ * test's own cold side or the engine under a busy room is an open finding
+ * (QUESTIONS, beside Q1441's before/after measurement), not something a
+ * timeout settles. The limit is raised so the finding cannot hold a push.
  */
-const SCRIPT_MS = 30_000;
+const SCRIPT_MS = 120_000;
 
 /**
  * **How many proposals the scripts closed** (Q1440), filled as they run and

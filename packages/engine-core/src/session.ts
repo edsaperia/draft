@@ -22,7 +22,8 @@ import { SCHEMA_VERSION, INC_PREFIX } from './types.js';
 import type { Hunk, PatchSet, Span } from './text/types.js';
 import type { Comparison, Fit, Outcome } from './ranking/types.js';
 import { applyPatch, footprint, footprintsConflict, validateHunks } from './text/patch.js';
-import { splitLines, joinLines } from './text/diff.js';
+import { checkAttestation, stripAttestation } from './text/attest.js';
+import { splitLines, joinLines, normalizeLines } from './text/diff.js';
 import { rebaseHunks } from './text/rebase.js';
 import { fitDavidson } from './ranking/davidson.js';
 import { chainHash, sha256Hex, stableStringify } from './hash.js';
@@ -660,7 +661,11 @@ export class Session {
         c.awaiting = { raceId: event.raceId, p: event.p, threshold: event.threshold,
           // the cap mark rides the park with the numbers (R-051); absent
           // stays absent, so a log written before it existed folds the same
-          ...(event.cappedFit ? { cappedFit: event.cappedFit } : {}) };
+          ...(event.cappedFit ? { cappedFit: event.cappedFit } : {}),
+          // and so does what the room decided on (Q1458), on the same terms:
+          // a park written before the field carries none, and the accept it
+          // is answered by adopts with none, exactly as it did before
+          ...(event.decided ? { decided: event.decided } : {}) };
         this.fitCache.clear();
         this.touch();
         break;
@@ -1026,9 +1031,24 @@ export class Session {
   }
 
   documentAt(version: number): string {
+    return joinLines(this.linesAt(version) as string[]);
+  }
+
+  /**
+   * **The lines a version holds — the one line array** (Q1491). A patch is
+   * line numbers and wording against a version, so everything that checks a
+   * patch is asking about *these*, and `splitLines(documentAt(v))` is not
+   * reliably the same array: the round trip through one string normalises
+   * any line ending a line turns out to contain, and a text written before
+   * the doors normalised could hold one. Four callers asked the round trip
+   * and three asked the session, which is exactly how the participant
+   * boundary came to refuse wording the session itself would have taken.
+   * Ask this instead, and the two cannot disagree again.
+   */
+  linesAt(version: number): readonly string[] {
     const lines = this.versions[version];
     if (!lines) throw new Error(`unknown version ${version}`);
-    return joinLines(lines);
+    return lines;
   }
 
   /**
@@ -1226,6 +1246,34 @@ export class Session {
     this.emit({ type: 'participant-resumed', t, participantId });
   }
 
+  /**
+   * **A carriage return never enters the text** (Q1491, the nh2026
+   * convention). A hunk's `lines` are what the version array is built out of,
+   * so this is the last place a line ending inside one of them can be caught:
+   * past here a "line" holding a `\r` is a line the document cannot represent
+   * — `document()` joins with '\n' and every reader that splits the text back
+   * gets a different array from the one the session holds, which is how
+   * fifteen proposals came to be told the wording they replaced was not the
+   * wording they replaced.
+   *
+   * **At the command, never in the fold.** Every road into the version array
+   * comes through `submitCandidate`, `decreeText` or `confirmRebase`, and
+   * each normalises what it is given before it validates it; `apply` does
+   * not, so a log written before this rule replays exactly as it was written.
+   * The same object comes back where nothing moves, so nothing else is
+   * touched either.
+   */
+  private normalizedPatch(patch: PatchSet): PatchSet {
+    let moved = false;
+    const hunks = patch.hunks.map((h) => {
+      const lines = normalizeLines(h.lines);
+      if (lines === h.lines) return h;
+      moved = true;
+      return { ...h, lines: lines as string[] };
+    });
+    return moved ? { ...patch, hunks } : patch;
+  }
+
   submitCandidate(
     t: number,
     input: {
@@ -1255,14 +1303,21 @@ export class Session {
         `rationale exceeds ${this.constitutionValue.rationaleMaxChars} chars`,
       );
     }
-    if (input.patch) {
-      if (input.patch.baseVersion !== this.currentVersion()) {
+    const patch = input.patch ? this.normalizedPatch(input.patch) : undefined;
+    if (patch) {
+      if (patch.baseVersion !== this.currentVersion()) {
         throw new Error(
-          `patch targets version ${input.patch.baseVersion}; current is ${this.currentVersion()}`,
+          `patch targets version ${patch.baseVersion}; current is ${this.currentVersion()}`,
         );
       }
-      if (input.patch.hunks.length === 0) throw new Error('empty patch');
-      validateHunks(this.currentLines().length, input.patch.hunks);
+      if (patch.hunks.length === 0) throw new Error('empty patch');
+      validateHunks(this.currentLines().length, patch.hunks);
+      // **Checked where it is given, required where the act enters** (R-136).
+      // The participant boundaries — `ParticipantApi.submit` and the host's
+      // three text commands — refuse a patch that carries no attestation;
+      // here it is honoured wherever it is present and never demanded, so
+      // the library's own callers and every replay are untouched.
+      checkAttestation(this.currentLines(), patch.hunks, { required: false });
     } else if (input.setting) {
       // Q390: values are simpler than prose in exactly one way — equality
       // is decidable — so §5's dedup gate collapses to it (SPEC v0.53).
@@ -1294,7 +1349,10 @@ export class Session {
       t,
       id,
       author: input.author,
-      ...(input.patch ? { patch: input.patch } : {}),
+      // **The attestation is validation, not record** (R-136): it is stripped
+      // here, at the one door that writes a submission, so an event's shape
+      // does not move and every log on disk replays byte for byte.
+      ...(patch ? { patch: { ...patch, hunks: stripAttestation(patch.hunks) } } : {}),
       ...(input.setting ? { setting: input.setting } : {}),
       rationale: input.rationale,
       ...(input.machineAuthored ? { machineAuthored: true } : {}),
@@ -1355,13 +1413,16 @@ export class Session {
     if (input.rationale.length > this.constitutionValue.rationaleMaxChars) {
       throw new Error(`rationale exceeds ${this.constitutionValue.rationaleMaxChars} chars`);
     }
-    if (input.patch.baseVersion !== this.currentVersion()) {
+    const given = this.normalizedPatch(input.patch);
+    if (given.baseVersion !== this.currentVersion()) {
       throw new Error(
-        `patch targets version ${input.patch.baseVersion}; current is ${this.currentVersion()}`,
+        `patch targets version ${given.baseVersion}; current is ${this.currentVersion()}`,
       );
     }
-    if (input.patch.hunks.length === 0) throw new Error('empty patch');
-    validateHunks(this.currentLines().length, input.patch.hunks);
+    if (given.hunks.length === 0) throw new Error('empty patch');
+    validateHunks(this.currentLines().length, given.hunks);
+    // the pen's patch attests like anybody's where it carries one (R-136)
+    checkAttestation(this.currentLines(), given.hunks, { required: false });
     // **§4.2's park rule reaching the second door** (R-058, narrowed by
     // R-100). The sweep adopts no text across a parked span, and since R-100
     // `rebaseOthers` does rebase a parked patch — but only where the rebase
@@ -1379,16 +1440,18 @@ export class Session {
     }
     const id = `c${++this.candidateCounter}`;
     const newVersion = this.currentVersion() + 1;
+    // stripped before it is written, as a submission's is (R-136)
+    const patch = { ...given, hunks: stripAttestation(given.hunks) };
     this.emit({
       type: 'text-decreed',
       t,
       id,
       author: input.author,
-      patch: input.patch,
+      patch,
       rationale: input.rationale,
       newVersion,
     });
-    this.rebaseOthers(t, id, input.patch.hunks, newVersion);
+    this.rebaseOthers(t, id, patch.hunks, newVersion);
     return { id };
   }
 
@@ -1474,7 +1537,12 @@ export class Session {
    * decided, not at the convenor's convenience. The cap mark (R-051) replays
    * with them, being a fact about that same moment and that same fit — the
    * shielded adoption is the likeliest of all to be read afterwards, and is
-   * not the one receipt allowed to lie by omission. Everything downstream of
+   * not the one receipt allowed to lie by omission. **And so do the
+   * membership's own three numbers** (Q1458, Ed 2026-09-18): approvals, floor
+   * and silences, recorded at the park and copied here, so the record of a
+   * shielded adoption states *n of E weighed in* like every other adoption's
+   * — and states it as it stood when the vote carried, whatever the room did
+   * while the answer was awaited. Everything downstream of
    * `adopted` — the version bump, the rebase of the field, the refund of the
    * stake, `lastAdoptionT`, the fit cache — runs unchanged.
    *
@@ -1493,7 +1561,7 @@ export class Session {
     const before = this.log.length;
     if (outcome === 'accept') {
       this.adopt(t, candidateId, parked.p, parked.threshold, parked.raceId,
-        parked.cappedFit);
+        parked.cappedFit, parked.decided);
     } else {
       this.emit({ type: 'candidate-retired', t, id: candidateId,
         raceId: parked.raceId, refund: exitRefund(c.stakePaid, 'failed'),
@@ -1535,21 +1603,25 @@ export class Session {
    * After a failed rebase the author confirms (or revises) against the
    * new text; evidence resets (SPEC §2.4).
    */
-  confirmRebase(t: number, candidateId: string, patch: PatchSet, rationale?: string): void {
+  confirmRebase(t: number, candidateId: string, given: PatchSet, rationale?: string): void {
     this.assertOpen();
     const c = this.candidate(candidateId);
     if (c.state !== 'rebase-pending') {
       throw new Error(`candidate ${candidateId} is not awaiting confirmation`);
     }
+    const patch = this.normalizedPatch(given);
     if (patch.baseVersion !== this.currentVersion()) {
       throw new Error('confirmation must target the current version');
     }
     if (patch.hunks.length === 0) throw new Error('empty patch');
     validateHunks(this.currentLines().length, patch.hunks);
+    // a re-made proposal attests like a fresh one where it carries one (R-136)
+    checkAttestation(this.currentLines(), patch.hunks, { required: false });
     // **Revising is one of §2.4's three roads**, so the reason may be rewritten
     // with the wording (Q170). Optional and omitted where it is unchanged, so a
     // log written before this existed replays byte for byte.
-    this.emit({ type: 'candidate-confirmed', t, id: candidateId, patch,
+    this.emit({ type: 'candidate-confirmed', t, id: candidateId,
+      patch: { ...patch, hunks: stripAttestation(patch.hunks) },
       ...(rationale === undefined ? {} : { rationale }) });
   }
 
@@ -1610,6 +1682,18 @@ export class Session {
    */
   races(t: number = this.lastT): RaceView[] {
     return this.raceRules.races(t);
+  }
+
+  /**
+   * **One member's own abstention deadline on one race** (Q1460): the moment
+   * their silence stops counting toward the group (§8.2), in engine ms, or
+   * null where 💤 is *never*, where they are not awaited on the race's
+   * approval pair, or where the race is not live. A fact about this seat
+   * alone, saying nothing about anybody else, so it crosses §3.5 untouched.
+   * Clock-free: the caller compares it with its own now.
+   */
+  abstainDeadline(raceId: string, participantId: string): number | null {
+    return this.raceRules.abstainDeadline(raceId, participantId);
   }
 
   /** The live race holding a candidate; throws if it is not in one. */
@@ -1776,9 +1860,15 @@ export class Session {
       // every standing park's offsets through `rebaseOthers`
       if (this.raceRules.overlapsPark(c.footprint, this.raceRules.parkedFootprints())) continue;
       if (this.constitutionValue.textAssent) {
+        // the membership's three numbers ride the park beside `p` and the
+        // cap mark (Q1458, Ed 2026-09-18): the park is the moment the vote
+        // carried, and all three move with the clock, so recording them
+        // here is the only way the adoption the convenor's accept produces
+        // can state what the room actually decided on rather than what a
+        // re-derivation at accept time would find
         this.emit({ type: 'candidate-awaiting-assent', t, id: leaderId,
           raceId: this.raceIdOf(leaderId), p, threshold,
-          ...(cappedFit ? { cappedFit } : {}) });
+          ...(cappedFit ? { cappedFit } : {}), decided });
         continue;
       }
       this.adopt(t, leaderId, p, threshold, undefined, cappedFit, decided);
@@ -2227,7 +2317,13 @@ export class Session {
       edgesByCandidate: (id) => this.edgesByCandidate.get(id) ?? [],
       evidenceSince: (id) => this.evidenceSince.get(id),
       evidenceSinceT: (id) => this.evidenceSinceT.get(id),
-      suspended: (id) => this.roster.get(id)?.suspended === true,
+      // **out of E is removed or lapsed** (SPEC §8.2, §9.5; issue #65 F1): the
+      // interface said both and this read one, so a member who resigned or was
+      // removed went on approving the proposal they left behind
+      suspended: (id) => {
+        const r = this.roster.get(id);
+        return r?.removed === true || r?.suspended === true;
+      },
       eMembers: () => this.eMembers(),
       // the later of arriving and coming back (Q1439, §8.2): before either,
       // nobody could have been asked. `-Infinity` for somebody off the roster

@@ -189,18 +189,68 @@ describe('the floor counts approvals (Q1439, R-125)', () => {
   });
 });
 
-describe('the floor is read against the group X is waiting on (R-126)', () => {
-  it('a count-form quorum above half the group is capped', () => {
-    // count 5 in a room of 5: the cap is ⌈5/2⌉ = 3
-    const { s } = proposed({ quorum: { form: 'count', n: 5 } });
-    expect(only(s, 2000).floor).toBe(3);
-    expect(s.adoptionFloor()).toBe(3);
+describe('the floor is read against the group X is waiting on (R-126, R-139)', () => {
+  it('a count-form quorum above the group is capped at the group', () => {
+    // count 9 in a room of 5: the cap is the group itself, 5 — R-088's
+    // property, that however few are left the quorum never outgrows them,
+    // and all that is left of R-126's cap since Q1490 (R-139)
+    const { s } = proposed({ quorum: { form: 'count', n: 9 } });
+    expect(only(s, 2000).floor).toBe(5);
+    expect(s.adoptionFloor()).toBe(5);
   });
 
-  it('a share-form quorum is a share of the group, capped at half of it', () => {
+  it('a count at the whole group is unanimity, and asks for it', () => {
+    // and below the group it is simply the number asked for: the cap at half
+    // used to make this 3 (Q1490 reversed it, R-139)
+    const { s } = proposed({ quorum: { form: 'count', n: 5 } });
+    expect(only(s, 2000).floor).toBe(5);
+  });
+
+  it('a share-form quorum is a share of the group, to 100% of it', () => {
     const { s } = proposed({ quorum: { form: 'share', n: 50 } });
-    // the whole room is still in the group: ⌈50×5/100⌉ = 3, cap ⌈5/2⌉ = 3
+    // the whole room is still in the group: ⌈50×5/100⌉ = 3, and nothing caps
+    // it — 50% of five is 3, as it reads, not a majority (Q1490)
     expect(only(s, 2000).floor).toBe(3);
+    // …and the whole scale is available above it
+    expect(only(proposed({ quorum: { form: 'share', n: 100 } }).s, 2000).floor).toBe(5);
+    expect(only(proposed({ quorum: { form: 'share', n: 90 } }).s, 2000).floor).toBe(5);
+    expect(only(proposed({ quorum: { form: 'share', n: 51 } }).s, 2000).floor).toBe(3);
+  });
+
+  /**
+   * **At 100% one member preferring the current text ends the proposal**
+   * (Q1490, R-139): the quorum is the whole group, so the best future — every
+   * member still to answer approving — cannot reach it once anybody has
+   * answered the other way, and §4.4 closes the candidate. It was put to Ed
+   * before he confirmed the ruling, and taken.
+   */
+  it('at 100% one vote for the current text closes the proposal (§4.4)', () => {
+    const { s, id } = proposed({ quorum: { form: 'share', n: 100 } });
+    const r = only(s, 2000);
+    expect(r.floor).toBe(5);
+    s.judge(2000, 'p2', r.leaderId!, r.incumbentId, 'b');   // prefer the text
+    s.tick(2100);
+    expect(s.getCandidate(id).state).toBe('retired');
+    expect(s.getCandidate(id).exit?.cause).toBe('dominated');
+  });
+
+  /**
+   * **And 💤 is what keeps such a room moving** (Q1490): a silence that has
+   * run its period leaves the group the quorum is read against (§8.2), so
+   * 100% is *everybody still deciding* rather than everybody on the roster.
+   */
+  it('silence past 💤 shrinks the group, and unanimity with it', () => {
+    const P = 30 * MINUTE;
+    const { s } = proposed({ quorum: { form: 'share', n: 100 }, abstainAfterMs: P });
+    expect(only(s, 2000).floor).toBe(5);
+    // three of the five say nothing for their period: the group is the author
+    // and the one member still inside it
+    const r = only(s, 2000);
+    s.judge(2000, 'p2', r.leaderId!, r.incumbentId, 'a');
+    const late = only(s, 2000 + P + 1);
+    expect(late.group).toBe(2);
+    expect(late.floor).toBe(2);
+    expect(late.approvals).toBe(2);
   });
 
   it('no third sits under the room’s number any more (ruling s, R-131 reversing R-073)', () => {
@@ -232,7 +282,8 @@ describe('the floor is read against the group X is waiting on (R-126)', () => {
   });
 
   it('the seconder is min(2, E): unanimity at E = 2, one at E = 1', () => {
-    // E = 2: ⌈2/2⌉ caps every quorum at 1, so the seconder is the whole floor
+    // E = 2: a room that settled no quorum has Q′ = 0, so the seconder is the
+    // whole floor — and it is unanimity there
     const two = proposed({}, 2);
     expect(two.s.adoptionFloor()).toBe(2);
     expect(only(two.s, 2000).floor).toBe(2);
@@ -473,6 +524,30 @@ describe('the edges of E', () => {
     expect((adopted as { approvals?: number; floor?: number }).floor).toBe(1);
   });
 
+  // **A departed author is out of E** (issue #65 F1, SPEC §8.2): the derived
+  // preference counts *unless its author is out of E*, and §9.5 names three
+  // roads out — the engine honoured lapse alone, so a member who resigned or
+  // was removed went on approving the proposal they left behind.
+  it('a removed author is out of E, so their preference is not an approval', () => {
+    const { s } = proposed({ quorum: { form: 'count', n: 2 } });
+    expect(only(s, 2000).approvals).toBe(1);   // the author's own (§3.3)
+    s.removeParticipant(2100, 'p1');           // a resignation folds to the same event
+    expect(only(s, 2200).approvals).toBe(0);
+  });
+
+  // **A whole room lapsing at one tick retires nothing** (issue #65 F2, SPEC
+  // §4.4 → why: R-140): with E empty every count is nought, `0 ≤ 0` held,
+  // and every live proposal was closed for good — though §9.5a returns each
+  // of those members on their next read.
+  it('a room that all lapses at once retires nothing', () => {
+    const { s } = proposed({ quorum: { form: 'count', n: 2 } });
+    for (const p of ['p1', 'p2', 'p3', 'p4', 'p5']) s.suspendParticipant(2100, p);
+    expect(only(s, 2200).dominated).toEqual([]);
+    expect(s.tick(2200).map((e) => e.type)).not.toContain('candidate-retired');
+    for (const p of ['p1', 'p2', 'p3', 'p4', 'p5']) s.resumeParticipant(2300, p);
+    expect(only(s, 2400).leaderId, 'the proposal is still there when they return').toBeTruthy();
+  });
+
   it('at E = 2 the seconder is unanimity, and the measured clause still binds', () => {
     const { s } = proposed({}, 2);
     const r = only(s, 2000);
@@ -499,6 +574,20 @@ describe('a setting race rides the same floor', () => {
     const after = 1000 + P + 1;
     expect(only(s, after).approvals).toBe(2);
     expect(s.tick(after).map((e) => e.type)).toContain('adopted');
+  });
+
+  // issue #65's *Verify*: the motion races share the path, so a mover who
+  // leaves stops approving their own motion as an author of a text does
+  it('a mover who leaves stops approving their motion (issue #65 F1)', () => {
+    const s = open({ quorum: { form: 'count', n: 2 } }, 5);
+    s.setStanding(500, 'ending', { endsAtMs: null });
+    s.submitCandidate(1000, {
+      author: 'p1', rationale: 'later',
+      setting: { settingId: 'ending', value: { endsAtMs: 9_000_000 } },
+    });
+    expect(only(s, 2000).approvals).toBe(1);
+    s.removeParticipant(2100, 'p1');
+    expect(only(s, 2200).approvals).toBe(0);
   });
 });
 

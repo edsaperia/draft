@@ -32,7 +32,7 @@
  */
 import { chromium } from 'playwright';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
-import { say, sleep as T, followLink, post as postTo, outbox, linkIn } from './lib/walk.mjs';
+import { say, sleep as T, followLink, post as postTo, outbox, linkIn, landOn } from './lib/walk.mjs';
 
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
 const stuck = [];
@@ -69,6 +69,41 @@ await cmd('founder', 'invite', { email: m1 });
 await cmd('founder', 'invite', { email: m2 });
 jars.set('m1', (await followLink(linkIn(await mailTo(m1)))).cookie);
 jars.set('m2', (await followLink(linkIn(await mailTo(m2)))).cookie);
+
+/* ---- a withdrawn invitation, before the start (Q1493) -------------------
+   Ed, 2026-09-21: *An email when withdrawn*. The withdrawal was silent, and
+   the only thing that ever said it had happened was the old link — which
+   answered *unknown member 'm-7'* at 12:43 on the day of the convention, the
+   machine's own vocabulary to somebody following the one address they had
+   been given. Withdrawing is the Founder's own act and lives before 🍾
+   (`requirePreStart`), so the step stands here, where the document still is.
+   Red on the pre-fix host at *no mail* and at *400*. */
+{
+  const gone = `m3-${run}@example.org`;
+  await cmd('founder', 'invite', { email: gone });
+  const sent = await mailTo(gone);
+  const deadLink = linkIn(sent);
+  const v0 = await (await fetch(`${BASE}/api/d/${SLUG}/view`, { headers: { cookie: jars.get('founder') } })).json();
+  const row = ((v0.view || {}).members || []).find((m) => m.email === gone);
+  const pulled = row ? await cmd('founder', 'uninvite', { member: row.id }) : { ok: false };
+  await T(900);
+  const told = (await outbox(BASE)).filter((x) => x.to === gone);
+  const last = told[0];                     // the tail is newest first
+  const subjectOk = !!last && /has been withdrawn/.test(String(last.subject || ''));
+  const noToken = !!last && !/token=/.test(String(last.text || last.body || ''));
+  const door = deadLink ? await followLink(deadLink) : { status: 0, location: '', cookie: '' };
+  const doorOk = door.status === 302 && door.location === `/d/${SLUG}` && !door.cookie;
+  say('withdrawn  · ' + JSON.stringify({ pulled: !!pulled.ok, mails: told.length,
+    subject: last && last.subject, door: door.status + ' ' + door.location }));
+  if (!pulled.ok || told.length !== 2 || !subjectOk || !noToken) {
+    fail('the withdrawal mail', 'one mail saying the invitation is withdrawn, with no login link — saw '
+      + JSON.stringify(told.map((x) => x.subject)));
+  }
+  if (!doorOk) {
+    fail('the dead link', 'the withdrawn invitee’s old link should land on the ordinary door — saw '
+      + door.status + ' ' + door.location + (door.cookie ? ' with a cookie' : ''));
+  }
+}
 for (const [setting, value] of Object.entries({
   ending: { endsAtMs: Date.now() + 30 * 24 * 3600_000 }, authorship: { rung: 'sealedElective' },
   judgments: { rung: 'after' }, applications: { apply: true }, admission: { price: 'proposal' },
@@ -88,7 +123,7 @@ const seat = async (email) => {
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push(email.split('-')[0] + ': ' + String(e)));
   const login = await (await post(`/api/d/${SLUG}/login`, { email })).json();
-  await page.goto(login.devLink, { waitUntil: 'networkidle' });
+  await landOn(page, login.devLink, { waitUntil: 'networkidle' });
   await T(1500);
   // every OK owed at the start (the founder's settings, the gates): the
   // motion waits behind ⚖️'s OK for anybody but its mover (Q1344)
@@ -253,8 +288,49 @@ const crown = ((crownView.view && crownView.view.crownTasks) || [])[0];
 say('crown      · ' + JSON.stringify(crown && { id: crown.id, motion: crown.motion }));
 if (!crown) fail('the crown', 'the carried invitation raised no 👑 question for the held 🛡️');
 else {
-  const ans = await cmd('founder', 'answer-crown-question', { question: crown.id, outcome: 'accept' });
-  if (!ans.ok) fail('the crown', '👑 accept refused: ' + JSON.stringify(ans.error || ans));
+  /* **And the Founder is asked on the page, not over the wire** (Q1475, Ed
+   * 2026-09-19, the Founder of a live room: *I did have founder veto but I
+   * wasn't served a queue card for it*). This walk answered the question with
+   * a command and so never looked at the founder's own surface, where the
+   * motion's rail entry read ⏳ — *you have answered it*, which is true of
+   * the Founder on every motion their own accept carried — so the ask never
+   * ran. An invitation's card is a `mo:<id>` card, which is the door's half
+   * of the fix `applicants-walk` reads on the admission card. */
+  const chair = await seat(`founder-${run}@example.org`);
+  const entry = await chair.evaluate((id) => {
+    const li = document.querySelector('#rail .qitem[data-q="mo:' + id + '"]');
+    const b = li && li.querySelector('button');
+    return b ? { st: (b.className.match(/st-\w+/) || [''])[0] } : null;
+  }, crown.motion);
+  say('👑 entry   · ' + JSON.stringify(entry));
+  if (!entry || entry.st !== 'st-ask') {
+    fail('the 👑 entry', 'a parked invitation should ask the Founder, saw ' + JSON.stringify(entry));
+  }
+  const cq = await chair.evaluate(async (id) => {
+    const li = document.querySelector('#rail .qitem[data-q="mo:' + id + '"]');
+    const tab = document.querySelector('[data-tab="mo:' + id + '"]')
+      || (li && li.querySelector('button'));
+    if (!tab) return { err: 'no tab for the parked motion' };
+    tab.click();
+    await new Promise((s) => setTimeout(s, 1200));
+    const c = document.querySelector('.setupcard');
+    if (!c) return { err: 'the tab opened no card' };
+    return { crownq: [...c.querySelectorAll('[data-crownq]')].map((b) => b.dataset.crownq),
+      radios: c.querySelectorAll('.lanepick:not([disabled])').length,
+      text: (c.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 140) };
+  }, crown.motion);
+  say('👑 card    · ' + JSON.stringify(cq));
+  if (!cq || cq.err || cq.crownq.join('|') !== 'reject|accept' || cq.radios !== 0) {
+    fail('the 👑 card', 'a parked invitation should carry the 👑 pair and no vote: ' + JSON.stringify(cq));
+  }
+  const pressed = await chair.evaluate(() => {
+    const b = document.querySelector('.setupcard [data-crownq="accept"]');
+    if (!b) return false;
+    b.click();
+    return true;
+  });
+  say('👑 ✒️      · ' + (pressed ? 'pressed on the page' : 'no ✒️ to press'));
+  if (!pressed) fail('the 👑 accept', 'the parked invitation offered the Founder no ✒️');
 }
 await T(2500);
 
@@ -278,12 +354,17 @@ say('mail       · ' + JSON.stringify(mail && linkIn(mail)));
 if (!mail || !/\/auth\/login/.test(linkIn(mail) || '')) {
   fail('the mail', 'no login link reached the carried invitee');
 }
-// the subsection stops saying *proposed*: the invitation stands
-const sub2 = await mover.evaluate(() => {
+// the subsection stops saying *proposed*: the invitation stands. The view
+// above is the server's; the page learns it on its next 4 s poll, so read
+// until it has (up to 10 s) rather than once — a single read raced the poll
+// (PR #96's run 35803362292, 2026-09-23)
+const readInvitees = () => mover.evaluate(() => {
   const h = document.getElementById('cs-mem-invitees');
   const box = h && (h.closest('.csub') || h.parentElement);
   return box ? box.textContent.replace(/\s+/g, ' ').trim().slice(0, 160) : null;
 });
+let sub2 = await readInvitees();
+for (let i = 0; i < 20 && sub2 && /proposed/.test(sub2); i++) { await T(500); sub2 = await readInvitees(); }
 say('Invitees   · ' + JSON.stringify(sub2));
 if (!sub2 || !/newbie/.test(sub2)) fail('the subsection', '*Invitees* lost the carried invitee: ' + JSON.stringify(sub2));
 else if (/proposed/.test(sub2)) fail('the subsection', '*Invitees* still calls the carried invitation proposed');

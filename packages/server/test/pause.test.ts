@@ -9,7 +9,7 @@
  * 23505 marks the document `stalled` on every view and in /healthz until a
  * save succeeds.
  */
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { AddressInfo } from 'node:net';
@@ -20,6 +20,7 @@ import type { OutboxRow, PersonRow } from '../src/persistence.js';
 import { MAILS } from '../src/mailer.js';
 import { createDraftServer } from '../src/server.js';
 import type { DraftServer } from '../src/server.js';
+import { attestBody } from './attest-wire.js';
 
 const tmp = () => mkdtempSync(join(tmpdir(), 'draft-pause-'));
 
@@ -43,6 +44,23 @@ class SplitPersistence extends FilePersistence {
   private arrived: (() => void) | null = null;
   readonly atGate = new Promise<void>((r) => { this.arrived = r; });
   release(): void { this.open?.(); }
+  /** …and whose every write fails while this is set, with the file store's
+   *  EACCES — no 23505, the code `stalled` used to wait for alone (issue
+   *  #79; a statement timeout or a reset connection is the same case). */
+  failWrites = false;
+  private refuse(): void {
+    if (this.failWrites) {
+      throw Object.assign(new Error('EACCES: permission denied, open'), { code: 'EACCES' });
+    }
+  }
+  override async appendEngineLog(id: string, entries: readonly unknown[]): Promise<void> {
+    this.refuse();
+    return super.appendEngineLog(id, entries);
+  }
+  override async writeBridgeState(id: string, serialized: string): Promise<void> {
+    this.refuse();
+    return super.writeBridgeState(id, serialized);
+  }
   override async appendDocLog(id: string, entries: readonly LogEntry[], people: readonly PersonRow[] = []): Promise<void> {
     if (this.failNext) {
       this.failNext = false;
@@ -54,6 +72,7 @@ class SplitPersistence extends FilePersistence {
       this.arrived?.();
       await held;
     }
+    this.refuse();
     return super.appendDocLog(id, entries, people);
   }
 
@@ -66,13 +85,15 @@ class SplitPersistence extends FilePersistence {
   }
 }
 
-async function boot(botKey: string | null): Promise<{ base: string; draft: DraftServer; store: SplitPersistence }> {
+/** The admin key guards the pause (issue #10); the bot key defaults to it
+ *  so a case about the pause alone need name one key. */
+async function boot(adminKey: string | null, botKey: string | null = adminKey): Promise<{ base: string; draft: DraftServer; store: SplitPersistence; dataDir: string }> {
   const dataDir = tmp();
   const cfg = {
     port: 0, dataDir, baseUrl: 'http://127.0.0.1',
     designDir: join(import.meta.dirname, '..', '..', '..', 'design'),
     resendApiKey: null, mailFrom: 'test <t@example.org>', mailOff: false,
-    botKey,
+    botKey, adminKey,
     secret: 'test-secret', store: 'file' as const, databaseUrl: null,
     trustProxy: false, buildSha: null, notifyEmail: null,
   };
@@ -81,7 +102,7 @@ async function boot(botKey: string | null): Promise<{ base: string; draft: Draft
   await new Promise<void>((r) => draft.server.listen(0, '127.0.0.1', r));
   cfg.baseUrl = `http://127.0.0.1:${(draft.server.address() as AddressInfo).port}`;
   booted.push(draft);
-  return { base: cfg.baseUrl, draft, store };
+  return { base: cfg.baseUrl, draft, store, dataDir };
 }
 
 const post = (base: string, path: string, body: unknown, headers: Record<string, string> = {}) =>
@@ -137,6 +158,21 @@ describe('the announced pause (Q1345)', () => {
     const keyed = await boot('test-key');
     expect((await post(keyed.base, '/api/admin/pause', {}, { authorization: 'Bearer wrong' })).status).toBe(401);
     expect((await post(keyed.base, '/api/admin/resume', {}, { authorization: 'Bearer wrong' })).status).toBe(401);
+  });
+
+  // **the pause takes the admin key and no other** (issue #10): the bot key
+  // is typed on command lines and declared on the public dev host, and a
+  // re-POSTed pause freezes every room for as long as somebody keeps asking
+  it('refuses the bot key on pause and resume, and the admin key at the bot outbox', async () => {
+    const { base } = await boot('admin-key', 'bot-key');
+    const bot = { authorization: 'Bearer bot-key' };
+    const admin = { authorization: 'Bearer admin-key' };
+    expect((await post(base, '/api/admin/pause', {}, bot)).status).toBe(401);
+    expect((await post(base, '/api/admin/resume', {}, bot)).status).toBe(401);
+    expect((await post(base, '/api/admin/pause', {}, admin)).status).toBe(200);
+    expect((await post(base, '/api/admin/resume', {}, admin)).status).toBe(200);
+    expect((await fetch(base + '/api/bots/outbox', { headers: admin })).status).toBe(401);
+    expect((await fetch(base + '/api/bots/outbox', { headers: bot })).status).toBe(200);
   });
 
   it('refuses every command with 503 and the pause, says paused on every view answer, and lets the pause lift', async () => {
@@ -337,5 +373,121 @@ describe('mail behind a failed relay (issue #7)', () => {
     expect((await setChamber(base, slug, cookie, 'link')).status).toBe(200);
     await draft.outbox.drain();
     expect(await store.listOutboxFor(id, invitee)).toHaveLength(1);
+  });
+});
+
+/**
+ * **A command the store could not write does not stand** (issue #79). The
+ * command is applied in memory and then persisted, and a throw from the
+ * persist left the apply standing: the member read a 500 while every other
+ * seat already had their proposal. Permanently failing, the restart erased
+ * it with no record; transiently, the next commit from anybody flushed the
+ * cursor, and the member's retry put the same wording in the race twice at
+ * two ✏️. And `stalled` fired on a 23505 alone, so a document whose saves
+ * were failing for any other reason said nothing to anyone.
+ */
+describe('a save that fails (issue #79)', () => {
+  type RaceView = View & { clauses: unknown[]; mine: unknown[] };
+  const attested = async (base: string, path: string, body: unknown, cookie: string) =>
+    fetch(base + path, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: base, cookie },
+      body: JSON.stringify(await attestBody(base, path, body, cookie)),
+    });
+  /** Ada founds, invites Bo and Cy, and begins: three members, so a race
+   *  Bo opens stays open long enough to be read from Cy's seat. */
+  async function room() {
+    const b = await boot('test-key');
+    const { slug, cookie: ada } = await found(b.base, 'Unsaved');
+    const cmd = async (cookie: string, name: string, args: unknown): Promise<Response> =>
+      attested(b.base, `/api/d/${slug}/cmd`, { cmd: name, args }, cookie);
+    const ok = async (cookie: string, name: string, args: unknown): Promise<void> => {
+      const r = await cmd(cookie, name, args);
+      expect(r.status, `${name}: ${await r.clone().text()}`).toBe(200);
+    };
+    const seat = async (email: string): Promise<string> => {
+      await ok(ada, 'invite', { email });
+      await b.draft.outbox.drain();
+      const links = readFileSync(join(b.dataDir, 'outbox.jsonl'), 'utf8').split(/\r?\n/)
+        .filter((l) => l.length > 0).map((l) => JSON.parse(l) as { to: string; link?: string })
+        .filter((m) => m.to === email && m.link !== undefined);
+      return follow(links[links.length - 1]!.link!);
+    };
+    await ok(ada, 'confirm-starting-text', { text: 'The orchard is shared at harvest.' });
+    const bo = await seat('bo@example.org');
+    const cy = await seat('cy@example.org');
+    const values: Record<string, unknown> = {
+      ending: { endsAtMs: null }, rate: { grant: 4, cap: 8, dripMinutes: 240 },
+      quorum: { form: 'count', n: 1 }, chamber: { rung: 'link' }, authorship: { rung: 'sealed' },
+      judgments: { rung: 'after' }, applications: { apply: false }, admission: { price: 'assembly' },
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await cmd(ada, 'reclaim', { setting });
+      await ok(ada, 'set-setting', { setting, value });
+    }
+    await ok(ada, 'begin', {});
+    const propose = () => cmd(bo, 'propose-text', {
+      baseVersion: 0,
+      hunks: [{ start: 0, end: 1, lines: ['The orchard is shared at midsummer.'] }],
+      why: 'midsummer, not harvest',
+    });
+    const read = async (cookie: string): Promise<RaceView> => view(b.base, slug, cookie) as Promise<RaceView>;
+    return { ...b, slug, ada, bo, cy, cmd, propose, read };
+  }
+
+  it('a refused write is refused for the whole room, and the document says it could not save', async () => {
+    const { base, store, propose, read, bo, cy } = await room();
+    store.failWrites = true;
+    const failed = await propose();
+    expect(failed.status).toBe(500);
+    // what the member was told is what every other seat reads
+    expect((await read(cy)).clauses, 'Cy is not dealt a proposal that failed').toHaveLength(0);
+    expect((await read(bo)).mine, 'nor does Bo hold one').toHaveLength(0);
+    const said = (await failed.json()) as { error: string };
+    expect(said.error, 'the refusal says what happened').toMatch(/could not be saved/);
+    // and the document flies the red flag while its saves are failing
+    expect((await read(cy)).stalled).toBe(true);
+    const h = (await (await fetch(`${base}/healthz`)).json()) as { documentsStalled: number };
+    expect(h.documentsStalled).toBe(1);
+    store.failWrites = false;
+  }, 60_000);
+
+  it('a transient failure does not land the refused act later, so a retry lands it once', async () => {
+    const { store, propose, read, bo, cy, ada, cmd } = await room();
+    store.failWrites = true;
+    expect((await propose()).status).toBe(500);
+    store.failWrites = false;
+    // any ordinary command from anybody: before the fix it flushed the
+    // cursor and persisted the proposal the member had been told failed
+    expect((await cmd(ada, 'invite', { email: 'dy@example.org' })).status).toBe(200);
+    expect((await read(cy)).stalled, 'a save that lands clears the flag').toBe(false);
+    expect((await read(bo)).mine, 'nothing of Bo stands').toHaveLength(0);
+    // Bo retries, as the refusal told them to
+    expect((await propose()).status).toBe(200);
+    expect((await read(bo)).mine, 'one proposal, once').toHaveLength(1);
+    expect((await read(cy)).clauses).toHaveLength(1);
+  }, 60_000);
+
+  // A second command applied while the failing save was in flight is undone
+  // by the same rewind — it was applied on top of the first — so it must be
+  // refused too, never answered 200 over a document that no longer holds it.
+  it('a command queued behind a failed save is refused with it', async () => {
+    const { base, store } = await boot('test-key');
+    const { slug, cookie } = await found(base, 'Behind');
+    const before = chamberOf(await view(base, slug, cookie));
+    store.gateNext = true;
+    const a = setChamber(base, slug, cookie, 'public');
+    await store.atGate;
+    const b = setChamber(base, slug, cookie, 'link');
+    await new Promise((r) => setTimeout(r, 100));
+    store.failWrites = true;
+    store.release();
+    expect((await a).status).toBe(500);
+    const refused = await b;
+    expect(refused.status, 'B was applied on top of A and undone with it').toBe(500);
+    expect(((await refused.json()) as { error: string }).error).toMatch(/could not be saved/);
+    store.failWrites = false;
+    expect(chamberOf(await view(base, slug, cookie)), 'neither stands').toBe(before);
   });
 });

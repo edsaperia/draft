@@ -463,9 +463,18 @@ function checkMarks() {
   // **↻ is a character, and the two who wear it are told apart by a colour**
   // (SURFACE Y22, Q170): the one thing that would break if it were a picture.
   if (!/\.mk-shifted\s*\{\s*color:\s*var\(--muted\)/.test(rules)) find('marks', '↻ (.mk-shifted) is not grey (Q612)');
-  if (!/\.mk-stranded\s*\{\s*color:\s*rgb\(var\(--lc-yours\)\)/.test(rules)) find('marks', '↻ blue (.mk-stranded) is not the yours hue (Q170)');
+  // …and since Q1484 (Ed, 2026-09-21: *Red entry, words unchanged*) the
+  // stranded one is the surface's own red rather than the `yours` blue
+  if (!/\.mk-stranded\s*\{\s*color:\s*rgb\(var\(--lc-wrong\)\)/.test(rules)) find('marks', '↻ red (.mk-stranded) is not the wrong hue (Q1484)');
   const lc = (n) => (css.match(new RegExp(`--lc-${n}:\\s*([0-9, ]+)`)) || [])[1];
   if (lc('deciding') !== lc('closed')) find('marks', '--lc-deciding and --lc-closed are not one grey');
+  // **One red, in one place** (Q1484): `--slash` and `--lc-wrong` are the same
+  // colour in two notations, so the strike on a laid-down power, the phone
+  // drawer's count and the stranded entry cannot drift apart.
+  if (!/--slash:\s*rgb\(var\(--lc-wrong\)\)/.test(css)) find('marks', '--slash is not rgb(var(--lc-wrong)) — the surface has two reds (Q1484)');
+  // the stranded entry, the gutter tab and the card head all take their hue
+  // from `anchHue`, which is the one place that may know about the red
+  if (!/st === 'yours'\) return g\.stranded \? 'wrong' : 'yours'/.test(js('design/session.js'))) find('marks', "anchHue does not give a stranded proposal the 'wrong' hue (Q1484)");
   note(`  ${rows.length} marks; KEEP_ORDER ${keep.length}, STACK_ORDER ${stack.length}`);
 }
 
@@ -1087,8 +1096,12 @@ function checkAuthorNeverAsked() {
   // `itemsFromView` is live.js's since Q1352 (e) lifted the live layer out
   const page = js('design/live.js');
   const pat = page.indexOf('function itemsFromView(');
-  // the window reaches past the deck and ledger building above the skip (Q1200)
-  const items = pat < 0 ? '' : page.slice(pat, pat + 8000);
+  // The window reaches past the deck and ledger building above the skip
+  // (Q1200) — and grows with them: 8,000 until the abstention clock's own
+  // lines (Q1460) pushed the skip past it. A window that misses the skip
+  // reports the skip as *conditional again*, which is a false finding, so
+  // the number is kept comfortably ahead of the code it has to clear.
+  const items = pat < 0 ? '' : page.slice(pat, pat + 10_000);
   if (!/r\.candidates\.every\(\(c\) => c\.mine\)\) continue;/.test(items))
     find('events', 'the all-mine skip in `itemsFromView` carries a condition again — the engine serves no pair for an all-mine race at any E, so E19 exempts nothing (backlog 253 overturns Q835)');
   else note('  the `mine` skip is unconditional');
@@ -1234,6 +1247,57 @@ function checkCommands(M) {
   const unsent = handlers.filter((h) => !sentByPage.has(h) && !sentByWalks.has(h));
   note(`  ${handlers.length} commands, ${sentByPage.size} sent by the page, ${unsent.length} sent by nothing but the tests` +
     (unsent.length ? `: ${unsent.join(', ')}` : ''));
+
+  // **The three text commands take an attested patch** (SPEC §2.1, §2.4 →
+  // why: R-136). Each one must reach the module through `attestedOf`, never
+  // through the bare `patchOf` beside it: the difference is the whole of the
+  // guard, and it is one character on a call the type checker is happy with
+  // either way. The attestation itself must be stated (`required: true`) and
+  // must be read against the version the patch names, not against whatever
+  // stands now, which on a stale patch is a different document.
+  const TEXT_CMDS = ['propose-text', 'pen-text', 'rebase-text'];
+  for (const c of TEXT_CMDS) {
+    const row = new RegExp(`'${c}':[\\s\\S]*?\\n  \\},`).exec(table.slice(table.indexOf(`'${c}':`)));
+    const body = row ? row[0] : '';
+    if (!body) { find('commands', `the checker cannot read '${c}' out of HANDLERS`); continue; }
+    if (!/attestedOf\(bridge, args\)/.test(body)) {
+      find('commands', `'${c}' does not take its patch through attestedOf() — ` +
+        'a patch whose wording it never checks can rewrite the wrong clause (SPEC §2.4, R-136)');
+    }
+    if (/patchOf\(args\)/.test(body)) {
+      find('commands', `'${c}' still calls patchOf() directly, which checks no wording (R-136)`);
+    }
+  }
+  const attested = /function attestedOf[\s\S]*?\n}/.exec(src)?.[0] ?? '';
+  if (!/required: true/.test(attested)) {
+    find('commands', 'attestedOf() does not require the attestation — R-136 is *required, not optional*');
+  }
+  // **The lines that version holds, never the text split back** (Q1491): a
+  // `splitLines(documentAt(v))` round trip normalises any line ending a line
+  // turns out to contain, so the door compared the page's faithful
+  // attestation against an array the engine does not have — and refused
+  // fifteen proposals at the convention over a pasted carriage return.
+  if (!/linesAt\(patch\.baseVersion\)/.test(attested)) {
+    find('commands', 'attestedOf() does not read the lines of the version the patch names ' +
+      '— linesAt(), never the text split back (SPEC §2.4, R-136; Q1491)');
+  }
+  // and the participant API is the same door for everything that is not the page
+  const api = js('packages/engine-core/src/participant-api.ts');
+  const submitAt = api.indexOf('  submit(');
+  const submit = submitAt < 0 ? '' : api.slice(submitAt, api.indexOf('\n  }', submitAt));
+  if (!/checkAttestation\([\s\S]*?required: true/.test(submit)) {
+    find('commands', 'ParticipantApi.submit does not require the attestation — SPEC §1: ' +
+      'a sim persona and a personal AI speak this door exactly as a human client does (R-136)');
+  }
+  // **and none of it is written down**: the three emitters strip it, so an
+  // event's shape does not move and every log replays byte for byte
+  const engineSrc = js('packages/engine-core/src/session.ts');
+  const strips = [...engineSrc.matchAll(/stripAttestation\(/g)].length;
+  if (strips < 3) {
+    find('commands', `only ${strips} of the three text emitters strip the attestation — ` +
+      'it is validation, never record (R-136)');
+  }
+  note(`  the three text commands attest, the API requires it, ${strips} emitters strip it`);
 }
 
 /**
@@ -1700,6 +1764,93 @@ function checkClaudeMd() {
 }
 
 /**
+ * **A guard CLAUDE.md names is one some workflow runs** (plan-ci-speed.md
+ * Stage 4; the shape issue #17 found on 2026-09-17). A gotcha that names its
+ * guard is short because the guard's red build is what stops the mistake
+ * recurring (Q736) — which is true only if something runs the guard. Ten
+ * named guards ran in no job when the plan was written.
+ *
+ * What counts as a named guard: every `npm run …` or `node scripts|design/…`
+ * invocation in a Gotchas bullet (the same reading `checkClaudeMd`'s GUARD
+ * takes), and any script, tool or test named after *Guard:*, *guard*,
+ * *Measured by*, *Walked by* or *reproduces it* anywhere in the Glossary or
+ * Gotchas. It resolves when the workflows (and `scripts/ci-walks.sh`, which
+ * the walks job calls) run that npm script or that file — comments do not
+ * count — and a `*.test.ts` resolves to `npm test`.
+ *
+ * **A warning, not a finding** (the builder's brief, 2026-09-23: *don't make
+ * spec-check red on day one*). What is left is a list for Ed to rule on —
+ * wire it into a job, or stop naming it as a guard — and it prints on every
+ * run, under `--quiet` too, and as a GitHub annotation on the runner.
+ */
+function checkGuardsRun() {
+  const lines = read('CLAUDE.md').split(/\r?\n/);
+  const idx = (p) => lines.findIndex((l) => l.startsWith(p));
+  const gloss = idx('## Glossary'), gotcha = idx('## Gotchas'), end = idx('## The spec pass');
+  if (gloss < 0 || gotcha < 0 || end < 0) return; // checkClaudeMd has said so
+  const bullets = [];
+  lines.slice(gloss, end).forEach((l, i) => {
+    if (/^\s*- /.test(l)) bullets.push({ text: l, gotcha: gloss + i > gotcha });
+    else if (bullets.length && /^\s+\S/.test(l)) bullets[bullets.length - 1].text += ' ' + l.trim();
+  });
+  const pkg = JSON.parse(read('package.json')).scripts;
+  // what the runner runs: the workflows and the walks script, comment lines out
+  const code = (t) => t.split(/\r?\n/).filter((l) => !/^\s*#/.test(l)).join('\n');
+  const wfDir = '.github/workflows';
+  let ran = readdirSync(join(ROOT, wfDir)).filter((f) => /\.ya?ml$/.test(f)).map((f) => code(read(`${wfDir}/${f}`))).join('\n');
+  for (const m of [...ran.matchAll(/bash (scripts\/[\w./-]+\.sh)/g)]) if (existsSync(join(ROOT, m[1]))) ran += '\n' + code(read(m[1]));
+  const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const ranScripts = new Set(Object.keys(pkg).filter((n) => new RegExp(`npm run ${esc(n)}(?![\\w:-])`).test(ran)));
+  if (/\bnpm test\b/.test(ran)) ranScripts.add('test');
+  const ranText = ran + '\n' + [...ranScripts].map((n) => pkg[n]).join('\n');
+  // the two probes' pages are run by `npm run probe`, which names neither
+  const RUN_BY = { 'session-probe.js': 'probe', 'setup-probe.js': 'probe' };
+  // named beside a guard, and not one: a freeze makes the red go away, and
+  // `design` is the server a walk is pointed at
+  const NOT_GUARDS = new Set(['npm run copy-freeze', 'npm run qa:freeze', 'npm run design']);
+  const INVOKE = /`((?:npm run [\w:-]+|node (?:scripts|design)\/)[^`]*)`/g;
+  const CLAUSE = /(?:[Gg]uards?:?|[Mm]easured by|[Ww]alked by|[Rr]eproduces it)\s+(.*?)(?:\.(?=\s+[A-Z*]|$)|$)/g;
+  const guards = new Map();
+  const add = (g, head) => { if (!NOT_GUARDS.has(g) && !guards.has(g)) guards.set(g, head); };
+  for (const b of bullets) {
+    const head = b.text.trim().slice(2, 60);
+    const toks = [];
+    // *measured with `x`, an instrument, not a guard* (Ed, 2026-09-23): a
+    // script that measures and asserts nothing is named, never counted
+    if (b.gotcha) for (const m of b.text.matchAll(INVOKE)) {
+      if (!b.text.slice(m.index + m[0].length).startsWith(', an instrument')) toks.push(m[1]);
+    }
+    for (const c of b.text.matchAll(CLAUSE)) for (const t of c[1].matchAll(/`([^`]+)`/g)) toks.push(t[1]);
+    for (const raw of toks) {
+      const tok = raw.trim();
+      let m;
+      if ((m = /^npm run ([\w:-]+)/.exec(tok))) add('npm run ' + m[1], head);
+      else if ((m = /^node ((?:scripts|design)\/[\w./-]+)/.exec(tok))) add(m[1], head);
+      else if ((m = /^((?:scripts|design)\/[\w./-]+\.(?:mjs|js))/.exec(tok))) add(m[1], head);
+      else if ((m = /^([\w-]+\.test\.ts)/.exec(tok))) add(m[1], head);
+      else if ((m = /^([\w-]+\.mjs)/.exec(tok))) add(m[1], head);
+      else if ((m = /^([\w-]+)(?:\s+--[\w=-]+)*$/.exec(tok)) && pkg[m[1]]) add('npm run ' + m[1], head);
+    }
+  }
+  const base = (p) => p.split('/').pop();
+  const unrun = [];
+  for (const [g, head] of guards) {
+    const ok = g.startsWith('npm run ') ? ranScripts.has(g.slice(8))
+      : g.endsWith('.test.ts') ? ranScripts.has('test')
+      : RUN_BY[base(g)] ? ranScripts.has(RUN_BY[base(g)])
+      : ranText.includes(g) || ranText.includes(base(g));
+    if (!ok) unrun.push(`${g} — named by: ${head}`);
+  }
+  note(`  ${guards.size} guards named in CLAUDE.md, ${guards.size - unrun.length} of them run by a workflow`);
+  if (!unrun.length) return;
+  console.log(`  ⚠ [guards] ${unrun.length} guard(s) CLAUDE.md names that no workflow runs — a warning, not a finding:`);
+  for (const u of unrun) console.log(`      ${u}`);
+  if (process.env.GITHUB_ACTIONS === 'true') {
+    console.log(`::warning title=guards run nowhere::${unrun.length} guard(s) CLAUDE.md names run in no workflow: ${unrun.map((u) => u.split(' — ')[0]).join(', ')}`);
+  }
+}
+
+/**
  * A raw NUL byte in the first 8000 bytes of a file makes git call the whole
  * file binary, and a binary file has no three-way merge: two branches that
  * touch it conflict entirely, however far apart their edits sit. It is not a
@@ -1802,19 +1953,19 @@ function checkApprovalFloor() {
   } else note('  `clearsFloor` tests approvals against the race’s own floor');
 
   const caps = [
-    ['packages/engine-core/src/races.ts', 'floorFor', /Math\.min\(asked, Math\.ceil\(group \/ 2\)\)/],
-    ['packages/constitution/src/populations.ts', 'adoptionFloor', /Math\.min\(quorumN, Math\.ceil\(E \/ 2\)\)/],
+    ['packages/engine-core/src/races.ts', 'floorFor', /Math\.min\(asked, group\)/],
+    ['packages/constitution/src/populations.ts', 'adoptionFloor', /Math\.min\(quorumN, E\)/],
   ];
   for (const [file, name, pat] of caps) {
     const src = uncomment(read(file));
     const i = src.indexOf(`function ${name}(`);
     const fn = i < 0 ? '' : src.slice(i, src.indexOf('\n}', i));
     if (!fn) {
-      find('floor', `${file} has no \`${name}\` — the floor's arithmetic lives in two places and both must cap the quorum at half (Q1439, R-126)`);
+      find('floor', `${file} has no \`${name}\` — the floor's arithmetic lives in two places and both must cap the quorum at the population it is read against (Q1490, R-139)`);
       continue;
     }
     if (!pat.test(fn)) {
-      find('floor', `${file}'s \`${name}\` no longer caps the quorum at half the population it is read against (Q1439, R-126) — the two copies move together or not at all`);
+      find('floor', `${file}'s \`${name}\` no longer caps the quorum at the whole population it is read against (Q1490, R-139, reversing R-126's cap at half) — the two copies move together or not at all, and without the cap a count larger than the group holds every race for ever (R-088)`);
     }
     // the built-in third, gone at v0.133 (Q1439 ruling s, R-131): a term put
     // back into either copy would leave the whole suite green while the card's
@@ -1826,7 +1977,7 @@ function checkApprovalFloor() {
       find('floor', `${file}'s \`${name}\` no longer holds the seconder — F is never fewer than two approvals, min(2, E) (Q1439 ruling u, R-131): at a floor of one the author's own derived preference is the whole floor, and the churn study measured 888 reversions in 904 adoptions`);
     }
   }
-  note('  both copies cap the quorum at half, hold the seconder, and hold no third');
+  note('  both copies cap the quorum at the population, hold the seconder, and hold no third');
   if (floorRow && !/max\(Q′, min\(2, E\)\)/.test(floorRow.Value || '')) {
     find('floor', `Appendix A's floor row no longer states F as max(Q′, min(2, E)): "${(floorRow.Value || '').slice(0, 80)}" — the ⌈E/3⌉ minimum went at v0.133 and a seconder took its place (Q1439 rulings s and u, R-131)`);
   } else note('  Appendix A states F as max(Q′, min(2, E))');
@@ -1980,6 +2131,7 @@ checkPicture();
 checkBannedWords();
 checkListJoiner();
 checkClaudeMd();
+checkGuardsRun();
 checkLedger();
 checkApprovalFloor();
 checkCandidateStates();

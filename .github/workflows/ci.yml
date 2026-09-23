@@ -20,6 +20,14 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    # **No job stands for ever** (plan-ci-speed.md Stage 1: one run stood for
+    # seventy hours with no limit on any job). Fifteen minutes is four times
+    # the gates; a push to main also carries the deploy, whose own poll may
+    # wait twenty-five minutes (thirteen when paused), so that run gets
+    # forty-five — a timeout cancels the job, and a cancelled job does not
+    # run the pause-lifting step below, so the limit must never fall inside
+    # the deploy's own budget.
+    timeout-minutes: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && 45 || 15 }}
     # **One deploy at a time** (issue #8, F3). The deploy is a step of this
     # job, so two pushes in quick succession ran two of them side by side:
     # on 2026-09-12 runs 34687139656 and 34687164564 overlapped, the first
@@ -163,6 +171,11 @@ jobs:
         env:
           HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
           BASE: ${{ vars.DRAFT_BASE_URL }}
+          # **Two keys since #10** (Ed's P1 batch, 2026-09-22): the admin
+          # key pauses, resumes and uploads a surface; the bot key reads the
+          # bot outbox alone and is here only for verify-deploy, which checks
+          # that the bot key is refused at the surface route
+          ADMIN_KEY: ${{ secrets.DRAFT_ADMIN_KEY }}
           BOT_KEY: ${{ secrets.DRAFT_BOT_KEY }}
           BEFORE: ${{ github.event.before }}
           GH_TOKEN: ${{ github.token }}
@@ -258,13 +271,13 @@ jobs:
           # and counts)
           VERIFY_BEFORE=""
           if [ -f before.json ]; then VERIFY_BEFORE="--before=before.json"; fi
-          if [ "$lane" = surface ] && [ -n "$BASE" ] && [ -n "$BOT_KEY" ]; then
+          if [ "$lane" = surface ] && [ -n "$BASE" ] && [ -n "$ADMIN_KEY" ]; then
             # the served set: the page files at the top of design/, and the
             # document's face under design/fonts/ with its licence (Q1402),
             # as routes-surface.ts's asset rows and surface.ts's SURFACE_NAME allow
             tar --format=ustar -czf surface.tgz $(ls design/*.html design/*.js design/*.css design/*.svg design/*.png design/*.woff design/*.woff2 design/*.txt design/fonts/*.woff2 design/fonts/OFL.txt 2>/dev/null)
             if curl -fsS -X POST "$BASE/api/admin/surface?sha=$GITHUB_SHA" \
-                 -H "authorization: Bearer $BOT_KEY" -H 'content-type: application/gzip' \
+                 -H "authorization: Bearer $ADMIN_KEY" -H 'content-type: application/gzip' \
                  --data-binary @surface.tgz -o surface.json; then
               echo "surface reloaded: $(node -e 'console.log(JSON.parse(require("fs").readFileSync("surface.json","utf8")).files.length)') files"
               live=$(curl -s -D - -o /dev/null "$BASE/" | tr -d '\r' | awk 'tolower($1)=="x-build:"{print $2}')
@@ -287,7 +300,7 @@ jobs:
           # pinned to the old one by keep-alive would go on writing to a log
           # the new one has loaded. Paused, the old instance persists
           # nothing and every page shows the modal until the new one
-          # answers. Needs the DRAFT_BOT_KEY secret (the same key as on the
+          # answers. Needs the DRAFT_ADMIN_KEY secret (the same key as on the
           # host); without it the deploy still runs, unpaused, and says so.
           #
           # **And a pause this step made is this step's to lift** (issue #8,
@@ -296,8 +309,8 @@ jobs:
           # never lands used to leave the room paused until the host's own
           # fifteen-minute lift, with the job long since red and nobody
           # watching.
-          if [ -n "$BASE" ] && [ -n "$BOT_KEY" ]; then
-            if curl -fsS -X POST "$BASE/api/admin/pause" -H "authorization: Bearer $BOT_KEY" \
+          if [ -n "$BASE" ] && [ -n "$ADMIN_KEY" ]; then
+            if curl -fsS -X POST "$BASE/api/admin/pause" -H "authorization: Bearer $ADMIN_KEY" \
                  -H 'content-type: application/json' -d '{}' -o /dev/null; then
               echo "PAUSED=1" >> "$GITHUB_ENV"
               # the poll's own budget, measured from the pause rather than
@@ -317,7 +330,7 @@ jobs:
               echo "the live host did not accept the pause — deploying anyway"
             fi
           else
-            echo "no DRAFT_BOT_KEY secret or DRAFT_BASE_URL — deploying without a pause (Q1345)"
+            echo "no DRAFT_ADMIN_KEY secret or DRAFT_BASE_URL — deploying without a pause (Q1345)"
           fi
           # unpaused, nothing is waiting on us and the old budget stands
           if [ -z "$waitSeconds" ]; then waitSeconds=$(( 25 * 60 )); fi
@@ -347,15 +360,27 @@ jobs:
           # **Do not re-send the pause while waiting** (issue #8, F4): once
           # traffic has moved it would pause the *new* instance, which is
           # the room, not the deploy.
+          #
+          # **One sighting is not a cutover** (2026-09-22, the convention
+          # batch's deploy, a9ca8e8): attempt 5 read the new build on `/`,
+          # and five seconds later verify-deploy's /healthz was answered by
+          # the old instance still draining behind Render's balancer —
+          # `booted 5929a6e, expected a9ca8e8` on a deploy that had landed.
+          # The two instances overlap for a while and the balancer is not
+          # atomic across requests, so the new build has to answer on both
+          # `/` (x-build) and `/healthz` (booted) three attempts running
+          # before the verifier is trusted to meet only the new one.
           deadline=$(( $(date +%s) + waitSeconds ))
-          i=0
+          i=0; streak=0
           while [ "$(date +%s)" -lt "$deadline" ]; do
             i=$(( i + 1 ))
             sleep 15
             live=$(curl -s -m 10 -D - -o /dev/null "$BASE/" | tr -d '\r' \
               | awk 'tolower($1)=="x-build:"{print $2}')
-            echo "  attempt $i: ${live:-none}"
-            if [ "$live" = "$GITHUB_SHA" ]; then deployed=1; break; fi
+            booted=$(curl -s -m 10 "$BASE/healthz" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).booted||"")}catch{console.log("")}})')
+            if [ "$live" = "$GITHUB_SHA" ] && [ "$booted" = "$GITHUB_SHA" ]; then streak=$(( streak + 1 )); else streak=0; fi
+            echo "  attempt $i: x-build ${live:-none} · booted ${booted:-none} · streak $streak"
+            if [ "$streak" -ge 3 ]; then deployed=1; break; fi
           done
           if [ -z "$deployed" ]; then
             echo "the deployed build never became $GITHUB_SHA in ${waitSeconds}s — refusing"
@@ -385,9 +410,9 @@ jobs:
         if: failure() && env.PAUSED == '1'
         env:
           BASE: ${{ vars.DRAFT_BASE_URL }}
-          BOT_KEY: ${{ secrets.DRAFT_BOT_KEY }}
+          ADMIN_KEY: ${{ secrets.DRAFT_ADMIN_KEY }}
         run: |
-          curl -fsS -X POST "$BASE/api/admin/resume" -H "authorization: Bearer $BOT_KEY" \
+          curl -fsS -X POST "$BASE/api/admin/resume" -H "authorization: Bearer $ADMIN_KEY" \
             -H 'content-type: application/json' -d '{}' -o /dev/null \
             && echo "the pause is lifted — the live host is writing again" \
             || echo "the resume was refused: lift it by hand (docs/OPERATING.md §3) or wait out PauseState.MAX_MS"
@@ -420,6 +445,7 @@ jobs:
   # change needs no re-freeze — only a page change does (Q914).
   probe:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -440,17 +466,9 @@ jobs:
       - if: steps.browser.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
       - run: npm run probe -- --strict
-      # the copy golden (entry 128): every card's strings on every walk, keyed
-      # by walk and card key, against design/tools/card-copy.golden.json. A
-      # STYLE.md pass is a snapshot and nothing pinned a card's words between
-      # passes, so the next change silently undid the last audit; now a copy
-      # change is red here until `npm run copy-freeze`, and that freeze's diff
-      # is what the next pass reads. **Expect red after an intentional copy
-      # change** — that is the point, not a defect. ~3 min of headless walking,
-      # which is why it is in this job and not in `ci`, and `if: always()` for
-      # the same reason as its neighbours (Q913).
-      - run: npm run copy-check -- --walk
-        if: always()
+      # (`copy-check --walk` stood here until plan-ci-speed.md Stage 2; it is
+      # the `copy-walk` job below now, on its own runner.)
+      #
       # which cards the setup-probe actually opens (Q914 (9), Q915). --strict
       # cannot do this job: a dead step needs a *miss*, and a card nobody
       # tries to open produces none — a grant blocks nothing in ORDER, so the
@@ -487,6 +505,13 @@ jobs:
       # about the first three and nothing after the fourth.
       - run: npm run picture-walk
         if: always()
+      # **The rail follows the text as each face lands** (2026-09-21, the
+      # session-probe's 43 rail differences read): the page re-laid its rail
+      # only when the last pending face was in, so with Bold a second behind
+      # Regular every entry stood a line off its clause for that second. Holds
+      # one face back and times how long the rail stays stale.
+      - run: npm run rail-font-walk
+        if: always()
       # **The take-back** (Q1318, Ed 2026-09-11: *I should be able to choose
       # a value to take it back with ✒️, but I wasn't able to do that here*):
       # hand a setting to the membership, then reclaim it with the pen and a
@@ -510,6 +535,44 @@ jobs:
         if: always()
       - run: node scripts/founding-walk.mjs --takeback=chamber
         if: always()
+
+  # The copy golden (entry 128): every card's strings on every walk, keyed by
+  # walk and card key, against design/tools/card-copy.golden.json. A STYLE.md
+  # pass is a snapshot and nothing pinned a card's words between passes, so
+  # the next change silently undid the last audit; now a copy change is red
+  # here until `npm run copy-freeze`, and that freeze's diff is what the next
+  # pass reads. **Expect red after an intentional copy change** — that is the
+  # point, not a defect. ~3 min of headless walking, which is why it is not
+  # in `ci`; the static half (`copy-check` with no flag) is.
+  #
+  # **Its own job since plan-ci-speed.md Stage 2**: it was the longest step
+  # left in `probe` once toc-travel stopped waiting on a literal, and alone
+  # it keeps `probe` under five minutes. Same setup as `probe`, same
+  # standing: in parallel with `ci`, gating nothing, a red X on the commit.
+  copy-walk:
+    name: probe (copy-check --walk)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: playwright version, for the browser cache key
+        id: pw
+        run: echo "v=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        id: browser
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ steps.pw.outputs.v }}
+      - if: steps.browser.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.browser.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+      - run: npm run copy-check -- --walk
 
   # **Last green on `main`: 2026-09-16** (run 143, `fba9d3e` — every step, the
   # seat matrix at both hats included). **First green: 2026-09-07** (run 104,
@@ -559,8 +622,28 @@ jobs:
   # job with `needs: [ci, probe, walks]`, which is a separate decision and
   # wants the walks' flake rate measured first; per push, ungated, is that
   # measurement.
+  #
+  # **In parallel since plan-ci-speed.md Stage 1** (Ed, 2026-09-22 evening:
+  # *our current test/walk/guard regime is very slow*). Twenty steps in
+  # series on one runner took 43 minutes and decided every push; the job is
+  # now a matrix over five groups, each on its own runner with its own dev
+  # server, and `scripts/ci-walks.sh <group>` holds which walk runs where,
+  # why each is there, and how each server is booted — the per-walk notes
+  # that stood here moved into it beside the lines they describe. Q917 (a)'s
+  # `if: always()` guarantee is kept by the script (every walk runs, each
+  # prints a verdict line, the group is red at the end if any walk was), and
+  # `fail-fast: false` keeps it across groups: one red group cancels none of
+  # the others. The seat matrix runs one hat per group, and its exit 3 still
+  # reddens its group (Q1354).
   walks:
+    name: walks (${{ matrix.group }})
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        # repros since Stage 4: the guards CLAUDE.md named and no job ran
+        group: [seat-member, seat-clerk, journey, motions, doors, repros]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -583,188 +666,19 @@ jobs:
         run: npx playwright install --with-deps chromium
       - if: steps.browser.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
-
-      # Five variables and one absence. DRAFT_DATA_DIR keeps the log out of
-      # packages/server/data; DRAFT_BASE_URL must name 127.0.0.1 rather than
-      # the default localhost, because the magic links the outbox hands back
-      # are built from cfg.baseUrl and the walks attach at 127.0.0.1 — a link
-      # on the other origin lands the page on a different origin from the one
-      # the walk started at, which is the cookie trap applicants-walk's
-      # DOCBASE comment describes. DRAFT_BUILD_SHA names the commit in
-      # x-build; nothing reads it today, but a walk that refuses a server
-      # whose x-build is not the tree's HEAD is coming, and a job that did not
-      # set it would go red the day it lands. And **no RESEND_API_KEY**: its
-      # absence is what selects the dev outbox and makes devMail true, and the
-      # ladder bar's ⏭ exists only then.
-      - name: boot a dev server for the walks, and reserve slug-walk's address
-        run: |
-          export PORT=8161
-          export DRAFT_DATA_DIR="$RUNNER_TEMP/walk-data"
-          export DRAFT_BASE_URL="http://127.0.0.1:$PORT"
-          export DRAFT_BUILD_SHA="$GITHUB_SHA"
-          npm run server > "$RUNNER_TEMP/walk-server.log" 2>&1 &
-          echo "WALK_PID=$!" >> "$GITHUB_ENV"
-          echo "WALK_BASE=$DRAFT_BASE_URL" >> "$GITHUB_ENV"
-          # poll rather than sleep: a fixed wait is either slow or flaky
-          for i in $(seq 1 60); do
-            if curl -fsS -o /dev/null "$DRAFT_BASE_URL/healthz"; then up=1; break; fi
-            sleep 0.5
-          done
-          if [ -z "$up" ]; then
-            echo "the server never answered /healthz — its log follows"
-            cat "$RUNNER_TEMP/walk-server.log"
-            exit 1
-          fi
-          # slug-walk asserts what happens when an address is *taken*, so one
-          # has to be taken first — the curl its own header documents. -fsS,
-          # so a refusal fails this step and names itself rather than
-          # surfacing later as a walk that cannot find its collision.
-          curl -fsS -o /dev/null -X POST "$DRAFT_BASE_URL/api/docs" \
-            -H 'content-type: application/json' \
-            -d '{"title":"Test Charter","slug":"test-charter","email":"a@b.com"}'
-
-      # room-walk gets a server of its own for **isolation**: it is the one
-      # walk that builds a room rather than a document — phase A invites,
-      # arrives and drives fifteen members, phase B builds a whole ladder
-      # document with the twenty-strong cast (`CAST_NAMES`, dev-ladder.ts) —
-      # and that does not belong on the process the other nine walks and the
-      # seat matrix are founding their own documents on.
-      #
-      # **Not for the cooldown** (issue #17, F1): this comment said the
-      # shared server "keeps the default cooldown" and room-walk needed 0,
-      # which stopped being true at R-086 — `HOST_COOLDOWN_MS` is 0
-      # (config.ts), so both servers here run at 0 whatever this line says.
-      # `DRAFT_COOLDOWN_MS=0` stays anyway, because room-walk refuses a
-      # server whose `/healthz` reports any other value: stated, it cannot
-      # be taken down by a host default that moves.
-      - name: boot a second dev server for room-walk, isolated, cooldown 0
-        run: |
-          export PORT=8162
-          export DRAFT_DATA_DIR="$RUNNER_TEMP/room-walk-data"
-          export DRAFT_BASE_URL="http://127.0.0.1:$PORT"
-          export DRAFT_BUILD_SHA="$GITHUB_SHA"
-          export DRAFT_COOLDOWN_MS=0
-          npm run server > "$RUNNER_TEMP/room-server.log" 2>&1 &
-          echo "ROOM_PID=$!" >> "$GITHUB_ENV"
-          echo "ROOM_BASE=$DRAFT_BASE_URL" >> "$GITHUB_ENV"
-          for i in $(seq 1 60); do
-            if curl -fsS -o /dev/null "$DRAFT_BASE_URL/healthz"; then up=1; break; fi
-            sleep 0.5
-          done
-          if [ -z "$up" ]; then
-            echo "the room-walk server never answered /healthz — its log follows"
-            cat "$RUNNER_TEMP/room-server.log"
-            exit 1
-          fi
-
-      # `if: always()` for the same reason as probe's neighbours (Q913): one
-      # walk's failure must not hide the next one's. They share the one
-      # server, which is fine because each founds its own document under its
-      # own title, and each takes the base URL as an argument — the form all
-      # four read first, ahead of any fallback port of their own.
-      - run: npm run journey -- "$WALK_BASE"
-        if: always()
-      # the founder answering their own delegated question, alone in the
-      # room, and 🍾 refusing to begin on one voice (R-015, R-045) — the one
-      # mood no other walk drives. Self-starting: it serves design/ itself
-      # and takes no base URL (Q1177, Ed 2026-09-14: in CI, beside journey)
-      - run: npm run founder-answers
-        if: always()
-      - run: npm run applicants-walk -- "$WALK_BASE"
-        if: always()
-      # 🪪's other two prices: the walk's three assertions are one per price
-      # (proposal above, then the 🏛️ assembly hold, then the founder's pen)
-      - run: npm run applicants-walk -- "$WALK_BASE" --price=assembly
-        if: always()
-      - run: npm run applicants-walk -- "$WALK_BASE" --price=pen
-        if: always()
-      # a member's page across 🍾 when every power is laid down (Q1364, the
-      # lab-2026 room): no phantom answer cards, the resolved questions' news
-      # servable, ✉️ composing at 🪪's price — on the polled page and on a
-      # fresh load
-      - run: npm run after-begin-walk -- "$WALK_BASE"
-        if: always()
-      # a member's invitation motion on the surface (Q1370): the ✏️ commit at
-      # 🪪 proposal, the mover's ✏️ entry, the *proposed* invitee, the twin
-      # refusal naming no id
-      - run: npm run invite-walk -- "$WALK_BASE"
-        if: always()
-      # a member arrives while the founder has left 🎩 unanswered and delegated ⏱️ 👥
-      # (Q1365, Q1372): 🏛️ served at arrival on the Founded line, no question until
-      # its OK, then the questions in order whatever the founder has not reached
-      - run: npm run member-questions-walk -- "$WALK_BASE"
-        if: always()
-      - run: npm run slug-walk -- "$WALK_BASE" test-charter
-        if: always()
-      - run: npm run ladder -- "$WALK_BASE"
-        if: always()
-      # the whole loop: propose → every member served → vote → adopt, twice,
-      # then the 🛡️ park-and-crown path on a ladder document (Q1178)
-      - run: npm run room-walk -- "$ROOM_BASE"
-        if: always()
-      # **A laid-down pen is laid down** (entry 62, K2/K29, Ed's batch-B QA
-      # 2026-08-25: *please check that giving up powers actually gives them
-      # up, on all settings where they can be given up*) — every setting the
-      # founder's own card sets, under both hats, before 🍾, after it and on
-      # a closed document, plus ⏰ as the control that keeps its pen.
-      #
-      # It ran in **no CI job at all** until 2026-09-17 (issue #17, F2),
-      # while CLAUDE.md named it as the guard for the `may*`/`can*` rule and
-      # for `mayPenOn(k)`. That is what the eviction rule (Q736) trades a
-      # gotcha's post-mortem for: the red build. A guard nothing runs is not
-      # a guard, and the paragraph it replaced is gone.
-      #
-      # **The base is an argument, not a default**: its own fallback is
-      # 8199, so a bare run here would drive whatever answered there — or
-      # nothing. About two and a half minutes.
-      - run: npm run powers-walk -- "$WALK_BASE"
-        if: always()
-      # **The seat matrix joins the walks** (Q1205, Ed 2026-09-14: *fix 1282,
-      # then the harness joins CI*). Seven seats × three epochs, asserting
-      # SURFACE §2's Audience column per seat per step — the only guard over
-      # that column anywhere, and the instrument that found Q1280–Q1282. Both
-      # hats, because green means both. The clerk document ran only as far as
-      # 🍾 until Q920 was built on 2026-09-07; it goes the whole way now, and
-      # four rows the harness still marks `ifHat: 'member'` for that old
-      # reason — E10, E11, E39 and the removal motion they hang off — are
-      # issue #17's F4 and are **not** asserted on the clerk hat yet. It is
-      # the long one — about ten
-      # minutes, of which the `lapsed` seat's real one-minute lapse is a
-      # couple — so it stands last of the walks.
-      #
-      # **Exit 3 reddens the job** (Q1354, Ed 2026-09-14: *a cell nobody has
-      # written a rule for reddens the job until it is read*). A §2 cell the
-      # harness cannot read is *no rule*, and since Q1356 so is a row that
-      # passed over an empty audience — red on purpose and still distinct
-      # from a failure in the code, so a reader can tell the two apart, but no
-      # longer forgiven here. Until this date the step translated 3 into 0,
-      # because three rows stood unread (E22 on both hats, E11 on the member
-      # hat) and no run could reach 0; Ed read all three the same day (Q1355,
-      # Q1356), the harness's green line is 0 from then on, and a 3 means
-      # somebody must read a cell — never invent a predicate in the script.
-      # So the step fails on anything but 0: a finding, a page error, a
-      # refused command, a seat that could not be stood, a server that is not
-      # this tree, or an unread cell. The payload goes to the artifact below
-      # rather than into the tree, where it is gitignored by design (*a run is
-      # snapshots, not an artifact*), so a red run can be read seat by seat.
-      - name: the seat matrix, both hats
-        if: always()
-        run: npm run seat-matrix -- "$WALK_BASE" --hat=both --out="$RUNNER_TEMP/seat-matrix.json"
+      - name: the ${{ matrix.group }} walks
+        run: bash scripts/ci-walks.sh "${{ matrix.group }}"
 
       # The server's side of the story, beside the walk's: a red walk with
-      # only the walk's stdout is the one-hour hunt Q911 describes.
-      - name: stop the server
-        if: always()
-        run: |
-          kill -TERM "$WALK_PID" || true
-          kill -TERM "$ROOM_PID" || true
-          pkill -f 'src/main.ts' || true
+      # only the walk's stdout is the one-hour hunt Q911 describes. One
+      # artifact per group, named for it; the seat groups carry their
+      # matrix payload, gitignored in the tree by design (*a run is
+      # snapshots, not an artifact*), so a red run can be read seat by seat.
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: walk-server-log
+          name: walks-${{ matrix.group }}
           path: |
-            ${{ runner.temp }}/walk-server.log
-            ${{ runner.temp }}/room-server.log
-            ${{ runner.temp }}/seat-matrix.json
+            ${{ runner.temp }}/walk-server-*.log
+            ${{ runner.temp }}/seat-matrix-*.json
           if-no-files-found: warn

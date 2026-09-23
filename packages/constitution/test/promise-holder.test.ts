@@ -304,20 +304,21 @@ describe('delegated: the blind question opens and the room\'s answer binds', () 
     s.answer(1, bo, 'chamber', { rung: 'public' });
     expect(s.settingState('chamber').collecting).toBe(true);
     expect(s.readiness().holds).toContainEqual({ setting: 'chamber', why: 'invitation-open' });
-    // ---- finding 5 ----
-    // §9.6a's own remedy, quoted in `maybeResolve` (session.ts:1387): *an
-    // invitation that will never be opened can simply be withdrawn*. It does
-    // not release the question. `uninvite` calls `afterRosterChange` — and so
-    // `maybeResolveAll` — only `if (wasInE)`, and an invitee is in E only once
+    // ---- finding 5, ruled and cured (Q1482) ----
+    // §9.6a's own remedy, quoted in `maybeResolve`: *an invitation that will
+    // never be opened can simply be withdrawn*. It used not to release the
+    // question — `uninvite` called `afterRosterChange`, and so
+    // `maybeResolveAll`, only `if (wasInE)`, and an invitee is in E only once
     // they have arrived (`populations.ts`), so withdrawing the one thing that
-    // was blocking the resolution runs no resolution check at all.
+    // was blocking the resolution ran no resolution check at all and the
+    // founder was left reading *n of n answered* under a 🍾 that refused. It
+    // resolves on the withdrawal now: the gate that moved is the invitations
+    // in flight, and it is a gate whether or not E moved with it.
     s.uninvite(1, cy);
-    expect(s.settingState('chamber').collecting).toBe(true);
-    expect(s.settingState('chamber').settledBy).toBeNull();
-    expect(s.readiness().holds).toContainEqual({ setting: 'chamber', why: 'collecting' });
-    // any later event nudges it through — here a member re-stating their answer
-    s.answer(1, bo, 'chamber', { rung: 'public' });
+    expect(s.settingState('chamber').collecting).toBe(false);
     expect(s.settingState('chamber').settledBy).toBe('ceremony');
+    expect(s.settingState('chamber').value).toEqual({ rung: 'public' });
+    expect(s.readiness().holds.some((h) => h.setting === 'chamber')).toBe(false);
   });
 
   it('the founder cannot answer for the room — they must reclaim, and that clears the answers', () => {

@@ -31,7 +31,7 @@
  * first: a pointer cannot press what is off screen.
  */
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
-import { say, linkIn, onPage, browserFor, installPaste } from './lib/walk.mjs';
+import { say, linkIn, onPage, browserFor, installPaste, followLink, landOn } from './lib/walk.mjs';
 
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
 // --empty-text: found the document on a confirmed-empty text (Q649 (a)) and
@@ -93,13 +93,18 @@ const LIFECYCLE = {
   L2: 'L2 ✋ saved',    // an answer about yourself: on Save; your member row, and still there after a reload
   L3: 'L3 answered',   // a blind question answered (--delegate-all): on ✓; the entry leaves the rail, the card shows the count
   L4: 'L4 judged',     // a judgment cast: ✓ closes; the pair's own entry files as ⏳, the other pairs' stay lit (pairs 3, pairs 7)
-  L5: 'L5 proposed',   // a motion committed: on Propose; the ✏️ entry pinned
+  L5: 'L5 proposed',   // a motion committed (and a text proposal, Q1485 (A)): on Propose the card closes; the ✏️ entry pinned
   L6: 'L6 📧 sent',    // 📧 send: the card closes on send; the clause says to check your inbox
   L7: 'L7 owed OK',    // a decision you are owed: on OK, one press, persisted per member; the clause keeps the change line
   L8: 'L8 grant OK',   // a power arrives: on OK; ACK_KEYS per seat — not served again after a reload, the socket held
   L9: 'L9 🗑️',        // 🗑️: always closes; un-actioned input reverted (⏱️'s number, ✋'s text), the set value untouched
 };
 const L = (k) => LIFECYCLE[k].padEnd(11) + '· ';
+// **what the rail says for a few seconds after a press** (Q1485 (A), Ed
+// 2026-09-21: *Close, and say so*) — `COPY.session.rail.justProposed`, quoted
+// here rather than read out of the page, so a copy edit that drops it reddens
+// this walk rather than passing silently
+const JUST_PROPOSED = 'Proposed — the members are deciding';
 // Q911: a walk on a default port will drive whatever process is listening,
 // and a stale one serves today's page over a week-old engine — so the first
 // thing this does is refuse a server that is not this tree.
@@ -115,7 +120,16 @@ if (GESTURE) await page.addInitScript((g) => { window.COMMIT_GESTURE_OVERRIDE = 
 // on an untrusted event is chromium-only (walk.mjs's `installPaste`)
 await installPaste(page);
 const errors = [];
-page.on('pageerror', (e) => errors.push(String(e)));
+/**
+ * **A page error a step is *about*** (plan stage 5b), the same discipline as
+ * `expectRefused` below: the one throw this walk performs in order to be
+ * reported. Named by its message, and only for as long as the step that
+ * pushed it is running — a blanket allowance would hide the boot errors
+ * this list exists to catch (Q1281).
+ */
+const expectThrown = [];
+const noteThrown = (s) => { if (!expectThrown.some((re) => re.test(s))) errors.push(s); };
+page.on('pageerror', (e) => noteThrown(String(e)));
 // **A refused command is a failure even when the walk recovers from it**
 // (2026-08-22). Both of the day's birth bugs went straight past this walk:
 // a held commit fired twice, so the second 📧 send asked for the address the
@@ -232,7 +246,7 @@ if (!mails.length) {
   process.exit(1);
 }
 const link = linkIn(mails[mails.length - 1]);
-await page.goto(link);
+await landOn(page, link);
 for (let i = 0; i < 40 && !page.url().includes('/d/'); i++) await T(500);
 await T(2200);
 say('birth      · saved at ' + page.url());
@@ -336,14 +350,17 @@ if (!EMPTY_TEXT) {
   }));
   await T(300);
   /* ---- the strip before 🍾 (Q1313, Ed 2026-09-11: *same strip as after 🍾*)
-   * B · I · [] at the lifted column's top right — the charter's own strip,
+   * B · I at the lifted column's top right — the charter's own strip,
    * measured as the edit-mode step measures it after 🍾: 1px inside the card's
-   * top edge, --s2 inside its right, no lane controls and no [] on the row; B
+   * top edge, --s2 inside its right, no lane controls and no `[]` anywhere; B
    * and I dark until the column holds the caret. Then Q1314's shape — a paste
    * of several paragraphs, as a ClipboardEvent carrying text/plain — after
-   * which the row's ✒️ must be live; then [] pressed: the exact characters,
-   * monospace, the caret converted (the lane's own arithmetic); released,
-   * rendered again; and ✒️ confirms the same text whichever view showed. */
+   * which the row's ✒️ must be live.
+   * **And since Q1467 edit mode IS the source** (Ed, 2026-09-19): the column
+   * shows the characters — `**book**`, `# House rules`, `- No dogs` — in the
+   * document's own face, never monospace, each block still wearing the rank
+   * its marker names; B on a word already between `**` takes the marks off,
+   * and a second press puts them back. ✒️ then confirms exactly that text. */
   const stripAt = () => page.evaluate(() => {
     const pr = document.getElementById('prose');
     const st = document.querySelector('#prosectl .lanectl');
@@ -352,32 +369,29 @@ if (!EMPTY_TEXT) {
     return { order: [...st.querySelectorAll('button')].map((x) => x.textContent.trim()).join(''),
       top: Math.round(r.top - c.top), right: Math.round(c.right - r.right),
       laneCtl: document.querySelectorAll('.lanebox .lanectl').length,
-      rowMode: document.querySelectorAll('#proserow .lmode').length,
+      anyMode: document.querySelectorAll('.lmode, [data-act="col-mode"]').length,
       fmtDark: [...st.querySelectorAll('.lfmt')].every((x) => x.disabled),
-      pressed: st.querySelector('.lmode').getAttribute('aria-pressed') === 'true',
       src: pr.classList.contains('mdsrc'),
       mono: /mono|Menlo|Consolas/i.test(getComputedStyle(pr).fontFamily) };
   });
-  const caretIn = (which) => page.evaluate((w) => {
-    // the caret placed, or read back: offset in characters into the block that holds it
+  // select a run of characters inside the block that holds it, by text
+  const selectIn = (word) => page.evaluate((w) => {
     const pr = document.getElementById('prose');
-    const sel = getSelection();
-    if (w) {
-      pr.focus({ preventScroll: true });
-      const blk = [...pr.children].find((b) => /book/.test(b.textContent));
-      if (!blk) return null;
-      const strong = blk.querySelector('strong');
-      const r = document.createRange();
-      if (strong) r.setStart(strong.firstChild, 2); else { const t = blk.firstChild; r.setStart(t, blk.textContent.indexOf('book') + 2); }
-      r.collapse(true); sel.removeAllRanges(); sel.addRange(r);
+    pr.focus({ preventScroll: true });
+    const blk = [...pr.children].find((b) => b.textContent.includes(w));
+    if (!blk) return false;
+    const walk = document.createTreeWalker(blk, NodeFilter.SHOW_TEXT);
+    let node, at = null;
+    while ((node = walk.nextNode())) {
+      const i = node.nodeValue.indexOf(w);
+      if (i >= 0) { at = [node, i]; break; }
     }
-    if (!sel.rangeCount) return null;
-    const rg = sel.getRangeAt(0);
-    const blk = [...pr.children].find((b) => b === rg.endContainer || b.contains(rg.endContainer));
-    if (!blk) return null;
-    const r2 = document.createRange(); r2.selectNodeContents(blk); r2.setEnd(rg.endContainer, rg.endOffset);
-    return { off: r2.toString().length, text: blk.textContent };
-  }, which);
+    if (!at) return false;
+    const r = document.createRange();
+    r.setStart(at[0], at[1]); r.setEnd(at[0], at[1] + w.length);
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    return true;
+  }, word);
   const pressStrip = async (sel) => {
     const box = await page.evaluate((s) => {
       const b = document.querySelector(s);
@@ -390,6 +404,23 @@ if (!EMPTY_TEXT) {
     await T(300);
     return true;
   };
+  // **The founder's column read as the page reads it** (`proseText`): since
+  // Q1467 the column shows its source while it is edited and its rendering
+  // while it is read, so a raw `textContent` is a fact about the view and
+  // never about the text. This is the one read-out both views share.
+  const proseSrc = () => page.evaluate(() => {
+    const pr = document.getElementById('prose');
+    return [...pr.children].map((b) => {
+      if (pr.classList.contains('mdsrc')) return b.textContent;
+      const m = b.className.match(/lvl(\d)/);
+      return (m ? '#'.repeat(+m[1]) + ' ' : b.classList.contains('bullet') ? '- ' : '') + window.CARDS.htmlToMd(b);
+    }).join('\n').trim();
+  });
+  const bookLine = () => page.evaluate(() => {
+    const pr = document.getElementById('prose');
+    const b = [...pr.children].find((x) => /book/.test(x.textContent));
+    return b ? b.textContent : null;
+  });
   const stripRest = await stripAt();
   // B and I follow the caret a tick behind focusout, so each state is read
   // after one
@@ -405,32 +436,30 @@ if (!EMPTY_TEXT) {
     const pr = document.getElementById('prose');
     const b = document.querySelector('#proserow [data-act="row-commit"]');
     return { blocks: pr.children.length, penLive: !!(b && !b.disabled),
-      heading: !!pr.querySelector('.docline.lvl1'), strong: !!pr.querySelector('strong'),
+      heading: !!pr.querySelector('.docline.lvl1'), rendered: !!pr.querySelector('strong'),
       bullet: !!pr.querySelector('.bullet') };
   });
-  const caretRich = await caretIn(true);
-  const flipped = await pressStrip('#prosectl [data-act="col-mode"]');
-  const stripSrc = await stripAt();
-  const caretSrc = await caretIn(false);
   const srcChars = await page.evaluate(() => {
     const pr = document.getElementById('prose');
     return { stars: [...pr.children].some((b) => /\*\*book\*\*/.test(b.textContent)),
       hash: [...pr.children].some((b) => /^# House rules$/.test(b.textContent)),
       dash: [...pr.children].some((b) => /^- No dogs$/.test(b.textContent)),
-      dressed: !!pr.querySelector('strong, .docline, .bullet') };
+      dressed: !!pr.querySelector('.docline, .bullet') };
   });
-  const flippedBack = await pressStrip('#prosectl [data-act="col-mode"]');
-  const stripBack = await stripAt();
-  const caretBack = await caretIn(false);
-  const stripPreOk = !!stripRest && stripRest.order === 'BI[]' && stripRest.top === 1 && stripRest.right === 8 &&
-    stripRest.laneCtl === 0 && stripRest.rowMode === 0 && !stripRest.pressed && !stripRest.src &&
+  // B on a word the marks already hold takes them off; B again puts them back
+  const selected = await selectIn('book');
+  const unbolded = (await pressStrip('#prosectl [data-fmt="bold"]')) ? await bookLine() : null;
+  const reselected = await selectIn('book');
+  const rebolded = (await pressStrip('#prosectl [data-fmt="bold"]')) ? await bookLine() : null;
+  const stripPreOk = !!stripRest && stripRest.order === 'BI' && stripRest.top === 1 && stripRest.right === 8 &&
+    stripRest.laneCtl === 0 && stripRest.anyMode === 0 && stripRest.src && !stripRest.mono &&
     !!darkThenLit && darkThenLit.dark && darkThenLit.lit &&
-    pasted && afterPaste.blocks === 5 && afterPaste.penLive && afterPaste.heading && afterPaste.strong && afterPaste.bullet &&
-    !!caretRich && caretRich.off === 18 && flipped && !!stripSrc && stripSrc.pressed && stripSrc.src && stripSrc.mono &&
-    !!caretSrc && caretSrc.off === 20 && srcChars.stars && srcChars.hash && srcChars.dash && !srcChars.dressed &&
-    flippedBack && !!stripBack && !stripBack.pressed && !stripBack.src && !stripBack.mono && !!caretBack && caretBack.off === 18;
-  say('strip pre  · ' + (stripPreOk ? 'B · I · [] at the card\'s top right before 🍾, dark until the caret, a pasted text lights ✒️, [] shows the characters in monospace with the caret converted (18 → 20 → 18), released rendered'
-    : 'FAIL: ' + JSON.stringify({ stripRest, darkThenLit, afterPaste, caretRich, stripSrc, caretSrc, srcChars, stripBack, caretBack })));
+    pasted && afterPaste.blocks === 5 && afterPaste.penLive && afterPaste.heading && !afterPaste.rendered && afterPaste.bullet &&
+    srcChars.stars && srcChars.hash && srcChars.dash && srcChars.dressed &&
+    selected && reselected && unbolded === 'Guests sign the book at the door.' &&
+    rebolded === 'Guests sign the **book** at the door.';
+  say('strip pre  · ' + (stripPreOk ? 'B · I at the card\'s top right before 🍾, no [], dark until the caret, a pasted text lights ✒️, the column shows the characters in the document\'s own face with every rank kept, and B takes the marks off a bold word and puts them back'
+    : 'FAIL: ' + JSON.stringify({ stripRest, darkThenLit, afterPaste, srcChars, selected, unbolded, reselected, rebolded })));
   if (!stripPreOk) stuck.push('the strip before 🍾');
   // the strip rides with the tab: at the page's end both are stuck under the
   // navbar, level, and the strip wears its ground
@@ -449,11 +478,8 @@ if (!EMPTY_TEXT) {
   const rodeOk = rode.detached && Math.abs(rode.level) <= 1;
   say('strip ride · ' + (rodeOk ? 'stuck under the navbar level with the 📝 tab, ground on' : 'FAIL: ' + JSON.stringify(rode)));
   if (!rodeOk) stuck.push('the strip riding before 🍾');
-  // what ✒️ will send: the column read as the page reads it, marks written back
-  const expectedText = await page.evaluate(() => [...document.getElementById('prose').children].map((b) => {
-    const m = b.className.match(/lvl(\d)/);
-    return (m ? '#'.repeat(+m[1]) + ' ' : b.classList.contains('bullet') ? '- ' : '') + window.CARDS.htmlToMd(b);
-  }).join('\n').trim());
+  // what ✒️ will send: the column read as the page reads it (`proseText`)
+  const expectedText = await proseSrc();
   const saved = await page.evaluate(() => {
     const b = document.querySelector('#proserow [data-act="row-commit"]');
     const glyph = b ? window.CARDS.glyphTextOf(b).trim() : null;
@@ -523,9 +549,13 @@ if (!EMPTY_TEXT) {
   /* ---- a click outside leaves edit mode before 🍾 (Q1315, Ed 2026-09-11:
    * *clicking outside of cards should close them*) — on nothing, in the
    * rail's empty space: the mode off, the row gone, the column's text kept;
-   * 📝 again brings the mode back with the same text. */
+   * 📝 again brings the mode back with the same text.
+   * **The text is read as the page reads it** (`proseSrc`, `proseText`'s own
+   * shape): since Q1467 the column shows its source while it is edited and
+   * its rendering while it is read, so a raw `textContent` compared across
+   * the boundary compares two views rather than two texts. */
   const outsidePre = await (async () => {
-    const before = await page.evaluate(() => document.getElementById('prose').textContent);
+    const before = await proseSrc();
     const pt = await page.evaluate(() => {
       const r = document.querySelector('aside.queue').getBoundingClientRect();
       const x = Math.round(r.x + r.width / 2), y = Math.round(Math.max(40, Math.min(innerHeight - 40, r.bottom - 40)));
@@ -538,14 +568,14 @@ if (!EMPTY_TEXT) {
       editing: document.getElementById('doc').classList.contains('editing'),
       editable: document.getElementById('prose').getAttribute('contenteditable'),
       row: !!document.querySelector('#proserow [data-proposalrow]'),
-      strip: !!document.querySelector('#prosectl .lanectl'),
-      text: document.getElementById('prose').textContent }));
+      strip: !!document.querySelector('#prosectl .lanectl') }));
+    left.text = await proseSrc();
     await page.evaluate(() => document.querySelector('#ridetab .achip[data-tab="text"]').click());
     await T(300);
     const back = await page.evaluate(() => ({
       editing: document.getElementById('doc').classList.contains('editing'),
-      strip: !!document.querySelector('#prosectl .lanectl'),
-      text: document.getElementById('prose').textContent }));
+      strip: !!document.querySelector('#prosectl .lanectl') }));
+    back.text = await proseSrc();
     return { hit: pt.hit, left, back, kept: left.text === before && back.text === before };
   })();
   const outsidePreOk = !outsidePre.left.editing && outsidePre.left.editable === 'false' && !outsidePre.left.row &&
@@ -620,7 +650,19 @@ const pickOption = (label) => page.evaluate((l) => {
   const r = o.getBoundingClientRect();
   return { x: r.x + 14, y: r.y + r.height / 2 };
 }, label);
-const fillFields = () => page.evaluate(() => {
+/* **A date the walk types is counted from the run, never written down** (found
+ * 2026-09-18 18:00, when the literal below — `2026-09-18T18:00` — became the
+ * past and every document the walk founded closed the moment it began: forty
+ * FAIL lines from `amendment` onwards, all of them *the document has closed*,
+ * and the same on main. A wall-clock literal in a walk is a time bomb with the
+ * fuse written on it. `datetime-local` takes local time with no zone, which is
+ * what the page's own field holds. */
+const dateIn = (days) => {
+  const d = new Date(Date.now() + days * 86_400_000);
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:00`;
+};
+const fillFields = () => page.evaluate((when) => {
   // **One number per choice group** (Q1162): 👥 draws two blocks each with
   // its own box, and filling both would answer in two forms at once — the
   // last claim winning, which committed a count of 5 in a room of 2. The
@@ -656,11 +698,11 @@ const fillFields = () => page.evaluate(() => {
       if (ch) takenChoice.add(ch);
       n.value = String(Math.max(+n.min || 1, 5));
     }
-    else if (n.type === 'datetime-local') n.value = '2026-09-18T18:00';
+    else if (n.type === 'datetime-local') n.value = when;
     else n.value = 'The club shall meet on the first Tuesday.';
     fire();
   });
-});
+}, dateIn(30));
 const committable = () => page.evaluate(() =>
   [...document.querySelectorAll('.setupcard .commitrow button')]
     .some((x) => !x.disabled && !/🗑/.test(x.textContent) && !x.querySelector('[data-gl="bin"]')));
@@ -893,7 +935,7 @@ const invitationLink = async (addr) => {
   return mail ? linkIn(mail) : null;
 };
 const guestLand = async (url) => {
-  await guestPage.goto(url);
+  await landOn(guestPage, url);
   for (let i = 0; i < 40 && !guestPage.url().includes('/d/'); i++) {
     await guestPage.waitForTimeout(500);
   }
@@ -907,7 +949,7 @@ const secondSeatPreBegin = async () => {
   }
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
   guestPage = await ctx.newPage();
-  guestPage.on('pageerror', (e) => errors.push('[guest] ' + String(e)));
+  guestPage.on('pageerror', (e) => noteThrown('[guest] ' + String(e)));
   guestPage.on('response', (r) => { if (r.request().method() === 'POST' &&
     /give-ok/.test(r.request().postData() || '')) guestOks += 1; });
   guestPage.on('response', (r) => { if (r.request().method() === 'POST' &&
@@ -936,6 +978,29 @@ const secondSeatPreBegin = async () => {
     ? 'nothing set before this arrival is served · served ' + JSON.stringify(f.served)
     : 'FAIL: ' + JSON.stringify(owed) + ' are served as acknowledgements before 🍾'));
   if (owed.length) stuck.push('pre-Begin acks in the member seat: ' + owed.join(','));
+  /* **…and 🏛️ reaches them as *Activate Your Membership*** (Q1502, Ed
+   * 2026-09-22): a body about 🏛️ alone, and the commit *Activate 🏛️*. Read
+   * and closed, never pressed — what the OK then opens is the member
+   * questions walk's. */
+  const voice = await guestPage.evaluate(async () => {
+    const b = document.querySelector('#rail [data-card="grant-voice"]');
+    if (!b) return null;
+    b.click();
+    await new Promise((r) => setTimeout(r, 900));
+    const c = document.querySelector('.setupcard[data-setupcard="grant-voice"]');
+    const ok = c && c.querySelector('[data-ok]');
+    const out = { title: b.getAttribute('title'),
+      word: ok ? window.CARDS.glyphTextOf(ok).replace(/\s+/g, ' ').trim() : null,
+      body: c ? c.innerText.replace(/\s+/g, ' ').slice(0, 600) : null };
+    const a = c && c.querySelector('.chipcol .achip'); if (a) a.click();
+    return out;
+  });
+  await guestPage.waitForTimeout(400);
+  const voiceOk = !!voice && voice.word === 'Activate 🏛️' && /Activate Your Membership/.test(voice.title || '') &&
+    /You are already a member/.test(voice.body || '');
+  say('activate   · ' + (voiceOk ? 'the member’s 🏛️ grant reads “' + voice.word + '”, titled ' + voice.title
+    : 'FAIL: ' + JSON.stringify(voice)));
+  if (!voiceOk) stuck.push('the member’s 🏛️ grant (Q1502)');
 };
 /* ---- names and faces reach every seat (backlog 42, Q850–Q853) -----------
  * The register is public by the spec's own test — names, pictures, who has
@@ -1058,6 +1123,40 @@ const lifecycleL2 = async () => {
  * where it was, no *keep* block wears the draft, the register still reads the
  * committed name, and the card is still open. Second-seat by construction:
  * in a quiet room no render lands between typing and the commit. */
+/* **🎩 from a member's seat says what it stands at** (Q1503, Ed's convention
+ * observation 2026-09-22: *"Set to [blank]"*). A member opening the founder's
+ * 🎩 met `readBody`'s *Set to* line with no `VALUE.hat` behind it. It is the
+ * founder's own two sentences now, locked, the standing one marked — read
+ * here on the guest seat, and closed by the bin so the rest of the seat's
+ * walk sees the page it always saw. */
+const hatFromMemberSeat = async () => {
+  if (!guestPage) return;
+  const opened = await guestPage.evaluate(() => {
+    const el = document.querySelector('#band [data-tab="hat"]');
+    if (!el) return false;
+    el.click();
+    return true;
+  });
+  await guestPage.waitForTimeout(420);
+  if (!opened) { say('hat        · FAIL: no 🎩 tab in the member seat'); stuck.push('Q1503: the 🎩 tab'); return; }
+  const r = await guestPage.evaluate(() => {
+    const picks = [...document.querySelectorAll('.setupcard .choice .pick')];
+    const out = {
+      radios: picks.length,
+      locked: picks.filter((p) => p.querySelector('.lanepick')?.disabled).length,
+      marked: picks.filter((p) => p.classList.contains('on')).map((p) => (p.querySelector('.opttext')?.textContent ?? '').trim()),
+      setTo: /Set to/.test(document.querySelector('.setupcard')?.textContent ?? ''),
+    };
+    document.querySelector('.setupcard [data-revert]')?.click();
+    return out;
+  });
+  await guestPage.waitForTimeout(400);
+  const ok = r.radios === 2 && r.locked === 2 && r.marked.length === 1 && !r.setTo;
+  say('hat        · ' + (ok ? 'ok' : 'FAIL') + ': 🎩 on the member seat — ' + r.radios + ' radios, ' + r.locked +
+    ' locked, marked ' + JSON.stringify(r.marked) + (r.setTo ? ', a *Set to* line' : ''));
+  if (!ok) stuck.push('Q1503: 🎩 on the member seat');
+};
+
 const DRAFT_NAME = 'Draft Name';
 const draftSurvivesRender = async () => {
   if (!guestPage) return; // its own failure, already reported
@@ -1179,6 +1278,65 @@ const lifecycleL9 = async () => {
   if (!nameOk) stuck.push('L9: 🗑️ on ✋');
 };
 
+/* ---- an ordinary rule changed by the Founder's ✒️ is news (issue #80) ----
+ * The module owes every member an OK for a Founder's change to an ordinary
+ * rule once it has a *from* (Q530); the page decides it is news by reading
+ * `previousValue`, and the live `settingState` adapter dropped it — so on
+ * every real document `changedFrom` read null, the ordinary arm of `news()`
+ * never fired, and the owed OK could never be given (and, owed, it wedged the
+ * setting's news channel shut). 🪶 is the ordinary rule the Founder still
+ * holds a pen on here (⏱️'s is promised away before 🍾, above), changed at
+ * the wire as 🌍 is below; what is under test is the member's rail, card and
+ * single OK — twice, the second change back to the old name, because an OK
+ * given must leave the channel open for the next one. Red on the pre-#80
+ * page at *railed: false*. */
+const ordinaryAmendmentNews = async () => {
+  if (!guestPage) return; // its own failure, already reported
+  const setTitle = (text, why) => page.evaluate(([t, w]) =>
+    fetch(location.pathname.replace('/d/', '/api/d/') + '/cmd', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ cmd: 'set-setting', args: { setting: 'title', value: { text: t }, ...(w ? { why: w } : {}) } }),
+    }).then((r) => r.json()).catch((e) => ({ error: String(e && e.message) })), [text, why]);
+  const owedOf = () => guestPage.evaluate(() => fetch(location.pathname.replace('/d/', '/api/d/') + '/view')
+    .then((r) => r.json()).then((v) => (v.view || {}).owedOks || []).catch(() => null));
+  const was = await page.evaluate(() => fetch(location.pathname.replace('/d/', '/api/d/') + '/view')
+    .then((r) => r.json()).then((v) => v.title).catch(() => null));
+  const round = async (label, text, why) => {
+    const said = await setTitle(text, why);
+    if (said && said.error) return { label, error: said.error };
+    await T(5000); // one poll in the member's seat
+    const s = await guestState();
+    const owed0 = await owedOf();
+    const railed = (s.rail || []).includes('title');
+    let body = '', pressed = false, owed1 = null;
+    const oks = guestOks;
+    if (railed) {
+      await guestPage.evaluate(() => { const el = document.querySelector('#rail [data-card="title"]'); if (el) el.click(); });
+      await guestPage.waitForTimeout(900);
+      body = await guestPage.evaluate(() => {
+        const c = document.querySelector('.setupcard[data-setupcard="title"]');
+        return c ? c.innerText.replace(/\s+/g, ' ') : '';
+      });
+      const ok = await guestPage.$('.setupcard[data-setupcard="title"] [data-ok]:not([disabled])');
+      if (ok) { await ok.click(); pressed = true; }
+      await guestPage.waitForTimeout(1800);
+      owed1 = await owedOf();
+    }
+    const good = railed && (owed0 || []).includes('title') && pressed && (!why || body.includes(why)) &&
+      Array.isArray(owed1) && !owed1.includes('title') && guestOks - oks === 1;
+    return { label, good, railed, owed0, pressed, reason: why ? body.includes(why) : null, owed1,
+      oks: guestOks - oks, rail: s.rail };
+  };
+  if (!was) { say('title news · FAIL: no title in the view'); stuck.push('the ordinary amendment (#80)'); return; }
+  const WHY = 'A shorter name reads better on the notice board.';
+  const r1 = await round('renamed', was + ' (renamed)', WHY);
+  const r2 = r1.good ? await round('and back', was, null) : null;
+  const good = r1.good && r2 && r2.good;
+  say('title news · ' + (good
+    ? 'the Founder\'s ✒️ on 🪶 reaches the member as news carrying its reason, one OK clears it, and a second change is news again'
+    : 'FAIL: ' + JSON.stringify([r1, r2])));
+  if (!good) stuck.push('the Founder\'s change to an ordinary rule is news (#80)');
+};
 const secondSeatOnAmendment = async () => {
   if (!guestPage) return; // its own failure, already reported
   // the founder amends a constitutional setting they still hold, at the wire:
@@ -1228,6 +1386,41 @@ const secondSeatOnAmendment = async () => {
     if (!ok) stuck.push('the member seat after 🍾 ' + when);
   };
   noPhantoms(arrived, 'through the poll');
+  /* ---- head insertion (Q1477, the nh2026 convention 2026-09-20) ----------
+   * **A page that polled across 🍾 must be served the text the engine opened
+   * on.** `textVersion` reads 0 on both sides of the cork — over the founder's
+   * unversioned text before it, over the engine's document at version 0 after
+   * — and the slim view leaves the text out when the page's `tv` matches. 🍾
+   * confirms whatever the column holds (R-081), and the column draws no
+   * paragraph for a blank line, so at the convention the engine opened on a
+   * text two lines shorter than the one the room had been reading: every page
+   * kept its own, drew the document in a line space that was not the engine's
+   * and aimed five proposals two lines low, all refused by R-136's guard.
+   * Two halves, both on the seat that watched 🍾 by its poll: the answer such
+   * a poll gets must carry a text, and every block the column draws must name
+   * the line the host serves. Repro: `scripts/repro/head-insertion-aim.mjs
+   * --case=cork`. */
+  const aim = await guestPage.evaluate(async () => {
+    const base = location.pathname.replace('/d/', '/api/d/');
+    // the seqs a page that had been polling since before the cork still holds:
+    // a document seq it has fallen behind, and no engine seq at all
+    const slim = await (await fetch(base + '/view?since=1.0&tv=0&rk=0')).json();
+    const now = await (await fetch(base + '/view')).json();
+    const lines = String(now.text || '').split('\n');
+    return {
+      named: slim.slim || [], carried: slim.text !== undefined, eseq: slim.eseq,
+      wrong: (window.SESSION.DOC || []).filter((l) => !l.gap && /^L\d+$/.test(l.key || ''))
+        .filter((l) => lines[Number(l.key.slice(1))] !==
+          ((l.t === 'h' ? '#'.repeat(l.level || 1) + ' ' : l.bullet ? '- ' : '') + (l.x || '')))
+        .map((l) => l.key),
+    };
+  });
+  const aimOk = aim.carried && !aim.wrong.length;
+  say('head inser.· ' + (aimOk
+    ? 'a poll from before 🍾 is served the engine’s own text, and every block the column draws names the line the host serves'
+    : 'FAIL: ' + (aim.carried ? '' : 'the answer left the text out (slim ' + JSON.stringify(aim.named) + ') · ') +
+      (aim.wrong.length ? 'blocks keyed outside the host’s text: ' + JSON.stringify(aim.wrong) : '')));
+  if (!aimOk) stuck.push('Q1477: the text a page holds across 🍾');
   // one press, and one only
   const before = guestOks;
   await guestPage.evaluate((k) => {
@@ -1364,8 +1557,40 @@ const motionFillOnAmended = async () => {
   say('mover’s ⏳ · ' + (okG ? 'the mover’s own entry is a ⏳ wait with the same bar: ' + g1.title
     : 'FAIL: ' + JSON.stringify(g1)));
   if (!okG) stuck.push('the 🏛️ motion’s fill on the mover’s entry');
-  // the founder answers *keep*: a keep blocks a 🏛️ motion rather than settling
-  // it (§9.6), so the motion stands with every answer in — and the bar is full
+  /* …and the mover's own card asks them nothing (issue #88, K8): the two
+   * blocks inert with the proposed one marked, no lane to press, and 🗑️ —
+   * withdrawing — as its one act. Until #88 it drew the live *Keep this*
+   * lane first, and a keep kills (Q1473), so the mover could end their own
+   * motion as *rejected by the membership*. Red on the pre-#88 page at
+   * three lanes. */
+  const moverCard = await guestPage.evaluate(async (k) => {
+    const t = document.querySelector('#rail [data-card="' + k + '"]');
+    if (!t) return null;
+    t.click();
+    await new Promise((r) => setTimeout(r, 700));
+    const c = document.querySelector('[data-setupcard="' + k + '"]');
+    if (!c) return { open: false };
+    const out = { open: true, lanes: c.querySelectorAll('[data-motion]').length,
+      blocks: c.querySelectorAll('.pick').length,
+      marked: c.querySelectorAll('.pick.on').length,
+      answer: !!c.querySelector('[data-confirm]'),
+      withdraw: !!c.querySelector('[data-withdrawmotion]') };
+    const a = c.querySelector('.chipcol .achip'); if (a) a.click();
+    return out;
+  }, mKey);
+  await guestPage.waitForTimeout(400);
+  const moverOk = !!moverCard && moverCard.open && moverCard.lanes === 0 && moverCard.blocks === 2 &&
+    moverCard.marked === 1 && !moverCard.answer && moverCard.withdraw;
+  say('mover’s 🏛️ · ' + (moverOk ? 'the mover’s own card: two inert blocks, the proposed one marked, no lane and no 🏛️, 🗑️ its one act'
+    : 'FAIL: ' + JSON.stringify(moverCard)));
+  if (!moverOk) stuck.push('the mover’s own 🏛️ card draws no lane (#88)');
+  /* **The founder answers *keep*, and that is the end of it** (Q1473, Ed
+   * 2026-09-19: *it should fail as soon as someone votes against on a 🏛️*).
+   * Until v0.138 a keep blocked and did not kill, and these lines asserted
+   * the motion standing with every answer in and its bar full — which is the
+   * state a document can no longer be in. What the press does now is settle
+   * it: the vote leaves both rails, the mover is served E41's card for it,
+   * and their 🏛️ comes back. */
   const kept = await wire(page, 'answer-motion', { motion, answer: 'keep' });
   if (kept && kept.error) {
     say('motion kept· FAIL: the founder could not answer · ' + JSON.stringify(kept));
@@ -1373,18 +1598,32 @@ const motionFillOnAmended = async () => {
   }
   await T(5000);
   const e2 = await entryAt(page, mKey);
-  const ok2 = !!e2 && e2.fill === '100%' && e2.title === '2 of 2 have answered' && e2.mark === 'deciding';
-  say('motion moves· ' + (ok2 ? 'the founder’s answer moves it: ' + e2.title + ' · fill ' + e2.fill + ' · the entry files as ⏳'
-    : 'FAIL: ' + JSON.stringify(e2)));
-  if (!ok2) stuck.push('the 🏛️ motion’s fill after the founder answered');
+  const g2 = await entryAt(guestPage, mKey);
+  const news2 = await entryAt(guestPage, 'held:' + motion);
+  const ok2 = !e2 && !g2 && !!news2 && news2.state === 'st-news';
+  say('a keep ends· ' + (ok2 ? 'the founder’s vote against settles it: the vote leaves both rails and the mover is served its ✖ news'
+    : 'FAIL: ' + JSON.stringify({ e2, g2, news2 })));
+  if (!ok2) stuck.push('a keep ends the 🏛️ motion (Q1473)');
+  /* …and the 🏛️ comes back with it, which is what lets the withdrawal below
+   * be walked at all: one 🏛️ out per member at a time (§9.6). */
+  const put2 = await wire(guestPage, 'open-motion', { payload: { kind: 'set', setting: AMENDED, value: { rung: 'link' } },
+    why: 'a link is enough, then' });
+  const motion2 = put2 && put2.result;
+  if (!motion2 || put2.error) {
+    say('🏛️ back   · FAIL: the settled motion did not free the mover’s 🏛️ · ' + JSON.stringify(put2));
+    stuck.push('the 🏛️ slot after a keep');
+    return;
+  }
+  await T(5000);
   // withdrawn: nothing is in flight, so the entry says the rule again, not a count
-  const drop = await wire(guestPage, 'withdraw-motion', { motion });
+  const mKey2 = 'mo:' + motion2;
+  const drop = await wire(guestPage, 'withdraw-motion', { motion: motion2 });
   if (drop && drop.error) {
     say('motion gone· FAIL: the member could not withdraw · ' + JSON.stringify(drop));
     stuck.push('withdrawing the 🏛️ motion');
   }
   await T(5000);
-  const e3 = await entryAt(page, mKey);
+  const e3 = await entryAt(page, mKey2);
   const ok3 = !e3 || !/have answered/.test(e3.title || '');
   say('motion gone· ' + (ok3 ? 'withdrawn, and the entry no longer counts answers' + (e3 ? ' · ' + JSON.stringify(e3) : ' · the entry left the rail')
     : 'FAIL: the count survived the withdrawal · ' + JSON.stringify(e3)));
@@ -1397,11 +1636,12 @@ const motionFillOnAmended = async () => {
  * it, and — 🌍's 🛡️ being the founder's after this founding — it parks at the
  * crown rather than landing, where the founder refuses it.
  *
- * **Not the founder answering *keep***, which the plan for this work asked
- * for and which cannot fail a motion: §9.6's settle check skips any motion
- * with a standing keep (`maybeSettleMotions`, *a standing keep blocks but does
- * not kill*), so the motion above simply stands running — which is what the
- * rows above it assert. The crown's refusal is the road this walk takes; an
+ * **Not the founder answering *keep***, which is a road of its own since
+ * Q1473 (Ed, 2026-09-19) and is walked where it happens — `motionFillOnAmended`
+ * above, whose *a keep ends* row reads the ✖ news this same card family
+ * raises. Until v0.138 a keep could not fail a motion at all: the settle
+ * check skipped any motion carrying one, so the motion simply stood running.
+ * The crown's refusal is the road this section takes; an
  * **ordinary** motion is held the moment no answer still to come could carry
  * it (Q1440, `engine-bridge`'s `sync`), which `invite-walk` asserts, and the
  * system's own withdrawal is raised inside `sync` on a path the wire refuses
@@ -1551,7 +1791,7 @@ const motionDeckOnAmended = async () => {
   const ctx3 = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
   const cyPage = await ctx3.newPage();
   cyPage.on('pageerror', (e) => errors.push('[cy] ' + String(e)));
-  await cyPage.goto(cyLink);
+  await landOn(cyPage, cyLink);
   for (let i = 0; i < 40 && !cyPage.url().includes('/d/'); i++) await cyPage.waitForTimeout(500);
   await cyPage.waitForTimeout(2600);
   const putA = await wire(guestPage, 'open-motion', { payload: { kind: 'set', setting: AMENDED, value: { rung: 'closed' } }, why: 'members only, again' });
@@ -1584,7 +1824,13 @@ const motionDeckOnAmended = async () => {
     : 'FAIL: ' + JSON.stringify(cardA)));
   if (!deckOk2) stuck.push('the first motion’s card');
   await closeCard();
-  const ansA = await wire(page, 'answer-motion', { motion: mA, answer: 'keep' });
+  /* **The founder abstains rather than keeps** (Q1473): what this step is
+   * about is two motions on one setting, each its own tab and entry, each
+   * answered and each still running — and since v0.138 a keep settles the
+   * motion it is cast on, which would take the entry out of the rail before
+   * the next line could read it. An abstention is the answer that leaves a
+   * motion collecting, and it leaves the third seat's answer owed. */
+  const ansA = await wire(page, 'answer-motion', { motion: mA, answer: 'abstain' });
   if (ansA && ansA.error) { say('motions ansA · FAIL: ' + JSON.stringify(ansA)); stuck.push('the founder’s answer on the first motion'); }
   await T(5000);
   const dA2 = await entryAt(page, mKA), dB2 = await entryAt(page, mKB);
@@ -1593,7 +1839,7 @@ const motionDeckOnAmended = async () => {
   say('motions 3  · ' + (deckOk3 ? 'the first answered: its entry files as ⏳ ' + dA2.title + ' · the second still asks ' + dB2.title
     : 'FAIL: ' + JSON.stringify({ dA2, dB2 })));
   if (!deckOk3) stuck.push('the entries after the first answer');
-  const ansB = await wire(page, 'answer-motion', { motion: mB, answer: 'keep' });
+  const ansB = await wire(page, 'answer-motion', { motion: mB, answer: 'abstain' });
   if (ansB && ansB.error) { say('motions ansB · FAIL: ' + JSON.stringify(ansB)); stuck.push('the founder’s answer on the second motion'); }
   await T(5000);
   const dA3 = await entryAt(page, mKA), dB3 = await entryAt(page, mKB);
@@ -1603,11 +1849,43 @@ const motionDeckOnAmended = async () => {
     return c ? [...c.querySelectorAll('[data-motion][aria-pressed="true"]')].map((b) => b.dataset.motion) : null;
   }, mKA);
   const deckOk4 = !!dA3 && dA3.mark === 'deciding' && !!dB3 && dB3.mark === 'deciding' && /^2 of 3 have answered$/.test(dB3.title || '') &&
-    !!cardA3 && cardA3.join() === 'no';
+    !!cardA3 && cardA3.join() === 'abstain';
   say('motions 4  · ' + (deckOk4 ? 'both answered, both entries ⏳: ' + dB3.title + ' · the first’s card reopens with the answer given pre-pressed'
     : 'FAIL: ' + JSON.stringify({ dA3, dB3, cardA3 })));
   if (!deckOk4) stuck.push('the entries once every motion is answered');
   await closeCard();
+  /* **…and a rename stands in the 🪶 clause's own pile like any other** (Q1474,
+   * Ed's screenshot 2026-09-19: *name the document proposal not showing
+   * correctly*). The title's paragraph is drawn by `titleGovPara` rather than
+   * by the section body every other rule goes through, and it built its pile
+   * from a list of its own — so a motion on the title had a rail entry, no tab
+   * anywhere, and a card that would not open. One motion is enough here: what
+   * it asserts is that the title's pile is `chipsFor`'s, and everything else
+   * about a motion the four steps above have already walked. `scripts/repro/
+   * title-motion-tab.mjs` is the whole reading, from a member's seat too. */
+  const putT = await wire(guestPage, 'open-motion',
+    { payload: { kind: 'set', setting: 'title', value: { text: 'A Better Name For The Journey' } }, why: 'it deserves a better name' });
+  const mT = putT && putT.result;
+  if (!mT || putT.error) {
+    say('rename put · FAIL: a motion on the title was refused · ' + JSON.stringify(putT));
+    stuck.push('a motion on the title');
+  } else {
+    await T(5000);
+    const mKT = 'mo:' + mT;
+    const seenT = await page.evaluate((k) => {
+      const rule = document.querySelector('#band .achip[data-chip="title"]');
+      const para = rule ? rule.closest('.cpara') : null;
+      const tab = document.querySelector('#band .achip[data-chip="' + k + '"]');
+      return { entry: !!document.querySelector('#rail li[data-q="' + k + '"]'),
+        inTitlePile: !!(tab && para && para.contains(tab)),
+        front: para && para.querySelector('.achip') ? para.querySelector('.achip').dataset.chip : null };
+    }, mKT);
+    const renameOk = seenT.entry && seenT.inTitlePile && seenT.front === 'title';
+    say('rename tab · ' + (renameOk ? 'a rename has its own rail entry and its own tab in the 🪶 clause’s pile, behind the rule’s own'
+      : 'FAIL: ' + JSON.stringify(seenT)));
+    if (!renameOk) stuck.push('the rename’s tab in the title’s pile (Q1474)');
+    await wire(guestPage, 'withdraw-motion', { motion: mT });
+  }
   await wire(guestPage, 'withdraw-motion', { motion: mA });
   await wire(cyPage, 'withdraw-motion', { motion: mB });
   await T(5000);
@@ -1709,6 +1987,32 @@ const stuckAtBegin = async () => {
       : 'FAIL: holds ' + JSON.stringify(after.holds) + ' · rail ' + JSON.stringify(after.rail)));
     if (!gone) stuck.push('the ✉️ remedy did not clear after an invitation');
   } else { say('invited    · FAIL: no ✉️ to invite from'); stuck.push('the ✉️ tab at the dead end'); }
+  /* 5 — **and while the room answers, 🍾 waits in the open, naming who is
+   * still to answer** (issue #76, Ed 2026-09-22: *a ⏳ Begin task in the rail
+   * with a list of the usernames/avatars which have answers still due*). The
+   * invitee arrives, so every hold is `collecting` and the founder's own part
+   * is done: 🍾 must be a ⏳ entry in the rail carrying the invitee's face and
+   * name, and its card must open refused. Until #76 the entry stood as an
+   * ask with nobody named on it, or — where ✋ or 🖼️ were still served — not
+   * at all. */
+  const link = await invitationLink(GUEST1);
+  const arrived = link ? await followLink(link).then(() => true, () => false) : false;
+  await T(5200);                                 // one poll in the founder's seat
+  const due = await page.evaluate(() => {
+    const li = document.querySelector('#rail li[data-q="begin"]');
+    const b = li && li.querySelector('button');
+    return b ? { state: [...b.classList].find((c) => c.startsWith('st-')) || null,
+      names: [...li.querySelectorAll('.qdue')].map((e) => e.textContent.trim()),
+      faces: li.querySelectorAll('.qdue .av, .qdue .emojiface').length } : null;
+  });
+  const holds5 = ((await founding()) || {}).readiness || {};
+  const guestName = GUEST1.split('@')[0];
+  const dueOk = arrived && !!due && due.state === 'st-wait' && due.faces >= 1 &&
+    due.names.some((n) => n.includes(guestName)) &&
+    (holds5.holds || []).every((h) => h.why === 'collecting');
+  say('who is due · ' + (dueOk ? '🍾 waits as ⏳ in the rail, naming ' + JSON.stringify(due.names) + ' with their faces'
+    : 'FAIL: ' + JSON.stringify({ arrived, due, holds: holds5.holds })));
+  if (!dueOk) stuck.push('⏳ Begin names who is still to answer (#76)');
 };
 
 /* ---- 🍾's power table (entry 158, Q1018, R-057; per setting since Q1195 (c),
@@ -1811,6 +2115,26 @@ const beginRowsBeforeStart = async () => {
     : 'FAIL: ' + rows.length + ' rows · given ' + JSON.stringify(givenPen) +
       ' · laid down ' + JSON.stringify(downPen)));
   if (!ok) stuck.push('the 🍾 row holding a promised-away pen did not read given, alone');
+  /* 🗑️ puts the table back (issue #34 F2). The toggles write `S.beginRows`
+   * in place and the bin's snapshot never named it, so a struck cell survived
+   * the bin and 🍾 laid that power down for good. Two kept cells struck, 🗑️,
+   * 🍾 reopened: the rows must read as they opened — twice, since the
+   * snapshot outlives the press. Red on the pre-#34 page at the first round. */
+  const said = (rs) => JSON.stringify(rs.map((r) => r.key + ' ' + r.cells.map((c) => c.pw + '=' + c.says).join(' ')));
+  const opening = said(rows);
+  const binRounds = [];
+  for (const [k, pw] of [['chamber', 'u'], ['quorum', 'a']]) {
+    const struck = await brSet(k, pw, 'down');
+    const mid = said(await brRows());
+    const binned = await clickIn('.setupcard [data-revert]');
+    await T(500);
+    const back = await open('begin') ? said(await brRows()) : null;
+    binRounds.push({ k, pw, struck, moved: mid !== opening, binned, restored: back === opening });
+  }
+  const binOk = binRounds.every((r) => r.struck && r.moved && r.binned && r.restored);
+  say('begin bin  · ' + (binOk ? 'a struck cell, 🗑️, and 🍾 reopens as it opened — twice'
+    : 'FAIL: ' + JSON.stringify(binRounds)));
+  if (!binOk) stuck.push('🗑️ on 🍾 puts the power table back (#34 F2)');
   // …and one row's 🛡️ set to lay down, which is what the press must carry
   const set = await brSet('invite', 'a', 'down');
   const after = await brRows();
@@ -2016,6 +2340,26 @@ for (let i = 0; i < 60; i++) {
     say('  textcard · ' + (tcOk ? next + ' opens headless and its entry carries no subtitle'
       : 'FAIL: ' + next + ' · title head ' + JSON.stringify(tc.title) + ' · entry subtitle ' + JSON.stringify(tc.sub)));
     if (!tcOk) stuck.push(next + ': a title head or an entry subtitle (Q1373/Q1374)');
+    /* **A grant is accepted, and says so** (Q1501, Q1502; Ed 2026-09-22):
+     * until its press the card's commit reads *Accept* and the power —
+     * 🏛️'s *Activate 🏛️* — and its rail entry and tab wear the *yours* hue,
+     * the entry sparkling. Read at the same moment as the line above. */
+    const GRANT_WORD = { 'grant-pen': 'Accept ✒️', 'grant-shield': 'Accept 🛡️', 'grant-voice': 'Activate 🏛️',
+      canpropose: 'Accept ✏️', canjudge: 'Accept ⚖️' };
+    const gw = await page.evaluate((k) => {
+      const ok = document.querySelector('.setupcard [data-ok="' + k + '"]');
+      const li = document.querySelector('#rail li[data-q="' + k + '"]');
+      const b = li && li.querySelector('button');
+      const tab = document.querySelector('.setupcard .chipcol [data-chip="' + k + '"]');
+      return { word: ok ? window.CARDS.glyphTextOf(ok).replace(/\s+/g, ' ').trim() : null,
+        entryHue: b ? /lc-yours/.test(b.getAttribute('style') || '') : null,
+        sparkle: !!(li && li.querySelector('.sparkle')),
+        tabHue: tab ? /lc-yours/.test(tab.getAttribute('style') || '') : null };
+    }, next);
+    const gwOk = gw.word === GRANT_WORD[next] && gw.entryHue === true && gw.sparkle && gw.tabHue === true;
+    say('  accept   · ' + (gwOk ? next + ' commits with “' + gw.word + '”, its entry and tab in the yours hue, the entry sparkling'
+      : 'FAIL: ' + next + ' · ' + JSON.stringify(gw) + ' · wanted “' + GRANT_WORD[next] + '”'));
+    if (!gwOk) stuck.push(next + ': the grant’s Accept, hue and sparkle (Q1501/Q1502)');
   }
   // **The door is ✉️, and it stopped being 🪪 on 2026-08-26** (entry 94,
   // Q916). This opened `admission` and typed into an invitation box that used
@@ -2047,6 +2391,8 @@ for (let i = 0; i < 60; i++) {
       await identityReachesEverySeat();
       // Q1327 — a draft typed on ✋ in the member seat survives the poll's render
       await draftSurvivesRender();
+      // Q1503 — 🎩 from the member's seat is the founder's card, locked
+      await hatFromMemberSeat();
       // L9 — 🗑️ puts back what was typed and touches nothing set (Q1239)
       await lifecycleL9();
     } else {
@@ -2389,9 +2735,9 @@ const editState = await page.evaluate(() => {
     runway: Math.round(parseFloat(getComputedStyle(document.getElementById('doc')).paddingBottom)),
     gap: !!document.querySelector('#charter .prose p.editable.blank.gap[data-key^="G"]'),
     // **the lane controls are the column's one strip** (Q1294 (b), Ed
-    // 2026-09-10: *top right of the edit box*): B · I · [] at the card's top
+    // 2026-09-10: *top right of the edit box*): B · I at the card's top
     // right — 1px inside its top edge, --s2 (8px) inside its right — no lane
-    // carrying controls of its own, and no [] left on the row
+    // carrying controls of its own, and no [] anywhere since Q1467
     strip: (() => {
       const st = document.querySelector('#charter .editctl .lanectl');
       if (!st || !col) return null;
@@ -2399,7 +2745,7 @@ const editState = await page.evaluate(() => {
       return { order: [...st.querySelectorAll('button')].map((x) => x.textContent.trim()).join(''),
         top: Math.round(r.top - c.top), right: Math.round(c.right - r.right),
         laneCtl: document.querySelectorAll('.lanebox .lanectl').length,
-        rowMode: document.querySelectorAll('#charter [data-proposalrow] .lmode').length };
+        anyMode: document.querySelectorAll('.lmode, [data-act="col-mode"]').length };
     })() };
 });
 // **the pile is 📝 and the Text's held powers, no more** (Q1404): a power 🍾
@@ -2413,8 +2759,8 @@ const textPowersHeld = await page.evaluate(() => fetch(location.pathname.replace
   .catch(() => null));
 const wantRide = textPowersHeld === null ? null : 1 + textPowersHeld;
 editState.wantRide = wantRide;
-const stripOk = !!editState.strip && editState.strip.order === 'BI[]' && editState.strip.top === 1 &&
-  editState.strip.right === 8 && editState.strip.laneCtl === 0 && editState.strip.rowMode === 0;
+const stripOk = !!editState.strip && editState.strip.order === 'BI' && editState.strip.top === 1 &&
+  editState.strip.right === 8 && editState.strip.laneCtl === 0 && editState.strip.anyMode === 0;
 const rowBare = editState.rowGround && /rgba\(0, 0, 0, 0\)|transparent/.test(editState.rowGround.bg) &&
   editState.rowGround.shadow === 'none' && editState.rowGround.border === 'none';
 // ✏️ always; ✒️ only ever *beside* it, never instead (the founder has not
@@ -2426,7 +2772,7 @@ const editOk = (await hostEditable()) === 'true' && editState.editing && editSta
   editState.rideRight === editState.consRight + 2 && editState.padTop === 24 &&
   Math.abs(editState.lineDelta) <= 1 && editState.runway === 0 && stripOk &&
   (EMPTY_TEXT ? !editState.gap : editState.gap);
-say('edit mode  · ' + JSON.stringify(editState) + (editOk ? '' : '  FAIL: 📝 should lift the column (24px over the first line), fan the pile to 📝 plus the Text\'s held powers (' + wantRide + ' tabs, Q1404) on the constitution\'s gutter, draw the bare row greyed with ✏️ (✒️ only beside it), the B · I · [] strip at the card\'s top right with no lane carrying controls, and the trailing gap'));
+say('edit mode  · ' + JSON.stringify(editState) + (editOk ? '' : '  FAIL: 📝 should lift the column (24px over the first line), fan the pile to 📝 plus the Text\'s held powers (' + wantRide + ' tabs, Q1404) on the constitution\'s gutter, draw the bare row greyed with ✏️ (✒️ only beside it), the B · I strip at the card\'s top right with no lane carrying controls, and the trailing gap'));
 if (!editOk) stuck.push('edit mode');
 /* ---- a click outside leaves edit mode after 🍾 too (Q1315, Ed 2026-09-11:
  * *clicking outside of cards should close them*, ruled for both eras): on
@@ -2531,6 +2877,9 @@ if (!doorOk) stuck.push('the floating 📝 (Q1335)');
 // the other half of backlog 50: what *is* news to a member is a rule changed
 // while they were here, and one press of OK is what dismisses it
 await secondSeatOnAmendment();
+
+// issue #80: and an *ordinary* rule the Founder changes is news too
+await ordinaryAmendmentNews();
 
 // Q1319: with the amendment acknowledged, a member puts 🌍 to the room and
 // the founder's rail entry must read the motion's progress
@@ -2809,6 +3158,226 @@ if (column.skipped) {
     : 'FAIL: ' + JSON.stringify(column)));
   if (!columnOk) stuck.push('the column above the editing card (Q1336)');
 }
+/* ---- a new clause typed straight after the Enter that made it (Q1461 (iii),
+ * Ed's residency room 2026-09-18: the sentence came out appended to the clause
+ * above). Opening the composer used to travel to the card — an animated scroll
+ * — and the caret only landed in the lane on its far side, so everything typed
+ * meanwhile went on hitting the *column*. The clause is put **low** in the
+ * window first, because one already near the reading line makes the travel a
+ * no-op and hides the whole thing; then Enter and the sentence with no pause,
+ * which is what a person does. Binned through the row's own 🗑️ afterwards,
+ * like the column step above. */
+const gapKeys = await (async () => {
+  if (EMPTY_TEXT) return { skipped: 'an empty document has no clause to press Enter at the end of' };
+  const SENT = 'A new clause, typed the instant it was made.';
+  /* **Nothing open first.** A card still standing when the Enter lands makes
+   * `startDraft` take its own in-place path and the step tests nothing — which
+   * is exactly what the step did on its first outing, quietly green against the
+   * unfixed page (the step above leaves one open often enough). */
+  const was = await page.evaluate(() => {
+    const open = window.SESSION.openId;
+    if (open != null) window.SESSION.closeCard();
+    return open;
+  });
+  await T(500);
+  const found = await page.evaluate(() => {
+    const ps = [...document.querySelectorAll('#charter .prose p.editable[data-key]')]
+      .filter((p) => !p.classList.contains('gap') && !p.closest('.sugg') && p.textContent.trim().length > 5);
+    const p = ps[ps.length - 1];
+    if (!p) return null;
+    p.scrollIntoView({ block: 'center' });
+    scrollBy(0, -320);                         // out of bringIntoView's 100–300 band
+    return p.dataset.key;
+  });
+  if (!found) return { at: null, was };
+  await T(300);                                // the scroll settles before anything is measured
+  /* The caret at the clause's very end — and the recorder that reads the first
+   * character's own arrival. **Where it lands is read inside the page**: a
+   * `page.evaluate` between the Enter and the next key is a round trip of its
+   * own, and on a document this size it outlasts the travel, so the walk would
+   * measure the state the reader never typed into. The listener costs nothing
+   * and answers the only question there is — when the next character arrived,
+   * was the card open and was the caret in the new clause's lane? */
+  const at = await page.evaluate((k) => {
+    const p = [...document.querySelectorAll('#charter .prose p.editable[data-key]')]
+      .find((x) => x.dataset.key === k && !x.closest('.sugg'));
+    if (!p) return null;
+    const r = document.createRange(); r.selectNodeContents(p); r.collapse(false);
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    window.__firstKey = null;
+    document.addEventListener('beforeinput', (ev) => {
+      if (window.__firstKey || ev.inputType !== 'insertText') return;
+      const el = document.activeElement;
+      window.__firstKey = { open: window.SESSION.openId,
+        lane: el && el.dataset ? el.dataset.lane || null : null,
+        at: el && el.id ? '#' + el.id : null };
+    }, true);
+    return { key: k, top: Math.round(p.getBoundingClientRect().top) };
+  }, found);
+  if (!at) return { at };
+  await page.keyboard.press('Enter');
+  await page.keyboard.type(SENT, { delay: 40 });
+  await T(400);
+  const m = await page.evaluate(() => {
+    const d = (window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours');
+    const el = document.activeElement;
+    return { sites: d ? d.sites.map((x) => x.keys.join('+') + ':' + x.text) : null,
+      born: window.__firstKey, lane: el && el.dataset ? el.dataset.lane || null : null };
+  });
+  const binned = await page.evaluate(() => {
+    const b = document.querySelector('#charter [data-proposalrow] [data-act="row-discard"]');
+    if (!b || b.disabled) return false;
+    b.click();
+    return true;
+  });
+  await T(500);
+  return { at, ...m, want: SENT, binned,
+    draft: await page.evaluate(() => !!(window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours')) };
+})();
+if (gapKeys.skipped) {
+  say('gap keys   · skipped — ' + gapKeys.skipped);
+} else {
+  const one = gapKeys.sites && gapKeys.sites.length === 1 ? gapKeys.sites[0] : null;
+  const gap = one && /^G\d+:/.test(one) ? one.slice(0, one.indexOf(':')) : null;
+  const bornOk = !!gapKeys.born && gapKeys.born.open === 'draft-yours' &&
+    /^G\d+$/.test(gapKeys.born.lane || '');
+  const gapKeysOk = bornOk && !!gap && one.slice(gap.length + 1) === gapKeys.want &&
+    gapKeys.lane === gap && gapKeys.binned && !gapKeys.draft;
+  say('gap keys   · ' + (gapKeysOk
+    ? 'Enter at ' + gapKeys.at.key + ' (' + gapKeys.at.top + 'px down the window) opens the card and lands the caret in ' +
+      gap + ' before the next key; typing with no pause puts every character there'
+    : 'FAIL: ' + JSON.stringify(gapKeys)));
+  if (!gapKeysOk) stuck.push('a new clause typed straight after its Enter (Q1461)');
+}
+/* ---- Enter at the end of a lane you are already drafting in (issue #78; the
+ * twelve-seat integration room, 2026-09-20: *"…of each month.Meetings begin at
+ * seven…"* in the signed charter). `readLane` stripped the trailing newline
+ * the Enter made, so the lane was redrawn without its new block, the caret
+ * came back to line one and the second sentence was glued onto the first.
+ * Real key presses: type at a clause's end (the draft opens), Enter, a
+ * sentence; the hunk the page would send is read off `SESSION.hunksOf` and
+ * must carry two lines. Then Enter alone at the end must leave the draft
+ * sending one line — the empty line is the lane's, never the proposal's
+ * (`sentText`). Binned through the row's own 🗑️, like the steps above.
+ * Red on the pre-#78 page at *one line, glued*. */
+const laneKeys = await (async () => {
+  if (EMPTY_TEXT) return { skipped: 'an empty document has no clause to draft on' };
+  const FIRST = ' Circulated within a week.';
+  const SECOND = 'A second sentence on its own line.';
+  await page.evaluate(() => { if (window.SESSION.openId != null) window.SESSION.closeCard(); });
+  await T(500);
+  const at = await page.evaluate(() => {
+    const p = [...document.querySelectorAll('#charter .prose p.editable[data-key]')]
+      .find((x) => !x.classList.contains('gap') && !x.closest('.sugg') &&
+        !x.querySelector('.mdmark') && x.textContent.trim().length > 5);
+    if (!p) return null;
+    p.scrollIntoView({ block: 'center' });
+    const r = document.createRange(); r.selectNodeContents(p); r.collapse(false);
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    return p.dataset.key;
+  });
+  if (!at) return { at };
+  await page.keyboard.type(FIRST, { delay: 30 });
+  await T(700);
+  await page.keyboard.press('Enter');
+  await page.keyboard.type(SECOND, { delay: 30 });
+  await T(500);
+  const read = () => page.evaluate(() => {
+    const d = (window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours');
+    const hunks = d && window.SESSION.hunksOf ? window.SESSION.hunksOf(d) : null;
+    return { text: d && d.sites[0] ? d.sites[0].text : null,
+      lanes: document.querySelectorAll('.sugg.editcard [data-lane] .lp').length,
+      lines: hunks && hunks[0] ? hunks[0].lines : null };
+  });
+  const two = await read();
+  // the second sentence taken back off, and the new line left bare
+  for (let i = 0; i < SECOND.length; i++) await page.keyboard.press('Backspace');
+  await T(500);
+  const bare = await read();
+  const binned = await page.evaluate(() => {
+    const b = document.querySelector('#charter [data-proposalrow] [data-act="row-discard"]');
+    if (!b || b.disabled) return false;
+    b.click();
+    return true;
+  });
+  await T(500);
+  return { at, two, bare, binned, want: [FIRST.trim(), SECOND],
+    draft: await page.evaluate(() => !!(window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours')) };
+})();
+if (laneKeys.skipped) {
+  say('lane keys  · skipped — ' + laneKeys.skipped);
+} else {
+  const l2 = laneKeys.two && laneKeys.two.lines;
+  const twoOk = !!l2 && l2.length === 2 && l2[0].endsWith(laneKeys.want[0]) && l2[1] === laneKeys.want[1] &&
+    laneKeys.two.lanes === 2;
+  const lb = laneKeys.bare && laneKeys.bare.lines;
+  const bareOk = !!lb && lb.length === 1 && lb[0].endsWith(laneKeys.want[0]) && laneKeys.bare.lanes === 2;
+  const laneKeysOk = !!laneKeys.at && twoOk && bareOk && laneKeys.binned && !laneKeys.draft;
+  say('lane keys  · ' + (laneKeysOk
+    ? 'Enter at the end of the draft on ' + laneKeys.at + ' makes a second line: the hunk carries two lines, and the new line left bare sends one'
+    : 'FAIL: ' + JSON.stringify(laneKeys)));
+  if (!laneKeysOk) stuck.push('Enter at the end of a lane you are drafting in (#78)');
+}
+/* ---- a heading's `#`, from the column, with real key presses (Q1467; Ed,
+ * the residency room 2026-09-19: *I can't edit headings in the text. the #s
+ * are not editable*). Edit mode is the markdown source, so the marker is
+ * ordinary text: a click lands a caret in it, one step right stands the caret
+ * behind the `#`, and Backspace takes that character and no other. The draft
+ * must be on **that** heading — the failure this replaces put the caret at the
+ * end of the paragraph above and opened a draft there, a keystroke aimed at
+ * one clause landing on another (Q1461's family). Binned through the row's own
+ * 🗑️ afterwards, like the two steps above. */
+const headKeys = await (async () => {
+  const found = await page.evaluate(() => {
+    if (window.SESSION.openId != null) window.SESSION.closeCard();
+    const head = [...document.querySelectorAll('#charter .prose [data-key]')]
+      .filter((b) => !b.closest('.sugg') && b.getClientRects().length)
+      .find((b) => { const m = b.querySelector('.mdmark'); return m && /^#+\s*$/.test(m.textContent); });
+    if (!head) return null;
+    head.scrollIntoView({ block: 'center' });
+    const mark = head.querySelector('.mdmark');
+    const c = head.cloneNode(true);
+    c.querySelectorAll('.chipcol, .nocaret, .sechint, .mdmark').forEach((el) => el.remove());
+    const r = document.createRange(); r.selectNodeContents(mark);
+    const q = r.getBoundingClientRect();
+    return { key: head.dataset.key, marker: mark.textContent, words: c.textContent,
+      furniture: mark.closest('[contenteditable="false"]') != null,
+      x: q.left + 2, y: q.top + q.height / 2 };
+  });
+  if (!found) return { skipped: 'the charter holds no heading with a marker' };
+  await T(300);
+  await page.mouse.click(found.x, found.y);
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('Backspace');
+  await T(500);
+  const m = await page.evaluate(() => {
+    const d = (window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours');
+    return { sites: d ? d.sites.map((x) => x.keys.join('+') + ':' + x.text) : null,
+      lane: document.activeElement && document.activeElement.dataset
+        ? document.activeElement.dataset.lane || null : null };
+  });
+  const binned = await page.evaluate(() => {
+    const b = document.querySelector('#charter [data-proposalrow] [data-act="row-discard"]');
+    if (!b || b.disabled) return false;
+    b.click();
+    return true;
+  });
+  await T(500);
+  return { ...found, ...m, binned,
+    draft: await page.evaluate(() => !!(window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours')) };
+})();
+if (headKeys.skipped) {
+  say('head keys  · skipped — ' + headKeys.skipped);
+} else {
+  const want = headKeys.key + ':' + headKeys.marker.slice(1) + headKeys.words;
+  const headKeysOk = !headKeys.furniture && !!headKeys.sites && headKeys.sites.length === 1 &&
+    headKeys.sites[0] === want && headKeys.lane === headKeys.key && headKeys.binned && !headKeys.draft;
+  say('head keys  · ' + (headKeysOk
+    ? 'a click on ' + headKeys.key + '’s ' + JSON.stringify(headKeys.marker.trim()) +
+      ' stands a caret in it, and Backspace takes that character on that heading alone'
+    : 'FAIL: ' + JSON.stringify(headKeys)));
+  if (!headKeysOk) stuck.push('a heading’s marker edited from the column (Q1467)');
+}
 const caret = await page.evaluate((empty) => {
   const r = document.createRange();
   let p;
@@ -2833,6 +3402,348 @@ const caret = await page.evaluate((empty) => {
   s.addRange(r);
   return p.dataset.key || '(no key)';
 }, EMPTY_TEXT);
+/* ---- ✏️ *propose edit* over a run of two lines (Q1483, the nh2026
+ * convention 2026-09-20: *the propose edit button doesn't always pick up the
+ * right text*) ------------------------------------------------------------
+ * Two halves of one defect, on one card:
+ *
+ *   **a rival's lane** — the draft remembered the rival's wording as what it
+ *   replaces, and Q1463's misaim guard compares that to the clause as it
+ *   stands, so **every press was refused on the page** with *the text moved
+ *   while you were writing*, which was false, and nothing was ever sent;
+ *
+ *   **the keep lane** — the head of a card over a *run* reads the whole run
+ *   (`runTextFor`, Q1308) and ✏️ under it opened a draft on the first block
+ *   alone: a card about `[k, k+2)` gave a draft aimed at `[k, k+1)`, so a
+ *   candidate's several lines would have replaced one and doubled the rest.
+ *
+ * Each lane is pressed, the draft read out of the page's own model, and the
+ * proposal put with the row's own hold, its hunk read off the wire — the
+ * page's own `hunksOf` being closed over inside session-view.html where no
+ * walk can reach it. **Each proposal is withdrawn before the next**, so the
+ * step asks one spare ✏️ of the seat that reads and one of the seat that puts
+ * the rival wording — and it picks both by reading the wallets, because by
+ * the end of this walk the founder's is empty, bo's and cy's depend on the
+ * drip, and which seat can still pay is not a thing to assume. **Called from
+ * inside the proposing section**, where two seats still hold an ✏️: by the
+ * end of this walk nobody does. It leaves the clause and both wallets as it
+ * found them.
+ * It fails on the pre-fix page at *run edit 1 · FAIL: … refused on the page*
+ * and at *run edit 2 · FAIL: … opened ["Lk"]*. */
+const proposeEditOverRun = async () => {
+  if (!guestPage) return;                       // its own failure, already reported
+  const wire = (pg, cmd, args) => pg.evaluate(([c, a]) => fetch(location.pathname.replace('/d/', '/api/d/') + '/cmd', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ cmd: c, args: a }),
+  }).then((r) => r.json()).catch((e) => ({ error: String(e && e.message) })), [cmd, args]);
+  const viewOf = (pg) => pg.evaluate(() => fetch(location.pathname.replace('/d/', '/api/d/') + '/view')
+    .then((r) => r.json()).catch(() => null));
+
+  const v0 = await viewOf(page);
+  const lines = String((v0 || {}).text || '').split('\n');
+  // a clause already racing opens its race rather than a run of its own
+  const taken = new Set();
+  for (const c of ((v0 || {}).clauses || [])) {
+    for (const sp of (c.contested || [])) for (let i = sp.start; i <= sp.end; i++) taken.add(i);
+  }
+  let k = -1;
+  for (let i = 0; i + 1 < lines.length; i++) {
+    if (taken.has(i) || taken.has(i + 1) || !lines[i].trim() || !lines[i + 1].trim()) continue;
+    k = i; break;
+  }
+  if (k < 0) {
+    say('run edit   · FAIL: every run of two lines is already racing · ' + JSON.stringify([...taken]));
+    stuck.push('a free two-line run for the propose-edit run'); return;
+  }
+  // **the founder reads and bo writes**, and no third seat is minted: cy is
+  // seated later in the walk and its page has acknowledged nothing, so it
+  // holds no cards to press — and the two gap proposals the `askable` step
+  // makes are the whole of cy's wallet.
+  const reader = { who: 'ada', pg: page }, author = { who: 'bo', pg: guestPage };
+  for (const s of [reader, author]) s.purse = ((await viewOf(s.pg)) || {}).wallet;
+  const wallets = { ada: reader.purse, bo: author.purse };
+  if (!(reader.purse >= 1 && author.purse >= 1)) {
+    say('run edit   · FAIL: an ✏️ apiece is needed and the wallets are ' + JSON.stringify(wallets));
+    stuck.push('an ✏️ apiece for the run edit'); return;
+  }
+  const rp = reader.pg;
+  const RIVAL = 'Two lines stand here as one, and the club keeps the shorter.';
+  const put = await wire(author.pg, 'propose-text', { baseVersion: (v0 || {}).textVersion,
+    hunks: [{ start: k, end: k + 2, lines: [RIVAL], was: [lines[k], lines[k + 1]] }],
+    why: 'shorter is plainer' });
+  const rival = put && put.result && put.result.id;
+  if (!rival) {
+    say('run edit   · FAIL: ' + author.who + ' could not put the rival wording on L' + k + '+L' + (k + 1) +
+      ' · ' + JSON.stringify(put).slice(0, 160) + ' · wallets ' + JSON.stringify(wallets));
+    stuck.push('the rival wording the run edit is read against'); return;
+  }
+  await T(5600);                                 // one poll in the reader's seat
+  // **whatever this step made, it takes away again** — on its way out of any
+  // of the failures below as much as at the end, because a rival left
+  // standing is an ✏️ of bo's gone and a race on a clause the steps after
+  // this one look for
+  let outstanding = null;
+  try {
+
+  // the page's own model of the draft a press opened — read rather than
+  // driven, so a failure names what the page holds
+  const draftNow = () => rp.evaluate(() => {
+    const S = window.SESSION;
+    const d = (S.SUGGS || []).find((x) => x.id === 'draft-yours');
+    if (!d || !(d.sites || []).length) return null;
+    const s = d.sites[0];
+    return { sites: d.sites.length, keys: s.keys.slice(), text: s.text,
+      seed: s.seed == null ? null : s.seed, origin: s.origin.map((o) => o.text),
+      refusal: d.refusal || null };
+  });
+  // **what went out, off the wire.** `LIVE_HOOKS` is closed over inside
+  // session-view.html and no walk can reach it (head-insertion-aim says the
+  // same), so the hunk is read from the request itself — which is the better
+  // reading anyway: it is what the host was actually told.
+  let sent = null;
+  rp.on('response', (r) => {
+    const body = r.request().postData() || '';
+    if (!/\/cmd$/.test(r.url()) || !/propose-text/.test(body)) return;
+    let hunks = null;
+    try { hunks = JSON.parse(body).args.hunks.map((h) => [h.start, h.end, (h.lines || []).length]); } catch { /* not ours */ }
+    sent = { status: r.status(), hunks };
+  });
+  // the row's ✏️, held as the propose step holds it (backlog 184: a click in
+  // the click position, a real press held down in the hold position)
+  const holdCommit = async () => {
+    // the floating row where the window has one, else the card's own ✏️ —
+    // which is the control a draft opened by ✏️ *propose edit* carries when
+    // the reader never went through 📝
+    const b = await rp.$('#charter [data-proposalrow] [data-act="row-commit"]:not([data-pen]):not([disabled])')
+      || await rp.$('.sugg [data-act="draft-propose"]:not([data-pen]):not([disabled])');
+    if (!b) return false;
+    await b.scrollIntoViewIfNeeded();
+    const bx = await b.boundingBox();
+    if (!bx) return false;
+    await rp.mouse.move(bx.x + bx.width / 2, bx.y + bx.height / 2);
+    if ((await pageGesture()) === 'click') await rp.mouse.click(bx.x + bx.width / 2, bx.y + bx.height / 2);
+    else { await rp.mouse.down(); await T(1400); await rp.mouse.up(); }
+    await T(2600);
+    return true;
+  };
+
+  for (const lane of ['approve', 'keep']) {
+    const n = lane === 'approve' ? 1 : 2;
+    const opened = await rp.evaluate(([a, b, ln]) => {
+      const S = window.SESSION;
+      const it = (S.SUGGS || []).find((x) => !x.mine && (x.keys || []).join('+') === 'L' + a + '+L' + b);
+      if (!it) return { found: false, have: (S.SUGGS || []).map((x) => x.id + ':' + (x.keys || []).join('+')) };
+      try { S.toggle(it.id, false); } catch { /* already open */ }
+      const q = String(it.id).replace(/["\\]/g, '\\$&');
+      const card = document.querySelector('.sugg[data-card="' + q + '"]');
+      const btn = card && [...card.querySelectorAll('[data-propose-from]')]
+        .find((x) => x.dataset.proposeFrom.split('|')[1] === ln);
+      if (!btn) return { found: true, id: it.id, btn: false,
+        lanes: card ? [...card.querySelectorAll('[data-propose-from]')].map((x) => x.dataset.proposeFrom) : null };
+      btn.click();
+      return { found: true, id: it.id, btn: true };
+    }, [k, k + 1, lane]);
+    if (!opened.found || !opened.btn) {
+      say('run edit ' + n + ' · FAIL: no ' + lane + ' lane on ' + reader.who + '’s card over L' + k + '+L' + (k + 1) +
+        ' · ' + JSON.stringify(opened).slice(0, 220));
+      stuck.push('the ' + lane + ' lane of a two-line run’s card'); return;
+    }
+    await T(1200);
+    const d = await draftNow();
+    const keysOk = !!d && d.sites === 1 && d.keys.join('+') === 'L' + k + '+L' + (k + 1);
+    // the seeded lane starts from the rival's wording and the keep lane from
+    // the run's own, and either way the **origin is what the document holds**
+    const seedOk = !!d && (lane === 'keep' ? d.seed === null : d.seed === RIVAL);
+    const originOk = !!d && d.origin.join('\n') === lines[k] + '\n' + lines[k + 1];
+    if (!keysOk || !seedOk || !originOk) {
+      say('run edit ' + n + ' · FAIL: ✏️ on the ' + lane + ' lane of L' + k + '+L' + (k + 1) +
+        ' opened ' + JSON.stringify(d).slice(0, 300));
+      stuck.push('✏️ over a two-line run (' + lane + ')'); return;
+    }
+    // something of the member's own in it, so what goes out is a wording and
+    // not the run put back (Q1479 (b)); typed into the lane by its own key,
+    // which is where the caret already is
+    const typed = await rp.evaluate((sel) => {
+      const box = document.querySelector(sel);
+      if (!box) return false;
+      box.focus({ preventScroll: true });
+      const r = document.createRange(); r.selectNodeContents(box); r.collapse(false);
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      return true;
+    }, '.sugg[data-card="draft-yours"] [data-lane="L' + k + '"]');
+    if (!typed) {
+      say('run edit ' + n + ' · FAIL: no lane keyed L' + k + ' on the draft card to type into');
+      stuck.push('the lane of a draft ✏️ opened over a run (' + lane + ')'); return;
+    }
+    await rp.keyboard.type(' zz');
+    await T(900);
+    sent = null;
+    const held = await holdCommit();
+    const landed = await rp.evaluate(([a, b]) => {
+      const S = window.SESSION;
+      const m = (S.SUGGS || []).find((x) => x.mine && x.unproposed !== true &&
+        (x.keys || []).join('+') === 'L' + a + '+L' + b);
+      const dr = (S.SUGGS || []).find((x) => x.id === 'draft-yours' && (x.sites || []).length);
+      const just = document.querySelector('#rail .qjust');
+      const doc0 = document.getElementById('doc');
+      return { id: m ? m.id : null, cand: m ? m.candidate : null, edits: S.editsHeld,
+        draft: !!dr, refusal: dr ? (dr.refusal || null) : null,
+        // **the card closes at Propose and the rail says so** (Q1485 (A))
+        open: S.openId, just: just ? just.textContent.trim() : null,
+        editing: !!(doc0 && doc0.classList.contains('editing')) };
+    }, [k, k + 1]);
+    // **the whole run, in one hunk**: a draft on the first block alone sends
+    // `[k, k+1)` and the lines it leaves behind are doubled
+    const aim = sent && sent.hunks;
+    const aimOk = !!aim && aim.length === 1 && aim[0][0] === k && aim[0][1] === k + 2;
+    // **and the page still knows it by the name it proposed it under**
+    // (Q1485 (D)): the command's own refresh rebuilds every item out of the
+    // fresh view, and until the page has been handed the new candidate's id
+    // it rebuilds the proposal under the view's own name — which is not the
+    // open card's, so the card vanished with no animation a round trip after
+    // it said *Submitted*. `mine:` is that other name.
+    const named = !!landed.id && !String(landed.id).startsWith('mine:');
+    // **the card closes at the press, and the rail says the thing went out**
+    // (Q1485 (A), Ed 2026-09-21: *Close, and say so*). Red on the pre-fix
+    // page: the card stayed open under the proposal's own id wearing a
+    // pressed *✏️ Submitted*, and no entry anywhere carried a sentence.
+    const shutOk = landed.open === null && !landed.editing && landed.just === JUST_PROPOSED;
+    const sentOk = held && !!sent && sent.status < 400 && aimOk && !!landed.id && !landed.draft && named && shutOk;
+    say('run edit ' + n + ' · ' + (sentOk
+      ? '✏️ on the ' + lane + ' lane of a card over L' + k + '+L' + (k + 1) + ' opens the whole run' +
+        (lane === 'keep' ? '' : ', seeded from the rival’s wording') +
+        ', and ' + reader.who + '’s proposal goes out as [' + k + ', ' + (k + 2) + ') · propose-text ' + sent.status +
+        ' · the card closed, edit mode ended, the rail says “' + landed.just + '”'
+      : 'FAIL: ' + (sent ? 'propose-text ' + sent.status + ' · sent ' + JSON.stringify(aim) +
+          ' for [' + k + ', ' + (k + 2) + ')' : 'nothing was sent') +
+        ' · held ' + held + ' · ' + JSON.stringify(landed).slice(0, 260)));
+    outstanding = landed.cand;
+    if (!sentOk) { stuck.push('sending a draft ✏️ opened over a run (' + lane + ')'); return; }
+    // **withdrawn before the next**, so the second half asks the same one ✏️
+    // of the same wallet and the rival's card is served again
+    await rp.evaluate(() => { try { window.SESSION.toggle(window.SESSION.openId, false); } catch { /* none open */ } });
+    if (outstanding) { await wire(rp, 'withdraw-text', { candidate: outstanding }); outstanding = null; }
+    await T(5600);
+  }
+
+  /* **An empty wallet darkens the ✏️, and says when the next one lands**
+   * (Q1486 (E), Ed 2026-09-21, widening his own question: *dark, with ✏️
+   * hh:mm countdown (for proposals as well as rule changes, the same
+   * anywhere you would want to press the button but you have no ✏️s)*).
+   *
+   * The reader's wallet is spent dry on the wire — ordinary title motions,
+   * one ✏️ each — and then a draft is opened on the run this step already
+   * owns. Red before the fix at *the row's ✏️ is live with an empty wallet*:
+   * the button was dark already (that much was right), but nothing said
+   * when it would wake, and pressing it was the only way to find out.
+   *
+   * *The countdown's text moving* is driven rather than waited for: a ten
+   * minute drip does not change its minutes inside a walk, so the step moves
+   * the note's own deadline — the one absolute instant the clock reads —
+   * and lets the **page's own 1 s timer** repaint it, then asserts the
+   * figures moved and that it is the very same element, which is the whole
+   * claim (one timer patching in place, never a render). */
+  const spent = [];
+  const trail = { purse: null, puts: [], dry: null, back: null, purse2: null };
+  try {
+    trail.purse = ((await viewOf(rp)) || {}).wallet || 0;
+    for (let i = 0; i < trail.purse; i++) {
+      const r = await wire(rp, 'open-motion', { payload: { kind: 'set', setting: 'title',
+        value: { text: 'Broke Row Probe ' + (i + 1) } } });
+      trail.puts.push(r && (r.result || r.error || r.ok));
+      if (r && r.result) spent.push(r.result.motion || r.result.id || r.result);
+    }
+    await T(5600);
+    trail.dry = ((await viewOf(rp)) || {}).wallet;
+    // a draft on the run this step owns, opened the way the lanes above do
+    await rp.evaluate(([a, b]) => {
+      const S = window.SESSION;
+      const it = (S.SUGGS || []).find((x) => !x.mine && (x.keys || []).join('+') === 'L' + a + '+L' + b) ||
+        (S.SUGGS || []).find((x) => !x.mine);
+      if (it) { try { S.toggle(it.id, false); } catch { /* already open */ } }
+      const q = it ? String(it.id).replace(/["\\]/g, '\\$&') : '';
+      const card = q && document.querySelector('.sugg[data-card="' + q + '"]');
+      const btn = card && card.querySelector('[data-propose-from]');
+      if (btn) btn.click();
+    }, [k, k + 1]);
+    await T(1000);
+    await rp.evaluate((sel) => {
+      const box = document.querySelector(sel);
+      if (!box) return;
+      box.focus({ preventScroll: true });
+      const r = document.createRange(); r.selectNodeContents(box); r.collapse(false);
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    }, '.sugg[data-card="draft-yours"] [data-lane]');
+    await rp.keyboard.type(' zz');
+    await T(700);
+    const dark = await rp.evaluate(() => {
+      const b = document.querySelector('#charter [data-proposalrow] [data-act="row-commit"]:not([data-pen])') ||
+        document.querySelector('.sugg [data-act="draft-propose"]:not([data-pen])');
+      const n = document.querySelector('#charter .pdrip, .sugg .pdrip');
+      // the ✏️ in the note is a drawn glyph, so the characters come back
+      // through `glyphTextOf` — `textContent` would print the figures alone
+      return { there: !!b, disabled: !!(b && b.disabled), title: b ? b.title : null,
+        note: n ? (window.CARDS.glyphTextOf(n) || '').trim() : null,
+        at: n ? +n.getAttribute('data-abstain-at') : null };
+    });
+    sent = null;
+    const held = await holdCommit();          // no enabled ✏️ to hold: nothing goes out
+    await T(900);
+    // the page's own clock, driven: the deadline moved, the timer repaints it
+    const ticked = await rp.evaluate(() => {
+      const n = document.querySelector('#charter .pdrip, .sugg .pdrip');
+      if (!n) return null;
+      n.__mark = 1;                                    // the same element, or it is a render
+      const was = (window.CARDS.glyphTextOf(n) || '').trim();
+      n.setAttribute('data-abstain-at', String(Date.now() + 3 * 3600_000));
+      return { was };
+    });
+    await T(1400);
+    const now2 = await rp.evaluate(() => {
+      const n = document.querySelector('#charter .pdrip, .sugg .pdrip');
+      return n ? { text: (window.CARDS.glyphTextOf(n) || '').trim(), same: n.__mark === 1 } : null;
+    });
+    // and it wakes when an ✏️ comes back: a withdrawal returns the stake whole
+    if (spent.length) { trail.back = await wire(rp, 'withdraw-motion', { motion: spent.pop() }); }
+    await T(5600);
+    trail.purse2 = ((await viewOf(rp)) || {}).wallet;
+    const woke = await rp.evaluate(() => {
+      const b = document.querySelector('#charter [data-proposalrow] [data-act="row-commit"]:not([data-pen])') ||
+        document.querySelector('.sugg [data-act="draft-propose"]:not([data-pen])');
+      return { there: !!b, disabled: !!(b && b.disabled), note: !!document.querySelector('#charter .pdrip, .sugg .pdrip') };
+    });
+    const clock = /^✏️ \d\d:\d\d$/.test(dark.note || '') && dark.at > Date.now();
+    const moved = !!ticked && !!now2 && now2.same && now2.text !== ticked.was && /^✏️ \d\d:\d\d$/.test(now2.text);
+    const brokeOk = dark.there && dark.disabled && clock && !held && sent === null &&
+      moved && woke.there && !woke.disabled && !woke.note;
+    say('broke row  · ' + (brokeOk
+      ? 'an empty wallet darkens the row’s ✏️ and stands “' + dark.note + '” beside it; nothing is sent on a press; ' +
+        'the page’s own clock repaints the same note “' + ticked.was + '” → “' + now2.text + '”; ' +
+        'and a returned ✏️ wakes the button and takes the countdown away'
+      : 'FAIL: dark ' + JSON.stringify(dark) + ' · held ' + held + ' · sent ' + JSON.stringify(sent) +
+        ' · ticked ' + JSON.stringify(ticked) + ' → ' + JSON.stringify(now2) + ' · woke ' + JSON.stringify(woke) +
+        ' · wallet ' + JSON.stringify(trail).slice(0, 400)));
+    if (!brokeOk) stuck.push('the empty wallet’s dark ✏️ and its countdown');
+  } finally {
+    for (const m of spent) await wire(rp, 'withdraw-motion', { motion: m });
+    await T(1200);
+  }
+
+  } finally {
+    // …and any draft of the reader's that never went out: an unproposed draft
+    // left standing is a card and a rail entry the steps after this one count
+    await rp.evaluate(() => {
+      const b = document.querySelector('#charter [data-proposalrow] [data-act="row-discard"]') ||
+        document.querySelector('.sugg [data-act="draft-cancel"]');
+      if (b && !b.disabled) b.click();
+      try { window.SESSION.toggle(window.SESSION.openId, false); } catch { /* none open */ }
+    });
+    await T(600);
+    if (outstanding) await wire(rp, 'withdraw-text', { candidate: outstanding });
+    await wire(author.pg, 'withdraw-text', { candidate: rival });
+    await T(1200);
+  }
+};
 say('caret      · ' + (caret || 'FAIL: no charter paragraph to type in'));
 if (caret) {
   /* Inside edit mode the ordinary `'X'` is applied by `typeAt` to the block the
@@ -3293,7 +4204,7 @@ if (caret) {
         let n = 0;
         p2.on('framenavigated', (f) => { if (f === p2.mainFrame()) n++; });
         await fakeBuild(p2, (seen) => seen >= 1);
-        await p2.goto(page.url());
+        await landOn(p2, page.url());
         await p2.waitForFunction(() => !!window.SESSION, null, { timeout: 30_000 });
         n = 0;                          // the load itself is a navigation
         for (let i = 0; i < 20 && !n; i++) await p2.waitForTimeout(500);
@@ -3335,7 +4246,7 @@ if (caret) {
         let n = 0;
         p3.on('framenavigated', (f) => { if (f === p3.mainFrame()) n++; });
         await fakeBuild(p3, () => faking);
-        await p3.goto(page.url());
+        await landOn(p3, page.url());
         await p3.waitForFunction(() => !!window.SESSION, null, { timeout: 30_000 });
         n = 0;
         // **Every box on the card, not one** — through the page's own
@@ -3366,7 +4277,7 @@ if (caret) {
         for (const k of ['quorum', 'lapse', 'ending']) {
           if (!(await H.open(k))) continue;
           const avoid = Object.values(standing[k] || {}).filter((x) => typeof x === 'number');
-          const r = await p3.evaluate((nos) => {
+          const r = await p3.evaluate(({ nos, when }) => {
             const out = [];
             for (const f of [...document.querySelectorAll('.setupcard input')]) {
               if (f.offsetParent === null) continue;
@@ -3378,13 +4289,13 @@ if (caret) {
                 for (let c = lo; c <= hi && nx === null; c += st) if (!nos.includes(c)) nx = c;
                 if (nx === null) continue;
                 f.value = String(nx);
-              } else f.value = '2026-10-19T19:00';
+              } else f.value = when;              // counted from the run, never written down
               for (const e of ['input', 'change']) f.dispatchEvent(new Event(e, { bubbles: true }));
               if (f.value !== before) out.push((f.dataset.num || f.dataset.txt || '?') + ' ' +
                 JSON.stringify(before) + '→' + JSON.stringify(f.value));
             }
             return out;
-          }, avoid);
+          }, { nos: avoid, when: dateIn(61) });
           if (r && r.length) { used = k; moved = r; break; }
           await p3.evaluate(() => { const a = document.querySelector('.setupcard .chipcol .achip'); if (a) a.click(); });
           await H.T(420);
@@ -3684,8 +4595,11 @@ if (caret) {
       const api = location.pathname.replace('/d/', '/api/d/');
       return fetch(api + '/view').then((r) => r.json()).then((v) => fetch(api + '/cmd', {
         method: 'POST', headers: { 'content-type': 'application/json' },
+        // `was` states the wording this hunk replaces, which the door requires
+        // of every client (Q1463 (1)) — read off the very view just fetched
         body: JSON.stringify({ cmd: 'propose-text', args: { baseVersion: v.textVersion,
-          hunks: [{ start: n, end: n + 1, lines: ['Every member may bring two guests.'] }],
+          hunks: [{ start: n, end: n + 1, lines: ['Every member may bring two guests.'],
+            was: [String(v.text || '').split('\n')[n]] }],
           why: 'Sundays are the point' } }),
       })).then((r) => r.json()).catch((e) => ({ error: String(e && e.message) }));
     }, line);
@@ -3747,6 +4661,8 @@ if (caret) {
       await closeCard();
     }
   }
+
+  await proposeEditOverRun();
 
   /* ---- races wait behind the ⚖️ OK (Q1328) --------------------------------
    * Ed, 2026-09-11: *I shouldn't be served a task until I can do its main
@@ -3822,12 +4738,29 @@ if (caret) {
     say('gate entry · ' + (gateSubsOk ? '💡 and ⚖️ stand as their names alone, no subtitle'
       : 'FAIL: a gate entry carries a subtitle · ' + JSON.stringify(gateSubs)));
     if (!gateSubsOk) stuck.push('a gate entry carries a subtitle (Q1374)');
+    // **…and each wears *yours* and sparkles until accepted** (Q1501): the
+    // member's 💡 and ⚖️ are the two grants no founder meets as cards
+    const gateLook = await guestPage.evaluate(() => ['canpropose', 'canjudge'].map((k) => {
+      const li = document.querySelector('#rail li[data-q="' + k + '"]');
+      const b = li && li.querySelector('button');
+      return [k, !!b && /lc-yours/.test(b.getAttribute('style') || ''), !!(li && li.querySelector('.sparkle'))];
+    }));
+    const gateLookOk = gateLook.every(([, hue, sp]) => hue && sp);
+    say('gate hue   · ' + (gateLookOk ? '💡 and ⚖️ wait in the yours hue, sparkling, until accepted'
+      : 'FAIL: ' + JSON.stringify(gateLook)));
+    if (!gateLookOk) stuck.push('💡 ⚖️ unaccepted: the yours hue and the sparkle (Q1501)');
     if (!g0.judgeServed) {
       say('⚖️ OK      · FAIL: ⚖️ is not served to the member, so its OK cannot be walked · rail ' + JSON.stringify(g0.rail));
       stuck.push('⚖️ is not served to the member (Q1328)');
     } else {
       await guestPage.evaluate(() => document.querySelector('#rail [data-card="canjudge"]').click());
       await guestPage.waitForTimeout(500);
+      const judgeWord = await guestPage.evaluate(() => {
+        const b = document.querySelector('.setupcard [data-ok]');
+        return b ? window.CARDS.glyphTextOf(b).replace(/\s+/g, ' ').trim() : null;
+      });
+      say('⚖️ accept  · ' + (judgeWord === 'Accept ⚖️' ? 'the member’s ⚖️ commits with “Accept ⚖️” (Q1501)' : 'FAIL: ' + JSON.stringify(judgeWord)));
+      if (judgeWord !== 'Accept ⚖️') stuck.push('the member’s ⚖️ commit word (Q1501)');
       const pressed = await guestPage.evaluate(() => {
         const b = document.querySelector('.setupcard [data-ok]');
         if (!b || b.disabled) return false;
@@ -3897,6 +4830,52 @@ if (caret) {
     await guestPage.waitForTimeout(400);
   }
 
+  /* ---- the page reports its own errors (plan stage 5b) ----------------------
+   * A refusal has been written down on the host since Q1330; an error the
+   * page *threw* was written down nowhere at all, and the only two this
+   * project ever caught were found by hand — Q1281's swallowed boot error,
+   * months later, and the `?debug=1` strip's, on a phone Ed was holding.
+   * So the guest's page throws one on purpose and the walk reads it back off
+   * the host through the dev route: `kind: 'page'`, the seat the cookie
+   * stands for and not the body's word, and the page's path **without its
+   * query**, a magic link's token travelling in one. The throw is expected
+   * here and is not a walk failure — `expectThrown` counts it off, for this
+   * step only. */
+  if (guestPage && ok) {
+    const PROBE = 'journey page error probe';
+    const REJECT = 'journey page rejection probe';
+    expectThrown.push(new RegExp(PROBE), new RegExp(REJECT));
+    let tail = null;
+    try {
+      // from a script of the page's own rather than the walk's `evaluate`
+      // handle, so both handlers meet an ordinary page error. (`source` is
+      // empty for an inline script whatever it is appended to — the field's
+      // own parsing, capping and origin-stripping are `errors.test.ts`'s.)
+      await guestPage.evaluate(([m, j]) => {
+        const s = document.createElement('script');
+        s.textContent = 'setTimeout(function () { throw new Error(' + JSON.stringify(m) + '); }, 0);' +
+          'setTimeout(function () { Promise.reject(new Error(' + JSON.stringify(j) + ')); }, 0);';
+        document.head.appendChild(s);
+      }, [PROBE, REJECT]);
+      await guestPage.waitForTimeout(1200);
+      tail = await (await fetch(BASE + '/api/dev/errors')).json();
+    } catch (e) { tail = { errors: [], fetchFailed: String(e) }; }
+    finally { expectThrown.length = 0; }
+    const here = new URL(guestPage.url()).pathname.replace(/^\/d\//, '');
+    const rows = (tail && tail.errors) || [];
+    const row = rows.find((r) => r.kind === 'page' && String(r.reason).includes(PROBE));
+    const rej = rows.find((r) => r.kind === 'page' && String(r.reason).includes(REJECT));
+    const pageOk = !!row && !!rej && typeof row.seat === 'string' && row.seat.length > 0 &&
+      String(row.path).startsWith('/d/') && !String(row.path).includes('?') &&
+      row.slug === here && !('args' in row) && !('cmd' in row) &&
+      typeof row.line === 'number' && /^rejection: /.test(String(rej.reason));
+    say('page error · ' + (pageOk
+      ? 'a throw and a rejection reported and read back off the host · seat ' + row.seat +
+        ' · path ' + row.path + ' · line ' + row.line + ' · ' + (row.source || 'no source')
+      : 'FAIL: ' + JSON.stringify({ row, rej, some: rows.slice(0, 3), fetchFailed: tail && tail.fetchFailed })));
+    if (!pageOk) stuck.push('the page did not report its own uncaught error (stage 5b)');
+  }
+
   /* ---- one pair, one tab, one entry (Q1367; the deck of Q1200 and the
    * ledger of Q1201 before it) --------------------------------------------
    * The guest proposes a **second** wording on the same clause as their
@@ -3936,19 +4915,21 @@ if (caret) {
     const jar = (await page.context().cookies(BASE)).map((c) => c.name + '=' + c.value).join('; ');
     const floored = await fetch(BASE + '/api/d/' + slug + '/cmd', { method: 'POST',
       headers: { 'content-type': 'application/json', cookie: jar },
-      body: JSON.stringify({ cmd: 'set-setting', args: { setting: 'quorum', value: { form: 'count', n: 3 } } }) })
+      body: JSON.stringify({ cmd: 'set-setting', args: { setting: 'quorum', value: { form: 'share', n: 50 } } }) })
       .then((r) => r.json()).catch((e) => ({ error: String(e && e.message) }));
     if (floored && floored.error) {
-      say('deck       · FAIL: could not raise the floor above the room · ' + JSON.stringify(floored.error));
+      say('deck       · FAIL: could not set the floor above one voice · ' + JSON.stringify(floored.error));
       stuck.push('the deck’s floor');
     }
-    // **And a third seat, since Q1439** (R-126). The count of 3 above used to
-    // be *above the room* and hold every race at the floor; no quorum may ask
-    // for more than half of the group now, so in a room of two the floor is
-    // one however high the count — and one approving voice, the author's own
-    // derived preference among them, carries the leader away mid-step. At
-    // three the same count reads ⌈3/2⌉ = 2, which the one author's preference
-    // does not meet, and the race stands for its pairs to be judged. cy is
+    // **And a third seat, since Q1439** (R-126). The count above used to be
+    // *above the room* and hold every race at the floor; a quorum is read
+    // against the group now, so a number out of reach is no help — and since
+    // Q1490 (R-139) it is worse than none, a count at or above the group
+    // being unanimity, which closes a candidate the moment anybody prefers
+    // the current text (§4.4). **A share of 50 is the number**: ⌈G/2⌉ is
+    // exactly what the old cap produced at every size this walk reaches, it
+    // sits above the author's own lone approval, and the race stands to be
+    // judged rather than carried or closed out from under the step. cy is
     // invited already; the login door seats them, which is what the askable
     // section below does a few steps later anyway.
     const cySeat = await fetch(BASE + '/api/d/' + slug + '/login', { method: 'POST',
@@ -3962,11 +4943,11 @@ if (caret) {
       const ctxDeck = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
       const deckPage = await ctxDeck.newPage();
       deckPage.on('pageerror', (e) => errors.push('[cy] ' + String(e)));
-      await deckPage.goto(cySeatLink);
+      await landOn(deckPage, cySeatLink);
       for (let i = 0; i < 40 && !deckPage.url().includes('/d/'); i++) await deckPage.waitForTimeout(500);
       await deckPage.waitForTimeout(2600);
       say('deck seat  · ' + (deckPage.url().includes('/d/')
-        ? 'a third seat is here, so a count of 3 is under half the room and holds the race'
+        ? 'a third seat is here, so a share of 50 is above one voice and below the room, and holds the race'
         : 'FAIL: the third seat never landed'));
     }
     await T(4600);                                   // the founder's poll takes the new floor
@@ -3975,7 +4956,8 @@ if (caret) {
       return fetch(api + '/view').then((r) => r.json()).then((v) => fetch(api + '/cmd', {
         method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ cmd: 'propose-text', args: { baseVersion: v.textVersion,
-          hunks: [{ start: n, end: n + 1, lines: ['Every member may bring one guest, on Sundays.'] }],
+          hunks: [{ start: n, end: n + 1, lines: ['Every member may bring one guest, on Sundays.'],
+            was: [String(v.text || '').split('\n')[n]] }],
           why } }),
       })).then((r) => r.json()).catch((e) => ({ error: String(e && e.message) }));
     }, [line, WHY2]);
@@ -3998,7 +4980,18 @@ if (caret) {
           const b = li.querySelector('button');
           const mk = li.querySelector('.qmark .mk');
           return { id: li.dataset.q, mark: mk ? ([...mk.classList].find((c) => c.startsWith('mk-')) || '').slice(3) : '',
-            cap: b ? b.title : '', teasers: [...li.querySelectorAll('.qwhy')].map((e) => e.textContent.trim()) };
+            cap: b ? b.title : '', teasers: [...li.querySelectorAll('.qwhy')].map((e) => e.textContent.trim()),
+            // the queue card stack's depth (Q1462): how many rivals are still
+            // to come on this race, capped at five, 0 where there is no pile
+            pile: +(li.dataset.pile || 0),
+            // **the abstention clock on the entry** (Q1460 (e)): the figures
+            // as drawn, or null where the entry carries none — a live pair
+            // inside 💤's last day wears one, a pair this seat has answered
+            // does not. The button's own box goes with it, so a clock that
+            // pushed the entry about would be read here too.
+            abs: ((n) => (n ? (n.querySelector('.abst') || n).textContent.trim() : null))(li.querySelector('.absnote')),
+            box: ((r) => (r ? [Math.round(r.width), Math.round(r.height)] : null))(
+              b ? b.getBoundingClientRect() : null) };
         });
       }, id);
       // the race's one lit entry, as the older steps read it: by the race id,
@@ -4035,6 +5028,11 @@ if (caret) {
             cast: (card.querySelector('[data-act="submit"]') || {}).getAttribute
               ? card.querySelector('[data-act="submit"]').getAttribute('aria-pressed') : null,
             ledger: card.querySelectorAll('.ledger, .ledgerpair').length,
+            // **💤's countdown on the Indifferent row** (Q1460): the hh:mm as
+            // drawn, or null where the row carries none — an unjudged pair
+            // this seat is awaited on wears one, a pair it has answered does not
+            abstain: ((n) => (n ? n.querySelector('.abst').textContent : null))(
+              card.querySelector('.vinblock .absnote')),
             // a template printing a field nobody set (Q1385, Ed's screenshot
             // of 2026-09-11: the word *undefined* under a proposed block on a
             // live race card): the stretch of card text around the word, or null
@@ -4079,6 +5077,24 @@ if (caret) {
           (rivalOf(e1) ? ' · and the rival pair, two teasers' : '')
           : 'FAIL: ' + JSON.stringify(e1)));
         if (!ok1) stuck.push('the entries before any judgment');
+        // **The queue card stack** (Q1462, Ed 2026-09-18). Two challengers
+        // stand on this clause and the router deals them one pair at a time,
+        // so what is not dealt is beneath: lit incumbent pairs plus the pile
+        // on the front one must come to two, however the hand fell. Where
+        // both pairs are dealt at once there is genuinely nothing hidden and
+        // the pile is rightly absent — the branch is named in the line, since
+        // a step that cannot say which case it ran is a step that can go
+        // quietly green (the gap-keys lesson). A rival-against-rival pair
+        // asks something else and never wears one.
+        const stand1 = e1.filter((e) => e.teasers.length === 1);
+        const deep1 = Math.max(0, ...stand1.map((e) => e.pile));
+        const okP1 = ok1 && stand1.length + deep1 === 2 &&
+          stand1.filter((e) => e.pile > 0).length <= 1 && (rivalOf(e1) || { pile: 0 }).pile === 0;
+        say('pile 1     · ' + (okP1
+          ? (deep1 ? 'one pair dealt, the other beneath it — the entry wears ' + deep1 + ' edge'
+            : 'both pairs dealt as their own entries, nothing beneath — no pile, and none on the rival pair')
+          : 'FAIL: ' + JSON.stringify(e1.map((e) => [e.id, e.teasers.length, e.pile]))));
+        if (!okP1) stuck.push('the queue card stack before any judgment (Q1462)');
         if (ok1) {
           const first = q1.teasers[0], other = first === WHY1 ? WHY2 : WHY1;
           // 2 — open the first pair's own entry: a quick card, that pair alone,
@@ -4087,6 +5103,31 @@ if (caret) {
           const ok2 = c1.card && /quick-open/.test(c1.cls) && c1.keepLane && c1.whys.length === 1 && c1.whys[0] === first && c1.ledger === 0;
           say('pairs 2    · ' + (ok2 ? 'its card is that pair, quick, its reason “' + first + '”, no ledger' : 'FAIL: ' + JSON.stringify(c1)));
           if (!ok2) stuck.push('the first pair’s card');
+          // **Q1460 — 💤's countdown, on a pair still asking you.** This
+          // founding sets 💤 to twenty minutes (`lapseSet`), and the proposal
+          // was made moments ago, so the row reads 00:20 or 00:19 and never
+          // 00:00. Under `--delegate-all` nothing sets 💤 and there is no
+          // clock to draw, which is the *never* case and not a failure.
+          if (lapseSet) {
+            const okA = ok2 && /^00:(19|20)$/.test(c1.abstain || '');
+            say('abstain 1  · ' + (okA ? 'the Indifferent row carries its own countdown, ' + c1.abstain + ' of 💤’s twenty minutes'
+              : 'FAIL: ' + JSON.stringify(c1.abstain)));
+            if (!okA) stuck.push('the abstention countdown on an unjudged pair (Q1460)');
+            // **Q1460 (e) — and the rail entry carries the same figures**,
+            // twenty minutes being well inside the last day (Ed, 2026-09-19:
+            // *the rail should only show the clock when it's less than 24
+            // hrs*). Read off the entries as they stood before the card was
+            // opened, so it is the rail's own line and not the card's; the
+            // entry's box is read with it, because a clock that pushed the
+            // entry about would be a rail that moves when a minute passes.
+            const eAbs = e1.filter((x) => x.abs !== null);
+            const okR = eAbs.length === e1.length && e1.every((x) => /^00:(19|20)$/.test(x.abs))
+              && e1.every((x) => x.box && x.box[0] === e1[0].box[0]);
+            say('abstain 3  · ' + (okR ? e1.length + ' lit ' + (e1.length === 1 ? 'entry' : 'entries') +
+              ', each carrying the same clock in the rail, ' + e1[0].abs + ', every button ' + e1[0].box[0] + 'px wide'
+              : 'FAIL: ' + JSON.stringify(e1.map((x) => [x.id, x.abs, x.box]))));
+            if (!okR) stuck.push('the abstention clock on the rail entry (Q1460 (e))');
+          }
           // **Keep, deliberately** — *the current text*, on both pairs. A room
           // of two has a floor of one, so one approving vote adopts the
           // challenger on the spot and the race seals into a record (the first
@@ -4101,6 +5142,33 @@ if (caret) {
           // derived preference meets the moment anybody measures the leader at
           // all. *Keep* holds the race open for the reason a room actually
           // holds one open: it prefers the text it has (R-114's asymmetry).
+          /* **A vote the host refused is not filed** (issue #37). The press
+           * files the pair ⏳ before the answer, and nothing took it back:
+           * the entry read *still deciding* and reopened with the verdict
+           * pressed while the server held no judgment and still asked for
+           * one — until a reload. The wire answers this judgment with a 500;
+           * two polls later the entry must be asking again. Red on the
+           * pre-#37 page at *deciding*. */
+          expectRefused.push(/"cmd":"judge-race"/);
+          const refuse = (r) => ((r.request().postData() || '').includes('"judge-race"')
+            ? r.fulfill({ status: 500, contentType: 'application/json', body: '{"error":"refused by the walk"}' })
+            : r.continue());
+          await page.route('**/api/d/*/cmd', refuse);
+          let r0 = null;
+          try {
+            const jr = await judge(q1.id, 'keep');
+            await T(9200);                          // two polls
+            const er = byId(await entries(), q1.id);
+            r0 = { judged: jr, mark: er && er.mark, cap: er && er.cap };
+          } finally {
+            await page.unroute('**/api/d/*/cmd', refuse);
+            expectRefused.length = 0;
+          }
+          const okR0 = !!r0 && r0.judged && (r0.mark === 'needs' || r0.mark === 'urgent');
+          say('refused    · ' + (okR0 ? 'a judgment the host refused leaves its entry asking (' + r0.mark + '), not filed ⏳'
+            : 'FAIL: ' + JSON.stringify(r0)));
+          if (!okR0) stuck.push('a refused judgment is not filed (#37)');
+          await openEntry(q1.id);                   // back where the step below expects to be
           // 3 — judged: that entry is ⏳ now, and the other pair's entry is lit
           // beside it — its own, not the same one re-lit
           const j1 = await judge(q1.id, 'keep');
@@ -4110,6 +5178,23 @@ if (caret) {
           say('pairs 3    · ' + (ok3 ? 'judged · its entry files as ⏳ “' + byId(e2, q1.id).cap + '” · the other pair’s own entry is ' + q2.mark + ' “' + other + '”'
             : 'FAIL: judged ' + j1 + ' · ' + JSON.stringify(e2)));
           if (!ok3) stuck.push('the entries after the first judgment');
+          // the pile is one shallower for it (Q1462): the second challenger
+          // is its own lit entry now, so there is nothing left beneath and no
+          // entry on the race wears an edge — a judged pair's ⏳ never does
+          const okP2 = ok3 && e2.every((e) => e.pile === 0);
+          say('pile 2     · ' + (okP2 ? 'judged · the other pair is its own entry now, nothing beneath it, no pile anywhere on the race'
+            : 'FAIL: ' + JSON.stringify(e2.map((e) => [e.id, e.mark, e.pile]))));
+          if (!okP2) stuck.push('the queue card stack after the first judgment (Q1462)');
+          // **Q1460 (e) — and the answered pair's entry loses its clock**, the
+          // other one keeping its own: the entry is the card's own rule read
+          // one column over, and a ⏳ is not asking you anything
+          if (lapseSet) {
+            const judged = byId(e2, q1.id), stillAsking = byId(e2, q2.id);
+            const okR2 = ok3 && judged && judged.abs === null && stillAsking && /^00:(19|20)$/.test(stillAsking.abs || '');
+            say('abstain 4  · ' + (okR2 ? 'judged · that entry carries no clock, the pair still asking keeps ' + stillAsking.abs
+              : 'FAIL: ' + JSON.stringify(e2.map((e) => [e.id, e.mark, e.abs]))));
+            if (!okR2) stuck.push('the rail clock after a judgment (Q1460 (e))');
+          }
           // 4 — the other pair by its own entry, never by a second press on
           // the first; judge it
           const c2 = ok3 ? await openEntry(q2.id) : { card: false };
@@ -4163,6 +5248,16 @@ if (caret) {
           say('bare word  · ' + (l1.card && !l1.bare ? 'the judged pair’s card after a reload prints no bare undefined or NaN'
             : 'FAIL: ' + JSON.stringify(l1.bare)));
           if (l1.card && l1.bare) stuck.push('a bare word on the reloaded judged card (Q1385)');
+          // **Q1460 — and a pair you have answered wears none.** The card is
+          // not asking you anything, so there is nothing for a countdown to
+          // be about; the same read as `abstain 1`, on the other side of a
+          // judgment and a reload.
+          if (lapseSet) {
+            const okB = l1.card && l1.abstain === null;
+            say('abstain 2  · ' + (okB ? 'the judged pair’s card carries no countdown'
+              : 'FAIL: ' + JSON.stringify(l1.abstain)));
+            if (!okB) stuck.push('the countdown on a judged pair (Q1460)');
+          }
           // 7 — choose the other lane, ✓: the revision goes on the same pair.
           //
           // **On the rival pair since Q1439**, where it was the first quick
@@ -4212,8 +5307,12 @@ if (caret) {
          * view: the hand holds no card on T. Asserted: the entry is lit, not
          * ⏳; the press opens the rival pair as a race card; the judgment
          * lands; and only then does the entry file as ⏳ — the ruling's other
-         * half. The floor goes to four first: a third seat makes E three, and
-         * three is what the deck step set. Skipped, and said, under
+         * half. The floor goes to two first — a third seat makes E three, so
+         * two is above the author's own lone approval and below the room.
+         * **It asked for four until Q1490** (R-139), when the old cap at half
+         * the group read that as ⌈3/2⌉ = 2; the cap is the whole group now,
+         * so four would be unanimity and every wording here would close on
+         * the founder's first keep (§4.4). Skipped, and said, under
          * --new-clause and --empty-text, whose own gap proposals stand where
          * T would go. */
         if (NEW_CLAUSE || EMPTY_TEXT) {
@@ -4221,10 +5320,10 @@ if (caret) {
         } else {
           const floored4 = await fetch(BASE + '/api/d/' + slug + '/cmd', { method: 'POST',
             headers: { 'content-type': 'application/json', cookie: jar },
-            body: JSON.stringify({ cmd: 'set-setting', args: { setting: 'quorum', value: { form: 'count', n: 4 } } }) })
+            body: JSON.stringify({ cmd: 'set-setting', args: { setting: 'quorum', value: { form: 'count', n: 2 } } }) })
             .then((r) => r.json()).catch((e) => ({ error: String(e && e.message) }));
           if (floored4 && floored4.error) {
-            say('askable    · FAIL: could not raise the floor above three seats · ' + JSON.stringify(floored4.error));
+            say('askable    · FAIL: could not set the floor above one voice · ' + JSON.stringify(floored4.error));
             stuck.push('the askable case’s floor');
           }
           // **The login door first, the invitation as the fallback** — the
@@ -4246,7 +5345,7 @@ if (caret) {
             const ctx2 = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
             cyPage = await ctx2.newPage();
             cyPage.on('pageerror', (e) => errors.push('[cy] ' + String(e)));
-            await cyPage.goto(link2);
+            await landOn(cyPage, link2);
             for (let i = 0; i < 40 && !cyPage.url().includes('/d/'); i++) await cyPage.waitForTimeout(500);
             await cyPage.waitForTimeout(2600);
           }
@@ -4256,8 +5355,10 @@ if (caret) {
             const api = location.pathname.replace('/d/', '/api/d/');
             return fetch(api + '/view').then((r) => r.json()).then((v) => fetch(api + '/cmd', {
               method: 'POST', headers: { 'content-type': 'application/json' },
+              // a pure insertion attests with `after`, the line it follows (Q1463 (1))
               body: JSON.stringify({ cmd: 'propose-text', args: { baseVersion: v.textVersion,
-                hunks: [{ start: n, end: n, lines: [text] }], why } }),
+                hunks: [{ start: n, end: n, lines: [text],
+                  after: n === 0 ? null : String(v.text || '').split('\n')[n - 1] }], why } }),
             })).then((r) => r.json()).catch((e) => ({ error: String(e && e.message) }));
           }, [n, text, why]);
           const nLines = await page.evaluate(() => {
@@ -4417,7 +5518,9 @@ await noRoadBack();
  * kept its rail entry, its tabs and its pairs until T=0.
  *
  * The room here is three (the pairs step seated cy), and the quorum is a
- * count of three, which at a group of three reads ⌈3/2⌉ = 2. bo proposes on a
+ * count of two — what the old cap at half the group produced out of the
+ * numbers the two steps above used to ask for, and what they ask for plainly
+ * since Q1490 (R-139). bo proposes on a
  * line nothing is racing on; the founder prefers the text that stands, and
  * the proposal is still live — a = 1, o = 1, w = 1, and cy could still make
  * it two against one. cy prefers the text as well, and now no answer still to
@@ -4450,7 +5553,7 @@ const dominatedProposal = async () => {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
   const cyPage = await ctx.newPage();
   cyPage.on('pageerror', (e) => errors.push('[cy] ' + String(e)));
-  await cyPage.goto(link);
+  await landOn(cyPage, link);
   for (let i = 0; i < 40 && !cyPage.url().includes('/d/'); i++) await cyPage.waitForTimeout(500);
   await cyPage.waitForTimeout(2600);
 
@@ -4470,13 +5573,14 @@ const dominatedProposal = async () => {
     stuck.push('a free clause for the domination'); await ctx.close(); return;
   }
   const WORDING = 'The clubhouse keeps a visitors’ book.';
-  const put = await guestPage.evaluate(([n, text, base]) => fetch(
+  const put = await guestPage.evaluate(([n, text, base, was]) => fetch(
     location.pathname.replace('/d/', '/api/d/') + '/cmd', {
       method: 'POST', headers: { 'content-type': 'application/json' },
+      // `was` is the wording it replaces, off the same view `at` was chosen from (Q1463 (1))
       body: JSON.stringify({ cmd: 'propose-text', args: { baseVersion: base,
-        hunks: [{ start: n, end: n + 1, lines: [text] }], why: 'we should know who came' } }),
+        hunks: [{ start: n, end: n + 1, lines: [text], was }], why: 'we should know who came' } }),
     }).then((r) => r.json()).catch((e) => ({ error: String(e && e.message) })),
-  [at, WORDING, (v0 || {}).textVersion]);
+  [at, WORDING, (v0 || {}).textVersion, [lines[at]]]);
   const cand = put && put.result && put.result.id;
   if (!cand || put.error) {
     say('dominated  · FAIL: the member could not propose · ' + JSON.stringify(put));
@@ -4609,6 +5713,147 @@ const dominatedProposal = async () => {
   await ctx.close();
 };
 await dominatedProposal();
+
+/* ---- a draft follows its paragraph (Q1463, Ed 2026-09-18: *follow the
+ * paragraph, and refuse if lost*) -----------------------------------------
+ * A draft's sites are keyed by engine line and the hunks it sends are read
+ * off those keys, while the version is read fresh at the press — so a line
+ * adopted *above* an unproposed draft used to leave the key naming somebody
+ * else's clause, and the proposal went out against that one and was taken,
+ * the version being current. In a busy room that is the ordinary case for
+ * anybody who drafts for longer than it takes something above them to pass.
+ *
+ * The founder puts a draft on the last free clause, then proposes a new clause
+ * near the top and bo prefers it: E is three here, so the quorum is two, and
+ * the author's own preference is the first of them. Then the founder's site
+ * must read one line further down, with the wording it was written against
+ * untouched. It is the first of `stale-key`'s three cases, on the live path,
+ * and it fails on the pre-fix page at *follow · FAIL: … L8 → L8*. Binned
+ * afterwards through the row's own 🗑️.
+ *
+ * **Last, deliberately**: it adopts, and an adoption leaves a record in every
+ * rail — which is one more record than the steps above are counting. */
+const draftFollowsClause = async () => {
+  if (!guestPage) return;                       // its own failure, already reported
+  const wire = (pg, cmd, args) => pg.evaluate(([c, a]) => fetch(location.pathname.replace('/d/', '/api/d/') + '/cmd', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ cmd: c, args: a }),
+  }).then((r) => r.json()).catch((e) => ({ error: String(e && e.message) })), [cmd, args]);
+  const viewOf = (pg) => pg.evaluate(() => fetch(location.pathname.replace('/d/', '/api/d/') + '/view')
+    .then((r) => r.json()).catch(() => null));
+
+  // **the last line nothing is racing on**, read off the wire: a contested
+  // clause opens its race rather than a caret, and this step is about the
+  // caret
+  const v0 = await viewOf(page);
+  const lines = String((v0 || {}).text || '').split('\n');
+  const taken = new Set();
+  for (const c of ((v0 || {}).clauses || [])) {
+    for (const sp of (c.contested || [])) for (let i = sp.start; i <= sp.end; i++) taken.add(i);
+  }
+  let dk = -1;
+  for (let i = lines.length - 1; i > 1; i--) if (!taken.has(i) && lines[i].trim()) { dk = i; break; }
+  if (dk < 2) {
+    say('follow     · FAIL: no free clause low in the document to draft on · ' + JSON.stringify([...taken]));
+    stuck.push('a free clause for the follow'); return;
+  }
+  // …and the caret at its end, one character typed, which is the draft
+  const started = await page.evaluate((k) => {
+    const t = document.querySelector('#ridetab .achip[data-tab="text"]') ||
+      document.querySelector('#editdoor [data-act="edit-door"]');
+    if (t && !document.getElementById('doc').classList.contains('editing')) t.click();
+    const p = [...document.querySelectorAll('#charter .prose p.editable[data-key]')]
+      .find((x) => x.dataset.key === k && !x.closest('.sugg'));
+    if (!p) return null;
+    p.scrollIntoView({ block: 'center' });
+    const r = document.createRange(); r.selectNodeContents(p); r.collapse(false);
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    return k;
+  }, 'L' + dk);
+  if (!started) {
+    say('follow     · FAIL: no paragraph L' + dk + ' to put a caret in');
+    stuck.push('the caret for the follow'); return;
+  }
+  await T(400);
+  await page.keyboard.type('Z');
+  await T(700);
+  const site = () => page.evaluate(() => {
+    const d = (window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours');
+    return d && d.sites.length === 1
+      ? { keys: d.sites[0].keys.join('+'), origin: d.sites[0].origin.map((o) => o.text).join(' | '),
+        text: d.sites[0].text, lost: !!d.sites[0].lost, stranded: !!d.stranded } : null;
+  });
+  const was = await site();
+  if (!was || was.keys !== 'L' + dk) {
+    say('follow     · FAIL: the draft did not land on L' + dk + ' · ' + JSON.stringify(was));
+    stuck.push('the draft the follow is about'); return;
+  }
+
+  // **a seat with an edit left to spend.** By the end of this walk the
+  // founder's wallet and bo's are both empty; cy has judged and never
+  // proposed, so the new clause is cy's — seated again over the login route,
+  // `dominatedProposal` having closed the page it used.
+  const slug = new URL(page.url()).pathname.replace(/^\/d\//, '');
+  const lj = await fetch(BASE + '/api/d/' + slug + '/login', { method: 'POST',
+    headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: GUEST2 }) })
+    .then((r) => r.json()).catch(() => null);
+  const link = (lj && lj.devLink) || await invitationLink(GUEST2);
+  if (!link) {
+    say('follow     · FAIL: no way back in for ' + GUEST2 + ' — nobody left to propose the new clause');
+    stuck.push('the seat the follow rides on'); return;
+  }
+  const cyCtx = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+  const cyPage = await cyCtx.newPage();
+  cyPage.on('pageerror', (e) => errors.push('[cy] ' + String(e)));
+  await landOn(cyPage, link);
+  for (let i = 0; i < 40 && !cyPage.url().includes('/d/'); i++) await cyPage.waitForTimeout(500);
+  await cyPage.waitForTimeout(2600);
+
+  const AT = 2;
+  // a pure insertion attests with `after`, the line it follows (Q1463 (1))
+  const put = await wire(cyPage, 'propose-text', { baseVersion: (v0 || {}).textVersion,
+    hunks: [{ start: AT, end: AT, lines: ['Nothing in this charter excuses unkindness.'],
+      after: String((v0 || {}).text || '').split('\n')[AT - 1] }],
+    why: 'it belongs near the front' });
+  const cand = put && put.result && put.result.id;
+  if (!cand || put.error) {
+    say('follow     · FAIL: the new clause could not be proposed · ' + JSON.stringify(put));
+    stuck.push('the insertion the follow rides on'); await cyCtx.close(); return;
+  }
+  await T(5200);
+  const vr = await viewOf(guestPage);
+  const race = ((vr || {}).clauses || []).find((c) => (c.candidates || []).some((x) => x.id === cand));
+  if (!race) {
+    say('follow     · FAIL: the new clause reached no race');
+    stuck.push('the insertion’s race'); await cyCtx.close(); return;
+  }
+  // **the author's own preference is one of the two** (Q1440's arithmetic on
+  // this same room): cy wrote it, so a = 1 already, and the founder preferring
+  // it makes a = 2 — the quorum at a group of three
+  const yes = await wire(page, 'judge-race', { a: cand, b: race.incumbentId, outcome: 'a' });
+  if (yes && yes.error) {
+    say('follow     · FAIL: the room could not carry it · ' + JSON.stringify(yes));
+    stuck.push('carrying the insertion'); await cyCtx.close(); return;
+  }
+  await T(6000);                                 // the adoption batch, then a poll in each seat
+  const v1 = await viewOf(page);
+  const grew = String((v1 || {}).text || '').split('\n').length - lines.length;
+  const now = await site();
+  const followed = grew === 1 && now && now.keys === 'L' + (dk + 1) && now.origin === was.origin &&
+    now.text === was.text && !now.lost && !now.stranded;
+  say('follow     · ' + (followed
+    ? 'a clause adopted above the draft: the site moved L' + dk + ' → ' + now.keys +
+      ', its wording and its origin untouched'
+    : 'FAIL: the text grew by ' + grew + ' · ' + JSON.stringify(was) + ' → ' + JSON.stringify(now)));
+  if (!followed) stuck.push('a draft following its paragraph (Q1463)');
+  await page.evaluate(() => {
+    const b = document.querySelector('#charter [data-proposalrow] [data-act="row-discard"]');
+    if (b && !b.disabled) b.click();
+  });
+  await T(500);
+  await cyCtx.close();
+};
+await draftFollowsClause();
 
 say('errors     · ' + (errors.length ? errors.slice(0, 4).join(' / ') : 'none'));
 say('refused    · ' + (refused.length ? refused.join(' / ') : 'none'));

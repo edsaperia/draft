@@ -115,6 +115,11 @@ export const healthTable: Route[] = [
         // the throws nobody handled since boot (entry 77) — see `errors`
         // in server.ts. `total` is the one number to watch between sessions.
         errors: ctx.errors,
+        // and the refusals nobody did anything wrong to meet (Q1493 (a)):
+        // a race with the 4 s poll, answered by the page and counted here
+        // instead of being written into the error log. A room that makes
+        // many of these is saying something about its pace, not a defect.
+        races: ctx.races,
         // the adoption metronome this process is pacing at (§4.2, entry
         // 77): stated because it is an operator knob a restart changes and
         // nothing else on the surface reports it.
@@ -137,16 +142,15 @@ export const healthTable: Route[] = [
 export const operatorTable: Route[] = [
   {
     // **The announced pause** (Q1345): two POSTs for the bearer of
-    // DRAFT_BOT_KEY — the operator's key already on the host — gated exactly
-    // as the bot outbox is: an unknown path without the key, 401 with a
-    // wrong one. `pause` takes an optional `expectedMs` for the bar; both
+    // DRAFT_ADMIN_KEY (issue #10: it was the bot key, whose leak was said to
+    // be bots-only) — an unknown path without the key, 401 with a wrong one. `pause` takes an optional `expectedMs` for the bar; both
     // answer with the pause as every view will carry it.
     name: 'POST /api/admin/pause and /resume',
     method: 'POST',
     match: (r) => r.path === '/api/admin/pause' || r.path === '/api/admin/resume',
     handler: async (ctx, r) => {
       const { req, res, path, nowMs } = r;
-      if (r.bearerRefused()) return true;
+      if (r.bearerRefused(ctx.cfg.adminKey)) return true;
       if (path === '/api/admin/pause') {
         const body = await readJson(req).catch(() => ({} as Record<string, unknown>));
         const asked = Number(body.expectedMs);
@@ -164,7 +168,7 @@ export const operatorTable: Route[] = [
   {
     // **The surface reload** (Q1347): the served page files of one commit,
     // as a gzipped ustar tar of `design/<file>` entries in the body and the
-    // commit in `?sha=`, under the same key as the pause. Unpacked into a
+    // commit in `?sha=`, under the admin key, as the pause (issue #10). Unpacked into a
     // fresh directory beside the data and served from there from this
     // moment; `x-build` states the new commit, so every open page reloads
     // itself and CI's verification sees the commit it pushed. No restart,
@@ -174,7 +178,7 @@ export const operatorTable: Route[] = [
     match: '/api/admin/surface',
     handler: async (ctx, r) => {
       const { req, res, url } = r;
-      if (r.bearerRefused()) return true;
+      if (r.bearerRefused(ctx.cfg.adminKey)) return true;
       const sha = (url.searchParams.get('sha') ?? '').trim();
       if (!/^[0-9a-f]{7,40}$/.test(sha)) { json(res, 400, { error: 'sha must be a commit hash' }); return true; }
       const chunks: Buffer[] = [];
@@ -202,7 +206,7 @@ export const operatorTable: Route[] = [
     method: 'GET',
     match: '/api/bots/outbox',
     handler: (ctx, r) => {
-      if (r.bearerRefused()) return true;
+      if (r.bearerRefused(ctx.cfg.botKey)) return true;
       json(r.res, 200, { mails: outboxTail(botOutboxPath(ctx.cfg.dataDir)) });
       return true;
     },

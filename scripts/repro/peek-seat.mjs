@@ -3,13 +3,14 @@
 // verdict on the founding predicates. Read-only apart from arriving.
 //   node peek-seat.mjs <magic link> [--width 390]
 import { chromium } from 'playwright';
+import { landOn } from '../lib/walk.mjs';
 
 const link = process.argv[2];
 const width = Number((process.argv.find((a) => a.startsWith('--width=')) ?? '').slice(8)) || 1600;
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width, height: 1000 } });
 page.on('pageerror', (e) => console.log('PAGEERROR', e.message));
-await page.goto(link, { waitUntil: 'networkidle' });
+await landOn(page, link, { waitUntil: 'networkidle' });
 await page.waitForTimeout(1500);
 console.log('url', page.url());
 const out = await page.evaluate(() => {

@@ -18,6 +18,7 @@ import type { Persistence } from '../src/persistence.js';
 import { PgPersistence } from '../src/pg-persistence.js';
 import { asEngineDoc, resumeBridge } from '../src/engine-host.js';
 import { LIMITS } from '../src/commands.js';
+import { attestBody } from './attest-wire.js';
 import { SCHEMA_VERSION, chainHash } from '../../constitution/src/index.js';
 import type { ConstitutionEvent } from '../../constitution/src/index.js';
 
@@ -56,13 +57,18 @@ type MemberViewPayload = {
     members: Array<{ id: string; name: string | null; arrived: boolean;
       owed: number; answered: number }> };
   text: string; textVersion: number; floor: number;
-  settingRaces: Array<{ id: string; settingId: string; judged: boolean; askable: boolean; ask: unknown }>;
+  settingRaces: Array<{ id: string; settingId: string; judged: boolean; askable: boolean;
+    ask: unknown;
+    /** this seat's own 💤 deadline on the race, while it has one (Q1460) */
+    abstainAt?: number }>;
   wallet: number | null;
   walletInfo: { balance: number; nextDripInMs: number | null; dripIntervalMs: number | null;
     cap: number | null } | null;
   clauses: Array<{ id: string; contested: Array<{ start: number; end: number }>;
     incumbentId: string; deadlocked: boolean; closeness: number; judges: number; floor: number;
     judged: boolean; shifted: boolean;
+    /** this seat's own 💤 deadline on the race, while it has one (Q1460) */
+    abstainAt?: number;
     candidates: Array<{ id: string; mine: boolean; rationale: string; hunks: Hunk[];
       author?: { id: string; name: string | null; picture: string | null } }> }>;
   mine: Array<{ id: string; state: string; rationale: string; patch: unknown; footprint: unknown;
@@ -180,14 +186,20 @@ const cookieOf = (res: Response): string => {
   return header!.split(';')[0]!;
 };
 
-const post = (base: string, path: string, body: unknown, cookie?: string) =>
+// **A text proposal states the wording it replaces** (Q1463 (1), R-136), and
+// the host refuses one that does not. Every post in this file goes through
+// here, so `attestBody` fills `was` / `after` from the view the post is about
+// — leaving alone anything the caller attested itself, and anything against a
+// version that is not the one standing, which is what keeps the stale-version
+// and the bot-style-stale tests saying exactly what they said before.
+const post = async (base: string, path: string, body: unknown, cookie?: string) =>
   fetch(base + path, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
       ...(cookie ? { cookie } : {}),
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify(await attestBody(base, path, body, cookie)),
   });
 
 /** Follow a magic link the way a browser does: GET the interstitial,
@@ -939,6 +951,47 @@ describe('review #1 hardening', () => {
     expect(await after.json()).toMatchObject({ stranger: true });
     expect(JSON.stringify(await (await fetch(`${base}/api/d/${created.slug}/view`,
       { headers: { cookie: leaver } })).json())).not.toContain('.org');
+
+    // an invitation withdrawn before it was followed: the kept link lands on
+    // the document's door, seatless — never *unknown member 'm-…'* in a
+    // stranger's browser (issue #35 F1, Q1493)
+    await post(base, `/api/d/${created.slug}/cmd`,
+      { cmd: 'invite', args: { email: 'kept@example.org' } }, g);
+    const keptLink = (await lastMailTo(dataDir, 'kept@example.org')).link!;
+    const gv2 = await (await fetch(`${base}/api/d/${created.slug}/view`,
+      { headers: { cookie: g } })).json() as MemberViewPayload;
+    const keptId = gv2.view.members.find((m) => m.email === 'kept@example.org')!.id;
+    await post(base, `/api/d/${created.slug}/cmd`,
+      { cmd: 'uninvite', args: { member: keptId } }, g);
+    const kept = await consume(keptLink);
+    expect(kept.status).toBe(302);
+    expect(kept.headers.get('location')).toBe(`/d/${created.slug}`);
+    expect(kept.headers.get('set-cookie'), 'no seat, so no cookie').toBeNull();
+  });
+
+  // **A clerk is seated by the login door** (found building issue #35): a
+  // founder who is not a member has no row in `memberRecords`, and Q1493's
+  // *a seat that is gone* read that absence as a withdrawn invitation — so a
+  // clerk's own login link opened the document seatless, the stranger's
+  // door, with no way in at all.
+  it('a clerk founder’s login link seats them', async () => {
+    const { base, dataDir } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Clerked', email: 'clerk@example.org',
+    })).json() as { devLink: string; slug: string };
+    const c = cookieOf(await consume(created.devLink));
+    const set = await post(base, `/api/d/${created.slug}/cmd`,
+      { cmd: 'set-convenor-membership', args: { isMember: false } }, c);
+    expect(set.status, await set.clone().text()).toBe(200);
+    const asked = await post(base, `/api/d/${created.slug}/login`, { email: 'clerk@example.org' });
+    expect(asked.status).toBe(200);
+    const again = await consume((await lastMailTo(dataDir, 'clerk@example.org')).link!);
+    expect(again.status).toBe(302);
+    const cookie = again.headers.get('set-cookie');
+    expect(cookie, 'the clerk is seated').toBeTruthy();
+    const v = await (await fetch(`${base}/api/d/${created.slug}/view`,
+      { headers: { cookie: cookie!.split(';')[0]! } })).json() as { stranger?: boolean };
+    expect(v.stranger).toBeUndefined();
   });
 });
 
@@ -985,12 +1038,14 @@ describe('the surface is served', () => {
  * The limiter behind a proxy (defect 3, re-fixed after staging caught the
  * first answer being wrong on 2026-08-20). What must hold is one sentence:
  * a client cannot change which bucket it lands in by sending headers.
- * /auth/login is the door to hammer — its limiter runs before anything
- * else, and a bad token neither mails nor writes to a log.
+ * /auth/login is the door to hammer — nothing but the 10 KB token read
+ * stands above its limiter, and a bad token neither mails nor writes to a
+ * log. The shared `auth` bucket is 200 since issue #69, so the first
+ * refusal is the two-hundred-and-first request.
  */
 describe('rate limiting reads the client the proxy states', () => {
   const flood = async (base: string,
-                       headers: (i: number) => Record<string, string>, n = 62) => {
+                       headers: (i: number) => Record<string, string>, n = 202) => {
     let limited = 0;
     for (let i = 0; i < n && limited === 0; i++) {
       const res = await fetch(`${base}/auth/login`, {
@@ -1011,7 +1066,7 @@ describe('rate limiting reads the client the proxy states', () => {
       'cf-connecting-ip': '198.51.100.7',
       'x-forwarded-for': `203.0.113.${i}, 198.51.100.7, 10.7.${i}.${i}`,
     }));
-    expect(limited).toBe(61);
+    expect(limited).toBe(201);
   });
 
   it('gives two clients two buckets', async () => {
@@ -1025,7 +1080,7 @@ describe('rate limiting reads the client the proxy states', () => {
     const limited = await flood(base, (i) => ({
       'x-forwarded-for': `10.0.0.${i}, 198.51.102.9`,
     }));
-    expect(limited).toBe(61);
+    expect(limited).toBe(201);
   });
 });
 
@@ -1263,6 +1318,77 @@ describe('the address is chosen before the email, and reserved on send (Q460/462
       { available: boolean }).available).toBe(true);
     expect((await lastMailTo(dataDir, 'ada@example.org')).link).toBeTruthy();
   });
+
+  /**
+   * **The pending creation is read one way** (issue #38, absorbing #40):
+   * `Stash.pendingOf`, by all three handlers. A founder mistypes 📧,
+   * corrects it and presses 📨; the link opens in a new tab and the birth tab
+   * stays open beside the document.
+   */
+  it('one pending creation, read one way: the address it moved to, the founder it names, the tab left behind', async () => {
+    const { base } = await boot({ trustProxy: true });
+    const send = async (body: Record<string, unknown>) => {
+      const res = await fetch(base + '/api/docs', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'cf-connecting-ip': '198.51.103.38' },
+        body: JSON.stringify({ title: 'Stash', ...body }),
+      });
+      return { status: res.status, body: await res.json() as { slug?: string; pendingId?: string;
+        devLink?: string; created?: boolean; suggestion?: string; error?: string } };
+    };
+
+    // F2: the address was corrected on the resend, and the earlier link is
+    // the one followed first — it founds where the creation now points, not
+    // where its own token was minted
+    const a = await send({ slug: 'corr-a', email: 'ada@example.org' });
+    const b = await send({ slug: 'corr-b', email: 'ada@example.org', pendingId: a.body.pendingId });
+    expect(b.status).toBe(200);
+    const early = await consume(a.body.devLink!);
+    expect(early.status).toBe(302);
+    expect(early.headers.get('location')).toBe('/d/corr-b');
+    expect((await fetch(`${base}/api/d/corr-a/view`)).status).toBe(404);
+
+    // F1: a mistyped address, corrected on the resend; the good link founds,
+    // and the typo's link — followed afterwards — seats nobody
+    const typo = await send({ slug: 'typo', email: 'a@exmaple.org' });
+    const good = await send({ slug: 'typo', email: 'a@example.org', pendingId: typo.body.pendingId });
+    const founded = await consume(good.body.devLink!);
+    expect(founded.headers.get('location')).toBe('/d/typo');
+    const stray = await consume(typo.body.devLink!);
+    expect(stray.status, 'the typo link names a founder the document does not have').toBe(410);
+    expect(stray.headers.get('set-cookie')).toBeNull();
+
+    // F4: the birth tab left open after the save — its keystrokes are told
+    // where the document is, not a 404 nothing reads
+    const one = await send({ slug: 'stale-tab', email: 'bo@example.org' });
+    await consume(one.body.devLink!);
+    const typed = await post(base, '/api/docs/pending', { pendingId: one.body.pendingId, text: 'x' });
+    expect(typed.status).toBe(409);
+    expect(await typed.json()).toMatchObject({ created: true, slug: 'stale-tab' });
+    // …and a stash nobody holds stays the plain 404
+    expect((await post(base, '/api/docs/pending', { pendingId: 'no-such', text: 'x' })).status).toBe(404);
+
+    // F3: 📨 from that tab is told the document exists — never *that address
+    // is taken* with a twin at `stale-tab-2` — and gets no token and no mail
+    const again = await send({ slug: 'stale-tab', email: 'bo@example.org', pendingId: one.body.pendingId });
+    expect(again.status).toBe(200);
+    expect(again.body).toMatchObject({ created: true, slug: 'stale-tab' });
+    expect(again.body.devLink).toBeUndefined();
+    expect(again.body.suggestion).toBeUndefined();
+
+    // F5: the other order — the typo's link followed *before* the corrected
+    // one. The stash holds the address the creation was last sent to, so the
+    // typo's link founds nothing, seats nobody, and the good link still founds
+    const typo2 = await send({ slug: 'typo-first', email: 'b@exmaple.org' });
+    const good2 = await send({ slug: 'typo-first', email: 'b@example.org', pendingId: typo2.body.pendingId });
+    const first = await consume(typo2.body.devLink!);
+    expect(first.status, 'a link to an address the founder corrected founds nothing').toBe(410);
+    expect(first.headers.get('set-cookie')).toBeNull();
+    expect((await fetch(`${base}/api/d/typo-first/view`)).status).toBe(404);
+    const second = await consume(good2.body.devLink!);
+    expect(second.status).toBe(302);
+    expect(second.headers.get('location')).toBe('/d/typo-first');
+  });
 });
 
 describe('the clock closes the document (SPEC §4.6, Q467)', () => {
@@ -1318,6 +1444,9 @@ describe('the clock closes the document (SPEC §4.6, Q467)', () => {
     ] as const) {
       for (const cookie of [ada, bo, cy]) await cmd(cookie, 'answer', { setting, value });
     }
+    // an invitation nobody follows until after the close (issue #35 F1)
+    await cmd(ada, 'invite', { email: 'dee@example.org' });
+    const deeInvite = (await lastMailTo(dataDir, 'dee@example.org')).link!;
     await cmd(ada, 'begin', {}); // 🍾
     expect((await viewOf(ada)).constitutedAtT).not.toBeNull();
 
@@ -1384,16 +1513,46 @@ describe('the clock closes the document (SPEC §4.6, Q467)', () => {
     expect(signed.record!.signatures.map((s) => [s.name, s.comment]))
       .toEqual([['Bo', 'I still think daily.'], ['Cy', '']]);
 
+    // -- and a signature must not empty the record on everybody else's page
+    // (issue #30 finding 1). Every 🥂 OK is a write, so the next 4s poll on
+    // every other open page is a *slim* view: it already holds the sealed
+    // records and asks for them to be left out. The record is built from the
+    // same outcomes, so skipping them left the closed document reading as
+    // nothing adopted and nothing in the backlog — at the one moment the
+    // whole room is looking at it.
+    const h = closed as MemberViewPayload & { recordsKey: number };
+    const polled = await (await fetch(`${base}/api/d/${slug}/view?since=${h.seq}.${h.eseq}` +
+      `&tv=${h.textVersion}&rk=${h.recordsKey}`, { headers: { cookie: bo } }))
+      .json() as MemberViewPayload & { slim: string[] };
+    expect(polled.slim).toContain('records');
+    expect(polled.record!.undecided.map((u) => u.raceId)).toEqual(rec.undecided.map((u) => u.raceId));
+
     // -- the mail: every member and invitee, once, and not again next minute
     const closedMails = () => readFileSync(join(dataDir, 'outbox.jsonl'), 'utf8')
       .split('\n').filter((l) => l.length > 0)
       .map((l) => JSON.parse(l) as { to: string; subject: string; link?: string })
       .filter((m) => m.subject === '“Night Watch Rota” has closed');
     expect(closedMails().map((m) => m.to).sort())
-      .toEqual(['ada@example.org', 'bo@example.org', 'cy@example.org']);
-    expect(closedMails()[0]!.link).toBe(`${base}/d/${slug}`);
+      .toEqual(['ada@example.org', 'bo@example.org', 'cy@example.org', 'dee@example.org']);
+    // **a member's closing mail logs them in** (issue #35 F4): the bare
+    // address met a member with no cookie at the stranger's page. An
+    // invitation never followed keeps the bare address — the close expired
+    // it (X14), and the login door would seat nobody
+    const closeLink = (to: string) => closedMails().find((m) => m.to === to)!.link!;
+    for (const to of ['ada@example.org', 'bo@example.org', 'cy@example.org']) {
+      expect(closeLink(to), to).toContain('/auth/login?token=');
+    }
+    expect(closeLink('dee@example.org')).toBe(`${base}/d/${slug}`);
     await draft.tick(ends + 61_000);
-    expect(closedMails()).toHaveLength(3);
+    expect(closedMails()).toHaveLength(4);
+
+    // **an invitation link followed after the close lands on the closed
+    // document** (issue #35 F1): `arrive` refuses a closed document, and the
+    // throw came after the token was spent — raw JSON, the link dead
+    const late = await consume(deeInvite);
+    expect(late.status).toBe(302);
+    expect(late.headers.get('location')).toBe(`/d/${slug}`);
+    expect(late.headers.get('set-cookie'), 'the close excluded them, so no seat').toBeNull();
   });
 });
 
@@ -2055,6 +2214,63 @@ describe('👤 authorship on the wire (SPEC §3.5a)', () => {
     // and nothing was proposed — the refusal left no candidate behind
     expect((await sealed.viewOf(sealed.cy)).mine).toEqual([]);
   });
+  /**
+   * **The hole Q1463 (1) closes, over the wire** (Ed, 2026-09-19; SPEC §2.4 →
+   * why: R-136). A bot, a personal AI or any outside client holds line numbers
+   * and re-reads the version; when a line is adopted *above* its draft the
+   * numbers go stale while the version it quotes is **current**, so the
+   * engine's *targets version N* guard has nothing to fire on and the proposal
+   * silently rewrites the wrong clause.
+   *
+   * On the tree before this ruling all three posts below were accepted, and
+   * the second landed a candidate to replace the rota clause with wording
+   * written for the clubhouse one. The attestation is what tells them apart.
+   */
+  it('refuses a bot-style stale patch whose version is current (Q1463 (1), R-136)', async () => {
+    const el = await foundAt('anonymous');
+    // **raw**, straight past `post`'s helper: every body here is written by
+    // hand precisely because it is what an outside client would send
+    const send = (cookie: string, args: unknown) => fetch(`${el.base}/api/d/${el.slug}/cmd`, {
+      method: 'POST', headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({ cmd: 'propose-text', args }),
+    });
+    const v = await el.viewOf(el.cy);
+    const lines = v.text.split('\n');
+    expect(lines).toEqual(['The clubhouse is open all week.', 'The rota is weekly.']);
+
+    // 1 · no attestation at all — refused at the door, whatever the numbers say
+    const bare = await send(el.cy, { baseVersion: v.textVersion,
+      hunks: [{ start: 1, end: 2, lines: ['The rota is fortnightly.'] }], why: 'less often' });
+    expect(bare.status).toBe(400);
+    expect(((await bare.json()) as { error: string }).error).toMatch(/carries no 'was'/);
+
+    // 2 · **the stale hunk**: a draft written against line 0 and sent at line
+    //     1, the version current. Today's engine takes it; the attestation
+    //     refuses it, because line 1 is not the wording it was written against
+    const misaimed = await send(el.cy, { baseVersion: v.textVersion,
+      hunks: [{ start: 1, end: 2, lines: ['The clubhouse is open on Sundays too.'],
+        was: ['The clubhouse is open all week.'] }], why: 'Sundays' });
+    expect(misaimed.status).toBe(400);
+    expect(((await misaimed.json()) as { error: string }).error)
+      .toMatch(/the text at lines 2–2 is not what this proposal replaces/);
+
+    // 3 · the same wording aimed where it belongs is taken
+    const right = await send(el.cy, { baseVersion: v.textVersion,
+      hunks: [{ start: 0, end: 1, lines: ['The clubhouse is open on Sundays too.'],
+        was: ['The clubhouse is open all week.'] }], why: 'Sundays' });
+    expect(right.status).toBe(200);
+
+    // and the two refusals left nothing behind: one candidate, the right one
+    const mine = (await el.viewOf(el.cy)).mine;
+    expect(mine).toHaveLength(1);
+    // an insertion states the line it follows, and the top of the document null
+    const ins = await send(el.cy, { baseVersion: v.textVersion,
+      hunks: [{ start: 0, end: 0, lines: ['A preamble.'], after: 'not the top' }], why: 'first' });
+    expect(ins.status).toBe(400);
+    expect(((await ins.json()) as { error: string }).error)
+      .toMatch(/is not what this proposal was written after/);
+  });
+
   // the file's budget, on the describe: each of these founds a real document
   // over HTTP, and five of the seven timed out at the 5 s default under load
   // in batch Q (B32/B34)
@@ -2939,6 +3155,113 @@ describe('the applicant is served the door plus their application (Q1281)', () =
     expect(v2.applicant.judged).toBe(1);
     expect(['submitted', 'proposed', 'admitted']).toContain(v2.applicant.status);
     expect(JSON.stringify(v2)).not.toContain('ada@example.org');
+  }, 60_000);
+});
+
+/**
+ * **Everybody the document turns away is told** (issue #29, and Q1498 riding
+ * it). SPEC §9.7½ ends its admissions paragraph *either way they are told by
+ * mail*, and the 🪪 card promises it — but `relay` had no arm for
+ * `application-refused`, so a refused applicant heard nothing on any road.
+ * And SURFACE E40 gives a member removed by a carried 🥾 motion *exactly
+ * E31's tells*, the mail among them, while the arm mailed exile alone.
+ */
+describe('a refusal and a carried removal are mailed (issue #29, Q1498)', () => {
+  const mailsTo = (dataDir: string, to: string) => readFileSync(join(dataDir, 'outbox.jsonl'), 'utf8')
+    .split(/\r?\n/).filter((l) => l.length > 0)
+    .map((l) => JSON.parse(l) as { to: string; subject: string; text: string; link?: string })
+    .filter((m) => m.to === to);
+  async function room(prices: { admission: string; removal?: string }, ends: number | null) {
+    const b = await boot();
+    const created = await (await post(b.base, '/api/docs', {
+      title: 'Door Charter', email: 'ada@example.org',
+    })).json() as { ok: boolean; slug: string; devLink: string };
+    const ada = cookieOf(await consume(created.devLink));
+    const slug = created.slug;
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const res = await post(b.base, `/api/d/${slug}/cmd`, { cmd: name, args }, cookie);
+      const body = await res.json() as { ok?: boolean; error?: string; result?: unknown };
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+      return body.result;
+    };
+    const seat = async (email: string) => {
+      await cmd(ada, 'invite', { email });
+      return cookieOf(await consume((await lastMailTo(b.dataDir, email)).link!));
+    };
+    await cmd(ada, 'confirm-starting-text', { text: 'The door is answered by whoever is nearest.' });
+    const bo = await seat('bo@example.org');
+    const cy = await seat('cy@example.org');
+    await cmd(ada, 'set-setting', { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
+    const values: Record<string, unknown> = {
+      ending: { endsAtMs: ends },
+      quorum: { form: 'count', n: 1 }, chamber: { rung: 'link' },
+      authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
+      applications: { apply: true }, admission: { price: prices.admission },
+      ...(prices.removal ? { removal: { price: prices.removal } } : {}),
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await post(b.base, `/api/d/${slug}/cmd`, { cmd: 'reclaim', args: { setting } }, ada);
+      await cmd(ada, 'set-setting', { setting, value });
+    }
+    await cmd(ada, 'set-convenor-membership', { isMember: true });
+    // the doors' powers laid down, so a carried act lands without the crown
+    await cmd(ada, 'begin', { laidDown: [
+      { setting: 'door:invite', power: 'unilateral' }, { setting: 'door:invite', power: 'assent' },
+      { setting: 'door:remove', power: 'unilateral' }, { setting: 'door:remove', power: 'assent' },
+    ] });
+    const knock = async (email: string, name: string) => {
+      const k = await (await post(b.base, `/api/d/${slug}/apply`, { email })).json() as { devLink: string };
+      const c = cookieOf(await consume(k.devLink));
+      await cmd(c, 'submit-application', { name });
+      return c;
+    };
+    const viewOf = async (cookie: string) => (await (await fetch(
+      `${b.base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as MemberViewPayload;
+    return { ...b, slug, ada, bo, cy, cmd, knock, viewOf };
+  }
+  /** Every mail to this address but the verification the knock sent. */
+  const toldTo = (dataDir: string, to: string) =>
+    mailsTo(dataDir, to).filter((m) => !/\/auth\/apply/.test(m.link ?? ''));
+
+  it('an application one member votes against at 🏛️ is refused, and the applicant is mailed', async () => {
+    const { dataDir, draft, ada, cmd, knock, viewOf } = await room({ admission: 'assembly' }, null);
+    await knock('dee@example.org', 'Dee');
+    const motion = (await viewOf(ada)).view.motions.find((m) => (m.payload as { kind: string }).kind === 'admit')!;
+    await cmd(ada, 'answer-motion', { motion: motion.id, answer: 'keep' }); // Q1473: this ends it
+    await draft.outbox.drain();
+    const told = toldTo(dataDir, 'dee@example.org');
+    expect(told, 'the refusal, beside the verification mail').toHaveLength(1);
+    expect(told[0]!.subject).toContain('Door Charter');
+    // no seat, so no login: the document's own address, as exile's mail
+    expect(told[0]!.link).not.toContain('token=');
+    expect(told[0]!.text).not.toContain('token=');
+  }, 60_000);
+
+  it('an application the close finds still running at ✏️ is refused, and the applicant is mailed', async () => {
+    const ends = Date.now() + 3_600_000;
+    const { dataDir, draft, knock } = await room({ admission: 'proposal' }, ends);
+    await knock('eve@example.org', 'Eve');
+    await draft.tick(ends + 1_000); // nobody judged it: the close holds the motion
+    await draft.outbox.drain();
+    const told = toldTo(dataDir, 'eve@example.org');
+    // the close's own mail goes to members and invitees, never an applicant,
+    // so the one mail here is the refusal
+    expect(told).toHaveLength(1);
+    expect(told[0]!.subject).toContain('Door Charter');
+  }, 60_000);
+
+  it('a member removed by a carried 🥾 motion is mailed, the membership named as the actor (E40)', async () => {
+    const { dataDir, draft, ada, cy, cmd, viewOf } = await room({ admission: 'assembly', removal: 'assembly' }, null);
+    const boId = (await viewOf(ada)).view.members.find((m) => m.email === 'bo@example.org')!.id;
+    const motion = await cmd(cy, 'open-motion', { payload: { kind: 'remove', member: boId }, why: 'moved away' });
+    await cmd(ada, 'answer-motion', { motion, answer: 'accept' });
+    await draft.outbox.drain();
+    const told = mailsTo(dataDir, 'bo@example.org').filter((m) => /no longer a member/.test(m.subject));
+    expect(told, 'the removed member hears it from the document').toHaveLength(1);
+    expect(told[0]!.text, 'the room removed them, not the Founder').not.toContain('The Founder');
+    expect(told[0]!.text).toMatch(/members/);
+    expect(told[0]!.link).not.toContain('token=');
   }, 60_000);
 });
 

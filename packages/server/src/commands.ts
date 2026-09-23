@@ -12,6 +12,7 @@ import type {
   MotionAnswer, MotionInput, Power, PowerKey, SettingId, SettingValue,
 } from '../../constitution/src/index.js';
 import type { PatchSet } from '../../engine-core/src/text/types.js';
+import { checkAttestation } from '../../engine-core/src/text/attest.js';
 import { emojiFaceOf } from './faces.js';
 
 export interface Actor {
@@ -63,6 +64,12 @@ export const cap = (value: string, max: number, what: string): string => {
 export const emailOk = (email: string): string => {
   if (email.length > LIMITS.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     throw new Error('that does not look like an email address');
+  }
+  // **an address no provider delivers is refused where it is typed** (issue
+  // #67 F4): an accented letter or a non-Latin domain passed every gate and
+  // failed at the provider on every retry, reading *the mail could not be sent*
+  if (/[^\x21-\x7e]/.test(email)) {
+    throw new Error('that address has a character email cannot send to — use plain letters, digits and punctuation, no accents');
   }
   // one address, one member (§9.7½) only holds if case cannot mint two
   // seats (review #1, finding 18); comparisons lowercase too
@@ -136,11 +143,45 @@ export function faceTakenBy(cs: ConstitutionSession, pic: string, self: string):
   return null;
 }
 
-const refuseTaken = (cs: ConstitutionSession, pic: string, self: string): string => {
+const refuseTaken = (cs: ConstitutionSession, pic: string, self: string,
+  blind = false): string => {
   const holder = faceTakenBy(cs, pic, self);
-  if (holder !== null) throw new Error(`Taken — ${holder} got there first.`);
+  // an applicant is outside the room (issue #33, SURFACE Y28): the refusal
+  // names nobody, `faceTakenBy`'s own no-name word standing in
+  if (holder !== null) throw new Error(`Taken — ${blind ? 'Somebody' : holder} got there first.`);
   return pic;
 };
+
+/**
+ * **The attestation, at the door** (SPEC §2.4 → why: R-136). Every text
+ * proposal states what it believes it is replacing, and one that does not —
+ * or whose wording is not what the version it names actually holds — is
+ * refused here: for the page, a bot and any outside client alike.
+ *
+ * It is the guard the version check cannot be. A hunk carries line numbers
+ * and a version, so a client that drafted against line 8 while a line was
+ * adopted above it holds a stale number against a version that is
+ * nonetheless **current** — *targets version N* has nothing to fire on, and
+ * the wrong clause is rewritten with the author's own words.
+ *
+ * **The version guard still speaks first**: where the patch names anything
+ * but the version standing now, the engine's own refusal is the truer
+ * sentence and nothing is said here. Otherwise the attestation is checked
+ * against the lines that version holds, exactly — and then dropped:
+ * `submitCandidate`, `decreeText` and `confirmRebase` strip it before they
+ * emit, so no event's shape moves and every log replays byte for byte.
+ */
+function attestedOf(bridge: EngineBridge, args: Args): PatchSet {
+  const patch = patchOf(args);
+  if (patch.baseVersion !== bridge.engine.currentVersion()) return patch;
+  // **The lines the engine holds, never the text split back** (Q1491): a
+  // version written before the doors normalised can hold a line ending
+  // inside a line, and the round trip through one string takes it out — so
+  // the page's faithful attestation was refused against an array the engine
+  // itself does not have.
+  checkAttestation(bridge.engine.linesAt(patch.baseVersion), patch.hunks, { required: true });
+  return patch;
+}
 
 /** A patch as the page sends it: line hunks against a stated version. */
 function patchOf(args: Args): PatchSet {
@@ -168,7 +209,23 @@ function patchOf(args: Args): PatchSet {
       total += l.length + 1;
     }
     if (total > LIMITS.text) throw new Error(`the text is too long (${LIMITS.text} characters at most)`);
-    return { start, end, lines: lines as string[] };
+    // **What the hunk says it is replacing** (R-136), shape only — the wording
+    // is `attestedOf`'s question, and neither field is ever stored, so neither
+    // counts against the patch's own length. `was` on a replacement, `after`
+    // on a pure insertion, both absent on a patch from a client that does not
+    // send them yet, which `attestedOf` is what refuses.
+    const { was, after } = h as Record<string, unknown>;
+    if (was !== undefined && (!Array.isArray(was) || !was.every((l) => typeof l === 'string'))) {
+      throw new Error("a hunk's 'was' is a list of strings");
+    }
+    if (after !== undefined && after !== null && typeof after !== 'string') {
+      throw new Error("a hunk's 'after' is a string or null");
+    }
+    return {
+      start, end, lines: lines as string[],
+      ...(was === undefined ? {} : { was: was as string[] }),
+      ...(after === undefined ? {} : { after: after as string | null }),
+    };
   });
   return { baseVersion, hunks };
 }
@@ -384,7 +441,7 @@ const HANDLERS: Record<string, Handler> = {
         throw new Error("signing is not offered under this document's anonymity rule (§3.5a)");
       }
     }
-    return bridge.proposeText(t, a.memberId, patchOf(args), why, signed);
+    return bridge.proposeText(t, a.memberId, attestedOf(bridge, args), why, signed);
   },
   /* -- ✒️ on the Text (R-058, entry 160): the Founder's amendment passes the
      instant it is submitted. **No `signed` argument** — the office signs, not
@@ -394,7 +451,7 @@ const HANDLERS: Record<string, Handler> = {
   'pen-text': (cs, a, t, args, bridge) => {
     if (bridge === null) throw new Error('the document has not begun');
     const why = typeof args.why === 'string' ? cap(args.why, LIMITS.why, 'the reason') : '';
-    return bridge.penText(t, a.memberId, patchOf(args), why);
+    return bridge.penText(t, a.memberId, attestedOf(bridge, args), why);
   },
   /* -- re-making a stranded proposal (SPEC §2.4, Q170): the author's own
      patch, rebuilt against the text that replaced the one it was written for.
@@ -406,7 +463,7 @@ const HANDLERS: Record<string, Handler> = {
     if (bridge === null) throw new Error('the document has not begun');
     const why = typeof args.why === 'string'
       ? cap(args.why, LIMITS.why, 'the rationale') : undefined;
-    return bridge.rebaseText(t, a.memberId, str(args, 'candidate'), patchOf(args), why);
+    return bridge.rebaseText(t, a.memberId, str(args, 'candidate'), attestedOf(bridge, args), why);
   },
   'withdraw-text': (cs, a, t, args, bridge) => {
     if (bridge === null) throw new Error('the document has not begun');
@@ -426,10 +483,16 @@ const HANDLERS: Record<string, Handler> = {
   },
   'submit-application': (cs, a, t, args) => {
     const applicant = applicantOnly(a);
+    // **the status is asked before the face** (issue #33): an application
+    // that cannot be submitted meets the module's own refusal, fields or
+    // none, so a seat that has already submitted cannot go on probing faces
+    if (cs.applicantRecords().get(applicant)?.status !== 'verified') {
+      cs.submitApplication(t, applicant);
+    }
     const fields: { name?: string; picture?: string; words?: string } = {};
     if (typeof args.name === 'string') fields.name = cap(args.name, LIMITS.name, 'the name');
     if (typeof args.picture === 'string') {
-      fields.picture = refuseTaken(cs, validPicture(args.picture), applicant);
+      fields.picture = refuseTaken(cs, validPicture(args.picture), applicant, true);
     }
     if (typeof args.words === 'string') fields.words = cap(args.words, LIMITS.words, 'the words');
     cs.submitApplication(t, applicant, fields);

@@ -313,7 +313,7 @@ describe('dedup-gate in a full scripted run', () => {
       // **Three who prefer the clause as it stands** (Q1439). The room used to
       // be the two drafters alone under a quorum of 99, which held the floor
       // out of reach so the original stayed live for its twin to meet. No
-      // quorum may ask for more than half now (R-126), so in a room of two the
+      // quorum could ask for more than half then (R-126), so in a room of two the
       // floor is one and the first approval carries the original away — and
       // the twin meets nothing. **A race is held open by disagreement now,
       // not by an unreachable number**, which is the whole of Q1439: these
@@ -344,10 +344,14 @@ describe('dedup-gate in a full scripted run', () => {
       windowMs: 24 * HOURS,
       seed: 'dupes',
       makePersona: (profile, rng) => new ScriptedPersona(profile, dupeScenario, rng),
-      // Hold the floor above reach so candidates stay live and the second
-      // persona's twin draft meets a live original. It froze the threshold at
-      // 0.99 until v0.128, when the bar left the adoption test (Q1362, R-117).
-      constitutionOverrides: { quorum: { form: 'count', n: 99 } },
+      // Hold the floor above the two drafters' reach so candidates stay live
+      // and the second persona's twin draft meets a live original. It froze
+      // the threshold at 0.99 until v0.128, when the bar left the adoption
+      // test (Q1362, R-117), and it was a count of 99 until Q1490 (R-139):
+      // the cap is the whole group now, so 99 in a room of five is unanimity
+      // and every candidate closes on the first vote for the clause (§4.4).
+      // Three — the number the old cap produced — is asked for directly.
+      constitutionOverrides: { quorum: { form: 'count', n: 3 } },
       dedupGate: new DedupGate(),
       onProgress: (line) => lines.push(line),
     });

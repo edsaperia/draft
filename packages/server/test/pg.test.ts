@@ -21,6 +21,7 @@ import type { OutboxRow } from '../src/persistence.js';
 import { DocStore } from '../src/store.js';
 import { copyStore, verifyStores } from '../src/copy-store.js';
 import { main as tools } from '../src/tools.js';
+import { errorLogContract } from './error-store.js';
 import { ConstitutionSession, InMemoryPeople } from '../../constitution/src/index.js';
 import type { LogEntry } from '../../constitution/src/index.js';
 
@@ -186,17 +187,30 @@ d('PgPersistence contract', () => {
     expect(back.memberRecords().get(bo)).toMatchObject({ erased: true, email: null, name: null });
   });
 
+  /** The same body `unit.test.ts` runs against the file store (plan stage
+   *  5a): a line read back is the line that was written, under either. */
+  it('the error log is a row of the store: newest first, capped, byte for byte', async () => {
+    await errorLogContract(await open());
+  });
+
   it('the wipe empties a throwaway schema and leaves it migrated', async () => {
     const p = await open();
     const store = new DocStore(p);
     await store.create('d-w', { title: 'W', slug: 'w',
       convenor: { id: 'founder', email: 'w@example.org', isMember: true } }, 1);
     await p.putTokens([['tw', { kind: 'login', email: 'w@example.org', expMs: 9e12 }]]);
+    // the error log too (plan stage 5a): its capped arguments carry an
+    // invitee's address, and a wipe leaving them in a table is not a wipe
+    await p.appendError({ at: 1, kind: 'refused', status: 400, method: 'POST',
+      path: '/api/d/w/cmd', doc: 'd-w', cmd: 'invite',
+      args: '{"email":"ada@example.org"}', reason: 'that address is taken' });
+    expect(await p.readErrors()).toHaveLength(1);
     expect(await p.listDocIds()).toEqual(['d-w']);
     expect(await p.wipe()).toBe(1);
     expect(await p.listDocIds()).toEqual([]);
     expect(await p.readPeople('d-w')).toEqual([]);
     expect(await p.takeToken('tw')).toBeNull();
+    expect(await p.readErrors()).toEqual([]);
     // still this build's schema: a reopen migrates nothing and refuses nothing
     await (await reopen(p)).close();
   });
@@ -210,6 +224,12 @@ d('PgPersistence contract', () => {
     expect(await p.getStash('k')).not.toBeNull();
     await p.sweepStashes(600);
     expect(await p.getStash('k')).toBeNull();
+    // the address the creation was last sent to (issue #38 F5, migration 7)
+    await p.putStash('k3', { text: '', expMs: 9e12, slug: 's', email: 'ada@example.org' });
+    expect(await p.getStash('k3')).toEqual({ text: '', expMs: 9e12, slug: 's', email: 'ada@example.org' });
+    await p.putStash('k3', { text: '', expMs: 9e12, slug: 's', email: 'ada@example.com' });
+    expect((await p.getStash('k3'))!.email).toBe('ada@example.com');
+    expect((await p.dumpStashes()).find(([k]) => k === 'k3')![1].email).toBe('ada@example.com');
     await p.putStash('k2', { text: 'x', expMs: 9e12 });
     await p.deleteStash('k2');
     expect(await p.getStash('k2')).toBeNull();

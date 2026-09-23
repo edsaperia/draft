@@ -211,7 +211,16 @@ window.SETUP = (function () {
   };
   const nounOf = (c) => c.n || c.t;
   const HUE = { ask: 'open', wait: 'closed', news: 'changed', yours: 'yours', done: 'closed' };
-  const hueOf = (c, ctx) => HUE[stateOf(c, ctx)];
+  // **A grant waiting to be accepted wears *yours*** (Q1501, Ed 2026-09-22:
+  // members did not realise the grant cards need their OK before the verb
+  // works). The five — 💡 ⚖️ ✒️ 🛡️ 🏛️ — are news, and news is the colour
+  // of a rule that only wants to have been read; a grant is addressed to you
+  // (C8) and its press hands you something, so until it is accepted it takes
+  // the hue for *something of yours awaits* on its tab, its rail entry and
+  // its card's strip, and goes grey like any settled card after.
+  const grantCard = (c) => !!c && !!c.isGate && !c.isBegin && !c.isClosing;
+  const hueFor = (c, st) => (st === 'news' && grantCard(c) ? 'yours' : HUE[st]);
+  const hueOf = (c, ctx) => hueFor(c, stateOf(c, ctx));
   // **One wash ramp for both columns** (Q623 (a), 2026-08-22). The charter's
   // entries take their alpha from urgency — session.js's `washCol`, URG_LO at
   // no urgency to URG_HI at the most — where a setup entry took a fixed 0.22,
@@ -231,6 +240,11 @@ window.SETUP = (function () {
      reason: one function draws it, so the columns cannot drift. */
   const markOf = (c, ctx, tab, host) => {
     const st = stateOf(c, ctx);
+    // **A filed record wears its outcome** (Q1459): its subject *is* how the
+    // motion ended, so the tab is the drawn ✔ for one that carried and the ✖
+    // for one that did not, in every state — never a character for
+    // `glyphHtml`, which a record has not got.
+    if (c.record) return c.carried ? DONE : RETIRED;
     // **A retired tab keeps its subject glyph** (Ed, 2026-08-18): the piles
     // stand in one place, hold the whole constitution, and most of what is
     // in them can still be acted on — they are a menu, and a menu of ✔s
@@ -332,7 +346,7 @@ window.SETUP = (function () {
     return '<span class="achip st-' + st + (o.active ? ' wmark' : '') + (o.inert ? ' behind' : '') + '"' +
     ' data-chip="' + c.k + '"' +
     (o.inert ? ' aria-hidden="true"' : ' role="button" tabindex="0" data-tab="' + c.k + '"') +
-    ' style="--chiphue: var(--lc-' + HUE[st] + ')' + (o.z ? '; z-index:' + o.z : '') + '"' +
+    ' style="--chiphue: var(--lc-' + hueFor(c, st) + ')' + (o.z ? '; z-index:' + o.z : '') + '"' +
     (o.inert ? '' : ' title="' + esc(labelOf(c, ctx) + (o.active ? ' — close it'
       : st === 'ask' ? ' — waiting on you' : st === 'wait' ? ' — waiting on others'
       : st === 'news' ? (c.grants ? ' — yours to take' : ' — decided; it waits for your OK')
@@ -644,6 +658,7 @@ window.SETUP = (function () {
      surface's `resolveCounts` and undefined where none is in flight — so a
      constitutional proposal wears the same bar and the same *n of E have
      answered* as a blind question, instead of the founder's 100%. */
+  const SPARKLE_MS = 3200;              // system.css's `sparkleSweep` length
   function railEntry(c, ctx) {
     const w = washOf(c, ctx);
     const st = stateOf(c, ctx);
@@ -664,6 +679,12 @@ window.SETUP = (function () {
       ' aria-current="' + (ctx.open === c.k) + '"' +
       ' title="' + esc(room ? got + ' of ' + ctx.E + ' have answered' : labelOf(c, ctx)) + '"' +
       ' style="--washcol: ' + w.col + '; --washbg: ' + w.bg + '; --fill: ' + fill + '">' +
+      // **an unaccepted grant sparkles** (Q1501, Ed's word): a small, slow
+      // shimmer across the entry while it waits, a still glint under reduced
+      // motion, and never once accepted. Its phase is the clock's, so a rail
+      // rebuilt by a poll carries on the same sweep rather than restarting it.
+      (st === 'news' && grantCard(c) ? '<span class="sparkle" aria-hidden="true" style="animation-delay: -' +
+        (Date.now() % SPARKLE_MS) + 'ms"></span>' : '') +
       '<span class="ql"><span class="subj" aria-hidden="true">' + markOf(c, ctx) + '</span>' +
       // **an entry about a person leads with their face** (Q1375, Ed
       // 2026-09-15): the surface writes `face` on the departure and admit
@@ -671,7 +692,15 @@ window.SETUP = (function () {
       // (`railSpeakerHtml`'s `.qface`) between the mark and the sentence; the
       // tooltip above is the sentence alone
       (c.face ? '<span class="qface" aria-hidden="true">' + avHtml(c.face) + '</span>' : '') +
-      '<span class="qt">' + esc(labelOf(c, ctx)) + '</span></span>' +
+      '<span class="qt">' + esc(labelOf(c, ctx)) + '</span>' +
+      // **and the abstention clock in the last day** (Q1460 (e)): the surface
+      // writes `absAt` on a card whose ordinary motion races — this seat's
+      // own deadline on it, and nobody else's — so the entry says when
+      // silence here will be counted and a vote not cast cannot hide behind
+      // an unopened card. The twenty-four hours, and the *abstained* past
+      // them, are the renderer's own rule; the clause rail says the same
+      // thing in the same words.
+      window.CARDS.abstainNoteHtml(c.absAt, 'rail') + '</span>' +
       // the summary is the entry's body: markup where the context hands
       // markup (the member surface's — a spoken rationale, a news line, the
       // deck's count), else a plain teaser wrapped here (the applicant's and
@@ -1072,9 +1101,32 @@ window.SETUP = (function () {
           : clickGesture ? 'Ask all members — a full one-second assembly'
           : 'Ask all members — a full one-second hold') + '"' +
         ' data-holdmotion="' + c.k + '">' + glyphHtml('🏛️') + '</button>'
-      : '<button class="btn btn-approve glyphbtn emojibtn"' + (dto ? '' : ' disabled') +
-        ' data-putmotion="1" title="Propose it">' + glyphHtml('✏️') + '</button>';
+      // **An empty wallet darkens the ✏️, with the countdown beside it**
+      // (Q1486 (E), Ed 2026-09-21: *dark, with ✏️ hh:mm countdown (for
+      // proposals as well as rule changes, the same anywhere you would want
+      // to press the button but you have no ✏️s)*). It was lit, and the press
+      // met the module's own *insufficient ✏️ for the stake* — engine
+      // vocabulary, and told to the one member who most wants the rule moved
+      // and has nothing to move it with. An ordinary motion is the only route
+      // that costs: 🏛️ is free, so the branch above never asks.
+      : (() => {
+        const broke = walletBroke();
+        return (broke ? window.CARDS.abstainNoteHtml(dripAt(), 'drip') : '') +
+          '<button class="btn btn-approve glyphbtn emojibtn"' + (dto && !broke ? '' : ' disabled') +
+          ' data-putmotion="1" title="' + esc(broke ? window.COPY.session.row.broke : 'Propose it') + '">' +
+          glyphHtml('✏️') + '</button>';
+      })();
   };
+  /* **What the wallet says about a press that would spend an ✏️** (Q1486 (E)).
+     Both halves read `window.SESSION`, which owns the wallet on both
+     surfaces — before 🍾 there is no session mounted and nothing composes a
+     motion, so a missing SESSION answers *not broke* and changes nothing. */
+  const walletBroke = () => {
+    const S2 = window.SESSION;
+    if (!S2 || S2.editsHeld == null) return false;
+    return S2.editsHeld < ((S2.EDIT_RULES && S2.EDIT_RULES.stake) || 1);
+  };
+  const dripAt = () => (window.SESSION ? window.SESSION.dripAt : null);
 
   /* ---- the consent controls, shared -----------------------------------------
      Moved out of founding-ceremony.html when Q344 closed (Ed, 2026-08-18): a
@@ -1354,17 +1406,22 @@ window.SETUP = (function () {
       // the explanation, and the blindness story returns with the 🍾 redesign
       // (Q1169). **And the meaning line went with them** (Q1439, 2026-09-18):
       // the rule sentence stands alone under each block.
-      // **The share runs 5 to 50** (Q1439, ruling a): no quorum may ask for
-      // more than half the group a proposal is waiting on, and the box says
-      // so. **The numbers follow the share** (ruling m) in a slot the `input`
-      // handler repaints as the number is typed — empty until there is one.
+      // **The share runs 1 to 100** (Q1490, R-139, opening what Q1439 ruling a
+      // had capped at half): the whole scale, unanimity at the top and a
+      // single voice at the bottom. **The numbers follow the share** (ruling
+      // m) in a slot the `input` handler repaints as the number is typed —
+      // empty until there is one — and beneath each block `quorumSlot` says
+      // what the number comes to where it needs saying.
       const share = (frm) => (f === frm && typeof A.quorum === 'number' ? A.quorum : '');
+      const count = (frm) => (f === frm && typeof A.quorum === 'number' ? A.quorum : '');
       return '<div class="choice" role="radiogroup">' +
       ansRow(f === 'share', 'quorumForm', 'share',
         RULE_QUORUM.share(box('share', SHARE.min, SHARE.max) + '%',
-          shareSlot('quorum', share('share'), E)), '') +
+          shareSlot('quorum', share('share'), E)) +
+        quorumSlot('quorum', 'share', share('share'), E), '') +
       ansRow(f === 'count', 'quorumForm', 'count',
-        RULE_QUORUM.count(box('count', 1, Math.max(1, E))), '') +
+        RULE_QUORUM.count(box('count', 1, Math.max(1, E))) +
+        quorumSlot('quorum', 'count', count('count'), E), '') +
       '</div>';
     },
     authorship: (A) =>
@@ -1415,7 +1472,11 @@ window.SETUP = (function () {
       // hydration skips a `myAnswer` of null outright), so `!== null` read
       // true and painted *At a set time* as chosen, beside an empty date and
       // a dark ✓: a suggested answer on a blind collection.
-      ansRow(A.ending !== null && A.ending !== undefined && A.ending !== 'never',
+      // …and the rung is chosen by its own press before a date is in its
+      // box (issue #75 F1): `endingKind` is that press, the box's reveal
+      // hanging on the rung being on — until #75 the rung waited on a date
+      // and the date on the rung, and neither ever came.
+      ansRow(A.endingKind === 'date' || (A.ending !== null && A.ending !== undefined && A.ending !== 'never'),
         'ending', 'date', ctlWord('At a set time'), '',
         '', '<span class="fld"><label>Ends</label><input type="datetime-local" data-ansdate="ending"' +
         (A.ending && A.ending !== 'never' ? ' value="' + esc(A.ending) + '"' : '') + '></span>') +
@@ -1552,10 +1613,13 @@ window.SETUP = (function () {
   const ctlWord = (s) => '<span class="ctl">' + s + '</span>';
 
   /* **A share of the membership, with the numbers after it** (Q1439, ruling m).
-     `SHARE` is the range 👥's share box offers — 5 is the lowest quorum worth
-     stating and 50 is the cap, no quorum being allowed to ask for more than
-     half (ruling a) — and the two writers below turn a percentage into the
-     count it comes to in a membership of `e`.
+     `SHARE` is the range 👥's share box offers — **the whole scale, 1 to 100,
+     since Q1490** (Ed, 2026-09-21 → why: R-139): the cap at half went with
+     R-126, and the bottom went the same afternoon (*the lower bound should go
+     down to one member*), so a membership may ask for unanimity or for a
+     single voice and read on the card what either comes to. The two writers
+     below turn a percentage into the count it comes to in a membership of
+     `e`; `quorumNote` says what that count means at either end.
 
      The count is the module's own (`⌈n·e/100⌉`, product before quotient), so
      the sentence on the card and the number the engine reads a race against
@@ -1566,7 +1630,7 @@ window.SETUP = (function () {
      place as the number is typed; `shareWords` is the whole share, for every
      site that prints a settled one. Both print nothing at all for a number
      nobody has typed: a blind card must not show what it would come to. */
-  const SHARE = { min: 5, max: 50 };
+  const SHARE = { min: 1, max: 100 };
   const shareCount = (pct, e) => {
     const n = +pct, E = Math.max(1, +e || 1);
     if (!isFinite(n)) return null;
@@ -1574,16 +1638,76 @@ window.SETUP = (function () {
     return M && M.quorumCount ? Math.min(M.quorumCount({ form: 'share', n }, E), E)
       : Math.min(Math.max(1, Math.ceil(n * E / 100)), E);
   };
+  /* **The bracket prints the floor the engine applies, never the share's bare
+     arithmetic** (Ed, 2026-09-21, Q1490: *print the real floor*): a race is
+     held to `max(⌈n·E/100⌉, min(2, E))` (SPEC §4.2, the module's
+     `adoptionFloor`), so 1% of a membership of twelve reads *(2 of 12)* —
+     the number a member will actually meet. `shareCount` above stays the bare
+     share **on purpose**: `quorumNote` reads it to know the share came to
+     fewer than two, and raising it would switch that sentence off exactly
+     where it is owed. Guard: `npm run slider-walk`. */
+  const shareFloor = (pct, e) => {
+    const c = shareCount(pct, e), E = Math.max(1, +e || 1);
+    if (c === null) return null;
+    const M = window.CONSTITUTION;
+    return M && M.adoptionFloor ? M.adoptionFloor(c, E)
+      : Math.max(Math.min(c, E), Math.min(2, E));
+  };
   const shareTail = (pct, e) => (pct === '' || pct === null || pct === undefined || !isFinite(+pct)
-    ? '' : window.COPY.page.val.quorumTail(shareCount(pct, e), Math.max(1, +e || 1)));
+    ? '' : window.COPY.page.val.quorumTail(shareFloor(pct, e), Math.max(1, +e || 1)));
   const shareWords = (pct, e) => (pct === '' || pct === null || pct === undefined || !isFinite(+pct)
-    ? '' : window.COPY.page.val.quorumPct(+pct, shareCount(pct, e), Math.max(1, +e || 1)));
+    ? '' : window.COPY.page.val.quorumPct(+pct, shareFloor(pct, e), Math.max(1, +e || 1)));
   /* …and the slot the tail is repainted into, keyed by the setting so the
      `input` handlers can find it without knowing which surface drew it —
      the trick `data-meaning` played for the meaning line until that line
      left the surface (Q1439, 2026-09-18). */
   const shareSlot = (key, pct, e) =>
     '<span data-share="' + esc(key) + '">' + shareTail(pct, e) + '</span>';
+
+  /* ---- 👥's own sentence, at either end of the scale (Q1490, R-139) -------
+     **The one meaning line left on the surface**, and it is 👥's because the
+     number it prints is the one a member cannot work out from the rule: a
+     quorum above half is a veto in the hands of the few, and a quorum below
+     two is not the number it says. Everything Q1439 ruling u took off the
+     cards stays off them.
+
+     `quorumAsk` is what the chosen number comes to in a membership of `e` —
+     the share's own count, or a fixed count read against the membership,
+     since the engine caps a count at the group it waits on (§9.5a) — and
+     `quorumNote` turns that into at most one sentence:
+
+       · **below the seconder** — the number comes to fewer than two, and the
+         floor is `min(2, E)` whatever is asked for (SPEC §4.2), so the card
+         says what the membership is really held to. First, because at E = 2
+         a count of one is both below the seconder and above half, and the
+         honest sentence there is the one about the floor.
+       · **above half** — with a floor of F in a membership of E, a proposal
+         is stopped once E − F + 1 members prefer the current text. The floor
+         is the *real* one, `max(ask, min(2, E))`, never the raw number.
+
+     Nothing at all in a membership of one (every quorum is the whole of it)
+     and nothing for a number nobody has typed, which is `shareTail`'s rule
+     and for the same reason. */
+  const quorumAsk = (form, n, e) => {
+    const E = Math.max(1, +e || 1);
+    if (n === '' || n === null || n === undefined || !isFinite(+n)) return null;
+    return form === 'share' ? shareCount(n, E)
+      : Math.min(Math.max(0, Math.floor(+n)), E);
+  };
+  const quorumNote = (form, n, e) => {
+    const E = Math.max(1, +e || 1);
+    const ask = quorumAsk(form, n, e);
+    if (ask === null || E < 2) return '';
+    if (ask < 2) return window.COPY.page.quorumFloorMin;
+    return ask * 2 > E ? window.COPY.page.quorumStop(E - ask + 1) : '';
+  };
+  /* …and the slot it is repainted into, `shareSlot`'s twin. Keyed by setting
+     **and form**, because 👥 draws two blocks and only the block whose form is
+     chosen has a number that means anything (Q1162). It carries `.exp`, the
+     option block's own explanation treatment, and collapses when empty. */
+  const quorumSlot = (key, form, n, e) =>
+    '<span class="exp" data-qnote="' + esc(key) + ':' + esc(form) + '">' +
+    esc(quorumNote(form, n, e)) + '</span>';
 
   /* **💤 is stated in minutes, hours or days** (Ed, 2026-09-17, Q1439 ruling
      j, minimum five minutes). The period does two jobs from Q1439: silent on
@@ -1731,7 +1855,8 @@ window.SETUP = (function () {
   return { esc, TICK, ARROW_OUT, initials, avHtml, hueOf, washOf, stateOf, labelOf, nounOf, markOf, railEntry,
     bandHtml, fitBand, pileHtml, stripHtml, cardHtml, readBody,
     nameBody, pictureBody, opt, setPickWords, num, numIn, ctlWord, faces, someIn, FACE_EMOJI,
-    SHARE, shareCount, shareTail, shareWords, shareSlot, LAPSE_UNITS, LAPSE_BOUNDS, lapseParts, unitSel,
+    SHARE, shareCount, shareTail, shareWords, shareSlot, quorumAsk, quorumNote, quorumSlot,
+    LAPSE_UNITS, LAPSE_BOUNDS, lapseParts, unitSel,
     FACE_TONES, faceToneRow, faceToned, setFaceTone,
     setFaceTaken, faceTakenBy, faceBtn, emojiPicker,
     routeFor, motionCommitHtml,

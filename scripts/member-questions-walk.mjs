@@ -24,7 +24,7 @@
  */
 import { chromium } from 'playwright';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
-import { say, sleep as T, followLink, linkIn, outbox as devOutbox, post as postTo } from './lib/walk.mjs';
+import { say, sleep as T, followLink, linkIn, outbox as devOutbox, post as postTo, landOn } from './lib/walk.mjs';
 
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
 await assertServerBuild(BASE, 'member-questions-walk');
@@ -78,7 +78,7 @@ page.on('response', (r) => { if (r.url().includes('/api/') && r.status() >= 400)
   refused.push(r.status() + ' ' + r.request().method() + ' ' + new URL(r.url()).pathname + ' ' +
     String(r.request().postData() || '').slice(0, 120));
 } });
-await page.goto(m1Invite, { waitUntil: 'networkidle' });
+await landOn(page, m1Invite, { waitUntil: 'networkidle' });
 for (let i = 0; i < 40 && !page.url().includes('/d/'); i++) await page.waitForTimeout(500);
 await page.waitForTimeout(2600);
 const state = () => page.evaluate(() => ({
@@ -120,10 +120,38 @@ check('⏱️ is served once 🏛️ is acknowledged (Q1365, Q1372)', s.rail.inc
 check('👥 waits its turn behind ⏱️ (the member\'s own cascade)', !s.rail.includes('ans-quorum'), 'rail ' + JSON.stringify(s.rail));
 check('🏛️ leaves the rail once OK\'d', !s.rail.includes('grant-voice'), 'rail ' + JSON.stringify(s.rail));
 
-// the member answers ⏱️ by the API; the page learns by its poll
+/* the member answers ⏱️ on the card, with real focus, real keys and **one**
+ * press (issue #75 F2): the ✓'s mousedown blurs the box, and `change` used
+ * to render the card under the press, so the first press sent nothing. A
+ * dispatched `input` would not reproduce it — the box needs real focus for
+ * the press to have a blur to cause. */
+const answersSent = [];
+page.on('request', (r) => {
+  const b = r.postData() || '';
+  if (r.url().endsWith('/cmd') && b.includes('"cmd":"answer"')) answersSent.push(b);
+});
+const openEntry = (k) => page.evaluate((key) => {
+  const el = document.querySelector(`#rail [data-card="${key}"]`);
+  if (!el) return false;
+  el.click(); return true;
+}, k);
+const openedRate = await openEntry('ans-rate');
+await T(900);
+const rateBox = openedRate && await page.$('.setupcard [data-ansnum="rate"]');
+if (rateBox) {
+  await rateBox.click();
+  await page.keyboard.type('10');
+  const before = answersSent.length;
+  await page.click('.setupcard [data-confirm]');
+  await T(1500);
+  check('⏱️ is answered by the first press on its ✓ (#75 F2)', answersSent.length - before === 1,
+    `${answersSent.length - before} answer(s) sent`);
+} else check('⏱️ is answered by the first press on its ✓ (#75 F2)', false, 'no ⏱️ card or number box');
 const login = await (await post(`/api/d/${SLUG}/login`, { email: m1 })).json();
 jars.set('m1', (await followLink(login.devLink)).cookie);
-await cmd('m1', 'answer', { setting: 'rate', value: { grant: 3, cap: 5, dripMinutes: 10 } });
+// a failed press is its own finding above; the wire answers for it so the
+// steps below still test what they test
+if (!answersSent.length) await cmd('m1', 'answer', { setting: 'rate', value: { grant: 3, cap: 5, dripMinutes: 10 } });
 await T(POLL + 1500);
 s = await state();
 say(`answered ⏱️ · rail ${JSON.stringify(s.rail)}`);
@@ -205,6 +233,45 @@ if (s.rail.includes('ans-lapse')) {
   }));
   check('the answer comes back as 20 minutes, not as a spell in milliseconds',
     back.n === '20' && back.unit === 'minutes', JSON.stringify(back));
+}
+
+/* ---- 5 — ⏰ answered *At a set time* (issue #75 F1) ----------------------
+ * The rung carries no value of its own — the date does — and until #75 its
+ * press wrote the existing answer back onto itself, so on an unanswered card
+ * it never became chosen, its box never appeared and *Never* was the only
+ * answer anybody could give. Driven with a real mouse and real keys: the
+ * rung, then the date typed into its box, then **one** press. */
+await cmd('founder', 'delegate', { setting: 'ending' });
+await T(POLL + 1500);
+s = await state();
+check('⏰ is served once it is handed over', s.rail.includes('ans-ending'), 'rail ' + JSON.stringify(s.rail));
+if (s.rail.includes('ans-ending')) {
+  await openEntry('ans-ending');
+  await T(900);
+  const rung = '.setupcard [data-ans="ending"][data-ansval="date"]';
+  await page.click(rung);
+  await T(500);
+  const f1 = await page.evaluate((sel) => {
+    const box = document.querySelector('.setupcard [data-ansdate="ending"]');
+    const ok = document.querySelector('.setupcard [data-confirm]');
+    return { chosen: document.querySelector(sel).getAttribute('aria-pressed'),
+      box: !!(box && box.offsetParent), commit: ok ? ok.disabled : null };
+  }, rung);
+  check('*At a set time* is chosen by its press and shows its box, the ✓ still dark (#75 F1)',
+    f1.chosen === 'true' && f1.box && f1.commit === true, JSON.stringify(f1));
+  if (f1.box) {
+    await page.click('.setupcard [data-ansdate="ending"]');
+    await page.keyboard.type('01012030');
+    await page.keyboard.press('Tab');
+    await page.keyboard.type('1200P');
+    await T(400);
+    const before = answersSent.length;
+    await page.click('.setupcard [data-confirm]');
+    await T(1500);
+    const sent = answersSent.slice(before);
+    check('⏰ is answered with the date by the first press (#75 F1, F2)',
+      sent.length === 1 && /"setting":"ending".*"endsAtMs":\d+/.test(sent[0]), JSON.stringify(sent));
+  }
 }
 
 say('errors     · ' + (errors.length ? errors.slice(0, 4).join(' / ') : 'none'));

@@ -453,7 +453,26 @@ function runningTwin(s: MotionHost, payload: MotionPayload): MotionId | null {
  * The settle check (v0.48): a constitutional motion carries at the moment
  * every currently active member — E, evaluated live (R-088) — stands
  * at accept or abstain with no keep standing. Re-run on every answer and
- * every roster event; a standing keep blocks but does not kill.
+ * every roster event.
+ *
+ * **And it fails at the moment one of them keeps what stands** (Ed,
+ * 2026-09-19, Q1473; SPEC §9.6, R-138). Until v0.138 a standing keep blocked
+ * and did not kill — the motion ran on, ⏳ for everyone who had answered,
+ * because the keeper might change their mind — and R-021 gave a blocked
+ * motion one way out, the mover's withdrawal. **An application has no mover**
+ * (§9.7½ opens it with `by: null`), so a stranger one member had voted
+ * against was listed under *Applicants*, told nothing, until the clock closed
+ * the document; Ed found one in a live room. One rule for one glyph: every
+ * 🏛️ vote against ends its proposal at once, whatever the proposal is about.
+ *
+ * Two things stay exactly as they were. **Abstention never blocks** — it is
+ * an answer, and the check below reads it as one. **And accept and abstain
+ * stay revisable until the motion settles**: what a keep does is settle it,
+ * so there is nothing left to revise, not a new rule about revision.
+ *
+ * The keep is read over the electorate as it stands, so a keep from somebody
+ * who has since lapsed or gone does not fail anything — the same live-E rule
+ * the carry has always been read by.
  */
 export function maybeSettleMotions(s: MotionHost, t: number): void {
   let settled = true;
@@ -468,7 +487,15 @@ export function maybeSettleMotions(s: MotionHost, t: number): void {
         .filter((m2) => m2.id !== excl);
       if (electorate.length === 0) continue;
       const answers = electorate.map((m) => rec.answers.get(m.id));
-      if (answers.some((a) => a === undefined || a === 'keep')) continue;
+      // the vote against, first, and before the wait for the rest: it needs
+      // no other answer to be final (Q1473)
+      if (answers.some((a) => a === 'keep')) {
+        s.emit({ type: 'motion-held', t, motion: rec.id });
+        settleHeldEffects(s, t, rec);
+        settled = true;
+        break;
+      }
+      if (answers.some((a) => a === undefined)) continue;
       if (!answers.some((a) => a === 'accept')) continue; // nobody consented to anything
       if (s.reservedTarget(rec)) {
         // Reserved is assent at the end of either route (§9.7 v0.49):
@@ -626,12 +653,19 @@ export function crownSeatVacated(s: MotionHost, t: number): void {
 /**
  * Follow-ons of a held motion: a refused application is told so (§9.7½), and
  * **the mover is told their motion failed** (Ed, 2026-09-17, Q1447; SURFACE
- * E41, R-130). Two callers, which are two of the three roads to a failure:
+ * E41, R-130). Three callers, which are three of the four roads to a failure:
  * `adjudicateOrdinaryMotion` with *held* — the engine ran the race and the
- * value stood — and `answerCrownQuestion` with *reject*, the Founder's 🛡️
- * refusing a motion the room had already carried. The third is
- * `abandonMotion`, which calls `oweHeld` for itself, having no status event
- * of this shape to hang it on.
+ * value stood — `answerCrownQuestion` with *reject*, the Founder's 🛡️
+ * refusing a motion the room had already carried, and — since Q1473 —
+ * `maybeSettleMotions`, where one member of the electorate kept what stands
+ * and that ends it. The fourth is `abandonMotion`, which calls `oweHeld` for
+ * itself, having no status event of this shape to hang it on.
+ *
+ * **The 🏛️ road reaches both arms** (Q1473). An application refused this way
+ * is refused by the road a rejected application already took, so the applicant
+ * is told exactly as they are at the ✏️ price and may apply again; and a
+ * member's invitation or removal kept this way tells its mover with the same
+ * card the other roads raise.
  *
  * The owing goes **after** the status event and before nothing else, which is
  * where the departure owing sits relative to `member-removed`: the news of an

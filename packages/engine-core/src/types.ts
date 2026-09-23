@@ -43,7 +43,8 @@ export interface Constitution {
   /**
    * The room's settled quorum (SPEC §4.2, §9.0a): a fixed count, or a
    * share — **of the group the leader is waiting on** since Q1439 (R-126),
-   * rounded up — and in either form never more than half of that group.
+   * rounded up — and in either form never more than the whole of that group
+   * (Q1490, R-139: the cap at half went, a share running to 100%).
    * null = no quorum settled (Q′ = 0), which leaves the statistical minimum
    * governing alone.
    */
@@ -245,10 +246,14 @@ export interface Candidate {
    * the room's confidence at the moment it decided, not the convenor's
    * convenience — and the close records the park's own race. The cap mark
    * (R-051) rides here for the same reason: it is a fact about the same
-   * moment and the same fit, and absent still means converged.
+   * moment and the same fit, and absent still means converged. So do the
+   * membership's own three numbers (Q1458) — approvals, floor and silences —
+   * which is what lets the record of a shielded adoption say *n of E weighed
+   * in* like any other; absent means a log written before the field.
    */
   awaiting?: { raceId: string; p: number; threshold: number;
-    cappedFit?: { iterations: number; gradMax: number } };
+    cappedFit?: { iterations: number; gradMax: number };
+    decided?: { approvals: number; floor: number; abstained: number } };
 }
 
 /**
@@ -314,7 +319,7 @@ export interface RaceView {
    * *Indifferent* leaves it at once; silence leaves it a period after the
    * pair as it stands became answerable, or never where 💤 is *never*. A
    * share-form quorum is a share of **this**, and neither form may ask for
-   * more than half of it.
+   * more than the whole of it (Q1490, R-139).
    */
   group: number;
   /**
@@ -329,9 +334,9 @@ export interface RaceView {
    */
   abstained: number;
   /**
-   * **F, at the time the view was taken** (SPEC §4.2): `max(Q′, min(⌈E/3⌉,
-   * F_max))`, the quorum read against `group` and capped at half of it, the
-   * statistical minimum read against the whole of E. It moves with the clock
+   * **F, at the time the view was taken** (SPEC §4.2): `max(Q′, min(2, E))`,
+   * the quorum read against `group` and capped at the whole of it (R-139),
+   * the seconder read against the whole of E. It moves with the clock
    * as well as with the log, because an abstention needs no event — which is
    * why `races()` takes a `t`.
    */
@@ -533,6 +538,23 @@ export type Event =
        * receipt that lies by omission. Absent means the fit converged.
        */
       cappedFit?: { iterations: number; gradMax: number };
+      /**
+       * **What the room decided on, held over the park** (Q1458, Ed
+       * 2026-09-18): the approvals the winner held, the floor it met and the
+       * silences 💤 had already taken, snapshotted by the batch exactly as
+       * `p` and `threshold` are. `assent`'s accept copies them onto the
+       * `adopted` event, so a shielded adoption's record states the
+       * membership's numbers like any other — and states **the numbers that
+       * stood when the vote carried**, not the ones a re-derivation at the
+       * convenor's convenience would find. All three move with the clock
+       * (§8.2), so the park is the only honest moment to read them.
+       *
+       * One optional object rather than three optional fields, because the
+       * three are one snapshot of one moment and are never separately known;
+       * optional on `cappedFit`'s own terms — absent, never `undefined`, so
+       * every log written before the field existed folds byte for byte.
+       */
+      decided?: { approvals: number; floor: number; abstained: number };
     }
   | {
       /**

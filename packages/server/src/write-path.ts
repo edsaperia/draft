@@ -32,7 +32,24 @@ import type { OutboxRow, Persistence } from './persistence.js';
 import type { MailOutbox, QueuedMail } from './outbox.js';
 import { MAILS } from './mailer.js';
 import type { Mail, Mailer } from './mailer.js';
-import { devNow, driveBridge, foldTime, persistEngine } from './engine-host.js';
+import { devNow, driveBridge, foldTime, persistEngine, rewindEngine } from './engine-host.js';
+
+/**
+ * **A command the store could not write, said as what it is** (issue #79).
+ * `commit` throws this after it has rewound the document, so the refusal the
+ * member reads is true: nothing changed, for them or for anybody. It is the
+ * route failing, not the member — a 500, counted in `/healthz`'s errors with
+ * the store's own error as its cause — but unlike every other internal
+ * failure its sentence reaches the wire, since it tells the member exactly
+ * what happened and what to do.
+ */
+export class NotSavedError extends Error {
+  static readonly MESSAGE = 'that could not be saved, so nothing changed — please try again in a moment';
+  readonly notSaved = true;
+  constructor(cause?: unknown) {
+    super(NotSavedError.MESSAGE, cause === undefined ? undefined : { cause });
+  }
+}
 
 /**
  * **A pause is announced, never guessed** (Q1345, Ed 2026-09-12: *explicitly
@@ -128,12 +145,22 @@ export class WritePath {
   async sendNow(mail: Mail, documentId: string | null,
     token?: string): Promise<void> {
     const { cfg, mailer, outbox } = this.d;
-    if (cfg.mailOff) {
-      await outbox.enqueue([{ ...mail, documentId,
-        ...(token === undefined ? {} : { tokenHash: sha256Hex(token) }) }], this.d.now());
-      return;
+    const queue = (): Promise<void> => outbox.enqueue([{ ...mail, documentId,
+      ...(token === undefined ? {} : { tokenHash: sha256Hex(token) }) }], this.d.now());
+    if (cfg.mailOff) return queue();
+    try {
+      await mailer.send(mail);
+    } catch (e) {
+      // **a door's mail the provider refused is queued, not lost** (issue #67
+      // F3): the login mail and the applicant's verification had one attempt
+      // where a relayed mail has six, and the door could only report silence.
+      // The outbox's ladder takes it from here — and its give-up revokes the
+      // link, the token hash riding the row. The creation mail (no document
+      // yet) stays synchronous: the birth's 📧 reports its own failure.
+      if (documentId === null) throw e;
+      await queue();
+      this.d.outbox.kick(this.d.now());
     }
-    await mailer.send(mail);
   }
 
   /**
@@ -268,26 +295,61 @@ export class WritePath {
         }
       } else if (event.type === 'closed') {
         // the close (SPEC §4.6): every member and invitee is told, once — the
-        // close is one event in the log, and only fresh entries relay
-        const link = `${cfg.baseUrl}/d/${cs.slug}`;
+        // close is one event in the log, and only fresh entries relay.
+        // **A member's mail logs them in** (issue #35 F4): the bare address
+        // met a member without a cookie at the stranger's page, needing a
+        // second mail to sign. An invitation never followed keeps the bare
+        // address — the close expired it (SPEC X14), and the login door
+        // seats nobody on a closed document who had not arrived.
+        const bare = `${cfg.baseUrl}/d/${cs.slug}`;
         const seen = new Set<string>();
-        const tell = (email: string | null | undefined): void => {
-          if (!email || seen.has(email)) return;
+        const tell = (email: string | null | undefined, seat: string | null): void => {
+          if (!mailable(email) || seen.has(email)) return;
           seen.add(email);
-          push(email, MAILS.closed(title, link));
+          if (seat === null) { push(email, MAILS.closed(title, bare)); return; }
+          const l = loginLink(seat, email);
+          push(email, MAILS.closed(title, l.link), l.tokenHash);
         };
-        tell(cs.convenorRecord().email);
-        for (const m of cs.memberRecords().values()) if (!m.removed) tell(m.email);
-      } else if (event.type === 'member-removed' && event.by === 'convenor') {
+        // the convenor by their own record: a clerk is not in memberRecords
+        const convenor = cs.convenorRecord();
+        tell(convenor.email, convenor.id);
+        for (const m of cs.memberRecords().values()) {
+          if (!m.removed) tell(m.email, m.arrivedAtT === null ? null : m.id);
+        }
+      } else if (event.type === 'application-refused') {
+        // **a refused applicant is told** (issue #29; SPEC §9.7½): every road
+        // — the room's vote against, a race it could not carry, the close,
+        // the crown's refusal — emits this one event, so one mail serves them
+        // all. The address is the applicant's row; no token, there being no
+        // seat (the exile arm's shape)
+        const a = cs.applicantRecords().get(event.applicant);
+        if (a !== undefined && mailable(a.email)) {
+          push(a.email, MAILS.applicationRefused(title, `${cfg.baseUrl}/d/${cs.slug}`));
+        }
+      } else if (event.type === 'member-removed' && event.by !== 'self') {
         // exile at will (SURFACE E31, Q901): the removed member is outside
         // the document by now, so mail is the channel — with the document's
-        // address and **no token**, the `closed` arm's shape, since a login
-        // link would be minted for a seat that no longer exists. A carried
-        // removal (`viaMotion`, E10/E11's outcome) and a resignation (the
-        // member's own act) relay nothing.
+        // address and **no token** (E31's form), since a login link would be
+        // minted for a seat that no longer exists. **A carried removal is
+        // told too** (SURFACE E40, Q1498): exactly E31's tells, the members
+        // named as the actor. A resignation (the member's own act) relays
+        // nothing.
         const m = cs.memberRecords().get(event.member);
         if (m !== undefined && mailable(m.email)) {
-          push(m.email, MAILS.removed(title, `${cfg.baseUrl}/d/${cs.slug}`));
+          const link = `${cfg.baseUrl}/d/${cs.slug}`;
+          push(m.email, event.by === 'convenor' ? MAILS.removed(title, link)
+            : MAILS.removedByMotion(title, link));
+        }
+      } else if (event.type === 'member-uninvited') {
+        // **a withdrawn invitation is told to the person it was sent to**
+        // (Q1493, Ed 2026-09-21: *An email when withdrawn*). The `removed`
+        // arm's own shape — no token, the document's address — for the same
+        // reason: the seat is gone, so a login link would be minted for
+        // nobody. Whichever hand withdrew it and whichever side of 🍾 it
+        // happened on: the event is the fact, and there is one event.
+        const m = cs.memberRecords().get(event.member);
+        if (m !== undefined && mailable(m.email)) {
+          push(m.email, MAILS.uninvited(title, `${cfg.baseUrl}/d/${cs.slug}`));
         }
       } else if (event.type === 'lapse-warned' || event.type === 'member-lapsed') {
         const m = cs.memberRecords().get(event.member);
@@ -331,7 +393,14 @@ export class WritePath {
    */
   commit(doc: LoadedDoc, nowMs: number): Promise<number | null> {
     const { cfg, commits, pause, persistence, store } = this.d;
+    // the session the caller applied its command to, taken before the
+    // chain: every caller applies and then commits in one synchronous run
+    const applied = doc.cs;
     return commits.run(doc.id, async () => {
+      // a commit ahead of this one in the chain failed and rewound the
+      // document (issue #79), taking this command's apply with it — so this
+      // one was not saved either, and must not answer 200 over nothing
+      if (doc.cs !== applied) throw new NotSavedError();
       // the engine rides every commit (Q391): born at constitute, synced
       // with roster truth and ground shifts, closed when the ending passes
       driveBridge(doc, this.tOf(doc, nowMs), cfg.engineTuning);
@@ -353,12 +422,19 @@ export class WritePath {
         await store.persist(doc);
         await persistEngine(persistence, doc);
       } catch (e) {
-        // **a save the store rejected for good marks the document** (Q1346):
-        // a 23505 is another writer holding this document's log — the
-        // split of Q1345 — and no retry from this instance will ever land,
-        // so the document says so on every view until a save succeeds
-        if ((e as { code?: unknown }).code === '23505') doc.stalled = nowMs;
-        throw e;
+        // **a save the store rejected marks the document** (Q1346): a 23505
+        // is another writer holding this document's log — the split of
+        // Q1345 — and no retry from this instance will ever land. **Widened
+        // to every failure** (issue #79): EACCES, a statement timeout, a
+        // reset connection, #71's 23503 all mean *this document's saves are
+        // not landing*, and a save that lands clears the flag one line
+        // below, so a transient blip heals itself as the split does
+        doc.stalled = nowMs;
+        // …and the command does not stand: memory goes back to what the
+        // store holds, so the refusal and every other seat agree
+        store.rewind(doc);
+        rewindEngine(doc, cfg.engineTuning);
+        throw new NotSavedError(e);
       }
       doc.stalled = null;
       // **Mail is relayed off its own cursor** (issue #7). Relaying `fresh`
