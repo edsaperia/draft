@@ -143,7 +143,8 @@ window.CARDS = (function () {
   // and ↻ stays the character it always was; the palette paints those three
   // kinds and the eight pictures below — ten of the thirteen kinds, the check
   // and the multiply each serving a decided kind and its filed twin — bring
-  // their own colour.
+  // their own colour, **except the check and the multiply**, whose one purple
+  // gave way to the palette's green and grey (Q1517, Ed 2026-09-23; `CHECK`).
   //
   // What survives of Q288 is the **rule**: every lifecycle mark is drawn, which
   // now means *one set, the same picture on every machine* rather than whichever
@@ -182,10 +183,16 @@ window.CARDS = (function () {
   // yours — pencil
   const PENCIL = mkSvg('pencil', '<path d="M16.6352 7.58545L21.1451 10.1198L23.7063 14.6565L9.36953 28.9933L4.50768 26.4228L2.29846 21.9222L16.6352 7.58545Z" fill="#FF822D"/><path d="M1.3895 28.0652L1.97165 29.377L3.22663 29.9024L9.35704 28.9771L2.31475 21.9348L1.3895 28.0652Z" fill="#FFCE7C"/><path d="M1.06291 30.2289L1.38948 28.0652L3.22659 29.9023L1.06291 30.2289Z" fill="#402A32"/><path d="M22.2761 1.94443C23.0572 1.16338 24.3235 1.16338 25.1045 1.94443L29.3472 6.18707C30.1282 6.96812 30.1282 8.23445 29.3472 9.0155L25.8117 12.551L21.2845 10.2869L18.7406 5.47996L22.2761 1.94443Z" fill="#F92F60"/><path d="M18.7406 5.47998L25.8117 12.551L23.6903 14.6724L16.6193 7.6013L18.7406 5.47998Z" fill="#D3D3D3"/>');
   // a proposal carried, and the incumbent held — check mark and multiply, the
-  // one pair in the set drawn to match each other (both #785DC8, both solid,
-  // both upright), which is what the 2026-08-17 ✔/✖ pairing was chosen for
-  const CHECK = mkSvg('check', '<path fill-rule="evenodd" clip-rule="evenodd" d="M28.9278 10.3004C30.1588 11.6067 30.0977 13.6636 28.7914 14.8946L13.9394 28.8901C12.6481 30.107 10.6193 30.0632 9.38167 28.7917L3.11793 22.3567C1.86596 21.0705 1.89371 19.0129 3.17992 17.7609C4.46612 16.509 6.52372 16.5367 7.77569 17.8229L11.809 21.9665L24.3336 10.164C25.6399 8.93304 27.6968 8.99411 28.9278 10.3004Z" fill="#785DC8"/>');
-  const MULTIPLY = mkSvg('multiply', '<path d="M7.2225 2.8925C6.0325 1.7025 4.0825 1.7025 2.8925 2.8925C1.7025 4.0925 1.7025 6.0325 2.8925 7.2325L11.6405 15.9765L2.9025 24.7225C1.7125 25.9125 1.7125 27.8625 2.9025 29.0525C4.0925 30.2425 6.0425 30.2425 7.2325 29.0525L15.9735 20.3075L24.7125 29.0425C25.9025 30.2325 27.8525 30.2325 29.0425 29.0425C30.2325 27.8525 30.2325 25.9025 29.0425 24.7125L20.3045 15.9745L29.0525 7.2225C30.2425 6.0325 30.2425 4.0825 29.0525 2.8925C27.8525 1.7025 25.9025 1.7025 24.7125 2.8925L15.9715 11.6415L7.2225 2.8925Z" fill="#785DC8"/>');
+  // one pair in the set drawn to match each other (both solid, both upright),
+  // which is what the 2026-08-17 ✔/✖ pairing was chosen for. **Their fill is
+  // the palette's** (Q1517, Ed 2026-09-23: *on amendments that passed it
+  // should be green*): Fluent draws both in one purple, #785DC8, a side effect
+  // of choosing the set and never a ruling on colour. The shapes are the
+  // file's; the fill is `currentColor`, so `.mk-adopted` paints the ✔ `--ok`
+  // and `.mk-retired` the ✖ `--muted` (system.css), and the filed twins drain
+  // those colours as they drained the purple.
+  const CHECK = mkSvg('check', '<path fill-rule="evenodd" clip-rule="evenodd" d="M28.9278 10.3004C30.1588 11.6067 30.0977 13.6636 28.7914 14.8946L13.9394 28.8901C12.6481 30.107 10.6193 30.0632 9.38167 28.7917L3.11793 22.3567C1.86596 21.0705 1.89371 19.0129 3.17992 17.7609C4.46612 16.509 6.52372 16.5367 7.77569 17.8229L11.809 21.9665L24.3336 10.164C25.6399 8.93304 27.6968 8.99411 28.9278 10.3004Z" fill="currentColor"/>');
+  const MULTIPLY = mkSvg('multiply', '<path d="M7.2225 2.8925C6.0325 1.7025 4.0825 1.7025 2.8925 2.8925C1.7025 4.0925 1.7025 6.0325 2.8925 7.2325L11.6405 15.9765L2.9025 24.7225C1.7125 25.9125 1.7125 27.8625 2.9025 29.0525C4.0925 30.2425 6.0425 30.2425 7.2325 29.0525L15.9735 20.3075L24.7125 29.0425C25.9025 30.2325 27.8525 30.2325 29.0425 29.0425C30.2325 27.8525 30.2325 25.9025 29.0425 24.7125L20.3045 15.9745L29.0525 7.2225C30.2425 6.0325 30.2425 4.0825 29.0525 2.8925C27.8525 1.7025 25.9025 1.7025 24.7125 2.8925L15.9715 11.6415L7.2225 2.8925Z" fill="currentColor"/>');
   // **The two Fluent files this alphabet does not take** are the pause button
   // and the counterclockwise arrows button, and they are the two that are
   // *buttons*: a rounded blue plate with a white shape knocked out. ⏸ keeps the
@@ -251,8 +258,9 @@ window.CARDS = (function () {
     // a matched pair, so the outcome is legible before you open anything. The
     // 2026-08-17 argument for ✖ U+2716 over Unicode's own ✘ U+2718 — a pair has
     // to be one weight and one lean at 13px in a margin — is met here by the set
-    // rather than by the codepoint: Fluent's check and multiply are one purple,
-    // one solid weight and both upright.
+    // rather than by the codepoint: Fluent's check and multiply are one solid
+    // weight and both upright — and since Q1517 the ✔ is `--ok` green and the
+    // ✖ `--muted` grey, the palette saying which way it went a second time.
     adopted: CHECK,     // a proposal carried: the charter changed here
     retired: MULTIPLY,  // the incumbent held: nothing changed
     // **Filed keeps which way it went** (Ed, 2026-08-17). ☑️ collapsed both

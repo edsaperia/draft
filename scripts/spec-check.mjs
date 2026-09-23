@@ -441,7 +441,12 @@ function checkMarks() {
   // **not** carry a `.mk-*` colour, and the three that are not pictures must.
   const markSrc = objLit(cards, 'MARK').replace(/\/\/[^\n]*/g, '');
   const valOf = (k) => ((markSrc.match(new RegExp(`(?:^|[,{])\\s*${k}:\\s*([^,\\n]+)`)) || [])[1] || '').trim();
-  const painted = markKeys.filter((k) => !/^[A-Z]+$/.test(valOf(k)) || valOf(k) === 'PAUSE');
+  // **…and a picture whose fill is `currentColor` is painted too** (Q1517, Ed
+  // 2026-09-23): the ✔ and ✖ keep Fluent's shapes and take the palette's green
+  // and grey, so the split reads the picture's own definition for the word.
+  const pictureOf = (name) => (cards.match(new RegExp(`const ${name} = mkSvg\\([^\\n]*`)) || [''])[0];
+  const painted = markKeys.filter((k) => !/^[A-Z]+$/.test(valOf(k)) || valOf(k) === 'PAUSE'
+    || /fill="currentColor"/.test(pictureOf(valOf(k))));
   // the rules, not the prose about them — this file's comments name the classes
   const rules = css.replace(/\/\*[\s\S]*?\*\//g, '');
   const colouredBy = {};

@@ -1928,6 +1928,23 @@ async function walkRail(page, rails, walk) {
     }
     return { red, rows: out };
   });
+  // **a passed ✔ is green, a held ✖ grey** (R3, Q1517, Ed 2026-09-23). The
+  // drawn fill of every unfiled decided mark on the page — rail, gutter,
+  // contents rail, card heads — read against the palette's own tokens, each
+  // resolved to rgb through a probe element rather than written down here.
+  const decided = await page.evaluate(() => {
+    const probe = document.createElement('span');
+    document.body.appendChild(probe);
+    const tok = (name) => { probe.style.color = 'var(' + name + ')'; return getComputedStyle(probe).color; };
+    const want = { adopted: tok('--ok'), retired: tok('--muted') };
+    probe.remove();
+    const seen = {};
+    for (const kind of ['adopted', 'retired']) {
+      seen[kind] = [...document.querySelectorAll('.mk-' + kind + ' svg path')]
+        .map((p) => getComputedStyle(p).fill);
+    }
+    return { want, seen };
+  });
   const beneath = await page.evaluate(() =>
     Object.fromEntries(window.SESSION.SUGGS.filter((s) => s.beneath).map((s) => [s.id, s.beneath])));
   // the same rail with the field off, so the comparison is this page's own
@@ -1946,11 +1963,31 @@ async function walkRail(page, rails, walk) {
     window.SESSION.refreshRail();
   }, saved);
   await wait(page, 250);
-  rails.push({ walk, withPile, without, beneath, stranded });
+  rails.push({ walk, withPile, without, beneath, stranded, decided });
 }
 function railRules(rails) {
   const out = [];
   const file = (rule, said, saw, note) => out.push({ rule, lens: 'positioning', said, saw, note });
+  // R3 — the unfiled ✔ in --ok, the unfiled ✖ in --muted (Q1517). A walk
+  // with none of a kind says nothing; the run says so if no walk had any.
+  const R3_SAID = { adopted: 'a passed ✔ is drawn in the palette’s `--ok` green (Q1517, Ed 2026-09-23)',
+    retired: 'a held ✖ is drawn in the palette’s `--muted` grey (Q1517, Ed 2026-09-23)' };
+  for (const kind of ['adopted', 'retired']) {
+    let any = 0;
+    for (const r of rails) {
+      const d = r.decided;
+      if (!d) continue;
+      const fills = d.seen[kind] || [];
+      any += fills.length;
+      const wrong = [...new Set(fills.filter((f) => f !== d.want[kind]))];
+      if (wrong.length) {
+        file('R3', R3_SAID[kind], fills.filter((f) => f !== d.want[kind]).length + ' of ' + fills.length
+          + ' .mk-' + kind + ' path(s) fill ' + wrong.join(' / ') + ', wanted ' + d.want[kind], r.walk);
+      }
+    }
+    if (!any) file('R3', R3_SAID[kind].replace(/ \(Q1517.*$/, '') + ' — measured at all (Q1517)',
+      'no unfiled .mk-' + kind + ' mark on any walked page', rails.map((r) => r.walk).join(','));
+  }
   for (const r of rails) {
     // R2 — the stranded entry's ground and its ↻, both the surface's one red
     const st = r.stranded || { red: '', rows: [] };

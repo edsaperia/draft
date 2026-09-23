@@ -714,6 +714,17 @@
      faded to sit down. Ed sent the buttons back the same afternoon and the
      opacity went with them.) */
   .mk-filedYes, .mk-filedNo { filter: grayscale(1); }
+  /* **A passed ✔ is green, a held ✖ grey** (Q1517, Ed 2026-09-23: *on
+     amendments that passed it should be green*). The two pictures fill with
+     `currentColor` rather than Fluent's one purple, so the palette says which
+     way it went: `--ok`, green meaning *decided* and only that, on the ✔ that
+     changed the charter; `--muted` on the ✖ where nothing changed. The filed
+     twins take the same colours and drain them above: measured through the
+     same grayscale filter, `--ok` drains to 108 where the purple drained to
+     106, and `--muted` to 115 — nine levels lighter than before, and the
+     luminance of the `--muted` ⏸ and ↻ beside it exactly. */
+  .mk-adopted, .mk-filedYes { color: var(--ok); }
+  .mk-retired, .mk-filedNo { color: var(--muted); }
   /* **The three the palette still paints.** ⏸ is a stroked glyph and ↻ a
      character, so both take `color` like any other ink, and the grey is the same
      `--muted` the drained pictures land on. */
